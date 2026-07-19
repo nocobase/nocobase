@@ -16,8 +16,11 @@ export enum NocoBaseDesktopRouteType {
   flowPage = 'flowPage',
 }
 
+export type NocoBaseDesktopRouteTypeValue = NocoBaseDesktopRouteType | (string & {});
+
 export interface NocoBaseDesktopRouteOptions {
   hasPersistedMenuInstanceFlow?: boolean;
+  pageMenuModelClass?: string;
   hasPersistedPageTabFlowModel?: boolean;
   [key: string]: any;
 }
@@ -33,7 +36,7 @@ export interface NocoBaseDesktopRoute {
   menuSchemaUid?: string;
   tabSchemaName?: string;
   pageSchemaUid?: string;
-  type?: NocoBaseDesktopRouteType;
+  type?: NocoBaseDesktopRouteTypeValue;
   options?: NocoBaseDesktopRouteOptions;
   sort?: number;
   hideInMenu?: boolean;
@@ -47,6 +50,14 @@ export interface NocoBaseDesktopRoute {
   updatedAt?: string;
   createdBy?: any;
   updatedBy?: any;
+}
+
+export function isPageMenuRoute(route: NocoBaseDesktopRoute | undefined): boolean {
+  return typeof route?.options?.pageMenuModelClass === 'string' && !!route.options.pageMenuModelClass.trim();
+}
+
+export function isFlowPageRoute(route: NocoBaseDesktopRoute | undefined): boolean {
+  return route?.type === NocoBaseDesktopRouteType.flowPage || isPageMenuRoute(route);
 }
 
 export interface AdminLayoutRoutePageMeta {

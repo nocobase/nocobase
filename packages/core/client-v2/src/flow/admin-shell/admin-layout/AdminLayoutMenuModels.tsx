@@ -11,7 +11,8 @@ import React from 'react';
 import { FlowModel } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import { isFlowPageRoute, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import { buildPageMenuRoute, resolvePageMenuModelByRouteType } from '../../models/base/PageModel';
 import {
   AdminLayoutMenuCreationMeta,
   AdminLayoutMenuCreationParams,
@@ -391,8 +392,13 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   }
 
   async createMenuFromMeta(meta: AdminLayoutMenuCreationMeta, values: AdminLayoutMenuCreationParams) {
-    const routeType =
-      meta.menuType === 'flowPage'
+    const pageMenuDefinition = await resolvePageMenuModelByRouteType(this.flowEngine, meta.menuType, this.context);
+    if (!pageMenuDefinition && !['flowPage', 'page', 'group', 'link'].includes(meta.menuType)) {
+      throw new Error(`Unknown or unavailable menu type '${meta.menuType}'.`);
+    }
+    const routeType = pageMenuDefinition
+      ? pageMenuDefinition.routeType
+      : meta.menuType === 'flowPage'
         ? NocoBaseDesktopRouteType.flowPage
         : meta.menuType === 'page'
           ? NocoBaseDesktopRouteType.page
@@ -431,6 +437,17 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           openInNewWindow: values.openInNewWindow,
         },
       });
+      return;
+    }
+
+    if (pageMenuDefinition) {
+      await createRoute(
+        buildPageMenuRoute(pageMenuDefinition, {
+          title: values.title,
+          icon: values.icon,
+          schemaUid: uid(),
+        }),
+      );
       return;
     }
 
@@ -648,7 +665,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       };
     }
 
-    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+    if (route.type === NocoBaseDesktopRouteType.page || isFlowPageRoute(route)) {
       const runtimeTarget = resolveAdminRouteRuntimeTarget({
         app: this.context.app,
         route,

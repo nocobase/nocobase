@@ -12,7 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deviceType } from 'react-device-detect';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../../hooks/useApp';
-import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../flow-compat';
+import { isPageMenuRoute, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../flow-compat';
 import {
   resolveAdminRouteRuntimeTarget,
   toRouterNavigationPath,
@@ -22,6 +22,7 @@ import { getLayoutModel, type BaseLayoutModel } from '../admin-shell/BaseLayoutM
 import { useLayoutRoutePage } from '../admin-shell/useLayoutRoutePage';
 import { AppNotFound } from '../../components';
 import { useKeepAlive } from '../../components/KeepAlive';
+import { resolvePageMenuModelByRouteType } from '../models/base/PageModel';
 
 type FlowRouteGuardState = {
   pageUid?: string;
@@ -252,7 +253,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   const routeRepository = flowEngine.context.routeRepository as FlowRouteRepositoryLike | undefined;
   const params = useParams();
   const pageUid = pageUidProp || params?.name;
-  const hasNestedRoutePath = typeof params?.tabUid !== 'undefined' || typeof params?.['*'] !== 'undefined';
+  const hasNestedRoutePath = typeof params?.tabUid !== 'undefined' || Boolean(params?.['*']);
   const skipRouteRepositoryCheck = !routeRepository;
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
     pageUid: undefined,
@@ -260,8 +261,11 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     allowBridge: false,
     notFound: false,
   });
+  const pathnameRef = useRef(location.pathname);
   const replaceTriggeredRef = useRef(false);
   const requestIdRef = useRef(0);
+
+  pathnameRef.current = location.pathname;
 
   if (!pageUid) {
     throw new Error('[NocoBase] FlowRoute requires pageUid or route.params.name.');
@@ -284,7 +288,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
           await routeRepository?.ensureAccessibleLoaded?.();
         } catch (_error) {
           if (active && requestId === requestIdRef.current) {
-            setGuardState({ pageUid, pending: false, allowBridge: true, notFound: false });
+            setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
           }
           return;
         }
@@ -303,12 +307,32 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
         return;
       }
 
+      if (hasNestedRoutePath) {
+        const layoutModel = getLayoutModel(flowEngine);
+        const resolvedLayoutRoute = layoutModel?.resolveLayoutRoute?.({ pathname: pathnameRef.current });
+        if (resolvedLayoutRoute?.type === 'notFound') {
+          setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
+          return;
+        }
+      }
+
       if (!route && legacyPageBehavior === 'notFound') {
         const flowModelExists = await hasFlowModel(flowEngine, pageUid);
         if (active && requestId === requestIdRef.current) {
           setGuardState({ pageUid, pending: false, allowBridge: flowModelExists, notFound: !flowModelExists });
         }
         return;
+      }
+
+      if (isPageMenuRoute(route)) {
+        const definition = await resolvePageMenuModelByRouteType(flowEngine, route.type, flowEngine.context);
+        if (!active || requestId !== requestIdRef.current) {
+          return;
+        }
+        if (definition?.modelClass !== route.options?.pageMenuModelClass?.trim()) {
+          setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
+          return;
+        }
       }
 
       if (route?.type === NocoBaseDesktopRouteType.group) {
@@ -396,6 +420,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   }, [
     app,
     flowEngine,
+    getLayoutModel,
     hasNestedRoutePath,
     legacyPageBehavior,
     navigate,

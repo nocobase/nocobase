@@ -9,14 +9,14 @@
 
 import { FileTextOutlined, LinkOutlined } from '@ant-design/icons';
 import React from 'react';
-import { Icon, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './mobileFlowCompat';
+import { Icon, isFlowPageRoute, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './mobileFlowCompat';
 
 export type MobileRouteTitleTranslator = (key: string) => string;
 export type MobileTabRouteCollectOptions = {
   includeHidden?: boolean;
 };
 export type MobileTabRoute = NocoBaseDesktopRoute & {
-  type: NocoBaseDesktopRouteType.flowPage | NocoBaseDesktopRouteType.link;
+  type: NonNullable<NocoBaseDesktopRoute['type']>;
 };
 
 function getRouteSort(route: NocoBaseDesktopRoute, index: number) {
@@ -59,8 +59,10 @@ export function mobileRouteTreeContainsTabKey(routes: NocoBaseDesktopRoute[] | u
 }
 
 export function isMobileTabRoute(route: NocoBaseDesktopRoute): route is MobileTabRoute {
-  return route.type === NocoBaseDesktopRouteType.flowPage || route.type === NocoBaseDesktopRouteType.link;
+  return isFlowPageRoute(route) || route.type === NocoBaseDesktopRouteType.link;
 }
+
+export { isFlowPageRoute };
 
 export function isVisibleMobileTabRoute(route: NocoBaseDesktopRoute, options: MobileTabRouteCollectOptions = {}) {
   return isMobileTabRoute(route) && (options.includeHidden || (!route.hidden && !route.hideInMenu));

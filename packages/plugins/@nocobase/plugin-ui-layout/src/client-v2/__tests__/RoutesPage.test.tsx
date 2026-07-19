@@ -14,6 +14,28 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import RoutesPage, { MobileRoutesPage } from '../pages/RoutesPage';
 
+const pageMenuModelRegistry = vi.hoisted(() => {
+  const state = {
+    current: [] as Array<{
+      label?: string;
+      modelClass: string;
+      routeType: string;
+      sort: number;
+    }>,
+  };
+  return {
+    resolve: vi.fn(async () => state.current),
+    state,
+  };
+});
+
+const flowEngine = vi.hoisted(() => ({
+  context: {
+    t: (key: string, options?: Record<string, unknown>) =>
+      key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(options?.[name] ?? '')),
+  },
+}));
+
 const flowContext = vi.hoisted(() => ({
   current: undefined as
     | {
@@ -31,17 +53,20 @@ const flowContext = vi.hoisted(() => ({
     | undefined,
 }));
 
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+  return {
+    ...actual,
+    resolvePageMenuModels: pageMenuModelRegistry.resolve,
+  };
+});
+
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
   return {
     ...actual,
     randomId: () => 'generated-route-schema-uid',
-    useFlowEngine: () => ({
-      context: {
-        t: (key: string, options?: Record<string, unknown>) =>
-          key.replace(/\{\{(\w+)\}\}/g, (_, name) => String(options?.[name] ?? '')),
-      },
-    }),
+    useFlowEngine: () => flowEngine,
     useFlowContext: () => flowContext.current,
   };
 });
@@ -49,6 +74,8 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 afterEach(() => {
   cleanup();
   flowContext.current = undefined;
+  pageMenuModelRegistry.state.current = [];
+  pageMenuModelRegistry.resolve.mockClear();
 });
 
 async function findOpenDrawer(title: string) {
@@ -304,6 +331,277 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(within(mobileAddDialog).queryByText('Modern page (v2)')).not.toBeInTheDocument();
     expect(within(mobileAddDialog).getByRole('radio', { name: 'Page' })).toBeChecked();
     expect(within(mobileAddDialog).getByRole('radio', { name: 'Link' })).toBeInTheDocument();
+  });
+
+  it('should append resolved page menu models to root and group creation while keeping page children tab-only', async () => {
+    pageMenuModelRegistry.state.current = [
+      {
+        label: 'Earlier custom page',
+        modelClass: 'EarlierPageMenuModel',
+        routeType: 'earlierPage',
+        sort: 10,
+      },
+      {
+        label: 'Later custom page',
+        modelClass: 'LaterPageMenuModel',
+        routeType: 'laterPage',
+        sort: 20,
+      },
+    ];
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(pageMenuModelRegistry.resolve).toHaveBeenCalledWith(flowEngine, flowEngine.context);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const addDrawer = await findOpenDrawer('Add new');
+    expect(
+      within(addDrawer)
+        .getAllByRole('radio')
+        .map((radio) => radio.closest('label')?.textContent?.trim()),
+    ).toEqual(['Group', 'Page', 'Link', 'Earlier custom page', 'Later custom page']);
+    expect(within(addDrawer).getByRole('radio', { name: 'Page' })).toBeChecked();
+
+    fireEvent.click(within(addDrawer).getByRole('radio', { name: 'Earlier custom page' }));
+    fireEvent.change(within(addDrawer).getByLabelText('Title'), { target: { value: 'Custom reports' } });
+    fireEvent.click(within(addDrawer).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.create).toHaveBeenCalledWith({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          options: {
+            pageMenuModelClass: 'EarlierPageMenuModel',
+          },
+          schemaUid: 'generated-route-schema-uid',
+          title: 'Custom reports',
+          type: 'earlierPage',
+        }),
+      });
+    });
+    const createCall = resource.create.mock.calls[resource.create.mock.calls.length - 1][0];
+    expect(createCall.values).not.toHaveProperty('children');
+    expect(createCall.values).not.toHaveProperty('enableTabs');
+    expect(createCall.values).not.toHaveProperty('menuSchemaUid');
+
+    const desktopRow = await screen.findByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' }));
+    const pageChildDrawer = await findOpenDrawer('Add child route');
+    expect(within(pageChildDrawer).getAllByRole('radio')).toHaveLength(1);
+    expect(within(pageChildDrawer).getByRole('radio', { name: 'Tab' })).toBeChecked();
+    expect(within(pageChildDrawer).queryByRole('radio', { name: 'Earlier custom page' })).not.toBeInTheDocument();
+    fireEvent.click(within(pageChildDrawer).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => {
+      expect(document.body.querySelector('.ant-drawer-open')).not.toBeInTheDocument();
+    });
+
+    const groupRow = screen.getByRole('row', { name: /Desktop group/ });
+    fireEvent.click(within(groupRow).getByRole('button', { name: 'Add child Desktop group' }));
+    const groupChildDrawer = await findOpenDrawer('Add child route');
+    expect(within(groupChildDrawer).getByRole('radio', { name: 'Earlier custom page' })).toBeInTheDocument();
+    expect(within(groupChildDrawer).getByRole('radio', { name: 'Later custom page' })).toBeInTheDocument();
+  });
+
+  it('should distinguish available and unavailable dynamic page menu routes', async () => {
+    pageMenuModelRegistry.state.current = [
+      {
+        label: 'Custom page model',
+        modelClass: 'CustomPageMenuModel',
+        routeType: 'customPage',
+        sort: 10,
+      },
+    ];
+    const resource = createRoutesPageResources({
+      desktopRoutes: [
+        {
+          id: 20,
+          options: {
+            pageMenuModelClass: 'CustomPageMenuModel',
+          },
+          schemaUid: 'available-custom-page',
+          title: 'Available custom route',
+          type: 'customPage',
+        },
+        {
+          id: 21,
+          options: {
+            pageMenuModelClass: 'StaleCustomPageMenuModel',
+          },
+          schemaUid: 'mismatched-custom-page',
+          title: 'Mismatched custom route',
+          type: 'customPage',
+        },
+        {
+          id: 22,
+          options: {
+            pageMenuModelClass: 'RemovedPageMenuModel',
+          },
+          schemaUid: 'removed-custom-page',
+          title: 'Removed custom route',
+          type: 'removedPage',
+        },
+      ],
+    });
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    const availableRow = await screen.findByRole('row', { name: /Available custom route/ });
+    await waitFor(() => {
+      expect(within(availableRow).getByText('Custom page model')).toBeInTheDocument();
+    });
+    expect(within(availableRow).getByText('Custom page model').closest('.ant-tag')).toHaveClass('ant-tag-purple');
+    expect(within(availableRow).getByRole('button', { name: 'Add child Available custom route' })).toBeDisabled();
+    expect(within(availableRow).getByRole('link', { name: 'View Available custom route' })).toHaveAttribute(
+      'href',
+      '/admin/available-custom-page',
+    );
+
+    const mismatchedRow = screen.getByRole('row', { name: /Mismatched custom route/ });
+    expect(within(mismatchedRow).getByText('Unavailable (customPage)')).toBeInTheDocument();
+    expect(within(mismatchedRow).getByRole('button', { name: 'Add child Mismatched custom route' })).toBeDisabled();
+    expect(within(mismatchedRow).getByRole('button', { name: 'View Mismatched custom route' })).toBeDisabled();
+    expect(within(mismatchedRow).getByRole('button', { name: 'Edit Mismatched custom route' })).toBeEnabled();
+    expect(within(mismatchedRow).getByRole('button', { name: 'Delete Mismatched custom route' })).toBeEnabled();
+
+    const removedRow = screen.getByRole('row', { name: /Removed custom route/ });
+    expect(within(removedRow).getByText('Unavailable (removedPage)')).toBeInTheDocument();
+    expect(within(removedRow).getByRole('button', { name: 'View Removed custom route' })).toBeDisabled();
+  });
+
+  it('should show Unknown for custom route types without page menu model metadata', async () => {
+    const resource = createRoutesPageResources({
+      desktopRoutes: [
+        {
+          id: 23,
+          options: {
+            customSetting: true,
+          },
+          schemaUid: 'other-plugin-route',
+          title: 'Other plugin route',
+          type: 'otherPluginRoute',
+        },
+      ],
+    });
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    const customRouteRow = await screen.findByRole('row', { name: /Other plugin route/ });
+    expect(within(customRouteRow).getByText('Unknown')).toBeInTheDocument();
+    expect(within(customRouteRow).queryByText('Unavailable (otherPluginRoute)')).not.toBeInTheDocument();
+    expect(within(customRouteRow).getByRole('link', { name: 'View Other plugin route' })).toHaveAttribute(
+      'href',
+      '/admin/other-plugin-route',
+    );
+  });
+
+  it('should preserve unavailable route options and enforce the available page menu model class when editing', async () => {
+    pageMenuModelRegistry.state.current = [
+      {
+        label: 'Custom page model',
+        modelClass: 'CustomPageMenuModel',
+        routeType: 'customPage',
+        sort: 10,
+      },
+    ];
+    const resource = createRoutesPageResources({
+      desktopRoutes: [
+        {
+          id: 20,
+          options: {
+            keep: 'available',
+            pageMenuModelClass: 'CustomPageMenuModel',
+          },
+          schemaUid: 'available-custom-page',
+          title: 'Available custom route',
+          type: 'customPage',
+        },
+        {
+          id: 21,
+          options: {
+            keep: 'unavailable',
+            pageMenuModelClass: 'StaleCustomPageMenuModel',
+          },
+          schemaUid: 'mismatched-custom-page',
+          title: 'Mismatched custom route',
+          type: 'customPage',
+        },
+      ],
+    });
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    const availableRow = await screen.findByRole('row', { name: /Available custom route/ });
+    await waitFor(() => {
+      expect(within(availableRow).getByText('Custom page model')).toBeInTheDocument();
+    });
+    fireEvent.click(within(availableRow).getByRole('button', { name: 'Edit Available custom route' }));
+    const availableDrawer = await findOpenDrawer('Edit route');
+    expect(within(availableDrawer).getByText('Custom page model')).toBeInTheDocument();
+    expect(within(availableDrawer).queryByRole('checkbox', { name: 'Enable page tabs' })).not.toBeInTheDocument();
+    fireEvent.change(within(availableDrawer).getByLabelText('Title'), { target: { value: 'Updated custom route' } });
+    fireEvent.click(within(availableDrawer).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 20,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          options: {
+            keep: 'available',
+            pageMenuModelClass: 'CustomPageMenuModel',
+          },
+          type: 'customPage',
+        }),
+      });
+    });
+    expect(await screen.findByText('Updated custom route')).toBeInTheDocument();
+
+    const mismatchedRow = screen.getByRole('row', { name: /Mismatched custom route/ });
+    fireEvent.click(within(mismatchedRow).getByRole('button', { name: 'Edit Mismatched custom route' }));
+    const unavailableDrawer = await findOpenDrawer('Edit route');
+    expect(within(unavailableDrawer).getByText('Unavailable (customPage)')).toBeInTheDocument();
+    fireEvent.change(within(unavailableDrawer).getByLabelText('Title'), {
+      target: { value: 'Updated unavailable route' },
+    });
+    fireEvent.click(within(unavailableDrawer).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 21,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          options: {
+            keep: 'unavailable',
+            pageMenuModelClass: 'StaleCustomPageMenuModel',
+          },
+          type: 'customPage',
+        }),
+      });
+    });
   });
 
   it('should filter legacy v1 page routes from the v2 routes management table', async () => {
@@ -854,7 +1152,7 @@ type MutableRouteRecord = Record<string, unknown> & {
   parentId?: number;
 };
 
-function createRoutesPageResources() {
+function createRoutesPageResources(options: { desktopRoutes?: MutableRouteRecord[] } = {}) {
   const routesByLayout = new Map<string, MutableRouteRecord[]>([
     [
       DEFAULT_ADMIN_UI_LAYOUT.uid,
@@ -927,6 +1225,7 @@ function createRoutesPageResources() {
             },
           ],
         },
+        ...(options.desktopRoutes ?? []),
       ],
     ],
     [

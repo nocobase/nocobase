@@ -19,6 +19,7 @@ import {
 function createPlugin() {
   const app = {
     flowEngine: { registerModelLoaders: vi.fn() },
+    entryActionManager: { register: vi.fn() },
     router: { add: vi.fn() },
     i18n: { t: (key: string) => key },
     pluginSettingsManager: { addMenuItem: vi.fn(), addPageTabItem: vi.fn() },
@@ -49,7 +50,7 @@ describe('PluginWorkflowClientV2 task type registry', () => {
     expect(plugin.taskTypes.get('demo')).toEqual({ ...option, key: 'demo' });
   });
 
-  it('registers desktop and mobile task center routes plus the topbar action model', async () => {
+  it('registers desktop and mobile task center routes plus workflow task entry models', async () => {
     const { app, plugin } = createPlugin();
 
     await plugin.load();
@@ -75,11 +76,51 @@ describe('PluginWorkflowClientV2 task type registry', () => {
           extends: 'TopbarActionModel',
           loader: expect.any(Function),
         }),
+        WorkflowTasksEntryActionModel: expect.objectContaining({
+          extends: 'ActionModel',
+          loader: expect.any(Function),
+        }),
+        WorkflowTasksEmbeddedPageModel: expect.objectContaining({
+          extends: 'ChildPageModel',
+          loader: expect.any(Function),
+        }),
+        WorkflowTasksPageMenuModel: expect.objectContaining({
+          extends: 'BasePageMenuModel',
+          loader: expect.any(Function),
+        }),
       }),
     );
+    expect(app.entryActionManager.register).toHaveBeenCalledWith(
+      'workflow:tasks:action-panel',
+      expect.objectContaining({
+        scope: 'action-panel',
+        provider: expect.any(Function),
+      }),
+    );
+    const provider = app.entryActionManager.register.mock.calls.find(
+      ([name]) => name === 'workflow:tasks:action-panel',
+    )?.[1].provider;
+    const items = await provider({});
+    expect(items[0].createModelOptions.stepParams.popupSettings.openView).toEqual({
+      mode: 'embed',
+      pageModelClass: 'WorkflowTasksEmbeddedPageModel',
+      showFlowSettings: false,
+    });
 
     const modelLoaders = app.flowEngine.registerModelLoaders.mock.calls[0][0];
     await expect(modelLoaders.WorkflowTasksTopbarActionModel.loader()).resolves.toHaveProperty(
+      'default',
+      expect.any(Function),
+    );
+    await expect(modelLoaders.WorkflowTasksEntryActionModel.loader()).resolves.toHaveProperty(
+      'default',
+      expect.any(Function),
+    );
+    await expect(modelLoaders.WorkflowTasksEmbeddedPageModel.loader()).resolves.toHaveProperty(
+      'default',
+      expect.any(Function),
+    );
+    await expect(modelLoaders.WorkflowTasksPageMenuModel.loader()).resolves.toHaveProperty(
       'default',
       expect.any(Function),
     );

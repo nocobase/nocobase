@@ -77,6 +77,11 @@ interface SyncRuntimeOptions {
   routeState?: unknown;
 }
 
+interface StepNavigateOptions {
+  finalPathname?: string;
+  routeState?: unknown;
+}
+
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
 
 const normalizeBasePathname = (basePathname?: string) => {
@@ -302,7 +307,10 @@ export class BaseLayoutRouteCoordinator {
       const routeState = options.routeState;
 
       if (!options.skipInitialStepNavigation && this.shouldStepNavigate(runtime, viewList)) {
-        this.stepNavigate(viewList, 0, routeState);
+        this.stepNavigate(viewList, 0, {
+          finalPathname: pathname,
+          routeState,
+        });
         runtime.hasStepNavigated = true;
         this.scheduleInitialDeepLinkReplay(runtime, pathname, routeState);
         return;
@@ -387,13 +395,17 @@ export class BaseLayoutRouteCoordinator {
       });
   }
 
-  private stepNavigate(viewList: ViewItem[], index: number, routeState?: unknown) {
+  private stepNavigate(viewList: ViewItem[], index: number, options: StepNavigateOptions = {}) {
     if (!viewList[index]) {
       return;
     }
 
+    const routeState = options.routeState;
     const navigationOptions = routeState ? { state: routeState } : undefined;
-    if (index === 0) {
+    const isLastView = index === viewList.length - 1;
+    if (isLastView && index > 0 && options.finalPathname) {
+      this.flowEngine.context.router.navigate(options.finalPathname, navigationOptions);
+    } else if (index === 0) {
       new ViewNavigation(this.flowEngine.context, [], { basePath: this.basePathname }).navigateTo(
         viewList[index].params,
         {
@@ -409,7 +421,7 @@ export class BaseLayoutRouteCoordinator {
       ).navigateTo(viewList[index].params, navigationOptions);
     }
 
-    this.stepNavigate(viewList, index + 1, routeState);
+    this.stepNavigate(viewList, index + 1, options);
   }
 
   private replayActiveRuntimeViewsAfterLayoutContentElementChange() {

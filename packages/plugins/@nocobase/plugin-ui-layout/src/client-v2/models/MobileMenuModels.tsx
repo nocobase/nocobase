@@ -25,6 +25,7 @@ import {
   getMobileRouteIcon,
   getMobileRouteTabKey,
   getMobileRouteTitle,
+  isFlowPageRoute,
   isMobileTabRoute,
   mobileRouteTreeContainsTabKey,
   type MobileRouteTitleTranslator,
@@ -40,7 +41,7 @@ export type MobileTabNode = {
   key: string;
   label: ReactNode;
   icon: ReactNode;
-  type: NocoBaseDesktopRouteType.flowPage | NocoBaseDesktopRouteType.link;
+  type: NonNullable<NocoBaseDesktopRoute['type']>;
   active?: boolean;
   path?: string;
   href?: string;
@@ -615,7 +616,7 @@ export class MobileLayoutMenuItemModel extends FlowModel {
     }
 
     const key = getMobileRouteTabKey(route, this.sortIndex);
-    const isFlowPage = route.type === NocoBaseDesktopRouteType.flowPage;
+    const isFlowPage = isFlowPageRoute(route);
 
     return {
       key,

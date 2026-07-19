@@ -57,7 +57,7 @@ describe('LayoutManager', () => {
     });
     expect(React.isValidElement(routes.mobile.element)).toBe(true);
     expect(routes['mobile.__page']).toMatchObject({
-      path: ':name',
+      path: ':name/*',
       authCheck: true,
     });
     expect(routes['mobile.__pageTab']).toMatchObject({
@@ -119,7 +119,7 @@ describe('LayoutManager', () => {
       authCheck: true,
     });
     expect(routes['admin.settings.publicForms.layout.__page']).toMatchObject({
-      path: ':name',
+      path: ':name/*',
       authCheck: true,
     });
     expect(routes['admin.settings.publicForms.layout.__pageTab']).toMatchObject({
@@ -203,6 +203,32 @@ describe('LayoutManager', () => {
       'admin.settings.publicForms.layout',
       'admin.settings.publicForms.layout.__pageView',
     ]);
+  });
+
+  it('matches page route extensions with the standard page route', () => {
+    const app: any = {
+      renderComponent: vi.fn(),
+    };
+    app.router = new RouterManager({}, app);
+    const manager = new LayoutManager(app);
+
+    app.router.add('admin', {
+      path: '/admin',
+      element: <div />,
+    });
+    manager.registerLayout({
+      routeName: 'admin.pluginPages',
+      routePath: 'plugin-pages',
+      uid: 'plugin-pages-layout-model',
+      layoutModelClass: 'PluginPagesLayoutModel',
+    });
+
+    const matches = matchRoutes(
+      app.router.getRoutesTree(),
+      '/admin/plugin-pages/custom-page/section/recent/filter/pending',
+    );
+
+    expect(matches?.map((match) => match.route.id)).toEqual(['admin', 'admin.pluginPages', 'admin.pluginPages.__page']);
   });
 
   it('allows explicit page model classes and authCheck', () => {

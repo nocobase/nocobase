@@ -8,7 +8,7 @@
  */
 
 import { type FlowEngine, useFlowEngine } from '@nocobase/flow-engine';
-import { FlowRoute, getAdminLayoutModel, type LayoutRouteLike } from '@nocobase/client-v2';
+import { FlowRoute, getAdminLayoutModel, isFlowPageRoute, type LayoutRouteLike } from '@nocobase/client-v2';
 import { Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -104,7 +104,7 @@ const AdminPageContent = (props: { uid: string; allAccessRoutes: NocoBaseDesktop
   const { active } = useKeepAlive();
   const route = findRouteBySchemaUid(uid, allAccessRoutes);
 
-  if (route?.type === NocoBaseDesktopRouteType.flowPage) {
+  if (isFlowPageRoute(route)) {
     return <LegacyFlowRoute pageUid={uid} active={active} />;
   }
 
