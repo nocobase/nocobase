@@ -50,7 +50,7 @@ P1 does not include creating a page directly from an Entry, an App Bridge API, o
 
 `lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It performs the VSC commit, workspace validation, entry reconciliation, and runtime compilation in one database transaction. There is no separate scan action or scan state.
 
-Public Agent authoring uses a different request shape from RunJS Studio workspaces:
+Repository source operations use a different request shape from RunJS Studio workspaces:
 
 1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.
 2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A whole-workspace preview may return HTTP 207 when only part of the Entry set compiles; HTTP 207 or 422 must not proceed to save.
@@ -58,7 +58,7 @@ Public Agent authoring uses a different request shape from RunJS Studio workspac
 4. On HTTP 409, pull again and rebuild the candidate. Never resolve a conflict by replacing only the expected Head while reusing stale source.
 5. Verify the new Head, all affected Entry artifacts, reference rows, and the bound Flow Surface. Updating a retained inline fallback `code` field does not change the active runtime while `sourceMode` remains `light-extension`.
 
-The public CLI families are `light-extension-repos`, `light-extension-entries`, `light-extension-references`, `light-extension-files`, and `light-extensions`. Raw `vscFile`, `runJSSources`, direct artifact writes, and ZIP round-trips are not alternative save paths for an active light-extension repository. `inspectSourceArchive` remains read-only.
+Raw `vscFile`, `runJSSources`, direct artifact writes, and ZIP round-trips are not alternative save paths for an active light-extension repository. `inspectSourceArchive` remains read-only.
 
 | Case | Result | Persistent state |
 | --- | --- | --- |
@@ -269,9 +269,5 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 
 - Existing inline JS surfaces require no migration. Missing `sourceMode` continues to mean inline.
 - Active light-extension bindings keep retained inline code only as compatibility fallback; source edits must go through the repository domain.
-- The planned public command floor is app/CLI `2.2.0-beta.16` (or `2.2.0` stable) with managed skills pack `1.0.21` or newer.
-- `plugin-light-extension` must be enabled before light-extension command families are used. Ordinary RunJS workspace authoring additionally requires `plugin-vsc-file`.
-- Roll back Skills first by removing the source-mode router, then hide the CLI command groups through `nocobase-ctl.config.json` if required. Backend actions may remain available for older clients.
+- `plugin-light-extension` must be enabled before light-extension repository APIs are used. Ordinary RunJS workspace authoring additionally requires `plugin-vsc-file`.
 - Do not delete persisted `sourceBinding` data during rollback. Failed saves are transactionally rolled back; successful source versions are reverted by creating a normal new commit from the desired historical source.
-
-The full release order, regression gates, acceptance record, and rollback dry-run are documented in [SOURCE_AUTHORING_ROLLOUT.md](./SOURCE_AUTHORING_ROLLOUT.md).

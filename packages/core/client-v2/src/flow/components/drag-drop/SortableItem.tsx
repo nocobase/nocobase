@@ -11,7 +11,7 @@ import React, { FC } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export const SortableItem: FC<React.PropsWithChildren<{ model: any }>> = (props) => {
+export const SortableItem: FC<{ model: any }> = (props) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.model.uid });
 
   const style = {

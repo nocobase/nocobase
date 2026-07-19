@@ -34,7 +34,7 @@ NavigateNoUpdateContext.displayName = 'NavigateNoUpdateContext';
 /**
  * 提供一个在 URL 变化时不会重新创建引用的 navigate。
  */
-export const NavigateNoUpdateProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+export const NavigateNoUpdateProvider: React.FC = ({ children }) => {
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
@@ -161,7 +161,7 @@ const titleWrapperStyle = {
 /**
  * 为标题补充 tooltip 图标。
  */
-export const withTooltipComponent = (Component: React.FC<React.PropsWithChildren>) => {
+export const withTooltipComponent = (Component: React.FC) => {
   return (props) => {
     const { tooltip } = props;
 
@@ -191,7 +191,7 @@ export const VariableScopeContext = createContext<{ scopeId: string; type: strin
 /**
  * 为菜单项提供变量作用域信息。
  */
-export const VariableScope: React.FC<React.PropsWithChildren<{ scopeId: string; type: string }>> = (props) => {
+export const VariableScope: React.FC<{ scopeId: string; type: string }> = (props) => {
   const parent = useContext(VariableScopeContext);
   const value = useMemo(
     () => ({

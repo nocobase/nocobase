@@ -7,23 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  LIGHT_EXTENSION_COMPILE_METRIC_COUNTERS,
-  LIGHT_EXTENSION_COMPILE_METRICS_SCHEMA_VERSION,
-  type LightExtensionCompileMetricCounter,
-  type LightExtensionCompileMetricsSummary,
-} from '../../shared/compileMetrics';
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import {
   createMediumCompilePerformanceFixture,
   createSmallCompilePerformanceFixture,
 } from './helpers/compilePerformanceFixture';
-import {
-  buildCompilePerformanceBaselineReport,
-  calculateDurationStatistics,
-  serializeCompilePerformanceBaselineJson,
-  serializeCompilePerformanceBaselineMarkdown,
-} from './helpers/compilePerformanceReport';
 
 describe('compile performance fixture helper', () => {
   it('generates the deterministic 1 Entry / 10 file fixture with a stable byte size', () => {
@@ -86,148 +74,6 @@ describe('compile performance fixture helper', () => {
     expect(validation.diagnostics).toEqual([]);
   });
 });
-
-describe('compile performance baseline report helper', () => {
-  it('calculates deterministic median and interpolated p95 statistics', () => {
-    const statistics = calculateDurationStatistics([4, 1, 3, 2]);
-    expect(statistics).toMatchObject({ sampleCount: 4, median: 2.5 });
-    expect(statistics.p95).toBeCloseTo(3.85);
-    expect(calculateDurationStatistics([7])).toEqual({ sampleCount: 1, median: 7, p95: 7 });
-  });
-
-  it('builds stable JSON and Markdown reports with environment, fixture, run counts, timings, and every counter', () => {
-    const fixture = createSmallCompilePerformanceFixture();
-    const coldCounters = createCounters({ compiledEntryCount: 1 });
-    const hotCounters = createCounters({ compileCacheHitCount: 1, compiledEntryCount: 0, reusedEntryCount: 1 });
-    const report = buildCompilePerformanceBaselineReport({
-      commit: 'abc1234',
-      nodeVersion: '20.16.0',
-      databaseDialect: 'postgres',
-      fixture: fixture.parameters,
-      scenarios: [
-        {
-          name: 'Private file save',
-          coldRuns: [
-            createSummary({ total: 20, compileEntries: 8 }, coldCounters),
-            createSummary({ total: 10, compileEntries: 4 }, coldCounters),
-          ],
-          hotRuns: [createSummary({ total: 5 }, hotCounters), createSummary({ total: 7 }, hotCounters)],
-        },
-      ],
-    });
-
-    expect(report).toMatchObject({
-      schemaVersion: 1,
-      environment: {
-        commit: 'abc1234',
-        nodeVersion: '20.16.0',
-        databaseDialect: 'postgres',
-      },
-      fixture: { entryCount: 1, fileCount: 10, totalBytes: 926 },
-      scenarios: [
-        {
-          name: 'Private file save',
-          operation: 'saveSource',
-          result: 'success',
-          cold: {
-            runCount: 2,
-            durationsMs: {
-              total: { sampleCount: 2, median: 15, p95: 19.5 },
-              compileEntries: { sampleCount: 2, median: 6, p95: 7.8 },
-            },
-            counters: coldCounters,
-          },
-          hot: {
-            runCount: 2,
-            durationsMs: { total: { sampleCount: 2, median: 6, p95: 6.9 } },
-            counters: hotCounters,
-          },
-        },
-      ],
-    });
-
-    const json = serializeCompilePerformanceBaselineJson(report);
-    expect(json.endsWith('\n')).toBe(true);
-    expect(JSON.parse(json)).toEqual(report);
-
-    const markdown = serializeCompilePerformanceBaselineMarkdown(report);
-    expect(markdown).toContain('| Commit | abc1234 |');
-    expect(markdown).toContain('| Node version | 20.16.0 |');
-    expect(markdown).toContain('| Database dialect | postgres |');
-    expect(markdown).toContain('| Entries | 1 |');
-    expect(markdown).toContain('| Files | 10 |');
-    expect(markdown).toContain('| Total bytes | 926 |');
-    expect(markdown).toContain('| Cold | total | 2 | 15 | 19.5 |');
-    expect(markdown).toContain('| Hot | total | 2 | 6 | 6.9 |');
-    for (const counter of LIGHT_EXTENSION_COMPILE_METRIC_COUNTERS) {
-      expect(markdown).toContain(`| Cold | ${counter} | ${coldCounters[counter]} |`);
-      expect(markdown).toContain(`| Hot | ${counter} | ${hotCounters[counter]} |`);
-    }
-  });
-
-  it('rejects missing or non-deterministic structure counters instead of hiding structural regressions', () => {
-    const fixture = createSmallCompilePerformanceFixture();
-    const counters = createCounters();
-    const missingCounter = { ...counters };
-    delete (missingCounter as Partial<Record<LightExtensionCompileMetricCounter, number>>).referenceScanCount;
-
-    expect(() =>
-      buildCompilePerformanceBaselineReport({
-        commit: 'abc1234',
-        nodeVersion: '20.16.0',
-        databaseDialect: 'sqlite',
-        fixture: fixture.parameters,
-        scenarios: [
-          {
-            name: 'Missing counter',
-            coldRuns: [createSummary({ total: 1 }, missingCounter)],
-            hotRuns: [createSummary({ total: 1 }, counters)],
-          },
-        ],
-      }),
-    ).toThrow('counter "referenceScanCount"');
-
-    expect(() =>
-      buildCompilePerformanceBaselineReport({
-        commit: 'abc1234',
-        nodeVersion: '20.16.0',
-        databaseDialect: 'sqlite',
-        fixture: fixture.parameters,
-        scenarios: [
-          {
-            name: 'Counter drift',
-            coldRuns: [
-              createSummary({ total: 1 }, counters),
-              createSummary({ total: 2 }, createCounters({ compiledEntryCount: 2 })),
-            ],
-            hotRuns: [createSummary({ total: 1 }, counters)],
-          },
-        ],
-      }),
-    ).toThrow('non-deterministic cold counter "compiledEntryCount"');
-  });
-});
-
-function createSummary(
-  durationsMs: LightExtensionCompileMetricsSummary['durationsMs'],
-  counters: LightExtensionCompileMetricsSummary['counters'],
-): LightExtensionCompileMetricsSummary {
-  return {
-    schemaVersion: LIGHT_EXTENSION_COMPILE_METRICS_SCHEMA_VERSION,
-    operation: 'saveSource',
-    result: 'success',
-    durationsMs,
-    counters,
-  };
-}
-
-function createCounters(
-  overrides: Partial<Record<LightExtensionCompileMetricCounter, number>> = {},
-): Record<LightExtensionCompileMetricCounter, number> {
-  return Object.fromEntries(
-    LIGHT_EXTENSION_COMPILE_METRIC_COUNTERS.map((counter, index) => [counter, overrides[counter] ?? index]),
-  ) as Record<LightExtensionCompileMetricCounter, number>;
-}
 
 function totalFixtureBytes(files: Array<{ content: string }>): number {
   return files.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0);

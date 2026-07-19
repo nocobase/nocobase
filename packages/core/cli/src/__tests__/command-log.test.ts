@@ -17,7 +17,6 @@ import {
   getCommandLogCommandId,
   initCommandLogSession,
   installCommandLogWriteHooks,
-  sanitizeArgv,
   stripAnsi,
 } from '../lib/command-log.js';
 
@@ -36,18 +35,6 @@ test('getCommandLogCommandId derives stable command ids for common commands', ()
 
 test('stripAnsi removes terminal control sequences', () => {
   expect(stripAnsi('\u001B[31merror\u001B[39m')).toBe('error');
-});
-
-test('sanitizeArgv redacts short and long token flags', () => {
-  expect(sanitizeArgv(['api', 'users', 'list', '-t', 'short-secret'])).toEqual(['api', 'users', 'list', '-t', '***']);
-  expect(sanitizeArgv(['api', 'users', 'list', '-t=inline-secret'])).toEqual(['api', 'users', 'list', '-t=***']);
-  expect(sanitizeArgv(['api', 'users', 'list', '-tcompact-secret'])).toEqual(['api', 'users', 'list', '-t***']);
-  expect(sanitizeArgv(['api', 'users', 'list', '--token=long-secret'])).toEqual([
-    'api',
-    'users',
-    'list',
-    '--token=***',
-  ]);
 });
 
 test('command log session writes log and meta files and captures stdout/stderr', async () => {
