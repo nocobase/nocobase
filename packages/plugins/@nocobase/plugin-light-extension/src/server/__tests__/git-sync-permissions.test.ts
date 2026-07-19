@@ -59,6 +59,8 @@ describe('light extension Git sync permissions acceptance', () => {
   it('registers the real ACL predicate for the no-access, manage-only, pull-only, and push-only role matrix', async () => {
     type AclCondition = (ctx: {
       can?: (input: { resource: string; action: string }) => unknown | Promise<unknown>;
+      action?: { params?: Record<string, unknown> };
+      request?: { path?: string; headers?: Record<string, string> };
     }) => boolean | Promise<boolean>;
     const registrations: Array<{ resource: string; action: string; condition: string | AclCondition }> = [];
     const app = {
@@ -108,6 +110,25 @@ describe('light extension Git sync permissions acceptance', () => {
         });
         expect(allowed, `${role.permissions.join(',') || 'no-access'}:${action}`).toBe(role.allowed.includes(action));
       }
+    }
+
+    const configure = conditions.get('configure');
+    if (typeof configure !== 'function') {
+      throw new Error('Expected configure ACL predicate');
+    }
+    const token = 'github_pat_acl_transport_secret';
+    const transportContexts = [
+      { action: { params: { authRef: token, values: {} } } },
+      { request: { headers: { 'x-git-credential': token } } },
+      { request: { path: `/api/lightExtensionSync:configure/credential/${token}` } },
+    ];
+    for (const transportContext of transportContexts) {
+      const ctx = {
+        ...transportContext,
+        can: () => ({}),
+      };
+      await expect(configure(ctx)).resolves.toBe(false);
+      expect(JSON.stringify(ctx)).not.toContain(token);
     }
   });
 

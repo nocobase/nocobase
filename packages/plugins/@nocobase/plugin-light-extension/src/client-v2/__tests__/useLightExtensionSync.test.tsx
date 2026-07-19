@@ -52,7 +52,7 @@ const operationResult: LightExtensionSyncOperationResult = {
     remoteTargetVersion: 1,
     revision: 'remote-2',
     credentialConfigured: true,
-    authRefDisplay: '{{ $env.GITHUB_SYNC }}',
+    authRefDisplay: '********',
   },
   plan: {
     state: 'in-sync',

@@ -12,6 +12,7 @@ import {
   RemoteSyncAdapterRegistry,
   RemoteSyncRuntimeService,
   VscPermissionHookRegistry,
+  validateVscRemoteAuthRef,
 } from '@nocobase/plugin-vsc-file';
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
@@ -100,7 +101,9 @@ export async function createGitSyncAcceptanceFixture(): Promise<GitSyncAcceptanc
   });
   const registry = new RemoteSyncAdapterRegistry();
   registry.register(adapter);
-  const validateCredential = vi.fn(async () => undefined);
+  const validateCredential = vi.fn((authRef: unknown) =>
+    validateVscRemoteAuthRef(authRef, async (name) => ({ name, type: 'secret' })),
+  );
   const runtime = new RemoteSyncRuntimeService(app.db, {
     adapterRegistry: registry,
     credentialResolver: { validate: validateCredential },

@@ -55,7 +55,6 @@ const syncActionUrls: Record<LightExtensionSyncActionName, string> = {
 const authRefActions = new Set<LightExtensionSyncActionName>(['configure', 'testConnection', 'createFromGit']);
 const sensitiveCredentialKeyPattern = /(token|authorization|password|secret|credential|privatekey)/i;
 const authRefPattern = /^\{\{ \$env\.[A-Za-z_][A-Za-z0-9_]* \}\}$/;
-const MAX_LITERAL_CREDENTIAL_LENGTH = 255;
 const actionFields: Record<LightExtensionSyncActionName, ReadonlySet<string>> = {
   get: new Set(['repoId']),
   configure: new Set(['repoId', 'provider', 'config', 'authRef']),
@@ -215,29 +214,9 @@ function validateAuthRef(action: LightExtensionSyncActionName, record: Record<st
   if (!authRefActions.has(action) || typeof record.authRef !== 'string') {
     throw new LightExtensionSyncRequestInputError();
   }
-  if (authRefPattern.test(record.authRef)) {
-    return;
-  }
-  if (
-    !record.authRef ||
-    record.authRef.trim() !== record.authRef ||
-    record.authRef.length > MAX_LITERAL_CREDENTIAL_LENGTH ||
-    hasControlCharacter(record.authRef) ||
-    record.authRef.includes('{{') ||
-    record.authRef.includes('}}')
-  ) {
+  if (!authRefPattern.test(record.authRef)) {
     throw new LightExtensionSyncRequestInputError();
   }
-}
-
-function hasControlCharacter(value: string): boolean {
-  for (const character of value) {
-    const code = character.charCodeAt(0);
-    if (code <= 0x1f || code === 0x7f) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function validateProvider(value: unknown): void {

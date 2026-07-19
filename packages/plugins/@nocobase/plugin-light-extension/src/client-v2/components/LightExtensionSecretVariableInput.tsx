@@ -8,14 +8,13 @@
  */
 
 import { useFlowContext } from '@nocobase/flow-engine';
-import { AutoComplete, Input, Spin, Typography } from 'antd';
+import { Select, Spin, Typography } from 'antd';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { useT } from '../locale';
 
 const SECRET_AUTH_REF_PATTERN = /^\{\{ \$env\.([A-Za-z_][A-Za-z0-9_]*) \}\}$/;
 const ENVIRONMENT_VARIABLE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const MAX_LITERAL_CREDENTIAL_LENGTH = 255;
 
 type CredentialInputLoadState = 'loading' | 'ready' | 'failed';
 
@@ -31,7 +30,7 @@ export interface LightExtensionSecretVariableCandidate {
 
 export type LightExtensionCredentialValidation =
   | { valid: true; authRef?: string }
-  | { valid: false; reason?: 'invalid-expression' | 'secret-not-found' | 'invalid-token' | 'load-failed' };
+  | { valid: false; reason?: 'invalid-expression' | 'secret-not-found' | 'load-failed' };
 
 interface EnvironmentVariablesApi {
   request(options: { url: string; method: 'get'; params: { paginate: false }; skipNotify: true }): Promise<unknown>;
@@ -76,14 +75,7 @@ export function validateLightExtensionCredential(
     return { valid: true, authRef: input };
   }
 
-  if (input.includes('{{') || input.includes('}}')) {
-    return { valid: false, reason: 'invalid-expression' };
-  }
-  if (input.length > MAX_LITERAL_CREDENTIAL_LENGTH || hasControlCharacter(input)) {
-    return { valid: false, reason: 'invalid-token' };
-  }
-
-  return { valid: true, authRef: input };
+  return { valid: false, reason: 'invalid-expression' };
 }
 
 export async function fetchLightExtensionSecretVariables(
@@ -173,34 +165,24 @@ export function LightExtensionCredentialInput(props: LightExtensionCredentialInp
     () => candidates.map((candidate) => ({ label: candidate.name, value: candidate.authRef })),
     [candidates],
   );
-  const showsSecretReference = Boolean(value?.trim() && SECRET_AUTH_REF_PATTERN.test(value.trim()));
-  const inputProps = {
-    'aria-describedby': errorMessage ? validationMessageId : undefined,
-    'aria-invalid': errorMessage ? true : undefined,
-    'aria-label': ariaLabel || t('GitHub token'),
-    autoComplete: showsSecretReference ? 'off' : 'new-password',
-    disabled,
-    placeholder: placeholder || t('Select a secret variable or enter a GitHub token'),
-    status: errorMessage ? ('error' as const) : undefined,
-  };
 
   return (
     <div>
-      <AutoComplete
+      <Select<string>
         allowClear
+        aria-describedby={errorMessage ? validationMessageId : undefined}
+        aria-invalid={errorMessage ? true : undefined}
+        aria-label={ariaLabel || t('GitHub credential')}
         disabled={disabled}
-        filterOption={(inputValue, option) =>
-          String(option?.label || '')
-            .toLowerCase()
-            .includes(inputValue.toLowerCase())
-        }
         notFoundContent={loadState === 'loading' ? <Spin size="small" /> : null}
-        onChange={(nextValue) => onChange?.(nextValue)}
+        onChange={(nextValue) => onChange?.(nextValue || '')}
+        optionFilterProp="label"
         options={options}
-        value={value || ''}
-      >
-        {showsSecretReference ? <Input {...inputProps} /> : <Input.Password {...inputProps} />}
-      </AutoComplete>
+        placeholder={placeholder || t('Select a Secret variable')}
+        showSearch
+        status={errorMessage ? 'error' : undefined}
+        value={value || undefined}
+      />
       {errorMessage ? (
         <Typography.Text id={validationMessageId} role="alert" type="danger">
           {errorMessage}
@@ -218,22 +200,9 @@ function getValidationMessage(
     return undefined;
   }
   if (validation.reason === 'invalid-expression' || validation.reason === 'secret-not-found') {
-    return t('Select an existing secret variable or enter a GitHub token');
-  }
-  if (validation.reason === 'invalid-token') {
-    return t('GitHub token is invalid');
+    return t('Select an existing Secret variable');
   }
   return t('Failed to load secret variables');
-}
-
-function hasControlCharacter(value: string): boolean {
-  for (const character of value) {
-    const code = character.charCodeAt(0);
-    if (code <= 0x1f || code === 0x7f) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

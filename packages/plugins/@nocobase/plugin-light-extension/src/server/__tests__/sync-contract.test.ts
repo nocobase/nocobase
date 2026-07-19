@@ -50,7 +50,7 @@ describe('light-extension remote sync facade contract', () => {
     remoteTargetVersion: 3,
     revision: 'abc123',
     credentialConfigured: true,
-    authRefDisplay: '{{ $env.GITHUB_SYNC_SECRET }}',
+    authRefDisplay: '********',
     lastSyncedAt: '2026-07-16T00:00:00.000Z',
   };
 

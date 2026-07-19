@@ -66,7 +66,7 @@ const source: LightExtensionSyncSourceSummary = {
   remoteTargetVersion: 3,
   revision: 'remote-revision-123456',
   credentialConfigured: true,
-  authRefDisplay: '{{ $env.GITHUB_SYNC_SECRET }}',
+  authRefDisplay: '********',
   lastSyncedAt: '2026-07-16T00:00:00.000Z',
 };
 

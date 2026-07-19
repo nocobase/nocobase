@@ -9,7 +9,7 @@
 
 import type { HandlerType } from '@nocobase/resourcer';
 import type { RemoteSyncRuntime, VscFileRemoteRecord, VscRemoteSyncPlan } from '@nocobase/plugin-vsc-file';
-import { computeRemoteSnapshotContentHash } from '@nocobase/plugin-vsc-file';
+import { computeRemoteSnapshotContentHash, RemoteSyncError } from '@nocobase/plugin-vsc-file';
 import { vi } from 'vitest';
 
 import { LightExtensionError } from '../../shared/errors';
@@ -67,7 +67,7 @@ describe('lightExtensionSync resource', () => {
         remoteTargetVersion: 1,
         revision: 'rev_remote',
         credentialConfigured: true,
-        authRefDisplay: '{{ $env.GI*** }}',
+        authRefDisplay: '********',
         lastSyncedAt: null,
       },
     });
@@ -80,11 +80,9 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('"authRef":');
   });
 
-  it('persists a direct token through authRef and returns only a masked credential summary', async () => {
+  it('rejects a direct token before persistence or remote access', async () => {
     const directToken = 'github_pat_test_direct_123';
-    const directRemote = { ...remote, authRef: directToken };
     const fixture = createFixture();
-    vi.mocked(fixture.runtime.configureRemote).mockResolvedValueOnce(directRemote);
     const ctx = await runAction(
       fixture,
       'configure',
@@ -97,15 +95,39 @@ describe('lightExtensionSync resource', () => {
       ['manageSyncSource'],
     );
 
-    expect(fixture.runtime.configureRemote).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
-    expect(ctx.body).toMatchObject({
-      source: {
-        credentialConfigured: true,
-        authRefDisplay: '********',
-      },
-    });
+    expect(ctx.status).toBe(400);
+    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
+    expect(fixture.runtime.testTarget).not.toHaveBeenCalled();
     expect(JSON.stringify(ctx.body)).not.toContain(directToken);
+  });
+
+  it('returns only an irreversible credential mask from testConnection', async () => {
+    const fixture = createFixture();
+    const ctx = await runAction(fixture, 'testConnection', { repoId: repo.id, authRef: remote.authRef }, [
+      'manageSyncSource',
+    ]);
+
+    expect(ctx.body).toMatchObject({ credentialConfigured: true, authRefDisplay: '********' });
+    expect(JSON.stringify(ctx.body)).not.toContain('GITHUB_TOKEN');
     expect(JSON.stringify(ctx.body)).not.toContain('"authRef":');
+  });
+
+  it('does not expose credentials when the remote handler throws', async () => {
+    const token = 'github_pat_provider_error_secret';
+    const fixture = createFixture();
+    vi.mocked(fixture.runtime.configureRemote).mockRejectedValueOnce(
+      new RemoteSyncError('AUTH_FAILED', token, { details: { token } }),
+    );
+    const ctx = await runAction(
+      fixture,
+      'configure',
+      { repoId: repo.id, provider: 'github', config: remote.config, authRef: remote.authRef },
+      ['manageSyncSource'],
+    );
+
+    expect(ctx.status).toBe(422);
+    expect(ctx.body).toMatchObject({ errors: [{ code: 'LIGHT_EXTENSION_SYNC_AUTH_FAILED' }] });
+    expect(JSON.stringify(ctx.body)).not.toContain(token);
   });
 
   it('treats a soft-disabled remote as unconfigured while retaining its internal baseline', async () => {
@@ -215,7 +237,7 @@ describe('lightExtensionSync resource', () => {
     expect(fixture.runtime.establishInitialBaseline).toHaveBeenCalled();
     expect(ctx.body).toMatchObject({
       repo: { id: repo.id },
-      source: { revision: 'rev_remote', authRefDisplay: '{{ $env.GI*** }}' },
+      source: { revision: 'rev_remote', authRefDisplay: '********' },
       plan: { state: 'in-sync' },
     });
     const serialized = JSON.stringify(ctx.body);
@@ -293,7 +315,8 @@ describe('lightExtensionSync resource', () => {
       ['create', 'manageSyncSource', 'pullFromSyncSource'],
     );
 
-    expect(ctx.status).toBe(422);
+    expect(ctx.status).toBe(400);
+    expect(fixture.runtime.normalizeConfig).not.toHaveBeenCalled();
     expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
     expect(JSON.stringify(ctx.body)).not.toContain('ghp_secret');
   });
@@ -343,7 +366,7 @@ describe('lightExtensionSync resource', () => {
       source: {
         config: { branch: 'release' },
         revision: 'rev_remote',
-        authRefDisplay: '{{ $env.GI*** }}',
+        authRefDisplay: '********',
       },
     });
     expect(JSON.stringify(ctx.body)).not.toContain('GITHUB_TOKEN');
@@ -360,6 +383,69 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('jobId');
     expect(serialized).not.toContain('files');
     expect(serialized).not.toContain('vscr_demo');
+  });
+
+  it('rejects and sanitizes credentials supplied through query, headers, or paths', async () => {
+    const token = 'github_pat_transport_secret';
+    const queryFixture = createFixture();
+    const query = await runAction(
+      queryFixture,
+      'configure',
+      { repoId: repo.id, provider: 'github', config: remote.config },
+      ['manageSyncSource'],
+      true,
+      { authRef: token },
+    );
+    expect(query.status).toBe(400);
+    expect(JSON.stringify(query)).not.toContain(token);
+    expect(queryFixture.runtime.configureRemote).not.toHaveBeenCalled();
+
+    const headerFixture = createFixture();
+    const header = await runAction(
+      headerFixture,
+      'configure',
+      { repoId: repo.id, provider: 'github', config: remote.config },
+      ['manageSyncSource'],
+      true,
+      {},
+      { headers: { 'x-git-credential': token } },
+    );
+    expect(header.status).toBe(400);
+    expect(JSON.stringify(header)).not.toContain(token);
+    expect(headerFixture.runtime.configureRemote).not.toHaveBeenCalled();
+
+    const pathFixture = createFixture();
+    const path = await runAction(
+      pathFixture,
+      'configure',
+      { repoId: repo.id, provider: 'github', config: remote.config },
+      ['manageSyncSource'],
+      true,
+      {},
+      { path: `/api/lightExtensionSync:configure/credential/${token}` },
+    );
+    expect(path.status).toBe(400);
+    expect(JSON.stringify(path)).not.toContain(token);
+    expect(pathFixture.runtime.configureRemote).not.toHaveBeenCalled();
+  });
+
+  it('rejects and sanitizes credentials nested in request body arrays', async () => {
+    const token = 'github_pat_nested_array_secret';
+    const fixture = createFixture();
+    const ctx = await runAction(
+      fixture,
+      'configure',
+      {
+        repoId: repo.id,
+        provider: 'github',
+        config: { ...remote.config, nested: [{ authRef: token }] },
+      },
+      ['manageSyncSource'],
+    );
+
+    expect(ctx.status).toBe(400);
+    expect(JSON.stringify(ctx)).not.toContain(token);
+    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
   });
 
   it('records a safe blocked sync audit when owner apply or compile fails', async () => {
@@ -515,6 +601,7 @@ async function runAction(
   allowedActions: string[],
   scopeMatches = true,
   actionParams: Record<string, unknown> = {},
+  request?: { path?: string; headers?: Record<string, string> },
 ) {
   const handler = (fixture.resource.actions as Record<string, HandlerType>)[actionName];
   const ctx = {
@@ -523,6 +610,7 @@ async function runAction(
       actionName,
       params: { ...actionParams, values },
     },
+    request,
     can: ({ action }: { resource: string; action: string }) =>
       allowedActions.includes(action)
         ? { params: scopeMatches ? {} : { filter: { normalizedName: 'scope-miss' } } }

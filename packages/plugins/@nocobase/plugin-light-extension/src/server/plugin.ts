@@ -23,7 +23,12 @@ import {
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
-import { createLightExtensionSyncResource, lightExtensionSyncActionNames } from './resources/lightExtensionSync';
+import {
+  createLightExtensionSyncResource,
+  lightExtensionSyncActionNames,
+  sanitizeUnsafeLightExtensionSyncTransport,
+} from './resources/lightExtensionSync';
+import type { LightExtensionResourceContext } from './resources/resourceAction';
 import {
   createLightExtensionRuntimeResource,
   lightExtensionRuntimeActionNames,
@@ -446,6 +451,9 @@ export class PluginLightExtensionServer extends Plugin {
     } as const;
     for (const actionName of lightExtensionSyncActionNames) {
       app.acl?.allow?.('lightExtensionSync', actionName, async (ctx) => {
+        if (sanitizeUnsafeLightExtensionSyncTransport(ctx as unknown as LightExtensionResourceContext)) {
+          return false;
+        }
         if (!ctx.can) {
           return false;
         }

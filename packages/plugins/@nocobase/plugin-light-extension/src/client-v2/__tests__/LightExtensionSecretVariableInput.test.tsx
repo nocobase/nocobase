@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
@@ -33,10 +33,11 @@ function renderWithEngine(node: React.ReactNode) {
 }
 
 function ControlledCredentialInput(props: {
+  initialValue?: string;
   onValidationChange?: (value: LightExtensionCredentialValidation) => void;
   loadEnvironmentVariables?: () => Promise<LightExtensionEnvironmentVariableRecord[]>;
 }) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(props.initialValue || '');
   return (
     <LightExtensionCredentialInput
       loadEnvironmentVariables={props.loadEnvironmentVariables || loadVariables}
@@ -48,106 +49,85 @@ function ControlledCredentialInput(props: {
 }
 
 describe('LightExtensionCredentialInput', () => {
-  it('uses one input to show only secret candidates and emit an environment expression', async () => {
+  it('shows only Secret candidates and emits an environment expression', async () => {
     const user = userEvent.setup();
-    renderWithEngine(<ControlledCredentialInput />);
+    const onValidationChange = vi.fn();
+    renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
 
-    const input = screen.getByRole('combobox', { name: 'GitHub token' });
-    expect(input).toHaveAttribute('type', 'password');
+    const input = screen.getByRole('combobox', { name: 'GitHub credential' });
     await user.click(input);
 
     expect(await screen.findByText('SYNC_SECRET')).toBeInTheDocument();
     expect(screen.queryByText('PUBLIC_SETTING')).not.toBeInTheDocument();
 
     await user.click(screen.getByText('SYNC_SECRET'));
-    const selectedInput = screen.getByRole('combobox', { name: 'GitHub token' });
-    expect(selectedInput).toHaveValue('{{ $env.SYNC_SECRET }}');
-    expect(selectedInput).not.toHaveAttribute('type', 'password');
-  });
-
-  it('accepts a directly entered token from the same password input', async () => {
-    const user = userEvent.setup();
-    const onValidationChange = vi.fn();
-    renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
-
-    const input = screen.getByRole('combobox', { name: 'GitHub token' });
-    await user.type(input, 'github_pat_test_direct_123');
-
     await waitFor(() =>
       expect(onValidationChange).toHaveBeenLastCalledWith({
         valid: true,
-        authRef: 'github_pat_test_direct_123',
+        authRef: '{{ $env.SYNC_SECRET }}',
       }),
     );
-    expect(input).toHaveAttribute('type', 'password');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('rejects ordinary variables, missing secrets, and mixed expressions', async () => {
+  it('does not accept a directly typed token as a selected value', async () => {
+    const user = userEvent.setup();
     const onValidationChange = vi.fn();
     renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
 
-    let input = screen.getByRole('combobox', { name: 'GitHub token' });
-    fireEvent.change(input, { target: { value: '{{ $env.PUBLIC_SETTING }}' } });
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Select an existing secret variable or enter a GitHub token',
-    );
+    const input = screen.getByRole('combobox', { name: 'GitHub credential' });
+    await user.type(input, 'github_pat_test_direct_123');
+    await user.keyboard('{Enter}');
 
-    input = screen.getByRole('combobox', { name: 'GitHub token' });
-    fireEvent.change(input, { target: { value: '{{ $env.MISSING_SECRET }}' } });
-    await waitFor(() =>
-      expect(onValidationChange).toHaveBeenLastCalledWith({ valid: false, reason: 'secret-not-found' }),
-    );
-
-    input = screen.getByRole('combobox', { name: 'GitHub token' });
-    fireEvent.change(input, { target: { value: 'Bearer {{ $env.SYNC_SECRET }}' } });
-    await waitFor(() =>
-      expect(onValidationChange).toHaveBeenLastCalledWith({ valid: false, reason: 'invalid-expression' }),
+    expect(onValidationChange).not.toHaveBeenCalledWith(
+      expect.objectContaining({ authRef: 'github_pat_test_direct_123' }),
     );
   });
 
-  it('keeps direct token input available when secret variables fail to load', async () => {
-    const user = userEvent.setup();
+  it('rejects ordinary variables and missing Secrets supplied by existing drafts', async () => {
+    const onValidationChange = vi.fn();
+    renderWithEngine(
+      <ControlledCredentialInput initialValue="{{ $env.PUBLIC_SETTING }}" onValidationChange={onValidationChange} />,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Select an existing Secret variable');
+    await waitFor(() =>
+      expect(onValidationChange).toHaveBeenLastCalledWith({ valid: false, reason: 'secret-not-found' }),
+    );
+  });
+
+  it('reports a failed Secret-variable lookup for an existing reference', async () => {
     const onValidationChange = vi.fn();
     const loadEnvironmentVariables = vi.fn(async (): Promise<LightExtensionEnvironmentVariableRecord[]> => {
       throw new Error('load failed');
     });
     renderWithEngine(
       <ControlledCredentialInput
+        initialValue="{{ $env.SYNC_SECRET }}"
         loadEnvironmentVariables={loadEnvironmentVariables}
         onValidationChange={onValidationChange}
       />,
     );
 
-    const input = screen.getByRole('combobox', { name: 'GitHub token' });
-    await user.type(input, 'github_pat_test_direct_123');
     await waitFor(() =>
       expect(onValidationChange).toHaveBeenLastCalledWith({
-        valid: true,
-        authRef: 'github_pat_test_direct_123',
+        valid: false,
+        reason: 'load-failed',
       }),
     );
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-
-    fireEvent.change(input, { target: { value: '{{ $env.SYNC_SECRET }}' } });
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Failed to load secret variables');
-    const expressionInput = screen.getByRole('combobox', { name: 'GitHub token' });
+    const expressionInput = screen.getByRole('combobox', { name: 'GitHub credential' });
     expect(expressionInput).toHaveAttribute('aria-invalid', 'true');
     expect(expressionInput).toHaveAttribute('aria-describedby', alert.id);
   });
 
-  it('validates empty values, exact secret references, and literal tokens independently of secret loading', () => {
+  it('validates only empty values and exact known Secret references', () => {
     const candidates = [{ name: 'SYNC_SECRET', authRef: formatLightExtensionSecretAuthRef('SYNC_SECRET') }];
 
     expect(validateLightExtensionCredential('', candidates)).toEqual({ valid: true });
     expect(validateLightExtensionCredential('{{ $env.SYNC_SECRET }}', candidates)).toEqual({
       valid: true,
       authRef: '{{ $env.SYNC_SECRET }}',
-    });
-    expect(validateLightExtensionCredential(' github_pat_test_direct_123 ', candidates, 'failed')).toEqual({
-      valid: true,
-      authRef: 'github_pat_test_direct_123',
     });
     expect(validateLightExtensionCredential('{{ $env.SYNC_SECRET }}', candidates, 'failed')).toEqual({
       valid: false,
@@ -157,13 +137,13 @@ describe('LightExtensionCredentialInput', () => {
       valid: false,
       reason: 'invalid-expression',
     });
-    expect(validateLightExtensionCredential('x'.repeat(256), candidates)).toEqual({
+    expect(validateLightExtensionCredential('github_pat_test_direct_123', candidates)).toEqual({
       valid: false,
-      reason: 'invalid-token',
+      reason: 'invalid-expression',
     });
-    expect(validateLightExtensionCredential('unsafe\nvalue', candidates)).toEqual({
+    expect(validateLightExtensionCredential('{{ $env.MISSING_SECRET }}', candidates)).toEqual({
       valid: false,
-      reason: 'invalid-token',
+      reason: 'secret-not-found',
     });
   });
 });

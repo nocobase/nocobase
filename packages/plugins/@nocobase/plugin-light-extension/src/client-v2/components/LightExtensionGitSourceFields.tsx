@@ -269,11 +269,11 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
         />
       </Form.Item>
       <Form.Item
-        extra={t('Optional for public repositories. Choose a secret variable or enter a token directly.')}
-        label={t('GitHub token')}
+        extra={t('Optional for public repositories. Choose a Secret variable.')}
+        label={t('GitHub credential')}
       >
         <LightExtensionCredentialInput
-          aria-label={t('GitHub token')}
+          aria-label={t('GitHub credential')}
           disabled={disabled}
           loadEnvironmentVariables={loadEnvironmentVariables}
           onChange={(nextValue) => {
@@ -281,7 +281,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
             updateField('authRef', nextValue);
           }}
           onValidationChange={handleAuthValidationChange}
-          placeholder={t('Select a secret variable or enter a GitHub token')}
+          placeholder={t('Select a Secret variable')}
           value={value.authRef}
         />
       </Form.Item>

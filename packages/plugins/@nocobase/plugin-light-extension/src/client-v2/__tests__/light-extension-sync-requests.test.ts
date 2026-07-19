@@ -54,7 +54,7 @@ describe('light-extension sync requests', () => {
         name: 'sales',
         provider: 'github',
         config: { owner: 'nocobase', repository: 'extensions', branch: '', subdirectory: 'sales' },
-        authRef: 'github_pat_test_direct_123',
+        authRef: '{{ $env.GITHUB_SYNC }}',
       },
     ],
   ] as const)('calls only the facade action for %s', async (action, input) => {
@@ -118,7 +118,7 @@ describe('light-extension sync requests', () => {
         repoId: 'repo-1',
         provider: 'github',
         config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
-        authRef: 'invalid\ncredential',
+        authRef: 'github_pat_test_direct_123',
       }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     await expect(
@@ -126,7 +126,7 @@ describe('light-extension sync requests', () => {
         repoId: 'repo-1',
         provider: 'github',
         config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
-        authRef: 'x'.repeat(256),
+        authRef: 'Bearer {{ $env.GITHUB_SYNC }}',
       }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     expect(request).not.toHaveBeenCalled();

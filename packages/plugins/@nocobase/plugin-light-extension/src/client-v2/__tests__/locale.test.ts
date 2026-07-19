@@ -15,8 +15,8 @@ import zhCN from '../../locale/zh-CN.json';
 const gitSyncKeys = [
   'Sync code',
   'GitHub source',
-  'GitHub token',
-  'Select a secret variable or enter a GitHub token',
+  'GitHub credential',
+  'Select a Secret variable',
   'Test connection',
   'Pull from Git',
   'Push to Git',

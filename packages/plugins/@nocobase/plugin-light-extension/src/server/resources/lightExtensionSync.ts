@@ -45,6 +45,10 @@ import {
 } from './resourceAction';
 
 const remoteName = 'origin';
+const redactedCredential = '[REDACTED]';
+const secretAuthRefPattern = /^\{\{ \$env\.[A-Za-z_][A-Za-z0-9_]* \}\}$/;
+const sensitiveCredentialKeyPattern = /(token|authorization|password|secret|credential|privatekey|authref)/i;
+const credentialTransportKeyPattern = /(token|password|secret|credential|privatekey|authref)/i;
 
 export const lightExtensionSyncActionNames = [
   'get',
@@ -139,7 +143,7 @@ function createSyncAction(
   actionName: LightExtensionSyncActionName,
   run: SyncActionRunner,
 ): HandlerType {
-  return createTypedResourceAction({
+  const action = createTypedResourceAction({
     services,
     getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
     run: async (currentServices, input, ctx) => {
@@ -154,6 +158,78 @@ function createSyncAction(
     },
     transformError: (error) => normalizeSyncError(error),
   });
+  return async (ctx, next) => {
+    const resourceCtx = ctx as LightExtensionResourceContext;
+    if (sanitizeUnsafeLightExtensionSyncTransport(resourceCtx) || sanitizeRejectedBodyCredentials(resourceCtx)) {
+      const params = toMutableRecord(resourceCtx.action?.params);
+      const values = toMutableRecord(params.values);
+      values.__rejectedCredentialInput = true;
+      params.values = values;
+    }
+    await action(ctx, next);
+  };
+}
+
+export function sanitizeUnsafeLightExtensionSyncTransport(ctx: LightExtensionResourceContext): boolean {
+  let rejected = false;
+  const params = toMutableRecord(ctx.action?.params);
+  for (const key of Object.keys(params)) {
+    if (key !== 'values' && sensitiveCredentialKeyPattern.test(normalizeCredentialKey(key))) {
+      params[key] = redactedCredential;
+      rejected = true;
+    }
+  }
+
+  const headers = ctx.request?.headers || ctx.request?.header;
+  if (headers) {
+    for (const key of Object.keys(headers)) {
+      if (credentialTransportKeyPattern.test(normalizeCredentialKey(key))) {
+        headers[key] = redactedCredential;
+        rejected = true;
+      }
+    }
+  }
+
+  const requestPath = ctx.request?.path;
+  if (requestPath && credentialTransportKeyPattern.test(requestPath)) {
+    ctx.request.path = redactedCredential;
+    rejected = true;
+  }
+  return rejected;
+}
+
+function sanitizeRejectedBodyCredentials(ctx: LightExtensionResourceContext): boolean {
+  const params = toMutableRecord(ctx.action?.params);
+  const values = toMutableRecord(params.values);
+  const seen = new WeakSet<object>();
+
+  const sanitize = (value: unknown, root: boolean): boolean => {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    if (seen.has(value)) {
+      return true;
+    }
+    seen.add(value);
+    if (Array.isArray(value)) {
+      return value.reduce((rejected, item) => sanitize(item, false) || rejected, false);
+    }
+
+    let rejected = false;
+    for (const [key, child] of Object.entries(value)) {
+      const normalizedKey = normalizeCredentialKey(key);
+      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isSecretAuthRef(child)));
+      if (invalidAuthRef || (key !== 'authRef' && sensitiveCredentialKeyPattern.test(normalizedKey))) {
+        value[key] = redactedCredential;
+        rejected = true;
+      } else {
+        rejected = sanitize(child, false) || rejected;
+      }
+    }
+    return rejected;
+  };
+
+  return sanitize(values, true);
 }
 
 async function createFromGit(
@@ -591,16 +667,7 @@ function planAudit(remote: VscFileRemoteRecord | null, plan: VscRemoteSyncPlan) 
 }
 
 function toAuthRefDisplay(authRef: string | null): string | null {
-  if (!authRef) {
-    return null;
-  }
-  const match = /^\{\{\s*\$env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$/.exec(authRef);
-  if (!match) {
-    return '********';
-  }
-  const name = match[1];
-  const visible = name.length <= 2 ? name[0] : name.slice(0, 2);
-  return `{{ $env.${visible}*** }}`;
+  return authRef ? '********' : null;
 }
 
 function normalizeExecutionInput(input: ResourceActionInput) {
@@ -630,7 +697,22 @@ function requireNullableAuthRef(value: unknown): string | null {
   if (value === null) {
     return null;
   }
-  return requireString(value, 'authRef');
+  if (!isSecretAuthRef(value)) {
+    throw invalidInput('authRef must reference a Secret environment variable');
+  }
+  return value;
+}
+
+function isSecretAuthRef(value: unknown): value is string {
+  return typeof value === 'string' && secretAuthRefPattern.test(value);
+}
+
+function normalizeCredentialKey(key: string): string {
+  return key.replace(/[^A-Za-z0-9]/g, '');
+}
+
+function toMutableRecord(value: unknown): ResourceActionInput {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as ResourceActionInput) : {};
 }
 
 function requireString(value: unknown, label: string): string {
