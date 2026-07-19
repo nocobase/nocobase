@@ -47,16 +47,6 @@ const chartSelectableEntry = {
   runtimeCodeHash: 'runtime_hash_chart',
 };
 
-const clientAppEntry = {
-  ...selectableEntry,
-  id: 'entry_customer_console',
-  kind: 'client-app',
-  entryName: 'customer-console',
-  entryPath: 'client-app/customer-console/index.html',
-  title: 'Customer console',
-  runtimeAvailable: true,
-};
-
 const selectableRepo = {
   id: 'repo_orders',
   name: 'orders',
@@ -81,7 +71,7 @@ describe('light extension source menu items', () => {
 
       return {
         data: {
-          data: [selectableEntry, clientAppEntry],
+          data: [selectableEntry],
         },
       };
     });
@@ -121,7 +111,6 @@ describe('light extension source menu items', () => {
     expect(repoItem?.label).toBe('Orders');
     expect(repoItem?.children).toHaveLength(1);
     expect(entryItem?.label).toBe('order-total');
-    expect(repoItem?.searchText).not.toContain('customer-console');
     expect(entryItem?.searchText).toContain('Orders');
     expect(entryItem?.searchText).toContain('order-total');
 

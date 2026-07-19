@@ -26,15 +26,15 @@ function groupManifestByGraphHash() {
 }
 
 describe('RunJS generated declaration graphs', () => {
-  it('keeps 110 logical packs while emitting a shared graph for each unique declaration closure', async () => {
+  it('keeps 109 logical packs while emitting a shared graph for each unique declaration closure', async () => {
     const groups = groupManifestByGraphHash();
     const loaderSource = await import('../type-packs/generated/loaders?raw').then((module) => module.default as string);
     const importedGraphHashes = [
       ...loaderSource.matchAll(/import\(['"]\.\/graphs\/([0-9a-f]{64})(?:\.ts)?['"]\)/gu),
     ].map((match) => match[1]);
 
-    expect(generatedRunJSTypeLibraryPackManifest).toHaveLength(110);
-    expect(groups.size).toBeLessThanOrEqual(61);
+    expect(generatedRunJSTypeLibraryPackManifest).toHaveLength(109);
+    expect(groups.size).toBeLessThanOrEqual(60);
     expect(groups.size).toBeLessThan(generatedRunJSTypeLibraryPackManifest.length);
     expect(new Set(importedGraphHashes)).toEqual(new Set(groups.keys()));
     expect(importedGraphHashes).toHaveLength(groups.size);

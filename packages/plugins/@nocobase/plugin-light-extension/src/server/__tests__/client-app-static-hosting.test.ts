@@ -7,22 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Transaction } from '@nocobase/database';
-import { createHash } from 'crypto';
+import type { Database } from '@nocobase/database';
 import { defaultTreeAdapter, parse, type DefaultTreeAdapterTypes } from 'parse5';
 import { Readable } from 'stream';
 
-import { LightExtensionError } from '../../shared/errors';
 import {
   ClientAppService,
   type ClientAppAsset,
   type ClientAppDescriptor,
   type ClientAppStaticRequest,
 } from '../services/ClientAppService';
-import type { ClientAppAssetStorage, ClientAppStoredFile } from '../services/ClientAppStorage';
+import type { ClientAppAssetStorage } from '../services/ClientAppStorage';
 import type { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import type { LightExtensionRepoService } from '../services/LightExtensionRepoService';
-
 describe('ClientAppService static hosting', () => {
   it('injects one leading base and one runtime config without rewriting application URLs', async () => {
     const html = [
@@ -41,7 +38,6 @@ describe('ClientAppService static hosting', () => {
       'Cache-Control': 'no-cache',
       'Content-Type': 'text/html; charset=utf-8',
       'X-Content-Type-Options': 'nosniff',
-      ETag: expect.stringMatching(/^"sha256-[a-f0-9]{64}"$/u),
     });
     const body = requireBuffer(response.body);
     expect(response.headers['Content-Length']).toBe(String(body.length));
@@ -94,7 +90,7 @@ describe('ClientAppService static hosting', () => {
     expect(fixture.openedPaths).toEqual(['assets/missing.js']);
   });
 
-  it('supports asset MIME, HEAD, strong and weak If-None-Match validation', async () => {
+  it('supports asset MIME and HEAD requests', async () => {
     const fixture = createStaticFixture({
       'application.html': '<html><head></head><body>app</body></html>',
       'assets/app.js': 'window.clientApp = true;',
@@ -105,34 +101,10 @@ describe('ClientAppService static hosting', () => {
     expect(first.headers['Cache-Control']).toBe('no-cache');
     expect(await responseText(first)).toBe('window.clientApp = true;');
 
-    const notModified = await fixture.service.serveClientAppAsset(
-      request({ relativePath: 'assets/app.js', ifNoneMatch: `W/${first.headers.ETag}` }),
-    );
-    expect(notModified.status).toBe(304);
-    expect(notModified.body).toBeUndefined();
-    expect(notModified.headers.ETag).toBe(first.headers.ETag);
-    expect(notModified.headers['Content-Length']).toBeUndefined();
-
     const head = await fixture.service.serveClientAppAsset(request({ relativePath: 'assets/app.js', method: 'HEAD' }));
     expect(head.status).toBe(200);
     expect(head.body).toBeUndefined();
     expect(head.headers['Content-Length']).toBe(String(Buffer.byteLength('window.clientApp = true;')));
-  });
-
-  it('keys transformed HTML ETags by content, workspace root, and runtime configuration', async () => {
-    const fixture = createStaticFixture({
-      'application.html': '<html><head><base href="/"></head><body>app</body></html>',
-    });
-    const customer = await fixture.service.serveClientAppAsset(request());
-    const admin = await fixture.service.serveClientAppAsset(
-      request({ workspaceRoot: '/v/admin/', apiBaseUrl: '/api/apps/admin/' }),
-    );
-    expect(customer.headers.ETag).not.toBe(admin.headers.ETag);
-    expect(await responseText(admin)).toContain('<base href="/v/admin/">');
-
-    const notModified = await fixture.service.serveClientAppAsset(request({ ifNoneMatch: customer.headers.ETag }));
-    expect(notModified.status).toBe(304);
-    expect(notModified.body).toBeUndefined();
   });
 
   it.each(['../secret', '%2e%2e/secret', '\\secret', 'asset\0name'])(
@@ -147,149 +119,7 @@ describe('ClientAppService static hosting', () => {
       expect(fixture.openedPaths).toEqual([]);
     },
   );
-
-  it('retries once when an upload switches the current content between resolve and open', async () => {
-    const fixture = createStaticFixture({ 'application.html': '<html><head></head><body>new</body></html>' });
-    const firstDescriptor = { ...fixture.descriptor, contentHash: 'old-content' };
-    vi.spyOn(fixture.service, 'resolveClientApp')
-      .mockResolvedValueOnce(firstDescriptor)
-      .mockResolvedValueOnce(fixture.descriptor);
-    vi.spyOn(fixture.service, 'openClientAppAsset')
-      .mockRejectedValueOnce(new LightExtensionError('LIGHT_EXTENSION_SOURCE_OUTDATED'))
-      .mockImplementation(fixture.openAsset);
-
-    const response = await fixture.service.serveClientAppAsset(request());
-
-    expect(response.status).toBe(200);
-    expect(await responseText(response)).toContain('new');
-    expect(fixture.service.resolveClientApp).toHaveBeenCalledTimes(2);
-  });
 });
-
-describe('ClientAppService transaction-aware repo retirement', () => {
-  it('uses the caller transaction and defers physical cleanup until commit', async () => {
-    let state = 'ready';
-    const entry = model({ id: 'entry-1' });
-    const asset = model({
-      id: 'asset-1',
-      assetSetId: 'set-1',
-      entryId: 'entry-1',
-      extname: '.js',
-      filename: 'app.js',
-      mimetype: 'application/javascript',
-      path: 'set-1',
-      size: 3,
-      state,
-      storageId: 1,
-      title: 'app',
-    });
-    const originalUpdate = asset.update;
-    asset.update = vi.fn(async (values: Record<string, unknown>) => {
-      if (typeof values.state === 'string') {
-        state = values.state;
-      }
-      await originalUpdate(values);
-      return asset;
-    });
-    asset.get = vi.fn((key: string) => (key === 'state' ? state : asset.values[key]));
-    const destroyClientApp = vi.fn(async () => 1);
-    const destroyEntry = vi.fn(async () => 1);
-    const destroyAssets = vi.fn(async () => 1);
-    const storage = { delete: vi.fn(async () => undefined) } as unknown as ClientAppAssetStorage;
-    const db = {
-      getRepository: (name: string) => ({
-        find: vi.fn(async (options: { filter?: Record<string, unknown> }) => {
-          if (name === 'lightExtensionEntries') {
-            return [entry];
-          }
-          if (name === 'lightExtensionClientAppAssets') {
-            return options.filter?.assetSetId === 'set-1' || options.filter?.entryId === 'entry-1' ? [asset] : [];
-          }
-          return [];
-        }),
-      }),
-      getModel: (name: string) => ({
-        destroy:
-          name === 'lightExtensionClientApps'
-            ? destroyClientApp
-            : name === 'lightExtensionEntries'
-              ? destroyEntry
-              : destroyAssets,
-      }),
-    } as unknown as Database;
-    let afterCommit: (() => Promise<void>) | undefined;
-    const transaction = {
-      afterCommit: vi.fn((callback: () => Promise<void>) => {
-        afterCommit = callback;
-      }),
-    } as unknown as Transaction;
-    const service = new ClientAppService(
-      db,
-      {} as LightExtensionRepoService,
-      {} as LightExtensionPermissionService,
-      storage,
-    );
-
-    await expect(service.retireClientAppsForRepo('repo-1', transaction)).resolves.toEqual(['set-1']);
-    expect(transaction.afterCommit).toHaveBeenCalledTimes(1);
-    expect(destroyClientApp).toHaveBeenCalledWith({ where: { entryId: 'entry-1' }, transaction });
-    expect(destroyEntry).toHaveBeenCalledWith({ where: { id: 'entry-1' }, transaction });
-    expect(storage.delete).not.toHaveBeenCalled();
-
-    await requireCallback(afterCommit)();
-    expect(storage.delete).toHaveBeenCalledWith([expect.objectContaining({ filename: 'app.js', storageId: 1 })]);
-    expect(destroyAssets).toHaveBeenCalledWith({ where: { assetSetId: 'set-1' }, hooks: false });
-  });
-
-  it('runs the injectable Entry deletion guard under the repo lock before deleting metadata', async () => {
-    const calls: string[] = [];
-    const entry = model({ id: 'entry-1', kind: 'client-app', repoId: 'repo-1' });
-    const transaction = { LOCK: { SHARE: 'SHARE', UPDATE: 'UPDATE' } } as unknown as Transaction;
-    const db = {
-      options: { dialect: 'sqlite' },
-      sequelize: {
-        transaction: async (
-          _options: Record<string, unknown>,
-          run: (currentTransaction: Transaction) => Promise<unknown>,
-        ) => run(transaction),
-      },
-      getRepository: (name: string) => ({
-        find: vi.fn(async () => []),
-        findOne: vi.fn(async () => (name === 'lightExtensionEntries' ? entry : null)),
-      }),
-      getModel: (name: string) => ({
-        findOne: vi.fn(async () => {
-          if (name === 'lightExtensionRepos') {
-            calls.push('repo-lock');
-            return model({ id: 'repo-1' });
-          }
-          return null;
-        }),
-        destroy: vi.fn(async () => {
-          calls.push(name === 'lightExtensionClientApps' ? 'client-app-delete' : 'entry-delete');
-          return 1;
-        }),
-      }),
-    } as unknown as Database;
-    const service = new ClientAppService(
-      db,
-      {} as LightExtensionRepoService,
-      {} as LightExtensionPermissionService,
-      {} as ClientAppAssetStorage,
-    );
-    const guard = vi.fn(async (_entryId: string, currentTransaction: Transaction) => {
-      expect(currentTransaction).toBe(transaction);
-      calls.push('guard');
-    });
-    service.useEntryDeleteGuard(guard);
-
-    await service.deleteClientApp('entry-1');
-
-    expect(guard).toHaveBeenCalledWith('entry-1', transaction);
-    expect(calls).toEqual(['repo-lock', 'guard', 'client-app-delete', 'entry-delete']);
-  });
-});
-
 function request(overrides: Partial<ClientAppStaticRequest> = {}): ClientAppStaticRequest {
   return {
     entryId: 'entry-1',
@@ -309,20 +139,11 @@ function createStaticFixture(files: Record<string, string | Buffer>) {
     key: 'customer',
     kind: 'client-app',
     title: 'Customer',
-    description: null,
-    category: null,
-    icon: null,
-    tags: [],
-    sort: null,
     entryHtml: 'dist/application.html',
-    staticRoot: 'dist',
     contentHash: 'client-app-content',
     fileCount: Object.keys(files).length,
     byteSize: Object.values(files).reduce((total, value) => total + toBuffer(value).length, 0),
     updatedAt: null,
-    available: true,
-    enabled: true,
-    ready: true,
   };
   const openedPaths: string[] = [];
   const openAsset = async (
@@ -338,8 +159,6 @@ function createStaticFixture(files: Record<string, string | Buffer>) {
     const content = toBuffer(value);
     return {
       relativePath,
-      clientAppContentHash: descriptor.contentHash,
-      contentHash: createHash('sha256').update(content).digest('hex'),
       size: content.length,
       stream: Readable.from(content),
     };
@@ -353,17 +172,6 @@ function createStaticFixture(files: Record<string, string | Buffer>) {
   vi.spyOn(service, 'resolveClientApp').mockResolvedValue(descriptor);
   vi.spyOn(service, 'openClientAppAsset').mockImplementation(openAsset);
   return { descriptor, openedPaths, openAsset, service };
-}
-
-function model(initialValues: Record<string, unknown>) {
-  const values = { ...initialValues };
-  return {
-    values,
-    get: vi.fn((key: string) => values[key]),
-    update: vi.fn(async (next: Record<string, unknown>) => {
-      Object.assign(values, next);
-    }),
-  };
 }
 
 function findElements(node: DefaultTreeAdapterTypes.Node, tagName: string): DefaultTreeAdapterTypes.Element[] {
@@ -420,13 +228,6 @@ function requireBuffer(value: Buffer | Readable | undefined): Buffer {
 function requireElement(value: DefaultTreeAdapterTypes.Element | undefined): DefaultTreeAdapterTypes.Element {
   if (!value) {
     throw new Error('Expected an HTML element');
-  }
-  return value;
-}
-
-function requireCallback(value: (() => Promise<void>) | undefined): () => Promise<void> {
-  if (!value) {
-    throw new Error('Expected an afterCommit callback');
   }
   return value;
 }

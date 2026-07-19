@@ -43,9 +43,8 @@ import { LightExtensionCompilePreviewService } from './services/LightExtensionCo
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
 import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
 import type {
-  ClientAppAsset,
   ClientAppDescriptor,
-  ClientAppOpenOptions,
+  ClientAppReferenceResolver,
   ClientAppStaticRequest,
   ClientAppStaticResponse,
   ClientAppSummary,
@@ -57,12 +56,6 @@ import {
   findFileManagerPlugin,
 } from './services/ClientAppStorage';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
-import {
-  ExternalReferenceService,
-  type ExternalReferenceOwnerAdapter,
-  type ExternalReferenceServiceContext,
-  type ReplaceExternalReferencesInput,
-} from './services/ExternalReferenceService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
 import {
@@ -200,8 +193,6 @@ export class PluginLightExtensionServer extends Plugin {
 
   private referenceService?: ReferenceService;
 
-  private externalReferenceService?: ExternalReferenceService;
-
   private moveSourceService?: MoveSourceService;
 
   private moveToInlineService?: MoveToInlineService;
@@ -224,14 +215,6 @@ export class PluginLightExtensionServer extends Plugin {
     return this.requireClientAppService().resolveClientApp(entryId);
   }
 
-  async openClientAppAsset(
-    entryId: string,
-    relativePath: string,
-    options?: ClientAppOpenOptions,
-  ): Promise<ClientAppAsset | null> {
-    return this.requireClientAppService().openClientAppAsset(entryId, relativePath, options);
-  }
-
   async serveClientAppAsset(input: ClientAppStaticRequest): Promise<ClientAppStaticResponse> {
     return this.requireClientAppService().serveClientAppAsset(input);
   }
@@ -240,38 +223,8 @@ export class PluginLightExtensionServer extends Plugin {
     return this.requireClientAppService().listSelectableClientApps();
   }
 
-  async deleteClientApp(entryId: string): Promise<void> {
-    await this.requireClientAppService().deleteClientApp(entryId);
-  }
-
-  async deleteClientAppsForRepo(repoId: string): Promise<void> {
-    await this.requireClientAppService().deleteClientAppsForRepo(repoId);
-  }
-
-  registerExternalReferenceOwnerAdapter(adapter: ExternalReferenceOwnerAdapter): () => void {
-    return this.requireExternalReferenceService().registerOwnerAdapter(adapter);
-  }
-
-  async syncExternalReferences(input: ReplaceExternalReferencesInput, ctx: ExternalReferenceServiceContext = {}) {
-    return this.requireExternalReferenceService().replaceReferences(input, ctx);
-  }
-
-  async deleteExternalReferences(
-    input: Pick<ReplaceExternalReferencesInput, 'ownerKind' | 'ownerId'>,
-    ctx: ExternalReferenceServiceContext = {},
-  ) {
-    return this.requireExternalReferenceService().deleteReferences(input, ctx);
-  }
-
-  async reconcileExternalReferences(input: { ownerKind: string }, ctx: ExternalReferenceServiceContext = {}) {
-    return this.requireExternalReferenceService().reconcileReferences(input, ctx);
-  }
-
-  async getExternalReferenceHealth(
-    input: Pick<ReplaceExternalReferencesInput, 'ownerKind' | 'ownerId'> & { entryId: string },
-    ctx: ExternalReferenceServiceContext = {},
-  ) {
-    return this.requireExternalReferenceService().getReferenceHealth(input, ctx);
+  registerClientAppReferenceResolver(resolver: ClientAppReferenceResolver): () => void {
+    return this.clientAppService?.useReferenceResolver(resolver) || (() => undefined);
   }
 
   async syncFlowModelReferencesForNodeTree(
@@ -377,13 +330,6 @@ export class PluginLightExtensionServer extends Plugin {
       },
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
-    this.externalReferenceService = new ExternalReferenceService(db);
-    this.clientAppService?.useEntryDeleteGuard((entryId, transaction) =>
-      this.requireExternalReferenceService().assertEntryNotReferenced(entryId, transaction),
-    );
-    this.clientAppService?.useRepoDeleteGuard((repoId, transaction) =>
-      this.requireExternalReferenceService().assertRepoNotReferenced(repoId, transaction),
-    );
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
     this.runtimeResolveService = new RuntimeResolveService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
     this.compileWorkerPool = new LightExtensionCompileWorkerPool();
@@ -400,7 +346,6 @@ export class PluginLightExtensionServer extends Plugin {
       },
     );
     this.repoService.useReferenceService(this.referenceService);
-    this.repoService.useExternalReferenceService(this.externalReferenceService);
     this.repoService.useRemoteSyncLifecycleGate({
       assertRepositoryIdle: (repoId, transaction) =>
         requireRemoteSyncRuntime((this.app as unknown as AppWithPluginEvents).pm).assertRepositoryIdle(
@@ -449,11 +394,7 @@ export class PluginLightExtensionServer extends Plugin {
     );
     if (this.clientAppService) {
       (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-        createLightExtensionClientAppsResource(
-          this.clientAppService,
-          (entryId) => this.deleteClientApp(entryId),
-          (entryId) => this.requireExternalReferenceService().listEntryOwners(entryId),
-        ),
+        createLightExtensionClientAppsResource(this.clientAppService),
       );
     }
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
@@ -531,7 +472,6 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
     await ensureClientAppInternalStorage(this.db, fileManager);
-    await this.clientAppService?.sweepOrphanedAssetSets();
   }
 
   private requireClientAppService(): ClientAppService {
@@ -542,16 +482,6 @@ export class PluginLightExtensionServer extends Plugin {
       );
     }
     return this.clientAppService;
-  }
-
-  private requireExternalReferenceService(): ExternalReferenceService {
-    if (!this.externalReferenceService) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
-        'Light extension reference service is unavailable',
-      );
-    }
-    return this.externalReferenceService;
   }
 
   private registerCompileShutdownListener() {
@@ -614,9 +544,7 @@ export class PluginLightExtensionServer extends Plugin {
     const permissions = {
       upload: 'writeSource',
       list: 'list',
-      get: 'list',
       delete: 'delete',
-      listReferences: 'list',
     } as const;
     for (const actionName of lightExtensionClientAppActionNames) {
       app.acl?.allow?.('lightExtensionClientApps', actionName, async (ctx) => {

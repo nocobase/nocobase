@@ -13,9 +13,6 @@ import path from 'path';
 
 import {
   buildLightExtensionSettingsSchema,
-  getLightExtensionClientAppStaticRoot,
-  LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_URI,
-  LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_VERSION,
   LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
   LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
   LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
@@ -25,18 +22,10 @@ import {
   LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS,
   LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
-  lightExtensionClientAppEntryV1Schema,
   lightExtensionEntryV1Schema,
   lightExtensionEntryV1SchemaJson,
-  parseLightExtensionClientAppEntryV1,
-  parseLightExtensionClientAppEntryV1Json,
 } from '../schema';
-import {
-  lightExtensionClientAppEntryV1SchemaFileContent,
-  lightExtensionClientAppEntryV1SchemaSha256,
-  lightExtensionEntryV1SchemaFileContent,
-  lightExtensionEntryV1SchemaSha256,
-} from '../schema/server';
+import { lightExtensionEntryV1SchemaFileContent, lightExtensionEntryV1SchemaSha256 } from '../schema/server';
 
 describe('@nocobase/light-extension-sdk entry.json schema', () => {
   const ajv = new Ajv({ allErrors: true, jsonPointers: true });
@@ -47,7 +36,7 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
     expect(validate(lightExtensionEntryV1Schema.examples[0])).toBe(true);
     const canonicalFile = fs.readFileSync(path.resolve(__dirname, '../schema/entry-v1.schema.json'), 'utf8');
     expect(lightExtensionEntryV1SchemaFileContent).toBe(canonicalFile);
-    expect(lightExtensionEntryV1SchemaSha256).toBe('d1cfa4aeaa94365780b8cc2d7e17aea04fccbfd7522002c35943534f1fa80d89');
+    expect(lightExtensionEntryV1SchemaSha256).toMatch(/^[a-f0-9]{64}$/u);
   });
 
   it('locks canonical constants to the schema', () => {
@@ -190,95 +179,5 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
         },
       },
     });
-  });
-});
-
-describe('@nocobase/light-extension-sdk client-app entry.json schema', () => {
-  const ajv = new Ajv({ allErrors: true, jsonPointers: true });
-  const validate = ajv.compile(lightExtensionClientAppEntryV1Schema);
-
-  it('validates the dedicated schema without changing the RunJS schema contract', () => {
-    expect(ajv.validateSchema(lightExtensionClientAppEntryV1Schema)).toBe(true);
-    expect(lightExtensionClientAppEntryV1Schema.$id).toBe(LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_URI);
-    expect(lightExtensionClientAppEntryV1Schema.properties.schemaVersion.const).toBe(
-      LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_VERSION,
-    );
-    expect(lightExtensionClientAppEntryV1Schema.properties.key.pattern).toBe(LIGHT_EXTENSION_ENTRY_KEY_PATTERN);
-    expect(lightExtensionClientAppEntryV1Schema.properties.entry.default).toBe('index.html');
-    expect(validate(lightExtensionClientAppEntryV1Schema.examples[0])).toBe(true);
-    expect(lightExtensionClientAppEntryV1Schema.properties).not.toHaveProperty('settings');
-    expect(lightExtensionClientAppEntryV1Schema.properties).not.toHaveProperty('root');
-    expect(lightExtensionClientAppEntryV1Schema.properties).not.toHaveProperty('build');
-    expect(lightExtensionClientAppEntryV1Schema.properties).not.toHaveProperty('router');
-    expect(lightExtensionClientAppEntryV1Schema.properties).not.toHaveProperty('runtimeContract');
-
-    const canonicalFile = fs.readFileSync(path.resolve(__dirname, '../schema/client-app-entry-v1.schema.json'), 'utf8');
-    expect(lightExtensionClientAppEntryV1SchemaFileContent).toBe(canonicalFile);
-    expect(lightExtensionClientAppEntryV1SchemaSha256).toMatch(/^[a-f0-9]{64}$/u);
-  });
-
-  it('defaults entry to index.html and preserves nested HTML entry paths', () => {
-    expect(
-      parseLightExtensionClientAppEntryV1({
-        schemaVersion: 1,
-        key: 'customer-console',
-        title: 'Customer Console',
-      }),
-    ).toEqual({
-      schemaVersion: 1,
-      key: 'customer-console',
-      title: 'Customer Console',
-      entry: 'index.html',
-    });
-    expect(
-      parseLightExtensionClientAppEntryV1Json(
-        JSON.stringify({
-          schemaVersion: 1,
-          key: 'customer-console',
-          title: 'Customer Console',
-          entry: 'dist/application.html',
-        }),
-      ),
-    ).toEqual({
-      schemaVersion: 1,
-      key: 'customer-console',
-      title: 'Customer Console',
-      entry: 'dist/application.html',
-    });
-    expect(getLightExtensionClientAppStaticRoot('index.html')).toBe('');
-    expect(getLightExtensionClientAppStaticRoot('dist/application.html')).toBe('dist');
-  });
-
-  it.each([
-    '/index.html',
-    '../index.html',
-    'dist/../../index.html',
-    'dist\\index.html',
-    'dist/\0index.html',
-    'https://example.com/index.html',
-    '//example.com/index.html',
-    'dist/application.js',
-  ])('rejects unsafe or non-HTML entry path %j', (entry) => {
-    const descriptor = {
-      schemaVersion: 1,
-      key: 'customer-console',
-      title: 'Customer Console',
-      entry,
-    };
-    expect(validate(descriptor)).toBe(false);
-    expect(() => parseLightExtensionClientAppEntryV1(descriptor)).toThrow(TypeError);
-  });
-
-  it('rejects fields that belong to build or runtime configuration', () => {
-    for (const field of ['root', 'dist', 'build', 'router', 'serviceWorker', 'runtimeContract', 'release', 'version']) {
-      const descriptor = {
-        schemaVersion: 1,
-        key: 'customer-console',
-        title: 'Customer Console',
-        [field]: 'unsupported',
-      };
-      expect(validate(descriptor)).toBe(false);
-      expect(() => parseLightExtensionClientAppEntryV1(descriptor)).toThrow(`field "${field}" is not supported`);
-    }
   });
 });

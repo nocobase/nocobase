@@ -11,15 +11,6 @@ import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-export const lightExtensionClientAppEntryV1SchemaFilePath = resolve(__dirname, 'client-app-entry-v1.schema.json');
-export const lightExtensionClientAppEntryV1SchemaFileContent = readFileSync(
-  lightExtensionClientAppEntryV1SchemaFilePath,
-  'utf8',
-);
-export const lightExtensionClientAppEntryV1SchemaSha256 = createHash('sha256')
-  .update(lightExtensionClientAppEntryV1SchemaFileContent)
-  .digest('hex');
-
 export const lightExtensionEntryV1SchemaFilePath = resolve(__dirname, 'entry-v1.schema.json');
 export const lightExtensionEntryV1SchemaFileContent = readFileSync(lightExtensionEntryV1SchemaFilePath, 'utf8');
 export const lightExtensionEntryV1SchemaSha256 = createHash('sha256')

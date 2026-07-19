@@ -151,17 +151,7 @@ const libs = ctx.libs;
 const direct = { ...ctx.libs };
 const aliased = { ...libs };
 `),
-    ).toEqual([
-      '@nocobase/sdk/client',
-      'antd-icons/full',
-      'antd/full',
-      'dayjs',
-      'formulajs',
-      'lodash',
-      'mathjs',
-      'react',
-      'react-dom/client',
-    ]);
+    ).toEqual(['antd-icons/full', 'antd/full', 'dayjs', 'formulajs', 'lodash', 'mathjs', 'react', 'react-dom/client']);
   });
 
   it('treats numeric computed destructuring as a dynamic full request', () => {
@@ -237,12 +227,11 @@ type Button = import('antd').Button;
 import type { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import value from 'lodash';
-import { createClient } from '@nocobase/sdk/client';
 import unrelated from 'unrelated-package';
 `,
         'src/main.ts',
       ),
-    ).toEqual(['@nocobase/sdk/client', 'antd-icons/P', 'antd/Button', 'dayjs', 'lodash', 'react']);
+    ).toEqual(['antd-icons/P', 'antd/Button', 'dayjs', 'lodash', 'react']);
   });
 
   it.each([

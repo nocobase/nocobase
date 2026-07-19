@@ -620,7 +620,6 @@ function resolveDefaultExternalModules(): Record<string, string> {
     'lodash',
     'mathjs',
     '@formulajs/formulajs',
-    '@nocobase/sdk/client',
   ]) {
     const runtimeName = resolveRunJSBuiltInModule(moduleName);
     if (runtimeName) {

@@ -265,18 +265,6 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
     const firstInitialization = await compiler.initialize('/assets/esbuild.wasm');
     const secondInitialization = await compiler.initialize('/assets/esbuild.wasm');
     const result = await compiler.build(vfs, entry(), 0);
-    vfs.replace(2, [
-      {
-        path: entry().entryPath,
-        content: [
-          `import { createClient } from '@nocobase/sdk/client';`,
-          `const client = createClient();`,
-          `ctx.render(<div>{String(client.auth.role)}</div>);`,
-        ].join('\n'),
-        language: 'typescript',
-      },
-    ]);
-    const clientSdkResult = await compiler.build(vfs, entry(), 0);
 
     expect(fetchCompiler).toHaveBeenCalledTimes(1);
     expect(secondInitialization).toEqual(firstInitialization);
@@ -299,9 +287,6 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
         inputFileCount: 2,
       },
     });
-    expect(clientSdkResult.accepted).toBe(true);
-    expect(clientSdkResult.diagnostics).toEqual([]);
-    expect(clientSdkResult.artifact.code).toContain('case "@nocobase/sdk/client": return ctx.libs.clientSdk;');
     compiler.dispose();
   });
 });

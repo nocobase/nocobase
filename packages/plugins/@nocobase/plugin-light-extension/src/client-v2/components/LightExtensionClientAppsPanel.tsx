@@ -9,9 +9,8 @@
 
 import { DeleteOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useACLRoleContext } from '@nocobase/client-v2';
-import { Alert, Button, Empty, Flex, Modal, Result, Space, Table, Tag, Tooltip, Typography, Upload } from 'antd';
+import { Alert, Button, Empty, Flex, Modal, Result, Space, Table, Typography, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { UploadFile } from 'antd/es/upload/interface';
 import type { RcFile } from 'rc-upload/lib/interface';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,16 +27,6 @@ interface LightExtensionClientAppsPanelProps {
   onChanged?: () => void | Promise<void>;
 }
 
-type Notice = {
-  type: 'success' | 'warning' | 'error';
-  message: string;
-};
-
-type ReferenceState =
-  | { status: 'loading'; references: [] }
-  | { status: 'ready'; references: LightExtensionClientAppReference[] }
-  | { status: 'error'; references: [] };
-
 const ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 
 export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtensionClientAppsPanelProps) {
@@ -48,46 +37,17 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
   const canDelete = isAllowedAction(parseAction('lightExtensionClientApps:delete'));
   const requestVersionRef = useRef(0);
   const [apps, setApps] = useState<LightExtensionClientAppDescriptor[]>([]);
-  const [referencesByEntryId, setReferencesByEntryId] = useState<Record<string, ReferenceState>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<LightExtensionClientAppHookError>();
-  const [notice, setNotice] = useState<Notice>();
+  const [notice, setNotice] = useState<string>();
   const [uploadTarget, setUploadTarget] = useState<LightExtensionClientAppDescriptor | null>();
-  const [uploadFile, setUploadFile] = useState<File>();
-  const [uploadFileList, setUploadFileList] = useState<UploadFile[]>([]);
+  const [uploadFile, setUploadFile] = useState<RcFile>();
   const [uploadError, setUploadError] = useState<string>();
   const [uploading, setUploading] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<LightExtensionClientAppDescriptor>();
+  const [removeReferences, setRemoveReferences] = useState<LightExtensionClientAppReference[]>([]);
   const [removeError, setRemoveError] = useState<string>();
   const [removing, setRemoving] = useState(false);
-
-  const loadReferences = useCallback(
-    async (app: LightExtensionClientAppDescriptor, requestVersion: number) => {
-      setReferencesByEntryId((current) => ({
-        ...current,
-        [app.entryId]: { status: 'loading', references: [] },
-      }));
-      try {
-        const references = await clientApps.listReferences(app.entryId);
-        if (requestVersionRef.current !== requestVersion) {
-          return;
-        }
-        setReferencesByEntryId((current) => ({
-          ...current,
-          [app.entryId]: { status: 'ready', references },
-        }));
-      } catch {
-        if (requestVersionRef.current !== requestVersion) {
-          return;
-        }
-        setReferencesByEntryId((current) => ({
-          ...current,
-          [app.entryId]: { status: 'error', references: [] },
-        }));
-      }
-    },
-    [clientApps],
-  );
 
   const loadApps = useCallback(async () => {
     const requestVersion = requestVersionRef.current + 1;
@@ -100,19 +60,17 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
         return;
       }
       setApps(nextApps);
-      setReferencesByEntryId({});
-      await Promise.all(nextApps.map((app) => loadReferences(app, requestVersion)));
     } catch (error) {
       if (requestVersionRef.current !== requestVersion) {
         return;
       }
-      setLoadError(toClientAppHookError(error, 'list', t('Failed to load light extension applications')));
+      setLoadError(toClientAppHookError(error, t('Failed to load light extension applications')));
     } finally {
       if (requestVersionRef.current === requestVersion) {
         setLoading(false);
       }
     }
-  }, [clientApps, loadReferences, repoId, t]);
+  }, [clientApps, repoId, t]);
 
   useEffect(() => {
     loadApps();
@@ -124,7 +82,6 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
   const openUpload = useCallback((target: LightExtensionClientAppDescriptor | null) => {
     setUploadTarget(target);
     setUploadFile(undefined);
-    setUploadFileList([]);
     setUploadError(undefined);
   }, []);
 
@@ -134,7 +91,6 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
     }
     setUploadTarget(undefined);
     setUploadFile(undefined);
-    setUploadFileList([]);
     setUploadError(undefined);
   }, [uploading]);
 
@@ -142,12 +98,10 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
     (file: RcFile) => {
       if (!isZipFile(file)) {
         setUploadFile(undefined);
-        setUploadFileList([]);
         setUploadError(t('Select a ZIP file'));
         return false;
       }
       setUploadFile(file);
-      setUploadFileList([{ uid: file.uid, name: file.name, status: 'done' }]);
       setUploadError(undefined);
       return false;
     },
@@ -162,36 +116,27 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
     setUploading(true);
     setUploadError(undefined);
     try {
-      const updatedApp = await clientApps.upload(
-        repoId,
-        uploadFile,
-        uploadTarget ? { entryId: uploadTarget.entryId, contentHash: uploadTarget.contentHash } : undefined,
-      );
+      const updatedApp = await clientApps.upload(repoId, uploadFile, uploadTarget?.entryId);
       setApps((current) => [updatedApp, ...current.filter((app) => app.entryId !== updatedApp.entryId)]);
-      const requestVersion = requestVersionRef.current;
-      await loadReferences(updatedApp, requestVersion);
-      setNotice({
-        type: 'success',
-        message: uploadTarget
-          ? t('Light extension application files replaced')
-          : t('Light extension application uploaded'),
-      });
+      setNotice(
+        uploadTarget ? t('Light extension application files replaced') : t('Light extension application uploaded'),
+      );
       setUploadTarget(undefined);
       setUploadFile(undefined);
-      setUploadFileList([]);
       await onChanged?.();
     } catch (error) {
       setUploadError(getClientAppErrorMessage(error, t));
     } finally {
       setUploading(false);
     }
-  }, [clientApps, loadReferences, onChanged, repoId, t, uploadFile, uploadTarget]);
+  }, [clientApps, onChanged, repoId, t, uploadFile, uploadTarget]);
 
   const closeRemove = useCallback(() => {
     if (removing) {
       return;
     }
     setRemoveTarget(undefined);
+    setRemoveReferences([]);
     setRemoveError(undefined);
   }, [removing]);
 
@@ -199,36 +144,22 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
     if (!removeTarget) {
       return;
     }
-    const referenceState = referencesByEntryId[removeTarget.entryId];
-    if (referenceState?.status !== 'ready' || referenceState.references.length) {
-      return;
-    }
     setRemoving(true);
     setRemoveError(undefined);
     try {
       await clientApps.delete(removeTarget.entryId);
       setApps((current) => current.filter((app) => app.entryId !== removeTarget.entryId));
-      setReferencesByEntryId((current) => {
-        const next = { ...current };
-        delete next[removeTarget.entryId];
-        return next;
-      });
       setRemoveTarget(undefined);
-      setNotice({ type: 'success', message: t('Light extension application removed') });
+      setRemoveReferences([]);
+      setNotice(t('Light extension application removed'));
       await onChanged?.();
     } catch (error) {
-      const references = getErrorReferences(error);
-      if (references.length) {
-        setReferencesByEntryId((current) => ({
-          ...current,
-          [removeTarget.entryId]: { status: 'ready', references },
-        }));
-      }
+      setRemoveReferences(getErrorReferences(error));
       setRemoveError(getClientAppErrorMessage(error, t));
     } finally {
       setRemoving(false);
     }
-  }, [clientApps, onChanged, referencesByEntryId, removeTarget, t]);
+  }, [clientApps, onChanged, removeTarget, t]);
 
   const columns = useMemo<ColumnsType<LightExtensionClientAppDescriptor>>(
     () => [
@@ -275,33 +206,10 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
         render: (updatedAt: string | null) => formatDate(updatedAt),
       },
       {
-        title: t('Current health'),
-        key: 'health',
-        width: 130,
-        render: (_value, app) => {
-          const ready = app.ready !== false && app.available !== false && app.enabled !== false;
-          return <Tag color={ready ? 'success' : 'error'}>{ready ? t('Ready') : t('Unavailable')}</Tag>;
-        },
-      },
-      {
-        title: t('Used by'),
-        key: 'references',
-        width: 230,
-        render: (_value, app) => renderReferences(referencesByEntryId[app.entryId], t),
-      },
-      {
         title: t('Actions'),
         key: 'actions',
         width: 190,
         render: (_value, app) => {
-          const referenceState = referencesByEntryId[app.entryId];
-          const removeDisabled = referenceState?.status !== 'ready' || Boolean(referenceState.references.length);
-          const removeReason =
-            referenceState?.status === 'ready' && referenceState.references.length
-              ? t('This application is used by a workspace and cannot be removed')
-              : referenceState?.status === 'error'
-                ? t('Usage could not be checked')
-                : t('Checking usage');
           return (
             <Space size="small">
               {canUpload ? (
@@ -316,32 +224,28 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
                 </Button>
               ) : null}
               {canDelete ? (
-                <Tooltip title={removeDisabled ? removeReason : undefined}>
-                  <span>
-                    <Button
-                      aria-label={`${t('Remove application')} ${app.title || app.key}`}
-                      danger
-                      disabled={removeDisabled}
-                      icon={<DeleteOutlined />}
-                      onClick={() => {
-                        setRemoveError(undefined);
-                        setRemoveTarget(app);
-                      }}
-                      size="small"
-                      style={ACTION_BUTTON_STYLE}
-                      type="link"
-                    >
-                      {t('Remove')}
-                    </Button>
-                  </span>
-                </Tooltip>
+                <Button
+                  aria-label={`${t('Remove application')} ${app.title || app.key}`}
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    setRemoveError(undefined);
+                    setRemoveReferences([]);
+                    setRemoveTarget(app);
+                  }}
+                  size="small"
+                  style={ACTION_BUTTON_STYLE}
+                  type="link"
+                >
+                  {t('Remove')}
+                </Button>
               ) : null}
             </Space>
           );
         },
       },
     ],
-    [canDelete, canUpload, openUpload, referencesByEntryId, t],
+    [canDelete, canUpload, openUpload, t],
   );
 
   if (loadError) {
@@ -360,20 +264,10 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
     );
   }
 
-  const removeReferenceState = removeTarget ? referencesByEntryId[removeTarget.entryId] : undefined;
-  const removeReferences = removeReferenceState?.status === 'ready' ? removeReferenceState.references : [];
-
   return (
     <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
       {notice ? (
-        <Alert
-          closable
-          message={notice.message}
-          onClose={() => setNotice(undefined)}
-          role="status"
-          showIcon
-          type={notice.type}
-        />
+        <Alert closable message={notice} onClose={() => setNotice(undefined)} role="status" showIcon type="success" />
       ) : null}
       <Flex align="center" justify="space-between" gap="small" wrap>
         <Typography.Title level={4} style={{ margin: 0 }}>
@@ -443,11 +337,10 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
             aria-label={t('Application ZIP')}
             beforeUpload={selectUploadFile}
             disabled={uploading}
-            fileList={uploadFileList}
+            fileList={uploadFile ? [{ uid: uploadFile.uid, name: uploadFile.name, status: 'done' }] : []}
             maxCount={1}
             onRemove={() => {
               setUploadFile(undefined);
-              setUploadFileList([]);
               setUploadError(undefined);
               return true;
             }}
@@ -492,8 +385,8 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
               description={
                 <Space direction="vertical" size={2}>
                   {removeReferences.map((reference, index) => (
-                    <Typography.Text key={reference.id || `${formatReferenceLocation(reference)}:${index}`}>
-                      {formatReferenceLocation(reference)}
+                    <Typography.Text key={`${reference.ownerKind}:${reference.ownerId}:${index}`}>
+                      {reference.ownerId}
                     </Typography.Text>
                   ))}
                 </Space>
@@ -515,54 +408,12 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
   );
 }
 
-function renderReferences(referenceState: ReferenceState | undefined, t: (key: string) => string): React.ReactNode {
-  if (!referenceState || referenceState.status === 'loading') {
-    return <Typography.Text type="secondary">{t('Checking usage')}</Typography.Text>;
-  }
-  if (referenceState.status === 'error') {
-    return <Typography.Text type="warning">{t('Usage could not be checked')}</Typography.Text>;
-  }
-  if (!referenceState.references.length) {
-    return <Typography.Text type="secondary">{t('Not used')}</Typography.Text>;
-  }
-  return (
-    <Space direction="vertical" size={2}>
-      {referenceState.references.map((reference, index) => (
-        <Tag key={reference.id || `${formatReferenceLocation(reference)}:${index}`}>
-          {formatReferenceLocation(reference)}
-        </Tag>
-      ))}
-    </Space>
-  );
-}
-
-function formatReferenceLocation(reference: LightExtensionClientAppReference): string {
-  for (const value of [reference.label, reference.title, reference.ownerId]) {
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-  const locator = reference.ownerLocator || {};
-  for (const key of ['label', 'title', 'workspaceTitle', 'workspaceName', 'workspaceUid', 'portalUid', 'modelUid']) {
-    const value = locator[key];
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-  return reference.ownerKind || '-';
-}
-
 function getErrorReferences(error: unknown): LightExtensionClientAppReference[] {
   if (!(error instanceof LightExtensionClientAppHookError)) {
     return [];
   }
-  for (const key of ['references', 'workspaces'] as const) {
-    const values = error.details?.[key];
-    if (Array.isArray(values)) {
-      return values.filter(isClientAppReference);
-    }
-  }
-  return [];
+  const references = error.details?.references;
+  return Array.isArray(references) ? references.filter(isClientAppReference) : [];
 }
 
 function isClientAppReference(value: unknown): value is LightExtensionClientAppReference {
@@ -588,9 +439,6 @@ function getClientAppErrorMessage(error: unknown, t: (key: string) => string): s
   if (error.details?.category === 'client-app-replacement') {
     return t('The ZIP entry key does not match the application being replaced');
   }
-  if (error.details?.category === 'client-app-replacement-stale') {
-    return t('The application changed before replacement; refresh and try again');
-  }
   if (error.code === 'LIGHT_EXTENSION_REPO_DISABLED' || error.code === 'LIGHT_EXTENSION_REPO_ARCHIVED') {
     return t('Enable the repository before uploading an application');
   }
@@ -600,14 +448,10 @@ function getClientAppErrorMessage(error: unknown, t: (key: string) => string): s
   return t('Light extension application request failed');
 }
 
-function toClientAppHookError(
-  error: unknown,
-  operation: 'list',
-  fallbackMessage: string,
-): LightExtensionClientAppHookError {
+function toClientAppHookError(error: unknown, fallbackMessage: string): LightExtensionClientAppHookError {
   return error instanceof LightExtensionClientAppHookError
     ? error
-    : new LightExtensionClientAppHookError({ operation, message: fallbackMessage });
+    : new LightExtensionClientAppHookError({ message: fallbackMessage });
 }
 
 function isZipFile(file: File): boolean {

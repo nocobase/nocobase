@@ -17,7 +17,7 @@ export default defineCollection({
   indexes: [
     {
       unique: true,
-      fields: ['entryId'],
+      fields: ['repoId', 'key'],
     },
     {
       unique: true,
@@ -27,28 +27,30 @@ export default defineCollection({
   fields: [
     {
       type: 'string',
-      name: 'entryId',
+      name: 'id',
       primaryKey: true,
       allowNull: false,
     },
     {
-      type: 'belongsTo',
-      name: 'entry',
-      target: 'lightExtensionEntries',
-      targetKey: 'id',
-      foreignKey: 'entryId',
-      constraints: false,
+      type: 'string',
+      name: 'repoId',
+      allowNull: false,
     },
+    {
+      type: 'belongsTo',
+      name: 'repo',
+      target: 'lightExtensionRepos',
+      targetKey: 'id',
+      foreignKey: 'repoId',
+      constraints: true,
+      onDelete: 'CASCADE',
+    },
+    { type: 'string', name: 'key', allowNull: false },
+    { type: 'string', name: 'title', allowNull: false },
     {
       type: 'string',
       name: 'entryHtml',
       allowNull: false,
-    },
-    {
-      type: 'string',
-      name: 'staticRoot',
-      allowNull: false,
-      defaultValue: '',
     },
     {
       type: 'string',

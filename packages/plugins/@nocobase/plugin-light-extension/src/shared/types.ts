@@ -25,12 +25,7 @@ import type {
   VscRemoteSyncPlan,
 } from '@nocobase/plugin-vsc-file';
 
-export type {
-  LightExtensionEntryKind,
-  LightExtensionKind,
-  LightExtensionRunJSKind,
-  LightExtensionStaticKind,
-} from '../constants';
+export type { LightExtensionKind } from '../constants';
 
 export type LightExtensionRepoLifecycleStatus = (typeof LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES)[number];
 
@@ -82,11 +77,6 @@ export interface LightExtensionInspectSourceArchiveInput {
 
 export interface LightExtensionInspectSourceArchiveResult {
   files: LightExtensionTreeEntryInput[];
-}
-
-export interface LightExtensionClientAppUploadRequest<TFile = unknown> {
-  repoId: string;
-  file: TFile;
 }
 
 export interface LightExtensionChangeLifecycleInput {

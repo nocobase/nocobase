@@ -9,7 +9,6 @@
 
 import * as antdIcons from '@ant-design/icons';
 import { autorun } from '@formily/reactive';
-import * as clientSdk from '@nocobase/sdk/client';
 import type { FlowContext } from './flowContext';
 
 export type RunJSLibCache = 'global' | 'context';
@@ -172,7 +171,6 @@ const DEFAULT_RUNJS_LIBS: Array<{ name: string; cache: RunJSLibCache; loader: Ru
   { name: 'antd', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'antd') },
   { name: 'dayjs', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'dayjs') },
   { name: 'antdIcons', cache: 'global', loader: () => antdIcons },
-  { name: 'clientSdk', cache: 'global', loader: () => clientSdk },
   { name: 'lodash', cache: 'global', loader: () => import('lodash').then((m) => m.default || m) },
   { name: 'formula', cache: 'global', loader: () => import('@formulajs/formulajs').then((m) => m.default || m) },
   { name: 'math', cache: 'global', loader: () => import('mathjs').then((m) => m) },

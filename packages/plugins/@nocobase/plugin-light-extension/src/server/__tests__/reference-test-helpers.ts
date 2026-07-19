@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import { createHash } from 'crypto';
 import { vi } from 'vitest';
 
@@ -86,15 +86,35 @@ export function createReferenceServiceFixture(
     },
     getModel: (name: keyof typeof repositories) => ({
       findByPk: async (filterByTk: string) => repositories[name].findOne({ filterByTk }),
+      findOne: async (options: { where?: Record<string, unknown> } = {}) =>
+        repositories[name].findOne({ filter: options.where }),
+      bulkCreate: async (records: Record<string, unknown>[]) =>
+        Promise.all(records.map((values) => repositories[name].create({ values }))),
+      destroy: async (options: { where?: Record<string, unknown> } = {}) =>
+        repositories[name].destroy({ filter: options.where }),
     }),
+    options: { dialect: 'sqlite' },
     sequelize: {
-      transaction: async (run: (transaction: unknown) => Promise<unknown>) => {
+      transaction: async <T>(
+        optionsOrRun: object | ((transaction: Transaction) => Promise<T>),
+        optionalRun?: (transaction: Transaction) => Promise<T>,
+      ) => {
+        const run = typeof optionsOrRun === 'function' ? optionsOrRun : optionalRun;
+        if (!run) {
+          throw new Error('Missing transaction callback');
+        }
         const snapshot = snapshotRepositories(repositories);
+        const afterCommit: Array<() => Promise<void>> = [];
         try {
-          return await run({
+          const result = await run({
             transactionId: 'test_transaction',
-            LOCK: { UPDATE: 'UPDATE' },
-          });
+            LOCK: { SHARE: 'SHARE', UPDATE: 'UPDATE' },
+            afterCommit: (callback: () => Promise<void>) => afterCommit.push(callback),
+          } as unknown as Transaction);
+          for (const callback of afterCommit) {
+            await callback();
+          }
+          return result;
         } catch (error) {
           restoreRepositories(repositories, snapshot);
           throw error;

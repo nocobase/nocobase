@@ -30,7 +30,6 @@
       "import": "./lib/schema/server.js",
       "require": "./lib/schema/server.js"
     },
-    "./schema/client-app-entry-v1.schema.json": "./lib/schema/client-app-entry-v1.schema.json",
     "./schema/entry-v1.schema.json": "./lib/schema/entry-v1.schema.json",
     "./typegen": {
       "types": "./lib/typegen/index.d.ts",

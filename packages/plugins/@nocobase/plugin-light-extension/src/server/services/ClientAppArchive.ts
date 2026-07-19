@@ -7,11 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  getLightExtensionClientAppStaticRoot,
-  parseLightExtensionClientAppEntryV1Json,
-  type LightExtensionClientAppEntryV1,
-} from '@nocobase/light-extension-sdk/schema';
 import { createHash } from 'crypto';
 import { createWriteStream } from 'fs';
 import fs from 'fs/promises';
@@ -41,14 +36,20 @@ export interface ClientAppArchiveAsset {
 }
 
 export interface PreparedClientAppArchive {
-  descriptor: LightExtensionClientAppEntryV1;
+  descriptor: ClientAppDescriptorFile;
   entryHtml: string;
-  staticRoot: string;
   contentHash: string;
   fileCount: number;
   byteSize: number;
   assets: ClientAppArchiveAsset[];
   dispose(): Promise<void>;
+}
+
+export interface ClientAppDescriptorFile {
+  schemaVersion: 1;
+  key: string;
+  title?: string;
+  entry: string;
 }
 
 interface InspectedArchiveEntry {
@@ -83,13 +84,13 @@ export async function prepareClientAppArchive(zipPath: string): Promise<Prepared
       throw invalidArchive(`entry.json must not exceed ${CLIENT_APP_ARCHIVE_LIMITS.entryDescriptorBytes} bytes`);
     }
 
-    let descriptor: LightExtensionClientAppEntryV1;
+    let descriptor: ClientAppDescriptorFile;
     try {
-      descriptor = parseLightExtensionClientAppEntryV1Json(await fs.readFile(descriptorEntry.filePath, 'utf8'));
+      descriptor = parseClientAppDescriptor(await fs.readFile(descriptorEntry.filePath, 'utf8'));
     } catch (error) {
       throw invalidArchive(error instanceof Error ? error.message : 'entry.json is invalid');
     }
-    const staticRoot = getLightExtensionClientAppStaticRoot(descriptor.entry);
+    const staticRoot = getStaticRoot(descriptor.entry);
     const entryAssetPath = staticRoot ? descriptor.entry.slice(staticRoot.length + 1) : descriptor.entry;
     const assets = extracted
       .filter((entry): entry is ExtractedArchiveEntry => !entry.directory && entry.path !== 'entry.json')
@@ -111,7 +112,6 @@ export async function prepareClientAppArchive(zipPath: string): Promise<Prepared
     return {
       descriptor,
       entryHtml: descriptor.entry,
-      staticRoot,
       contentHash,
       fileCount: assets.length,
       byteSize,
@@ -400,6 +400,85 @@ function hashAssetSet(assets: ClientAppArchiveAsset[]): string {
     hash.update('\n');
   }
   return hash.digest('hex');
+}
+
+const CLIENT_APP_DESCRIPTOR_FIELDS = new Set(['schemaVersion', 'key', 'title', 'entry']);
+
+function parseClientAppDescriptor(content: string): ClientAppDescriptorFile {
+  let value: unknown;
+  try {
+    value = JSON.parse(content);
+  } catch (error) {
+    throw new TypeError(error instanceof Error ? error.message : 'entry.json is invalid JSON');
+  }
+  if (!isRecord(value)) {
+    throw new TypeError('entry.json must contain a JSON object');
+  }
+  const unsupportedField = Object.keys(value).find((field) => !CLIENT_APP_DESCRIPTOR_FIELDS.has(field));
+  if (unsupportedField) {
+    throw new TypeError(`entry.json field "${unsupportedField}" is not supported`);
+  }
+  if (value.schemaVersion !== 1) {
+    throw new TypeError('entry.json schemaVersion must be 1');
+  }
+  const key = requireSlug(value.key, 'key');
+  const descriptor: ClientAppDescriptorFile = {
+    schemaVersion: 1,
+    key,
+    entry: normalizeEntryPath(value.entry),
+  };
+  assignOptionalString(descriptor, value, 'title', 120);
+  return descriptor;
+}
+
+function assignOptionalString(
+  descriptor: ClientAppDescriptorFile,
+  value: Record<string, unknown>,
+  field: 'title',
+  maxLength: number,
+): void {
+  const fieldValue = value[field];
+  if (fieldValue === undefined) {
+    return;
+  }
+  if (typeof fieldValue !== 'string' || fieldValue.length > maxLength) {
+    throw new TypeError(`entry.json ${field} must be a string no longer than ${maxLength} characters`);
+  }
+  descriptor[field] = fieldValue;
+}
+
+function requireSlug(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]{0,62}$/u.test(value)) {
+    throw new TypeError(`entry.json ${field} must be a lowercase slug`);
+  }
+  return value;
+}
+
+function normalizeEntryPath(value: unknown): string {
+  const entry = value === undefined ? 'index.html' : value;
+  if (typeof entry !== 'string' || !entry || entry.includes('\0') || entry.includes('\\') || entry.startsWith('/')) {
+    throw new TypeError('entry.json entry must be a safe relative HTML path');
+  }
+  const segments = entry.split('/');
+  if (
+    segments.some((segment) => !segment || segment === '.' || segment === '..') ||
+    entry.includes('?') ||
+    entry.includes('#') ||
+    /^[A-Za-z][A-Za-z0-9+.-]*:/u.test(entry) ||
+    !/\.html?$/iu.test(segments[segments.length - 1])
+  ) {
+    throw new TypeError('entry.json entry must be a safe relative HTML path');
+  }
+  return entry;
+}
+
+function getStaticRoot(entry: string): string {
+  const separator = entry.lastIndexOf('/');
+  return separator < 0 ? '' : entry.slice(0, separator);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function invalidArchive(message: string): LightExtensionError {

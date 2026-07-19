@@ -23,19 +23,13 @@ export default defineCollection({
       fields: ['assetSetId', 'relativePath'],
     },
     {
-      fields: ['entryId', 'assetSetId'],
-    },
-    {
       fields: ['repoId', 'assetSetId'],
     },
   ],
   fields: [
-    { type: 'string', name: 'entryId' },
     { type: 'string', name: 'repoId', allowNull: false },
     { type: 'string', name: 'assetSetId', allowNull: false },
     { type: 'string', name: 'relativePath', allowNull: false },
-    { type: 'string', name: 'contentHash', allowNull: false },
-    { type: 'string', name: 'state', allowNull: false, defaultValue: 'staging' },
     { type: 'string', name: 'title' },
     { type: 'string', name: 'filename', allowNull: false },
     { type: 'string', name: 'extname' },

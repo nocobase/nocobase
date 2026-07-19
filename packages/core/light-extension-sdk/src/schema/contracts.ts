@@ -10,11 +10,6 @@
 export const LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION = 1;
 export const LIGHT_EXTENSION_ENTRY_SCHEMA_URI = 'https://schemas.nocobase.com/light-extension/entry-v1.schema.json';
 export const LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH = '/light-extensions/schemas/entry-v1.schema.json';
-export const LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_VERSION = 1;
-export const LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_URI =
-  'https://schemas.nocobase.com/light-extension/client-app-entry-v1.schema.json';
-export const LIGHT_EXTENSION_CLIENT_APP_ENTRY_SCHEMA_LOCAL_PATH =
-  '/light-extensions/schemas/client-app-entry-v1.schema.json';
 export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = '^[a-z0-9][a-z0-9-]{0,62}$';
 export const LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN = '^[A-Za-z_][A-Za-z0-9_-]{0,63}$';
 

@@ -8,10 +8,6 @@
  */
 
 export { PluginLightExtensionServer } from './plugin';
-export * from './services/ClientAppArchive';
-export * from './services/ClientAppService';
-export * from './services/ClientAppStorage';
-export * from './services/ExternalReferenceService';
 export * from './services/AffectedEntryCompilePlanner';
 export * from './services/LightExtensionAuditService';
 export * from './services/LightExtensionCanonicalWorkspace';

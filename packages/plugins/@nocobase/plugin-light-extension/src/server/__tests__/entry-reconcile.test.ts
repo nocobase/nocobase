@@ -67,42 +67,6 @@ describe('LightExtensionEntryService reconcile', () => {
     });
   });
 
-  it('preserves client-app entries while reconciling RunJS source entries', async () => {
-    const sourceEntry = createSourceEntry('sales-kpi');
-    const fixture = createReconcileFixture([createStoredEntry(sourceEntry), createStoredClientAppEntry()]);
-    const clientAppRecord = fixture.repository.records[1];
-    const clientAppBefore = clientAppRecord.toJSON();
-
-    const result = await fixture.service.reconcileEntries('ler_sales', [sourceEntry], 'commit_2', fixture.transaction);
-
-    expect(result.entries.map((entry) => entry.id)).toEqual(['lee_sales-kpi']);
-    expect(clientAppRecord.update).not.toHaveBeenCalled();
-    expect(clientAppRecord.toJSON()).toEqual(clientAppBefore);
-    expect(clientAppRecord.toJSON()).toMatchObject({
-      id: 'lee_customer-console',
-      kind: 'client-app',
-      healthStatus: 'ready',
-      runtimeArtifact: null,
-    });
-  });
-
-  it('excludes client-app entries from planned source reconcile writes and fingerprints', async () => {
-    const sourceEntry = createSourceEntry('sales-kpi');
-    const fixture = createReconcileFixture([createStoredEntry(sourceEntry), createStoredClientAppEntry()]);
-    const clientAppRecord = fixture.repository.records[1];
-    const plan = await fixture.service.planReconcileEntries('ler_sales', [sourceEntry], 'commit_1');
-
-    expect(plan.writes.map((write) => write.id)).not.toContain('lee_customer-console');
-    await clientAppRecord.update({ title: 'Customer Console Updated' });
-    await expect(fixture.service.publishReconcilePlan(plan, fixture.transaction)).resolves.toEqual(plan.result);
-    expect(clientAppRecord.toJSON()).toMatchObject({
-      id: 'lee_customer-console',
-      title: 'Customer Console Updated',
-      healthStatus: 'ready',
-    });
-    expect(clientAppRecord.update).toHaveBeenCalledTimes(1);
-  });
-
   it('classifies settings and display metadata changes while writing only changed fields', async () => {
     const sourceEntry = createSourceEntry('sales-kpi');
     const fixture = createReconcileFixture([createStoredEntry(sourceEntry)]);
@@ -213,39 +177,6 @@ function createStoredEntry(
     createdAt: '2026-07-17T00:00:00.000Z',
     updatedAt: '2026-07-17T00:00:00.000Z',
     ...overrides,
-  };
-}
-
-function createStoredClientAppEntry(): Record<string, unknown> {
-  return {
-    id: 'lee_customer-console',
-    repoId: 'ler_sales',
-    target: 'client',
-    kind: 'client-app',
-    entryName: 'customer-console',
-    entryPath: 'dist/application.html',
-    descriptorPath: 'entry.json',
-    title: 'Customer Console',
-    description: null,
-    category: null,
-    icon: null,
-    tags: null,
-    sort: null,
-    settingsSchema: null,
-    settingsSchemaHash: null,
-    settingsDefaultsHash: null,
-    compiledCommitId: null,
-    runtimeArtifact: null,
-    runtimeVersion: null,
-    surfaceStyle: null,
-    runtimeCodeHash: null,
-    artifactHash: null,
-    filesHash: null,
-    compiledAt: null,
-    healthStatus: 'ready',
-    diagnostics: [],
-    createdAt: '2026-07-17T00:00:00.000Z',
-    updatedAt: '2026-07-17T00:00:00.000Z',
   };
 }
 

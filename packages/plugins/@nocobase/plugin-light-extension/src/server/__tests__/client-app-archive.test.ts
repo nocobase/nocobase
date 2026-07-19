@@ -31,7 +31,6 @@ describe('ClientAppArchive', () => {
     });
     const preparedDefault = await prepareClientAppArchive(defaultArchive);
     expect(preparedDefault.entryHtml).toBe('index.html');
-    expect(preparedDefault.staticRoot).toBe('');
     expect(preparedDefault.assets.map((asset) => asset.relativePath)).toEqual([
       'app.js',
       'assets/logo.png',
@@ -54,7 +53,6 @@ describe('ClientAppArchive', () => {
     });
     const preparedNested = await prepareClientAppArchive(nestedArchive);
     expect(preparedNested.entryHtml).toBe('dist/application.html');
-    expect(preparedNested.staticRoot).toBe('dist');
     expect(preparedNested.assets.map((asset) => asset.relativePath)).toEqual(['application.html', 'assets/app.css']);
     await preparedNested.dispose();
   });

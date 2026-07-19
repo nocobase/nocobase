@@ -8,7 +8,7 @@
  */
 
 type ClientAppPortalRecord = {
-  enabled?: unknown;
+  appName?: unknown;
   routePath?: unknown;
   frontend?: {
     type?: unknown;
@@ -39,6 +39,7 @@ export type ClientAppDevProxyOptions = {
 };
 
 type ProxyRequest = {
+  headers?: Record<string, string | string[] | undefined>;
   url?: string;
 };
 
@@ -103,23 +104,63 @@ function readPortalRecords(payload: unknown): ClientAppPortalRecord[] {
     return [];
   }
   const data = (payload as { data?: unknown }).data;
-  if (Array.isArray(data)) {
-    return data as ClientAppPortalRecord[];
+  if (!data || typeof data !== 'object') {
+    return [];
   }
-  if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
-    return (data as { data: ClientAppPortalRecord[] }).data;
+  const portals = (data as { portals?: unknown }).portals;
+  return Array.isArray(portals) ? (portals as ClientAppPortalRecord[]) : [];
+}
+
+function getClientAppRouteRoot(record: ClientAppPortalRecord, modernClientBasePath: string) {
+  if (typeof record.appName !== 'string' || typeof record.routePath !== 'string') {
+    return;
   }
-  return [];
+  const appName = record.appName.trim();
+  const routeRoot = normalizeClientAppRouteRoot(record.routePath, modernClientBasePath);
+  if (!appName || !routeRoot || appName === 'main') {
+    return appName === 'main' ? routeRoot : undefined;
+  }
+  const modernClientPathname = parsePathname(modernClientBasePath);
+  if (!modernClientPathname) {
+    return;
+  }
+  const modernClientSegments = splitPathSegments(modernClientPathname);
+  const routeSegments = splitPathSegments(routeRoot);
+  return pathFromSegments([
+    ...modernClientSegments,
+    'apps',
+    appName,
+    ...routeSegments.slice(modernClientSegments.length),
+  ]);
 }
 
 function createPortalListUrl(gatewayTargetUrl: string, apiBasePath: string) {
   const url = new URL(gatewayTargetUrl);
   const targetPath = url.pathname.replace(/\/+$/u, '');
   const apiPath = `/${apiBasePath.replace(/^\/+|\/+$/gu, '')}`;
-  url.pathname = `${targetPath}${apiPath}/multiPortals:listEnabled`.replace(/\/{2,}/gu, '/');
+  url.pathname = `${targetPath}${apiPath}/app:getPortals`.replace(/\/{2,}/gu, '/');
   url.search = '';
   url.hash = '';
   return url.toString();
+}
+
+function readRequestHeader(request: ProxyRequest, name: string) {
+  const value = request.headers?.[name];
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  return value;
+}
+
+function createPortalListHeaders(request: ProxyRequest) {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  for (const name of ['authorization', 'cookie', 'x-app', 'x-authenticator', 'x-role', 'x-locale']) {
+    const value = readRequestHeader(request, name);
+    if (value) {
+      headers[name] = value;
+    }
+  }
+  return headers;
 }
 
 export function createClientAppDevProxyRouter(options: ClientAppDevProxyOptions) {
@@ -131,25 +172,21 @@ export function createClientAppDevProxyRouter(options: ClientAppDevProxyOptions)
   let cacheExpiresAt = 0;
   let pendingRouteRoots: Promise<string[] | undefined> | undefined;
 
-  const fetchRouteRoots = async () => {
+  const fetchRouteRoots = async (request: ProxyRequest) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
       const response = await fetchClient(portalListUrl, {
-        headers: { Accept: 'application/json' },
+        headers: createPortalListHeaders(request),
         signal: controller.signal,
       });
       if (!response.ok) {
-        return [];
+        return;
       }
       const records = readPortalRecords(await response.json());
       return records
-        .filter((record) => record.enabled === true && record.frontend?.type === 'client-app')
-        .map((record) =>
-          typeof record.routePath === 'string'
-            ? normalizeClientAppRouteRoot(record.routePath, options.modernClientBasePath)
-            : undefined,
-        )
+        .filter((record) => record.frontend?.type === 'client-app')
+        .map((record) => getClientAppRouteRoot(record, options.modernClientBasePath))
         .filter((routeRoot): routeRoot is string => Boolean(routeRoot));
     } catch {
       return;
@@ -158,12 +195,12 @@ export function createClientAppDevProxyRouter(options: ClientAppDevProxyOptions)
     }
   };
 
-  const getRouteRoots = async () => {
+  const getRouteRoots = async (request: ProxyRequest) => {
     if (Date.now() < cacheExpiresAt) {
       return cachedRouteRoots;
     }
     if (!pendingRouteRoots) {
-      pendingRouteRoots = fetchRouteRoots();
+      pendingRouteRoots = fetchRouteRoots(request);
     }
     try {
       const discoveredRouteRoots = await pendingRouteRoots;
@@ -182,7 +219,7 @@ export function createClientAppDevProxyRouter(options: ClientAppDevProxyOptions)
     if (!pathname) {
       return options.modernClientTargetUrl;
     }
-    const routeRoots = await getRouteRoots();
+    const routeRoots = await getRouteRoots(request);
     return routeRoots.some((routeRoot) => isPathAtOrBelow(pathname, routeRoot))
       ? options.gatewayTargetUrl
       : options.modernClientTargetUrl;

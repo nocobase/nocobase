@@ -15,11 +15,9 @@ import { LightExtensionError } from '../../shared/errors';
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { ExternalReferenceService } from '../services/ExternalReferenceService';
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
-import { stableJsonHash } from '../services/ReferenceOwnerRegistry';
 
 describe('plugin-light-extension repo service', () => {
   let app: MockServer;
@@ -362,20 +360,10 @@ describe('plugin-light-extension repo service', () => {
 
   it('rejects delete when references exist without suggesting an unavailable UI action', async () => {
     const repo = await service.createRepo({ name: 'Referenced Repo' }, { requestId: 'req_reference_create' });
-    service.useExternalReferenceService(new ExternalReferenceService(app.db));
-    await app.db.getRepository('lightExtensionReferences').create({
-      values: {
-        repoId: repo.id,
-        entryId: 'lee_referenced',
-        kind: 'client-app',
-        ownerKind: 'multiPortal.frontend',
-        ownerLocator: {
-          kind: 'multiPortal.frontend',
-          ownerId: 'portal-1',
-        },
-        ownerLocatorHash: stableJsonHash({ kind: 'multiPortal.frontend', ownerId: 'portal-1' }),
-      },
-    });
+    const listReferencesForRepo = vi.fn(async () => [
+      { entryId: 'lee_referenced', ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
+    ]);
+    service.useClientAppService({ listReferencesForRepo, retireClientAppsForRepo: vi.fn() });
 
     await expect(service.deleteRepo({ repoId: repo.id }, { requestId: 'req_delete_referenced' })).rejects.toMatchObject(
       {
@@ -384,10 +372,10 @@ describe('plugin-light-extension repo service', () => {
         message: 'Light extension repository is referenced and cannot be deleted',
         details: expect.objectContaining({
           references: [{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }],
-          workspaces: [{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }],
         }),
       },
     );
+    expect(listReferencesForRepo).toHaveBeenCalledOnce();
 
     expect(await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id })).toBeTruthy();
     const blockedLog = await app.db.getRepository('lightExtensionLogs').findOne({
@@ -429,8 +417,8 @@ describe('plugin-light-extension repo service', () => {
         compiledAt: new Date(),
       },
     });
-    const retireClientAppsForRepo = vi.fn(async () => []);
-    service.useClientAppService({ retireClientAppsForRepo });
+    const retireClientAppsForRepo = vi.fn(async () => undefined);
+    service.useClientAppService({ listReferencesForRepo: vi.fn(async () => []), retireClientAppsForRepo });
 
     const deleted = await service.deleteRepo({ repoId: repo.id }, { requestId: 'req_delete_success' });
     const vscRepo = await app.db.getRepository('vscFileRepositories').findOne({

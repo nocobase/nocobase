@@ -62,24 +62,6 @@ describe('plugin-light-extension source ZIP archive', () => {
     ]);
   });
 
-  it('rejects source ZIP entries that are not valid UTF-8 text', async () => {
-    const zipBase64 = await createZipBase64({
-      'README.md': Buffer.from([0xc3, 0x28]),
-    });
-
-    await expect(parseLightExtensionSourceArchive(zipBase64, new LightExtensionValidator())).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      details: {
-        diagnostics: [
-          expect.objectContaining({
-            code: 'zip_file_not_utf8',
-            path: 'README.md',
-          }),
-        ],
-      },
-    });
-  });
-
   it('rejects path traversal and case-insensitive duplicate paths', async () => {
     const traversalZip = await createZipBase64({
       '../escape.js': 'export default true;\n',
@@ -140,7 +122,7 @@ describe('plugin-light-extension source ZIP archive', () => {
   });
 });
 
-async function createZipBase64(files: Record<string, string | Buffer>): Promise<string> {
+async function createZipBase64(files: Record<string, string>): Promise<string> {
   const zip = new JSZip();
   for (const [path, content] of Object.entries(files)) {
     zip.file(path, content);

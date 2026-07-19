@@ -37,12 +37,11 @@ export interface ClientAppStoredFile {
 }
 
 export interface ClientAppAssetStorage {
-  reserve(input: { assetSetId: string; relativePath: string; byteSize: number }): Promise<ClientAppStoredFile>;
-  stage(input: {
+  store(input: {
     assetSetId: string;
     relativePath: string;
     filePath: string;
-    reservedFile?: ClientAppStoredFile;
+    byteSize: number;
   }): Promise<ClientAppStoredFile>;
   open(file: ClientAppStoredFile): Promise<{ stream: Readable; contentType?: string }>;
   delete(files: readonly ClientAppStoredFile[]): Promise<void>;
@@ -66,7 +65,12 @@ export class FileManagerClientAppStorage implements ClientAppAssetStorage {
     private readonly storageName = LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME,
   ) {}
 
-  async reserve(input: { assetSetId: string; relativePath: string; byteSize: number }): Promise<ClientAppStoredFile> {
+  async store(input: {
+    assetSetId: string;
+    relativePath: string;
+    filePath: string;
+    byteSize: number;
+  }): Promise<ClientAppStoredFile> {
     const expectedStorage = [...this.fileManager.storagesCache.values()].find(
       (storage) => storage.name === this.storageName,
     );
@@ -78,7 +82,7 @@ export class FileManagerClientAppStorage implements ClientAppAssetStorage {
     const physicalExtension = /^\.[A-Za-z0-9]{1,16}$/u.test(sourceExtension) ? sourceExtension.toLowerCase() : '.asset';
     const physicalFilename = `${createHash('sha256').update(input.relativePath).digest('hex')}${physicalExtension}`;
     const mimeType = lookupMimeType(input.relativePath);
-    return {
+    const reservedFile: ClientAppStoredFile = {
       title: path.posix.basename(input.relativePath, sourceExtension),
       filename: physicalFilename,
       extname: physicalExtension,
@@ -87,18 +91,6 @@ export class FileManagerClientAppStorage implements ClientAppAssetStorage {
       path: input.assetSetId,
       storageId: expectedStorage.id,
     };
-  }
-
-  async stage(input: {
-    assetSetId: string;
-    relativePath: string;
-    filePath: string;
-    reservedFile?: ClientAppStoredFile;
-  }): Promise<ClientAppStoredFile> {
-    const stat = await fs.stat(input.filePath);
-    const reservedFile =
-      input.reservedFile ||
-      (await this.reserve({ assetSetId: input.assetSetId, relativePath: input.relativePath, byteSize: stat.size }));
     const uploadRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-client-app-object-'));
     let uploaded: unknown;
     try {

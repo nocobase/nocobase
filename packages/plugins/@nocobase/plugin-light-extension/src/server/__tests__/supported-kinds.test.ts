@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  LIGHT_EXTENSION_ENTRY_KINDS,
-  LIGHT_EXTENSION_RUNJS_KINDS,
-  LIGHT_EXTENSION_STATIC_KINDS,
-  LIGHT_EXTENSION_SUPPORTED_KINDS,
-  isLightExtensionEntryKind,
-  isLightExtensionRunJSKind,
-  isLightExtensionStaticKind,
-} from '../../constants';
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
 import {
@@ -25,16 +16,6 @@ import {
 } from '../services/ReferenceOwnerRegistry';
 
 describe('plugin-light-extension supported kinds validator', () => {
-  it('separates RunJS, static, and all Entry kinds', () => {
-    expect(LIGHT_EXTENSION_RUNJS_KINDS).toEqual(['js-block', 'js-page', 'js-field', 'js-action', 'js-item', 'runjs']);
-    expect(LIGHT_EXTENSION_SUPPORTED_KINDS).toBe(LIGHT_EXTENSION_RUNJS_KINDS);
-    expect(LIGHT_EXTENSION_STATIC_KINDS).toEqual(['client-app']);
-    expect(LIGHT_EXTENSION_ENTRY_KINDS).toEqual([...LIGHT_EXTENSION_RUNJS_KINDS, 'client-app']);
-    expect(isLightExtensionRunJSKind('client-app')).toBe(false);
-    expect(isLightExtensionStaticKind('client-app')).toBe(true);
-    expect(isLightExtensionEntryKind('client-app')).toBe(true);
-  });
-
   it('uses the JS Page render and reference owner contracts', () => {
     expect(LIGHT_EXTENSION_AUTHORING_SURFACES['js-page']).toEqual({
       kind: 'js-page',
@@ -142,38 +123,6 @@ describe('plugin-light-extension supported kinds validator', () => {
         'tsconfig.json',
         'src/shared/**',
         'src/client/js-pages/**',
-      ]),
-    );
-  });
-
-  it('keeps client-app outside the RunJS source workspace validator', () => {
-    const result = new LightExtensionValidator().validateWorkspace({
-      files: [
-        {
-          path: 'src/client/client-apps/customer-console/index.html',
-          content: '<!doctype html><title>Customer Console</title>',
-        },
-        {
-          path: 'src/client/client-apps/customer-console/entry.json',
-          content: JSON.stringify({
-            schemaVersion: 1,
-            key: 'customer-console',
-            entry: 'index.html',
-          }),
-        },
-      ],
-    });
-
-    expect(result.accepted).toBe(false);
-    expect(result.entries).toEqual([]);
-    expect(result.capabilities.supportedKinds).toEqual(LIGHT_EXTENSION_RUNJS_KINDS);
-    expect(result.capabilities.allowedPaths.entries).not.toHaveProperty('client-app');
-    expect(result.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'workspace_path_not_allowed',
-          path: 'src/client/client-apps/customer-console/index.html',
-        }),
       ]),
     );
   });

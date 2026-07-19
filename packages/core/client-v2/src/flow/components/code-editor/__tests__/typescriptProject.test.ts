@@ -103,9 +103,6 @@ describe('CodeEditor TypeScript project', () => {
   it('uses an exact, prototype-safe built-in auto-import allowlist', () => {
     expect(getRunJSBuiltInAutoImportLibrary('react')).toBe('React');
     expect(getRunJSBuiltInAutoImportLibrary('react-dom/client')).toBe('ReactDOM');
-    expect(getRunJSBuiltInAutoImportLibrary('@nocobase/sdk/client')).toBe('clientSdk');
-    expect(getRunJSBuiltInAutoImportLibrary('@nocobase/sdk')).toBeUndefined();
-    expect(getRunJSBuiltInAutoImportLibrary('@nocobase/sdk/client/typo')).toBeUndefined();
     expect(getRunJSBuiltInAutoImportLibrary('react-dom')).toBeUndefined();
     expect(getRunJSBuiltInAutoImportLibrary('constructor')).toBeUndefined();
     expect(getRunJSBuiltInAutoImportLibrary('__proto__')).toBeUndefined();
@@ -195,33 +192,6 @@ describe('CodeEditor TypeScript project', () => {
       }),
     );
     expect(JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes)).not.toContain(`from 'react'`);
-  });
-
-  it('rewrites the client SDK auto import to the shared ctx.libs module', async () => {
-    const code = 'createCli';
-    const project: CodeEditorTypeScriptProject = {
-      currentFilePath: 'src/main.ts',
-      files: [{ content: code, path: 'src/main.ts' }],
-      rewriteBuiltInAutoImports: true,
-      typeLibraryIds: ['@nocobase/sdk/client'],
-    };
-    const result = await getTypeScriptCompletionResult(project, code.length, code, true);
-    const completion = result?.options.find((option) => option.label === 'createClient');
-    const dispatch = vi.fn();
-
-    expect(completion?.detail).toBe('Auto import from ctx.libs.clientSdk');
-    if (typeof completion?.apply === 'function') {
-      completion.apply({ dispatch } as never, completion, result?.from || 0, result?.to || code.length);
-    }
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        changes: expect.arrayContaining([
-          expect.objectContaining({ from: 0, insert: 'const { createClient } = ctx.libs.clientSdk;\n', to: 0 }),
-          expect.objectContaining({ from: 0, insert: 'createClient', to: code.length }),
-        ]),
-      }),
-    );
-    expect(JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes)).not.toContain('@nocobase/sdk/client');
   });
 
   it('rewrites default and namespace built-in auto imports according to the TypeScript code action', async () => {

@@ -4,26 +4,6 @@
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "client": [
-        "lib/client/index.d.ts"
-      ]
-    }
-  },
-  "exports": {
-    ".": {
-      "types": "./lib/index.d.ts",
-      "import": "./lib/index.js",
-      "require": "./lib/index.js"
-    },
-    "./client": {
-      "types": "./lib/client/index.d.ts",
-      "import": "./lib/client/index.js",
-      "require": "./lib/client/index.js"
-    },
-    "./package.json": "./package.json"
-  },
   "dependencies": {
     "axios": "^1.7.0",
     "qs": "^6.10.1"

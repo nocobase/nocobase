@@ -30,7 +30,6 @@ const runJSBuiltInAutoImportSources: ReadonlyMap<string, string> = new Map([
   ['lodash', 'lodash'],
   ['mathjs', 'math'],
   ['@formulajs/formulajs', 'formula'],
-  ['@nocobase/sdk/client', 'clientSdk'],
 ]);
 
 export function getRunJSBuiltInAutoImportLibrary(source: string | undefined): string | undefined {

@@ -15,17 +15,12 @@ import { NAMESPACE } from '../../constants';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import {
   deleteLightExtensionClientApp,
-  listLightExtensionClientAppReferences,
   listLightExtensionClientApps,
   type LightExtensionClientAppDescriptor,
-  type LightExtensionClientAppReference,
   uploadLightExtensionClientApp,
 } from '../api/lightExtensionClientAppsRequests';
 
-export type LightExtensionClientAppOperation = 'list' | 'upload' | 'delete' | 'references';
-
 interface LightExtensionClientAppHookErrorOptions {
-  operation: LightExtensionClientAppOperation;
   code?: string;
   status?: number;
   message: string;
@@ -33,8 +28,6 @@ interface LightExtensionClientAppHookErrorOptions {
 }
 
 export class LightExtensionClientAppHookError extends Error {
-  readonly operation: LightExtensionClientAppOperation;
-
   readonly code?: string;
 
   readonly status?: number;
@@ -44,7 +37,6 @@ export class LightExtensionClientAppHookError extends Error {
   constructor(options: LightExtensionClientAppHookErrorOptions) {
     super(options.message);
     this.name = 'LightExtensionClientAppHookError';
-    this.operation = options.operation;
     this.code = options.code;
     this.status = options.status;
     this.details = options.details;
@@ -53,13 +45,8 @@ export class LightExtensionClientAppHookError extends Error {
 
 export interface UseLightExtensionClientAppsResult {
   list(repoId: string): Promise<LightExtensionClientAppDescriptor[]>;
-  upload(
-    repoId: string,
-    file: File,
-    expected?: { entryId: string; contentHash: string },
-  ): Promise<LightExtensionClientAppDescriptor>;
+  upload(repoId: string, file: File, expectedEntryId?: string): Promise<LightExtensionClientAppDescriptor>;
   delete(entryId: string): Promise<void>;
-  listReferences(entryId: string): Promise<LightExtensionClientAppReference[]>;
 }
 
 type FlowContextWithApi = {
@@ -71,62 +58,31 @@ export function useLightExtensionClientApps(): UseLightExtensionClientAppsResult
   const { t } = useTranslation(NAMESPACE);
   const fallbackMessage = t('Light extension application request failed');
 
-  const list = useCallback(
-    async (repoId: string) => {
+  const request = useCallback(
+    async <T>(run: () => Promise<T>) => {
       try {
-        return await listLightExtensionClientApps(ctx.api, repoId);
+        return await run();
       } catch (error) {
-        throw normalizeClientAppError('list', error, fallbackMessage);
+        throw normalizeClientAppError(error, fallbackMessage);
       }
     },
-    [ctx.api, fallbackMessage],
+    [fallbackMessage],
   );
-  const upload = useCallback(
-    async (repoId: string, file: File, expected?: { entryId: string; contentHash: string }) => {
-      try {
-        return await uploadLightExtensionClientApp(ctx.api, repoId, file, expected);
-      } catch (error) {
-        throw normalizeClientAppError('upload', error, fallbackMessage);
-      }
-    },
-    [ctx.api, fallbackMessage],
-  );
-  const deleteApp = useCallback(
-    async (entryId: string) => {
-      try {
-        await deleteLightExtensionClientApp(ctx.api, entryId);
-      } catch (error) {
-        throw normalizeClientAppError('delete', error, fallbackMessage);
-      }
-    },
-    [ctx.api, fallbackMessage],
-  );
-  const listReferences = useCallback(
-    async (entryId: string) => {
-      try {
-        return await listLightExtensionClientAppReferences(ctx.api, entryId);
-      } catch (error) {
-        throw normalizeClientAppError('references', error, fallbackMessage);
-      }
-    },
-    [ctx.api, fallbackMessage],
-  );
-
   return useMemo(
-    () => ({ list, upload, delete: deleteApp, listReferences }),
-    [deleteApp, list, listReferences, upload],
+    () => ({
+      list: (repoId: string) => request(() => listLightExtensionClientApps(ctx.api, repoId)),
+      upload: (repoId: string, file: File, expectedEntryId?: string) =>
+        request(() => uploadLightExtensionClientApp(ctx.api, repoId, file, expectedEntryId)),
+      delete: (entryId: string) => request(() => deleteLightExtensionClientApp(ctx.api, entryId)),
+    }),
+    [ctx.api, request],
   );
 }
 
-function normalizeClientAppError(
-  operation: LightExtensionClientAppOperation,
-  error: unknown,
-  fallbackMessage: string,
-): LightExtensionClientAppHookError {
+function normalizeClientAppError(error: unknown, fallbackMessage: string): LightExtensionClientAppHookError {
   const response = getRecordProperty(error, 'response');
   const serverError = getFirstServerError(response?.data) || getFirstServerError(error);
   return new LightExtensionClientAppHookError({
-    operation,
     code: toNonEmptyString(serverError?.code),
     status: toNumber(serverError?.status) ?? toNumber(response?.status),
     message: toNonEmptyString(serverError?.message) || fallbackMessage,

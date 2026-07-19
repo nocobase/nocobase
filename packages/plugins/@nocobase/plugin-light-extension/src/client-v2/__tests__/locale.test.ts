@@ -36,8 +36,6 @@ const clientAppKeys = [
   'Custom frontend',
   'Upload application',
   'Replace files',
-  'Current health',
-  'Used by',
   'You do not have permission to manage light extension applications',
   'This application is used by a workspace and cannot be removed',
 ] as const;

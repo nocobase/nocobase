@@ -17,7 +17,7 @@ function createFetchClient(records: unknown[]) {
   return vi.fn(async () => ({
     ok: true,
     async json() {
-      return { data: records };
+      return { data: { portals: records } };
     },
   }));
 }
@@ -36,14 +36,19 @@ describe('client app dev proxy', () => {
   it('routes client app documents and assets to the Gateway', async () => {
     const fetchClient = createFetchClient([
       {
-        enabled: true,
+        appName: 'main',
         routePath: '/nb-crm',
         frontend: { type: 'client-app', entryId: 'crm-entry' },
       },
       {
-        enabled: true,
+        appName: 'main',
         routePath: '/layout-space',
         frontend: { type: 'layout', layoutUid: 'layout' },
+      },
+      {
+        appName: 'sales',
+        routePath: '/customer',
+        frontend: { type: 'client-app', entryId: 'sales-entry' },
       },
     ]);
     const router = createClientAppDevProxyRouter({
@@ -55,29 +60,53 @@ describe('client app dev proxy', () => {
       modernClientTargetUrl,
     });
 
-    await expect(router({ url: '/v/nb-crm/' })).resolves.toBe(gatewayTargetUrl);
+    await expect(
+      router({
+        url: '/v/nb-crm/',
+        headers: {
+          authorization: 'Bearer test-token',
+          cookie: 'nb_auth_token_main=test-cookie',
+          'x-role': 'root',
+        },
+      }),
+    ).resolves.toBe(gatewayTargetUrl);
     await expect(router({ url: '/v/nb-crm/assets/index.js' })).resolves.toBe(gatewayTargetUrl);
     await expect(router({ url: '/v/nb-crm-opportunities' })).resolves.toBe(modernClientTargetUrl);
     await expect(router({ url: '/v/layout-space/' })).resolves.toBe(modernClientTargetUrl);
+    await expect(router({ url: '/v/apps/sales/customer/orders' })).resolves.toBe(gatewayTargetUrl);
+    await expect(router({ url: '/v/customer/orders' })).resolves.toBe(modernClientTargetUrl);
     expect(fetchClient).toHaveBeenCalledOnce();
-    expect(fetchClient.mock.calls[0][0]).toBe('http://127.0.0.1:23001/api/multiPortals:listEnabled');
+    expect(fetchClient.mock.calls[0][0]).toBe('http://127.0.0.1:23001/api/app:getPortals');
+    expect(fetchClient.mock.calls[0][1].headers).toMatchObject({
+      Accept: 'application/json',
+      authorization: 'Bearer test-token',
+      cookie: 'nb_auth_token_main=test-cookie',
+      'x-role': 'root',
+    });
   });
 
   it('falls back without negatively caching a temporary discovery failure', async () => {
     const fetchClient = vi
       .fn()
-      .mockRejectedValueOnce(new Error('Gateway unavailable'))
+      .mockResolvedValueOnce({
+        ok: false,
+        async json() {
+          return {};
+        },
+      })
       .mockResolvedValueOnce({
         ok: true,
         async json() {
           return {
-            data: [
-              {
-                enabled: true,
-                routePath: '/nb-crm',
-                frontend: { type: 'client-app', entryId: 'crm-entry' },
-              },
-            ],
+            data: {
+              portals: [
+                {
+                  appName: 'main',
+                  routePath: '/nb-crm',
+                  frontend: { type: 'client-app', entryId: 'crm-entry' },
+                },
+              ],
+            },
           };
         },
       });

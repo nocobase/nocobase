@@ -18,14 +18,14 @@ import { CLIENT_APP_ARCHIVE_LIMITS } from '../services/ClientAppArchive';
 import { ClientAppService } from '../services/ClientAppService';
 import { getServiceContext, type LightExtensionResourceContext, toRecord } from './resourceAction';
 
-export const lightExtensionClientAppActionNames = ['upload', 'list', 'get', 'delete', 'listReferences'] as const;
+export const lightExtensionClientAppActionNames = ['upload', 'list', 'delete'] as const;
 export const CLIENT_APP_UPLOAD_LIMITS = Object.freeze({
   files: 1,
   fileSize: CLIENT_APP_ARCHIVE_LIMITS.compressedBytes,
-  fields: 3,
+  fields: 2,
   fieldNameSize: 64,
   fieldSize: 4 * 1024,
-  parts: 5,
+  parts: 4,
   headerPairs: 32,
 });
 
@@ -36,11 +36,7 @@ type MultipartRequest = NonNullable<LightExtensionResourceContext['request']> & 
   };
 };
 
-export function createLightExtensionClientAppsResource(
-  clientAppService: ClientAppService,
-  deleteClientApp: (entryId: string) => Promise<void> = (entryId) => clientAppService.deleteClientApp(entryId),
-  listClientAppReferences: (entryId: string) => Promise<unknown> = async () => [],
-): ResourceOptions {
+export function createLightExtensionClientAppsResource(clientAppService: ClientAppService): ResourceOptions {
   return {
     name: 'lightExtensionClientApps',
     only: [...lightExtensionClientAppActionNames],
@@ -62,11 +58,6 @@ export function createLightExtensionClientAppsResource(
                     expectedEntryId: optionalString(request?.body?.expectedEntryId),
                   }
                 : {}),
-              ...(optionalString(request?.body?.expectedContentHash)
-                ? {
-                    expectedContentHash: optionalString(request?.body?.expectedContentHash),
-                  }
-                : {}),
             },
             {
               ...getServiceContext(ctx),
@@ -78,13 +69,11 @@ export function createLightExtensionClientAppsResource(
         }
       }),
       list: createClientAppResourceAction((ctx) => clientAppService.listClientApps(requireRepoId(ctx))),
-      get: createClientAppResourceAction((ctx) => clientAppService.resolveClientApp(requireEntryId(ctx))),
       delete: createClientAppResourceAction(async (ctx) => {
         const entryId = requireEntryId(ctx);
-        await deleteClientApp(entryId);
+        await clientAppService.deleteClientApp(entryId);
         return { entryId, deleted: true };
       }),
-      listReferences: createClientAppResourceAction((ctx) => listClientAppReferences(requireEntryId(ctx))),
     },
   };
 }

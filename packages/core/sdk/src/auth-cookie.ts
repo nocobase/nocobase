@@ -7,18 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type AuthCookieType = 'authToken' | 'authenticator' | 'role' | 'csrfToken';
-
-const cookieNamePrefixes: Record<AuthCookieType, string> = {
-  authToken: 'nb_auth_token',
-  authenticator: 'nb_authenticator',
-  role: 'nb_role',
-  csrfToken: 'nb_csrf_token',
-};
-
-export function getAuthCookieName(type: AuthCookieType, appName?: string) {
-  return `${cookieNamePrefixes[type]}_${appName || 'main'}`;
-}
+import type { AuthCookieType } from '@nocobase/utils/client';
+import { getAuthCookieName } from '@nocobase/utils/client';
 
 export function setRoleCookie(appName: string | undefined, role?: string | null) {
   if (typeof document === 'undefined') {
