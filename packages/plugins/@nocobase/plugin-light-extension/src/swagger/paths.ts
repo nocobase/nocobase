@@ -242,7 +242,6 @@ export const lightExtensionPaths = {
       description: [
         'Apply files as an incremental patch, create one source commit, validate the final workspace, and compile runtime artifacts atomically.',
         'files is a delta: include only changed upserts and deletes, not an implicit complete-workspace replacement. expectedHeadCommitId is required and must exactly match the current repository Head; pass null only for a repository without a Head.',
-        'previewTicket is optional. A valid server-issued ticket may reuse trusted compiler artifacts; invalid or expired tickets safely fall back unless requirePreviewTicket is true. The built-in editor saves directly and does not require preview first.',
         'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator diagnostics. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
       ].join('\n\n'),
       requestBody: {
@@ -273,16 +272,6 @@ export const lightExtensionPaths = {
                     $ref: '#/components/schemas/LightExtensionFileChange',
                   },
                 },
-                previewTicket: {
-                  type: 'string',
-                  description: 'Opaque short-lived ticket returned by a successful trusted whole-workspace preview.',
-                },
-                requirePreviewTicket: {
-                  type: 'boolean',
-                  default: false,
-                  description:
-                    'When true, a missing, expired, tampered, or non-matching preview ticket returns LIGHT_EXTENSION_PREVIEW_TICKET_INVALID without saving.',
-                },
               },
             },
           },
@@ -296,7 +285,7 @@ export const lightExtensionPaths = {
         403: errorResponse('The current user cannot write repository source.'),
         409: {
           description:
-            'The source Head is stale (LIGHT_EXTENSION_SOURCE_OUTDATED), a required preview ticket is invalid (LIGHT_EXTENSION_PREVIEW_TICKET_INVALID), the repository is archived, or the source backend rejected the write.',
+            'The source Head is stale (LIGHT_EXTENSION_SOURCE_OUTDATED), the repository is archived, or the source backend rejected the write.',
           content: {
             'application/json': {
               schema: {
@@ -320,7 +309,6 @@ export const lightExtensionPaths = {
       summary: 'Compile an unsaved light-extension workspace preview',
       description: [
         'Validate and compile the supplied complete unsaved workspace without creating a source commit or changing repository Head.',
-        'Set issueSaveTicket to true with expectedHeadCommitId for an actor-bound, short-lived Save ticket. Tickets are issued only for an accepted whole-workspace preview after server artifacts enter the trusted cache.',
         'Use --body-file for multi-file payloads. HTTP 200 means every requested entry was accepted. HTTP 207 means a whole-workspace preview compiled at least one entry and rejected at least one. HTTP 422 means the targeted entry or every workspace entry was rejected. All three statuses preserve diagnostics, including path, line, and column.',
       ].join('\n\n'),
       requestBody: {
@@ -335,17 +323,6 @@ export const lightExtensionPaths = {
               properties: {
                 repoId: {
                   type: 'string',
-                },
-                expectedHeadCommitId: {
-                  $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
-                  description:
-                    'Required when issueSaveTicket is true and must match the current repository Head exactly.',
-                },
-                issueSaveTicket: {
-                  type: 'boolean',
-                  default: false,
-                  description:
-                    'Request a short-lived trusted ticket for a later Save of this exact canonical workspace.',
                 },
                 entryId: {
                   type: 'string',

@@ -60,8 +60,6 @@ const resourceActionRunners: Record<LightExtensionFileActionName, ResourceAction
         expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
         message: requireString(input, 'message'),
         files: requireArray(input, 'files', normalizeFileChange),
-        previewTicket: optionalNonEmptyString(input, 'previewTicket'),
-        requirePreviewTicket: optionalBoolean(input, 'requirePreviewTicket'),
       }),
       currentUser,
     ),

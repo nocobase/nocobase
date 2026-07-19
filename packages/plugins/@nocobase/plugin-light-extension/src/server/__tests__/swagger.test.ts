@@ -111,6 +111,9 @@ describe('light-extension swagger', () => {
     const previewRequest = preview.requestBody.content['application/json'].schema;
 
     expect(saveRequest.required).toEqual(['repoId', 'expectedHeadCommitId', 'message', 'files']);
+    expect(Object.keys(saveRequest.properties).sort()).toEqual(
+      ['expectedHeadCommitId', 'files', 'message', 'repoId'].sort(),
+    );
     expect(saveRequest.properties.values).toBeUndefined();
     expect(saveRequest.properties.files.description).toContain('Incremental source patch');
     expect(saveSource.description).toContain('files is a delta');
@@ -119,6 +122,9 @@ describe('light-extension swagger', () => {
     expect(Object.keys(saveSource.responses).map(Number).sort()).toEqual([200, 403, 409, 422]);
 
     expect(previewRequest.required).toEqual(['repoId', 'files']);
+    expect(Object.keys(previewRequest.properties).sort()).toEqual(
+      ['entryId', 'entryPath', 'files', 'kind', 'repoId', 'runtimeVersion'].sort(),
+    );
     expect(previewRequest.properties.values).toBeUndefined();
     expect(preview.description).toContain('HTTP 200');
     expect(preview.description).toContain('HTTP 207');

@@ -10,7 +10,6 @@
 export { PluginLightExtensionServer } from './plugin';
 export * from './services/AffectedEntryCompilePlanner';
 export * from './services/LightExtensionAuditService';
-export * from './services/LightExtensionCanonicalWorkspace';
 export * from './services/LightExtensionCompileContract';
 export * from './services/LightExtensionCompileWorkerPool';
 export * from './services/LightExtensionCompileWorkerProtocol';
@@ -20,7 +19,6 @@ export * from './services/LightExtensionCompilerSessionManager';
 export * from './services/LightExtensionCompilePreviewService';
 export * from './services/LightExtensionEntryService';
 export * from './services/LightExtensionPermissionService';
-export * from './services/LightExtensionPreviewTicket';
 export * from './services/PreparedCandidateWorkspace';
 export * from './services/PublishCompiledEntriesService';
 export * from './services/LightExtensionValidator';

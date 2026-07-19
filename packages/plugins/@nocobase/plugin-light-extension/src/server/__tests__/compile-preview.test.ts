@@ -116,7 +116,7 @@ describe('plugin-light-extension compile preview', () => {
 
   it('compiles an unsaved workspace into a temporary preview artifact without pulling or persisting source', async () => {
     const repo = createRepo();
-    const { db, entriesRepository } = createDbStub([]);
+    const { db, entriesRepository, persistenceRepositories } = createDbStub([]);
     const fileService = createFileServiceStub(repo, validSalesKpiFiles());
     const { service, metricsCollector } = createPreviewService(db, fileService);
 
@@ -162,6 +162,11 @@ describe('plugin-light-extension compile preview', () => {
     expect(fileService.pull).not.toHaveBeenCalled();
     expect(entriesRepository.create).not.toHaveBeenCalled();
     expect(entriesRepository.update).not.toHaveBeenCalled();
+    for (const repository of Object.values(persistenceRepositories)) {
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.destroy).not.toHaveBeenCalled();
+    }
     expect(metricsCollector).toHaveBeenCalledTimes(1);
     expect(metricsCollector).toHaveBeenCalledWith({
       schemaVersion: 1,
@@ -756,10 +761,29 @@ function createDbStub(entries: Record<string, unknown>[]) {
     create: vi.fn(),
     update: vi.fn(),
   };
+  const persistenceRepositories = Object.fromEntries(
+    [
+      'lightExtensionCompileCache',
+      'lightExtensionRuntimeArtifacts',
+      'lightExtensionRepos',
+      'vscFileCommits',
+      'vscFileTrees',
+    ].map((name) => [
+      name,
+      {
+        create: vi.fn(),
+        update: vi.fn(),
+        destroy: vi.fn(),
+      },
+    ]),
+  );
   const db = {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntries') {
         return entriesRepository;
+      }
+      if (name in persistenceRepositories) {
+        return persistenceRepositories[name];
       }
 
       throw new Error(`Unexpected repository ${name}`);
@@ -769,6 +793,7 @@ function createDbStub(entries: Record<string, unknown>[]) {
   return {
     db,
     entriesRepository,
+    persistenceRepositories,
   };
 }
 

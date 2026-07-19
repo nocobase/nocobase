@@ -675,23 +675,6 @@ export const lightExtensionSchemas = {
           $ref: '#/components/schemas/LightExtensionCompileEntryResult',
         },
       },
-      ticket: {
-        $ref: '#/components/schemas/TrustedPreviewTicketSummary',
-      },
-    },
-  },
-  TrustedPreviewTicketSummary: {
-    type: 'object',
-    required: ['ticket', 'expiresAt'],
-    properties: {
-      ticket: {
-        type: 'string',
-        description: 'Opaque, short-lived, actor-bound token. The token does not contain source or Artifact payloads.',
-      },
-      expiresAt: {
-        type: 'string',
-        format: 'date-time',
-      },
     },
   },
   LightExtensionSaveSourceEntryResult: {

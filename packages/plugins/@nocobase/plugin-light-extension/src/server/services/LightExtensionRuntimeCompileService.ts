@@ -76,10 +76,6 @@ import {
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
-import {
-  LightExtensionPreviewTicketVerifier,
-  type LightExtensionPreviewTicketVerification,
-} from './LightExtensionPreviewTicket';
 import { createReferenceRefreshPlan, type ReferenceRefreshPlan } from './ReferenceRefreshPlanner';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
 import {
@@ -145,7 +141,6 @@ export interface LightExtensionRuntimeCompileServiceOptions {
   compileCacheEnabled?: boolean;
   compilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
   trustedCompileCache?: LightExtensionTrustedCompileCacheService;
-  previewTicketVerifier?: LightExtensionPreviewTicketVerifier;
   compileExecutor?: LightExtensionCompileExecutor;
   publishCompiledEntries?: PublishCompiledEntriesService;
 }
@@ -158,7 +153,6 @@ export interface LightExtensionPreparedSave {
   readonly compileEntries: LightExtensionSaveSourceResult['compile']['entries'];
   readonly diagnostics: readonly LightExtensionDiagnostic[];
   readonly referencePlan: ReferenceRefreshPlan;
-  readonly previewTicketToConsume?: string;
   readonly compiledEntryCount: number;
 }
 
@@ -179,8 +173,6 @@ export class LightExtensionRuntimeCompileService {
   private readonly compilerBuildIdentity: LightExtensionCompilerBuildIdentity;
 
   private readonly trustedCompileCache: LightExtensionTrustedCompileCacheService;
-
-  private readonly previewTicketVerifier?: LightExtensionPreviewTicketVerifier;
 
   private readonly compileExecutor?: LightExtensionCompileExecutor;
 
@@ -204,7 +196,6 @@ export class LightExtensionRuntimeCompileService {
         ? compilerBridge.getCompilerBuildIdentity()
         : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
     this.trustedCompileCache = options.trustedCompileCache || new LightExtensionTrustedCompileCacheService(db);
-    this.previewTicketVerifier = options.previewTicketVerifier;
     this.compileExecutor = options.compileExecutor;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
   }
@@ -337,13 +328,7 @@ export class LightExtensionRuntimeCompileService {
     ctx.compileMetrics?.set('entryCount', preparedEntries.entries.length);
     ctx.compileMetrics?.set('affectedEntryCount', compilePlan.metrics.affectedEntryCount);
     recordDependencyPlanMetrics(compilePlan, ctx.compileMetrics);
-    const ticketVerification = await this.verifyPreviewTicket(input, candidate, readyInputs, entryPlan, ctx);
-    const compilePreparation = await this.prepareCompileResults(
-      candidate.repo.id,
-      readyInputs,
-      ticketVerification,
-      ctx,
-    );
+    const compilePreparation = await this.prepareCompileResults(candidate.repo.id, readyInputs, ctx);
     const diagnostics = sortDiagnostics([
       ...preparedEntries.diagnostics,
       ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
@@ -382,7 +367,6 @@ export class LightExtensionRuntimeCompileService {
       compileEntries: Object.freeze(compileEntries),
       diagnostics: Object.freeze(diagnostics),
       referencePlan: Object.freeze(referencePlan),
-      ...(ticketVerification.status === 'hit' ? { previewTicketToConsume: ticketVerification.ticket } : {}),
       compiledEntryCount: compilePreparation.compiledEntryCount,
     });
     this.preparedSaves.add(prepared);
@@ -402,9 +386,6 @@ export class LightExtensionRuntimeCompileService {
         'LIGHT_EXTENSION_SOURCE_ERROR',
         'Prepared save must be created by this runtime compile service instance',
       );
-    }
-    if (prepared.previewTicketToConsume && this.previewTicketVerifier) {
-      transaction.afterCommit(() => this.consumePreviewTicketBestEffort(prepared.previewTicketToConsume as string));
     }
     const candidate = await this.fileService.publishSourceCandidate(prepared.candidate, ctx);
     await this.entryService.publishReconcilePlan(prepared.entryPlan, transaction);
@@ -446,14 +427,6 @@ export class LightExtensionRuntimeCompileService {
     };
   }
 
-  private async consumePreviewTicketBestEffort(ticket: string): Promise<void> {
-    try {
-      await this.previewTicketVerifier?.consumeAfterSuccessfulSave(ticket);
-    } catch {
-      // A cache failure after commit must not turn an already published Save into a client-visible failure.
-    }
-  }
-
   private async recordPublishedCompileAudits(
     results: readonly LightExtensionCompileSuccessResult[],
     ctx: LightExtensionServiceContext,
@@ -480,86 +453,9 @@ export class LightExtensionRuntimeCompileService {
     }
   }
 
-  private async verifyPreviewTicket(
-    input: LightExtensionSaveSourceInput,
-    candidate: LightExtensionPreparedSourceCandidate,
-    readyInputs: PreparedEntryCompileInput[],
-    entryPlan: LightExtensionEntryReconcilePlan,
-    ctx: LightExtensionServiceContext,
-  ): Promise<LightExtensionPreviewTicketVerification> {
-    if (!this.previewTicketVerifier) {
-      if (input.requirePreviewTicket) {
-        throw new LightExtensionError(
-          'LIGHT_EXTENSION_PREVIEW_TICKET_INVALID',
-          'A valid trusted preview ticket is required to save this light extension source',
-          { status: 409, details: { reason: 'missing' } },
-        );
-      }
-      return { status: 'miss', reason: 'not_provided' };
-    }
-    try {
-      return await this.previewTicketVerifier.verify({
-        previewTicket: input.previewTicket,
-        requirePreviewTicket: input.requirePreviewTicket,
-        repoId: candidate.repo.id,
-        actorId: ctx.actorUserId,
-        baseHeadCommitId: candidate.expectedHeadCommitId,
-        workspaceDigest: candidate.vscPreparedPush.candidate.treeHash,
-        compilerBuildId: this.compilerBuildIdentity.compilerBuildId,
-        runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
-        entries: readyInputs.map((entry) => ({
-          target: 'client',
-          kind: entry.entry.kind as LightExtensionKind,
-          entryName: entry.entry.entryName,
-          entryId:
-            entryPlan.result.changes.find((change) => change.entry.id === entry.entry.id)?.previousEntry?.id || null,
-          entryPath: entry.entry.entryPath,
-          compileKey: entry.compileKey,
-          filesHash: entry.filesHash,
-          inputManifest: entry.inputManifest,
-        })),
-      });
-    } catch (error) {
-      if (error instanceof LightExtensionError && error.code === 'LIGHT_EXTENSION_PREVIEW_TICKET_INVALID') {
-        await this.assertPreparedCandidateHeadStillCurrent(candidate);
-      }
-      throw error;
-    }
-  }
-
-  private async assertPreparedCandidateHeadStillCurrent(
-    candidate: LightExtensionPreparedSourceCandidate,
-  ): Promise<void> {
-    const [repo, vscRepo] = await Promise.all([
-      this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: candidate.repo.id }),
-      this.db.getRepository('vscFileRepositories').findOne({ filterByTk: candidate.repo.vscRepoId }),
-    ]);
-    const currentHeadCommitId = repo ? nullableString(repo.get('headCommitId')) : null;
-    const currentVscHeadCommitId = vscRepo ? nullableString(vscRepo.get('headCommitId')) : null;
-    if (
-      currentHeadCommitId === candidate.expectedHeadCommitId &&
-      currentVscHeadCommitId === candidate.expectedHeadCommitId
-    ) {
-      return;
-    }
-    throw new LightExtensionError(
-      'LIGHT_EXTENSION_SOURCE_OUTDATED',
-      'Light extension source changed after the workspace was opened',
-      {
-        details: {
-          repoId: candidate.repo.id,
-          expectedHeadCommitId: candidate.expectedHeadCommitId,
-          currentHeadCommitId,
-          currentVscHeadCommitId,
-        },
-      },
-    );
-  }
-
   private async prepareCompileResults(
     repoId: string,
     readyInputs: PreparedEntryCompileInput[],
-    ticketVerification: LightExtensionPreviewTicketVerification,
     ctx: LightExtensionServiceContext,
   ): Promise<PreparedCompileResults> {
     const expectations = readyInputs.map((input) => ({
@@ -567,20 +463,13 @@ export class LightExtensionRuntimeCompileService {
       filesHash: input.filesHash,
       inputManifest: input.inputManifest,
     }));
-    const cacheLookup =
-      ticketVerification.status === 'hit'
-        ? {
-            hits: ticketVerification.artifacts,
-            missingKeys: new Set<string>(),
-            corruptKeys: new Set<string>(),
-          }
-        : this.compileCacheEnabled
-          ? await this.trustedCompileCache.loadVerified(expectations)
-          : {
-              hits: new Map<string, TrustedCompileArtifact>(),
-              missingKeys: new Set<string>(),
-              corruptKeys: new Set<string>(),
-            };
+    const cacheLookup = this.compileCacheEnabled
+      ? await this.trustedCompileCache.loadVerified(expectations)
+      : {
+          hits: new Map<string, TrustedCompileArtifact>(),
+          missingKeys: new Set<string>(),
+          corruptKeys: new Set<string>(),
+        };
     const executions = new Map<string, 'compiled' | 'reused'>();
     const results: Array<LightExtensionCompileResult | undefined> = new Array(readyInputs.length);
     const compileJobs: Array<{ index: number; input: PreparedEntryCompileInput; job: LightExtensionCompileJob }> = [];
@@ -589,10 +478,7 @@ export class LightExtensionRuntimeCompileService {
 
     readyInputs.forEach((input, index) => {
       const legacyEntryNeedsCompile = Boolean(input.entry.artifactHash && !input.entry.compiledInputKey);
-      const cached =
-        legacyEntryNeedsCompile && ticketVerification.status !== 'hit'
-          ? undefined
-          : cacheLookup.hits.get(input.compileKey);
+      const cached = legacyEntryNeedsCompile ? undefined : cacheLookup.hits.get(input.compileKey);
       if (cached) {
         ctx.compileMetrics?.increment('compileCacheHitCount');
         ctx.compileMetrics?.increment('reusedEntryCount');
