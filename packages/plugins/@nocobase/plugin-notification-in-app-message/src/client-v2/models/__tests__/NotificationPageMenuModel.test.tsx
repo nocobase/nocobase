@@ -79,7 +79,14 @@ describe('NotificationPageMenuModel', () => {
 
     render(model.render() as React.ReactElement);
 
-    expect(screen.getByTestId('inbox-content')).toBeInTheDocument();
+    const inboxContent = screen.getByTestId('inbox-content');
+    expect(inboxContent).toBeInTheDocument();
+    expect(inboxContent.parentElement).toHaveStyle({
+      position: 'absolute',
+      inset: '0',
+      minHeight: '0',
+      overflow: 'hidden',
+    });
     expect(screen.queryByTestId('mobile-notification-content')).not.toBeInTheDocument();
     await waitFor(() => {
       expect(holder.userIdObs.value).toBe(7);

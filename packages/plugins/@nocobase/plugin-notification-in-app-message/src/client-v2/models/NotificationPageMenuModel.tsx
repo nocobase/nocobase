@@ -39,7 +39,7 @@ function DesktopNotificationPageContent() {
   }, [currentUserId]);
 
   return (
-    <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, minHeight: 0, overflow: 'hidden' }}>
       <InboxContent />
     </div>
   );
