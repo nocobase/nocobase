@@ -67,6 +67,7 @@ const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
       return loadCsv(payload.filePath);
     case '.xls':
     case '.xlsx':
+    case '.xlsm':
       return loadXlsx(payload.filePath, payload.mimeType);
     case '.json':
     case '.md':

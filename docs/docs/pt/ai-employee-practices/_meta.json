@@ -13,5 +13,10 @@
     "type": "custom-link",
     "label": "Lina: Tradução de localização",
     "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "Preencher formulários personalizados de blocos JS com funcionários de IA",
+    "link": "/building-tips/ai-fill-js-block-form"
   }
 ]

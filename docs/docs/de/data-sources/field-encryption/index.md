@@ -1,53 +1,56 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
+title: "Feldverschlüsselung"
+description: "Verschlüsselt und speichert vertrauliche Geschäftsdaten (Telefonnummern, E-Mail-Adressen, Kartennummern usw.) als Chiffretext in der Datenbank, um sensible Informationen zu schützen."
+keywords: "Feldverschlüsselung,Encryption,sensible Daten,Chiffretextspeicherung,NocoBase"
 ---
-
 # Verschlüsselung
 
 ## Einführung
 
-Bestimmte vertrauliche Geschäftsdaten, wie z.B. Kunden-Mobiltelefonnummern, E-Mail-Adressen oder Kartennummern, können verschlüsselt werden. Nach der Verschlüsselung werden diese Daten als Chiffretext in der Datenbank gespeichert.
+Private Geschäftsdaten wie die Telefonnummer, E-Mail-Adresse oder Kartennummer von Kunden können verschlüsselt und anschließend als Chiffretext in der Datenbank gespeichert werden.
 
 ![20251104192513](https://static-docs.nocobase.com/20251104192513.png)
 
-## Verschlüsselung
+## Verschlüsselungsmethode
 
 :::warning
-Das Plugin generiert automatisch einen `Anwendungsschlüssel`, der im Verzeichnis `/storage/apps/main/encryption-field-keys` gespeichert wird.
+Das Plugin generiert automatisch einen `应用密钥`. Dieser Schlüssel wird im Verzeichnis `/storage/apps/main/encryption-field-keys` gespeichert.
 
-Die Datei des `Anwendungsschlüssels` trägt den Schlüssel-ID als Namen und hat die Dateiendung `.key`. Bitte ändern Sie den Dateinamen nicht eigenmächtig.
+Der Dateiname von `应用密钥` ist die Schlüssel-ID, und die Dateierweiterung lautet `.key`. Ändern Sie den Dateinamen nicht willkürlich.
 
-Bitte bewahren Sie die Datei des `Anwendungsschlüssels` sicher auf. Geht die Datei des `Anwendungsschlüssels` verloren, können die verschlüsselten Daten nicht mehr entschlüsselt werden.
+Bewahren Sie die Datei `应用密钥` sorgfältig auf. Wenn die Datei `应用密钥` verloren geht, können verschlüsselte Daten nicht entschlüsselt werden.
 
-Wenn das Plugin von einer Sub-Anwendung aktiviert wird, wird der Schlüssel standardmäßig im Verzeichnis `/storage/apps/${Name der Sub-Anwendung}/encryption-field-keys` gespeichert.
+Wenn das Plugin in einer Unteranwendung aktiviert ist, lautet das Standardverzeichnis für die Schlüssel `/storage/apps/${子应用name}/encryption-field-keys`.
 :::
 
 ### Funktionsweise
 
-Es wird die Umschlag-Verschlüsselung (Envelope Encryption) verwendet.
+Es wird Umschlagverschlüsselung verwendet.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
 
-### Schlüsselgenerierungsprozess
-1.  Wenn ein verschlüsseltes Feld zum ersten Mal erstellt wird, generiert das System automatisch einen 32-Bit `Anwendungsschlüssel`, der Base64-kodiert im Standardspeicherverzeichnis abgelegt wird.
-2.  Bei jeder Erstellung eines neuen verschlüsselten Feldes wird ein zufälliger 32-Bit `Feldschlüssel` für dieses Feld generiert. Dieser wird dann mit dem `Anwendungsschlüssel` und einem zufällig generierten 16-Bit `Feld-Verschlüsselungsvektor` (`AES`-Verschlüsselungsalgorithmus) verschlüsselt und im `options`-Feld der `fields`-Tabelle gespeichert.
+### Ablauf der Schlüsselerstellung
+1. Beim ersten Erstellen eines verschlüsselten Felds generiert das System automatisch einen 32-Bit-`应用密钥` und speichert ihn Base64-kodiert im Standardspeicherverzeichnis.
+2. Bei jedem Erstellen eines neuen verschlüsselten Felds wird für dieses Feld ein zufälliger 32-Bit-`字段密钥` generiert. Dieser wird dann mit `应用密钥` und einem zufällig generierten 16-Bit-`字段加密向量` verschlüsselt (Verschlüsselungsalgorithmus `AES`) und anschließend im Feld `options` der Tabelle `fields` gespeichert.
 
-### Feld-Verschlüsselungsprozess
-1.  Jedes Mal, wenn Daten in ein verschlüsseltes Feld geschrieben werden, werden zuerst der verschlüsselte `Feldschlüssel` und der `Feld-Verschlüsselungsvektor` aus dem `options`-Feld der `fields`-Tabelle abgerufen.
-2.  Der verschlüsselte `Feldschlüssel` wird mithilfe des `Anwendungsschlüssels` und des `Feld-Verschlüsselungsvektors` entschlüsselt. Anschließend werden die Daten mit dem `Feldschlüssel` und einem zufällig generierten 16-Bit `Daten-Verschlüsselungsvektor` (`AES`-Verschlüsselungsalgorithmus) verschlüsselt.
-3.  Die Daten werden mit dem entschlüsselten `Feldschlüssel` signiert (`HMAC-SHA256`-Hash-Algorithmus) und Base64-kodiert in einen String umgewandelt. (Die resultierende `Datensignatur` wird später für die Datensuche verwendet.)
-4.  Der 16-Bit `Daten-Verschlüsselungsvektor` und der verschlüsselte `Daten-Chiffretext` werden binär zusammengefügt und anschließend Base64-kodiert in einen String umgewandelt.
-5.  Der Base64-kodierte String der `Datensignatur` und der Base64-kodierte String des zusammengefügten `Daten-Chiffretexts` werden durch einen Punkt (`.`) getrennt zusammengefügt.
-6.  Der endgültig zusammengefügte String wird in der Datenbank gespeichert.
+### Ablauf der Feldverschlüsselung
+1. Bei jedem Schreiben von Daten in ein verschlüsseltes Feld werden zunächst der verschlüsselte `字段密钥` und `字段加密向量` aus dem Feld `options` der Tabelle `fields` abgerufen.
+2. Der verschlüsselte `字段密钥` wird mit `应用密钥` und `字段加密向量` entschlüsselt. Anschließend werden die Daten mit `字段密钥` und einem zufällig generierten 16-Bit-`数据加密向量` verschlüsselt (Verschlüsselungsalgorithmus `AES`).
+3. Die Daten werden mit dem entschlüsselten `字段密钥` signiert (Hash-Algorithmus `HMAC-SHA256`) und Base64-kodiert in eine Zeichenfolge umgewandelt (der erzeugte `数据签名` wird später für die Datensuche verwendet).
+4. Der 16-Bit-`数据加密向量` und der verschlüsselte `数据密文` werden binär zusammengefügt und Base64-kodiert in eine Zeichenfolge umgewandelt.
+5. Die Base64-kodierte Zeichenfolge von `数据签名` und die Base64-kodierte Zeichenfolge des zusammengefügten `数据密文` werden durch '.' getrennt zusammengefügt.
+6. Die endgültig zusammengesetzte Zeichenfolge wird in der Datenbank gespeichert.
+
 
 ## Umgebungsvariablen
 
-Wenn Sie einen benutzerdefinierten `Anwendungsschlüssel` festlegen möchten, können Sie die Umgebungsvariable `ENCRYPTION_FIELD_KEY_PATH` verwenden. Das Plugin lädt dann die Datei unter diesem Pfad als `Anwendungsschlüssel`.
+Wenn Sie `应用密钥` festlegen möchten, können Sie die Umgebungsvariable `ENCRYPTION_FIELD_KEY_PATH` verwenden. Das Plugin lädt die Datei unter diesem Pfad als `应用密钥`.
 
-Anforderungen an die Datei des `Anwendungsschlüssels`:
-1.  Die Dateiendung muss `.key` sein.
-2.  Der Dateiname wird als Schlüssel-ID verwendet; die Verwendung einer UUID wird empfohlen, um die Eindeutigkeit zu gewährleisten.
-3.  Der Dateiinhalt muss 32 Bytes Base64-kodierter Binärdaten sein.
+Anforderungen an das Dateiformat von `应用密钥`:
+1. Die Dateierweiterung muss `.key` sein.
+2. Der Dateiname wird als Schlüssel-ID verwendet; für die Eindeutigkeit wird die Verwendung einer UUID empfohlen.
+3. Der Dateiinhalt besteht aus Base64-kodierten 32-Bit-Binärdaten.
 
 ```bash
 ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
@@ -57,33 +60,33 @@ ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 
 ![20240802173721](https://static-docs.nocobase.com/20240802173721.png)
 
-## Auswirkungen der Verschlüsselung auf die Filterung
+## Auswirkungen der Verschlüsselung auf Filter
 
-Verschlüsselte Felder unterstützen nur folgende Operatoren: gleich, ungleich, existiert, existiert nicht.
+Verschlüsselte Felder unterstützen nur: gleich, ungleich, vorhanden und nicht vorhanden.
 
 ![20240802174042](https://static-docs.nocobase.com/20240802174042.png)
 
-Filterungsprozess:
-1.  Den verschlüsselten `Feldschlüssel` des Feldes abrufen und diesen mit dem `Anwendungsschlüssel` entschlüsseln.
-2.  Den `Feldschlüssel` verwenden, um die Benutzereingabe zu signieren (`HMAC-SHA256`-Hash-Algorithmus).
-3.  Den signierten Suchtext mit einem `.`-Trennzeichen zusammenfügen und in der Datenbank eine Präfix-Suchanfrage auf dem verschlüsselten Feld durchführen.
+Methode zur Datenfilterung:
+1. Den `字段密钥` des verschlüsselten Felds abrufen und den `字段密钥` mit `应用密钥` entschlüsseln.
+2. Den vom Benutzer eingegebenen Suchtext mit `字段密钥` signieren (Hash-Algorithmus `HMAC-SHA256`).
+3. Den signierten Suchtext mit dem Trennzeichen `.` zusammenfügen und in der Datenbank eine Präfixsuche im verschlüsselten Feld durchführen.
 
 ## Schlüsselrotation
 
 :::warning
-Bevor Sie den Befehl `nocobase key-rotation` verwenden, stellen Sie sicher, dass das Plugin geladen ist.
+Vergewissern Sie sich vor der Verwendung des Schlüsselrotationsbefehls `nocobase key-rotation`, dass die Anwendung dieses Plugin geladen hat.
 :::
 
-Wenn eine Anwendung in eine neue Umgebung migriert wird und Sie den gleichen Schlüssel wie in der alten Umgebung nicht weiterverwenden möchten, können Sie den Befehl `nocobase key-rotation` verwenden, um den `Anwendungsschlüssel` zu ersetzen.
+Wenn die Anwendung in eine neue Umgebung migriert wurde und nicht weiterhin denselben Schlüssel wie in der alten Umgebung verwenden soll, können Sie den Befehl `nocobase key-rotation` verwenden, um `应用密钥` zu ersetzen.
 
-Für die Ausführung des Schlüsselrotationsbefehls muss der `Anwendungsschlüssel` der alten Umgebung angegeben werden. Nach der Ausführung wird ein neuer `Anwendungsschlüssel` generiert und Base64-kodiert im Standardverzeichnis gespeichert, der den alten Schlüssel ersetzt.
+Für die Ausführung des Schlüsselrotationsbefehls muss der Anwendungsschlüssel der alten Umgebung angegeben werden. Nach der Ausführung wird ein neuer Anwendungsschlüssel generiert und der alte Schlüssel ersetzt. Der neue Anwendungsschlüssel wird Base64-kodiert im Standardspeicherverzeichnis gespeichert.
 
 ```bash
-# --key-path gibt die Datei des Anwendungsschlüssels der alten Umgebung an, die den verschlüsselten Daten in der Datenbank entspricht.
+# --key-path 指定的是和数据库加密数据对应的旧环境的应用密钥文件
  yarn nocobase key-rotation --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
 
-Um den `Anwendungsschlüssel` einer Sub-Anwendung zu rotieren, müssen Sie den Parameter `--app-name` hinzufügen und den `Namen` der Sub-Anwendung angeben.
+Wenn `应用密钥` einer Unteranwendung ersetzt wird, muss der Parameter `--app-name` hinzugefügt werden, um `name` der Unteranwendung anzugeben.
 
 ```bash
  yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key

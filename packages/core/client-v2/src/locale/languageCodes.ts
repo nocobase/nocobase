@@ -54,6 +54,7 @@ export const languageCodes: Record<string, LocaleOptions> = {
   'ml-IN': { label: 'മലയാളം' },
   'mn-MN': { label: 'Монгол хэл' },
   'ms-MY': { label: 'بهاس ملايو' },
+  'my-MM': { label: 'မြန်မာဘာသာ' },
   'nb-NO': { label: 'Norsk bokmål' },
   'ne-NP': { label: 'नेपाली' },
   'nl-BE': { label: 'Vlaams' },

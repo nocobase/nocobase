@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MobilePopup } from '../MobilePopup';
 
 vi.mock('react-i18next', () => ({
@@ -60,6 +60,47 @@ describe('MobilePopup', () => {
   const MobilePopupWithDrawerStyles = MobilePopup as React.ComponentType<
     React.ComponentProps<typeof MobilePopup> & { styles?: { body?: React.CSSProperties } }
   >;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('constrains the default popup to the dynamic viewport and keeps the body scrollable', () => {
+    vi.stubGlobal('CSS', {
+      supports: vi.fn((property: string, value: string) => property === 'height' && value === '100dvh'),
+    });
+
+    render(
+      <MobilePopup visible title="Title" onClose={vi.fn()}>
+        body
+      </MobilePopup>,
+    );
+
+    const maxHeight = 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))';
+
+    expect(screen.getByTestId('mobile-popup')).toHaveStyle({ maxHeight });
+    expect(screen.getByTestId('mobile-popup-body')).toHaveStyle({
+      maxHeight,
+      overflowY: 'auto',
+      overflowX: 'hidden',
+    });
+  });
+
+  it('falls back to the layout viewport when dynamic viewport units are unavailable', () => {
+    vi.stubGlobal('CSS', {
+      supports: vi.fn(() => false),
+    });
+
+    render(
+      <MobilePopup visible title="Title" onClose={vi.fn()}>
+        body
+      </MobilePopup>,
+    );
+
+    expect(screen.getByTestId('mobile-popup-body')).toHaveStyle({
+      maxHeight: 'calc(100vh - var(--nb-mobile-page-header-height, 46px))',
+    });
+  });
 
   it('applies drawer body styles as max bounds without forcing fixed half-window height', () => {
     render(

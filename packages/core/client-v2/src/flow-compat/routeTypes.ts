@@ -21,6 +21,7 @@ export type NocoBaseDesktopRouteTypeValue = NocoBaseDesktopRouteType | (string &
 export interface NocoBaseDesktopRouteOptions {
   hasPersistedMenuInstanceFlow?: boolean;
   pageMenuModelClass?: string;
+  hasPersistedPageTabFlowModel?: boolean;
   [key: string]: any;
 }
 

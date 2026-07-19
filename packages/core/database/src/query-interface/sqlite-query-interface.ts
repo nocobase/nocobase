@@ -53,7 +53,7 @@ export default class SqliteQueryInterface extends QueryInterface {
     };
   }> {
     try {
-      const { ast } = this.parseSQL(await this.viewDef(options.viewName));
+      const { ast } = this.parseSQL(await this.viewDef(options));
 
       const columns = ast.columns;
 
@@ -81,12 +81,15 @@ export default class SqliteQueryInterface extends QueryInterface {
     return sqlParser.parse(sql);
   }
 
-  async viewDef(viewName: string): Promise<string> {
+  async viewDef(options: { viewName: string; schema?: string }): Promise<string> {
     const viewDefinition = await this.db.sequelize.query(
       `SELECT sql
        FROM sqlite_master
-       WHERE name = '${viewName}' AND type = 'view'`,
+       WHERE name = :viewName AND type = 'view'`,
       {
+        replacements: {
+          viewName: options.viewName,
+        },
         type: 'SELECT',
       },
     );

@@ -104,6 +104,16 @@ export const Edit = (props) => {
             fileCollectionName: fileCollection,
           });
 
+          if (!checkData?.data?.isSupportToUploadFiles) {
+            vditor.tip(
+              t('vditor.uploadError.message', {
+                storageTitle: checkData?.data?.storage?.title,
+              }),
+              0,
+            );
+            return;
+          }
+
           vditor.tip(flowCtx.t('uploading'), 0);
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,

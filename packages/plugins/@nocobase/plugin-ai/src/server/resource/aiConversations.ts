@@ -28,6 +28,10 @@ async function getAIEmployee(ctx: Context, username: string) {
   return employee;
 }
 
+export function isAIEmployeeEnabled(employee: Model | null | undefined) {
+  return employee?.get?.('enabled') !== false;
+}
+
 function setupSSEHeaders(ctx: Context) {
   ctx.set({
     'Content-Type': 'text/event-stream',
@@ -187,6 +191,9 @@ export default {
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
+      }
+      if (!isAIEmployeeEnabled(employee)) {
+        ctx.throw(400, 'AI employee is disabled');
       }
 
       try {
