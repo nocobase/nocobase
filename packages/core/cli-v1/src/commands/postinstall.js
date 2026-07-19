@@ -15,6 +15,9 @@ const { readFile, writeFile } = require('fs').promises;
 const { syncPluginSymlinks } = require('@nocobase/utils/plugin-symlink');
 
 function runPatchPackage() {
+  if (!existsSync(resolve(process.cwd(), 'patches'))) {
+    return;
+  }
   // run yarn patch-package
   // console.log('patching third party packages...');
   return run('yarn', ['patch-package'], {
