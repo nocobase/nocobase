@@ -44,8 +44,12 @@ import {
   stableJsonHash,
 } from './ReferenceOwnerRegistry';
 import { SettingsResolverService } from './SettingsResolverService';
-import type { ReferenceRefreshPlan } from './ReferenceRefreshPlanner';
 import { getRuntimeSettingsSource, hasUsableRuntimeArtifact } from './runtimeArtifact';
+
+type ReferenceRefreshScope =
+  | { mode: 'skip'; reason: string }
+  | { mode: 'entries'; entryIds: string[]; reason: string }
+  | { mode: 'repo'; reason: string };
 
 type FlowModelRepositoryLike = {
   findModelById?: (
@@ -101,7 +105,7 @@ type ReferenceUpsertSummary = {
 };
 
 export interface ReferenceRefreshResult {
-  mode: ReferenceRefreshPlan['mode'];
+  mode: ReferenceRefreshScope['mode'];
   reason: string;
   targetEntryCount: number;
   referenceCount: number;
@@ -188,20 +192,16 @@ export class ReferenceService {
       summary,
       scopeRepoId,
     );
-    const nonAdapterOwners = await this.markFlowModelReferencesOwnerMissingForUids(
+    await this.removeUnseenReferencesForOwners(
       modelUids.filter((modelUid) => !templateOwnerUids.has(modelUid)),
-      {
-        action: input.action || 'flowModels.save',
-        requestId,
-      },
-      {
-        ...ctx,
-        scopeRepoId,
-        skipOwnerLocatorHashes: seenOwnerHashes,
-      },
+      input.action || 'flowModels.save',
+      requestId,
+      ctx,
+      summary,
+      scopeRepoId,
+      seenOwnerHashes,
+      'owner_no_longer_references_extension',
     );
-    summary.ownerMissing += nonAdapterOwners.ownerMissing;
-    mergeStatusCounts(summary, nonAdapterOwners.statusCounts);
     const missingOwners = await this.markMissingReferenceOwners(
       input.action || 'flowModels.save',
       requestId,
@@ -340,20 +340,16 @@ export class ReferenceService {
       summary,
       scopeRepoId,
     );
-    const nonAdapterOwners = await this.markFlowModelReferencesOwnerMissingForUids(
+    await this.removeUnseenReferencesForOwners(
       Array.from(existingModelUids).filter((modelUid) => !templateOwnerUids.has(modelUid)),
-      {
-        action: 'referenceRebuild',
-        requestId,
-      },
-      {
-        ...rebuildContext,
-        scopeRepoId,
-        skipOwnerLocatorHashes: seenOwnerHashes,
-      },
+      'referenceRebuild',
+      requestId,
+      rebuildContext,
+      summary,
+      scopeRepoId,
+      seenOwnerHashes,
+      'owner_no_longer_references_extension',
     );
-    summary.ownerMissing += nonAdapterOwners.ownerMissing;
-    mergeStatusCounts(summary, nonAdapterOwners.statusCounts);
 
     const references = await this.findReferenceModels(scopeRepoId ? { repoId: scopeRepoId } : {}, rebuildContext);
     const missingOwnerUids: string[] = [];
@@ -469,14 +465,14 @@ export class ReferenceService {
   }
 
   async refreshReferences(
-    input: { repoId: string; plan: ReferenceRefreshPlan },
+    input: { repoId: string; plan: ReferenceRefreshScope },
     ctx: ReferenceServiceContext = {},
   ): Promise<ReferenceRefreshResult> {
     const normalizedRepoId = normalizeString(input.repoId);
     if (!normalizedRepoId) {
       return emptyReferenceRefreshResult('skip', 'repo_id_missing');
     }
-    const normalizedPlan = normalizeReferenceRefreshPlan(input.plan);
+    const normalizedPlan = normalizeReferenceRefreshScope(input.plan);
     const requestId = ctx.requestId || randomUUID();
     if (normalizedPlan.mode === 'skip') {
       const result = emptyReferenceRefreshResult('skip', normalizedPlan.reason);
@@ -556,13 +552,17 @@ export class ReferenceService {
     return result;
   }
 
-  async refreshReferencesForRepo(repoId: string, ctx: ReferenceServiceContext = {}): Promise<ReferenceRefreshResult> {
+  async refreshReferencesForRepo(
+    repoId: string,
+    ctx: ReferenceServiceContext = {},
+    reason = 'repo_lifecycle_change',
+  ): Promise<ReferenceRefreshResult> {
     return this.refreshReferences(
       {
         repoId,
         plan: {
           mode: 'repo',
-          reason: 'repo_lifecycle_change',
+          reason,
         },
       },
       ctx,
@@ -1934,7 +1934,7 @@ function normalizeOwnerKind(value: unknown): LightExtensionReferenceRecord['owne
   return adapter?.ownerKind || JS_BLOCK_REFERENCE_OWNER_ADAPTER.ownerKind;
 }
 
-function normalizeReferenceRefreshPlan(plan: ReferenceRefreshPlan): ReferenceRefreshPlan {
+function normalizeReferenceRefreshScope(plan: ReferenceRefreshScope): ReferenceRefreshScope {
   if (plan.mode !== 'entries') {
     return plan;
   }

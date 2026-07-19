@@ -511,7 +511,7 @@ describe('plugin-light-extension references service', () => {
   });
 
   it('refreshes existing references after their runtime no longer matches the repo head', async () => {
-    const { service, repositories } = createReferenceServiceFixture({
+    const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
       flowModelTrees: {
         flow_js_block: createJsBlockNode(),
       },
@@ -520,11 +520,20 @@ describe('plugin-light-extension references service', () => {
       references: [createReferenceRecord()],
     });
 
-    await service.refreshReferencesForRepo('ler_sales');
+    const result = await service.refreshReferencesForRepo('ler_sales', {}, 'source_published');
 
+    expect(result.reason).toBe('source_published');
     expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
       resolvedStatus: 'runtime_missing',
     });
+    expect(recordReferenceEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          mode: 'repo',
+          reason: 'source_published',
+        }),
+      }),
+    );
   });
 
   it('refreshes references with the owner current settings instead of schema defaults', async () => {

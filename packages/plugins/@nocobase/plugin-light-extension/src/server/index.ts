@@ -26,7 +26,6 @@ export * from './services/LightExtensionSourceArchive';
 export * from './services/LightExtensionWorkspaceCompilerBridge';
 export * from './services/LightExtensionTrustedCompileCacheService';
 export * from './services/RuntimeResolveService';
-export * from './services/ReferenceRefreshPlanner';
 export * from './services/ReferenceService';
 export * from './services/errorContract';
 export * from '../shared/errors';

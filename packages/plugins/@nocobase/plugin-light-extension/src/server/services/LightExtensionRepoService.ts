@@ -420,19 +420,14 @@ export class LightExtensionRepoService {
       }
 
       const next = await this.getInternalRepo(input.repoId, { ...ctx, transaction });
-      await this.referenceService?.refreshReferences(
-        {
-          repoId: input.repoId,
-          plan: {
-            mode: 'repo',
-            reason: 'repo_lifecycle_change',
-          },
-        },
+      await this.referenceService?.refreshReferencesForRepo(
+        input.repoId,
         {
           ...ctx,
           transaction,
           requestId,
         },
+        'repo_lifecycle_change',
       );
       await this.auditService.recordLifecycleEvent({
         repoId: input.repoId,

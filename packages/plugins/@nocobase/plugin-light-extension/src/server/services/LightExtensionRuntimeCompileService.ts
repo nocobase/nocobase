@@ -76,7 +76,6 @@ import {
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
-import { createReferenceRefreshPlan, type ReferenceRefreshPlan } from './ReferenceRefreshPlanner';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
 import {
   LightExtensionTrustedCompileCacheService,
@@ -86,11 +85,7 @@ import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
 
 type ReferenceRefreshService = {
-  refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext) => Promise<void>;
-  refreshReferences?: (
-    input: { repoId: string; plan: ReferenceRefreshPlan },
-    ctx?: LightExtensionServiceContext,
-  ) => Promise<unknown>;
+  refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext, reason?: string) => Promise<unknown>;
 };
 
 interface RuntimeCompileSourceFile {
@@ -152,7 +147,6 @@ export interface LightExtensionPreparedSave {
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
   readonly compileEntries: LightExtensionSaveSourceResult['compile']['entries'];
   readonly diagnostics: readonly LightExtensionDiagnostic[];
-  readonly referencePlan: ReferenceRefreshPlan;
   readonly compiledEntryCount: number;
 }
 
@@ -348,17 +342,6 @@ export class LightExtensionRuntimeCompileService {
     const compileEntries = successfulResults.map((entry) =>
       toSuccessfulCompileEntryResult(entry, compilePreparation.executions.get(entry.entryId) || 'compiled'),
     );
-    const runtimeAvailability = entryPlan.result.changes.map((change) => ({
-      entryId: change.entry.id,
-      beforeUsable: Boolean(change.before?.runtimeUsable),
-      afterUsable:
-        change.entry.healthStatus === 'ready' && successfulResults.some((item) => item.entryId === change.entry.id),
-    }));
-    const referencePlan = createReferenceRefreshPlan({
-      compilePlan,
-      reconcileResult: entryPlan.result,
-      runtimeAvailability,
-    });
     const prepared: LightExtensionPreparedSave = Object.freeze({
       candidate,
       entryPlan,
@@ -366,7 +349,6 @@ export class LightExtensionRuntimeCompileService {
       compileResults: Object.freeze(successfulResults.map((entry) => Object.freeze(entry))),
       compileEntries: Object.freeze(compileEntries),
       diagnostics: Object.freeze(diagnostics),
-      referencePlan: Object.freeze(referencePlan),
       compiledEntryCount: compilePreparation.compiledEntryCount,
     });
     this.preparedSaves.add(prepared);
@@ -404,11 +386,7 @@ export class LightExtensionRuntimeCompileService {
       },
       transaction,
     });
-    if (this.referenceService?.refreshReferences) {
-      await this.referenceService.refreshReferences({ repoId: candidate.repo.id, plan: prepared.referencePlan }, ctx);
-    } else if (prepared.referencePlan.mode !== 'skip') {
-      await this.referenceService?.refreshReferencesForRepo(candidate.repo.id, ctx);
-    }
+    await this.referenceService?.refreshReferencesForRepo(candidate.repo.id, ctx, 'source_published');
     await this.recordPublishedCompileAudits(prepared.compileResults, ctx);
     const [repo, entryModels] = await Promise.all([
       this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: candidate.repo.id, transaction }),
