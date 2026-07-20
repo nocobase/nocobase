@@ -158,7 +158,6 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
           const settings = getAIChatBoxSettings(model.props);
           return {
             ...settings,
-            scope: settings.scope === undefined ? model.uid : settings.scope,
             selectedBlocks: getAIChatBoxWorkContext(model),
           };
         },
@@ -248,7 +247,7 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
         },
         handler(ctx: AIChatBoxFlowContext, params: AIChatBoxSettingsParams) {
           ctx.model.setProps({
-            scope: normalizeAIChatBoxScopeForSave(params.scope, ctx.model.uid),
+            scope: normalizeAIChatBoxScopeForSave(params.scope),
             systemPrompt: params.systemPrompt || '',
             defaultUserMessage: params.defaultUserMessage || '',
             allowedAIEmployees: Array.isArray(params.allowedAIEmployees) ? params.allowedAIEmployees : [],

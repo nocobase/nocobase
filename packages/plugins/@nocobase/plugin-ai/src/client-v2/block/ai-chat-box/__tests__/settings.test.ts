@@ -85,17 +85,18 @@ describe('AI chat box settings helpers', () => {
   });
 
   it('resolves query scope separately from conversation create scope', () => {
-    expect(getAIChatBoxConversationScope(makeModel())).toBe('chat-box-1');
+    expect(getAIChatBoxConversationScope(makeModel())).toBeUndefined();
+    expect(getAIChatBoxConversationScope(makeModel({ scope: 'chat-box-1' }))).toBe('chat-box-1');
     expect(getAIChatBoxConversationScope(makeModel({ scope: '' }))).toBeUndefined();
     expect(getAIChatBoxConversationScope(makeModel({ scope: 'shared-sales' }))).toBe('shared-sales');
     expect(getAIChatBoxCreateScope(makeModel())).toBe('chat-box-1');
     expect(getAIChatBoxCreateScope(makeModel({ scope: '' }))).toBe('chat-box-1');
     expect(getAIChatBoxCreateScope(makeModel({ scope: 'shared-sales' }))).toBe('shared-sales');
 
-    expect(normalizeAIChatBoxScopeForSave(undefined, 'chat-box-1')).toBeUndefined();
-    expect(normalizeAIChatBoxScopeForSave('chat-box-1', 'chat-box-1')).toBeUndefined();
-    expect(normalizeAIChatBoxScopeForSave('', 'chat-box-1')).toBe('');
-    expect(normalizeAIChatBoxScopeForSave('shared-sales', 'chat-box-1')).toBe('shared-sales');
+    expect(normalizeAIChatBoxScopeForSave(undefined)).toBe('');
+    expect(normalizeAIChatBoxScopeForSave('chat-box-1')).toBe('chat-box-1');
+    expect(normalizeAIChatBoxScopeForSave('')).toBe('');
+    expect(normalizeAIChatBoxScopeForSave('shared-sales')).toBe('shared-sales');
   });
 
   it('normalizes configured work context without duplicate items', () => {
@@ -154,15 +155,22 @@ describe('AI chat box settings flow', () => {
       getGridLayout: vi.fn(() => layout),
       saveGridLayout,
     } as unknown as FlowModel;
+    const props: AIChatBoxBlockModel['props'] = {};
+    const setProps = vi.fn((nextProps: Partial<AIChatBoxSettings>) => {
+      Object.assign(props, nextProps);
+    });
 
     Object.defineProperties(model, {
       uid: { value: 'chat-box-1' },
+      props: { value: props },
       parent: { value: parent },
       _options: { value: { subKey: 'items' } },
+      setProps: { value: setProps },
     });
 
     await model.afterAddAsSubModel();
 
+    expect(setProps).toHaveBeenCalledWith({ scope: 'chat-box-1' });
     expect(saveGridLayout).toHaveBeenCalledWith({
       version: 2,
       rows: [
@@ -194,12 +202,13 @@ describe('AI chat box settings flow', () => {
     expect(cardSettingsFlow?.getStep('blockHeight')).toBeDefined();
   });
 
-  it('uses default scope for editing and stores cleared scope without falling back to uid', async () => {
+  it('uses the stored scope for editing and stores cleared scope without falling back to uid', async () => {
     const flow = AIChatBoxBlockModel.globalFlowRegistry.getFlow(AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY);
     const editStep = flow?.getStep('editChatBox')?.serialize();
     const bodyBlock = makeFlowModel('body-1', 'Body one');
     const model = makeModel(
       {
+        scope: 'chat-box-1',
         selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
       },
       [bodyBlock, makeCoreModel()],

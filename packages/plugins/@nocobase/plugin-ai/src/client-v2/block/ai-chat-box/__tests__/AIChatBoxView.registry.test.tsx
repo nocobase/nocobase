@@ -198,8 +198,8 @@ describe('AIChatBoxView mounted registry', () => {
     );
   });
 
-  it('uses the block uid for conversation queries by default', () => {
-    render(<AIChatBoxView model={makeModel()} />);
+  it('uses the initialized block uid for conversation queries', () => {
+    render(<AIChatBoxView model={makeModel({ scope: 'chat-box-1' })} />);
 
     expect(mocks.runtime.scope).toBe('chat-box-1');
   });

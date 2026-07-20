@@ -64,7 +64,7 @@ export const normalizeAIChatBoxHeight = (height: unknown) => {
 
 export const getAIChatBoxConversationScope = (model: AIChatBoxBlockModel) => {
   const settings = getAIChatBoxSettings(model.props);
-  return settings.scope === undefined ? model.uid : settings.scope || undefined;
+  return settings.scope || undefined;
 };
 
 export const getAIChatBoxCreateScope = (model: AIChatBoxBlockModel) => {
@@ -72,11 +72,8 @@ export const getAIChatBoxCreateScope = (model: AIChatBoxBlockModel) => {
   return settings.scope || model.uid;
 };
 
-export const normalizeAIChatBoxScopeForSave = (scope: string | undefined, defaultScope: string) => {
-  if (scope === undefined || scope === defaultScope) {
-    return undefined;
-  }
-  return scope;
+export const normalizeAIChatBoxScopeForSave = (scope: string | undefined) => {
+  return scope || '';
 };
 
 export const normalizeAIChatBoxWorkContext = (selectedBlocks: ContextItem[] | undefined) => {

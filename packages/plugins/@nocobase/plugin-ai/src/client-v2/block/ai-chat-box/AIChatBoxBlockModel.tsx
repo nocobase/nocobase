@@ -84,6 +84,9 @@ export class AIChatBoxBlockModel extends BlockModel<AIChatBoxBlockStructure> {
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
+    if (this.props.scope === undefined) {
+      this.setProps({ scope: this.uid });
+    }
     await resizeNewChatBoxGridItem(this);
   }
 
