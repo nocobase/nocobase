@@ -80,6 +80,7 @@ interface PreparedEntryCompileInput extends LightExtensionCompileKeyResult {
 interface PreparedCompileResults {
   results: LightExtensionCompileResult[];
   compiledEntryCount: number;
+  compiledEntryIds: string[];
 }
 
 export interface LightExtensionRuntimeCompileServiceOptions {
@@ -95,6 +96,7 @@ export interface LightExtensionPreparedSave {
   readonly compileEntries: ReadonlyArray<LightExtensionSaveSourceResult['compile']['entries'][number]>;
   readonly diagnostics: readonly LightExtensionDiagnostic[];
   readonly compiledEntryCount: number;
+  readonly compiledEntryIds: readonly string[];
 }
 
 export interface LightExtensionRemoteSnapshotCompileResult {
@@ -226,7 +228,10 @@ export class LightExtensionRuntimeCompileService {
       });
     }
     const successfulResults = compilePreparation.results as LightExtensionCompileSuccessResult[];
-    const compileEntries = successfulResults.map(toSuccessfulCompileEntryResult);
+    const compiledEntryIds = new Set(compilePreparation.compiledEntryIds);
+    const compileEntries = successfulResults.map((result) =>
+      toSuccessfulCompileEntryResult(result, compiledEntryIds.has(result.entryId)),
+    );
     const prepared: LightExtensionPreparedSave = Object.freeze({
       candidate,
       entryPlan,
@@ -234,6 +239,7 @@ export class LightExtensionRuntimeCompileService {
       compileEntries: Object.freeze(compileEntries),
       diagnostics: Object.freeze(diagnostics),
       compiledEntryCount: compilePreparation.compiledEntryCount,
+      compiledEntryIds: Object.freeze([...compilePreparation.compiledEntryIds]),
     });
     this.preparedSaves.add(prepared);
     return prepared;
@@ -271,7 +277,11 @@ export class LightExtensionRuntimeCompileService {
       transaction,
     });
     await this.referenceService?.refreshReferencesForRepo(candidate.repo.id, ctx, 'source_published');
-    await this.recordPublishedCompileAudits(prepared.compileResults, ctx);
+    const compiledEntryIds = new Set(prepared.compiledEntryIds);
+    await this.recordPublishedCompileAudits(
+      prepared.compileResults.filter((result) => compiledEntryIds.has(result.entryId)),
+      ctx,
+    );
     const [repo, entryModels] = await Promise.all([
       this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: candidate.repo.id, transaction }),
       this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: candidate.repo.id }, transaction }),
@@ -282,7 +292,7 @@ export class LightExtensionRuntimeCompileService {
       commit: candidate.commit,
       tree: candidate.tree,
       compile: {
-        status: prepared.compileEntries.length === 0 ? 'skipped' : 'success',
+        status: prepared.compiledEntryCount === 0 ? 'skipped' : 'success',
         entries: [...prepared.compileEntries],
       },
       diagnostics: [...prepared.diagnostics],
@@ -319,7 +329,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<PreparedCompileResults> {
     const requestId = ctx.requestId || randomUUID();
     const correlationId = randomUUID();
-    const compileJobs = readyInputs.map((input, ordinal) => ({
+    const preparedJobs = readyInputs.map((input, ordinal) => ({
       input,
       job: createCompileJob(input, {
         repoId,
@@ -329,16 +339,26 @@ export class LightExtensionRuntimeCompileService {
         compilerBuildIdentity: this.compilerBuildIdentity,
       }),
     }));
+    const reusedResults: LightExtensionCompileSuccessResult[] = [];
+    const compileJobs: typeof preparedJobs = [];
+    for (const preparedJob of preparedJobs) {
+      const reused = reuseCompiledEntry(preparedJob.job, preparedJob.input);
+      if (reused) {
+        reusedResults.push(reused);
+      } else {
+        compileJobs.push(preparedJob);
+      }
+    }
     const compileExecutor = this.compileExecutor;
-    let results: LightExtensionCompileResult[];
+    let compiledResults: LightExtensionCompileResult[];
     if (compileExecutor) {
-      results = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
+      compiledResults = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
     } else {
       // The non-worker compatibility path is intentionally serial so database-backed compile audit hooks remain safe
       // on SQLite. Production compile paths use the bounded isolated worker.
-      results = [];
+      compiledResults = [];
       for (const { job, input } of compileJobs) {
-        results.push(
+        compiledResults.push(
           this.compilerBridge
             ? await this.compileEntryWithoutWorker(job, input, ctx)
             : await executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 }),
@@ -346,8 +366,11 @@ export class LightExtensionRuntimeCompileService {
       }
     }
     return {
-      results,
+      results: [...reusedResults, ...compiledResults].sort(
+        (left, right) => left.ordinal - right.ordinal || left.entryId.localeCompare(right.entryId),
+      ),
       compiledEntryCount: compileJobs.length,
+      compiledEntryIds: compileJobs.map(({ job }) => job.entryId),
     };
   }
 
@@ -585,8 +608,14 @@ export class LightExtensionRuntimeCompileService {
       },
       ctx.transaction,
     );
-    await this.recordPublishedCompileAudits(successfulResults, ctx);
-    const compileEntries = successfulResults.map(toSuccessfulCompileEntryResult);
+    const compiledEntryIds = new Set(compilePreparation.compiledEntryIds);
+    await this.recordPublishedCompileAudits(
+      successfulResults.filter((result) => compiledEntryIds.has(result.entryId)),
+      ctx,
+    );
+    const compileEntries = successfulResults.map((result) =>
+      toSuccessfulCompileEntryResult(result, compiledEntryIds.has(result.entryId)),
+    );
     await this.db.getRepository('lightExtensionRepos').update({
       filterByTk: repoId,
       values: {
@@ -606,7 +635,7 @@ export class LightExtensionRuntimeCompileService {
 
     return {
       repo: withEntrySummary(repo ? repoFromModelLike(repo) : prepared.repo, entryModels.map(entryFromModel)),
-      status: compileEntries.length === 0 ? 'skipped' : 'success',
+      status: compilePreparation.compiledEntryCount === 0 ? 'skipped' : 'success',
       entries: compileEntries,
       diagnostics,
     };
@@ -682,8 +711,56 @@ function compileResultIdentity(job: LightExtensionCompileJob) {
   };
 }
 
+function reuseCompiledEntry(
+  job: LightExtensionCompileJob,
+  input: PreparedEntryCompileInput,
+): LightExtensionCompileSuccessResult | null {
+  const { entry } = input;
+  const artifact = entry.runtimeArtifact;
+  if (
+    entry.compiledInputKey !== input.compileKey ||
+    entry.compilerBuildId !== input.inputManifest.compilerBuildId ||
+    entry.runtimeVersion !== input.inputManifest.runtimeVersion ||
+    !artifact ||
+    artifact.version !== input.inputManifest.runtimeVersion ||
+    artifact.entryPath !== entry.entryPath ||
+    !entry.runtimeCodeHash ||
+    !entry.artifactHash
+  ) {
+    return null;
+  }
+  const runtimeCodeHash = buildRunJSRuntimeCodeHash(artifact.code);
+  const artifactHash = buildRunJSArtifactHash({
+    code: artifact.code,
+    sourceMap: artifact.sourceMap,
+    version: artifact.version,
+    entryPath: artifact.entryPath,
+    runtimeContract: input.inputManifest.runtimeContract,
+  });
+  if (runtimeCodeHash !== entry.runtimeCodeHash || artifactHash !== entry.artifactHash) {
+    return null;
+  }
+  return {
+    ...compileResultIdentity(job),
+    accepted: true,
+    artifact: {
+      code: artifact.code,
+      ...(artifact.sourceMap ? { sourceMap: artifact.sourceMap } : {}),
+      version: artifact.version,
+      entryPath: artifact.entryPath,
+      filesHash: artifact.filesHash,
+      diagnostics: sortDiagnostics(artifact.diagnostics || []),
+      metadata: artifact.metadata,
+    },
+    artifactHash,
+    runtimeCodeHash,
+    diagnostics: sortDiagnostics(artifact.diagnostics || []),
+  };
+}
+
 function toSuccessfulCompileEntryResult(
   result: LightExtensionCompileSuccessResult,
+  compiled: boolean,
 ): LightExtensionSaveSourceResult['compile']['entries'][number] {
   return {
     entryId: result.entryId,
@@ -691,7 +768,7 @@ function toSuccessfulCompileEntryResult(
     kind: result.kind,
     entryPath: result.entryPath,
     status: 'success',
-    execution: 'compiled',
+    execution: compiled ? 'compiled' : 'skipped',
     diagnostics: result.diagnostics,
     artifact: {
       version: result.artifact.version,

@@ -35,7 +35,7 @@ import {
   type RunJSSurfaceStyle,
 } from '..';
 import type { NodeRunJSTypeLibraryRegistry } from './node-type-library';
-import { inspectRunJSSourceWorkspaceWithDependencies } from './source-inspection';
+import { inspectRunJSSourceWorkspaceWithDependencies, RunJSSourceWorkspaceInspector } from './source-inspection';
 import {
   isRunJSImportablePath,
   resolveRunJSBuiltInModule,
@@ -66,6 +66,7 @@ export interface CompileRunJSSourceWorkspaceInput {
   additionalAllowedGlobals?: Iterable<string>;
   typeLibraryIds?: readonly string[];
   typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
+  sourceInspector?: RunJSSourceWorkspaceInspector;
 }
 
 export interface CompileRunJSSourceWorkspaceResult {
@@ -198,9 +199,10 @@ export async function compileRunJSSourceWorkspace(
   }
 
   if (!hasErrorDiagnostic(diagnostics)) {
-    const inspection = inspectRunJSSourceWorkspaceWithDependencies(
-      toSourceInspectionInput({ ...input, entry: entryPath }),
-    );
+    const inspectionInput = toSourceInspectionInput({ ...input, entry: entryPath });
+    const inspection = input.sourceInspector
+      ? input.sourceInspector.inspectWithDependencies(inspectionInput)
+      : inspectRunJSSourceWorkspaceWithDependencies(inspectionInput);
     diagnostics.push(...inspection.diagnostics);
   }
 

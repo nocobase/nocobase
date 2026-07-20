@@ -41,17 +41,17 @@ export async function parseLightExtensionSourceArchive(
     throwArchiveValidation('zip_empty', 'ZIP archive does not contain source files');
   }
 
-  const declaredUncompressedBytes = validateArchiveEntriesBeforeExtraction(
-    sourceEntries,
-    archive.byteLength,
-    validator,
-  );
-  assertZipBudget(archive.byteLength, declaredUncompressedBytes, validator);
-
   const rawPaths = sourceEntries.map((entry) => normalizeArchiveEntryPath(getOriginalEntryName(entry)));
   const topLevelDirectory = findSharedTopLevelDirectory(rawPaths);
   const paths = rawPaths.map((path) => stripTopLevelDirectory(path, topLevelDirectory));
   assertUniquePaths(paths);
+  const declaredUncompressedBytes = validateArchiveEntriesBeforeExtraction(
+    sourceEntries,
+    paths,
+    archive.byteLength,
+    validator,
+  );
+  assertZipBudget(archive.byteLength, declaredUncompressedBytes, validator);
 
   const files: LightExtensionTreeEntryInput[] = [];
   let extractedBytes = 0;
@@ -159,6 +159,7 @@ function validateArchiveEntry(entry: JSZipObject): void {
 
 function validateArchiveEntriesBeforeExtraction(
   entries: JSZipObject[],
+  paths: string[],
   compressedBytes: number,
   validator: LightExtensionValidator,
 ): number {
@@ -168,15 +169,21 @@ function validateArchiveEntriesBeforeExtraction(
   }
 
   let uncompressedBytes = 0;
-  for (const entry of entries) {
-    const path = normalizeArchiveEntryPath(getOriginalEntryName(entry));
+  let sourceBytes = 0;
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    const path = paths[index];
     const compressedSize = getZipEntrySize(entry, 'compressedSize');
     const uncompressedSize = getZipEntrySize(entry, 'uncompressedSize');
-    if (compressedSize > compressedBytes || uncompressedSize > limits.maxFileBytes) {
+    if (
+      compressedSize > compressedBytes ||
+      (!isJsPortalWorkspacePath(path) && uncompressedSize > limits.maxFileBytes)
+    ) {
       throwArchiveValidation('file_size_limit_exceeded', 'ZIP source file is too large', path);
     }
     uncompressedBytes += uncompressedSize;
-    if (uncompressedBytes > limits.maxRepoBytes) {
+    sourceBytes += isJsPortalWorkspacePath(path) ? 0 : uncompressedSize;
+    if (sourceBytes > limits.maxRepoBytes) {
       throwArchiveValidation('repo_budget_limit_exceeded', 'ZIP source budget is exceeded');
     }
   }

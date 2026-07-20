@@ -47,7 +47,12 @@ describe('LightExtensionCompileWorkerPool', () => {
         throw new Error('Expected the real worker compile to be accepted');
       }
       expect(result.artifact.code).toContain('ctx.render');
-      expect(pool.getMetrics()).toMatchObject({ active: 0, completed: 1, maxActive: 1 });
+      const updated = await pool.submit(createCompileJob(0, '-updated'));
+      expect(updated.accepted).toBe(true);
+      if (updated.accepted) {
+        expect(updated.artifact.code).toContain('0-updated');
+      }
+      expect(pool.getMetrics()).toMatchObject({ active: 0, completed: 2, maxActive: 1 });
     } finally {
       await pool.shutdown();
     }

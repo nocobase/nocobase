@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { compileRunJSSourceWorkspace } from '../compiler';
+import { compileRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from '../compiler';
 
 type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
@@ -19,6 +19,32 @@ async function executeArtifact(code: string, ctx: unknown): Promise<unknown> {
 }
 
 describe('@nocobase/runjs compiler golden contracts', () => {
+  it('reuses a provided TypeScript inspector across compilations', async () => {
+    const sourceInspector = new RunJSSourceWorkspaceInspector();
+    try {
+      const compile = (label: string) =>
+        compileRunJSSourceWorkspace({
+          files: [{ path: 'index.tsx', content: `ctx.render(<div>${label}</div>);` }],
+          entry: 'index.tsx',
+          surfaceStyle: 'render',
+          sourceInspector,
+        });
+
+      await compile('first');
+      const second = await compile('second');
+
+      expect(second.failureCode).toBeUndefined();
+      expect(second.artifact.code).toContain('second');
+      expect(sourceInspector.getDebugState()).toMatchObject({
+        projectCreateCount: 1,
+        projectReuseCount: 1,
+        projectUpdateCount: 2,
+      });
+    } finally {
+      sourceInspector.dispose();
+    }
+  });
+
   it.each([
     {
       name: 'single TypeScript file',

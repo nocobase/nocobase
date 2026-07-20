@@ -755,6 +755,7 @@ describe('LightExtensionListPage', () => {
     expect(lightExtensionRepoFilterCollection.fields?.map((field) => field.name)).toEqual(
       LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
     );
+    expect(lightExtensionRepoFilterCollection.hidden).toBe(true);
 
     const repo = {
       id: 'ler_sales',

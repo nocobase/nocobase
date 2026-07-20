@@ -122,6 +122,47 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(runtimeArtifact.code).toContain('Sales KPI');
   });
 
+  it('only recompiles the Entry whose local source changed', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Incremental Entry Save',
+      initialFiles: preciseSharedDependencyFiles(),
+    });
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'establish compiled entries',
+      files: [{ path: 'README.md', content: '# Incremental entry fixture\n', language: 'markdown' }],
+    });
+    const compileEntrySpy = vi.spyOn(compilerBridge, 'compileEntry');
+
+    const updated = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change one Entry source',
+      files: [
+        {
+          path: 'src/client/js-blocks/dependent/index.tsx',
+          content: `import { runtimeValue } from '../../../shared/runtime-value'; ctx.render(<div>Updated {runtimeValue}</div>);`,
+          language: 'typescript',
+        },
+      ],
+    });
+    const afterEntries = await app.db.getRepository('lightExtensionEntries').find({
+      filter: { repoId: repo.id },
+      sort: ['entryName'],
+    });
+
+    expect(compileEntrySpy).toHaveBeenCalledTimes(1);
+    expect(compileEntrySpy).toHaveBeenCalledWith(
+      expect.objectContaining({ entryName: 'dependent' }),
+      expect.any(Object),
+    );
+    expect(updated.compile.status).toBe('success');
+    expect(updated.compile.entries).toEqual([
+      expect.objectContaining({ entryName: 'dependent', execution: 'compiled' }),
+      expect.objectContaining({ entryName: 'independent', execution: 'skipped' }),
+    ]);
+    expect(afterEntries.every((entry) => entry.get('compiledCommitId') === updated.commit.id)).toBe(true);
+  });
+
   it('conservatively recompiles every ready Entry after a shared source change', async () => {
     const repo = await repoService.createRepo({
       name: 'Precise Shared Dependency Save',
@@ -166,6 +207,8 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'establish immutable artifacts',
       files: [{ path: 'README.md', content: '# Compile all recovery\n', language: 'markdown' }],
     });
+    expect(initial.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
+    const compileEntrySpy = vi.spyOn(compilerBridge, 'compileEntry');
     const entries = await app.db.getRepository('lightExtensionEntries').find({
       filter: { repoId: repo.id },
       sort: ['entryName'],
@@ -187,10 +230,12 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     const repaired = await saveCurrentSource({
       repoId: repo.id,
-      message: 'repair artifacts by recompiling all ready entries',
+      message: 'repair immutable artifacts from current Entry artifacts',
       files: [{ path: 'README.md', content: '# Repair artifacts\n', language: 'markdown' }],
     });
-    expect(repaired.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
+    expect(compileEntrySpy).not.toHaveBeenCalled();
+    expect(repaired.compile.status).toBe('skipped');
+    expect(repaired.compile.entries.every((entry) => entry.execution === 'skipped')).toBe(true);
     await expect(
       app.db.getRepository('lightExtensionRuntimeArtifacts').findOne({ filterByTk: firstArtifactHash }),
     ).resolves.toBeTruthy();
@@ -220,6 +265,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     const rebuiltEntries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: repo.id } });
 
+    expect(compileEntrySpy).toHaveBeenCalledTimes(2);
     expect(rebuilt.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
     expect(rebuiltEntries.every((entry) => entry.get('compilerBuildId') === changedBuildIdentity.compilerBuildId)).toBe(
       true,

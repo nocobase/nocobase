@@ -98,6 +98,7 @@ export const LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES = [
 ] as const;
 export const lightExtensionRepoFilterCollection: CollectionOptions = {
   name: LIGHT_EXTENSION_REPO_FILTER_COLLECTION,
+  hidden: true,
   filterTargetKey: 'id',
   fields: [
     {
