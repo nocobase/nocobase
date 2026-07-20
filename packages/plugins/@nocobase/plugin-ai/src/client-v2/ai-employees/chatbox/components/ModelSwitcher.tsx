@@ -60,20 +60,10 @@ export const ModelSwitcher: React.FC<{
     () => getAIEmployeeModelServices(currentEmployee, llmServices),
     [currentEmployee, llmServices],
   );
-  const visibleServices = useMemo(() => {
-    if (!allowedModelKeys?.length) {
-      return scopedServices;
-    }
-    const allowedSet = new Set(allowedModelKeys);
-    return scopedServices
-      .map((service) => ({
-        ...service,
-        enabledModels: service.enabledModels.filter((item) =>
-          allowedSet.has(getModelKey({ llmService: service.llmService, model: item.value })),
-        ),
-      }))
-      .filter((service) => service.enabledModels.length > 0);
-  }, [allowedModelKeys, scopedServices]);
+  const visibleServices = useMemo(
+    () => getVisibleModelServices(scopedServices, allowedModelKeys, currentConversation ? model : undefined),
+    [allowedModelKeys, currentConversation, model, scopedServices],
+  );
   const scopedModels = useMemo(() => getAllModels(visibleServices), [visibleServices]);
   const servicesWithModels = useMemo(
     () => visibleServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
@@ -245,6 +235,36 @@ export const ModelSwitcher: React.FC<{
 
 function getModelKey(model: ModelRef) {
   return `${model.llmService}:${model.model}`;
+}
+
+export function getVisibleModelServices(
+  services: LLMServiceItem[],
+  allowedModelKeys?: string[],
+  currentConversationModel?: ModelRef | null,
+) {
+  if (!allowedModelKeys?.length) {
+    return services;
+  }
+  const allowedSet = new Set(allowedModelKeys);
+  return services
+    .map((service) => ({
+      ...service,
+      enabledModels: service.enabledModels.filter((item) =>
+        isAllowedOrCurrentModel(
+          { llmService: service.llmService, model: item.value },
+          allowedSet,
+          currentConversationModel,
+        ),
+      ),
+    }))
+    .filter((service) => service.enabledModels.length > 0);
+}
+
+function isAllowedOrCurrentModel(model: ModelRef, allowedSet: Set<string>, currentConversationModel?: ModelRef | null) {
+  if (allowedSet.has(getModelKey(model))) {
+    return true;
+  }
+  return currentConversationModel ? isSameModel(model, currentConversationModel) : false;
 }
 
 function getModelLabel(services: LLMServiceItem[], model: ModelRef | null | undefined) {

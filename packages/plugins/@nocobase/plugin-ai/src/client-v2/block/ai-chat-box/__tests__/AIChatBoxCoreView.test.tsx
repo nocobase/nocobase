@@ -222,6 +222,28 @@ describe('AIChatBoxCoreView', () => {
     });
   });
 
+  it('does not switch employees while an existing conversation is open', () => {
+    mocks.senderProps = undefined;
+    mocks.switchAIEmployee.mockReset();
+    mocks.currentConversation = 'session-1';
+    mocks.draftMessages = [];
+    mocks.setContextItems.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [];
+    mocks.getAIEmployees.mockResolvedValue([{ username: 'sales', nickname: 'Sales assistant', category: 'business' }]);
+
+    render(
+      createAIChatBoxCoreViewNode({
+        showMessages: false,
+        showDisclaimer: false,
+        allowedAIEmployees: ['sales'],
+      }),
+    );
+
+    expect(mocks.switchAIEmployee).not.toHaveBeenCalled();
+  });
+
   it('does not inject configured work context into existing conversations', () => {
     mocks.senderProps = undefined;
     mocks.currentConversation = 'session-1';

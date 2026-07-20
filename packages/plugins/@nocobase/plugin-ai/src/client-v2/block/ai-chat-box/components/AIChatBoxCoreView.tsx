@@ -56,6 +56,9 @@ export const AIChatBoxCoreView: React.FC = observer(() => {
   useChatBoxEffect(runtime);
 
   useEffect(() => {
+    if (currentConversation) {
+      return;
+    }
     if (currentEmployee && (!allowedAIEmployees.length || allowedAIEmployees.includes(currentEmployee.username))) {
       return;
     }
@@ -78,7 +81,7 @@ export const AIChatBoxCoreView: React.FC = observer(() => {
         }
       })
       .catch(console.error);
-  }, [aiConfigRepository, allowedAIEmployees, chatBoxModel, currentEmployee, switchAIEmployee]);
+  }, [aiConfigRepository, allowedAIEmployees, chatBoxModel, currentConversation, currentEmployee, switchAIEmployee]);
 
   useEffect(() => {
     if (currentConversation || hasDraftUserMessage || !configuredWorkContext.length) {
