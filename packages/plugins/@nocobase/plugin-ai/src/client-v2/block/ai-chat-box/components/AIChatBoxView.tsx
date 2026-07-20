@@ -385,25 +385,29 @@ export const AIChatBoxView: React.FC<{
   const app = useApp();
   const t = useT();
   const { token } = theme.useToken();
-  const runtime = useChatBoxRuntime();
-  const { clear, startNewConversation, triggerTask } = useChatBoxActions(runtime);
-  const { syncContextAttachments } = useChatMessageActions(runtime);
-  const currentConversation = runtime.chatConversationModel.currentConversation;
-  const chat = useChat(currentConversation, runtime);
-  const [showConversations, setShowConversations] = useState(false);
-  const [showMessagesPanel, setShowMessagesPanel] = useState(false);
+
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
-  const conversationCreateScope = getAIChatBoxCreateScope(model);
-  runtime.scope = getAIChatBoxConversationScope(model);
-  const { refresh: refreshConversations } = useChatConversationActions(runtime);
-  const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
   const minWidth = Math.max(settings.minWidth, AI_CHAT_BOX_CORE_MIN_WIDTH);
   const height = getAIChatBoxViewHeight(model, settings.height);
   const conversationPanelWidth = 300;
   const messagesPanelWidth = 350;
   const headerHeight = 48;
+
+  const [showConversations, setShowConversations] = useState(false);
+  const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const isSidePanelOpen = showConversations || showMessagesPanel;
+
+  const runtime = useChatBoxRuntime();
+  const conversationCreateScope = getAIChatBoxCreateScope(model);
+  runtime.scope = getAIChatBoxConversationScope(model);
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
+  const chat = useChat(currentConversation, runtime);
+  const { clear, startNewConversation, triggerTask } = useChatBoxActions(runtime);
+  const { refresh: refreshConversations } = useChatConversationActions(runtime);
+  const { syncContextAttachments } = useChatMessageActions(runtime);
+
   const closeSidePanel = () => {
     setShowConversations(false);
     setShowMessagesPanel(false);
