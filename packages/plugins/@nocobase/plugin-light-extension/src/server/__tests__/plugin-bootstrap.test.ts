@@ -70,11 +70,14 @@ describe('plugin-light-extension bootstrap', () => {
     });
 
     await plugin.load();
+    expect(afterStartListeners).toHaveLength(2);
     await plugin.load();
-    expect(afterStartListeners).toHaveLength(1);
+    expect(afterStartListeners).toHaveLength(2);
 
     await plugin.afterEnable();
     expect(listRecoverablePullJobs).toHaveBeenCalledTimes(1);
+    await Promise.all([...afterStartListeners].map((listener) => listener()));
+    expect(listRecoverablePullJobs).toHaveBeenCalledTimes(2);
 
     await plugin.afterDisable();
     expect(afterStartListeners).toHaveLength(0);

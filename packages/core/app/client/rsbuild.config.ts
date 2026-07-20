@@ -17,6 +17,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
 import { addWasmUrlAssetRule } from '../rsbuildWasmUrlAsset';
+import { createClientAppDevProxyRouter } from './clientAppDevProxy';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,6 +123,13 @@ export default defineConfig(({ command }) => {
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${clientPort + 1}`;
+  const v2TargetUrl = `http://127.0.0.1:${v2Port}`;
+  const clientAppDevProxyRouter = createClientAppDevProxyRouter({
+    apiBasePath,
+    gatewayTargetUrl: proxyTargetUrl,
+    modernClientBasePath: v2BasePath,
+    modernClientTargetUrl: v2TargetUrl,
+  });
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT, clientPort);
   const workspaceAliases = getRsbuildBrowserAlias();
@@ -246,9 +254,10 @@ export default defineConfig(({ command }) => {
           xfwd: true,
         },
         [v2BasePath]: {
-          target: `http://127.0.0.1:${v2Port}`,
+          target: v2TargetUrl,
           changeOrigin: true,
           ws: true,
+          router: clientAppDevProxyRouter,
           pathRewrite: {
             [`^${v2BasePath}`]: v2BasePath,
           },

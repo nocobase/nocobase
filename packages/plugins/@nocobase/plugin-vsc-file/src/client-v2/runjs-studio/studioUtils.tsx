@@ -33,6 +33,10 @@ import {
 import type { WorkspaceLoadResult } from './studioInternalTypes';
 import { clientRunJSWorkspaceAdapter } from './workspaceAdapter';
 
+type RunJSTypeScriptProject = CodeEditorTypeScriptProject & {
+  ignoredDiagnosticCodes?: number[];
+};
+
 export const defaultEntryPath = clientRunJSWorkspaceAdapter.defaultEntryPath;
 export const defaultRunJSSourceRoot = clientRunJSWorkspaceAdapter.sourceRoot;
 export const defaultStudioHeight = 'min(720px, calc(100vh - 112px))';
@@ -582,7 +586,7 @@ export function buildRunJSTypeScriptProject(
     globalContextType?: string;
     modelUse?: string;
   } = {},
-): CodeEditorTypeScriptProject | undefined {
+): RunJSTypeScriptProject | undefined {
   if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
     return undefined;
   }

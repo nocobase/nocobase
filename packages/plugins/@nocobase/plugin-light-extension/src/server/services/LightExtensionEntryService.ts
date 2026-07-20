@@ -227,7 +227,7 @@ export class LightExtensionEntryService {
     baseHeadCommitId: string | null,
   ): Promise<LightExtensionEntryReconcilePlan> {
     const repository = this.db.getRepository('lightExtensionEntries');
-    const existingRecords = await repository.find({
+    const existingRecords: Model[] = await repository.find({
       filter: { repoId },
       sort: ['target', 'kind', 'entryName'],
     });
@@ -317,7 +317,7 @@ export class LightExtensionEntryService {
       );
     }
     const repository = this.db.getRepository('lightExtensionEntries');
-    const records = await repository.find({ filter: { repoId: plan.repoId }, transaction });
+    const records: Model[] = await repository.find({ filter: { repoId: plan.repoId }, transaction });
     if (createExistingEntriesFingerprint(records) !== plan.existingEntriesFingerprint) {
       throw new LightExtensionError(
         'LIGHT_EXTENSION_SOURCE_OUTDATED',
@@ -356,7 +356,7 @@ export class LightExtensionEntryService {
     transaction: Transaction,
   ): Promise<EntryReconcileResult> {
     const repository = this.db.getRepository('lightExtensionEntries');
-    const existingRecords = await repository.find({
+    const existingRecords: Model[] = await repository.find({
       filter: { repoId },
       sort: ['target', 'kind', 'entryName'],
       transaction,

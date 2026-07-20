@@ -484,12 +484,9 @@ const createSearchItem = (
           if (shouldActivateSearchSubmenu) {
             activateSearchSubmenu(searchKey);
           }
-          if ((e.nativeEvent as any)?.isComposing || searchHandlers.isComposing(searchKey)) {
+          if ((e.nativeEvent as InputEvent).isComposing || searchHandlers.isComposing(searchKey)) {
             searchHandlers.updateInputValue(searchKey, value);
             return;
-          }
-          if (!value && shouldActivateSearchSubmenu) {
-            deactivateSearchSubmenu(searchKey);
           }
           searchHandlers.updateSearchValue(searchKey, value);
         }}
@@ -504,11 +501,7 @@ const createSearchItem = (
           e.stopPropagation();
           const value = e.currentTarget.value;
           if (shouldActivateSearchSubmenu) {
-            if (value) {
-              activateSearchSubmenu(searchKey);
-            } else {
-              deactivateSearchSubmenu(searchKey);
-            }
+            activateSearchSubmenu(searchKey);
           }
           searchHandlers.endComposition(searchKey, value);
         }}
@@ -516,11 +509,21 @@ const createSearchItem = (
           e.stopPropagation();
         }}
         onKeyDown={(e) => {
+          if (e.key === 'Escape' || e.key === 'Tab') {
+            deactivateSearchSubmenu(searchKey);
+            return;
+          }
+          if (shouldActivateSearchSubmenu) {
+            activateSearchSubmenu(searchKey);
+          }
           e.stopPropagation();
         }}
         onMouseDown={(e) => {
           // 防止菜单聚焦丢失或页面滚动
           e.stopPropagation();
+          if (shouldActivateSearchSubmenu) {
+            activateSearchSubmenu(searchKey);
+          }
         }}
         size="small"
         style={{
@@ -552,7 +555,7 @@ const KEEP_OPEN_LABEL_STYLE: React.CSSProperties = {
 
 // 短暂保持打开状态的注册表（用于跨父节点快速重建时的恢复）
 const DROPDOWN_PERSIST_TTL_MS = 350;
-const SUBMENU_CLOSE_DELAY = 0.05;
+const MENU_CLOSE_DELAY = 0.3;
 const SUBMENU_MOTION_DISABLED = {
   motionEnter: false,
   motionLeave: false,
@@ -563,9 +566,9 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const engine = useFlowEngine();
   const [menuVisible, setMenuVisible] = useState(false);
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
-  const [activeSearchKey, setActiveSearchKey] = useState<string | null>(null);
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
+  const activeSearchKeyRef = useRef<string | null>(null);
   const closeByOutsideClickRef = useRef(false);
   const skipPreserveActiveSearchRef = useRef(false);
   const dropdownMaxHeight = useNiceDropdownMaxHeight();
@@ -589,13 +592,13 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
   const closeMenu = useCallback(() => {
     setMenuVisible(false);
-    setActiveSearchKey(null);
+    activeSearchKeyRef.current = null;
     setOpenKeys(new Set());
     clearAllSearchValues();
   }, [clearAllSearchValues]);
 
   const activateSearchSubmenu = useCallback((key: string) => {
-    setActiveSearchKey(key);
+    activeSearchKeyRef.current = key;
     setOpenKeys((prev) => {
       if (prev.has(key)) return prev;
       const next = new Set(prev);
@@ -605,11 +608,14 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   }, []);
 
   const deactivateSearchSubmenu = useCallback((key: string) => {
-    setActiveSearchKey((prev) => (prev === key ? null : prev));
+    if (activeSearchKeyRef.current === key) {
+      activeSearchKeyRef.current = null;
+    }
   }, []);
 
   const closeActiveSearchForPath = useCallback(
     (keyPath: string) => {
+      const activeSearchKey = activeSearchKeyRef.current;
       if (
         !activeSearchKey ||
         keyPath === activeSearchKey ||
@@ -621,25 +627,26 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
       skipPreserveActiveSearchRef.current = true;
       clearSearchValue(activeSearchKey);
-      setActiveSearchKey(null);
+      activeSearchKeyRef.current = null;
       setOpenKeys((prev) => {
         const next = new Set(prev);
         next.delete(activeSearchKey);
         return next;
       });
     },
-    [activeSearchKey, clearSearchValue],
+    [clearSearchValue],
   );
 
   const handleMenuOpenChange = useCallback(
     (nextOpenKeys: string[]) => {
       let normalized = normalizeOpenKeys(nextOpenKeys);
-      if (activeSearchKey && openKeys.has(activeSearchKey) && !normalized.includes(activeSearchKey)) {
-        if (normalized.length || skipPreserveActiveSearchRef.current) {
+      const activeSearchKey = activeSearchKeyRef.current;
+      if (activeSearchKey && !normalized.includes(activeSearchKey)) {
+        if (skipPreserveActiveSearchRef.current) {
           clearSearchValue(activeSearchKey);
-          setActiveSearchKey(null);
+          activeSearchKeyRef.current = null;
         } else {
-          normalized = [activeSearchKey];
+          normalized = Array.from(openKeys);
         }
       }
 
@@ -658,7 +665,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       dropdownMenuProps.onOpenChange?.(normalized);
       skipPreserveActiveSearchRef.current = false;
     },
-    [activeSearchKey, clearSearchValue, dropdownMenuProps, openKeys, shouldPreventClose],
+    [clearSearchValue, dropdownMenuProps, openKeys, shouldPreventClose],
   );
 
   useEffect(() => {
@@ -958,13 +965,14 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       trigger={props.trigger ?? ['hover', 'click']}
       open={menuVisible}
       destroyPopupOnHide
+      mouseLeaveDelay={props.mouseLeaveDelay ?? MENU_CLOSE_DELAY}
       overlayClassName={overlayClassName}
       placement="bottomLeft"
       menu={{
         ...dropdownMenuProps,
         openKeys: Array.from(openKeys),
         items: items,
-        subMenuCloseDelay: dropdownMenuProps.subMenuCloseDelay ?? SUBMENU_CLOSE_DELAY,
+        subMenuCloseDelay: dropdownMenuProps.subMenuCloseDelay ?? MENU_CLOSE_DELAY,
         motion: dropdownMenuProps.motion ?? SUBMENU_MOTION_DISABLED,
         onClick: () => {},
         onOpenChange: handleMenuOpenChange,
@@ -975,7 +983,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         },
       }}
       onOpenChange={(visible, info) => {
-        if (!visible && activeSearchKey && info?.source === 'trigger' && !closeByOutsideClickRef.current) {
+        if (!visible && activeSearchKeyRef.current && info?.source === 'trigger' && !closeByOutsideClickRef.current) {
           return;
         }
 

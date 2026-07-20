@@ -356,27 +356,22 @@ describe('plugin-light-extension repo service', () => {
 
   it('rejects delete when references exist without suggesting an unavailable UI action', async () => {
     const repo = await service.createRepo({ name: 'Referenced Repo' }, { requestId: 'req_reference_create' });
-    await app.db.getRepository('lightExtensionReferences').create({
-      values: {
-        repoId: repo.id,
-        entryId: 'lee_referenced',
-        ownerKind: 'flowModel.step',
-        ownerLocator: {
-          kind: 'flowModel.step',
-          flowModelId: 'flow_1',
-          stepId: 'step_1',
-        },
-        ownerLocatorHash: 'owner_hash_1',
-      },
-    });
+    const listReferencesForRepo = vi.fn(async () => [
+      { entryId: 'lee_referenced', ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
+    ]);
+    service.useClientAppService({ listReferencesForRepo, retireClientAppsForRepo: vi.fn() });
 
     await expect(service.deleteRepo({ repoId: repo.id }, { requestId: 'req_delete_referenced' })).rejects.toMatchObject(
       {
         code: 'LIGHT_EXTENSION_REFERENCE_EXISTS',
         status: 409,
         message: 'Light extension repository is referenced and cannot be deleted',
+        details: expect.objectContaining({
+          references: [expect.objectContaining({ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' })],
+        }),
       },
     );
+    expect(listReferencesForRepo).toHaveBeenCalledOnce();
 
     expect(await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id })).toBeTruthy();
     const blockedLog = await app.db.getRepository('lightExtensionLogs').findOne({
@@ -418,6 +413,8 @@ describe('plugin-light-extension repo service', () => {
         compiledAt: new Date(),
       },
     });
+    const retireClientAppsForRepo = vi.fn(async () => undefined);
+    service.useClientAppService({ listReferencesForRepo: vi.fn(async () => []), retireClientAppsForRepo });
 
     const deleted = await service.deleteRepo({ repoId: repo.id }, { requestId: 'req_delete_success' });
     const vscRepo = await app.db.getRepository('vscFileRepositories').findOne({
@@ -429,6 +426,7 @@ describe('plugin-light-extension repo service', () => {
     expect(await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id })).toBeNull();
     expect(await app.db.getRepository('lightExtensionEntries').count({ filter: { repoId: repo.id } })).toBe(0);
     expect(vscRepo?.get('status')).toBe('archived');
+    expect(retireClientAppsForRepo).toHaveBeenCalledWith(repo.id, expect.objectContaining({ LOCK: expect.anything() }));
     await expect(
       app.db.getRepository('lightExtensionReferences').create({
         values: {

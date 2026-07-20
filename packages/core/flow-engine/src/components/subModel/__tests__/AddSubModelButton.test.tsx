@@ -411,7 +411,7 @@ describe('transformItems - searchable flags', () => {
     await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
   });
 
-  it('closes searchable submenu after focus without input', async () => {
+  it('keeps searchable submenu open while interacting with its input', async () => {
     const engine = new FlowEngine();
     await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
@@ -451,7 +451,11 @@ describe('transformItems - searchable flags', () => {
     await user.click(screen.getByRole('textbox'));
     fireEvent.mouseLeave(screen.getByText('Fields'));
 
-    await waitFor(() => expect(screen.queryByText('Field 1')).not.toBeInTheDocument());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
   });
 
   it('closes active searchable submenu after outside click', async () => {

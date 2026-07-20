@@ -509,7 +509,7 @@ export class ReferenceService {
         targetEntryCount = entries.length;
       }
       const entryById = new Map<string, Model>(
-        entries.map((entry: Model) => [normalizeString(entry.get('id')), entry]),
+        entries.map((entry: Model): [string, Model] => [normalizeString(entry.get('id')), entry]),
       );
       const ownerLoads = new Map<string, Promise<FlowModelNode | null>>();
       const loadOwner = (modelUid: string) => {
