@@ -13,7 +13,6 @@ import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
 
 export const DEFAULT_AI_CHAT_BOX_WIDTH = 400;
 export const DEFAULT_AI_CHAT_BOX_HEIGHT = 650;
-export const DEFAULT_AI_CHAT_BOX_GRID_WIDTH = 6;
 
 const isContextItem = (value: unknown): value is ContextItem => {
   return (

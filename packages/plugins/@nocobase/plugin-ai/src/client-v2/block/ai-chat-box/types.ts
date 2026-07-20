@@ -13,7 +13,7 @@ import type { ContextItem } from '../../ai-employees/types';
 
 export type AIChatBoxBlockStructure = {
   subModels: {
-    bodyBlocks: FlowModel[];
+    items: FlowModel[];
     actions: ActionModel[];
   };
 };

@@ -8,37 +8,13 @@
  */
 
 import React from 'react';
-import { Flex, Typography, theme } from 'antd';
 import { FlowModel } from '@nocobase/flow-engine';
-import { tExpr, useT } from '../../locale';
-import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
+import { tExpr } from '../../locale';
 import { AIChatBoxCoreView } from './components/AIChatBoxCoreView';
-
-const AIChatBoxCorePlaceholder: React.FC = () => {
-  const t = useT();
-  const { token } = theme.useToken();
-
-  return (
-    <Flex
-      vertical
-      align="center"
-      justify="center"
-      style={{
-        minHeight: 240,
-        height: '100%',
-        padding: token.paddingLG,
-        color: token.colorTextDescription,
-      }}
-    >
-      <Typography.Text type="secondary">{t('AI chat box core')}</Typography.Text>
-    </Flex>
-  );
-};
 
 export class AIChatBoxCoreModel extends FlowModel {
   render() {
-    const parent = this.parent as AIChatBoxBlockModel | undefined;
-    return parent ? <AIChatBoxCoreView /> : <AIChatBoxCorePlaceholder />;
+    return <AIChatBoxCoreView />;
   }
 }
 

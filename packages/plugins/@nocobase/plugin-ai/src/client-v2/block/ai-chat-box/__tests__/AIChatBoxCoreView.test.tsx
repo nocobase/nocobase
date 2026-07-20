@@ -107,12 +107,12 @@ const makeFlowModel = (uid: string, title: string) => {
 };
 
 const makeModel = (props: AIChatBoxBlockProps): AIChatBoxBlockModel => {
-  const bodyBlocks = [makeFlowModel('body-1', 'Body one')];
+  const items = [makeFlowModel('body-1', 'Body one')];
   return {
     uid: 'chat-box-1',
     props,
     mapSubModels: (_subKey: string, callback: (model: FlowModel, index: number) => unknown) =>
-      bodyBlocks.map((bodyBlock, index) => callback(bodyBlock, index)),
+      items.map((item, index) => callback(item, index)),
   } as AIChatBoxBlockModel;
 };
 
@@ -191,7 +191,6 @@ describe('AIChatBoxCoreView', () => {
     expect(screen.queryByTestId('messages')).toBeNull();
     expect(screen.getByTestId('sender')).toBeInTheDocument();
     expect(mocks.senderProps).toMatchObject({
-      containerStyle: { margin: '8px 0', minWidth: 0 },
       placeholder: 'Ask sales',
       showContextSelector: false,
       showUpload: false,

@@ -23,7 +23,6 @@ import {
   useFlowContext,
   type FlowModelContext,
   type SubModelItem,
-  type SubModelItemsType,
 } from '@nocobase/flow-engine';
 import { Badge, Empty, Button, Flex, Layout, Tooltip, theme, Typography } from 'antd';
 import {
@@ -51,11 +50,9 @@ import { getAIChatBoxConversationScope, getAIChatBoxCreateScope, getAIChatBoxSet
 const { Header } = Layout;
 
 export const AI_CHAT_BOX_ACTION_MODEL_NAMES = ['JSActionModel', 'AIEmployeeActionModel'] as const;
-export const AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
+export const AI_CHAT_BOX_ITEM_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
 export const AI_CHAT_BOX_CORE_MIN_WIDTH = 400;
 export const AI_CHAT_BOX_CORE_MIN_HEIGHT = 420;
-
-const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel']);
 
 const compactHeaderClassName = css`
   .ant-btn {
@@ -91,7 +88,7 @@ const headerActionAddButtonClassName = css`
   align-self: center !important;
 `;
 
-const bodySubModelsClassName = css`
+const bodyItemsClassName = css`
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -101,7 +98,7 @@ const bodySubModelsClassName = css`
   overflow-x: hidden;
 `;
 
-const bodySubModelItemClassName = css`
+const bodyItemClassName = css`
   flex: 0 0 auto;
   min-height: 0;
 `;
@@ -149,40 +146,10 @@ const bodyCoreRendererClassName = css`
 
 export const isAIChatBoxCoreModel = (model: FlowModel) => model instanceof AIChatBoxCoreModel;
 
-export const filterNestedAIChatBoxBlockItems = (items: SubModelItem[]): SubModelItem[] => {
-  return items
-    .map((item): SubModelItem | undefined => {
-      if (nestedChatBoxModelNames.has(String(item.key)) || nestedChatBoxModelNames.has(String(item.useModel))) {
-        return undefined;
-      }
-
-      let children = item.children;
-      if (Array.isArray(children)) {
-        children = filterNestedAIChatBoxBlockItems(children);
-      } else if (typeof children === 'function') {
-        const childrenGetter = children as Exclude<SubModelItemsType, SubModelItem[]>;
-        children = async (ctx: FlowModelContext) => {
-          const resolvedChildren = await childrenGetter(ctx);
-          return filterNestedAIChatBoxBlockItems(resolvedChildren);
-        };
-      }
-
-      if (Array.isArray(children) && children.length === 0 && (item.type === 'group' || !item.createModelOptions)) {
-        return undefined;
-      }
-
-      return {
-        ...item,
-        children,
-      };
-    })
-    .filter((item): item is SubModelItem => !!item);
-};
-
-export const getAIChatBoxBodyBlockItems = async (ctx: FlowModelContext): Promise<SubModelItem[]> => {
+export const getAIChatBoxItems = async (ctx: FlowModelContext): Promise<SubModelItem[]> => {
   return (
     await Promise.all(
-      AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES.filter((modelName) => Boolean(ctx.engine.getModelClass(modelName))).map(
+      AI_CHAT_BOX_ITEM_MODEL_NAMES.filter((modelName) => Boolean(ctx.engine.getModelClass(modelName))).map(
         (modelName) => buildSubModelItems(modelName)(ctx),
       ),
     )
@@ -206,9 +173,9 @@ export const getAIChatBoxActionItems = async (ctx: FlowModelContext): Promise<Su
   return items.filter((item): item is SubModelItem => !!item);
 };
 
-export const moveAddedBlockBeforeCore = async (model: AIChatBoxBlockModel, addedModel: FlowModel) => {
-  const bodyBlocks = model.subModels.bodyBlocks || [];
-  const coreBlock = bodyBlocks.find(isAIChatBoxCoreModel);
+export const moveAddedItemBeforeCore = async (model: AIChatBoxBlockModel, addedModel: FlowModel) => {
+  const items = model.subModels.items || [];
+  const coreBlock = items.find(isAIChatBoxCoreModel);
   if (!coreBlock || coreBlock.uid === addedModel.uid) {
     return;
   }
@@ -236,16 +203,16 @@ const ActionAddButton: React.FC<{
   );
 };
 
-const BodyAddButton: React.FC<{
+const ItemAddButton: React.FC<{
   model: AIChatBoxBlockModel;
 }> = ({ model }) => {
   const t = useT();
   return (
     <AddSubModelButton
       model={model}
-      subModelKey="bodyBlocks"
-      items={getAIChatBoxBodyBlockItems}
-      afterSubModelAdd={(addedModel) => moveAddedBlockBeforeCore(model, addedModel)}
+      subModelKey="items"
+      items={getAIChatBoxItems}
+      afterSubModelAdd={(addedModel) => moveAddedItemBeforeCore(model, addedModel)}
     >
       <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
     </AddSubModelButton>
@@ -281,7 +248,7 @@ const ActionRenderer: React.FC<{
   );
 });
 
-const BodySlot: React.FC<{
+const ItemsSlot: React.FC<{
   model: AIChatBoxBlockModel;
 }> = observer(({ model }) => {
   const t = useT();
@@ -289,7 +256,7 @@ const BodySlot: React.FC<{
   const flowSettings = flowSettingsEnabled
     ? ({ showBackground: false, showBorder: false, toolbarPosition: 'above' } as const)
     : false;
-  const nodes = model.mapSubModels('bodyBlocks', (subModel) => {
+  const nodes = model.mapSubModels('items', (subModel) => {
     const isCore = isAIChatBoxCoreModel(subModel);
     const renderer = (
       <FlowModelRenderer
@@ -309,7 +276,7 @@ const BodySlot: React.FC<{
         }
       />
     );
-    const className = isCore ? bodyCoreItemClassName : bodySubModelItemClassName;
+    const className = isCore ? bodyCoreItemClassName : bodyItemClassName;
 
     return (
       <div
@@ -329,10 +296,10 @@ const BodySlot: React.FC<{
       <DndProvider>
         {flowSettingsEnabled ? (
           <div style={{ padding: '10px 8px 6px', flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>
-            <BodyAddButton model={model} />
+            <ItemAddButton model={model} />
           </div>
         ) : null}
-        <div className={bodySubModelsClassName}>
+        <div className={bodyItemsClassName}>
           {nodes.length ? (
             nodes
           ) : (
@@ -568,7 +535,7 @@ export const AIChatBoxView: React.FC = observer(() => {
             )}
           </Flex>
         </Header>
-        <BodySlot model={model} />
+        <ItemsSlot model={model} />
       </Layout>
     </Layout>
   );

@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { EMPTY_COLUMN_UID, FlowModel, type FlowModelContext, type GridLayoutV2 } from '@nocobase/flow-engine';
+import { FlowModel, type FlowModelContext } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { dialogController } from '../../../ai-employees/stores/dialog-controller';
 import { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
@@ -18,7 +18,6 @@ import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import { AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY } from '../settings';
 import {
   DEFAULT_AI_CHAT_BOX_HEIGHT,
-  DEFAULT_AI_CHAT_BOX_GRID_WIDTH,
   DEFAULT_AI_CHAT_BOX_WIDTH,
   getAIChatBoxConversationScope,
   getAIChatBoxCreateScope,
@@ -40,12 +39,12 @@ type TestAIChatBoxBlockModel = AIChatBoxBlockModel & {
   setDecoratorProps: ReturnType<typeof vi.fn>;
 };
 
-const makeModel = (props: Partial<AIChatBoxSettings> = {}, bodyBlocks: FlowModel[] = []): TestAIChatBoxBlockModel => {
+const makeModel = (props: Partial<AIChatBoxSettings> = {}, items: FlowModel[] = []): TestAIChatBoxBlockModel => {
   const model = {
     uid: 'chat-box-1',
     props,
     mapSubModels: (_subKey: string, callback: (model: FlowModel, index: number) => unknown) =>
-      bodyBlocks.map((bodyBlock, index) => callback(bodyBlock, index)),
+      items.map((item, index) => callback(item, index)),
     setProps: vi.fn((nextProps: Partial<AIChatBoxSettings>) => {
       model.props = {
         ...model.props,
@@ -114,7 +113,7 @@ describe('AI chat box settings helpers', () => {
     ]);
   });
 
-  it('keeps display body blocks out of work context', () => {
+  it('keeps display items out of work context', () => {
     const bodyOne = makeFlowModel('body-1', 'Body one');
     const bodyTwo = makeFlowModel('body-2', 'Body two');
     const model = makeModel(
@@ -138,23 +137,8 @@ describe('AI chat box settings flow', () => {
     });
   });
 
-  it('resizes newly added production blocks in the parent grid', async () => {
+  it('initializes the scope for newly added production blocks', async () => {
     const model = Object.create(AIChatBoxBlockModel.prototype) as AIChatBoxBlockModel;
-    const layout: GridLayoutV2 = {
-      version: 2,
-      rows: [
-        {
-          id: 'row-1',
-          cells: [{ id: 'row-1:cell:0', items: ['chat-box-1'] }],
-          sizes: [24],
-        },
-      ],
-    };
-    const saveGridLayout = vi.fn();
-    const parent = {
-      getGridLayout: vi.fn(() => layout),
-      saveGridLayout,
-    } as unknown as FlowModel;
     const props: AIChatBoxBlockModel['props'] = {};
     const setProps = vi.fn((nextProps: Partial<AIChatBoxSettings>) => {
       Object.assign(props, nextProps);
@@ -163,27 +147,12 @@ describe('AI chat box settings flow', () => {
     Object.defineProperties(model, {
       uid: { value: 'chat-box-1' },
       props: { value: props },
-      parent: { value: parent },
-      _options: { value: { subKey: 'items' } },
       setProps: { value: setProps },
     });
 
     await model.afterAddAsSubModel();
 
     expect(setProps).toHaveBeenCalledWith({ scope: 'chat-box-1' });
-    expect(saveGridLayout).toHaveBeenCalledWith({
-      version: 2,
-      rows: [
-        {
-          id: 'row-1',
-          cells: [
-            { id: 'row-1:cell:0', items: ['chat-box-1'] },
-            { id: 'row-1:cell:empty', items: [EMPTY_COLUMN_UID] },
-          ],
-          sizes: [DEFAULT_AI_CHAT_BOX_GRID_WIDTH, 24 - DEFAULT_AI_CHAT_BOX_GRID_WIDTH],
-        },
-      ],
-    });
   });
 
   it('registers production settings with the common block height menu', () => {

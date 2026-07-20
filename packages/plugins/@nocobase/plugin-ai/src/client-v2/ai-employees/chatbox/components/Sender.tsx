@@ -59,7 +59,6 @@ const senderClassName = css`
 
 export type SenderOptions = {
   placeholder?: string;
-  containerStyle?: React.CSSProperties;
   showContextSelector?: boolean;
   showUpload?: boolean;
   showWebSearch?: boolean;
@@ -177,6 +176,8 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const showWebSearch = options.showWebSearch !== false;
   const placeholder = options.placeholder || 'Enter your question';
   const scope = options.scope ?? runtime.scope;
+  const containerMargin = runtime.mode === 'block' ? '8px 0 0' : '8px 16px';
+  const disclaimerMargin = runtime.mode === 'block' ? '10px 0 0' : '10px 0';
 
   useEffect(() => {
     chatSenderModel.setSenderRef(senderRef);
@@ -292,9 +293,8 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   return (
     <div
       style={{
-        margin: '8px 16px',
+        margin: containerMargin,
         minWidth: 0,
-        ...options.containerStyle,
       }}
     >
       <AntSender
@@ -325,7 +325,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
           style={{
             display: 'block',
             textAlign: 'center',
-            margin: '10px 0',
+            margin: disclaimerMargin,
             fontSize: token.fontSizeSM,
             color: token.colorTextTertiary,
           }}

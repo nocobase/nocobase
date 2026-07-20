@@ -119,7 +119,7 @@ vi.mock('../../../ai-employees/chatbox/components/Conversations', () => ({
 const makeModel = (
   props: AIChatBoxBlockModel['props'] = {},
   decoratorProps: AIChatBoxBlockModel['decoratorProps'] = {},
-  bodyBlocks: FlowModel[] = [],
+  items: FlowModel[] = [],
   flowSettingsEnabled = false,
 ): AIChatBoxBlockModel => {
   return {
@@ -130,7 +130,7 @@ const makeModel = (
       flowSettingsEnabled,
     },
     mapSubModels: (subKey: string, callback: (model: FlowModel, index: number) => React.ReactNode) =>
-      subKey === 'bodyBlocks' ? bodyBlocks.map((bodyBlock, index) => callback(bodyBlock, index)) : [],
+      subKey === 'items' ? items.map((item, index) => callback(item, index)) : [],
   } as AIChatBoxBlockModel;
 };
 
@@ -254,7 +254,7 @@ describe('AIChatBoxView mounted registry', () => {
     expect(coreRendererProps?.extraToolbarItems).toEqual([]);
   });
 
-  it('lets added body blocks push the chat core down inside the scrollable body area', () => {
+  it('lets added body items push the chat core down inside the scrollable body area', () => {
     const { getAllByTestId } = renderAIChatBoxView(makeModel({}, {}, [makeBodyModel(), makeCoreModel()]));
     const [bodyRenderer, coreRenderer] = getAllByTestId('flow-model-renderer');
     const bodyItem = bodyRenderer.parentElement;
