@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-field-simple
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Bước 2: Tạo Field Model
 
 Tạo file mới `src/client-v2/models/DisplaySimpleFieldModel.tsx`. Đây là phần lõi của plugin — định nghĩa cách field render và gắn vào loại field interface nào.

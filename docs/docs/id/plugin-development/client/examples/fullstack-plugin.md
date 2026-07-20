@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
+Selanjutnya jalankan mode pengembangan agar perubahan kode Anda di-hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Langkah 2: Mendefinisikan Tabel Data (Server)
 
 Buat `src/server/collections/todoItems.ts`. NocoBase akan secara otomatis memuat definisi collection di direktori ini:

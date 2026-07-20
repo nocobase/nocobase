@@ -51,6 +51,12 @@ nb scaffold plugin @my-project/plugin-simple-block
 
 这会在 `plugins/@my-project/plugin-simple-block` 下生成基础文件结构。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
+
 ## 第二步：创建区块模型
 
 新建 `src/client-v2/models/SimpleBlockModel.tsx`。这是整个插件的核心——定义区块怎么渲染、怎么配置。

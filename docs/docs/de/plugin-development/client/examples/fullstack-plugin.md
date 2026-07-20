@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 Detaillierte Erläuterungen siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
 
+Starten Sie anschließend den Entwicklungsmodus, damit Ihre Codeänderungen per Hot-Reload übernommen werden:
+
+```bash
+nb source dev
+```
+
 ## Schritt 2: Datentabelle definieren (Server)
 
 Erstellen Sie `src/server/collections/todoItems.ts`. NocoBase lädt automatisch die Collection-Definitionen unter diesem Verzeichnis:

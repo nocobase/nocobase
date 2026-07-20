@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Bước 2: Định nghĩa collection (phía server)
 
 Tạo file mới `src/server/collections/todoItems.ts`. NocoBase sẽ tự động load các collection definition trong thư mục này:

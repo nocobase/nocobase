@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-field-simple
 
 For detailed instructions, see [Writing Your First Plugin](../../write-your-first-plugin).
 
+Then start dev mode so your code changes hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Step 2: Create the Field Model
 
 Create `src/client-v2/models/DisplaySimpleFieldModel.tsx`. This is the core of the plugin -- defining how the field renders and which field interface it binds to.

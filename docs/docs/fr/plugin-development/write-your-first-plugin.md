@@ -10,7 +10,15 @@ Ce document vous accompagnera pour créer de zéro un plugin de bloc utilisable 
 
 ## Prérequis
 
-Avant de commencer, assurez-vous d'avoir installé une application NocoBase via le CLI NocoBase (`nb init`). Le CLI prend en charge deux sources : npm et Git. La source Git est recommandée (lors du développement avec l'IA, vous pouvez directement consulter le code source). Voir [Installer l'application via le CLI](../nocobase-cli/installation/cli.md) ou le [Guide de démarrage AI Agent](../ai/quick-start.mdx).
+Avant de commencer, assurez-vous d'avoir installé une application NocoBase via le CLI NocoBase (`nb init`). Le développement de plugins prend en charge deux sources : npm et Git. La source Git est recommandée (lors du développement avec l'IA, vous pouvez directement consulter le code source). Voir [Installer l'application via le CLI](../nocobase-cli/installation/cli.md).
+
+```bash
+nb init --ui
+```
+
+Choisissez ensuite l'option `Git source install` pour installer l'application NocoBase :
+
+![git source](https://static-docs.nocobase.com/20260720173518.png)
 
 Une fois l'installation terminée, vous pouvez commencer.
 
@@ -58,7 +66,13 @@ Une fois la commande exécutée avec succès, des fichiers de base seront géné
         └─ zh-CN.json
 ```
 
-Une fois la création terminée, vous pouvez accéder à la page « Gestionnaire de plugins » dans votre navigateur ([adresse par défaut](http://localhost:13000/admin/settings/plugin-manager)) pour vérifier que le plugin apparaît bien dans la liste.
+Une fois la création terminée, vous pouvez exécuter
+
+```bash
+nb source dev
+```
+
+Accédez ensuite à la page « Gestionnaire de plugins » dans votre navigateur ([adresse par défaut](http://localhost:13000/admin/settings/plugin-manager)) pour vérifier que le plugin apparaît bien dans la liste.
 
 ## Étape 2 : implémenter un bloc client simple
 
@@ -87,15 +101,22 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Enregistrez le modèle de bloc**. Modifiez `client-v2/models/index.ts` pour exporter le nouveau modèle, afin qu'il puisse être chargé par le runtime frontend :
+2. **Enregistrez le modèle de bloc**. Modifiez `client-v2/plugin.ts` pour enregistrer le nouveau modèle, afin que le runtime frontend puisse le charger :
 
 ```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      }
+    })
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
 Après avoir sauvegardé le code, si vous exécutez un script de développement, vous devriez voir des journaux de rechargement à chaud dans la sortie du terminal.
@@ -118,30 +139,12 @@ Après l'activation, créez une nouvelle page « Modern page (v2) ». Lors de l'
 
 ### Rendre le plugin préinstallé ou activé par défaut (optionnel)
 
-Ce qui précède décrit l'activation manuelle d'un plugin individuel. Si vous maintenez votre propre application NocoBase et souhaitez que certains plugins soient automatiquement disponibles après l'exécution de `nocobase install` (première installation) ou `nocobase upgrade` (mise à niveau), vous pouvez utiliser deux variables d'environnement pour contrôler l'état par défaut des plugins :
+Ce qui précède décrit l'activation manuelle d'un plugin individuel. Si vous maintenez votre propre application NocoBase et souhaitez que certains plugins soient automatiquement disponibles après l'exécution de `nb init` (première installation) ou `nb app upgrade` (mise à niveau), vous pouvez utiliser deux variables d'environnement pour contrôler l'état par défaut des plugins :
 
 - **`APPEND_PRESET_LOCAL_PLUGINS` (ajouter aux plugins locaux préinstallés par défaut)** — ajoute le plugin à la liste des plugins locaux préinstallés ; il apparaît dans le « Gestionnaire de plugins » après l'installation, mais n'est pas activé par défaut et doit être activé manuellement
 - **`APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut)** — ajoute le plugin à la liste des plugins intégrés, qui sont automatiquement activés lors de l'installation ; en tant que plugins intégrés, **ils ne peuvent pas être désactivés ni supprimés dans le « Gestionnaire de plugins »**
 
-La valeur de ces deux variables est le nom du package du plugin (le champ `name` dans `package.json`), avec plusieurs plugins séparés par des virgules. Configurez-les dans le fichier `.env` :
-
-```bash
-# Préinstallé par défaut : apparaît dans la liste du Gestionnaire de plugins, mais n'est pas activé automatiquement
-APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
-
-# Activé par défaut : installé et activé automatiquement, et ne peut pas être désactivé depuis l'interface
-APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
-```
-
-En règle générale, `nb plugin enable` suffit pour le développement et le débogage en local. Ces deux variables sont davantage adaptées aux scénarios de distribution « prêts à l'emploi » — par exemple, si vous avez empaqueté une application NocoBase avec un ensemble fixe de plugins et souhaitez que ces plugins soient directement disponibles après l'initialisation.
-
-:::tip Astuce
-
-- Le plugin doit être téléchargé localement et pouvoir être résolu dans `node_modules` ; voir [Structure du projet](./project-structure.md)
-- Après configuration, il faut réexécuter `nocobase install` ou `nocobase upgrade` pour que les changements prennent effet
-- La description complète des variables d'environnement est disponible dans [Variables d'environnement](../get-started/installation/env.md#append_preset_local_plugins)
-
-:::
+Pour plus de détails, consultez la documentation [Variables d'environnement](../get-started/installation/env.md#append_preset_local_plugins).
 
 ## Étape 4 : construire et empaqueter
 

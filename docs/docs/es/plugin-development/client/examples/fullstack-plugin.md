@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 Para más detalles, consulte [Crear el primer plugin](../../write-your-first-plugin).
 
+A continuación, inicie el modo de desarrollo para que sus cambios de código se recarguen en caliente:
+
+```bash
+nb source dev
+```
+
 ## Paso 2: definir la tabla (servidor)
 
 Cree `src/server/collections/todoItems.ts`. NocoBase carga automáticamente las definiciones de Collection de este directorio:

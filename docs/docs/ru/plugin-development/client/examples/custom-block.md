@@ -51,6 +51,12 @@ nb scaffold plugin @my-project/plugin-simple-block
 
 Это сгенерирует базовую файловую структуру в `plugins/@my-project/plugin-simple-block`. Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
 
+Затем запустите режим разработки, чтобы изменения кода подхватывались горячей перезагрузкой:
+
+```bash
+nb source dev
+```
+
 ## Шаг 2: создать модель блока
 
 Создайте `src/client-v2/models/SimpleBlockModel.tsx`. Это ядро плагина — здесь определяется, как блок рендерится и как настраивается.

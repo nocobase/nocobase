@@ -29,7 +29,7 @@ Sau khi enable plugin:
 
 Đảm bảo bạn đã:
 
-1. Tạo một dự án NocoBase thông qua `nb init` (khuyến nghị sử dụng nguồn Git), và ứng dụng đã chạy thành công
+1. Tạo một dự án NocoBase thông qua `nb init --ui` (khuyến nghị sử dụng nguồn Git)
 2. Đã mở editor hỗ trợ AI Agent (như Claude Code, Codex, Cursor, v.v.), với thư mục làm việc được đặt là thư mục gốc của dự án (`<app-path>`)
 
 Cấu trúc thư mục dự án do `nb init` tạo ra như sau:
@@ -95,6 +95,12 @@ nb scaffold plugin @my-project/plugin-watermark
 ```
 
 AI đã sinh cấu trúc thư mục plugin chuẩn dưới `plugins/@my-project/plugin-watermark/`.
+
+Sau khi tạo scaffold, chạy chế độ phát triển tại thư mục gốc của dự án (`<app-path>`) để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
 
 ### 3. Viết code phía server
 

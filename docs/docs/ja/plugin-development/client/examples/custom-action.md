@@ -49,6 +49,12 @@ nb scaffold plugin @my-project/plugin-simple-action
 
 詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、コードを変更するたびにホットリロードされます：
+
+```bash
+nb source dev
+```
+
 ## ステップ2：操作モデルの作成
 
 各操作は表示シーンの宣言が必要で、`static scene` プロパティで指定します：

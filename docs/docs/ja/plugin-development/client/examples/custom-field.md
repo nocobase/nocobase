@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-field-simple
 
 詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、コードを変更するたびにホットリロードされます：
+
+```bash
+nb source dev
+```
+
 ## ステップ2：フィールドモデルの作成
 
 `src/client-v2/models/DisplaySimpleFieldModel.tsx` を新規作成します。これがプラグインの中核で、フィールドのレンダリング方法とバインド先のフィールドインターフェースを定義します。

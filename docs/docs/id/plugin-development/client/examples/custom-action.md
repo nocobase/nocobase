@@ -49,6 +49,12 @@ nb scaffold plugin @my-project/plugin-simple-action
 
 Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
+Selanjutnya jalankan mode pengembangan agar perubahan kode Anda di-hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Langkah 2: Membuat Model Action
 
 Setiap Action perlu mendeklarasikan skenario kemunculannya, ditentukan melalui properti `static scene`:

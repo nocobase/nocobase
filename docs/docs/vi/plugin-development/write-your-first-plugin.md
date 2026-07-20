@@ -10,7 +10,15 @@ Tài liệu này sẽ hướng dẫn bạn tạo từ đầu một Plugin Block 
 
 ## Điều kiện tiên quyết
 
-Trước khi bắt đầu, hãy chắc chắn bạn đã cài đặt ứng dụng NocoBase qua NocoBase CLI (`nb init`). CLI hỗ trợ hai nguồn npm và Git, khuyến nghị dùng nguồn Git (khi phát triển với AI có thể tham khảo trực tiếp source code). Xem chi tiết tại [Cài đặt bằng CLI](../nocobase-cli/installation/cli.md) hoặc [Hướng dẫn kết nối AI Agent](../ai/quick-start.mdx).
+Trước khi bắt đầu, hãy chắc chắn bạn đã cài đặt ứng dụng NocoBase qua NocoBase CLI (`nb init`). Phát triển plugin hỗ trợ hai nguồn npm và Git, khuyến nghị dùng nguồn Git (khi phát triển với AI có thể tham khảo trực tiếp source code). Xem chi tiết tại [Cài đặt bằng CLI](../nocobase-cli/installation/cli.md).
+
+```bash
+nb init --ui
+```
+
+Sau đó chọn phương án `Git source install` để cài đặt ứng dụng NocoBase:
+
+![git source](https://static-docs.nocobase.com/20260720173518.png)
 
 Sau khi cài xong là bạn có thể bắt đầu.
 
@@ -58,7 +66,13 @@ Sau khi lệnh chạy thành công, các file cơ bản sẽ được tạo tron
         └─ zh-CN.json
 ```
 
-Sau khi tạo xong, bạn có thể truy cập trang "Plugin Manager" trên trình duyệt (địa chỉ mặc định: http://localhost:13000/admin/settings/plugin-manager) để kiểm tra Plugin đã xuất hiện trong danh sách chưa.
+Sau khi tạo xong, bạn có thể chạy
+
+```bash
+nb source dev
+```
+
+Sau đó truy cập trang "Plugin Manager" trên trình duyệt ([địa chỉ mặc định](http://localhost:13000/admin/settings/plugin-manager)) để kiểm tra Plugin đã xuất hiện trong danh sách chưa.
 
 ## Bước 2: Triển khai một Block client đơn giản
 
@@ -87,15 +101,22 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Đăng ký model Block**. Sửa `client-v2/models/index.ts`, export model mới để runtime front-end load được:
+2. **Đăng ký model Block**. Sửa `client-v2/plugin.ts`, đăng ký model mới để runtime front-end load được:
 
 ```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      }
+    })
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
 Sau khi lưu code, nếu bạn đang chạy script phát triển, bạn sẽ thấy log hot-reload xuất hiện ở terminal.
@@ -118,30 +139,12 @@ Sau khi kích hoạt, hãy tạo một trang "Modern page (v2)" mới, khi thêm
 
 ### Đặt Plugin thành mặc định hoặc tự động kích hoạt (tùy chọn)
 
-Ở trên là cách bật từng Plugin thủ công. Nếu bạn đang duy trì ứng dụng NocoBase của riêng mình và muốn một số Plugin tự động sẵn sàng sau khi chạy `nocobase install` (cài đặt lần đầu) hoặc `nocobase upgrade` (nâng cấp), bạn có thể dùng hai biến môi trường để kiểm soát trạng thái mặc định của Plugin:
+Ở trên là cách bật từng Plugin thủ công. Nếu bạn đang duy trì ứng dụng NocoBase của riêng mình và muốn một số Plugin tự động sẵn sàng sau khi chạy `nb init` (cài đặt lần đầu) hoặc `nb app upgrade` (nâng cấp), bạn có thể dùng hai biến môi trường để kiểm soát trạng thái mặc định của Plugin:
 
 - **`APPEND_PRESET_LOCAL_PLUGINS` (Thêm Plugin preset mặc định)** — Thêm Plugin vào danh sách Plugin preset local, sau khi cài đặt Plugin sẽ xuất hiện trong "Trình quản lý Plugin", nhưng mặc định không kích hoạt, cần bạn bật thủ công
 - **`APPEND_PRESET_BUILT_IN_PLUGINS` (Thêm Plugin tích hợp mặc định)** — Thêm Plugin vào danh sách Plugin tích hợp, Plugin sẽ được tự động kích hoạt khi cài đặt, và vì là Plugin tích hợp nên **không thể tắt hay xóa trong "Trình quản lý Plugin"**
 
-Giá trị của cả hai biến là tên package của Plugin (trường `name` trong `package.json`), nhiều Plugin phân tách bằng dấu phẩy tiếng Anh. Cấu hình trong file `.env` như sau:
-
-```bash
-# Preset mặc định: xuất hiện trong danh sách Trình quản lý Plugin, nhưng không tự động kích hoạt
-APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
-
-# Tự động kích hoạt: tự động cài đặt và kích hoạt, và không thể tắt trên giao diện
-APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
-```
-
-Thông thường, `nb plugin enable` ở trên là đủ cho phát triển và debug local. Hai biến này phù hợp hơn cho các kịch bản phát hành "mở hộp là dùng được" — ví dụ khi bạn đóng gói một ứng dụng NocoBase kèm theo bộ Plugin cố định và muốn Plugin sẵn sàng ngay sau khi khởi tạo.
-
-:::tip Mẹo
-
-- Plugin cần đã được tải về local và có thể tìm thấy trong `node_modules`, xem [Cấu trúc thư mục dự án](./project-structure.md)
-- Sau khi cấu hình, cần chạy lại `nocobase install` hoặc `nocobase upgrade` thì mới có hiệu lực
-- Xem đầy đủ các biến môi trường tại [Biến môi trường](../get-started/installation/env.md#append_preset_local_plugins)
-
-:::
+Xem chi tiết tại tài liệu [Biến môi trường](../get-started/installation/env.md#append_preset_local_plugins).
 
 ## Bước 4: Build và đóng gói
 

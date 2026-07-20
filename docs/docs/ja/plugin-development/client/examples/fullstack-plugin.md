@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、コードを変更するたびにホットリロードされます：
+
+```bash
+nb source dev
+```
+
 ## ステップ2：データテーブルの定義（サーバーサイド）
 
 `src/server/collections/todoItems.ts` を新規作成します。NocoBase はこのディレクトリ配下の collection 定義を自動的に読み込みます：

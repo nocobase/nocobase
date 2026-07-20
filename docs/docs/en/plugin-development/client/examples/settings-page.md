@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-settings-page
 
 This will generate a basic file structure under `plugins/@my-project/plugin-settings-page`, including `src/client-v2/`, `src/server/`, `src/locale/`, and other directories. For detailed instructions, see [Writing Your First Plugin](../../write-your-first-plugin).
 
+Then start dev mode so your code changes hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Step 2: Register the Settings Page
 
 Edit `src/client-v2/plugin.tsx`. In `load()`, use `this.pluginSettingsManager` to register the settings page. This is done in two steps -- first register the menu entry with `addMenuItem()`, then register the actual page with `addPageTabItem()`:

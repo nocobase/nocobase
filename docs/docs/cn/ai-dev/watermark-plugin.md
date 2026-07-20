@@ -29,7 +29,7 @@ keywords: "AI 开发,水印插件,NocoBase 插件,实战案例,AI 编程"
 
 确保你已经：
 
-1. 通过 `nb init` 创建了一个 NocoBase 项目（推荐使用 Git 来源），并且应用已经跑起来
+1. 通过 `nb init --ui` 创建了一个 NocoBase 项目（推荐使用 Git 来源）
 2. 打开了支持 AI Agent 的编辑器（比如 Claude Code、Codex、Cursor 等），工作目录设为项目根目录（`<app-path>`）
 
 `nb init` 创建的项目目录结构如下：
@@ -95,6 +95,12 @@ nb scaffold plugin @my-project/plugin-watermark
 ```
 
 AI 在 `plugins/@my-project/plugin-watermark/` 下生成了标准的插件目录结构。
+
+脚手架创建好后，在项目根目录（`<app-path>`）下运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
 
 ### 3. 编写服务端代码
 

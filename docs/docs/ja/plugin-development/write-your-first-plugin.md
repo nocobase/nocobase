@@ -10,7 +10,15 @@ keywords: "プラグイン作成,最初のプラグイン,nb scaffold plugin,プ
 
 ## 前提条件
 
-始める前に、NocoBase CLI（`nb init`）でアプリケーションをインストール済みであることを確認してください。CLI は npm と Git の 2 つのソースをサポートしており、Git ソースの使用を推奨します（AI 開発時にソースコードを直接参照できます）。詳細は [CLI でアプリケーションをインストールする](../nocobase-cli/installation/cli.md) または [AI Agent 導入ガイド](../ai/quick-start.mdx) をご覧ください。
+始める前に、NocoBase CLI（`nb init`）でアプリケーションをインストール済みであることを確認してください。プラグイン開発は npm と Git の 2 つのソースをサポートしており、Git ソースの使用を推奨します（AI 開発時にソースコードを直接参照できます）。詳細は [CLI でアプリケーションをインストールする](../nocobase-cli/installation/cli.md) をご覧ください。
+
+```bash
+nb init --ui
+```
+
+続いて `Git source install` を選択して NocoBase アプリケーションをインストールします：
+
+![git source](https://static-docs.nocobase.com/20260720173518.png)
 
 インストールが完了したら、開発を始められます。
 
@@ -58,7 +66,13 @@ nb scaffold plugin @my-project/plugin-hello
         └─ zh-CN.json
 ```
 
-作成後、ブラウザで「プラグインマネージャー」ページ（デフォルトアドレス：http://localhost:13000/admin/settings/plugin-manager）にアクセスし、プラグインがリストに表示されているか確認できます。
+作成後、次のコマンドを実行できます：
+
+```bash
+nb source dev
+```
+
+そしてブラウザで「プラグインマネージャー」ページ（[デフォルトアドレス](http://localhost:13000/admin/settings/plugin-manager)）にアクセスし、プラグインがリストに表示されているか確認できます。
 
 ## ステップ 2：シンプルなクライアントブロックを実装する
 
@@ -87,15 +101,22 @@ HelloBlockModel.define({
 });
 ```
 
-2. **ブロックモデルを登録します**。`client-v2/models/index.ts` を編集し、新しいモデルをエクスポートして、フロントエンドランタイムでロードできるようにします：
+2. **ブロックモデルを登録します**。`client-v2/plugin.ts` を編集し、新しいモデルを登録して、フロントエンドランタイムでロードできるようにします：
 
 ```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      }
+    })
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
 コードを保存した後、開発スクリプトを実行している場合は、ターミナル出力にホットリロードのログが表示されるはずです。
@@ -118,30 +139,12 @@ export default {
 
 ### プラグインをデフォルトでプリセットまたはデフォルトで有効化する（オプション）
 
-上記では単一プラグインを手動で有効化する方法を説明しました。自分の NocoBase アプリケーションを管理していて、`nocobase install`（初回インストール）や `nocobase upgrade`（アップグレード）の実行後に特定のプラグインを自動的に準備しておきたい場合は、2 つの環境変数でプラグインのデフォルト状態を制御できます：
+上記では単一プラグインを手動で有効化する方法を説明しました。自分の NocoBase アプリケーションを管理していて、`nb init`（初回インストール）や `nb app upgrade`（アップグレード）の実行後に特定のプラグインを自動的に準備しておきたい場合は、2 つの環境変数でプラグインのデフォルト状態を制御できます：
 
 - **`APPEND_PRESET_LOCAL_PLUGINS`（デフォルトプリセットプラグインの追加）** — プラグインをプリセット済みのローカルプラグインリストに追加します。インストール後に「プラグインマネージャー」に表示されますが、デフォルトでは無効であり、手動で有効化する必要があります
 - **`APPEND_PRESET_BUILT_IN_PLUGINS`（デフォルト内蔵プラグインの追加）** — プラグインを内蔵プラグインリストに追加します。インストール時に自動的に有効化され、内蔵プラグインとして**「プラグインマネージャー」では無効化も削除もできません**
 
-どちらの変数の値もプラグインのパッケージ名（`package.json` の `name`）で、複数のプラグインは英語のカンマで区切ります。`.env` での設定例：
-
-```bash
-# デフォルトプリセット：プラグインマネージャーのリストに表示されるが、自動的には有効化されない
-APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
-
-# デフォルト有効化：自動的にインストールして有効化され、画面から無効化できない
-APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
-```
-
-通常、ローカル開発・デバッグには前述の `nb plugin enable` で十分です。これら 2 つの変数は「すぐに使える」配布シナリオに適しています——たとえば、固定のプラグインセットを含む NocoBase アプリケーションをパッケージングし、初期化後にプラグインをすぐに利用可能にしたい場合などです。
-
-:::tip ヒント
-
-- プラグインがローカルにダウンロードされ、`node_modules` で解決できる状態になっている必要があります。[プロジェクトディレクトリ構造](./project-structure.md)を参照してください
-- 設定後、`nocobase install` または `nocobase upgrade` を再実行することで有効になります
-- 環境変数の完全な説明は[環境変数](../get-started/installation/env.md#append_preset_local_plugins)を参照してください
-
-:::
+詳しくは[環境変数](../get-started/installation/env.md#append_preset_local_plugins)のドキュメントを参照してください。
 
 ## ステップ 4：ビルドとパッケージング
 

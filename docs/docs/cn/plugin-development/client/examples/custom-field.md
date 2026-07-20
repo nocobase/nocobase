@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-field-simple
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
+
 ## 第二步：创建字段模型
 
 新建 `src/client-v2/models/DisplaySimpleFieldModel.tsx`。这是插件的核心——定义字段怎么渲染，以及绑定到哪种字段接口。

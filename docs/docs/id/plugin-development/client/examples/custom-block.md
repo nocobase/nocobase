@@ -51,6 +51,12 @@ nb scaffold plugin @my-project/plugin-simple-block
 
 Ini akan menghasilkan struktur file dasar di `plugins/@my-project/plugin-simple-block`. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
+Selanjutnya jalankan mode pengembangan agar perubahan kode Anda di-hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Langkah 2: Membuat Model Block
 
 Buat `src/client-v2/models/SimpleBlockModel.tsx`. Ini adalah inti dari seluruh plugin — mendefinisikan bagaimana Block dirender dan dikonfigurasi.

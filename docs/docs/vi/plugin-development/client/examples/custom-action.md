@@ -49,6 +49,12 @@ nb scaffold plugin @my-project/plugin-simple-action
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Bước 2: Tạo Action Model
 
 Mỗi Action cần khai báo kịch bản xuất hiện qua thuộc tính `static scene`:

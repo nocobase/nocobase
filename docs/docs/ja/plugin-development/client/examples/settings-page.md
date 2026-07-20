@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-settings-page
 
 `plugins/@my-project/plugin-settings-page` 配下に `src/client-v2/`、`src/server/`、`src/locale/` などのディレクトリを含む基本的なファイル構成が生成されます。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、コードを変更するたびにホットリロードされます：
+
+```bash
+nb source dev
+```
+
 ## ステップ2：設定ページの登録
 
 `src/client-v2/plugin.tsx` を編集し、`load()` 内で `this.pluginSettingsManager` を使って設定ページを登録します。2ステップで行います — まず `addMenuItem()` でメニューエントリを登録し、次に `addPageTabItem()` で実際のページを登録します：

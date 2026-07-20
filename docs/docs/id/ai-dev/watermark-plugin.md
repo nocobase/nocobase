@@ -29,7 +29,7 @@ Setelah Plugin diaktifkan:
 
 Pastikan Anda telah:
 
-1. Membuat proyek NocoBase melalui `nb init` (disarankan menggunakan sumber Git), dan aplikasi sudah berjalan
+1. Membuat proyek NocoBase melalui `nb init --ui` (disarankan menggunakan sumber Git)
 2. Membuka editor yang mendukung AI Agent (seperti Claude Code, Codex, Cursor, dll), dengan direktori kerja diatur ke direktori root proyek (`<app-path>`)
 
 Struktur direktori proyek yang dibuat oleh `nb init` adalah sebagai berikut:
@@ -95,6 +95,12 @@ nb scaffold plugin @my-project/plugin-watermark
 ```
 
 AI menghasilkan struktur direktori Plugin standar di `plugins/@my-project/plugin-watermark/`.
+
+Setelah scaffold dibuat, jalankan mode pengembangan di direktori root proyek (`<app-path>`) agar perubahan kode Anda di-hot-reload:
+
+```bash
+nb source dev
+```
 
 ### 3. Menulis Kode Sisi Server
 

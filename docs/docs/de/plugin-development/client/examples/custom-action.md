@@ -49,6 +49,12 @@ nb scaffold plugin @my-project/plugin-simple-action
 
 Detaillierte Erläuterungen siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
 
+Starten Sie anschließend den Entwicklungsmodus, damit Ihre Codeänderungen per Hot-Reload übernommen werden:
+
+```bash
+nb source dev
+```
+
 ## Schritt 2: Aktionsmodelle erstellen
 
 Jede Aktion muss das Szenario deklarieren, in dem sie erscheint, indem sie über die Eigenschaft `static scene` angegeben wird:

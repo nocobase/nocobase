@@ -49,6 +49,12 @@ nb scaffold plugin @my-project/plugin-simple-action
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
+
 ## 第二步：创建操作模型
 
 每个操作需要声明它出现的场景，通过 `static scene` 属性指定：

@@ -51,6 +51,12 @@ nb scaffold plugin @my-project/plugin-simple-block
 
 Lệnh này sẽ sinh cấu trúc file cơ bản tại `plugins/@my-project/plugin-simple-block`. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Bước 2: Tạo Block Model
 
 Tạo file mới `src/client-v2/models/SimpleBlockModel.tsx`. Đây là phần lõi của toàn bộ plugin — định nghĩa cách block render và cách cấu hình.

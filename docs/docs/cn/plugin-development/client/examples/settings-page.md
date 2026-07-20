@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-settings-page
 
 这会在 `plugins/@my-project/plugin-settings-page` 下生成基础文件结构，包括 `src/client-v2/`、`src/server/`、`src/locale/` 等目录。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
+
 ## 第二步：注册设置页
 
 编辑 `src/client-v2/plugin.tsx`，在 `load()` 里用 `this.pluginSettingsManager` 注册设置页。分两步——先用 `addMenuItem()` 注册菜单入口，再用 `addPageTabItem()` 注册实际页面：

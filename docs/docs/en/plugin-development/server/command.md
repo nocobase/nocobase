@@ -30,7 +30,7 @@ export default function (app: Application) {
   app
     .command('echo')
     .option('-v, --version')
-    .action(async ([options]) => {
+    .action(async (options) => {
       console.log('Hello World!');
       if (options.version) {
         console.log('Current version:', await app.version.get());
@@ -68,7 +68,7 @@ export default class PluginHelloServer extends Plugin {
       app
         .command('echo')
         .option('-v, --version')
-        .action(async ([options]) => {
+        .action(async (options) => {
           console.log('Hello World!');
           if (options.version) {
             console.log('Current version:', await app.version.get());

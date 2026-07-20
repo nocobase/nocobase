@@ -29,7 +29,7 @@ Nach Aktivierung des Plugins:
 
 Stellen Sie sicher, dass Sie:
 
-1. Mit `nb init` ein NocoBase-Projekt erstellt haben (empfohlen mit Git-Quelle), und die Anwendung läuft bereits
+1. Mit `nb init --ui` ein NocoBase-Projekt erstellt haben (empfohlen mit Git-Quelle)
 2. Einen Editor mit KI-Agent-Unterstützung geöffnet haben (z. B. Claude Code, Codex, Cursor usw.), wobei das Arbeitsverzeichnis auf das Projektstammverzeichnis (`<app-path>`) gesetzt ist
 
 Die mit `nb init` erstellte Projektverzeichnisstruktur sieht wie folgt aus:
@@ -95,6 +95,12 @@ nb scaffold plugin @my-project/plugin-watermark
 ```
 
 Die KI generiert unter `plugins/@my-project/plugin-watermark/` die Standard-Verzeichnisstruktur des Plugins.
+
+Sobald das Gerüst erstellt ist, starten Sie den Entwicklungsmodus im Projektstammverzeichnis (`<app-path>`), damit Ihre Codeänderungen per Hot-Reload übernommen werden:
+
+```bash
+nb source dev
+```
 
 ### 3. Serverseitigen Code schreiben
 

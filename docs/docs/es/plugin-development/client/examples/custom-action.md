@@ -49,6 +49,12 @@ nb scaffold plugin @my-project/plugin-simple-action
 
 Para más detalles, consulte [Crear el primer plugin](../../write-your-first-plugin).
 
+A continuación, inicie el modo de desarrollo para que sus cambios de código se recarguen en caliente:
+
+```bash
+nb source dev
+```
+
 ## Paso 2: crear los modelos de acción
 
 Cada acción debe declarar su escenario mediante la propiedad `static scene`:

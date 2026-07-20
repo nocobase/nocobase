@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
 
+Затем запустите режим разработки, чтобы изменения кода подхватывались горячей перезагрузкой:
+
+```bash
+nb source dev
+```
+
 ## Шаг 2: определить таблицу данных (сервер)
 
 Создайте `src/server/collections/todoItems.ts`. NocoBase автоматически загружает определения collection из этого каталога:

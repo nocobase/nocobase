@@ -29,7 +29,7 @@ After enabling the plugin:
 
 Make sure you have:
 
-1. Created a NocoBase project via `nb init` (Git source is recommended), and the application is already running
+1. Created a NocoBase project via `nb init --ui` (Git source is recommended)
 2. An editor that supports AI Agent open (e.g., Claude Code, Codex, Cursor, etc.), with the working directory set to the project root (`<app-path>`)
 
 The project directory structure created by `nb init` is as follows:
@@ -95,6 +95,12 @@ nb scaffold plugin @my-project/plugin-watermark
 ```
 
 AI generates a standard plugin directory structure under `plugins/@my-project/plugin-watermark/`.
+
+Once the scaffold is created, start dev mode from the project root (`<app-path>`) so your code changes hot-reload:
+
+```bash
+nb source dev
+```
 
 ### 3. Write Server-Side Code
 

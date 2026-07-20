@@ -52,6 +52,12 @@ nb scaffold plugin @my-project/plugin-settings-page
 
 Lệnh này sẽ sinh cấu trúc file cơ bản tại `plugins/@my-project/plugin-settings-page`, bao gồm các thư mục `src/client-v2/`, `src/server/`, `src/locale/`, v.v. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
+
 ## Bước 2: Đăng ký trang cài đặt
 
 Chỉnh sửa `src/client-v2/plugin.tsx`, trong `load()` dùng `this.pluginSettingsManager` để đăng ký trang cài đặt. Chia làm hai bước — trước tiên dùng `addMenuItem()` để đăng ký mục menu, sau đó dùng `addPageTabItem()` để đăng ký trang thực tế:

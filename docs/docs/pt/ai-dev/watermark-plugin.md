@@ -29,7 +29,7 @@ Depois que o plugin é habilitado:
 
 Certifique-se de que você já tem:
 
-1. Um projeto NocoBase criado via `nb init` (recomenda-se a origem Git) com a aplicação em execução
+1. Um projeto NocoBase criado via `nb init --ui` (recomenda-se a origem Git)
 2. Um editor com suporte a AI Agent aberto (por exemplo, Claude Code, Codex, Cursor, etc.), com o diretório de trabalho definido como o diretório raiz do projeto (`<app-path>`)
 
 O diretório do projeto criado via `nb init` possui a seguinte estrutura:
@@ -95,6 +95,12 @@ nb scaffold plugin @my-project/plugin-watermark
 ```
 
 A IA gera a estrutura padrão de diretórios do plugin em `plugins/@my-project/plugin-watermark/`.
+
+Depois de criar o scaffold, inicie o modo de desenvolvimento no diretório raiz do projeto (`<app-path>`) para que suas alterações de código sejam recarregadas a quente:
+
+```bash
+nb source dev
+```
 
 ### 3. Escrever o código do servidor
 

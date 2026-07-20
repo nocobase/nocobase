@@ -55,6 +55,12 @@ nb scaffold plugin @my-project/plugin-custom-table-block-resource
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
+
 ## 第二步：定义数据表（服务端）
 
 新建 `src/server/collections/todoItems.ts`，NocoBase 会自动加载这个目录下的 collection 定义：
