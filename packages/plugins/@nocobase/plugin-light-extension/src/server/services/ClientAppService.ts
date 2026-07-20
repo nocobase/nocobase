@@ -7,19 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Transaction, type Database, type Model } from '@nocobase/database';
-import { uid } from '@nocobase/utils';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import { contentType as formatContentType, lookup as lookupMimeType } from 'mime-types';
 import { defaultTreeAdapter, html, parse, serialize, type DefaultTreeAdapterTypes } from 'parse5';
 import path from 'path';
 import type { Readable } from 'stream';
 
-import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
-import type { LightExtensionRepoRecord } from '../../shared/types';
-import { prepareClientAppArchive, type PreparedClientAppArchive } from './ClientAppArchive';
-import type { LightExtensionPermissionService } from './LightExtensionPermissionService';
-import type { LightExtensionRepoService, LightExtensionServiceContext } from './LightExtensionRepoService';
-import type { ClientAppAssetStorage, ClientAppStoredFile } from './ClientAppStorage';
+import { LightExtensionError } from '../../shared/errors';
+import { JsPortalStorage, type JsPortalAsset, type JsPortalDescriptor } from './JsPortalStorage';
 
 export interface ClientAppDescriptor {
   entryId: string;
@@ -40,17 +35,6 @@ export interface ClientAppSummary {
   key: string;
   title: string;
   repoTitle: string;
-}
-
-export interface ClientAppAsset {
-  relativePath: string;
-  size: number;
-  mimeType?: string;
-  stream: Readable;
-}
-
-export interface ClientAppOpenOptions {
-  expectedContentHash?: string;
 }
 
 export interface ClientAppStaticRequest {
@@ -81,23 +65,9 @@ export type ClientAppReferenceResolver = (
   transaction: Transaction,
 ) => Promise<readonly ClientAppReference[]>;
 
-export interface ClientAppServiceOptions {
-  onCleanupError?: (error: unknown, assetSetId: string) => void;
-}
-
 const CLIENT_APP_CACHE_CONTROL = 'no-cache';
 const CLIENT_APP_RUNTIME_SCRIPT_ATTRIBUTE = 'data-nocobase-client-app-runtime';
 const NOT_FOUND_BODY = Buffer.from('Not Found');
-
-interface StagedClientAppAsset {
-  relativePath: string;
-  storedFile: ClientAppStoredFile;
-}
-
-interface ClientAppRecords {
-  app: Model;
-  repo: Model;
-}
 
 interface NormalizedClientAppStaticRequest extends ClientAppStaticRequest {
   relativePath: string;
@@ -106,15 +76,14 @@ interface NormalizedClientAppStaticRequest extends ClientAppStaticRequest {
   apiBaseUrl: string;
 }
 
+type ClientAppPortalStorage = Pick<JsPortalStorage, 'listPortals' | 'openAsset' | 'removeRepo' | 'resolvePortal'>;
+
 export class ClientAppService {
   private referenceResolver?: ClientAppReferenceResolver;
 
   constructor(
     private readonly db: Database,
-    private readonly repoService: LightExtensionRepoService,
-    private readonly permissionService: LightExtensionPermissionService,
-    private readonly storage: ClientAppAssetStorage,
-    private readonly options: ClientAppServiceOptions = {},
+    private readonly storage: ClientAppPortalStorage = new JsPortalStorage(),
   ) {}
 
   useReferenceResolver(resolver: ClientAppReferenceResolver): () => void {
@@ -126,243 +95,57 @@ export class ClientAppService {
     };
   }
 
-  async upload(
-    input: { repoId: string; zipPath: string; expectedEntryId?: string },
-    ctx: LightExtensionServiceContext = {},
-  ): Promise<ClientAppDescriptor> {
-    await this.permissionService.assertActionAllowed({ action: 'writeSource', ctx });
-    const repo = await this.repoService.getRepo(input.repoId, ctx);
-    assertRepoAcceptsClientAppUpload(repo);
-    const archive = await prepareClientAppArchive(input.zipPath);
-    const assetSetId = `leas_${uid()}`;
-    const staged: StagedClientAppAsset[] = [];
-    let published = false;
-    try {
-      await this.assertExpectedReplacementTarget(repo.id, input.expectedEntryId, archive);
-      for (const asset of archive.assets) {
-        const storedFile = await this.storage.store({
-          assetSetId,
-          relativePath: asset.relativePath,
-          filePath: asset.filePath,
-          byteSize: asset.byteSize,
-        });
-        staged.push({ relativePath: asset.relativePath, storedFile });
-      }
-      await this.persistStagedAssets(repo.id, assetSetId, staged);
-      const result = await this.publishUpload(repo.id, assetSetId, archive, input.expectedEntryId);
-      published = true;
-      await this.cleanupAssetSetBestEffort(result.oldAssetSetId);
-      return this.resolveClientApp(result.entryId);
-    } finally {
-      if (!published) {
-        await this.discardStagedAssetSetBestEffort(
-          assetSetId,
-          staged.map((asset) => asset.storedFile),
-        );
-      }
-      await archive.dispose().catch((error) => this.options.onCleanupError?.(error, assetSetId));
-    }
-  }
-
   async resolveClientApp(entryId: string): Promise<ClientAppDescriptor> {
-    const records = await this.loadClientAppRecords(entryId);
-    assertClientAppRecordsAvailable(records, entryId);
-    return appToDescriptor(records.app);
+    const locator = parseEntryId(entryId);
+    const repo = await this.requireEnabledRepo(locator.repoId, entryId);
+    const portal = await this.storage.resolvePortal(locator.repoId, locator.portalKey);
+    if (!portal) {
+      throw clientAppNotFound(entryId);
+    }
+    return toClientAppDescriptor(portal, repo);
   }
 
-  async openClientAppAsset(
-    entryId: string,
-    relativePath: string,
-    options: ClientAppOpenOptions = {},
-  ): Promise<ClientAppAsset | null> {
-    const normalizedPath = normalizeAssetPath(relativePath);
-    return this.db.sequelize.transaction(
-      {
-        isolationLevel: this.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.READ_COMMITTED,
-      },
-      async (transaction) => {
-        const records = await this.loadClientAppRecords(entryId, transaction, 'share');
-        assertClientAppRecordsAvailable(records, entryId);
-        const clientAppContentHash = String(records.app.get('contentHash'));
-        if (options.expectedContentHash && options.expectedContentHash !== clientAppContentHash) {
-          throw new LightExtensionError(
-            'LIGHT_EXTENSION_SOURCE_OUTDATED',
-            `Client app "${entryId}" changed before its asset was opened`,
-            {
-              details: {
-                entryId,
-                expectedContentHash: options.expectedContentHash,
-                currentContentHash: clientAppContentHash,
-              },
-            },
-          );
-        }
-        const asset = await this.db.getRepository('lightExtensionClientAppAssets').findOne({
-          filter: {
-            assetSetId: records.app.get('assetSetId'),
-            relativePath: normalizedPath,
-          },
-          transaction,
+  async listSelectableClientApps(): Promise<ClientAppSummary[]> {
+    const repos = await this.db.getRepository('lightExtensionRepos').find({
+      filter: { lifecycleStatus: 'enabled' },
+      fields: ['id', 'name', 'title'],
+      sort: ['title', 'name'],
+    });
+    const items: ClientAppSummary[] = [];
+    for (const repo of repos) {
+      const repoId = String(repo.get('id'));
+      const repoTitle = String(repo.get('title') || repo.get('name') || repoId);
+      for (const portal of await this.storage.listPortals(repoId)) {
+        items.push({
+          entryId: createEntryId(repoId, portal.key),
+          repoId,
+          key: portal.key,
+          title: portal.title,
+          repoTitle,
         });
-        if (!asset) {
-          return null;
-        }
-        const storedFile = storedFileFromModel(asset);
-        const opened = await this.storage.open(storedFile);
-        return {
-          relativePath: normalizedPath,
-          size: Number(asset.get('size')),
-          ...(storedFile.mimetype || opened.contentType ? { mimeType: storedFile.mimetype || opened.contentType } : {}),
-          stream: opened.stream,
-        };
-      },
-    );
+      }
+    }
+    return items;
   }
 
   async serveClientAppAsset(input: ClientAppStaticRequest): Promise<ClientAppStaticResponse> {
     const request = normalizeStaticRequest(input);
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const descriptor = await this.resolveClientApp(request.entryId);
-      try {
-        return await this.serveResolvedClientAppAsset(descriptor, request);
-      } catch (error) {
-        if (attempt === 0 && isLightExtensionError(error) && error.code === 'LIGHT_EXTENSION_SOURCE_OUTDATED') {
-          continue;
-        }
-        throw error;
-      }
+    const locator = parseEntryId(request.entryId);
+    await this.requireEnabledRepo(locator.repoId, request.entryId);
+    const portal = await this.storage.resolvePortal(locator.repoId, locator.portalKey);
+    if (!portal) {
+      throw clientAppNotFound(request.entryId);
     }
-    throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_OUTDATED', 'Client app changed while serving its assets');
-  }
-
-  async listSelectableClientApps(): Promise<ClientAppSummary[]> {
-    const apps = await this.db.getRepository('lightExtensionClientApps').find({ sort: ['title', 'key'] });
-    const repoIds = [...new Set(apps.map((app) => String(app.get('repoId'))))];
-    const repos = repoIds.length
-      ? await this.db.getRepository('lightExtensionRepos').find({ filter: { id: { $in: repoIds } } })
-      : [];
-    const repoById = new Map<string, Model>(
-      repos.map((repo: Model): [string, Model] => [String(repo.get('id')), repo]),
-    );
-    return apps.flatMap((app) => {
-      const repo = repoById.get(String(app.get('repoId')));
-      if (!repo || repo.get('lifecycleStatus') !== 'enabled') {
-        return [];
-      }
-      return [
-        {
-          entryId: String(app.get('id')),
-          repoId: String(app.get('repoId')),
-          key: String(app.get('key')),
-          title: String(app.get('title') || app.get('key')),
-          repoTitle: String(repo.get('title') || repo.get('name') || app.get('repoId')),
-        },
-      ];
-    });
-  }
-
-  async listClientApps(repoId: string): Promise<ClientAppDescriptor[]> {
-    const apps = await this.db.getRepository('lightExtensionClientApps').find({
-      filter: { repoId },
-      sort: ['title', 'key'],
-    });
-    return apps.map(appToDescriptor);
-  }
-
-  async deleteClientApp(entryId: string): Promise<void> {
-    const initial = await this.db.getRepository('lightExtensionClientApps').findOne({ filterByTk: entryId });
-    if (!initial) {
-      throw clientAppNotFound(entryId);
-    }
-    const repoId = String(initial.get('repoId'));
-    const assetSetId = await this.db.sequelize.transaction(async (transaction) => {
-      await lockRepo(this.db, repoId, transaction);
-      const app = await this.db.getRepository('lightExtensionClientApps').findOne({ filterByTk: entryId, transaction });
-      if (!app || String(app.get('repoId')) !== repoId) {
-        throw clientAppNotFound(entryId);
-      }
-      await this.assertEntriesNotReferenced([entryId], transaction);
-      const currentAssetSetId = String(app.get('assetSetId'));
-      await this.db.getRepository('lightExtensionClientApps').destroy({ filterByTk: entryId, transaction });
-      return currentAssetSetId;
-    });
-    await this.cleanupAssetSetBestEffort(assetSetId);
-  }
-
-  async listReferencesForRepo(repoId: string, transaction: Transaction): Promise<ClientAppReference[]> {
-    const apps = await this.db.getRepository('lightExtensionClientApps').find({
-      filter: { repoId },
-      fields: ['id'],
-      transaction,
-    });
-    return this.resolveReferences(
-      apps.map((app) => String(app.get('id'))),
-      transaction,
-    );
-  }
-
-  async retireClientAppsForRepo(repoId: string, transaction: Transaction): Promise<void> {
-    const apps = await this.db.getRepository('lightExtensionClientApps').find({ filter: { repoId }, transaction });
-    const assetSetIds = apps.map((app) => String(app.get('assetSetId'))).filter(Boolean);
-    if (assetSetIds.length) {
-      await this.db.getRepository('lightExtensionClientApps').destroy({ filter: { repoId }, transaction });
-      transaction.afterCommit(async () => {
-        for (const assetSetId of assetSetIds) {
-          await this.cleanupAssetSetBestEffort(assetSetId);
-        }
-      });
-    }
-  }
-
-  private async assertExpectedReplacementTarget(
-    repoId: string,
-    expectedEntryId: string | undefined,
-    archive: PreparedClientAppArchive,
-  ): Promise<void> {
-    if (!expectedEntryId) {
-      return;
-    }
-    const app = await this.db.getRepository('lightExtensionClientApps').findOne({ filterByTk: expectedEntryId });
-    if (!app || app.get('repoId') !== repoId) {
-      throw clientAppNotFound(expectedEntryId);
-    }
-    const expectedKey = String(app.get('key'));
-    if (archive.descriptor.key !== expectedKey) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_INVALID_INPUT',
-        `Replacement ZIP entry key must be "${expectedKey}"`,
-        {
-          details: {
-            category: 'client-app-replacement',
-            expectedEntryId,
-            expectedKey,
-            actualKey: archive.descriptor.key,
-          },
-        },
-      );
-    }
-  }
-
-  private async serveResolvedClientAppAsset(
-    descriptor: ClientAppDescriptor,
-    request: NormalizedClientAppStaticRequest,
-  ): Promise<ClientAppStaticResponse> {
-    const entryAssetPath = getClientAppEntryAssetPath(descriptor);
-    const requestedAssetPath = request.relativePath || entryAssetPath;
-    let asset = await this.openClientAppAsset(descriptor.entryId, requestedAssetPath, {
-      expectedContentHash: descriptor.contentHash,
-    });
-    let servesEntryHtml = requestedAssetPath === entryAssetPath;
-
+    const requestedAssetPath = request.relativePath || portal.entryHtml;
+    let asset = await this.storage.openAsset(locator.repoId, locator.portalKey, requestedAssetPath);
+    let servesEntryHtml = requestedAssetPath === portal.entryHtml;
     if (
       !asset &&
       request.relativePath &&
       isHtmlDocumentNavigation(request) &&
       path.posix.extname(request.relativePath) === ''
     ) {
-      asset = await this.openClientAppAsset(descriptor.entryId, entryAssetPath, {
-        expectedContentHash: descriptor.contentHash,
-      });
+      asset = await this.storage.openAsset(locator.repoId, locator.portalKey, portal.entryHtml);
       servesEntryHtml = true;
     }
     if (!asset) {
@@ -371,113 +154,8 @@ export class ClientAppService {
     return servesEntryHtml ? createEntryHtmlResponse(asset, request) : createStaticAssetResponse(asset, request);
   }
 
-  private async persistStagedAssets(repoId: string, assetSetId: string, assets: StagedClientAppAsset[]): Promise<void> {
-    await this.db.getModel<Model>('lightExtensionClientAppAssets').bulkCreate(
-      assets.map((asset) => {
-        const { id: _id, ...storedFile } = asset.storedFile;
-        return {
-          ...storedFile,
-          repoId,
-          assetSetId,
-          relativePath: asset.relativePath,
-        };
-      }),
-    );
-  }
-
-  private async publishUpload(
-    repoId: string,
-    assetSetId: string,
-    archive: PreparedClientAppArchive,
-    expectedEntryId?: string,
-  ): Promise<{ entryId: string; oldAssetSetId: string | null }> {
-    return this.db.sequelize.transaction(async (transaction) => {
-      const repo = await lockRepo(this.db, repoId, transaction);
-      assertRepoModelAcceptsClientAppUpload(repo, repoId);
-      const repository = this.db.getRepository('lightExtensionClientApps');
-      const current = await repository.findOne({
-        filter: { repoId, key: archive.descriptor.key },
-        transaction,
-      });
-      if (expectedEntryId && current?.get('id') !== expectedEntryId) {
-        throw staleReplacementError(expectedEntryId, current?.get('id'));
-      }
-
-      const entryId = current ? String(current.get('id')) : `leca_${uid()}`;
-
-      const values = {
-        id: entryId,
-        repoId,
-        key: archive.descriptor.key,
-        title: archive.descriptor.title || archive.descriptor.key,
-        entryHtml: archive.entryHtml,
-        assetSetId,
-        contentHash: archive.contentHash,
-        fileCount: archive.fileCount,
-        byteSize: archive.byteSize,
-      };
-      const oldAssetSetId = current ? String(current.get('assetSetId')) : null;
-      if (current) {
-        await current.update(values, { transaction });
-      } else {
-        await repository.create({ values, transaction });
-      }
-      return { entryId, oldAssetSetId };
-    });
-  }
-
-  private async discardStagedAssetSetBestEffort(
-    assetSetId: string,
-    files: readonly ClientAppStoredFile[],
-  ): Promise<void> {
-    try {
-      if (files.length) {
-        await this.storage.delete(dedupeStoredFiles(files));
-      }
-      await this.db.getModel('lightExtensionClientAppAssets').destroy({ where: { assetSetId }, hooks: false });
-    } catch (error) {
-      this.options.onCleanupError?.(error, assetSetId);
-    }
-  }
-
-  private async cleanupAssetSetBestEffort(assetSetId: string | null): Promise<void> {
-    if (!assetSetId) {
-      return;
-    }
-    try {
-      const models = await this.db.getRepository('lightExtensionClientAppAssets').find({ filter: { assetSetId } });
-      if (!models.length) {
-        return;
-      }
-      await this.storage.delete(dedupeStoredFiles(models.map(storedFileFromModel)));
-      await this.db.getModel('lightExtensionClientAppAssets').destroy({ where: { assetSetId }, hooks: false });
-    } catch (error) {
-      this.options.onCleanupError?.(error, assetSetId);
-    }
-  }
-
-  private async assertEntriesNotReferenced(entryIds: readonly string[], transaction: Transaction): Promise<void> {
-    const references = await this.resolveReferences(entryIds, transaction);
-    if (!references.length) {
-      return;
-    }
-    throw new LightExtensionError(
-      'LIGHT_EXTENSION_REFERENCE_EXISTS',
-      'Client app is referenced and cannot be deleted',
-      {
-        details: {
-          entryId: entryIds.length === 1 ? entryIds[0] : undefined,
-          referenceCount: references.length,
-          references,
-        },
-      },
-    );
-  }
-
-  private async resolveReferences(
-    entryIds: readonly string[],
-    transaction: Transaction,
-  ): Promise<ClientAppReference[]> {
+  async listReferencesForRepo(repoId: string, transaction: Transaction): Promise<ClientAppReference[]> {
+    const entryIds = (await this.storage.listPortals(repoId)).map((portal) => createEntryId(repoId, portal.key));
     if (!entryIds.length || !this.referenceResolver) {
       return [];
     }
@@ -486,49 +164,58 @@ export class ClientAppService {
     );
   }
 
-  private async loadClientAppRecords(
-    entryId: string,
-    transaction?: Transaction,
-    lockRepository?: 'share' | 'update',
-  ): Promise<ClientAppRecords> {
-    let app = await this.db.getRepository('lightExtensionClientApps').findOne({ filterByTk: entryId, transaction });
-    if (!app) {
+  async retireClientAppsForRepo(repoId: string, transaction: Transaction): Promise<void> {
+    transaction.afterCommit(() => this.storage.removeRepo(repoId));
+  }
+
+  private async requireEnabledRepo(repoId: string, entryId: string): Promise<Model> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId });
+    if (!repo) {
       throw clientAppNotFound(entryId);
     }
-    const repoId = String(app.get('repoId'));
-    const lockedRepo =
-      lockRepository && transaction ? await lockRepo(this.db, repoId, transaction, lockRepository) : null;
-    if (lockedRepo) {
-      app = await this.db.getRepository('lightExtensionClientApps').findOne({ filterByTk: entryId, transaction });
-      if (!app || String(app.get('repoId')) !== repoId) {
-        throw clientAppNotFound(entryId);
-      }
+    const lifecycleStatus = repo.get('lifecycleStatus');
+    if (lifecycleStatus === 'archived') {
+      throw new LightExtensionError('LIGHT_EXTENSION_REPO_ARCHIVED', `Client app "${entryId}" is archived`);
     }
-    const repo =
-      lockedRepo || (await this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId, transaction }));
-    if (!repo) {
-      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', `Client app "${entryId}" has no repository`);
+    if (lifecycleStatus !== 'enabled') {
+      throw new LightExtensionError('LIGHT_EXTENSION_REPO_DISABLED', `Client app "${entryId}" is disabled`);
     }
-    return { app, repo };
+    return repo;
   }
+}
+
+function createEntryId(repoId: string, portalKey: string): string {
+  return `${repoId}:${portalKey}`;
+}
+
+function parseEntryId(entryId: string): { repoId: string; portalKey: string } {
+  const normalized = requireNonEmptyString(entryId, 'entryId');
+  const separator = normalized.lastIndexOf(':');
+  const repoId = normalized.slice(0, separator);
+  const portalKey = normalized.slice(separator + 1);
+  if (separator < 1 || !/^[A-Za-z0-9_-]+$/u.test(repoId) || !/^[a-z0-9][a-z0-9-]{0,62}$/u.test(portalKey)) {
+    throw clientAppNotFound(entryId);
+  }
+  return { repoId, portalKey };
+}
+
+function toClientAppDescriptor(portal: JsPortalDescriptor, repo: Model): ClientAppDescriptor {
+  return {
+    entryId: createEntryId(portal.repoId, portal.key),
+    repoId: portal.repoId,
+    key: portal.key,
+    kind: 'client-app',
+    title: portal.title,
+    entryHtml: portal.entryHtml,
+    contentHash: portal.contentHash,
+    fileCount: portal.fileCount,
+    byteSize: portal.byteSize,
+    updatedAt: normalizeDate(repo.get('updatedAt')),
+  };
 }
 
 function clientAppNotFound(entryId: string): LightExtensionError {
   return new LightExtensionError('LIGHT_EXTENSION_ENTRY_NOT_FOUND', `Client app "${entryId}" was not found`);
-}
-
-function staleReplacementError(expectedEntryId: string, currentEntryId?: unknown): LightExtensionError {
-  return new LightExtensionError(
-    'LIGHT_EXTENSION_SOURCE_OUTDATED',
-    `Client app "${expectedEntryId}" changed before replacement was published`,
-    {
-      details: {
-        category: 'client-app-replacement-stale',
-        expectedEntryId,
-        currentEntryId: typeof currentEntryId === 'string' ? currentEntryId : null,
-      },
-    },
-  );
 }
 
 function normalizeStaticRequest(input: ClientAppStaticRequest): NormalizedClientAppStaticRequest {
@@ -617,10 +304,6 @@ function requireNonEmptyString(value: string, field: string): string {
   return value.trim();
 }
 
-function getClientAppEntryAssetPath(descriptor: ClientAppDescriptor): string {
-  return normalizeAssetPath(path.posix.basename(descriptor.entryHtml));
-}
-
 function isHtmlDocumentNavigation(request: NormalizedClientAppStaticRequest): boolean {
   const destination = request.fetchDestination?.trim().toLowerCase();
   if (destination) {
@@ -633,7 +316,7 @@ function isHtmlDocumentNavigation(request: NormalizedClientAppStaticRequest): bo
 }
 
 async function createEntryHtmlResponse(
-  asset: ClientAppAsset,
+  asset: JsPortalAsset,
   request: NormalizedClientAppStaticRequest,
 ): Promise<ClientAppStaticResponse> {
   const source = await readAssetBuffer(asset);
@@ -649,7 +332,7 @@ async function createEntryHtmlResponse(
 }
 
 function createStaticAssetResponse(
-  asset: ClientAppAsset,
+  asset: JsPortalAsset,
   request: NormalizedClientAppStaticRequest,
 ): ClientAppStaticResponse {
   const headers = staticHeaders(resolveAssetContentType(asset), asset.size);
@@ -682,12 +365,12 @@ function staticHeaders(contentType: string, contentLength: number): Readonly<Rec
   };
 }
 
-function resolveAssetContentType(asset: ClientAppAsset): string {
+function resolveAssetContentType(asset: JsPortalAsset): string {
   const logicalType = asset.mimeType || lookupMimeType(asset.relativePath) || 'application/octet-stream';
   return formatContentType(logicalType) || String(logicalType);
 }
 
-async function readAssetBuffer(asset: ClientAppAsset): Promise<Buffer> {
+async function readAssetBuffer(asset: JsPortalAsset): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let byteSize = 0;
   for await (const chunk of asset.stream) {
@@ -778,98 +461,6 @@ function serializeInlineScriptValue(value: string): string {
     .replace(/\u2029/gu, '\\u2029');
 }
 
-async function lockRepo(
-  db: Database,
-  repoId: string,
-  transaction: Transaction,
-  lockMode: 'share' | 'update' = 'update',
-): Promise<Model> {
-  const repo = await lockRepoIfExists(db, repoId, transaction, lockMode);
-  if (!repo) {
-    throw new LightExtensionError(
-      'LIGHT_EXTENSION_REPO_NOT_FOUND',
-      `Light extension repository "${repoId}" was not found`,
-    );
-  }
-  return repo;
-}
-
-function lockRepoIfExists(
-  db: Database,
-  repoId: string,
-  transaction: Transaction,
-  lockMode: 'share' | 'update' = 'update',
-): Promise<Model | null> {
-  return db.getModel('lightExtensionRepos').findOne({
-    where: { id: repoId },
-    transaction,
-    lock: lockMode === 'share' ? transaction.LOCK.SHARE : transaction.LOCK.UPDATE,
-  });
-}
-
-function assertRepoAcceptsClientAppUpload(repo: LightExtensionRepoRecord): void {
-  if (repo.lifecycleStatus === 'archived') {
-    throw new LightExtensionError('LIGHT_EXTENSION_REPO_ARCHIVED', 'Archived repositories cannot upload client apps');
-  }
-  if (repo.lifecycleStatus === 'disabled') {
-    throw new LightExtensionError('LIGHT_EXTENSION_REPO_DISABLED', 'Disabled repositories cannot upload client apps');
-  }
-}
-
-function assertRepoModelAcceptsClientAppUpload(repo: Model, repoId: string): void {
-  const lifecycleStatus = repo.get('lifecycleStatus');
-  if (lifecycleStatus === 'archived') {
-    throw new LightExtensionError('LIGHT_EXTENSION_REPO_ARCHIVED', `Repository "${repoId}" is archived`);
-  }
-  if (lifecycleStatus !== 'enabled') {
-    throw new LightExtensionError('LIGHT_EXTENSION_REPO_DISABLED', `Repository "${repoId}" is disabled`);
-  }
-}
-
-function assertClientAppRecordsAvailable(records: ClientAppRecords, entryId: string): void {
-  const lifecycleStatus = records.repo.get('lifecycleStatus');
-  if (lifecycleStatus === 'archived') {
-    throw new LightExtensionError('LIGHT_EXTENSION_REPO_ARCHIVED', `Client app "${entryId}" is archived`);
-  }
-  if (lifecycleStatus !== 'enabled') {
-    throw new LightExtensionError('LIGHT_EXTENSION_REPO_DISABLED', `Client app "${entryId}" is disabled`);
-  }
-}
-
-function appToDescriptor(app: Model): ClientAppDescriptor {
-  return {
-    entryId: String(app.get('id')),
-    repoId: String(app.get('repoId')),
-    key: String(app.get('key')),
-    kind: 'client-app',
-    title: String(app.get('title') || app.get('key')),
-    entryHtml: String(app.get('entryHtml')),
-    contentHash: String(app.get('contentHash')),
-    fileCount: Number(app.get('fileCount')),
-    byteSize: Number(app.get('byteSize')),
-    updatedAt: normalizeDate(app.get('updatedAt')),
-  };
-}
-
-function storedFileFromModel(model: Model): ClientAppStoredFile {
-  const storageId = model.get('storageId');
-  if (typeof storageId !== 'string' && typeof storageId !== 'number') {
-    throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Client app asset storage is unavailable');
-  }
-  return {
-    id: model.get('id') as string | number,
-    title: String(model.get('title') || ''),
-    filename: String(model.get('filename')),
-    ...(typeof model.get('extname') === 'string' ? { extname: model.get('extname') as string } : {}),
-    size: Number(model.get('size')),
-    ...(typeof model.get('mimetype') === 'string' ? { mimetype: model.get('mimetype') as string } : {}),
-    path: String(model.get('path') || ''),
-    ...(typeof model.get('url') === 'string' ? { url: model.get('url') as string } : {}),
-    storageId,
-    ...(isRecord(model.get('meta')) ? { meta: model.get('meta') as Record<string, unknown> } : {}),
-  };
-}
-
 function normalizeAssetPath(value: string): string {
   if (typeof value !== 'string' || !value || value.includes('\0') || value.includes('\\') || value.startsWith('/')) {
     throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Client app asset path is invalid');
@@ -886,20 +477,4 @@ function normalizeDate(value: unknown): string | null {
     return value.toISOString();
   }
   return typeof value === 'string' && value ? value : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function dedupeStoredFiles(files: readonly ClientAppStoredFile[]): ClientAppStoredFile[] {
-  const seen = new Set<string>();
-  return files.filter((file) => {
-    const key = `${String(file.storageId)}\0${file.path}\0${file.filename}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
 }

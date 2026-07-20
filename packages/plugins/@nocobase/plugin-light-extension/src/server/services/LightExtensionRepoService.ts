@@ -474,9 +474,8 @@ export class LightExtensionRepoService {
       return await this.withTransaction(ctx.transaction, async (transaction) => {
         const repo = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         await this.assertRemoteSyncIdle(repo.vscRepoId, transaction);
-        const clientAppReferences = this.clientAppService
-          ? await this.clientAppService.listReferencesForRepo(input.repoId, transaction)
-          : [];
+        const clientAppService = this.requireClientAppService();
+        const clientAppReferences = await clientAppService.listReferencesForRepo(input.repoId, transaction);
         const referenceCount = (await this.countRepoReferences(input.repoId, transaction)) + clientAppReferences.length;
 
         if (referenceCount > 0) {
@@ -506,7 +505,7 @@ export class LightExtensionRepoService {
             }),
           ),
         );
-        await this.clientAppService?.retireClientAppsForRepo(input.repoId, transaction);
+        await clientAppService.retireClientAppsForRepo(input.repoId, transaction);
         await this.db.getRepository('lightExtensionEntries').destroy({
           filter: {
             repoId: input.repoId,
@@ -552,6 +551,13 @@ export class LightExtensionRepoService {
 
       throw error;
     }
+  }
+
+  private requireClientAppService(): Pick<ClientAppService, 'listReferencesForRepo' | 'retireClientAppsForRepo'> {
+    if (!this.clientAppService) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Client app service is unavailable');
+    }
+    return this.clientAppService;
   }
 
   private async assertRepoNameAvailable(name: string, normalizedName: string, transaction: Transaction): Promise<void> {

@@ -12,7 +12,7 @@ import { isVscError } from '@nocobase/plugin-vsc-file';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES } from '../../constants';
-import { LightExtensionError } from '../../shared/errors';
+import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCreateRepoInput,
   LightExtensionInspectSourceArchiveResult,
@@ -23,7 +23,12 @@ import type {
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
-import { parseLightExtensionSourceArchive } from '../services/LightExtensionSourceArchive';
+import {
+  isJsPortalWorkspacePath,
+  isStrictUtf8Text,
+  parseLightExtensionSourceArchive,
+} from '../services/LightExtensionSourceArchive';
+import { JsPortalStorage, type JsPortalWorkspaceFile } from '../services/JsPortalStorage';
 import { toLightExtensionSourceError } from '../services/errorContract';
 import { createTypedResourceAction, getServiceContext, toRecord, type ResourceActionInput } from './resourceAction';
 
@@ -50,6 +55,7 @@ interface LightExtensionRepoActionServices {
   db: Database;
   repoService: LightExtensionRepoService;
   runtimeCompileService: LightExtensionRuntimeCompileService;
+  jsPortalStorage: Pick<JsPortalStorage, 'replaceWorkspaceFiles' | 'validateWorkspaceFiles'>;
 }
 
 const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceActionRunner> = {
@@ -87,11 +93,13 @@ export function createLightExtensionReposResource(
   db: Database,
   repoService: LightExtensionRepoService,
   runtimeCompileService: LightExtensionRuntimeCompileService,
+  jsPortalStorage: Pick<JsPortalStorage, 'replaceWorkspaceFiles' | 'validateWorkspaceFiles'> = new JsPortalStorage(),
 ): ResourceOptions {
   const services = {
     db,
     repoService,
     runtimeCompileService,
+    jsPortalStorage,
   };
   return {
     name: 'lightExtensionRepos',
@@ -123,8 +131,9 @@ async function createRepoAndCompileInitialSource(
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
 ) {
-  const createInput = await normalizeCreateInput(input, services.repoService);
-  return services.db.sequelize.transaction(async (transaction) => {
+  const { createInput, portalFiles } = await normalizeCreateInput(input, services.repoService);
+  validateJsPortalFiles(services.jsPortalStorage, portalFiles);
+  const repo = await services.db.sequelize.transaction(async (transaction) => {
     const transactionContext = {
       ...currentUser,
       transaction,
@@ -148,6 +157,10 @@ async function createRepoAndCompileInitialSource(
     });
     return compile.repo;
   });
+  if (portalFiles.length) {
+    await services.jsPortalStorage.replaceWorkspaceFiles(repo.id, portalFiles);
+  }
+  return repo;
 }
 
 async function inspectSourceArchive(
@@ -169,33 +182,68 @@ async function inspectSourceArchive(
     );
   }
 
-  return {
-    files: await parseLightExtensionSourceArchive(
-      requireString(input, 'zipBase64'),
-      services.repoService.getValidator(),
-    ),
-  };
+  const files = await parseLightExtensionSourceArchive(
+    requireString(input, 'zipBase64'),
+    services.repoService.getValidator(),
+  );
+  validateJsPortalFiles(
+    services.jsPortalStorage,
+    files.filter((file) => isJsPortalWorkspacePath(file.path)).map(toJsPortalWorkspaceFile),
+  );
+  return { files };
 }
 
 async function normalizeCreateInput(
   input: ResourceActionInput,
   repoService: LightExtensionRepoService,
-): Promise<LightExtensionCreateRepoInput> {
+): Promise<{ createInput: LightExtensionCreateRepoInput; portalFiles: JsPortalWorkspaceFile[] }> {
   const zipBase64 = optionalString(input, 'zipBase64');
   const suppliedInitialFiles = optionalArray(input, 'initialFiles', normalizeTreeEntryInput);
   const initialFiles = zipBase64
     ? await parseLightExtensionSourceArchive(zipBase64, repoService.getValidator())
     : suppliedInitialFiles;
 
+  const portalFiles = (initialFiles || []).filter((file) => isJsPortalWorkspacePath(file.path));
+  const sourceFiles = (initialFiles || []).filter((file) => !isJsPortalWorkspacePath(file.path));
+  assertTextSourceFiles(sourceFiles);
   return {
-    name: requireString(input, 'name'),
-    title: optionalNullableString(input, 'title'),
-    description: optionalNullableString(input, 'description'),
-    initialFiles,
-    message:
-      optionalString(input, 'message') ||
-      (zipBase64 ? 'Import light extension source' : 'Initial light extension source'),
+    createInput: {
+      name: requireString(input, 'name'),
+      title: optionalNullableString(input, 'title'),
+      description: optionalNullableString(input, 'description'),
+      ...(initialFiles ? { initialFiles: sourceFiles } : {}),
+      message:
+        optionalString(input, 'message') ||
+        (zipBase64 ? 'Import light extension source' : 'Initial light extension source'),
+    },
+    portalFiles: portalFiles.map(toJsPortalWorkspaceFile),
   };
+}
+
+function toJsPortalWorkspaceFile(file: LightExtensionTreeEntryInput): JsPortalWorkspaceFile {
+  if (typeof file.content !== 'string') {
+    throw invalidInput(`JS Portal file must include content: ${file.path}`);
+  }
+  return {
+    path: file.path,
+    content: file.content,
+    encoding: file.encoding || 'utf8',
+    size: file.size,
+  };
+}
+
+function validateJsPortalFiles(
+  storage: Pick<JsPortalStorage, 'validateWorkspaceFiles'>,
+  files: readonly JsPortalWorkspaceFile[],
+): void {
+  try {
+    storage.validateWorkspaceFiles(files);
+  } catch (error) {
+    if (isLightExtensionError(error)) {
+      throw error;
+    }
+    throw invalidInput(error instanceof Error ? error.message : 'JS Portal files are invalid');
+  }
 }
 
 function normalizeUpdateInput(input: ResourceActionInput): LightExtensionUpdateRepoInput {
@@ -211,6 +259,7 @@ function normalizeTreeEntryInput(value: unknown, label: string): LightExtensionT
   const normalized = compactObject({
     path: requireString(record, 'path', label),
     content: optionalString(record, 'content', label),
+    encoding: optionalFileEncoding(record, 'encoding', label),
     blobHash: optionalString(record, 'blobHash', label),
     size: optionalNumber(record, 'size', label),
     language: optionalString(record, 'language', label),
@@ -220,6 +269,17 @@ function normalizeTreeEntryInput(value: unknown, label: string): LightExtensionT
   assertUpsertHasSource(normalized, label);
 
   return normalized;
+}
+
+function assertTextSourceFiles(files: LightExtensionTreeEntryInput[]): void {
+  for (const file of files) {
+    if (file.encoding === 'base64') {
+      throw invalidInput(`Binary content is only supported inside src/client/js-portals: ${file.path}`);
+    }
+    if (typeof file.content === 'string' && !isStrictUtf8Text(file.content)) {
+      throw invalidInput(`Source file must be UTF-8 text without NUL bytes: ${file.path}`);
+    }
+  }
 }
 
 function requireRepoId(input: ResourceActionInput): string {
@@ -282,6 +342,21 @@ function optionalNumber(input: ResourceActionInput, key: string, label = key): n
     throw invalidInput(`${label} must be a number`);
   }
 
+  return value;
+}
+
+function optionalFileEncoding(
+  input: ResourceActionInput,
+  key: string,
+  label = key,
+): LightExtensionTreeEntryInput['encoding'] {
+  const value = input[key];
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (value !== 'utf8' && value !== 'base64') {
+    throw invalidInput(`${label} must be utf8 or base64`);
+  }
   return value;
 }
 

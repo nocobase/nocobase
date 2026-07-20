@@ -7,247 +7,102 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Transaction } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 import fs from 'fs/promises';
-import JSZip from 'jszip';
 import os from 'os';
 import path from 'path';
-import { Readable } from 'stream';
 
 import { ClientAppService } from '../services/ClientAppService';
-import {
-  type ClientAppAssetStorage,
-  type ClientAppStoredFile,
-  FileManagerClientAppStorage,
-} from '../services/ClientAppStorage';
-import type { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
-import type { LightExtensionRepoService } from '../services/LightExtensionRepoService';
-import { createReferenceServiceFixture } from './reference-test-helpers';
+import { JsPortalStorage, type JsPortalWorkspaceFile } from '../services/JsPortalStorage';
 
 describe('ClientAppService', () => {
-  const temporaryRoots: string[] = [];
+  let root: string;
+  let storage: JsPortalStorage;
+
+  beforeEach(async () => {
+    root = await fs.mkdtemp(path.join(os.tmpdir(), 'js-portal-service-'));
+    storage = new JsPortalStorage(root);
+    await storage.replaceWorkspaceFiles('repo-1', portalFiles('customer', 'Customer Portal'));
+  });
 
   afterEach(async () => {
-    await Promise.all(temporaryRoots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })));
+    await fs.rm(root, { recursive: true, force: true });
   });
 
-  it('publishes and replaces a client app without creating a RunJS Entry', async () => {
-    const { repositories, service, storage } = createFixture();
-    const first = await service.upload({
-      repoId: 'repo-1',
-      zipPath: await createClientAppZip('customer-app', {
-        'index.html': '<html>first</html>',
-        'assets/logo.png': Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff]),
-      }),
-    });
-    const second = await service.upload({
-      repoId: 'repo-1',
-      zipPath: await createClientAppZip('customer-app', {
-        'index.html': '<html>second</html>',
-        'assets/logo.png': Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x01, 0xfe]),
-      }),
-      expectedEntryId: first.entryId,
-    });
+  it('lists and resolves enabled storage-backed JS Portals', async () => {
+    const service = new ClientAppService(createDb(), storage);
 
-    expect(second.entryId).toBe(first.entryId);
-    expect(second.contentHash).not.toBe(first.contentHash);
-    expect(repositories.lightExtensionEntries.records).toHaveLength(0);
-    expect(repositories.lightExtensionClientApps.records).toHaveLength(1);
-    const asset = await service.openClientAppAsset(second.entryId, 'assets/logo.png');
-    expect(asset?.mimeType).toBe('image/png');
-    await expect(readStream(asset?.stream)).resolves.toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x01, 0xfe]));
-    expect(storage.objectCount()).toBe(second.fileCount);
-  });
-
-  it('rejects mismatched replacements and referenced deletions', async () => {
-    const { repositories, service, storage } = createFixture();
-    const uploaded = await service.upload({
-      repoId: 'repo-1',
-      zipPath: await createClientAppZip('customer-app', { 'index.html': '<html>first</html>' }),
-    });
-
-    await expect(
-      service.upload({
+    await expect(service.listSelectableClientApps()).resolves.toEqual([
+      {
+        entryId: 'repo-1:customer',
         repoId: 'repo-1',
-        zipPath: await createClientAppZip('other-app', { 'index.html': '<html>other</html>' }),
-        expectedEntryId: uploaded.entryId,
-      }),
-    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
-
-    const unregister = service.useReferenceResolver(async () => [
-      { entryId: uploaded.entryId, ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
+        key: 'customer',
+        title: 'Customer Portal',
+        repoTitle: 'Repository 1',
+      },
     ]);
-    await expect(service.deleteClientApp(uploaded.entryId)).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_REFERENCE_EXISTS',
+    await expect(service.resolveClientApp('repo-1:customer')).resolves.toMatchObject({
+      entryId: 'repo-1:customer',
+      kind: 'client-app',
+      entryHtml: 'index.html',
+      fileCount: 3,
     });
-    unregister();
-    await service.deleteClientApp(uploaded.entryId);
-
-    expect(repositories.lightExtensionClientApps.records).toHaveLength(0);
-    expect(repositories.lightExtensionClientAppAssets.records).toHaveLength(0);
-    expect(storage.objectCount()).toBe(0);
+    await expect(service.resolveClientApp('repo-1:missing')).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+    });
   });
 
-  it('lists client apps for repository management regardless of repository lifecycle', async () => {
-    const { repositories, service } = createFixture([
-      { id: 'app-disabled', repoId: 'repo-disabled', key: 'disabled-app' },
-      { id: 'app-archived', repoId: 'repo-archived', key: 'archived-app' },
-    ]);
+  it('keeps disabled repository portals unavailable at runtime', async () => {
+    const service = new ClientAppService(createDb('disabled'), storage);
 
-    await expect(service.listClientApps('repo-disabled')).resolves.toMatchObject([
-      { entryId: 'app-disabled', repoId: 'repo-disabled', key: 'disabled-app', kind: 'client-app' },
-    ]);
-    await expect(service.listClientApps('repo-archived')).resolves.toMatchObject([
-      { entryId: 'app-archived', repoId: 'repo-archived', key: 'archived-app', kind: 'client-app' },
-    ]);
-    expect(repositories.lightExtensionRepos.findOne).not.toHaveBeenCalled();
-  });
-
-  it('keeps disabled client apps unavailable at runtime', async () => {
-    const { service } = createFixture([{ id: 'app-disabled', repoId: 'repo-1', key: 'disabled-app' }], 'disabled');
-
-    await expect(service.resolveClientApp('app-disabled')).rejects.toMatchObject({
+    await expect(service.listSelectableClientApps()).resolves.toEqual([]);
+    await expect(service.resolveClientApp('repo-1:customer')).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_REPO_DISABLED',
     });
   });
 
-  it('uses only the latest client app reference resolver', async () => {
-    const { service } = createFixture([{ id: 'app-1', repoId: 'repo-1', key: 'customer-app' }]);
-    const firstResolver = vi.fn(async () => [
-      { entryId: 'app-1', ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
+  it('uses storage portal IDs for reference protection and removes storage after commit', async () => {
+    const service = new ClientAppService(createDb(), storage);
+    const resolver = vi.fn(async () => [
+      { entryId: 'repo-1:customer', ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
     ]);
-    const secondResolver = vi.fn(async () => [
-      { entryId: 'app-1', ownerKind: 'multiPortal.frontend', ownerId: 'portal-2' },
+    service.useReferenceResolver(resolver);
+    const afterCommit: Array<() => Promise<void>> = [];
+    const transaction = {
+      afterCommit: (callback: () => Promise<void>) => afterCommit.push(callback),
+    } as unknown as Transaction;
+
+    await expect(service.listReferencesForRepo('repo-1', transaction)).resolves.toEqual([
+      { entryId: 'repo-1:customer', ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
     ]);
-    const unregisterFirst = service.useReferenceResolver(firstResolver);
-    const unregisterSecond = service.useReferenceResolver(secondResolver);
-
-    const references = await service.listReferencesForRepo('repo-1', {} as Transaction);
-
-    expect(firstResolver).not.toHaveBeenCalled();
-    expect(secondResolver).toHaveBeenCalledOnce();
-    expect(references).toEqual([{ entryId: 'app-1', ownerKind: 'multiPortal.frontend', ownerId: 'portal-2' }]);
-    unregisterFirst();
-    await expect(service.listReferencesForRepo('repo-1', {} as Transaction)).resolves.toEqual(references);
-    unregisterSecond();
-    await expect(service.listReferencesForRepo('repo-1', {} as Transaction)).resolves.toEqual([]);
+    await service.retireClientAppsForRepo('repo-1', transaction);
+    await expect(storage.listPortals('repo-1')).resolves.toHaveLength(1);
+    await afterCommit[0]();
+    await expect(storage.listPortals('repo-1')).resolves.toEqual([]);
   });
-
-  it('fails closed instead of using public File Manager storage', async () => {
-    const uploadFile = vi.fn();
-    const storage = new FileManagerClientAppStorage({
-      storagesCache: new Map([
-        [1, { id: 1, name: 'local', title: 'Public uploads', type: 'local', baseUrl: '/storage/uploads', options: {} }],
-      ]),
-      storageTypes: { get: vi.fn() },
-      uploadFile,
-      getFileStream: vi.fn(),
-      loadStorages: vi.fn(),
-    } as unknown as ConstructorParameters<typeof FileManagerClientAppStorage>[0]);
-
-    await expect(
-      storage.store({ assetSetId: 'set-1', relativePath: 'index.html', filePath: 'unused', byteSize: 1 }),
-    ).rejects.toThrow(/unavailable/u);
-    expect(uploadFile).not.toHaveBeenCalled();
-  });
-
-  function createFixture(clientApps: Record<string, unknown>[] = [], lifecycleStatus = 'enabled') {
-    const { db, repositories } = createReferenceServiceFixture({
-      repos: [
-        {
-          id: 'repo-1',
-          name: 'repo-1',
-          title: 'Repository 1',
-          lifecycleStatus,
-          healthStatus: 'ready',
-        },
-      ],
-      clientApps,
-    });
-    const storage = new MemoryClientAppStorage();
-    const repoService = {
-      getRepo: async () => ({
-        id: 'repo-1',
-        name: 'repo-1',
-        title: 'Repository 1',
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-      }),
-    } as unknown as LightExtensionRepoService;
-    const permissionService = {
-      assertActionAllowed: async () => undefined,
-    } as unknown as LightExtensionPermissionService;
-    return {
-      repositories,
-      storage,
-      service: new ClientAppService(db, repoService, permissionService, storage),
-    };
-  }
-
-  async function createClientAppZip(key: string, files: Record<string, string | Buffer>): Promise<string> {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'client-app-service-test-'));
-    temporaryRoots.push(root);
-    const zip = new JSZip();
-    zip.file('entry.json', JSON.stringify({ schemaVersion: 1, key }));
-    for (const [name, content] of Object.entries(files)) {
-      zip.file(name, content);
-    }
-    const zipPath = path.join(root, 'fixture.zip');
-    await fs.writeFile(zipPath, await zip.generateAsync({ type: 'nodebuffer' }));
-    return zipPath;
-  }
 });
 
-class MemoryClientAppStorage implements ClientAppAssetStorage {
-  private readonly objects = new Map<string, Buffer>();
-
-  async store(input: {
-    assetSetId: string;
-    relativePath: string;
-    filePath: string;
-    byteSize: number;
-  }): Promise<ClientAppStoredFile> {
-    const key = `${input.assetSetId}/${input.relativePath}`;
-    const extension = path.posix.extname(input.relativePath);
-    const storedFile: ClientAppStoredFile = {
-      title: path.posix.basename(input.relativePath, extension),
-      filename: path.posix.basename(input.relativePath),
-      size: input.byteSize,
-      ...(input.relativePath.endsWith('.png') ? { mimetype: 'image/png' } : {}),
-      path: path.posix.dirname(key),
-      storageId: 1,
-      meta: { key },
-    };
-    this.objects.set(String(storedFile.meta?.key), await fs.readFile(input.filePath));
-    return storedFile;
-  }
-
-  async open(file: ClientAppStoredFile) {
-    const content = this.objects.get(String(file.meta?.key));
-    if (!content) {
-      throw new Error('Missing client app asset');
-    }
-    return { stream: Readable.from(content) };
-  }
-
-  async delete(files: readonly ClientAppStoredFile[]) {
-    for (const file of files) {
-      this.objects.delete(String(file.meta?.key));
-    }
-  }
-
-  objectCount() {
-    return this.objects.size;
-  }
+function createDb(lifecycleStatus = 'enabled'): Database {
+  const repo = {
+    get: (field: string) =>
+      ({ id: 'repo-1', name: 'repo-1', title: 'Repository 1', lifecycleStatus, updatedAt: null })[field],
+  };
+  return {
+    getRepository: () => ({
+      find: async (options: { filter?: { lifecycleStatus?: string } }) =>
+        options.filter?.lifecycleStatus === lifecycleStatus ? [repo] : [],
+      findOne: async (options: { filterByTk?: string }) => (options.filterByTk === 'repo-1' ? repo : null),
+    }),
+  } as unknown as Database;
 }
 
-async function readStream(stream: Readable | undefined): Promise<Buffer> {
-  if (!stream) {
-    throw new Error('Expected stream');
-  }
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
+function portalFiles(key: string, title: string): JsPortalWorkspaceFile[] {
+  return [
+    {
+      path: `src/client/js-portals/${key}/entry.json`,
+      content: JSON.stringify({ schemaVersion: 1, key, title }),
+    },
+    { path: `src/client/js-portals/${key}/index.html`, content: '<html><head></head><body>portal</body></html>' },
+    { path: `src/client/js-portals/${key}/assets/app.js`, content: 'window.portal = true;' },
+  ];
 }

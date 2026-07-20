@@ -18,6 +18,7 @@ import PluginLightExtensionServer from '../plugin';
 describe('plugin-light-extension bootstrap', () => {
   it('declares the vsc-file dependency and keeps lifecycle hooks safe without a full app', async () => {
     expect(packageJson.peerDependencies['@nocobase/plugin-vsc-file']).toBe(packageJson.version);
+    expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-file-manager');
 
     const plugin = new PluginLightExtensionServer({} as Application, {
       name: 'light-extension',
@@ -70,9 +71,9 @@ describe('plugin-light-extension bootstrap', () => {
     });
 
     await plugin.load();
-    expect(afterStartListeners).toHaveLength(2);
+    expect(afterStartListeners).toHaveLength(1);
     await plugin.load();
-    expect(afterStartListeners).toHaveLength(2);
+    expect(afterStartListeners).toHaveLength(1);
 
     await plugin.afterEnable();
     expect(listRecoverablePullJobs).toHaveBeenCalledTimes(1);

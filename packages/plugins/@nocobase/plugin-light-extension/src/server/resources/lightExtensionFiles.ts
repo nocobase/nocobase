@@ -21,6 +21,7 @@ import type {
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
+import { isJsPortalWorkspacePath, isStrictUtf8Text } from '../services/LightExtensionSourceArchive';
 import { toLightExtensionSourceError } from '../services/errorContract';
 import { createTypedResourceAction, getServiceContext, toRecord, type ResourceActionInput } from './resourceAction';
 
@@ -53,16 +54,7 @@ const resourceActionRunners: Record<LightExtensionFileActionName, ResourceAction
   getFile: (services, input, currentUser) => services.fileService.getFile(normalizeGetFileInput(input), currentUser),
   readArchivedSource: (services, input, currentUser) =>
     services.fileService.readArchivedSource(normalizeGetFileInput(input), currentUser),
-  saveSource: (services, input, currentUser) =>
-    services.runtimeCompileService.saveSource(
-      compactObject({
-        repoId: requireRepoId(input),
-        expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
-        message: requireString(input, 'message'),
-        files: requireArray(input, 'files', normalizeFileChange),
-      }),
-      currentUser,
-    ),
+  saveSource: (services, input, currentUser) => saveSource(services, input, currentUser),
   listCommits: (services, input, currentUser) =>
     services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),
 };
@@ -143,6 +135,7 @@ function normalizeFileChange(value: unknown, label: string): LightExtensionFileC
   const normalized = compactObject({
     path: requireString(record, 'path', label),
     content: optionalString(record, 'content', label),
+    encoding: optionalFileEncoding(record, 'encoding', label),
     blobHash: optionalString(record, 'blobHash', label),
     size: optionalNumber(record, 'size', label),
     language: optionalString(record, 'language', label),
@@ -153,6 +146,64 @@ function normalizeFileChange(value: unknown, label: string): LightExtensionFileC
   assertFileChangeSource(normalized, label);
 
   return normalized;
+}
+
+async function saveSource(
+  services: LightExtensionFileActionServices,
+  input: ResourceActionInput,
+  currentUser: LightExtensionServiceContext,
+) {
+  const repoId = requireRepoId(input);
+  const expectedHeadCommitId = requireNullableString(input, 'expectedHeadCommitId');
+  const files = requireArray(input, 'files', normalizeFileChange);
+  const portalChanges = files.filter((file) => isJsPortalWorkspacePath(file.path));
+  const sourceChanges = files.filter((file) => !isJsPortalWorkspacePath(file.path));
+  for (const file of sourceChanges) {
+    if (file.encoding === 'base64') {
+      throw invalidInput(`Binary content is only supported inside src/client/js-portals: ${file.path}`);
+    }
+    if (typeof file.content === 'string' && !isStrictUtf8Text(file.content)) {
+      throw invalidInput(`Source file must be UTF-8 text without NUL bytes: ${file.path}`);
+    }
+  }
+  if (portalChanges.length) {
+    await services.fileService.assertWritableHead(repoId, expectedHeadCommitId, currentUser);
+  }
+  const portalSnapshot = portalChanges.length
+    ? await services.fileService.prepareJsPortalSnapshot(repoId, portalChanges)
+    : undefined;
+  const saveInput = compactObject({
+    repoId,
+    expectedHeadCommitId,
+    message: requireString(input, 'message'),
+    files: sourceChanges,
+  });
+  const result =
+    sourceChanges.length || !portalChanges.length
+      ? await services.runtimeCompileService.saveSource(saveInput, currentUser)
+      : await currentSaveSourceResult(services.fileService, repoId, currentUser);
+  if (portalSnapshot) {
+    await services.fileService.replaceJsPortalFiles(repoId, portalSnapshot);
+  }
+  return result;
+}
+
+async function currentSaveSourceResult(
+  fileService: LightExtensionFileService,
+  repoId: string,
+  currentUser: LightExtensionServiceContext,
+) {
+  const current = await fileService.pull({ repoId, includeContent: 'none' }, currentUser);
+  if (!current.commit || !current.tree) {
+    throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source commit is missing');
+  }
+  return {
+    repo: current.repo,
+    commit: current.commit,
+    tree: current.tree,
+    compile: { status: 'skipped' as const, entries: [] },
+    diagnostics: [],
+  };
 }
 
 function requireRepoId(input: ResourceActionInput): string {
@@ -205,24 +256,17 @@ function optionalString(input: ResourceActionInput, key: string, label = key): s
   return value;
 }
 
-function optionalNonEmptyString(input: ResourceActionInput, key: string, label = key): string | undefined {
-  const value = optionalString(input, key, label);
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (!value.trim()) {
-    throw invalidInput(`${label} must not be empty`);
-  }
-  return value.trim();
-}
-
-function optionalBoolean(input: ResourceActionInput, key: string, label = key): boolean | undefined {
+function optionalFileEncoding(
+  input: ResourceActionInput,
+  key: string,
+  label = key,
+): LightExtensionFileChange['encoding'] {
   const value = input[key];
   if (typeof value === 'undefined') {
     return undefined;
   }
-  if (typeof value !== 'boolean') {
-    throw invalidInput(`${label} must be a boolean`);
+  if (value !== 'utf8' && value !== 'base64') {
+    throw invalidInput(`${label} must be utf8 or base64`);
   }
   return value;
 }

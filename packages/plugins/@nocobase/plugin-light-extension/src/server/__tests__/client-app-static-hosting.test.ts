@@ -11,15 +11,8 @@ import type { Database } from '@nocobase/database';
 import { defaultTreeAdapter, parse, type DefaultTreeAdapterTypes } from 'parse5';
 import { Readable } from 'stream';
 
-import {
-  ClientAppService,
-  type ClientAppAsset,
-  type ClientAppDescriptor,
-  type ClientAppStaticRequest,
-} from '../services/ClientAppService';
-import type { ClientAppAssetStorage } from '../services/ClientAppStorage';
-import type { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
-import type { LightExtensionRepoService } from '../services/LightExtensionRepoService';
+import { ClientAppService, type ClientAppStaticRequest } from '../services/ClientAppService';
+import type { JsPortalAsset, JsPortalDescriptor, JsPortalStorage } from '../services/JsPortalStorage';
 describe('ClientAppService static hosting', () => {
   it('injects one leading base and one runtime config without rewriting application URLs', async () => {
     const html = [
@@ -29,7 +22,7 @@ describe('ClientAppService static hosting', () => {
       '<script type="module" src="assets/app.js"></script>',
       '</head><body><div id="root"></div></body></html>',
     ].join('');
-    const fixture = createStaticFixture({ 'application.html': html });
+    const fixture = createStaticFixture({ 'index.html': html });
 
     const response = await fixture.service.serveClientAppAsset(request());
 
@@ -62,7 +55,7 @@ describe('ClientAppService static hosting', () => {
 
   it('serves real assets first and only falls back for extensionless HTML document navigation', async () => {
     const fixture = createStaticFixture({
-      'application.html': '<html><head></head><body>app</body></html>',
+      'index.html': '<html><head></head><body>app</body></html>',
       'orders/1': '<html><head></head><body>real order file</body></html>',
     });
 
@@ -78,7 +71,7 @@ describe('ClientAppService static hosting', () => {
     );
     expect(fallback.status).toBe(200);
     expect(await responseText(fallback)).toContain('<base href="/v/customer/">');
-    expect(fixture.openedPaths).toEqual(['orders/2', 'application.html']);
+    expect(fixture.openedPaths).toEqual(['orders/2', 'index.html']);
 
     fixture.openedPaths.length = 0;
     const missingAsset = await fixture.service.serveClientAppAsset(
@@ -92,7 +85,7 @@ describe('ClientAppService static hosting', () => {
 
   it('supports asset MIME and HEAD requests', async () => {
     const fixture = createStaticFixture({
-      'application.html': '<html><head></head><body>app</body></html>',
+      'index.html': '<html><head></head><body>app</body></html>',
       'assets/app.js': 'window.clientApp = true;',
     });
     const first = await fixture.service.serveClientAppAsset(request({ relativePath: 'assets/app.js' }));
@@ -111,7 +104,7 @@ describe('ClientAppService static hosting', () => {
     'rejects unsafe static paths: %s',
     async (relativePath) => {
       const fixture = createStaticFixture({
-        'application.html': '<html><head></head><body>app</body></html>',
+        'index.html': '<html><head></head><body>app</body></html>',
       });
       await expect(fixture.service.serveClientAppAsset(request({ relativePath }))).rejects.toMatchObject({
         code: 'LIGHT_EXTENSION_INVALID_INPUT',
@@ -122,7 +115,7 @@ describe('ClientAppService static hosting', () => {
 });
 function request(overrides: Partial<ClientAppStaticRequest> = {}): ClientAppStaticRequest {
   return {
-    entryId: 'entry-1',
+    entryId: 'repo-1:customer',
     relativePath: '',
     workspaceRoot: '/v/customer/',
     publicPath: '/',
@@ -133,24 +126,17 @@ function request(overrides: Partial<ClientAppStaticRequest> = {}): ClientAppStat
 }
 
 function createStaticFixture(files: Record<string, string | Buffer>) {
-  const descriptor: ClientAppDescriptor = {
-    entryId: 'entry-1',
+  const descriptor: JsPortalDescriptor = {
     repoId: 'repo-1',
     key: 'customer',
-    kind: 'client-app',
     title: 'Customer',
-    entryHtml: 'dist/application.html',
+    entryHtml: 'index.html',
     contentHash: 'client-app-content',
     fileCount: Object.keys(files).length,
     byteSize: Object.values(files).reduce((total, value) => total + toBuffer(value).length, 0),
-    updatedAt: null,
   };
   const openedPaths: string[] = [];
-  const openAsset = async (
-    _entryId: string,
-    relativePath: string,
-    _options?: { expectedContentHash?: string },
-  ): Promise<ClientAppAsset | null> => {
+  const openAsset = async (relativePath: string): Promise<JsPortalAsset | null> => {
     openedPaths.push(relativePath);
     const value = files[relativePath];
     if (typeof value === 'undefined') {
@@ -163,15 +149,24 @@ function createStaticFixture(files: Record<string, string | Buffer>) {
       stream: Readable.from(content),
     };
   };
-  const service = new ClientAppService(
-    {} as Database,
-    {} as LightExtensionRepoService,
-    {} as LightExtensionPermissionService,
-    {} as ClientAppAssetStorage,
-  );
-  vi.spyOn(service, 'resolveClientApp').mockResolvedValue(descriptor);
-  vi.spyOn(service, 'openClientAppAsset').mockImplementation(openAsset);
+  const repo = createModel({ id: 'repo-1', lifecycleStatus: 'enabled' });
+  const db = {
+    getRepository: () => ({
+      findOne: async (options: { filterByTk?: string }) => (options.filterByTk === descriptor.repoId ? repo : null),
+    }),
+  } as unknown as Database;
+  const storage = {
+    listPortals: async () => [descriptor],
+    resolvePortal: async (_repoId: string, portalKey: string) => (portalKey === descriptor.key ? descriptor : null),
+    openAsset: async (_repoId: string, _portalKey: string, relativePath: string) => openAsset(relativePath),
+    removeRepo: async () => undefined,
+  } as Pick<JsPortalStorage, 'listPortals' | 'openAsset' | 'removeRepo' | 'resolvePortal'>;
+  const service = new ClientAppService(db, storage);
   return { descriptor, openedPaths, openAsset, service };
+}
+
+function createModel(values: Record<string, unknown>) {
+  return { get: (name: string) => values[name] };
 }
 
 function findElements(node: DefaultTreeAdapterTypes.Node, tagName: string): DefaultTreeAdapterTypes.Element[] {

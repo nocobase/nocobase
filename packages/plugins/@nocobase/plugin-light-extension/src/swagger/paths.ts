@@ -240,7 +240,7 @@ export const lightExtensionPaths = {
       tags: ['lightExtensionFiles'],
       summary: 'Save and compile an incremental light-extension source patch',
       description: [
-        'Apply files as an incremental patch, create one source commit, validate the final workspace, and compile runtime artifacts atomically.',
+        'Apply files as an incremental patch. Ordinary source creates one source commit and compiles runtime artifacts; src/client/js-portals files are stored outside source history and replace the Portal storage snapshot.',
         'files is a delta: include only changed upserts and deletes, not an implicit complete-workspace replacement. expectedHeadCommitId is required and must exactly match the current repository Head; pass null only for a repository without a Head.',
         'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator diagnostics. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
       ].join('\n\n'),
