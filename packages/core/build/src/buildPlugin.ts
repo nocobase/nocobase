@@ -96,6 +96,8 @@ const external = [
   '@nocobase/flow-engine',
   '@nocobase/client-v2',
   '@nocobase/shared',
+  '@nocobase/runjs',
+  '@nocobase/light-extension-sdk',
   // @nocobase/auth
   'jsonwebtoken',
 
@@ -303,6 +305,21 @@ export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
   fs.writeFileSync(externalVersionPath, `module.exports = ${JSON.stringify(data, null, 2)};`);
 }
 
+function normalizePackageJsonForDepCache(pkg: Record<string, unknown>) {
+  const { _lastModified: _ignoredLastModified, ...rest } = pkg;
+  return rest;
+}
+
+function isBundledDepCacheFresh(outputPackage: Record<string, unknown>, sourcePackage: Record<string, unknown>) {
+  if (outputPackage.version !== sourcePackage.version) {
+    return false;
+  }
+  return (
+    JSON.stringify(normalizePackageJsonForDepCache(outputPackage)) ===
+    JSON.stringify(normalizePackageJsonForDepCache(sourcePackage))
+  );
+}
+
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
@@ -338,10 +355,10 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     const { outputDir, mainFile, pkg, nccConfig, depDir } = deps[dep];
     const outputPackageJson = path.join(outputDir, 'package.json');
 
-    // cache check
+    // cache check: version alone is not enough when package exports/files change in-place
     if (fs.existsSync(outputPackageJson)) {
       const outputPackage = require(outputPackageJson);
-      if (outputPackage.version === pkg.version) {
+      if (isBundledDepCacheFresh(outputPackage, pkg)) {
         continue;
       }
     }
