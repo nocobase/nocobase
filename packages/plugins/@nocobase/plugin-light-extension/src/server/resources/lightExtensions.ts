@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '@nocobase/plugin-vsc-file';
+import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '../vsc-file/public-api';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';

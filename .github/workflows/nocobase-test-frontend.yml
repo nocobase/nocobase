@@ -48,12 +48,7 @@ jobs:
 
       - run: yarn install --frozen-lockfile
       - name: Check tracked RunJS artifacts (regenerate and commit them if this fails)
-        run: |
-          yarn workspace @nocobase/runjs generate:check
-          git diff --exit-code -- \
-            packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/manifest.ts \
-            packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/manifest.ts \
-            packages/core/runjs/src/generated/dom-type-only-bridge.ts
+        run: yarn workspace @nocobase/runjs generate:check
       - name: Pack dependencies
         run: |
           find . -name node_modules -type d -prune -print0 > node_modules.list

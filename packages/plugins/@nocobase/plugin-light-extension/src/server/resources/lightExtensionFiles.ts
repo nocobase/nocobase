@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isVscError } from '@nocobase/plugin-vsc-file';
+import { isVscError } from '../vsc-file/public-api';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LightExtensionError } from '../../shared/errors';

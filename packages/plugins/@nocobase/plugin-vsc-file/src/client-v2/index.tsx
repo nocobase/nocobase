@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './runjs-studio';
-export { useT as useVscFileT } from './locale';
-export { default } from './plugin';
+import { Plugin } from '@nocobase/client-v2';
+
+export default class PluginVscFileCompatibilityClientV2 extends Plugin {}

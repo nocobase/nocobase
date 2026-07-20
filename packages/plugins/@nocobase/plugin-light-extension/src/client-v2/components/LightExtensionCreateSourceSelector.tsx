@@ -8,7 +8,7 @@
  */
 
 import { UploadOutlined } from '@ant-design/icons';
-import type { VscGitHubRemoteConfig } from '@nocobase/plugin-vsc-file';
+import type { VscGitHubRemoteConfig } from '../../shared/vsc-file/public-api';
 import { Alert, Form, Radio, Space, Upload } from 'antd';
 import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import React, { useCallback, useEffect, useRef, useState } from 'react';

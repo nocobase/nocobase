@@ -14,7 +14,7 @@ import type {
   VscPermissionHookInput,
   VscPermissionHookResult,
   VscPermissionRequestMetadata,
-} from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
 import { randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE, type LightExtensionAclAction } from '../../constants';

@@ -11,7 +11,7 @@ import 'ses';
 import { FlowExitAllException, FlowExitException } from './utils/exceptions';
 
 export interface JSRunnerOptions {
-  /** Maximum execution time in milliseconds. Defaults to 30 seconds. */
+  /** Maximum execution time in milliseconds. Defaults to 5 seconds. */
   timeoutMs?: number;
   globals?: Record<string, any>;
   version?: string;
@@ -23,7 +23,7 @@ export interface JSRunnerOptions {
   preprocessTemplates?: boolean;
 }
 
-export const DEFAULT_RUNJS_TIMEOUT_MS = 30_000;
+export const DEFAULT_RUNJS_TIMEOUT_MS = 5_000;
 
 /**
  * Decide whether RunJS `{{ ... }}` compatibility preprocessing should run.

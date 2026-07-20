@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
-import { RemoteSyncError, VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+import { RemoteSyncError, VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 

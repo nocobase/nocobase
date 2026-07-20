@@ -8,7 +8,7 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { RunJSStudioToolbarContext } from '@nocobase/plugin-vsc-file/client-v2';
+import type { RunJSStudioToolbarContext } from '../vsc-file/public-api';
 import { message } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';

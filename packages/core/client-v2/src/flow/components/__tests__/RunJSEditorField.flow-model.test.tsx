@@ -183,6 +183,44 @@ describe('RunJSEditorField FlowModel integration', () => {
     expect(capturedValue).toMatchObject(expected);
   });
 
+  it.each([
+    { code: 'return 1;', expectedVersion: 'v1' },
+    { code: '', expectedVersion: 'v2' },
+  ])('uses $expectedVersion for string editor values without a persisted version', ({ code, expectedVersion }) => {
+    const harness = createFlowModelHarness();
+    let capturedValue: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'effective-version-provider',
+      renderEditor: (props) => {
+        capturedValue = props.value;
+        return <div>effective version</div>;
+      },
+    });
+    harness.renderEditor(<RunJSEditorField locatorFactory="flowModel.step" value={code} />, { code });
+
+    expect(capturedValue).toMatchObject({ code, version: expectedVersion });
+  });
+
+  it.each([
+    { value: { code: 'return 1;' }, expectedVersion: 'v1' },
+    { value: { code: '' }, expectedVersion: 'v2' },
+  ])('uses $expectedVersion for object editor values without a persisted version', ({ value, expectedVersion }) => {
+    const harness = createFlowModelHarness();
+    let capturedValue: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'effective-object-version-provider',
+      renderEditor: (props) => {
+        capturedValue = props.value;
+        return <div>effective object version</div>;
+      },
+    });
+    harness.renderEditor(<RunJSEditorField locatorFactory="flowModel.step" value={value} />, value);
+
+    expect(capturedValue).toMatchObject({ ...value, version: expectedVersion });
+  });
+
   it.each<{
     name: string;
     unsafeProps: { paramPath?: string[]; flowKey?: string; stepKey?: string };

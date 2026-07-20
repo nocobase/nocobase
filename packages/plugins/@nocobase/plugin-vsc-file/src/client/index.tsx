@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './runjs-studio/contract';
-export { default } from './plugin';
+import { Plugin } from '@nocobase/client';
+
+export default class PluginVscFileCompatibilityClient extends Plugin {}

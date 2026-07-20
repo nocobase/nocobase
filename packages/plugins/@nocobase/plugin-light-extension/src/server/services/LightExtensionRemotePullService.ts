@@ -14,8 +14,8 @@ import type {
   VscFileSyncJobRecord,
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
-} from '@nocobase/plugin-vsc-file';
-import { RemoteSyncError } from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
+import { RemoteSyncError } from '../vsc-file/public-api';
 
 import { LightExtensionError, isLightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
 import type { LightExtensionRepoRecord, LightExtensionSaveSourceResult } from '../../shared/types';

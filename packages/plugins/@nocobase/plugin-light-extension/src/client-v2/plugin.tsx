@@ -8,7 +8,7 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
+import { runJSStudioToolbarRegistry } from './vsc-file/public-api';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,

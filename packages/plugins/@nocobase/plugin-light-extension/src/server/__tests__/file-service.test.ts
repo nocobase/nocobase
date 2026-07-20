@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer, { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer, { VscFileService, VscPermissionHookRegistry } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION } from '../../constants';

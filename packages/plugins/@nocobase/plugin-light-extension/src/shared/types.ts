@@ -23,7 +23,7 @@ import type {
   VscRemotePlannerState,
   VscRemoteProvider,
   VscRemoteSyncPlan,
-} from '@nocobase/plugin-vsc-file';
+} from './vsc-file/public-api';
 
 export type { LightExtensionKind } from '../constants';
 

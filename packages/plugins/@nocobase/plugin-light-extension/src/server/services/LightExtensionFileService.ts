@@ -15,9 +15,9 @@ import type {
   PreparedPush,
   VscRefName,
   VscRemoteSnapshot,
-} from '@nocobase/plugin-vsc-file';
-import { computeRemoteSnapshotContentHash, isVscError } from '@nocobase/plugin-vsc-file';
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
+import { computeRemoteSnapshotContentHash, isVscError } from '../vsc-file/public-api';
+import { VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
 import { createHash, randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 

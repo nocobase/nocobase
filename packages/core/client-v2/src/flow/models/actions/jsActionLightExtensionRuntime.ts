@@ -9,6 +9,8 @@
 
 import {
   FlowCancelSaveException,
+  FlowExitAllException,
+  FlowExitException,
   type FlowModel,
   type FlowRuntimeContext,
   type RunJSValue,
@@ -195,6 +197,9 @@ export async function runJSActionRuntime(input: {
   } catch (error) {
     if (!isCurrentJSActionRuntimeRun(ctx.model, runId)) {
       return;
+    }
+    if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
+      throw error;
     }
     showJSActionRuntimeError(ctx, error);
   } finally {

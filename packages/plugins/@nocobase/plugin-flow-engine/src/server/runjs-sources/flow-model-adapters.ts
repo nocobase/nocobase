@@ -102,7 +102,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
       assertFlowModelStepSourceIsInline(model, locator, ctx);
       const { codeValue, versionValue, sourceMissing } = readFlowModelStepSource(model, locator);
       const code = typeof codeValue === 'string' ? codeValue : '';
-      const version = typeof versionValue === 'string' && versionValue ? versionValue : 'v2';
+      const version = resolveLegacyVersion(code, versionValue, sourceMissing);
 
       return {
         code,
@@ -821,14 +821,14 @@ function readNestedSource(model: JsonRecord, locator: FlowModelNestedLocator) {
     if (typeof value.code === 'string') {
       return {
         code: value.code,
-        version: typeof value.version === 'string' && value.version ? value.version : 'v2',
+        version: resolveLegacyVersion(value.code, value.version),
         originalValue: value,
       };
     }
     if (typeof value.script === 'string') {
       return {
         code: value.script,
-        version: typeof value.version === 'string' && value.version ? value.version : 'v2',
+        version: resolveLegacyVersion(value.script, value.version),
         originalValue: value,
       };
     }
@@ -836,7 +836,7 @@ function readNestedSource(model: JsonRecord, locator: FlowModelNestedLocator) {
 
   return {
     code: typeof value === 'string' ? value : '',
-    version: 'v2',
+    version: resolveLegacyVersion(value, undefined),
     originalValue: value,
   };
 }
@@ -1033,7 +1033,7 @@ function writeNestedRunJSBinding(
 
   setAtPath(root, targetPath, {
     code: typeof currentValue === 'string' ? currentValue : '',
-    version: 'v2',
+    version: resolveLegacyVersion(currentValue, undefined),
     sourceMode: binding.sourceMode,
     sourceBinding: cloneJsonRecord(binding.sourceBinding),
   });
@@ -1259,6 +1259,13 @@ function cloneJsonRecord(value: unknown): JsonRecord {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function resolveLegacyVersion(code: unknown, version: unknown, uninitialized = false): string {
+  if (typeof version === 'string' && version) {
+    return version;
+  }
+  return !uninitialized && typeof code === 'string' && code.trim() ? 'v1' : 'v2';
 }
 
 function getExistingNestedValue(root: unknown, path: JsonPath): unknown {

@@ -14,8 +14,8 @@ import type {
   VscFileRemoteRecord,
   VscRemoteProvider,
   VscRemoteSyncPlan,
-} from '@nocobase/plugin-vsc-file';
-import { RemoteSyncError } from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
+import { RemoteSyncError } from '../vsc-file/public-api';
 import { randomUUID } from 'crypto';
 
 import type { LightExtensionAclAction } from '../../constants';

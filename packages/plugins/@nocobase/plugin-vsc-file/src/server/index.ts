@@ -7,18 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './permissions';
-export * from './config';
-export * from './runjs-sources';
-export * from './services/VscFileService';
-export * from './services/VscFileMetrics';
-export * from './services/CanonicalCandidateService';
-export * from './services/TreeService';
-export * from './remotes';
-export * from './remotes/snapshot';
-export * from './remotes/credentialRef';
-export * from '../shared/errors';
-export * from '../shared/types';
-export * from '../shared/runjs-source-types';
-export * from '../shared/remote-sync-types';
-export { default } from './plugin';
+import { Plugin } from '@nocobase/server';
+
+export default class PluginVscFileCompatibilityServer extends Plugin {}

@@ -8,7 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '@nocobase/plugin-vsc-file';
+import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '../vsc-file/public-api';
 import { createHash, randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';

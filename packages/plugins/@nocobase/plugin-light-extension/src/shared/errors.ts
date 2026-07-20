@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RemoteSyncErrorCode } from '@nocobase/plugin-vsc-file';
+import type { RemoteSyncErrorCode } from './vsc-file/public-api';
 
 export type LightExtensionErrorCode =
   | 'LIGHT_EXTENSION_INVALID_INPUT'

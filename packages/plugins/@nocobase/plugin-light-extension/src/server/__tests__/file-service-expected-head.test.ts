@@ -8,7 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import { VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+import { VscPermissionHookRegistry } from '../vsc-file';
 import { describe, expect, it, vi } from 'vitest';
 
 import { LightExtensionFileService } from '../services/LightExtensionFileService';

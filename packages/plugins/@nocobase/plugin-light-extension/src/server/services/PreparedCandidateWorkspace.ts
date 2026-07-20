@@ -12,7 +12,7 @@ import type {
   CanonicalCandidateChange,
   CanonicalCandidateFile,
   CanonicalCandidateSnapshot,
-} from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
 
 import { LightExtensionError } from '../../shared/errors';
 import type {

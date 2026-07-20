@@ -29,7 +29,7 @@ import {
   type RunJSWorkspacePathType,
   type RunJSWorkspaceFile,
   useVscFileT,
-} from '@nocobase/plugin-vsc-file/client-v2';
+} from '../vsc-file/public-api';
 import { type EmbeddedRunJSEditorSaveResult, useFullscreenOverlay } from '@nocobase/client-v2';
 import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';

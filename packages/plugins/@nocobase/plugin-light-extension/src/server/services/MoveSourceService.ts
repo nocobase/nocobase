@@ -14,8 +14,8 @@ import type {
   RunJSSourceAdapterContext,
   RunJSSourceAdapterRegistry,
   RunJSSourceLocator,
-} from '@nocobase/plugin-vsc-file';
-import { isVscError } from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
+import { isVscError } from '../vsc-file/public-api';
 import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
 import ts from 'typescript';
 import { posix as pathPosix } from 'path';

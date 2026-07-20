@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import { isVscError } from '@nocobase/plugin-vsc-file';
+import { isVscError } from '../vsc-file/public-api';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES } from '../../constants';

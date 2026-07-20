@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscRemoteSnapshotFile } from '@nocobase/plugin-vsc-file';
+import type { VscRemoteSnapshotFile } from '../vsc-file';
 import {
   RemoteSyncAdapterRegistry,
   RemoteSyncError,
   RemoteSyncRuntimeService,
   VscPermissionHookRegistry,
   validateVscRemoteAuthRef,
-} from '@nocobase/plugin-vsc-file';
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+} from '../vsc-file';
+import PluginVscFileServer from '../vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
-import { DeterministicRemoteAdapter } from '../../../../plugin-vsc-file/src/server/remotes/testing/DeterministicRemoteAdapter';
+import { DeterministicRemoteAdapter } from '../vsc-file/remotes/testing/DeterministicRemoteAdapter';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';

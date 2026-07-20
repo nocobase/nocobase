@@ -28,7 +28,7 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
+import { runJSStudioToolbarRegistry } from '../../client-v2/vsc-file/public-api';
 
 import { JSPageLightExtensionSourceField } from '../../client-v2/components/JSBlockLightExtensionSourceField';
 import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm';

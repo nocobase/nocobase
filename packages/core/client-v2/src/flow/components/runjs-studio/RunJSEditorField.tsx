@@ -84,14 +84,21 @@ function getAtPath(root: unknown, path: readonly string[]): unknown {
   return current;
 }
 
-function resolveFallbackVersion(params: unknown, versionPath: readonly string[]): string {
+function resolveFallbackVersion(params: unknown, versionPath: readonly string[], value: unknown): string {
   const version = getAtPath(params, versionPath);
-  return typeof version === 'string' && version ? version : 'v2';
+  if (typeof version === 'string' && version) {
+    return version;
+  }
+  const code = typeof value === 'string' ? value : isRunJSValue(value) ? value.code : '';
+  return code.trim() ? 'v1' : 'v2';
 }
 
 function normalizeEditorValue(value: unknown, fallbackVersion: string): RunJSValue {
   if (isRunJSValue(value)) {
-    return normalizeRunJSValue(value);
+    const normalized = normalizeRunJSValue(value);
+    return typeof value.version === 'string' && value.version
+      ? normalized
+      : { ...normalized, version: fallbackVersion };
   }
   if (typeof value === 'string') {
     return { code: value, version: fallbackVersion };
@@ -383,7 +390,7 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   const valueMode = resolveValueMode(value, props);
   const generatedLocator = createFlowModelStepLocator(props, flowContext, flowStep?.path);
   const current = mergeRunJSValueWithStepParams(
-    normalizeEditorValue(value, resolveFallbackVersion(flowStep?.params, fieldVersionPath)),
+    normalizeEditorValue(value, resolveFallbackVersion(flowStep?.params, fieldVersionPath, value)),
     resolveCurrentStepParams(flowContext, generatedLocator, flowStep?.params),
     fieldParamPath,
   );

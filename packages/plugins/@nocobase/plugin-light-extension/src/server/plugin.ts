@@ -8,8 +8,8 @@
  */
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH } from '@nocobase/light-extension-sdk/schema';
-import type { RemoteSyncRuntime, RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+import type { RemoteSyncRuntime, RunJSSourceAdapterRegistry, VscPermissionHook } from './vsc-file/public-api';
+import { VscFileService, VscPermissionHookRegistry } from './vsc-file/public-api';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 

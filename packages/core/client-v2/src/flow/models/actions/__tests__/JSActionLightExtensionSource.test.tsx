@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type FlowSettingsContext, type StepDefinition } from '@nocobase/flow-engine';
+import {
+  FlowExitAllException,
+  FlowExitException,
+  type FlowSettingsContext,
+  type StepDefinition,
+} from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
@@ -345,6 +350,56 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
     await expect(model.applyFlow('clickSettings')).resolves.toBeTruthy();
 
     expect(message.error).toHaveBeenCalledWith('entry missing');
+    expect(model.props.loading).toBe(false);
+  });
+
+  it.each([
+    new FlowExitException('clickSettings', 'js-action-exit'),
+    new FlowExitAllException('clickSettings', 'js-action-exit'),
+  ])('preserves %s as normal FlowExecutor control flow', async (exitError) => {
+    const { model, message } = createActionModel<JSActionModel>({
+      ModelClass: JSActionModel,
+      use: 'JSActionModel',
+      uid: 'js-action-exit',
+      runJs: {
+        code: 'ctx.exit();',
+        version: 'v2',
+        sourceMode: 'inline',
+      },
+    });
+    vi.spyOn(model.context, 'runjs').mockRejectedValue(exitError);
+
+    await expect(
+      runJSActionRuntime({
+        ctx: model.context,
+        params: model.getStepParams('clickSettings', 'runJs') as Record<string, unknown>,
+        runJs: {
+          code: 'ctx.exit();',
+          version: 'v2',
+          sourceMode: 'inline',
+        },
+      }),
+    ).rejects.toBe(exitError);
+
+    expect(message.error).not.toHaveBeenCalled();
+    expect(model.props.loading).toBe(false);
+  });
+
+  it('keeps ctx.exit() on the FlowExecutor normal-exit path', async () => {
+    const { model, message } = createActionModel<JSActionModel>({
+      ModelClass: JSActionModel,
+      use: 'JSActionModel',
+      uid: 'js-action-real-exit',
+      runJs: {
+        code: 'ctx.exit();',
+        version: 'v2',
+        sourceMode: 'inline',
+      },
+    });
+
+    await expect(model.applyFlow('clickSettings')).resolves.toBeInstanceOf(FlowExitAllException);
+
+    expect(message.error).not.toHaveBeenCalled();
     expect(model.props.loading).toBe(false);
   });
 });

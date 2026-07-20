@@ -9,7 +9,7 @@
 
 import type { Context } from '@nocobase/actions';
 import type { Transaction } from '@nocobase/database';
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 import { vi } from 'vitest';

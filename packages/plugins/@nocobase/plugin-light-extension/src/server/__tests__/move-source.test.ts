@@ -8,7 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import type { RunJSSourceAdapterRegistry } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceAdapterRegistry } from '../vsc-file';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionEntryRecord, LightExtensionRepoRecord } from '../../shared/types';

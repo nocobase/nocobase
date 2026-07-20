@@ -13,7 +13,7 @@ import type {
   VscFileRemoteRecord,
   VscRemoteProvider,
   VscRemoteSyncPlan,
-} from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
 
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionRepoRecord, LightExtensionTreeEntryInput } from '../../shared/types';

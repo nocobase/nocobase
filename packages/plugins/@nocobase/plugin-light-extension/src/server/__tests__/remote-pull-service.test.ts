@@ -7,21 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscRemoteSnapshotFile } from '@nocobase/plugin-vsc-file';
-import { VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import type { VscRemoteSnapshotFile } from '../vsc-file';
+import { VscPermissionHookRegistry } from '../vsc-file';
+import PluginVscFileServer from '../vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
-import { ExternalCommitMapStore } from '../../../../plugin-vsc-file/src/server/remotes/ExternalCommitMapStore';
-import { RemoteSyncAdapterRegistry } from '../../../../plugin-vsc-file/src/server/remotes/RemoteSyncAdapterRegistry';
-import { RemoteStore } from '../../../../plugin-vsc-file/src/server/remotes/RemoteStore';
-import { SyncStatePlanner } from '../../../../plugin-vsc-file/src/server/remotes/SyncStatePlanner';
-import { DeterministicRemoteAdapter } from '../../../../plugin-vsc-file/src/server/remotes/testing/DeterministicRemoteAdapter';
-import { VscRemotePullDiscoveryService } from '../../../../plugin-vsc-file/src/server/remotes/VscRemotePullDiscoveryService';
-import { loadVscSnapshot } from '../../../../plugin-vsc-file/src/server/remotes/VscRemotePushService';
-import { CommitService } from '../../../../plugin-vsc-file/src/server/services/CommitService';
-import { TreeService } from '../../../../plugin-vsc-file/src/server/services/TreeService';
+import { ExternalCommitMapStore } from '../vsc-file/remotes/ExternalCommitMapStore';
+import { RemoteSyncAdapterRegistry } from '../vsc-file/remotes/RemoteSyncAdapterRegistry';
+import { RemoteStore } from '../vsc-file/remotes/RemoteStore';
+import { SyncStatePlanner } from '../vsc-file/remotes/SyncStatePlanner';
+import { DeterministicRemoteAdapter } from '../vsc-file/remotes/testing/DeterministicRemoteAdapter';
+import { VscRemotePullDiscoveryService } from '../vsc-file/remotes/VscRemotePullDiscoveryService';
+import { loadVscSnapshot } from '../vsc-file/remotes/VscRemotePushService';
+import { CommitService } from '../vsc-file/services/CommitService';
+import { TreeService } from '../vsc-file/services/TreeService';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';

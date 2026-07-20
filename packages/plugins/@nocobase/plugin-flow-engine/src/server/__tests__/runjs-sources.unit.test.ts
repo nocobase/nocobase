@@ -158,6 +158,109 @@ describe('flow-engine RunJS source registration', () => {
     });
   });
 
+  it('keeps persisted non-empty FlowModel code without a version on v1 semantics', async () => {
+    const registrar = createRegistrar();
+    const db = {
+      getCollection: () => ({
+        repository: {
+          findModelById: async () => ({
+            uid: 'legacy-js-step-model',
+            use: 'JSBlockModel',
+            stepParams: {
+              jsSettings: {
+                runJs: {
+                  code: 'return {{ ctx.record.id }};',
+                },
+              },
+            },
+          }),
+        },
+      }),
+    } as unknown as Database;
+    registerFlowModelRunJSSourceAdapters({
+      db,
+      app: {
+        pm: {
+          get: () => registrar,
+        },
+      },
+    });
+
+    const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
+
+    await expect(
+      stepAdapter?.readLegacy({
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'legacy-js-step-model',
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+        },
+        ctx: {},
+      }),
+    ).resolves.toMatchObject({
+      code: 'return {{ ctx.record.id }};',
+      version: 'v1',
+      uninitialized: undefined,
+    });
+  });
+
+  it('keeps persisted nested RunJS code without a version on v1 semantics', async () => {
+    const registrar = createRegistrar();
+    const db = {
+      getCollection: () => ({
+        repository: {
+          findModelById: async () => ({
+            uid: 'legacy-nested-model',
+            use: 'FormModel',
+            stepParams: {
+              eventSettings: {
+                customVariable: {
+                  variables: [
+                    {
+                      key: 'legacy_variable',
+                      runjs: {
+                        code: 'return {{ ctx.record.id }};',
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        },
+      }),
+    } as unknown as Database;
+    registerFlowModelRunJSSourceAdapters({
+      db,
+      app: {
+        pm: {
+          get: () => registrar,
+        },
+      },
+    });
+
+    const nestedAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.nestedRunJS');
+
+    await expect(
+      nestedAdapter?.readLegacy({
+        locator: {
+          kind: 'flowModel.nestedRunJS',
+          modelUid: 'legacy-nested-model',
+          containerFlowKey: 'eventSettings',
+          containerStepKey: 'customVariable',
+          valuePath: ['variables', 'legacy_variable', 'runjs'],
+          scene: 'eventFlow',
+        },
+        ctx: {},
+      }),
+    ).resolves.toMatchObject({
+      code: 'return {{ ctx.record.id }};',
+      version: 'v1',
+    });
+  });
+
   it('rejects an unknown FlowModel step locator when the persisted step is missing', async () => {
     const registrar = createRegistrar();
     const db = {

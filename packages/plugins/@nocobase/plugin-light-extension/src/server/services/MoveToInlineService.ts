@@ -23,7 +23,7 @@ import {
   type VscRepositoryRecord,
   type VscServiceContext,
   VscFileService,
-} from '@nocobase/plugin-vsc-file';
+} from '../vsc-file/public-api';
 import { createHash } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';

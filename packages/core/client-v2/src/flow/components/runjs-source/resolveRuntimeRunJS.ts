@@ -32,6 +32,53 @@ function normalizeVersion(version: unknown): string {
   return typeof version === 'string' && version ? version : 'v2';
 }
 
+function resolveEffectiveVersion(code: unknown, version: unknown): string {
+  if (typeof version === 'string' && version) {
+    return version;
+  }
+  return typeof code === 'string' && code.trim() ? 'v1' : 'v2';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readResolverErrorCode(error: unknown): string | undefined {
+  if (!isRecord(error)) {
+    return undefined;
+  }
+  if (typeof error.code === 'string') {
+    return error.code;
+  }
+  const response = isRecord(error.response) ? error.response : undefined;
+  const data = isRecord(response?.data) ? response.data : isRecord(error.data) ? error.data : undefined;
+  const firstError = Array.isArray(data?.errors) ? data.errors[0] : undefined;
+  return isRecord(firstError) && typeof firstError.code === 'string' ? firstError.code : undefined;
+}
+
+function readResolverErrorStatus(error: unknown): number | undefined {
+  if (!isRecord(error)) {
+    return undefined;
+  }
+  if (typeof error.status === 'number') {
+    return error.status;
+  }
+  const response = isRecord(error.response) ? error.response : undefined;
+  return typeof response?.status === 'number' ? response.status : undefined;
+}
+
+function canUseLastKnownGood(error: unknown): boolean {
+  const code = readResolverErrorCode(error);
+  if (code === 'RUNJS_SOURCE_RESOLVER_NOT_FOUND' || code === 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE') {
+    return true;
+  }
+  if (code && /(DENIED|INVALID|FAILED|CONFLICT|OUTDATED|NOT_FOUND|REQUIRED)$/.test(code)) {
+    return false;
+  }
+  const status = readResolverErrorStatus(error);
+  return status === 404 || status === 502 || status === 503 || status === 504;
+}
+
 function normalizeResolverResult(
   input: ResolveRunJSSourceBindingInput,
   result: RunJSSourceResolverResult,
@@ -95,24 +142,39 @@ export async function resolveRuntimeRunJS(
   registry: RunJSSourceResolverRegistryManager = RunJSSourceResolverRegistry,
 ): Promise<ResolvedRuntimeRunJS> {
   const runJs = normalizeRunJSValue(input.runJs);
+  const effectiveVersion = resolveEffectiveVersion(input.runJs?.code, input.runJs?.version);
   const sourceMode = normalizeSourceMode(input.sourceMode ?? runJs.sourceMode);
   const sourceBinding = input.sourceBinding ?? runJs.sourceBinding;
   const settings = input.settings ?? runJs.settings;
   if (sourceMode !== INLINE_RUNJS_SOURCE_MODE) {
-    return resolveRunJSSourceBinding(
-      {
+    try {
+      return await resolveRunJSSourceBinding(
+        {
+          sourceMode,
+          sourceBinding,
+          settings,
+          context: input.context,
+        },
+        registry,
+      );
+    } catch (error) {
+      if (!runJs.code.trim() || !canUseLastKnownGood(error)) {
+        throw error;
+      }
+      return {
+        code: runJs.code,
+        version: effectiveVersion,
         sourceMode,
-        sourceBinding,
-        settings,
+        ...(sourceBinding ? { sourceBinding } : {}),
+        settings: normalizeSettings(settings),
         context: input.context,
-      },
-      registry,
-    );
+      };
+    }
   }
 
   return {
     code: runJs.code,
-    version: runJs.version,
+    version: effectiveVersion,
     sourceMode: INLINE_RUNJS_SOURCE_MODE,
     settings: normalizeSettings(settings),
     context: input.context,

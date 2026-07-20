@@ -7,23 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { runJSSourcePaths } from './paths';
-import { runJSSourceSchemas } from './schemas';
-
-export default {
-  openapi: '3.0.2',
-  info: {
-    title: 'NocoBase API - VSC file plugin',
-    version: '1.0.0',
-  },
-  tags: [
-    {
-      name: 'runJSSources',
-      description: 'Open, preview, and save owner-aware RunJS Studio workspaces.',
-    },
-  ],
-  paths: runJSSourcePaths,
-  components: {
-    schemas: runJSSourceSchemas,
-  },
-};
+export default {};

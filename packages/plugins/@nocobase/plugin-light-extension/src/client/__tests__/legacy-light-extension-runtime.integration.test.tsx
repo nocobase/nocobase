@@ -22,8 +22,8 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
-import PluginVscFileClient from '@nocobase/plugin-vsc-file/client';
-import { runJSStudioProvider } from '@nocobase/plugin-vsc-file/client-v2';
+import PluginVscFileClient from '../vsc-file/plugin';
+import { runJSStudioProvider } from '../../client-v2/vsc-file/public-api';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {

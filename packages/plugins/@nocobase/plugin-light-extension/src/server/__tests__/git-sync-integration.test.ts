@@ -13,12 +13,12 @@ import {
   RemoteSyncError,
   RemoteSyncRuntimeService,
   VscPermissionHookRegistry,
-} from '@nocobase/plugin-vsc-file';
+} from '../vsc-file';
 import { vi } from 'vitest';
 
-import { GitHubRemoteAdapter } from '../../../../plugin-vsc-file/src/server/remotes/providers/github/GitHubRemoteAdapter';
-import type { GitHubApi } from '../../../../plugin-vsc-file/src/server/remotes/providers/github/githubTypes';
-import { RemoteCredentialResolver } from '../../../../plugin-vsc-file/src/server/remotes/security/RemoteCredentialResolver';
+import { GitHubRemoteAdapter } from '../vsc-file/remotes/providers/github/GitHubRemoteAdapter';
+import type { GitHubApi } from '../vsc-file/remotes/providers/github/githubTypes';
+import { RemoteCredentialResolver } from '../vsc-file/remotes/security/RemoteCredentialResolver';
 import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
 import {
   createGitSyncAcceptanceFixture,

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer, { RemoteSyncError } from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer, { RemoteSyncError } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 

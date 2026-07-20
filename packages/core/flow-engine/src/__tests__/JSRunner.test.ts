@@ -141,10 +141,33 @@ describe('JSRunner', () => {
     expect(result.value).toBe('ok');
   });
 
-  it('allows default executions to run longer than five seconds and clears the timeout timer', async () => {
+  it('times out default executions after five seconds and clears the timeout timer', async () => {
     vi.useFakeTimers();
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       const runner = new JSRunner();
+      const resultPromise = runner.run(`
+        return new Promise((resolve) => {
+          setTimeout(() => resolve('ok'), 6000);
+        });
+      `);
+
+      await vi.advanceTimersByTimeAsync(5000);
+      const result = await resultPromise;
+
+      expect(DEFAULT_RUNJS_TIMEOUT_MS).toBe(5_000);
+      expect(result.success).toBe(false);
+      expect(result.timeout).toBe(true);
+      expect(spy).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('allows callers to opt into a thirty-second timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const runner = new JSRunner({ timeoutMs: 30_000 });
       const resultPromise = runner.run(`
         return new Promise((resolve) => {
           setTimeout(() => resolve('ok'), 6000);
@@ -154,7 +177,6 @@ describe('JSRunner', () => {
       await vi.advanceTimersByTimeAsync(6000);
       const result = await resultPromise;
 
-      expect(DEFAULT_RUNJS_TIMEOUT_MS).toBe(30_000);
       expect(result.success).toBe(true);
       expect(result.value).toBe('ok');
       expect(vi.getTimerCount()).toBe(0);

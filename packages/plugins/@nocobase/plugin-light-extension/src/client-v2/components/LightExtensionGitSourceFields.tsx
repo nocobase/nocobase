@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscGitHubRemoteConfig } from '@nocobase/plugin-vsc-file';
+import type { VscGitHubRemoteConfig } from '../../shared/vsc-file/public-api';
 import { Form, Input } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 

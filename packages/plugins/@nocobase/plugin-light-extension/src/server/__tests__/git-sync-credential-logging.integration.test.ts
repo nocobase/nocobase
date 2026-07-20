@@ -7,12 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  computeRemoteSnapshotContentHash,
-  RemoteSyncAdapterRegistry,
-  type VscRemoteSnapshot,
-} from '@nocobase/plugin-vsc-file';
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import { computeRemoteSnapshotContentHash, RemoteSyncAdapterRegistry, type VscRemoteSnapshot } from '../vsc-file';
+import PluginVscFileServer from '../vsc-file';
 import type { AuditLog } from '@nocobase/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';

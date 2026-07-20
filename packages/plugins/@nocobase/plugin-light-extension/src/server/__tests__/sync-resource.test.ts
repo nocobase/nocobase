@@ -8,8 +8,8 @@
  */
 
 import type { HandlerType } from '@nocobase/resourcer';
-import type { RemoteSyncRuntime, VscFileRemoteRecord, VscRemoteSyncPlan } from '@nocobase/plugin-vsc-file';
-import { computeRemoteSnapshotContentHash, RemoteSyncError } from '@nocobase/plugin-vsc-file';
+import type { RemoteSyncRuntime, VscFileRemoteRecord, VscRemoteSyncPlan } from '../vsc-file';
+import { computeRemoteSnapshotContentHash, RemoteSyncError } from '../vsc-file';
 import { vi } from 'vitest';
 
 import { LightExtensionError } from '../../shared/errors';

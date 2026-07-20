@@ -52,6 +52,17 @@ describe('resolveRuntimeRunJS', () => {
     });
   });
 
+  it.each([
+    { code: 'return 1;', expectedVersion: 'v1' },
+    { code: '', expectedVersion: 'v2' },
+  ])('uses $expectedVersion for inline code without a stored version', async ({ code, expectedVersion }) => {
+    await expect(resolveRuntimeRunJS({ runJs: { code } })).resolves.toMatchObject({
+      code,
+      version: expectedVersion,
+      sourceMode: 'inline',
+    });
+  });
+
   it('treats a missing sourceMode as inline even when additive source fields are present', async () => {
     const resolve = vi.fn(() => ({
       code: 'return "compiled";',
@@ -317,5 +328,78 @@ return {
       code: 'RUNJS_SOURCE_RESOLVER_NOT_FOUND',
       sourceMode: 'light-extension',
     } satisfies Partial<RunJSSourceResolverError>);
+  });
+
+  it('uses the retained artifact when an external resolver is not registered', async () => {
+    await expect(
+      resolveRuntimeRunJS({
+        runJs: {
+          code: 'return "last known good";',
+          sourceMode: 'light-extension',
+          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          settings: { region: 'APAC' },
+        },
+      }),
+    ).resolves.toEqual({
+      code: 'return "last known good";',
+      version: 'v1',
+      sourceMode: 'light-extension',
+      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      settings: { region: 'APAC' },
+      context: undefined,
+    });
+  });
+
+  it.each([
+    Object.assign(new Error('runtime unavailable'), { code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', status: 409 }),
+    Object.assign(new Error('resource unavailable'), { response: { status: 404 } }),
+    Object.assign(new Error('service unavailable'), { response: { status: 503 } }),
+  ])('uses the retained artifact for an explicitly unavailable resolver service', async (resolverError) => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: async () => {
+        throw resolverError;
+      },
+    });
+
+    await expect(
+      resolveRuntimeRunJS({
+        runJs: {
+          code: 'return "last known good";',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        },
+      }),
+    ).resolves.toMatchObject({
+      code: 'return "last known good";',
+      version: 'v2',
+      sourceMode: 'light-extension',
+    });
+  });
+
+  it.each([
+    Object.assign(new Error('permission denied'), { code: 'LIGHT_EXTENSION_PERMISSION_DENIED', status: 403 }),
+    Object.assign(new Error('settings invalid'), { code: 'LIGHT_EXTENSION_SETTINGS_INVALID', status: 422 }),
+    Object.assign(new Error('validation failed'), { code: 'LIGHT_EXTENSION_VALIDATION_FAILED', status: 503 }),
+    Object.assign(new Error('binding conflict'), { code: 'LIGHT_EXTENSION_BINDING_OUTDATED', status: 409 }),
+  ])('preserves permission and data errors instead of using the retained artifact', async (resolverError) => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: async () => {
+        throw resolverError;
+      },
+    });
+
+    await expect(
+      resolveRuntimeRunJS({
+        runJs: {
+          code: 'return "last known good";',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        },
+      }),
+    ).rejects.toBe(resolverError);
   });
 });

@@ -69,7 +69,7 @@ vi.mock('../workspace/lightExtensionWorkspaceArchive', () => ({
   readLightExtensionWorkspaceArchive: mocks.archive.readLightExtensionWorkspaceArchive,
 }));
 
-vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
+vi.mock('../vsc-file/public-api', () => {
   return {
     buildLineDiff: () => [],
     inferLanguageFromPath: (path: string) => {

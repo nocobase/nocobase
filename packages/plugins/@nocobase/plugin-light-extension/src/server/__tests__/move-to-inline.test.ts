@@ -14,7 +14,7 @@ import {
   type RunJSSourceAdapterRegistry,
   type VscFileChange,
   type VscFileService,
-} from '@nocobase/plugin-vsc-file';
+} from '../vsc-file';
 import { createHash } from 'crypto';
 import { describe, expect, it, vi } from 'vitest';
 

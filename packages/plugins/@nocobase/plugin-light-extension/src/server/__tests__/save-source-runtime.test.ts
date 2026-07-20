@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import type { LightExtensionSaveSourceInput } from '../../shared/types';
