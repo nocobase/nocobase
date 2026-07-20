@@ -61,12 +61,12 @@ describe('loadSwagger', () => {
     expect(loadSwagger(packageRoot).paths).toHaveProperty('/source');
   });
 
-  test.each([
-    ['@nocobase/plugin-light-extension', '/lightExtensionFiles:saveSource'],
-    ['@nocobase/plugin-vsc-file', '/runJSSources:save'],
-  ])('loads an exported TypeScript Swagger entry from %s', (packageName, expectedPath) => {
-    const swagger = loadSwagger(packageName);
+  test.each(['/lightExtensionFiles:saveSource', '/runJSSources:save'])(
+    'loads %s from the combined Light Extension Swagger entry',
+    (expectedPath) => {
+      const swagger = loadSwagger('@nocobase/plugin-light-extension');
 
-    expect(swagger.paths).toHaveProperty(expectedPath);
-  });
+      expect(swagger.paths).toHaveProperty(expectedPath);
+    },
+  );
 });

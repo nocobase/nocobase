@@ -2,7 +2,7 @@
 
 ## Implemented contract
 
-The provider-neutral remote framework is implemented in `plugin-vsc-file`. It adds:
+The provider-neutral remote framework is implemented by Light Extension's internal VSC module. It adds:
 
 - `vscFileRemotes` for normalized provider configuration and credential references.
 - `vscFileSyncJobs` for durable, idempotent Push and Pull work with claims, leases, retries, and recovery phases.
@@ -16,9 +16,9 @@ The planner reports `unconfigured`, `in-sync`, `local-ahead`, `remote-ahead`, `d
 
 ## Ownership boundary
 
-`plugin-vsc-file` owns provider-neutral persistence, adapter registration, snapshot hashing, planning, durable jobs, compare-and-set publication, mappings, conflicts, and recovery. Provider SDKs and network clients stay behind the adapter boundary.
+The internal VSC module owns provider-neutral persistence, adapter registration, snapshot hashing, planning, durable jobs, compare-and-set publication, mappings, conflicts, and recovery. Provider SDKs and network clients stay behind the adapter boundary.
 
-Inbound apply is owner-specific. `VscRemotePullDiscoveryService` can fetch and pin a remote snapshot, but only the owning domain plugin can validate, compile, and commit that snapshot through its normal local transaction path. For light extensions, `plugin-light-extension` performs that apply and returns only safe domain DTOs.
+Inbound apply is owner-specific. `VscRemotePullDiscoveryService` can fetch and pin a remote snapshot, but only the owning domain can validate, compile, and commit that snapshot through its normal local transaction path. Light Extension performs that apply and returns only safe domain DTOs.
 
 The local VSC repository remains the authoritative runtime source. Synchronization exchanges source snapshots and external revision mappings; it does not mirror complete Git history.
 

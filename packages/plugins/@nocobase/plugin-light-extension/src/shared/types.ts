@@ -579,10 +579,9 @@ export interface LightExtensionReferenceRebuildResult {
 }
 
 /**
- * The provider-neutral remote framework, snapshots, jobs, mappings, and conflicts belong to plugin-vsc-file. This
- * facade deliberately exposes only a light-extension repository id and safe remote summaries. The internal VSC
- * repository remains the authoritative local source, while synchronization exchanges source snapshots rather than
- * attempting to mirror provider history.
+ * The provider-neutral remote framework, snapshots, jobs, mappings, and conflicts belong to the internal VSC module.
+ * This facade deliberately exposes only a light-extension repository id and safe remote summaries. The internal VSC
+ * repository remains the authoritative local source, while synchronization exchanges source snapshots rather than attempting to mirror provider history.
  */
 export type LightExtensionSyncProvider = VscRemoteProvider;
 

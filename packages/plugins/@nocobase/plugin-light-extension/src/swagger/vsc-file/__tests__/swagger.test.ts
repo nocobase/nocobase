@@ -9,15 +9,18 @@
 
 import { expect, test } from 'vitest';
 
-import swagger from '..';
+import swagger from '../..';
 
 test('publishes only owner-aware RunJS workspace authoring actions', () => {
-  expect(Object.keys(swagger.paths).sort()).toEqual([
-    '/runJSSources:compilePreview',
-    '/runJSSources:open',
-    '/runJSSources:openLatest',
-    '/runJSSources:save',
-  ]);
+  expect(Object.keys(swagger.paths)).toEqual(
+    expect.arrayContaining([
+      '/runJSSources:compilePreview',
+      '/runJSSources:open',
+      '/runJSSources:openLatest',
+      '/runJSSources:save',
+      '/lightExtensionFiles:saveSource',
+    ]),
+  );
   expect(Object.keys(swagger.paths)).not.toEqual(
     expect.arrayContaining([
       '/runJSSources:exportZip',

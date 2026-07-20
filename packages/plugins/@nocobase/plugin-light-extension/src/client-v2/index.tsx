@@ -23,5 +23,6 @@ export {
   type LightExtensionModelMenuTarget,
 } from './modelMenu/createLightExtensionModelMenuProvider';
 export { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
+export * from './vsc-file/public-api';
 export { PluginLightExtensionClientV2 } from './plugin';
 export { default } from './plugin';

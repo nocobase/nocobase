@@ -25,6 +25,7 @@ export * from './services/LightExtensionWorkspaceCompilerBridge';
 export * from './services/RuntimeResolveService';
 export * from './services/ReferenceService';
 export * from './services/errorContract';
+export * from './vsc-file';
 export * from '../shared/errors';
 export * from '../shared/default-template';
 export * from '../shared/types';

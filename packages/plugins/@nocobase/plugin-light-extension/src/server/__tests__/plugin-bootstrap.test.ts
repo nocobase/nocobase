@@ -17,7 +17,9 @@ import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension bootstrap', () => {
   it('keeps lifecycle hooks safe without a full app', async () => {
-    expect(packageJson.peerDependencies['@nocobase/plugin-vsc-file']).toBe(packageJson.version);
+    expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-vsc-file');
+    expect(packageJson.peerDependencies).toHaveProperty('@nocobase/client');
+    expect(packageJson.peerDependencies).toHaveProperty('@nocobase/plugin-environment-variables');
     expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-file-manager');
 
     const plugin = new PluginLightExtensionServer({} as Application, {

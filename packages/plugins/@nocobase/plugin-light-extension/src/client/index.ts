@@ -26,6 +26,8 @@ import {
 import { runJSStudioToolbarRegistry } from '../client-v2/vsc-file/public-api';
 import { installLegacyRunJSStudioClient } from './vsc-file/plugin';
 
+export * from './vsc-file/public-api';
+
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
   JSActionLightExtensionSourceField,

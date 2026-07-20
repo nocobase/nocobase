@@ -9,6 +9,7 @@
 
 import { lightExtensionPaths } from './paths';
 import { lightExtensionSchemas } from './schemas';
+import vscFileSwagger from './vsc-file';
 
 export default {
   openapi: '3.0.2',
@@ -22,9 +23,16 @@ export default {
     { name: 'lightExtensionReferences', description: 'Inspect visible light-extension usage references.' },
     { name: 'lightExtensionFiles', description: 'Read and save light-extension source files.' },
     { name: 'lightExtensions', description: 'Preview light-extension source compilation.' },
+    ...vscFileSwagger.tags,
   ],
-  paths: lightExtensionPaths,
+  paths: {
+    ...lightExtensionPaths,
+    ...vscFileSwagger.paths,
+  },
   components: {
-    schemas: lightExtensionSchemas,
+    schemas: {
+      ...lightExtensionSchemas,
+      ...vscFileSwagger.components.schemas,
+    },
   },
 };

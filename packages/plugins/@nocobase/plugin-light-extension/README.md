@@ -2,7 +2,7 @@
 
 `@nocobase/plugin-light-extension` is the domain layer for NocoBase light extensions.
 
-Light extensions organize multi-file RunJS entries on top of `@nocobase/plugin-vsc-file`. Existing RunJS surfaces reference an entry by repository, entry, and kind instead of copying code into each FlowModel.
+Light extensions organize multi-file RunJS entries on the package's internal VSC repository module. Existing RunJS surfaces reference an entry by repository, entry, and kind instead of copying code into each FlowModel.
 
 ## Boundaries
 
@@ -163,7 +163,7 @@ An entry-bound workspace can edit the selected entry directory and files outside
 
 ## Move RunJS Source Contract
 
-The RunJS Studio toolbar registry in `@nocobase/plugin-vsc-file` allows this plugin to contribute **Move to light extension** without coupling the editor package to light-extension UI or APIs. The registry is a `globalThis` singleton so legacy and client-v2 bundles share the same contributions. Both the canonical client-v2 plugin and the legacy admin-shell bridge register the action; lifecycle cleanup remains identity-safe. The action is registered only when the host adapter supports `writeExternalBinding`.
+The internal RunJS Studio toolbar registry allows this plugin to contribute **Move to light extension** without coupling the editor to light-extension APIs. The registry is a `globalThis` singleton so legacy and client-v2 bundles share the same contributions. Both the canonical client-v2 plugin and the legacy admin-shell bridge register the action; lifecycle cleanup remains identity-safe. The action is registered only when the host adapter supports `writeExternalBinding`.
 
 The client calls `POST lightExtensions:moveSource` with the following payload:
 
@@ -228,19 +228,19 @@ Primary assertion coverage:
 ```bash
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.test.ts --run --reporter=verbose
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/move-source.test.tsx --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-vsc-file/src/client-v2/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/vsc-file/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
 ```
 
 ## Remote Sync Facade
 
-Light-extension remote synchronization is exposed through the `lightExtensionSync` Resource. It is the public domain facade over `plugin-vsc-file`'s `RemoteSyncRuntime`; raw VSC remote collections and internal Resources are deliberately denied to clients.
+Light-extension remote synchronization is exposed through the `lightExtensionSync` Resource. It is the public domain facade over the internal VSC `RemoteSyncRuntime`; raw VSC remote collections and internal Resources are deliberately denied to clients.
 
 The facade supports `get`, `configure`, `disconnect`, `testConnection`, `plan`, `pull`, `push`, and `createFromGit`. Requests use the light-extension repository id and strict input allowlists. Responses contain safe source summaries, masked credential-reference displays, and planner results without raw tokens, internal VSC repository ids, remote ids, job claims, or inbound snapshot handles.
 
 Ownership is split as follows:
 
-- `plugin-vsc-file` owns adapters, normalized provider configuration, durable jobs, commit mappings, conflicts, planning, Push, Pull discovery, and recovery primitives.
-- `plugin-light-extension` owns remote-to-light-extension validation, compilation, atomic Head advancement, runtime artifact replacement, reference rebuilds, and Pull recovery.
+- The internal VSC module owns adapters, normalized provider configuration, durable jobs, commit mappings, conflicts, planning, Push, Pull discovery, and recovery primitives.
+- The Light Extension domain owns remote-to-light-extension validation, compilation, atomic Head advancement, runtime artifact replacement, reference rebuilds, and Pull recovery.
 - The local light-extension VSC repository remains the runtime source. Remote synchronization exchanges snapshots; it does not expose or reproduce full Git history.
 
 The synchronization ACL actions are scoped independently:
@@ -269,5 +269,5 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 
 - Existing inline JS surfaces require no migration. Missing `sourceMode` continues to mean inline.
 - Active light-extension bindings keep retained inline code only as compatibility fallback; source edits must go through the repository domain.
-- `plugin-light-extension` must be enabled before light-extension repository APIs are used. Ordinary RunJS workspace authoring additionally requires `plugin-vsc-file`.
+- `plugin-light-extension` must be enabled before Light Extension or RunJS workspace repository APIs are used.
 - Do not delete persisted `sourceBinding` data during rollback. Failed saves are transactionally rolled back; successful source versions are reverted by creating a normal new commit from the desired historical source.

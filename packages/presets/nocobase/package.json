@@ -108,8 +108,7 @@
     "@nocobase/server": "2.2.0-beta.15",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1",
-    "@nocobase/plugin-light-extension": "2.2.0-beta.15",
-    "@nocobase/plugin-vsc-file": "2.2.0-beta.15"
+    "@nocobase/plugin-light-extension": "2.2.0-beta.15"
   },
   "deprecated": [
     "@nocobase/plugin-audit-logs",
@@ -194,9 +193,7 @@
     "@nocobase/plugin-theme-editor",
     "@nocobase/plugin-block-template",
     "@nocobase/plugin-ui-templates",
-    "@nocobase/plugin-license",
-    "@nocobase/plugin-light-extension",
-    "@nocobase/plugin-vsc-file"
+    "@nocobase/plugin-license"
   ],
   "repository": {
     "type": "git",
