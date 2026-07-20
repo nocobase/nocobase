@@ -32,7 +32,7 @@ export default {
         'x-component': 'Input',
         required: true,
         description:
-          "{{t('Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+          "{{t('Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.')}}",
       },
     },
     {

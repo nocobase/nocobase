@@ -198,6 +198,41 @@ Jika perlu menyimpan file sensitif, disarankan menggunakan layanan cloud storage
 
 ![](https://static-docs.nocobase.com/202501031623549.png)
 
+Untuk local storage atau public storage lain yang dapat diakses langsung melalui URL same-origin aplikasi, Anda juga perlu memperhatikan risiko dari file active content. File seperti `html`, `xhtml`, dan `svg` dapat diparse dan dijalankan langsung oleh browser. Jika penyerang dapat mengupload file seperti ini dan membuat user membukanya, penyerang dapat menggunakan domain aplikasi tepercaya untuk menghosting halaman atau script berbahaya.
+
+Validasi upload NocoBase tidak mempercayai `Content-Type` yang dikirim request. Validasi ini mengutamakan MIME type yang dideteksi di sisi server. Ekstensi file hanya merepresentasikan nama file dan tidak boleh dianggap sebagai tipe konten yang otoritatif. Karena itu, saat menyajikan file upload publik, Anda juga perlu memastikan jalur akses file memiliki header respons keamanan yang tepat.
+
+Jika Anda melakukan deployment dengan Docker atau menggunakan konfigurasi nginx yang dibuat oleh NocoBase, direktori upload sudah menyertakan perlindungan ini: semua file upload mengembalikan `X-Content-Type-Options: nosniff`, dan file active content seperti `html`, `xhtml`, `svg`, `svgz`, dan `pdf` dikembalikan sebagai download melalui `Content-Disposition: attachment`.
+
+Jika menggunakan proxy kustom, CDN, object storage, atau mengekspos direktori upload lokal secara langsung, pastikan aturan ini tidak dilewati. Anda dapat menggunakan konfigurasi nginx berikut sebagai referensi:
+
+```nginx
+location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    alias /path/to/nocobase/storage/uploads/$1;
+    add_header Content-Disposition "attachment" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+
+location /storage/uploads/ {
+    alias /path/to/nocobase/storage/uploads/;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+```
+
+Jika aplikasi NocoBase Anda menggunakan `APP_PUBLIC_PATH`, ganti `/storage/uploads/` dengan prefix akses aktual, seperti `/nocobase/storage/uploads/`.
+
+Umumnya, kami merekomendasikan administrator untuk:
+
+- Mengutamakan private storage, signed URL, atau domain file terpisah, agar file yang diupload user tidak disajikan langsung dari origin yang sama dengan aplikasi utama.
+- Menerapkan allowlist MIME type yang ketat untuk upload dan hanya mengizinkan tipe file yang benar-benar dibutuhkan bisnis.
+- Berhati-hati saat mengizinkan active content type seperti `text/html`, `application/xhtml+xml`, dan `image/svg+xml`. Meskipun sistem mencoba mengembalikan file ini sebagai download, hal ini tidak boleh dianggap sebagai pengganti penuh untuk pembatasan upload dan isolasi origin.
+- Menerapkan pengaturan keamanan yang konsisten pada reverse proxy, CDN, object storage, dan layer distribusi file statis lainnya, agar file berbahaya tidak dikembalikan inline dengan melewati perlindungan application layer.
+- Jangan gunakan local/public storage untuk menghosting konten Web yang tidak tepercaya. Jika kemampuan ini benar-benar diperlukan, gunakan domain terisolasi dan evaluasi CSP, perilaku download, dan access control secara terpisah.
+
+Jika administrator secara eksplisit mengizinkan upload tipe file berbahaya, administrator perlu mengevaluasi sendiri risiko phishing, eksekusi script same-origin, dan kebocoran informasi sensitif, serta memastikan Web Server, gateway, CDN, dan layanan storage dalam rantai deployment menerapkan pembatasan yang konsisten.
+
 ### Backup Aplikasi
 
 Untuk memastikan keamanan data aplikasi dan menghindari kehilangan data, kami merekomendasikan Anda untuk membackup database secara berkala.

@@ -18,6 +18,29 @@ Currently, NocoBase has built-in support for the following engine types:
 
 The system automatically adds a local storage engine during installation, which can be used directly. You can also add new engines or edit the parameters of existing ones.
 
+
+If you are already using a storage engine that only supports public access and want to migrate historical files to S3 Pro, see [Migrate to S3 Pro](./migrate-to-s3-pro.md).
+
+## File Accessibility
+
+Different storage engines support different file access controls. Before configuring a storage engine, confirm whether your files need private access:
+
+| Storage engine | File accessibility |
+| --- | --- |
+| [Local Storage](./local) | Only public access is supported; private access is not supported |
+| [Amazon S3](./amazon-s3) | Only public access is supported; private access is not supported |
+| [Aliyun OSS](./aliyun-oss) | Only public access is supported; private access is not supported |
+| [Tencent COS](./tencent-cos) | Only public access is supported; private access is not supported |
+| [S3 Pro](./s3-pro) | Private access is supported through temporary signed URLs |
+
+:::warning Note
+
+Local Storage, Amazon S3, Aliyun OSS, and Tencent COS do not perform login authentication for file access and do not generate temporary signed URLs. After a file is uploaded, anyone who has the file access URL can access it directly.
+
+If you need to store contracts, identity documents, internal materials, or other files that should not be public, use [S3 Pro](./s3-pro) and enable private access.
+
+:::
+
 ## Common Parameters
 
 In addition to the specific parameters for different engine types, the following are common parameters (using local storage as an example):

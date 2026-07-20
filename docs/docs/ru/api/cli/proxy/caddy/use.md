@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy use"
-description: "Справка по команде nb proxy caddy use: переключает текущий driver provider Caddy."
-keywords: "nb proxy caddy use,NocoBase CLI,caddy,driver"
+description: "Справочник по команде nb proxy caddy use: переключение текущего драйвера провайдера Caddy."
+keywords: "nb proxy caddy use,NocoBase CLI,caddy,драйвер"
 ---
 
 # nb proxy caddy use
 
-Переключает текущий driver provider Caddy.
+Переключает текущий драйвер провайдера Caddy.
 
 ## Использование
 
@@ -29,8 +29,8 @@ nb proxy caddy use docker
 
 ## Примечания
 
-- Эта команда сохраняет результат в `proxy.caddy-driver`
-- Последующие команды, такие как `start`, `reload`, `stop`, `status` и `info`, будут использовать текущий driver
+- Команда сохраняет результат в `proxy.caddy-driver`
+- Последующие команды, такие как `start`, `reload`, `stop`, `status` и `info`, используют текущий драйвер
 
 ## Связанные команды
 

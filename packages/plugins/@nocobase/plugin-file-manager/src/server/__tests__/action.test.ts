@@ -205,6 +205,20 @@ describe('action', () => {
         expect(res.text).toContain('Hello world!');
       });
 
+      it('should force uploaded XML files to download when served locally', async () => {
+        const { body, status } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/svg-as-xml.xml'),
+        });
+
+        expect(status).toBe(200);
+        expect(body.data.extname).toBe('.xml');
+
+        const res = await agent.get(body.data.url);
+        expect(res.headers['content-disposition']).toBe('attachment');
+        expect(res.headers['content-security-policy']).toBe('sandbox');
+        expect(res.headers['x-content-type-options']).toBe('nosniff');
+      });
+
       it('filename with special character (URL)', async () => {
         const rawText = '[]中文报告! 1%~50.4% (123) {$#}';
         const rawFilename = `${rawText}.txt`;
@@ -353,6 +367,88 @@ describe('action', () => {
         const destPath = getStorageDestPath(imageStorage);
         const stats = await fs.stat(path.join(destPath, attachment.filename));
         expect(stats.size).toBe(255);
+      });
+
+      it('rejects a forged image upload whose active content filename is not allowed', async () => {
+        const imageStorage = await StorageRepo.create({
+          values: {
+            name: 'imageOnlyStorage',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              mimetype: ['image/*'],
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: imageStorage.name,
+            },
+          ],
+        });
+
+        const forgedHtml = Buffer.concat([
+          Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+          Buffer.from('ddddddddddddddddddd<img src=axxxx onerror="onerror=alert(1)" s>'),
+        ]);
+        for (const filename of ['custom_name.html', 'custom_name.xml']) {
+          const response = await agent
+            .post(`/attachments:create?${querystring.stringify({ attachmentField: 'customers.avatar' })}`)
+            .attach(FILE_FIELD_NAME, forgedHtml, {
+              filename,
+              contentType: 'image/jpeg',
+            });
+
+          expect(response.status).toBe(400);
+        }
+      });
+
+      it('allows a forged image upload when its active content filename is explicitly allowed', async () => {
+        const imageStorage = await StorageRepo.create({
+          values: {
+            name: 'imageAndHtmlStorage',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              mimetype: ['image/*', 'text/html'],
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: imageStorage.name,
+            },
+          ],
+        });
+
+        const forgedHtml = Buffer.concat([
+          Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+          Buffer.from('ddddddddddddddddddd<img src=axxxx onerror="onerror=alert(1)" s>'),
+        ]);
+        const response = await agent
+          .post(`/attachments:create?${querystring.stringify({ attachmentField: 'customers.avatar' })}`)
+          .attach(FILE_FIELD_NAME, forgedHtml, {
+            filename: 'custom_name.html',
+            contentType: 'image/jpeg',
+          });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toMatchObject({
+          extname: '.html',
+          mimetype: 'image/jpeg',
+        });
       });
 
       it('upload to storage which is not default', async () => {

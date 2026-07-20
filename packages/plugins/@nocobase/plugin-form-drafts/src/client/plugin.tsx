@@ -75,7 +75,10 @@ FormBlockModel.registerFlow({
           await ctx.draftRepository.create();
           return;
         }
-        await ctx.setFormValues(draft.values);
+        await ctx.setFormValues(draft.values, {
+          source: 'system',
+          triggerEvent: false,
+        });
         ctx.showDraftAlert(
           'This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.',
         );
@@ -93,7 +96,7 @@ FormBlockModel.registerFlow({
         if (ctx.draftRepository.disabled) {
           return;
         }
-        await ctx.draftRepository.save(ctx.form.getFieldsValue());
+        await ctx.draftRepository.save(ctx.form.getFieldsValue(true));
         ctx.showDraftAlert(
           'Your draft has been saved. You can continue editing and submit it, or click “Delete Draft” to start over.',
         );

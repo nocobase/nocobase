@@ -67,6 +67,10 @@ describe('getDownloadFileName', () => {
     expect(isActiveContentFile({ mimetype: 'application/pdf', url: 'https://example.com/files/report.pdf' })).toBe(
       true,
     );
+    expect(isActiveContentFile({ mimetype: 'application/xml', url: 'https://example.com/files/payload.xml' })).toBe(
+      true,
+    );
+    expect(isActiveContentFile({ filename: 'payload.xsl', url: 'https://example.com/files/payload.xsl' })).toBe(true);
     expect(isActiveContentFile({ filename: 'index.html', url: 'https://example.com/files/index.html' })).toBe(true);
     expect(isActiveContentFile({ mimetype: 'image/png', url: 'https://example.com/files/avatar.png' })).toBe(false);
   });

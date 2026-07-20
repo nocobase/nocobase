@@ -45,7 +45,12 @@ export type EventOptions = {
   force?: boolean;
   stack?: Array<number | string>;
   parentExecutionId?: number | string;
-  onTriggerFail?: Function;
+  onTriggerFail?: (
+    workflow: WorkflowModel,
+    context: object,
+    options: EventOptions,
+    error?: unknown,
+  ) => void | Promise<void>;
   [key: string]: any;
 } & Transactionable;
 
@@ -68,7 +73,7 @@ export default class Dispatcher {
     const execution: ExecutionModel = await ExecutionRepo.findOne({
       filterByTk: event.executionId,
     });
-    if (!execution || execution.dispatched) {
+    if (!execution || execution.dispatched || execution.status !== EXECUTION_STATUS.QUEUEING) {
       return;
     }
     this.plugin
@@ -89,12 +94,12 @@ export default class Dispatcher {
     workflow: WorkflowModel,
     context: object,
     options: EventOptions = {},
-  ): void | Promise<Processor | null> {
+  ): void | Promise<Processor | null | void> {
     const logger = this.plugin.getLogger(workflow.id);
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
       logger.debug(`ignored event data:`, context);
-      return;
+      return this.handleTriggerFail(workflow, context, options, new Error('app is not ready'));
     }
     if (!options.force && !options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
@@ -111,7 +116,7 @@ export default class Dispatcher {
     }
     if (context == null) {
       logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
-      return;
+      return this.handleTriggerFail(workflow, context, options, new Error('event context is null'));
     }
 
     if (options.manually || this.plugin.isWorkflowSync(workflow)) {
@@ -369,6 +374,14 @@ export default class Dispatcher {
     return valid;
   }
 
+  private async handleTriggerFail(workflow: WorkflowModel, context: object, options: EventOptions, error?: unknown) {
+    try {
+      await options.onTriggerFail?.(workflow, context, options, error);
+    } catch (triggerFailError) {
+      this.plugin.getLogger(workflow.id).error(`trigger failure callback failed`, { error: triggerFailError });
+    }
+  }
+
   private async createExecution(
     workflow: WorkflowModel,
     context: object,
@@ -382,22 +395,35 @@ export default class Dispatcher {
       });
       stack = parentExecution ? [...(parentExecution.stack ?? []), parentExecution.id] : [];
     }
-    const valid = await this.validateEvent(workflow, context, { ...options, stack });
+    let valid: boolean;
+    try {
+      valid = await this.validateEvent(workflow, context, { ...options, stack });
+    } catch (error) {
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
+    }
     if (!valid) {
-      options.onTriggerFail?.(workflow, context, options);
-      throw new Error('event is not valid');
+      const error = new Error('event is not valid');
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
     }
 
-    const execution: ExecutionModel = await workflow.createExecution({
-      context,
-      key: workflow.key,
-      eventKey: options.eventKey ?? randomUUID(),
-      stack,
-      parentExecutionId: options.parentExecutionId ?? null,
-      dispatched: deferred ?? false,
-      status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
-      manually: options.manually,
-    });
+    let execution: ExecutionModel;
+    try {
+      execution = await workflow.createExecution({
+        context,
+        key: workflow.key,
+        eventKey: options.eventKey ?? randomUUID(),
+        stack,
+        parentExecutionId: options.parentExecutionId ?? null,
+        dispatched: deferred ?? false,
+        status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+        manually: options.manually,
+      });
+    } catch (error) {
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
+    }
 
     this.plugin.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
@@ -432,8 +458,7 @@ export default class Dispatcher {
     // the transaction boundary is managed externally, so run once without retry.
     if (options.transaction) {
       try {
-        const { execution } = await this.acquireExecution(input, options, options.transaction);
-        return execution;
+        return await this.acquireExecution(input, options, options.transaction);
       } catch (error) {
         if (error instanceof Error) {
           logger.error(`entering execution failed: ${error.message}`, { error });
@@ -455,13 +480,12 @@ export default class Dispatcher {
         async () => {
           const tx = await this.plugin.db.sequelize.transaction({
             isolationLevel:
-              this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+              this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.READ_COMMITTED,
           });
           try {
-            const { execution, shouldRetry } = await this.acquireExecution(input, options, tx);
+            const execution = await this.acquireExecution(input, options, tx);
             await tx.commit();
             result = execution;
-            return shouldRetry;
           } catch (error) {
             await tx.rollback();
             if (this.isConcurrentAcquireError(error)) {
@@ -471,7 +495,6 @@ export default class Dispatcher {
               logger.error(`entering execution failed: ${error.message}`, { error });
             }
             result = null;
-            return false;
           }
         },
         {
@@ -497,17 +520,25 @@ export default class Dispatcher {
     input: ExecutionModel | null,
     options: { immediate?: boolean },
     transaction: Transaction,
-  ): Promise<{ execution: ExecutionModel | null; shouldRetry: boolean }> {
+  ): Promise<ExecutionModel | null> {
     let execution: ExecutionModel | null = input;
     if (execution) {
       if (!options.immediate || execution.status !== EXECUTION_STATUS.QUEUEING) {
         await execution.reload({ transaction });
       }
     } else {
+      const workflowIds = [...this.plugin.enabledCache.keys()];
+      if (!workflowIds.length) {
+        this.plugin.getLogger('dispatcher').debug(`no enabled workflow to process`);
+        return null;
+      }
+
       execution = (await this.plugin.db.getRepository('executions').findOne({
         filter: {
           dispatched: false,
-          'workflow.enabled': true,
+          status: EXECUTION_STATUS.QUEUEING,
+          startedAt: null,
+          workflowId: workflowIds,
         },
         sort: 'id',
         transaction,
@@ -522,18 +553,14 @@ export default class Dispatcher {
     }
 
     if (!execution) {
-      return { execution: null, shouldRetry: false };
+      return null;
     }
 
-    const entered = await this.enter(execution, transaction);
-    // NOTE: a queued execution was fetched but acquired by another worker first
-    // (conditional update affected 0 rows), retry to pick the next one.
-    const shouldRetry = !input && !entered;
-    return { execution: entered, shouldRetry };
+    return this.enter(execution, transaction);
   }
 
   private async acquireWithRetry(
-    acquire: () => Promise<boolean>,
+    acquire: () => Promise<void>,
     options: {
       logger: AcquireRetryLogger;
       conflictMessage: string;
@@ -541,22 +568,18 @@ export default class Dispatcher {
     },
   ) {
     for (let attempt = 1; attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
-      let shouldRetry = false;
       try {
-        shouldRetry = await acquire();
+        await acquire();
+        break;
       } catch (error) {
         if (!this.isConcurrentAcquireError(error)) {
           throw error;
         }
-        shouldRetry = true;
         options.logger.warn(options.conflictMessage, { error });
-      }
-      if (!shouldRetry) {
-        break;
-      }
-      if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
-        options.logger.warn(options.maxAttemptsMessage);
-        break;
+        if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
+          options.logger.warn(options.maxAttemptsMessage);
+          break;
+        }
       }
     }
   }

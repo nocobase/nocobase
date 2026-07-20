@@ -1,33 +1,34 @@
 ---
-pkg: "@nocobase/plugin-data-source-rest-api"
+title: "REST-API-Datenquelle"
+description: "Binden Sie Daten aus REST-API-Quellen an, ordnen Sie RESTful-Ressourcen Collections zu, konfigurieren Sie Schnittstellenzuordnungen für List/Get/Create/Update/Destroy und unterstützen Sie CRUD-Operationen."
+keywords: "REST-API-Datenquelle,externe API,Schnittstellenzuordnung,Collection-Zuordnung,NocoBase"
 ---
 
+# REST-API-Datenquelle
 
-# REST API Datenquelle
+<PluginInfo commercial="true" name="data-source-rest-api"></PluginInfo>
 
 ## Einführung
 
-Dieses Plugin ermöglicht Ihnen die nahtlose Integration von Daten aus REST API Quellen.
+Dient zum Anbinden von Daten aus REST-API-Quellen.
 
 ## Installation
 
-Dieses Plugin ist ein kommerzielles Plugin und muss über den Plugin-Manager hochgeladen und aktiviert werden.
+Dieses Plugin ist ein kommerzielles Plugin. Eine detaillierte Anleitung zur Aktivierung finden Sie unter [Anleitung zur Aktivierung kommerzieller Plugins](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide).
 
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+## REST-API-Quelle hinzufügen
 
-## Hinzufügen einer REST API Datenquelle
-
-Nach der Aktivierung des Plugins können Sie eine REST API Datenquelle hinzufügen, indem Sie diese im Dropdown-Menü „Neu hinzufügen“ der Datenquellenverwaltung auswählen.
+Wählen Sie nach der Aktivierung des Plugins im Dropdown-Menü „Add new“ der Datenquellenverwaltung die Option „REST API“ aus.
 
 ![20240721171420](https://static-docs.nocobase.com/20240721171420.png)
 
-Konfigurieren Sie die REST API Datenquelle.
+REST-API-Quelle konfigurieren
 
 ![20240721171507](https://static-docs.nocobase.com/20240721171507.png)
 
-## Hinzufügen einer Sammlung
+## Collection hinzufügen
 
-In NocoBase wird eine RESTful-Ressource einer Sammlung zugeordnet, zum Beispiel eine Benutzer-Ressource.
+RESTful-Ressourcen entsprechen den Collections in NocoBase, zum Beispiel der Ressource „Users“.
 
 ```bash
 GET /users
@@ -37,7 +38,7 @@ PUT /users/1
 DELETE /users/1
 ```
 
-Diese API-Endpunkte werden in NocoBase wie folgt zugeordnet:
+Die entsprechende Konfiguration in der NocoBase-API lautet:
 
 ```bash
 GET /users:list
@@ -47,93 +48,107 @@ POST /users:update?filterByTk=1
 POST /users:destroy?filterByTk=1
 ```
 
-Eine umfassende Anleitung zu den NocoBase API-Designspezifikationen finden Sie in der API-Dokumentation.
+Die vollständige Spezifikation des NocoBase-API-Designs finden Sie in der API-Dokumentation.
 
 ![20240716213344](https://static-docs.nocobase.com/20240716213344.png)
 
-Lesen Sie das Kapitel „NocoBase API – Core“ für detaillierte Informationen.
+Siehe den Abschnitt „NocoBase API - Core“.
 
 ![20240716213258](https://static-docs.nocobase.com/20240716213258.png)
 
-Die Sammlungskonfiguration für eine REST API Datenquelle umfasst Folgendes:
+Die Collection-Konfiguration der REST-API-Datenquelle sieht wie folgt aus:
 
 ### List
 
-Konfigurieren Sie die Schnittstellen-Zuordnung für die Anzeige einer Ressourcenliste.
+Konfigurieren Sie die Schnittstellenzuordnung zum Abrufen der Ressourcenliste.
 
-![20240716211351](https://static-docs.nocobase.com/20240716211351.png)
+![20251201162457](https://static-docs.nocobase.com/20251201162457.png)
 
 ### Get
 
-Konfigurieren Sie die Schnittstellen-Zuordnung für die Anzeige von Ressourcendetails.
+Konfigurieren Sie die Schnittstellenzuordnung zum Abrufen der Ressourcendetails.
 
-![20240716211532](https://static-docs.nocobase.com/20240716211532.png)
+![20251201162744](https://static-docs.nocobase.com/20251201162744.png)
 
 ### Create
 
-Konfigurieren Sie die Schnittstellen-Zuordnung für die Erstellung einer Ressource.
+Konfigurieren Sie die Schnittstellenzuordnung zum Erstellen einer Ressource.
 
-![20240716211634](https://static-docs.nocobase.com/20240716211634.png)
+![20251201163000](https://static-docs.nocobase.com/20251201163000.png)
 
 ### Update
 
-Konfigurieren Sie die Schnittstellen-Zuordnung für die Aktualisierung einer Ressource.
-![20240716211733](https://static-docs.nocobase.com/20240716211733.png)
+Konfigurieren Sie die Schnittstellenzuordnung zum Aktualisieren einer Ressource.
+![20251201163058](https://static-docs.nocobase.com/20251201163058.png)
 
 ### Destroy
 
-Konfigurieren Sie die Schnittstellen-Zuordnung für das Löschen einer Ressource.
+Konfigurieren Sie die Schnittstellenzuordnung zum Löschen einer Ressource.
 
-![20240716211808](https://static-docs.nocobase.com/20240716211808.png)
+![20251201163204](https://static-docs.nocobase.com/20251201163204.png)
 
-Die Schnittstellen „List“ und „Get“ müssen beide konfiguriert werden.
+Die Schnittstellen List und Get müssen konfiguriert werden.
+## API debuggen
 
-## Debugging der API
+### Anforderungsparameter anbinden
 
-### Integration von Anfrageparametern
+Beispiel: Konfigurieren Sie für die List-Schnittstelle die Parameter für die Seitennavigation. (Wenn die Drittanbieter-API selbst keine Seitennavigation unterstützt, werden die abgerufenen Listendaten für die Seitennavigation verwendet.)
 
-Beispiel: Konfigurieren Sie Paginierungsparameter für die List-API. Falls die Drittanbieter-API selbst keine Paginierung unterstützt, paginiert NocoBase basierend auf den abgerufenen Listendaten.
+![20251201163500](https://static-docs.nocobase.com/20251201163500.png)
 
-![20241121205229](https://static-docs.nocobase.com/20241121205229.png)
+Beachten Sie, dass nur Variablen wirksam werden, die bereits in der Schnittstelle hinzugefügt wurden.
 
-Bitte beachten Sie, dass nur Variablen wirksam werden, die in der Schnittstelle hinzugefügt wurden.
+| Name des Anbindungsparameters der Drittanbieter-API | NocoBase-Parameter       |
+| --------------------------------------------------- | ------------------------ |
+| page                                                | {{request.params.page}}     |
+| limit                                               | {{request.params.pageSize}} |
 
-| Parametername der Drittanbieter-API | NocoBase-Parameter              |
-| ----------------------------------- | ------------------------------- |
-| page                                | {{request.params.page}}         |
-| limit                               | {{request.params.pageSize}}     |
+Klicken Sie auf „Try it out“, um den Vorgang zu testen und das Antwortergebnis anzuzeigen.
 
-Sie können auf „Try it out“ klicken, um die Debugging-Funktion zu nutzen und die Antwort anzuzeigen.
-
-![20241121210320](https://static-docs.nocobase.com/20241121210320.png)
+![20251201163635](https://static-docs.nocobase.com/20251201163635.png)
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20241121211034.mp4" type="video/mp4">
 </video>
 
-### Transformation des Antwortformats
+### Antwortformat konvertieren
 
-Das Antwortformat der Drittanbieter-API entspricht möglicherweise nicht dem NocoBase-Standard und muss transformiert werden, bevor es korrekt im Frontend angezeigt werden kann.
+Das Antwortformat der Drittanbieter-API entspricht möglicherweise nicht dem NocoBase-Standard und muss konvertiert werden, damit es im Frontend korrekt angezeigt werden kann.
 
-![20241121214638](https://static-docs.nocobase.com/20241121214638.png)
+![20251201164529](https://static-docs.nocobase.com/20251201164529.png)
 
-Passen Sie die Konvertierungsregeln basierend auf dem Antwortformat der Drittanbieter-API an, um sicherzustellen, dass die Ausgabe dem NocoBase-Standard entspricht.
+Passen Sie die Konvertierungsregeln entsprechend dem Antwortformat der Drittanbieter-API an, sodass sie dem NocoBase-Ausgabestandard entsprechen.
 
-![20241121215100](https://static-docs.nocobase.com/20241121215100.png)
+![20251201164629](https://static-docs.nocobase.com/20251201164629.png)
 
-Beschreibung des Debugging-Prozesses
+Beschreibung des Debugging-Ablaufs
 
 ![20240717110051](https://static-docs.nocobase.com/20240717110051.png)
 
+### Fehlerinformationen konvertieren
+
+Wenn bei der Drittanbieter-API ein Fehler auftritt, entspricht das Format der Fehlerinformationen in der Antwort möglicherweise nicht dem NocoBase-Standard und muss konvertiert werden, damit es im Frontend korrekt angezeigt werden kann.
+
+![20251201170545](https://static-docs.nocobase.com/20251201170545.png)
+
+Wenn keine Konvertierung der Fehlerinformationen konfiguriert ist, werden diese standardmäßig in eine Fehlerinformation mit HTTP-Statuscode konvertiert.
+
+![20251201170732](https://static-docs.nocobase.com/20251201170732.png)
+
+Nach der Konfiguration der Konvertierung der Fehlerinformationen entsprechen diese dem NocoBase-Ausgabestandard, sodass das Frontend die Fehlerinformationen der Drittanbieter-API korrekt anzeigen kann.
+
+![20251201170946](https://static-docs.nocobase.com/20251201170946.png)
+![20251201171113](https://static-docs.nocobase.com/20251201171113.png)
+
 ## Variablen
 
-Die REST API Datenquelle unterstützt drei Arten von Variablen für die API-Integration:
+Die REST-API-Datenquelle stellt drei Arten von Variablen für die Anbindung von Schnittstellen bereit:
 
-- Benutzerdefinierte Datenquellenvariablen
-- NocoBase-Anfragevariablen
-- Drittanbieter-Antwortvariablen
+- Benutzerdefinierte Variablen der Datenquelle
+- NocoBase-Anfrage
+- Antwort der Drittanbieter-API
 
-### Benutzerdefinierte Datenquellenvariablen
+### Benutzerdefinierte Variablen der Datenquelle
 
 ![20240716221937](https://static-docs.nocobase.com/20240716221937.png)
 
@@ -141,77 +156,77 @@ Die REST API Datenquelle unterstützt drei Arten von Variablen für die API-Inte
 
 ### NocoBase-Anfrage
 
-- Params: URL-Abfrageparameter (Search Params), die je nach Schnittstelle variieren.
-- Headers: Benutzerdefinierte Anfrage-Header, die hauptsächlich spezifische X-Informationen von NocoBase bereitstellen.
-- Body: Der Anfragetext (Body).
-- Token: Der API-Token für die aktuelle NocoBase-Anfrage.
+- Params: URL-Abfrageparameter (Search Params); die Params unterscheiden sich je nach Schnittstelle.
+- Headers: Anforderungskopf, der hauptsächlich einige benutzerdefinierte X-Informationen von NocoBase bereitstellt.
+- Body: Body der Anfrage.
+- Token: API-Token der aktuellen NocoBase-Anfrage.
 
-![20240716222042](https://static-docs.nocobase.com/20240716222042.png)
+![20251201164833](https://static-docs.nocobase.com/20251201164833.png)
 
-### Drittanbieter-Antworten
+### Antwort der Drittanbieter-API
 
-Derzeit ist nur der Antworttext (Body) verfügbar.
+Derzeit wird nur der Body der Antwort bereitgestellt.
 
-![20240716222303](https://static-docs.nocobase.com/20240716222303.png)
+![20251201164915](https://static-docs.nocobase.com/20251201164915.png)
 
-Die für jede Schnittstelle verfügbaren Variablen sind unten aufgeführt:
+Bei der Anbindung der einzelnen Schnittstellen stehen die folgenden Variablen zur Verfügung:
 
 ### List
 
-| Parameter               | Beschreibung                                                 |
-| ----------------------- | ------------------------------------------------------------ |
-| request.params.page     | Aktuelle Seite                                               |
-| request.params.pageSize | Anzahl der Elemente pro Seite                                |
-| request.params.filter   | Filterkriterien (müssen dem NocoBase Filter-Format entsprechen) |
-| request.params.sort     | Sortierkriterien (müssen dem NocoBase Sort-Format entsprechen) |
-| request.params.appends  | Bedarfsweise zu ladende Felder, typischerweise für Verknüpfungsfelder |
-| request.params.fields   | Einzuschließende Felder (Whitelist)                          |
-| request.params.except   | Auszuschließende Felder (Blacklist)                          |
+| Parameter               | Beschreibung                                      |
+| ----------------------- | ------------------------------------------------ |
+| request.params.page     | Aktuelle Seitennummer                            |
+| request.params.pageSize | Anzahl der Einträge pro Seite                    |
+| request.params.filter   | Filterbedingungen (müssen dem NocoBase-Filterformat entsprechen) |
+| request.params.sort     | Sortierregeln (müssen dem NocoBase-Sortierformat entsprechen) |
+| request.params.appends  | Bei Bedarf zu ladende Felder, meist zum bedarfsgesteuerten Laden von Beziehungsfeldern |
+| request.params.fields   | Welche Felder die Schnittstelle ausgibt (Whitelist) |
+| request.params.except   | Welche Felder ausgeschlossen werden (Blacklist) |
 
 ### Get
 
-| Parameter                 | Beschreibung                                                 |
-| ------------------------- | ------------------------------------------------------------ |
-| request.params.filterByTk | Erforderlich, typischerweise die ID des aktuellen Datensatzes |
-| request.params.filter     | Filterkriterien (müssen dem NocoBase Filter-Format entsprechen) |
-| request.params.appends    | Bedarfsweise zu ladende Felder, typischerweise für Verknüpfungsfelder |
-| request.params.fields     | Einzuschließende Felder (Whitelist)                          |
-| request.params.except     | Auszuschließende Felder (Blacklist)                          |
+| Parameter                 | Beschreibung                                      |
+| ------------------------- | ------------------------------------------------ |
+| request.params.filterByTk | Erforderlich, normalerweise die ID des aktuellen Datensatzes |
+| request.params.filter     | Filterbedingungen (müssen dem NocoBase-Filterformat entsprechen) |
+| request.params.appends    | Bei Bedarf zu ladende Felder, meist zum bedarfsgesteuerten Laden von Beziehungsfeldern |
+| request.params.fields     | Welche Felder die Schnittstelle ausgibt (Whitelist) |
+| request.params.except     | Welche Felder ausgeschlossen werden (Blacklist) |
 
 ### Create
 
-| Parameter                | Beschreibung                   |
-| ------------------------ | ------------------------------ |
-| request.params.whiteList | Whitelist                      |
-| request.params.blacklist | Blacklist                      |
-| request.body             | Anfangsdaten für die Erstellung |
+| Parameter                | Beschreibung          |
+| ------------------------ | --------------------- |
+| request.params.whiteList | Whitelist             |
+| request.params.blacklist | Blacklist             |
+| request.body             | Initialdaten für die Erstellung |
 
 ### Update
 
-| Parameter                 | Beschreibung                                                 |
-| ------------------------- | ------------------------------------------------------------ |
-| request.params.filterByTk | Erforderlich, typischerweise die ID des aktuellen Datensatzes |
-| request.params.filter     | Filterkriterien (müssen dem NocoBase Filter-Format entsprechen) |
-| request.params.whiteList  | Whitelist                                                    |
-| request.params.blacklist  | Blacklist                                                    |
-| request.body              | Daten für die Aktualisierung                                 |
+| Parameter                 | Beschreibung                                      |
+| ------------------------- | ------------------------------------------------ |
+| request.params.filterByTk | Erforderlich, normalerweise die ID des aktuellen Datensatzes |
+| request.params.filter     | Filterbedingungen (müssen dem NocoBase-Filterformat entsprechen) |
+| request.params.whiteList  | Whitelist                                        |
+| request.params.blacklist  | Blacklist                                        |
+| request.body              | Zu aktualisierende Daten                         |
 
 ### Destroy
 
-| Parameter                 | Beschreibung                                                 |
-| ------------------------- | ------------------------------------------------------------ |
-| request.params.filterByTk | Erforderlich, typischerweise die ID des aktuellen Datensatzes |
-| request.params.filter     | Filterkriterien (müssen dem NocoBase Filter-Format entsprechen) |
+| Parameter                 | Beschreibung                                      |
+| ------------------------- | ------------------------------------------------ |
+| request.params.filterByTk | Erforderlich, normalerweise die ID des aktuellen Datensatzes |
+| request.params.filter     | Filterbedingungen (müssen dem NocoBase-Filterformat entsprechen) |
 
-## Feldkonfiguration
+## Felder konfigurieren
 
-Feldmetadaten (Felder) werden aus den CRUD-Schnittstellendaten der angepassten Ressource extrahiert, um als Felder der Sammlung zu dienen.
+Extrahieren Sie aus den Daten der CRUD-Schnittstellen der angebundenen Ressource die Metadaten der Felder (Fields) und verwenden Sie sie als Felder der Collection.
 
 ![20240716223636](https://static-docs.nocobase.com/20240716223636.png)
 
-Extrahieren Sie Feldmetadaten.
+Feldmetadaten extrahieren.
 
-![20241121230436](https://static-docs.nocobase.com/20241121230436.png)
+![20251201165133](https://static-docs.nocobase.com/20251201165133.png)
 
 Felder und Vorschau.
 
@@ -221,8 +236,8 @@ Felder bearbeiten (ähnlich wie bei anderen Datenquellen).
 
 ![20240716224704](https://static-docs.nocobase.com/20240716224704.png)
 
-## Hinzufügen von REST API Datenquellen-Blöcken
+## Block für die REST-API-Datenquelle hinzufügen
 
-Sobald die Sammlung konfiguriert ist, können Sie Blöcke zur Oberfläche hinzufügen.
+Nachdem die Collection konfiguriert wurde, können Sie in der Benutzeroberfläche einen Block hinzufügen.
 
 ![20240716225120](https://static-docs.nocobase.com/20240716225120.png)

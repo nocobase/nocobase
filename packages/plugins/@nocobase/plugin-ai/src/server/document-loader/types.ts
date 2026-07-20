@@ -35,6 +35,13 @@ export type ParseableFile = {
   storageId?: number;
   meta?: Record<string, any>;
   size?: number;
+  source?: {
+    dataSourceKey?: string;
+    collectionName?: string;
+    field?: string;
+    documentCache?: boolean;
+    trustworthy?: boolean;
+  };
 };
 
 export type DocumentLoaderLike = {

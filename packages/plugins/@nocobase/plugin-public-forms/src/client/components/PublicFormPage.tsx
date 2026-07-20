@@ -9,6 +9,7 @@
 
 import { css } from '@emotion/css';
 import { useField } from '@formily/react';
+import { useMemoizedFn } from 'ahooks';
 import {
   ACLCustomContext,
   Action,
@@ -90,24 +91,36 @@ function useTitle(data) {
   useEffect(() => {
     if (!data) return;
     document.title = compile(data?.data?.title);
-  }, [data]);
+  }, [compile, data]);
 }
 
 export const PublicFormMessageContext = createContext<any>({});
 export const PageBackgroundColor = '#f5f5f5';
 
+const getPublicFormContainerHeight = () => {
+  if (isDesktop) {
+    return '100%';
+  }
+
+  if (typeof CSS !== 'undefined' && CSS.supports?.('height', '100dvh')) {
+    return '100dvh';
+  }
+
+  return '100vh';
+};
+
 const PublicFormMessageProvider = ({ children }) => {
   const [showMessage, setShowMessage] = useState(false);
   const field = useField();
 
-  const toggleFieldVisibility = (fieldName, visible) => {
+  const toggleFieldVisibility = useMemoizedFn((fieldName, visible) => {
     field.form.query(fieldName).take((f) => {
       if (f) {
         f.visible = visible;
         f.hidden = !visible;
       }
     });
-  };
+  });
 
   useEffect(() => {
     toggleFieldVisibility('success', showMessage);
@@ -120,7 +133,7 @@ const PublicFormMessageProvider = ({ children }) => {
         }
       });
     }
-  }, [showMessage]);
+  }, [field.form, showMessage, toggleFieldVisibility]);
 
   return (
     <PublicFormMessageContext.Provider value={{ showMessage, setShowMessage }}>
@@ -233,15 +246,22 @@ function InternalPublicForm() {
     return <UnEnabledFormPlaceholder />;
   }
   const components = isMobile ? mobileComponents : {};
+  const containerHeight = getPublicFormContainerHeight();
   return (
     <ACLCustomContext.Provider value={{ allowAll: true }}>
       <PublicAPIClientProvider>
         <div
           style={{
-            minHeight: '100vh',
+            minHeight: isDesktop ? '100vh' : containerHeight,
             background: PageBackgroundColor,
-            height: '100%',
-            overflow: 'auto',
+            height: containerHeight,
+            ...(isDesktop
+              ? { overflow: 'auto' }
+              : {
+                  overflowX: 'hidden',
+                  overflowY: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                }),
           }}
         >
           <div

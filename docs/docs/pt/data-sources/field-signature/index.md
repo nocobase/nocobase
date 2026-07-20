@@ -2,35 +2,35 @@
 pkg: "@nocobase/plugin-field-signature"
 ---
 
-# Campo de tabela: Assinatura manuscrita
+# Campo de tabela de dados: assinatura manuscrita
 
 ## Introdução
 
-O campo de assinatura manuscrita permite que o usuário escreva uma assinatura sobre uma tela usando mouse ou tela sensível ao toque. Ao salvar, a imagem da assinatura é gravada na **tabela de arquivos** escolhida, reutilizando o fluxo de upload e armazenamento provido pelo **Gerenciador de Arquivos**.
+O campo de assinatura manuscrita permite que os usuários escrevam suas assinaturas na tela usando o mouse ou uma tela sensível ao toque. Após ser salva, a imagem da assinatura será gravada na **tabela de dados de arquivos** selecionada, reutilizando o processo de upload e armazenamento de arquivos fornecido pelo **gerenciador de arquivos**.
 
 ## Instalação
 
-1. Confirme que seu ambiente é **Pro ou superior** e que a licença está válida.
-2. Abra o **Gerenciador de Plugins**, localize **Campo de tabela: Assinatura manuscrita** (`@nocobase/plugin-field-signature`) e ative-o.
-3. Garanta que o **Gerenciador de Arquivos** (`@nocobase/plugin-file-manager`) também esteja ativado. O campo de assinatura manuscrita depende dele para fornecer a tabela de arquivos, o upload e o armazenamento; sem ele não será possível salvar a imagem da assinatura.
+1. Confirme se o ambiente atual é a **Edição Profissional ou superior** e se a licença está válida.
+2. Abra o **gerenciador de plugins**, localize **Campo de tabela de dados: assinatura manuscrita** (`@nocobase/plugin-field-signature`) e ative-o.
+3. Certifique-se de que o **gerenciador de arquivos** (`@nocobase/plugin-file-manager`) esteja ativado. O campo de assinatura manuscrita depende dele para fornecer a tabela de dados de arquivos e os recursos de upload e armazenamento; quando não está ativado, não será possível salvar as imagens das assinaturas.
 
-## Como usar
+## Instruções de uso
 
-### Adicionar o campo
+### Adicionar campo
 
-Vá em **Data Source** → escolha a tabela → **Configurar campos** → **Adicionar campo** → no grupo Multimídia, selecione **Assinatura manuscrita**.
+Em **Fonte de dados** → selecione uma tabela de dados → **Configurar campos** → **Adicionar campo** → no grupo multimídia, selecione **Assinatura manuscrita**.
 
 ### Configuração do campo
 
-- **Tabela de arquivos**: obrigatório; selecione uma tabela de arquivos (por exemplo, `attachments`) onde a imagem da assinatura será salva.
-- A configuração de armazenamento e as regras de upload usadas pela imagem da assinatura são determinadas pela tabela de arquivos escolhida.
+- **Tabela de dados de arquivos**: obrigatório; selecione uma tabela de dados de arquivos para salvar os arquivos (por exemplo, `attachments`). As imagens das assinaturas serão salvas nela.
+- A configuração de armazenamento e as regras de upload efetivamente usadas pelas imagens das assinaturas são determinadas pela própria tabela de dados de arquivos selecionada.
 
-### Configuração na UI
+### Configuração da interface
 
-- Após adicionar o campo de assinatura manuscrita ao formulário, é possível ajustar **Configurações da assinatura** na configuração de UI do campo, incluindo cor do traço, cor de fundo, largura e altura da tela de assinatura, além da largura e altura da miniatura.
-- Em cenários somente leitura, também é possível ajustar a largura e a altura da miniatura para controlar o tamanho de exibição da imagem.
+- Após adicionar o campo de assinatura manuscrita a um formulário, você pode ajustar as **configurações da assinatura** na configuração da interface do campo, incluindo a cor do traço, a cor de fundo, a largura e a altura da tela de assinatura, além da largura e da altura da miniatura.
+- Em cenários de exibição somente leitura, também é possível ajustar a largura e a altura da miniatura da assinatura para controlar as dimensões de exibição da imagem.
+### Operação na interface
 
-### Operação na UI
-
-- Clique sobre a área do campo para abrir a tela de assinatura. Após escrever, confirme para fazer o upload e vincular o registro de arquivo correspondente.
-- Em telas pequenas, é possível usar a interface de assinatura em modo paisagem ou tela cheia para facilitar a escrita.
+- Clique na área do campo para abrir a tela de assinatura. Após concluir a escrita, confirme para fazer o upload e associar o arquivo correspondente.
+- Em dispositivos com telas pequenas, pode-se usar uma interface de assinatura em modo paisagem ou tela cheia, facilitando a escrita.
+![20260709232226](https://static-docs.nocobase.com/20260709232226.png)

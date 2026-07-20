@@ -251,6 +251,7 @@
   "Will be executed in the background as a queued task.": "Akan dieksekusi di latar belakang sebagai tugas antrean.",
   "Workflow": "Alur kerja",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Alur kerja dieksekusi, status hasilnya adalah <1>{{statusText}}</1><2>Lihat eksekusi</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "Alur kerja tidak dipicu karena permintaan saat ini tidak memenuhi persyaratan pemicu.",
   "Workflow is not exists": "Workflow is not exists",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "Tugas alur kerja",

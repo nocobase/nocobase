@@ -34,6 +34,7 @@ import { SystemSettingsSource } from './flow/system-settings';
 import { LayoutManager } from './layout-manager/LayoutManager';
 import type { PluginClass, PluginManager, PluginType } from './PluginManager';
 import { RouteRepository } from './RouteRepository';
+import { stripModernClientPrefix } from './authRedirect';
 import type {
   ComponentTypeAndString,
   RenderableComponentType,
@@ -78,6 +79,10 @@ const trimLeadingSlashes = (value: string) => {
 const trimTrailingSlashes = (value: string) => {
   const match = TRAILING_SLASHES_REGEXP.exec(value);
   return match ? value.slice(0, -match[0].length) : value;
+};
+
+const ensureTrailingSlash = (value: string) => {
+  return `${trimTrailingSlashes(value)}/`;
 };
 
 const isRenderableComponentType = (value: unknown): value is AnyComponent => isValidElementType(value);
@@ -396,7 +401,7 @@ export abstract class BaseApplication<
       this.favicon = favicon || '';
     }
 
-    const iconHref = this.favicon || '/favicon/favicon.ico';
+    const iconHref = this.favicon || this.getCdnUrl() + 'favicon/favicon.ico';
 
     if (faviconLinkElement) {
       faviconLinkElement.href = iconHref;
@@ -431,12 +436,12 @@ export abstract class BaseApplication<
     return getSubAppName(this.getPublicPath()) || null;
   }
 
+  getCdnUrl() {
+    return ensureTrailingSlash(window['__webpack_public_path__'] || stripModernClientPrefix(this.getPublicPath()));
+  }
+
   getPublicPath() {
-    let publicPath = this.options.publicPath || '/';
-    if (!publicPath.endsWith('/')) {
-      publicPath += '/';
-    }
-    return publicPath;
+    return ensureTrailingSlash(this.options.publicPath || '/');
   }
 
   getApiUrl(pathname = '') {

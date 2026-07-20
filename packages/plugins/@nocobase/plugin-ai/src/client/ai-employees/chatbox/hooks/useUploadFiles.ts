@@ -12,6 +12,7 @@ import PluginFileManagerClient from '@nocobase/plugin-file-manager/client';
 import { useAISettingsContext } from '../../AISettingsProvider';
 import { useChat } from '../hooks/useChat';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { normalizeAIFileUploadAttachment } from '../utils';
 
 export function useStorage(storage: string) {
   const name = storage ?? '';
@@ -94,7 +95,7 @@ export const useUploadFiles = () => {
             if (!file?.response?.data) {
               return file;
             }
-            return { ...file.response.data, status: file.status };
+            return normalizeAIFileUploadAttachment(file.response.data, file.status);
           }
           return file;
         }),

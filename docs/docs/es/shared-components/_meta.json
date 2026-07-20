@@ -1,0 +1,131 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Vista general",
+    "link": "/shared-components/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Componentes de formulario",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "CodeScanner",
+        "link": "/shared-components/form/code-scanner"
+      },
+      {
+        "type": "custom-link",
+        "label": "DialogFormLayout",
+        "link": "/shared-components/form/dialog-form-layout"
+      },
+      {
+        "type": "custom-link",
+        "label": "DrawerFormLayout",
+        "link": "/shared-components/form/drawer-form-layout"
+      },
+      {
+        "type": "custom-link",
+        "label": "EnvVariableInput",
+        "link": "/shared-components/form/env-variable-input"
+      },
+      {
+        "type": "custom-link",
+        "label": "FileSizeInput",
+        "link": "/shared-components/form/file-size-input"
+      },
+      {
+        "type": "custom-link",
+        "label": "JsonTextArea",
+        "link": "/shared-components/form/json-text-area"
+      },
+      {
+        "type": "custom-link",
+        "label": "PasswordInput",
+        "link": "/shared-components/form/password-input"
+      },
+      {
+        "type": "custom-link",
+        "label": "RemoteSelect",
+        "link": "/shared-components/form/remote-select"
+      },
+      {
+        "type": "custom-link",
+        "label": "ScanInput",
+        "link": "/shared-components/form/scan-input"
+      },
+      {
+        "type": "custom-link",
+        "label": "TypedVariableInput",
+        "link": "/shared-components/form/typed-variable-input"
+      },
+      {
+        "type": "custom-link",
+        "label": "VariableInput",
+        "link": "/shared-components/form/variable-input"
+      },
+      {
+        "type": "custom-link",
+        "label": "VariableJsonTextArea",
+        "link": "/shared-components/form/variable-json-text-area"
+      },
+      {
+        "type": "custom-link",
+        "label": "VariableTextArea",
+        "link": "/shared-components/form/variable-text-area"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Componentes de filtro",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "CollectionFilter",
+        "link": "/shared-components/filter/"
+      },
+      {
+        "type": "custom-link",
+        "label": "CollectionFilterPanel",
+        "link": "/shared-components/filter/collection-filter-panel"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Componentes de tabla",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "SortableRow",
+        "link": "/shared-components/table/sortable-row"
+      },
+      {
+        "type": "custom-link",
+        "label": "SortHandle",
+        "link": "/shared-components/table/sort-handle"
+      },
+      {
+        "type": "custom-link",
+        "label": "Table",
+        "link": "/shared-components/table/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Herramientas",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "createFormRegistry",
+        "link": "/shared-components/create-form-registry"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Icon",
+    "link": "/shared-components/icon"
+  }
+]

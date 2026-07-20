@@ -43,11 +43,18 @@ class PluginCollectionTreeServer extends Plugin {
             options['schema'] = collection.options.schema;
           }
 
+          let nodePkType = 'bigInt';
           if (eventOptions.fieldModels) {
-            options['fieldModels'] = eventOptions.fieldModels;
+            const pk = eventOptions.fieldModels.find((x) => x.options.primaryKey === true);
+            if (pk) {
+              nodePkType = pk.type;
+            }
           }
 
-          this.defineTreePathCollection(name, options);
+          this.defineTreePathCollection(name, {
+            ...options,
+            nodePkType,
+          });
 
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
@@ -195,15 +202,8 @@ class PluginCollectionTreeServer extends Plugin {
     });
   }
 
-  private async defineTreePathCollection(name: string, options: { schema?: string; fieldModels?: Model[] }) {
-    let nodePkType = 'bigInt';
-    if (options.fieldModels) {
-      const pk = options.fieldModels.find((x) => x.options.primaryKey === true);
-      if (pk) {
-        nodePkType = pk.type;
-      }
-    }
-
+  private async defineTreePathCollection(name: string, options: { schema?: string; nodePkType: string }) {
+    const { nodePkType, ...collectionOptions } = options;
     this.db.collection({
       name,
       autoGenId: false,
@@ -218,7 +218,7 @@ class PluginCollectionTreeServer extends Plugin {
           fields: [{ name: 'path', length: 191 }],
         },
       ],
-      ...options,
+      ...collectionOptions,
     });
   }
 
