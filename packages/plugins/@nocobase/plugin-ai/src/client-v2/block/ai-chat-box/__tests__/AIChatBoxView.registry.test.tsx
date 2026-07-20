@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import type { FlowModel } from '@nocobase/flow-engine';
+import { FlowContextProvider, type FlowModel, type FlowModelContext } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clearMountedChatBoxes, getMountedChatBox } from '../../../ai-employees/chatbox/stores/mounted-chat-boxes';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
@@ -146,6 +146,14 @@ const makeBodyModel = () => {
   } as FlowModel;
 };
 
+const renderAIChatBoxView = (model: AIChatBoxBlockModel) => {
+  return render(
+    <FlowContextProvider context={{ model } as FlowModelContext}>
+      <AIChatBoxView />
+    </FlowContextProvider>,
+  );
+};
+
 describe('AIChatBoxView mounted registry', () => {
   afterEach(() => {
     clearMountedChatBoxes();
@@ -163,7 +171,7 @@ describe('AIChatBoxView mounted registry', () => {
   });
 
   it('registers the mounted block runtime and removes it on unmount', () => {
-    const { container, unmount } = render(<AIChatBoxView model={makeModel({ height: 720 })} />);
+    const { container, unmount } = renderAIChatBoxView(makeModel({ height: 720 }));
     const entry = getMountedChatBox('chat-box-1');
 
     const layouts = container.querySelectorAll('.ant-layout');
@@ -199,31 +207,31 @@ describe('AIChatBoxView mounted registry', () => {
   });
 
   it('uses the initialized block uid for conversation queries', () => {
-    render(<AIChatBoxView model={makeModel({ scope: 'chat-box-1' })} />);
+    renderAIChatBoxView(makeModel({ scope: 'chat-box-1' }));
 
     expect(mocks.runtime.scope).toBe('chat-box-1');
   });
 
   it('keeps explicitly blank scope unfiltered for conversation queries', () => {
-    render(<AIChatBoxView model={makeModel({ scope: '' })} />);
+    renderAIChatBoxView(makeModel({ scope: '' }));
 
     expect(mocks.runtime.scope).toBeUndefined();
   });
 
   it('uses explicit scope for conversation queries', () => {
-    render(<AIChatBoxView model={makeModel({ scope: 'shared-sales' })} />);
+    renderAIChatBoxView(makeModel({ scope: 'shared-sales' }));
 
     expect(mocks.runtime.scope).toBe('shared-sales');
   });
 
   it('fills the common block height container when height mode is fixed', () => {
-    const { container } = render(<AIChatBoxView model={makeModel({}, { heightMode: 'specifyValue', height: 720 })} />);
+    const { container } = renderAIChatBoxView(makeModel({}, { heightMode: 'specifyValue', height: 720 }));
 
     expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('height: 100%');
   });
 
   it('keeps the chat box core wide enough for horizontal scrolling', () => {
-    const { container, getByTestId } = render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()])} />);
+    const { container, getByTestId } = renderAIChatBoxView(makeModel({}, {}, [makeCoreModel()]));
     const coreItem = getByTestId('flow-model-renderer').closest(
       `[style*="min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px"]`,
     );
@@ -237,7 +245,7 @@ describe('AIChatBoxView mounted registry', () => {
   it('does not render a drag handle for the chat box core itself', () => {
     const core = makeCoreModel();
 
-    render(<AIChatBoxView model={makeModel({}, {}, [core], true)} />);
+    renderAIChatBoxView(makeModel({}, {}, [core], true));
 
     const coreRendererProps = mocks.flowModelRendererProps.find((props) => props.model === core);
 
@@ -247,7 +255,7 @@ describe('AIChatBoxView mounted registry', () => {
   });
 
   it('lets added body blocks push the chat core down inside the scrollable body area', () => {
-    const { getAllByTestId } = render(<AIChatBoxView model={makeModel({}, {}, [makeBodyModel(), makeCoreModel()])} />);
+    const { getAllByTestId } = renderAIChatBoxView(makeModel({}, {}, [makeBodyModel(), makeCoreModel()]));
     const [bodyRenderer, coreRenderer] = getAllByTestId('flow-model-renderer');
     const bodyItem = bodyRenderer.parentElement;
     const coreItem = coreRenderer.closest(`[style*="min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px"]`);
@@ -260,7 +268,7 @@ describe('AIChatBoxView mounted registry', () => {
   it('shows an unread dot on the conversation toggle for unread block conversations', () => {
     mocks.runtime.chatConversationModel.conversations = [{ sessionId: 'session-1', read: false }];
 
-    const { container } = render(<AIChatBoxView model={makeModel()} />);
+    const { container } = renderAIChatBoxView(makeModel());
 
     expect(container.querySelector('.ant-badge-dot')).toBeTruthy();
   });
@@ -269,7 +277,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.runtime.chatConversationModel.unreadCount = 1;
     mocks.runtime.chatConversationModel.conversations = [{ sessionId: 'session-1', read: true }];
 
-    const { container } = render(<AIChatBoxView model={makeModel()} />);
+    const { container } = renderAIChatBoxView(makeModel());
 
     expect(container.querySelector('.ant-badge-dot')).toBeFalsy();
   });

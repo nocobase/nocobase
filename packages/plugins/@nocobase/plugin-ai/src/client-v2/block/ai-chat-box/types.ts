@@ -25,7 +25,7 @@ export type AIChatBoxBlockProps = {
   scope?: string;
   systemPrompt?: string;
   defaultUserMessage?: string;
-  selectedBlocks?: ContextItem[];
+  workContext?: ContextItem[];
   allowedAIEmployees?: string[];
   allowedModels?: string[];
   senderPlaceholder?: string;
@@ -45,7 +45,7 @@ export type AIChatBoxSettings = Required<
     | 'height'
     | 'systemPrompt'
     | 'defaultUserMessage'
-    | 'selectedBlocks'
+    | 'workContext'
     | 'allowedAIEmployees'
     | 'allowedModels'
     | 'senderPlaceholder'

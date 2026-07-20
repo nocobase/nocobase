@@ -56,7 +56,7 @@ describe('Sender options helpers', () => {
     });
   });
 
-  it('honors disabled upload, context selector, and web search options', () => {
+  it('honors disabled upload and web search options without dropping work context', () => {
     expect(
       buildSenderSendOptions({
         content: 'Hello',
@@ -65,13 +65,12 @@ describe('Sender options helpers', () => {
         contextItems: [context('manual-1')],
         webSearch: true,
         uploadEnabled: false,
-        contextSelectorEnabled: false,
         webSearchEnabled: false,
       }),
     ).toMatchObject({
       messages: [{ type: 'text', content: 'Hello' }],
       attachments: undefined,
-      workContext: [],
+      workContext: [context('manual-1')],
       webSearch: false,
     });
   });

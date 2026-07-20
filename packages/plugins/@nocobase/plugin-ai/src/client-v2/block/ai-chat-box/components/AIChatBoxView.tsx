@@ -20,6 +20,7 @@ import {
   buildSubModelItem,
   buildSubModelItems,
   observer,
+  useFlowContext,
   type FlowModelContext,
   type SubModelItem,
   type SubModelItemsType,
@@ -379,9 +380,9 @@ const SidePanel: React.FC<{
   );
 };
 
-export const AIChatBoxView: React.FC<{
-  model: AIChatBoxBlockModel;
-}> = observer(({ model }) => {
+export const AIChatBoxView: React.FC = observer(() => {
+  const ctx = useFlowContext<FlowModelContext>();
+  const model = ctx.model as AIChatBoxBlockModel;
   const app = useApp();
   const t = useT();
   const { token } = theme.useToken();

@@ -31,7 +31,7 @@ export const getDefaultAIChatBoxSettings = (): AIChatBoxSettings => ({
   scope: undefined,
   systemPrompt: '',
   defaultUserMessage: '',
-  selectedBlocks: [],
+  workContext: [],
   allowedAIEmployees: [],
   allowedModels: [],
   senderPlaceholder: 'Enter your question',
@@ -52,7 +52,7 @@ export const getAIChatBoxSettings = (props: AIChatBoxBlockProps = {}): AIChatBox
 
   return {
     ...settings,
-    selectedBlocks: Array.isArray(settings.selectedBlocks) ? settings.selectedBlocks.filter(isContextItem) : [],
+    workContext: Array.isArray(settings.workContext) ? settings.workContext : [],
     allowedAIEmployees: Array.isArray(settings.allowedAIEmployees) ? settings.allowedAIEmployees : [],
     allowedModels: Array.isArray(settings.allowedModels) ? settings.allowedModels : [],
   };
@@ -76,8 +76,8 @@ export const normalizeAIChatBoxScopeForSave = (scope: string | undefined) => {
   return scope || '';
 };
 
-export const normalizeAIChatBoxWorkContext = (selectedBlocks: ContextItem[] | undefined) => {
-  const items = Array.isArray(selectedBlocks) ? selectedBlocks.filter(isContextItem) : [];
+export const normalizeAIChatBoxWorkContext = (workContext: ContextItem[] | undefined) => {
+  const items = Array.isArray(workContext) ? workContext.filter(isContextItem) : [];
   const seen = new Set<string>();
   return items.filter((item) => {
     const key = `${item.type}:${item.uid}`;
@@ -90,5 +90,5 @@ export const normalizeAIChatBoxWorkContext = (selectedBlocks: ContextItem[] | un
 };
 
 export const getAIChatBoxWorkContext = (model: AIChatBoxBlockModel) => {
-  return normalizeAIChatBoxWorkContext(getAIChatBoxSettings(model.props).selectedBlocks);
+  return normalizeAIChatBoxWorkContext(getAIChatBoxSettings(model.props).workContext);
 };

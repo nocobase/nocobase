@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Attachments, Sender as AntSender } from '@ant-design/x';
-import { Alert, Button, Flex, Space, Spin, theme, Tooltip, type GetRef, type UploadFile } from 'antd';
+import { Alert, Button, Flex, Space, Spin, theme, Tooltip, Typography, type GetRef, type UploadFile } from 'antd';
 import { EditOutlined, InfoCircleOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@nocobase/flow-engine';
@@ -65,7 +65,7 @@ export type SenderOptions = {
   showWebSearch?: boolean;
   showEmployeeSelect?: boolean;
   showModelSelect?: boolean;
-  sendContextItems?: boolean;
+  showDisclaimer?: boolean;
   defaultSystemMessage?: string;
   defaultUserMessage?: string;
   allowedAIEmployees?: string[];
@@ -88,7 +88,6 @@ export type BuildSenderSendOptionsInput = {
   webSearch?: boolean;
   scope?: string;
   uploadEnabled?: boolean;
-  contextSelectorEnabled?: boolean;
   webSearchEnabled?: boolean;
 };
 
@@ -119,14 +118,13 @@ export const buildSenderSendOptions = ({
   webSearch,
   scope,
   uploadEnabled = true,
-  contextSelectorEnabled = true,
   webSearchEnabled = true,
 }: BuildSenderSendOptionsInput): SendOptions | null => {
   if (!currentEmployee) {
     return null;
   }
   const resolvedContent = content || defaultUserMessage || '';
-  const resolvedContextItems = contextSelectorEnabled ? mergeSenderContextItems(contextItems) : [];
+  const resolvedContextItems = mergeSenderContextItems(contextItems);
 
   if (!resolvedContent && !resolvedContextItems.length) {
     return null;
@@ -153,6 +151,7 @@ export const buildSenderSendOptions = ({
 
 export const Sender: React.FC<SenderOptions> = observer((options) => {
   const t = useT();
+  const { token } = theme.useToken();
   const senderRef = useRef<SenderRef | null>(null);
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel, chatSenderModel } = runtime;
@@ -176,7 +175,6 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const showContextSelector = options.showContextSelector !== false;
   const showUpload = options.showUpload !== false;
   const showWebSearch = options.showWebSearch !== false;
-  const sendContextItems = options.sendContextItems ?? showContextSelector;
   const placeholder = options.placeholder || 'Enter your question';
   const scope = options.scope ?? runtime.scope;
 
@@ -216,7 +214,6 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       webSearch,
       scope,
       uploadEnabled: showUpload,
-      contextSelectorEnabled: sendContextItems,
       webSearchEnabled: showWebSearch,
     });
     if (!sendOptions) {
@@ -322,6 +319,20 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
         actions={false}
         autoSize={{ minRows: 2, maxRows: 8 }}
       />
+      {options.showDisclaimer !== false ? (
+        <Typography.Text
+          type="secondary"
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            margin: '10px 0',
+            fontSize: token.fontSizeSM,
+            color: token.colorTextTertiary,
+          }}
+        >
+          {t('AI disclaimer')}
+        </Typography.Text>
+      ) : null}
     </div>
   );
 });
@@ -340,9 +351,8 @@ const SenderHeader: React.FC<{
   const contextItems = chat.use.contextItems();
   const attachments = chat.use.attachments();
 
-  const showContextItems = options.showContextSelector !== false;
   const showAttachments = options.showUpload !== false;
-  const hasContextItems = showContextItems && !!contextItems?.length;
+  const hasContextItems = !!contextItems?.length;
   const hasAttachments = showAttachments && !!attachments?.length;
 
   if (!isShowSenderHint && !isEditingMessage && (!currentEmployee || (!hasContextItems && !hasAttachments))) {
@@ -361,7 +371,7 @@ const SenderHeader: React.FC<{
           <EditMessageHeader />
         </div>
       ) : null}
-      {currentEmployee && showContextItems ? <ContextItemsHeader /> : null}
+      {currentEmployee && hasContextItems ? <ContextItemsHeader /> : null}
       {currentEmployee && showAttachments ? <AttachmentsHeader readonly={readonly} /> : null}
     </div>
   );

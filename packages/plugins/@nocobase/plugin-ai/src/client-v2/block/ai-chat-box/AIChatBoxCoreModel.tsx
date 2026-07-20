@@ -12,7 +12,7 @@ import { Flex, Typography, theme } from 'antd';
 import { FlowModel } from '@nocobase/flow-engine';
 import { tExpr, useT } from '../../locale';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
-import { MessagesAndSender } from './components/MessagesAndSender';
+import { AIChatBoxCoreView } from './components/AIChatBoxCoreView';
 
 const AIChatBoxCorePlaceholder: React.FC = () => {
   const t = useT();
@@ -38,7 +38,7 @@ const AIChatBoxCorePlaceholder: React.FC = () => {
 export class AIChatBoxCoreModel extends FlowModel {
   render() {
     const parent = this.parent as AIChatBoxBlockModel | undefined;
-    return parent ? <MessagesAndSender model={parent} /> : <AIChatBoxCorePlaceholder />;
+    return parent ? <AIChatBoxCoreView /> : <AIChatBoxCorePlaceholder />;
   }
 }
 

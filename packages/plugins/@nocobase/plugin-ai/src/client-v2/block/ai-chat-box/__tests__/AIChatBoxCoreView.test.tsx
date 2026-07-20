@@ -9,11 +9,11 @@
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import type { FlowModel } from '@nocobase/flow-engine';
+import { FlowContextProvider, type FlowModel, type FlowModelContext } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import type { SenderOptions } from '../../../ai-employees/chatbox/components/Sender';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { MessagesAndSender } from '../components/MessagesAndSender';
+import { AIChatBoxCoreView } from '../components/AIChatBoxCoreView';
 import type { AIChatBoxBlockProps } from '../types';
 
 const mocks = vi.hoisted(() => ({
@@ -116,7 +116,22 @@ const makeModel = (props: AIChatBoxBlockProps): AIChatBoxBlockModel => {
   } as AIChatBoxBlockModel;
 };
 
-describe('MessagesAndSender', () => {
+const makeCoreModel = (props: AIChatBoxBlockProps) => {
+  return {
+    uid: 'core-1',
+    parent: makeModel(props),
+  } as FlowModel;
+};
+
+const createAIChatBoxCoreViewNode = (props: AIChatBoxBlockProps) => {
+  return (
+    <FlowContextProvider context={{ model: makeCoreModel(props) } as FlowModelContext}>
+      <AIChatBoxCoreView />
+    </FlowContextProvider>
+  );
+};
+
+describe('AIChatBoxCoreView', () => {
   it('keeps messages in a bounded flex region above the sender', () => {
     mocks.messagesRendered = false;
     mocks.currentConversation = undefined;
@@ -127,14 +142,7 @@ describe('MessagesAndSender', () => {
     mocks.aiEmployees = [];
     mocks.getAIEmployees.mockResolvedValue([]);
 
-    const { container } = render(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: true,
-          showDisclaimer: false,
-        })}
-      />,
-    );
+    const { container } = render(createAIChatBoxCoreViewNode({ showMessages: true, showDisclaimer: false }));
 
     const messages = screen.getByTestId('messages');
     const messagesRegion = messages.parentElement;
@@ -162,23 +170,21 @@ describe('MessagesAndSender', () => {
     ]);
 
     const { container } = render(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: false,
-          showContextSelector: false,
-          showUpload: false,
-          showWebSearch: false,
-          showEmployeeSelect: false,
-          showModelSelect: false,
-          showDisclaimer: false,
-          senderPlaceholder: 'Ask sales',
-          systemPrompt: 'Use sales tone',
-          defaultUserMessage: 'Summarize this block',
-          selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
-          allowedAIEmployees: ['sales'],
-          allowedModels: ['openai:gpt'],
-        })}
-      />,
+      createAIChatBoxCoreViewNode({
+        showMessages: false,
+        showContextSelector: false,
+        showUpload: false,
+        showWebSearch: false,
+        showEmployeeSelect: false,
+        showModelSelect: false,
+        showDisclaimer: false,
+        senderPlaceholder: 'Ask sales',
+        systemPrompt: 'Use sales tone',
+        defaultUserMessage: 'Summarize this block',
+        workContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+        allowedAIEmployees: ['sales'],
+        allowedModels: ['openai:gpt'],
+      }),
     );
 
     expect(container.firstElementChild?.getAttribute('style')).toContain('max-height: 100%');
@@ -192,7 +198,7 @@ describe('MessagesAndSender', () => {
       showWebSearch: false,
       showEmployeeSelect: false,
       showModelSelect: false,
-      sendContextItems: true,
+      showDisclaimer: false,
       allowedAIEmployees: ['sales'],
       allowedModels: ['openai:gpt'],
       scope: 'chat-box-1',
@@ -227,13 +233,11 @@ describe('MessagesAndSender', () => {
     mocks.getAIEmployees.mockResolvedValue([]);
 
     render(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: false,
-          showDisclaimer: false,
-          selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
-        })}
-      />,
+      createAIChatBoxCoreViewNode({
+        showMessages: false,
+        showDisclaimer: false,
+        workContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+      }),
     );
     expect(mocks.setContextItems).not.toHaveBeenCalled();
   });
@@ -249,13 +253,11 @@ describe('MessagesAndSender', () => {
     mocks.getAIEmployees.mockResolvedValue([]);
 
     render(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: false,
-          showDisclaimer: false,
-          selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
-        })}
-      />,
+      createAIChatBoxCoreViewNode({
+        showMessages: false,
+        showDisclaimer: false,
+        workContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+      }),
     );
 
     expect(mocks.setContextItems).not.toHaveBeenCalled();
@@ -274,13 +276,11 @@ describe('MessagesAndSender', () => {
     mocks.getAIEmployees.mockResolvedValue([]);
 
     const { rerender } = render(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: false,
-          showDisclaimer: false,
-          defaultUserMessage: 'Summarize this block',
-        })}
-      />,
+      createAIChatBoxCoreViewNode({
+        showMessages: false,
+        showDisclaimer: false,
+        defaultUserMessage: 'Summarize this block',
+      }),
     );
 
     expect(mocks.setSenderValue).toHaveBeenCalledWith('Summarize this block');
@@ -288,13 +288,11 @@ describe('MessagesAndSender', () => {
     mocks.senderValue = '';
 
     rerender(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: false,
-          showDisclaimer: false,
-          defaultUserMessage: 'Summarize this block',
-        })}
-      />,
+      createAIChatBoxCoreViewNode({
+        showMessages: false,
+        showDisclaimer: false,
+        defaultUserMessage: 'Summarize this block',
+      }),
     );
 
     expect(mocks.setSenderValue).not.toHaveBeenCalled();
@@ -314,14 +312,7 @@ describe('MessagesAndSender', () => {
     ];
     mocks.getAIEmployees.mockResolvedValue(mocks.aiEmployees);
 
-    render(
-      <MessagesAndSender
-        model={makeModel({
-          showMessages: true,
-          showDisclaimer: false,
-        })}
-      />,
-    );
+    render(createAIChatBoxCoreViewNode({ showMessages: true, showDisclaimer: false }));
 
     await waitFor(() => expect(mocks.setRoles).toHaveBeenCalled());
     const roleUpdater = mocks.setRoles.mock.calls[0][0] as (roles: Record<string, unknown>) => Record<string, unknown>;

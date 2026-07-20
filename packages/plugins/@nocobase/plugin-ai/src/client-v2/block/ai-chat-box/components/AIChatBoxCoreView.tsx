@@ -8,9 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Typography, theme } from 'antd';
-import { observer } from '@nocobase/flow-engine';
-import { useT } from '../../../locale';
+import { observer, useFlowContext, type FlowModelContext } from '@nocobase/flow-engine';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { Messages } from '../../../ai-employees/chatbox/components/Messages';
 import { Sender } from '../../../ai-employees/chatbox/components/Sender';
@@ -21,16 +19,13 @@ import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime'
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { getAIChatBoxCreateScope, getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
 
-export const MessagesAndSender: React.FC<{
-  model: AIChatBoxBlockModel;
-}> = observer(({ model }) => {
-  const t = useT();
-  const { token } = theme.useToken();
+export const AIChatBoxCoreView: React.FC = observer(() => {
+  const ctx = useFlowContext<FlowModelContext>();
+  const model = ctx.model.parent as AIChatBoxBlockModel;
   const aiConfigRepository = useAIConfigRepository();
 
   const settings = getAIChatBoxSettings(model.props);
   const conversationCreateScope = getAIChatBoxCreateScope(model);
-  const selectedBlocks = model.props.selectedBlocks;
 
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel } = runtime;
@@ -41,7 +36,10 @@ export const MessagesAndSender: React.FC<{
   const draftMessages = draftChat.use.messages();
 
   const allowedAIEmployees = settings.allowedAIEmployees;
-  const configuredWorkContext = useMemo(() => normalizeAIChatBoxWorkContext(selectedBlocks), [selectedBlocks]);
+  const configuredWorkContext = useMemo(
+    () => normalizeAIChatBoxWorkContext(settings.workContext),
+    [settings.workContext],
+  );
   const configuredWorkContextKey = configuredWorkContext
     .map((item) => `${item.type}:${item.uid}:${item.title || ''}`)
     .join('|');
@@ -171,27 +169,13 @@ export const MessagesAndSender: React.FC<{
           showWebSearch={settings.showWebSearch}
           showEmployeeSelect={settings.showEmployeeSelect}
           showModelSelect={settings.showModelSelect}
-          sendContextItems
+          showDisclaimer={settings.showDisclaimer}
           allowedAIEmployees={settings.allowedAIEmployees}
           allowedModels={settings.allowedModels}
           scope={conversationCreateScope}
           defaultSystemMessage={settings.systemPrompt}
           defaultUserMessage={settings.defaultUserMessage}
         />
-        {settings.showDisclaimer ? (
-          <Typography.Text
-            type="secondary"
-            style={{
-              display: 'block',
-              textAlign: 'center',
-              margin: 0,
-              fontSize: token.fontSizeSM,
-              color: token.colorTextTertiary,
-            }}
-          >
-            {t('AI disclaimer')}
-          </Typography.Text>
-        ) : null}
       </div>
     </div>
   );

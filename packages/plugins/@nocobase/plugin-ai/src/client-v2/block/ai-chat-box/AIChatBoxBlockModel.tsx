@@ -93,7 +93,7 @@ export class AIChatBoxBlockModel extends BlockModel<AIChatBoxBlockStructure> {
   renderComponent() {
     return (
       <ChatBoxRuntimeProvider runtime={getOrCreateBlockRuntime(this)}>
-        <AIChatBoxView model={this} />
+        <AIChatBoxView />
       </ChatBoxRuntimeProvider>
     );
   }

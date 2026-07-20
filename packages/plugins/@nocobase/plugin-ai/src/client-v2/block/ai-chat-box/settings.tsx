@@ -158,7 +158,7 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
           const settings = getAIChatBoxSettings(model.props);
           return {
             ...settings,
-            selectedBlocks: getAIChatBoxWorkContext(model),
+            workContext: getAIChatBoxWorkContext(model),
           };
         },
         uiSchema: async (ctx: AIChatBoxFlowContext) => {
@@ -201,7 +201,7 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
               },
               'x-component': 'FlowSettingsVariableTextArea',
             },
-            selectedBlocks: {
+            workContext: {
               type: 'array',
               title: tExpr('Work context'),
               'x-decorator': 'FormItem',
@@ -252,7 +252,7 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
             defaultUserMessage: params.defaultUserMessage || '',
             allowedAIEmployees: Array.isArray(params.allowedAIEmployees) ? params.allowedAIEmployees : [],
             allowedModels: Array.isArray(params.allowedModels) ? params.allowedModels : [],
-            selectedBlocks: normalizeAIChatBoxWorkContext(params.selectedBlocks),
+            workContext: normalizeAIChatBoxWorkContext(params.workContext),
           });
         },
       },

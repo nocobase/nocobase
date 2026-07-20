@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Badge, Button, Divider, Layout, theme, Tooltip, Typography } from 'antd';
+import { Badge, Button, Divider, Layout, theme, Tooltip } from 'antd';
 import {
   BugOutlined,
   CloseOutlined,
@@ -219,18 +219,6 @@ export const ChatBox: React.FC<{
           }}
         >
           <Sender />
-          <Typography.Text
-            type="secondary"
-            style={{
-              display: 'block',
-              textAlign: 'center',
-              margin: '10px 0',
-              fontSize: token.fontSizeSM,
-              color: token.colorTextTertiary,
-            }}
-          >
-            {t('AI disclaimer')}
-          </Typography.Text>
         </Footer>
       </Layout>
     </Layout>

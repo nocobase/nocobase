@@ -100,14 +100,14 @@ describe('AI chat box settings helpers', () => {
   });
 
   it('normalizes configured work context without duplicate items', () => {
-    const selectedBlocks: TestContextItem[] = [
+    const workContext: TestContextItem[] = [
       { type: 'flow-model', uid: 'external-1', title: 'External' },
       { type: 'flow-model', uid: 'body-1', title: 'Manual body title' },
       { type: 'datasource', uid: 'collection-1', title: 'Collection' },
       { type: 'flow-model', uid: 'external-1', title: 'Duplicate external' },
     ];
 
-    expect(normalizeAIChatBoxWorkContext(selectedBlocks)).toEqual([
+    expect(normalizeAIChatBoxWorkContext(workContext)).toEqual([
       { type: 'flow-model', uid: 'external-1', title: 'External' },
       { type: 'flow-model', uid: 'body-1', title: 'Manual body title' },
       { type: 'datasource', uid: 'collection-1', title: 'Collection' },
@@ -119,7 +119,7 @@ describe('AI chat box settings helpers', () => {
     const bodyTwo = makeFlowModel('body-2', 'Body two');
     const model = makeModel(
       {
-        selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+        workContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
       },
       [bodyOne, makeCoreModel(), bodyTwo],
     );
@@ -209,7 +209,7 @@ describe('AI chat box settings flow', () => {
     const model = makeModel(
       {
         scope: 'chat-box-1',
-        selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+        workContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
       },
       [bodyBlock, makeCoreModel()],
     );
@@ -230,7 +230,7 @@ describe('AI chat box settings flow', () => {
 
     expect(editStep?.defaultParams?.(ctx)).toMatchObject({
       scope: 'chat-box-1',
-      selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+      workContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
     });
 
     const schema = await editStep?.uiSchema?.(ctx);
@@ -238,7 +238,7 @@ describe('AI chat box settings flow', () => {
       'scope',
       'systemPrompt',
       'defaultUserMessage',
-      'selectedBlocks',
+      'workContext',
       'allowedAIEmployees',
       'allowedModels',
     ]);
@@ -270,7 +270,7 @@ describe('AI chat box settings flow', () => {
       scope: '',
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
-      selectedBlocks: [
+      workContext: [
         { type: 'flow-model', uid: 'external-1', title: 'External' },
         { type: 'flow-model', uid: 'body-1', title: 'Body one' },
       ],
@@ -282,7 +282,7 @@ describe('AI chat box settings flow', () => {
       scope: '',
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
-      selectedBlocks: [
+      workContext: [
         { type: 'flow-model', uid: 'external-1', title: 'External' },
         { type: 'flow-model', uid: 'body-1', title: 'Body one' },
       ],
