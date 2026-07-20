@@ -39,8 +39,6 @@ export function createReferenceServiceFixture(
     flowModels?: Record<string, unknown>[];
     repos?: Record<string, unknown>[];
     entries?: Record<string, unknown>[];
-    clientApps?: Record<string, unknown>[];
-    clientAppAssets?: Record<string, unknown>[];
     references?: Record<string, unknown>[];
     flowModelTemplates?: Record<string, unknown>[];
     flowModelTreePaths?: Record<string, unknown>[];
@@ -53,8 +51,6 @@ export function createReferenceServiceFixture(
     flowModels: createRepository({ records: input.flowModels || [] }),
     lightExtensionRepos: createRepository({ records: input.repos || [] }),
     lightExtensionEntries: createRepository({ records: input.entries || [] }),
-    lightExtensionClientApps: createRepository({ records: input.clientApps || [] }),
-    lightExtensionClientAppAssets: createRepository({ records: input.clientAppAssets || [] }),
     lightExtensionReferences: createRepository({ records: input.references || [] }),
     lightExtensionLogs: createRepository(),
     flowModelTemplates: createRepository({ records: input.flowModelTemplates || [] }),

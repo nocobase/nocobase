@@ -14,6 +14,7 @@ import { TextDecoder } from 'util';
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic, LightExtensionTreeEntryInput } from '../../shared/types';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
+import { JS_PORTAL_WORKSPACE_ROOT } from './JsPortalStorage';
 
 type ZipEntrySizeData = {
   compressedSize?: unknown;
@@ -54,8 +55,6 @@ export async function parseLightExtensionSourceArchive(
 
   const files: LightExtensionTreeEntryInput[] = [];
   let extractedBytes = 0;
-  const decoder = new TextDecoder('utf-8', { fatal: true });
-
   for (let index = 0; index < sourceEntries.length; index += 1) {
     const entry = sourceEntries[index];
     const declaredSize = getZipEntrySize(entry, 'uncompressedSize');
@@ -66,15 +65,21 @@ export async function parseLightExtensionSourceArchive(
 
     extractedBytes += contentBuffer.byteLength;
     let content: string;
+    let encoding: 'utf8' | 'base64' | undefined;
     try {
-      content = decoder.decode(contentBuffer);
+      content = decodeUtf8(contentBuffer);
     } catch {
-      throwArchiveValidation('zip_file_not_utf8', 'ZIP source files must be UTF-8 text', paths[index]);
+      if (!isJsPortalWorkspacePath(paths[index])) {
+        throwArchiveValidation('zip_file_not_utf8', 'ZIP source files must be UTF-8 text', paths[index]);
+      }
+      content = contentBuffer.toString('base64');
+      encoding = 'base64';
     }
 
     files.push({
       path: paths[index],
       content,
+      ...(isJsPortalWorkspacePath(paths[index]) ? { encoding: encoding || 'utf8' } : {}),
       size: contentBuffer.byteLength,
       language: languageFromPath(paths[index]),
       mode: ZIP_FILE_MODE,
@@ -82,7 +87,9 @@ export async function parseLightExtensionSourceArchive(
   }
 
   assertZipBudget(archive.byteLength, extractedBytes, validator);
-  const diagnostics = validator.validateInitialFiles({ files });
+  const diagnostics = validator.validateInitialFiles({
+    files: files.filter((file) => !isJsPortalWorkspacePath(file.path)),
+  });
   if (hasErrorDiagnostic(diagnostics)) {
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension ZIP source is invalid', {
       status: 422,
@@ -91,6 +98,25 @@ export async function parseLightExtensionSourceArchive(
   }
 
   return files;
+}
+
+function decodeUtf8(content: Buffer): string {
+  const decoded = new TextDecoder('utf-8', { fatal: true }).decode(content);
+  if (decoded.includes('\0')) {
+    throw new TypeError('NUL is not valid source text');
+  }
+  return decoded;
+}
+
+export function isJsPortalWorkspacePath(path: string): boolean {
+  return path.startsWith(`${JS_PORTAL_WORKSPACE_ROOT}/`);
+}
+
+export function isStrictUtf8Text(content: string): boolean {
+  return (
+    !content.includes('\0') &&
+    new TextDecoder('utf-8', { fatal: true }).decode(Buffer.from(content, 'utf8')) === content
+  );
 }
 
 function decodeArchiveBase64(zipBase64: string, validator: LightExtensionValidator): Buffer {
@@ -285,6 +311,12 @@ function languageFromPath(path: string): string {
   }
   if (extension === '.md') {
     return 'markdown';
+  }
+  if (extension === '.html' || extension === '.htm') {
+    return 'html';
+  }
+  if (extension === '.css') {
+    return 'css';
   }
   return 'text';
 }

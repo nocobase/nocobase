@@ -50,7 +50,6 @@ import type {
 import LightExtensionCreateSourceSelector, {
   type LightExtensionCreateSource,
 } from '../components/LightExtensionCreateSourceSelector';
-import LightExtensionClientAppsPanel from '../components/LightExtensionClientAppsPanel';
 import LightExtensionGitSourceFields, {
   createEmptyLightExtensionGitSourceDraft,
   type LightExtensionGitHubSourceValue,
@@ -83,7 +82,7 @@ type Notice = {
 };
 
 type ToggleLifecycleStatus = 'enabled' | 'disabled';
-type DetailPanel = 'source' | 'sync' | 'client-apps';
+type DetailPanel = 'source' | 'sync';
 type SyncConfigurationRequest = 'test' | 'configure';
 
 const entryKinds = ['js-block', 'js-page', 'js-action', 'js-field', 'js-item', 'runjs'] as const;
@@ -202,7 +201,7 @@ function LightExtensionListPageInner() {
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
-  const detailDrawerOpen = (activePanel === 'source' || activePanel === 'client-apps') && Boolean(selectedRepoId);
+  const detailDrawerOpen = activePanel === 'source' && Boolean(selectedRepoId);
   const syncDrawerOpen = activePanel === 'sync' && Boolean(selectedRepoId);
 
   const resetCreateForm = useCallback(() => {
@@ -634,7 +633,7 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 460,
+        width: 350,
         render: (_value, repo) => (
           <Space size="small" onClick={(event) => event.stopPropagation()}>
             <Button
@@ -654,15 +653,6 @@ function LightExtensionListPageInner() {
               type="link"
             >
               {t('Sync code')}
-            </Button>
-            <Button
-              aria-label={`${t('Custom frontend')} ${repo.title || repo.name}`}
-              onClick={() => selectRepo(repo.id, { panel: 'client-apps' })}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Custom frontend')}
             </Button>
             <Button
               aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
@@ -713,11 +703,6 @@ function LightExtensionListPageInner() {
         />
       );
     }
-
-    if (activePanel === 'client-apps' && selectedRepo) {
-      return <LightExtensionClientAppsPanel repoId={selectedRepo.id} />;
-    }
-
     return null;
   };
 
@@ -1035,14 +1020,14 @@ function useLightExtensionRepoFilterCollection(): Collection | undefined {
 }
 
 function parseDetailPanel(value: string | null): DetailPanel | null {
-  return value === 'source' || value === 'sync' || value === 'client-apps' ? value : null;
+  return value === 'source' || value === 'sync' ? value : null;
 }
 
 function detailPanelTitle(t: (key: string) => string, panel: DetailPanel): string {
   if (panel === 'source') {
     return t('Source');
   }
-  return panel === 'sync' ? t('Sync code') : t('Custom frontend');
+  return t('Sync code');
 }
 
 function formatDate(value?: string | null): string {

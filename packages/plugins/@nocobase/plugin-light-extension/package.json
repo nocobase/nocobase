@@ -43,14 +43,12 @@
     "jszip": "^3.10.1",
     "mime-types": "^3.0.1",
     "parse5": "^7.1.2",
-    "typescript": "^5.x",
-    "yauzl": "^3.2.0"
+    "typescript": "^5.x"
   },
   "devDependencies": {
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@types/mime-types": "^3.0.1",
-    "@types/yauzl": "^2.10.3",
     "dayjs": "^1.11.10",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.11.2"

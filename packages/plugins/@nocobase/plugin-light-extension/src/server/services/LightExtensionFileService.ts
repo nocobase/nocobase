@@ -19,7 +19,7 @@ import type {
 } from '@nocobase/plugin-vsc-file';
 import { computeRemoteSnapshotContentHash, isVscError } from '@nocobase/plugin-vsc-file';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
 import type { LightExtensionAclAction } from '../../constants';
@@ -45,6 +45,7 @@ import {
   type LightExtensionWorkspaceValidationResult,
 } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
+import { JsPortalStorage, type JsPortalWorkspaceFile, JS_PORTAL_WORKSPACE_ROOT } from './JsPortalStorage';
 
 export interface LightExtensionPullInput {
   repoId: string;
@@ -116,6 +117,10 @@ export class LightExtensionFileService {
     repoService?: LightExtensionRepoService,
     permissionHooks?: VscPermissionHookRegistry,
     private readonly validator = new LightExtensionValidator(),
+    private readonly jsPortalStorage: Pick<
+      JsPortalStorage,
+      'listWorkspaceFiles' | 'replaceWorkspaceFiles' | 'validateWorkspaceFiles'
+    > = new JsPortalStorage(),
   ) {
     this.repoService = repoService || new LightExtensionRepoService(db, auditService, permissionService);
     this.useVscPermissionHookRegistry(
@@ -137,6 +142,40 @@ export class LightExtensionFileService {
       assertRepoNotArchived(repo, 'read source');
       return this.pullInternal(repo, input, ctx, transaction, 'readSource');
     });
+  }
+
+  async assertWritableHead(
+    repoId: string,
+    expectedHeadCommitId: string | null,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<void> {
+    await this.permissionService.assertActionAllowed({ action: 'writeSource', ctx });
+    const repo = await this.repoService.getInternalRepo(repoId, ctx);
+    assertRepoNotArchived(repo, 'write source');
+    assertExpectedHead(expectedHeadCommitId, repo.headCommitId, repo.id);
+  }
+
+  async prepareJsPortalSnapshot(
+    repoId: string,
+    changes: readonly LightExtensionFileChange[],
+  ): Promise<JsPortalWorkspaceFile[]> {
+    const files = applyJsPortalChanges(await this.jsPortalStorage.listWorkspaceFiles(repoId), changes);
+    try {
+      this.jsPortalStorage.validateWorkspaceFiles(files);
+    } catch (error) {
+      if (isLightExtensionError(error)) {
+        throw error;
+      }
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        error instanceof Error ? error.message : 'JS Portal files are invalid',
+      );
+    }
+    return files;
+  }
+
+  replaceJsPortalFiles(repoId: string, files: readonly JsPortalWorkspaceFile[]): Promise<void> {
+    return this.jsPortalStorage.replaceWorkspaceFiles(repoId, files);
   }
 
   async pullCommit(
@@ -645,13 +684,14 @@ export class LightExtensionFileService {
     transaction: Transaction,
     aclAction: LightExtensionAclAction,
   ): Promise<LightExtensionPullResult> {
+    const portalFiles = await this.jsPortalStorage.listWorkspaceFiles(repo.id);
     const pullSource = () =>
       this.runVsc(repo.id, () =>
         this.vscFileService.pull(
           {
             repoId: repo.vscRepoId,
             ref: input.ref,
-            knownTreeHash: input.knownTreeHash,
+            knownTreeHash: portalFiles.length ? undefined : input.knownTreeHash,
             includeContent: input.includeContent,
             selectedPaths: input.selectedPaths,
           },
@@ -676,7 +716,7 @@ export class LightExtensionFileService {
       commit: result.commit ? toPublicCommit(result.commit, repo.id) : null,
       tree: result.tree,
       unchanged: result.unchanged,
-      files: result.files as LightExtensionPulledFile[] | undefined,
+      files: mergeJsPortalFiles(result.files as LightExtensionPulledFile[] | undefined, portalFiles, input),
     };
   }
 
@@ -687,13 +727,14 @@ export class LightExtensionFileService {
     transaction: Transaction,
     aclAction: LightExtensionAclAction,
   ): Promise<LightExtensionPullResult> {
+    const portalFiles = await this.jsPortalStorage.listWorkspaceFiles(repo.id);
     const pullSource = () =>
       this.runVsc(repo.id, () =>
         this.vscFileService.pullCommit(
           {
             repoId: repo.vscRepoId,
             commitId: input.commitId,
-            knownTreeHash: input.knownTreeHash,
+            knownTreeHash: portalFiles.length ? undefined : input.knownTreeHash,
             includeContent: input.includeContent,
             selectedPaths: input.selectedPaths,
           },
@@ -718,7 +759,7 @@ export class LightExtensionFileService {
       commit: result.commit ? toPublicCommit(result.commit, repo.id) : null,
       tree: result.tree,
       unchanged: result.unchanged,
-      files: result.files as LightExtensionPulledFile[] | undefined,
+      files: mergeJsPortalFiles(result.files as LightExtensionPulledFile[] | undefined, portalFiles, input),
     };
   }
 
@@ -968,6 +1009,90 @@ function toVscFileChange(file: LightExtensionFileChange): VscFileChange {
     mode: file.mode,
     operation: file.operation,
   };
+}
+
+function applyJsPortalChanges(
+  currentFiles: readonly JsPortalWorkspaceFile[],
+  changes: readonly LightExtensionFileChange[],
+): JsPortalWorkspaceFile[] {
+  const files = new Map(currentFiles.map((file) => [file.path, file]));
+  for (const change of changes) {
+    if (!isValidJsPortalFilePath(change.path)) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', `JS Portal path is invalid: ${change.path}`);
+    }
+    if (change.operation === 'delete') {
+      files.delete(change.path);
+      continue;
+    }
+    if (typeof change.content !== 'string') {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'JS Portal file changes must include content');
+    }
+    files.set(change.path, {
+      path: change.path,
+      content: change.content,
+      encoding: change.encoding || 'utf8',
+      ...(change.size === undefined ? {} : { size: change.size }),
+    });
+  }
+  return [...files.values()].sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function isValidJsPortalFilePath(value: string): boolean {
+  const prefix = `${JS_PORTAL_WORKSPACE_ROOT}/`;
+  if (
+    !value.startsWith(prefix) ||
+    value.includes('\0') ||
+    value.includes('\\') ||
+    pathPosix.normalize(value) !== value
+  ) {
+    return false;
+  }
+  const [portalKey, ...segments] = value.slice(prefix.length).split('/');
+  return /^[a-z0-9][a-z0-9-]{0,62}$/u.test(portalKey) && segments.length > 0 && segments.every(Boolean);
+}
+
+function mergeJsPortalFiles(
+  sourceFiles: LightExtensionPulledFile[] | undefined,
+  portalFiles: readonly JsPortalWorkspaceFile[],
+  input: LightExtensionPullInput,
+): LightExtensionPulledFile[] | undefined {
+  if (!sourceFiles) {
+    return sourceFiles;
+  }
+  const selectedPaths = new Set(input.selectedPaths || []);
+  const virtualFiles = portalFiles.map((file) => {
+    const bytes = file.encoding === 'base64' ? Buffer.from(file.content, 'base64') : Buffer.from(file.content, 'utf8');
+    const includeContent =
+      input.includeContent === 'all' || (input.includeContent === 'selected' && selectedPaths.has(file.path));
+    return {
+      path: file.path,
+      pathHash: sha256(file.path),
+      pathLowerHash: sha256(file.path.toLocaleLowerCase('en-US')),
+      blobHash: sha256(bytes),
+      size: file.size ?? bytes.length,
+      language: languageFromPath(file.path),
+      mode: '100644',
+      encoding: file.encoding || 'utf8',
+      ...(includeContent ? { content: file.content } : {}),
+    };
+  });
+  return [...sourceFiles.filter((file) => !file.path.startsWith(`${JS_PORTAL_WORKSPACE_ROOT}/`)), ...virtualFiles].sort(
+    (left, right) => left.path.localeCompare(right.path),
+  );
+}
+
+function sha256(value: string | Buffer): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function languageFromPath(path: string): string {
+  const extension = pathPosix.extname(path).toLowerCase();
+  if (extension === '.ts' || extension === '.tsx') return 'typescript';
+  if (extension === '.js' || extension === '.jsx') return 'javascript';
+  if (extension === '.json') return 'json';
+  if (extension === '.html') return 'html';
+  if (extension === '.css') return 'css';
+  return 'text';
 }
 
 function buildSnapshotReplacementChanges(

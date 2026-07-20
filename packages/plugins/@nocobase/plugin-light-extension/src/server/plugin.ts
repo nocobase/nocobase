@@ -20,10 +20,6 @@ import {
   createLightExtensionCapabilitiesResource,
   lightExtensionCapabilitiesActionNames,
 } from './resources/lightExtensionCapabilities';
-import {
-  createLightExtensionClientAppsResource,
-  lightExtensionClientAppActionNames,
-} from './resources/lightExtensionClientApps';
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
@@ -50,7 +46,7 @@ import type {
   ClientAppSummary,
 } from './services/ClientAppService';
 import { ClientAppService } from './services/ClientAppService';
-import { LocalClientAppStorage } from './services/ClientAppStorage';
+import { JsPortalStorage } from './services/JsPortalStorage';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -294,17 +290,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
     );
     this.entryService = new LightExtensionEntryService(db, this.fileService, this.repoService, this.validator);
-    this.clientAppService = new ClientAppService(
-      db,
-      this.repoService,
-      this.permissionService,
-      new LocalClientAppStorage(),
-      {
-        onCleanupError: (error, assetSetId) => {
-          this.log.warn('Failed to retire a replaced client app asset set', { error, assetSetId });
-        },
-      },
-    );
+    this.clientAppService = new ClientAppService(db, new JsPortalStorage());
     this.repoService.useClientAppService(this.clientAppService);
     this.compilePreviewService = new LightExtensionCompilePreviewService(
       db,
@@ -382,9 +368,6 @@ export class PluginLightExtensionServer extends Plugin {
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionEntriesResource(this.entryService, this.runtimeResolveService),
-    );
-    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionClientAppsResource(this.clientAppService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),
@@ -471,7 +454,6 @@ export class PluginLightExtensionServer extends Plugin {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
-    this.registerClientAppAcl(app);
     this.registerSyncAcl(app);
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
@@ -482,30 +464,9 @@ export class PluginLightExtensionServer extends Plugin {
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
-        ...lightExtensionClientAppActionNames.map((action) => `lightExtensionClientApps:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
       ],
     });
-  }
-
-  private registerClientAppAcl(app: AppWithPluginEvents) {
-    const permissions = {
-      upload: 'writeSource',
-      list: 'list',
-      delete: 'delete',
-    } as const;
-    for (const actionName of lightExtensionClientAppActionNames) {
-      app.acl?.allow?.('lightExtensionClientApps', actionName, async (ctx) => {
-        if (!ctx.can) {
-          return false;
-        }
-        const permission = await ctx.can({
-          resource: 'lightExtension',
-          action: permissions[actionName],
-        });
-        return permission !== false && permission !== null && typeof permission !== 'undefined';
-      });
-    }
   }
 
   private registerSyncAcl(app: AppWithPluginEvents) {

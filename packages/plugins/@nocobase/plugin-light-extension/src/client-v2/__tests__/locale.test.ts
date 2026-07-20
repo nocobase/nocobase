@@ -32,16 +32,15 @@ const gitSyncKeys = [
   'You do not have permission to perform this sync operation',
 ] as const;
 
-const clientAppKeys = [
-  'Custom frontend',
-  'Upload application',
-  'Replace files',
-  'You do not have permission to manage light extension applications',
-  'This application is used by a workspace and cannot be removed',
+const portalWorkspaceKeys = [
+  'Binary file',
+  'Binary files are read-only in the code editor.',
+  'Download file',
+  'Failed to download file',
 ] as const;
 
 describe('plugin-light-extension client-v2 locale entries', () => {
-  it('keeps English and Chinese keys aligned for Git sync settings', () => {
+  it('keeps English and Chinese keys aligned for client-v2 features', () => {
     expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
 
     for (const key of gitSyncKeys) {
@@ -49,7 +48,7 @@ describe('plugin-light-extension client-v2 locale entries', () => {
       expect(zhCN[key]).toBeTruthy();
     }
 
-    for (const key of clientAppKeys) {
+    for (const key of portalWorkspaceKeys) {
       expect(enUS[key]).toBeTruthy();
       expect(zhCN[key]).toBeTruthy();
     }

@@ -58,7 +58,12 @@ export const lightExtensionSchemas = {
       },
       content: {
         type: 'string',
-        description: 'UTF-8 source content for an upsert. Preserve newlines, Unicode, quotes, and template strings.',
+        description: 'UTF-8 source content, or canonical base64 when encoding=base64 for src/client/js-portals files.',
+      },
+      encoding: {
+        type: 'string',
+        enum: ['utf8', 'base64'],
+        description: 'Optional JS Portal content encoding. base64 is rejected outside src/client/js-portals.',
       },
       blobHash: {
         type: 'string',
@@ -530,6 +535,11 @@ export const lightExtensionSchemas = {
       },
       content: {
         type: 'string',
+      },
+      encoding: {
+        type: 'string',
+        enum: ['utf8', 'base64'],
+        description: 'Present for virtual src/client/js-portals files; binary content is returned as base64.',
       },
     },
   },
