@@ -37,10 +37,11 @@ describe('plugin-light-extension permission service', () => {
     };
     const app = {
       db: {} as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
       acl,
-      pm: {
-        get: vi.fn(() => null),
-        getPlugins: vi.fn(() => new Map()),
+      auditManager: {
+        registerActions: vi.fn(),
+        log: vi.fn(),
       },
       resourceManager: {
         define: vi.fn(),
@@ -85,30 +86,20 @@ describe('plugin-light-extension permission service', () => {
     expect(managementSnippet?.actions).toContain('lightExtensionCapabilities:get');
   });
 
-  it('registers the vsc permission hook after vsc-file becomes available later', async () => {
-    let afterLoadPluginListener: ((plugin: unknown, options?: unknown) => void) | undefined;
-    const registeredHooks: unknown[] = [];
+  it('registers and removes the hosted VSC permission hook directly', async () => {
     const definedResources: Array<{ name?: string; actions?: Record<string, unknown> }> = [];
-    let registrar: {
-      registerPermissionHook: ReturnType<typeof vi.fn>;
-      getPermissionHookRegistry: () => Record<string, unknown>;
-      getRunJSSourceAdapterRegistry: () => Record<string, unknown>;
-    } | null = null;
-    const on = vi.fn((eventName: string, listener: (plugin: unknown, options?: unknown) => void) => {
-      if (eventName === 'afterLoadPlugin') {
-        afterLoadPluginListener = listener;
-      }
-    });
+    const on = vi.fn();
     const off = vi.fn();
     const app = {
       db: {} as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
       acl: {
         allow: vi.fn(),
         registerSnippet: vi.fn(),
       },
-      pm: {
-        get: vi.fn(() => registrar),
-        getPlugins: vi.fn(() => (registrar ? new Map([['vsc-file', registrar]]) : new Map())),
+      auditManager: {
+        registerActions: vi.fn(),
+        log: vi.fn(),
       },
       resourceManager: {
         define: vi.fn((resource: { name?: string; actions?: Record<string, unknown> }) => {
@@ -126,26 +117,47 @@ describe('plugin-light-extension permission service', () => {
 
     await plugin.load();
 
-    expect(on).toHaveBeenCalledWith('afterLoadPlugin', expect.any(Function));
-    expect(registeredHooks).toHaveLength(0);
+    expect(on).not.toHaveBeenCalledWith('afterLoadPlugin', expect.any(Function));
+    expect(definedResources.find((resource) => resource.name === 'vscFile')).toBeDefined();
     expect(definedResources.find((resource) => resource.name === 'lightExtensions')?.actions).toHaveProperty(
       'moveToInline',
     );
-
-    const unregister = vi.fn();
-    registrar = {
-      registerPermissionHook: vi.fn((hook: unknown) => {
-        registeredHooks.push(hook);
-        return unregister;
+    await expect(
+      plugin.getPermissionHookRegistry().assertAllowed({
+        userId: '1',
+        action: 'getRepository',
+        ownerType: 'light-extension',
+        ownerId: 'ler_direct_hook',
+        request: {
+          resourceName: 'vscFile',
+          actionName: 'getRepository',
+          requestId: 'req_direct_hook',
+        },
       }),
-      getPermissionHookRegistry: () => ({}),
-      getRunJSSourceAdapterRegistry: () => ({}),
-    };
-    afterLoadPluginListener?.(registrar);
+    ).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: {
+        ownerType: 'light-extension',
+        denyReason: 'raw_resource_forbidden',
+        requestId: 'req_direct_hook',
+      },
+    });
 
-    expect(registrar.registerPermissionHook).toHaveBeenCalledTimes(1);
-    expect(registeredHooks[0]).toEqual(expect.any(Function));
-    expect(off).toHaveBeenCalledWith('afterLoadPlugin', afterLoadPluginListener);
+    await plugin.afterDisable();
+    await expect(
+      plugin.getPermissionHookRegistry().assertAllowed({
+        userId: '1',
+        action: 'getRepository',
+        ownerType: 'light-extension',
+        ownerId: 'ler_direct_hook',
+      }),
+    ).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: {
+        ownerType: 'light-extension',
+        denyReason: 'protected_owner_requires_permission_hook',
+      },
+    });
   });
 
   it('ignores non-light-extension owners', async () => {

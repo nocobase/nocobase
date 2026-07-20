@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer, { RemoteSyncError } from '../vsc-file';
+import { RemoteSyncError } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -25,7 +25,7 @@ describe('plugin-light-extension repo service', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [PluginVscFileServer, PluginLightExtensionServer],
+      plugins: [PluginLightExtensionServer],
     });
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);

@@ -12,7 +12,7 @@ import { MockServer, createMockServer } from '@nocobase/test';
 
 import { runJSSourceAuditActionNames, vscFileAuditActionNames } from '../audit';
 import type { VscPermissionHookInput } from '../permissions';
-import PluginVscFileServer from '../plugin';
+import PluginLightExtensionServer from '../../plugin';
 import { RemoteStore } from '../remotes/RemoteStore';
 import { SyncJobStore } from '../remotes/SyncJobStore';
 
@@ -45,7 +45,15 @@ describe('vsc-file permission hooks and audit registration', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'acl', 'data-source-manager', 'system-settings', PluginVscFileServer],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'data-source-manager',
+        'system-settings',
+        PluginLightExtensionServer,
+      ],
     });
 
     const user = await app.db.getRepository('users').findOne();
@@ -598,8 +606,8 @@ describe('vsc-file permission hooks and audit registration', () => {
     expect(JSON.stringify(recoveryMetadata)).not.toContain('response source secret');
   });
 
-  function getPlugin(): PluginVscFileServer {
-    return app.pm.get(PluginVscFileServer) as PluginVscFileServer;
+  function getPlugin(): PluginLightExtensionServer {
+    return app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
   }
 
   function getAuditAction(actionName: string, resourceName = 'vscFile'): VscAuditActionRegistration | null {

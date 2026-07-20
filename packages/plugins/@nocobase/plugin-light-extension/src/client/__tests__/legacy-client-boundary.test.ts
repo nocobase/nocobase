@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import type React from 'react';
 
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
@@ -35,7 +36,8 @@ import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm
 import LightExtensionListPage from '../../client-v2/pages/LightExtensionListPage';
 import PluginLightExtensionClient from '..';
 
-vi.mock('react-i18next', () => ({
+vi.mock('react-i18next', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-i18next')>()),
   useTranslation: () => ({
     t: (text: string) => text,
   }),
@@ -53,9 +55,15 @@ describe('plugin-light-extension legacy client boundary', () => {
     vi.clearAllMocks();
   });
 
-  it('registers a thin settings bridge, runtime resolver, and source editor without importing the v1 client runtime', async () => {
+  it('registers a thin settings bridge, runtime resolver, and source editor without a direct v1 import', async () => {
     const add = vi.fn();
-    const registerComponents = vi.fn();
+    const PreviousJSPageSourceField = () => null;
+    const components: Record<string, React.ElementType> = {
+      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: PreviousJSPageSourceField,
+    };
+    const registerComponents = vi.fn((nextComponents: Record<string, React.ElementType>) => {
+      Object.assign(components, nextComponents);
+    });
     const unregisterToolbar = vi.fn();
     const registerToolbar = vi.spyOn(runJSStudioToolbarRegistry, 'register').mockReturnValue(unregisterToolbar);
     const apiClient = {
@@ -68,6 +76,7 @@ describe('plugin-light-extension legacy client boundary', () => {
         pluginSettingsManager: { add },
         flowEngine: {
           flowSettings: {
+            components,
             registerComponents,
           },
         },
@@ -96,6 +105,9 @@ describe('plugin-light-extension legacy client boundary', () => {
       '@nocobase/plugin-light-extension/inline-settings-descriptor',
     );
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain(
+      '@nocobase/plugin-vsc-file/runjs-studio',
+    );
     expect(registerToolbar).toHaveBeenCalledWith(
       expect.objectContaining({ key: '@nocobase/plugin-light-extension/move-source' }),
     );
@@ -120,6 +132,8 @@ describe('plugin-light-extension legacy client boundary', () => {
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(unregisterToolbar).toHaveBeenCalledTimes(1);
+    expect(components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(PreviousJSPageSourceField);
+    expect(components[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBeUndefined();
 
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 

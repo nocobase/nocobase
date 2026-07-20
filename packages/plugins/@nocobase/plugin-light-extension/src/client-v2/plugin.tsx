@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { runJSStudioToolbarRegistry } from './vsc-file/public-api';
+import { installRunJSStudioClientV2 } from './vsc-file/plugin';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
@@ -53,6 +54,8 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
   }
 
   async load() {
+    this.disposers.push(installRunJSStudioClientV2());
+
     const components = {
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
       [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,

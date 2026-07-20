@@ -8,7 +8,6 @@
  */
 
 import type { RunJSLegacySource, RunJSSourceAdapter, RunJSSourceLocator } from '../vsc-file';
-import PluginVscFileServer from '../vsc-file';
 import { VscFileService } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
@@ -22,7 +21,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
   let repoId: string;
 
   beforeEach(async () => {
-    await setupApp([PluginVscFileServer, PluginLightExtensionServer]);
+    await setupApp([PluginLightExtensionServer]);
   });
 
   afterEach(async () => {
@@ -274,10 +273,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     expect(serializedLogs).not.toContain(repoId);
   });
 
-  it('registers the owner hook when vsc-file loads after light-extension', async () => {
-    await app.destroy();
-    await setupApp([PluginLightExtensionServer, PluginVscFileServer]);
-
+  it('registers the owner hook without a second plugin instance', async () => {
     const response = await agent.resource('vscFile').getRepository({ values: { repoId } });
 
     expect(response.status).toBe(403);
@@ -335,10 +331,6 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     });
   });
 
-  function getVscPlugin(): PluginVscFileServer {
-    return app.pm.get(PluginVscFileServer) as PluginVscFileServer;
-  }
-
   function getLightExtensionPlugin(): PluginLightExtensionServer {
     return app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
   }
@@ -363,7 +355,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
       assertCanWrite: () => undefined,
     };
 
-    getVscPlugin().registerRunJSSourceAdapter(adapter);
+    getLightExtensionPlugin().registerRunJSSourceAdapter(adapter);
   }
 
   function createLocator(): FlowModelStepLocator {

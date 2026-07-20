@@ -11,8 +11,8 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import enUS from '../../../locale/en-US.json';
-import zhCN from '../../../locale/zh-CN.json';
+import enUS from '../../../../locale/en-US.json';
+import zhCN from '../../../../locale/zh-CN.json';
 import { runJSStudioProvider } from '../RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
 import { runJSManifestPath } from '../workspaceUtils';
@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../../shared/path', () => ({
+vi.mock('../../../../shared/vsc-file/path-normalize', () => ({
   normalizePath: (path: string) => String(path || '').replace(/\\/g, '/'),
 }));
 
@@ -601,6 +601,17 @@ describe('runJSStudioProvider', () => {
     expect(historyPanel.style.maxHeight).toBe('40px');
     expect(historyPanel.style.marginTop).toBe('auto');
     expect(within(historyPanel).getByRole('button', { name: 'Expand history' })).toBeTruthy();
+  });
+
+  it('falls through to the next editor when opening Studio fails', async () => {
+    mocks.request.mockRejectedValueOnce(new Error('Studio unavailable'));
+
+    renderEditor(vi.fn(), {
+      renderNext: () => <div>Legacy inline editor</div>,
+    });
+
+    expect(await screen.findByText('Legacy inline editor')).toBeTruthy();
+    expect(screen.queryByText('Studio unavailable')).toBeNull();
   });
 
   it('delegates save to the host without rendering or clearing a local footer in embedded mode', async () => {

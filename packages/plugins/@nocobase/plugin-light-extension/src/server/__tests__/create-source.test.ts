@@ -9,7 +9,6 @@
 
 import type { Context } from '@nocobase/actions';
 import type { Transaction } from '@nocobase/database';
-import PluginVscFileServer from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 import { vi } from 'vitest';
@@ -25,7 +24,7 @@ describe('plugin-light-extension initial source creation', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [PluginVscFileServer, PluginLightExtensionServer],
+      plugins: [PluginLightExtensionServer],
     });
   });
 

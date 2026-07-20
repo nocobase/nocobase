@@ -9,7 +9,7 @@
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
-import PluginVscFileServer from '../plugin';
+import PluginLightExtensionServer from '../../plugin';
 import { vscFileActionNames } from '../resources/vscFile';
 
 describe('vsc-file resource actions and ACL', () => {
@@ -20,7 +20,15 @@ describe('vsc-file resource actions and ACL', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'acl', 'data-source-manager', 'system-settings', PluginVscFileServer],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'data-source-manager',
+        'system-settings',
+        PluginLightExtensionServer,
+      ],
     });
 
     const user = await app.db.getRepository('users').findOne();

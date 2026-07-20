@@ -103,6 +103,9 @@ describe('PluginLightExtensionClientV2', () => {
       '@nocobase/plugin-light-extension/inline-settings-descriptor',
     );
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain(
+      '@nocobase/plugin-vsc-file/runjs-studio',
+    );
   });
 
   it('replaces core source-field fallbacks without duplicate-registration warnings', async () => {
@@ -163,6 +166,7 @@ describe('PluginLightExtensionClientV2', () => {
     );
     expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
   });
 
   it('cleans previous global registrations before loading a new instance', async () => {
@@ -197,8 +201,13 @@ describe('PluginLightExtensionClientV2', () => {
 
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
-    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(2);
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).not.toBe(firstResolver);
+    expect(
+      RunJSEditorRegistry.getProviders().filter(
+        (provider) => provider.key === '@nocobase/plugin-vsc-file/runjs-studio',
+      ),
+    ).toHaveLength(1);
   });
 });

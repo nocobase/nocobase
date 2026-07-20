@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import type { LightExtensionSaveSourceInput } from '../../shared/types';
@@ -39,7 +38,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [PluginVscFileServer, PluginLightExtensionServer],
+      plugins: [PluginLightExtensionServer],
     });
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);

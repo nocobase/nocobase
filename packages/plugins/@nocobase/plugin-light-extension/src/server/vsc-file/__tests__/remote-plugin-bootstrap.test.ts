@@ -23,12 +23,12 @@ import { lightExtensionSyncAuditActionNames, remoteSyncAuditActionNames } from '
 import { DeterministicRemoteAdapter } from '../remotes/testing/DeterministicRemoteAdapter';
 import { VscPermissionHookRegistry } from '../permissions';
 import { VscFileService } from '../services/VscFileService';
-import PluginVscFileServer from '../plugin';
+import { VscFileServerModule } from '../plugin';
+import PluginLightExtensionServer from '../../plugin';
 
 describe('vsc-file remote runtime bootstrap', () => {
   it('reloads the GitHub adapter identity-safely and unregisters the runtime on disable', async () => {
     const registeredAuditActions: Array<{ name: string }> = [];
-    const afterStartListeners = new Set<() => Promise<void>>();
     const app = {
       db: {} as Database,
       environment: { getVariables: vi.fn(() => ({})) },
@@ -37,24 +37,11 @@ describe('vsc-file remote runtime bootstrap', () => {
       auditManager: {
         registerActions: vi.fn((actions: Array<{ name: string }>) => registeredAuditActions.push(...actions)),
       },
-      on: vi.fn((eventName: string, listener: () => Promise<void>) => {
-        if (eventName === 'afterStart') {
-          afterStartListeners.add(listener);
-        }
-      }),
-      off: vi.fn((eventName: string, listener: () => Promise<void>) => {
-        if (eventName === 'afterStart') {
-          afterStartListeners.delete(listener);
-        }
-      }),
     } as unknown as Application;
-    const plugin = new PluginVscFileServer(app, {
-      name: 'vsc-file',
-      packageName: '@nocobase/plugin-vsc-file',
-    });
+    const module = new VscFileServerModule(app, app.db);
 
-    await plugin.load();
-    const firstRuntime = plugin.getRemoteSyncRuntime();
+    await module.load();
+    const firstRuntime = module.getRemoteSyncRuntime();
     expect(
       firstRuntime.normalizeConfig('github', {
         owner: 'nocobase',
@@ -63,11 +50,8 @@ describe('vsc-file remote runtime bootstrap', () => {
         subdirectory: null,
       }),
     ).toEqual({ owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null });
-    expect(afterStartListeners).toHaveLength(1);
-
-    await plugin.load();
-    expect(plugin.getRemoteSyncRuntime()).not.toBe(firstRuntime);
-    expect(afterStartListeners).toHaveLength(1);
+    await module.load();
+    expect(module.getRemoteSyncRuntime()).not.toBe(firstRuntime);
     for (const actionName of remoteSyncAuditActionNames) {
       expect(registeredAuditActions).toContainEqual(expect.objectContaining({ name: `vscRemote:${actionName}` }));
     }
@@ -77,13 +61,11 @@ describe('vsc-file remote runtime bootstrap', () => {
       );
     }
 
-    await plugin.afterDisable();
-    expect(afterStartListeners).toHaveLength(0);
-    expect(() => plugin.getRemoteSyncRuntime()).toThrow('Remote sync runtime is not loaded');
+    await module.afterDisable();
+    expect(() => module.getRemoteSyncRuntime()).toThrow('Remote sync runtime is not loaded');
 
-    await plugin.load();
-    expect(plugin.getRemoteSyncRuntime()).toBeDefined();
-    expect(afterStartListeners).toHaveLength(1);
+    await module.load();
+    expect(module.getRemoteSyncRuntime()).toBeDefined();
   });
 
   it('keeps the Push reconciler from consuming recoverable Pull jobs', async () => {
@@ -310,7 +292,7 @@ describe('vsc-file remote runtime bootstrap', () => {
   });
 
   it('pins a provider default branch before persisting an empty-branch configuration', async () => {
-    const app = await createMockServer({ plugins: [PluginVscFileServer] });
+    const app = await createMockServer({ plugins: [PluginLightExtensionServer] });
     try {
       const repository = await new VscFileService(app.db, new VscPermissionHookRegistry()).createRepository({
         ownerType: 'plugin',
@@ -362,7 +344,7 @@ describe('vsc-file remote runtime bootstrap', () => {
   });
 
   it('fetches a candidate target and establishes its initial baseline in the caller transaction', async () => {
-    const app = await createMockServer({ plugins: [PluginVscFileServer] });
+    const app = await createMockServer({ plugins: [PluginLightExtensionServer] });
     try {
       const initialFiles = [{ path: 'index.ts', content: 'export default 1;\n', language: 'typescript' }];
       const repository = await new VscFileService(app.db, new VscPermissionHookRegistry()).createRepository({

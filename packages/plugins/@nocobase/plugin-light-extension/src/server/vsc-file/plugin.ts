@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, runJSSourceCodeInspectorRegistry } from '@nocobase/server';
+import type { Database } from '@nocobase/database';
+import type { Application } from '@nocobase/server';
+import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
 import { resolve } from 'path';
 
 import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
@@ -26,7 +28,7 @@ import { inspectRunJSSourceCode } from './runjs-sources/compiler/source-inspecti
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../../shared/vsc-file/runjs-source-types';
 
-export class PluginVscFileServer extends Plugin {
+export class VscFileServerModule {
   private unregisterSourceCodeInspector?: () => void;
 
   private readonly permissionHooks = createPermissionHookRegistry();
@@ -41,9 +43,12 @@ export class PluginVscFileServer extends Plugin {
 
   private unregisterGitHubAdapter?: () => void;
 
-  private remoteRecoveryListener?: () => Promise<void>;
-
   private remoteRecoveryPromise?: Promise<void>;
+
+  constructor(
+    private readonly app: Application,
+    private readonly db: Database,
+  ) {}
 
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.permissionHooks.register(hook);
@@ -73,7 +78,7 @@ export class PluginVscFileServer extends Plugin {
   }
 
   async beforeLoad() {
-    if (this.options.packageName || this.db.hasCollection('vscFileRepositories')) {
+    if (this.db.hasCollection('vscFileRepositories')) {
       return;
     }
 
@@ -118,7 +123,6 @@ export class PluginVscFileServer extends Plugin {
       audit: createRemoteSyncAuditEmitter(this.app.auditManager),
     });
     this.app.auditManager.registerActions(createRemoteSyncAuditActions());
-    this.registerRemoteRecoveryListener();
   }
 
   async afterEnable() {
@@ -137,25 +141,7 @@ export class PluginVscFileServer extends Plugin {
     this.unregisterRemoteRuntime();
   }
 
-  private registerRemoteRecoveryListener() {
-    this.removeRemoteRecoveryListener();
-    const listener = async () => {
-      await this.runRemoteRecovery();
-    };
-    this.remoteRecoveryListener = listener;
-    this.app.on('afterStart', listener);
-  }
-
-  private removeRemoteRecoveryListener() {
-    if (!this.remoteRecoveryListener) {
-      return;
-    }
-    this.app.off('afterStart', this.remoteRecoveryListener);
-    this.remoteRecoveryListener = undefined;
-  }
-
   private unregisterRemoteRuntime() {
-    this.removeRemoteRecoveryListener();
     this.unregisterGitHubAdapter?.();
     this.unregisterGitHubAdapter = undefined;
     this.remoteSyncRuntime = undefined;
@@ -183,4 +169,4 @@ function createPermissionHookRegistry(): VscPermissionHookRegistry {
   return registry;
 }
 
-export default PluginVscFileServer;
+export default VscFileServerModule;

@@ -1639,6 +1639,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     };
   }, []);
 
+  if (!workspace && workspaceError && !ownerOutdatedWorkspaceError && props.renderNext) {
+    return props.renderNext();
+  }
+
   return (
     <div data-testid="runjs-studio-editor" ref={studioRootRef} style={editorStyle}>
       <div

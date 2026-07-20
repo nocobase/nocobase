@@ -41,7 +41,7 @@ vi.mock('@nocobase/client', () => ({
   }),
 }));
 
-describe('PluginVscFileClient', () => {
+describe('installLegacyRunJSStudioClient', () => {
   afterEach(async () => {
     const { RunJSEditorRegistry } = await import('@nocobase/client-v2');
     const { LegacyRunJSEditorRegistry } = await import('../runjs-studio/contract');
@@ -49,18 +49,9 @@ describe('PluginVscFileClient', () => {
     LegacyRunJSEditorRegistry.clear();
   });
 
-  it('inherits the legacy client plugin lifecycle methods', async () => {
-    const { default: PluginVscFileClient } = await import('../plugin');
-    const plugin = new PluginVscFileClient({ packageName: '@nocobase/plugin-vsc-file' } as never, {} as never);
-
-    expect(typeof plugin.afterAdd).toBe('function');
-    expect(typeof plugin.beforeLoad).toBe('function');
-    expect(typeof plugin.load).toBe('function');
-  });
-
-  it('registers the legacy RunJS Studio provider', async () => {
+  it('registers and disposes both Studio providers', async () => {
     const [
-      { default: PluginVscFileClient },
+      { installLegacyRunJSStudioClient },
       { RunJSEditorRegistry },
       { LegacyRunJSEditorRegistry },
       { legacyRunJSStudioProvider },
@@ -70,14 +61,18 @@ describe('PluginVscFileClient', () => {
       import('@nocobase/client-v2'),
       import('../runjs-studio/contract'),
       import('../runjs-studio/LegacyRunJSStudioProvider'),
-      import('../../client-v2/runjs-studio'),
+      import('../../../client-v2/vsc-file/runjs-studio'),
     ]);
-    const plugin = new PluginVscFileClient({ packageName: '@nocobase/plugin-vsc-file' } as never, {} as never);
+    const dispose = installLegacyRunJSStudioClient();
 
-    await plugin.load();
-
-    expect(RunJSEditorRegistry.getProviders()).toContain(runJSStudioProvider);
+    expect(RunJSEditorRegistry.getProviders()).toContainEqual(runJSStudioProvider);
     expect(LegacyRunJSEditorRegistry.getProviders()).toContain(legacyRunJSStudioProvider);
     expect(legacyProviders).toContain(legacyRunJSStudioProvider);
+
+    dispose();
+
+    expect(RunJSEditorRegistry.getProviders()).not.toContainEqual(runJSStudioProvider);
+    expect(LegacyRunJSEditorRegistry.getProviders()).not.toContain(legacyRunJSStudioProvider);
+    expect(legacyProviders).not.toContain(legacyRunJSStudioProvider);
   });
 });

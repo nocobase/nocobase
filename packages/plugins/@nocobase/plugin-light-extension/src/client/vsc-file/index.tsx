@@ -8,4 +8,4 @@
  */
 
 export * from './public-api';
-export { default } from './plugin';
+export { installLegacyRunJSStudioClient } from './plugin';

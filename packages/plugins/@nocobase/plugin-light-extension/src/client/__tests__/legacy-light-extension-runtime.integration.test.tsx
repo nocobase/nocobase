@@ -22,7 +22,6 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
-import PluginVscFileClient from '../vsc-file/plugin';
 import { runJSStudioProvider } from '../../client-v2/vsc-file/public-api';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
@@ -43,14 +42,10 @@ function createLegacyApplication() {
 }
 
 async function loadLegacyPlugins(app: Application) {
-  const vscFile = new PluginVscFileClient({ name: 'vsc-file', packageName: '@nocobase/plugin-vsc-file' }, app);
   const lightExtension = new PluginLightExtensionClient({ name: 'light-extension', packageName: NAMESPACE }, app);
 
-  await vscFile.afterAdd();
   await lightExtension.afterAdd();
-  await vscFile.beforeLoad();
   await lightExtension.beforeLoad();
-  await vscFile.load();
   await lightExtension.load();
 
   return lightExtension;
@@ -68,7 +63,7 @@ describe('legacy Light Extension runtime integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('loads both legacy plugins into the v1 Application and replaces stale global registrations on reload', async () => {
+  it('hosts both Studio providers in Light Extension and replaces stale global registrations on reload', async () => {
     const firstApp = createLegacyApplication();
     await firstApp.load();
     await loadLegacyPlugins(firstApp);
@@ -84,7 +79,7 @@ describe('legacy Light Extension runtime integration', () => {
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
       [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
     });
-    expect(RunJSEditorRegistry.getProviders()).toContain(runJSStudioProvider);
+    expect(RunJSEditorRegistry.getProviders()).toContainEqual(runJSStudioProvider);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
       '@nocobase/plugin-vsc-file/legacy-runjs-studio',

@@ -6,19 +6,16 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { Plugin } from '@nocobase/client';
-import { RunJSEditorRegistry } from '@nocobase/client-v2';
-
 import { LegacyRunJSEditorRegistry } from './runjs-studio/contract';
-import { runJSStudioProvider } from '../../client-v2/vsc-file/runjs-studio';
+import { legacyRunJSStudioProvider } from './runjs-studio/LegacyRunJSStudioProvider';
+import { installRunJSStudioClientV2 } from '../../client-v2/vsc-file/plugin';
 
-export class PluginVscFileClient extends Plugin {
-  async load() {
-    const { legacyRunJSStudioProvider } = await import('./runjs-studio/LegacyRunJSStudioProvider');
+export function installLegacyRunJSStudioClient() {
+  const disposeClientV2 = installRunJSStudioClientV2();
+  const disposeLegacy = LegacyRunJSEditorRegistry.registerProvider(legacyRunJSStudioProvider);
 
-    RunJSEditorRegistry.registerProvider(runJSStudioProvider);
-    LegacyRunJSEditorRegistry.registerProvider(legacyRunJSStudioProvider);
-  }
+  return () => {
+    disposeLegacy();
+    disposeClientV2();
+  };
 }
-
-export default PluginVscFileClient;

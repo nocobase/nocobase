@@ -8,7 +8,6 @@
  */
 
 import { computeRemoteSnapshotContentHash, RemoteSyncAdapterRegistry, type VscRemoteSnapshot } from '../vsc-file';
-import PluginVscFileServer from '../vsc-file';
 import type { AuditLog } from '@nocobase/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
@@ -148,8 +147,10 @@ describe('light extension Git credential logging integration', () => {
   });
 });
 
-type VscPluginInternals = {
-  remoteAdapters: RemoteSyncAdapterRegistry;
+type LightExtensionPluginInternals = {
+  vscFileServerModule: {
+    remoteAdapters: RemoteSyncAdapterRegistry;
+  };
 };
 
 async function createApp(): Promise<MockServer> {
@@ -163,15 +164,14 @@ async function createApp(): Promise<MockServer> {
       'acl',
       'data-source-manager',
       'system-settings',
-      PluginVscFileServer,
       PluginLightExtensionServer,
     ],
   });
 }
 
 function getGitHubAdapter(app: MockServer) {
-  const plugin = app.pm.get(PluginVscFileServer) as PluginVscFileServer;
-  const registry = (plugin as unknown as VscPluginInternals).remoteAdapters;
+  const plugin = app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
+  const registry = (plugin as unknown as LightExtensionPluginInternals).vscFileServerModule.remoteAdapters;
   const adapter = registry.get('github');
   if (!adapter) {
     throw new Error('Expected the GitHub remote adapter');

@@ -16,7 +16,7 @@ import packageJson from '../../../package.json';
 import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension bootstrap', () => {
-  it('declares the vsc-file dependency and keeps lifecycle hooks safe without a full app', async () => {
+  it('keeps lifecycle hooks safe without a full app', async () => {
     expect(packageJson.peerDependencies['@nocobase/plugin-vsc-file']).toBe(packageJson.version);
     expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-file-manager');
 
@@ -33,25 +33,16 @@ describe('plugin-light-extension bootstrap', () => {
     expect('createRepository' in plugin).toBe(false);
   });
 
-  it('registers one Pull recovery listener across reloads and runs a one-shot scan after enable', async () => {
-    const listRecoverablePullJobs = vi.fn(async () => []);
-    const runtime = {
-      getPullCoordinator: () => ({ listRecoverablePullJobs }),
-    };
-    const registrar = {
-      registerPermissionHook: vi.fn(() => vi.fn()),
-      getPermissionHookRegistry: () => ({}),
-      getRunJSSourceAdapterRegistry: () => ({}),
-      getRemoteSyncRuntime: () => runtime,
-    };
+  it('hosts VSC capabilities and recovers Push before Pull with one listener across reloads', async () => {
     const afterStartListeners = new Set<() => Promise<void>>();
     const app = {
       db: {} as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
       acl: { allow: vi.fn(), registerSnippet: vi.fn() },
       resourceManager: { define: vi.fn(), options: {} },
-      pm: {
-        get: vi.fn(() => registrar),
-        getPlugins: vi.fn(() => new Map([['vsc-file', registrar]])),
+      auditManager: {
+        registerActions: vi.fn(),
+        log: vi.fn(),
       },
       use: vi.fn(),
       on: vi.fn((eventName: string, listener: () => Promise<void>) => {
@@ -74,13 +65,27 @@ describe('plugin-light-extension bootstrap', () => {
     expect(afterStartListeners).toHaveLength(1);
     await plugin.load();
     expect(afterStartListeners).toHaveLength(1);
+    const order: string[] = [];
+    const runtime = plugin.getRemoteSyncRuntime();
+    vi.spyOn(runtime, 'recoverPushJobs').mockImplementation(async () => {
+      order.push('push');
+    });
+    const listRecoverablePullJobs = vi
+      .spyOn(runtime.getPullCoordinator(), 'listRecoverablePullJobs')
+      .mockImplementation(async () => {
+        order.push('pull');
+        return [];
+      });
 
     await plugin.afterEnable();
     expect(listRecoverablePullJobs).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['push', 'pull']);
     await Promise.all([...afterStartListeners].map((listener) => listener()));
     expect(listRecoverablePullJobs).toHaveBeenCalledTimes(2);
+    expect(order).toEqual(['push', 'pull', 'push', 'pull']);
 
     await plugin.afterDisable();
     expect(afterStartListeners).toHaveLength(0);
+    expect(() => plugin.getRemoteSyncRuntime()).toThrow('Remote sync runtime is not loaded');
   });
 });

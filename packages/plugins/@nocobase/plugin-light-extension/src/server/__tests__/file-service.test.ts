@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer, { VscFileService, VscPermissionHookRegistry } from '../vsc-file';
+import { VscFileService, VscPermissionHookRegistry } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION } from '../../constants';
@@ -36,7 +36,6 @@ describe('plugin-light-extension file service resource bridge', () => {
         'acl',
         'data-source-manager',
         'system-settings',
-        PluginVscFileServer,
         PluginLightExtensionServer,
       ],
     });
@@ -1305,17 +1304,10 @@ async function createRoleAgent(app: MockServer, roleName: string, snippets: stri
 }
 
 function getVscPermissionHookRegistrar(app: MockServer): {
-  registerPermissionHook: PluginVscFileServer['registerPermissionHook'];
+  registerPermissionHook: PluginLightExtensionServer['registerPermissionHook'];
 } {
-  const plugin =
-    app.pm.get('@nocobase/plugin-vsc-file') ||
-    app.pm.get('vsc-file') ||
-    app.pm.get('plugin-vsc-file') ||
-    Array.from(app.pm.getPlugins().values()).find(
-      (candidate) => typeof (candidate as { registerPermissionHook?: unknown }).registerPermissionHook === 'function',
-    );
-
+  const plugin = app.pm.get(PluginLightExtensionServer);
   return plugin as {
-    registerPermissionHook: PluginVscFileServer['registerPermissionHook'];
+    registerPermissionHook: PluginLightExtensionServer['registerPermissionHook'];
   };
 }

@@ -13,7 +13,7 @@ import JSZip from 'jszip';
 import { VscError } from '../../../shared/vsc-file/errors';
 import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../../shared/vsc-file/runjs-source-types';
 import { runJSManifestPath } from '../../../shared/vsc-file/runjs-workspace-path';
-import PluginVscFileServer from '../plugin';
+import PluginLightExtensionServer from '../../plugin';
 import { runJSSourceActionNames } from '../runjs-sources';
 
 describe('runJSSources resource', () => {
@@ -25,7 +25,15 @@ describe('runJSSources resource', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'acl', 'data-source-manager', 'system-settings', PluginVscFileServer],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'data-source-manager',
+        'system-settings',
+        PluginLightExtensionServer,
+      ],
     });
 
     const user = await app.db.getRepository('users').findOne();
@@ -969,8 +977,8 @@ describe('runJSSources resource', () => {
     });
   }
 
-  function getPlugin(): PluginVscFileServer {
-    return app.pm.get(PluginVscFileServer) as PluginVscFileServer;
+  function getPlugin(): PluginLightExtensionServer {
+    return app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
   }
 });
 

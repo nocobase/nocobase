@@ -8,13 +8,13 @@
  */
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
-import { VSC_FILE_NAMESPACE } from '../../shared/vsc-file/constants';
+import { NAMESPACE } from '../../constants';
 
 export function useT() {
   const engine = useFlowEngine({ throwError: false });
-  return (str: string) => engine?.context?.t?.(str, { ns: [VSC_FILE_NAMESPACE, 'client'] }) ?? str;
+  return (str: string) => engine?.context?.t?.(str, { ns: [NAMESPACE, 'client'] }) ?? str;
 }
 
 export function tExpr(key: string) {
-  return _tExpr(key, { ns: [VSC_FILE_NAMESPACE, 'client'] });
+  return _tExpr(key, { ns: [NAMESPACE, 'client'] });
 }

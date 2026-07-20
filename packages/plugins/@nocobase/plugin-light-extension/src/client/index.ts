@@ -24,6 +24,7 @@ import {
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
 import { runJSStudioToolbarRegistry } from '../client-v2/vsc-file/public-api';
+import { installLegacyRunJSStudioClient } from './vsc-file/plugin';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
@@ -68,6 +69,7 @@ interface LegacyApp {
   apiClient?: Parameters<typeof createLightExtensionRunJSResolver>[0];
   flowEngine?: {
     flowSettings?: {
+      components?: Record<string, React.ElementType>;
       registerComponents?: (
         components: Record<string, React.ElementType>,
         options?: { warnOnOverwrite?: boolean },
@@ -87,19 +89,10 @@ let activeLightExtensionLegacyInstance: PluginLightExtensionClient | null = null
  *
  * The canonical runtime is `src/client-v2`, but the current admin settings
  * shell still requests legacy client bundles. This registers the same minimal
- * settings page without importing the legacy runtime or adding SchemaComponent
- * behavior.
+ * settings page without adding SchemaComponent behavior.
  */
 export class PluginLightExtensionClient {
-  private unregisterRunJSEditor?: () => void;
-
-  private unregisterRunJSResolver?: () => void;
-
-  private unregisterRunJSSettingsDescriptor?: () => void;
-
-  private unregisterRunJSToolbar?: () => void;
-
-  private unregisterModelMenus?: () => void;
+  private readonly disposers: Array<() => void> = [];
 
   constructor(
     public readonly options: LightExtensionLegacyClientOptions = {},
@@ -109,56 +102,81 @@ export class PluginLightExtensionClient {
   async afterAdd() {}
 
   async beforeLoad() {
-    activeLightExtensionLegacyInstance?.disposeRegistrations();
-    this.disposeRegistrations();
+    activeLightExtensionLegacyInstance?.dispose();
+    this.dispose();
   }
 
-  private disposeRegistrations() {
-    this.unregisterRunJSEditor?.();
-    this.unregisterRunJSEditor = undefined;
-    this.unregisterRunJSResolver?.();
-    this.unregisterRunJSResolver = undefined;
-    this.unregisterRunJSSettingsDescriptor?.();
-    this.unregisterRunJSSettingsDescriptor = undefined;
-    this.unregisterRunJSToolbar?.();
-    this.unregisterRunJSToolbar = undefined;
-    this.unregisterModelMenus?.();
-    this.unregisterModelMenus = undefined;
+  dispose() {
+    while (this.disposers.length) {
+      this.disposers.pop()?.();
+    }
     if (activeLightExtensionLegacyInstance === this) {
       activeLightExtensionLegacyInstance = null;
     }
   }
 
   async load() {
-    this.app?.flowEngine?.flowSettings?.registerComponents?.(
-      {
-        [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
-        [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
-        [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
-        [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
-        [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
-        [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      },
-      { warnOnOverwrite: false },
-    );
+    this.disposers.push(installLegacyRunJSStudioClient());
+
+    const components = {
+      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
+      [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
+      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
+      [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
+      [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
+      [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+    };
+    const flowSettings = this.app?.flowEngine?.flowSettings;
+    if (flowSettings?.registerComponents) {
+      const registeredComponents = flowSettings.components;
+      const previousComponents = registeredComponents
+        ? new Map(
+            Object.keys(components).map((name) => [
+              name,
+              {
+                exists: Object.prototype.hasOwnProperty.call(registeredComponents, name),
+                value: registeredComponents[name],
+              },
+            ]),
+          )
+        : null;
+      flowSettings.registerComponents(components, { warnOnOverwrite: false });
+      if (registeredComponents && previousComponents) {
+        this.disposers.push(() => {
+          for (const [name, component] of Object.entries(components)) {
+            if (registeredComponents[name] !== component) {
+              continue;
+            }
+            const previous = previousComponents.get(name);
+            if (previous?.exists) {
+              registeredComponents[name] = previous.value;
+            } else {
+              delete registeredComponents[name];
+            }
+          }
+        });
+      }
+    }
 
     if (this.app?.apiClient) {
-      this.unregisterModelMenus = registerLightExtensionModelMenus(this.app.apiClient);
-      this.unregisterRunJSResolver = RunJSSourceResolverRegistry.registerResolver(
-        createLightExtensionRunJSResolver(this.app.apiClient),
+      this.disposers.push(registerLightExtensionModelMenus(this.app.apiClient));
+      this.disposers.push(
+        RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
       );
-      this.unregisterRunJSSettingsDescriptor = RunJSSettingsDescriptorProviderRegistry.registerProvider(
-        createInlineLightExtensionSettingsDescriptorProvider(this.app.apiClient),
+      this.disposers.push(
+        RunJSSettingsDescriptorProviderRegistry.registerProvider(
+          createInlineLightExtensionSettingsDescriptorProvider(this.app.apiClient),
+        ),
       );
-      this.unregisterRunJSToolbar = runJSStudioToolbarRegistry.register(
-        createMoveSourceToLightExtensionContribution(this.app.apiClient),
+      this.disposers.push(
+        runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(this.app.apiClient)),
       );
     }
-    this.unregisterRunJSEditor = RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider());
+    this.disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
 
     this.app?.pluginSettingsManager?.add(LIGHT_EXTENSION_SETTINGS_KEY, {
       icon: 'CodeOutlined',

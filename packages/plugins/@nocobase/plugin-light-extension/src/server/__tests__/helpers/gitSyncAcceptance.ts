@@ -14,7 +14,6 @@ import {
   VscPermissionHookRegistry,
   validateVscRemoteAuthRef,
 } from '../../vsc-file';
-import PluginVscFileServer from '../../vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -64,7 +63,7 @@ export interface GitSyncAcceptanceFixture {
 }
 
 export async function createGitSyncAcceptanceFixture(): Promise<GitSyncAcceptanceFixture> {
-  const app = await createMockServer({ plugins: [PluginVscFileServer, PluginLightExtensionServer] });
+  const app = await createMockServer({ plugins: [PluginLightExtensionServer] });
   const auditService = new LightExtensionAuditService(app.db);
   const permissionService = new LightExtensionPermissionService(auditService);
   const permissionHooks = new VscPermissionHookRegistry();

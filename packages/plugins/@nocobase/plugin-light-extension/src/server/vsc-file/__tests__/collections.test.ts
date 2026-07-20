@@ -8,10 +8,11 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import path from 'path';
+import type { Application } from '@nocobase/server';
 import { UniqueConstraintError } from 'sequelize';
 
 import { pathHash, pathLowerHash } from '../../../shared/vsc-file/path';
+import { VscFileServerModule } from '../plugin';
 
 describe('vsc-file collections', () => {
   let db: Database;
@@ -19,9 +20,7 @@ describe('vsc-file collections', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({
-      directory: path.resolve(__dirname, '../collections'),
-    });
+    await new VscFileServerModule({} as Application, db).beforeLoad();
     await db.sync();
   });
 

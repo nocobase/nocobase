@@ -9,7 +9,6 @@
 
 import type { VscRemoteSnapshotFile } from '../vsc-file';
 import { VscPermissionHookRegistry } from '../vsc-file';
-import PluginVscFileServer from '../vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -54,7 +53,7 @@ describe('LightExtensionRemotePullService', () => {
   let discovery: VscRemotePullDiscoveryService;
 
   beforeEach(async () => {
-    app = await createMockServer({ plugins: [PluginVscFileServer, PluginLightExtensionServer] });
+    app = await createMockServer({ plugins: [PluginLightExtensionServer] });
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);
     const permissionHooks = new VscPermissionHookRegistry();
