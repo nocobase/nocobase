@@ -8,9 +8,9 @@
  */
 
 import { createMockServer, type MockServer } from '@nocobase/test';
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import type { RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/server';
 
+import PluginLightExtensionServer from '../../../../plugin-light-extension/src/server';
 import FlowModelRepository from '../repository';
 import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
 
@@ -22,7 +22,7 @@ describe('flow-engine RunJS source adapters', () => {
   let repository: FlowModelRepository;
 
   beforeEach(async () => {
-    await resetApp([PluginVscFileServer, 'flow-engine']);
+    await resetApp([PluginLightExtensionServer, 'flow-engine']);
   });
 
   afterEach(async () => {
@@ -2860,7 +2860,7 @@ describe('flow-engine RunJS source adapters', () => {
 
   it('registers adapters while compiler validation remains available when Flow Engine loads first', async () => {
     await app.destroy();
-    await resetApp(['flow-engine', PluginVscFileServer]);
+    await resetApp(['flow-engine', PluginLightExtensionServer]);
 
     await repository.insertModel({
       uid: 'chart-runjs-reversed-order-model',
@@ -2901,7 +2901,7 @@ describe('flow-engine RunJS source adapters', () => {
     });
   });
 
-  async function resetApp(runJSPlugins: Array<string | typeof PluginVscFileServer>) {
+  async function resetApp(runJSPlugins: Array<string | typeof PluginLightExtensionServer>) {
     app = await createMockServer({
       registerActions: true,
       acl: true,

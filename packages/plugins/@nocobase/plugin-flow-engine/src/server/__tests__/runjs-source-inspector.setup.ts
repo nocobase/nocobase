@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { inspectRunJSSourceCode } from '@nocobase/plugin-vsc-file';
+import { inspectRunJSSourceCode } from '@nocobase/runjs/compiler';
 import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
 
 runJSSourceCodeInspectorRegistry.register(inspectRunJSSourceCode);

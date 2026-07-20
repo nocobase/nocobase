@@ -33,7 +33,12 @@ type RunJSSourceAdapterRegistrar = {
   registerRunJSSourceAdapter: (adapter: RunJSSourceAdapter) => () => void;
 };
 
-const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugin-vsc-file'];
+const LIGHT_EXTENSION_PLUGIN_ALIASES = [
+  '@nocobase/plugin-light-extension',
+  'light-extension',
+  'plugin-light-extension',
+];
+const LEGACY_VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugin-vsc-file'];
 
 export function registerFlowModelRunJSSourceAdapters(plugin: PluginWithApp): () => void {
   let unregisterAdapters: Array<() => void> = [];
@@ -86,24 +91,33 @@ function removeAfterLoadPluginListener(plugin: PluginWithApp, listener: PluginLo
 }
 
 function findRunJSSourceAdapterRegistrar(pm: PluginManagerLike): RunJSSourceAdapterRegistrar | null {
-  for (const alias of VSC_FILE_PLUGIN_ALIASES) {
+  const lightExtension = findRunJSSourceAdapterRegistrarByAliases(pm, LIGHT_EXTENSION_PLUGIN_ALIASES);
+  if (lightExtension) {
+    return lightExtension;
+  }
+
+  const plugins = pm.getPlugins?.();
+  if (plugins) {
+    for (const plugin of plugins.values()) {
+      if (isRunJSSourceAdapterRegistrar(plugin)) {
+        return plugin;
+      }
+    }
+  }
+
+  return findRunJSSourceAdapterRegistrarByAliases(pm, LEGACY_VSC_FILE_PLUGIN_ALIASES);
+}
+
+function findRunJSSourceAdapterRegistrarByAliases(
+  pm: PluginManagerLike,
+  aliases: string[],
+): RunJSSourceAdapterRegistrar | null {
+  for (const alias of aliases) {
     const plugin = pm.get?.(alias);
     if (isRunJSSourceAdapterRegistrar(plugin)) {
       return plugin;
     }
   }
-
-  const plugins = pm.getPlugins?.();
-  if (!plugins) {
-    return null;
-  }
-
-  for (const plugin of plugins.values()) {
-    if (isRunJSSourceAdapterRegistrar(plugin)) {
-      return plugin;
-    }
-  }
-
   return null;
 }
 

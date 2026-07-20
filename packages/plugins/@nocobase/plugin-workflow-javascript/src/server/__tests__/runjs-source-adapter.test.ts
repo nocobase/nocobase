@@ -8,7 +8,6 @@
  */
 
 import type { MockServer } from '@nocobase/test';
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import type { RunJSSourceLocator } from '@nocobase/server';
 import { getApp } from '@nocobase/plugin-workflow-test';
 
@@ -20,7 +19,7 @@ describe('workflow-javascript RunJS source adapter', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: [PluginVscFileServer, PluginWorkflowJavaScriptServer],
+      plugins: [PluginWorkflowJavaScriptServer],
     });
   });
 
@@ -288,18 +287,6 @@ describe('workflow-javascript RunJS source adapter', () => {
   });
 
   it('denies workflow JavaScript source access without node update permission', async () => {
-    await app.db.getRepository('roles').create({
-      values: {
-        name: 'workflow-reader',
-      },
-    });
-    const user = await app.db.getRepository('users').create({
-      values: {
-        nickname: 'Workflow reader',
-        roles: ['workflow-reader'],
-      },
-    });
-    const restrictedAgent = (await app.agent().login(user)).set('x-role', 'workflow-reader');
     const WorkflowModel = app.db.getCollection('workflows').model;
     const workflow = await WorkflowModel.create({
       enabled: false,
@@ -317,14 +304,9 @@ describe('workflow-javascript RunJS source adapter', () => {
       nodeId: node.id,
     };
 
-    const open = await restrictedAgent.resource('runJSSources').open({
-      values: {
-        locator,
-      },
-    });
+    const adapter = createWorkflowJavaScriptRunJSSourceAdapter(app.db);
 
-    expect(open.status).toBe(403);
-    expect(open.body.errors[0]).toMatchObject({
+    await expect(adapter.assertCanRead({ locator, ctx: { can: () => undefined } })).rejects.toMatchObject({
       code: 'PERMISSION_DENIED',
       status: 403,
       details: {

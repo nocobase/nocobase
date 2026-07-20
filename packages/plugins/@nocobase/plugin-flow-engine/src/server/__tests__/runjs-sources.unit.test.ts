@@ -18,23 +18,33 @@ type Registrar = {
 };
 
 describe('flow-engine RunJS source registration', () => {
-  it('registers FlowModel source adapters', () => {
-    const registrar = createRegistrar();
+  it('prefers the Light Extension host and unregisters every adapter on cleanup', () => {
+    const lightExtension = createRegistrar();
+    const legacyVsc = createRegistrar();
     const cleanup = registerFlowModelRunJSSourceAdapters({
       db: {} as Database,
       app: {
         pm: {
-          get: () => registrar,
+          get: (name) => {
+            if (name === '@nocobase/plugin-light-extension') {
+              return lightExtension;
+            }
+            if (name === '@nocobase/plugin-vsc-file') {
+              return legacyVsc;
+            }
+            return null;
+          },
         },
       },
     });
 
-    expect(registrar.adapters.length).toBeGreaterThan(0);
+    expect(lightExtension.adapters.length).toBeGreaterThan(0);
+    expect(legacyVsc.adapters).toEqual([]);
     cleanup();
-    expect(registrar.adapters).toEqual([]);
+    expect(lightExtension.adapters).toEqual([]);
   });
 
-  it('registers after the optional VSC plugin loads and removes the pending listener on cleanup', () => {
+  it('registers after Light Extension loads and removes the pending listener on cleanup', () => {
     const registrar = createRegistrar();
     const listeners = new Set<(plugin: unknown) => void>();
     let loaded = false;
@@ -42,7 +52,7 @@ describe('flow-engine RunJS source registration', () => {
       db: {} as Database,
       app: {
         pm: {
-          get: () => (loaded ? registrar : null),
+          get: (name) => (loaded && name === '@nocobase/plugin-light-extension' ? registrar : null),
         },
         on: (_eventName, listener) => listeners.add(listener),
         off: (_eventName, listener) => listeners.delete(listener),
@@ -58,6 +68,67 @@ describe('flow-engine RunJS source registration', () => {
     expect(listeners.size).toBe(0);
 
     cleanup();
+    expect(registrar.adapters).toEqual([]);
+  });
+
+  it('discovers a capability host when no known alias resolves', () => {
+    const registrar = createRegistrar();
+    const legacyVsc = createRegistrar();
+    const cleanup = registerFlowModelRunJSSourceAdapters({
+      db: {} as Database,
+      app: {
+        pm: {
+          get: (name) => (name === '@nocobase/plugin-vsc-file' ? legacyVsc : null),
+          getPlugins: () => new Map([['custom-host', registrar]]),
+        },
+      },
+    });
+
+    expect(registrar.adapters.length).toBeGreaterThan(0);
+    expect(legacyVsc.adapters).toEqual([]);
+    cleanup();
+    expect(registrar.adapters).toEqual([]);
+  });
+
+  it('keeps the legacy VSC alias as the final compatibility fallback', () => {
+    const registrar = createRegistrar();
+    const cleanup = registerFlowModelRunJSSourceAdapters({
+      db: {} as Database,
+      app: {
+        pm: {
+          get: (name) => (name === 'vsc-file' ? registrar : null),
+        },
+      },
+    });
+
+    expect(registrar.adapters.length).toBeGreaterThan(0);
+    cleanup();
+    expect(registrar.adapters).toEqual([]);
+  });
+
+  it('keeps repeated load and cleanup free of duplicate or residual adapters', () => {
+    const registrar = createRegistrar();
+    const plugin = {
+      db: {} as Database,
+      app: {
+        pm: {
+          get: (name: string) => (name === 'light-extension' ? registrar : null),
+        },
+      },
+    };
+    let cleanup: (() => void) | undefined;
+    const load = () => {
+      cleanup?.();
+      cleanup = registerFlowModelRunJSSourceAdapters(plugin);
+    };
+
+    load();
+    const adapterCount = registrar.adapters.length;
+    load();
+    expect(registrar.adapters).toHaveLength(adapterCount);
+
+    cleanup?.();
+    cleanup?.();
     expect(registrar.adapters).toEqual([]);
   });
 
