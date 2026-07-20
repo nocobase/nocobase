@@ -10,47 +10,35 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@nocobase/client-v2';
 import {
-  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
-  FlowModel,
   FlowModelRenderer,
-  FlowSettingsButton,
-  buildSubModelItem,
-  buildSubModelItems,
   observer,
   useFlowContext,
   type FlowModelContext,
-  type SubModelItem,
+  type FlowModel,
 } from '@nocobase/flow-engine';
 import { Badge, Empty, Button, Flex, Layout, Tooltip, theme, Typography } from 'antd';
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  MessageOutlined,
-  PlusCircleOutlined,
-  PlusOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { NAMESPACE, useT } from '../../../locale';
-import { Conversations } from '../../../ai-employees/chatbox/components/Conversations';
-import { Messages } from '../../../ai-employees/chatbox/components/Messages';
-import { useChat } from '../../../ai-employees/chatbox/hooks/useChat';
-import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
-import { useChatConversationActions } from '../../../ai-employees/chatbox/hooks/useChatConversationActions';
-import { useChatMessageActions } from '../../../ai-employees/chatbox/hooks/useChatMessageActions';
-import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mounted-chat-boxes';
-import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
+import { useT } from '../../../locale';
+import {
+  Conversations,
+  Messages,
+  registerMountedChatBox,
+  useChat,
+  useChatBoxActions,
+  useChatBoxRuntime,
+  useChatConversationActions,
+  useChatMessageActions,
+} from '../../../ai-employees/chatbox';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
+import { isAIChatBoxCoreModel } from '../sub-models';
 import { getAIChatBoxConversationScope, getAIChatBoxCreateScope, getAIChatBoxSettings } from '../utils';
 
 const { Header } = Layout;
 
-export const AI_CHAT_BOX_ACTION_MODEL_NAMES = ['JSActionModel', 'AIEmployeeActionModel'] as const;
-export const AI_CHAT_BOX_ITEM_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
 export const AI_CHAT_BOX_CORE_MIN_WIDTH = 400;
 export const AI_CHAT_BOX_CORE_MIN_HEIGHT = 420;
 
@@ -84,11 +72,7 @@ const headerActionItemsClassName = css`
   }
 `;
 
-const headerActionAddButtonClassName = css`
-  align-self: center !important;
-`;
-
-const bodyItemsClassName = css`
+const itemsClassName = css`
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -98,12 +82,21 @@ const bodyItemsClassName = css`
   overflow-x: hidden;
 `;
 
-const bodyItemClassName = css`
+const blockItemClassName = css`
   flex: 0 0 auto;
   min-height: 0;
 `;
 
-const bodyCoreItemClassName = css`
+const chatBoxFlexContentStyles = `
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const chatBoxItemClassName = css`
   flex: 1 0 auto;
   min-height: ${AI_CHAT_BOX_CORE_MIN_HEIGHT}px;
   overflow: hidden;
@@ -112,12 +105,7 @@ const bodyCoreItemClassName = css`
 
   > div,
   > div > div {
-    flex: 1 1 auto;
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    ${chatBoxFlexContentStyles}
   }
 
   .ant-layout {
@@ -125,169 +113,64 @@ const bodyCoreItemClassName = css`
   }
 `;
 
-const bodyCoreRendererClassName = css`
-  flex: 1 1 auto;
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+const chatBoxRendererClassName = css`
+  ${chatBoxFlexContentStyles}
 
   > div,
   > div > div {
-    flex: 1 1 auto;
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    ${chatBoxFlexContentStyles}
   }
 `;
 
-export const isAIChatBoxCoreModel = (model: FlowModel) => model instanceof AIChatBoxCoreModel;
-
-export const getAIChatBoxItems = async (ctx: FlowModelContext): Promise<SubModelItem[]> => {
-  return (
-    await Promise.all(
-      AI_CHAT_BOX_ITEM_MODEL_NAMES.filter((modelName) => Boolean(ctx.engine.getModelClass(modelName))).map(
-        (modelName) => buildSubModelItems(modelName)(ctx),
-      ),
-    )
-  ).flat();
-};
-
-export const getAIChatBoxActionItems = async (ctx: FlowModelContext): Promise<SubModelItem[]> => {
-  const items = await Promise.all(
-    AI_CHAT_BOX_ACTION_MODEL_NAMES.map(async (modelName) => {
-      const ModelClass = await ctx.engine.getModelClassAsync(modelName);
-      if (!ModelClass) {
-        return undefined;
-      }
-      const item = await buildSubModelItem(ModelClass, ctx);
-      if (modelName === 'AIEmployeeActionModel' && item) {
-        item.label = ctx.t('AI employee', { ns: NAMESPACE });
-      }
-      return item;
-    }),
-  );
-  return items.filter((item): item is SubModelItem => !!item);
-};
-
-export const moveAddedItemBeforeCore = async (model: AIChatBoxBlockModel, addedModel: FlowModel) => {
-  const items = model.subModels.items || [];
-  const coreBlock = items.find(isAIChatBoxCoreModel);
-  if (!coreBlock || coreBlock.uid === addedModel.uid) {
-    return;
-  }
-  await model.flowEngine.moveModel(addedModel.uid, coreBlock.uid, { persist: false });
-};
-
-export const getAIChatBoxViewHeight = (model: AIChatBoxBlockModel, fallbackHeight: number) => {
-  const heightMode = model.decoratorProps?.heightMode;
-  if (heightMode === 'specifyValue' || heightMode === 'fullHeight') {
-    return '100%';
-  }
-  return fallbackHeight;
-};
-
-const ActionAddButton: React.FC<{
-  model: AIChatBoxBlockModel;
+const ChatBoxItem: React.FC<{
+  model: FlowModel;
 }> = ({ model }) => {
-  const t = useT();
   return (
-    <AddSubModelButton model={model} subModelKey="actions" items={getAIChatBoxActionItems}>
-      <FlowSettingsButton className={headerActionAddButtonClassName} icon={<SettingOutlined />}>
-        {t('Actions')}
-      </FlowSettingsButton>
-    </AddSubModelButton>
-  );
-};
-
-const ItemAddButton: React.FC<{
-  model: AIChatBoxBlockModel;
-}> = ({ model }) => {
-  const t = useT();
-  return (
-    <AddSubModelButton
-      model={model}
-      subModelKey="items"
-      items={getAIChatBoxItems}
-      afterSubModelAdd={(addedModel) => moveAddedItemBeforeCore(model, addedModel)}
+    <div
+      className={chatBoxItemClassName}
+      style={{ minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH, minHeight: AI_CHAT_BOX_CORE_MIN_HEIGHT }}
     >
-      <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
-    </AddSubModelButton>
+      <Droppable model={model}>
+        <div className={chatBoxRendererClassName}>
+          <FlowModelRenderer model={model} showFlowSettings={false} hideRemoveInSettings extraToolbarItems={[]} />
+        </div>
+      </Droppable>
+    </div>
   );
 };
 
-const ActionRenderer: React.FC<{
-  model: AIChatBoxBlockModel;
-}> = observer(({ model }) => {
-  const flowSettings = model.context.flowSettingsEnabled
-    ? ({ showBackground: false, showBorder: false, toolbarPosition: 'above' } as const)
-    : false;
-
+const BlockItem: React.FC<{
+  model: FlowModel;
+}> = ({ model }) => {
   return (
-    <>
-      {model.mapSubModels('actions', (action) => (
-        <Droppable model={action} key={action.uid}>
-          <FlowModelRenderer
-            model={action}
-            showFlowSettings={flowSettings}
-            hideRemoveInSettings={false}
-            extraToolbarItems={[
-              {
-                key: 'drag-handler',
-                component: DragHandler,
-                sort: 1,
-              },
-            ]}
-          />
-        </Droppable>
-      ))}
-    </>
+    <div className={blockItemClassName}>
+      <Droppable model={model}>
+        <FlowModelRenderer
+          model={model}
+          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+          extraToolbarItems={[
+            {
+              key: 'drag-handler',
+              component: DragHandler,
+              sort: 1,
+            },
+          ]}
+        />
+      </Droppable>
+    </div>
   );
-});
+};
 
 const ItemsSlot: React.FC<{
   model: AIChatBoxBlockModel;
 }> = observer(({ model }) => {
   const t = useT();
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
-  const flowSettings = flowSettingsEnabled
-    ? ({ showBackground: false, showBorder: false, toolbarPosition: 'above' } as const)
-    : false;
   const nodes = model.mapSubModels('items', (subModel) => {
-    const isCore = isAIChatBoxCoreModel(subModel);
-    const renderer = (
-      <FlowModelRenderer
-        model={subModel}
-        showFlowSettings={isCore ? false : flowSettings}
-        hideRemoveInSettings={isCore}
-        extraToolbarItems={
-          isCore
-            ? []
-            : [
-                {
-                  key: 'drag-handler',
-                  component: DragHandler,
-                  sort: 1,
-                },
-              ]
-        }
-      />
-    );
-    const className = isCore ? bodyCoreItemClassName : bodyItemClassName;
-
-    return (
-      <div
-        key={subModel.uid}
-        className={className}
-        style={isCore ? { minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH, minHeight: AI_CHAT_BOX_CORE_MIN_HEIGHT } : undefined}
-      >
-        <Droppable model={subModel}>
-          {isCore ? <div className={bodyCoreRendererClassName}>{renderer}</div> : renderer}
-        </Droppable>
-      </div>
+    return isAIChatBoxCoreModel(subModel) ? (
+      <ChatBoxItem key={subModel.uid} model={subModel} />
+    ) : (
+      <BlockItem key={subModel.uid} model={subModel} />
     );
   });
 
@@ -296,10 +179,10 @@ const ItemsSlot: React.FC<{
       <DndProvider>
         {flowSettingsEnabled ? (
           <div style={{ padding: '10px 8px 6px', flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>
-            <ItemAddButton model={model} />
+            {model.renderConfigureItems()}
           </div>
         ) : null}
-        <div className={bodyItemsClassName}>
+        <div className={itemsClassName}>
           {nodes.length ? (
             nodes
           ) : (
@@ -356,8 +239,9 @@ export const AIChatBoxView: React.FC = observer(() => {
 
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
+  const heightMode = model.decoratorProps?.heightMode;
   const minWidth = Math.max(settings.minWidth, AI_CHAT_BOX_CORE_MIN_WIDTH);
-  const height = getAIChatBoxViewHeight(model, settings.height);
+  const height = heightMode === 'specifyValue' || heightMode === 'fullHeight' ? '100%' : settings.height;
   const conversationPanelWidth = 300;
   const messagesPanelWidth = 350;
   const headerHeight = 48;
@@ -502,12 +386,8 @@ export const AIChatBoxView: React.FC = observer(() => {
             </Tooltip>
           </Flex>
           <Flex className={headerActionsClassName} align="center" gap={6}>
-            <div className={headerActionItemsClassName}>
-              <DndProvider>
-                <ActionRenderer model={model} />
-              </DndProvider>
-            </div>
-            {flowSettingsEnabled ? <ActionAddButton model={model} /> : null}
+            <div className={headerActionItemsClassName}>{model.renderActions()}</div>
+            {flowSettingsEnabled ? model.renderConfigureActions() : null}
             <Tooltip title={t('New conversation')}>
               <Button
                 aria-label={t('New conversation')}

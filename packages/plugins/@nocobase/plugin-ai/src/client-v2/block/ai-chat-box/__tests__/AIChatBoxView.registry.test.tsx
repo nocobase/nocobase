@@ -46,6 +46,9 @@ const mocks = vi.hoisted(() => ({
   addContextItems: vi.fn(),
   syncContextAttachments: vi.fn(),
   flowModelRendererProps: [] as FlowModelRendererProps[],
+  renderActions: vi.fn(() => null),
+  renderConfigureActions: vi.fn(() => null),
+  renderConfigureItems: vi.fn(() => null),
 }));
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => ({
@@ -129,6 +132,9 @@ const makeModel = (
     context: {
       flowSettingsEnabled,
     },
+    renderActions: mocks.renderActions,
+    renderConfigureActions: mocks.renderConfigureActions,
+    renderConfigureItems: mocks.renderConfigureItems,
     mapSubModels: (subKey: string, callback: (model: FlowModel, index: number) => React.ReactNode) =>
       subKey === 'items' ? items.map((item, index) => callback(item, index)) : [],
   } as AIChatBoxBlockModel;
@@ -164,6 +170,9 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.refreshConversations.mockClear();
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
+    mocks.renderActions.mockClear();
+    mocks.renderConfigureActions.mockClear();
+    mocks.renderConfigureItems.mockClear();
     mocks.flowModelRendererProps = [];
     mocks.runtime.scope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];

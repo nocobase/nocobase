@@ -17,6 +17,7 @@ import {
 import { tExpr } from '../../locale';
 import { AIChatBoxView } from './components/AIChatBoxView';
 import { registerAIChatBoxBlockSettings } from './settings';
+import { renderAIChatBoxActions, renderAIChatBoxConfigureActions, renderAIChatBoxConfigureItems } from './sub-models';
 import { getDefaultAIChatBoxSettings } from './utils';
 import type { AIChatBoxBlockProps, AIChatBoxBlockStructure } from './types';
 
@@ -42,6 +43,18 @@ export class AIChatBoxBlockModel extends BlockModel<AIChatBoxBlockStructure> {
         <AIChatBoxView />
       </ChatBoxRuntimeProvider>
     );
+  }
+
+  renderActions() {
+    return renderAIChatBoxActions(this);
+  }
+
+  renderConfigureActions() {
+    return renderAIChatBoxConfigureActions(this);
+  }
+
+  renderConfigureItems() {
+    return renderAIChatBoxConfigureItems(this);
   }
 }
 

@@ -7,19 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel, type FlowModelContext, type ModelConstructor } from '@nocobase/flow-engine';
+import { ActionModel } from '@nocobase/client-v2';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import {
+  AIChatBoxActionGroupModel,
+  AIChatBoxItemGroupModel,
   AI_CHAT_BOX_ACTION_MODEL_NAMES,
   AI_CHAT_BOX_ITEM_MODEL_NAMES,
-  getAIChatBoxActionItems,
-  getAIChatBoxItems,
-  getAIChatBoxViewHeight,
   isAIChatBoxCoreModel,
   moveAddedItemBeforeCore,
-} from '../components/AIChatBoxView';
+  renderAIChatBoxConfigureActions,
+  renderAIChatBoxConfigureItems,
+} from '../sub-models';
 
 class JSBlockModel extends FlowModel {}
 JSBlockModel.define({ label: 'JS block', sort: 30 });
@@ -33,32 +36,32 @@ MarkdownBlockModel.define({ label: 'Markdown', sort: 20 });
 class TableBlockModel extends FlowModel {}
 TableBlockModel.define({ label: 'Table', sort: 5 });
 
-class JSActionModel extends FlowModel {}
-class AIEmployeeActionModel extends FlowModel {}
+class JSActionModel extends ActionModel {}
+JSActionModel.define({ label: 'JS action', sort: 20 });
+
+class AIEmployeeActionModel extends ActionModel {}
+AIEmployeeActionModel.define({ label: 'AI employees', sort: 10 });
+
+type AddSubModelButtonElementProps = {
+  subModelBaseClass?: string;
+  subModelKey?: string;
+};
 
 describe('AIChatBoxView helpers', () => {
   it('only allows JS Action and AI Employee action models', async () => {
     expect(AI_CHAT_BOX_ACTION_MODEL_NAMES).toEqual(['JSActionModel', 'AIEmployeeActionModel']);
 
-    const getModelClassAsync = vi.fn(async (name: string) => {
-      const models: Record<string, ModelConstructor> = {
-        JSActionModel,
-        AIEmployeeActionModel,
-      };
-      return models[name];
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ActionModel,
+      JSActionModel,
+      AIEmployeeActionModel,
     });
-    const ctx = {
-      engine: {
-        getModelClassAsync,
-      },
-      t: (key: string) => `t:${key}`,
-    } as unknown as FlowModelContext;
 
-    const items = await getAIChatBoxActionItems(ctx);
+    const items = await AIChatBoxActionGroupModel.defineChildren(engine.context);
 
-    expect(getModelClassAsync.mock.calls.map(([name]) => name)).toEqual(['JSActionModel', 'AIEmployeeActionModel']);
-    expect(items.map((item) => item.useModel)).toEqual(['JSActionModel', 'AIEmployeeActionModel']);
-    expect(items[1].label).toBe('t:AI employee');
+    expect(items.map((item) => item.useModel).sort()).toEqual(['AIEmployeeActionModel', 'JSActionModel']);
+    expect(items.find((item) => item.useModel === 'AIEmployeeActionModel')?.label).toBe('AI employees');
   });
 
   it('only allows read-only display blocks in the chat body', async () => {
@@ -72,10 +75,28 @@ describe('AIChatBoxView helpers', () => {
       TableBlockModel,
     });
 
-    const items = await getAIChatBoxItems(engine.context);
+    const items = await AIChatBoxItemGroupModel.defineChildren(engine.context);
 
     expect(items.map((item) => item.useModel)).toEqual(['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel']);
     expect(items.map((item) => item.useModel)).not.toContain('TableBlockModel');
+  });
+
+  it('uses group models when rendering configure buttons', () => {
+    const model = {
+      context: {
+        t: (key: string) => key,
+      },
+      getModelClassName: (name: string) => `local:${name}`,
+      translate: (key: string) => `t:${key}`,
+    } as AIChatBoxBlockModel;
+
+    const actionButton = renderAIChatBoxConfigureActions(model) as ReactElement<AddSubModelButtonElementProps>;
+    const itemButton = renderAIChatBoxConfigureItems(model) as ReactElement<AddSubModelButtonElementProps>;
+
+    expect(actionButton.props.subModelKey).toBe('actions');
+    expect(actionButton.props.subModelBaseClass).toBe('local:AIChatBoxActionGroupModel');
+    expect(itemButton.props.subModelKey).toBe('items');
+    expect(itemButton.props.subModelBaseClass).toBe('local:AIChatBoxItemGroupModel');
   });
 
   it('identifies the core model and moves newly added blocks before it', async () => {
@@ -99,19 +120,5 @@ describe('AIChatBoxView helpers', () => {
 
     expect(moveModel).toHaveBeenCalledTimes(1);
     expect(moveModel).toHaveBeenCalledWith('added', 'core', { persist: false });
-  });
-
-  it('uses the common block height modes when rendering the chat box view', () => {
-    const model = {
-      decoratorProps: {},
-    } as unknown as AIChatBoxBlockModel;
-
-    expect(getAIChatBoxViewHeight(model, 640)).toBe(640);
-
-    model.decoratorProps.heightMode = 'specifyValue';
-    expect(getAIChatBoxViewHeight(model, 640)).toBe('100%');
-
-    model.decoratorProps.heightMode = 'fullHeight';
-    expect(getAIChatBoxViewHeight(model, 640)).toBe('100%');
   });
 });

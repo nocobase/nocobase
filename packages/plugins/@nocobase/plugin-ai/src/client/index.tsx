@@ -34,7 +34,12 @@ import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/
 import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
 import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
 import { registerPluginAIRunJSFacade } from '../client-v2/runjs/registerAIEmployeeRunJSFacade';
-import { AIChatBoxBlockModel, AIChatBoxCoreModel } from '../client-v2/block/ai-chat-box';
+import {
+  AIChatBoxActionGroupModel,
+  AIChatBoxBlockModel,
+  AIChatBoxCoreModel,
+  AIChatBoxItemGroupModel,
+} from '../client-v2/block/ai-chat-box';
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
@@ -64,11 +69,13 @@ export class PluginAIClient extends Plugin {
     });
 
     this.flowEngine.registerModels({
+      AIChatBoxActionGroupModel,
       AIEmployeeShortcutListModel,
       AIEmployeeShortcutModel,
       AIEmployeeButtonModel,
       AIChatBoxBlockModel,
       AIChatBoxCoreModel,
+      AIChatBoxItemGroupModel,
     });
     this.flowEngine.registerModelLoaders({
       AIEmployeeActionModel: {
