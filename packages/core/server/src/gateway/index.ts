@@ -30,6 +30,7 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { PortalStaticServer } from './portal-static';
 import { getStorageUploadSecurityHeaders } from './static-file-security';
 import {
   injectRuntimeScript,
@@ -122,6 +123,7 @@ export class Gateway extends EventEmitter {
   private host = '0.0.0.0';
   private socketPath = getSocketPath();
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
+  private portalStaticServer = new PortalStaticServer();
   private terminating = false;
 
   private getOriginalRequestUrl(req: IncomingMessage) {
@@ -212,6 +214,7 @@ export class Gateway extends EventEmitter {
   public reset() {
     this.middlewares = new Toposort<GatewayMiddleware>();
     this.selectorMiddlewares = new Toposort<AppSelectorMiddleware>();
+    this.portalStaticServer.clearCache();
 
     this.addAppSelectorMiddleware(
       async (ctx: AppSelectorMiddlewareContext, next) => {
@@ -530,6 +533,10 @@ export class Gateway extends EventEmitter {
     const isFilesRequest = Boolean(getFileAccessRestPath(pathname, APP_PUBLIC_PATH));
 
     if (!pathname.startsWith(process.env.API_BASE_PATH) && !isFilesRequest) {
+      if (await this.portalStaticServer.handle(req, res, APP_PUBLIC_PATH)) {
+        return;
+      }
+
       if (this.isV2Request(pathname)) {
         if (handleApp !== 'main') {
           const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
