@@ -26,29 +26,35 @@ export const MessagesAndSender: React.FC<{
 }> = observer(({ model }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const runtime = useChatBoxRuntime();
-  const { chatBoxModel, chatConversationModel } = runtime;
   const aiConfigRepository = useAIConfigRepository();
-  const { switchAIEmployee } = useChatBoxActions(runtime);
+
   const settings = getAIChatBoxSettings(model.props);
   const conversationCreateScope = getAIChatBoxCreateScope(model);
   const selectedBlocks = model.props.selectedBlocks;
+
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = runtime;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const currentConversation = chatConversationModel.currentConversation;
+
+  const draftChat = useChat(undefined, runtime);
+  const draftMessages = draftChat.use.messages();
+
+  const allowedAIEmployees = settings.allowedAIEmployees;
   const configuredWorkContext = useMemo(() => normalizeAIChatBoxWorkContext(selectedBlocks), [selectedBlocks]);
   const configuredWorkContextKey = configuredWorkContext
     .map((item) => `${item.type}:${item.uid}:${item.title || ''}`)
     .join('|');
-  const allowedAIEmployees = settings.allowedAIEmployees;
-  const currentEmployee = chatBoxModel.currentEmployee;
-  const currentConversation = chatConversationModel.currentConversation;
-  const draftChat = useChat(undefined, runtime);
-  const draftMessages = draftChat.use.messages();
   const draftMessageKey = draftMessages.map((message) => message.key).join('|');
   const hasDraftUserMessage = draftMessages.some((message) => message.role === 'user');
+
+  const { switchAIEmployee } = useChatBoxActions(runtime);
   const defaultUserMessageStateRef = useRef<{
     draftKey?: string;
     value?: string;
     applied?: boolean;
   }>({});
+
   useChatBoxEffect(runtime);
 
   useEffect(() => {
