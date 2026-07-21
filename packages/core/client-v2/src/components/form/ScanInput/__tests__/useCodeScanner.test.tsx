@@ -300,6 +300,30 @@ describe('useCodeScanner', () => {
     expect(mocks.clear).toHaveBeenCalled();
   });
 
+  it('ignores a camera start failure after the scanner unmounts', async () => {
+    let rejectStart: ((error: Error) => void) | undefined;
+    mocks.start.mockReturnValueOnce(
+      new Promise<null>((_resolve, reject) => {
+        rejectStart = reject;
+      }),
+    );
+    const handleCameraStartFailure = vi.fn();
+    const handleScanFailure = vi.fn();
+
+    const { unmount } = render(
+      <ScannerHost onCameraStartFailure={handleCameraStartFailure} onScanFailure={handleScanFailure} />,
+    );
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    unmount();
+    await act(async () => {
+      rejectStart?.(new Error('Camera start canceled'));
+    });
+
+    expect(handleCameraStartFailure).not.toHaveBeenCalled();
+    expect(handleScanFailure).not.toHaveBeenCalled();
+  });
+
   it('uses jsQR first for Safari uploaded QR images', async () => {
     const handleScanSuccess = vi.fn();
     jsQrMocks.default.mockReturnValueOnce({ data: 'JSQR-CODE' });

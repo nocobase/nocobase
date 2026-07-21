@@ -46,15 +46,11 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
   const [viewport, setViewport] = useState(getViewportSize);
 
   const previewScale = scannerSize.width
-    ? Math.min(viewport.width / scannerSize.width, viewport.height / scannerSize.height)
+    ? Math.max(viewport.width / scannerSize.width, viewport.height / scannerSize.height)
     : Math.min(1, viewport.width / SCANNER_RENDER_WIDTH);
-  const scanBoxSize = scannerSize.width
-    ? getCodeScanBoxSize(scannerSize.width, scannerSize.height)
+  const visibleScanBoxSize = scannerSize.width
+    ? getCodeScanBoxSize(viewport.width, viewport.height)
     : { width: 0, height: 0 };
-  const visibleScanBoxSize = {
-    width: Math.floor(scanBoxSize.width * previewScale),
-    height: Math.floor(scanBoxSize.height * previewScale),
-  };
 
   const showScanFailure = useCallback(() => {
     message.error(t('Code recognition failed, please scan again'));

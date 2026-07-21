@@ -340,29 +340,40 @@ export function useCodeScanner({
       cancelActiveScan();
       const scanSession = scanSessionRef.current;
       scanSucceededRef.current = false;
-      await scannerInstance.start(
-        { facingMode: 'environment' },
-        {
-          fps: 8,
-          disableFlip: false,
-          videoConstraints: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 30 },
+      try {
+        await scannerInstance.start(
+          { facingMode: 'environment' },
+          {
+            fps: 8,
+            disableFlip: false,
+            videoConstraints: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30 },
+            },
+            qrbox(width, height) {
+              onScannerSizeChanged?.({ width, height });
+              return clampCodeScanBoxSize(getCodeScanBoxSize(width, height), width, height);
+            },
           },
-          qrbox(width, height) {
-            onScannerSizeChanged?.({ width, height });
-            return clampCodeScanBoxSize(getCodeScanBoxSize(width, height), width, height);
+          (decodedText) => {
+            reportScanSuccess(decodedText);
           },
-        },
-        (decodedText) => {
-          reportScanSuccess(decodedText);
-        },
-        undefined,
-      );
+          undefined,
+        );
+      } catch (error) {
+        if (scanSession !== scanSessionRef.current) {
+          return;
+        }
+        throw error;
+      }
       if (scanSession !== scanSessionRef.current) {
-        await stopScanner(scannerInstance, { clear: true });
+        try {
+          await stopScanner(scannerInstance, { clear: true });
+        } catch {
+          // The scanner may already have been cleared by the canceled session cleanup.
+        }
         return;
       }
       if (shouldScanQrWithJsQR(formatsToSupport)) {
