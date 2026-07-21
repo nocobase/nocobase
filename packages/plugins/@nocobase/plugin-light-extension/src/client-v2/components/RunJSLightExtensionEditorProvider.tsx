@@ -46,6 +46,7 @@ import {
 } from '../resolvers/LightExtensionRunJSResolver';
 import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
+import { LightExtensionPreviewProblemClient } from '../problems/previewProblemClient';
 import LightExtensionWorkspacePage, {
   type LightExtensionHostPreviewRequest,
   type LightExtensionMoveToInlineRequest,
@@ -366,6 +367,10 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
   const resolverApi = app?.apiClient;
   const api = flowContext?.api || resolverApi;
+  const previewProblemClient = React.useMemo(
+    () => (resolverApi ? new LightExtensionPreviewProblemClient(resolverApi) : undefined),
+    [resolverApi],
+  );
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
   const authoringModelUid = effectiveLocator && 'modelUid' in effectiveLocator ? effectiveLocator.modelUid : undefined;
@@ -677,6 +682,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
         ownerLocator={authoringOwnerLocator}
+        previewProblemClient={previewProblemClient}
         repoId={currentBinding.repoId}
         workspaceScope={workspaceScope}
       />

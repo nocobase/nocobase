@@ -12,6 +12,7 @@ import { lightExtensionContextActionNames } from '../resources/lightExtensionCon
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
+import { lightExtensionPreviewProblemActionNames } from '../resources/lightExtensionPreviewProblems';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
 
@@ -22,6 +23,7 @@ const publicActions = {
   lightExtensionContexts: ['get'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview'],
+  lightExtensionPreviewProblems: ['open', 'append', 'list', 'watch', 'close'],
 } as const;
 
 describe('light-extension swagger', () => {
@@ -33,6 +35,7 @@ describe('light-extension swagger', () => {
       lightExtensionContexts: lightExtensionContextActionNames,
       lightExtensionFiles: lightExtensionFileActionNames,
       lightExtensions: lightExtensionActionNames,
+      lightExtensionPreviewProblems: lightExtensionPreviewProblemActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))
@@ -51,7 +54,9 @@ describe('light-extension swagger', () => {
         expect(registeredActions[resource as keyof typeof registeredActions]).toContain(action);
         expect(swaggerDocument.paths[`/${resource}:${action}`].post).toBeTruthy();
         expect(Object.keys(swaggerDocument.paths[`/${resource}:${action}`])).toEqual(['post']);
-        expect(swaggerDocument.paths[`/${resource}:${action}`].post['x-mcp']).toBe(true);
+        expect(swaggerDocument.paths[`/${resource}:${action}`].post['x-mcp']).toBe(
+          resource !== 'lightExtensionPreviewProblems' || ['list', 'watch'].includes(action),
+        );
       }
     }
   });
@@ -109,6 +114,13 @@ describe('light-extension swagger', () => {
         end: { $ref: '#/components/schemas/LightExtensionProblemPosition' },
       },
     });
+    expect(schemas.LightExtensionPreviewProblemSessionResult).toBeTruthy();
+    expect(schemas.LightExtensionPreviewProblemSessionResult.allOf[1].properties.state.enum).toEqual([
+      'active',
+      'completed',
+      'stale',
+      'expired',
+    ]);
     expect(schemas.LightExtensionEntry.required).not.toContain('problems');
     expect(schemas.LightExtensionEntry.properties.problems).toBeUndefined();
     expect(schemas.LightExtensionRuntimeArtifact.properties.problems).toBeUndefined();

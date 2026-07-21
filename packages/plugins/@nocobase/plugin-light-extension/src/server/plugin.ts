@@ -49,6 +49,10 @@ import {
   createLightExtensionReferencesResource,
   lightExtensionReferenceActionNames,
 } from './resources/lightExtensionReferences';
+import {
+  createLightExtensionPreviewProblemsResource,
+  lightExtensionPreviewProblemActionNames,
+} from './resources/lightExtensionPreviewProblems';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
@@ -69,6 +73,10 @@ import { JsPortalStorage } from './services/JsPortalStorage';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
+import {
+  CacheLightExtensionPreviewProblemStorage,
+  LightExtensionPreviewProblemService,
+} from './services/LightExtensionPreviewProblemService';
 import { LightExtensionRemotePullService } from './services/LightExtensionRemotePullService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from './services/LightExtensionRuntimeCompileService';
@@ -88,6 +96,9 @@ type AppWithPluginEvents = {
       get<T>(key: string): Promise<T | undefined>;
       del(key: string): Promise<void>;
     }>;
+  };
+  lockManager?: {
+    runExclusive<T>(key: string, callback: () => Promise<T>, ttl?: number): Promise<T>;
   };
   resourceManager?: {
     define?: (resource: unknown) => void;
@@ -179,6 +190,8 @@ export class PluginLightExtensionServer extends Plugin {
   private entryService?: LightExtensionEntryService;
 
   private referenceService?: ReferenceService;
+
+  private previewProblemService?: LightExtensionPreviewProblemService;
 
   private moveSourceService?: MoveSourceService;
 
@@ -316,6 +329,18 @@ export class PluginLightExtensionServer extends Plugin {
       this.compileWorkerPool,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
+    if (app.cacheManager?.createCache && app.lockManager) {
+      const previewProblemCache = await app.cacheManager.createCache({
+        name: 'light-extension-preview-problems',
+        prefix: 'light-extension:preview-problems',
+      });
+      this.previewProblemService = new LightExtensionPreviewProblemService(
+        typeof (this.app as unknown as { name?: unknown }).name === 'string'
+          ? (this.app as unknown as { name: string }).name || 'main'
+          : 'main',
+        new CacheLightExtensionPreviewProblemStorage(previewProblemCache, app.lockManager),
+      );
+    }
     this.contextPackService = new LightExtensionContextPackService(
       db,
       this.referenceService,
@@ -384,6 +409,11 @@ export class PluginLightExtensionServer extends Plugin {
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionReferencesResource(this.referenceService),
     );
+    if (this.previewProblemService) {
+      (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+        createLightExtensionPreviewProblemsResource(this.previewProblemService),
+      );
+    }
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionContextsResource(this.contextPackService),
     );
@@ -493,6 +523,7 @@ export class PluginLightExtensionServer extends Plugin {
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
+    app.acl?.allow?.('lightExtensionPreviewProblems', [...lightExtensionPreviewProblemActionNames], 'loggedIn');
     app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
     this.registerSyncAcl(app);
     app.acl?.registerSnippet?.({

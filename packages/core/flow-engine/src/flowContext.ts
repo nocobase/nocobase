@@ -63,6 +63,7 @@ import { externalReactRender, setupRunJSLibs } from './runjsLibs';
 import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
 import { RUNJS_EVALUATION_WRAPPER_LINE_OFFSET } from '@nocobase/runjs/compiler/line-map';
 import { setRunJSRuntimeReporting } from './runjsRuntimeReporter';
+import { setRunJSApiFailureReporting } from './runjsApiFailureReporter';
 
 function normalizePathname(pathname: string) {
   return pathname.endsWith('/') ? pathname : `${pathname}/`;
@@ -3599,6 +3600,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
       const runCtx = new Ctor(this);
       setRunJSRuntimeReporting(runCtx, options?.runtimeReporting);
+      setRunJSApiFailureReporting(
+        runCtx,
+        options?.runtimeReporting?.apiFailureReporter
+          ? {
+              identity: options.runtimeReporting.identity,
+              reporter: options.runtimeReporting.apiFailureReporter,
+            }
+          : undefined,
+      );
       runCtx.defineMethod('t', (key: string, options?: any) => {
         return this.t(key, { ns: 'runjs', ...options });
       });

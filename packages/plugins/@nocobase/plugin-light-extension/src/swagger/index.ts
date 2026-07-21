@@ -24,6 +24,10 @@ export default {
     { name: 'lightExtensionContexts', description: 'Inspect ACL-filtered binding-aware authoring context.' },
     { name: 'lightExtensionFiles', description: 'Read and save light-extension source files.' },
     { name: 'lightExtensions', description: 'Preview light-extension source compilation.' },
+    {
+      name: 'lightExtensionPreviewProblems',
+      description: 'Exchange short-lived preview problems through a user- and role-scoped cursor channel.',
+    },
   ],
   paths: lightExtensionPaths,
   components: {

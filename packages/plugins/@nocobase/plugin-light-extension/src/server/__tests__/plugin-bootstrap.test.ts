@@ -90,4 +90,45 @@ describe('plugin-light-extension bootstrap', () => {
     expect(afterStartListeners).toHaveLength(0);
     expect(() => plugin.getRemoteSyncRuntime()).toThrow('Remote sync runtime is not loaded');
   });
+
+  it('creates the cache-backed preview problem service and registers its resource', async () => {
+    const definedResources: Array<{ name?: string }> = [];
+    const cache = {
+      get: vi.fn(),
+      set: vi.fn(),
+      del: vi.fn(),
+    };
+    const createCache = vi.fn(async () => cache);
+    const app = {
+      name: 'main',
+      db: {} as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
+      acl: { allow: vi.fn(), registerSnippet: vi.fn() },
+      cacheManager: { createCache },
+      lockManager: { runExclusive: vi.fn() },
+      resourceManager: {
+        define: vi.fn((resource: { name?: string }) => definedResources.push(resource)),
+        options: {},
+      },
+      auditManager: {
+        registerActions: vi.fn(),
+        log: vi.fn(),
+      },
+      use: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    } as unknown as Application;
+    const plugin = new PluginLightExtensionServer(app, {
+      name: 'light-extension',
+      packageName: NAMESPACE,
+    });
+
+    await plugin.load();
+
+    expect(createCache).toHaveBeenCalledWith({
+      name: 'light-extension-preview-problems',
+      prefix: 'light-extension:preview-problems',
+    });
+    expect(definedResources).toContainEqual(expect.objectContaining({ name: 'lightExtensionPreviewProblems' }));
+  });
 });

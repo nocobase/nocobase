@@ -8,6 +8,7 @@
  */
 
 import type {
+  RunJSApiFailureReporter,
   RunJSExecutionMetadataValue,
   RunJSRuntimeReporter,
   RunJSRuntimeReportingOptions,
@@ -30,11 +31,14 @@ export interface RunJSHostPreviewSourceRef extends Record<string, unknown> {
 }
 
 export interface CreateRunJSHostPreviewSessionInput {
+  previewSessionId?: string;
+  executionId?: string;
   artifactHash: string;
   snapshotId: string;
   sourceMap: string;
   metadata?: Readonly<Record<string, RunJSExecutionMetadataValue>>;
   reporter: RunJSRuntimeReporter;
+  apiFailureReporter?: RunJSApiFailureReporter;
 }
 
 export interface RunJSHostPreviewSession {
@@ -63,8 +67,11 @@ export function createRunJSHostPreviewSession(input: CreateRunJSHostPreviewSessi
     throw new Error('RunJS host preview requires a workspace snapshot');
   }
 
-  const previewSessionId = createSessionId('preview');
-  const executionId = createSessionId('execution');
+  const previewSessionId = input.previewSessionId || createSessionId('preview');
+  const executionId = input.executionId || createSessionId('execution');
+  if (!isNonEmptyString(previewSessionId) || !isNonEmptyString(executionId)) {
+    throw new Error('RunJS host preview requires valid session and execution ids');
+  }
   const sourceRef: RunJSHostPreviewSourceRef = {
     type: RUNJS_HOST_PREVIEW_SOURCE_REF_TYPE,
     version: RUNJS_HOST_PREVIEW_SOURCE_REF_VERSION,
@@ -91,6 +98,7 @@ export function createRunJSHostPreviewSession(input: CreateRunJSHostPreviewSessi
         },
       },
       reporter: input.reporter,
+      ...(input.apiFailureReporter ? { apiFailureReporter: input.apiFailureReporter } : {}),
     },
   };
   sessions.set(previewSessionId, registration);

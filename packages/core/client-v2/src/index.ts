@@ -51,12 +51,17 @@ export type {
   EditorRef,
 } from './flow/components/code-editor/types';
 export {
+  createRunJSHostPreviewSession,
+  getActiveRunJSHostPreviewSessionCount,
+  isRunJSHostPreviewSourceRef,
+  resolveRunJSHostPreviewReporting,
   RunJSSourceResolverError,
   RunJSSourceResolverRegistry,
   resolveRunJSSourceBinding,
   resolveRuntimeRunJS,
 } from './flow/components/runjs-source';
 export type {
+  CreateRunJSHostPreviewSessionInput,
   ResolvedRuntimeRunJS,
   ResolveRunJSSourceBindingInput,
   RuntimeRunJSInput,
@@ -66,6 +71,8 @@ export type {
   RunJSSourceResolverResult,
   RunJSSourceSettingsDescriptor,
   RunJSSourceSettings,
+  RunJSHostPreviewSession,
+  RunJSHostPreviewSourceRef,
 } from './flow/components/runjs-source';
 export {
   DEFAULT_DATA_SOURCE_KEY,

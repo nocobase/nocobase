@@ -231,6 +231,8 @@ describe('sanitizeJsonSchemaForOpenAITools', () => {
         'lightExtensionFiles:getFile',
         'lightExtensionFiles:pull',
         'lightExtensionFiles:saveSource',
+        'lightExtensionPreviewProblems:list',
+        'lightExtensionPreviewProblems:watch',
         'lightExtensionReferences:readReferences',
         'lightExtensionRepos:get',
         'lightExtensionRepos:list',
@@ -239,6 +241,13 @@ describe('sanitizeJsonSchemaForOpenAITools', () => {
     );
     expect(optedInTools.map((tool) => tool.resourceName)).not.toEqual(
       expect.arrayContaining(['runJSSources', 'vscFile', 'vscFileArtifacts', 'lightExtensionSync']),
+    );
+    expect(optedInTools.map((tool) => `${tool.resourceName}:${tool.actionName}`)).not.toEqual(
+      expect.arrayContaining([
+        'lightExtensionPreviewProblems:open',
+        'lightExtensionPreviewProblems:append',
+        'lightExtensionPreviewProblems:close',
+      ]),
     );
     expect(optedInTools.map((tool) => tool.path).join('\n')).not.toMatch(
       /runJSSources|vscFile|artifact|credential|restore|recovery|lightExtensionSync/iu,

@@ -18,6 +18,7 @@ import { lightExtensionContextActionNames } from '../resources/lightExtensionCon
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
+import { lightExtensionPreviewProblemActionNames } from '../resources/lightExtensionPreviewProblems';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionRuntimeActionNames } from '../resources/lightExtensionRuntime';
@@ -61,6 +62,11 @@ describe('plugin-light-extension permission service', () => {
 
     expect(acl.allow).toHaveBeenCalledWith('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     expect(acl.allow).toHaveBeenCalledWith(
+      'lightExtensionPreviewProblems',
+      [...lightExtensionPreviewProblemActionNames],
+      'loggedIn',
+    );
+    expect(acl.allow).toHaveBeenCalledWith(
       'lightExtensionCapabilities',
       [...lightExtensionCapabilitiesActionNames],
       'public',
@@ -81,6 +87,7 @@ describe('plugin-light-extension permission service', () => {
     });
     const managementSnippet = registeredSnippets.find((snippet) => snippet.name === LIGHT_EXTENSION_ACL_SNIPPET);
     expect(managementSnippet?.actions).not.toContain('lightExtensionRuntime:resolve');
+    expect(managementSnippet?.actions).not.toContain('lightExtensionPreviewProblems:append');
     expect(managementSnippet?.actions).not.toContain('lightExtension:updateMeta');
     expect(managementSnippet?.actions).not.toContain('lightExtension:viewLogs');
     expect(managementSnippet?.actions).not.toContain('lightExtension:sync');

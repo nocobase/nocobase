@@ -8,6 +8,7 @@
  */
 
 import { parseRunJSStackFrames } from '@nocobase/runjs/compiler/line-map';
+import type { RunJSApiFailureReporter } from './runjsApiFailureReporter';
 
 export const RUNJS_RUNTIME_ISSUE_SCHEMA_VERSION = 1 as const;
 export const RUNJS_RUNTIME_REPORTING_CONTEXT = Symbol.for('@nocobase/runjs/runtime-reporting');
@@ -68,6 +69,7 @@ export interface RunJSRuntimeReporter {
 export interface RunJSRuntimeReportingOptions {
   identity: RunJSExecutionIdentity;
   reporter: RunJSRuntimeReporter;
+  apiFailureReporter?: RunJSApiFailureReporter;
 }
 
 export type RunJSRuntimeIssueInput =

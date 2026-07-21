@@ -10,6 +10,7 @@
 import { APIClient } from '@nocobase/sdk';
 import type { ActionParams, IResource, RequestOptions } from '@nocobase/sdk';
 import type { FlowContext } from '../flowContext';
+import { getRunJSApiFailureReporting, reportRunJSApiFailure } from '../runjsApiFailureReporter';
 import { getDataSourceKeyFromHeaders, markDataSourceDirty } from './dataSourceDirty';
 
 type ResourceActionFn = (params?: ActionParams, opts?: unknown) => Promise<unknown>;
@@ -19,6 +20,7 @@ export const SKIP_DATA_SOURCE_DIRTY = '__nocobaseSkipDataSourceDirty';
 const DIRTY_DISPATCH_TOKEN = Symbol('nocobaseDirtyDispatchToken');
 
 type DirtyDispatchToken = {
+  apiFailureReported?: boolean;
   marked: boolean;
   requestKey?: string;
   resourceKey?: string;
@@ -418,6 +420,33 @@ function markResourceActionDataSourceDirtyOnce(
   markResourceActionDataSourceDirty(context, dirtyResourceAction, headers);
 }
 
+function reportResourceActionFailureOnce(
+  token: DirtyDispatchToken,
+  context: FlowContext,
+  action: DirtyResourceAction | undefined,
+  method: unknown,
+  error: unknown,
+): void {
+  if (token.apiFailureReported || !action) {
+    return;
+  }
+  const reporting = getRunJSApiFailureReporting(context);
+  if (!reporting) {
+    return;
+  }
+  token.apiFailureReported = true;
+  reportRunJSApiFailure(reporting, {
+    method,
+    resource: action.dataSourceKey ? `dataSources.${action.dataSourceKey}.${action.resourceName}` : action.resourceName,
+    action: action.actionName,
+    error,
+  });
+}
+
+function getResourceActionMethod(actionName: string): 'GET' | 'POST' {
+  return ['get', 'list'].includes(actionName.trim().toLowerCase()) ? 'GET' : 'POST';
+}
+
 function isObjectRecord(value: unknown): value is Record<PropertyKey, unknown> {
   return !!value && typeof value === 'object';
 }
@@ -439,7 +468,7 @@ function createDirtyAwareResource(
       }
 
       const dirtyResourceAction = resolveDirtyResourceActionFromResource(resourceName, resourceOf, prop, context);
-      if (!dirtyResourceAction || !isMutatingResourceAction(dirtyResourceAction.actionName)) {
+      if (!dirtyResourceAction) {
         return original;
       }
 
@@ -478,11 +507,22 @@ function createDirtyAwareResource(
         } finally {
           requestTokenStack.pop();
         }
-        const result = await actionResult;
-        if (ownsToken) {
-          markResourceActionDataSourceDirtyOnce(token, context, dirtyResourceAction, headers);
+        try {
+          const result = await actionResult;
+          if (ownsToken) {
+            markResourceActionDataSourceDirtyOnce(token, context, dirtyResourceAction, headers);
+          }
+          return result;
+        } catch (error) {
+          reportResourceActionFailureOnce(
+            token,
+            context,
+            dirtyResourceAction,
+            getResourceActionMethod(dirtyResourceAction.actionName),
+            error,
+          );
+          throw error;
         }
-        return result;
       };
     },
   });
@@ -524,7 +564,7 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
       return new Proxy(resourceInstance, {
         get(target, prop, receiver) {
           const original = Reflect.get(target, prop, receiver);
-          if (typeof prop !== 'string' || typeof original !== 'function' || !isMutatingResourceAction(prop)) {
+          if (typeof prop !== 'string' || typeof original !== 'function') {
             return original;
           }
 
@@ -640,14 +680,23 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
       ...cleanConfig
     } = options;
     const receiver = createDispatchReceiver(token);
-    return (
-      Reflect.apply(baseRequest, shouldUseRequestDispatchReceiver ? receiver : api, [cleanConfig]) as Promise<R>
-    ).then((result) => {
-      if (ownsToken) {
-        markResourceActionDataSourceDirtyOnce(token, context, dirtyResourceAction, options.headers);
-      }
-      return result;
-    });
+    return (Reflect.apply(baseRequest, shouldUseRequestDispatchReceiver ? receiver : api, [cleanConfig]) as Promise<R>)
+      .then((result) => {
+        if (ownsToken) {
+          markResourceActionDataSourceDirtyOnce(token, context, dirtyResourceAction, options.headers);
+        }
+        return result;
+      })
+      .catch((error: unknown) => {
+        reportResourceActionFailureOnce(
+          token,
+          context,
+          dirtyResourceAction,
+          options.method || (dirtyResourceAction ? getResourceActionMethod(dirtyResourceAction.actionName) : 'GET'),
+          error,
+        );
+        throw error;
+      });
   }) as APIClient['request'];
 
   const isLockedOwnProperty = (target: DirtyAwareAPIClient, prop: PropertyKey) => {

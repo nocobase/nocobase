@@ -281,6 +281,67 @@ export const lightExtensionSchemas = {
       },
     },
   },
+  LightExtensionPreviewProblemOpenInput: {
+    type: 'object',
+    required: ['repoId', 'entryId', 'ownerLocator', 'snapshotId', 'artifactHash'],
+    properties: {
+      repoId: { type: 'string' },
+      entryId: { type: 'string' },
+      ownerLocator: { $ref: '#/components/schemas/LightExtensionReferenceOwnerLocator' },
+      snapshotId: { type: 'string' },
+      artifactHash: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+      ttlMs: { type: 'integer', minimum: 10000, maximum: 300000 },
+    },
+  },
+  LightExtensionPreviewProblemSessionInput: {
+    type: 'object',
+    required: ['sessionId', 'repoId', 'entryId', 'ownerLocator', 'snapshotId', 'artifactHash', 'executionId'],
+    properties: {
+      sessionId: { type: 'string' },
+      repoId: { type: 'string' },
+      entryId: { type: 'string' },
+      ownerLocator: { $ref: '#/components/schemas/LightExtensionReferenceOwnerLocator' },
+      snapshotId: { type: 'string' },
+      artifactHash: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+      executionId: { type: 'string' },
+    },
+  },
+  LightExtensionPreviewProblemItem: {
+    type: 'object',
+    required: ['cursor', 'problem'],
+    properties: {
+      cursor: { type: 'integer', minimum: 1 },
+      problem: { $ref: '#/components/schemas/LightExtensionProblem' },
+    },
+  },
+  LightExtensionPreviewProblemSessionResult: {
+    allOf: [
+      { $ref: '#/components/schemas/LightExtensionPreviewProblemSessionInput' },
+      {
+        type: 'object',
+        required: ['schemaVersion', 'state', 'cursor', 'nextCursor', 'expiresAt', 'droppedCount', 'items'],
+        properties: {
+          schemaVersion: { type: 'integer', enum: [1] },
+          state: { type: 'string', enum: ['active', 'completed', 'stale', 'expired'] },
+          cursor: { type: 'integer', minimum: 0 },
+          nextCursor: { type: 'integer', minimum: 0 },
+          expiresAt: { type: 'string', format: 'date-time' },
+          droppedCount: { type: 'integer', minimum: 0 },
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/LightExtensionPreviewProblemItem' },
+          },
+        },
+      },
+    ],
+  },
+  LightExtensionPreviewProblemSessionEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: { $ref: '#/components/schemas/LightExtensionPreviewProblemSessionResult' },
+    },
+  },
   LightExtensionErrorItem: {
     type: 'object',
     required: ['code', 'message', 'status'],

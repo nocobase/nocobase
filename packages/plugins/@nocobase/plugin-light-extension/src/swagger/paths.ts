@@ -417,4 +417,149 @@ export const lightExtensionPaths = {
       },
     },
   },
+  '/lightExtensionPreviewProblems:open': {
+    post: {
+      'x-mcp': false,
+      tags: ['lightExtensionPreviewProblems'],
+      summary: 'Open a scoped preview problem session',
+      requestBody: {
+        required: true,
+        content: jsonContent('LightExtensionPreviewProblemOpenInput'),
+      },
+      responses: {
+        200: {
+          description: 'Opened preview problem session.',
+          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
+        },
+        403: errorResponse('The current user cannot open a preview problem session.'),
+      },
+    },
+  },
+  '/lightExtensionPreviewProblems:append': {
+    post: {
+      'x-mcp': false,
+      tags: ['lightExtensionPreviewProblems'],
+      summary: 'Append sanitized browser problems to a preview session',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              allOf: [
+                schemaRef('LightExtensionPreviewProblemSessionInput'),
+                {
+                  type: 'object',
+                  required: ['problems'],
+                  properties: {
+                    problems: {
+                      type: 'array',
+                      items: schemaRef('LightExtensionProblem'),
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Updated preview problem session.',
+          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
+        },
+        403: errorResponse('The preview problem session is outside the current user or role scope.'),
+        404: errorResponse('The preview problem session does not exist.'),
+        409: errorResponse('The preview problem session is no longer active.'),
+      },
+    },
+  },
+  '/lightExtensionPreviewProblems:list': {
+    post: {
+      'x-mcp': true,
+      tags: ['lightExtensionPreviewProblems'],
+      summary: 'List preview problems after a cursor',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              allOf: [
+                schemaRef('LightExtensionPreviewProblemSessionInput'),
+                { type: 'object', properties: { cursor: { type: 'integer', minimum: 0 } } },
+              ],
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Problems after the supplied cursor and the next cursor.',
+          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
+        },
+        403: errorResponse('The preview problem session is outside the current user or role scope.'),
+        404: errorResponse('The preview problem session does not exist.'),
+      },
+    },
+  },
+  '/lightExtensionPreviewProblems:watch': {
+    post: {
+      'x-mcp': true,
+      tags: ['lightExtensionPreviewProblems'],
+      summary: 'Poll a preview problem session after a cursor',
+      description: 'The first version uses ordinary cursor polling; clients may call this operation repeatedly.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              allOf: [
+                schemaRef('LightExtensionPreviewProblemSessionInput'),
+                { type: 'object', properties: { cursor: { type: 'integer', minimum: 0 } } },
+              ],
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Current preview problem state and problems after the supplied cursor.',
+          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
+        },
+        403: errorResponse('The preview problem session is outside the current user or role scope.'),
+        404: errorResponse('The preview problem session does not exist.'),
+      },
+    },
+  },
+  '/lightExtensionPreviewProblems:close': {
+    post: {
+      'x-mcp': false,
+      tags: ['lightExtensionPreviewProblems'],
+      summary: 'Close or stale a preview problem session',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              allOf: [
+                schemaRef('LightExtensionPreviewProblemSessionInput'),
+                {
+                  type: 'object',
+                  required: ['state'],
+                  properties: { state: { type: 'string', enum: ['completed', 'stale'] } },
+                },
+              ],
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Closed preview problem session.',
+          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
+        },
+        403: errorResponse('The preview problem session is outside the current user or role scope.'),
+        404: errorResponse('The preview problem session does not exist.'),
+      },
+    },
+  },
 };

@@ -274,6 +274,8 @@
   "Other light extension entries are read-only here": "此编辑器中其他轻插件 Entry 为只读",
   "Only editable files in this workspace will be restored. Read-only files will remain unchanged.": "仅恢复当前工作区中允许编辑的文件，只读文件将保持不变。",
   "Preview failed": "预览失败",
+  "Preview API permission denied": "预览 API 权限不足",
+  "Preview API request failed": "预览 API 请求失败",
   "Source changed while preview was compiling. Run again.": "预览编译期间源码已发生变化，请重新运行。",
   "ready": "就绪",
   "Select collection": "选择数据表",

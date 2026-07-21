@@ -37,11 +37,10 @@ import {
   type CodeEditorRevealTarget,
   type EmbeddedRunJSEditorSaveResult,
   createRunJSHostPreviewSession,
-  type RunJSHostPreviewSession,
   type RunJSHostPreviewSourceRef,
   useFullscreenOverlay,
 } from '@nocobase/client-v2';
-import type { RunJSRuntimeEvent } from '@nocobase/flow-engine';
+import type { RunJSApiFailureEvent, RunJSRuntimeEvent } from '@nocobase/flow-engine';
 import {
   getFirstMappedRunJSStackFrame,
   mapRunJSStack,
@@ -100,6 +99,11 @@ import {
 } from '../workspace/lightExtensionWorkspaceArchive';
 import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 import { useWorkspaceProblemStore, WorkspaceProblemStore } from '../problems/workspaceProblemStore';
+import {
+  LightExtensionPreviewProblemClient,
+  openLightExtensionPreviewProblemSession,
+  type ActiveLightExtensionPreviewProblemSession,
+} from '../problems/previewProblemClient';
 
 interface WorkspaceFile extends RunJSWorkspaceFile {
   encoding?: LightExtensionFileEncoding;
@@ -115,12 +119,20 @@ interface LightExtensionWorkspacePageProps {
   workspaceScope?: LightExtensionWorkspaceScope;
   entryId?: string | null;
   ownerLocator?: LightExtensionReferenceOwnerLocator;
+  previewProblemClient?: LightExtensionPreviewProblemClient;
   referenceId?: string;
   onPreview?: (request: LightExtensionHostPreviewRequest) => void | Promise<void>;
   onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
   onSaved?: () => void | Promise<void>;
+}
+
+interface ActiveHostPreviewSession {
+  sourceRef: RunJSHostPreviewSourceRef;
+  close(): void;
+  closeRemote(state: 'completed' | 'stale'): Promise<void>;
+  remote?: ActiveLightExtensionPreviewProblemSession;
 }
 
 export interface LightExtensionMoveToInlineRequest {
@@ -179,6 +191,7 @@ function LightExtensionWorkspacePage({
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
   entryId,
   ownerLocator,
+  previewProblemClient,
   referenceId,
   onPreview,
   onMoveToInline,
@@ -246,7 +259,7 @@ function LightExtensionWorkspacePage({
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
   const previewRequestSequenceRef = useRef(0);
-  const activePreviewSessionRef = useRef<RunJSHostPreviewSession | null>(null);
+  const activePreviewSessionRef = useRef<ActiveHostPreviewSession | null>(null);
   const revealRequestSequenceRef = useRef(0);
   const bindingContextRequestSequenceRef = useRef(0);
   const ownerLocatorSignature = useMemo(() => JSON.stringify(ownerLocator || null), [ownerLocator]);
@@ -449,8 +462,10 @@ function LightExtensionWorkspacePage({
     problemStore.setSnapshot(previewSnapshotKey);
     return () => {
       previewRequestSequenceRef.current += 1;
-      activePreviewSessionRef.current?.close();
+      const session = activePreviewSessionRef.current;
       activePreviewSessionRef.current = null;
+      session?.close();
+      session?.closeRemote('stale').catch(() => undefined);
     };
   }, [previewSnapshotKey, problemStore]);
 
@@ -802,12 +817,16 @@ function LightExtensionWorkspacePage({
     await loadVersionIntoEditor(commit);
   };
 
-  const closeActivePreviewSession = useCallback((): RunJSHostPreviewSourceRef | undefined => {
-    const session = activePreviewSessionRef.current;
-    activePreviewSessionRef.current = null;
-    session?.close();
-    return session?.sourceRef;
-  }, []);
+  const closeActivePreviewSession = useCallback(
+    async (state: 'completed' | 'stale'): Promise<RunJSHostPreviewSourceRef | undefined> => {
+      const session = activePreviewSessionRef.current;
+      activePreviewSessionRef.current = null;
+      session?.close();
+      await session?.closeRemote(state).catch(() => undefined);
+      return session?.sourceRef;
+    },
+    [],
+  );
 
   const reportPreviewRestoreFailure = useCallback(
     (error: unknown, sourceRef?: RunJSHostPreviewSourceRef) => {
@@ -873,7 +892,7 @@ function LightExtensionWorkspacePage({
       await loadBindingContext();
       if (onRequestClose) {
         previewRequestSequenceRef.current += 1;
-        const sourceRef = closeActivePreviewSession();
+        const sourceRef = await closeActivePreviewSession('completed');
         try {
           await onRequestClose();
         } catch (error) {
@@ -970,7 +989,7 @@ function LightExtensionWorkspacePage({
     }
 
     previewRequestSequenceRef.current += 1;
-    const sourceRef = closeActivePreviewSession();
+    const sourceRef = await closeActivePreviewSession('completed');
     try {
       await onRequestClose?.();
     } catch (error) {
@@ -981,7 +1000,7 @@ function LightExtensionWorkspacePage({
   const discardLocalAndClose = useCallback(async () => {
     setCloseConfirmOpen(false);
     previewRequestSequenceRef.current += 1;
-    const sourceRef = closeActivePreviewSession();
+    const sourceRef = await closeActivePreviewSession('completed');
     try {
       await onRequestClose?.();
     } catch (error) {
@@ -1062,13 +1081,17 @@ function LightExtensionWorkspacePage({
     }
 
     const requestSnapshotKey = previewSnapshotKey;
-    closeActivePreviewSession();
+    const previousSession = activePreviewSessionRef.current;
+    activePreviewSessionRef.current = null;
+    previousSession?.close();
+    previousSession?.closeRemote('stale').catch(() => undefined);
     const requestSequence = previewRequestSequenceRef.current + 1;
     previewRequestSequenceRef.current = requestSequence;
     problemStore.replaceProblems({ producer: 'host-preview', snapshotId: requestSnapshotKey, problems: [] });
     setPreviewing(true);
     setNotice(null);
-    let session: RunJSHostPreviewSession | null = null;
+    let session: ActiveHostPreviewSession | null = null;
+    let remoteSession: ActiveLightExtensionPreviewProblemSession | undefined;
     try {
       const result = await compileWorkspacePreview({
         repoId,
@@ -1108,7 +1131,30 @@ function LightExtensionWorkspacePage({
         throw new Error(t('Preview artifact is missing a valid source map.'));
       }
 
-      session = createRunJSHostPreviewSession({
+      remoteSession =
+        previewProblemClient && ownerLocator
+          ? await openLightExtensionPreviewProblemSession(previewProblemClient, {
+              repoId,
+              entryId: entryId || '',
+              ownerLocator,
+              snapshotId: result.snapshotId,
+              artifactHash: artifact.artifactHash,
+            })
+          : undefined;
+      if (
+        previewRequestSequenceRef.current !== requestSequence ||
+        latestPreviewSnapshotRef.current !== requestSnapshotKey
+      ) {
+        await remoteSession?.close('stale').catch(() => undefined);
+        return;
+      }
+      const hostSession = createRunJSHostPreviewSession({
+        ...(remoteSession
+          ? {
+              previewSessionId: remoteSession.result.sessionId,
+              executionId: remoteSession.result.executionId,
+            }
+          : {}),
         artifactHash: artifact.artifactHash,
         snapshotId: requestSnapshotKey,
         sourceMap,
@@ -1120,7 +1166,7 @@ function LightExtensionWorkspacePage({
           ...(ownerLocatorSignature !== 'null' ? { ownerLocator: ownerLocatorSignature } : {}),
         },
         reporter: {
-          report(event) {
+          async report(event) {
             if (
               !session ||
               activePreviewSessionRef.current !== session ||
@@ -1131,14 +1177,44 @@ function LightExtensionWorkspacePage({
             ) {
               return;
             }
+            const problem = createHostPreviewRuntimeProblem(event, session.sourceRef, workspaceScope);
             problemStore.appendProblems({
               producer: 'host-preview',
               snapshotId: requestSnapshotKey,
-              problems: [createHostPreviewRuntimeProblem(event, session.sourceRef, workspaceScope)],
+              problems: [problem],
             });
+            await session.remote?.append([problem]).catch(() => undefined);
+          },
+        },
+        apiFailureReporter: {
+          async report(event) {
+            if (
+              !session ||
+              activePreviewSessionRef.current !== session ||
+              latestPreviewSnapshotRef.current !== requestSnapshotKey ||
+              event.identity.executionId !== session.sourceRef.executionId ||
+              event.identity.artifactHash !== session.sourceRef.artifactHash ||
+              event.identity.sourceURL !== session.sourceRef.sourceURL
+            ) {
+              return;
+            }
+            const problem = createHostPreviewApiProblem(event, session.sourceRef, workspaceScope, t);
+            problemStore.appendProblems({
+              producer: 'host-preview',
+              snapshotId: requestSnapshotKey,
+              problems: [problem],
+            });
+            await session.remote?.append([problem]).catch(() => undefined);
           },
         },
       });
+      session = {
+        ...hostSession,
+        remote: remoteSession,
+        async closeRemote(state) {
+          await remoteSession?.close(state).then(() => undefined);
+        },
+      };
       activePreviewSessionRef.current = session;
       await onPreview({
         artifact,
@@ -1152,6 +1228,9 @@ function LightExtensionWorkspacePage({
           activePreviewSessionRef.current = null;
         }
         session.close();
+        await session.closeRemote('stale').catch(() => undefined);
+      } else {
+        await remoteSession?.close('stale').catch(() => undefined);
       }
       if (
         previewRequestSequenceRef.current !== requestSequence ||
@@ -1173,11 +1252,12 @@ function LightExtensionWorkspacePage({
   }, [
     canPreview,
     baseHeadCommitId,
-    closeActivePreviewSession,
     compileWorkspacePreview,
     entryId,
     onPreview,
     ownerLocatorSignature,
+    ownerLocator,
+    previewProblemClient,
     previewSnapshotKey,
     problemStore,
     repoId,
@@ -1770,6 +1850,37 @@ function createHostPreviewRuntimeProblem(
       ruleId: event.issue.ruleId,
       executionMayContinue: event.issue.executionMayContinue,
       runtimeDetails: event.issue.details,
+    },
+  });
+}
+
+function createHostPreviewApiProblem(
+  event: RunJSApiFailureEvent,
+  sourceRef: RunJSHostPreviewSourceRef,
+  workspaceScope: Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>,
+  t: (key: string) => string,
+): LightExtensionProblem {
+  const createProblem = createLightExtensionProblemFactory({
+    snapshotId: sourceRef.snapshotId,
+    requestId: event.identity.executionId,
+    source: 'api',
+    phase: event.issue.phase,
+  });
+  return createProblem({
+    code: event.issue.phase === 'permission' ? 'host_preview_api_permission_denied' : 'host_preview_api_failed',
+    severity: 'error',
+    message: t(event.issue.phase === 'permission' ? 'Preview API permission denied' : 'Preview API request failed'),
+    path: workspaceScope.entryPath,
+    kind: workspaceScope.kind,
+    details: {
+      previewSessionId: sourceRef.previewSessionId,
+      executionId: event.identity.executionId,
+      artifactHash: event.identity.artifactHash,
+      method: event.issue.method,
+      resource: event.issue.resource,
+      action: event.issue.action,
+      status: event.issue.status,
+      reasonCode: event.issue.reasonCode,
     },
   });
 }

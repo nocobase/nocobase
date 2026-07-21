@@ -16,6 +16,7 @@ import {
   setRunJSRuntimeReporting,
   type RunJSRuntimeReportingOptions,
 } from './runjsRuntimeReporter';
+import { setRunJSApiFailureReporting } from './runjsApiFailureReporter';
 
 export interface JSRunnerOptions {
   /** Maximum execution time in milliseconds. Defaults to 5 seconds. */
@@ -236,6 +237,15 @@ export class JSRunner {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_RUNJS_TIMEOUT_MS;
     this.runtimeReporting = options.runtimeReporting;
     setRunJSRuntimeReporting(providedGlobals.ctx, this.runtimeReporting);
+    setRunJSApiFailureReporting(
+      providedGlobals.ctx,
+      this.runtimeReporting?.apiFailureReporter
+        ? {
+            identity: this.runtimeReporting.identity,
+            reporter: this.runtimeReporting.apiFailureReporter,
+          }
+        : undefined,
+    );
   }
 
   /**

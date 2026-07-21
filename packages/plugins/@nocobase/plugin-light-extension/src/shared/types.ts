@@ -225,6 +225,54 @@ export interface LightExtensionProblem {
   provenance?: LightExtensionProblemProvenance[];
 }
 
+export type LightExtensionPreviewProblemSessionState = 'active' | 'completed' | 'stale' | 'expired';
+
+export interface LightExtensionPreviewProblemSessionIdentity {
+  repoId: string;
+  entryId: string;
+  ownerLocator: LightExtensionReferenceOwnerLocator;
+  snapshotId: string;
+  artifactHash: string;
+  executionId: string;
+}
+
+export interface LightExtensionPreviewProblemOpenInput
+  extends Omit<LightExtensionPreviewProblemSessionIdentity, 'executionId'> {
+  ttlMs?: number;
+}
+
+export interface LightExtensionPreviewProblemSessionInput extends LightExtensionPreviewProblemSessionIdentity {
+  sessionId: string;
+}
+
+export interface LightExtensionPreviewProblemAppendInput extends LightExtensionPreviewProblemSessionInput {
+  problems: LightExtensionProblem[];
+}
+
+export interface LightExtensionPreviewProblemListInput extends LightExtensionPreviewProblemSessionInput {
+  cursor?: number;
+}
+
+export interface LightExtensionPreviewProblemCloseInput extends LightExtensionPreviewProblemSessionInput {
+  state: Extract<LightExtensionPreviewProblemSessionState, 'completed' | 'stale'>;
+}
+
+export interface LightExtensionPreviewProblemItem {
+  cursor: number;
+  problem: LightExtensionProblem;
+}
+
+export interface LightExtensionPreviewProblemSessionResult extends LightExtensionPreviewProblemSessionIdentity {
+  schemaVersion: 1;
+  sessionId: string;
+  state: LightExtensionPreviewProblemSessionState;
+  cursor: number;
+  nextCursor: number;
+  expiresAt: string;
+  droppedCount: number;
+  items: LightExtensionPreviewProblemItem[];
+}
+
 export interface LightExtensionEntryRuntimeArtifact {
   artifactHash?: string;
   code: string;

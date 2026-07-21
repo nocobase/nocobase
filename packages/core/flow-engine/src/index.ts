@@ -35,6 +35,7 @@ export * from './flowContext';
 export * from './FlowContextProvider';
 export * from './JSRunner';
 export * from './runjsRuntimeReporter';
+export * from './runjsApiFailureReporter';
 export {
   getRunJSDocFor,
   createJSRunnerWithVersion,

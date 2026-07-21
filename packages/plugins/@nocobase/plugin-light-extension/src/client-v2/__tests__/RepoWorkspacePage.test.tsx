@@ -20,6 +20,7 @@ import { LightExtensionHookError, type UseLightExtensionRepoResult } from '../ho
 import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
+import { LightExtensionPreviewProblemClient } from '../problems/previewProblemClient';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 
 const mocks = vi.hoisted(() => ({
@@ -43,6 +44,9 @@ const mocks = vi.hoisted(() => ({
   hostPreviewSessions: [] as Array<{
     close: ReturnType<typeof vi.fn>;
     input: {
+      apiFailureReporter?: { report: (event: unknown) => void | Promise<void> };
+      executionId?: string;
+      previewSessionId?: string;
       reporter: { report: (event: unknown) => void };
     };
     sourceRef: Record<string, unknown>;
@@ -57,7 +61,10 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@nocobase/client-v2', () => ({
   createRunJSHostPreviewSession: (input: {
+    apiFailureReporter?: { report: (event: unknown) => void | Promise<void> };
     artifactHash: string;
+    executionId?: string;
+    previewSessionId?: string;
     snapshotId: string;
     sourceMap: string;
     metadata?: Record<string, unknown>;
@@ -68,8 +75,8 @@ vi.mock('@nocobase/client-v2', () => ({
     const sourceRef = {
       type: 'runjs-host-preview',
       version: 1,
-      previewSessionId: `preview:${sequence}`,
-      executionId: `execution:${sequence}`,
+      previewSessionId: input.previewSessionId || `preview:${sequence}`,
+      executionId: input.executionId || `execution:${sequence}`,
       artifactHash: input.artifactHash,
       snapshotId: input.snapshotId,
       sourceURL: sourceMap.sourceURL,
@@ -878,6 +885,307 @@ describe('LightExtensionWorkspacePage', () => {
     );
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(screen.queryByText('Preview updated')).not.toBeInTheDocument();
+  });
+
+  it('opens the remote problem channel before host preview, appends scoped API failures, and stales on source change', async () => {
+    const operations: string[] = [];
+    const onPreview = vi.fn(async () => {
+      operations.push('preview');
+    });
+    const ownerLocator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'block_1',
+      use: 'JSBlockModel' as const,
+      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
+    };
+    const request = vi.fn(async (options: { url: string; data: Record<string, unknown> }) => {
+      operations.push(options.url);
+      const identity = {
+        sessionId: 'preview:server',
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        ownerLocator,
+        snapshotId: String(options.data.snapshotId || 'snapshot'),
+        artifactHash: 'a'.repeat(64),
+        executionId: 'execution:server',
+      };
+      return {
+        data: {
+          data: {
+            schemaVersion: 1,
+            ...identity,
+            state: options.url.endsWith(':close') ? options.data.state : 'active',
+            cursor: options.url.endsWith(':append') ? 1 : 0,
+            nextCursor: options.url.endsWith(':append') ? 1 : 0,
+            expiresAt: '2026-07-21T00:02:00.000Z',
+            droppedCount: 0,
+            items: [],
+          },
+        },
+      };
+    });
+    const previewProblemClient = new LightExtensionPreviewProblemClient({ request } as never);
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onPreview={onPreview}
+          ownerLocator={ownerLocator}
+          previewProblemClient={previewProblemClient}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
+    expect(operations.slice(0, 2)).toEqual(['lightExtensionPreviewProblems:open', 'preview']);
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'lightExtensionPreviewProblems:open',
+        data: expect.objectContaining({ snapshotId: 'workspace-preview-1' }),
+      }),
+    );
+    const session = mocks.hostPreviewSessions[0];
+    expect(session.sourceRef).toMatchObject({
+      previewSessionId: 'preview:server',
+      executionId: 'execution:server',
+    });
+
+    await act(async () => {
+      await session.input.apiFailureReporter?.report({
+        schemaVersion: 1,
+        identity: {
+          executionId: 'execution:server',
+          artifactHash: 'a'.repeat(64),
+          sourceURL: session.sourceRef.sourceURL,
+        },
+        issue: {
+          schemaVersion: 1,
+          type: 'api',
+          phase: 'permission',
+          severity: 'error',
+          method: 'POST',
+          resource: 'posts',
+          action: 'update',
+          status: 403,
+          reasonCode: 'NO_PERMISSION',
+        },
+      });
+    });
+    expect(await screen.findByText('Preview API permission denied')).toBeInTheDocument();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'lightExtensionPreviewProblems:append',
+        data: expect.objectContaining({
+          sessionId: 'preview:server',
+          executionId: 'execution:server',
+          problems: [
+            expect.objectContaining({
+              phase: 'permission',
+              source: 'api',
+              details: expect.objectContaining({
+                method: 'POST',
+                resource: 'posts',
+                action: 'update',
+                status: 403,
+                reasonCode: 'NO_PERMISSION',
+              }),
+            }),
+          ],
+        }),
+      }),
+    );
+
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>changed</div>);' },
+    });
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'lightExtensionPreviewProblems:close',
+          data: expect.objectContaining({ state: 'stale' }),
+        }),
+      ),
+    );
+  });
+
+  it('stales a remote session without running host preview when source changes while open is pending', async () => {
+    const onPreview = vi.fn();
+    const ownerLocator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'block_1',
+      use: 'JSBlockModel' as const,
+      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
+    };
+    let resolveOpen: ((value: unknown) => void) | undefined;
+    const request = vi.fn((options: { url: string; data: Record<string, unknown> }) => {
+      const result = {
+        schemaVersion: 1,
+        sessionId: 'preview:pending',
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        ownerLocator,
+        snapshotId: String(options.data.snapshotId || 'snapshot'),
+        artifactHash: 'a'.repeat(64),
+        executionId: 'execution:pending',
+        state: options.url.endsWith(':close') ? options.data.state : 'active',
+        cursor: 0,
+        nextCursor: 0,
+        expiresAt: '2026-07-21T00:02:00.000Z',
+        droppedCount: 0,
+        items: [],
+      };
+      if (options.url.endsWith(':open')) {
+        return new Promise((resolve) => {
+          resolveOpen = resolve;
+        });
+      }
+      return Promise.resolve({ data: { data: result } });
+    });
+    const previewProblemClient = new LightExtensionPreviewProblemClient({ request } as never);
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onPreview={onPreview}
+          ownerLocator={ownerLocator}
+          previewProblemClient={previewProblemClient}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensionPreviewProblems:open' })),
+    );
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>changed while opening</div>);' },
+    });
+    const openRequest = request.mock.calls.find(([options]) => options.url.endsWith(':open'))?.[0];
+    await act(async () => {
+      resolveOpen?.({
+        data: {
+          data: {
+            schemaVersion: 1,
+            sessionId: 'preview:pending',
+            repoId: 'ler_sales',
+            entryId: 'lee_sales_kpi',
+            ownerLocator,
+            snapshotId: String(openRequest?.data.snapshotId || 'snapshot'),
+            artifactHash: 'a'.repeat(64),
+            executionId: 'execution:pending',
+            state: 'active',
+            cursor: 0,
+            nextCursor: 0,
+            expiresAt: '2026-07-21T00:02:00.000Z',
+            droppedCount: 0,
+            items: [],
+          },
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'lightExtensionPreviewProblems:close',
+          data: expect.objectContaining({ state: 'stale' }),
+        }),
+      ),
+    );
+    expect(onPreview).not.toHaveBeenCalled();
+    expect(mocks.hostPreviewSessions).toHaveLength(0);
+  });
+
+  it('keeps remote close failures observational when closing host preview', async () => {
+    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
+    const onPreview = vi.fn();
+    const onRequestClose = vi.fn();
+    const ownerLocator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'block_1',
+      use: 'JSBlockModel' as const,
+      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
+    };
+    const request = vi.fn(async (options: { url: string; data: Record<string, unknown> }) => {
+      if (options.url.endsWith(':close')) {
+        throw new Error('problem channel unavailable');
+      }
+      return {
+        data: {
+          data: {
+            schemaVersion: 1,
+            sessionId: 'preview:server',
+            repoId: 'ler_sales',
+            entryId: 'lee_sales_kpi',
+            ownerLocator,
+            snapshotId: String(options.data.snapshotId || 'snapshot'),
+            artifactHash: 'a'.repeat(64),
+            executionId: 'execution:server',
+            state: 'active',
+            cursor: 0,
+            nextCursor: 0,
+            expiresAt: '2026-07-21T00:02:00.000Z',
+            droppedCount: 0,
+            items: [],
+          },
+        },
+      };
+    });
+    const previewProblemClient = new LightExtensionPreviewProblemClient({ request } as never);
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onFooterActionsChange={(actions) => {
+            footerActions = actions;
+          }}
+          onPreview={onPreview}
+          onRequestClose={onRequestClose}
+          ownerLocator={ownerLocator}
+          previewProblemClient={previewProblemClient}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await footerActions?.onCancel();
+    });
+
+    expect(mocks.hostPreviewSessions[0].close).toHaveBeenCalledTimes(1);
+    expect(onRequestClose).toHaveBeenCalledTimes(1);
   });
 
   it('maps host runtime events to the current workspace and ignores the closed session after source changes', async () => {

@@ -274,6 +274,8 @@
   "Other light extension entries are read-only here": "Other light extension entries are read-only here",
   "Only editable files in this workspace will be restored. Read-only files will remain unchanged.": "Only editable files in this workspace will be restored. Read-only files will remain unchanged.",
   "Preview failed": "Preview failed",
+  "Preview API permission denied": "Preview API permission denied",
+  "Preview API request failed": "Preview API request failed",
   "Source changed while preview was compiling. Run again.": "Source changed while preview was compiling. Run again.",
   "ready": "Ready",
   "Select collection": "Select collection",
