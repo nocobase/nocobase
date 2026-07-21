@@ -8,6 +8,7 @@
  */
 
 import type { FrontendToolManifest, FrontendToolPermission } from '../../common/frontend-tools';
+import { cloneDeep } from 'lodash';
 
 const TOOL_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 
@@ -30,7 +31,7 @@ type FrontendToolEntry = {
 
 const cloneManifest = (manifest: FrontendToolManifest): FrontendToolManifest => ({
   ...manifest,
-  inputSchema: { ...manifest.inputSchema },
+  inputSchema: cloneDeep(manifest.inputSchema),
 });
 
 export class FrontendToolRegistry {
@@ -70,7 +71,7 @@ export class FrontendToolRegistry {
       title: registration.title,
       description: registration.description,
       permission: registration.permission ?? 'ASK',
-      inputSchema: registration.inputSchema ?? { type: 'object', properties: {} },
+      inputSchema: cloneDeep(registration.inputSchema ?? { type: 'object', properties: {} }),
     };
     this.tools.set(id, {
       manifest,

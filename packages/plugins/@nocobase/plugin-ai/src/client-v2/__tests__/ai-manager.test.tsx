@@ -96,17 +96,18 @@ describe('AIManager v2', () => {
   it('registers, executes, lists, and clears frontend tools by block uid', async () => {
     const manager = new AIManager();
     const execute = vi.fn().mockResolvedValue({ refreshed: true });
+    const inputSchema = {
+      type: 'object',
+      properties: {
+        force: { type: 'boolean' },
+      },
+    };
 
     const manifest = manager.frontendTools.register('block-1', {
       name: 'refresh_dashboard',
       description: 'Refresh the current dashboard.',
       permission: 'ALLOW',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          force: { type: 'boolean' },
-        },
-      },
+      inputSchema,
       execute,
     });
 
@@ -114,6 +115,18 @@ describe('AIManager v2', () => {
     expect(manifest.permission).toBe('ALLOW');
     expect(manager.frontendTools.list('block-1')).toEqual([manifest]);
     expect(manager.frontendTools.getManifest(manifest.id)).toEqual(manifest);
+
+    inputSchema.properties.force.type = 'string';
+    manifest.inputSchema.properties = {};
+    const loadedManifest = manager.frontendTools.getManifest(manifest.id);
+    (loadedManifest.inputSchema as typeof inputSchema).properties.force.type = 'number';
+    expect(manager.frontendTools.getManifest(manifest.id).inputSchema).toEqual({
+      type: 'object',
+      properties: {
+        force: { type: 'boolean' },
+      },
+    });
+
     await expect(manager.frontendTools.execute(manifest.id, { force: true })).resolves.toEqual({ refreshed: true });
     expect(execute).toHaveBeenCalledWith({ force: true });
 
