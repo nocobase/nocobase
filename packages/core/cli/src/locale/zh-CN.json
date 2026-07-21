@@ -107,7 +107,8 @@
         "pull": "拉取 Light Extension",
         "contextRead": "读取 Light Extension Context Pack",
         "workspaceCheck": "检查 Light Extension Workspace",
-        "save": "保存 Light Extension"
+        "save": "保存 Light Extension",
+        "previewProblems": "跟踪 Light Extension Preview Problem"
       },
       "pull": {
         "summary": "将 JS Block 或 JS Page 拉取到本地源码 Workspace",
@@ -142,6 +143,42 @@
         "errors": {
           "rejected": "Workspace 检查拒绝了快照 {{snapshotId}}。\n{{problems}}",
           "notAccepted": "Workspace 检查未接受快照 {{snapshotId}}。\n{{problems}}"
+        }
+      },
+      "dev": {
+        "summary": "监听本地 Light Extension Workspace，并以 JSONL 输出有限次数的权威检查",
+        "flags": {
+          "once": "只检查当前快照一次，不持续监听源码变化",
+          "pollInterval": "本地源码轮询间隔（毫秒）",
+          "debounceMs": "源码保持不变多久后开始检查（毫秒）",
+          "maxCheckRounds": "需要人工关注前允许的最大权威检查轮数",
+          "maxDurationMs": "Agent 循环的最大持续时间（毫秒）",
+          "repeatedFingerprintThreshold": "相同错误指纹集合连续出现多少次后要求人工关注"
+        },
+        "errors": {
+          "rejected": "Workspace 检查拒绝了快照 {{snapshotId}}。",
+          "needsAttention": "有限 Agent 循环已达到预算，需要重新评估后再继续。"
+        }
+      },
+      "problems": {
+        "summary": "以 JSONL 跟踪当前人工 Host Preview 的 Problem 会话",
+        "flags": {
+          "follow": "从 NocoBase Workspace 复制的 Preview 会话 Token",
+          "pollInterval": "轮询间隔（毫秒）",
+          "timeoutMs": "最大跟踪时间（毫秒）",
+          "once": "只轮询一次，不持续等待会话关闭"
+        },
+        "errors": {
+          "timeout": "跟踪 Preview Problem 会话超时。",
+          "runtimeFailed": "人工 Host Preview 报告了运行时错误。请修复本地源码后重新执行检查。",
+          "sessionClosed": "Preview Problem 会话在完成前已过期或变为 stale。",
+          "sessionMismatch": "Preview 会话与当前本地仓库、入口、快照或 Context Pack Hash 不匹配。",
+          "invalidResponse": "Preview Problem 会话响应无效。",
+          "invalidState": "Preview Problem 会话状态无效。",
+          "invalidItem": "Preview Problem 会话条目无效。",
+          "identityMismatch": "Preview Problem 会话响应标识不匹配。",
+          "invalidField": "Preview Problem 的 {{label}} 无效。",
+          "invalidCursor": "Preview Problem 游标无效。"
         }
       },
       "save": {
@@ -197,9 +234,12 @@
         "recordAcceptedOnly": "只能记录已接受的 Workspace 检查。",
         "snapshotMismatch": "服务端返回的 Workspace 快照与当前本地文件不匹配，因此不会将 Workspace 标记为已检查。",
         "checkedHeadMismatch": "已接受的检查使用了不同的基线 Head。请重新拉取 Workspace。",
+        "contextHashMissing": "本地 Workspace 不包含 Context Pack Hash。请重新拉取后再使用 Agent 循环。",
+        "agentLoopMissing": "本地 Agent 循环状态缺失。请先运行 `nb light check`，再跟踪 Preview Problem。",
         "baselineMissing": "{{path}} 的 Pull 基线缺失。请重新拉取 Workspace 后再保存。",
         "baselineHashMismatch": "{{path}} 的 Pull 基线与 Workspace 状态不匹配。请重新拉取 Workspace 后再检查或保存修改。",
         "checkRequired": "当前本地快照尚未通过权威 Workspace 检查。请在最后一次文件修改后运行 `nb light check`。",
+        "previewRequired": "当前快照尚未完成人工 Host Preview，或仍有运行时错误。请在 NocoBase 中执行 Preview，再用 `nb light problems` 跟踪会话。",
         "saveRepoMismatch": "保存响应中的仓库与本地 Workspace 不匹配。",
         "unsafeDirectory": "拒绝使用不安全的 Workspace 目录：{{path}}"
       }

@@ -10,6 +10,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Modal, message } from 'antd';
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI } from '@nocobase/light-extension-sdk/schema';
+import { decodeLightExtensionPreviewSessionDescriptor } from '@nocobase/light-extension-sdk/agent-loop';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -231,6 +232,7 @@ vi.mock('../vsc-file/public-api', () => {
       activeFile,
       onChange,
       onRunPreview,
+      onDiffToggle,
       scene,
       showRunButton,
       previewing,
@@ -246,6 +248,7 @@ vi.mock('../vsc-file/public-api', () => {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
       onRunPreview?: () => void;
+      onDiffToggle?: () => void;
       scene?: string;
       showRunButton?: boolean;
       previewing?: boolean;
@@ -281,6 +284,11 @@ vi.mock('../vsc-file/public-api', () => {
         {showRunButton ? (
           <button disabled={!onRunPreview} onClick={onRunPreview} type="button">
             {previewing ? 'Running' : 'Run'}
+          </button>
+        ) : null}
+        {onDiffToggle ? (
+          <button onClick={onDiffToggle} type="button">
+            View diff
           </button>
         ) : null}
         {toolbarActions}
@@ -960,6 +968,23 @@ describe('LightExtensionWorkspacePage', () => {
       previewSessionId: 'preview:server',
       executionId: 'execution:server',
     });
+    const agentStatus = screen.getByTestId('light-extension-agent-loop-status');
+    expect(within(agentStatus).getByText('workspace-preview-1')).toBeInTheDocument();
+    expect(within(agentStatus).getByText('Preview session status: active')).toBeInTheDocument();
+    const previewToken = within(agentStatus).getByText((content) =>
+      content.startsWith('light-preview-v1.'),
+    ).textContent;
+    expect(decodeLightExtensionPreviewSessionDescriptor(previewToken || '')).toMatchObject({
+      sessionId: 'preview:server',
+      repoId: 'ler_sales',
+      entryId: 'lee_sales_kpi',
+      snapshotId: 'workspace-preview-1',
+      contextHash: 'generic_context_1',
+      executionId: 'execution:server',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'View diff' }));
+    expect(within(agentStatus).getByText('Reviewed')).toBeInTheDocument();
+    expect(within(agentStatus).getByText('Locked')).toBeInTheDocument();
 
     await act(async () => {
       await session.input.apiFailureReporter?.report({
@@ -1017,6 +1042,10 @@ describe('LightExtensionWorkspacePage', () => {
         }),
       ),
     );
+    expect(within(agentStatus).getByText('Preview session status: stale')).toBeInTheDocument();
+    expect(
+      within(agentStatus).queryByText((content) => content.startsWith('light-preview-v1.')),
+    ).not.toBeInTheDocument();
   });
 
   it('stales a remote session without running host preview when source changes while open is pending', async () => {

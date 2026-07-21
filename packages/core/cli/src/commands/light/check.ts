@@ -21,7 +21,9 @@ import {
   LightExtensionCliError,
   loadWorkspaceState,
   readWorkspaceFiles,
+  recordRejectedWorkspaceCheck,
   recordSuccessfulWorkspaceCheck,
+  recordWorkspaceAgentLoopEvent,
   resolveLightExtensionTarget,
   unwrapResponseData,
   type LightExtensionWorkspaceCheckResult,
@@ -89,13 +91,19 @@ export default class LightCheck extends Command {
 
     try {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
-      const state = await loadWorkspaceState(workspaceRoot);
+      let state = await loadWorkspaceState(workspaceRoot);
       const target = await resolveLightExtensionTarget({
         env: flags.env ?? state.env.name,
         apiBaseUrl: flags['api-base-url'] ?? state.app.apiBaseUrl,
       });
       assertTargetMatchesState(target, state);
       const files = await readWorkspaceFiles(workspaceRoot, state);
+      state = await recordWorkspaceAgentLoopEvent({
+        workspaceRoot,
+        state,
+        files,
+        event: { type: 'check_started' },
+      });
       const response = await executeRawApiRequest({
         envName: target.envName,
         baseUrl: target.apiBaseUrl,
@@ -113,6 +121,7 @@ export default class LightCheck extends Command {
 
       if (response.status === 422) {
         const result = extractRejectedWorkspaceCheckResult(response.data);
+        await recordRejectedWorkspaceCheck({ workspaceRoot, state, files, result });
         const output = {
           ok: false,
           httpStatus: 422,
@@ -144,6 +153,7 @@ export default class LightCheck extends Command {
 
       const result = extractWorkspaceCheckResult(unwrapResponseData(response.data));
       if (!result.accepted) {
+        await recordRejectedWorkspaceCheck({ workspaceRoot, state, files, result });
         const output = { ok: false, httpStatus: response.status, check: result };
         throw new LightExtensionCliError(
           translateCli(

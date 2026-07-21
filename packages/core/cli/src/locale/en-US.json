@@ -107,7 +107,8 @@
         "pull": "Light Extension pull",
         "contextRead": "Light Extension Context Pack read",
         "workspaceCheck": "Light Extension workspace check",
-        "save": "Light Extension save"
+        "save": "Light Extension save",
+        "previewProblems": "Light Extension preview problem follow"
       },
       "pull": {
         "summary": "Pull a JS Block or JS Page into a local source workspace",
@@ -142,6 +143,42 @@
         "errors": {
           "rejected": "Workspace check rejected snapshot {{snapshotId}}.\n{{problems}}",
           "notAccepted": "Workspace check did not accept snapshot {{snapshotId}}.\n{{problems}}"
+        }
+      },
+      "dev": {
+        "summary": "Watch a local Light Extension workspace and run finite authoritative checks as JSONL",
+        "flags": {
+          "once": "Check the current snapshot once instead of watching for source changes",
+          "pollInterval": "Local source polling interval in milliseconds",
+          "debounceMs": "Wait for local source to remain unchanged before checking",
+          "maxCheckRounds": "Maximum authoritative check rounds before attention is required",
+          "maxDurationMs": "Maximum Agent loop duration in milliseconds",
+          "repeatedFingerprintThreshold": "Consecutive identical error fingerprint sets before attention is required"
+        },
+        "errors": {
+          "rejected": "Workspace check rejected snapshot {{snapshotId}}.",
+          "needsAttention": "The finite Agent loop budget was reached and requires attention before continuing."
+        }
+      },
+      "problems": {
+        "summary": "Follow the current manual Host Preview problem session as JSONL",
+        "flags": {
+          "follow": "Preview session token copied from the NocoBase workspace",
+          "pollInterval": "Polling interval in milliseconds",
+          "timeoutMs": "Maximum follow duration in milliseconds",
+          "once": "Poll once instead of following until the session closes"
+        },
+        "errors": {
+          "timeout": "Timed out while following the Preview Problem session.",
+          "runtimeFailed": "The manual Host Preview reported runtime errors. Fix the local source and run check again.",
+          "sessionClosed": "The Preview Problem session became stale or expired before it was completed.",
+          "sessionMismatch": "The Preview session does not match the current local repository, entry, snapshot, or Context Pack hash.",
+          "invalidResponse": "Invalid Preview Problem session response.",
+          "invalidState": "Invalid Preview Problem session state.",
+          "invalidItem": "Invalid Preview Problem session item.",
+          "identityMismatch": "Preview Problem session response identity mismatch.",
+          "invalidField": "Invalid Preview Problem {{label}}.",
+          "invalidCursor": "Invalid Preview Problem cursor."
         }
       },
       "save": {
@@ -197,9 +234,12 @@
         "recordAcceptedOnly": "Only an accepted workspace check can be recorded.",
         "snapshotMismatch": "The server returned a workspace snapshot that does not match the current local files. Refusing to mark the workspace as checked.",
         "checkedHeadMismatch": "The accepted check used a different base Head. Pull the workspace again.",
+        "contextHashMissing": "The local workspace does not contain a Context Pack hash. Pull it again before using the Agent loop.",
+        "agentLoopMissing": "The local Agent loop state is missing. Run `nb light check` before following Preview Problems.",
         "baselineMissing": "The Pull baseline for {{path}} is missing. Pull the workspace again before saving.",
         "baselineHashMismatch": "The Pull baseline for {{path}} does not match the workspace state. Pull the workspace again before reviewing or saving changes.",
         "checkRequired": "The current local snapshot has not passed the authoritative workspace check. Run `nb light check` after the latest file change.",
+        "previewRequired": "The current snapshot has not completed its manual Host Preview without runtime errors. Run Preview in NocoBase, then follow its session with `nb light problems`.",
         "saveRepoMismatch": "Save response repository does not match the local workspace.",
         "unsafeDirectory": "Refusing to use an unsafe workspace directory: {{path}}"
       }

@@ -75,19 +75,25 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__
 
 ## Agent CLI and MCP Workflow
 
-The supported local Agent workflow uses the stateless `nb light` commands. It keeps editable UTF-8 source in a normal directory and records only repository identity, the pulled Head, and content hashes under `.nocobase/light-extension-state.json`; credentials, tokens, and cookies are never written to the workspace.
+The supported local Agent workflow uses a finite `nb light` state machine. It keeps editable UTF-8 source in a normal directory and records repository identity, the pulled Head, content hashes, the current snapshot/Context identity, check rounds, and manual Preview state under `.nocobase/light-extension-state.json`; credentials, tokens, and cookies are never written to the workspace.
 
 ```bash
 nb light pull --repo <repo-id> --entry <entry-id> --dir ./my-light-extension
-nb light check --dir ./my-light-extension --json-output
+nb light dev --dir ./my-light-extension
+# In NocoBase, review the diff and click Run manually. Copy the Agent session token.
+nb light problems --dir ./my-light-extension --follow <session-token>
 nb light save --dir ./my-light-extension --yes --json-output
 ```
 
-`check` always sends the complete candidate workspace to `lightExtensions:compileWorkspacePreview`. Generated files under `.nocobase/**` and `.light-extension/types/**` are excluded. HTTP 200 is successful only when `data.accepted` is `true`; HTTP 422 is read exclusively from `errors[0].details` and blocks saving even when individual entries compiled successfully.
+`dev` watches only local text source. After a debounce it sends the complete candidate workspace to `lightExtensions:compileWorkspacePreview`, emits snapshot, state, and Problem records as JSONL, and stops at `ready_for_preview`; it never clicks Run, opens Host Preview, saves, or publishes. Use `--once` for one deterministic check. Generated files under `.nocobase/**` and `.light-extension/types/**` are excluded. HTTP 200 is successful only when `data.accepted` is `true`; HTTP 422 is read exclusively from `errors[0].details` and blocks saving even when individual entries compiled successfully. `nb light check --json-output` remains available for a single human-readable or JSON check.
 
-`save` computes an `upsert/delete` delta against the pulled baseline and requires the current local snapshot to have passed the authoritative check. Without `--yes`, the user must confirm the file and line summary before the existing `lightExtensionFiles:saveSource` action is called. A Head conflict leaves the local files and baseline intact; pull the new Head and replay the local patch instead of replacing only `expectedHeadCommitId`.
+Host Preview is deliberately manual because it executes trusted administrator code inside the current application and may create real side effects. Use a test application or restricted role, review the diff, click **Run**, and copy the session token shown beside the authoritative snapshot. Keep `nb light problems --follow <session-token>` running while observing the host result; it accepts only Problems whose repository, entry, snapshot, Context Pack hash, artifact, and execution identities match the current local workspace. Closing or cancelling the Preview workspace completes the remote session. A source edit marks the old session stale, clears its runtime Problems from the current snapshot, and requires another authoritative check and manual Run.
 
-The first local workflow supports JS Block and JS Page text workspaces. It rejects `src/client/js-portals/**`, base64, NUL, and binary content. It never triggers Host Preview, publish, or an automatic rebase.
+The loop is finite. `nb light dev` accepts maximum check rounds, maximum duration, and repeated-fingerprint thresholds. Reaching any budget moves the workspace to `needs_attention` instead of rechecking indefinitely. Static failures, runtime failures, session closure, and budget exhaustion have stable nonzero exits and JSONL/JSON details suitable for an external coding Agent.
+
+`save` computes an `upsert/delete` delta against the pulled baseline and requires the current local snapshot to have passed the authoritative check, completed the matching manual Preview without runtime errors, and reached the user-reviewed diff gate. Without `--yes`, the user must confirm the file and line summary before the existing `lightExtensionFiles:saveSource` action is called. A Head conflict enters `conflict` and leaves the local files and baseline intact: copy or retain the patch, pull the new Head, replay the patch, re-check, and run Preview again. Never replace only `expectedHeadCommitId`, and never automatically retry a save against a new Head.
+
+The first local workflow supports JS Block and JS Page text workspaces. It rejects `src/client/js-portals/**`, base64, NUL, and binary content. No CLI path automatically triggers Host Preview, save, publish, or rebase.
 
 MCP exposure is also opt-in. Clients must explicitly request the package:
 
@@ -95,7 +101,7 @@ MCP exposure is also opt-in. Clients must explicitly request the package:
 x-mcp-packages: @nocobase/plugin-light-extension
 ```
 
-Only approved high-level authoring operations are generated as tools. Raw VSC/RunJS source access, artifact mutation, credentials, synchronization internals, and recovery operations remain excluded. MCP calls preserve the caller's allowlisted `authorization`, `x-role`, and `x-authenticator` headers and continue through the real Resource Action and ACL path. A source save still requires `writeSource` permission and an upstream user-reviewed diff; MCP does not automatically save or publish.
+Only approved high-level authoring operations are generated as tools. Raw VSC/RunJS source access, artifact mutation, credentials, synchronization internals, and recovery operations remain excluded. CLI, MCP, and the browser share the same complete-workspace snapshot, `LightExtensionProblem`, Context Pack hash, artifact, and execution identities; there is no server-side patch session. MCP calls preserve the caller's allowlisted `authorization`, `x-role`, and `x-authenticator` headers and continue through the real Resource Action and ACL path. A source save still requires `writeSource` permission and an upstream user-reviewed diff; MCP does not automatically preview, save, or publish.
 
 ## Workspace ZIP Contract
 

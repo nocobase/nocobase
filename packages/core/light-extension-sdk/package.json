@@ -15,6 +15,11 @@
       "import": "./lib/client/index.js",
       "require": "./lib/client/index.js"
     },
+    "./agent-loop": {
+      "types": "./lib/agent-loop/index.d.ts",
+      "import": "./lib/agent-loop/index.js",
+      "require": "./lib/agent-loop/index.js"
+    },
     "./shared": {
       "types": "./lib/shared/index.d.ts",
       "import": "./lib/shared/index.js",

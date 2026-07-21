@@ -15,6 +15,7 @@ import {
   type LightExtensionBindingContextTypegenResult,
   type LightExtensionSettingsTypegenResult,
 } from '@nocobase/light-extension-sdk/typegen';
+import { encodeLightExtensionPreviewSessionDescriptor } from '@nocobase/light-extension-sdk/agent-loop';
 import {
   CodeTab,
   CloseConfirmModal,
@@ -47,7 +48,7 @@ import {
   mapRunJSStackFrame,
   parseRunJSLineMapV1,
 } from '@nocobase/runjs/compiler/line-map';
-import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
+import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tag, Tooltip, Typography, message, theme } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -133,6 +134,15 @@ interface ActiveHostPreviewSession {
   close(): void;
   closeRemote(state: 'completed' | 'stale'): Promise<void>;
   remote?: ActiveLightExtensionPreviewProblemSession;
+}
+
+type PreviewAgentStatus = 'idle' | 'active' | 'completed' | 'stale' | 'expired';
+
+interface PreviewAgentSessionState {
+  status: PreviewAgentStatus;
+  snapshotId?: string;
+  sessionId?: string;
+  token?: string;
 }
 
 export interface LightExtensionMoveToInlineRequest {
@@ -234,6 +244,8 @@ function LightExtensionWorkspacePage({
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [previewAgentSession, setPreviewAgentSession] = useState<PreviewAgentSessionState>({ status: 'idle' });
+  const [diffReviewedSnapshotKey, setDiffReviewedSnapshotKey] = useState<string>();
   const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
@@ -258,6 +270,7 @@ function LightExtensionWorkspacePage({
   const historyRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
+  const previousPreviewSnapshotKeyRef = useRef('');
   const previewRequestSequenceRef = useRef(0);
   const activePreviewSessionRef = useRef<ActiveHostPreviewSession | null>(null);
   const revealRequestSequenceRef = useRef(0);
@@ -436,6 +449,13 @@ function LightExtensionWorkspacePage({
     [entryId, repoId, sourceFiles, workspaceScope],
   );
   latestPreviewSnapshotRef.current = previewSnapshotKey;
+  const previewHasErrors = problemState.problems.some((problem) => problem.severity === 'error');
+  const previewDiffReviewed = diffReviewedSnapshotKey === previewSnapshotKey;
+  const previewSaveGateReady =
+    previewAgentSession.status === 'completed' &&
+    Boolean(previewAgentSession.snapshotId) &&
+    previewDiffReviewed &&
+    !previewHasErrors;
   const canPreview = entryScoped && Boolean(onPreview);
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
   const browserPreviewEntry = useMemo(
@@ -468,6 +488,17 @@ function LightExtensionWorkspacePage({
       session?.closeRemote('stale').catch(() => undefined);
     };
   }, [previewSnapshotKey, problemStore]);
+
+  useEffect(() => {
+    const previousSnapshotKey = previousPreviewSnapshotKeyRef.current;
+    previousPreviewSnapshotKeyRef.current = previewSnapshotKey;
+    if (!previousSnapshotKey || previousSnapshotKey === previewSnapshotKey) {
+      return;
+    }
+    setPreviewAgentSession((current) =>
+      current.status === 'idle' ? current : { ...current, status: 'stale', token: undefined },
+    );
+  }, [previewSnapshotKey]);
 
   useEffect(() => {
     if (!provisionalPreview.enabled || provisionalPreview.workspaceSnapshotId !== previewSnapshotKey) {
@@ -823,6 +854,13 @@ function LightExtensionWorkspacePage({
       activePreviewSessionRef.current = null;
       session?.close();
       await session?.closeRemote(state).catch(() => undefined);
+      if (session) {
+        setPreviewAgentSession((current) => ({
+          ...current,
+          status: state,
+          token: state === 'completed' ? current.token : undefined,
+        }));
+      }
       return session?.sourceRef;
     },
     [],
@@ -1085,6 +1123,9 @@ function LightExtensionWorkspacePage({
     activePreviewSessionRef.current = null;
     previousSession?.close();
     previousSession?.closeRemote('stale').catch(() => undefined);
+    if (previousSession) {
+      setPreviewAgentSession((current) => ({ ...current, status: 'stale', token: undefined }));
+    }
     const requestSequence = previewRequestSequenceRef.current + 1;
     previewRequestSequenceRef.current = requestSequence;
     problemStore.replaceProblems({ producer: 'host-preview', snapshotId: requestSnapshotKey, problems: [] });
@@ -1121,6 +1162,7 @@ function LightExtensionWorkspacePage({
         problems: result.problems,
       });
       if (!result.accepted || !result.artifact) {
+        setPreviewAgentSession({ status: 'idle', snapshotId: result.snapshotId });
         setNotice({ type: 'error', message: t('Preview failed') });
         return;
       }
@@ -1148,6 +1190,26 @@ function LightExtensionWorkspacePage({
         await remoteSession?.close('stale').catch(() => undefined);
         return;
       }
+      const previewSessionToken =
+        remoteSession && activeBindingContextPack
+          ? encodeLightExtensionPreviewSessionDescriptor({
+              schemaVersion: 1,
+              sessionId: remoteSession.result.sessionId,
+              repoId,
+              entryId: entryId || '',
+              ownerLocator: ownerLocator || {},
+              snapshotId: remoteSession.result.snapshotId,
+              contextHash: activeBindingContextPack.contextHash,
+              artifactHash: remoteSession.result.artifactHash,
+              executionId: remoteSession.result.executionId,
+            })
+          : undefined;
+      setPreviewAgentSession({
+        status: remoteSession ? 'active' : 'idle',
+        snapshotId: result.snapshotId,
+        sessionId: remoteSession?.result.sessionId,
+        token: previewSessionToken,
+      });
       const hostSession = createRunJSHostPreviewSession({
         ...(remoteSession
           ? {
@@ -1232,6 +1294,7 @@ function LightExtensionWorkspacePage({
       } else {
         await remoteSession?.close('stale').catch(() => undefined);
       }
+      setPreviewAgentSession((current) => ({ ...current, status: 'stale', token: undefined }));
       if (
         previewRequestSequenceRef.current !== requestSequence ||
         latestPreviewSnapshotRef.current !== requestSnapshotKey
@@ -1254,6 +1317,7 @@ function LightExtensionWorkspacePage({
     baseHeadCommitId,
     compileWorkspacePreview,
     entryId,
+    activeBindingContextPack,
     onPreview,
     ownerLocatorSignature,
     ownerLocator,
@@ -1604,6 +1668,55 @@ function LightExtensionWorkspacePage({
                           type="warning"
                         />
                       ) : null}
+                      {canPreview ? (
+                        <Alert
+                          data-testid="light-extension-agent-loop-status"
+                          description={
+                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                              <Flex align="center" gap={8} wrap="wrap">
+                                <Typography.Text>{t('Agent snapshot')}:</Typography.Text>
+                                <Typography.Text code>
+                                  {previewAgentSession.snapshotId || t('Awaiting authoritative Preview check')}
+                                </Typography.Text>
+                              </Flex>
+                              <Flex align="center" gap={8} wrap="wrap">
+                                <Typography.Text>{t('Preview session')}:</Typography.Text>
+                                <Tag>{t(`Preview session status: ${previewAgentSession.status}`)}</Tag>
+                                {previewAgentSession.sessionId ? (
+                                  <Typography.Text code>{previewAgentSession.sessionId}</Typography.Text>
+                                ) : null}
+                              </Flex>
+                              {previewAgentSession.token ? (
+                                <Typography.Paragraph
+                                  copyable={{ text: previewAgentSession.token }}
+                                  ellipsis={{ rows: 1 }}
+                                  style={{ margin: 0 }}
+                                >
+                                  {previewAgentSession.token}
+                                </Typography.Paragraph>
+                              ) : (
+                                <Typography.Text type="secondary">
+                                  {t('Run Host Preview to create a copyable Agent session token.')}
+                                </Typography.Text>
+                              )}
+                              <Flex align="center" gap={8} wrap="wrap">
+                                <Typography.Text>{t('Diff review')}:</Typography.Text>
+                                <Tag color={previewDiffReviewed ? 'success' : 'default'}>
+                                  {previewDiffReviewed ? t('Reviewed') : t('Required')}
+                                </Tag>
+                                <Typography.Text>{t('Agent save gate')}:</Typography.Text>
+                                <Tag color={previewSaveGateReady ? 'success' : 'warning'}>
+                                  {previewSaveGateReady ? t('Ready') : t('Locked')}
+                                </Tag>
+                              </Flex>
+                            </Space>
+                          }
+                          message={t('Agent loop status')}
+                          showIcon
+                          style={{ marginBottom: 8 }}
+                          type={previewSaveGateReady ? 'success' : 'info'}
+                        />
+                      ) : null}
                       {activeFileReadOnly && entryScoped && !isBinaryWorkspaceFile(activeFile) ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
                       ) : null}
@@ -1653,7 +1766,15 @@ function LightExtensionWorkspacePage({
                           jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
                           onChange={updateActiveFile}
                           onCloseFile={closeOpenFile}
-                          onDiffToggle={() => setIsDiff((current) => !current)}
+                          onDiffToggle={() =>
+                            setIsDiff((current) => {
+                              const next = !current;
+                              if (next) {
+                                setDiffReviewedSnapshotKey(previewSnapshotKey);
+                              }
+                              return next;
+                            })
+                          }
                           onFilesCollapsedChange={setFilesCollapsed}
                           onOpenFile={openFilePath}
                           onRunPreview={canPreview ? runPreview : undefined}

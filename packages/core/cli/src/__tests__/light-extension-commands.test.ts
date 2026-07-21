@@ -13,7 +13,10 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { encodeLightExtensionPreviewSessionDescriptor } from '@nocobase/light-extension-sdk/agent-loop';
 import LightCheck from '../commands/light/check.js';
+import LightDev from '../commands/light/dev.js';
+import LightProblems from '../commands/light/problems.js';
 import LightPull from '../commands/light/pull.js';
 import LightSave from '../commands/light/save.js';
 import {
@@ -22,6 +25,8 @@ import {
   LIGHT_EXTENSION_STATE_PATH,
   loadWorkspaceState,
   readWorkspaceFiles,
+  recordWorkspaceAgentLoopEvent,
+  type LightExtensionProblem,
   type LightExtensionWorkspaceFile,
 } from '../lib/light-extension-workspace.js';
 
@@ -273,6 +278,107 @@ async function runAcceptedCheck(workspace: string) {
   return command;
 }
 
+async function completeManualPreview(workspace: string, problems: LightExtensionProblem[] = []) {
+  let state = await loadWorkspaceState(workspace);
+  const files = await readWorkspaceFiles(workspace, state);
+  const snapshotId = buildWorkspaceSnapshotId(files);
+  state = await recordWorkspaceAgentLoopEvent({
+    workspaceRoot: workspace,
+    state,
+    files,
+    event: {
+      type: 'preview_opened',
+      sessionId: 'preview_1',
+      snapshotId,
+      contextHash: state.contextHash || '',
+    },
+  });
+  return recordWorkspaceAgentLoopEvent({
+    workspaceRoot: workspace,
+    state,
+    files,
+    event: {
+      type: 'preview_polled',
+      sessionId: 'preview_1',
+      cursor: problems.length,
+      state: 'completed',
+      snapshotId,
+      contextHash: state.contextHash || '',
+      problems,
+    },
+  });
+}
+
+function createPreviewToken(workspaceState: Awaited<ReturnType<typeof loadWorkspaceState>>, snapshotId: string) {
+  return encodeLightExtensionPreviewSessionDescriptor({
+    schemaVersion: 1,
+    sessionId: 'preview_1',
+    repoId: workspaceState.repo.id,
+    entryId: workspaceState.entry.id,
+    ownerLocator: { kind: 'flowModel.step', modelUid: 'block_1', stepPath: ['render'] },
+    snapshotId,
+    contextHash: workspaceState.contextHash || '',
+    artifactHash: 'a'.repeat(64),
+    executionId: 'execution_1',
+  });
+}
+
+async function runDevOnce(workspace: string) {
+  const command = createCommandHarness({
+    dir: workspace,
+    once: true,
+    'poll-interval': 50,
+    'debounce-ms': 0,
+    'max-check-rounds': 20,
+    'max-duration-ms': 15 * 60 * 1000,
+    'repeated-fingerprint-threshold': 2,
+    env: 'test',
+    'api-base-url': apiBaseUrl,
+    role: 'developer',
+    authenticator: 'password',
+    token: 'secret-api-key',
+  });
+  await LightDev.prototype.run.call(command as never);
+  return command;
+}
+
+async function runProblemsOnce(workspace: string, token: string) {
+  const command = createCommandHarness({
+    dir: workspace,
+    follow: token,
+    'poll-interval': 100,
+    'timeout-ms': 1000,
+    once: true,
+    env: 'test',
+    'api-base-url': apiBaseUrl,
+    role: 'developer',
+    authenticator: 'password',
+    token: 'secret-api-key',
+  });
+  await LightProblems.prototype.run.call(command as never);
+  return command;
+}
+
+function createProblem(input: {
+  fingerprint: string;
+  snapshotId: string;
+  requestId: string;
+  source?: string;
+}): LightExtensionProblem {
+  return {
+    schemaVersion: 1,
+    phase: input.source === 'host-runtime' ? 'runtime' : 'typecheck',
+    source: input.source || 'typescript',
+    severity: 'error',
+    code: input.fingerprint,
+    message: input.fingerprint,
+    snapshotId: input.snapshotId,
+    requestId: input.requestId,
+    fingerprint: input.fingerprint,
+    path: 'src/client/demo/index.tsx',
+  };
+}
+
 beforeEach(async () => {
   fakeHandlers = {};
   requests = [];
@@ -287,6 +393,20 @@ afterEach(async () => {
 });
 
 describe('nb light pull/check/save', () => {
+  test('initializes the finite Agent loop at the pulled snapshot', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+
+    const state = await loadWorkspaceState(workspace);
+    const files = await readWorkspaceFiles(workspace, state);
+    expect(state.agentLoop).toMatchObject({
+      status: 'pulled',
+      snapshotId: buildWorkspaceSnapshotId(files),
+      contextHash: 'context_generic',
+      baseHeadCommitId: 'commit_1',
+    });
+  });
+
   test('preserves text, authentication semantics, expectedHeadCommitId null, full checks, and delta-only saves', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
@@ -311,6 +431,7 @@ describe('nb light pull/check/save', () => {
     await mkdir(join(workspace, '.light-extension/types'), { recursive: true });
     await writeFile(join(workspace, '.light-extension/types/context.d.ts'), Buffer.from([0, 1, 2]));
     await runAcceptedCheck(workspace);
+    await completeManualPreview(workspace);
 
     const checkRequest = requests.find((request) => request.path.endsWith('compileWorkspacePreview'));
     expect(checkRequest?.body.expectedHeadCommitId).toBeNull();
@@ -458,6 +579,251 @@ describe('nb light pull/check/save', () => {
     expect((output.check as { problems: Array<{ code: string }> }).problems[0]?.code).toBe('ts_2322');
     expect(JSON.stringify(output)).not.toContain('must-not-be-read');
     expect((await loadWorkspaceState(workspace)).lastCheck).toBeUndefined();
+    expect((await loadWorkspaceState(workspace)).agentLoop?.status).toBe('check_failed');
+  });
+
+  test('runs finite JSONL checks without opening Preview or saving and stops on repeated fingerprints', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+    const sourcePath = join(workspace, 'src/client/demo/index.tsx');
+    let checkNumber = 0;
+    fakeHandlers['/api/lightExtensions:compileWorkspacePreview'] = (request) => {
+      checkNumber += 1;
+      const files = request.body.files as LightExtensionWorkspaceFile[];
+      const snapshotId = buildWorkspaceSnapshotId(files);
+      return {
+        status: 422,
+        body: {
+          errors: [
+            {
+              code: 'LIGHT_EXTENSION_WORKSPACE_REJECTED',
+              message: 'rejected',
+              details: {
+                baseHeadCommitId: 'commit_1',
+                snapshotId,
+                requestId: `request_${checkNumber}`,
+                accepted: false,
+                failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+                problems: [
+                  createProblem({ fingerprint: 'same_error', snapshotId, requestId: `request_${checkNumber}` }),
+                ],
+                entries: [],
+              },
+            },
+          ],
+        },
+      };
+    };
+
+    await writeFile(sourcePath, 'export default () => "first patch";\n', 'utf8');
+    const first = createCommandHarness({
+      dir: workspace,
+      once: true,
+      'poll-interval': 50,
+      'debounce-ms': 0,
+      'max-check-rounds': 20,
+      'max-duration-ms': 15 * 60 * 1000,
+      'repeated-fingerprint-threshold': 2,
+      env: 'test',
+      'api-base-url': apiBaseUrl,
+      role: 'developer',
+      authenticator: 'password',
+      token: 'secret-api-key',
+    });
+    let firstError: unknown;
+    try {
+      await LightDev.prototype.run.call(first as never);
+    } catch (error: unknown) {
+      firstError = error;
+    }
+    expect(firstError).toMatchObject({ exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected });
+    expect((await loadWorkspaceState(workspace)).agentLoop?.status).toBe('check_failed');
+    expect(first.log.mock.calls.map((call) => JSON.parse(String(call[0])))).toEqual([
+      expect.objectContaining({ type: 'problem', problem: expect.objectContaining({ fingerprint: 'same_error' }) }),
+      expect.objectContaining({ type: 'state', agentState: 'check_failed', accepted: false }),
+    ]);
+
+    await writeFile(sourcePath, 'export default () => "second patch";\n', 'utf8');
+    await expect(runDevOnce(workspace)).rejects.toMatchObject({ exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected });
+    expect((await loadWorkspaceState(workspace)).agentLoop).toMatchObject({
+      status: 'needs_attention',
+      needsAttentionReason: 'repeated_fingerprints',
+    });
+    expect(requests.map((request) => request.path)).not.toContain('/api/lightExtensionPreviewProblems:watch');
+    expect(requests.map((request) => request.path)).not.toContain('/api/lightExtensionFiles:saveSource');
+  });
+
+  test('follows only the current manual Preview session and unlocks save after completion', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default () => "preview patch";\n', 'utf8');
+    await runAcceptedCheck(workspace);
+    const state = await loadWorkspaceState(workspace);
+    const files = await readWorkspaceFiles(workspace, state);
+    const snapshotId = buildWorkspaceSnapshotId(files);
+    const previewToken = createPreviewToken(state, snapshotId);
+    fakeHandlers['/api/lightExtensionPreviewProblems:watch'] = () => ({
+      body: {
+        data: {
+          schemaVersion: 1,
+          sessionId: 'preview_1',
+          repoId: 'ler_demo',
+          entryId: 'lee_demo',
+          ownerLocator: { kind: 'flowModel.step', modelUid: 'block_1', stepPath: ['render'] },
+          snapshotId,
+          artifactHash: 'a'.repeat(64),
+          executionId: 'execution_1',
+          state: 'completed',
+          cursor: 0,
+          nextCursor: 0,
+          expiresAt: '2026-07-21T19:00:00.000Z',
+          droppedCount: 0,
+          items: [],
+        },
+      },
+    });
+
+    const command = await runProblemsOnce(workspace, previewToken);
+
+    expect((await loadWorkspaceState(workspace)).agentLoop?.status).toBe('ready_to_save');
+    expect(command.log.mock.calls.map((call) => JSON.parse(String(call[0])))).toEqual([
+      expect.objectContaining({ type: 'state', previewState: 'completed', agentState: 'ready_to_save' }),
+    ]);
+  });
+
+  test('keeps runtime errors scoped to the followed Preview and exits nonzero', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default () => "runtime patch";\n', 'utf8');
+    await runAcceptedCheck(workspace);
+    const state = await loadWorkspaceState(workspace);
+    const files = await readWorkspaceFiles(workspace, state);
+    const snapshotId = buildWorkspaceSnapshotId(files);
+    const previewToken = createPreviewToken(state, snapshotId);
+    const runtimeProblem = createProblem({
+      fingerprint: 'runtime_error',
+      snapshotId,
+      requestId: 'execution_1',
+      source: 'host-runtime',
+    });
+    fakeHandlers['/api/lightExtensionPreviewProblems:watch'] = () => ({
+      body: {
+        data: {
+          schemaVersion: 1,
+          sessionId: 'preview_1',
+          repoId: 'ler_demo',
+          entryId: 'lee_demo',
+          ownerLocator: { kind: 'flowModel.step', modelUid: 'block_1', stepPath: ['render'] },
+          snapshotId,
+          artifactHash: 'a'.repeat(64),
+          executionId: 'execution_1',
+          state: 'completed',
+          cursor: 1,
+          nextCursor: 1,
+          expiresAt: '2026-07-21T19:00:00.000Z',
+          droppedCount: 0,
+          items: [{ cursor: 1, problem: runtimeProblem }],
+        },
+      },
+    });
+    const command = createCommandHarness({
+      dir: workspace,
+      follow: previewToken,
+      'poll-interval': 100,
+      'timeout-ms': 1000,
+      once: true,
+      env: 'test',
+      'api-base-url': apiBaseUrl,
+      role: 'developer',
+      authenticator: 'password',
+      token: 'secret-api-key',
+    });
+
+    await expect(LightProblems.prototype.run.call(command as never)).rejects.toMatchObject({
+      exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+    });
+    expect((await loadWorkspaceState(workspace)).agentLoop).toMatchObject({
+      status: 'runtime_failed',
+      problems: [expect.objectContaining({ fingerprint: 'runtime_error' })],
+    });
+  });
+
+  test('resumes Preview Problems from the persisted cursor', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default () => "cursor patch";\n', 'utf8');
+    await runAcceptedCheck(workspace);
+    const state = await loadWorkspaceState(workspace);
+    const files = await readWorkspaceFiles(workspace, state);
+    const snapshotId = buildWorkspaceSnapshotId(files);
+    const previewToken = createPreviewToken(state, snapshotId);
+    let poll = 0;
+    fakeHandlers['/api/lightExtensionPreviewProblems:watch'] = (request) => {
+      poll += 1;
+      expect(request.body.cursor).toBe(poll === 1 ? 0 : 3);
+      return {
+        body: {
+          data: {
+            sessionId: 'preview_1',
+            snapshotId,
+            artifactHash: 'a'.repeat(64),
+            executionId: 'execution_1',
+            state: poll === 1 ? 'active' : 'completed',
+            nextCursor: 3,
+            items: [],
+          },
+        },
+      };
+    };
+
+    await runProblemsOnce(workspace, previewToken);
+    await runProblemsOnce(workspace, previewToken);
+
+    expect(poll).toBe(2);
+    expect((await loadWorkspaceState(workspace)).agentLoop).toMatchObject({
+      status: 'ready_to_save',
+      preview: { cursor: 3, state: 'completed' },
+    });
+  });
+
+  test('rejects a Preview token after local source changes and blocks save before Preview completion', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+    const sourcePath = join(workspace, 'src/client/demo/index.tsx');
+    await writeFile(sourcePath, 'export default () => "checked patch";\n', 'utf8');
+    await runAcceptedCheck(workspace);
+    const state = await loadWorkspaceState(workspace);
+    const files = await readWorkspaceFiles(workspace, state);
+    const previewToken = createPreviewToken(state, buildWorkspaceSnapshotId(files));
+    const saveCommand = createCommandHarness({
+      dir: workspace,
+      message: 'Blocked save',
+      yes: true,
+      env: 'test',
+      'api-base-url': apiBaseUrl,
+      role: undefined,
+      token: 'secret-api-key',
+      'json-output': true,
+    });
+    await expect(LightSave.prototype.run.call(saveCommand as never)).rejects.toMatchObject({ exitCode: 1 });
+    expect(requests.map((request) => request.path)).not.toContain('/api/lightExtensionFiles:saveSource');
+
+    await writeFile(sourcePath, 'export default () => "newer patch";\n', 'utf8');
+    requests = [];
+    const problemCommand = createCommandHarness({
+      dir: workspace,
+      follow: previewToken,
+      'poll-interval': 100,
+      'timeout-ms': 1000,
+      once: true,
+      env: 'test',
+      'api-base-url': apiBaseUrl,
+      role: undefined,
+      token: 'secret-api-key',
+    });
+    await expect(LightProblems.prototype.run.call(problemCommand as never)).rejects.toMatchObject({ exitCode: 1 });
+    expect(requests).toHaveLength(0);
+    expect((await loadWorkspaceState(workspace)).agentLoop?.status).toBe('dirty');
   });
 
   test.each([
@@ -492,7 +858,11 @@ describe('nb light pull/check/save', () => {
     const sourcePath = join(workspace, 'src/client/demo/index.tsx');
     await writeFile(sourcePath, 'export default () => "local patch";\n', 'utf8');
     await runAcceptedCheck(workspace);
-    const stateBefore = await readFile(join(workspace, ...LIGHT_EXTENSION_STATE_PATH.split('/')), 'utf8');
+    await completeManualPreview(workspace);
+    const baselineBefore = await readFile(
+      join(workspace, '.nocobase/light-extension-baseline/src/client/demo/index.tsx'),
+      'utf8',
+    );
     fakeHandlers['/api/lightExtensionFiles:saveSource'] = () => ({
       status: 409,
       body: {
@@ -520,7 +890,10 @@ describe('nb light pull/check/save', () => {
       exitCode: LIGHT_EXTENSION_EXIT_CODES.conflict,
     });
     expect(await readFile(sourcePath, 'utf8')).toBe('export default () => "local patch";\n');
-    expect(await readFile(join(workspace, ...LIGHT_EXTENSION_STATE_PATH.split('/')), 'utf8')).toBe(stateBefore);
+    expect(
+      await readFile(join(workspace, '.nocobase/light-extension-baseline/src/client/demo/index.tsx'), 'utf8'),
+    ).toBe(baselineBefore);
+    expect((await loadWorkspaceState(workspace)).agentLoop?.status).toBe('conflict');
     expect(String(command.logToStderr.mock.calls.at(-1)?.[0])).toContain('Pull the new Head and replay this patch');
   });
 
@@ -592,6 +965,7 @@ describe('nb light pull/check/save', () => {
     await runPull(workspace, { head: 'commit_1' });
     await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default () => "local patch";\n', 'utf8');
     await runAcceptedCheck(workspace);
+    await completeManualPreview(workspace);
     await writeFile(
       join(workspace, '.nocobase/light-extension-baseline/src/client/demo/index.tsx'),
       'export default () => "tampered baseline";\n',

@@ -467,5 +467,21 @@
   "Failed to restore the saved host version.": "Failed to restore the saved host version.",
   "Keep the editor open, retry Cancel, or reload the page to restore the saved version.": "Keep the editor open, retry Cancel, or reload the page to restore the saved version.",
   "The saved host version could not be restored. Retry Cancel or reload the page.": "The saved host version could not be restored. Retry Cancel or reload the page.",
-  "The saved host version could not be restored. Reload the page before continuing.": "The saved host version could not be restored. Reload the page before continuing."
+  "The saved host version could not be restored. Reload the page before continuing.": "The saved host version could not be restored. Reload the page before continuing.",
+  "Agent loop status": "Agent loop status",
+  "Agent snapshot": "Agent snapshot",
+  "Awaiting authoritative Preview check": "Awaiting authoritative Preview check",
+  "Preview session": "Preview session",
+  "Preview session status: idle": "Idle",
+  "Preview session status: active": "Active",
+  "Preview session status: completed": "Completed",
+  "Preview session status: stale": "Stale",
+  "Preview session status: expired": "Expired",
+  "Run Host Preview to create a copyable Agent session token.": "Run Host Preview to create a copyable Agent session token.",
+  "Diff review": "Diff review",
+  "Reviewed": "Reviewed",
+  "Required": "Required",
+  "Agent save gate": "Agent save gate",
+  "Ready": "Ready",
+  "Locked": "Locked"
 }

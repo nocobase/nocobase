@@ -14,6 +14,16 @@ import type {
   LightExtensionContextPackLike,
   LightExtensionSettingsTypegenFile,
 } from '@nocobase/light-extension-sdk/typegen';
+import {
+  advanceLightExtensionAgentLoop,
+  canSaveLightExtensionAgentLoop,
+  createLightExtensionAgentLoopState,
+  parseLightExtensionAgentLoopState,
+  updateLightExtensionAgentLoopBudget,
+  type LightExtensionAgentLoopBudget,
+  type LightExtensionAgentLoopEvent,
+  type LightExtensionAgentLoopState,
+} from '@nocobase/light-extension-sdk/agent-loop';
 import { getCurrentEnvName, getEnv } from './auth-store.js';
 import { translateCli } from './cli-locale.js';
 
@@ -205,6 +215,7 @@ export interface LightExtensionWorkspaceState {
   contextHash?: string;
   files: Record<string, LightExtensionWorkspaceFileState>;
   pulledAt: string;
+  agentLoop?: LightExtensionAgentLoopState;
   lastCheck?: {
     accepted: true;
     localSnapshotId: string;
@@ -865,6 +876,7 @@ function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
       : { contextHash: requireString(record.contextHash, 'Workspace Context Pack hash') }),
     files: parsedFiles,
     pulledAt: requireString(record.pulledAt, 'Workspace pulledAt'),
+    ...(record.agentLoop === undefined ? {} : { agentLoop: parseLightExtensionAgentLoopState(record.agentLoop) }),
   };
 }
 
@@ -1066,6 +1078,17 @@ async function writeStateAndBaseline(
   await fs.rename(temporaryPath, statePath);
 }
 
+export async function writeLightExtensionWorkspaceState(
+  workspaceRoot: string,
+  state: LightExtensionWorkspaceState,
+): Promise<void> {
+  const statePath = join(resolve(workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
+  await fs.mkdir(dirname(statePath), { recursive: true });
+  const temporaryPath = `${statePath}.${process.pid}.tmp`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+  await fs.rename(temporaryPath, statePath);
+}
+
 export async function writeGeneratedTypeFiles(
   workspaceRoot: string,
   files: readonly LightExtensionSettingsTypegenFile[],
@@ -1154,6 +1177,11 @@ export async function materializePulledWorkspace(options: {
     contextHash: options.contextHash,
     files: fileStates,
     pulledAt: new Date().toISOString(),
+    agentLoop: createLightExtensionAgentLoopState({
+      snapshotId: buildWorkspaceSnapshotId(files),
+      contextHash: options.contextHash,
+      baseHeadCommitId: options.pull.repo.headCommitId,
+    }),
   };
   await writeGeneratedTypeFiles(root, options.generatedTypeFiles);
   await writeStateAndBaseline(root, state, files);
@@ -1190,8 +1218,23 @@ export async function recordSuccessfulWorkspaceCheck(options: {
       }),
     );
   }
+  const synchronizedState = synchronizeWorkspaceAgentLoop(options.state, options.files);
+  let agentLoop = synchronizedState.agentLoop;
+  if (agentLoop && agentLoop.status !== 'checking') {
+    agentLoop = advanceLightExtensionAgentLoop(agentLoop, { type: 'check_started' });
+  }
+  if (agentLoop) {
+    agentLoop = advanceLightExtensionAgentLoop(agentLoop, {
+      type: 'check_completed',
+      accepted: true,
+      snapshotId: localSnapshotId,
+      contextHash: synchronizedState.contextHash || agentLoop.contextHash,
+      problems: options.result.problems,
+    });
+  }
   const state: LightExtensionWorkspaceState = {
-    ...options.state,
+    ...synchronizedState,
+    ...(agentLoop ? { agentLoop } : {}),
     lastCheck: {
       accepted: true,
       localSnapshotId,
@@ -1201,10 +1244,103 @@ export async function recordSuccessfulWorkspaceCheck(options: {
       checkedAt: new Date().toISOString(),
     },
   };
-  const statePath = join(resolve(options.workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
-  const temporaryPath = `${statePath}.${process.pid}.tmp`;
-  await fs.writeFile(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
-  await fs.rename(temporaryPath, statePath);
+  await writeLightExtensionWorkspaceState(options.workspaceRoot, state);
+  return state;
+}
+
+export async function recordRejectedWorkspaceCheck(options: {
+  workspaceRoot: string;
+  state: LightExtensionWorkspaceState;
+  files: readonly LightExtensionWorkspaceFile[];
+  result: LightExtensionWorkspaceCheckResult;
+}): Promise<LightExtensionWorkspaceState> {
+  const localSnapshotId = buildWorkspaceSnapshotId(options.files);
+  if (localSnapshotId !== options.result.snapshotId) {
+    throw new LightExtensionCliError(
+      translateCli('commands.light.errors.snapshotMismatch', undefined, {
+        fallback:
+          'The server returned a workspace snapshot that does not match the current local files. Refusing to record the failed check.',
+      }),
+      { details: { localSnapshotId, serverSnapshotId: options.result.snapshotId } },
+    );
+  }
+  const synchronizedState = synchronizeWorkspaceAgentLoop(options.state, options.files);
+  let agentLoop = synchronizedState.agentLoop;
+  if (agentLoop && agentLoop.status !== 'checking') {
+    agentLoop = advanceLightExtensionAgentLoop(agentLoop, { type: 'check_started' });
+  }
+  if (agentLoop) {
+    agentLoop = advanceLightExtensionAgentLoop(agentLoop, {
+      type: 'check_completed',
+      accepted: false,
+      snapshotId: localSnapshotId,
+      contextHash: synchronizedState.contextHash || agentLoop.contextHash,
+      problems: options.result.problems,
+    });
+  }
+  const state: LightExtensionWorkspaceState = {
+    ...synchronizedState,
+    ...(agentLoop ? { agentLoop } : {}),
+  };
+  delete state.lastCheck;
+  await writeLightExtensionWorkspaceState(options.workspaceRoot, state);
+  return state;
+}
+
+export function synchronizeWorkspaceAgentLoop(
+  state: LightExtensionWorkspaceState,
+  files: readonly LightExtensionWorkspaceFile[],
+  budget?: Partial<LightExtensionAgentLoopBudget>,
+): LightExtensionWorkspaceState {
+  if (!state.contextHash) {
+    return state;
+  }
+  const snapshotId = buildWorkspaceSnapshotId(files);
+  let agentLoop = state.agentLoop;
+  if (
+    !agentLoop ||
+    agentLoop.contextHash !== state.contextHash ||
+    agentLoop.baseHeadCommitId !== state.baseHeadCommitId
+  ) {
+    agentLoop = createLightExtensionAgentLoopState({
+      snapshotId,
+      contextHash: state.contextHash,
+      baseHeadCommitId: state.baseHeadCommitId,
+      budget,
+    });
+  } else if (agentLoop.snapshotId !== snapshotId) {
+    agentLoop = advanceLightExtensionAgentLoop(agentLoop, {
+      type: 'local_changed',
+      snapshotId,
+      contextHash: state.contextHash,
+    });
+  }
+  if (budget) {
+    agentLoop = updateLightExtensionAgentLoopBudget(agentLoop, budget);
+  }
+  return { ...state, agentLoop };
+}
+
+export async function recordWorkspaceAgentLoopEvent(options: {
+  workspaceRoot: string;
+  state: LightExtensionWorkspaceState;
+  files: readonly LightExtensionWorkspaceFile[];
+  event: LightExtensionAgentLoopEvent;
+  budget?: Partial<LightExtensionAgentLoopBudget>;
+}): Promise<LightExtensionWorkspaceState> {
+  const synchronizedState = synchronizeWorkspaceAgentLoop(options.state, options.files, options.budget);
+  if (!synchronizedState.agentLoop) {
+    throw new LightExtensionCliError(
+      translateCli('commands.light.errors.contextHashMissing', undefined, {
+        fallback: 'The local workspace does not contain a Context Pack hash. Pull it again before using the Agent loop.',
+      }),
+    );
+  }
+  const state = {
+    ...synchronizedState,
+    agentLoop: advanceLightExtensionAgentLoop(synchronizedState.agentLoop, options.event),
+  };
+  await writeLightExtensionWorkspaceState(options.workspaceRoot, state);
   return state;
 }
 
@@ -1359,6 +1495,19 @@ export function assertWorkspaceReadyToSave(
       },
     );
   }
+  if (
+    !state.contextHash ||
+    !state.agentLoop ||
+    !canSaveLightExtensionAgentLoop(state.agentLoop, { snapshotId, contextHash: state.contextHash })
+  ) {
+    throw new LightExtensionCliError(
+      translateCli('commands.light.errors.previewRequired', undefined, {
+        fallback:
+          'The current snapshot has not completed its manual Host Preview without runtime errors. Run Preview in NocoBase, then follow its session with `nb light problems`.',
+      }),
+      { details: { snapshotId, agentLoop: state.agentLoop } },
+    );
+  }
   return snapshotId;
 }
 
@@ -1375,12 +1524,26 @@ export async function recordSuccessfulSave(options: {
       }),
     );
   }
+  let agentLoop = options.state.agentLoop;
+  if (agentLoop) {
+    if (agentLoop.status === 'ready_to_save') {
+      agentLoop = advanceLightExtensionAgentLoop(agentLoop, { type: 'save_started' });
+    }
+    agentLoop = {
+      ...advanceLightExtensionAgentLoop(agentLoop, {
+        type: 'save_completed',
+        headCommitId: options.result.commit.id,
+      }),
+      baseHeadCommitId: options.result.commit.id,
+    };
+  }
   const state: LightExtensionWorkspaceState = {
     ...options.state,
     baseHeadCommitId: options.result.commit.id,
     treeHash: options.result.tree.hash,
     files: Object.fromEntries(options.files.map((file) => [file.path, stateFileFromWorkspaceFile(file)])),
     pulledAt: new Date().toISOString(),
+    ...(agentLoop ? { agentLoop } : {}),
     lastCheck: undefined,
   };
   delete state.lastCheck;

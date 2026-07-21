@@ -78,7 +78,7 @@
         "description": "Manage restorable revisions during NocoBase app building."
       },
       "light": {
-        "description": "Pull, check, and save local JS Block and JS Page source workspaces."
+        "description": "Pull, watch, check, follow Preview Problems, and save local JS Block and JS Page source workspaces."
       },
       "examples": {
         "description": "Internal example commands for prompt and UI experiments.",

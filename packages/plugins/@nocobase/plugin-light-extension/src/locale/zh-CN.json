@@ -467,5 +467,21 @@
   "Failed to restore the saved host version.": "恢复已保存的 Host 版本失败。",
   "Keep the editor open, retry Cancel, or reload the page to restore the saved version.": "请保持编辑器打开，重试取消，或重新加载页面以恢复已保存版本。",
   "The saved host version could not be restored. Retry Cancel or reload the page.": "无法恢复已保存的 Host 版本。请重试取消或重新加载页面。",
-  "The saved host version could not be restored. Reload the page before continuing.": "无法恢复已保存的 Host 版本。继续操作前请重新加载页面。"
+  "The saved host version could not be restored. Reload the page before continuing.": "无法恢复已保存的 Host 版本。继续操作前请重新加载页面。",
+  "Agent loop status": "Agent 循环状态",
+  "Agent snapshot": "Agent 快照",
+  "Awaiting authoritative Preview check": "等待权威 Preview 检查",
+  "Preview session": "Preview 会话",
+  "Preview session status: idle": "未开始",
+  "Preview session status: active": "进行中",
+  "Preview session status: completed": "已完成",
+  "Preview session status: stale": "已过期",
+  "Preview session status: expired": "已失效",
+  "Run Host Preview to create a copyable Agent session token.": "运行 Host Preview 后会生成可复制的 Agent 会话 Token。",
+  "Diff review": "差异审阅",
+  "Reviewed": "已审阅",
+  "Required": "必需",
+  "Agent save gate": "Agent 保存门禁",
+  "Ready": "就绪",
+  "Locked": "锁定"
 }
