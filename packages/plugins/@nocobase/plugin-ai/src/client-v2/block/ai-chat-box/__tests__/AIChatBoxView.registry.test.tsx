@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
       currentConversation: undefined as string | undefined,
       conversations: [] as Array<{ sessionId: string; read: boolean }>,
       unreadCount: 0,
+      setConversationRead: vi.fn(),
     },
   },
   eventBus: {
@@ -169,6 +170,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.eventBus.addEventListener.mockClear();
     mocks.eventBus.removeEventListener.mockClear();
     mocks.refreshConversations.mockClear();
+    mocks.runtime.chatConversationModel.setConversationRead.mockClear();
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
     mocks.renderActions.mockClear();
@@ -219,6 +221,28 @@ describe('AIChatBoxView mounted registry', () => {
     renderAIChatBoxView(makeModel({ scope: 'chat-box-1' }));
 
     await expect(mocks.runtime.getScope?.({ operation: 'list' })).resolves.toBe('chat-box-1');
+  });
+
+  it('updates conversation read state from websocket events without refreshing the list', () => {
+    renderAIChatBoxView(makeModel());
+    const readListener = mocks.eventBus.addEventListener.mock.calls.find(
+      ([eventName]) => eventName === 'ws:message:ai-conversations:read',
+    )?.[1] as EventListener | undefined;
+    expect(readListener).toBeDefined();
+    expect(mocks.refreshConversations).toHaveBeenCalledTimes(1);
+
+    mocks.refreshConversations.mockClear();
+    readListener?.(
+      new CustomEvent('ws:message:ai-conversations:read', {
+        detail: {
+          sessionId: 'session-1',
+          read: false,
+        },
+      }),
+    );
+
+    expect(mocks.runtime.chatConversationModel.setConversationRead).toHaveBeenCalledWith('session-1', false);
+    expect(mocks.refreshConversations).not.toHaveBeenCalled();
   });
 
   it('keeps explicitly blank scope unfiltered for conversation queries', async () => {

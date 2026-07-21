@@ -345,10 +345,14 @@ describe('chatbox runtime models', () => {
     expect(model.conversations[0].read).toBe(true);
     expect(model.unreadCount).toBe(1);
 
+    model.setConversationRead('session-b', false);
+    expect(model.conversations[1].read).toBe(false);
+    expect(model.unreadCount).toBe(2);
+
     model.markConversationRead('session-a');
     model.markConversationRead('missing-session');
 
-    expect(model.unreadCount).toBe(1);
+    expect(model.unreadCount).toBe(2);
   });
 
   it('updates WorkflowTaskModel list UI state, normalization, and unread counts', () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '@nocobase/client-v2';
 import {
   DndProvider,
@@ -272,9 +272,6 @@ export const AIChatBoxView: React.FC = observer(() => {
     setShowConversations(false);
     setShowMessagesPanel(false);
   };
-  const refreshBlockConversations = useCallback(() => {
-    refreshConversations();
-  }, [refreshConversations]);
 
   useEffect(() => {
     return registerMountedChatBox({
@@ -293,12 +290,20 @@ export const AIChatBoxView: React.FC = observer(() => {
   }, [chat, clear, model.uid, runtime, syncContextAttachments, triggerTask]);
 
   useEffect(() => {
-    refreshBlockConversations();
-    app.eventBus.addEventListener('ws:message:ai-conversations:read', refreshBlockConversations);
-    return () => {
-      app.eventBus.removeEventListener('ws:message:ai-conversations:read', refreshBlockConversations);
+    refreshConversations();
+    const handleConversationRead = (event: Event) => {
+      const detail = (event as CustomEvent<{ sessionId?: string; read?: boolean }>).detail;
+      if (!detail?.sessionId || typeof detail.read !== 'boolean') {
+        return;
+      }
+      runtime.chatConversationModel.setConversationRead(detail.sessionId, detail.read);
     };
-  }, [app.eventBus, conversationScope, refreshBlockConversations]);
+
+    app.eventBus.addEventListener('ws:message:ai-conversations:read', handleConversationRead);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-conversations:read', handleConversationRead);
+    };
+  }, [app.eventBus, conversationScope, refreshConversations, runtime.chatConversationModel]);
 
   return (
     <Layout

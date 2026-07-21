@@ -31,6 +31,7 @@ export class ChatConversationModel {
       setCurrentConversation: action,
       setKeyword: action,
       setConversations: action,
+      setConversationRead: action,
       markConversationRead: action,
       setWebSearch: action,
       setConversationSegmented: action,
@@ -50,9 +51,9 @@ export class ChatConversationModel {
     this.conversations = typeof conversations === 'function' ? conversations(this.conversations) : conversations;
   };
 
-  markConversationRead = (sessionId: string) => {
+  setConversationRead = (sessionId: string, read: boolean) => {
     const target = this.conversations.find((item) => item.sessionId === sessionId);
-    if (!target || target.read) {
+    if (!target || target.read === read) {
       return;
     }
 
@@ -60,11 +61,15 @@ export class ChatConversationModel {
       item.sessionId === sessionId
         ? {
             ...item,
-            read: true,
+            read,
           }
         : item,
     );
-    this.unreadCount = Math.max(0, this.unreadCount - 1);
+    this.unreadCount = read ? Math.max(0, this.unreadCount - 1) : this.unreadCount + 1;
+  };
+
+  markConversationRead = (sessionId: string) => {
+    this.setConversationRead(sessionId, true);
   };
 
   setWebSearch = (webSearch: boolean) => {
