@@ -1,0 +1,28 @@
+{
+  "name": "@nocobase/plugin-ai-page",
+  "displayName": "AI Page",
+  "displayName.zh-CN": "AI 页面",
+  "description": "Build code-first NocoBase pages with external AI agents through a page-scoped HTTP API.",
+  "description.zh-CN": "通过页面范围的 HTTP API，使用外部 AI Agent 搭建代码优先的 NocoBase 页面。",
+  "version": "2.2.0-alpha.9",
+  "license": "Apache-2.0",
+  "main": "dist/server/index.js",
+  "devDependencies": {
+    "antd": "5.x",
+    "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "nocobase": {
+    "supportedVersions": ["2.x"],
+    "editionLevel": 0
+  },
+  "keywords": ["AI", "Pages"]
+}

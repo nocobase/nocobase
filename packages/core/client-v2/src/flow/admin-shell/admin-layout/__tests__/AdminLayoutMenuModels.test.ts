@@ -17,6 +17,7 @@ import { NocoBaseDesktopRouteType } from '../../../../flow-compat';
 import {
   AdminLayoutMenuItemRenderer,
   AdminLayoutMenuItemModel,
+  adminLayoutPageTypeManager,
   AdminLayoutModel,
   ADMIN_LAYOUT_MODEL_UID,
   getAdminLayoutMenuMovePositionOptions,
@@ -109,6 +110,7 @@ describe('AdminLayoutModel menu items', () => {
 
   afterEach(() => {
     delete (globalThis.window as any).__nocobase_modern_client_prefix__;
+    adminLayoutPageTypeManager.remove('testPage');
   });
 
   const createRoute = (options?: Partial<import('../../../../flow-compat').NocoBaseDesktopRoute>) => ({
@@ -1460,6 +1462,92 @@ describe('AdminLayoutModel menu items', () => {
       method: 'insertBefore',
     });
     expect(request).not.toHaveBeenCalled();
+  });
+
+  it('should create a registered page type and run its initialization hook', async () => {
+    const onRouteCreated = vi.fn().mockResolvedValue(undefined);
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 101,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+    adminLayoutPageTypeManager.register({
+      name: 'testPage',
+      label: 'Test page',
+      sort: 20,
+      routeOptions: { renderer: 'test' },
+      onRouteCreated,
+    });
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-registered-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'testPage',
+          source: 'header',
+        },
+      },
+    });
+    model.setStepParams('menuCreation', 'basic', { title: 'Custom page' });
+
+    await model.save();
+
+    expect(createRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Custom page',
+        options: {
+          renderer: 'test',
+          pageType: 'testPage',
+        },
+      }),
+      undefined,
+    );
+    expect(onRouteCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flowEngine: engine,
+        routeId: 101,
+        values: { title: 'Custom page' },
+      }),
+    );
+  });
+
+  it('should run a registered page type cleanup hook after deleting its route', async () => {
+    const onRouteDeleted = vi.fn().mockResolvedValue(undefined);
+    const deleteRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.deleteRoute = deleteRoute;
+    adminLayoutPageTypeManager.register({
+      name: 'testPage',
+      label: 'Test page',
+      onRouteDeleted,
+    });
+
+    const route = {
+      id: 102,
+      title: 'Custom page',
+      schemaUid: 'custom-page-schema',
+      type: NocoBaseDesktopRouteType.flowPage,
+      options: { pageType: 'testPage' },
+    };
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-delete-registered-page',
+      use: AdminLayoutMenuItemModel,
+      props: { route },
+    });
+
+    await model.destroy();
+
+    expect(deleteRoute).toHaveBeenCalledWith(102);
+    expect(onRouteDeleted).toHaveBeenCalledWith({
+      flowEngine: engine,
+      pageSchemaUid: 'custom-page-schema',
+      routeId: 102,
+      route,
+    });
   });
 
   it('should persist insert step using selected menu type', async () => {
