@@ -165,7 +165,10 @@ export class LightExtensionRuntimeCache {
     input: RunJSSourceResolverInput,
     sourceBinding: LightExtensionRuntimeSourceBinding,
   ): Promise<ResolvedLightExtensionRuntimeSource> {
-    const requestInput = { ...input, settings: structuredClone(input.settings || {}) };
+    const requestInput = {
+      ...input,
+      settings: JSON.parse(JSON.stringify(input.settings || {})) as Record<string, unknown>,
+    };
     const requestSourceBinding = structuredClone(sourceBinding);
     const identity = getLightExtensionRuntimeIdentity(api);
     const generation = this.generation.get(requestSourceBinding.repoId);
@@ -469,7 +472,11 @@ async function listLightExtensionSourceMenuItems(
     return {
       key: `repo:${repoId}`,
       label: repoLabel,
-      searchText: [repoId, repoLabel, ...entriesInRepo.map((entry) => getEntryLabel(entry))].join(' '),
+      searchText: [
+        repoId,
+        repoLabel,
+        ...entriesInRepo.flatMap((entry) => [getEntryLabel(entry), entry.entryName, entry.entryPath]),
+      ].join(' '),
       children: entryItems,
     };
   });
