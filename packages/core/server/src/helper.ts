@@ -41,17 +41,12 @@ export function createResourcer(options: ApplicationOptions) {
 
 function isWhitelistedCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
-  const whitelist = getCorsWhitelist();
 
   if (!origin) {
     return false;
   }
 
-  if (!whitelist) {
-    return isTrustedOrigin(ctx, origin);
-  }
-
-  return whitelist.has('*') || whitelist.has(origin);
+  return isTrustedOrigin(ctx, origin);
 }
 
 export function resolveCorsOrigin(ctx: any) {
