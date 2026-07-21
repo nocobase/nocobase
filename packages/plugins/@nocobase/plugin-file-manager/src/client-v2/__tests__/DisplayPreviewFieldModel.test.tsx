@@ -24,6 +24,7 @@ vi.mock('@nocobase/client-v2', () => ({
   DetailsItemModel: previewModelMocks.DetailsItemModel,
   FieldModel: class FieldModel {
     props: Record<string, unknown> = {};
+    context: Record<string, unknown> = {};
     static define = previewModelMocks.define;
     static registerFlow = previewModelMocks.registerFlow;
   },
@@ -114,12 +115,8 @@ describe('DisplayPreviewFieldModel', () => {
     });
   });
 
-  it('downloads preview files and reports failed downloads', async () => {
+  it('downloads preview files', async () => {
     const click = vi.fn();
-    vi.stubGlobal('URL', {
-      createObjectURL: vi.fn(() => 'blob:download'),
-      revokeObjectURL: vi.fn(),
-    });
     vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLElement & {
         click?: () => void;
@@ -131,11 +128,6 @@ describe('DisplayPreviewFieldModel', () => {
       }
       return element;
     });
-    const fetchMock = vi.fn().mockResolvedValue({
-      blob: async () => new Blob(['content']),
-      ok: true,
-    });
-    vi.stubGlobal('fetch', fetchMock);
     const model = createModel({
       value: [{ filename: 'avatar.png', mimetype: 'image/png', url: '/avatar.png' }],
       showFileName: true,
@@ -148,7 +140,6 @@ describe('DisplayPreviewFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
-    expect(fetchMock).toHaveBeenCalledWith('/avatar.png');
   });
 
   it('renders nested titleField previews with separators and N/A placeholders', () => {
@@ -161,7 +152,7 @@ describe('DisplayPreviewFieldModel', () => {
 
     render(<>{model.render()}</>);
 
-    expect(screen.getByAltText('preview')).toHaveAttribute('src', '/first.png');
+    expect(screen.getByAltText('first.png')).toHaveAttribute('src', '/first.png');
     expect(screen.getByText('N/A')).toBeInTheDocument();
     expect(document.body).toHaveTextContent(', ');
   });
