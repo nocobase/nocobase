@@ -1,22 +1,50 @@
 ---
 title: "ctx.ai"
 description: "Use ctx.ai in RunJS to trigger AI employee tasks in the global conversation or a specified AI Chat Box, either with inline task content or with tasks configured on an AI employee action."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
 
 Use `ctx.ai` in RunJS to trigger **AI employee tasks**. It works well in JSBlock, JSAction, and other interactions where a button, form, or business flow needs to hand work to a specific AI employee.
 
-`ctx.ai` only triggers tasks. It does not return the execution result of the AI employee task. After the call, the task enters the AI employee conversation flow, and the result is handled by the AI employee session.
+`ctx.ai` uploads AI task attachments and triggers tasks. File uploads can be awaited, but task triggering does not return the execution result of the AI employee task. After the call, the task enters the AI employee conversation flow, and the result is handled by the AI employee session.
 
 :::warning Note
 
-`ctx.ai` is provided by the AI plugin. If the AI plugin is not enabled, or the current RunJS environment has not loaded the corresponding client capability, `ctx.ai` may not exist. You can check `ctx.ai?.triggerTask` or `ctx.ai?.triggerModelTask` before calling it.
+`ctx.ai` is provided by the AI plugin. If the AI plugin is not enabled, or the current RunJS environment has not loaded the corresponding client capability, `ctx.ai` may not exist. You can check `ctx.ai?.uploadFile`, `ctx.ai?.triggerTask`, or `ctx.ai?.triggerModelTask` before calling it.
 
 :::
 
 ## Methods
+
+### ctx.ai.uploadFile()
+
+Upload one file and return an attachment object that can be passed directly to an AI employee task.
+
+```ts
+const attachment = await ctx.ai.uploadFile(file, options);
+```
+
+| Parameter | Type | Description |
+|------|------|------|
+| `file` | `File` | Browser file object to upload. |
+| `options.onProgress` | `(percent: number) => void` | Upload progress callback. `percent` ranges from `0` to `100`. |
+| `options.signal` | `AbortSignal` | Signal used to cancel the upload. |
+
+The upload uses the file storage configured by the AI plugin and creates a record in `aiFiles`. The returned object includes fields such as `id`, `filename`, `url`, and `source`:
+
+```ts
+const attachment = await ctx.ai.uploadFile(file, {
+  onProgress(percent) {
+    console.log('upload progress', percent);
+  },
+});
+
+// attachment can be placed directly in message.attachments
+```
+
+The Promise is rejected when the upload fails. Removing an attachment from the local UI does not delete the record already created in `aiFiles`, matching the behavior of the default AI chat window.
 
 ### ctx.ai.triggerTask()
 
@@ -41,6 +69,7 @@ Common `Task` fields:
 | `title` | `string` | Task title. |
 | `message.system` | `string` | System message, used to constrain the AI employee's role and output requirements. |
 | `message.user` | `string` | User message, which is the main instruction for this task. |
+| `message.attachments` | `Attachment[]` | Attachments used by the task, usually returned by `ctx.ai.uploadFile()`. |
 | `message.workContext` | `ContextItem[]` | Page block context used by the task. |
 | `autoSend` | `boolean` | Whether to send the task message automatically. |
 | `webSearch` | `boolean` | Whether Web search is allowed for this task. |
@@ -68,6 +97,104 @@ ctx.ai.triggerTask({
 ```
 
 The uid must belong to the outer AI Chat Box block currently mounted on the page. Do not put this routing value inside `tasks`. If the target block cannot be found, NocoBase reports an error and does not fall back to the global dialog. When `chatBoxUid` is omitted, the task uses the global AI employee dialog.
+
+### Upload and Send Attachments in JSBlock
+
+The following example renders file upload, task instructions, and a send button in JSBlock. Uploaded files are passed to the AI employee through `message.attachments`:
+
+```tsx
+if (!ctx.ai?.uploadFile || !ctx.ai?.triggerTask) {
+  ctx.message.error(ctx.t('AI employee task API is not available.'));
+  return;
+}
+
+const { React } = ctx.libs;
+const { useState } = React;
+const { Button, Card, Input, Space, Upload } = ctx.libs.antd;
+const { InboxOutlined, SendOutlined } = ctx.libs.antdIcons;
+
+const AttachmentTask = () => {
+  const [prompt, setPrompt] = useState('');
+  const [fileList, setFileList] = useState([]);
+
+  const uploadAttachment = async ({ file, onError, onProgress, onSuccess }) => {
+    try {
+      const attachment = await ctx.ai.uploadFile(file, {
+        onProgress(percent) {
+          onProgress?.({ percent });
+        },
+      });
+      onSuccess?.(attachment);
+    } catch (error) {
+      onError?.(error instanceof Error ? error : new Error(ctx.t('File upload failed')));
+    }
+  };
+
+  const sendTask = () => {
+    const attachments = fileList
+      .filter((file) => file.status === 'done' && file.response)
+      .map((file) => file.response);
+
+    if (!prompt.trim()) {
+      ctx.message.warning(ctx.t('Enter task instructions'));
+      return;
+    }
+
+    ctx.ai.triggerTask({
+      aiEmployee: 'viz',
+      open: true,
+      tasks: [
+        {
+          title: ctx.t('Analyze uploaded files'),
+          message: {
+            user: prompt.trim(),
+            attachments,
+          },
+          autoSend: true,
+        },
+      ],
+    });
+    setPrompt('');
+    setFileList([]);
+  };
+
+  const uploading = fileList.some((file) => file.status === 'uploading');
+
+  return (
+    <Card title={ctx.t('AI file analysis')}>
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Upload.Dragger
+          multiple
+          fileList={fileList}
+          customRequest={uploadAttachment}
+          onChange={({ fileList: nextFileList }) => setFileList(nextFileList)}
+        >
+          <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+          <p>{ctx.t('Click or drag files here to upload')}</p>
+        </Upload.Dragger>
+        <Input.TextArea
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          placeholder={ctx.t('Describe the task for the AI employee')}
+          autoSize={{ minRows: 3, maxRows: 8 }}
+        />
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
+          disabled={uploading || !prompt.trim()}
+          onClick={sendTask}
+        >
+          {ctx.t('Send to AI')}
+        </Button>
+      </Space>
+    </Card>
+  );
+};
+
+ctx.render(<AttachmentTask />);
+```
+
+With `autoSend: false`, the attachments and task instructions are placed in the AI chat draft instead of being sent immediately.
 
 ### Add Page Block Context
 
@@ -186,6 +313,7 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `taskIndex` | `number` | Task index, starting from `0`. |
 | `options.open` | `boolean` | Whether to open the AI employee conversation panel. |
 | `options.auto` | `boolean` | Whether to use the auto-trigger semantics of an AI employee action. |
+| `options.attachments` | `Attachment[]` | Attachments dynamically appended to the configured task. |
 
 This method reads the AI employee and task configuration from the target model. It is useful when the task has already been configured on an AI employee action on the page, and RunJS only needs to trigger it.
 
@@ -201,6 +329,7 @@ const weeklyReviewActionUid = 'AI_EMPLOYEE_ACTION_MODEL_UID';
 
 ctx.ai.triggerModelTask(weeklyReviewActionUid, 0, {
   open: true,
+  attachments,
 });
 
 ctx.message.success(ctx.t('Configured AI employee task triggered.'));
@@ -220,11 +349,13 @@ If the target model does not exist, has no AI employee configured, or the specif
 ## Notes
 
 - `triggerTask()` and `triggerModelTask()` are fire-and-forget. They do not return the execution result of the AI employee task.
+- `uploadFile()` returns a Promise. Wait for the upload to finish before triggering a task that uses the attachment.
 - `aiEmployee` strings only match `AIEmployee.username` exactly. They do not match nicknames, job titles, or translated names.
 - `triggerModelTask()` uses a `0`-based `taskIndex`.
 - `triggerModelTask()` reads task configuration from the target AI employee action model. If the task needs work context, configure `message.workContext` on that task.
 - Top-level `triggerTask().chatBoxUid` must reference an AI Chat Box block currently mounted on the page.
 - `triggerModelTask()` keeps using `chatBoxUid` configured on its preset task.
+- Dynamic `triggerModelTask()` attachments are appended to the preset task's existing `message.attachments` without changing the saved task configuration.
 
 ## Related
 

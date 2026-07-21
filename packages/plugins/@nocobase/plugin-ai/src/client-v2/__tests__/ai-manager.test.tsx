@@ -21,7 +21,11 @@ const ChatSettingsForm = () => <div />;
 
 function createManager(getModel?: (uid: string, searchInPreviousEngines?: boolean) => unknown) {
   const eventBus = new EventTarget();
+  const request = vi.fn();
   const app = {
+    apiClient: {
+      request,
+    },
     eventBus,
     flowEngine: {
       getModel: getModel ?? vi.fn(),
@@ -31,6 +35,7 @@ function createManager(getModel?: (uid: string, searchInPreviousEngines?: boolea
   return {
     manager: new AIManager(app),
     eventBus,
+    request,
   };
 }
 
@@ -186,6 +191,33 @@ describe('AIManager v2', () => {
     expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [{ title: 'Now' }] }]);
   });
 
+  it('uploads files through the application API client', async () => {
+    const source = { dataSourceKey: 'main', collectionName: 'aiFiles' };
+    const { manager, request } = createManager();
+    request.mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+          filename: 'report.txt',
+          meta: { source },
+        },
+      },
+    });
+
+    await expect(manager.uploadFile(new File(['report'], 'report.txt'))).resolves.toMatchObject({
+      id: 1,
+      filename: 'report.txt',
+      source,
+      status: 'done',
+    });
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'aiFiles:create',
+        method: 'post',
+      }),
+    );
+  });
+
   it('drops the oldest queued task when the pending AI employee task queue exceeds 20 tasks', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { manager, eventBus } = createManager();
@@ -222,6 +254,32 @@ describe('AIManager v2', () => {
 
     expect(getModel).toHaveBeenCalledWith('flow-model-uid', true);
     expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [task], chatBoxUid: 'chat-box-1', open: true }]);
+  });
+
+  it('appends runtime attachments to the configured model task without mutating it', () => {
+    const configuredAttachment = { id: 1, filename: 'configured.txt' };
+    const runtimeAttachment = { id: 2, filename: 'runtime.txt' };
+    const task: Task = {
+      title: 'Summarize',
+      message: {
+        user: 'Summarize the attachments',
+        attachments: [configuredAttachment],
+      },
+    };
+    const getModel = vi.fn(() => ({
+      props: {
+        aiEmployee: { username: 'nathan' },
+        tasks: [task],
+      },
+    }));
+    const { manager, eventBus } = createManager(getModel);
+    const details = listenTasks(eventBus);
+
+    manager.onChatBoxMounted();
+    manager.triggerModelTask('flow-model-uid', 0, { attachments: [runtimeAttachment] });
+
+    expect(details[0].tasks?.[0].message?.attachments).toEqual([configuredAttachment, runtimeAttachment]);
+    expect(task.message?.attachments).toEqual([configuredAttachment]);
   });
 
   it('warns when model props have no task at the requested index', () => {

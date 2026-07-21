@@ -25,6 +25,7 @@ export type {
   SkillSettings,
   Task,
   TriggerTaskOptions,
+  UploadAIFileOptions,
   WebSearching,
 } from './ai-employees/types';
 export { formatModelLabel } from './llm-services/model-label';
@@ -32,7 +33,7 @@ export { createModelSettingsForm, ModelSelect, OptionsFields, type OptionField }
 export { AIConfigRepository, type LLMServiceItem } from './repositories/AIConfigRepository';
 export { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 export { AIManager } from './manager/ai-manager';
-export type { LLMProviderOptions, ToolModalProps, ToolOptions } from './manager/ai-manager';
+export type { LLMProviderOptions, ToolModalProps, ToolOptions, TriggerModelTaskOptions } from './manager/ai-manager';
 export * from './features';
 export { defaultVectorStorePropForm } from './features/components';
 export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';

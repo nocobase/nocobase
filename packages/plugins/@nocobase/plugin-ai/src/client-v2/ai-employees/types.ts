@@ -143,12 +143,36 @@ export type ToolCall<T = unknown> = {
 };
 
 export type Attachment = {
+  id?: string | number;
+  uid?: string;
+  name?: string;
   filename?: string;
+  url?: string;
+  preview?: string;
+  thumbUrl?: string;
+  size?: number;
+  mimetype?: string;
+  type?: string;
+  percent?: number;
   status?: string;
+  source?: {
+    dataSourceKey?: string;
+    collectionName?: string;
+    field?: string;
+  };
+  meta?: {
+    source?: Attachment['source'];
+    [key: string]: unknown;
+  };
   response?: {
     data?: Attachment;
   };
   [key: string]: unknown;
+};
+
+export type UploadAIFileOptions = {
+  onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
 };
 
 export type MessageType = 'text' | 'greeting';

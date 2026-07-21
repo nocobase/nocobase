@@ -26,7 +26,6 @@ import { ContextItem } from './ContextItem';
 import { FileCardList, useAttachmentFileCards } from './Attachments';
 import { ModelSwitcher } from './ModelSwitcher';
 import { SearchSwitch } from './SearchSwitch';
-import { normalizeAIFileUploadAttachment } from '../utils';
 
 type SenderRef = GetRef<typeof AntSender> & {
   nativeElement?: HTMLElement;
@@ -272,9 +271,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       },
       onSuccess: (response) => {
         const fileData = readUploadedFileData(response);
-        chat.setAttachments((previous) =>
-          previous.map((item) => (item.uid === uid ? normalizeAIFileUploadAttachment(fileData || item, 'done') : item)),
-        );
+        chat.setAttachments((previous) => previous.map((item) => (item.uid === uid ? fileData || item : item)));
       },
       onError: (error) => {
         chat.setAttachments((previous) =>

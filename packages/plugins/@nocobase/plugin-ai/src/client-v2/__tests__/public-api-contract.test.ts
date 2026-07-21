@@ -41,7 +41,9 @@ import type {
   OptionField,
   SkillSettings,
   Task,
+  TriggerModelTaskOptions,
   TriggerTaskOptions,
+  UploadAIFileOptions,
   WebSearching,
 } from '@nocobase/plugin-ai/client-v2';
 
@@ -96,7 +98,9 @@ describe('plugin-ai client-v2 public API contract', () => {
     const optionField: OptionField = { name: 'temperature', title: 'Temperature' };
     const skillSettings: SkillSettings = { tools: [], skills: [] };
     const task: Task = { title: 'Translate' };
+    const triggerModelTaskOptions: TriggerModelTaskOptions = { attachments: [attachment] };
     const triggerTaskOptions: TriggerTaskOptions = { aiEmployee, tasks: [task], chatBoxUid: 'chat-box-1' };
+    const uploadOptions: UploadAIFileOptions = { onProgress: () => {} };
     const webSearching: WebSearching = { type: 'search', query: 'NocoBase' };
 
     expect({
@@ -109,7 +113,9 @@ describe('plugin-ai client-v2 public API contract', () => {
       message,
       optionField,
       skillSettings,
+      triggerModelTaskOptions,
       triggerTaskOptions,
+      uploadOptions,
       webSearching,
     }).toBeDefined();
   });
