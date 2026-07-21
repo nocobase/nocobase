@@ -171,7 +171,7 @@ test('keeps JS Block and JS Page Agent Preview Problems snapshot-scoped before a
     expect(staleSave.response.status()).toBe(409);
 
     await page.goto(`/admin/settings/light-extension?repoId=${encodeURIComponent(repoId)}&panel=source`);
-    await expect(page.getByText(`Agent loop ${suffix}`)).toBeVisible();
+    await expect(page.getByText(`Agent loop ${suffix}`, { exact: true })).toBeVisible();
     await expect(page.getByText('agent-block', { exact: false }).first()).toBeVisible();
     await expect(page.getByText('agent-page', { exact: false }).first()).toBeVisible();
   } finally {

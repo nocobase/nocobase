@@ -47,7 +47,7 @@ describe('PublishCompiledEntriesService', () => {
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       status: 422,
       details: {
-        problems: [expect.objectContaining({ message: 'Compile failed' })],
+        problems: [expect.objectContaining({ message: 'Light extension compile infrastructure failed' })],
       },
     });
     expect(store.runInTransactionCalls).toBe(0);
