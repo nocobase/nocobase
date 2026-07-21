@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient, JSBlockModel } from '@nocobase/client-v2';
+import { createMockClient } from '@nocobase/client-v2';
 import { createJSRunnerWithVersion, FlowContext, getRunJSDocFor, setupRunJSContexts } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import PluginAIClientV2, {
   registerPluginAIPermissionsTab,
-  registerPluginAIJSBlockToolFlow,
   registerPluginAIRunJSContextContribution,
   registerPluginAISettingsPages,
 } from '../plugin';
@@ -130,59 +129,23 @@ describe('plugin-ai v2 settings registration', () => {
     }
   });
 
-  it('exposes frontend tools through the persistent JS block model context', async () => {
-    registerPluginAIJSBlockToolFlow();
-    const flow = JSBlockModel.globalFlowRegistry.getFlow('aiFrontendTools');
-    const handler = flow?.getStep('setup')?.serialize().handler;
-    const clear = vi.fn();
-    const register = vi.fn();
-    const triggerTask = vi.fn();
-    const modelContext = new FlowContext();
-    modelContext.defineProperty('ai', { value: { triggerTask } });
-    const runtimeDefineProperty = vi.fn();
-    const ctx = {
-      app: {
-        pm: {
-          get: vi.fn(() => ({
-            aiManager: {
-              frontendTools: {
-                clear,
-                register,
-              },
-            },
-          })),
-        },
-      },
-      model: {
-        uid: 'block-1',
-        context: modelContext,
-      },
-      defineProperty: runtimeDefineProperty,
-    };
-
-    expect(handler).toEqual(expect.any(Function));
-    await handler?.(ctx, {});
-
-    expect(clear).toHaveBeenCalledWith('block-1');
-    expect(runtimeDefineProperty).not.toHaveBeenCalled();
-    expect(modelContext.ai.triggerTask).toBe(triggerTask);
-    const registration = {
-      name: 'read_dashboard',
-      description: 'Read dashboard',
-      execute: vi.fn(),
-    };
-    modelContext.ai.tools.register(registration);
-    expect(register).toHaveBeenCalledWith('block-1', registration);
-  });
-
-  it('exposes ctx.ai from the engine context at RunJS runtime', async () => {
+  it('exposes ctx.ai and frontend tools whenever a JS block RunJS context is created', async () => {
     registerPluginAIRunJSContextContribution();
     await setupRunJSContexts();
 
     for (const version of ['v1', 'v2'] as const) {
       const triggerTask = vi.fn();
       const triggerModelTask = vi.fn();
+      const clear = vi.fn();
+      const register = vi.fn();
       const engineContext = new FlowContext();
+      engineContext.defineProperty('app', {
+        value: {
+          pm: {
+            get: () => ({ aiManager: { frontendTools: { clear, register } } }),
+          },
+        },
+      });
       engineContext.defineProperty('ai', {
         value: {
           triggerTask,
@@ -191,17 +154,28 @@ describe('plugin-ai v2 settings registration', () => {
       });
       const ctx = new FlowContext();
       ctx.addDelegate(engineContext);
-      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+      ctx.defineProperty('model', { value: { uid: 'block-1', constructor: { name: 'JSBlockModel' } } });
 
-      const runner = createJSRunnerWithVersion.call(ctx, { version });
-      const result = await runner.run(`
-        ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true });
-        ctx.ai.triggerModelTask('flow-model-uid', 0);
-        return typeof ctx.ai.triggerTask === 'function' && typeof ctx.ai.triggerModelTask === 'function';
-      `);
+      for (let run = 0; run < 2; run++) {
+        const runner = createJSRunnerWithVersion.call(ctx, { version });
+        const result = await runner.run(`
+          ctx.ai.tools.register({ name: 'read_dashboard', description: 'Read dashboard', execute() {} });
+          ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true });
+          ctx.ai.triggerModelTask('flow-model-uid', 0);
+          return typeof ctx.ai.tools.register === 'function';
+        `);
 
-      expect(result?.success).toBe(true);
-      expect(result?.value).toBe(true);
+        expect(result?.success).toBe(true);
+        expect(result?.value).toBe(true);
+      }
+
+      expect(clear).toHaveBeenCalledTimes(2);
+      expect(clear).toHaveBeenCalledWith('block-1');
+      expect(register).toHaveBeenCalledTimes(2);
+      expect(register).toHaveBeenCalledWith(
+        'block-1',
+        expect.objectContaining({ name: 'read_dashboard', description: 'Read dashboard' }),
+      );
       expect(triggerTask).toHaveBeenCalledWith({ aiEmployee: 'nathan', tasks: [], open: true });
       expect(triggerModelTask).toHaveBeenCalledWith('flow-model-uid', 0);
     }

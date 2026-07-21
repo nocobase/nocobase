@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JSBlockModel } from '@nocobase/client-v2';
 import { registerRunJSContextContribution } from '@nocobase/flow-engine';
 import { getFrontendToolRegistry, type FrontendToolRegistration } from '../manager/frontend-tool-registry';
 
@@ -21,14 +20,13 @@ type AIEmployeeRunJSFacadeManager = {
 };
 
 let runJSContextContributionRegistered = false;
-let jsBlockToolFlowRegistered = false;
 
 export const registerPluginAIRunJSContextContribution = () => {
   if (runJSContextContributionRegistered) {
     return;
   }
   runJSContextContributionRegistered = true;
-  registerRunJSContextContribution(({ FlowRunJSContext }) => {
+  registerRunJSContextContribution(({ version, RunJSContextRegistry, FlowRunJSContext }) => {
     FlowRunJSContext.define({
       properties: {
         ai: {
@@ -83,6 +81,35 @@ export const registerPluginAIRunJSContextContribution = () => {
         },
       },
     });
+
+    const BaseContext = RunJSContextRegistry.resolve(version, 'JSBlockModel') ?? FlowRunJSContext;
+    class AIJSBlockRunJSContext extends BaseContext {
+      constructor(delegate: unknown) {
+        super(delegate);
+        const frontendTools = getFrontendToolRegistry(this.app);
+        const blockUid = this.model?.uid;
+        if (!frontendTools || typeof blockUid !== 'string' || !blockUid) {
+          return;
+        }
+
+        frontendTools.clear(blockUid);
+        const currentAI = this.ai && typeof this.ai === 'object' ? this.ai : {};
+        this.defineProperty('ai', {
+          value: {
+            ...currentAI,
+            tools: {
+              register: (registration: FrontendToolRegistration) => frontendTools.register(blockUid, registration),
+            },
+          },
+        });
+      }
+    }
+    RunJSContextRegistry.register(
+      version,
+      'JSBlockModel',
+      AIJSBlockRunJSContext,
+      RunJSContextRegistry.getMeta(version, 'JSBlockModel'),
+    );
   });
 };
 
@@ -97,38 +124,4 @@ export const registerPluginAIRunJSFacade = (
     },
   });
   registerPluginAIRunJSContextContribution();
-};
-
-export const registerPluginAIJSBlockToolFlow = () => {
-  if (jsBlockToolFlowRegistered) {
-    return;
-  }
-  jsBlockToolFlowRegistered = true;
-  JSBlockModel.registerFlow({
-    key: 'aiFrontendTools',
-    sort: -1000,
-    steps: {
-      setup: {
-        handler(ctx) {
-          const frontendTools = getFrontendToolRegistry(ctx.app);
-          if (!frontendTools) {
-            return;
-          }
-
-          const blockUid = ctx.model.uid;
-          const modelContext = ctx.model.context;
-          frontendTools.clear(blockUid);
-          const currentAI = modelContext.ai && typeof modelContext.ai === 'object' ? modelContext.ai : {};
-          modelContext.defineProperty('ai', {
-            value: {
-              ...currentAI,
-              tools: {
-                register: (registration: FrontendToolRegistration) => frontendTools.register(blockUid, registration),
-              },
-            },
-          });
-        },
-      },
-    },
-  });
 };

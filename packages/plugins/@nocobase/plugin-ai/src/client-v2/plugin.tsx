@@ -20,7 +20,7 @@ import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { builtinLLMProviderOptions } from './llm-providers';
 import { registerPluginAIWorkflow } from './workflow/register';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
-import { registerPluginAIJSBlockToolFlow, registerPluginAIRunJSFacade } from './runjs/registerAIEmployeeRunJSFacade';
+import { registerPluginAIRunJSFacade } from './runjs/registerAIEmployeeRunJSFacade';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -117,7 +117,6 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
       });
     }
     registerPluginAIRunJSFacade(context, this.aiManager);
-    registerPluginAIJSBlockToolFlow();
     registerPluginAISettingsPages(this.pluginSettingsManager, this.t.bind(this));
     registerPluginAIPermissionsTab(this.app.pm, this.t.bind(this));
     registerPluginAIWorkflow(this.app.pm);
@@ -150,7 +149,6 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
 
 export default PluginAIClientV2;
 export {
-  registerPluginAIJSBlockToolFlow,
   registerPluginAIRunJSContextContribution,
   registerPluginAIRunJSFacade,
 } from './runjs/registerAIEmployeeRunJSFacade';
