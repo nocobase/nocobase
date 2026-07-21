@@ -76,7 +76,7 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
 
     expect(result.accepted).toBe(false);
     if (caseItem.expectedCode) {
-      expect(result.diagnostics).toEqual(
+      expect(result.problems).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             code: caseItem.expectedCode,
@@ -85,7 +85,7 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
       );
     }
     if (caseItem.expectedRuleId) {
-      expect(result.diagnostics).toEqual(
+      expect(result.problems).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             details: expect.objectContaining({
@@ -139,7 +139,7 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.diagnostics.some((diagnostic) => diagnostic.severity === 'error')).toBe(false);
+    expect(result.problems.some((problem) => problem.severity === 'error')).toBe(false);
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         result: 'success',

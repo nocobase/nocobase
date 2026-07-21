@@ -50,7 +50,7 @@ describe('PreparedCandidateWorkspace identity guard', () => {
         },
         validation: {
           accepted: true,
-          diagnostics: [],
+          problems: [],
           entries: [],
           capabilities: {} as never,
         },

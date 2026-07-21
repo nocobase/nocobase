@@ -34,7 +34,7 @@ describe('plugin-light-extension settings condition validator', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.diagnostics).toEqual([]);
+    expect(result.problems).toEqual([]);
   });
 
   it.each([
@@ -50,7 +50,7 @@ describe('plugin-light-extension settings condition validator', () => {
     const result = validateSettings(baseSchema(condition));
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code: expectedCode,
         path: 'src/client/js-blocks/sales/entry.json',
@@ -78,9 +78,7 @@ describe('plugin-light-extension settings condition validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics.filter((item) => item.code === 'settings_condition_cycle').length).toBeGreaterThanOrEqual(
-      7,
-    );
+    expect(result.problems.filter((item) => item.code === 'settings_condition_cycle').length).toBeGreaterThanOrEqual(7);
   });
 
   it('enforces depth, node, group item, and path segment limits', () => {
@@ -108,7 +106,7 @@ describe('plugin-light-extension settings condition validator', () => {
     for (const condition of [tooDeep, tooManyNodes, tooManyItems, tooManySegments]) {
       const result = validateSettings(baseSchema(condition));
       expect(result.accepted).toBe(false);
-      expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'settings_condition_too_complex' }));
+      expect(result.problems).toContainEqual(expect.objectContaining({ code: 'settings_condition_too_complex' }));
     }
   });
 
@@ -133,7 +131,7 @@ describe('plugin-light-extension settings condition validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'settings_condition_invalid' }));
+    expect(result.problems).toContainEqual(expect.objectContaining({ code: 'settings_condition_invalid' }));
   });
 
   it('rejects duplicate required names and oversized component props', () => {
@@ -150,7 +148,7 @@ describe('plugin-light-extension settings condition validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toEqual(
+    expect(result.problems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'settings_required_invalid' }),
         expect.objectContaining({ code: 'settings_field_invalid' }),
@@ -221,7 +219,7 @@ describe('plugin-light-extension settings condition validator', () => {
       inferredIncompleteObject,
     ]) {
       expect(result.accepted).toBe(false);
-      expect(result.diagnostics).toContainEqual(
+      expect(result.problems).toContainEqual(
         expect.objectContaining({ code: 'settings_condition_required_default_missing' }),
       );
     }
@@ -243,6 +241,8 @@ function validateLegacySettingsSchema(settingsSchema: Record<string, unknown>) {
 
 function validateDescriptorSettings(descriptorSettings: Record<string, unknown>) {
   return new LightExtensionValidator().validateWorkspace({
+    snapshotId: 'snapshot-test',
+    requestId: 'request-test',
     files: [
       { path: 'src/client/js-blocks/sales/index.tsx', content: 'ctx.render(null);\n' },
       {

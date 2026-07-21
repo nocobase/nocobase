@@ -55,7 +55,13 @@ async function handleRequest(request: BrowserPreviewWorkerRequest): Promise<void
         post({ ...responseBase(request), type: 'workspaceUpdated', workspaceVersion: request.workspaceVersion });
         return;
       case 'build': {
-        const result = await compiler.build(vfs, request.entry, workerRestartCount);
+        const result = await compiler.build(
+          vfs,
+          request.entry,
+          workerRestartCount,
+          request.requestId,
+          `browser-preview:${request.workspaceVersion}`,
+        );
         if (cancelledRequests.delete(request.requestId)) {
           postError(
             request,

@@ -355,7 +355,6 @@ function createEntryRecord(
           version: 'v2',
           entryPath: artifactEntryPath,
           filesHash: 'files_hash_1',
-          diagnostics: [],
           metadata: {
             runtimeContract: 'light-extension.current-runtime.v1',
           },
@@ -429,7 +428,6 @@ function createEntryRecord(
       : null,
     compiledAt: runtimeArtifact ? '2026-07-06T00:00:00.000Z' : null,
     healthStatus: input.entryHealthStatus || 'ready',
-    diagnostics: [],
     createdAt: null,
     updatedAt: null,
   };

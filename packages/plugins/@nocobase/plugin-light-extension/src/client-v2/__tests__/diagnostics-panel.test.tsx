@@ -11,7 +11,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { vi } from 'vitest';
 
-import DiagnosticsPanel from '../components/DiagnosticsPanel';
+import { createLightExtensionProblem } from '../../shared/problems';
+import ProblemsPanel from '../components/DiagnosticsPanel';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -23,36 +24,38 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-describe('DiagnosticsPanel', () => {
+describe('ProblemsPanel', () => {
   it('renders clickable source locations with line and column', () => {
-    const onOpenDiagnostic = vi.fn();
+    const onOpenProblem = vi.fn();
 
     render(
-      <DiagnosticsPanel
-        diagnostics={[
-          {
+      <ProblemsPanel
+        problems={[
+          createLightExtensionProblem({
+            phase: 'compile',
+            source: 'runjs-compiler',
             code: 'RUNJS_IMPORT_NOT_FOUND',
             severity: 'error',
             message: 'Import target was not found',
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
-            line: 3,
-            column: 12,
+            range: { start: { line: 3, column: 12 } },
+            snapshotId: 'snapshot-1',
+            requestId: 'request-1',
             kind: 'js-block',
             entryName: 'sales-kpi',
-          },
+          }),
         ]}
-        onOpenDiagnostic={onOpenDiagnostic}
+        onOpenProblem={onOpenProblem}
       />,
     );
 
     expect(screen.getByText('Import target was not found')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Line 3.*Column 12/ }));
 
-    expect(onOpenDiagnostic).toHaveBeenCalledWith(
+    expect(onOpenProblem).toHaveBeenCalledWith(
       expect.objectContaining({
         path: 'src/client/js-blocks/sales-kpi/index.tsx',
-        line: 3,
-        column: 12,
+        range: { start: { line: 3, column: 12 } },
       }),
     );
   });

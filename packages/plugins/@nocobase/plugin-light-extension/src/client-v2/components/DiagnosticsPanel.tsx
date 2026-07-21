@@ -13,20 +13,20 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionDiagnostic } from '../../shared/types';
+import type { LightExtensionProblem } from '../../shared/types';
 
-export interface DiagnosticsPanelProps {
-  diagnostics?: LightExtensionDiagnostic[];
+export interface ProblemsPanelProps {
+  problems?: LightExtensionProblem[];
   title?: string;
-  onOpenDiagnostic?: (diagnostic: LightExtensionDiagnostic) => void;
+  onOpenProblem?: (problem: LightExtensionProblem) => void;
 }
 
-export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
-  const { diagnostics = [], onOpenDiagnostic, title } = props;
+export function ProblemsPanel(props: ProblemsPanelProps) {
+  const { problems = [], onOpenProblem, title } = props;
   const { t } = useTranslation(NAMESPACE);
-  const sortedDiagnostics = useMemo(
+  const sortedProblems = useMemo(
     () =>
-      [...diagnostics].sort((left, right) =>
+      [...problems].sort((left, right) =>
         [left.severity, left.path || '', left.kind || '', left.entryName || '', left.code, left.message]
           .join('\u0000')
           .localeCompare(
@@ -35,15 +35,15 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
             ),
           ),
       ),
-    [diagnostics],
+    [problems],
   );
-  const errorCount = sortedDiagnostics.filter((item) => item.severity === 'error').length;
-  const warningCount = sortedDiagnostics.filter((item) => item.severity === 'warning').length;
+  const errorCount = sortedProblems.filter((item) => item.severity === 'error').length;
+  const warningCount = sortedProblems.filter((item) => item.severity === 'warning').length;
 
   return (
-    <section aria-label={title || t('Diagnostics')} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <section aria-label={title || t('Problems')} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Space align="center" wrap>
-        <Typography.Text strong>{title || t('Diagnostics')}</Typography.Text>
+        <Typography.Text strong>{title || t('Problems')}</Typography.Text>
         <Tag color={errorCount > 0 ? 'error' : 'default'}>
           {t('Errors')}: {errorCount}
         </Tag>
@@ -52,13 +52,13 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
         </Tag>
       </Space>
 
-      {sortedDiagnostics.length === 0 ? (
-        <Empty description={t('No diagnostics')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      {sortedProblems.length === 0 ? (
+        <Empty description={t('No problems')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : null}
 
-      {sortedDiagnostics.length > 0 ? (
+      {sortedProblems.length > 0 ? (
         <List
-          dataSource={sortedDiagnostics}
+          dataSource={sortedProblems}
           rowKey={(item) =>
             [
               item.severity,
@@ -66,8 +66,8 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
               item.path || '',
               item.kind || '',
               item.entryName || '',
-              item.line || '',
-              item.column || '',
+              item.range?.start.line || '',
+              item.range?.start.column || '',
               item.message,
             ].join(':')
           }
@@ -79,12 +79,12 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
                   <Space direction="vertical" size={2}>
                     <Typography.Text>{item.message}</Typography.Text>
                     {item.path ? (
-                      onOpenDiagnostic ? (
-                        <Button icon={<AimOutlined />} onClick={() => onOpenDiagnostic(item)} size="small" type="link">
-                          {formatDiagnosticLocation(item, t)}
+                      onOpenProblem ? (
+                        <Button icon={<AimOutlined />} onClick={() => onOpenProblem(item)} size="small" type="link">
+                          {formatProblemLocation(item, t)}
                         </Button>
                       ) : (
-                        <Typography.Text type="secondary">{formatDiagnosticLocation(item, t)}</Typography.Text>
+                        <Typography.Text type="secondary">{formatProblemLocation(item, t)}</Typography.Text>
                       )
                     ) : null}
                   </Space>
@@ -107,15 +107,15 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
   );
 }
 
-export default DiagnosticsPanel;
+export default ProblemsPanel;
 
-function formatDiagnosticLocation(diagnostic: LightExtensionDiagnostic, t: (key: string) => string): string {
+function formatProblemLocation(problem: LightExtensionProblem, t: (key: string) => string): string {
   return [
-    diagnostic.path,
-    diagnostic.kind,
-    diagnostic.entryName,
-    diagnostic.line ? `${t('Line')} ${diagnostic.line}` : null,
-    diagnostic.column ? `${t('Column')} ${diagnostic.column}` : null,
+    problem.path,
+    problem.kind,
+    problem.entryName,
+    problem.range?.start.line ? `${t('Line')} ${problem.range.start.line}` : null,
+    problem.range?.start.column ? `${t('Column')} ${problem.range.start.column}` : null,
   ]
     .filter(Boolean)
     .join(' / ');

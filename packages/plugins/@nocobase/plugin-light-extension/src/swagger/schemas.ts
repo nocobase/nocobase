@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../constants';
+
 const nullableString = {
   type: 'string',
   nullable: true,
@@ -21,7 +23,7 @@ const nullableDateTime = {
 export const lightExtensionSchemas = {
   LightExtensionKind: {
     type: 'string',
-    enum: ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'],
+    enum: [...LIGHT_EXTENSION_SUPPORTED_KINDS],
     description: 'Supported client-side light-extension authoring surface kind.',
   },
   LightExtensionWorkspaceFile: {
@@ -131,25 +133,10 @@ export const lightExtensionSchemas = {
       },
     },
   },
-  LightExtensionDiagnostic: {
+  LightExtensionProblemPosition: {
     type: 'object',
-    required: ['code', 'severity', 'message'],
+    required: ['line', 'column'],
     properties: {
-      code: {
-        type: 'string',
-        description: 'Stable machine-readable validator or compiler diagnostic code.',
-      },
-      severity: {
-        type: 'string',
-        enum: ['error', 'warning'],
-      },
-      message: {
-        type: 'string',
-      },
-      path: {
-        type: 'string',
-        description: 'Repository-relative source path associated with the diagnostic.',
-      },
       line: {
         type: 'integer',
         minimum: 1,
@@ -158,15 +145,133 @@ export const lightExtensionSchemas = {
         type: 'integer',
         minimum: 1,
       },
+    },
+  },
+  LightExtensionProblemRange: {
+    type: 'object',
+    required: ['start'],
+    properties: {
+      start: {
+        $ref: '#/components/schemas/LightExtensionProblemPosition',
+      },
+      end: {
+        $ref: '#/components/schemas/LightExtensionProblemPosition',
+      },
+    },
+    description: 'One-based coordinates in the original source file. end is optional.',
+  },
+  LightExtensionProblemProvenance: {
+    type: 'object',
+    required: ['source', 'phase', 'requestId'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: [
+          'validator',
+          'typescript',
+          'runjs-compiler',
+          'esbuild',
+          'browser-preview',
+          'host-runtime',
+          'react',
+          'api',
+          'server',
+        ],
+      },
+      phase: {
+        type: 'string',
+        enum: ['schema', 'typecheck', 'policy', 'compile', 'infrastructure', 'runtime', 'react', 'api', 'permission'],
+      },
+      requestId: {
+        type: 'string',
+      },
+    },
+  },
+  LightExtensionProblem: {
+    type: 'object',
+    required: [
+      'schemaVersion',
+      'phase',
+      'source',
+      'severity',
+      'code',
+      'message',
+      'snapshotId',
+      'requestId',
+      'fingerprint',
+    ],
+    properties: {
+      schemaVersion: {
+        type: 'integer',
+        enum: [1],
+      },
+      phase: {
+        type: 'string',
+        enum: ['schema', 'typecheck', 'policy', 'compile', 'infrastructure', 'runtime', 'react', 'api', 'permission'],
+      },
+      source: {
+        type: 'string',
+        enum: [
+          'validator',
+          'typescript',
+          'runjs-compiler',
+          'esbuild',
+          'browser-preview',
+          'host-runtime',
+          'react',
+          'api',
+          'server',
+        ],
+      },
+      severity: {
+        type: 'string',
+        enum: ['error', 'warning'],
+      },
+      code: {
+        type: 'string',
+        description: 'Stable machine-readable problem code.',
+      },
+      message: {
+        type: 'string',
+      },
+      path: {
+        type: 'string',
+        description: 'Repository-relative source path associated with the problem.',
+      },
+      range: {
+        $ref: '#/components/schemas/LightExtensionProblemRange',
+      },
+      snapshotId: {
+        type: 'string',
+      },
+      requestId: {
+        type: 'string',
+      },
+      fingerprint: {
+        type: 'string',
+        description: 'Stable identity that excludes snapshot and request ids.',
+      },
       kind: {
         $ref: '#/components/schemas/LightExtensionKind',
       },
       entryName: {
         type: 'string',
       },
+      stack: {
+        type: 'string',
+      },
+      fixHint: {
+        type: 'string',
+      },
       details: {
         type: 'object',
         additionalProperties: true,
+      },
+      provenance: {
+        type: 'array',
+        items: {
+          $ref: '#/components/schemas/LightExtensionProblemProvenance',
+        },
       },
     },
   },
@@ -187,14 +292,6 @@ export const lightExtensionSchemas = {
       details: {
         type: 'object',
         additionalProperties: true,
-        properties: {
-          diagnostics: {
-            type: 'array',
-            items: {
-              $ref: '#/components/schemas/LightExtensionDiagnostic',
-            },
-          },
-        },
       },
     },
   },
@@ -261,6 +358,37 @@ export const lightExtensionSchemas = {
       },
     },
   },
+  LightExtensionWorkspaceRejectedErrorResponse: {
+    type: 'object',
+    required: ['errors'],
+    properties: {
+      errors: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'object',
+          required: ['code', 'message', 'status', 'details'],
+          properties: {
+            code: {
+              type: 'string',
+              enum: ['LIGHT_EXTENSION_WORKSPACE_REJECTED'],
+            },
+            message: {
+              type: 'string',
+            },
+            status: {
+              type: 'integer',
+              enum: [422],
+            },
+            details: {
+              $ref: '#/components/schemas/LightExtensionWorkspaceCheckResult',
+            },
+          },
+        },
+      },
+    },
+  },
   LightExtensionRepo: {
     type: 'object',
     required: ['id', 'name', 'normalizedName', 'lifecycleStatus', 'healthStatus', 'headCommitId'],
@@ -305,17 +433,7 @@ export const lightExtensionSchemas = {
   },
   LightExtensionEntry: {
     type: 'object',
-    required: [
-      'id',
-      'repoId',
-      'target',
-      'kind',
-      'entryName',
-      'entryPath',
-      'descriptorPath',
-      'healthStatus',
-      'diagnostics',
-    ],
+    required: ['id', 'repoId', 'target', 'kind', 'entryName', 'entryPath', 'descriptorPath', 'healthStatus'],
     properties: {
       id: {
         type: 'string',
@@ -373,12 +491,6 @@ export const lightExtensionSchemas = {
       healthStatus: {
         type: 'string',
         enum: ['ready', 'missing'],
-      },
-      diagnostics: {
-        type: 'array',
-        items: {
-          $ref: '#/components/schemas/LightExtensionDiagnostic',
-        },
       },
       createdAt: nullableDateTime,
       updatedAt: nullableDateTime,
@@ -587,7 +699,7 @@ export const lightExtensionSchemas = {
   },
   LightExtensionCompileEntryResult: {
     type: 'object',
-    required: ['entryId', 'repoId', 'target', 'kind', 'entryName', 'entryPath', 'status', 'accepted', 'diagnostics'],
+    required: ['entryId', 'repoId', 'target', 'kind', 'entryName', 'entryPath', 'status', 'accepted', 'problems'],
     properties: {
       entryId: nullableString,
       repoId: {
@@ -611,10 +723,10 @@ export const lightExtensionSchemas = {
       accepted: {
         type: 'boolean',
       },
-      diagnostics: {
+      problems: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/LightExtensionDiagnostic',
+          $ref: '#/components/schemas/LightExtensionProblem',
         },
       },
       failureCode: {
@@ -644,33 +756,32 @@ export const lightExtensionSchemas = {
       filesHash: {
         type: 'string',
       },
-      diagnostics: {
-        type: 'array',
-        items: {
-          $ref: '#/components/schemas/LightExtensionDiagnostic',
-        },
-      },
       metadata: {
         type: 'object',
         additionalProperties: true,
       },
     },
   },
-  LightExtensionWorkspacePreviewResult: {
+  LightExtensionWorkspaceCheckResult: {
     type: 'object',
-    required: ['accepted', 'httpStatus', 'diagnostics'],
+    required: ['baseHeadCommitId', 'snapshotId', 'requestId', 'accepted', 'problems', 'entries'],
     properties: {
+      baseHeadCommitId: {
+        $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
+      },
+      snapshotId: {
+        type: 'string',
+      },
+      requestId: {
+        type: 'string',
+      },
       accepted: {
         type: 'boolean',
       },
-      httpStatus: {
-        type: 'integer',
-        enum: [200, 207, 422],
-      },
-      diagnostics: {
+      problems: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/LightExtensionDiagnostic',
+          $ref: '#/components/schemas/LightExtensionProblem',
         },
       },
       failureCode: {
@@ -689,7 +800,7 @@ export const lightExtensionSchemas = {
   },
   LightExtensionSaveSourceEntryResult: {
     type: 'object',
-    required: ['entryId', 'entryName', 'kind', 'entryPath', 'status', 'diagnostics'],
+    required: ['entryId', 'entryName', 'kind', 'entryPath', 'status', 'problems'],
     properties: {
       entryId: {
         type: 'string',
@@ -712,10 +823,10 @@ export const lightExtensionSchemas = {
         enum: ['compiled', 'skipped'],
         description: 'Optional server execution detail without changing the compatible status enum.',
       },
-      diagnostics: {
+      problems: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/LightExtensionDiagnostic',
+          $ref: '#/components/schemas/LightExtensionProblem',
         },
       },
       artifact: {
@@ -728,7 +839,7 @@ export const lightExtensionSchemas = {
   },
   LightExtensionSaveSourceResult: {
     type: 'object',
-    required: ['repo', 'commit', 'tree', 'compile', 'diagnostics'],
+    required: ['repo', 'commit', 'tree', 'compile', 'problems'],
     properties: {
       repo: {
         $ref: '#/components/schemas/LightExtensionRepo',
@@ -755,10 +866,10 @@ export const lightExtensionSchemas = {
           },
         },
       },
-      diagnostics: {
+      problems: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/LightExtensionDiagnostic',
+          $ref: '#/components/schemas/LightExtensionProblem',
         },
       },
     },
@@ -823,12 +934,12 @@ export const lightExtensionSchemas = {
       },
     },
   },
-  LightExtensionWorkspacePreviewEnvelope: {
+  LightExtensionWorkspaceCheckEnvelope: {
     type: 'object',
     required: ['data'],
     properties: {
       data: {
-        $ref: '#/components/schemas/LightExtensionWorkspacePreviewResult',
+        $ref: '#/components/schemas/LightExtensionWorkspaceCheckResult',
       },
     },
   },

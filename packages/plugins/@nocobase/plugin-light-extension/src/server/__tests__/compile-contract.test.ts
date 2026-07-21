@@ -39,7 +39,7 @@ describe('LightExtensionCompileContract', () => {
 
     expect(aggregate.accepted).toBe(false);
     expect(aggregate.results.map((result) => result.ordinal)).toEqual([0, 1, 2]);
-    expect(aggregate.diagnostics.map((diagnostic) => diagnostic.message)).toEqual(['failed 0', 'failed 1', 'failed 2']);
+    expect(aggregate.problems.map((problem) => problem.message)).toEqual(['failed 0', 'failed 1', 'failed 2']);
     expect(() => assertStructuredClonePlainData({ transaction: new Map() })).toThrow(
       'Value.transaction must not contain class instances or process-local objects',
     );

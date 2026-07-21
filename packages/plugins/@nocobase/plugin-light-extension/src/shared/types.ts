@@ -161,18 +161,68 @@ export interface LightExtensionPushResult {
   tree: LightExtensionStoredTree;
 }
 
-export type LightExtensionDiagnosticSeverity = 'error' | 'warning';
+export type LightExtensionProblemSchemaVersion = 1;
 
-export interface LightExtensionDiagnostic {
+export type LightExtensionProblemSeverity = 'error' | 'warning';
+
+export type LightExtensionProblemPhase =
+  | 'schema'
+  | 'typecheck'
+  | 'policy'
+  | 'compile'
+  | 'infrastructure'
+  | 'runtime'
+  | 'react'
+  | 'api'
+  | 'permission';
+
+export type LightExtensionProblemSource =
+  | 'validator'
+  | 'typescript'
+  | 'runjs-compiler'
+  | 'esbuild'
+  | 'browser-preview'
+  | 'host-runtime'
+  | 'react'
+  | 'api'
+  | 'server';
+
+export interface LightExtensionProblemPosition {
+  /** One-based line number in the original source file. */
+  line: number;
+  /** One-based column number in the original source file. */
+  column: number;
+}
+
+export interface LightExtensionProblemRange {
+  start: LightExtensionProblemPosition;
+  end?: LightExtensionProblemPosition;
+}
+
+export interface LightExtensionProblemProvenance {
+  source: LightExtensionProblemSource;
+  phase: LightExtensionProblemPhase;
+  requestId: string;
+}
+
+export interface LightExtensionProblem {
+  schemaVersion: LightExtensionProblemSchemaVersion;
+  phase: LightExtensionProblemPhase;
+  source: LightExtensionProblemSource;
+  severity: LightExtensionProblemSeverity;
   code: string;
-  severity: LightExtensionDiagnosticSeverity;
   message: string;
   path?: string;
-  line?: number;
-  column?: number;
+  range?: LightExtensionProblemRange;
+  snapshotId: string;
+  requestId: string;
+  fingerprint: string;
   kind?: string;
   entryName?: string;
+  stack?: string;
+  fixHint?: string;
   details?: Record<string, unknown>;
+  provenance?: LightExtensionProblemProvenance[];
 }
 
 export interface LightExtensionEntryRuntimeArtifact {
@@ -181,7 +231,6 @@ export interface LightExtensionEntryRuntimeArtifact {
   version: string;
   entryPath: string;
   filesHash?: string;
-  diagnostics?: LightExtensionDiagnostic[];
   metadata?: Record<string, unknown>;
 }
 
@@ -213,7 +262,6 @@ export interface LightExtensionEntryRecord {
   settingsDefaultsHash: string | null;
   compiledAt: string | null;
   healthStatus: LightExtensionEntryHealthStatus;
-  diagnostics: LightExtensionDiagnostic[];
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -229,7 +277,7 @@ export interface LightExtensionSaveSourceCompileEntryResult {
   entryPath: string;
   status: LightExtensionCompileEntryStatus;
   execution?: 'compiled' | 'skipped';
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   artifact?: LightExtensionCompilePreviewArtifactSummary;
   failureCode?: string;
 }
@@ -242,7 +290,7 @@ export interface LightExtensionSaveSourceResult {
     status: 'success' | 'skipped';
     entries: LightExtensionSaveSourceCompileEntryResult[];
   };
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
 }
 
 export interface LightExtensionValidationLimits {
@@ -318,7 +366,7 @@ export interface LightExtensionCompilePreviewEntryResult {
   entryPath: string | null;
   status: LightExtensionCompilePreviewEntryStatus;
   accepted: boolean;
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   failureCode?: string;
   artifact?: LightExtensionCompilePreviewArtifactSummary;
 }
@@ -327,7 +375,7 @@ export interface LightExtensionCompilePreviewResult {
   repo: LightExtensionRepoRecord;
   commitId: string | null;
   accepted: boolean;
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   entries: LightExtensionCompilePreviewEntryResult[];
 }
 
@@ -347,14 +395,18 @@ export interface LightExtensionWorkspacePreviewInput {
   files: LightExtensionWorkspacePreviewFile[];
 }
 
-export interface LightExtensionWorkspacePreviewResult {
+export interface LightExtensionWorkspaceCheckResult {
+  baseHeadCommitId: string | null;
+  snapshotId: string;
+  requestId: string;
   accepted: boolean;
-  httpStatus: 200 | 207 | 422;
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   failureCode?: string;
   artifact?: LightExtensionEntryRuntimeArtifact;
-  entries?: LightExtensionCompilePreviewEntryResult[];
+  entries: LightExtensionCompilePreviewEntryResult[];
 }
+
+export type LightExtensionWorkspacePreviewResult = LightExtensionWorkspaceCheckResult;
 
 export interface LightExtensionSelectableEntrySummary {
   id: string;

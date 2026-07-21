@@ -19,9 +19,10 @@ import {
   type LightExtensionKind,
 } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
+import { sortLightExtensionProblems } from '../../shared/problems';
 import type {
-  LightExtensionDiagnostic,
   LightExtensionEntryRecord,
+  LightExtensionProblem,
   LightExtensionSaveSourceInput,
   LightExtensionSaveSourceResult,
 } from '../../shared/types';
@@ -51,7 +52,6 @@ import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } fro
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
-import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
 
 type ReferenceRefreshService = {
@@ -94,7 +94,7 @@ export interface LightExtensionPreparedSave {
   readonly entryPlan: LightExtensionEntryReconcilePlan;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
   readonly compileEntries: ReadonlyArray<LightExtensionSaveSourceResult['compile']['entries'][number]>;
-  readonly diagnostics: readonly LightExtensionDiagnostic[];
+  readonly problems: readonly LightExtensionProblem[];
   readonly compiledEntryCount: number;
   readonly compiledEntryIds: readonly string[];
 }
@@ -105,7 +105,7 @@ export interface LightExtensionRemoteSnapshotCompileResult {
   contentHash: string;
   changed: boolean;
   compile: LightExtensionSaveSourceResult['compile'];
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
 }
 
 export class LightExtensionRuntimeCompileService {
@@ -202,7 +202,7 @@ export class LightExtensionRuntimeCompileService {
     const preparedEntries: LightExtensionPreparedEntries = {
       repo: candidate.repo,
       commitId: candidate.expectedHeadCommitId || '',
-      diagnostics: sortDiagnostics(candidate.validation.diagnostics),
+      problems: sortLightExtensionProblems(candidate.validation.problems),
       entries: entryPlan.result.entries,
       reconcile: entryPlan.result,
     };
@@ -212,9 +212,9 @@ export class LightExtensionRuntimeCompileService {
       this.compilerBuildIdentity,
     );
     const compilePreparation = await this.prepareCompileResults(candidate.repo.id, readyInputs, ctx);
-    const diagnostics = sortDiagnostics([
-      ...preparedEntries.diagnostics,
-      ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
+    const problems = sortLightExtensionProblems([
+      ...preparedEntries.problems,
+      ...compilePreparation.results.flatMap((entry) => entry.problems),
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
@@ -222,7 +222,7 @@ export class LightExtensionRuntimeCompileService {
         status: 422,
         details: {
           repoId: candidate.repo.id,
-          diagnostics,
+          problems,
           entries: failures.map(toFailedCompileEntryResult),
         },
       });
@@ -237,7 +237,7 @@ export class LightExtensionRuntimeCompileService {
       entryPlan,
       compileResults: Object.freeze(successfulResults.map((entry) => Object.freeze(entry))),
       compileEntries: Object.freeze(compileEntries),
-      diagnostics: Object.freeze(diagnostics),
+      problems: Object.freeze(problems),
       compiledEntryCount: compilePreparation.compiledEntryCount,
       compiledEntryIds: Object.freeze([...compilePreparation.compiledEntryIds]),
     });
@@ -295,7 +295,7 @@ export class LightExtensionRuntimeCompileService {
         status: prepared.compiledEntryCount === 0 ? 'skipped' : 'success',
         entries: [...prepared.compileEntries],
       },
-      diagnostics: [...prepared.diagnostics],
+      problems: [...prepared.problems],
     };
   }
 
@@ -313,7 +313,7 @@ export class LightExtensionRuntimeCompileService {
           entryPath: result.entryPath,
           runtimeVersion: result.artifact.version,
           requestId: result.requestId,
-          diagnostics: result.diagnostics,
+          problems: result.problems,
           filesHash: result.artifact.filesHash,
           artifactEntryPath: result.artifact.entryPath,
         },
@@ -399,7 +399,7 @@ export class LightExtensionRuntimeCompileService {
       return {
         ...compileResultIdentity(job),
         accepted: false,
-        diagnostics: compiled.diagnostics,
+        problems: compiled.problems,
         failureCode: compiled.failureCode || 'compile_failed',
       };
     }
@@ -417,7 +417,7 @@ export class LightExtensionRuntimeCompileService {
       artifact: compiled.artifact,
       artifactHash,
       runtimeCodeHash,
-      diagnostics: compiled.diagnostics,
+      problems: compiled.problems,
     };
   }
 
@@ -450,7 +450,7 @@ export class LightExtensionRuntimeCompileService {
         contentHash: replacement.contentHash,
         changed: false,
         compile: { status: 'skipped', entries: [] },
-        diagnostics: [],
+        problems: [],
       };
     }
 
@@ -469,7 +469,7 @@ export class LightExtensionRuntimeCompileService {
         status: compile.status,
         entries: compile.entries,
       },
-      diagnostics: sortDiagnostics(compile.diagnostics),
+      problems: sortLightExtensionProblems(compile.problems),
     };
   }
 
@@ -479,7 +479,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      diagnostics: LightExtensionDiagnostic[];
+      problems: LightExtensionProblem[];
     }
   > {
     const transaction = ctx.transaction;
@@ -500,7 +500,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      diagnostics: LightExtensionDiagnostic[];
+      problems: LightExtensionProblem[];
     }
   > {
     if (ctx.transaction) {
@@ -519,7 +519,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      diagnostics: LightExtensionDiagnostic[];
+      problems: LightExtensionProblem[];
     }
   > {
     const prepared = await this.entryService.prepareEntries(repoId, ctx);
@@ -549,7 +549,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      diagnostics: LightExtensionDiagnostic[];
+      problems: LightExtensionProblem[];
     }
   > {
     const transaction = ctx.transaction;
@@ -579,14 +579,14 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      diagnostics: LightExtensionDiagnostic[];
+      problems: LightExtensionProblem[];
     }
   > {
     const readyInputs = prepareEntryCompileInputs(prepared.entries, files, this.compilerBuildIdentity);
     const compilePreparation = await this.prepareCompileResults(repoId, readyInputs, ctx);
-    const diagnostics = sortDiagnostics([
-      ...prepared.diagnostics,
-      ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
+    const problems = sortLightExtensionProblems([
+      ...prepared.problems,
+      ...compilePreparation.results.flatMap((entry) => entry.problems),
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
@@ -595,7 +595,7 @@ export class LightExtensionRuntimeCompileService {
         details: {
           repoId,
           commitId,
-          diagnostics,
+          problems,
           entries: failures.map(toFailedCompileEntryResult),
         },
       });
@@ -637,7 +637,7 @@ export class LightExtensionRuntimeCompileService {
       repo: withEntrySummary(repo ? repoFromModelLike(repo) : prepared.repo, entryModels.map(entryFromModel)),
       status: compilePreparation.compiledEntryCount === 0 ? 'skipped' : 'success',
       entries: compileEntries,
-      diagnostics,
+      problems,
     };
   }
 }
@@ -749,12 +749,12 @@ function reuseCompiledEntry(
       version: artifact.version,
       entryPath: artifact.entryPath,
       filesHash: artifact.filesHash,
-      diagnostics: sortDiagnostics(artifact.diagnostics || []),
+      diagnostics: [],
       metadata: artifact.metadata,
     },
     artifactHash,
     runtimeCodeHash,
-    diagnostics: sortDiagnostics(artifact.diagnostics || []),
+    problems: [],
   };
 }
 
@@ -769,7 +769,7 @@ function toSuccessfulCompileEntryResult(
     entryPath: result.entryPath,
     status: 'success',
     execution: compiled ? 'compiled' : 'skipped',
-    diagnostics: result.diagnostics,
+    problems: result.problems,
     artifact: {
       version: result.artifact.version,
       entryPath: result.artifact.entryPath || result.entryPath,
@@ -789,7 +789,7 @@ function toFailedCompileEntryResult(
     entryPath: result.entryPath,
     status: 'failed',
     execution: 'compiled',
-    diagnostics: result.diagnostics,
+    problems: result.problems,
     failureCode: result.failureCode,
   };
 }

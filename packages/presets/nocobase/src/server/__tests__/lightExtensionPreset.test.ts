@@ -37,4 +37,35 @@ describe('Light Extension preset boundary', () => {
     expect(Object.keys(tsconfigPaths).some((name) => name.startsWith(VSC_FILE_PACKAGE))).toBe(false);
     expect(fs.existsSync(path.resolve('packages/plugins/@nocobase/plugin-vsc-file/package.json'))).toBe(false);
   });
+
+  it('expresses the final install state without development-only upgrade migrations or fixtures', () => {
+    expect(
+      fs.existsSync(
+        path.resolve(
+          'packages/plugins/@nocobase/plugin-light-extension/src/server/migrations/20260719000000-remove-client-app-storage.ts',
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.resolve(
+          'packages/presets/nocobase/src/server/migrations/20260720143000-merge-vsc-file-into-light-extension.ts',
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.resolve(
+          'packages/presets/nocobase/src/server/__tests__/migrations/merge-vsc-file-into-light-extension.test.ts',
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.resolve(
+          'packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/vsc-file-upgrade-compatibility.test.ts',
+        ),
+      ),
+    ).toBe(false);
+  });
 });

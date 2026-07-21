@@ -15,6 +15,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
+import { createLightExtensionProblem } from '../../shared/problems';
 import { LightExtensionHookError, type UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
 import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
@@ -345,7 +346,7 @@ function createSaveResult() {
       status: 'success',
       entries: [],
     },
-    diagnostics: [],
+    problems: [],
   };
 }
 
@@ -408,7 +409,7 @@ describe('LightExtensionWorkspacePage', () => {
     mocks.api.saveSource.mockResolvedValue(createSaveResult());
     mocks.api.compileWorkspacePreview.mockResolvedValue({
       accepted: true,
-      diagnostics: [],
+      problems: [],
       artifact: {
         code: 'ctx.render(<div>preview</div>);',
         version: 'v2',
@@ -459,7 +460,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByTestId('runjs-code-tab')).toBeInTheDocument();
   });
 
-  it('starts embedded field-value workspaces with files collapsed and keeps diagnostics inside the workspace shell', async () => {
+  it('starts embedded field-value workspaces with files collapsed and keeps problems inside the workspace shell', async () => {
     render(
       <MemoryRouter>
         <LightExtensionWorkspacePage defaultFilesCollapsed embedded repoId="ler_sales" />
@@ -468,10 +469,10 @@ describe('LightExtensionWorkspacePage', () => {
 
     const workspace = await screen.findByTestId('light-extension-runjs-studio-workspace');
     expect(screen.queryByTestId('runjs-files-panel')).not.toBeInTheDocument();
-    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({
+    expect(within(workspace).getByTestId('light-extension-workspace-problems')).toHaveStyle({
       overflowY: 'hidden',
     });
-    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveTextContent('Diagnostics');
+    expect(within(workspace).getByTestId('light-extension-workspace-problems')).toHaveTextContent('Problems');
 
     fireEvent.click(within(workspace).getByRole('button', { name: 'Expand files' }));
     expect(await screen.findByTestId('runjs-files-panel')).toHaveAttribute('data-collapsed', 'false');
@@ -578,7 +579,7 @@ describe('LightExtensionWorkspacePage', () => {
     ]);
   });
 
-  it('keeps local edits open and shows diagnostics when saveSource rejects invalid source with 422', async () => {
+  it('keeps local edits open and shows problems when saveSource rejects invalid source with 422', async () => {
     const onRequestClose = vi.fn();
     const onSaved = vi.fn();
     mocks.api.saveSource.mockRejectedValueOnce(
@@ -588,7 +589,7 @@ describe('LightExtensionWorkspacePage', () => {
         status: 422,
         message: 'Light extension source cannot be compiled',
         details: {
-          diagnostics: [
+          problems: [
             {
               code: 'RUNJS_COMPILE_FAILED',
               severity: 'error',
@@ -1917,7 +1918,7 @@ describe('LightExtensionWorkspacePage', () => {
     ]);
   });
 
-  it('shows persisted save diagnostics after validation failure', async () => {
+  it('shows persisted save problems after validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
       new LightExtensionHookError({
         operation: 'saveSource',
@@ -1925,7 +1926,7 @@ describe('LightExtensionWorkspacePage', () => {
         status: 422,
         message: 'Light extension source cannot be compiled',
         details: {
-          diagnostics: [
+          problems: [
             {
               code: 'import_not_allowed',
               severity: 'error',
@@ -1954,10 +1955,10 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
-    expect(screen.getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({ overflowY: 'auto' });
+    expect(screen.getByTestId('light-extension-workspace-problems')).toHaveStyle({ overflowY: 'auto' });
   });
 
-  it('opens diagnostic source locations after save validation failure', async () => {
+  it('opens problem source locations after save validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
       new LightExtensionHookError({
         operation: 'saveSource',
@@ -1965,17 +1966,20 @@ describe('LightExtensionWorkspacePage', () => {
         status: 422,
         message: 'Light extension source workspace is invalid',
         details: {
-          diagnostics: [
-            {
+          problems: [
+            createLightExtensionProblem({
+              phase: 'compile',
+              source: 'authoritative-compiler',
               code: 'RUNJS_IMPORT_NOT_FOUND',
               severity: 'error',
               message: 'Import target was not found',
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
-              line: 1,
-              column: 8,
+              range: { start: { line: 1, column: 8 } },
+              snapshotId: 'snapshot-save-validation',
+              requestId: 'request-save-validation',
               kind: 'js-block',
               entryName: 'sales-kpi',
-            },
+            }),
           ],
         },
       }),
@@ -1996,7 +2000,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));
-    expect(await screen.findByText('Opened diagnostic source')).toBeInTheDocument();
+    expect(await screen.findByText('Opened problem source')).toBeInTheDocument();
   });
 
   it('loads a history version through pullCommit instead of pull ref', async () => {

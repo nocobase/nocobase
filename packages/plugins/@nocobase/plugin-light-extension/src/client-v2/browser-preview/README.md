@@ -11,7 +11,7 @@ This directory contains the opt-in browser compiler for the light-extension edit
   reference refresh, server permission checks, and server `compileKey` decisions.
 - The Worker keeps one initialized WASM instance and a persistent in-memory VFS. Each preview invokes one `build`.
 - The portable RunJS boundary owns POSIX virtual paths, relative import resolution, built-in module mapping, compile
-  contracts, and diagnostics shared with the native compiler. It has no Node or native-esbuild imports.
+  contracts, and problems shared with the native compiler. It has no Node or native-esbuild imports.
 
 ## Assets and deployment
 

@@ -45,7 +45,7 @@ import {
 } from '../../constants';
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import type {
-  LightExtensionDiagnostic,
+  LightExtensionProblem,
   LightExtensionEntryRuntimeArtifact,
   LightExtensionFileEncoding,
   LightExtensionFileChange,
@@ -53,14 +53,14 @@ import type {
   LightExtensionCommitRecord,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
-import DiagnosticsPanel from '../components/DiagnosticsPanel';
+import ProblemsPanel from '../components/DiagnosticsPanel';
 import { isBrowserProvisionalPreviewEnabled } from '../browser-preview/BrowserPreviewSession';
 import {
   getLightExtensionPreviewSurfaceStyle,
   useBrowserProvisionalPreview,
 } from '../browser-preview/useBrowserProvisionalPreview';
 import {
-  getLightExtensionErrorDiagnostics,
+  getLightExtensionErrorProblems,
   LightExtensionHookError,
   useLightExtensionRepo,
 } from '../hooks/useLightExtensionRepo';
@@ -172,7 +172,7 @@ function LightExtensionWorkspacePage({
   const [filesCollapsed, setFilesCollapsed] = useState(defaultFilesCollapsed);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
-  const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
+  const [problems, setProblems] = useState<LightExtensionProblem[]>([]);
   const [loading, setLoading] = useState(false);
   const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -263,7 +263,7 @@ function LightExtensionWorkspacePage({
           setHistoryItems(toRunJSHistoryItems(commits));
           setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
         }
-        setDiagnostics([]);
+        setProblems([]);
         setIsDiff(false);
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
@@ -334,12 +334,12 @@ function LightExtensionWorkspacePage({
     files: sourceFiles,
     entry: browserPreviewEntry,
   });
-  const visibleDiagnostics = useMemo(
+  const visibleProblems = useMemo(
     () =>
-      provisionalPreview.enabled && provisionalPreview.diagnostics.length > 0
-        ? [...provisionalPreview.diagnostics, ...diagnostics]
-        : diagnostics,
-    [diagnostics, provisionalPreview.diagnostics, provisionalPreview.enabled],
+      provisionalPreview.enabled && provisionalPreview.problems.length > 0
+        ? [...provisionalPreview.problems, ...problems]
+        : problems,
+    [problems, provisionalPreview.problems, provisionalPreview.enabled],
   );
 
   const openFilePath = useCallback((path?: string) => {
@@ -671,7 +671,7 @@ function LightExtensionWorkspacePage({
         message: commitMessage,
         files: dirtyChanges,
       });
-      setDiagnostics(result.diagnostics);
+      setProblems(result.problems);
       setBaseHeadCommitId(result.commit.id);
       setBaseFiles(filesForSave);
       await onSaved?.();
@@ -689,7 +689,7 @@ function LightExtensionWorkspacePage({
       embeddedSaveRequestRef.current = null;
       embeddedSavePromiseRef.current = null;
       request?.reject(error);
-      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
+      setProblems(getLightExtensionErrorProblems(error) as LightExtensionProblem[]);
       setNotice({
         type: 'error',
         message:
@@ -796,18 +796,18 @@ function LightExtensionWorkspacePage({
     };
   }, [onFooterActionsChange]);
 
-  const openDiagnosticSource = useCallback(
-    (diagnostic: LightExtensionDiagnostic) => {
-      if (!diagnostic.path) {
+  const openProblemSource = useCallback(
+    (problem: LightExtensionProblem) => {
+      if (!problem.path) {
         return;
       }
-      if (!files.some((file) => file.path === diagnostic.path)) {
-        setNotice({ type: 'warning', message: t('Diagnostic source is not loaded') });
+      if (!files.some((file) => file.path === problem.path)) {
+        setNotice({ type: 'warning', message: t('Problem source is not loaded') });
         return;
       }
 
-      openFilePath(diagnostic.path);
-      setNotice({ type: 'info', message: t('Opened diagnostic source') });
+      openFilePath(problem.path);
+      setNotice({ type: 'info', message: t('Opened problem source') });
     },
     [files, openFilePath, t],
   );
@@ -839,7 +839,7 @@ function LightExtensionWorkspacePage({
         return;
       }
 
-      setDiagnostics(result.diagnostics);
+      setProblems(result.problems);
       if (!result.accepted || !result.artifact) {
         setNotice({ type: 'error', message: t('Preview failed') });
         return;
@@ -847,7 +847,7 @@ function LightExtensionWorkspacePage({
 
       await onPreview(result.artifact);
     } catch (error) {
-      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
+      setProblems(getLightExtensionErrorProblems(error) as LightExtensionProblem[]);
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
     } finally {
       setPreviewing(false);
@@ -1003,7 +1003,7 @@ function LightExtensionWorkspacePage({
         setFolders(collectWorkspaceFolders(nextFiles));
         setActivePath(nextActivePath);
         setOpenPaths(nextActivePath ? [nextActivePath] : []);
-        setDiagnostics([]);
+        setProblems([]);
         setIsDiff(false);
         message.success(t('ZIP imported. Save to create a new version.'));
       } catch (error) {
@@ -1203,7 +1203,7 @@ function LightExtensionWorkspacePage({
                           type={
                             provisionalPreview.status === 'degraded'
                               ? 'warning'
-                              : provisionalPreview.status === 'diagnostic'
+                              : provisionalPreview.status === 'problem'
                                 ? 'info'
                                 : provisionalPreview.status === 'ready'
                                   ? 'success'
@@ -1262,18 +1262,18 @@ function LightExtensionWorkspacePage({
                 </main>
               </div>
               <div
-                data-testid="light-extension-workspace-diagnostics"
+                data-testid="light-extension-workspace-problems"
                 style={{
                   borderTop: `1px solid ${token.colorBorderSecondary}`,
                   flex: '0 0 auto',
                   maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
                   minHeight: 96,
                   overflowX: 'hidden',
-                  overflowY: visibleDiagnostics.length > 0 ? 'auto' : 'hidden',
+                  overflowY: visibleProblems.length > 0 ? 'auto' : 'hidden',
                   padding: 12,
                 }}
               >
-                <DiagnosticsPanel diagnostics={visibleDiagnostics} onOpenDiagnostic={openDiagnosticSource} />
+                <ProblemsPanel problems={visibleProblems} onOpenProblem={openProblemSource} />
               </div>
             </div>,
             workspaceFullscreen.container,
@@ -1356,8 +1356,8 @@ function getProvisionalPreviewStatusMessage(
   if (status === 'degraded') {
     return t('Local provisional preview is unavailable. Save will continue on the server.');
   }
-  if (status === 'diagnostic') {
-    return t('Local provisional preview reported diagnostics. Server Save remains authoritative.');
+  if (status === 'problem') {
+    return t('Local provisional preview reported problems. Server Save remains authoritative.');
   }
   if (status === 'ready') {
     return t('Local provisional preview is ready. Server Save remains authoritative.');

@@ -102,7 +102,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const runtimeArtifact = await runtimeResolveService.getArtifact(runtime.artifactHash);
 
     expect(result.compile.status).toBe('success');
-    expect(result.diagnostics).toEqual([]);
+    expect(result.problems).toEqual([]);
     expect(compileLogs).toHaveLength(1);
     expect(entry?.get('compiledCommitId')).toBe(result.commit.id);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
@@ -382,7 +382,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     const artifact = await runtimeResolveService.getArtifact(runtime.artifactHash);
 
-    expect(result).toMatchObject({ compile: { status: 'success' }, diagnostics: [] });
+    expect(result).toMatchObject({ compile: { status: 'success' }, problems: [] });
     expect(entry?.get('kind')).toBe('js-page');
     expect(entry?.get('surfaceStyle')).toBe('render');
     expect(entry?.get('runtimeArtifact')).toMatchObject({
@@ -655,7 +655,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       status: 422,
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' })]),
+        problems: expect.arrayContaining([expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' })]),
       },
     });
 
@@ -702,7 +702,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       status: 422,
       details: {
-        diagnostics: expect.arrayContaining([
+        problems: expect.arrayContaining([
           expect.objectContaining({
             code: 'settings_condition_value_invalid',
             path: 'src/client/js-blocks/sales-kpi/entry.json',
@@ -940,7 +940,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([
+        problems: expect.arrayContaining([
           expect.objectContaining({
             severity: 'error',
             path: 'src/client/js-blocks/entry-b/index.tsx',

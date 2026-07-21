@@ -84,12 +84,16 @@ describe('plugin-light-extension compile preview', () => {
       status: 'failed',
       accepted: false,
     });
-    expect(salesTrend?.diagnostics).toEqual(
+    expect(salesTrend?.problems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/js-blocks/sales-trend/index.tsx',
-          line: expect.any(Number),
-          column: expect.any(Number),
+          range: {
+            start: {
+              line: expect.any(Number),
+              column: expect.any(Number),
+            },
+          },
         }),
       ]),
     );
@@ -147,7 +151,7 @@ describe('plugin-light-extension compile preview', () => {
 
     expect(result).toMatchObject({
       accepted: true,
-      diagnostics: [],
+      problems: [],
       artifact: {
         version: 'v2',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -206,7 +210,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result).toMatchObject({
       accepted: false,
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      diagnostics: [
+      problems: [
         expect.objectContaining({
           code: 'settings_condition_value_invalid',
           path: 'src/client/js-blocks/sales-kpi/entry.json',
@@ -255,7 +259,7 @@ describe('plugin-light-extension compile preview', () => {
         expect.objectContaining({ entryName: 'sales-trend', accepted: false, status: 'failed' }),
       ]),
     );
-    expect(result.diagnostics).toEqual(
+    expect(result.problems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/js-blocks/sales-trend/index.tsx',
@@ -295,7 +299,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result).toMatchObject({
       accepted: false,
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      diagnostics: [
+      problems: [
         expect.objectContaining({
           code: 'workspace_path_not_allowed',
           path: 'src/client/not-allowed.ts',
@@ -334,7 +338,7 @@ describe('plugin-light-extension compile preview', () => {
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
     });
     expect(salesKpi?.artifact).toBeUndefined();
-    expect(salesKpi?.diagnostics).toEqual(
+    expect(salesKpi?.problems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'workspace_path_not_allowed',
@@ -342,7 +346,7 @@ describe('plugin-light-extension compile preview', () => {
         }),
       ]),
     );
-    expect(result.diagnostics).toEqual(
+    expect(result.problems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'workspace_path_not_allowed',
@@ -395,7 +399,7 @@ describe('plugin-light-extension compile preview', () => {
       status: 'success',
       accepted: true,
     });
-    expect(result.diagnostics).toEqual([]);
+    expect(result.problems).toEqual([]);
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         entryId: 'lee_sales_kpi',
@@ -499,7 +503,7 @@ describe('plugin-light-extension compile preview', () => {
 
     expect(result).toMatchObject({
       accepted: true,
-      diagnostics: [],
+      problems: [],
       entries: [
         {
           entryId: 'lee_orders',
@@ -544,7 +548,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result.entries[0]).toMatchObject({
       entryId: 'lee_sales_trend',
       status: 'skipped',
-      diagnostics: [
+      problems: [
         expect.objectContaining({
           code: 'entry_missing',
         }),
@@ -558,7 +562,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result.entries[2]).toMatchObject({
       entryId: 'lee_unknown',
       status: 'skipped',
-      diagnostics: [
+      problems: [
         expect.objectContaining({
           code: 'entry_not_found',
         }),
@@ -647,10 +651,13 @@ describe('plugin-light-extension compile preview', () => {
 
   it('normalizes the unsaved workspace preview resource input', async () => {
     const previewResult = {
+      baseHeadCommitId: 'vsc_commit_1',
+      snapshotId: 'snapshot_1',
+      requestId: 'request_1',
       accepted: false,
-      httpStatus: 422,
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      diagnostics: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
+      problems: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
+      entries: [],
     };
     const compileWorkspacePreview = vi.fn().mockResolvedValue(previewResult);
     const resource = createLightExtensionsResource({
@@ -698,7 +705,48 @@ describe('plugin-light-extension compile preview', () => {
       expect.any(Object),
     );
     expect((ctx as { status?: number }).status).toBe(422);
-    expect((ctx as { body?: unknown }).body).toBe(previewResult);
+    expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBe(true);
+    expect((ctx as { body?: unknown }).body).toEqual({
+      errors: [
+        {
+          code: 'LIGHT_EXTENSION_WORKSPACE_REJECTED',
+          message: 'Light extension workspace check rejected one or more entries',
+          status: 422,
+          details: previewResult,
+        },
+      ],
+    });
+  });
+
+  it('leaves accepted workspace checks data-wrapped with the canonical result body', async () => {
+    const checkResult = {
+      baseHeadCommitId: 'vsc_commit_1',
+      snapshotId: 'snapshot_1',
+      requestId: 'request_1',
+      accepted: true,
+      problems: [],
+      entries: [],
+    };
+    const compileWorkspacePreview = vi.fn().mockResolvedValue(checkResult);
+    const resource = createLightExtensionsResource({
+      compileWorkspacePreview,
+    } as unknown as LightExtensionCompilePreviewService);
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            repoId: 'ler_sales',
+            files: [{ path: 'src/client/js-blocks/sales-kpi/index.tsx', content: 'ctx.render(<div />);' }],
+          },
+        },
+      },
+    } as unknown as Context;
+
+    await resource.actions?.compileWorkspacePreview?.(ctx, async () => {});
+
+    expect((ctx as { status?: number }).status).toBeUndefined();
+    expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBeUndefined();
+    expect((ctx as { body?: unknown }).body).toBe(checkResult);
   });
 });
 
@@ -738,6 +786,9 @@ function createDbStub(entries: Record<string, unknown>[]) {
       },
     ]),
   );
+  persistenceRepositories.lightExtensionRepos.findOne = vi
+    .fn()
+    .mockResolvedValue(createModel({ headCommitId: 'vsc_commit_1' }));
   const db = {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntries') {
@@ -837,7 +888,7 @@ function createEntryRecord(input: {
     settingsDefaultsHash: null,
     compiledAt: input.compiledCommitId ? new Date('2026-07-06T00:00:00.000Z') : null,
     healthStatus: 'ready',
-    diagnostics: [],
+    problems: [],
     createdAt: null,
     updatedAt: null,
   };

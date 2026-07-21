@@ -51,7 +51,7 @@ describe('light-extension swagger', () => {
     }
   });
 
-  it('reuses shared schemas for files, bindings, artifacts, diagnostics, errors, and expected Head conflicts', () => {
+  it('reuses shared schemas for files, bindings, artifacts, problems, errors, and expected Head conflicts', () => {
     const schemas = swaggerDocument.components.schemas;
     const saveSource = swaggerDocument.paths['/lightExtensionFiles:saveSource'].post;
     const saveRequest = saveSource.requestBody.content['application/json'].schema;
@@ -76,17 +76,39 @@ describe('light-extension swagger', () => {
         compilerBuildId: expect.objectContaining({ nullable: true }),
       }),
     );
-    expect(schemas.LightExtensionDiagnostic.required).toEqual(['code', 'severity', 'message']);
-    expect(schemas.LightExtensionDiagnostic.properties).toEqual(
+    expect(schemas.LightExtensionProblem.required).toEqual([
+      'schemaVersion',
+      'phase',
+      'source',
+      'severity',
+      'code',
+      'message',
+      'snapshotId',
+      'requestId',
+      'fingerprint',
+    ]);
+    expect(schemas.LightExtensionProblem.properties).toEqual(
       expect.objectContaining({
         path: expect.objectContaining({ type: 'string' }),
-        line: expect.objectContaining({ type: 'integer' }),
-        column: expect.objectContaining({ type: 'integer' }),
+        range: { $ref: '#/components/schemas/LightExtensionProblemRange' },
         kind: { $ref: '#/components/schemas/LightExtensionKind' },
         entryName: expect.objectContaining({ type: 'string' }),
         details: expect.objectContaining({ type: 'object' }),
       }),
     );
+    expect(schemas.LightExtensionProblemRange).toMatchObject({
+      required: ['start'],
+      properties: {
+        start: { $ref: '#/components/schemas/LightExtensionProblemPosition' },
+        end: { $ref: '#/components/schemas/LightExtensionProblemPosition' },
+      },
+    });
+    expect(schemas.LightExtensionEntry.required).not.toContain('problems');
+    expect(schemas.LightExtensionEntry.properties.problems).toBeUndefined();
+    expect(schemas.LightExtensionRuntimeArtifact.properties.problems).toBeUndefined();
+    expect(schemas.LightExtensionRuntimeArtifact.properties.diagnostics).toBeUndefined();
+    expect('LightExtensionDiagnostic' in schemas).toBe(false);
+    expect('LightExtensionWorkspacePreviewResult' in schemas).toBe(false);
     expect(schemas.LightExtensionErrorResponse.properties.errors.items).toEqual({
       $ref: '#/components/schemas/LightExtensionErrorItem',
     });
@@ -127,8 +149,32 @@ describe('light-extension swagger', () => {
     );
     expect(previewRequest.properties.values).toBeUndefined();
     expect(preview.description).toContain('HTTP 200');
-    expect(preview.description).toContain('HTTP 207');
     expect(preview.description).toContain('HTTP 422');
-    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 207, 403, 422]);
+    expect(preview.description).toContain('errors[0].details');
+    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 403, 422]);
+    expect(preview.responses[200].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionWorkspaceCheckEnvelope',
+    });
+    expect(preview.responses[422].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionWorkspaceRejectedErrorResponse',
+    });
+    expect(swaggerDocument.components.schemas.LightExtensionWorkspaceCheckResult.required).toEqual([
+      'baseHeadCommitId',
+      'snapshotId',
+      'requestId',
+      'accepted',
+      'problems',
+      'entries',
+    ]);
+    expect(swaggerDocument.components.schemas.LightExtensionWorkspaceCheckResult.properties.httpStatus).toBeUndefined();
+    expect(
+      swaggerDocument.components.schemas.LightExtensionWorkspaceRejectedErrorResponse.properties.errors.items,
+    ).toMatchObject({
+      properties: {
+        code: { enum: ['LIGHT_EXTENSION_WORKSPACE_REJECTED'] },
+        status: { enum: [422] },
+        details: { $ref: '#/components/schemas/LightExtensionWorkspaceCheckResult' },
+      },
+    });
   });
 });

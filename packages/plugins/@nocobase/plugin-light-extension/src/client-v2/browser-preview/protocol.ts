@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type {
-  LightExtensionDiagnostic,
-  LightExtensionEntryRuntimeArtifact,
-  LightExtensionKind,
-} from '../../shared/types';
+import type { LightExtensionProblem, LightExtensionEntryRuntimeArtifact, LightExtensionKind } from '../../shared/types';
 
 export const LIGHT_EXTENSION_BROWSER_PREVIEW_PROTOCOL_VERSION = 1;
 export const LIGHT_EXTENSION_BROWSER_PREVIEW_COMPILER_BUILD_ID = 'esbuild-wasm-0.27.7-portable-v1';
@@ -48,6 +44,8 @@ export interface BrowserPreviewMetrics {
 
 export interface ProvisionalCompileResult {
   provisional: true;
+  snapshotId: string;
+  requestId: string;
   accepted: boolean;
   artifact: LightExtensionEntryRuntimeArtifact & {
     metadata: Record<string, unknown> & {
@@ -56,7 +54,7 @@ export interface ProvisionalCompileResult {
       compilerBuildId: string;
     };
   };
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   metafile?: Record<string, unknown>;
   metrics: BrowserPreviewMetrics;
 }

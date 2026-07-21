@@ -349,11 +349,11 @@ function toNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-export function getLightExtensionErrorDiagnostics(error: unknown) {
+export function getLightExtensionErrorProblems(error: unknown) {
   if (!isLightExtensionHookError(error)) {
     return [];
   }
 
-  const diagnostics = error.details?.diagnostics;
-  return Array.isArray(diagnostics) ? diagnostics : [];
+  const problems = error.details?.problems;
+  return Array.isArray(problems) ? problems : [];
 }

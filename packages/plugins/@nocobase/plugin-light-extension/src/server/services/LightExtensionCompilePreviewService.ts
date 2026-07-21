@@ -8,15 +8,21 @@
  */
 
 import type { Database, Model } from '@nocobase/database';
+import { sha256Hex, stableSerialize } from '@nocobase/runjs';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import {
+  createLightExtensionProblemFactory,
+  sortLightExtensionProblems,
+  uniqueLightExtensionProblems,
+} from '../../shared/problems';
 import type {
   LightExtensionCompilePreviewArtifactSummary,
   LightExtensionCompilePreviewEntryResult,
   LightExtensionCompilePreviewResult,
-  LightExtensionDiagnostic,
+  LightExtensionProblem,
   LightExtensionEntryRecord,
   LightExtensionPulledFile,
   LightExtensionWorkspacePreviewInput,
@@ -31,9 +37,8 @@ import {
   LightExtensionEntryValidationResult,
   LightExtensionValidator,
   type LightExtensionWorkspaceValidationResult,
-  getWorkspaceLevelDiagnostics,
-  hasErrorDiagnostic,
-  sortDiagnostics,
+  getWorkspaceLevelProblems,
+  hasErrorProblem,
   toValidatorFiles,
 } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
@@ -51,7 +56,7 @@ interface LightExtensionCompilePreviewTarget {
   entryName: string;
   entryPath: string | null;
   validationEntry?: LightExtensionEntryValidationResult;
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   missingReason?: 'entry_missing' | 'entry_not_found';
 }
 
@@ -70,7 +75,7 @@ export class LightExtensionCompilePreviewService {
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionCompilePreviewResult> {
     const requestId = ctx.requestId || randomUUID();
-    const previewContext = {
+    const previewContext: LightExtensionServiceContext = {
       ...ctx,
       requestId,
       requestSource: ctx.requestSource || 'light-extension-compile-preview',
@@ -93,17 +98,27 @@ export class LightExtensionCompilePreviewService {
       },
       previewContext,
     );
+    const snapshotId = pull.tree?.hash || buildWorkspaceSnapshotId(pull.files || []);
+    previewContext.snapshotId = snapshotId;
+    const createProblem = createLightExtensionProblemFactory({
+      snapshotId,
+      requestId,
+      source: 'server',
+      phase: 'compile',
+    });
     const validation = this.validator.validateWorkspace({
       files: toValidatorFiles(pull.files || []),
+      snapshotId,
+      requestId,
     });
-    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
+    const workspaceProblems = getWorkspaceLevelProblems(validation.problems);
     const persistedEntries = await this.listPersistedEntries(input.repoId, previewContext);
-    const targets = buildPreviewTargets(input, validation.entries, persistedEntries);
+    const targets = buildPreviewTargets(input, validation.entries, persistedEntries, createProblem);
 
-    if (hasErrorDiagnostic(workspaceDiagnostics)) {
-      const sortedWorkspaceDiagnostics = sortDiagnostics(workspaceDiagnostics);
-      await this.recordPreviewValidationBlocked(input, previewContext, sortedWorkspaceDiagnostics, targets.length);
-      const entries = targets.map((target) => buildWorkspaceBlockedEntryResult(target, sortedWorkspaceDiagnostics));
+    if (hasErrorProblem(workspaceProblems)) {
+      const sortedWorkspaceProblems = sortLightExtensionProblems(workspaceProblems);
+      await this.recordPreviewValidationBlocked(input, previewContext, sortedWorkspaceProblems, targets.length);
+      const entries = targets.map((target) => buildWorkspaceBlockedEntryResult(target, sortedWorkspaceProblems));
       for (const entry of entries) {
         await this.recordEntryValidationBlocked(entry, previewContext, 'validation_failed');
       }
@@ -112,17 +127,14 @@ export class LightExtensionCompilePreviewService {
         repo: pull.repo,
         commitId: pull.commit?.id || null,
         accepted: false,
-        diagnostics: sortUniqueDiagnostics([
-          ...sortedWorkspaceDiagnostics,
-          ...entries.flatMap((entry) => entry.diagnostics),
-        ]),
+        problems: sortUniqueProblems([...sortedWorkspaceProblems, ...entries.flatMap((entry) => entry.problems)]),
         entries,
       };
     }
 
     const entries: LightExtensionCompilePreviewEntryResult[] = [];
     for (const target of targets) {
-      if (!target.validationEntry || hasErrorDiagnostic(target.diagnostics)) {
+      if (!target.validationEntry || hasErrorProblem(target.problems)) {
         const failed = buildSkippedEntryResult(target);
         entries.push(failed);
         await this.recordEntryValidationBlocked(failed, previewContext, target.missingReason || 'validation_failed');
@@ -149,7 +161,7 @@ export class LightExtensionCompilePreviewService {
         entryPath: target.validationEntry.entryPath,
         status: compiled.accepted ? 'success' : 'failed',
         accepted: compiled.accepted,
-        diagnostics: sortDiagnostics([...target.diagnostics, ...compiled.diagnostics]),
+        problems: sortLightExtensionProblems([...target.problems, ...compiled.problems]),
         failureCode: compiled.failureCode,
         artifact: compiled.accepted
           ? summarizeArtifact(compiled.artifact, target.validationEntry.entryPath)
@@ -157,16 +169,13 @@ export class LightExtensionCompilePreviewService {
       });
     }
 
-    const diagnostics = sortUniqueDiagnostics([
-      ...workspaceDiagnostics,
-      ...entries.flatMap((entry) => entry.diagnostics),
-    ]);
+    const problems = sortUniqueProblems([...workspaceProblems, ...entries.flatMap((entry) => entry.problems)]);
 
     return {
       repo: pull.repo,
       commitId: pull.commit?.id || null,
-      accepted: !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted),
-      diagnostics,
+      accepted: !hasErrorProblem(problems) && entries.every((entry) => entry.accepted),
+      problems,
       entries,
     };
   }
@@ -176,7 +185,7 @@ export class LightExtensionCompilePreviewService {
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionWorkspacePreviewResult> {
     const requestId = ctx.requestId || randomUUID();
-    const previewContext = {
+    const previewContext: LightExtensionServiceContext = {
       ...ctx,
       requestId,
       requestSource: ctx.requestSource || 'light-extension-workspace-preview',
@@ -193,51 +202,65 @@ export class LightExtensionCompilePreviewService {
     }
 
     const previewFiles = input.files;
+    const snapshotId = buildWorkspaceSnapshotId(previewFiles);
+    const baseHeadCommitId = await this.getBaseHeadCommitId(input.repoId, previewContext);
+    previewContext.snapshotId = snapshotId;
+    const createProblem = createLightExtensionProblemFactory({
+      snapshotId,
+      requestId,
+      source: 'server',
+      phase: 'compile',
+    });
     const validation = this.validator.validateWorkspace({
       files: previewFiles.map((file) => ({ ...file })),
+      snapshotId,
+      requestId,
     });
     const targetKind = input.kind;
     const targetEntryPath = input.entryPath?.trim();
     if (!targetKind && !targetEntryPath) {
-      return this.compileWholeWorkspacePreview(input, validation, previewFiles, previewContext);
+      return this.compileWholeWorkspacePreview(input, validation, previewFiles, previewContext, baseHeadCommitId);
     }
     if (!targetKind || !targetEntryPath) {
-      const diagnostics = [
-        {
+      const problems = [
+        createProblem({
           code: 'light_extension_preview_target_incomplete',
           severity: 'error',
           message: 'Light extension workspace preview must include both kind and entryPath when targeting an entry',
           path: input.entryPath,
           kind: input.kind,
-        } satisfies LightExtensionDiagnostic,
+        }),
       ];
       return {
+        baseHeadCommitId,
+        snapshotId,
+        requestId,
         accepted: false,
-        httpStatus: 422,
-        diagnostics,
+        problems,
         failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+        entries: [],
       };
     }
 
-    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
+    const workspaceProblems = getWorkspaceLevelProblems(validation.problems);
     const normalizedEntryPath = normalizeSourcePath(targetEntryPath);
     const validationEntry = validation.entries.find(
       (entry) => entry.kind === targetKind && normalizeSourcePath(entry.entryPath) === normalizedEntryPath,
     );
-    const entryDiagnostics = validationEntry
-      ? validationEntry.diagnostics
+    const entryProblems = validationEntry
+      ? validationEntry.problems
       : [
-          {
+          createProblem({
             code: 'entry_not_found',
             severity: 'error',
             message: `Light extension entry source "${normalizedEntryPath}" was not found`,
             path: normalizedEntryPath,
             kind: targetKind,
             entryName: inferEntryName(normalizedEntryPath),
-          } satisfies LightExtensionDiagnostic,
+          }),
         ];
-    const validationDiagnostics = sortUniqueDiagnostics([...workspaceDiagnostics, ...entryDiagnostics]);
-    if (!validationEntry || hasErrorDiagnostic(validationDiagnostics)) {
+    const validationProblems = sortUniqueProblems([...workspaceProblems, ...entryProblems]);
+    if (!validationEntry || hasErrorProblem(validationProblems)) {
       await this.recordCompileAuditBestEffort({
         repoId: input.repoId,
         entryId: input.entryId,
@@ -248,17 +271,33 @@ export class LightExtensionCompilePreviewService {
         ctx: previewContext,
         result: 'blocked',
         reasonCode: validationEntry ? 'validation_failed' : 'entry_not_found',
-        diagnostics: validationDiagnostics,
+        problems: validationProblems,
         message: 'Light extension workspace preview validation failed',
         details: {
           requestSource: previewContext.requestSource,
         },
       });
       return {
+        baseHeadCommitId,
+        snapshotId,
+        requestId,
         accepted: false,
-        httpStatus: 422,
-        diagnostics: validationDiagnostics,
+        problems: validationProblems,
         failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+        entries: [
+          {
+            entryId: input.entryId || null,
+            repoId: input.repoId,
+            target: 'client',
+            kind: targetKind,
+            entryName: validationEntry?.entryName || inferEntryName(normalizedEntryPath),
+            entryPath: normalizedEntryPath,
+            status: validationEntry ? 'failed' : 'skipped',
+            accepted: false,
+            problems: validationProblems,
+            failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+          },
+        ],
       };
     }
 
@@ -275,12 +314,14 @@ export class LightExtensionCompilePreviewService {
       },
       previewContext,
     );
-    const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
+    const problems = sortUniqueProblems([...validationProblems, ...compiled.problems]);
 
     return {
-      accepted: compiled.accepted && !hasErrorDiagnostic(diagnostics),
-      httpStatus: compiled.accepted && !hasErrorDiagnostic(diagnostics) ? 200 : 422,
-      diagnostics,
+      baseHeadCommitId,
+      snapshotId,
+      requestId,
+      accepted: compiled.accepted && !hasErrorProblem(problems),
+      problems,
       failureCode: compiled.failureCode,
       artifact: compiled.accepted
         ? {
@@ -289,10 +330,24 @@ export class LightExtensionCompilePreviewService {
             version: compiled.artifact.version,
             entryPath: compiled.artifact.entryPath || validationEntry.entryPath,
             filesHash: compiled.artifact.filesHash,
-            diagnostics,
             metadata: compiled.artifact.metadata,
           }
         : undefined,
+      entries: [
+        {
+          entryId: input.entryId || null,
+          repoId: input.repoId,
+          target: 'client',
+          kind: validationEntry.kind,
+          entryName: validationEntry.entryName,
+          entryPath: validationEntry.entryPath,
+          status: compiled.accepted ? 'success' : 'failed',
+          accepted: compiled.accepted && !hasErrorProblem(problems),
+          problems,
+          failureCode: compiled.failureCode,
+          artifact: compiled.accepted ? summarizeArtifact(compiled.artifact, validationEntry.entryPath) : undefined,
+        },
+      ],
     };
   }
 
@@ -301,8 +356,9 @@ export class LightExtensionCompilePreviewService {
     validation: LightExtensionWorkspaceValidationResult,
     files: LightExtensionWorkspacePreviewInput['files'],
     ctx: LightExtensionServiceContext,
+    baseHeadCommitId: string | null,
   ): Promise<LightExtensionWorkspacePreviewResult> {
-    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
+    const workspaceProblems = getWorkspaceLevelProblems(validation.problems);
     const persistedEntries = await this.listPersistedEntries(input.repoId, ctx);
     const persistedEntryIds = new Map(
       persistedEntries.map((entry) => [`${entry.kind}:${entry.entryName}`, entry.id] as const),
@@ -310,12 +366,12 @@ export class LightExtensionCompilePreviewService {
     const entries: LightExtensionCompilePreviewEntryResult[] = [];
 
     for (const validationEntry of validation.entries) {
-      const validationDiagnostics = sortUniqueDiagnostics([...workspaceDiagnostics, ...validationEntry.diagnostics]);
+      const validationProblems = sortUniqueProblems([...workspaceProblems, ...validationEntry.problems]);
       const entryId = persistedEntryIds.get(`${validationEntry.kind}:${validationEntry.entryName}`) || null;
       const persistedEntry = persistedEntries.find(
         (entry) => entry.kind === validationEntry.kind && entry.entryName === validationEntry.entryName,
       );
-      if (hasErrorDiagnostic(validationDiagnostics)) {
+      if (hasErrorProblem(validationProblems)) {
         entries.push({
           entryId,
           repoId: input.repoId,
@@ -325,7 +381,7 @@ export class LightExtensionCompilePreviewService {
           entryPath: validationEntry.entryPath,
           status: 'failed',
           accepted: false,
-          diagnostics: validationDiagnostics,
+          problems: validationProblems,
           failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
         });
         continue;
@@ -345,8 +401,8 @@ export class LightExtensionCompilePreviewService {
         },
         ctx,
       );
-      const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
-      const accepted = compiled.accepted && !hasErrorDiagnostic(diagnostics);
+      const problems = sortUniqueProblems([...validationProblems, ...compiled.problems]);
+      const accepted = compiled.accepted && !hasErrorProblem(problems);
       entries.push({
         entryId,
         repoId: input.repoId,
@@ -356,21 +412,20 @@ export class LightExtensionCompilePreviewService {
         entryPath: validationEntry.entryPath,
         status: compiled.accepted ? 'success' : 'failed',
         accepted,
-        diagnostics,
+        problems,
         failureCode: compiled.failureCode,
         artifact: compiled.accepted ? summarizeArtifact(compiled.artifact, validationEntry.entryPath) : undefined,
       });
     }
 
-    const diagnostics = sortUniqueDiagnostics([
-      ...workspaceDiagnostics,
-      ...entries.flatMap((entry) => entry.diagnostics),
-    ]);
-    const accepted = !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted);
+    const problems = sortUniqueProblems([...workspaceProblems, ...entries.flatMap((entry) => entry.problems)]);
+    const accepted = !hasErrorProblem(problems) && entries.every((entry) => entry.accepted);
     return {
+      baseHeadCommitId,
+      snapshotId: validation.snapshotId,
+      requestId: validation.requestId,
       accepted,
-      httpStatus: accepted ? 200 : entries.some((entry) => entry.accepted) ? 207 : 422,
-      diagnostics,
+      problems,
       entries,
       failureCode: accepted
         ? undefined
@@ -393,6 +448,15 @@ export class LightExtensionCompilePreviewService {
     return records.map((record: Model) => entryFromModel(record));
   }
 
+  private async getBaseHeadCommitId(repoId: string, ctx: LightExtensionServiceContext): Promise<string | null> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filter: { id: repoId },
+      fields: ['headCommitId'],
+      transaction: ctx.transaction,
+    });
+    return repo?.get('headCommitId') || null;
+  }
+
   private async recordPreviewPermissionDenied(
     repoId: string,
     ctx: LightExtensionServiceContext,
@@ -402,17 +466,23 @@ export class LightExtensionCompilePreviewService {
       return;
     }
 
+    const createProblem = createLightExtensionProblemFactory({
+      snapshotId: ctx.snapshotId || `permission:${repoId}`,
+      requestId: ctx.requestId || randomUUID(),
+      source: 'server',
+      phase: 'permission',
+    });
     await this.recordCompileAuditBestEffort({
       repoId,
       ctx,
       result: 'blocked',
       reasonCode: 'permission_denied',
-      diagnostics: [
-        {
+      problems: [
+        createProblem({
           code: error.code,
           severity: 'error',
           message: error.message,
-        },
+        }),
       ],
       message: 'Light extension compile preview permission denied',
       details: {
@@ -424,7 +494,7 @@ export class LightExtensionCompilePreviewService {
   private async recordPreviewValidationBlocked(
     input: LightExtensionCompilePreviewInput,
     ctx: LightExtensionServiceContext,
-    diagnostics: LightExtensionDiagnostic[],
+    problems: LightExtensionProblem[],
     entryCount: number,
   ): Promise<void> {
     await this.recordCompileAuditBestEffort({
@@ -432,7 +502,7 @@ export class LightExtensionCompilePreviewService {
       ctx,
       result: 'blocked',
       reasonCode: 'validation_failed',
-      diagnostics,
+      problems,
       message: 'Light extension compile preview workspace validation failed',
       details: {
         requestSource: ctx.requestSource,
@@ -457,7 +527,7 @@ export class LightExtensionCompilePreviewService {
       ctx,
       result: 'blocked',
       reasonCode,
-      diagnostics: entry.diagnostics,
+      problems: entry.problems,
       message: 'Light extension compile preview entry validation failed',
       details: {
         requestSource: ctx.requestSource,
@@ -475,13 +545,13 @@ export class LightExtensionCompilePreviewService {
     ctx: LightExtensionServiceContext;
     result: 'success' | 'blocked';
     reasonCode?: string;
-    diagnostics: LightExtensionDiagnostic[];
+    problems: LightExtensionProblem[];
     message: string;
     details?: Record<string, unknown>;
   }): Promise<void> {
     try {
-      const errorCount = input.diagnostics.filter((item) => item.severity === 'error').length;
-      const warningCount = input.diagnostics.filter((item) => item.severity === 'warning').length;
+      const errorCount = input.problems.filter((item) => item.severity === 'error').length;
+      const warningCount = input.problems.filter((item) => item.severity === 'warning').length;
       await this.auditService.recordCompileEvent({
         repoId: input.repoId,
         entryId: input.entryId,
@@ -493,17 +563,17 @@ export class LightExtensionCompilePreviewService {
         requestId: input.ctx.requestId || randomUUID(),
         actorUserId: input.ctx.actorUserId,
         entryPath: input.entryPath,
-        diagnosticCount: input.diagnostics.length,
+        problemCount: input.problems.length,
         errorCount,
         warningCount,
-        diagnostics: input.diagnostics,
+        problems: input.problems,
         reasonCode: input.reasonCode,
         message: input.message,
         details: input.details,
         transaction: input.ctx.transaction,
       });
     } catch {
-      // Preview diagnostics must not depend on audit persistence availability.
+      // Preview problems must not depend on audit persistence availability.
     }
   }
 }
@@ -512,6 +582,7 @@ function buildPreviewTargets(
   input: LightExtensionCompilePreviewInput,
   validationEntries: LightExtensionEntryValidationResult[],
   persistedEntries: LightExtensionEntryRecord[],
+  createProblem: ReturnType<typeof createLightExtensionProblemFactory>,
 ): LightExtensionCompilePreviewTarget[] {
   const persistedById = new Map(persistedEntries.map((entry) => [entry.id, entry]));
   const persistedByKey = new Map(persistedEntries.map((entry) => [entryKey(entry), entry]));
@@ -521,12 +592,12 @@ function buildPreviewTargets(
     return input.entryIds.map((entryId) => {
       const persisted = persistedById.get(entryId);
       if (!persisted) {
-        return buildUnknownEntryTarget(input.repoId, entryId);
+        return buildUnknownEntryTarget(input.repoId, entryId, createProblem);
       }
 
       const validationEntry = validationByKey.get(entryKey(persisted));
       if (!validationEntry) {
-        return buildMissingPersistedEntryTarget(persisted);
+        return buildMissingPersistedEntryTarget(persisted, createProblem);
       }
 
       return buildValidationEntryTarget(input.repoId, validationEntry, persisted);
@@ -539,7 +610,7 @@ function buildPreviewTargets(
   const validationKeys = new Set(validationEntries.map(entryKey));
   for (const persisted of persistedEntries) {
     if (!validationKeys.has(entryKey(persisted))) {
-      targets.push(buildMissingPersistedEntryTarget(persisted));
+      targets.push(buildMissingPersistedEntryTarget(persisted, createProblem));
     }
   }
 
@@ -563,19 +634,22 @@ function buildValidationEntryTarget(
     entryName: validationEntry.entryName,
     entryPath: validationEntry.entryPath,
     validationEntry,
-    diagnostics: validationEntry.diagnostics,
+    problems: validationEntry.problems,
   };
 }
 
-function buildMissingPersistedEntryTarget(entry: LightExtensionEntryRecord): LightExtensionCompilePreviewTarget {
-  const diagnostic = {
+function buildMissingPersistedEntryTarget(
+  entry: LightExtensionEntryRecord,
+  createProblem: ReturnType<typeof createLightExtensionProblemFactory>,
+): LightExtensionCompilePreviewTarget {
+  const problem = createProblem({
     code: 'entry_missing',
     severity: 'error',
     message: 'Entry source files were not found during compile preview',
     path: entry.entryPath,
     kind: entry.kind,
     entryName: entry.entryName,
-  } satisfies LightExtensionDiagnostic;
+  });
 
   return {
     entryId: entry.id,
@@ -584,18 +658,22 @@ function buildMissingPersistedEntryTarget(entry: LightExtensionEntryRecord): Lig
     kind: entry.kind,
     entryName: entry.entryName,
     entryPath: entry.entryPath,
-    diagnostics: [diagnostic],
+    problems: [problem],
     missingReason: 'entry_missing',
   };
 }
 
-function buildUnknownEntryTarget(repoId: string, entryId: string): LightExtensionCompilePreviewTarget {
-  const diagnostic = {
+function buildUnknownEntryTarget(
+  repoId: string,
+  entryId: string,
+  createProblem: ReturnType<typeof createLightExtensionProblemFactory>,
+): LightExtensionCompilePreviewTarget {
+  const problem = createProblem({
     code: 'entry_not_found',
     severity: 'error',
     message: `Light extension entry "${entryId}" was not found`,
     entryName: entryId,
-  } satisfies LightExtensionDiagnostic;
+  });
 
   return {
     entryId,
@@ -604,7 +682,7 @@ function buildUnknownEntryTarget(repoId: string, entryId: string): LightExtensio
     kind: 'unknown',
     entryName: entryId,
     entryPath: null,
-    diagnostics: [diagnostic],
+    problems: [problem],
     missingReason: 'entry_not_found',
   };
 }
@@ -619,13 +697,13 @@ function buildSkippedEntryResult(target: LightExtensionCompilePreviewTarget): Li
     entryPath: target.entryPath,
     status: 'skipped',
     accepted: false,
-    diagnostics: sortDiagnostics(target.diagnostics),
+    problems: sortLightExtensionProblems(target.problems),
   };
 }
 
 function buildWorkspaceBlockedEntryResult(
   target: LightExtensionCompilePreviewTarget,
-  workspaceDiagnostics: LightExtensionDiagnostic[],
+  workspaceProblems: LightExtensionProblem[],
 ): LightExtensionCompilePreviewEntryResult {
   return {
     entryId: target.entryId,
@@ -636,7 +714,7 @@ function buildWorkspaceBlockedEntryResult(
     entryPath: target.entryPath,
     status: target.validationEntry ? 'failed' : 'skipped',
     accepted: false,
-    diagnostics: sortDiagnostics([...target.diagnostics, ...workspaceDiagnostics]),
+    problems: sortLightExtensionProblems([...target.problems, ...workspaceProblems]),
     failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
   };
 }
@@ -688,25 +766,25 @@ function entryKey(entry: { target?: string; kind: string; entryName: string }): 
   return `${entry.target || 'client'}:${entry.kind}:${entry.entryName}`;
 }
 
-function sortUniqueDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
-  const unique = new Map<string, LightExtensionDiagnostic>();
-  for (const item of diagnostics) {
-    unique.set(diagnosticKey(item), item);
-  }
-
-  return sortDiagnostics([...unique.values()]);
+function sortUniqueProblems(problems: LightExtensionProblem[]): LightExtensionProblem[] {
+  return uniqueLightExtensionProblems(problems);
 }
 
-function diagnosticKey(input: LightExtensionDiagnostic): string {
-  return [
-    input.code,
-    input.severity,
-    input.path || '',
-    input.kind || '',
-    input.entryName || '',
-    input.line || '',
-    input.column || '',
-  ].join('\u0000');
+function buildWorkspaceSnapshotId(
+  files: readonly { path: string; content?: string; language?: string; mode?: string }[],
+) {
+  return sha256Hex(
+    stableSerialize(
+      files
+        .map((file) => ({
+          path: normalizeSourcePath(file.path),
+          content: file.content || '',
+          language: file.language || '',
+          mode: file.mode || '',
+        }))
+        .sort((left, right) => left.path.localeCompare(right.path)),
+    ),
+  );
 }
 
 function normalizeSourcePath(path: string): string {

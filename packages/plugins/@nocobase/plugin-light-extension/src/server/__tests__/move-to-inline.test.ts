@@ -70,7 +70,6 @@ const entry: LightExtensionEntryRecord = {
   settingsDefaultsHash: null,
   compiledAt: null,
   healthStatus: 'ready',
-  diagnostics: [],
 };
 
 describe('MoveToInlineService', () => {
@@ -383,7 +382,7 @@ describe('MoveToInlineService', () => {
     } as unknown as Database;
     const compileEntry = vi.fn(async (input: { files: Array<{ path: string; content?: string }> }) => ({
       accepted: true,
-      diagnostics: [],
+      problems: [],
       surface: {
         surface: 'js-page',
         surfaceStyle: 'render',

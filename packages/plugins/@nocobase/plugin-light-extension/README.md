@@ -53,7 +53,7 @@ P1 does not include creating a page directly from an Entry, an App Bridge API, o
 Repository source operations use a different request shape from RunJS Studio workspaces:
 
 1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.
-2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A whole-workspace preview may return HTTP 207 when only part of the Entry set compiles; HTTP 207 or 422 must not proceed to save.
+2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A successful check returns HTTP 200 with `{ data: LightExtensionWorkspaceCheckResult }`; any rejected Entry returns HTTP 422 with the same result in `errors[0].details`.
 3. Call `lightExtensionFiles:saveSource` with only the changed file delta plus the unchanged `expectedHeadCommitId`. Do not send the complete workspace as a replacement snapshot.
 4. On HTTP 409, pull again and rebuild the candidate. Never resolve a conflict by replacing only the expected Head while reusing stale source.
 5. Verify the new Head, all affected Entry artifacts, reference rows, and the bound Flow Surface. Updating a retained inline fallback `code` field does not change the active runtime while `sourceMode` remains `light-extension`.
@@ -62,8 +62,8 @@ Raw `vscFile`, `runJSSources`, direct artifact writes, and ZIP round-trips are n
 
 | Case | Result | Persistent state |
 | --- | --- | --- |
-| Valid changed source | Returns the commit, tree, entry compile results, and diagnostics | Repository Head and current runtime artifacts advance together |
-| Validation or compilation error | Returns `LIGHT_EXTENSION_VALIDATION_FAILED` with HTTP 422 diagnostics | The transaction rolls back; Head, source, entries, runtime artifacts, and references remain unchanged |
+| Valid changed source | Returns the commit, tree, entry compile results, and Problems | Repository Head and current runtime artifacts advance together |
+| Validation or compilation error | Returns `LIGHT_EXTENSION_VALIDATION_FAILED` with HTTP 422 Problems | The transaction rolls back; Head, source, entries, runtime artifacts, and references remain unchanged |
 | Empty/no-change save | Returns the VSC `NO_CHANGES` source error | Nothing changes |
 | Archived repository | Returns `LIGHT_EXTENSION_REPO_ARCHIVED` | Nothing changes |
 
@@ -95,6 +95,10 @@ interface LightExtensionInspectSourceArchiveResult {
 After validation, repository workspaces replace the complete local working copy. Entry-bound workspaces replace only editable paths and preserve other read-only entries. An entry-bound import is rejected when the ZIP contains another managed entry or omits the currently bound `entryPath`. Import never saves automatically; the user must use the drawer footer **Save** action to create and compile a new version.
 
 ZIP is an interactive import/export boundary, not the Agent local-edit workflow for an existing repository. Agent edits must use pull, full-workspace preview, and delta save so concurrency and Entry reconciliation remain explicit.
+
+The first Agent workflow supports only complete UTF-8 text workspaces for JS Block and JS Page entries. It rejects `src/client/js-portals/**`, base64 or binary content, and does not treat ZIP or raw VSC operations as a CAS-protected authoring path.
+
+Every authoring failure uses the single `LightExtensionProblem` contract. Source locations are one-based `range.start.line` and `range.start.column`; `snapshotId`, `requestId`, and `fingerprint` bind Problems to a specific check without persisting them in Entry records or runtime artifacts.
 
 | Condition | Result |
 | --- | --- |
@@ -143,7 +147,7 @@ Compatibility cases:
 | Case | Result |
 | --- | --- |
 | Keyed entry renamed | Reuses the existing `entryId`, updates `entryPath`, recompiles, and keeps runtime bindings active. |
-| Duplicate key in two directories of the same kind | Save is rejected with validation diagnostics. |
+| Duplicate key in two directories of the same kind | Save is rejected with validation Problems. |
 
 Entries that were already split into stale and replacement database records before this contract was introduced are not automatically repaired or merged. The stable-key guarantee applies to moves and renames performed after this behavior is available.
 

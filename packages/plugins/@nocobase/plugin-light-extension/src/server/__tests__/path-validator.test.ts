@@ -12,6 +12,8 @@ import { LightExtensionValidator } from '../services/LightExtensionValidator';
 describe('plugin-light-extension path validator', () => {
   it('accepts js-block entry files under the allowlisted source root', () => {
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -38,6 +40,8 @@ describe('plugin-light-extension path validator', () => {
 
   it('accepts repo root files and shared helper files', () => {
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'README.md',
@@ -64,13 +68,15 @@ describe('plugin-light-extension path validator', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.diagnostics.filter((item) => item.code === 'path_not_allowed')).toEqual([]);
-    expect(result.diagnostics.filter((item) => item.code === 'path_extension_not_allowed')).toEqual([]);
+    expect(result.problems.filter((item) => item.code === 'path_not_allowed')).toEqual([]);
+    expect(result.problems.filter((item) => item.code === 'path_extension_not_allowed')).toEqual([]);
   });
 
   it('accepts JS Page entry modules without allowing page-specific assets', () => {
     const validator = new LightExtensionValidator();
     const accepted = validator.validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-pages/orders/index.tsx',
@@ -84,6 +90,8 @@ describe('plugin-light-extension path validator', () => {
       ],
     });
     const rejected = validator.validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [{ path: 'src/client/js-pages/orders/style.css', content: '.page { min-height: 100vh; }\n' }],
     });
 
@@ -97,7 +105,7 @@ describe('plugin-light-extension path validator', () => {
         }),
       ],
     });
-    expect(rejected.diagnostics).toContainEqual(
+    expect(rejected.problems).toContainEqual(
       expect.objectContaining({
         code: 'path_extension_not_allowed',
         kind: 'js-page',
@@ -109,6 +117,8 @@ describe('plugin-light-extension path validator', () => {
   it('selects the entry index path by fixed priority instead of file order', () => {
     const validator = new LightExtensionValidator();
     const first = validator.validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.js',
@@ -122,6 +132,8 @@ describe('plugin-light-extension path validator', () => {
       ],
     });
     const second = validator.validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -141,6 +153,8 @@ describe('plugin-light-extension path validator', () => {
 
   it('rejects traversal, absolute paths, invalid entry names, and unsupported entry files', () => {
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: '../escape.ts',
@@ -174,7 +188,7 @@ describe('plugin-light-extension path validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics.map((item) => item.code)).toEqual(
+    expect(result.problems.map((item) => item.code)).toEqual(
       expect.arrayContaining([
         'path_traversal_not_allowed',
         'path_absolute_not_allowed',
@@ -183,19 +197,19 @@ describe('plugin-light-extension path validator', () => {
         'path_segment_invalid',
       ]),
     );
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code: 'path_traversal_not_allowed',
         path: 'src/client/js-blocks/foo/../bar/index.tsx',
       }),
     );
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code: 'path_segment_invalid',
         path: 'src/client/js-blocks/foo/./index.tsx',
       }),
     );
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code: 'path_segment_invalid',
         path: 'src/client/js-blocks/foo//index.tsx',
@@ -205,6 +219,8 @@ describe('plugin-light-extension path validator', () => {
 
   it('rejects unsupported shared file extensions and shared imports outside src/shared', () => {
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/shared/style.css',
@@ -222,7 +238,7 @@ describe('plugin-light-extension path validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toEqual(
+    expect(result.problems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'path_extension_not_allowed',

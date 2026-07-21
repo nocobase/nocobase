@@ -75,8 +75,8 @@ describe('plugin-light-extension collections', () => {
       'settingsDefaultsHash',
       'compiledAt',
       'healthStatus',
-      'diagnostics',
     ]);
+    expect(app.db.getCollection('lightExtensionEntries')?.getField('diagnostics')).toBeFalsy();
     expectCollectionFields('lightExtensionRuntimeArtifacts', [
       'artifactHash',
       'runtimeCodeHash',

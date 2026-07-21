@@ -8,7 +8,11 @@
  */
 
 import type { LightExtensionKind } from '../../../constants';
-import type { LightExtensionDiagnostic } from '../../../shared/types';
+import type {
+  LightExtensionProblemPhase,
+  LightExtensionProblemRange,
+  LightExtensionProblemSeverity,
+} from '../../../shared/types';
 
 export interface LightExtensionSourceFileInput {
   path: string;
@@ -44,4 +48,18 @@ export interface ParsedEntryDescriptor {
   settingsSchema: Record<string, unknown> | null;
 }
 
-export type DiagnosticTarget = Pick<LightExtensionDiagnostic, 'path' | 'kind' | 'entryName'>;
+export interface LightExtensionValidatorProblem {
+  phase: LightExtensionProblemPhase;
+  severity: LightExtensionProblemSeverity;
+  code: string;
+  message: string;
+  path?: string;
+  range?: LightExtensionProblemRange;
+  kind?: string;
+  entryName?: string;
+  stack?: string;
+  fixHint?: string;
+  details?: Record<string, unknown>;
+}
+
+export type ProblemTarget = Pick<LightExtensionValidatorProblem, 'path' | 'kind' | 'entryName'>;

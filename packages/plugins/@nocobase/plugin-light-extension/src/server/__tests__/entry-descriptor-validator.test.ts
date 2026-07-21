@@ -24,6 +24,8 @@ describe('plugin-light-extension entry descriptor validator', () => {
       },
     };
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: entryFiles({
         schemaVersion: 1,
         key: 'sales-overview',
@@ -60,6 +62,8 @@ describe('plugin-light-extension entry descriptor validator', () => {
   it('accepts legacy schema fields for existing repositories', () => {
     const settingsSchema = { type: 'object', properties: { title: { type: 'string' } } };
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: entryFiles({
         $schema: LIGHT_EXTENSION_ENTRY_SCHEMA_URL,
         schemaVersion: 1,
@@ -70,7 +74,7 @@ describe('plugin-light-extension entry descriptor validator', () => {
 
     expect(result.accepted).toBe(true);
     expect(result.entries[0].settingsSchema).toEqual(settingsSchema);
-    expect(result.diagnostics).toEqual([]);
+    expect(result.problems).toEqual([]);
   });
 
   it.each([
@@ -85,19 +89,27 @@ describe('plugin-light-extension entry descriptor validator', () => {
     [{ schemaVersion: 1, key: 'sales-kpi', settings: {}, settingsSchema: {} }, 'entry_descriptor_settings_conflict'],
     [{ schemaVersion: 1, key: 'sales-kpi', unknown: true }, 'entry_descriptor_unknown_field'],
   ])('rejects invalid descriptor contract %j', (descriptor, code) => {
-    const result = new LightExtensionValidator().validateWorkspace({ files: entryFiles(descriptor) });
+    const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
+      files: entryFiles(descriptor),
+    });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code,
         path: 'src/client/js-blocks/sales-kpi/entry.json',
+        phase: 'schema',
+        source: 'validator',
       }),
     );
   });
 
   it('requires entry.json and rejects old descriptor paths through workspace policy', () => {
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         { path: 'src/client/js-blocks/sales-kpi/index.tsx', content: 'ctx.render(<div />);\n' },
         { path: 'src/client/js-blocks/sales-kpi/meta.json', content: '{"key":"sales-kpi"}' },
@@ -106,13 +118,15 @@ describe('plugin-light-extension entry descriptor validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics.map((item) => item.code)).toEqual(
+    expect(result.problems.map((item) => item.code)).toEqual(
       expect.arrayContaining(['workspace_path_not_allowed', 'entry_descriptor_missing']),
     );
   });
 
   it('enforces the 128 KiB descriptor limit before JSON parsing', () => {
     const result = new LightExtensionValidator({ limits: { maxJsonBytes: 256 * 1024 } }).validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: entryFiles({
         schemaVersion: 1,
         key: 'sales-kpi',
@@ -121,7 +135,7 @@ describe('plugin-light-extension entry descriptor validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code: 'entry_descriptor_too_large',
         path: 'src/client/js-blocks/sales-kpi/entry.json',
@@ -131,12 +145,16 @@ describe('plugin-light-extension entry descriptor validator', () => {
 
   it('rejects descriptor imports while preserving ordinary JSON module imports', () => {
     const rejected = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: entryFiles(
         { schemaVersion: 1, key: 'sales-kpi' },
         'import descriptor from "./entry.json";\nctx.render(descriptor.key);\n',
       ),
     });
     const accepted = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         ...entryFiles(
           { schemaVersion: 1, key: 'sales-kpi' },
@@ -147,14 +165,14 @@ describe('plugin-light-extension entry descriptor validator', () => {
     });
 
     expect(rejected.accepted).toBe(false);
-    expect(rejected.diagnostics).toContainEqual(
-      expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' }),
-    );
+    expect(rejected.problems).toContainEqual(expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' }));
     expect(accepted.accepted).toBe(true);
   });
 
   it('validates settings field definitions in entry.json', () => {
     const result = new LightExtensionValidator().validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: entryFiles({
         schemaVersion: 1,
         key: 'sales-kpi',
@@ -169,7 +187,7 @@ describe('plugin-light-extension entry descriptor validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics.map((item) => item.code)).toEqual(
+    expect(result.problems.map((item) => item.code)).toEqual(
       expect.arrayContaining(['settings_schema_keyword_not_allowed', 'settings_x_component_not_allowed']),
     );
   });

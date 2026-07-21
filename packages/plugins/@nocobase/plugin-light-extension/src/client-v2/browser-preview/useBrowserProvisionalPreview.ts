@@ -9,7 +9,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { LightExtensionDiagnostic, LightExtensionKind, LightExtensionTreeEntryInput } from '../../shared/types';
+import { createLightExtensionProblemFactory } from '../../shared/problems';
+import type { LightExtensionProblem, LightExtensionKind, LightExtensionTreeEntryInput } from '../../shared/types';
 import { BrowserPreviewSession, BrowserPreviewSessionError } from './BrowserPreviewSession';
 import { ProvisionalPreviewSandbox } from './ProvisionalPreviewSandbox';
 import type {
@@ -24,13 +25,13 @@ export type BrowserProvisionalPreviewStatus =
   | 'initializing'
   | 'building'
   | 'ready'
-  | 'diagnostic'
+  | 'problem'
   | 'degraded';
 
 export interface BrowserProvisionalPreviewState {
   enabled: boolean;
   status: BrowserProvisionalPreviewStatus;
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   failureCode?: BrowserPreviewFailureCode | string;
   metrics?: BrowserPreviewMetrics;
   result?: ProvisionalCompileResult;
@@ -48,7 +49,7 @@ interface UseBrowserProvisionalPreviewInput {
 const DISABLED_STATE: BrowserProvisionalPreviewState = {
   enabled: false,
   status: 'disabled',
-  diagnostics: [],
+  problems: [],
 };
 
 export function useBrowserProvisionalPreview({
@@ -100,12 +101,18 @@ export function useBrowserProvisionalPreview({
       ...current,
       enabled: true,
       status: 'building',
-      diagnostics: [],
+      problems: [],
       failureCode: undefined,
       result: undefined,
     }));
 
     const runBuild = async () => {
+      const createHookProblem = createLightExtensionProblemFactory({
+        snapshotId: `browser-preview:${sequence}`,
+        requestId: `browser-preview-hook:${sequence}`,
+        source: 'browser-preview',
+        phase: 'infrastructure',
+      });
       setState((current) => ({ ...current, enabled: true, status: 'building', failureCode: undefined }));
       try {
         try {
@@ -118,19 +125,25 @@ export function useBrowserProvisionalPreview({
         if (!result || buildSequenceRef.current !== sequence) {
           return;
         }
-        let diagnostics = result.diagnostics;
+        let problems = result.problems;
         if (result.accepted && result.artifact.code) {
           const sandboxResult = await sandbox.execute(result.artifact.code);
           if (!sandboxResult.accepted) {
-            diagnostics = [
-              ...diagnostics,
-              {
+            const createRuntimeProblem = createLightExtensionProblemFactory({
+              snapshotId: result.snapshotId,
+              requestId: result.requestId,
+              source: 'browser-preview',
+              phase: 'runtime',
+            });
+            problems = [
+              ...problems,
+              createRuntimeProblem({
                 code: 'PREVIEW_SANDBOX_RUNTIME_FAILED',
                 severity: 'warning',
                 message: sandboxResult.message || 'Provisional preview sandbox execution failed',
                 path: entry.entryPath,
                 details: { provisional: true },
-              },
+              }),
             ];
           }
         }
@@ -139,8 +152,8 @@ export function useBrowserProvisionalPreview({
         }
         setState({
           enabled: true,
-          status: result.accepted ? (diagnostics.length ? 'diagnostic' : 'ready') : 'diagnostic',
-          diagnostics,
+          status: result.accepted ? (problems.length ? 'problem' : 'ready') : 'problem',
+          problems,
           failureCode: result.accepted ? undefined : result.metrics.previewFailureCode,
           metrics: result.metrics,
           result,
@@ -155,14 +168,14 @@ export function useBrowserProvisionalPreview({
           enabled: true,
           status: 'degraded',
           failureCode,
-          diagnostics: [
-            {
+          problems: [
+            createHookProblem({
               code: failureCode,
               severity: 'warning',
               message,
               path: entry.entryPath,
               details: { provisional: true },
-            },
+            }),
           ],
         });
       }

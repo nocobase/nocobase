@@ -275,6 +275,5 @@ function createSelectableEntry(kind: 'js-block' | 'js-page' = 'js-block') {
     settingsDefaultsHash: 'defaults_hash',
     compiledAt: '2026-07-09T00:00:00.000Z',
     healthStatus: 'ready',
-    diagnostics: [],
   };
 }

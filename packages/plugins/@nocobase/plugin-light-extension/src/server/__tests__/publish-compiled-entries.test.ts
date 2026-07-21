@@ -47,7 +47,7 @@ describe('PublishCompiledEntriesService', () => {
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       status: 422,
       details: {
-        diagnostics: [expect.objectContaining({ message: 'Compile failed' })],
+        problems: [expect.objectContaining({ message: 'Compile failed' })],
       },
     });
     expect(store.runInTransactionCalls).toBe(0);
@@ -89,6 +89,8 @@ describe('PublishCompiledEntriesService', () => {
     expect(entryRows.map((row) => (row.runtimeArtifact as { metadata: { entryId: string } }).metadata.entryId)).toEqual(
       ['entry-id-0', 'entry-id-1'],
     );
+    expect(entryRows.every((row) => !('diagnostics' in row))).toBe(true);
+    expect(entryRows.every((row) => !('diagnostics' in (row.runtimeArtifact as Record<string, unknown>)))).toBe(true);
   });
 
   it('keeps database calls constant for twenty entries and publishes ordinal order', async () => {
@@ -249,7 +251,7 @@ function createSuccessResult(job: LightExtensionCompileJob): LightExtensionCompi
     entryPath: job.entryPath,
     compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
     inputManifest: job.inputManifest,
-    diagnostics: [],
+    problems: [],
     observation: {
       workerId: 1,
       threadId: 10,
@@ -273,6 +275,5 @@ function createStoredEntry(job: LightExtensionCompileJob): Record<string, unknow
     entryPath: job.entryPath,
     descriptorPath: job.entryPath.replace(/index\.tsx$/u, 'entry.json'),
     healthStatus: 'ready',
-    diagnostics: [],
   };
 }

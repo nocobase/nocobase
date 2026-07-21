@@ -8,24 +8,18 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import {
-  buildRunJSArtifactHash,
-  buildRunJSRuntimeCodeHash,
-  sha256Hex,
-  stableSerialize,
-  type RunJSRuntimeArtifact,
-} from '@nocobase/runjs';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex, stableSerialize } from '@nocobase/runjs';
 import { Buffer } from 'node:buffer';
 
 import { LightExtensionError } from '../../shared/errors';
-import type { LightExtensionDiagnostic } from '../../shared/types';
+import { sortLightExtensionProblems } from '../../shared/problems';
+import type { LightExtensionEntryRuntimeArtifact } from '../../shared/types';
 import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   assertStructuredClonePlainData,
   type LightExtensionCompileResult,
   type LightExtensionCompileSuccessResult,
 } from './LightExtensionCompileContract';
-import { sortDiagnostics } from './LightExtensionValidator';
 
 const artifactUpdateFields = [
   'runtimeCodeHash',
@@ -47,7 +41,6 @@ const entryUpdateFields = [
   'artifactHash',
   'filesHash',
   'compiledAt',
-  'diagnostics',
   'healthStatus',
 ] as const;
 
@@ -198,19 +191,19 @@ function preparePublishBatch(batch: PublishCompiledEntriesBatch, compiledAt: Dat
   }
   const failures = batch.results.filter((result) => !result.accepted);
   if (failures.length > 0) {
-    const diagnostics = failures.flatMap((result) => sortDiagnostics(result.diagnostics));
+    const problems = failures.flatMap((result) => sortLightExtensionProblems(result.problems));
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
       status: 422,
       details: {
         commitId: batch.commitId,
-        diagnostics,
+        problems,
         entries: failures.map((result) => ({
           entryId: result.entryId,
           entryName: result.entryName,
           kind: result.kind,
           entryPath: result.entryPath,
           status: 'failed',
-          diagnostics: result.diagnostics,
+          problems: result.problems,
           failureCode: result.failureCode,
         })),
       },
@@ -285,14 +278,12 @@ function buildEntryPublishValues(
   commitId: string,
   compiledAt: Date,
 ): Record<string, unknown> {
-  const existingDiagnostics = normalizeDiagnostics(stored.diagnostics);
-  const runtimeArtifact: RunJSRuntimeArtifact = {
+  const runtimeArtifact: LightExtensionEntryRuntimeArtifact = {
     code: result.artifact.code,
     ...(result.artifact.sourceMap ? { sourceMap: result.artifact.sourceMap } : {}),
     version: result.artifact.version,
     entryPath: result.artifact.entryPath || result.entryPath,
     filesHash: result.artifact.filesHash,
-    diagnostics: sortDiagnostics(result.diagnostics),
     metadata: buildEntryRuntimeMetadata(stored, result),
   };
   return {
@@ -306,7 +297,6 @@ function buildEntryPublishValues(
     artifactHash: result.artifactHash,
     filesHash: result.artifact.filesHash || '',
     compiledAt,
-    diagnostics: sortDiagnostics([...existingDiagnostics, ...result.diagnostics]),
     healthStatus: 'ready',
   };
 }
@@ -364,19 +354,6 @@ function setConsistentRow(
     throw new TypeError(`Publish batch contains conflicting rows for ${keyField} "${key}"`);
   }
   rows.set(key, row);
-}
-
-function normalizeDiagnostics(value: unknown): LightExtensionDiagnostic[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.filter(
-    (item): item is LightExtensionDiagnostic =>
-      Boolean(item) &&
-      typeof item === 'object' &&
-      typeof (item as { code?: unknown }).code === 'string' &&
-      ['error', 'warning'].includes(String((item as { severity?: unknown }).severity)),
-  );
 }
 
 function requiredString(value: unknown, label: string): string {

@@ -143,14 +143,14 @@ function provisionalResult(entryPath: string): ProvisionalCompileResult {
       code: 'globalThis.__nocobaseProvisionalPreviewRun__ = async () => undefined;',
       version: 'v2',
       entryPath,
-      diagnostics: [],
+      problems: [],
       metadata: {
         provisional: true,
         trust: 'client-advisory',
         compilerBuildId: LIGHT_EXTENSION_BROWSER_PREVIEW_COMPILER_BUILD_ID,
       },
     },
-    diagnostics: [],
+    problems: [],
     metrics: {
       workerRestartCount: 0,
       inputFileCount: 1,
@@ -197,7 +197,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
         throw new TypeError('Failed to fetch');
       }),
     },
-  ])('reports a stable fetch diagnostic for $name', async ({ fetchCompiler }) => {
+  ])('reports a stable fetch problem for $name', async ({ fetchCompiler }) => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     vi.stubGlobal('fetch', fetchCompiler);
     const compiler = new BrowserProvisionalCompiler();
@@ -208,7 +208,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
     });
   });
 
-  it('reports a stable diagnostic code for a wrong WASM MIME type', async () => {
+  it('reports a stable problem code for a wrong WASM MIME type', async () => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     vi.stubGlobal(
       'fetch',
@@ -239,7 +239,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
     });
   });
 
-  it('initializes once and produces bundle, source map, diagnostics, and metafile from the browser VFS', async () => {
+  it('initializes once and produces bundle, source map, problems, and metafile from the browser VFS', async () => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     const { readFile } = await import('node:fs/promises');
     const wasm = await readFile(`${process.cwd()}/node_modules/esbuild-wasm/esbuild.wasm`);
@@ -264,7 +264,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
 
     const firstInitialization = await compiler.initialize('/assets/esbuild.wasm');
     const secondInitialization = await compiler.initialize('/assets/esbuild.wasm');
-    const result = await compiler.build(vfs, entry(), 0);
+    const result = await compiler.build(vfs, entry(), 0, 'build:test', 'browser-preview:1');
 
     expect(fetchCompiler).toHaveBeenCalledTimes(1);
     expect(secondInitialization).toEqual(firstInitialization);
@@ -280,7 +280,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
           canonical: false,
         },
       },
-      diagnostics: [],
+      problems: [],
       metafile: expect.any(Object),
       metrics: {
         firstBuildMs: expect.any(Number),

@@ -79,7 +79,7 @@ export const lightExtensionPaths = {
     post: {
       tags: ['lightExtensionEntries'],
       summary: 'Get one light-extension entry',
-      description: 'Get the entry descriptor, source identity, health, compile metadata, and diagnostics.',
+      description: 'Get the persisted entry descriptor, source identity, health, and compile metadata.',
       requestBody: {
         required: true,
         content: {
@@ -242,7 +242,7 @@ export const lightExtensionPaths = {
       description: [
         'Apply files as an incremental patch. Ordinary source creates one source commit and compiles runtime artifacts; src/client/js-portals files are stored outside source history and replace the Portal storage snapshot.',
         'files is a delta: include only changed upserts and deletes, not an implicit complete-workspace replacement. expectedHeadCommitId is required and must exactly match the current repository Head; pass null only for a repository without a Head.',
-        'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator diagnostics. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
+        'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator problems. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -298,7 +298,7 @@ export const lightExtensionPaths = {
           },
         },
         422: errorResponse(
-          'The final workspace failed validation or compilation. diagnostics are preserved in the response body.',
+          'The final workspace failed validation or compilation. Problems are preserved in the response body.',
         ),
       },
     },
@@ -309,7 +309,7 @@ export const lightExtensionPaths = {
       summary: 'Compile an unsaved light-extension workspace preview',
       description: [
         'Validate and compile the supplied complete unsaved workspace without creating a source commit or changing repository Head.',
-        'Use --body-file for multi-file payloads. HTTP 200 means every requested entry was accepted. HTTP 207 means a whole-workspace preview compiled at least one entry and rejected at least one. HTTP 422 means the targeted entry or every workspace entry was rejected. All three statuses preserve diagnostics, including path, line, and column.',
+        'Use --body-file for multi-file UTF-8 source payloads. HTTP 200 returns { data: LightExtensionWorkspaceCheckResult } only when every requested entry is accepted. If any entry is rejected, HTTP 422 returns the same CheckResult at errors[0].details. Problems use one-based original-source ranges.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -355,17 +355,13 @@ export const lightExtensionPaths = {
       responses: {
         200: {
           description: 'Every requested preview entry was accepted.',
-          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
-        },
-        207: {
-          description: 'Some whole-workspace preview entries were accepted and some were rejected.',
-          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
+          content: jsonContent('LightExtensionWorkspaceCheckEnvelope'),
         },
         403: errorResponse('The current user cannot compile light-extension previews.'),
         422: {
           description:
-            'The targeted entry or every whole-workspace entry was rejected. Inspect diagnostics before retrying.',
-          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
+            'At least one targeted or whole-workspace entry was rejected. Inspect errors[0].details.problems.',
+          content: jsonContent('LightExtensionWorkspaceRejectedErrorResponse'),
         },
       },
     },

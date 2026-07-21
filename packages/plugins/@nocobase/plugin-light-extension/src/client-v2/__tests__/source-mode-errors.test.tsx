@@ -384,7 +384,6 @@ function createSelectableEntry(options: { id?: string; kind?: 'js-block' | 'js-p
     settingsDefaultsHash: 'defaults_hash',
     compiledAt: '2026-07-09T00:00:00.000Z',
     healthStatus: 'ready',
-    diagnostics: [],
   };
 }
 

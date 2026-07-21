@@ -20,7 +20,8 @@ import { threadId } from 'node:worker_threads';
 import { posix as pathPosix } from 'path';
 
 import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
-import type { LightExtensionDiagnostic } from '../../shared/types';
+import { createLightExtensionProblem, sortLightExtensionProblems } from '../../shared/problems';
+import type { LightExtensionProblem } from '../../shared/types';
 import {
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   assertLightExtensionCompileJob,
@@ -29,7 +30,7 @@ import {
   type LightExtensionCompileJob,
   type LightExtensionCompileResult,
 } from './LightExtensionCompileContract';
-import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
+import { hasErrorProblem } from './LightExtensionValidator';
 import {
   rewriteLightExtensionSdkRuntimeImports,
   rewriteLightExtensionSettingsTypeImports,
@@ -72,10 +73,12 @@ export async function executeLightExtensionCompileJob(input: {
       sourceInspector,
     };
     const compiled = await compileRunJSSourceWorkspace(compileInput);
-    const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map(toLightExtensionDiagnostic));
-    if (hasErrorDiagnostic(diagnostics)) {
+    const problems = sortLightExtensionProblems(
+      compiled.artifact.diagnostics.map((item) => toLightExtensionProblem(item, input.job)),
+    );
+    if (hasErrorProblem(problems)) {
       return {
-        ...buildResultIdentity(input.job, input.workerId, executingThreadId, input.attempt, startedAt, diagnostics),
+        ...buildResultIdentity(input.job, input.workerId, executingThreadId, input.attempt, startedAt, problems),
         accepted: false,
         failureCode: compiled.failureCode || 'RUNJS_COMPILE_FAILED',
       };
@@ -83,7 +86,7 @@ export async function executeLightExtensionCompileJob(input: {
 
     const artifact: RunJSRuntimeArtifact = {
       ...compiled.artifact,
-      diagnostics,
+      diagnostics: [],
       metadata: {
         ...compiled.artifact.metadata,
         target: 'client',
@@ -108,7 +111,7 @@ export async function executeLightExtensionCompileJob(input: {
       runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
     });
     return {
-      ...buildResultIdentity(input.job, input.workerId, executingThreadId, input.attempt, startedAt, diagnostics),
+      ...buildResultIdentity(input.job, input.workerId, executingThreadId, input.attempt, startedAt, problems),
       accepted: true,
       artifact,
       artifactHash,
@@ -134,7 +137,7 @@ function buildResultIdentity(
   executingThreadId: number,
   attempt: number,
   startedAt: number,
-  diagnostics: LightExtensionDiagnostic[],
+  problems: LightExtensionProblem[],
 ) {
   return {
     jobId: job.jobId,
@@ -150,7 +153,7 @@ function buildResultIdentity(
     entryPath: job.entryPath,
     compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
     inputManifest: job.inputManifest,
-    diagnostics,
+    problems,
     observation: {
       workerId,
       threadId: executingThreadId,
@@ -181,20 +184,34 @@ function buildLegacyMetadata(surface: LightExtensionAuthoringSurfaceSpec, job: L
   };
 }
 
-function toLightExtensionDiagnostic(input: RunJSCompileDiagnostic): LightExtensionDiagnostic {
+function toLightExtensionProblem(input: RunJSCompileDiagnostic, job: LightExtensionCompileJob): LightExtensionProblem {
   const details: Record<string, unknown> = { ...(input.details || {}) };
   if (input.ruleId) {
     details.ruleId = input.ruleId;
   }
-  return {
+  return createLightExtensionProblem({
+    phase: 'compile',
+    source: 'runjs-compiler',
     code: input.code || input.ruleId || 'RUNJS_COMPILE_FAILED',
     severity: input.severity === 'warning' ? 'warning' : 'error',
     message: input.message,
     ...(input.path ? { path: input.path } : {}),
-    ...(typeof input.line === 'number' ? { line: input.line } : {}),
-    ...(typeof input.column === 'number' ? { column: input.column } : {}),
+    ...(typeof input.line === 'number'
+      ? {
+          range: {
+            start: {
+              line: input.line,
+              column: typeof input.column === 'number' ? input.column : 1,
+            },
+          },
+        }
+      : {}),
+    snapshotId: job.filesHash,
+    requestId: job.requestId,
+    kind: job.kind,
+    entryName: job.entryName,
     ...(Object.keys(details).length > 0 ? { details } : {}),
-  };
+  });
 }
 
 function inferRunJSLanguage(path: string): 'typescript' | 'javascript' | 'tsx' | 'jsx' {

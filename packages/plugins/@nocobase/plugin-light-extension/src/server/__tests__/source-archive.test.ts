@@ -96,13 +96,13 @@ describe('plugin-light-extension source ZIP archive', () => {
     await expect(parseLightExtensionSourceArchive(traversalZip, new LightExtensionValidator())).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_path_invalid' })]),
+        problems: expect.arrayContaining([expect.objectContaining({ code: 'zip_path_invalid' })]),
       },
     });
     await expect(parseLightExtensionSourceArchive(duplicateZip, new LightExtensionValidator())).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_duplicate_path' })]),
+        problems: expect.arrayContaining([expect.objectContaining({ code: 'zip_duplicate_path' })]),
       },
     });
   });
@@ -120,7 +120,7 @@ describe('plugin-light-extension source ZIP archive', () => {
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_compression_ratio_too_high' })]),
+        problems: expect.arrayContaining([expect.objectContaining({ code: 'zip_compression_ratio_too_high' })]),
       },
     });
 
@@ -129,7 +129,7 @@ describe('plugin-light-extension source ZIP archive', () => {
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'file_size_limit_exceeded' })]),
+        problems: expect.arrayContaining([expect.objectContaining({ code: 'file_size_limit_exceeded' })]),
       },
     });
 
@@ -138,7 +138,7 @@ describe('plugin-light-extension source ZIP archive', () => {
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_too_large' })]),
+        problems: expect.arrayContaining([expect.objectContaining({ code: 'zip_too_large' })]),
       },
     });
   });

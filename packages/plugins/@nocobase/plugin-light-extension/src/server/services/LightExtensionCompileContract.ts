@@ -16,10 +16,10 @@ import {
   LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
   type LightExtensionKind,
 } from '../../constants';
-import type { LightExtensionDiagnostic } from '../../shared/types';
+import { createLightExtensionProblem, sortLightExtensionProblems } from '../../shared/problems';
+import type { LightExtensionProblem } from '../../shared/types';
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import type { CompileInputManifest } from './LightExtensionCompileKey';
-import { sortDiagnostics } from './LightExtensionValidator';
 import { LIGHT_EXTENSION_SDK_TEMPLATE_VERSION, LIGHT_EXTENSION_VALIDATOR_VERSION } from './LightExtensionValidator';
 
 export type LightExtensionSurfaceStyle = 'render' | 'value' | 'action';
@@ -184,7 +184,7 @@ interface LightExtensionCompileResultBase {
   entryPath: string;
   compilerBuildId: string;
   inputManifest: CompileInputManifest;
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
   observation: LightExtensionCompileObservation;
 }
 
@@ -205,7 +205,7 @@ export type LightExtensionCompileResult = LightExtensionCompileSuccessResult | L
 export interface LightExtensionCompileBatchAggregate {
   accepted: boolean;
   results: LightExtensionCompileResult[];
-  diagnostics: LightExtensionDiagnostic[];
+  problems: LightExtensionProblem[];
 }
 
 export interface LightExtensionCompileExecutor {
@@ -360,7 +360,7 @@ export function aggregateLightExtensionCompileResults(
   return {
     accepted: ordered.every((result) => result.accepted),
     results: ordered,
-    diagnostics: ordered.flatMap((result) => sortDiagnostics(result.diagnostics)),
+    problems: ordered.flatMap((result) => sortLightExtensionProblems(result.problems)),
   };
 }
 
@@ -391,15 +391,19 @@ export function createLightExtensionCompileInfrastructureFailure(input: {
     entryPath: job.entryPath,
     compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
     inputManifest: job.inputManifest,
-    diagnostics: [
-      {
+    problems: [
+      createLightExtensionProblem({
+        phase: 'infrastructure',
+        source: 'server',
         code: input.failureCode,
         severity: 'error',
         message: input.message,
         path: job.entryPath,
         kind: job.kind,
         entryName: job.entryName,
-      },
+        snapshotId: job.filesHash,
+        requestId: job.requestId,
+      }),
     ],
     observation: {
       workerId: input.workerId,

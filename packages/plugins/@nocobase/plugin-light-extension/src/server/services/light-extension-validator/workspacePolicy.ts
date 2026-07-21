@@ -15,9 +15,14 @@ import {
   LIGHT_EXTENSION_SUPPORTED_KINDS,
   type LightExtensionKind,
 } from '../../../constants';
-import type { LightExtensionDiagnostic, LightExtensionValidationLimits } from '../../../shared/types';
-import { diagnostic } from './diagnostics';
-import type { EntryBucket, LightExtensionSourceFileInput, NormalizedSourceFile } from './types';
+import type { LightExtensionValidationLimits } from '../../../shared/types';
+import { problem } from './problems';
+import type {
+  EntryBucket,
+  LightExtensionSourceFileInput,
+  LightExtensionValidatorProblem,
+  NormalizedSourceFile,
+} from './types';
 
 export interface EntryFileRule {
   root: string;
@@ -88,76 +93,70 @@ export type SourcePathKind =
       status: 'unsupported' | 'ignored';
     };
 
-export function validateSourcePath(path: string): LightExtensionDiagnostic[] {
-  const diagnostics: LightExtensionDiagnostic[] = [];
+export function validateSourcePath(path: string): LightExtensionValidatorProblem[] {
+  const problems: LightExtensionValidatorProblem[] = [];
 
   if (!path || typeof path !== 'string') {
-    return [diagnostic('path_required', 'error', 'Source file path is required')];
+    return [problem('path_required', 'error', 'Source file path is required')];
   }
 
   const rawPath = path.trim();
 
   if (rawPath.includes('\\')) {
-    diagnostics.push(
-      diagnostic('path_backslash_not_allowed', 'error', 'Source file path must use "/" separators', { path }),
-    );
+    problems.push(problem('path_backslash_not_allowed', 'error', 'Source file path must use "/" separators', { path }));
   }
 
   if (rawPath.startsWith('/')) {
-    diagnostics.push(
-      diagnostic('path_absolute_not_allowed', 'error', 'Source file path must be repository relative', { path }),
+    problems.push(
+      problem('path_absolute_not_allowed', 'error', 'Source file path must be repository relative', { path }),
     );
   }
 
   const rawSegments = rawPath.split('/');
   if (rawSegments.includes('..')) {
-    diagnostics.push(
-      diagnostic('path_traversal_not_allowed', 'error', 'Source file path cannot traverse directories', { path }),
+    problems.push(
+      problem('path_traversal_not_allowed', 'error', 'Source file path cannot traverse directories', { path }),
     );
   }
 
   if (rawSegments.some((segment) => segment === '' || segment === '.' || segment === '..')) {
-    diagnostics.push(
-      diagnostic('path_segment_invalid', 'error', 'Source file path contains an invalid segment', { path }),
-    );
+    problems.push(problem('path_segment_invalid', 'error', 'Source file path contains an invalid segment', { path }));
   }
 
   const normalizedPath = normalizeSourcePath(rawPath);
   if (!normalizedPath || normalizedPath === '.') {
-    diagnostics.push(diagnostic('path_required', 'error', 'Source file path is required', { path }));
+    problems.push(problem('path_required', 'error', 'Source file path is required', { path }));
   }
 
   if (normalizedPath.startsWith('../') || normalizedPath.includes('/../')) {
-    diagnostics.push(
-      diagnostic('path_traversal_not_allowed', 'error', 'Source file path cannot traverse directories', { path }),
+    problems.push(
+      problem('path_traversal_not_allowed', 'error', 'Source file path cannot traverse directories', { path }),
     );
   }
 
   if (normalizedPath.split('/').some((segment) => segment === '' || segment === '.')) {
-    diagnostics.push(
-      diagnostic('path_segment_invalid', 'error', 'Source file path contains an invalid segment', { path }),
-    );
+    problems.push(problem('path_segment_invalid', 'error', 'Source file path contains an invalid segment', { path }));
   }
 
   if (normalizedPath.length > 240) {
-    diagnostics.push(diagnostic('path_too_long', 'error', 'Source file path is too long', { path }));
+    problems.push(problem('path_too_long', 'error', 'Source file path is too long', { path }));
   }
 
-  return diagnostics;
+  return problems;
 }
 
 export function validateDeleteSourcePath(
   path: string,
   existingPaths?: ReadonlySet<string>,
-): LightExtensionDiagnostic[] {
-  const diagnostics = validateSourcePath(path);
-  if (diagnostics.some((item) => item.severity === 'error')) {
-    return diagnostics;
+): LightExtensionValidatorProblem[] {
+  const problems = validateSourcePath(path);
+  if (problems.some((item) => item.severity === 'error')) {
+    return problems;
   }
 
   const normalizedPath = normalizeSourcePath(path);
   if (existingPaths?.has(normalizedPath)) {
-    return diagnostics;
+    return problems;
   }
 
   const pathKind = classifySourcePath(normalizedPath);
@@ -170,40 +169,35 @@ export function validateDeleteSourcePath(
       : {};
 
   if (pathKind.status === 'unsupported') {
-    diagnostics.push(
-      diagnostic(
-        'workspace_path_not_allowed',
-        'error',
-        'Source file path is outside the allowed light-extension roots',
-        {
-          path: normalizedPath,
-        },
-      ),
+    problems.push(
+      problem('workspace_path_not_allowed', 'error', 'Source file path is outside the allowed light-extension roots', {
+        path: normalizedPath,
+      }),
     );
   } else if (pathKind.status === 'missingEntryName') {
-    diagnostics.push(
-      diagnostic('entry_name_required', 'error', 'Entry name segment is required', {
+    problems.push(
+      problem('entry_name_required', 'error', 'Entry name segment is required', {
         path: normalizedPath,
         kind: pathKind.kind,
       }),
     );
   } else if (pathKind.status === 'enabled' && !isValidEntryName(pathKind.entryName)) {
-    diagnostics.push(
-      diagnostic('invalid_entry_name', 'error', 'Entry name must be a lowercase slug', {
+    problems.push(
+      problem('invalid_entry_name', 'error', 'Entry name must be a lowercase slug', {
         path: normalizedPath,
         ...pathTarget,
       }),
     );
   } else if (pathKind.status === 'enabled' && !isAllowedEntryFilePath(normalizedPath)) {
-    diagnostics.push(
-      diagnostic('path_extension_not_allowed', 'error', 'Source file path is not allowed for light-extension entries', {
+    problems.push(
+      problem('path_extension_not_allowed', 'error', 'Source file path is not allowed for light-extension entries', {
         path: normalizedPath,
         ...pathTarget,
       }),
     );
   }
 
-  return diagnostics;
+  return problems;
 }
 
 export function normalizeSourcePath(path: string): string {
@@ -295,12 +289,12 @@ export function isValidEntryName(value: string): boolean {
 export function validateZipBudget(
   input: { compressedBytes: number; uncompressedBytes: number },
   limits: LightExtensionValidationLimits,
-): LightExtensionDiagnostic[] {
-  const diagnostics: LightExtensionDiagnostic[] = [];
+): LightExtensionValidatorProblem[] {
+  const problems: LightExtensionValidatorProblem[] = [];
 
   if (input.compressedBytes > limits.maxZipBytes) {
-    diagnostics.push(
-      diagnostic('zip_too_large', 'error', 'ZIP archive is too large', {
+    problems.push(
+      problem('zip_too_large', 'error', 'ZIP archive is too large', {
         details: {
           compressedBytes: input.compressedBytes,
           maxZipBytes: limits.maxZipBytes,
@@ -311,8 +305,8 @@ export function validateZipBudget(
 
   const ratio = input.compressedBytes > 0 ? input.uncompressedBytes / input.compressedBytes : Infinity;
   if (ratio > limits.maxZipCompressionRatio) {
-    diagnostics.push(
-      diagnostic('zip_compression_ratio_too_high', 'error', 'ZIP archive compression ratio is too high', {
+    problems.push(
+      problem('zip_compression_ratio_too_high', 'error', 'ZIP archive compression ratio is too high', {
         details: {
           compressedBytes: input.compressedBytes,
           uncompressedBytes: input.uncompressedBytes,
@@ -323,20 +317,20 @@ export function validateZipBudget(
     );
   }
 
-  return diagnostics;
+  return problems;
 }
 
 export function normalizeFiles(
   files: LightExtensionSourceFileInput[],
-  diagnostics: LightExtensionDiagnostic[],
+  problems: LightExtensionValidatorProblem[],
   limits: LightExtensionValidationLimits,
 ): NormalizedSourceFile[] {
   const normalizedFiles: NormalizedSourceFile[] = [];
   let totalBytes = 0;
 
   if (files.length > limits.maxRepoFiles) {
-    diagnostics.push(
-      diagnostic('repo_file_count_exceeded', 'error', 'Repository contains too many source files', {
+    problems.push(
+      problem('repo_file_count_exceeded', 'error', 'Repository contains too many source files', {
         details: {
           fileCount: files.length,
           maxFiles: limits.maxRepoFiles,
@@ -347,7 +341,7 @@ export function normalizeFiles(
 
   for (const file of files) {
     const pathDiagnostics = validateSourcePath(file.path);
-    diagnostics.push(...pathDiagnostics);
+    problems.push(...pathDiagnostics);
     if (pathDiagnostics.some((item) => item.severity === 'error')) {
       continue;
     }
@@ -367,8 +361,8 @@ export function normalizeFiles(
           }
         : {};
     if (size > limits.maxFileBytes) {
-      diagnostics.push(
-        diagnostic('file_size_limit_exceeded', 'error', 'Source file is too large', {
+      problems.push(
+        problem('file_size_limit_exceeded', 'error', 'Source file is too large', {
           path,
           ...pathTarget,
           details: {
@@ -379,8 +373,8 @@ export function normalizeFiles(
       );
     }
     if (pathKind.status === 'unsupported') {
-      diagnostics.push(
-        diagnostic(
+      problems.push(
+        problem(
           'workspace_path_not_allowed',
           'error',
           'Source file path is outside the allowed light-extension roots',
@@ -390,22 +384,22 @@ export function normalizeFiles(
         ),
       );
     } else if (pathKind.status === 'shared' && !isAllowedSharedFilePath(path)) {
-      diagnostics.push(
-        diagnostic('path_extension_not_allowed', 'error', 'Source file path is not allowed for shared helpers', {
+      problems.push(
+        problem('path_extension_not_allowed', 'error', 'Source file path is not allowed for shared helpers', {
           path,
         }),
       );
     } else if (pathKind.status === 'missingEntryName') {
-      diagnostics.push(
-        diagnostic('entry_name_required', 'error', 'Entry name segment is required', {
+      problems.push(
+        problem('entry_name_required', 'error', 'Entry name segment is required', {
           path,
           kind: pathKind.kind,
         }),
       );
     }
     if (pathKind.status === 'enabled' && !isAllowedEntryFilePath(path)) {
-      diagnostics.push(
-        diagnostic(
+      problems.push(
+        problem(
           isForbiddenEntryRootFile(path, pathKind.kind, pathKind.entryName)
             ? 'workspace_path_not_allowed'
             : 'path_extension_not_allowed',
@@ -429,8 +423,8 @@ export function normalizeFiles(
   }
 
   if (totalBytes > limits.maxRepoBytes) {
-    diagnostics.push(
-      diagnostic('repo_budget_limit_exceeded', 'error', 'Repository source budget is exceeded', {
+    problems.push(
+      problem('repo_budget_limit_exceeded', 'error', 'Repository source budget is exceeded', {
         details: {
           totalBytes,
           maxRepoBytes: limits.maxRepoBytes,
@@ -444,7 +438,7 @@ export function normalizeFiles(
 
 export function collectEntryBuckets(
   files: NormalizedSourceFile[],
-  diagnostics: LightExtensionDiagnostic[],
+  problems: LightExtensionValidatorProblem[],
   limits: LightExtensionValidationLimits,
 ): EntryBucket[] {
   const buckets = new Map<string, EntryBucket>();
@@ -456,8 +450,8 @@ export function collectEntryBuckets(
     }
 
     if (!isValidEntryName(pathKind.entryName)) {
-      diagnostics.push(
-        diagnostic('invalid_entry_name', 'error', 'Entry name must be a lowercase slug', {
+      problems.push(
+        problem('invalid_entry_name', 'error', 'Entry name must be a lowercase slug', {
           path: file.path,
           kind: pathKind.kind,
           entryName: pathKind.entryName,
@@ -482,8 +476,8 @@ export function collectEntryBuckets(
   }
 
   if (buckets.size > limits.maxEntries) {
-    diagnostics.push(
-      diagnostic('entry_count_limit_exceeded', 'error', 'Repository contains too many entries', {
+    problems.push(
+      problem('entry_count_limit_exceeded', 'error', 'Repository contains too many entries', {
         details: {
           entryCount: buckets.size,
           maxEntries: limits.maxEntries,

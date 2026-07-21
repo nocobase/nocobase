@@ -45,6 +45,8 @@ describe('plugin-light-extension limits validator', () => {
     },
   ])('enforces $name from actual content bytes', ({ limits, content, code, path, details }) => {
     const result = new LightExtensionValidator({ limits }).validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -55,7 +57,7 @@ describe('plugin-light-extension limits validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(
+    expect(result.problems).toContainEqual(
       expect.objectContaining({
         code,
         ...(path ? { path } : {}),
@@ -69,18 +71,22 @@ describe('plugin-light-extension limits validator', () => {
     { name: 'file byte size', limits: { maxFileBytes: 1 }, code: 'file_size_limit_exceeded' },
   ])('enforces sync $name limits', ({ limits, code }) => {
     const validator = new LightExtensionValidator({ limits });
-    const diagnostics = validator.validateSyncBatch({
+    const problems = validator.validateSyncBatch({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         { path: 'src/client/js-blocks/sales-kpi/index.tsx', content: '你', size: 1 },
         { path: 'src/client/js-blocks/sales-kpi/meta.json', content: '{}' },
       ],
     });
 
-    expect(diagnostics).toContainEqual(expect.objectContaining({ code }));
+    expect(problems).toContainEqual(expect.objectContaining({ code }));
   });
 
   it('requires content for upserts while allowing delete-only items', () => {
-    const diagnostics = new LightExtensionValidator().validateSyncBatch({
+    const problems = new LightExtensionValidator().validateSyncBatch({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -94,7 +100,7 @@ describe('plugin-light-extension limits validator', () => {
       ],
     });
 
-    expect(diagnostics.filter((item) => item.code === 'source_content_required')).toEqual([
+    expect(problems.filter((item) => item.code === 'source_content_required')).toEqual([
       expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/index.tsx' }),
     ]);
   });
@@ -108,6 +114,8 @@ describe('plugin-light-extension limits validator', () => {
       },
     });
     const workspace = validator.validateWorkspace({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/one/index.tsx',
@@ -124,13 +132,15 @@ describe('plugin-light-extension limits validator', () => {
       ],
     });
     const zip = validator.validateZipBudget({
+      snapshotId: 'snapshot-test',
+      requestId: 'request-test',
       compressedBytes: 10,
       uncompressedBytes: 100,
     });
 
     expect(workspace.accepted).toBe(false);
     expect(workspace.capabilities.limits.maxEntries).toBe(1);
-    expect(workspace.diagnostics.map((item) => item.code)).toEqual(
+    expect(workspace.problems.map((item) => item.code)).toEqual(
       expect.arrayContaining(['entry_count_limit_exceeded', 'entry_file_count_exceeded']),
     );
     expect(zip).toContainEqual(expect.objectContaining({ code: 'zip_compression_ratio_too_high' }));

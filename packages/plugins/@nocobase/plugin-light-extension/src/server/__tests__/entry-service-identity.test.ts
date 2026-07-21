@@ -24,7 +24,6 @@ describe('LightExtensionEntryService stable source identity', () => {
       ['entryPath', 'src/client/js-blocks/old-directory/index.tsx'],
       ['descriptorPath', 'src/client/js-blocks/old-directory/entry.json'],
       ['healthStatus', 'ready'],
-      ['diagnostics', []],
     ]);
     const entryModel = {
       get: (key: string) => values.get(key),
