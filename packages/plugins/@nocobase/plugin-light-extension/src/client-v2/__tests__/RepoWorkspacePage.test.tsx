@@ -194,6 +194,7 @@ vi.mock('../vsc-file/public-api', () => {
       scene,
       showRunButton,
       previewing,
+      projectRevision,
       readOnly,
       toolbarActions,
       workspaceFiles,
@@ -208,6 +209,7 @@ vi.mock('../vsc-file/public-api', () => {
       scene?: string;
       showRunButton?: boolean;
       previewing?: boolean;
+      projectRevision: number;
       readOnly?: boolean;
       toolbarActions?: React.ReactNode;
       workspaceFiles: Array<{ content: string; path: string }>;
@@ -226,6 +228,7 @@ vi.mock('../vsc-file/public-api', () => {
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
+        data-project-revision={projectRevision}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -488,9 +491,14 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'false');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'false');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-scene', '');
+    const initialProjectRevision = Number(screen.getByTestId('runjs-code-tab').getAttribute('data-project-revision'));
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'export default function SalesKpi() { return "ok"; }\n' },
     });
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-project-revision',
+      String(initialProjectRevision + 1),
+    );
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await confirmSaveVersion('Update sales KPI');
 

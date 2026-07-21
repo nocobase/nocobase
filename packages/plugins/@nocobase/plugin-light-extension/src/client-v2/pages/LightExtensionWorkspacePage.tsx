@@ -165,7 +165,8 @@ function LightExtensionWorkspacePage({
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
-  const [files, setFiles] = useState<WorkspaceFile[]>([]);
+  const [files, setFilesState] = useState<WorkspaceFile[]>([]);
+  const [projectRevision, setProjectRevision] = useState(0);
   const [folders, setFolders] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
@@ -201,6 +202,10 @@ function LightExtensionWorkspacePage({
   const historyRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
+  const setFiles = useCallback((nextFiles: React.SetStateAction<WorkspaceFile[]>) => {
+    setFilesState(nextFiles);
+    setProjectRevision((current) => current + 1);
+  }, []);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -272,7 +277,7 @@ function LightExtensionWorkspacePage({
         setInitializedRepoId(repoId);
       }
     },
-    [getRepo, initialPath, listCommits, pull, repoId, t],
+    [getRepo, initialPath, listCommits, pull, repoId, setFiles, t],
   );
 
   useEffect(() => {
@@ -1012,7 +1017,7 @@ function LightExtensionWorkspacePage({
         setImporting(false);
       }
     },
-    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, t, workspaceScope],
+    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, setFiles, t, workspaceScope],
   );
 
   if (!repoId) {
@@ -1234,6 +1239,7 @@ function LightExtensionWorkspacePage({
                           onRunPreview={canPreview ? runPreview : undefined}
                           openPaths={openPaths}
                           previewing={previewing}
+                          projectRevision={projectRevision}
                           readOnly={activeFileReadOnly}
                           runJSGlobalContextType={activeEntryContext.globalContextType}
                           savedFiles={baseFiles}
