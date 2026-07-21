@@ -297,17 +297,19 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
         ref={senderRef}
         onChange={(nextValue) => {
           setValue(nextValue);
-          chatSenderModel.setSenderValue(nextValue);
         }}
         onPaste={handlePaste}
         onSubmit={submit}
         onCancel={cancelRequest}
         onBlur={() => {
+          chatSenderModel.setSenderValue(value);
           chatSenderModel.setShowSenderHint(false);
         }}
         header={<SenderHeader options={options} />}
         loading={responseLoading}
-        footer={({ components }) => <SenderFooter components={components} handleSubmit={submit} options={options} />}
+        footer={({ components }) => (
+          <SenderFooter components={components} handleSubmit={submit} options={options} value={value} />
+        )}
         disabled={!currentEmployee || readonly}
         placeholder={t(placeholder)}
         actions={false}
@@ -378,7 +380,8 @@ const SenderFooter: React.FC<{
   };
   handleSubmit: (content: string) => void;
   options: SenderOptions;
-}> = observer(({ components, handleSubmit, options }) => {
+  value: string;
+}> = observer(({ components, handleSubmit, options, value }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const runtime = useChatBoxRuntime();
@@ -390,13 +393,12 @@ const SenderFooter: React.FC<{
   const loading = chat.use.responseLoading();
   const addContextItems = chat.addContextItems;
   const removeContextItem = chat.removeContextItem;
-  const senderValue = chatSenderModel.senderValue;
   const contextItems = chat.use.contextItems();
   const senderRef = chatSenderModel.senderRef as React.MutableRefObject<SenderRef | null> | null;
   const disabled = !currentEmployee || readonly;
   const showContextSelector = options.showContextSelector !== false;
   const handleEmptySubmit = () => {
-    if (!senderValue && (contextItems.length || options.defaultUserMessage)) {
+    if (!value && (contextItems.length || options.defaultUserMessage)) {
       handleSubmit('');
     }
   };
@@ -410,7 +412,7 @@ const SenderFooter: React.FC<{
     nativeElement.onkeydown = (event) => {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        if (!senderValue && contextItems.length) {
+        if (!value && contextItems.length) {
           senderButtonRef.current?.click();
         }
       }
@@ -421,7 +423,7 @@ const SenderFooter: React.FC<{
         nativeElement.onkeydown = null;
       }
     };
-  }, [contextItems, senderRef, senderValue]);
+  }, [contextItems, senderRef, value]);
 
   return (
     <Flex justify="space-between" align="center" gap={8} style={{ minWidth: 0 }}>
