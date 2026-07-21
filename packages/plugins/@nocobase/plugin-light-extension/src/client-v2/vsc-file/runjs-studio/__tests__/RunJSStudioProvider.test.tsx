@@ -956,7 +956,8 @@ describe('runJSStudioProvider', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
     const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
-    expect(diagnostics.textContent).toContain('[error] src/client/index.tsx (RUNJS_ENTRY_NOT_FOUND)');
+    expect(diagnostics.textContent).toContain('RUNJS_ENTRY_NOT_FOUND');
+    expect(diagnostics.textContent).toContain('src/client/index.tsx');
     expect(diagnostics.textContent).toContain('RunJS entry file under src/client was not found');
     expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
   });
@@ -1218,12 +1219,13 @@ describe('runJSStudioProvider', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
     expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
     expect(within(dialog).getByText('Compile failed')).toBeTruthy();
-    expect(within(dialog).getByText(/\[error\] src\/client\/index\.tsx:1:8 \(TS1005\) ';' expected/)).toBeTruthy();
+    expect(within(dialog).getByText('TS1005')).toBeTruthy();
+    expect(within(dialog).getByText("';' expected")).toBeTruthy();
     const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
     expect(diagnostics.style.overflow).toBe('auto');
     expect(diagnostics.style.maxHeight).toBe('min(520px, calc(100vh - 260px))');
     expect(within(dialog).getByRole('button', { name: 'Copy technical details' })).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole('button', { name: /src\/client\/index\.tsx:1:8/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Open problem source.*Line 1.*Column 8/ }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save failed' })).toBeNull());
     expect(screen.getByLabelText('Edit file content')).toBeTruthy();
   });

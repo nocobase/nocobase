@@ -30,9 +30,14 @@ import {
   type RunJSWorkspaceFile,
   useVscFileT,
 } from '../vsc-file/public-api';
-import { type EmbeddedRunJSEditorSaveResult, useFullscreenOverlay } from '@nocobase/client-v2';
+import {
+  type CodeEditorDiagnostic,
+  type CodeEditorRevealTarget,
+  type EmbeddedRunJSEditorSaveResult,
+  useFullscreenOverlay,
+} from '@nocobase/client-v2';
 import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +58,8 @@ import type {
   LightExtensionCommitRecord,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
-import ProblemsPanel from '../components/DiagnosticsPanel';
+import { createLightExtensionProblemFactory } from '../../shared/problems';
+import ProblemsPanel from '../components/ProblemsPanel';
 import { isBrowserProvisionalPreviewEnabled } from '../browser-preview/BrowserPreviewSession';
 import {
   getLightExtensionPreviewSurfaceStyle,
@@ -79,6 +85,7 @@ import {
   readLightExtensionWorkspaceArchive,
 } from '../workspace/lightExtensionWorkspaceArchive';
 import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
+import { useWorkspaceProblemStore, WorkspaceProblemStore } from '../problems/workspaceProblemStore';
 
 interface WorkspaceFile extends RunJSWorkspaceFile {
   encoding?: LightExtensionFileEncoding;
@@ -172,7 +179,9 @@ function LightExtensionWorkspacePage({
   const [filesCollapsed, setFilesCollapsed] = useState(defaultFilesCollapsed);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
-  const [problems, setProblems] = useState<LightExtensionProblem[]>([]);
+  const problemStore = useMemo(() => new WorkspaceProblemStore(), []);
+  const problemState = useWorkspaceProblemStore(problemStore);
+  const [revealTarget, setRevealTarget] = useState<CodeEditorRevealTarget>();
   const [loading, setLoading] = useState(false);
   const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -201,6 +210,7 @@ function LightExtensionWorkspacePage({
   const historyRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
+  const revealRequestSequenceRef = useRef(0);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -263,7 +273,7 @@ function LightExtensionWorkspacePage({
           setHistoryItems(toRunJSHistoryItems(commits));
           setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
         }
-        setProblems([]);
+        problemStore.clear();
         setIsDiff(false);
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
@@ -272,7 +282,7 @@ function LightExtensionWorkspacePage({
         setInitializedRepoId(repoId);
       }
     },
-    [getRepo, initialPath, listCommits, pull, repoId, t],
+    [getRepo, initialPath, listCommits, problemStore, pull, repoId, t],
   );
 
   useEffect(() => {
@@ -310,8 +320,8 @@ function LightExtensionWorkspacePage({
     Boolean(activeFile && isBinaryWorkspaceFile(activeFile)) ||
     !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
   const previewSnapshotKey = useMemo(
-    () => buildWorkspacePreviewSnapshot(sourceFiles, workspaceScope),
-    [sourceFiles, workspaceScope],
+    () => buildWorkspacePreviewSnapshot(sourceFiles, workspaceScope, repoId, entryId),
+    [entryId, repoId, sourceFiles, workspaceScope],
   );
   latestPreviewSnapshotRef.current = previewSnapshotKey;
   const canPreview = entryScoped && Boolean(onPreview);
@@ -333,14 +343,23 @@ function LightExtensionWorkspacePage({
     enabled: browserPreviewEnabled,
     files: sourceFiles,
     entry: browserPreviewEntry,
+    workspaceSnapshotId: previewSnapshotKey,
   });
-  const visibleProblems = useMemo(
-    () =>
-      provisionalPreview.enabled && provisionalPreview.problems.length > 0
-        ? [...provisionalPreview.problems, ...problems]
-        : problems,
-    [problems, provisionalPreview.problems, provisionalPreview.enabled],
-  );
+
+  useLayoutEffect(() => {
+    problemStore.setSnapshot(previewSnapshotKey);
+  }, [previewSnapshotKey, problemStore]);
+
+  useEffect(() => {
+    if (!provisionalPreview.enabled || provisionalPreview.workspaceSnapshotId !== previewSnapshotKey) {
+      return;
+    }
+    problemStore.replaceProblems({
+      producer: 'provisional',
+      snapshotId: previewSnapshotKey,
+      problems: provisionalPreview.problems,
+    });
+  }, [previewSnapshotKey, problemStore, provisionalPreview]);
 
   const openFilePath = useCallback((path?: string) => {
     if (!path) {
@@ -406,6 +425,33 @@ function LightExtensionWorkspacePage({
 
     setFiles((current) => current.map((file) => (file.path === activePath ? { ...file, content: value } : file)));
   };
+
+  const updateTypeScriptProblems = useCallback(
+    (path: string, diagnostics: CodeEditorDiagnostic[]) => {
+      const createProblem = createLightExtensionProblemFactory({
+        snapshotId: previewSnapshotKey,
+        requestId: `typescript:${previewSnapshotKey}:${path}`,
+        source: 'typescript',
+        phase: 'typecheck',
+      });
+      problemStore.replaceProblems({
+        producer: `typescript:${path}`,
+        snapshotId: previewSnapshotKey,
+        problems: diagnostics
+          .filter((diagnostic) => diagnostic.severity === 'error' || diagnostic.severity === 'warning')
+          .map((diagnostic) =>
+            createProblem({
+              code: typeof diagnostic.code === 'undefined' ? 'TYPESCRIPT_PROBLEM' : `TS${diagnostic.code}`,
+              severity: diagnostic.severity === 'error' ? 'error' : 'warning',
+              message: diagnostic.message,
+              path,
+              range: { start: diagnostic.start, end: diagnostic.end },
+            }),
+          ),
+      });
+    },
+    [previewSnapshotKey, problemStore],
+  );
 
   const removeFile = (path: string) => {
     if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, path, 'file').canDelete) {
@@ -664,6 +710,7 @@ function LightExtensionWorkspacePage({
     setSaveOpen(false);
     setSaving(true);
     setNotice(null);
+    const requestSnapshotId = previewSnapshotKey;
     try {
       const result = await saveSource({
         repoId,
@@ -671,7 +718,7 @@ function LightExtensionWorkspacePage({
         message: commitMessage,
         files: dirtyChanges,
       });
-      setProblems(result.problems);
+      problemStore.replaceProblems({ producer: 'canonical', snapshotId: requestSnapshotId, problems: result.problems });
       setBaseHeadCommitId(result.commit.id);
       setBaseFiles(filesForSave);
       await onSaved?.();
@@ -689,7 +736,11 @@ function LightExtensionWorkspacePage({
       embeddedSaveRequestRef.current = null;
       embeddedSavePromiseRef.current = null;
       request?.reject(error);
-      setProblems(getLightExtensionErrorProblems(error) as LightExtensionProblem[]);
+      problemStore.replaceProblems({
+        producer: 'canonical',
+        snapshotId: requestSnapshotId,
+        problems: getLightExtensionErrorProblems(error) as LightExtensionProblem[],
+      });
       setNotice({
         type: 'error',
         message:
@@ -711,6 +762,8 @@ function LightExtensionWorkspacePage({
     onSaved,
     onRequestClose,
     pathRestrictionReason,
+    previewSnapshotKey,
+    problemStore,
     repoId,
     saveSource,
     t,
@@ -798,18 +851,34 @@ function LightExtensionWorkspacePage({
 
   const openProblemSource = useCallback(
     (problem: LightExtensionProblem) => {
-      if (!problem.path) {
+      if (!problem.path || !problem.range?.start) {
         return;
       }
-      if (!files.some((file) => file.path === problem.path)) {
+      const sourceFile = files.find((file) => file.path === problem.path);
+      if (!sourceFile) {
         setNotice({ type: 'warning', message: t('Problem source is not loaded') });
+        return;
+      }
+      if (!canChangeLightExtensionWorkspacePath(workspaceScope, problem.path)) {
+        setNotice({ type: 'warning', message: t('Problem source is outside the current entry scope') });
+        return;
+      }
+      if (isBinaryWorkspaceFile(sourceFile)) {
+        setNotice({ type: 'warning', message: t('Problem source is a binary file') });
         return;
       }
 
       openFilePath(problem.path);
+      revealRequestSequenceRef.current += 1;
+      setRevealTarget({
+        path: problem.path,
+        line: problem.range.start.line,
+        column: problem.range.start.column,
+        requestId: `problem-reveal:${revealRequestSequenceRef.current}`,
+      });
       setNotice({ type: 'info', message: t('Opened problem source') });
     },
-    [files, openFilePath, t],
+    [files, openFilePath, t, workspaceScope],
   );
 
   const runPreview = useCallback(async () => {
@@ -823,6 +892,7 @@ function LightExtensionWorkspacePage({
     try {
       const result = await compileWorkspacePreview({
         repoId,
+        expectedHeadCommitId: baseHeadCommitId,
         entryId,
         kind: workspaceScope.kind,
         entryPath: workspaceScope.entryPath,
@@ -839,7 +909,11 @@ function LightExtensionWorkspacePage({
         return;
       }
 
-      setProblems(result.problems);
+      problemStore.replaceProblems({
+        producer: 'canonical',
+        snapshotId: requestSnapshotKey,
+        problems: result.problems,
+      });
       if (!result.accepted || !result.artifact) {
         setNotice({ type: 'error', message: t('Preview failed') });
         return;
@@ -847,17 +921,23 @@ function LightExtensionWorkspacePage({
 
       await onPreview(result.artifact);
     } catch (error) {
-      setProblems(getLightExtensionErrorProblems(error) as LightExtensionProblem[]);
+      problemStore.replaceProblems({
+        producer: 'canonical',
+        snapshotId: requestSnapshotKey,
+        problems: getLightExtensionErrorProblems(error) as LightExtensionProblem[],
+      });
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
     } finally {
       setPreviewing(false);
     }
   }, [
     canPreview,
+    baseHeadCommitId,
     compileWorkspacePreview,
     entryId,
     onPreview,
     previewSnapshotKey,
+    problemStore,
     repoId,
     sourceFiles,
     t,
@@ -1003,7 +1083,7 @@ function LightExtensionWorkspacePage({
         setFolders(collectWorkspaceFolders(nextFiles));
         setActivePath(nextActivePath);
         setOpenPaths(nextActivePath ? [nextActivePath] : []);
-        setProblems([]);
+        problemStore.clear();
         setIsDiff(false);
         message.success(t('ZIP imported. Save to create a new version.'));
       } catch (error) {
@@ -1012,7 +1092,7 @@ function LightExtensionWorkspacePage({
         setImporting(false);
       }
     },
-    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, t, workspaceScope],
+    [activePath, canWrite, files, importing, inspectSourceArchive, problemStore, repoId, t, workspaceScope],
   );
 
   if (!repoId) {
@@ -1232,9 +1312,11 @@ function LightExtensionWorkspacePage({
                           onFilesCollapsedChange={setFilesCollapsed}
                           onOpenFile={openFilePath}
                           onRunPreview={canPreview ? runPreview : undefined}
+                          onDiagnosticsChange={updateTypeScriptProblems}
                           openPaths={openPaths}
                           previewing={previewing}
                           readOnly={activeFileReadOnly}
+                          revealTarget={revealTarget}
                           runJSGlobalContextType={activeEntryContext.globalContextType}
                           savedFiles={baseFiles}
                           showRunButton={canPreview}
@@ -1269,11 +1351,16 @@ function LightExtensionWorkspacePage({
                   maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
                   minHeight: 96,
                   overflowX: 'hidden',
-                  overflowY: visibleProblems.length > 0 ? 'auto' : 'hidden',
+                  overflowY:
+                    problemState.problems.length > 0 || problemState.staleProblems.length > 0 ? 'auto' : 'hidden',
                   padding: 12,
                 }}
               >
-                <ProblemsPanel problems={visibleProblems} onOpenProblem={openProblemSource} />
+                <ProblemsPanel
+                  problems={problemState.problems}
+                  staleProblems={problemState.staleProblems}
+                  onOpenProblem={openProblemSource}
+                />
               </div>
             </div>,
             workspaceFullscreen.container,
@@ -1629,8 +1716,15 @@ function inferLightExtensionLanguageFromPath(path: string): string {
   return inferLanguageFromPath(path, { cssLanguage: 'text', jsxLanguage: 'language-family' });
 }
 
-function buildWorkspacePreviewSnapshot(files: WorkspaceFile[], workspaceScope: LightExtensionWorkspaceScope): string {
+function buildWorkspacePreviewSnapshot(
+  files: WorkspaceFile[],
+  workspaceScope: LightExtensionWorkspaceScope,
+  repoId: string,
+  entryId?: string,
+): string {
   return JSON.stringify({
+    repoId,
+    entryId: entryId || null,
     workspaceScope,
     files: files.map((file) => [file.path, file.content, file.language || '', file.mode || '']),
   });

@@ -13,7 +13,11 @@ import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
+import {
+  LIGHT_EXTENSION_AUTHORING_SURFACES,
+  type LightExtensionCompileExecutor,
+} from '../services/LightExtensionCompileContract';
+import { executeLightExtensionCompileJob } from '../services/LightExtensionCompileJobExecutor';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
@@ -170,6 +174,45 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       render: (value: unknown) => rendered.push(value),
     });
     expect(rendered).toEqual(['page-1:Orders']);
+  });
+
+  it('keeps direct and worker compile problem semantics identical for the same snapshot', async () => {
+    const input = {
+      repoId: 'ler_sales',
+      entryId: 'lee_sales_kpi',
+      kind: 'js-block' as const,
+      entryName: 'sales-kpi',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: "const value: number = 'invalid';\nctx.render(<div>{value}</div>);\n",
+        },
+      ],
+    };
+    const context = { requestId: 'req_problem_parity', snapshotId: sha256Hex('workspace-snapshot') };
+    const executor: LightExtensionCompileExecutor = {
+      submitWithBackpressure: (job) =>
+        executeLightExtensionCompileJob({ job, workerId: 1, attempt: 1, executingThreadId: 1 }),
+    };
+
+    const direct = await bridge.compileEntry(input, context);
+    const worker = await bridge.compileEntry(input, context, executor);
+    const selectProblemContract = (problem: (typeof direct.problems)[number]) => ({
+      code: problem.code,
+      phase: problem.phase,
+      source: problem.source,
+      severity: problem.severity,
+      message: problem.message,
+      range: problem.range,
+      details: problem.details,
+      snapshotId: problem.snapshotId,
+      requestId: problem.requestId,
+      fingerprint: problem.fingerprint,
+    });
+
+    expect(worker.accepted).toBe(false);
+    expect(worker.problems.map(selectProblemContract)).toEqual(direct.problems.map(selectProblemContract));
   });
 
   it('defers a successful runtime compile audit until the result is published', async () => {

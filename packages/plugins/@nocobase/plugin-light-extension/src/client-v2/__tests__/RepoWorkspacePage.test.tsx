@@ -202,6 +202,7 @@ vi.mock('../vsc-file/public-api', () => {
       onFilesCollapsedChange,
       filesCollapsed,
       jsonSchemaResolver,
+      revealTarget,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
@@ -219,6 +220,7 @@ vi.mock('../vsc-file/public-api', () => {
         path: string,
         files: Array<{ content: string; path: string }>,
       ) => { uri: string } | undefined;
+      revealTarget?: { path: string; line: number; column: number; requestId: string };
     }) => (
       <div
         data-has-run-preview={String(Boolean(onRunPreview))}
@@ -227,6 +229,10 @@ vi.mock('../vsc-file/public-api', () => {
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
+        data-reveal-column={revealTarget?.column || ''}
+        data-reveal-line={revealTarget?.line || ''}
+        data-reveal-path={revealTarget?.path || ''}
+        data-reveal-request-id={revealTarget?.requestId || ''}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -408,8 +414,12 @@ describe('LightExtensionWorkspacePage', () => {
     });
     mocks.api.saveSource.mockResolvedValue(createSaveResult());
     mocks.api.compileWorkspacePreview.mockResolvedValue({
+      baseHeadCommitId: 'commit-1',
+      snapshotId: 'workspace-preview-1',
+      requestId: 'workspace-preview-request-1',
       accepted: true,
       problems: [],
+      entries: [],
       artifact: {
         code: 'ctx.render(<div>preview</div>);',
         version: 'v2',
@@ -590,12 +600,16 @@ describe('LightExtensionWorkspacePage', () => {
         message: 'Light extension source cannot be compiled',
         details: {
           problems: [
-            {
+            createLightExtensionProblem({
+              phase: 'typecheck',
+              source: 'typescript',
               code: 'RUNJS_COMPILE_FAILED',
               severity: 'error',
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
               message: "Type 'string' is not assignable to type 'number'.",
-            },
+              snapshotId: 'snapshot-invalid-source',
+              requestId: 'request-invalid-source',
+            }),
           ],
         },
       }),
@@ -757,6 +771,7 @@ describe('LightExtensionWorkspacePage', () => {
     await waitFor(() => expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(1));
     expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
       repoId: 'ler_sales',
+      expectedHeadCommitId: 'commit-1',
       entryId: 'lee_sales_kpi',
       kind: 'js-block',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -1927,14 +1942,18 @@ describe('LightExtensionWorkspacePage', () => {
         message: 'Light extension source cannot be compiled',
         details: {
           problems: [
-            {
+            createLightExtensionProblem({
+              phase: 'policy',
+              source: 'validator',
               code: 'import_not_allowed',
               severity: 'error',
               message: 'Import "react" is not allowed',
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
+              snapshotId: 'snapshot-import-policy',
+              requestId: 'request-import-policy',
               kind: 'js-block',
               entryName: 'sales-kpi',
-            },
+            }),
           ],
         },
       }),
@@ -1969,7 +1988,7 @@ describe('LightExtensionWorkspacePage', () => {
           problems: [
             createLightExtensionProblem({
               phase: 'compile',
-              source: 'authoritative-compiler',
+              source: 'runjs-compiler',
               code: 'RUNJS_IMPORT_NOT_FOUND',
               severity: 'error',
               message: 'Import target was not found',
@@ -1999,8 +2018,13 @@ describe('LightExtensionWorkspacePage', () => {
     await confirmSaveVersion('Check missing import');
 
     expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Open problem source.*Line 1/ }));
     expect(await screen.findByText('Opened problem source')).toBeInTheDocument();
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-reveal-line', '1');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-reveal-column', '8');
+    const firstRequestId = screen.getByTestId('runjs-code-tab').getAttribute('data-reveal-request-id');
+    fireEvent.click(screen.getByRole('button', { name: /Open problem source.*Line 1/ }));
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-reveal-request-id')).not.toBe(firstRequestId);
   });
 
   it('loads a history version through pullCommit instead of pull ref', async () => {

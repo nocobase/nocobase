@@ -31,6 +31,7 @@ export type BrowserProvisionalPreviewStatus =
 export interface BrowserProvisionalPreviewState {
   enabled: boolean;
   status: BrowserProvisionalPreviewStatus;
+  workspaceSnapshotId: string;
   problems: LightExtensionProblem[];
   failureCode?: BrowserPreviewFailureCode | string;
   metrics?: BrowserPreviewMetrics;
@@ -44,11 +45,13 @@ interface UseBrowserProvisionalPreviewInput {
   debounceMs?: number;
   sessionFactory?: () => BrowserPreviewSession;
   sandboxFactory?: () => ProvisionalPreviewSandbox;
+  workspaceSnapshotId: string;
 }
 
 const DISABLED_STATE: BrowserProvisionalPreviewState = {
   enabled: false,
   status: 'disabled',
+  workspaceSnapshotId: '',
   problems: [],
 };
 
@@ -59,6 +62,7 @@ export function useBrowserProvisionalPreview({
   debounceMs = 350,
   sessionFactory,
   sandboxFactory,
+  workspaceSnapshotId,
 }: UseBrowserProvisionalPreviewInput): BrowserProvisionalPreviewState {
   const [state, setState] = useState<BrowserProvisionalPreviewState>(DISABLED_STATE);
   const sessionRef = useRef<BrowserPreviewSession | null>(null);
@@ -101,6 +105,7 @@ export function useBrowserProvisionalPreview({
       ...current,
       enabled: true,
       status: 'building',
+      workspaceSnapshotId,
       problems: [],
       failureCode: undefined,
       result: undefined,
@@ -113,7 +118,13 @@ export function useBrowserProvisionalPreview({
         source: 'browser-preview',
         phase: 'infrastructure',
       });
-      setState((current) => ({ ...current, enabled: true, status: 'building', failureCode: undefined }));
+      setState((current) => ({
+        ...current,
+        enabled: true,
+        status: 'building',
+        workspaceSnapshotId,
+        failureCode: undefined,
+      }));
       try {
         try {
           await session.cancelLatestBuild();
@@ -153,6 +164,7 @@ export function useBrowserProvisionalPreview({
         setState({
           enabled: true,
           status: result.accepted ? (problems.length ? 'problem' : 'ready') : 'problem',
+          workspaceSnapshotId,
           problems,
           failureCode: result.accepted ? undefined : result.metrics.previewFailureCode,
           metrics: result.metrics,
@@ -167,6 +179,7 @@ export function useBrowserProvisionalPreview({
         setState({
           enabled: true,
           status: 'degraded',
+          workspaceSnapshotId,
           failureCode,
           problems: [
             createHookProblem({
@@ -185,7 +198,7 @@ export function useBrowserProvisionalPreview({
     return () => {
       clearTimeout(timer);
     };
-  }, [debounceMs, enabled, entry, workspaceFiles]);
+  }, [debounceMs, enabled, entry, workspaceFiles, workspaceSnapshotId]);
 
   return state;
 }

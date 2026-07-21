@@ -14,7 +14,9 @@ import { registerFlowModelRunJSSourceAdapters } from '../runjs-sources';
 
 type Registrar = {
   adapters: RunJSSourceAdapter[];
+  contextResolvers: unknown[];
   registerRunJSSourceAdapter: (adapter: RunJSSourceAdapter) => () => void;
+  registerLightExtensionReferenceOwnerContextResolver: (resolver: unknown) => () => void;
 };
 
 describe('flow-engine RunJS source registration', () => {
@@ -39,9 +41,11 @@ describe('flow-engine RunJS source registration', () => {
     });
 
     expect(lightExtension.adapters.length).toBeGreaterThan(0);
+    expect(lightExtension.contextResolvers).toHaveLength(1);
     expect(legacyVsc.adapters).toEqual([]);
     cleanup();
     expect(lightExtension.adapters).toEqual([]);
+    expect(lightExtension.contextResolvers).toEqual([]);
   });
 
   it('registers after Light Extension loads and removes the pending listener on cleanup', () => {
@@ -380,10 +384,17 @@ describe('flow-engine RunJS source registration', () => {
 function createRegistrar(): Registrar {
   const registrar: Registrar = {
     adapters: [],
+    contextResolvers: [],
     registerRunJSSourceAdapter(adapter) {
       registrar.adapters.push(adapter);
       return () => {
         registrar.adapters = registrar.adapters.filter((item) => item !== adapter);
+      };
+    },
+    registerLightExtensionReferenceOwnerContextResolver(resolver) {
+      registrar.contextResolvers.push(resolver);
+      return () => {
+        registrar.contextResolvers = registrar.contextResolvers.filter((item) => item !== resolver);
       };
     },
   };

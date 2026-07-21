@@ -43,7 +43,13 @@ export * from './data-source';
 export * from './entry-actions';
 export * from './flow';
 export { CodeEditorExtension } from './flow/components/code-editor/extension';
-export type { CodeEditorExtra, CodeEditorExtraRegistry, EditorRef } from './flow/components/code-editor/types';
+export type {
+  CodeEditorDiagnostic,
+  CodeEditorExtra,
+  CodeEditorExtraRegistry,
+  CodeEditorRevealTarget,
+  EditorRef,
+} from './flow/components/code-editor/types';
 export {
   RunJSSourceResolverError,
   RunJSSourceResolverRegistry,

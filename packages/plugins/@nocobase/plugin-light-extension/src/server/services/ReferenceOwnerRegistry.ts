@@ -10,6 +10,11 @@
 import { createHash } from 'crypto';
 
 import type {
+  LightExtensionOwnerAuthoringContextDescriptor,
+  LightExtensionOwnerAuthoringContextResolver,
+  LightExtensionOwnerAuthoringContextResolverInput,
+} from '../../shared/context-pack';
+import type {
   LightExtensionKind,
   LightExtensionReferenceOwnerAdapterContract,
   LightExtensionReferenceOwnerKind,
@@ -21,6 +26,35 @@ export type ReferenceOwnerAdapter = LightExtensionReferenceOwnerAdapterContract 
   settingsKey?: 'jsSettings' | 'clickSettings';
   modelUses?: string[];
 };
+
+export class ReferenceOwnerAuthoringContextResolverRegistry {
+  private readonly resolvers = new Map<LightExtensionReferenceOwnerKind, LightExtensionOwnerAuthoringContextResolver>();
+
+  register(resolver: LightExtensionOwnerAuthoringContextResolver): () => void {
+    for (const ownerKind of resolver.ownerKinds) {
+      if (this.resolvers.has(ownerKind)) {
+        throw new TypeError(`Light extension owner context resolver already registered for "${ownerKind}"`);
+      }
+    }
+    for (const ownerKind of resolver.ownerKinds) {
+      this.resolvers.set(ownerKind, resolver);
+    }
+    return () => {
+      for (const ownerKind of resolver.ownerKinds) {
+        if (this.resolvers.get(ownerKind) === resolver) {
+          this.resolvers.delete(ownerKind);
+        }
+      }
+    };
+  }
+
+  describe(
+    ownerKind: LightExtensionReferenceOwnerKind,
+    input: LightExtensionOwnerAuthoringContextResolverInput,
+  ): LightExtensionOwnerAuthoringContextDescriptor | null {
+    return this.resolvers.get(ownerKind)?.describe(input) || null;
+  }
+}
 
 const JS_BLOCK_STEP_PATH: ['stepParams', 'jsSettings'] = ['stepParams', 'jsSettings'];
 const JS_PAGE_STEP_PATH: ['stepParams', 'jsSettings', 'runJs'] = ['stepParams', 'jsSettings', 'runJs'];

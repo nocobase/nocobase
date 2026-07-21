@@ -138,12 +138,13 @@ class InMemoryPreviewWorker {
 function provisionalResult(entryPath: string): ProvisionalCompileResult {
   return {
     provisional: true,
+    snapshotId: 'browser-preview-snapshot',
+    requestId: 'browser-preview-request',
     accepted: true,
     artifact: {
       code: 'globalThis.__nocobaseProvisionalPreviewRun__ = async () => undefined;',
       version: 'v2',
       entryPath,
-      problems: [],
       metadata: {
         provisional: true,
         trust: 'client-advisory',
@@ -527,6 +528,7 @@ describe('useBrowserProvisionalPreview', () => {
       debounceMs: 0,
       sessionFactory,
       sandboxFactory,
+      workspaceSnapshotId: 'workspace-first',
     };
     const { result, rerender, unmount } = renderHook((props) => useBrowserProvisionalPreview(props), {
       initialProps,
@@ -537,7 +539,7 @@ describe('useBrowserProvisionalPreview', () => {
       expect.objectContaining({ provisional: true, trust: 'client-advisory' }),
     );
 
-    rerender({ ...initialProps, files: file('second') });
+    rerender({ ...initialProps, files: file('second'), workspaceSnapshotId: 'workspace-second' });
     await waitFor(() =>
       expect(
         worker.requests.some(
@@ -548,6 +550,7 @@ describe('useBrowserProvisionalPreview', () => {
       ).toBe(true),
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.workspaceSnapshotId).toBe('workspace-second');
     unmount();
   });
 });

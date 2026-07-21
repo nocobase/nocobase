@@ -131,6 +131,7 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
 function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtensionWorkspacePreviewInput {
   return compactObject({
     repoId: requireRepoId(input),
+    expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
     entryId: optionalNullableString(input, 'entryId'),
     kind: optionalLightExtensionKind(input, 'kind'),
     entryPath: optionalString(input, 'entryPath', 'entryPath'),
@@ -238,6 +239,17 @@ function optionalNullableString(input: ResourceActionInput, key: string): string
   return value.trim() || null;
 }
 
+function requireNullableString(input: ResourceActionInput, key: string): string | null {
+  if (!Object.prototype.hasOwnProperty.call(input, key)) {
+    throw invalidInput(`${key} is required and must be a string or null`);
+  }
+  const value = optionalNullableString(input, key);
+  if (typeof value === 'undefined') {
+    throw invalidInput(`${key} is required and must be a string or null`);
+  }
+  return value;
+}
+
 function requireArray<T>(
   input: ResourceActionInput,
   key: string,
@@ -260,6 +272,21 @@ function normalizeMoveSourceFile(value: unknown, index: number): LightExtensionM
   };
 }
 
+function optionalWorkspaceEncoding(
+  input: ResourceActionInput,
+  key: string,
+  label: string,
+): 'utf8' | 'base64' | undefined {
+  const value = optionalString(input, key, label);
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (value !== 'utf8' && value !== 'base64') {
+    throw invalidInput(`${label} must be "utf8" or "base64"`);
+  }
+  return value;
+}
+
 function normalizeWorkspacePreviewFile(
   value: unknown,
   index: number,
@@ -268,6 +295,7 @@ function normalizeWorkspacePreviewFile(
   return {
     path: requireString(file, 'path', `files[${index}].path`),
     content: requireStringValue(file, 'content', `files[${index}].content`),
+    encoding: optionalWorkspaceEncoding(file, 'encoding', `files[${index}].encoding`),
     language: optionalString(file, 'language', `files[${index}].language`),
     mode: optionalString(file, 'mode', `files[${index}].mode`),
   };

@@ -29,6 +29,7 @@ import type {
   LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
+import type { LightExtensionCompileExecutor } from './LightExtensionCompileContract';
 import { entryFromModel } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
@@ -68,6 +69,7 @@ export class LightExtensionCompilePreviewService {
     private readonly permissionService: LightExtensionPermissionService,
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
     private readonly validator = new LightExtensionValidator(),
+    private readonly compileExecutor?: LightExtensionCompileExecutor,
   ) {}
 
   async compilePreview(
@@ -98,7 +100,7 @@ export class LightExtensionCompilePreviewService {
       },
       previewContext,
     );
-    const snapshotId = pull.tree?.hash || buildWorkspaceSnapshotId(pull.files || []);
+    const snapshotId = buildWorkspaceSnapshotId(pull.files || []);
     previewContext.snapshotId = snapshotId;
     const createProblem = createLightExtensionProblemFactory({
       snapshotId,
@@ -151,6 +153,7 @@ export class LightExtensionCompilePreviewService {
           files: getEntryCompileFiles(pull.files || [], target.validationEntry),
         },
         previewContext,
+        this.compileExecutor,
       );
       entries.push({
         entryId: target.entryId,
@@ -201,9 +204,24 @@ export class LightExtensionCompilePreviewService {
       throw error;
     }
 
+    const repo = await this.getWorkspaceCheckRepo(input.repoId, previewContext);
+    const baseHeadCommitId = repo.headCommitId;
+    if (input.expectedHeadCommitId !== baseHeadCommitId) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_OUTDATED',
+        'Light extension workspace check source head is outdated',
+        {
+          details: {
+            repoId: input.repoId,
+            expectedHeadCommitId: input.expectedHeadCommitId,
+            currentHeadCommitId: baseHeadCommitId,
+          },
+        },
+      );
+    }
+
     const previewFiles = input.files;
     const snapshotId = buildWorkspaceSnapshotId(previewFiles);
-    const baseHeadCommitId = await this.getBaseHeadCommitId(input.repoId, previewContext);
     previewContext.snapshotId = snapshotId;
     const createProblem = createLightExtensionProblemFactory({
       snapshotId,
@@ -216,17 +234,27 @@ export class LightExtensionCompilePreviewService {
       snapshotId,
       requestId,
     });
+    const agentProblems = buildAgentWorkspaceProblems(previewFiles, validation.entries, createProblem);
     const targetKind = input.kind;
     const targetEntryPath = input.entryPath?.trim();
-    if (!targetKind && !targetEntryPath) {
-      return this.compileWholeWorkspacePreview(input, validation, previewFiles, previewContext, baseHeadCommitId);
+    if (!targetKind && !targetEntryPath && !input.entryId) {
+      return this.compileWholeWorkspacePreview(
+        input,
+        validation,
+        previewFiles,
+        previewContext,
+        baseHeadCommitId,
+        agentProblems,
+      );
     }
-    if (!targetKind || !targetEntryPath) {
+    if (!targetKind || !targetEntryPath || !input.entryId) {
       const problems = [
+        ...agentProblems,
         createProblem({
           code: 'light_extension_preview_target_incomplete',
           severity: 'error',
-          message: 'Light extension workspace preview must include both kind and entryPath when targeting an entry',
+          message:
+            'Light extension workspace preview must include entryId, kind, and entryPath when targeting an entry',
           path: input.entryPath,
           kind: input.kind,
         }),
@@ -242,8 +270,50 @@ export class LightExtensionCompilePreviewService {
       };
     }
 
-    const workspaceProblems = getWorkspaceLevelProblems(validation.problems);
+    const workspaceProblems = sortUniqueProblems([...getWorkspaceLevelProblems(validation.problems), ...agentProblems]);
     const normalizedEntryPath = normalizeSourcePath(targetEntryPath);
+    const persistedEntries = await this.listPersistedEntries(input.repoId, previewContext);
+    const persistedEntry = persistedEntries.find((entry) => entry.id === input.entryId);
+    const targetIdentityProblems: LightExtensionProblem[] = [];
+    if (!persistedEntry) {
+      targetIdentityProblems.push(
+        createProblem({
+          code: 'entry_not_found',
+          severity: 'error',
+          message: `Light extension entry "${input.entryId}" was not found in repository "${input.repoId}"`,
+          path: normalizedEntryPath,
+          kind: targetKind,
+          entryName: inferEntryName(normalizedEntryPath),
+        }),
+      );
+    } else {
+      if (persistedEntry.kind !== targetKind) {
+        targetIdentityProblems.push(
+          createProblem({
+            code: 'light_extension_preview_target_kind_mismatch',
+            severity: 'error',
+            message: 'Light extension workspace preview target kind does not match the persisted entry',
+            path: normalizedEntryPath,
+            kind: targetKind,
+            entryName: persistedEntry.entryName,
+            details: { expectedKind: persistedEntry.kind, requestedKind: targetKind },
+          }),
+        );
+      }
+      if (normalizeSourcePath(persistedEntry.entryPath) !== normalizedEntryPath) {
+        targetIdentityProblems.push(
+          createProblem({
+            code: 'light_extension_preview_target_path_mismatch',
+            severity: 'error',
+            message: 'Light extension workspace preview target path does not match the persisted entry',
+            path: normalizedEntryPath,
+            kind: targetKind,
+            entryName: persistedEntry.entryName,
+            details: { expectedEntryPath: persistedEntry.entryPath, requestedEntryPath: normalizedEntryPath },
+          }),
+        );
+      }
+    }
     const validationEntry = validation.entries.find(
       (entry) => entry.kind === targetKind && normalizeSourcePath(entry.entryPath) === normalizedEntryPath,
     );
@@ -259,7 +329,7 @@ export class LightExtensionCompilePreviewService {
             entryName: inferEntryName(normalizedEntryPath),
           }),
         ];
-    const validationProblems = sortUniqueProblems([...workspaceProblems, ...entryProblems]);
+    const validationProblems = sortUniqueProblems([...workspaceProblems, ...targetIdentityProblems, ...entryProblems]);
     if (!validationEntry || hasErrorProblem(validationProblems)) {
       await this.recordCompileAuditBestEffort({
         repoId: input.repoId,
@@ -313,6 +383,7 @@ export class LightExtensionCompilePreviewService {
         files: getEntryCompileFiles(previewFiles, validationEntry),
       },
       previewContext,
+      this.compileExecutor,
     );
     const problems = sortUniqueProblems([...validationProblems, ...compiled.problems]);
 
@@ -357,8 +428,9 @@ export class LightExtensionCompilePreviewService {
     files: LightExtensionWorkspacePreviewInput['files'],
     ctx: LightExtensionServiceContext,
     baseHeadCommitId: string | null,
+    agentProblems: LightExtensionProblem[],
   ): Promise<LightExtensionWorkspacePreviewResult> {
-    const workspaceProblems = getWorkspaceLevelProblems(validation.problems);
+    const workspaceProblems = sortUniqueProblems([...getWorkspaceLevelProblems(validation.problems), ...agentProblems]);
     const persistedEntries = await this.listPersistedEntries(input.repoId, ctx);
     const persistedEntryIds = new Map(
       persistedEntries.map((entry) => [`${entry.kind}:${entry.entryName}`, entry.id] as const),
@@ -400,6 +472,7 @@ export class LightExtensionCompilePreviewService {
           files: getEntryCompileFiles(files, validationEntry),
         },
         ctx,
+        this.compileExecutor,
       );
       const problems = sortUniqueProblems([...validationProblems, ...compiled.problems]);
       const accepted = compiled.accepted && !hasErrorProblem(problems);
@@ -448,13 +521,22 @@ export class LightExtensionCompilePreviewService {
     return records.map((record: Model) => entryFromModel(record));
   }
 
-  private async getBaseHeadCommitId(repoId: string, ctx: LightExtensionServiceContext): Promise<string | null> {
+  private async getWorkspaceCheckRepo(
+    repoId: string,
+    ctx: LightExtensionServiceContext,
+  ): Promise<{ headCommitId: string | null }> {
     const repo = await this.db.getRepository('lightExtensionRepos').findOne({
       filter: { id: repoId },
-      fields: ['headCommitId'],
+      fields: ['id', 'headCommitId', 'lifecycleStatus'],
       transaction: ctx.transaction,
     });
-    return repo?.get('headCommitId') || null;
+    if (!repo) {
+      throw new LightExtensionError('LIGHT_EXTENSION_REPO_NOT_FOUND', `Light extension repo "${repoId}" was not found`);
+    }
+    if (repo.get('lifecycleStatus') === 'archived') {
+      throw new LightExtensionError('LIGHT_EXTENSION_REPO_ARCHIVED', `Light extension repo "${repoId}" is archived`);
+    }
+    return { headCommitId: (repo.get('headCommitId') as string | null) || null };
   }
 
   private async recordPreviewPermissionDenied(
@@ -771,7 +853,13 @@ function sortUniqueProblems(problems: LightExtensionProblem[]): LightExtensionPr
 }
 
 function buildWorkspaceSnapshotId(
-  files: readonly { path: string; content?: string; language?: string; mode?: string }[],
+  files: readonly {
+    path: string;
+    content?: string;
+    encoding?: 'utf8' | 'base64';
+    language?: string;
+    mode?: string;
+  }[],
 ) {
   return sha256Hex(
     stableSerialize(
@@ -779,12 +867,63 @@ function buildWorkspaceSnapshotId(
         .map((file) => ({
           path: normalizeSourcePath(file.path),
           content: file.content || '',
+          encoding: file.encoding || 'utf8',
           language: file.language || '',
           mode: file.mode || '',
         }))
-        .sort((left, right) => left.path.localeCompare(right.path)),
+        .sort((left, right) => stableSerialize(left).localeCompare(stableSerialize(right))),
     ),
   );
+}
+
+function buildAgentWorkspaceProblems(
+  files: LightExtensionWorkspacePreviewInput['files'],
+  entries: LightExtensionEntryValidationResult[],
+  createProblem: ReturnType<typeof createLightExtensionProblemFactory>,
+): LightExtensionProblem[] {
+  const problems: LightExtensionProblem[] = [];
+  for (const file of files) {
+    const path = normalizeSourcePath(file.path);
+    if (file.encoding === 'base64') {
+      problems.push(
+        createProblem({
+          phase: 'policy',
+          code: 'light_extension_agent_base64_not_supported',
+          severity: 'error',
+          message: 'Light extension workspace checks accept UTF-8 source files only',
+          path,
+        }),
+      );
+    }
+    if (path === 'src/client/js-portals' || path.startsWith('src/client/js-portals/')) {
+      problems.push(
+        createProblem({
+          phase: 'policy',
+          code: 'light_extension_agent_portal_not_supported',
+          severity: 'error',
+          message: 'Light extension workspace checks do not support JS Portal source files',
+          path,
+        }),
+      );
+    }
+  }
+  for (const entry of entries) {
+    if (entry.kind === 'js-block' || entry.kind === 'js-page') {
+      continue;
+    }
+    problems.push(
+      createProblem({
+        phase: 'policy',
+        code: 'light_extension_agent_kind_not_supported',
+        severity: 'error',
+        message: 'Light extension workspace checks support JS Block and JS Page entries only',
+        path: entry.entryPath,
+        kind: entry.kind,
+        entryName: entry.entryName,
+      }),
+    );
+  }
+  return sortUniqueProblems(problems);
 }
 
 function normalizeSourcePath(path: string): string {

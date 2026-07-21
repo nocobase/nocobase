@@ -53,7 +53,7 @@ P1 does not include creating a page directly from an Entry, an App Bridge API, o
 Repository source operations use a different request shape from RunJS Studio workspaces:
 
 1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.
-2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A successful check returns HTTP 200 with `{ data: LightExtensionWorkspaceCheckResult }`; any rejected Entry returns HTTP 422 with the same result in `errors[0].details`.
+2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`, passing the retained Head as the required nullable `expectedHeadCommitId`. A successful check returns HTTP 200 with `{ data: LightExtensionWorkspaceCheckResult }`; any rejected Entry returns HTTP 422 with the same result in `errors[0].details`.
 3. Call `lightExtensionFiles:saveSource` with only the changed file delta plus the unchanged `expectedHeadCommitId`. Do not send the complete workspace as a replacement snapshot.
 4. On HTTP 409, pull again and rebuild the candidate. Never resolve a conflict by replacing only the expected Head while reusing stale source.
 5. Verify the new Head, all affected Entry artifacts, reference rows, and the bound Flow Surface. Updating a retained inline fallback `code` field does not change the active runtime while `sourceMode` remains `light-extension`.

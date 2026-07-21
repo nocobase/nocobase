@@ -382,12 +382,14 @@ export interface LightExtensionCompilePreviewResult {
 export interface LightExtensionWorkspacePreviewFile {
   path: string;
   content: string;
+  encoding?: LightExtensionFileEncoding;
   language?: string;
   mode?: string;
 }
 
 export interface LightExtensionWorkspacePreviewInput {
   repoId: string;
+  expectedHeadCommitId: string | null;
   entryId?: string | null;
   kind?: LightExtensionKind;
   entryPath?: string;

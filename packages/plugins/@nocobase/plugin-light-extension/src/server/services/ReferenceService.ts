@@ -1267,6 +1267,18 @@ export class ReferenceService {
     return Boolean(record);
   }
 
+  async readVisibleReferenceOwner(
+    ownerLocator: LightExtensionReferenceOwnerLocator,
+    ctx: ReferenceServiceContext = {},
+  ): Promise<Record<string, unknown> | null> {
+    if (!(await this.canReadReferenceOwner(ownerLocator, ctx))) {
+      return null;
+    }
+    const modelUid = getReferenceOwnerModelUid(ownerLocator);
+    const owner = modelUid ? await this.loadFlowModelTree(modelUid, ctx) : null;
+    return owner ? (owner as unknown as Record<string, unknown>) : null;
+  }
+
   private async canReadOwnerByAccessibleDesktopRoute(modelUid: string, ctx: ReferenceServiceContext): Promise<boolean> {
     const currentRoles = getCurrentRoleNames(ctx.state);
     if (!currentRoles.length) {

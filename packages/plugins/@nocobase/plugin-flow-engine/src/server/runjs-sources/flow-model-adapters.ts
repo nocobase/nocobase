@@ -37,6 +37,25 @@ type FlowModelNestedStorage = {
   targetPath: JsonPath;
 };
 
+export interface FlowModelReferenceOwnerContextResolver {
+  ownerKinds: readonly ['flowModel.step', 'flowModel.pageSettings'];
+  describe(input: {
+    reference: {
+      kind: string;
+      ownerKind: string;
+      ownerLocator: { modelUid?: string };
+    };
+    owner: Record<string, unknown>;
+  }): {
+    ownerKind: 'flowModel.step' | 'flowModel.pageSettings';
+    modelUid: string;
+    modelUse: string;
+    surface: string;
+    dataSourceKey?: string;
+    collectionName?: string;
+  } | null;
+}
+
 const RENDER_MODEL_USES = new Set([
   'JSBlockModel',
   'JSPageModel',
@@ -84,6 +103,42 @@ export function createFlowModelRunJSSourceAdapters(db: Database): RunJSSourceAda
     createChartAdapter(db, 'chart.option'),
     createChartAdapter(db, 'chart.events'),
   ];
+}
+
+export function createFlowModelReferenceOwnerContextResolver(): FlowModelReferenceOwnerContextResolver {
+  return {
+    ownerKinds: ['flowModel.step', 'flowModel.pageSettings'],
+    describe({ reference, owner }) {
+      const modelUid = readString(owner.uid);
+      const modelUse = readString(owner.use);
+      if (!modelUid || modelUid !== readString(reference.ownerLocator.modelUid)) {
+        return null;
+      }
+      if (reference.kind === 'js-block') {
+        if (reference.ownerKind !== 'flowModel.step' || modelUse !== 'JSBlockModel') {
+          return null;
+        }
+      } else if (reference.kind === 'js-page') {
+        if (reference.ownerKind !== 'flowModel.pageSettings' || modelUse !== 'JSPageModel') {
+          return null;
+        }
+      } else {
+        return null;
+      }
+
+      const resourceInit = getAtPath(owner, ['stepParams', 'resourceSettings', 'init']);
+      const collectionName = isRecord(resourceInit) ? readString(resourceInit.collectionName) : '';
+      const dataSourceKey = isRecord(resourceInit) ? readString(resourceInit.dataSourceKey) : '';
+      return {
+        ownerKind: reference.ownerKind,
+        modelUid,
+        modelUse,
+        surface: 'js-model.render',
+        ...(collectionName ? { collectionName } : {}),
+        ...(collectionName ? { dataSourceKey: dataSourceKey || 'main' } : {}),
+      };
+    },
+  };
 }
 
 function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelStepLocator> {
@@ -1259,6 +1314,10 @@ function cloneJsonRecord(value: unknown): JsonRecord {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readString(value: unknown): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
 }
 
 function resolveLegacyVersion(code: unknown, version: unknown, uninitialized = false): string {

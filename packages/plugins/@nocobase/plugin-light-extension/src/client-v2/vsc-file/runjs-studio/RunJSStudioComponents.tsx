@@ -28,8 +28,10 @@ import {
 } from '@ant-design/icons';
 import {
   CodeEditor,
+  type CodeEditorDiagnostic,
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
+  type CodeEditorRevealTarget,
   type RunJSWorkspaceTypeScriptContextResolver,
 } from '@nocobase/client-v2';
 import {
@@ -50,7 +52,8 @@ import {
 import type { InputRef } from 'antd/es/input';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { RunJSCompileDiagnostic } from './types';
+import type { LightExtensionProblem } from '../../../shared/types';
+import ProblemsPanel from '../../components/ProblemsPanel';
 import type {
   RunJSChangeSummary,
   RunJSConsoleEntry,
@@ -66,7 +69,6 @@ import {
   collectRunJSWorkspaceFolders,
   defaultRunJSSourceRoot,
   type FileTreeFileRow,
-  formatCompileDiagnostics,
   getRunJSBaseName,
   getRunJSDirectory,
   getRunJSTreeDragPayload,
@@ -844,6 +846,7 @@ export function CodeTab(props: {
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
   onRunPreview?: () => void;
+  onDiagnosticsChange?: (path: string, diagnostics: CodeEditorDiagnostic[]) => void;
   openPaths: string[];
   previewing?: boolean;
   readOnly: boolean;
@@ -859,6 +862,7 @@ export function CodeTab(props: {
   workspaceFiles: RunJSWorkspaceFile[];
   fullscreenControl?: CodeEditorFullscreenControl;
   jsonSchemaResolver?: RunJSWorkspaceJsonSchemaResolver;
+  revealTarget?: CodeEditorRevealTarget;
 }) {
   const {
     activeFile,
@@ -873,6 +877,7 @@ export function CodeTab(props: {
     onFilesCollapsedChange,
     onOpenFile,
     onRunPreview,
+    onDiagnosticsChange,
     openPaths,
     previewing,
     readOnly,
@@ -888,6 +893,7 @@ export function CodeTab(props: {
     workspaceFiles,
     fullscreenControl,
     jsonSchemaResolver,
+    revealTarget,
   } = props;
   const openFiles = openPaths
     .map((path) => workspaceFiles.find((file) => file.path === path))
@@ -1024,9 +1030,15 @@ export function CodeTab(props: {
         minHeight={0}
         moduleImportCompletions={moduleImportCompletions}
         name={activeFile.path}
+        onDiagnosticsChange={
+          isRunJSTypeScriptProjectFile(activeFile.path)
+            ? (diagnostics) => onDiagnosticsChange?.(activeFile.path, diagnostics)
+            : undefined
+        }
         onChange={isDiff ? undefined : onChange}
         placeholder={t('Edit file content')}
         readonly={readOnly || isDiff}
+        revealTarget={revealTarget}
         runButton={runAndDiffActions}
         scene={scene}
         showLogs={false}
@@ -1786,17 +1798,17 @@ export function SaveVersionModal(props: {
   );
 }
 
-export function SaveDiagnosticsModal(props: {
-  diagnostics: RunJSCompileDiagnostic[];
+export function SaveProblemsModal(props: {
+  problems: LightExtensionProblem[];
   onCancel: () => void;
-  onJump: (diagnostic: RunJSCompileDiagnostic) => void;
+  onJump: (problem: LightExtensionProblem) => void;
   open: boolean;
   t: (key: string) => string;
 }) {
-  const { diagnostics, onCancel, onJump, open, t } = props;
-  const details = formatCompileDiagnostics(diagnostics) || t('No compile diagnostics');
+  const { problems, onCancel, onJump, open, t } = props;
+  const details = formatProblemDetails(problems) || t('No problems');
 
-  const copyDiagnostics = async () => {
+  const copyProblems = async () => {
     try {
       await navigator.clipboard?.writeText(details);
       message.success(t('Details copied'));
@@ -1808,7 +1820,7 @@ export function SaveDiagnosticsModal(props: {
   return (
     <Modal
       footer={[
-        <Button aria-label={t('Copy technical details')} key="copy" icon={<CopyOutlined />} onClick={copyDiagnostics}>
+        <Button aria-label={t('Copy technical details')} key="copy" icon={<CopyOutlined />} onClick={copyProblems}>
           {t('Copy technical details')}
         </Button>,
         <Button key="dismiss" onClick={onCancel} type="primary">
@@ -1823,66 +1835,32 @@ export function SaveDiagnosticsModal(props: {
       <Space direction="vertical" style={{ width: '100%' }}>
         <Alert message={t('Compile failed')} role="alert" showIcon type="error" />
         <Typography.Text>{t('Fix compile errors before saving.')}</Typography.Text>
-        <pre
+        <div
           aria-label={t('Compile diagnostics')}
           data-testid="runjs-save-diagnostics"
           style={{
-            background: '#141414',
             borderRadius: 6,
-            color: '#f5f5f5',
-            fontFamily: 'monospace',
-            fontSize: 12,
-            lineHeight: 1.6,
             margin: 0,
             maxHeight: 'min(520px, calc(100vh - 260px))',
             overflow: 'auto',
-            padding: 12,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
           }}
         >
-          {diagnostics.length
-            ? diagnostics.map((diagnostic, index) => {
-                const text = formatCompileDiagnostics([diagnostic]);
-                if (!diagnostic.path) {
-                  return (
-                    <span key={`${diagnostic.code || diagnostic.ruleId || 'diagnostic'}-${index}`}>
-                      {text}
-                      {index < diagnostics.length - 1 ? '\n\n' : ''}
-                    </span>
-                  );
-                }
-
-                return (
-                  <button
-                    aria-label={text}
-                    key={`${diagnostic.path}-${diagnostic.line || 0}-${diagnostic.column || 0}-${index}`}
-                    onClick={() => onJump(diagnostic)}
-                    style={{
-                      background: 'transparent',
-                      border: 0,
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      display: 'block',
-                      font: 'inherit',
-                      marginBottom: index < diagnostics.length - 1 ? 12 : 0,
-                      padding: 0,
-                      textAlign: 'left',
-                      whiteSpace: 'pre-wrap',
-                      width: '100%',
-                      wordBreak: 'break-word',
-                    }}
-                    type="button"
-                  >
-                    {text}
-                  </button>
-                );
-              })
-            : details}
-        </pre>
+          <ProblemsPanel problems={problems} onOpenProblem={onJump} />
+        </div>
       </Space>
     </Modal>
   );
+}
+
+function formatProblemDetails(problems: LightExtensionProblem[]): string {
+  return problems
+    .map((problem) => {
+      const location = problem.path
+        ? `${problem.path}${problem.range?.start ? `:${problem.range.start.line}:${problem.range.start.column}` : ''}`
+        : '';
+      return `[${problem.severity}]${location ? ` ${location}` : ''} (${problem.code}) ${problem.message}`;
+    })
+    .join('\n\n');
 }
 
 export function CloseConfirmModal(props: {

@@ -143,6 +143,39 @@ export const lightExtensionPaths = {
       },
     },
   },
+  '/lightExtensionContexts:get': {
+    post: {
+      tags: ['lightExtensionContexts'],
+      summary: 'Get a binding-aware light-extension Context Pack',
+      description:
+        'Return an ACL-filtered Context Pack for one entry. Supply referenceId or ownerLocator for a precise binding; an unselected reusable entry remains generic or multiple.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['repoId', 'entryId'],
+              properties: {
+                repoId: { type: 'string' },
+                entryId: { type: 'string' },
+                referenceId: { type: 'string' },
+                ownerLocator: { $ref: '#/components/schemas/LightExtensionReferenceOwnerLocator' },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Generic, multiple, or precise Context Pack.',
+          content: jsonContent('LightExtensionContextPackEnvelope'),
+        },
+        403: errorResponse('The current user cannot read the entry references or owner context.'),
+        404: errorResponse('The repository or entry does not exist.'),
+      },
+    },
+  },
   '/lightExtensionFiles:pull': {
     post: {
       tags: ['lightExtensionFiles'],
@@ -319,10 +352,13 @@ export const lightExtensionPaths = {
           'application/json': {
             schema: {
               type: 'object',
-              required: ['repoId', 'files'],
+              required: ['repoId', 'expectedHeadCommitId', 'files'],
               properties: {
                 repoId: {
                   type: 'string',
+                },
+                expectedHeadCommitId: {
+                  $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
                 },
                 entryId: {
                   type: 'string',
@@ -334,7 +370,8 @@ export const lightExtensionPaths = {
                 },
                 entryPath: {
                   type: 'string',
-                  description: 'Target entry path. kind and entryPath must be supplied together for targeted preview.',
+                  description:
+                    'Target entry path. entryId, kind, and entryPath must be supplied together for targeted preview.',
                 },
                 runtimeVersion: {
                   type: 'string',
@@ -358,6 +395,10 @@ export const lightExtensionPaths = {
           content: jsonContent('LightExtensionWorkspaceCheckEnvelope'),
         },
         403: errorResponse('The current user cannot compile light-extension previews.'),
+        409: {
+          description: 'The supplied expectedHeadCommitId does not match the current repository Head.',
+          content: jsonContent('LightExtensionSourceOutdatedErrorResponse'),
+        },
         422: {
           description:
             'At least one targeted or whole-workspace entry was rejected. Inspect errors[0].details.problems.',

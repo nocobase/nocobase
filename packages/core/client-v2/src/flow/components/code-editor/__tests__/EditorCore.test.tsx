@@ -352,4 +352,50 @@ describe('EditorCore', () => {
     expect(screen.queryByRole('button', { name: 'Snippets' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Run' })).not.toBeInTheDocument();
   });
+
+  it('reveals one-based original source coordinates without subtracting wrapper lines', () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const { container } = render(
+      <EditorCore
+        revealTarget={{
+          path: 'src/client/example.ts',
+          line: 2,
+          column: 3,
+          requestId: 'reveal-1',
+        }}
+        value={'first\nsecond\nthird'}
+        viewRef={viewRef}
+      />,
+    );
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    expect(view.state.selection.main.anchor).toBe(view.state.doc.line(2).from + 2);
+    expect(document.activeElement).toBe(container.querySelector('.cm-content'));
+  });
+
+  it('repeats a reveal at the same location when requestId changes and clamps invalid coordinates', () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const target = {
+      path: 'src/client/example.ts',
+      line: 99,
+      column: 99,
+      requestId: 'reveal-1',
+    };
+    const { rerender } = render(<EditorCore revealTarget={target} value={'first\nlast'} viewRef={viewRef} />);
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    expect(view.state.selection.main.anchor).toBe(view.state.doc.line(2).to);
+    view.dispatch({ selection: { anchor: 0 } });
+    rerender(
+      <EditorCore revealTarget={{ ...target, requestId: 'reveal-2' }} value={'first\nlast'} viewRef={viewRef} />,
+    );
+
+    expect(view.state.selection.main.anchor).toBe(view.state.doc.line(2).to);
+  });
 });

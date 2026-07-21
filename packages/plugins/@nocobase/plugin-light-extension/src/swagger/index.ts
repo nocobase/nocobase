@@ -20,6 +20,7 @@ export default {
     { name: 'lightExtensionRepos', description: 'Discover existing light-extension source repositories.' },
     { name: 'lightExtensionEntries', description: 'Inspect persisted light-extension entries.' },
     { name: 'lightExtensionReferences', description: 'Inspect visible light-extension usage references.' },
+    { name: 'lightExtensionContexts', description: 'Inspect ACL-filtered binding-aware authoring context.' },
     { name: 'lightExtensionFiles', description: 'Read and save light-extension source files.' },
     { name: 'lightExtensions', description: 'Preview light-extension source compilation.' },
   ],

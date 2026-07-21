@@ -8,6 +8,7 @@
  */
 
 import swaggerDocument from '../../swagger';
+import { lightExtensionContextActionNames } from '../resources/lightExtensionContexts';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
@@ -18,6 +19,7 @@ const publicActions = {
   lightExtensionRepos: ['list', 'get'],
   lightExtensionEntries: ['get'],
   lightExtensionReferences: ['readReferences'],
+  lightExtensionContexts: ['get'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview'],
 } as const;
@@ -28,6 +30,7 @@ describe('light-extension swagger', () => {
       lightExtensionRepos: lightExtensionRepoActionNames,
       lightExtensionEntries: lightExtensionEntryActionNames,
       lightExtensionReferences: lightExtensionReferenceActionNames,
+      lightExtensionContexts: lightExtensionContextActionNames,
       lightExtensionFiles: lightExtensionFileActionNames,
       lightExtensions: lightExtensionActionNames,
     };
@@ -60,6 +63,7 @@ describe('light-extension swagger', () => {
         .schema;
 
     expect(schemas.LightExtensionWorkspaceFile).toBeTruthy();
+    expect(schemas.LightExtensionWorkspaceFile.properties.encoding).toMatchObject({ enum: ['utf8', 'base64'] });
     expect(schemas.LightExtensionFileChange).toBeTruthy();
     expect(schemas.LightExtensionSourceBinding.properties.kind).toEqual({
       $ref: '#/components/schemas/LightExtensionKind',
@@ -121,6 +125,12 @@ describe('light-extension swagger', () => {
     expect(previewRequest.properties.files.items).toEqual({
       $ref: '#/components/schemas/LightExtensionWorkspaceFile',
     });
+    expect(previewRequest.properties.expectedHeadCommitId).toEqual({
+      $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
+    });
+    expect(schemas.LightExtensionContextPack.properties.collection.properties.fields.items).toEqual({
+      $ref: '#/components/schemas/LightExtensionContextField',
+    });
     expect(saveSource.responses[409].content['application/json'].schema.oneOf).toContainEqual({
       $ref: '#/components/schemas/LightExtensionSourceOutdatedErrorResponse',
     });
@@ -143,20 +153,23 @@ describe('light-extension swagger', () => {
     expect(saveSource.description).toContain('LIGHT_EXTENSION_SOURCE_OUTDATED');
     expect(Object.keys(saveSource.responses).map(Number).sort()).toEqual([200, 403, 409, 422]);
 
-    expect(previewRequest.required).toEqual(['repoId', 'files']);
+    expect(previewRequest.required).toEqual(['repoId', 'expectedHeadCommitId', 'files']);
     expect(Object.keys(previewRequest.properties).sort()).toEqual(
-      ['entryId', 'entryPath', 'files', 'kind', 'repoId', 'runtimeVersion'].sort(),
+      ['entryId', 'entryPath', 'expectedHeadCommitId', 'files', 'kind', 'repoId', 'runtimeVersion'].sort(),
     );
     expect(previewRequest.properties.values).toBeUndefined();
     expect(preview.description).toContain('HTTP 200');
     expect(preview.description).toContain('HTTP 422');
     expect(preview.description).toContain('errors[0].details');
-    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 403, 422]);
+    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 403, 409, 422]);
     expect(preview.responses[200].content['application/json'].schema).toEqual({
       $ref: '#/components/schemas/LightExtensionWorkspaceCheckEnvelope',
     });
     expect(preview.responses[422].content['application/json'].schema).toEqual({
       $ref: '#/components/schemas/LightExtensionWorkspaceRejectedErrorResponse',
+    });
+    expect(preview.responses[409].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionSourceOutdatedErrorResponse',
     });
     expect(swaggerDocument.components.schemas.LightExtensionWorkspaceCheckResult.required).toEqual([
       'baseHeadCommitId',

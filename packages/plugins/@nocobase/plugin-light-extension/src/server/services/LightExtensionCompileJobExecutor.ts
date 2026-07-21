@@ -193,7 +193,7 @@ function toLightExtensionProblem(input: RunJSCompileDiagnostic, job: LightExtens
     phase: 'compile',
     source: 'runjs-compiler',
     code: input.code || input.ruleId || 'RUNJS_COMPILE_FAILED',
-    severity: input.severity === 'warning' ? 'warning' : 'error',
+    severity: input.severity === 'error' ? 'error' : 'warning',
     message: input.message,
     ...(input.path ? { path: input.path } : {}),
     ...(typeof input.line === 'number'
@@ -206,7 +206,7 @@ function toLightExtensionProblem(input: RunJSCompileDiagnostic, job: LightExtens
           },
         }
       : {}),
-    snapshotId: job.filesHash,
+    snapshotId: job.problemSnapshotId || job.filesHash,
     requestId: job.requestId,
     kind: job.kind,
     entryName: job.entryName,

@@ -39,6 +39,12 @@ export const lightExtensionSchemas = {
         type: 'string',
         description: 'Complete UTF-8 source content for this preview file.',
       },
+      encoding: {
+        type: 'string',
+        enum: ['utf8', 'base64'],
+        description:
+          'Workspace checks accept UTF-8 source only; base64 is documented so agents receive a structured rejection.',
+      },
       language: {
         type: 'string',
         description: 'Optional editor language hint.',
@@ -571,6 +577,109 @@ export const lightExtensionSchemas = {
       updatedAt: nullableDateTime,
     },
   },
+  LightExtensionContextReferenceSummary: {
+    type: 'object',
+    required: ['id', 'ownerKind', 'ownerLocator', 'ownerLocatorHash', 'resolvedStatus'],
+    properties: {
+      id: { type: 'string' },
+      ownerKind: { type: 'string' },
+      ownerLocator: { $ref: '#/components/schemas/LightExtensionReferenceOwnerLocator' },
+      ownerLocatorHash: { type: 'string' },
+      resolvedStatus: { type: 'string' },
+    },
+  },
+  LightExtensionContextField: {
+    type: 'object',
+    required: ['name', 'nullable', 'readable', 'writable'],
+    properties: {
+      name: { type: 'string' },
+      interface: { type: 'string' },
+      type: { type: 'string' },
+      nullable: { type: 'boolean' },
+      enum: {
+        type: 'array',
+        items: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }] },
+      },
+      associationTarget: { type: 'string' },
+      readable: { type: 'boolean' },
+      writable: { type: 'boolean' },
+    },
+  },
+  LightExtensionContextPack: {
+    type: 'object',
+    required: [
+      'contextPackVersion',
+      'contextMode',
+      'reason',
+      'repoId',
+      'entry',
+      'references',
+      'supportedImports',
+      'versions',
+      'contextHash',
+    ],
+    properties: {
+      contextPackVersion: { type: 'string', enum: ['light-extension.context-pack.v1'] },
+      contextMode: { type: 'string', enum: ['generic', 'multiple', 'precise'] },
+      reason: { type: 'string' },
+      repoId: { type: 'string' },
+      entry: {
+        type: 'object',
+        required: ['id', 'kind', 'entryName', 'entryPath', 'settingsSchema'],
+        properties: {
+          id: { type: 'string' },
+          kind: { $ref: '#/components/schemas/LightExtensionKind' },
+          entryName: { type: 'string' },
+          entryPath: { type: 'string' },
+          settingsSchema: { type: 'object', nullable: true, additionalProperties: true },
+        },
+      },
+      references: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/LightExtensionContextReferenceSummary' },
+      },
+      binding: {
+        type: 'object',
+        required: ['referenceId', 'ownerLocatorHash', 'owner'],
+        properties: {
+          referenceId: { type: 'string' },
+          ownerLocatorHash: { type: 'string' },
+          owner: {
+            type: 'object',
+            required: ['ownerKind', 'modelUid', 'modelUse', 'surface'],
+            properties: {
+              ownerKind: { type: 'string' },
+              modelUid: { type: 'string' },
+              modelUse: { type: 'string' },
+              surface: { type: 'string' },
+              dataSourceKey: { type: 'string' },
+              collectionName: { type: 'string' },
+            },
+          },
+        },
+      },
+      collection: {
+        type: 'object',
+        required: ['dataSourceKey', 'name', 'fields'],
+        properties: {
+          dataSourceKey: { type: 'string' },
+          name: { type: 'string' },
+          title: { type: 'string' },
+          fields: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/LightExtensionContextField' },
+          },
+        },
+      },
+      supportedImports: { type: 'array', items: { type: 'string' } },
+      versions: {
+        type: 'object',
+        required: ['sdk', 'validator'],
+        properties: { sdk: { type: 'string' }, validator: { type: 'string' } },
+      },
+      contextHash: { type: 'string' },
+    },
+  },
   LightExtensionCommit: {
     type: 'object',
     required: ['id', 'repoId', 'hash', 'seq', 'parentCommitId', 'treeHash', 'message', 'authorId', 'metadata'],
@@ -913,6 +1022,15 @@ export const lightExtensionSchemas = {
         items: {
           $ref: '#/components/schemas/LightExtensionReference',
         },
+      },
+    },
+  },
+  LightExtensionContextPackEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/LightExtensionContextPack',
       },
     },
   },

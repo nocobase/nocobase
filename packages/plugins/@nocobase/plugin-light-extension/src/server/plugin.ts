@@ -15,6 +15,7 @@ import type {
   RunJSSourceAuthoringInspector,
   VscPermissionHook,
 } from './vsc-file/public-api';
+import type { LightExtensionOwnerAuthoringContextResolver } from '../shared/context-pack';
 import { VscFileService, VscPermissionHookRegistry } from './vsc-file/public-api';
 import { VscFileServerModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';
@@ -28,6 +29,10 @@ import {
   lightExtensionCapabilitiesActionNames,
 } from './resources/lightExtensionCapabilities';
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
+import {
+  createLightExtensionContextsResource,
+  lightExtensionContextActionNames,
+} from './resources/lightExtensionContexts';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
 import {
@@ -47,6 +52,10 @@ import {
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
+import {
+  LightExtensionContextPackService,
+  type LightExtensionContextCollectionLike,
+} from './services/LightExtensionContextPackService';
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
 import type {
   ClientAppDescriptor,
@@ -69,6 +78,7 @@ import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
 import { MoveSourceService } from './services/MoveSourceService';
 import { MoveToInlineService } from './services/MoveToInlineService';
+import { ReferenceOwnerAuthoringContextResolverRegistry } from './services/ReferenceOwnerRegistry';
 
 type AppWithPluginEvents = {
   log?: unknown;
@@ -84,6 +94,18 @@ type AppWithPluginEvents = {
     options?: {
       prefix?: string;
     };
+  };
+  dataSourceManager?: {
+    get?: (key: string) =>
+      | {
+          acl?: {
+            can?: (input: { roles: string[]; resource: string; action: string }) => unknown;
+          };
+          collectionManager?: {
+            getCollection?: (name: string) => unknown;
+          };
+        }
+      | undefined;
   };
   acl?: {
     allow?: (
@@ -144,6 +166,10 @@ export class PluginLightExtensionServer extends Plugin {
 
   private compilePreviewService?: LightExtensionCompilePreviewService;
 
+  private contextPackService?: LightExtensionContextPackService;
+
+  private readonly referenceOwnerContextResolvers = new ReferenceOwnerAuthoringContextResolverRegistry();
+
   private runtimeResolveService?: RuntimeResolveService;
 
   private runtimeCompileService?: LightExtensionRuntimeCompileService;
@@ -202,6 +228,12 @@ export class PluginLightExtensionServer extends Plugin {
 
   registerRunJSSourceAuthoringInspector(inspector: RunJSSourceAuthoringInspector): () => void {
     return this.requireVscFileServerModule().registerRunJSSourceAuthoringInspector(inspector);
+  }
+
+  registerLightExtensionReferenceOwnerContextResolver(
+    resolver: LightExtensionOwnerAuthoringContextResolver,
+  ): () => void {
+    return this.referenceOwnerContextResolvers.register(resolver);
   }
 
   getRemoteSyncRuntime(): RemoteSyncRuntime {
@@ -273,6 +305,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.entryService = new LightExtensionEntryService(db, this.fileService, this.repoService, this.validator);
     this.clientAppService = new ClientAppService(db, new JsPortalStorage());
     this.repoService.useClientAppService(this.clientAppService);
+    this.compileWorkerPool = new LightExtensionCompileWorkerPool();
     this.compilePreviewService = new LightExtensionCompilePreviewService(
       db,
       this.auditService,
@@ -280,11 +313,36 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
       this.workspaceCompilerBridge,
       this.validator,
+      this.compileWorkerPool,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
+    this.contextPackService = new LightExtensionContextPackService(
+      db,
+      this.referenceService,
+      this.referenceOwnerContextResolvers,
+      {
+        getCollection: (dataSourceKey, collectionName) => {
+          const dataSource = (this.app as unknown as AppWithPluginEvents).dataSourceManager?.get?.(dataSourceKey);
+          const collection = dataSource?.collectionManager?.getCollection?.(collectionName);
+          return collection && typeof collection === 'object'
+            ? (collection as LightExtensionContextCollectionLike)
+            : null;
+        },
+        getPermission: async (dataSourceKey, collectionName, action, ctx) => {
+          const dataSource = (this.app as unknown as AppWithPluginEvents).dataSourceManager?.get?.(dataSourceKey);
+          const roles = getLightExtensionContextRoleNames(ctx.state);
+          if (roles.length && dataSource?.acl?.can) {
+            return dataSource.acl.can({ roles, resource: collectionName, action });
+          }
+          if (dataSourceKey === 'main' && ctx.can) {
+            return ctx.can({ resource: collectionName, action });
+          }
+          return false;
+        },
+      },
+    );
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
     this.runtimeResolveService = new RuntimeResolveService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
-    this.compileWorkerPool = new LightExtensionCompileWorkerPool();
     this.runtimeCompileService = new LightExtensionRuntimeCompileService(
       db,
       this.fileService,
@@ -325,6 +383,9 @@ export class PluginLightExtensionServer extends Plugin {
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionReferencesResource(this.referenceService),
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionContextsResource(this.contextPackService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionReposResource(db, this.repoService, this.runtimeCompileService),
@@ -440,6 +501,7 @@ export class PluginLightExtensionServer extends Plugin {
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
+        ...lightExtensionContextActionNames.map((action) => `lightExtensionContexts:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
@@ -854,6 +916,14 @@ function getRuntimeArtifactResourcePath(artifactHash: string, resourcePrefix?: s
 function normalizeBasePath(path: string): string {
   const normalized = `/${path.trim().replace(/^\/+|\/+$/g, '')}`;
   return normalized === '/' ? '' : normalized;
+}
+
+function getLightExtensionContextRoleNames(state?: Record<string, unknown>): string[] {
+  if (Array.isArray(state?.currentRoles)) {
+    return state.currentRoles.map((role) => (typeof role === 'string' ? role.trim() : '')).filter(Boolean);
+  }
+  const currentRole = typeof state?.currentRole === 'string' ? state.currentRole.trim() : '';
+  return currentRole ? [currentRole] : [];
 }
 
 export default PluginLightExtensionServer;

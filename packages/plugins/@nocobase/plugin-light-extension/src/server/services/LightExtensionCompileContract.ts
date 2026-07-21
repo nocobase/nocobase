@@ -153,6 +153,7 @@ export interface LightExtensionCompileJob {
   ordinal: number;
   compileKey: string;
   filesHash: string;
+  problemSnapshotId?: string;
   kind: LightExtensionKind;
   entryPath: string;
   runtimeVersion: string;
@@ -231,6 +232,9 @@ export function assertLightExtensionCompileJob(job: LightExtensionCompileJob): v
   }
   assertSha256(job.compileKey, 'compileKey');
   assertSha256(job.filesHash, 'filesHash');
+  if (job.problemSnapshotId) {
+    assertSha256(job.problemSnapshotId, 'problemSnapshotId');
+  }
   assertSha256(job.compilerBuildIdentity.compilerBuildId, 'compilerBuildIdentity.compilerBuildId');
   if (job.inputManifest.compilerBuildId !== job.compilerBuildIdentity.compilerBuildId) {
     throw new TypeError('Compile job build identity does not match its input manifest');
@@ -372,7 +376,7 @@ export function createLightExtensionCompileInfrastructureFailure(input: {
   queueDurationMs: number;
   runDurationMs: number;
   failureCode: string;
-  message: string;
+  message?: string;
 }): LightExtensionCompileFailureResult {
   const { job } = input;
   return {
@@ -397,11 +401,11 @@ export function createLightExtensionCompileInfrastructureFailure(input: {
         source: 'server',
         code: input.failureCode,
         severity: 'error',
-        message: input.message,
+        message: 'Light extension compile infrastructure failed',
         path: job.entryPath,
         kind: job.kind,
         entryName: job.entryName,
-        snapshotId: job.filesHash,
+        snapshotId: job.problemSnapshotId || job.filesHash,
         requestId: job.requestId,
       }),
     ],

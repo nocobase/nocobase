@@ -11,6 +11,7 @@ import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icon
 import {
   diagnoseRunJS,
   useFullscreenOverlay,
+  type CodeEditorRevealTarget,
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
@@ -20,6 +21,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 
 import { commitHistoryDefaultLimit } from '../../../shared/vsc-file/constants';
+import { createLightExtensionProblemFactory } from '../../../shared/problems';
+import type { LightExtensionProblem } from '../../../shared/types';
 import type { RunJSCompileDiagnostic } from './types';
 import { useT } from '../locale';
 import {
@@ -28,7 +31,7 @@ import {
   ConsolePanel,
   FilesPanel,
   RestoreVersionModal,
-  SaveDiagnosticsModal,
+  SaveProblemsModal,
   SaveVersionModal,
   VersionHistoryDock,
 } from './RunJSStudioComponents';
@@ -156,6 +159,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const historyRequestSeqRef = useRef(0);
   const consoleSeqRef = useRef(0);
   const latestWorkspaceSnapshotRef = useRef('');
+  const revealRequestSequenceRef = useRef(0);
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const studioRootRef = useRef<HTMLDivElement>(null);
@@ -187,6 +191,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [previewDiagnostics, setPreviewDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnostics, setSaveDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnosticsOpen, setSaveDiagnosticsOpen] = useState(false);
+  const [revealTarget, setRevealTarget] = useState<CodeEditorRevealTarget>();
   const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
   const [selectedDiffPath, setSelectedDiffPath] = useState<string | undefined>();
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
@@ -210,6 +215,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
   const saveSummary = summarizeWorkspaceChanges(baseFiles, files);
   const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version);
+  const visibleSaveProblems = useMemo(
+    () =>
+      adaptRunJSCompileDiagnosticsToProblems(
+        saveDiagnostics.length > 0 ? saveDiagnostics : previewDiagnostics,
+        currentPreviewSnapshotKey,
+      ),
+    [currentPreviewSnapshotKey, previewDiagnostics, saveDiagnostics],
+  );
   const showDiff = activeTab === 'diff';
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const runJSModelUse =
@@ -417,6 +430,25 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setActivePath(path);
     setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
   }, []);
+
+  const revealProblemSource = useCallback(
+    (problem: LightExtensionProblem) => {
+      if (!problem.path || !problem.range?.start || !files.some((file) => file.path === problem.path)) {
+        return;
+      }
+      revealRequestSequenceRef.current += 1;
+      openFilePath(problem.path);
+      setRevealTarget({
+        path: problem.path,
+        line: problem.range.start.line,
+        column: problem.range.start.column,
+        requestId: `runjs-problem-reveal:${revealRequestSequenceRef.current}`,
+      });
+      setActiveTab('code');
+      setSaveDiagnosticsOpen(false);
+    },
+    [files, openFilePath],
+  );
 
   const closeOpenFile = useCallback(
     (path: string) => {
@@ -1895,6 +1927,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         openPaths={openPaths}
                         previewing={previewing}
                         readOnly={workspaceEditingDisabled}
+                        revealTarget={revealTarget}
                         runJSModelUse={runJSModelUse}
                         savedFiles={savedFiles}
                         scene={scene}
@@ -1914,8 +1947,15 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                       onClear={clearConsole}
                       onCopy={copyLogs}
                       onJump={(entry) => {
-                        if (entry.path) {
+                        if (entry.path && entry.line && entry.column) {
                           openFilePath(entry.path);
+                          revealRequestSequenceRef.current += 1;
+                          setRevealTarget({
+                            path: entry.path,
+                            line: entry.line,
+                            column: entry.column,
+                            requestId: `runjs-console-reveal:${revealRequestSequenceRef.current}`,
+                          });
                           setActiveTab('code');
                         }
                       }}
@@ -1988,18 +2028,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         versionMessage={versionMessage}
       />
 
-      <SaveDiagnosticsModal
-        diagnostics={saveDiagnostics.length > 0 ? saveDiagnostics : previewDiagnostics}
+      <SaveProblemsModal
         onCancel={() => setSaveDiagnosticsOpen(false)}
-        onJump={(diagnostic) => {
-          if (!diagnostic.path) {
-            return;
-          }
-          openFilePath(diagnostic.path);
-          setActiveTab('code');
-          setSaveDiagnosticsOpen(false);
-        }}
+        onJump={revealProblemSource}
         open={saveDiagnosticsOpen}
+        problems={visibleSaveProblems}
         t={t}
       />
 
@@ -2019,5 +2052,35 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         t={t}
       />
     </div>
+  );
+}
+
+function adaptRunJSCompileDiagnosticsToProblems(
+  diagnostics: RunJSCompileDiagnostic[],
+  snapshotId: string,
+): LightExtensionProblem[] {
+  const createProblem = createLightExtensionProblemFactory({
+    snapshotId,
+    requestId: `runjs-studio:${snapshotId}`,
+    source: 'runjs-compiler',
+    phase: 'compile',
+  });
+  return diagnostics.map((diagnostic) =>
+    createProblem({
+      code: diagnostic.code || diagnostic.ruleId || 'RUNJS_COMPILE_FAILED',
+      severity: diagnostic.severity === 'error' ? 'error' : 'warning',
+      message: diagnostic.message,
+      path: diagnostic.path,
+      range:
+        diagnostic.line || diagnostic.column
+          ? {
+              start: {
+                line: Math.max(1, diagnostic.line || 1),
+                column: Math.max(1, diagnostic.column || 1),
+              },
+            }
+          : undefined,
+      details: diagnostic.details,
+    }),
   );
 }

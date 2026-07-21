@@ -16,7 +16,7 @@ import {
   type CompletionSource,
 } from '@codemirror/autocomplete';
 import { json } from '@codemirror/lang-json';
-import { forceLinting, lintGutter } from '@codemirror/lint';
+import { forceLinting, forEachDiagnostic, lintGutter, type Diagnostic } from '@codemirror/lint';
 import { Compartment, EditorSelection, EditorState, Prec, type Extension } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
@@ -40,6 +40,7 @@ import {
   type CodeEditorTypeScriptProjectRef,
 } from '../typescriptProject';
 import { resolveTooltipParent } from './tooltipParent';
+import type { CodeEditorDiagnostic, CodeEditorRevealTarget } from '../types';
 
 const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
   if (completionStatus(view.state) === 'pending') return true;
@@ -136,6 +137,8 @@ export const EditorCore: React.FC<{
   typescriptProjectRef?: CodeEditorTypeScriptProjectRef;
   language?: string;
   jsonSchema?: CodeEditorJsonSchema;
+  onDiagnosticsChange?: (diagnostics: CodeEditorDiagnostic[]) => void;
+  revealTarget?: CodeEditorRevealTarget;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -152,11 +155,15 @@ export const EditorCore: React.FC<{
   typescriptProjectRef,
   language,
   jsonSchema,
+  onDiagnosticsChange,
+  revealTarget,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
   const readonlyRef = useRef(readonly);
+  const onDiagnosticsChangeRef = useRef(onDiagnosticsChange);
+  const lastDiagnosticsKeyRef = useRef('');
   const completionSourceRef = useRef(completionSource);
   const extraCompletionsRef = useRef(extraCompletions);
   const jsonSchemaRef = useRef<CodeEditorJsonSchema | undefined>(jsonSchema) as CodeEditorJsonSchemaRef;
@@ -176,6 +183,7 @@ export const EditorCore: React.FC<{
   jsonSchemaRef.current = jsonSchema;
   stableTypeScriptProjectRef.current = typescriptProjectRef?.current;
   readonlyRef.current = readonly;
+  onDiagnosticsChangeRef.current = onDiagnosticsChange;
 
   const dynamicCompletionSource = useMemo<CompletionSource>(() => {
     return (context) => {
@@ -270,6 +278,12 @@ export const EditorCore: React.FC<{
             } catch (_) {
               // Ignore host callbacks so editor input stays responsive.
             }
+          }
+          const diagnostics = collectCodeEditorDiagnostics(update.state);
+          const diagnosticsKey = JSON.stringify(diagnostics);
+          if (diagnosticsKey !== lastDiagnosticsKeyRef.current) {
+            lastDiagnosticsKeyRef.current = diagnosticsKey;
+            onDiagnosticsChangeRef.current?.(diagnostics);
           }
         }),
       ],
@@ -384,6 +398,15 @@ export const EditorCore: React.FC<{
     });
   }, [value, viewRef]);
 
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !revealTarget) {
+      return;
+    }
+
+    revealCodeEditorTarget(view, revealTarget);
+  }, [revealTarget, viewRef]);
+
   const editorContainerMinHeight =
     typeof minHeight === 'undefined' ? 120 : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
 
@@ -391,3 +414,40 @@ export const EditorCore: React.FC<{
     <div style={{ flex: 1, minHeight: editorContainerMinHeight, minWidth: 0, overflow: 'hidden' }} ref={editorRef} />
   );
 };
+
+export function revealCodeEditorTarget(view: EditorView, target: CodeEditorRevealTarget): void {
+  const lineNumber = Math.min(Math.max(1, Math.trunc(target.line)), view.state.doc.lines);
+  const line = view.state.doc.line(lineNumber);
+  const columnOffset = Math.max(0, Math.trunc(target.column) - 1);
+  const position = Math.min(line.from + columnOffset, line.to);
+  view.dispatch({
+    selection: { anchor: position },
+    effects: EditorView.scrollIntoView(position, { y: 'center' }),
+  });
+  view.focus();
+}
+
+function collectCodeEditorDiagnostics(state: EditorState): CodeEditorDiagnostic[] {
+  const diagnostics: CodeEditorDiagnostic[] = [];
+  forEachDiagnostic(state, (diagnostic, from, to) => {
+    const startLine = state.doc.lineAt(from);
+    const endLine = state.doc.lineAt(to);
+    const code = (diagnostic as Diagnostic & { code?: number | string }).code;
+    diagnostics.push({
+      from,
+      to,
+      start: {
+        line: startLine.number,
+        column: from - startLine.from + 1,
+      },
+      end: {
+        line: endLine.number,
+        column: to - endLine.from + 1,
+      },
+      severity: diagnostic.severity,
+      message: diagnostic.message,
+      ...(typeof code === 'number' || typeof code === 'string' ? { code } : {}),
+    });
+  });
+  return diagnostics;
+}
