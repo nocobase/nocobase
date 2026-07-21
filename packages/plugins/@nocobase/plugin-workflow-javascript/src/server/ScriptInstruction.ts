@@ -213,7 +213,7 @@ export default class ScriptInstruction extends Instruction {
             return;
           }
           job.set(jobResult);
-          this.workflow.resume(job);
+          await this.workflow.resume(job).catch(() => {});
         });
       });
   }

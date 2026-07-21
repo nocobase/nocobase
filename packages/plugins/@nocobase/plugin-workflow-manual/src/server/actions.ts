@@ -8,107 +8,14 @@
  */
 
 import actions, { Context, utils } from '@nocobase/actions';
-import type { Model } from '@nocobase/database';
-import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, {
+  EXECUTION_STATUS,
+  getExecutionLockKey,
+  isLockAcquireError,
+  JOB_STATUS,
+} from '@nocobase/plugin-workflow';
 
 import ManualInstruction from './ManualInstruction';
-
-type ManualTaskModel = Model & {
-  id: number | string;
-  userId: number | string;
-  jobId: number | string;
-  status: number;
-  result?: unknown;
-  job: {
-    status: number;
-    result?: unknown;
-    set(values: { status: number; result: unknown }): void;
-    save(): Promise<void>;
-  };
-  node: {
-    config: {
-      mode?: number;
-    };
-  };
-};
-
-type StatusDistribution = {
-  status: number;
-  count: number;
-};
-
-function getSubmittedRatio(tasks: ManualTaskModel[]) {
-  if (!tasks.length) {
-    return 0;
-  }
-  const submitted = tasks.reduce((count, item) => (item.status !== JOB_STATUS.PENDING ? count + 1 : count), 0);
-  return submitted / tasks.length;
-}
-
-function getSingleModeStatus(distribution: StatusDistribution[]) {
-  return distribution.find((item) => item.status !== JOB_STATUS.PENDING && item.count > 0)?.status ?? null;
-}
-
-function getAllModeStatus(distribution: StatusDistribution[], assignees: Array<number | string>) {
-  const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
-  if (resolved && resolved.count === assignees.length) {
-    return JOB_STATUS.RESOLVED;
-  }
-  const rejected = distribution.find((item) => item.status < JOB_STATUS.PENDING);
-  if (rejected && rejected.count) {
-    return rejected.status;
-  }
-
-  return null;
-}
-
-function getAnyModeStatus(distribution: StatusDistribution[], assignees: Array<number | string>) {
-  const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
-  if (resolved && resolved.count) {
-    return JOB_STATUS.RESOLVED;
-  }
-  const rejectedCount = distribution.reduce(
-    (count, item) => (item.status < JOB_STATUS.PENDING ? count + item.count : count),
-    0,
-  );
-  if (rejectedCount === assignees.length) {
-    return JOB_STATUS.REJECTED;
-  }
-
-  return null;
-}
-
-async function updateJobByManualTask(task: ManualTaskModel, context: Context) {
-  const mode = task.node.config.mode ?? 0;
-  const tasks = await context.db.getModel<ManualTaskModel>('workflowManualTasks').findAll({
-    where: {
-      jobId: task.jobId,
-    },
-  });
-  const assignees: Array<number | string> = [];
-  const distributionMap = new Map<number, number>();
-
-  for (const item of tasks) {
-    distributionMap.set(item.status, (distributionMap.get(item.status) ?? 0) + 1);
-    assignees.push(item.userId);
-  }
-
-  const distribution = Array.from(distributionMap.entries()).map(([status, count]) => ({
-    status,
-    count,
-  }));
-  const status =
-    mode === 1
-      ? getAllModeStatus(distribution, assignees)
-      : mode === -1
-        ? getAnyModeStatus(distribution, assignees)
-        : getSingleModeStatus(distribution);
-
-  task.job.set({
-    status: status ?? JOB_STATUS.PENDING,
-    result: mode ? getSubmittedRatio(tasks) : task.result ?? task.job.result,
-  });
-}
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
@@ -191,36 +98,64 @@ export async function submit(context: Context, next) {
     },
   });
 
-  task.set({
-    status: actionItem.status,
-    result: actionItem.status
-      ? { [formKey]: { ...values.result[formKey], ...presetValues }, _: actionKey }
-      : { ...(task.result ?? {}), ...values.result },
-  });
-  task.changed('result', true);
-
   const handler = instruction.formTypes.get(forms[formKey].type);
-  if (handler && task.status) {
-    await handler.call(instruction, task, forms[formKey], processor);
-  }
+  let shouldResume = false;
 
-  await task.save();
-  await updateJobByManualTask(task as ManualTaskModel, context);
-  await task.job.save();
+  try {
+    const lock = await context.app.lockManager.tryAcquire(getExecutionLockKey(task.execution.id));
+    await lock.runExclusive(async () => {
+      await context.db.sequelize.transaction(async (transaction) => {
+        await Promise.all([
+          task.reload({ transaction }),
+          task.job.reload({ transaction }),
+          task.execution.reload({ transaction }),
+        ]);
+        if (
+          task.status !== JOB_STATUS.PENDING ||
+          task.job.status !== JOB_STATUS.PENDING ||
+          task.execution.status !== EXECUTION_STATUS.STARTED
+        ) {
+          return context.throw(400);
+        }
+
+        task.set({
+          status: actionItem.status,
+          result: actionItem.status
+            ? { [formKey]: { ...values.result[formKey], ...presetValues }, _: actionKey }
+            : { ...(task.result ?? {}), ...values.result },
+        });
+        task.changed('result', true);
+
+        if (handler && task.status) {
+          await handler.call(instruction, task, forms[formKey], processor);
+        }
+
+        await task.save({ transaction });
+        await instruction.updateJobByManualTasks(task.job, task.node, context.db, task, transaction);
+        await task.job.save({ transaction });
+        shouldResume = task.job.status !== JOB_STATUS.PENDING;
+      });
+    }, 60_000);
+  } catch (error) {
+    if (isLockAcquireError(error)) {
+      return context.throw(409, 'Execution is being processed');
+    }
+    throw error;
+  }
 
   context.body = task;
   context.status = 202;
 
   await next();
 
-  if (task.execution.status !== EXECUTION_STATUS.STARTED) {
+  if (!shouldResume) {
     return;
   }
 
   // NOTE: resume the process and no `await` for quick returning
   processor.logger.info(`manual node (${task.nodeId}) action trigger execution (${task.execution.id}) to resume`);
 
-  plugin.resume(task.job);
+  plugin.resume(task.job).catch(() => undefined);
 }
 
 export async function listMine(context: Context, next) {

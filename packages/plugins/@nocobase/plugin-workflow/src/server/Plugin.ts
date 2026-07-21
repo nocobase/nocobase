@@ -175,7 +175,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.dispatcher.recover();
+      this.dispatcher.recover({ gracePeriod: 60_000 });
     }, 300_000);
 
     await this.timeoutManager.load();
@@ -517,19 +517,43 @@ export default class PluginWorkflowServer extends Plugin {
     return this.dispatcher.recover();
   }
 
+  /**
+   * Persist the current job state and publish a poke that evaluates that state.
+   *
+   * PENDING resume calls are valid for instructions such as delay and sequential approval.
+   * Callers that aggregate multiple user actions must only call this method when their
+   * atomic update changes the job from PENDING to a terminal status.
+   * Persistence and queue publication failures are logged and rethrown to awaiting callers.
+   */
   public async resume(job: JobModel): Promise<void> {
-    if (job.changed()) {
-      await job.save();
-    }
-
     const executionId = job.executionId ?? job.execution?.id;
     if (executionId == null) {
       this.getLogger('dispatcher').warn(`execution id of job (${job.id}) not found, resume ignored`);
       return;
     }
 
-    this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) published to queue`);
-    await this.dispatcher.enqueue({ executionId, jobId: job.id });
+    try {
+      if (job.changed()) {
+        await job.save();
+      }
+    } catch (error) {
+      this.getLogger('dispatcher').error(
+        `persisting job (${job.id}) before resuming execution (${executionId}) failed`,
+        { error, executionId, jobId: job.id },
+      );
+      throw error;
+    }
+
+    try {
+      await this.dispatcher.enqueue({ executionId, jobId: job.id });
+      this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) published to queue`);
+    } catch (error) {
+      this.getLogger('dispatcher').error(
+        `publishing resume task for execution (${executionId}) from job (${job.id}) failed`,
+        { error, executionId, jobId: job.id },
+      );
+      throw error;
+    }
   }
 
   /**

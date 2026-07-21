@@ -8,8 +8,10 @@
  */
 
 import Joi from 'joi';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
-import WorkflowPlugin, { Processor, JOB_STATUS, Instruction } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import type { FlowNodeModel, JobModel } from '@nocobase/plugin-workflow';
 
 import initFormTypes, { FormHandler } from './forms';
 
@@ -29,6 +31,50 @@ export interface ManualConfig {
   title?: string;
 }
 
+type ManualTaskModel = Model & {
+  userId: number | string;
+  status: number;
+  result?: unknown;
+};
+
+type StatusDistribution = {
+  status: number;
+  count: number;
+};
+
+function getSubmittedRatio(tasks: ManualTaskModel[]) {
+  if (!tasks.length) {
+    return 0;
+  }
+  const submitted = tasks.reduce((count, item) => (item.status !== JOB_STATUS.PENDING ? count + 1 : count), 0);
+  return submitted / tasks.length;
+}
+
+function getSingleModeStatus(distribution: StatusDistribution[]) {
+  return distribution.find((item) => item.status !== JOB_STATUS.PENDING && item.count > 0)?.status ?? null;
+}
+
+function getAllModeStatus(distribution: StatusDistribution[], assignees: Array<number | string>) {
+  const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
+  if (resolved?.count === assignees.length) {
+    return JOB_STATUS.RESOLVED;
+  }
+  const rejected = distribution.find((item) => item.status < JOB_STATUS.PENDING);
+  return rejected?.count ? rejected.status : null;
+}
+
+function getAnyModeStatus(distribution: StatusDistribution[], assignees: Array<number | string>) {
+  const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
+  if (resolved?.count) {
+    return JOB_STATUS.RESOLVED;
+  }
+  const rejectedCount = distribution.reduce(
+    (count, item) => (item.status < JOB_STATUS.PENDING ? count + item.count : count),
+    0,
+  );
+  return rejectedCount === assignees.length ? JOB_STATUS.REJECTED : null;
+}
+
 export default class extends Instruction {
   formTypes = new Registry<FormHandler>();
 
@@ -36,6 +82,42 @@ export default class extends Instruction {
     super(workflow);
 
     initFormTypes(this);
+  }
+
+  async updateJobByManualTasks(
+    job: JobModel,
+    node: FlowNodeModel,
+    database: Database = this.workflow.app.db,
+    latestTask?: ManualTaskModel,
+    transaction?: Transaction,
+  ) {
+    const mode = (node.config as ManualConfig).mode ?? 0;
+    const tasks = await database.getModel<ManualTaskModel>('workflowManualTasks').findAll({
+      where: {
+        jobId: job.id,
+      },
+      transaction,
+    });
+    const assignees: Array<number | string> = [];
+    const distributionMap = new Map<number, number>();
+
+    for (const task of tasks) {
+      distributionMap.set(task.status, (distributionMap.get(task.status) ?? 0) + 1);
+      assignees.push(task.userId);
+    }
+
+    const distribution = Array.from(distributionMap.entries()).map(([status, count]) => ({ status, count }));
+    const status =
+      mode === 1
+        ? getAllModeStatus(distribution, assignees)
+        : mode === -1
+          ? getAnyModeStatus(distribution, assignees)
+          : getSingleModeStatus(distribution);
+
+    job.set({
+      status: status ?? JOB_STATUS.PENDING,
+      result: mode ? getSubmittedRatio(tasks) : latestTask?.result ?? job.result,
+    });
   }
 
   async run(node, prevJob, processor: Processor) {
@@ -71,7 +153,8 @@ export default class extends Instruction {
     return job;
   }
 
-  async resume(node, job, processor: Processor) {
+  async resume(node: FlowNodeModel, job: JobModel, processor: Processor) {
+    await this.updateJobByManualTasks(job, node);
     processor.logger.debug(`manual resume job and next status: ${job.status}`);
     return job;
   }

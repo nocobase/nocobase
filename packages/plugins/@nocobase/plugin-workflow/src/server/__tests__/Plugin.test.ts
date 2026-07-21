@@ -17,7 +17,7 @@ import { vi } from 'vitest';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
-import type { ExecutionModel } from '../types';
+import type { ExecutionModel, JobModel } from '../types';
 
 describe('workflow > Plugin', () => {
   let app: MockServer;
@@ -346,6 +346,73 @@ describe('workflow > Plugin', () => {
       return queues[app.eventQueue.getFullChannel(plugin.channelPendingExecution)] ?? [];
     };
 
+    it('should preserve resume save errors for awaiting callers', async () => {
+      const error = new Error('simulated save failure');
+      const job = {
+        id: 'job-1',
+        executionId: 'execution-1',
+        changed: () => true,
+        save: vi.fn().mockRejectedValue(error),
+      } as unknown as JobModel;
+
+      await expect(plugin.resume(job)).rejects.toBe(error);
+    });
+
+    it('should preserve resume publish errors for awaiting callers', async () => {
+      type EnqueueDispatcher = DispatcherState & {
+        enqueue(task: { executionId: number | string; jobId: number | string }): Promise<void>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: EnqueueDispatcher }).dispatcher;
+      const error = new Error('simulated publish failure');
+      const enqueue = vi.spyOn(dispatcher, 'enqueue').mockRejectedValueOnce(error);
+      const job = {
+        id: 'job-1',
+        executionId: 'execution-1',
+        changed: () => false,
+      } as unknown as JobModel;
+
+      await expect(plugin.resume(job)).rejects.toBe(error);
+      expect(enqueue).toHaveBeenCalledWith({ executionId: job.executionId, jobId: job.id });
+    });
+
+    it('should serialize queue callbacks delivered concurrently by an adapter', async () => {
+      type SerialDispatcher = DispatcherState & {
+        onQueueTask(event: { executionId: string }, options?: unknown): Promise<void>;
+        resolveTask(task: { executionId: string }): Promise<null>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: SerialDispatcher }).dispatcher;
+      const calls: string[] = [];
+      let notifyFirstEntered!: () => void;
+      let releaseFirst!: () => void;
+      const firstEntered = new Promise<void>((resolve) => {
+        notifyFirstEntered = resolve;
+      });
+      const firstBlocked = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      const resolveTask = vi.spyOn(dispatcher, 'resolveTask').mockImplementation(async (task) => {
+        calls.push(`start:${task.executionId}`);
+        if (task.executionId === 'first') {
+          notifyFirstEntered();
+          await firstBlocked;
+        }
+        calls.push(`end:${task.executionId}`);
+        return null;
+      });
+
+      const first = dispatcher.onQueueTask({ executionId: 'first' });
+      await firstEntered;
+      const second = dispatcher.onQueueTask({ executionId: 'second' });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(calls).toEqual(['start:first']);
+
+      releaseFirst();
+      await Promise.all([first, second]);
+      expect(calls).toEqual(['start:first', 'end:first', 'start:second', 'end:second']);
+      expect(dispatcher.executing).toBeNull();
+      resolveTask.mockRestore();
+    });
+
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
       'should acquire queueing execution only once under concurrent prepare',
       async () => {
@@ -365,7 +432,7 @@ describe('workflow > Plugin', () => {
         })) as ExecutionModel;
 
         type QueueingDispatcher = {
-          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+          prepare(input: ExecutionModel, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         };
         const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
 
@@ -397,7 +464,7 @@ describe('workflow > Plugin', () => {
       });
 
       type QueueingDispatcher = {
-        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        prepare(input: ExecutionModel, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
       };
       const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
       const transaction = db.sequelize.transaction;
@@ -548,7 +615,7 @@ describe('workflow > Plugin', () => {
     it('should stop retrying queued task after repeated unexpected queue errors', async () => {
       type RecoveringDispatcher = {
         enqueue(task: { executionId: number | string; jobId?: number | string; rerun?: unknown }): Promise<void>;
-        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        prepare(input: ExecutionModel, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         executing: Promise<unknown> | null;
         saving: Promise<unknown> | null;
       };
@@ -872,37 +939,6 @@ describe('workflow > Plugin', () => {
       expect(dispatcher.isConcurrentAcquireError(error)).toBe(true);
     });
 
-    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
-      'should acquire queueing execution only once under concurrent recovery',
-      async () => {
-        const w1 = await WorkflowModel.create({
-          enabled: true,
-          type: 'asyncTrigger',
-        });
-
-        const e1 = await w1.createExecution({
-          key: w1.key,
-          context: {},
-          dispatched: false,
-          status: EXECUTION_STATUS.QUEUEING,
-        });
-
-        type QueueingDispatcher = {
-          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
-        };
-        const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
-
-        const acquired = await Promise.all([dispatcher.prepare(null), dispatcher.prepare(null)]);
-
-        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
-        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
-
-        await e1.reload();
-        expect(e1.dispatched).toBe(true);
-        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
-      },
-    );
-
     it('should skip non-queueing undispatched executions when fetching from db', async () => {
       type DbFetchDispatcher = {
         recover(): Promise<void>;
@@ -955,6 +991,113 @@ describe('workflow > Plugin', () => {
       expect(queueing.dispatched).toBe(true);
 
       await dispatcher.executing?.catch(() => null);
+    });
+
+    it('should publish all queueing executions during one recovery', async () => {
+      const dispatcher = (plugin as unknown as { dispatcher: { recover(): Promise<void> } }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await workflow.createNode({ type: 'echo' });
+      const executions = await Promise.all(
+        Array.from({ length: 3 }, (_, index) =>
+          workflow.createExecution({
+            key: workflow.key,
+            context: { index },
+            dispatched: false,
+            status: EXECUTION_STATUS.QUEUEING,
+          }),
+        ),
+      );
+
+      await Promise.all([dispatcher.recover(), dispatcher.recover()]);
+
+      const processed = await waitFor(
+        async () => {
+          await Promise.all(executions.map((execution) => execution.reload()));
+          return executions;
+        },
+        (items) => items.every((execution) => execution.status === EXECUTION_STATUS.RESOLVED),
+      );
+      expect(processed.map((execution) => execution.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
+      for (const execution of executions) {
+        expect(await execution.getJobs()).toHaveLength(1);
+      }
+    });
+
+    it('should skip recently created queueing executions during periodic recovery', async () => {
+      type RecoveringDispatcher = {
+        recover(options?: { gracePeriod?: number }): Promise<void>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await workflow.createNode({ type: 'echo' });
+      const oldExecution = await workflow.createExecution({
+        key: workflow.key,
+        context: { old: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+      await sleep(1200);
+      const recentExecution = await workflow.createExecution({
+        key: workflow.key,
+        context: { recent: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      await dispatcher.recover({ gracePeriod: 1000 });
+
+      await waitFor(
+        async () => {
+          await oldExecution.reload();
+          return [oldExecution] as ExecutionModel[];
+        },
+        ([execution]) => execution.status === EXECUTION_STATUS.RESOLVED,
+      );
+      await recentExecution.reload();
+      expect(oldExecution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(recentExecution.status).toBe(EXECUTION_STATUS.QUEUEING);
+      expect(recentExecution.dispatched).toBe(false);
+    });
+
+    it('should skip recovery when another instance holds the recovery lock', async () => {
+      const dispatcher = (plugin as unknown as { dispatcher: { recover(): Promise<void> } }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+      const lock = await app.lockManager.tryAcquire(`workflow:recover:${app.name}`);
+
+      try {
+        await dispatcher.recover();
+        await execution.reload();
+        expect(execution.status).toBe(EXECUTION_STATUS.QUEUEING);
+        expect(execution.dispatched).toBe(false);
+      } finally {
+        await lock.release();
+      }
+
+      await dispatcher.recover();
+      await waitFor(
+        async () => {
+          await execution.reload();
+          return [execution] as ExecutionModel[];
+        },
+        ([item]) => item.status === EXECUTION_STATUS.RESOLVED,
+      );
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
     it('multiple triggers in same event', async () => {
