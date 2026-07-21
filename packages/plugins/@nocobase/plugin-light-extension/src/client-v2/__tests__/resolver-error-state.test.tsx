@@ -21,20 +21,19 @@ const SOURCE_BINDING = {
 describe('LightExtensionRunJSResolver error state', () => {
   it('uses selectable entry metadata as the binding title', async () => {
     const api = {
-      request: vi.fn(async (options: { url: string }) => ({
+      request: vi.fn(async () => ({
         data: {
-          data:
-            options.url === 'lightExtensionRepos:list'
-              ? [{ id: 'repo_sales', name: 'sales-tools', title: 'Sales tools' }]
-              : [
-                  {
-                    id: 'entry_sales',
-                    repoId: 'repo_sales',
-                    kind: 'js-block',
-                    entryName: 'sales-kpi',
-                    title: 'Sales KPI',
-                  },
-                ],
+          data: [
+            {
+              id: 'entry_sales',
+              repoId: 'repo_sales',
+              repoName: 'sales-tools',
+              repoTitle: 'Sales tools',
+              kind: 'js-block',
+              entryName: 'sales-kpi',
+              title: 'Sales KPI',
+            },
+          ],
         },
       })),
     };
@@ -45,14 +44,10 @@ describe('LightExtensionRunJSResolver error state', () => {
         sourceMode: 'light-extension',
         sourceBinding: SOURCE_BINDING,
       }),
-    ).resolves.toBe('Sales tools / sales-kpi');
+    ).resolves.toBe('Sales tools / Sales KPI');
     expect(api.request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
       method: 'post',
-      data: {
-        repoId: 'repo_sales',
-        kind: 'js-block',
-      },
     });
   });
 

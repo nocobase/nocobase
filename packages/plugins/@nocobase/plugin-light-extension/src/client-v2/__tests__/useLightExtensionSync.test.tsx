@@ -11,6 +11,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionSyncOperationResult } from '../../shared/types';
+import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 import { useLightExtensionSync } from '../hooks/useLightExtensionSync';
 import { getOrCreateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { getLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
@@ -170,5 +171,71 @@ describe('useLightExtensionSync', () => {
       settingsSchemaHash: 'schema-2',
     });
     expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
+  });
+
+  it('invalidates descriptor, runtime, and catalog caches after createFromGit succeeds', async () => {
+    let catalogVersion = 0;
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        catalogVersion += 1;
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                id: `entry-${catalogVersion}`,
+                repoId: 'repo-1',
+                kind: 'js-block',
+                entryName: 'sales',
+                entryPath: 'src/sales.tsx',
+                title: null,
+                category: null,
+                settingsSchema: null,
+                settingsSchemaHash: null,
+                settingsDefaultsHash: null,
+                runtimeCodeHash: 'runtime-1',
+                runtimeAvailable: true,
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: operationResult } });
+    });
+    const runtimeInvalidator = getOrCreateLightExtensionRuntimeCache(mocks.api, () => ({
+      invalidateRepo: vi.fn(),
+      clear: vi.fn(),
+    }));
+    runtimeInvalidator.invalidateRepo.mockClear();
+    const descriptorCache = getLightExtensionSettingsDescriptorCache(mocks.api);
+    descriptorCache.primeScope('repo-1', 'js-block', [
+      {
+        id: 'entry-1',
+        repoId: 'repo-1',
+        kind: 'js-block',
+        entryName: 'sales',
+        entryPath: 'src/sales.tsx',
+        title: null,
+        category: null,
+        settingsSchema: null,
+        settingsSchemaHash: null,
+        settingsDefaultsHash: null,
+        runtimeCodeHash: 'runtime-1',
+        runtimeAvailable: true,
+      },
+    ]);
+    const { result } = renderHook(() => useLightExtensionSync());
+
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
+    await act(async () => {
+      await result.current.createFromGit({
+        provider: 'github',
+        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        name: 'sales',
+      });
+    });
+
+    expect(descriptorCache.get({ repoId: 'repo-1', entryId: 'entry-1', kind: 'js-block' })).toBeUndefined();
+    expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledWith('repo-1');
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
   });
 });

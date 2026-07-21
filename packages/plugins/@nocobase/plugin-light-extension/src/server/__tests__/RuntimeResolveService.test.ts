@@ -156,6 +156,66 @@ describe('RuntimeResolveService', () => {
     ]);
   });
 
+  it('loads selectable entries and repo runtime metadata with a constant query count', async () => {
+    const { service, entriesRepository, reposRepository } = createRuntimeResolveService();
+    entriesRepository.find.mockResolvedValue(
+      Array.from({ length: 100 }, (_, index) =>
+        createModel({
+          ...createEntryRecord(),
+          id: `lee_${index}`,
+          repoId: `ler_${index}`,
+        }),
+      ),
+    );
+    reposRepository.find.mockResolvedValue(
+      Array.from({ length: 100 }, (_, index) =>
+        createModel({ id: `ler_${index}`, lifecycleStatus: 'enabled', headCommitId: 'vsc_commit_1' }),
+      ),
+    );
+
+    await expect(service.listSelectableEntries()).resolves.toHaveLength(100);
+    expect(entriesRepository.find).toHaveBeenCalledOnce();
+    expect(reposRepository.find).toHaveBeenCalledOnce();
+    expect(reposRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fields: ['id', 'lifecycleStatus', 'headCommitId'],
+      }),
+    );
+  });
+
+  it('projects only ACL-visible repo labels and merges the parsed row filter with catalog repo ids', async () => {
+    const { service, reposRepository } = createRuntimeResolveService();
+    reposRepository.find
+      .mockResolvedValueOnce([
+        createModel({ id: 'ler_sales', lifecycleStatus: 'enabled', headCommitId: 'vsc_commit_1' }),
+      ])
+      .mockResolvedValueOnce([createModel({ id: 'ler_sales', title: 'Sales title' })]);
+
+    await expect(
+      service.listSelectableEntries(
+        {},
+        {
+          can: async () => ({
+            params: {
+              fields: ['id', 'title'],
+              filter: { id: '{{ctx.state.visibleRepoId}}' },
+            },
+          }),
+          state: { visibleRepoId: 'ler_sales' },
+        },
+      ),
+    ).resolves.toEqual([expect.objectContaining({ repoId: 'ler_sales', repoTitle: 'Sales title' })]);
+    expect(reposRepository.find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        fields: ['id', 'title'],
+        filter: {
+          $and: [{ id: { $in: ['ler_sales'] } }, { id: 'ler_sales' }],
+        },
+      }),
+    );
+  });
+
   it('rejects runtime bindings whose identity does not match the entry current runtime', async () => {
     const { service } = createRuntimeResolveService();
 
@@ -288,6 +348,13 @@ function createRuntimeResolveService(
 ) {
   const entryRecord = createEntryRecord(options);
   const reposRepository = {
+    find: vi.fn().mockResolvedValue([
+      createModel({
+        id: 'ler_sales',
+        lifecycleStatus: options.repoLifecycleStatus || 'enabled',
+        headCommitId: typeof options.repoHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.repoHeadCommitId,
+      }),
+    ]),
     findOne: vi.fn().mockResolvedValue(
       createModel({
         id: 'ler_sales',
@@ -301,6 +368,7 @@ function createRuntimeResolveService(
     findOne: vi.fn().mockResolvedValue(createModel(entryRecord)),
   };
   const db = {
+    getCollection: vi.fn(() => ({})),
     getRepository: (name: string) => {
       if (name === 'lightExtensionRepos') {
         return reposRepository;

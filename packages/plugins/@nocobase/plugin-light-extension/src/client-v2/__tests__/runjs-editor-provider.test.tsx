@@ -957,7 +957,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(resolverApi.request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
       method: 'post',
-      data: { repoId: 'ler_example', kind: 'js-block' },
     });
     unregisterResolver();
   });

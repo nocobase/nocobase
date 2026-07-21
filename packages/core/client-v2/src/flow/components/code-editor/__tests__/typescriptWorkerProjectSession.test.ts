@@ -10,7 +10,11 @@
 import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createTypeScriptProjectSession, type CodeEditorTypeScriptProject } from '../typescriptProject';
+import {
+  createTypeScriptProjectSession as createProjectSession,
+  type CodeEditorTypeScriptProject,
+  type CodeEditorTypeScriptProjectSession,
+} from '../typescriptProject';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   createRunJSTypeLibraryRegistry,
@@ -25,7 +29,11 @@ import {
   type TypeScriptWorkerRequest,
   type TypeScriptWorkerResponse,
 } from '../typescriptWorkerProtocol';
-import { resolveTypeScriptWorkerUrl, type TypeScriptWorkerFactory } from '../typescriptWorkerProjectSession';
+import {
+  resolveTypeScriptWorkerUrl,
+  WorkerBackedTypeScriptProjectSession,
+  type TypeScriptWorkerFactory,
+} from '../typescriptWorkerProjectSession';
 
 function fakePack(answer = 42): RunJSTypeLibraryPack {
   return {
@@ -64,6 +72,16 @@ function deferred<T>() {
   return { promise, resolve: resolveDeferred };
 }
 
+const sessions = new Set<CodeEditorTypeScriptProjectSession>();
+
+function createTypeScriptProjectSession(
+  options?: Parameters<typeof createProjectSession>[0],
+): CodeEditorTypeScriptProjectSession {
+  const session = createProjectSession(options);
+  sessions.add(session);
+  return session;
+}
+
 type MessageListener = (event: MessageEvent<TypeScriptWorkerOutgoingMessage>) => void;
 type ErrorListener = (event: ErrorEvent) => void;
 
@@ -77,6 +95,7 @@ class InMemoryTypeScriptWorker {
   private readonly runtime = new TypeScriptWorkerRuntime();
   private bridgeRequestId = 0;
   private terminated = false;
+  terminateCount = 0;
 
   private crashedAfterPackRequest = false;
 
@@ -115,6 +134,7 @@ class InMemoryTypeScriptWorker {
   }
 
   terminate(): void {
+    this.terminateCount += 1;
     this.terminated = true;
     this.runtime.disposeAll();
   }
@@ -258,9 +278,70 @@ function inMemoryFactory(
   };
 }
 
-afterEach(() => clearRunJSTypeLibraryPackRegistryForTests());
+afterEach(async () => {
+  for (const session of sessions) session.dispose();
+  await Promise.all([...sessions].map((session) => session.whenDisposed()));
+  sessions.clear();
+  clearRunJSTypeLibraryPackRegistryForTests();
+});
 
 describe('TypeScript worker project session', () => {
+  it('does not create a Worker when an unused session is disposed', async () => {
+    const workerFactory = vi.fn(() => new InMemoryTypeScriptWorker());
+    const session = createTypeScriptProjectSession({ workerFactory });
+
+    session.dispose();
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(workerFactory).not.toHaveBeenCalled();
+  });
+
+  it('terminates a used Worker once and clears retained project state', async () => {
+    const worker = new InMemoryTypeScriptWorker();
+    const workerFactory = vi.fn(() => worker);
+    const session = new WorkerBackedTypeScriptProjectSession(workerFactory);
+    const retainedState = session as unknown as { lastSnapshot: unknown; stateKey: string };
+    const code = 'ctx.logger.info("ready");';
+    sessions.add(session);
+
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(retainedState.lastSnapshot).not.toBeNull();
+    expect(retainedState.stateKey.length).toBeGreaterThan(code.length);
+
+    session.dispose();
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(workerFactory).toHaveBeenCalledTimes(1);
+    expect(worker.terminateCount).toBe(1);
+    expect(retainedState.lastSnapshot).toBeNull();
+    expect(retainedState.stateKey).toBe('');
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(workerFactory).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles pending requests before disposal completes', async () => {
+    const loading = deferred<RunJSTypeLibraryPack>();
+    const registry = createRunJSTypeLibraryRegistry();
+    const loader = vi.fn(() => loading.promise);
+    registry.register({ id: 'fake-lib', libraryName: 'fakeLib', loader, topLevelNames: ['fakeLib'] });
+    const worker = new InMemoryTypeScriptWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    const code = 'ctx.libs.fakeLib.answer;';
+    sessions.add(session);
+
+    const diagnostics = session.getDiagnostics(project(code, registry), code);
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
+
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(await diagnostics).toEqual([]);
+    expect(worker.terminateCount).toBe(1);
+    loading.resolve(fakePack());
+  });
+
   it('loads real built-in React and Ant Design packs through the worker bridge', async () => {
     const code = `
 const element = ctx.React.createElement('div');
@@ -378,8 +459,15 @@ void element; void button;
     const code = 'ctx.logger.info("ready");';
     expect(await session.getDiagnostics(project(code), code)).toEqual([]);
     expect(workers).toHaveLength(2);
+    expect(workers[0].terminateCount).toBe(1);
 
     workers[0].emitError('late error from replaced worker');
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(workers).toHaveLength(2);
+
+    session.dispose();
+    await session.whenDisposed();
+    expect(workers[1].terminateCount).toBe(1);
     expect(await session.getDiagnostics(project(code), code)).toEqual([]);
     expect(workers).toHaveLength(2);
   });
@@ -448,10 +536,13 @@ void element; void button;
     expect(await firstSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 42;', first))).toEqual([]);
     expect(await secondSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second))).toEqual([]);
     firstSession.dispose();
+    await firstSession.whenDisposed();
     expect(firstSession.getDebugState()).toEqual(
       expect.objectContaining({ allFileNames: [], disposed: true, immutableFileCount: 0 }),
     );
     expect(await secondSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second))).toEqual([]);
+    secondSession.dispose();
+    await secondSession.whenDisposed();
   });
 
   it('does not deliver an old worker pack response to a replacement worker with the same bridge id', async () => {

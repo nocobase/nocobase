@@ -17,7 +17,10 @@ import type {
   LightExtensionSelectableEntrySummary,
   LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
-import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import {
+  getOrLoadLightExtensionSelectableCatalog,
+  invalidateLightExtensionRuntimeCache,
+} from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 
 export type ApiRequestOptions = {
@@ -41,13 +44,16 @@ export async function listSelectableLightExtensionEntries(
   api: ApiClientLike,
   input?: LightExtensionSelectableEntriesInput,
 ): Promise<LightExtensionSelectableEntrySummary[]> {
-  const response = await api.request<ResourceResponse<LightExtensionSelectableEntrySummary[]>>({
-    url: 'lightExtensionEntries:listSelectable',
-    method: 'post',
-    data: input,
+  const entries = await getOrLoadLightExtensionSelectableCatalog(api, async () => {
+    const response = await api.request<ResourceResponse<LightExtensionSelectableEntrySummary[]>>({
+      url: 'lightExtensionEntries:listSelectable',
+      method: 'post',
+    });
+    return unwrapResourceResponse(response) || [];
   });
-
-  return unwrapResourceResponse(response) || [];
+  return entries.filter(
+    (entry) => (!input?.repoId || entry.repoId === input.repoId) && (!input?.kind || entry.kind === input.kind),
+  );
 }
 
 export async function getLightExtensionEntry(api: ApiClientLike, entryId: string): Promise<LightExtensionEntryRecord> {

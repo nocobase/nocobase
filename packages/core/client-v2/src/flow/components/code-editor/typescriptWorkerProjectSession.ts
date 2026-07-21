@@ -49,6 +49,8 @@ type PendingRequest = {
   resolve(response: TypeScriptWorkerResponse): void;
 };
 
+type TypeScriptWorkerClientState = 'not-started' | 'running' | 'stopped';
+
 class TypeScriptWorkerUnavailableError extends Error {
   constructor(readonly cause: unknown) {
     super(cause instanceof Error ? cause.message : String(cause));
@@ -190,6 +192,7 @@ class TypeScriptWorkerClient {
   private pending = new Map<number, PendingRequest>();
   private requestId = 0;
   private registry: RunJSTypeLibraryRegistry | null = getDefaultRunJSTypeLibraryRegistry();
+  private state: TypeScriptWorkerClientState = 'not-started';
 
   constructor(private readonly factory: TypeScriptWorkerFactory) {}
 
@@ -212,8 +215,10 @@ class TypeScriptWorkerClient {
   }
 
   reset(reason = 'TypeScript worker terminated.'): void {
-    this.worker?.terminate();
+    const worker = this.worker;
     this.worker = null;
+    if (worker && this.state === 'running') worker.terminate();
+    this.state = 'stopped';
     this.registry = null;
     const error = new Error(reason);
     for (const pending of this.pending.values()) pending.reject(error);
@@ -226,6 +231,7 @@ class TypeScriptWorkerClient {
     try {
       worker = this.factory();
     } catch (error: unknown) {
+      this.state = 'stopped';
       throw new TypeScriptWorkerUnavailableError(error);
     }
     worker.addEventListener('message', (event) => this.onMessage(worker, event.data));
@@ -233,6 +239,7 @@ class TypeScriptWorkerClient {
       if (this.worker === worker) this.reset(event.message || 'TypeScript worker crashed.');
     });
     this.worker = worker;
+    this.state = 'running';
     return worker;
   }
 
@@ -277,6 +284,7 @@ let projectSequence = 0;
 export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
   private readonly client: TypeScriptWorkerClient;
   private readonly projectId = `runjs-typescript-${++projectSequence}`;
+  private disposal: Promise<void> = Promise.resolve();
   private disposed = false;
   private documentVersion = 0;
   private lastDebugState: CodeEditorTypeScriptProjectDebugState = {
@@ -291,13 +299,15 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   private lastInternalError: CodeEditorTypeScriptProjectInternalError | null = null;
   private lastSnapshot: TypeScriptWorkerProjectSnapshot | null = null;
   private latestRequestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
+  private pendingRequestCount = 0;
   private requestSequence = 0;
+  private resolveDisposal: (() => void) | null = null;
   private stateKey = '';
   private workerUnavailable = false;
 
   constructor(
     factory: TypeScriptWorkerFactory = defaultWorkerFactory,
-    private readonly fallback?: CodeEditorTypeScriptProjectSession,
+    private fallback?: CodeEditorTypeScriptProjectSession,
   ) {
     this.client = new TypeScriptWorkerClient(factory);
   }
@@ -308,6 +318,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     currentFileContent?: string,
     explicit = false,
   ): Promise<CompletionResult | null> {
+    if (this.disposed) return null;
     if (this.workerUnavailable) {
       return (await this.fallback?.getCompletionResult(project, position, currentFileContent, explicit)) ?? null;
     }
@@ -343,6 +354,8 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
           explicit,
         ) ?? null
       );
+    } finally {
+      this.finishRequest();
     }
   }
 
@@ -350,6 +363,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     project: CodeEditorTypeScriptProject,
     currentFileContent?: string,
   ): Promise<CodeEditorTypeScriptDiagnostic[]> {
+    if (this.disposed) return [];
     if (this.workerUnavailable) return (await this.fallback?.getDiagnostics(project, currentFileContent)) ?? [];
     const requestId = this.begin('diagnostics');
     try {
@@ -368,10 +382,13 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       return response.result.filter((diagnostic) => !ignoredCodes.has(diagnostic.code));
     } catch (error: unknown) {
       return (await this.useFallback(project, error))?.getDiagnostics(project, currentFileContent) ?? [];
+    } finally {
+      this.finishRequest();
     }
   }
 
   async getHover(project: CodeEditorTypeScriptProject, position: number, currentFileContent?: string) {
+    if (this.disposed) return null;
     if (this.workerUnavailable) return (await this.fallback?.getHover(project, position, currentFileContent)) ?? null;
     const requestId = this.begin('hover');
     try {
@@ -386,6 +403,8 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       return response.result;
     } catch (error: unknown) {
       return (await this.useFallback(project, error))?.getHover(project, position, currentFileContent) ?? null;
+    } finally {
+      this.finishRequest();
     }
   }
 
@@ -400,17 +419,20 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.fallback?.dispose();
-    if (!this.workerUnavailable) {
-      this.client
-        .request({
-          documentVersion: this.documentVersion,
-          kind: 'dispose',
-          projectId: this.projectId,
-        })
-        .then(() => this.client.reset())
-        .catch(() => this.client.reset());
-    }
+    const fallback = this.fallback;
+    this.fallback = undefined;
+    fallback?.dispose();
+    const requestsDisposed =
+      this.pendingRequestCount > 0
+        ? new Promise<void>((resolve) => {
+            this.resolveDisposal = resolve;
+          })
+        : Promise.resolve();
+    this.disposal = Promise.all([fallback?.whenDisposed(), requestsDisposed]).then(() => undefined);
+    this.client.reset('TypeScript project session has been disposed.');
+    this.lastSnapshot = null;
+    this.stateKey = '';
+    this.lastInternalError = null;
     this.lastDebugState = {
       ...this.lastDebugState,
       allFileNames: [],
@@ -424,10 +446,22 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     this.latestRequestIds.clear();
   }
 
+  whenDisposed(): Promise<void> {
+    return this.disposal;
+  }
+
   private begin(kind: 'completion' | 'diagnostics' | 'hover'): number {
+    this.pendingRequestCount += 1;
     const id = ++this.requestSequence;
     this.latestRequestIds.set(kind, id);
     return id;
+  }
+
+  private finishRequest(): void {
+    this.pendingRequestCount -= 1;
+    if (!this.disposed || this.pendingRequestCount !== 0) return;
+    this.resolveDisposal?.();
+    this.resolveDisposal = null;
   }
 
   private isCurrent(kind: 'completion' | 'diagnostics' | 'hover', requestId: number): boolean {
@@ -529,6 +563,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     project: CodeEditorTypeScriptProject,
     error: unknown,
   ): CodeEditorTypeScriptProjectSession | undefined {
+    if (this.disposed) return;
     this.report(project, error);
     if (!this.fallback) return;
     this.workerUnavailable = true;

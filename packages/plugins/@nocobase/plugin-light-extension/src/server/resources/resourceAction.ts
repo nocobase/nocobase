@@ -98,8 +98,11 @@ export function getServiceContext(ctx: LightExtensionResourceContext): LightExte
   const metadata = getRequestMetadata(ctx);
   return {
     actorUserId: metadata.actorUserId,
+    currentUser: ctx.state?.currentUser || ctx.auth?.user,
     requestId: metadata.requestId,
     requestSource: metadata.requestSource,
+    state: ctx.state,
+    timezone: ctx.timezone,
   };
 }
 

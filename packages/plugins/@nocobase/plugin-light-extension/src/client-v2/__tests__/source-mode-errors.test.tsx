@@ -268,7 +268,6 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
       expect(mocks.request).toHaveBeenCalledWith({
         url: 'lightExtensionEntries:listSelectable',
         method: 'post',
-        data: { kind: 'js-page' },
       });
     });
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));

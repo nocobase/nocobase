@@ -692,13 +692,16 @@ async function getSyntacticDiagnosticsWithoutTypeLibraries(
 }
 
 class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
+  private disposal: Promise<void> = Promise.resolve();
   private disposed = false;
   private languageServiceCreationCount = 0;
   private lastInternalError: CodeEditorTypeScriptProjectInternalError | null = null;
   private latestStateGeneration = 0;
   private latestStateKey = '';
+  private pendingRequestCount = 0;
   private projectService: ProjectService | null = null;
   private requestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
+  private resolveDisposal: (() => void) | null = null;
 
   async getCompletionResult(
     project: CodeEditorTypeScriptProject,
@@ -706,6 +709,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     currentFileContent?: string,
     explicit = false,
   ): Promise<CompletionResult | null> {
+    if (this.disposed) return null;
+    this.pendingRequestCount += 1;
     const request = this.beginRequest('completion', project, currentFileContent);
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
@@ -713,8 +718,11 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
       const result = getCompletionResultFromService(service, position, explicit, project.rewriteBuiltInAutoImports);
       return this.isCurrentRequest('completion', request) ? result : null;
     } catch (error) {
+      if (this.disposed) return null;
       this.reportInternalError(project, error);
       return null;
+    } finally {
+      this.finishRequest();
     }
   }
 
@@ -722,6 +730,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     project: CodeEditorTypeScriptProject,
     currentFileContent?: string,
   ): Promise<CodeEditorTypeScriptDiagnostic[]> {
+    if (this.disposed) return [];
+    this.pendingRequestCount += 1;
     const request = this.beginRequest('diagnostics', project, currentFileContent);
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
@@ -729,12 +739,15 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
       const diagnostics = filterIgnoredDiagnostics(project, getDiagnosticsFromService(service));
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     } catch (error) {
+      if (this.disposed) return [];
       this.reportInternalError(project, error);
       const diagnostics = filterIgnoredDiagnostics(
         project,
         await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent),
       );
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
+    } finally {
+      this.finishRequest();
     }
   }
 
@@ -743,6 +756,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     position: number,
     currentFileContent?: string,
   ): Promise<CodeEditorTypeScriptQuickInfoResult | null> {
+    if (this.disposed) return null;
+    this.pendingRequestCount += 1;
     const request = this.beginRequest('hover', project, currentFileContent);
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
@@ -756,8 +771,11 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
         to: quickInfo.textSpan ? quickInfo.textSpan.start + quickInfo.textSpan.length : position,
       };
     } catch (error) {
+      if (this.disposed) return null;
       this.reportInternalError(project, error);
       return null;
+    } finally {
+      this.finishRequest();
     }
   }
 
@@ -785,7 +803,25 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     this.projectService?.service.dispose();
     this.projectService = null;
     this.requestIds.clear();
+    this.latestStateKey = '';
+    this.lastInternalError = null;
     this.latestStateGeneration += 1;
+    if (this.pendingRequestCount > 0) {
+      this.disposal = new Promise((resolve) => {
+        this.resolveDisposal = resolve;
+      });
+    }
+  }
+
+  whenDisposed(): Promise<void> {
+    return this.disposal;
+  }
+
+  private finishRequest(): void {
+    this.pendingRequestCount -= 1;
+    if (!this.disposed || this.pendingRequestCount !== 0) return;
+    this.resolveDisposal?.();
+    this.resolveDisposal = null;
   }
 
   private beginRequest(

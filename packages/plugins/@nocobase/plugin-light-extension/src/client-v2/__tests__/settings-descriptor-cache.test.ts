@@ -19,17 +19,6 @@ import {
   invalidateLightExtensionSettingsDescriptorCache,
 } from '../resolvers/LightExtensionSettingsDescriptorCache';
 
-const REPO = {
-  id: 'repo_sales',
-  name: 'sales',
-  normalizedName: 'sales',
-  title: 'Sales',
-  description: null,
-  lifecycleStatus: 'enabled',
-  healthStatus: 'ready',
-  headCommitId: 'commit-1',
-};
-
 describe('LightExtension settings descriptor cache', () => {
   it('reuses one selectable-entry request for repeated descriptor reads without caching settings values', async () => {
     const entry = createEntry({
@@ -76,10 +65,6 @@ describe('LightExtension settings descriptor cache', () => {
     expect(request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
       method: 'post',
-      data: {
-        repoId: 'repo_sales',
-        kind: 'js-block',
-      },
     });
   });
 
@@ -114,10 +99,7 @@ describe('LightExtension settings descriptor cache', () => {
         settingsSchema: createMessageSchema('Page'),
       }),
     ];
-    const request = vi.fn(async (options: ApiRequestOptions) => {
-      const input = options.data as { repoId?: string; kind?: string };
-      return resourceResponse(entries.filter((entry) => entry.repoId === input.repoId && entry.kind === input.kind));
-    });
+    const request = vi.fn(async () => resourceResponse(entries));
     const resolver = createLightExtensionRunJSResolver(createApi(request));
 
     await expect(getDescriptor(resolver, {}, 'repo_sales', 'entry_sales_primary')).resolves.toMatchObject({
@@ -136,7 +118,7 @@ describe('LightExtension settings descriptor cache', () => {
       settingsSchemaHash: 'sales-page',
       defaults: { message: 'Page' },
     });
-    expect(request).toHaveBeenCalledTimes(4);
+    expect(request).toHaveBeenCalledTimes(1);
   });
 
   it('deduplicates concurrent cache misses for the same repository and kind', async () => {
@@ -195,7 +177,7 @@ describe('LightExtension settings descriptor cache', () => {
       settingsSchemaHash: 'schema-v1',
     });
 
-    invalidateLightExtensionSettingsDescriptorCache(api, 'repo_sales');
+    resolver.invalidateCache('repo_sales');
 
     await expect(getDescriptor(resolver)).resolves.toEqual({
       entryId: 'entry_sales',
@@ -208,18 +190,14 @@ describe('LightExtension settings descriptor cache', () => {
 
   it('uses a refreshed source menu response to prime descriptors without another request', async () => {
     let entry = createEntry({ schemaHash: 'schema-v1', settingsSchema: createMessageSchema('Old') });
-    const request = vi.fn(async (options: ApiRequestOptions) => {
-      if (options.url === 'lightExtensionRepos:list') {
-        return resourceResponse([REPO]);
-      }
-      return resourceResponse([entry]);
-    });
+    const request = vi.fn(async () => resourceResponse([entry]));
     const api = createApi(request);
     const resolver = createLightExtensionRunJSResolver(api);
 
     await expect(getDescriptor(resolver)).resolves.toMatchObject({ settingsSchemaHash: 'schema-v1' });
 
     entry = createEntry({ schemaHash: 'schema-v2', settingsSchema: createMessageSchema('New') });
+    resolver.invalidateCache('repo_sales');
     await resolver.listSourceMenuItems?.({
       kind: 'js-block',
       sourceMode: 'light-extension',

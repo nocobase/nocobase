@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model } from '@nocobase/database';
+import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
+import type { Database, Filter, Model } from '@nocobase/database';
 import { createHash } from 'crypto';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
@@ -84,7 +85,6 @@ export class RuntimeResolveService {
         'artifactHash',
         'filesHash',
         'settingsDefaultsHash',
-        'compiledAt',
         'healthStatus',
       ],
       sort: ['kind', 'entryName'],
@@ -92,11 +92,10 @@ export class RuntimeResolveService {
     });
     const runtimeEntries = records.map((record) => selectableEntryFromModel(record as Model));
     const repoIds: string[] = [...new Set<string>(runtimeEntries.map((entry) => entry.repoId))];
-    const repoHeadCommitIds = new Map(
-      await Promise.all(
-        repoIds.map(async (repoId) => [repoId, await this.loadEnabledRepoHeadCommitId(repoId, ctx)] as const),
-      ),
-    );
+    const [repoHeadCommitIds, repoLabels] = await Promise.all([
+      this.loadEnabledRepoHeadCommitIds(repoIds, ctx),
+      this.loadVisibleRepoLabels(repoIds, ctx),
+    ]);
     const entries: LightExtensionSelectableEntrySummary[] = [];
 
     for (const entry of runtimeEntries) {
@@ -104,7 +103,7 @@ export class RuntimeResolveService {
       if (!isSelectableRuntimeEntry(entry, repoHeadCommitId)) {
         continue;
       }
-      entries.push(toSelectableEntrySummary(entry));
+      entries.push(toSelectableEntrySummary(entry, repoLabels.get(entry.repoId)));
     }
 
     return entries;
@@ -203,17 +202,78 @@ export class RuntimeResolveService {
     return entryFromModel(record);
   }
 
-  private async loadEnabledRepoHeadCommitId(repoId: string, ctx: LightExtensionServiceContext): Promise<string | null> {
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
-      filterByTk: repoId,
+  private async loadEnabledRepoHeadCommitIds(
+    repoIds: string[],
+    ctx: LightExtensionServiceContext,
+  ): Promise<Map<string, string>> {
+    const repos = await this.db.getRepository('lightExtensionRepos').find({
+      filter: { id: { $in: repoIds } },
+      fields: ['id', 'lifecycleStatus', 'headCommitId'],
       transaction: ctx.transaction,
     });
-
-    if (String(repo?.get('lifecycleStatus') || '') !== 'enabled') {
-      return null;
+    const heads = new Map<string, string>();
+    for (const repo of repos) {
+      if (String(repo.get('lifecycleStatus') || '') !== 'enabled') {
+        continue;
+      }
+      const headCommitId = normalizeCommitId(repo.get('headCommitId'));
+      if (headCommitId) {
+        heads.set(String(repo.get('id')), headCommitId);
+      }
     }
+    return heads;
+  }
 
-    return normalizeCommitId(repo?.get('headCommitId'));
+  private async loadVisibleRepoLabels(
+    repoIds: string[],
+    ctx: LightExtensionServiceContext,
+  ): Promise<Map<string, SelectableRepoLabel>> {
+    if (!ctx.can || repoIds.length === 0) {
+      return new Map();
+    }
+    const permission = await ctx.can({ resource: 'lightExtensionRepos', action: 'list' });
+    if (!permission) {
+      return new Map();
+    }
+    const params = getPermissionParams(permission);
+    const fields = getVisibleRepoLabelFields(params);
+    if (fields.length === 0) {
+      return new Map();
+    }
+    const permissionFilter = await this.parseRepoLabelFilter(params?.filter, ctx);
+    const records = await this.db.getRepository('lightExtensionRepos').find({
+      filter: permissionFilter ? { $and: [{ id: { $in: repoIds } }, permissionFilter] } : { id: { $in: repoIds } },
+      fields: ['id', ...fields],
+      transaction: ctx.transaction,
+    });
+    return new Map(
+      records.map((record) => [
+        String(record.get('id')),
+        {
+          ...(fields.includes('name') ? { name: nullableString(record.get('name')) } : {}),
+          ...(fields.includes('title') ? { title: nullableString(record.get('title')) } : {}),
+        },
+      ]),
+    );
+  }
+
+  private async parseRepoLabelFilter(filter: unknown, ctx: LightExtensionServiceContext): Promise<Filter | undefined> {
+    if (!filter) {
+      return undefined;
+    }
+    try {
+      checkFilterParams(this.db.getCollection('lightExtensionRepos'), filter);
+      return ((await parseJsonTemplate(filter, {
+        state: ctx.state || {},
+        timezone: ctx.timezone,
+        userProvider: createUserProvider({ db: this.db, currentUser: ctx.currentUser }),
+      })) ?? filter) as Filter;
+    } catch (error) {
+      if (error instanceof NoPermissionError) {
+        return { id: '__light_extension_repo_label_not_visible__' };
+      }
+      throw error;
+    }
   }
 
   private async assertRuntimeStateAllowsEntry(
@@ -315,6 +375,7 @@ function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): vo
   const allowedSourceBindingKeys = new Set([
     'type',
     'repoId',
+    'repoName',
     'repoTitle',
     'entryId',
     'entryTitle',
@@ -441,10 +502,20 @@ function selectableEntryFromModel(record: Model): SelectableEntryProjection {
   };
 }
 
-function toSelectableEntrySummary(entry: SelectableEntryProjection): LightExtensionSelectableEntrySummary {
+interface SelectableRepoLabel {
+  name?: string | null;
+  title?: string | null;
+}
+
+function toSelectableEntrySummary(
+  entry: SelectableEntryProjection,
+  repoLabel?: SelectableRepoLabel,
+): LightExtensionSelectableEntrySummary {
   return {
     id: entry.id,
     repoId: entry.repoId,
+    ...(typeof repoLabel?.name !== 'undefined' ? { repoName: repoLabel.name } : {}),
+    ...(typeof repoLabel?.title !== 'undefined' ? { repoTitle: repoLabel.title } : {}),
     kind: entry.kind,
     entryName: entry.entryName,
     entryPath: entry.entryPath,
@@ -457,6 +528,28 @@ function toSelectableEntrySummary(entry: SelectableEntryProjection): LightExtens
     runtimeCodeHash: entry.runtimeCodeHash || '',
     runtimeAvailable: true,
   };
+}
+
+function getPermissionParams(permission: unknown): Record<string, unknown> | undefined {
+  if (!permission || typeof permission !== 'object' || Array.isArray(permission)) {
+    return undefined;
+  }
+  const params = (permission as { params?: unknown }).params;
+  return params && typeof params === 'object' && !Array.isArray(params)
+    ? (params as Record<string, unknown>)
+    : undefined;
+}
+
+function getVisibleRepoLabelFields(params?: Record<string, unknown>): Array<'name' | 'title'> {
+  const configuredFields = Array.isArray(params?.fields)
+    ? new Set(params.fields.filter((field): field is string => typeof field === 'string'))
+    : null;
+  const excludedFields = new Set(
+    Array.isArray(params?.except) ? params.except.filter((field): field is string => typeof field === 'string') : [],
+  );
+  return (['name', 'title'] as const).filter(
+    (field) => (!configuredFields || configuredFields.has(field)) && !excludedFields.has(field),
+  );
 }
 
 function hasConsistentSettingsHashes(entry: SelectableEntryProjection): boolean {

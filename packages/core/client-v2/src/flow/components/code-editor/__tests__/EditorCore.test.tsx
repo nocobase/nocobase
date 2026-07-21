@@ -192,6 +192,50 @@ describe('EditorCore', () => {
     }
   });
 
+  it('mounts and unmounts 100 unused editors without creating or terminating Workers', () => {
+    const terminate = vi.fn();
+    const workerFactory = vi.fn(() => ({ terminate }));
+    vi.stubGlobal('Worker', workerFactory);
+    vi.stubGlobal('__NOCOBASE_RUNJS_TYPESCRIPT_WORKER__', true);
+    try {
+      const { unmount } = render(
+        <>
+          {Array.from({ length: 100 }, (_, index) => (
+            <EditorCore key={index} value="" viewRef={{ current: null }} />
+          ))}
+        </>,
+      );
+
+      expect(workerFactory).not.toHaveBeenCalled();
+      expect(terminate).not.toHaveBeenCalled();
+      unmount();
+      expect(workerFactory).not.toHaveBeenCalled();
+      expect(terminate).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('uses a fresh TypeScript session after StrictMode effect replay', async () => {
+    const value = 'ctx.notARealMember;';
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const typescriptProjectRef = {
+      current: {
+        currentFilePath: 'main.ts',
+        files: [{ content: value, path: 'main.ts' }],
+      },
+    };
+    render(
+      <React.StrictMode>
+        <EditorCore enableLinter typescriptProjectRef={typescriptProjectRef} value={value} viewRef={viewRef} />
+      </React.StrictMode>,
+    );
+    const view = viewRef.current;
+    if (!view) throw new Error('EditorView was not initialized');
+
+    await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0), { timeout: 15_000 });
+  });
+
   it('keeps focus when workspace module completions change', () => {
     const fullscreenControl = { isFullscreen: false, toggleFullscreen: vi.fn() };
     const { container, rerender } = render(

@@ -38,6 +38,9 @@ const createMainThreadSession = vi.fn(() => ({
   getLastInternalError() {
     return null;
   },
+  whenDisposed() {
+    return Promise.resolve();
+  },
 }));
 
 vi.mock('../typescriptProjectRuntime', () => ({
@@ -56,4 +59,6 @@ it('uses the main-thread fallback when the Worker runtime chunk fails to load', 
     ),
   ).resolves.toEqual([]);
   expect(createMainThreadSession).toHaveBeenCalledTimes(1);
+  session.dispose();
+  await session.whenDisposed();
 });

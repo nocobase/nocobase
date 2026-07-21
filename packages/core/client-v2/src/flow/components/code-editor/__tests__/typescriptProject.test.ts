@@ -12,11 +12,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearTypeScriptProjectCachesForTests,
-  createTypeScriptProjectSession,
+  createTypeScriptProjectSession as createProjectSession,
   type CodeEditorTypeScriptProject,
+  type CodeEditorTypeScriptProjectSession,
   getTypeScriptCompletionResult,
   getTypeScriptProjectDiagnostics,
+  shutdownDefaultTypeScriptProjectSession,
 } from '../typescriptProject';
+import { createMainThreadTypeScriptProjectSession } from '../typescriptProjectRuntime';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   registerRunJSTypeLibraryPackLoader,
@@ -51,6 +54,16 @@ function createDeferred<T>() {
     rejectDeferred = reject;
   });
   return { promise, reject: rejectDeferred, resolve: resolveDeferred };
+}
+
+const sessions = new Set<CodeEditorTypeScriptProjectSession>();
+
+function createTypeScriptProjectSession(
+  options?: Parameters<typeof createProjectSession>[0],
+): CodeEditorTypeScriptProjectSession {
+  const session = createProjectSession(options);
+  sessions.add(session);
+  return session;
 }
 
 function fakePack(
@@ -94,7 +107,10 @@ function fakePack(
   };
 }
 
-afterEach(() => {
+afterEach(async () => {
+  for (const session of sessions) session.dispose();
+  await Promise.all([...sessions].map((session) => session.whenDisposed()));
+  sessions.clear();
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
@@ -821,6 +837,58 @@ ctx.libs.antd.NotAComponent;
     expect(attempts).toBe(2);
   });
 
+  it('clears the main-thread workspace key and files when disposal completes', async () => {
+    const code = `ctx.logger.info('${'workspace-content-'.repeat(100)}');`;
+    const session = createMainThreadTypeScriptProjectSession();
+    sessions.add(session);
+    const retainedState = session as unknown as { latestStateKey: string };
+
+    await session.getDiagnostics(baseProject(code), code);
+    expect(retainedState.latestStateKey.length).toBeGreaterThan(code.length);
+
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(retainedState.latestStateKey).toBe('');
+    expect(session.getDebugState()).toEqual(
+      expect.objectContaining({ allFileNames: [], disposed: true, rootFileNames: [], structureKey: undefined }),
+    );
+  });
+
+  it('waits for a pending main-thread request before disposal completes', async () => {
+    const loading = createDeferred<RunJSTypeLibraryPack>();
+    const loader = vi.fn(() => loading.promise);
+    registerRunJSTypeLibraryPackLoader('dayjs', loader);
+    const code = 'ctx.libs.dayjs;';
+    const session = createMainThreadTypeScriptProjectSession();
+    sessions.add(session);
+    const diagnostics = session.getDiagnostics(baseProject(code), code);
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
+
+    session.dispose();
+    let disposed = false;
+    const disposal = session.whenDisposed().then(() => {
+      disposed = true;
+    });
+    await Promise.resolve();
+    expect(disposed).toBe(false);
+
+    loading.resolve(fakePack('dayjs'));
+    await disposal;
+    expect(await diagnostics).toEqual([]);
+  });
+
+  it('shuts down the default session without rebuilding it and keeps the reset path reusable', async () => {
+    const code = 'ctx.notARealMember;';
+    expect(await getTypeScriptProjectDiagnostics(baseProject(code), code)).not.toEqual([]);
+
+    await shutdownDefaultTypeScriptProjectSession();
+    expect(await getTypeScriptProjectDiagnostics(baseProject(code), code)).toEqual([]);
+
+    clearTypeScriptProjectCachesForTests();
+    expect(await getTypeScriptProjectDiagnostics(baseProject(code), code)).not.toEqual([]);
+  });
+
   it('drops stale requests and supports explicit disposal', async () => {
     const deferred = createDeferred<RunJSTypeLibraryPack>();
     registerRunJSTypeLibraryPackLoader('dayjs', () => deferred.promise);
@@ -835,6 +903,7 @@ ctx.libs.antd.NotAComponent;
     expect(session.getDebugState().allFileNames).not.toContain('/__fake_packs__/dayjs/bridge.d.ts');
 
     session.dispose();
+    await session.whenDisposed();
     expect(session.getDebugState()).toEqual(
       expect.objectContaining({ allFileNames: [], disposed: true, rootFileNames: [] }),
     );

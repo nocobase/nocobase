@@ -39,8 +39,11 @@ import { normalizeVscBridgeError } from './errorContract';
 export interface LightExtensionServiceContext {
   actorUserId?: string | null;
   can?: LightExtensionCanFunction;
+  currentUser?: unknown;
   requestId?: string;
   requestSource?: string;
+  state?: Record<string, unknown>;
+  timezone?: string;
   transaction?: Transaction;
   /** @internal */
   deferredRejectedPushAudits?: Array<() => Promise<void>>;
@@ -233,6 +236,7 @@ export class LightExtensionRepoService {
         transaction: ctx.transaction,
       }),
       this.db.getRepository('lightExtensionEntries').find({
+        fields: ['repoId', 'kind', 'healthStatus'],
         transaction: ctx.transaction,
       }),
     ]);

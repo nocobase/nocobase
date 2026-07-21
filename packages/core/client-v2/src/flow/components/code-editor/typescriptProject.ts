@@ -85,6 +85,7 @@ export interface CodeEditorTypeScriptProjectSession {
     currentFileContent?: string,
   ): Promise<CodeEditorTypeScriptQuickInfoResult | null>;
   getLastInternalError(): CodeEditorTypeScriptProjectInternalError | null;
+  whenDisposed(): Promise<void>;
 }
 
 export interface CodeEditorTypeScriptQuickInfoResult {
@@ -107,6 +108,7 @@ const emptyDebugState = (disposed = false): CodeEditorTypeScriptProjectDebugStat
 });
 
 class DeferredTypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
+  private disposal: Promise<void> = Promise.resolve();
   private disposed = false;
   private loading: Promise<CodeEditorTypeScriptProjectSession> | null = null;
   private session: CodeEditorTypeScriptProjectSession | null = null;
@@ -116,7 +118,23 @@ class DeferredTypeScriptProjectSession implements CodeEditorTypeScriptProjectSes
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.session?.dispose();
+    const session = this.session;
+    if (session) {
+      session.dispose();
+      this.disposal = session.whenDisposed();
+    } else if (this.loading) {
+      this.disposal = this.loading.then(
+        (loadingSession) => {
+          loadingSession.dispose();
+          return loadingSession.whenDisposed();
+        },
+        () => undefined,
+      );
+    }
+    this.disposal = this.disposal.finally(() => {
+      this.loading = null;
+      this.session = null;
+    });
   }
 
   async getCompletionResult(
@@ -152,6 +170,10 @@ class DeferredTypeScriptProjectSession implements CodeEditorTypeScriptProjectSes
 
   getLastInternalError(): CodeEditorTypeScriptProjectInternalError | null {
     return this.session?.getLastInternalError() || null;
+  }
+
+  whenDisposed(): Promise<void> {
+    return this.disposal;
   }
 
   private async getSession(): Promise<CodeEditorTypeScriptProjectSession | null> {
@@ -195,13 +217,18 @@ export function createTypeScriptProjectSession(options?: {
 
 let defaultProjectSession = createTypeScriptProjectSession();
 
-export function disposeDefaultTypeScriptProjectSession(): void {
+export function resetDefaultTypeScriptProjectSession(): void {
   defaultProjectSession.dispose();
   defaultProjectSession = createTypeScriptProjectSession();
 }
 
+export async function shutdownDefaultTypeScriptProjectSession(): Promise<void> {
+  defaultProjectSession.dispose();
+  await defaultProjectSession.whenDisposed();
+}
+
 export function clearTypeScriptProjectCachesForTests(): void {
-  disposeDefaultTypeScriptProjectSession();
+  resetDefaultTypeScriptProjectSession();
   loadedMainThreadRuntime?.clearMainThreadTypeScriptProjectCachesForTests();
 }
 

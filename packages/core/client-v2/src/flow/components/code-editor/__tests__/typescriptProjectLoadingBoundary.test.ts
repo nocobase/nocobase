@@ -44,6 +44,9 @@ vi.mock('../typescriptWorkerProjectSession', () => {
       getLastInternalError() {
         return null;
       }
+      whenDisposed() {
+        return Promise.resolve();
+      }
     },
   };
 });
@@ -68,6 +71,9 @@ vi.mock('../typescriptProjectRuntime', () => {
         },
         getLastInternalError() {
           return null;
+        },
+        whenDisposed() {
+          return Promise.resolve();
         },
       };
     },
@@ -97,6 +103,10 @@ it('loads TypeScript implementations only for requests and keeps the main runtim
   expect(await fallbackSession.getDiagnostics(project, project.files[0].content)).toEqual([]);
   expect(counters.mainRuntimeLoads).toHaveBeenCalledTimes(1);
   expect(counters.mainSessionCreates).toHaveBeenCalledTimes(1);
+
+  session.dispose();
+  fallbackSession.dispose();
+  await Promise.all([session.whenDisposed(), fallbackSession.whenDisposed()]);
 });
 
 const project: CodeEditorTypeScriptProject = {

@@ -31,12 +31,55 @@ type StaticCreateModelOptions = {
 };
 
 const entries: LightExtensionSelectableEntrySummary[] = [
-  createEntry({ id: 'block', kind: 'js-block', repoId: 'repo-a', title: 'Dashboard block' }),
-  createEntry({ id: 'action', kind: 'js-action', repoId: 'repo-a', title: 'Refresh action' }),
-  createEntry({ id: 'field', kind: 'js-field', repoId: 'repo-a', title: 'Status field', category: null }),
-  createEntry({ id: 'field-category', kind: 'js-field', repoId: 'repo-b', category: 'js-field' }),
-  createEntry({ id: 'field-business-category', kind: 'js-field', repoId: 'repo-b', category: 'sales' }),
-  createEntry({ id: 'column', kind: 'js-field', repoId: 'repo-b', title: 'Summary column', category: 'js-column' }),
+  createEntry({
+    id: 'block',
+    kind: 'js-block',
+    repoId: 'repo-a',
+    repoName: 'repo-a',
+    repoTitle: 'Repository A',
+    title: 'Dashboard block',
+  }),
+  createEntry({
+    id: 'action',
+    kind: 'js-action',
+    repoId: 'repo-a',
+    repoName: 'repo-a',
+    repoTitle: 'Repository A',
+    title: 'Refresh action',
+  }),
+  createEntry({
+    id: 'field',
+    kind: 'js-field',
+    repoId: 'repo-a',
+    repoName: 'repo-a',
+    repoTitle: 'Repository A',
+    title: 'Status field',
+  }),
+  createEntry({
+    id: 'field-category',
+    kind: 'js-field',
+    repoId: 'repo-b',
+    repoName: 'repo-b',
+    repoTitle: 'Repository B',
+    category: 'js-field',
+  }),
+  createEntry({
+    id: 'field-business-category',
+    kind: 'js-field',
+    repoId: 'repo-b',
+    repoName: 'repo-b',
+    repoTitle: 'Repository B',
+    category: 'sales',
+  }),
+  createEntry({
+    id: 'column',
+    kind: 'js-field',
+    repoId: 'repo-b',
+    repoName: 'repo-b',
+    repoTitle: 'Repository B',
+    title: 'Summary column',
+    category: 'js-column',
+  }),
 ];
 
 describe('createLightExtensionModelMenuProvider', () => {
@@ -152,7 +195,7 @@ describe('createLightExtensionModelMenuProvider', () => {
   });
 
   it('falls back to repoId and returns a disabled item when loading fails', async () => {
-    const fallbackApi = createApi({ repos: [] });
+    const fallbackApi = createApi({ includeRepoLabels: false });
     const root = await getRootItem(fallbackApi, { target: 'block' });
     expect((await resolveChildren(root))[0].label).toBe('repo-a');
 
@@ -225,18 +268,17 @@ function createFieldContext(): FlowModelContext {
   } as unknown as FlowModelContext;
 }
 
-function createApi(input: { repos?: Array<Record<string, unknown>> } = {}): ApiClientLike {
-  const repos = input.repos ?? [
-    { id: 'repo-a', name: 'repo-a', title: 'Repository A' },
-    { id: 'repo-b', name: 'repo-b', title: 'Repository B' },
-  ];
+function createApi(input: { includeRepoLabels?: boolean } = {}): ApiClientLike {
+  const catalog =
+    input.includeRepoLabels === false
+      ? entries.map(({ repoName: _repoName, repoTitle: _repoTitle, ...entry }) => entry)
+      : entries;
   return {
     request: vi.fn(async <TResponse>(options) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        const kind = (options.data as { kind?: string } | undefined)?.kind;
-        return { data: { data: entries.filter((entry) => entry.kind === kind) } } as TResponse;
+      if (options.url !== 'lightExtensionEntries:listSelectable') {
+        throw new Error(`Unexpected request: ${options.url}`);
       }
-      return { data: { data: repos } } as TResponse;
+      return { data: { data: catalog } } as TResponse;
     }),
   };
 }

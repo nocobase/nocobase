@@ -14,6 +14,7 @@ type LightExtensionRuntimeCacheInvalidator = {
 
 const runtimeCaches = new WeakMap<object, LightExtensionRuntimeCacheInvalidator>();
 const cacheGenerations = new WeakMap<object, LightExtensionCacheGeneration>();
+const selectableCatalogs = new WeakMap<object, SelectableCatalogState>();
 const identityRegistrations = new WeakMap<object, LightExtensionRuntimeIdentityRegistration[]>();
 const fallbackIdentityRegistrations = new WeakMap<object, LightExtensionRuntimeIdentityRegistration>();
 
@@ -47,8 +48,20 @@ export type LightExtensionCacheGenerationSnapshot = {
   repo: number;
 };
 
+type SelectableCatalogState = {
+  cached?: {
+    entries: readonly unknown[];
+    expiresAt: number;
+    key: string;
+  };
+  inFlight: Map<string, Promise<readonly unknown[]>>;
+};
+
+export const LIGHT_EXTENSION_SELECTABLE_CATALOG_TTL_MS = 30_000;
+
 export class LightExtensionCacheGeneration {
   private globalGeneration = 0;
+  private catalogGeneration = 0;
   private readonly repoGenerations = new Map<string, number>();
 
   get(repoId: string): LightExtensionCacheGenerationSnapshot {
@@ -63,6 +76,10 @@ export class LightExtensionCacheGeneration {
     return current.global === snapshot.global && current.repo === snapshot.repo;
   }
 
+  getCatalog(): number {
+    return this.catalogGeneration;
+  }
+
   invalidateRepo(repoId: string): void {
     this.repoGenerations.set(repoId, (this.repoGenerations.get(repoId) || 0) + 1);
   }
@@ -70,6 +87,10 @@ export class LightExtensionCacheGeneration {
   clear(): void {
     this.globalGeneration += 1;
     this.repoGenerations.clear();
+  }
+
+  invalidateCatalog(): void {
+    this.catalogGeneration += 1;
   }
 }
 
@@ -174,22 +195,72 @@ export function registerLightExtensionRuntimeAuthSession(api: object, app?: obje
   return registerLightExtensionRuntimeIdentity(api, () => readRuntimeIdentity(api, app), getEventTarget(app));
 }
 
+export function getOrLoadLightExtensionSelectableCatalog<T>(
+  api: object,
+  load: () => Promise<T[]>,
+): Promise<readonly T[]> {
+  const generation = getLightExtensionCacheGeneration(api).getCatalog();
+  const identity = getLightExtensionRuntimeIdentity(api);
+  const key = JSON.stringify([identity, generation]);
+  const state = getSelectableCatalogState(api);
+  if (state.cached?.key === key && state.cached.expiresAt > Date.now()) {
+    return Promise.resolve(state.cached.entries as readonly T[]);
+  }
+  const existing = state.inFlight.get(key);
+  if (existing) {
+    return existing as Promise<readonly T[]>;
+  }
+  const request = load().then((entries) => {
+    const currentGeneration = getLightExtensionCacheGeneration(api).getCatalog();
+    const currentIdentity = getLightExtensionRuntimeIdentity(api);
+    if (currentGeneration !== generation || currentIdentity !== identity) {
+      return getOrLoadLightExtensionSelectableCatalog(api, load);
+    }
+    state.cached = {
+      entries,
+      expiresAt: Date.now() + LIGHT_EXTENSION_SELECTABLE_CATALOG_TTL_MS,
+      key,
+    };
+    return entries;
+  });
+  state.inFlight.set(key, request);
+  return request.finally(() => {
+    if (state.inFlight.get(key) === request) {
+      state.inFlight.delete(key);
+    }
+  });
+}
+
 export function invalidateLightExtensionRuntimeCache(api: object, repoId?: string): void {
+  const generation = getLightExtensionCacheGeneration(api);
   const cache = runtimeCaches.get(api);
   if (!cache) {
-    const generation = getLightExtensionCacheGeneration(api);
     if (repoId) {
       generation.invalidateRepo(repoId);
     } else {
       generation.clear();
     }
-    return;
-  }
-  if (repoId) {
+  } else if (repoId) {
     cache.invalidateRepo(repoId);
-    return;
+  } else {
+    cache.clear();
   }
-  cache.clear();
+  generation.invalidateCatalog();
+  const catalog = selectableCatalogs.get(api);
+  if (catalog) {
+    catalog.cached = undefined;
+    catalog.inFlight.clear();
+  }
+}
+
+function getSelectableCatalogState(api: object): SelectableCatalogState {
+  const existing = selectableCatalogs.get(api);
+  if (existing) {
+    return existing;
+  }
+  const state: SelectableCatalogState = { inFlight: new Map() };
+  selectableCatalogs.set(api, state);
+  return state;
 }
 
 function getFallbackIdentityRegistration(api: object): LightExtensionRuntimeIdentityRegistration {

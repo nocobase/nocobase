@@ -16,13 +16,15 @@ describe('light extension selectable entry summary', () => {
     const summary = {
       id: 'entry_1',
       repoId: 'repo_1',
+      repoName: 'repo-one',
+      repoTitle: 'Repository One',
       kind: 'js-block',
       entryName: 'example',
       entryPath: 'src/client/js-blocks/example/index.tsx',
       title: 'Example',
       category: 'examples',
-      settingsSchema: null,
-      settingsSchemaHash: null,
+      settingsSchema: { type: 'object', properties: { message: { type: 'string' } } },
+      settingsSchemaHash: 'settings_hash',
       settingsDefaultsHash: null,
       runtimeCodeHash: 'runtime_hash',
       runtimeAvailable: true as const,
@@ -35,9 +37,16 @@ describe('light extension selectable entry summary', () => {
     const entries = await listSelectableLightExtensionEntries(api, { kind: 'js-block' });
 
     expect(entries).toEqual([summary]);
+    expect(request).toHaveBeenCalledWith({
+      url: 'lightExtensionEntries:listSelectable',
+      method: 'post',
+    });
     expect(entries[0].runtimeAvailable).toBe(true);
     expect(entries[0]).not.toHaveProperty('runtimeArtifact');
     expect(entries[0]).not.toHaveProperty('code');
     expect(entries[0]).not.toHaveProperty('sourceMap');
+    expect(entries[0]).not.toHaveProperty('headCommitId');
+    expect(entries[0]).not.toHaveProperty('diagnostics');
+    expect(entries[0]).not.toHaveProperty('statistics');
   });
 });
