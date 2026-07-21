@@ -11,6 +11,7 @@ import type { Completion, CompletionResult } from '@codemirror/autocomplete';
 import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryRequest } from '@nocobase/runjs/client-v2';
 
 import { runJSTypeScriptEnvironmentPack } from './generated/runJSTypeScriptEnvironmentFiles';
+import type { TypeScriptWorkerOwner, TypeScriptWorkerOwnerResource } from './sharedTypeScriptWorkerOwner';
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
 import type {
@@ -46,8 +47,13 @@ interface WorkerLike {
 export type TypeScriptWorkerFactory = () => WorkerLike;
 
 type PendingRequest = {
+  projectId: string;
   reject(error: Error): void;
   resolve(response: TypeScriptWorkerResponse): void;
+};
+
+type QueuedRequest = PendingRequest & {
+  message: TypeScriptWorkerRequest;
 };
 
 type TypeScriptWorkerClientState = 'not-started' | 'running' | 'stopped';
@@ -300,46 +306,91 @@ function toCompletion(entry: TypeScriptWorkerCompletionEntry): Completion {
   };
 }
 
-class TypeScriptWorkerClient {
+export class TypeScriptWorkerClient {
   private worker: WorkerLike | null = null;
   private pending = new Map<number, PendingRequest>();
+  private queues = new Map<string, QueuedRequest[]>();
+  private lastProjectId: string | null = null;
+  private pumpScheduled = false;
   private requestId = 0;
-  private registry: RunJSTypeLibraryRegistry | null = getDefaultRunJSTypeLibraryRegistry();
+  private registries = new Map<string, RunJSTypeLibraryRegistry>();
   private state: TypeScriptWorkerClientState = 'not-started';
 
   constructor(private readonly factory: TypeScriptWorkerFactory) {}
 
-  setRegistry(registry: RunJSTypeLibraryRegistry): void {
-    this.registry = registry;
+  setRegistry(projectId: string, registry: RunJSTypeLibraryRegistry): void {
+    this.registries.set(projectId, registry);
   }
 
   async request(request: TypeScriptWorkerClientRequest): Promise<TypeScriptWorkerResponse> {
     const requestId = ++this.requestId;
-    const worker = this.ensureWorker();
     const message = {
       ...request,
       protocolVersion: RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
       requestId,
     } as TypeScriptWorkerRequest;
     return await new Promise<TypeScriptWorkerResponse>((resolve, reject) => {
-      this.pending.set(requestId, { reject, resolve });
-      worker.postMessage(message);
+      const queue = this.queues.get(request.projectId) || [];
+      queue.push({ message, projectId: request.projectId, reject, resolve });
+      this.queues.set(request.projectId, queue);
+      this.schedulePump();
     });
   }
 
-  reset(reason = 'TypeScript worker terminated.'): void {
+  cancelProject(projectId: string, reason = 'TypeScript project session has been disposed.'): void {
+    const error = new Error(reason);
+    for (const [requestId, pending] of this.pending) {
+      if (pending.projectId !== projectId) continue;
+      pending.reject(error);
+      this.pending.delete(requestId);
+    }
+    const queue = this.queues.get(projectId);
+    for (const pending of queue || []) pending.reject(error);
+    this.queues.delete(projectId);
+  }
+
+  async disposeProject(projectId: string, documentVersion: number): Promise<void> {
+    if (!this.worker) {
+      this.registries.delete(projectId);
+      return;
+    }
+    try {
+      await this.request({ documentVersion, kind: 'dispose', projectId });
+    } finally {
+      this.registries.delete(projectId);
+    }
+  }
+
+  restart(reason = 'TypeScript worker terminated.'): void {
+    this.reset(reason, false);
+  }
+
+  stop(reason = 'TypeScript worker owner has been disposed.'): void {
+    this.reset(reason, true);
+  }
+
+  private reset(reason: string, clearRegistries: boolean): void {
     const worker = this.worker;
     this.worker = null;
     if (worker && this.state === 'running') worker.terminate();
-    this.state = 'stopped';
-    this.registry = null;
+    this.state = clearRegistries ? 'stopped' : 'not-started';
     const error = new Error(reason);
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
+    for (const queue of this.queues.values()) {
+      for (const pending of queue) pending.reject(error);
+    }
+    this.queues.clear();
+    this.lastProjectId = null;
+    this.pumpScheduled = false;
+    if (clearRegistries) this.registries.clear();
   }
 
   private ensureWorker(): WorkerLike {
     if (this.worker) return this.worker;
+    if (this.state === 'stopped') {
+      throw new TypeScriptWorkerUnavailableError('TypeScript worker owner has been disposed.');
+    }
     let worker: WorkerLike;
     try {
       worker = this.factory();
@@ -349,7 +400,7 @@ class TypeScriptWorkerClient {
     }
     worker.addEventListener('message', (event) => this.onMessage(worker, event.data));
     worker.addEventListener('error', (event) => {
-      if (this.worker === worker) this.reset(event.message || 'TypeScript worker crashed.');
+      if (this.worker === worker) this.restart(event.message || 'TypeScript worker crashed.');
     });
     this.worker = worker;
     this.state = 'running';
@@ -360,7 +411,7 @@ class TypeScriptWorkerClient {
     if (!isTypeScriptWorkerProtocolMessage(message)) {
       const version = getTypeScriptWorkerProtocolVersion(message);
       if (version !== null && this.worker === sourceWorker) {
-        this.reset(
+        this.restart(
           `RunJS TypeScript worker protocol mismatch: client=${RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION}, worker=${version}`,
         );
       }
@@ -371,10 +422,11 @@ class TypeScriptWorkerClient {
       return;
     }
     const pending = this.pending.get(message.requestId);
-    if (!pending) return;
-    this.pending.delete(message.requestId);
-    if (message.kind === 'error') pending.reject(new Error(message.error));
-    else pending.resolve(message);
+    if (pending) {
+      this.pending.delete(message.requestId);
+      if (message.kind === 'error') pending.reject(new Error(message.error));
+      else pending.resolve(message);
+    }
   }
 
   private async loadPack(sourceWorker: WorkerLike, message: TypeScriptWorkerLoadPackRequest): Promise<void> {
@@ -390,13 +442,94 @@ class TypeScriptWorkerClient {
         if (this.worker === sourceWorker) sourceWorker.postMessage(response);
         return;
       }
-      const registry = this.registry;
+      const registry = this.registries.get(message.projectId);
       if (!registry) throw new Error('TypeScript worker registry is no longer available.');
       response.pack = await registry.loadPackForWorker(message.request as RunJSTypeLibraryRequest);
     } catch (error: unknown) {
       response.error = error instanceof Error ? error.message : String(error);
     }
     if (this.worker === sourceWorker) sourceWorker.postMessage(response);
+  }
+
+  private pump(): void {
+    this.pumpScheduled = false;
+    const projectIds = [...this.queues.entries()]
+      .filter(([, queue]) => queue.length > 0)
+      .map(([projectId]) => projectId);
+    if (!projectIds.length) return;
+    const lastIndex = this.lastProjectId ? projectIds.indexOf(this.lastProjectId) : -1;
+    const projectId = projectIds[(lastIndex + 1) % projectIds.length];
+    const queue = this.queues.get(projectId);
+    const pending = queue?.shift();
+    if (!pending) return;
+    if (!queue.length) this.queues.delete(projectId);
+    this.lastProjectId = projectId;
+    try {
+      const worker = this.ensureWorker();
+      this.pending.set(pending.message.requestId, pending);
+      worker.postMessage(pending.message);
+    } catch (error: unknown) {
+      this.pending.delete(pending.message.requestId);
+      pending.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+    this.schedulePump();
+  }
+
+  private schedulePump(): void {
+    if (this.pumpScheduled) return;
+    this.pumpScheduled = true;
+    queueMicrotask(() => this.pump());
+  }
+}
+
+interface TypeScriptWorkerOwnerLease {
+  client: TypeScriptWorkerClient;
+  release(projectId: string, documentVersion: number): Promise<void>;
+}
+
+class SharedTypeScriptWorkerClientResource implements TypeScriptWorkerOwnerResource {
+  private readonly client: TypeScriptWorkerClient;
+  private disposed = false;
+  private leaseCount = 0;
+
+  constructor(workerFactory: TypeScriptWorkerFactory) {
+    this.client = new TypeScriptWorkerClient(workerFactory);
+  }
+
+  acquire(): TypeScriptWorkerOwnerLease {
+    if (this.disposed) throw new Error('TypeScript worker owner resource has been disposed.');
+    this.leaseCount += 1;
+    let released = false;
+    return {
+      client: this.client,
+      release: async (projectId, documentVersion) => {
+        if (released) return;
+        released = true;
+        this.client.cancelProject(projectId);
+        this.leaseCount -= 1;
+        if (this.disposed) {
+          this.client.stop();
+          return;
+        }
+        if (this.leaseCount === 0) {
+          this.client.restart('Last TypeScript project has been disposed.');
+          await this.client.disposeProject(projectId, documentVersion);
+          return;
+        }
+        try {
+          await this.client.disposeProject(projectId, documentVersion);
+        } catch (_) {
+          // A crashed worker has already discarded its project state.
+        }
+      },
+    };
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.leaseCount = 0;
+    this.client.stop();
   }
 }
 
@@ -426,12 +559,24 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   private syncChain: Promise<void> = Promise.resolve();
   private workerNeedsFullSync = false;
   private workerUnavailable = false;
+  private readonly releaseClient: TypeScriptWorkerOwnerLease['release'];
 
   constructor(
     factory: TypeScriptWorkerFactory = defaultWorkerFactory,
     private fallback?: CodeEditorTypeScriptProjectSession,
+    owner?: TypeScriptWorkerOwner,
   ) {
-    this.client = new TypeScriptWorkerClient(factory);
+    if (owner) {
+      const lease = owner.getResource(() => new SharedTypeScriptWorkerClientResource(factory)).acquire();
+      this.client = lease.client;
+      this.releaseClient = lease.release;
+    } else {
+      this.client = new TypeScriptWorkerClient(factory);
+      this.releaseClient = async (projectId) => {
+        this.client.cancelProject(projectId);
+        this.client.stop();
+      };
+    }
   }
 
   async getCompletionResult(
@@ -550,8 +695,8 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
             this.resolveDisposal = resolve;
           })
         : Promise.resolve();
-    this.disposal = Promise.all([fallback?.whenDisposed(), requestsDisposed]).then(() => undefined);
-    this.client.reset('TypeScript project session has been disposed.');
+    const clientDisposal = this.releaseClient(this.projectId, this.documentVersion);
+    this.disposal = Promise.all([fallback?.whenDisposed(), requestsDisposed, clientDisposal]).then(() => undefined);
     this.acknowledgedState = null;
     this.workerNeedsFullSync = false;
     this.lastInternalError = null;
@@ -651,14 +796,14 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       targetRevision: next.revision,
       ...(fullSync ? { snapshot: next.snapshot } : { update: update as TypeScriptWorkerProjectUpdate }),
     };
-    this.client.setRegistry(registry);
+    this.client.setRegistry(this.projectId, registry);
     let response: TypeScriptWorkerResponse;
     try {
       response = await this.client.request(request);
     } catch (error: unknown) {
       if (error instanceof TypeScriptWorkerUnavailableError) throw error;
-      this.resetWorkerState('Rebuilding TypeScript worker after synchronization failure.');
-      this.client.setRegistry(registry);
+      this.resetWorkerState();
+      this.client.setRegistry(this.projectId, registry);
       response = await this.client.request({
         baseRevision: null,
         documentVersion: next.revision,
@@ -686,7 +831,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       return response;
     } catch (error: unknown) {
       if (error instanceof TypeScriptWorkerUnavailableError) throw error;
-      this.resetWorkerState('Rebuilding TypeScript worker after failure.');
+      this.resetWorkerState();
       const documentVersion = await this.sync(project, currentFileContent, true);
       const recoveredRequest = { ...request, documentVersion };
       const response = await this.client.request(recoveredRequest);
@@ -695,8 +840,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     }
   }
 
-  private resetWorkerState(reason: string): void {
-    this.client.reset(reason);
+  private resetWorkerState(): void {
     this.workerNeedsFullSync = true;
     this.lastDebugState = { ...this.lastDebugState, languageServiceCreationCount: 0 };
   }
@@ -735,7 +879,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     this.report(project, error);
     if (!this.fallback) return;
     this.workerUnavailable = true;
-    this.client.reset('TypeScript worker unavailable; using the main thread.');
+    this.client.cancelProject(this.projectId, 'TypeScript worker unavailable; using the main thread.');
     return this.fallback;
   }
 }

@@ -13,6 +13,7 @@ import type { Extension } from '@codemirror/state';
 import { type Tooltip, hoverTooltip } from '@codemirror/view';
 
 import type { RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
+import type { TypeScriptWorkerOwner } from './sharedTypeScriptWorkerOwner';
 
 export type { TypeScriptWorkerFactory } from './typescriptWorkerProjectSession';
 import type { TypeScriptWorkerFactory } from './typescriptWorkerProjectSession';
@@ -207,13 +208,14 @@ async function createMainThreadSession(): Promise<CodeEditorTypeScriptProjectSes
 
 export function createTypeScriptProjectSession(options?: {
   workerFactory?: TypeScriptWorkerFactory;
+  workerOwner?: TypeScriptWorkerOwner;
 }): CodeEditorTypeScriptProjectSession {
   const fallback = new DeferredTypeScriptProjectSession(createMainThreadSession);
   return new DeferredTypeScriptProjectSession(async () => {
     const workerRuntime = await import('./typescriptWorkerProjectSession').catch(() => null);
     if (!workerRuntime) return fallback;
     return options?.workerFactory || workerRuntime.canUseTypeScriptWorker()
-      ? new workerRuntime.WorkerBackedTypeScriptProjectSession(options?.workerFactory, fallback)
+      ? new workerRuntime.WorkerBackedTypeScriptProjectSession(options?.workerFactory, fallback, options?.workerOwner)
       : fallback;
   });
 }

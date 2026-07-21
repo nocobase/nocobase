@@ -24,6 +24,7 @@ import { EditorView, keymap, placeholder as cmPlaceholder, tooltips } from '@cod
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
+import { useTypeScriptWorkerOwner } from '../TypeScriptWorkerOwnerProvider';
 import {
   createJsonCompletionSource,
   createJsonHoverTooltip,
@@ -154,6 +155,7 @@ export const EditorCore: React.FC<{
   jsonSchema,
   viewRef,
 }) => {
+  const typeScriptWorkerOwner = useTypeScriptWorkerOwner();
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
   const readonlyRef = useRef(readonly);
@@ -216,7 +218,7 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const typeScriptProjectSession = createTypeScriptProjectSession();
+    const typeScriptProjectSession = createTypeScriptProjectSession({ workerOwner: typeScriptWorkerOwner });
     const typeScriptExtensions = {
       completionSource: createTypeScriptCompletionSource({
         projectRef: stableTypeScriptProjectRef,

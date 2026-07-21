@@ -20,6 +20,7 @@ import {
   createRunJSTypeLibraryRegistry,
   registerRunJSTypeLibraryPackLoader,
 } from '../typescriptLibraryRegistry';
+import { SharedTypeScriptWorkerOwner } from '../sharedTypeScriptWorkerOwner';
 import { TypeScriptWorkerRuntime } from '../typescriptWorkerRuntime';
 import {
   RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
@@ -751,11 +752,19 @@ void element; void button;
     first.register({ id: 'fake-lib', libraryName: 'fakeLib', loader: () => fakePack(42), topLevelNames: ['fakeLib'] });
     const second = createRunJSTypeLibraryRegistry();
     second.register({ id: 'fake-lib', libraryName: 'fakeLib', loader: () => fakePack(7), topLevelNames: ['fakeLib'] });
-    const firstSession = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
-    const secondSession = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
+    const owner = new SharedTypeScriptWorkerOwner();
+    const workers: InMemoryTypeScriptWorker[] = [];
+    const workerFactory = () => {
+      const worker = new InMemoryTypeScriptWorker();
+      workers.push(worker);
+      return worker;
+    };
+    const firstSession = createTypeScriptProjectSession({ workerFactory, workerOwner: owner });
+    const secondSession = createTypeScriptProjectSession({ workerFactory, workerOwner: owner });
 
     expect(await firstSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 42;', first))).toEqual([]);
     expect(await secondSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second))).toEqual([]);
+    expect(workers).toHaveLength(1);
     firstSession.dispose();
     await firstSession.whenDisposed();
     expect(firstSession.getDebugState()).toEqual(
@@ -764,6 +773,7 @@ void element; void button;
     expect(await secondSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second))).toEqual([]);
     secondSession.dispose();
     await secondSession.whenDisposed();
+    owner.dispose();
   });
 
   it('does not deliver an old worker pack response to a replacement worker with the same bridge id', async () => {
