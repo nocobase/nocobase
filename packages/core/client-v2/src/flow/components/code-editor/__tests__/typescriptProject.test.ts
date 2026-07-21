@@ -8,7 +8,7 @@
  */
 
 import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearTypeScriptProjectCachesForTests,
@@ -28,6 +28,7 @@ import {
   getRunJSBuiltInAutoImportLibrary,
   isRunJSTypeScriptAutoImportSourceAllowed,
 } from '../typescriptBuiltInAutoImport';
+import { shutdownTypeScriptProjectSessionSuite } from './helpers/withTypeScriptProjectSession';
 
 function baseProject(currentFileContent = '', modelUse?: string): CodeEditorTypeScriptProject {
   return {
@@ -114,6 +115,8 @@ afterEach(async () => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('CodeEditor TypeScript project', () => {
   it('uses an exact, prototype-safe built-in auto-import allowlist', () => {
@@ -887,6 +890,27 @@ ctx.libs.antd.NotAComponent;
 
     clearTypeScriptProjectCachesForTests();
     expect(await getTypeScriptProjectDiagnostics(baseProject(code), code)).not.toEqual([]);
+  });
+
+  it('waits for default sessions discarded by reset before final shutdown completes', async () => {
+    const loading = createDeferred<RunJSTypeLibraryPack>();
+    const loader = vi.fn(() => loading.promise);
+    registerRunJSTypeLibraryPackLoader('dayjs', loader);
+    const code = 'ctx.libs.dayjs;';
+    const diagnostics = getTypeScriptProjectDiagnostics(baseProject(code), code);
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
+
+    clearTypeScriptProjectCachesForTests();
+    let shutdownComplete = false;
+    const shutdown = shutdownDefaultTypeScriptProjectSession().then(() => {
+      shutdownComplete = true;
+    });
+    await Promise.resolve();
+    expect(shutdownComplete).toBe(false);
+
+    loading.resolve(fakePack('dayjs'));
+    await shutdown;
+    expect(await diagnostics).toEqual([]);
   });
 
   it('drops stale requests and supports explicit disposal', async () => {

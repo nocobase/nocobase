@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createTypeScriptProjectSession, type CodeEditorTypeScriptProjectSession } from '../../typescriptProject';
+import { expect } from 'vitest';
+
+import {
+  createTypeScriptProjectSession,
+  getDefaultTypeScriptProjectSessionDebugStateForTests,
+  shutdownDefaultTypeScriptProjectSession,
+  type CodeEditorTypeScriptProjectSession,
+} from '../../typescriptProject';
 
 export async function withTypeScriptProjectSession<T>(
   run: (session: CodeEditorTypeScriptProjectSession) => Promise<T>,
@@ -19,4 +26,11 @@ export async function withTypeScriptProjectSession<T>(
     session.dispose();
     await session.whenDisposed();
   }
+}
+
+export async function shutdownTypeScriptProjectSessionSuite(): Promise<void> {
+  await shutdownDefaultTypeScriptProjectSession();
+  expect(getDefaultTypeScriptProjectSessionDebugStateForTests()).toEqual(
+    expect.objectContaining({ allFileNames: [], disposed: true, rootFileNames: [] }),
+  );
 }

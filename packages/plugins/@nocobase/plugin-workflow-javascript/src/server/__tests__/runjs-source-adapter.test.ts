@@ -27,6 +27,10 @@ describe('workflow-javascript RunJS source adapter', () => {
     await app?.destroy();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('saves workflow JavaScript node content while preserving other config fields', async () => {
     const WorkflowModel = app.db.getCollection('workflows').model;
     const workflow = await WorkflowModel.create({

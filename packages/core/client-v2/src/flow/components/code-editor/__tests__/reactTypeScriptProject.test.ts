@@ -9,10 +9,13 @@
 
 import { buildRunJSTypeScriptContextDeclaration } from '@nocobase/runjs/client-v2';
 import type { Diagnostic } from '@codemirror/lint';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
-import { withTypeScriptProjectSession } from './helpers/withTypeScriptProjectSession';
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   getRunJSTypeLibraryPackRegistryDebugState,
@@ -34,6 +37,8 @@ afterEach(() => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS official React TypeScript project', () => {
   it('uses official React hooks, JSX, component, and utility types', async () => {

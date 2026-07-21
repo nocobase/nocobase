@@ -8,9 +8,12 @@
  */
 
 import type { Diagnostic } from '@codemirror/lint';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
-import { withTypeScriptProjectSession } from './helpers/withTypeScriptProjectSession';
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import { clearRunJSTypeLibraryPackRegistryForTests } from '../typescriptLibraryRegistry';
 import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
@@ -30,6 +33,8 @@ afterEach(() => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS generated Ant Design and Icons TypeScript packs', () => {
   it('loads representative Ant Design symbols with official props, generics, hooks, and static APIs', async () => {

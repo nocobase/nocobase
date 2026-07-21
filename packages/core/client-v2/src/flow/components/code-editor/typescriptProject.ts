@@ -221,15 +221,28 @@ export function createTypeScriptProjectSession(options?: {
 }
 
 let defaultProjectSession = createTypeScriptProjectSession();
+let defaultProjectSessionDisposal = Promise.resolve();
+
+function disposeDefaultTypeScriptProjectSession(): void {
+  const session = defaultProjectSession;
+  session.dispose();
+  defaultProjectSessionDisposal = Promise.all([defaultProjectSessionDisposal, session.whenDisposed()]).then(
+    () => undefined,
+  );
+}
 
 export function resetDefaultTypeScriptProjectSession(): void {
-  defaultProjectSession.dispose();
+  disposeDefaultTypeScriptProjectSession();
   defaultProjectSession = createTypeScriptProjectSession();
 }
 
 export async function shutdownDefaultTypeScriptProjectSession(): Promise<void> {
-  defaultProjectSession.dispose();
-  await defaultProjectSession.whenDisposed();
+  disposeDefaultTypeScriptProjectSession();
+  await defaultProjectSessionDisposal;
+}
+
+export function getDefaultTypeScriptProjectSessionDebugStateForTests(): CodeEditorTypeScriptProjectDebugState {
+  return defaultProjectSession.getDebugState();
 }
 
 export function clearTypeScriptProjectCachesForTests(): void {

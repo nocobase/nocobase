@@ -9,9 +9,12 @@
 
 import type { Diagnostic } from '@codemirror/lint';
 import { RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
-import { withTypeScriptProjectSession } from './helpers/withTypeScriptProjectSession';
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
@@ -35,6 +38,8 @@ afterEach(() => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS official ReactDOM TypeScript project', () => {
   it('uses official Root APIs for native, fragment, and ElementProxy containers', async () => {

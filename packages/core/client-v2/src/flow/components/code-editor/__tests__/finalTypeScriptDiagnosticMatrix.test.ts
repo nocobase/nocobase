@@ -8,7 +8,7 @@
  */
 
 import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
 import {
   runJSTypeScriptFinalDiagnosticMatrix,
@@ -23,6 +23,7 @@ import {
   clearRunJSTypeLibraryPackRegistryForTests,
   createRunJSTypeLibraryRegistry,
 } from '../typescriptLibraryRegistry';
+import { shutdownTypeScriptProjectSessionSuite } from './helpers/withTypeScriptProjectSession';
 
 function customPack(): RunJSTypeLibraryPack {
   return {
@@ -84,6 +85,8 @@ afterEach(() => {
   clearTypeScriptProjectCachesForTests();
   clearRunJSTypeLibraryPackRegistryForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS final browser TypeScript diagnostic matrix', () => {
   it('matches the shared Node diagnostic codes and stable message fragments', async () => {

@@ -8,9 +8,12 @@
  */
 
 import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
-import { withTypeScriptProjectSession } from './helpers/withTypeScriptProjectSession';
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import type { CodeEditorTypeScriptProject } from '../typescriptProject';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
@@ -74,6 +77,8 @@ function project(
 }
 
 afterEach(() => clearRunJSTypeLibraryPackRegistryForTests());
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('custom RunJS TypeScript library registry', () => {
   it('loads a fake library on demand with completion, hover, and diagnostics', async () => {
