@@ -26,10 +26,8 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../manager/ai-manager';
 import { useT } from '../../../locale';
 import type { PluginAIClientV2 } from '../../../plugin';
-import {
-  normalizeTriggerTaskOptions,
-  type RunJSAIEmployeeTriggerTaskOptions,
-} from '../utils/normalizeTriggerTaskOptions';
+import { normalizeTriggerTaskOptions, type RunJSAIEmployeeTriggerTaskOptions } from '../utils';
+import { getMountedChatBox } from '../stores/mounted-chat-boxes';
 import { ChatBoxRuntimeProvider, getGlobalChatBoxRuntime, useChatBoxRuntime } from '../stores/runtime';
 
 const { Text } = Typography;
@@ -57,6 +55,7 @@ const ChatBoxLayoutContent: React.FC<{
   const { loadUnreadCounts } = useChatConversationActions();
   const { triggerTask } = useChatBoxActions();
   const aiConfigRepository = useAIConfigRepository();
+  const t = useT();
 
   const refreshUnreadCounts = useCallback(() => {
     loadUnreadCounts().catch(console.error);
@@ -86,6 +85,17 @@ const ChatBoxLayoutContent: React.FC<{
           if (!normalized) {
             return undefined;
           }
+          const targetChatBoxUid = normalized.chatBoxUid;
+          const targetChatBox = targetChatBoxUid ? getMountedChatBox(targetChatBoxUid) : undefined;
+          if (targetChatBoxUid && !targetChatBox) {
+            notification.error({
+              message: t('AI chat box not found', { uid: targetChatBoxUid }),
+            });
+            return undefined;
+          }
+          if (targetChatBox) {
+            return targetChatBox.triggerTask(normalized);
+          }
           return triggerTask(normalized);
         })
         .catch(console.error);
@@ -97,7 +107,7 @@ const ChatBoxLayoutContent: React.FC<{
       aiManager?.onChatBoxUnmounted();
       app.eventBus.removeEventListener(AI_EMPLOYEE_TRIGGER_TASK_EVENT, handler);
     };
-  }, [aiConfigRepository, app.apiClient, app.eventBus, app.pm, triggerTask]);
+  }, [aiConfigRepository, app.apiClient, app.eventBus, app.pm, t, triggerTask]);
 
   const panelWidth = 450;
   const zIndex = 1100;

@@ -96,7 +96,7 @@ describe('plugin-ai client-v2 public API contract', () => {
     const optionField: OptionField = { name: 'temperature', title: 'Temperature' };
     const skillSettings: SkillSettings = { tools: [], skills: [] };
     const task: Task = { title: 'Translate' };
-    const triggerTaskOptions: TriggerTaskOptions = { aiEmployee, tasks: [task] };
+    const triggerTaskOptions: TriggerTaskOptions = { aiEmployee, tasks: [task], chatBoxUid: 'chat-box-1' };
     const webSearching: WebSearching = { type: 'search', query: 'NocoBase' };
 
     expect({

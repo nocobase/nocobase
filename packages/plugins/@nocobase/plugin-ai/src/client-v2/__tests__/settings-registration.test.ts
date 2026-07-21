@@ -163,9 +163,9 @@ describe('plugin-ai v2 settings registration', () => {
         const runner = createJSRunnerWithVersion.call(ctx, { version });
         const result = await runner.run(`
           ctx.ai.tools.register({ name: 'read_dashboard', description: 'Read dashboard', execute() {} });
-          ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true });
+          ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], chatBoxUid: 'chat-box-1', open: true });
           ctx.ai.triggerModelTask('flow-model-uid', 0);
-          return typeof ctx.ai.tools.register === 'function';
+          return typeof ctx.ai.tools.register === 'function' && typeof ctx.ai.triggerTask === 'function' && typeof ctx.ai.triggerModelTask === 'function';
         `);
 
         expect(result?.success).toBe(true);
@@ -179,7 +179,12 @@ describe('plugin-ai v2 settings registration', () => {
         'block-1',
         expect.objectContaining({ name: 'read_dashboard', description: 'Read dashboard' }),
       );
-      expect(triggerTask).toHaveBeenCalledWith({ aiEmployee: 'nathan', tasks: [], open: true });
+      expect(triggerTask).toHaveBeenCalledWith({
+        aiEmployee: 'nathan',
+        tasks: [],
+        chatBoxUid: 'chat-box-1',
+        open: true,
+      });
       expect(triggerModelTask).toHaveBeenCalledWith('flow-model-uid', 0);
     }
   });

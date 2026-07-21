@@ -10,7 +10,7 @@
 import { Registry } from '@nocobase/utils/client';
 import type { ToolsOptions, ToolModalProps } from '@nocobase/client-v2';
 import type { ComponentType } from 'react';
-import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils/normalizeTriggerTaskOptions';
+import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils';
 import type { Task } from '../ai-employees/types';
 import type { WorkContextOptions } from '../ai-employees/types';
 import type { AIEmployeeShortcutModel } from '../models/ai-employees/AIEmployeeShortcutModel';
@@ -18,7 +18,7 @@ import { FrontendToolRegistry } from './frontend-tool-registry';
 
 export const AI_EMPLOYEE_TRIGGER_TASK_EVENT = 'ai:employee:trigger-task';
 
-export type TriggerModelTaskOptions = Omit<RunJSAIEmployeeTriggerTaskOptions, 'aiEmployee' | 'tasks'>;
+export type TriggerModelTaskOptions = Omit<RunJSAIEmployeeTriggerTaskOptions, 'aiEmployee' | 'tasks' | 'chatBoxUid'>;
 
 type AIManagerApp = {
   eventBus: {
@@ -136,6 +136,7 @@ export class AIManager {
       ...options,
       aiEmployee: username,
       tasks: [task],
+      ...(task.chatBoxUid ? { chatBoxUid: task.chatBoxUid } : {}),
     });
   }
 

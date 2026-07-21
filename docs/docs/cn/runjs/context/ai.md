@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "ctx.ai 在 RunJS 中触发 AI 员工任务，支持直接传入任务内容，也支持复用页面上 AI 员工操作中已配置的任务。"
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "ctx.ai 在 RunJS 中触发 AI 员工任务，支持直接传入任务内容、指定 AI Chat Box，也支持复用页面上 AI 员工操作中已配置的任务。"
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -32,6 +32,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | AI 员工。传字符串时按 `AIEmployee.username` 精确匹配，且必须是当前用户可访问的 AI 员工 |
 | `tasks` | `Task[]` | 要触发的任务列表 |
+| `chatBoxUid` | `string` | 指定承载任务的 AI Chat Box 区块 FlowModel uid |
 | `open` | `boolean` | 是否打开 AI 员工对话面板 |
 | `auto` | `boolean` | 是否按 AI 员工操作的自动触发语义处理 |
 
@@ -47,6 +48,36 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `webSearch` | `boolean` | 是否允许本次任务使用 Web search |
 | `model` | `{ llmService: string; model: string } \| null` | 指定本次任务使用的模型 |
 | `skillSettings` | `SkillSettings` | 指定本次任务使用的 skills / tools 配置 |
+
+### 指定 AI Chat Box
+
+在 `triggerTask()` 的顶层参数中设置 `chatBoxUid`，可以让任务在页面上指定的 AI Chat Box 区块中触发，而不是打开全局 AI 员工对话框。
+
+```ts
+const chatBoxUid = 'AI_CHAT_BOX_BLOCK_UID';
+
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid,
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+使用 `chatBoxUid` 时需要注意：
+
+- `chatBoxUid` 是 `triggerTask()` 的顶层参数，不要放在 `tasks` 数组的具体任务上。
+- 传入的 uid 必须是 AI Chat Box 外层区块的 FlowModel uid，不是区块内部子模型或 AI 员工操作的 uid。
+- 目标 AI Chat Box 必须已在当前页面上挂载。如果找不到对应区块，NocoBase 会显示错误，且不会回退到全局对话框。
+
+如果不设置 `chatBoxUid`，任务会按默认行为在全局 AI 员工对话框中触发。
 
 ### 添加页面区块上下文
 
@@ -266,6 +297,8 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 
 这个方法会从目标模型读取 AI 员工和任务配置。它适合复用页面上已经配置好的 AI 员工操作——运营人员可以在界面里调整任务内容，JSBlock 只负责触发。
 
+`triggerModelTask()` 的 `options` 不接收 `chatBoxUid`。如果要在指定 AI Chat Box 中触发，需要在目标 AI 员工操作的对应任务上配置 `chatBoxUid`。`triggerModelTask()` 读取该任务时会一并复用此字段。
+
 ```ts
 if (!ctx.ai?.triggerModelTask) {
   ctx.message.error(ctx.t('AI 员工任务 API 不可用。'));
@@ -298,6 +331,8 @@ ctx.message.success(ctx.t('已触发配置好的 AI 员工任务。'));
 - `aiEmployee` 字符串只按 `AIEmployee.username` 精确匹配，不按昵称、职位或翻译后的名称匹配。
 - `triggerModelTask()` 的 `taskIndex` 从 `0` 开始。
 - `triggerModelTask()` 读取的是目标 AI 员工操作模型上的任务配置。任务需要使用工作上下文时，请在该任务配置里设置 `message.workContext`。
+- `triggerTask()` 的顶层 `chatBoxUid` 必须指向当前已挂载的 AI Chat Box 区块。
+- `triggerModelTask()` 不接收顶层 `chatBoxUid`，它会继续使用预设 Task 上的 `chatBoxUid`。
 
 ## 相关
 

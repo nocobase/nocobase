@@ -16,6 +16,7 @@ import { AIEmployeeProfileCard } from './ProfileCard';
 import { useChat } from './chatbox/hooks/useChat';
 import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
+import { getTargetChatBoxUid } from './chatbox/utils';
 import { getMountedChatBox, type MountedChatBoxEntry } from './chatbox/stores/mounted-chat-boxes';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from './chatbox/stores/runtime';
 import { useT } from '../locale';
@@ -25,13 +26,6 @@ type ShortcutAIEmployee = Pick<AIEmployee, 'username'> & Partial<AIEmployee>;
 
 type ShortcutContext = {
   workContext?: ContextItem[];
-};
-
-const getTargetChatBoxUid = (taskOptions?: Task[]) => {
-  if (taskOptions?.length !== 1) {
-    return undefined;
-  }
-  return taskOptions[0]?.chatBoxUid;
 };
 
 export const AIEmployeeShortcut: React.FC<{

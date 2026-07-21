@@ -214,6 +214,7 @@ export type Task = {
 export type TriggerTaskOptions = {
   aiEmployee?: AIEmployee;
   tasks?: Task[];
+  chatBoxUid?: string;
   auto?: boolean;
   open?: boolean;
 };

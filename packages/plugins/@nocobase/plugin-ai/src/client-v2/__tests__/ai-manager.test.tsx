@@ -10,7 +10,7 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT, AIManager } from '../manager/ai-manager';
-import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils/normalizeTriggerTaskOptions';
+import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils';
 import type { ContextItem, Task } from '../ai-employees/types';
 import type { FrontendToolRegistration } from '../manager/frontend-tool-registry';
 import type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../manager/ai-manager';
@@ -207,7 +207,7 @@ describe('AIManager v2', () => {
   });
 
   it('triggers a model task by reading model AI employee and 0-based task index', () => {
-    const task: Task = { title: 'Summarize' };
+    const task: Task = { title: 'Summarize', chatBoxUid: 'chat-box-1' };
     const getModel = vi.fn(() => ({
       props: {
         aiEmployee: { username: 'nathan' },
@@ -221,7 +221,7 @@ describe('AIManager v2', () => {
     manager.triggerModelTask('flow-model-uid', 1, { open: true });
 
     expect(getModel).toHaveBeenCalledWith('flow-model-uid', true);
-    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [task], open: true }]);
+    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [task], chatBoxUid: 'chat-box-1', open: true }]);
   });
 
   it('warns when model props have no task at the requested index', () => {

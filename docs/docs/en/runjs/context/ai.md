@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "Use ctx.ai in RunJS to trigger AI employee tasks, either with inline task content or with tasks configured on an AI employee action."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "Use ctx.ai in RunJS to trigger AI employee tasks in the global conversation or a specified AI Chat Box, either with inline task content or with tasks configured on an AI employee action."
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -30,6 +30,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | AI employee. When a string is passed, NocoBase matches `AIEmployee.username` exactly, and the AI employee must be accessible to the current user. |
 | `tasks` | `Task[]` | Tasks to trigger. |
+| `chatBoxUid` | `string` | FlowModel uid of the AI Chat Box block that should receive the task. |
 | `open` | `boolean` | Whether to open the AI employee conversation panel. |
 | `auto` | `boolean` | Whether to use the auto-trigger semantics of an AI employee action. |
 
@@ -45,6 +46,28 @@ Common `Task` fields:
 | `webSearch` | `boolean` | Whether Web search is allowed for this task. |
 | `model` | `{ llmService: string; model: string } \| null` | Model used by this task. |
 | `skillSettings` | `SkillSettings` | Skills and tools available to this task. |
+
+### Target an AI Chat Box
+
+Set `chatBoxUid` on the top-level `triggerTask()` options to trigger the task in a mounted AI Chat Box block instead of the global AI employee dialog.
+
+```ts
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid: 'AI_CHAT_BOX_BLOCK_UID',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+The uid must belong to the outer AI Chat Box block currently mounted on the page. Do not put this routing value inside `tasks`. If the target block cannot be found, NocoBase reports an error and does not fall back to the global dialog. When `chatBoxUid` is omitted, the task uses the global AI employee dialog.
 
 ### Add Page Block Context
 
@@ -166,6 +189,8 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 
 This method reads the AI employee and task configuration from the target model. It is useful when the task has already been configured on an AI employee action on the page, and RunJS only needs to trigger it.
 
+The public `triggerModelTask()` options do not accept `chatBoxUid`. To target an AI Chat Box, configure `chatBoxUid` on the preset task of the AI employee action. `triggerModelTask()` continues to reuse that preset value.
+
 ```ts
 if (!ctx.ai?.triggerModelTask) {
   ctx.message.error(ctx.t('AI employee task API is not available.'));
@@ -198,6 +223,8 @@ If the target model does not exist, has no AI employee configured, or the specif
 - `aiEmployee` strings only match `AIEmployee.username` exactly. They do not match nicknames, job titles, or translated names.
 - `triggerModelTask()` uses a `0`-based `taskIndex`.
 - `triggerModelTask()` reads task configuration from the target AI employee action model. If the task needs work context, configure `message.workContext` on that task.
+- Top-level `triggerTask().chatBoxUid` must reference an AI Chat Box block currently mounted on the page.
+- `triggerModelTask()` keeps using `chatBoxUid` configured on its preset task.
 
 ## Related
 

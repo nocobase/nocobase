@@ -37,11 +37,13 @@ export const registerPluginAIRunJSContextContribution = () => {
               type: 'function',
               description: 'Trigger an AI employee task. This is fire-and-forget and does not return a task result.',
               detail:
-                '(options: { aiEmployee?: string | AIEmployee; tasks?: Task[]; auto?: boolean; open?: boolean }) => void',
+                '(options: { aiEmployee?: string | AIEmployee; tasks?: Task[]; chatBoxUid?: string; auto?: boolean; open?: boolean }) => void',
               completion: {
                 insertText: `ctx.ai.triggerTask({ aiEmployee: 'username', tasks: [] })`,
               },
-              examples: [`ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true })`],
+              examples: [
+                `ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], chatBoxUid: 'ai-chat-box-uid', open: true })`,
+              ],
             },
             triggerModelTask: {
               type: 'function',
