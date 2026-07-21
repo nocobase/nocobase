@@ -11,17 +11,13 @@ import { buildRunJSTypeScriptContextDeclaration } from '@nocobase/runjs/client-v
 import type { Diagnostic } from '@codemirror/lint';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generatedRunJSTypeLibraryPackLoaders } from '../type-packs/generated/loaders';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
+import { withTypeScriptProjectSession } from './helpers/withTypeScriptProjectSession';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   getRunJSTypeLibraryPackRegistryDebugState,
 } from '../typescriptLibraryRegistry';
-import {
-  clearTypeScriptProjectCachesForTests,
-  createTypeScriptProjectSession,
-  type CodeEditorTypeScriptProject,
-} from '../typescriptProject';
+import { clearTypeScriptProjectCachesForTests, type CodeEditorTypeScriptProject } from '../typescriptProject';
 
 function reactProject(code: string): CodeEditorTypeScriptProject {
   return {
@@ -66,9 +62,9 @@ ctx.render(
   </Component>,
 );
 `;
-    const session = createTypeScriptProjectSession();
-
-    expect(errorMessages(await session.getDiagnostics(reactProject(code), code))).toEqual([]);
+    await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(reactProject(code), code))).toEqual([]);
+    });
   });
 
   it('reports invalid hook arguments, effect cleanup values, generics, and JSX props', async () => {
@@ -79,36 +75,39 @@ ctx.React.useEffect(() => 42, []);
 ctx.libs.React.useMemo<number>(() => 'wrong', []);
 ctx.render(<Component unexpected={1} />);
 `;
-    const session = createTypeScriptProjectSession();
-    const messages = errorMessages(await session.getDiagnostics(reactProject(code), code));
+    await withTypeScriptProjectSession(async (session) => {
+      const messages = errorMessages(await session.getDiagnostics(reactProject(code), code));
 
-    expect(messages.some((message) => /number/.test(message) && /string/.test(message))).toBe(true);
-    expect(messages.some((message) => /EffectCallback|Destructor|void/.test(message))).toBe(true);
-    expect(messages.filter((message) => /number/.test(message) && /string/.test(message)).length).toBeGreaterThan(1);
-    expect(messages.some((message) => /unexpected|required/.test(message))).toBe(true);
+      expect(messages.some((message) => /number/.test(message) && /string/.test(message))).toBe(true);
+      expect(messages.some((message) => /EffectCallback|Destructor|void/.test(message))).toBe(true);
+      expect(messages.filter((message) => /number/.test(message) && /string/.test(message)).length).toBeGreaterThan(1);
+      expect(messages.some((message) => /unexpected|required/.test(message))).toBe(true);
+    });
   });
 
   it('loads the React pack once for concurrent requests and never for ordinary code', async () => {
     const ordinaryCode = 'ctx.logger.info("ready");';
-    const ordinarySession = createTypeScriptProjectSession();
-    expect(await ordinarySession.getDiagnostics(reactProject(ordinaryCode), ordinaryCode)).toEqual([]);
+    await withTypeScriptProjectSession(async (ordinarySession) => {
+      expect(await ordinarySession.getDiagnostics(reactProject(ordinaryCode), ordinaryCode)).toEqual([]);
+    });
     expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(0);
 
     const code = 'ctx.libs.React.useState(0); const node = <div />; ctx.render(node);';
     const project = reactProject(code);
-    const session = createTypeScriptProjectSession();
-    const completionPosition = code.indexOf('ctx.libs.React.') + 'ctx.libs.React.'.length;
-    const [completion, hover, diagnostics] = await Promise.all([
-      session.getCompletionResult(project, completionPosition, code, true),
-      session.getHover(project, code.indexOf('useState') + 2, code),
-      session.getDiagnostics(project, code),
-    ]);
+    await withTypeScriptProjectSession(async (session) => {
+      const completionPosition = code.indexOf('ctx.libs.React.') + 'ctx.libs.React.'.length;
+      const [completion, hover, diagnostics] = await Promise.all([
+        session.getCompletionResult(project, completionPosition, code, true),
+        session.getHover(project, code.indexOf('useState') + 2, code),
+        session.getDiagnostics(project, code),
+      ]);
 
-    expect(completion?.options.some((option) => option.label === 'useState')).toBe(true);
-    expect(hover?.message).toContain('useState');
-    expect(errorMessages(diagnostics)).toEqual([]);
-    expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(1);
-    await session.getDiagnostics(project, code);
+      expect(completion?.options.some((option) => option.label === 'useState')).toBe(true);
+      expect(hover?.message).toContain('useState');
+      expect(errorMessages(diagnostics)).toEqual([]);
+      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(1);
+      await session.getDiagnostics(project, code);
+    });
     expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(1);
   });
 

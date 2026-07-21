@@ -10,7 +10,8 @@
 import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createTypeScriptProjectSession, type CodeEditorTypeScriptProject } from '../typescriptProject';
+import { withTypeScriptProjectSession } from './helpers/withTypeScriptProjectSession';
+import type { CodeEditorTypeScriptProject } from '../typescriptProject';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   createRunJSTypeLibraryRegistry,
@@ -78,22 +79,22 @@ describe('custom RunJS TypeScript library registry', () => {
   it('loads a fake library on demand with completion, hover, and diagnostics', async () => {
     const registry = createRunJSTypeLibraryRegistry();
     const loader = registerFake(registry);
-    const session = createTypeScriptProjectSession();
+    await withTypeScriptProjectSession(async (session) => {
+      expect(await session.getDiagnostics(project('ctx.logger.info("ready");', registry))).toEqual([]);
+      expect(loader).not.toHaveBeenCalled();
 
-    expect(await session.getDiagnostics(project('ctx.logger.info("ready");', registry))).toEqual([]);
-    expect(loader).not.toHaveBeenCalled();
-
-    const code = 'ctx.libs.fakeLib.greet("Ada"); ctx.libs.fakeLib.';
-    const completion = await session.getCompletionResult(project(code, registry), code.length, code, true);
-    expect(completion?.options.some((option) => option.label === 'answer')).toBe(true);
-    expect(completion?.options.some((option) => option.label === 'greet')).toBe(true);
-    const hover = await session.getHover(project(code, registry), code.indexOf('greet') + 2, code);
-    expect(`${hover?.detail}\n${hover?.message}`).toContain('greet');
-    expect(await session.getDiagnostics(project('ctx.libs.fakeLib.greet(1);', registry))).toEqual([
-      expect.objectContaining({ message: expect.stringMatching(/string/) }),
-    ]);
-    expect(loader).toHaveBeenCalledTimes(1);
-    expect(await registry.loadCompletionCatalog('fake-lib')).toEqual([{ label: 'greet', type: 'function' }]);
+      const code = 'ctx.libs.fakeLib.greet("Ada"); ctx.libs.fakeLib.';
+      const completion = await session.getCompletionResult(project(code, registry), code.length, code, true);
+      expect(completion?.options.some((option) => option.label === 'answer')).toBe(true);
+      expect(completion?.options.some((option) => option.label === 'greet')).toBe(true);
+      const hover = await session.getHover(project(code, registry), code.indexOf('greet') + 2, code);
+      expect(`${hover?.detail}\n${hover?.message}`).toContain('greet');
+      expect(await session.getDiagnostics(project('ctx.libs.fakeLib.greet(1);', registry))).toEqual([
+        expect.objectContaining({ message: expect.stringMatching(/string/) }),
+      ]);
+      expect(loader).toHaveBeenCalledTimes(1);
+      expect(await registry.loadCompletionCatalog('fake-lib')).toEqual([{ label: 'greet', type: 'function' }]);
+    });
   });
 
   it('supports explicit ids while preserving declarationFiles and unknown libraries', async () => {
@@ -102,11 +103,13 @@ describe('custom RunJS TypeScript library registry', () => {
     const explicit = project('ctx.fakeLib.greet(customGlobal);', registry, ['fake-lib']);
     explicit.declarationFiles = [{ content: 'declare const customGlobal: string;', path: 'src/custom.d.ts' }];
 
-    expect(await createTypeScriptProjectSession().getDiagnostics(explicit)).toEqual([]);
+    await withTypeScriptProjectSession(async (session) => {
+      expect(await session.getDiagnostics(explicit)).toEqual([]);
+    });
     expect(loader).toHaveBeenCalledTimes(1);
 
-    const unknown = await createTypeScriptProjectSession().getDiagnostics(
-      project('ctx.libs.notRegistered.call();', registry),
+    const unknown = await withTypeScriptProjectSession((session) =>
+      session.getDiagnostics(project('ctx.libs.notRegistered.call();', registry)),
     );
     expect(unknown.some((diagnostic) => /unknown/.test(diagnostic.message))).toBe(true);
   });
@@ -123,16 +126,16 @@ describe('custom RunJS TypeScript library registry', () => {
       vi.fn(() => fakePack('1.0.0', 7)),
     );
 
-    expect(
-      await createTypeScriptProjectSession().getDiagnostics(
-        project('ctx.libs.fakeLib.answer satisfies 42;', first, ['fake-lib']),
-      ),
-    ).toEqual([]);
-    expect(
-      await createTypeScriptProjectSession().getDiagnostics(
-        project('ctx.libs.fakeLib.answer satisfies 7;', second, ['fake-lib']),
-      ),
-    ).toEqual([]);
+    await withTypeScriptProjectSession(async (session) => {
+      expect(
+        await session.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 42;', first, ['fake-lib'])),
+      ).toEqual([]);
+    });
+    await withTypeScriptProjectSession(async (session) => {
+      expect(
+        await session.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second, ['fake-lib'])),
+      ).toEqual([]);
+    });
     expect(firstLoader).toHaveBeenCalledTimes(1);
     expect(secondLoader).toHaveBeenCalledTimes(1);
 
@@ -171,7 +174,9 @@ describe('custom RunJS TypeScript library registry', () => {
     const onInternalError = vi.fn();
     const conflictingProject = project('ctx.libs.fakeLib.answer;', conflicting, ['fake-lib', 'fake-extra']);
     conflictingProject.onInternalError = onInternalError;
-    expect(await createTypeScriptProjectSession().getDiagnostics(conflictingProject)).toEqual([]);
+    await withTypeScriptProjectSession(async (session) => {
+      expect(await session.getDiagnostics(conflictingProject)).toEqual([]);
+    });
     expect(onInternalError).toHaveBeenCalledWith(expect.objectContaining({ code: 'TYPE_LIBRARY_FILE_CONFLICT' }));
   });
 });

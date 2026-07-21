@@ -116,6 +116,7 @@ describe('RunJS final browser TypeScript diagnostic matrix', () => {
       }
     } finally {
       session.dispose();
+      await session.whenDisposed();
       registry.dispose();
     }
   });
