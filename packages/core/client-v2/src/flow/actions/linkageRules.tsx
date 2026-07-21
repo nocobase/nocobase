@@ -41,6 +41,8 @@ import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { AssignMode, FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { FieldStateRulesEditor, type FieldStateRuleItem } from '../components/FieldStateRulesEditor';
+import { parseFieldRuleTargetPath } from '../components/FieldRuleItemsEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import _ from 'lodash';
@@ -50,8 +52,13 @@ import { enumToOptions, translateOptionLabel } from '../internal/utils/enumOptio
 import {
   findFormItemModelByFieldPath,
   getCollectionFromModel,
+  getFormItemFieldPathCandidates,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
+import {
+  ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP,
+  ROW_SCOPED_FIELD_OPTIONS_PROP,
+} from '../internal/utils/rowScopedFieldState';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
 
@@ -213,6 +220,9 @@ const getFieldStateProps = (state: string, selectedOptions?: any[]) => {
 };
 
 const getFieldStateTargetModel = (state: string, model: any) => {
+  if (state === 'limitOptions' && isRowScopedFieldStateTarget(model)) {
+    return model;
+  }
   return state === 'limitOptions' ? model?.subModels?.field || model : model;
 };
 
@@ -221,17 +231,43 @@ const isFieldOptionsPatch = (props: any) => {
 };
 
 const syncFieldOptionsToForks = (model: any, props: any) => {
+  if (model?.isFork) return;
   if (!isFieldOptionsPatch(props) || !model?.forks || typeof model.forks.forEach !== 'function') return;
   model.forks.forEach((fork: any) => {
     fork?.setProps?.({ options: cloneOptions(props.options) });
   });
 };
 
+const CLEAR_VALUE_ON_HIDDEN_FIELD_STATE_ACTIONS = new Set([
+  'linkageSetFieldProps',
+  'subFormLinkageSetFieldProps',
+  'linkageSetFieldState',
+  'subFormLinkageSetFieldState',
+]);
+
 type FieldStateEditorValue = {
   fields: string[];
   state?: string;
   selectedOptions?: any[];
 };
+
+const getFieldStateOptions = (
+  t: (s: string) => string,
+  includeFormStates: boolean,
+  canConfigureLimitOptions: boolean,
+) =>
+  [
+    { label: t('Visible'), value: 'visible' },
+    { label: t('Hidden'), value: 'hidden' },
+    { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
+    includeFormStates && { label: t('Required'), value: 'required' },
+    includeFormStates && { label: t('Not required'), value: 'notRequired' },
+    includeFormStates && { label: t('Disabled'), value: 'disabled' },
+    includeFormStates && { label: t('Enabled'), value: 'enabled' },
+    includeFormStates && canConfigureLimitOptions && { label: t('Options'), value: 'limitOptions' },
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+const splitTargetPath = parseFieldRuleTargetPath;
 
 const FieldStateEditor = ({
   value = { fields: [] } as FieldStateEditorValue,
@@ -248,16 +284,7 @@ const FieldStateEditor = ({
     .filter(Boolean);
   const canConfigureLimitOptions =
     selectedFieldModels.length === 1 && selectedFieldModels.every((model: any) => supportsLimitOptions(model));
-  const stateOptions = [
-    { label: t('Visible'), value: 'visible' },
-    { label: t('Hidden'), value: 'hidden' },
-    { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
-    includeFormStates && { label: t('Required'), value: 'required' },
-    includeFormStates && { label: t('Not required'), value: 'notRequired' },
-    includeFormStates && { label: t('Disabled'), value: 'disabled' },
-    includeFormStates && { label: t('Enabled'), value: 'enabled' },
-    includeFormStates && canConfigureLimitOptions && { label: t('Options'), value: 'limitOptions' },
-  ].filter(Boolean);
+  const stateOptions = getFieldStateOptions(t, includeFormStates, canConfigureLimitOptions);
   const selectableOptions = getFieldOptionsBySelectedFields(fieldOptions, value.fields, t);
 
   const handleFieldsChange = (selectedFields: string[]) => {
@@ -623,6 +650,299 @@ function normalizeSubFormTargetPath(
   };
 }
 
+function normalizeFieldStateRuleItems(raw: any): FieldStateRuleItem[] {
+  return Array.isArray(raw) ? (raw as FieldStateRuleItem[]) : [];
+}
+
+function evaluateFieldStateRuleCondition(ctx: FlowContext, condition?: FilterGroupType): boolean {
+  if (!condition) return true;
+  const evaluator = (path: any, operator: string, right: any) => {
+    if (!operator) return true;
+    return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+  };
+
+  return evaluateConditions(removeInvalidFilterItems(condition), evaluator as any);
+}
+
+function getFieldIndexKey(fieldIndex: unknown): string | null {
+  if (!Array.isArray(fieldIndex)) return null;
+  const normalized = fieldIndex.filter((item): item is string => typeof item === 'string');
+  return normalized.length ? JSON.stringify(normalized) : null;
+}
+
+function isRowScopedFieldStateTarget(model: any): boolean {
+  if (!model || typeof model !== 'object') return false;
+  if (!Array.isArray(model?.context?.fieldIndex)) return false;
+  return !!(
+    model?.isFork ||
+    model?.subTableRowFork === true ||
+    model?.context?.subTableRowFork === true ||
+    model?.context?.getPropertyOptions?.('subTableRowFork')
+  );
+}
+
+function isSubTableRowScopedFieldStateTarget(model: any): boolean {
+  if (!model || typeof model !== 'object') return false;
+  return !!(
+    model?.subTableRowFork === true ||
+    model?.context?.subTableRowFork === true ||
+    model?.context?.getPropertyOptions?.('subTableRowFork')
+  );
+}
+
+function findRowScopedFieldStateTargetModel(ctx: FlowContext, targetPath: string) {
+  const sourceFieldIndexKey = getFieldIndexKey((ctx.model as any)?.context?.fieldIndex);
+  if (!sourceFieldIndexKey) return null;
+
+  const engine = (ctx as any)?.engine || (ctx.model as any)?.flowEngine;
+  if (!engine?.forEachModel) return null;
+
+  let matched: FlowModel | null = null;
+  const visit = (model: any) => {
+    if (matched || !model || model.disposed) return;
+    if (getFieldIndexKey(model?.context?.fieldIndex) !== sourceFieldIndexKey) return;
+    if (!isRowScopedFieldStateTarget(model)) return;
+    const candidates = getFormItemFieldPathCandidates(model);
+    if (candidates.some((path) => path === targetPath)) {
+      matched = model as FlowModel;
+    }
+  };
+
+  engine.forEachModel((model: any) => {
+    visit(model);
+    const forks = model?.forks;
+    if (forks && typeof forks.forEach === 'function') {
+      forks.forEach(visit);
+    }
+  });
+
+  return matched;
+}
+
+function findExactFieldStateFormItemModelByTargetPath(ctx: FlowContext, targetPath: string) {
+  const direct = findFormItemModelByFieldPath(ctx.model, targetPath);
+  if (direct) return direct;
+
+  const rowScoped = findRowScopedFieldStateTargetModel(ctx, targetPath);
+  if (rowScoped) return rowScoped;
+
+  const fieldIndex = (ctx.model as any)?.context?.fieldIndex;
+  const segments = splitTargetPath(targetPath);
+  if (!Array.isArray(fieldIndex) || segments.length < 2) {
+    return null;
+  }
+
+  for (let i = 1; i < segments.length; i++) {
+    const suffix = segments.slice(i).join('.');
+    const hit = findFormItemModelByFieldPath(ctx.model, suffix);
+    if (hit) return hit;
+  }
+
+  const rowScopedBySuffix = findRowScopedFieldStateTargetModel(ctx, segments.slice(1).join('.'));
+  if (rowScopedBySuffix) return rowScopedBySuffix;
+
+  return null;
+}
+
+function findNearestFieldStateFormItemModelByTargetPath(ctx: FlowContext, targetPath: string) {
+  const segments = splitTargetPath(targetPath);
+  if (segments.length < 2) return null;
+
+  for (let i = segments.length - 1; i > 0; i--) {
+    const ancestorPath = segments.slice(0, i).join('.');
+    const hit = findExactFieldStateFormItemModelByTargetPath(ctx, ancestorPath);
+    if (hit) return hit;
+  }
+
+  return null;
+}
+
+function getFieldStateRootCollection(ctx: FlowContext) {
+  return (ctx.model as any)?.context?.blockModel?.collection || getCollectionFromModel(ctx.model);
+}
+
+function isKnownInvalidFieldStateTargetPath(ctx: FlowContext, targetPath: string) {
+  const segments = splitTargetPath(targetPath);
+  if (!segments.length) return false;
+  if (segments[0]?.startsWith('__custom__:')) return false;
+
+  let collection = getFieldStateRootCollection(ctx) as any;
+  if (!collection?.getField) return false;
+
+  for (let index = 0; index < segments.length; index++) {
+    const field = collection?.getField?.(segments[index]) as any;
+    if (!field) return true;
+    if (index === segments.length - 1) return false;
+
+    const isAssociation = !!(field?.isAssociationField?.() || field?.target || field?.targetCollection);
+    if (!isAssociation) return true;
+    if (!field?.targetCollection?.getField) return false;
+    collection = field.targetCollection;
+  }
+
+  return false;
+}
+
+function findFieldStateFormItemModelByTargetPath(ctx: FlowContext, targetPath: string) {
+  const exact = findExactFieldStateFormItemModelByTargetPath(ctx, targetPath);
+  if (exact) return exact;
+  if (isKnownInvalidFieldStateTargetPath(ctx, targetPath)) return null;
+  return findNearestFieldStateFormItemModelByTargetPath(ctx, targetPath);
+}
+
+function resolveRowFormItemFork(ctx: FlowContext, formItemModel: FlowModel | null): FlowModel | null {
+  if (!formItemModel) return null;
+  if (isRowScopedFieldStateTarget(formItemModel)) {
+    return formItemModel;
+  }
+
+  const fieldUid = (formItemModel as any)?.uid ? String((formItemModel as any).uid) : '';
+  const fieldKey = (ctx.model as any)?.context?.fieldKey;
+  if (!fieldUid || !fieldKey || typeof (formItemModel as any)?.getFork !== 'function') {
+    return formItemModel;
+  }
+
+  return ((formItemModel as any).getFork(`${fieldKey}:${fieldUid}`) || formItemModel) as FlowModel;
+}
+
+function isSubTableColumnLikeFieldStateTarget(model: unknown): boolean {
+  if (!model || typeof model !== 'object') return false;
+  const record = model as Record<string, unknown>;
+  const ctor = (record as { constructor?: { name?: string; fieldComponentContext?: unknown } }).constructor;
+  if (ctor?.name === 'SubTableColumnModel') return true;
+  return typeof record.getColumnProps === 'function' && !!(record.subModels as { field?: unknown } | undefined)?.field;
+}
+
+function hasRowScopedFieldStateTargetPath(ctx: FlowContext, targetPath: string): boolean {
+  const engine = (ctx as any)?.engine || (ctx.model as any)?.flowEngine;
+  if (!engine?.forEachModel) return false;
+
+  let matched = false;
+  const visit = (model: any) => {
+    if (matched || !model || model.disposed) return;
+    const candidates = getFormItemFieldPathCandidates(model);
+    if (!candidates.some((path) => path === targetPath)) return;
+    matched = isRowScopedFieldStateTarget(model) || isSubTableColumnLikeFieldStateTarget(model);
+  };
+
+  engine.forEachModel((model: any) => {
+    visit(model);
+    const forks = model?.forks;
+    if (forks && typeof forks.forEach === 'function') {
+      forks.forEach(visit);
+    }
+  });
+
+  return matched;
+}
+
+function applyFieldStateRuleToModel(
+  actionName: string,
+  model: FlowModel,
+  item: FieldStateRuleItem,
+  setProps: (model: FlowModel, props: any) => void,
+) {
+  const state = item?.state;
+  if (!state) return;
+
+  let props =
+    state === 'limitOptions' && isRowScopedFieldStateTarget(model)
+      ? {
+          [ROW_SCOPED_FIELD_OPTIONS_PROP]: Array.isArray(item?.selectedOptions)
+            ? cloneOptions(item.selectedOptions)
+            : [],
+        }
+      : getFieldStateProps(state, item?.selectedOptions);
+  if (isSubTableRowScopedFieldStateTarget(model)) {
+    if (state === 'hidden') {
+      props = { hidden: true, [ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP]: true };
+    } else if (state === 'visible') {
+      props = { hidden: false, [ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP]: false };
+    }
+  }
+  if (!props) {
+    console.warn(`Unknown state: ${state}`);
+    return;
+  }
+
+  try {
+    setProps(getFieldStateTargetModel(state, model) as FlowModel, props);
+  } catch (error) {
+    console.warn(`[${actionName}] Failed to set field state`, { targetPath: item?.targetPath, state }, error);
+  }
+}
+
+function runFieldStateRules(
+  ctx: FlowContext,
+  options: {
+    actionName: string;
+    value: any;
+    setProps: (model: FlowModel, props: any) => void;
+    resolveModel: (item: FieldStateRuleItem) => FlowModel | null;
+  },
+) {
+  const items = normalizeFieldStateRuleItems(options.value);
+  if (!items.length) return;
+
+  for (const item of items) {
+    if (item?.enable === false) continue;
+    const targetPath = item?.targetPath ? String(item.targetPath) : '';
+    if (!targetPath || !item?.state) continue;
+    if (!evaluateFieldStateRuleCondition(ctx, item.condition)) continue;
+
+    const model = options.resolveModel(item);
+    if (!model) {
+      console.warn(`[${options.actionName}] Target field model not found`, {
+        targetPath,
+        modelUid: ctx.model?.uid,
+      });
+      continue;
+    }
+
+    applyFieldStateRuleToModel(options.actionName, model, item, options.setProps);
+  }
+}
+
+function runBlockFieldStateRules(ctx: FlowContext, actionName: string, value: any, setProps: any) {
+  runFieldStateRules(ctx, {
+    actionName,
+    value,
+    setProps,
+    resolveModel: (item) => {
+      const targetPath = item?.targetPath ? String(item.targetPath) : '';
+      const model = (targetPath ? findFieldStateFormItemModelByTargetPath(ctx, targetPath) : null) as FlowModel | null;
+      return resolveRowFormItemFork(ctx, model);
+    },
+  });
+}
+
+function runSubFormFieldStateRules(ctx: FlowContext, actionName: string, value: any, setProps: any) {
+  runFieldStateRules(ctx, {
+    actionName,
+    value,
+    setProps,
+    resolveModel: (item) => {
+      const rawTargetPath = item?.targetPath ? String(item.targetPath) : '';
+      if (!rawTargetPath) return null;
+
+      const directTarget = findFieldStateFormItemModelByTargetPath(ctx, rawTargetPath);
+      if (isRowScopedFieldStateTarget(directTarget)) {
+        return directTarget as FlowModel;
+      }
+
+      const normalized = normalizeSubFormTargetPath(ctx, rawTargetPath);
+      const itemModel = normalized?.fieldModel || directTarget || null;
+      if (isRowScopedFieldStateTarget(itemModel)) {
+        return itemModel as FlowModel;
+      }
+
+      const fieldUid = itemModel?.uid ? String(itemModel.uid) : '';
+      const formItemModel = fieldUid ? ctx.engine?.getModel?.(fieldUid) || itemModel : itemModel;
+      return resolveRowFormItemFork(ctx, (formItemModel || itemModel) as FlowModel | null);
+    },
+  });
+}
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: tExpr('Set block state'),
@@ -737,7 +1057,7 @@ export const linkageSetMenuItemProps = defineAction({
 
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
-  title: tExpr('Set field state'),
+  title: tExpr('Set field state (Deprecated)'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -779,7 +1099,7 @@ export const linkageSetFieldProps = defineAction({
 
 export const subFormLinkageSetFieldProps = defineAction({
   name: 'subFormLinkageSetFieldProps',
-  title: tExpr('Set field state'),
+  title: tExpr('Set field state (Deprecated)'),
   scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -841,7 +1161,7 @@ export const subFormLinkageSetFieldProps = defineAction({
 
 export const linkageSetDetailsFieldProps = defineAction({
   name: 'linkageSetDetailsFieldProps',
-  title: tExpr('Set field state'),
+  title: tExpr('Set details field state (Deprecated)'),
   scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -885,6 +1205,110 @@ type ArrayFieldComponentProps = {
   value?: unknown;
   onChange?: (value: unknown) => void;
 };
+
+const FieldStateRulesActionComponent: React.FC<
+  ArrayFieldComponentProps & {
+    includeFormStates?: boolean;
+  }
+> = ({ value, onChange, includeFormStates = true }) => {
+  const ctx = useFlowContext();
+  const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+  const fieldOptions = React.useMemo(() => {
+    return collectFieldAssignCascaderOptions({
+      formBlockModel: ctx.model,
+      t,
+      maxFormItemDepth: 1,
+    });
+  }, [ctx.model, t]);
+
+  const handleChange = React.useCallback(
+    (next: FieldStateRuleItem[]) => {
+      if (typeof onChange !== 'function') return;
+      onChange(next);
+    },
+    [onChange],
+  );
+
+  const getTargetFieldModel = React.useCallback(
+    (targetPath?: string) => {
+      if (!targetPath) return null;
+      return findFieldStateFormItemModelByTargetPath(ctx, targetPath);
+    },
+    [ctx],
+  );
+
+  const getStateOptions = React.useCallback(
+    (canConfigureLimitOptions: boolean) => getFieldStateOptions(t, includeFormStates, canConfigureLimitOptions),
+    [includeFormStates, t],
+  );
+
+  const getFieldOptions = React.useCallback((targetModel: unknown) => getFieldModelOptions(targetModel, t), [t]);
+
+  return (
+    <FieldStateRulesEditor
+      t={t}
+      fieldOptions={fieldOptions}
+      rootCollection={getCollectionFromModel(ctx.model)}
+      value={Array.isArray(value) ? (value as FieldStateRuleItem[]) : []}
+      onChange={handleChange}
+      includeFormStates={includeFormStates}
+      getTargetFieldModel={getTargetFieldModel}
+      getStateOptions={getStateOptions}
+      getFieldOptions={getFieldOptions}
+      supportsLimitOptions={supportsLimitOptions}
+    />
+  );
+};
+
+export const linkageSetFieldState = defineAction({
+  name: 'linkageSetFieldState',
+  title: tExpr('Set field state'),
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 110,
+  uiSchema: {
+    value: {
+      type: 'array',
+      'x-component': FieldStateRulesActionComponent,
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    runBlockFieldStateRules(ctx, 'linkageSetFieldState', value, setProps);
+  },
+});
+
+export const subFormLinkageSetFieldState = defineAction({
+  name: 'subFormLinkageSetFieldState',
+  title: tExpr('Set field state'),
+  scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
+  sort: 110,
+  uiSchema: {
+    value: {
+      type: 'array',
+      'x-component': FieldStateRulesActionComponent,
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    runSubFormFieldStateRules(ctx, 'subFormLinkageSetFieldState', value, setProps);
+  },
+});
+
+export const linkageSetDetailsFieldState = defineAction({
+  name: 'linkageSetDetailsFieldState',
+  title: tExpr('Set field state'),
+  scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
+  sort: 110,
+  uiSchema: {
+    value: {
+      type: 'array',
+      'x-component': (props) => {
+        return <FieldStateRulesActionComponent {...props} includeFormStates={false} />;
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    runBlockFieldStateRules(ctx, 'linkageSetDetailsFieldState', value, setProps);
+  },
+});
 
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
 const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
@@ -1951,6 +2375,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       }
     }
   };
+  const getRequiredMessage = () => ctx.t('The field value is required');
 
   const getModelTargetPathForPatch = (model: any): string | null => {
     if (!model || typeof model !== 'object') return null;
@@ -2125,6 +2550,21 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return keys;
   };
+  const clearRequiredValidationFeedback = (model: any) => {
+    const form = model.context.form;
+    const targetPath = getModelTargetPathForHiddenClear(model);
+    if (!form || !targetPath) return;
+
+    const errors = form.getFieldError(targetPath);
+    const requiredMessage = getRequiredMessage();
+    const requiredErrorIndex = errors.indexOf(requiredMessage);
+    if (requiredErrorIndex < 0) return;
+
+    const nextErrors = [...errors];
+    nextErrors.splice(requiredErrorIndex, 1);
+
+    form.setFields([{ name: targetPath, errors: nextErrors }]);
+  };
   const forEachModelIncludingForks = (visitor: (model: any) => void) => {
     const engine = (ctx as any)?.engine || ctx.model?.flowEngine;
     if (!engine?.forEachModel) return;
@@ -2182,6 +2622,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             disabled: undefined,
             required: undefined,
             hidden: undefined,
+            [ROW_SCOPED_FIELD_OPTIONS_PROP]: undefined,
+            [ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP]: undefined,
             ...model.props,
           };
         }
@@ -2193,8 +2635,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
         });
 
         if (
-          (action.name === 'linkageSetFieldProps' || action.name === 'subFormLinkageSetFieldProps') &&
-          props?.hiddenModel === true
+          CLEAR_VALUE_ON_HIDDEN_FIELD_STATE_ACTIONS.has(action.name) &&
+          (props?.hiddenModel === true || props?.[ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP] === true)
         ) {
           clearValueOnHiddenModelUids.add(model?.uid || String(model));
         }
@@ -2242,6 +2684,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
     const prevHidden = !!model.hidden;
     const nextHidden = !!newProps.hiddenModel;
+    const wasRequired = model.props.required === true;
+    const originalHasRequiredRule = (model.__originalProps?.rules || []).some((rule) => rule.required);
+    const shouldClearLinkageRequired = wasRequired && !originalHasRequiredRule;
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText', LINKAGE_ASSIGN_MODE_PROP]));
     syncFieldOptionsToForks(model, patchProps);
@@ -2256,14 +2701,18 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     if (newProps.required === true) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
+      const requiredMessage = getRequiredMessage();
       rules.push({
         required: true,
-        message: ctx.t('The field value is required'),
+        message: requiredMessage,
       });
       model.setProps('rules', rules);
-    } else if (newProps.required === false) {
+    } else if (newProps.required === false || shouldClearLinkageRequired) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
       model.setProps('rules', rules);
+      if (shouldClearLinkageRequired) {
+        clearRequiredValidationFeedback(model);
+      }
     }
 
     if (newProps.hiddenText) {
@@ -2289,8 +2738,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     if (
       clearValueOnHiddenModelUids.has(uid) &&
-      Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel') &&
-      patchProps.hiddenModel === true
+      ((Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel') && patchProps.hiddenModel === true) ||
+        patchProps?.[ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP] === true)
     ) {
       const targetPath = getModelTargetPathForHiddenClear(model);
       if (!targetPath) {
@@ -2494,9 +2943,14 @@ export const fieldLinkageRules = defineAction({
     }
 
     const rootLinkageScopeDepth = 0;
-    const defineSharedRuntimeMeta = (targetCtx: any) => {
+    const inputArgs = (ctx as any)?.inputArgs;
+    const sharedRuntimeMeta = {
+      inputArgs: inputArgs && typeof inputArgs === 'object' ? { ...inputArgs } : inputArgs,
+      linkageScopeDepth: rootLinkageScopeDepth,
+    };
+    const defineSharedRuntimeMeta = (targetCtx: any, runtimeMeta = sharedRuntimeMeta) => {
       if (!targetCtx || typeof targetCtx.defineProperty !== 'function') return;
-      const inputArgs = (ctx as any)?.inputArgs;
+      const inputArgs = runtimeMeta.inputArgs;
       if (inputArgs && typeof inputArgs === 'object') {
         targetCtx.defineProperty('inputArgs', {
           value: {
@@ -2505,7 +2959,7 @@ export const fieldLinkageRules = defineAction({
         });
       }
       targetCtx.defineProperty('linkageScopeDepth', {
-        value: rootLinkageScopeDepth,
+        value: runtimeMeta.linkageScopeDepth,
       });
     };
 
@@ -2644,6 +3098,54 @@ export const fieldLinkageRules = defineAction({
             return { block: blockAction, rows: rowActions };
           };
 
+          const splitFieldStateAction = () => {
+            const items = normalizeFieldStateRuleItems(rawValue);
+            if (!items.length) return { block: null as any, rows: new Map<string, any>() };
+
+            const blockItems: any[] = [];
+            const rowItemsByKey = new Map<string, any[]>();
+
+            for (const it of items) {
+              const targetPath = it?.targetPath ? String(it.targetPath) : '';
+              if (!targetPath) {
+                blockItems.push(it);
+                continue;
+              }
+
+              const rowScopeKey = getRowScopeKeyForTargetPath(targetPath);
+              if (
+                rowScopeKey &&
+                requiresRowIndexForTargetPath(targetPath) &&
+                hasRowScopedFieldStateTargetPath(ctx, targetPath)
+              ) {
+                const arr = rowItemsByKey.get(rowScopeKey) || [];
+                arr.push(it);
+                rowItemsByKey.set(rowScopeKey, arr);
+              } else {
+                blockItems.push(it);
+              }
+            }
+
+            const blockAction =
+              blockItems.length > 0
+                ? {
+                    ...action,
+                    params: { ...actionParams, value: blockItems },
+                  }
+                : null;
+
+            const rowActions = new Map<string, any>();
+            for (const [rowScopeKey, rowItems] of rowItemsByKey.entries()) {
+              if (!rowItems.length) continue;
+              rowActions.set(rowScopeKey, {
+                ...action,
+                params: { ...actionParams, value: rowItems },
+              });
+            }
+
+            return { block: blockAction, rows: rowActions };
+          };
+
           if (actionName === 'linkageAssignField') {
             const split = splitAssignAction({ mode: 'assign', valueKey: 'assignValue' });
             if (split.block) blockActions.push(split.block);
@@ -2657,6 +3159,17 @@ export const fieldLinkageRules = defineAction({
 
           if (actionName === 'setFieldsDefaultValue') {
             const split = splitAssignAction({ mode: 'default', valueKey: 'initialValue' });
+            if (split.block) blockActions.push(split.block);
+            split.rows.forEach((a, rowKey) => {
+              const arr = rowActionsByKey.get(rowKey) || [];
+              arr.push(a);
+              rowActionsByKey.set(rowKey, arr);
+            });
+            continue;
+          }
+
+          if (actionName === 'linkageSetFieldState') {
+            const split = splitFieldStateAction();
             if (split.block) blockActions.push(split.block);
             split.rows.forEach((a, rowKey) => {
               const arr = rowActionsByKey.get(rowKey) || [];
@@ -2688,7 +3201,44 @@ export const fieldLinkageRules = defineAction({
       return { blockParams, rowParamsByKey };
     };
 
+    const pickRowParamsByActionNames = (source: Map<string, any>, actionNames: Set<string>): Map<string, any> => {
+      const out = new Map<string, any>();
+      source.forEach((rowParams, rowScopeKey) => {
+        const rules = Array.isArray(rowParams?.value) ? rowParams.value : [];
+        const filteredRules = rules
+          .map((rule: any) => {
+            const actions = Array.isArray(rule?.actions)
+              ? rule.actions.filter((action: any) => actionNames.has(String(action?.name || '')))
+              : [];
+            return actions.length ? { ...rule, actions } : null;
+          })
+          .filter(Boolean);
+        if (filteredRules.length) {
+          out.set(rowScopeKey, { ...rowParams, value: filteredRules });
+        }
+      });
+      return out;
+    };
+
+    const refreshPendingRowScopedRetry = (targetRowParamsByKey: Map<string, any>, cleanupKey: string) => {
+      const model = ctx.model as any;
+      const cleanup = model?.[cleanupKey];
+      if (!targetRowParamsByKey.size) {
+        cleanup?.();
+        return;
+      }
+
+      if (cleanup) {
+        model[`${cleanupKey}Params`] = targetRowParamsByKey;
+        model[`${cleanupKey}RuntimeMeta`] = sharedRuntimeMeta;
+      }
+    };
+
     const { blockParams, rowParamsByKey } = splitParams();
+    const rowFieldStateParamsByKey = pickRowParamsByActionNames(rowParamsByKey, new Set(['linkageSetFieldState']));
+
+    refreshPendingRowScopedRetry(rowParamsByKey, '__pendingLinkageRowScopedRetryCleanup__');
+    refreshPendingRowScopedRetry(rowFieldStateParamsByKey, '__pendingLinkageRowScopedFieldStateRetryCleanup__');
 
     const resolvedBlock = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, blockParams);
     await commonLinkageRulesHandler(ctx, resolvedBlock);
@@ -2746,7 +3296,30 @@ export const fieldLinkageRules = defineAction({
       if (!rowPath) return true;
       const form = getFormForRowFork(model);
       if (!form || typeof form.getFieldValue !== 'function') return true;
-      return typeof form.getFieldValue(rowPath as any) !== 'undefined';
+      if (typeof form.getFieldValue(rowPath as any) !== 'undefined') return true;
+
+      const rowIndex = rowPath[rowPath.length - 1];
+      const parentPath = rowPath.slice(0, -1);
+      const parentValue = parentPath.length ? form.getFieldValue(parentPath as any) : undefined;
+      const renderedRows = (model as any)?.parent?.props?.value;
+
+      if (Array.isArray(parentValue)) {
+        if (typeof rowIndex === 'number' && rowIndex < parentValue.length) return true;
+        if (typeof rowIndex === 'number' && Array.isArray(renderedRows) && rowIndex < renderedRows.length) return true;
+        return false;
+      }
+
+      if (typeof parentValue !== 'undefined') return true;
+      if (typeof rowIndex === 'number' && Array.isArray(renderedRows)) {
+        return rowIndex < renderedRows.length;
+      }
+
+      const item = model?.context?.item;
+      if (typeof rowIndex === 'number' && typeof item?.length === 'number') {
+        return rowIndex < item.length;
+      }
+
+      return typeof item?.value !== 'undefined';
     };
 
     const hasRowItemContext = (model: any): boolean => {
@@ -2786,7 +3359,7 @@ export const fieldLinkageRules = defineAction({
     const collectRowScopedForksByKey = (): Map<string, FlowModel[]> => {
       const out = new Map<string, FlowModel[]>();
       const seenByKey = new Map<string, Set<string>>();
-      const engine = ctx.engine;
+      const engine = ctx.engine || (ctx.model as any)?.flowEngine;
       if (!engine?.forEachModel) return out;
 
       engine.forEachModel((m: FlowModel) => {
@@ -2812,16 +3385,19 @@ export const fieldLinkageRules = defineAction({
       return out;
     };
 
-    const runRowScoped = async (): Promise<boolean> => {
+    const runRowScoped = async (
+      targetRowParamsByKey = rowParamsByKey,
+      runtimeMeta = sharedRuntimeMeta,
+    ): Promise<boolean> => {
       const forksByKey = collectRowScopedForksByKey();
       let hasAnyRowFork = false;
-      for (const [rowScopeKey, rowParams] of rowParamsByKey.entries()) {
+      for (const [rowScopeKey, rowParams] of targetRowParamsByKey.entries()) {
         const forks = forksByKey.get(rowScopeKey) || [];
         if (forks.length) hasAnyRowFork = true;
         if (!forks.length) continue;
         for (const forkModel of forks) {
           const rowCtx = new FlowRuntimeContext(forkModel, ctx.flowKey);
-          defineSharedRuntimeMeta(rowCtx as any);
+          defineSharedRuntimeMeta(rowCtx as any, runtimeMeta);
           try {
             const resolvedRow = await resolveLinkageRulesParamsPreservingRunJsScripts(rowCtx, rowParams);
             await commonLinkageRulesHandler(rowCtx, resolvedRow);
@@ -2839,28 +3415,110 @@ export const fieldLinkageRules = defineAction({
       return hasAnyRowFork;
     };
 
-    const hasAnyRowFork = await runRowScoped();
+    const scheduleRowScopedRetry = (
+      targetRowParamsByKey: Map<string, any>,
+      options: {
+        flagKey: string;
+        cleanupKey: string;
+        cleanupOnFound: boolean;
+        warn?: boolean;
+      },
+    ) => {
+      const model = ctx.model as any;
+      const latestParamsKey = `${options.cleanupKey}Params`;
+      const latestMetaKey = `${options.cleanupKey}RuntimeMeta`;
+      if (!targetRowParamsByKey.size) {
+        model[options.cleanupKey]?.();
+        return;
+      }
 
-    // 如果当前未找到任何 row fork，但存在需要 row 上下文的赋值规则，延迟一帧再跑一次（解决 add 新行时 fork 尚未创建的问题）
-    if (!hasAnyRowFork) {
-      const flagKey = '__pendingLinkageRowScopedRetry__';
-      const anyModel = ctx.model as any;
-      if (!anyModel?.[flagKey]) {
+      model[latestParamsKey] = targetRowParamsByKey;
+      model[latestMetaKey] = sharedRuntimeMeta;
+      if (model[options.flagKey]) return;
+
+      if (options.warn) {
         console.warn('[linkageRules] Row-scoped linkage assignment deferred (row forks not ready), will retry', {
           flowKey: ctx.flowKey,
           modelUid: (ctx.model as any)?.uid,
-          rowKeys: Array.from(rowParamsByKey.keys()),
+          rowKeys: Array.from(targetRowParamsByKey.keys()),
         });
-        anyModel[flagKey] = true;
-        setTimeout(() => {
-          anyModel[flagKey] = false;
-          const base = ctx.model as any;
-          if (!base || base.disposed) return;
-          void runRowScoped().catch((error) => {
-            console.warn('[linkageRules] Failed to retry row-scoped linkage rules', error);
-          });
-        }, 0);
       }
+
+      model[options.flagKey] = true;
+      let cleaned = false;
+      let retrying = false;
+      const timers: ReturnType<typeof setTimeout>[] = [];
+      const emitter = (ctx.engine as any)?.emitter || (ctx.model as any)?.flowEngine?.emitter;
+
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        model[options.flagKey] = false;
+        model[options.cleanupKey] = undefined;
+        model[latestParamsKey] = undefined;
+        model[latestMetaKey] = undefined;
+        if (emitter && typeof emitter.off === 'function') {
+          emitter.off('model:mounted', retry);
+        }
+        for (const timer of timers) {
+          clearTimeout(timer);
+        }
+      };
+
+      const retry = () => {
+        if (cleaned || retrying) return;
+        const base = ctx.model as any;
+        if (!base || base.disposed) {
+          cleanup();
+          return;
+        }
+        retrying = true;
+        const latestParams = model[latestParamsKey] || targetRowParamsByKey;
+        const latestRuntimeMeta = model[latestMetaKey] || sharedRuntimeMeta;
+        return runRowScoped(latestParams, latestRuntimeMeta)
+          .then((found) => {
+            if (found && options.cleanupOnFound) {
+              cleanup();
+            }
+          })
+          .catch((error) => {
+            console.warn('[linkageRules] Failed to retry row-scoped linkage rules', error);
+          })
+          .finally(() => {
+            retrying = false;
+          });
+      };
+
+      model[options.cleanupKey] = cleanup;
+      if (emitter && typeof emitter.on === 'function') {
+        emitter.on('model:mounted', retry);
+      }
+      [0, 50, 200, 1000].forEach((delay) => {
+        timers.push(setTimeout(retry, delay));
+      });
+      timers.push(setTimeout(cleanup, 1500));
+    };
+
+    const hasAnyRowFork = await runRowScoped();
+
+    // Row fieldSettings may run after the parent form event and overwrite fork-local state back to persisted props.
+    // Reapply only field-state actions post render; assignment/default actions are intentionally excluded.
+    scheduleRowScopedRetry(rowFieldStateParamsByKey, {
+      flagKey: '__pendingLinkageRowScopedFieldStateRetry__',
+      cleanupKey: '__pendingLinkageRowScopedFieldStateRetryCleanup__',
+      cleanupOnFound: false,
+    });
+
+    // 如果当前未找到任何 row fork，但存在需要 row 上下文的赋值规则，延迟一帧再跑一次（解决 add 新行时 fork 尚未创建的问题）
+    if (!hasAnyRowFork) {
+      scheduleRowScopedRetry(rowParamsByKey, {
+        flagKey: '__pendingLinkageRowScopedRetry__',
+        cleanupKey: '__pendingLinkageRowScopedRetryCleanup__',
+        cleanupOnFound: true,
+        warn: true,
+      });
+    } else {
+      (ctx.model as any).__pendingLinkageRowScopedRetryCleanup__?.();
     }
   },
 });
