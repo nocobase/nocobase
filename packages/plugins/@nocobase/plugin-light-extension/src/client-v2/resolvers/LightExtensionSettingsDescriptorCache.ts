@@ -15,6 +15,11 @@ import type {
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
+import {
+  getLightExtensionCacheGeneration,
+  LightExtensionCacheGeneration,
+  type LightExtensionCacheGenerationSnapshot,
+} from './LightExtensionRuntimeCacheRegistry';
 
 type DescriptorBinding = Pick<LightExtensionRuntimeSourceBinding, 'repoId' | 'entryId'> & {
   kind: LightExtensionKind;
@@ -27,6 +32,7 @@ type DescriptorScope = {
 
 type ScopeState = DescriptorScope & {
   descriptorKeys: Set<string>;
+  generation: LightExtensionCacheGenerationSnapshot;
   loaded: boolean;
   version: number;
 };
@@ -71,7 +77,10 @@ export class LightExtensionSettingsDescriptorCache {
   private readonly scopes = new Map<string, ScopeState>();
   private readonly inFlightScopeLoads = new Map<string, InFlightScopeLoad>();
 
+  constructor(private readonly generation = new LightExtensionCacheGeneration()) {}
+
   get(binding: DescriptorBinding): RunJSSourceSettingsDescriptor | undefined {
+    this.syncScopeGeneration(this.getScope(binding.repoId, binding.kind));
     const descriptor = this.descriptors.get(getDescriptorKey(binding));
     return descriptor ? cloneDescriptor(descriptor) : undefined;
   }
@@ -93,28 +102,26 @@ export class LightExtensionSettingsDescriptorCache {
 
   primeScope(repoId: string, kind: LightExtensionKind, entries: LightExtensionSelectableEntrySummary[]): void {
     const scope = this.getScope(repoId, kind);
+    this.syncScopeGeneration(scope);
     scope.version += 1;
     this.writeScope(scope, entries);
   }
 
   invalidateRepo(repoId: string): void {
+    this.generation.invalidateRepo(repoId);
     for (const scope of this.scopes.values()) {
       if (scope.repoId !== repoId) {
         continue;
       }
-      scope.version += 1;
-      this.clearScopeDescriptors(scope);
-      scope.loaded = false;
+      this.syncScopeGeneration(scope);
     }
   }
 
   clear(): void {
+    this.generation.clear();
     for (const scope of this.scopes.values()) {
-      scope.version += 1;
-      scope.descriptorKeys.clear();
-      scope.loaded = false;
+      this.syncScopeGeneration(scope);
     }
-    this.descriptors.clear();
   }
 
   private getScope(repoId: string, kind: LightExtensionKind): ScopeState {
@@ -127,6 +134,7 @@ export class LightExtensionSettingsDescriptorCache {
       repoId,
       kind,
       descriptorKeys: new Set<string>(),
+      generation: this.generation.get(repoId),
       loaded: false,
       version: 0,
     };
@@ -138,6 +146,7 @@ export class LightExtensionSettingsDescriptorCache {
     scope: ScopeState,
     loadEntries: () => Promise<LightExtensionSelectableEntrySummary[]>,
   ): Promise<void> {
+    this.syncScopeGeneration(scope);
     const scopeKey = getScopeKey(scope);
     const existing = this.inFlightScopeLoads.get(scopeKey);
     if (existing?.version === scope.version) {
@@ -185,6 +194,17 @@ export class LightExtensionSettingsDescriptorCache {
     }
     scope.descriptorKeys.clear();
   }
+
+  private syncScopeGeneration(scope: ScopeState): void {
+    const generation = this.generation.get(scope.repoId);
+    if (generation.global === scope.generation.global && generation.repo === scope.generation.repo) {
+      return;
+    }
+    scope.version += 1;
+    scope.generation = generation;
+    this.clearScopeDescriptors(scope);
+    scope.loaded = false;
+  }
 }
 
 const descriptorCaches = new WeakMap<object, LightExtensionSettingsDescriptorCache>();
@@ -194,7 +214,7 @@ export function getLightExtensionSettingsDescriptorCache(api: object): LightExte
   if (existing) {
     return existing;
   }
-  const cache = new LightExtensionSettingsDescriptorCache();
+  const cache = new LightExtensionSettingsDescriptorCache(getLightExtensionCacheGeneration(api));
   descriptorCaches.set(api, cache);
   return cache;
 }

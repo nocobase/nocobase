@@ -97,6 +97,7 @@ export async function moveLightExtensionToInline(
 
   const result = unwrapResourceResponse(response);
   invalidateLightExtensionSettingsDescriptorCache(api, input.repoId);
+  invalidateLightExtensionRuntimeCache(api, input.repoId);
   return result;
 }
 

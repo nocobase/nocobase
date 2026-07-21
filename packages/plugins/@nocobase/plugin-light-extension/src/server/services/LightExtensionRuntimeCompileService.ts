@@ -10,7 +10,6 @@
 import type { Database } from '@nocobase/database';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs';
 import { randomUUID } from 'crypto';
-import { serialize } from 'node:v8';
 import { posix as pathPosix } from 'path';
 
 import {

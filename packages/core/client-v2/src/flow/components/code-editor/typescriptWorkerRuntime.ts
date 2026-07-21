@@ -9,9 +9,10 @@
 
 import {
   buildRunJSTypeScriptContextDeclaration,
-  buildRunJSTypeScriptEnvironmentFiles,
   collectRunJSTypeLibraryUsage,
   createRunJSTypeScriptCompilerOptions,
+  RUNJS_TYPESCRIPT_ENVIRONMENT_LIBRARY_NAME,
+  RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
   selectRunJSTypeLibraryRequests,
   type RunJSTypeLibraryPack,
   type RunJSTypeLibraryPackDependency,
@@ -19,7 +20,6 @@ import {
   RUNJS_TYPESCRIPT_CONTEXT_PATH,
 } from '@nocobase/runjs/client-v2';
 
-import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
 import {
   getRunJSBuiltInAutoImportLibrary,
   isRunJSTypeScriptAutoImportSourceAllowed,
@@ -75,7 +75,6 @@ type ProjectState = {
   snapshot: TypeScriptWorkerProjectSnapshot;
 };
 
-const environmentFiles = buildRunJSTypeScriptEnvironmentFiles(runJSTypeScriptLibSources);
 const completionPreferences: import('typescript').UserPreferences = {
   allowIncompleteCompletions: true,
   includeCompletionsForModuleExports: true,
@@ -247,6 +246,16 @@ async function loadProjectPacks(
   );
   for (const request of requests) state.packRequestIds.push(request.packId);
   const packs = new Map<string, RunJSTypeLibraryPack>();
+  await loadPackWithDependencies(
+    state,
+    {
+      kind: 'library',
+      libraryName: RUNJS_TYPESCRIPT_ENVIRONMENT_LIBRARY_NAME,
+      packId: RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
+    },
+    new Set(),
+    packs,
+  );
   for (const request of requests) await loadPackWithDependencies(state, request, new Set(), packs);
   return [...packs.values()].sort((left, right) => left.id.localeCompare(right.id));
 }
@@ -657,9 +666,6 @@ export class TypeScriptWorkerRuntime {
     const files = new Map<string, TypeScriptVirtualFileInput>();
     for (const file of [...snapshot.files, ...snapshot.declarationFiles]) {
       mergeFile(files, { content: file.content, fileName: toFileName(file.path), root: true });
-    }
-    for (const file of environmentFiles) {
-      mergeFile(files, { content: file.content, fileName: file.path, immutable: true, root: true });
     }
     mergeFile(files, {
       content: buildRunJSTypeScriptContextDeclaration(snapshot.runJSContext?.modelUse, {

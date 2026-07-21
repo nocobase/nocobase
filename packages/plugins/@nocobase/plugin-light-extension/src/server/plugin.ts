@@ -245,6 +245,7 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
 
+    await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     const vscFileServerModule = this.requireVscFileServerModule();
     await vscFileServerModule.load();
@@ -360,6 +361,7 @@ export class PluginLightExtensionServer extends Plugin {
   }
 
   async afterDisable() {
+    await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     await this.vscFileServerModule?.afterDisable();

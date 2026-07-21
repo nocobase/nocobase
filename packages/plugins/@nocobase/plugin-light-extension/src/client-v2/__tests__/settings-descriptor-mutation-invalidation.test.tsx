@@ -11,6 +11,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
+import { getOrCreateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import {
   getLightExtensionSettingsDescriptorCache,
   invalidateLightExtensionSettingsDescriptorCache,
@@ -39,9 +40,16 @@ const BINDING = {
 };
 
 describe('settings descriptor mutation invalidation', () => {
+  const runtimeInvalidator = getOrCreateLightExtensionRuntimeCache(mocks.api, () => ({
+    invalidateRepo: vi.fn(),
+    clear: vi.fn(),
+  }));
+
   beforeEach(() => {
     mocks.request.mockReset();
     invalidateLightExtensionSettingsDescriptorCache(mocks.api);
+    runtimeInvalidator.invalidateRepo.mockClear();
+    runtimeInvalidator.clear.mockClear();
   });
 
   it('invalidates the repository after lifecycle, source save, and delete mutations succeed', async () => {
@@ -54,6 +62,7 @@ describe('settings descriptor mutation invalidation', () => {
       await result.current.changeLifecycle({ repoId: 'repo_sales', lifecycleStatus: 'disabled' });
     });
     expect(cache.get(BINDING)).toBeUndefined();
+    expect(runtimeInvalidator.invalidateRepo).toHaveBeenLastCalledWith('repo_sales');
 
     primeDescriptor();
     await act(async () => {
@@ -65,12 +74,14 @@ describe('settings descriptor mutation invalidation', () => {
       });
     });
     expect(cache.get(BINDING)).toBeUndefined();
+    expect(runtimeInvalidator.invalidateRepo).toHaveBeenLastCalledWith('repo_sales');
 
     primeDescriptor();
     await act(async () => {
       await result.current.deleteRepo('repo_sales');
     });
     expect(cache.get(BINDING)).toBeUndefined();
+    expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledTimes(3);
   });
 
   it('keeps the cached descriptor when a mutation fails', async () => {
@@ -90,6 +101,7 @@ describe('settings descriptor mutation invalidation', () => {
       }),
     ).rejects.toThrow('Light extension request failed');
     expect(cache.get(BINDING)).toMatchObject({ settingsSchemaHash: 'schema-v1' });
+    expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
   });
 });
 

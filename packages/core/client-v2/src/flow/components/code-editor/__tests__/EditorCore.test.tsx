@@ -170,6 +170,28 @@ describe('EditorCore', () => {
     expect(tabEvent.defaultPrevented).toBe(false);
   });
 
+  it.each([undefined, 'json'])('does not create a TypeScript Worker for plain %s input', async (language) => {
+    const worker = vi.fn();
+    vi.stubGlobal('Worker', worker);
+    vi.stubGlobal('__NOCOBASE_RUNJS_TYPESCRIPT_WORKER__', true);
+    try {
+      const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+      const { unmount } = render(<EditorCore language={language} value="" viewRef={viewRef} />);
+      const view = viewRef.current;
+      if (!view) throw new Error('EditorView was not initialized');
+
+      view.dispatch({ changes: { from: 0, insert: language === 'json' ? '{' : 'const value = 1;' } });
+      startCompletion(view);
+      await Promise.resolve();
+
+      expect(worker).not.toHaveBeenCalled();
+      unmount();
+      expect(worker).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps focus when workspace module completions change', () => {
     const fullscreenControl = { isFullscreen: false, toggleFullscreen: vi.fn() };
     const { container, rerender } = render(

@@ -8,8 +8,9 @@
  */
 
 import type { Completion, CompletionResult } from '@codemirror/autocomplete';
-import type { RunJSTypeLibraryRequest } from '@nocobase/runjs/client-v2';
+import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryRequest } from '@nocobase/runjs/client-v2';
 
+import { runJSTypeScriptEnvironmentPack } from './generated/runJSTypeScriptEnvironmentFiles';
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
 import type {
@@ -256,6 +257,11 @@ class TypeScriptWorkerClient {
       protocolVersion: RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
     };
     try {
+      if (message.request.packId === RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID) {
+        response.pack = runJSTypeScriptEnvironmentPack;
+        if (this.worker === sourceWorker) sourceWorker.postMessage(response);
+        return;
+      }
       const registry = this.registry;
       if (!registry) throw new Error('TypeScript worker registry is no longer available.');
       response.pack = await registry.loadPackForWorker(message.request as RunJSTypeLibraryRequest);

@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { LightExtensionKind, LightExtensionSelectableEntrySummary } from '../../shared/types';
 import type { ApiClientLike, ApiRequestOptions } from '../api/lightExtensionEntriesRequests';
 import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
+import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import {
   getLightExtensionSettingsDescriptorCache,
   invalidateLightExtensionSettingsDescriptorCache,
@@ -260,6 +261,18 @@ describe('LightExtension settings descriptor cache', () => {
       settingsSchemaHash: 'schema-new',
       defaults: { message: 'New' },
     });
+  });
+
+  it('uses the shared repository generation when runtime state is invalidated', () => {
+    const api = createApi(vi.fn());
+    const cache = getLightExtensionSettingsDescriptorCache(api);
+    cache.primeScope('repo_sales', 'js-block', [
+      createEntry({ schemaHash: 'schema-old', settingsSchema: createMessageSchema('Old') }),
+    ]);
+
+    invalidateLightExtensionRuntimeCache(api, 'repo_sales');
+
+    expect(cache.get({ repoId: 'repo_sales', entryId: 'entry_sales', kind: 'js-block' })).toBeUndefined();
   });
 });
 
