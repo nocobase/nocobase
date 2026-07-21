@@ -719,6 +719,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     scope,
     model: inputModel,
   }: SendOptions & {
+    scope?: string;
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;

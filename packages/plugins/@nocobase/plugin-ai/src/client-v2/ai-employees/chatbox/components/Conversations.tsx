@@ -81,7 +81,6 @@ export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen })
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel, workflowTaskModel } = runtime;
   const showWorkflowTasks = runtime.mode !== 'block';
-  const scope = runtime.scope;
   const conversations = chatConversationModel.conversations;
   const currentConversation = chatConversationModel.currentConversation;
   const conversationSegmented = chatConversationModel.conversationSegmented;
@@ -166,7 +165,7 @@ export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen })
     } else {
       refreshWorkflowTasks();
     }
-  }, [activeSegmented, refresh, refreshWorkflowTasks, scope]);
+  }, [activeSegmented, refresh, refreshWorkflowTasks]);
 
   useEffect(() => {
     const lastItem = listRef.current?.querySelector('.ant-conversations-item:last-child');

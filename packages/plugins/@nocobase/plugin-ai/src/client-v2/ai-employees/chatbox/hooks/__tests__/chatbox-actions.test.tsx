@@ -122,7 +122,8 @@ describe('chatbox action integration', () => {
   });
 
   it('creates a scoped conversation and switches the current session in the provided runtime', async () => {
-    const runtime = createChatBoxRuntime({ mode: 'block' });
+    const getScope = vi.fn().mockResolvedValue('chat-box-1');
+    const runtime = createChatBoxRuntime({ mode: 'block', getScope });
     const otherRuntime = createChatBoxRuntime({ mode: 'block' });
     const createConversation = vi.fn().mockResolvedValue({
       data: {
@@ -148,7 +149,6 @@ describe('chatbox action integration', () => {
         aiEmployee: employee,
         messages: [{ type: 'text', content: 'Summarize this block' }],
         workContext: [],
-        scope: 'chat-box-1',
         model: {
           llmService: 'openai',
           model: 'gpt-5',
@@ -158,6 +158,7 @@ describe('chatbox action integration', () => {
 
     await waitFor(() => expect(createConversation).toHaveBeenCalled());
 
+    expect(getScope).toHaveBeenCalledWith({ operation: 'create' });
     expect(createConversation).toHaveBeenCalledWith({
       values: {
         aiEmployee: employee,
@@ -184,8 +185,9 @@ describe('chatbox action integration', () => {
     );
   });
 
-  it('uses the block runtime scope when auto-sending a routed task', async () => {
-    const runtime = createChatBoxRuntime({ mode: 'block' });
+  it('resolves the block runtime scope when auto-sending a routed task', async () => {
+    const getScope = vi.fn().mockResolvedValue('chat-box-1');
+    const runtime = createChatBoxRuntime({ mode: 'block', getScope });
     const createConversation = vi.fn().mockResolvedValue({
       data: {
         data: {
@@ -208,7 +210,6 @@ describe('chatbox action integration', () => {
     await act(async () => {
       await result.current.triggerTask({
         aiEmployee: employee,
-        scope: 'chat-box-1',
         tasks: [
           {
             title: 'Analyze in block',
@@ -222,6 +223,7 @@ describe('chatbox action integration', () => {
     });
 
     await waitFor(() => expect(createConversation).toHaveBeenCalled());
+    expect(getScope).toHaveBeenCalledWith({ operation: 'create' });
     expect(createConversation).toHaveBeenCalledWith({
       values: {
         aiEmployee: employee,

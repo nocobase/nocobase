@@ -11,6 +11,10 @@ import type { ContextItem } from '../../ai-employees/types';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
 
+type AIChatBoxScopeRenderContext = {
+  resolveJsonTemplate?: (template: string) => unknown | Promise<unknown>;
+};
+
 export const DEFAULT_AI_CHAT_BOX_WIDTH = 400;
 export const DEFAULT_AI_CHAT_BOX_HEIGHT = 650;
 
@@ -69,6 +73,37 @@ export const getAIChatBoxConversationScope = (model: AIChatBoxBlockModel) => {
 export const getAIChatBoxCreateScope = (model: AIChatBoxBlockModel) => {
   const settings = getAIChatBoxSettings(model.props);
   return settings.scope || model.uid;
+};
+
+const stringifyRenderedScope = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    console.error(error);
+    return String(value);
+  }
+};
+
+export const renderAIChatBoxScope = async (scope: string | undefined, ctx?: AIChatBoxScopeRenderContext) => {
+  if (!scope || !ctx?.resolveJsonTemplate) {
+    return scope;
+  }
+
+  try {
+    return stringifyRenderedScope(await ctx.resolveJsonTemplate(scope));
+  } catch (error) {
+    console.error(error);
+    return scope;
+  }
 };
 
 export const normalizeAIChatBoxScopeForSave = (scope: string | undefined) => {

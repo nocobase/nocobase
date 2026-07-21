@@ -29,7 +29,8 @@ type FlowModelRendererProps = {
 
 const mocks = vi.hoisted(() => ({
   runtime: {
-    scope: undefined as string | undefined,
+    mode: 'block',
+    getScope: undefined as undefined | ((options?: { operation?: 'list' | 'create' }) => Promise<string | undefined>),
     chatConversationModel: {
       currentConversation: undefined as string | undefined,
       conversations: [] as Array<{ sessionId: string; read: boolean }>,
@@ -152,9 +153,9 @@ const makeBodyModel = () => {
   } as FlowModel;
 };
 
-const renderAIChatBoxView = (model: AIChatBoxBlockModel) => {
+const renderAIChatBoxView = (model: AIChatBoxBlockModel, context: Partial<FlowModelContext> = {}) => {
   return render(
-    <FlowContextProvider context={{ model } as FlowModelContext}>
+    <FlowContextProvider context={{ model, ...context } as FlowModelContext}>
       <AIChatBoxView />
     </FlowContextProvider>,
   );
@@ -174,7 +175,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.renderConfigureActions.mockClear();
     mocks.renderConfigureItems.mockClear();
     mocks.flowModelRendererProps = [];
-    mocks.runtime.scope = undefined;
+    mocks.runtime.getScope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
   });
@@ -195,7 +196,6 @@ describe('AIChatBoxView mounted registry', () => {
     entry?.triggerTask({ aiEmployee: { username: 'sales' } });
     expect(mocks.triggerTask).toHaveBeenCalledWith({
       aiEmployee: { username: 'sales' },
-      scope: 'chat-box-1',
     });
     entry?.syncContextItems([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.addContextItems).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
@@ -215,22 +215,35 @@ describe('AIChatBoxView mounted registry', () => {
     );
   });
 
-  it('uses the initialized block uid for conversation queries', () => {
+  it('resolves the initialized block uid for conversation queries', async () => {
     renderAIChatBoxView(makeModel({ scope: 'chat-box-1' }));
 
-    expect(mocks.runtime.scope).toBe('chat-box-1');
+    await expect(mocks.runtime.getScope?.({ operation: 'list' })).resolves.toBe('chat-box-1');
   });
 
-  it('keeps explicitly blank scope unfiltered for conversation queries', () => {
+  it('keeps explicitly blank scope unfiltered for conversation queries', async () => {
     renderAIChatBoxView(makeModel({ scope: '' }));
 
-    expect(mocks.runtime.scope).toBeUndefined();
+    await expect(mocks.runtime.getScope?.({ operation: 'list' })).resolves.toBeUndefined();
+    await expect(mocks.runtime.getScope?.({ operation: 'create' })).resolves.toBe('chat-box-1');
   });
 
-  it('uses explicit scope for conversation queries', () => {
+  it('resolves explicit scope for conversation queries', async () => {
     renderAIChatBoxView(makeModel({ scope: 'shared-sales' }));
 
-    expect(mocks.runtime.scope).toBe('shared-sales');
+    await expect(mocks.runtime.getScope?.({ operation: 'list' })).resolves.toBe('shared-sales');
+    await expect(mocks.runtime.getScope?.({ operation: 'create' })).resolves.toBe('shared-sales');
+  });
+
+  it('renders scope variables when conversation requests resolve scope', async () => {
+    const resolveJsonTemplate = vi.fn().mockResolvedValue('record-1');
+
+    renderAIChatBoxView(makeModel({ scope: '{{ ctx.record.id }}' }), {
+      resolveJsonTemplate,
+    } as Partial<FlowModelContext>);
+
+    await expect(mocks.runtime.getScope?.({ operation: 'list' })).resolves.toBe('record-1');
+    expect(resolveJsonTemplate).toHaveBeenCalledWith('{{ ctx.record.id }}');
   });
 
   it('fills the common block height container when height mode is fixed', () => {

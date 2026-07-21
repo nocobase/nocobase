@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   useChatConversationActions: vi.fn(),
   runtime: {
     mode: 'block',
-    scope: undefined as string | undefined,
+    getScope: undefined as undefined | ((options?: { operation?: 'list' | 'create' }) => Promise<string | undefined>),
     chatBoxModel: {
       expanded: false,
       setReadonly: vi.fn(),
@@ -75,8 +75,7 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
 }));
 
 vi.mock('../../../ai-employees/chatbox/hooks/useChatConversationActions', () => ({
-  useChatConversationActions: (runtime: ChatBoxRuntime, options?: { scope?: string }) =>
-    mocks.useChatConversationActions(runtime, options),
+  useChatConversationActions: (runtime: ChatBoxRuntime) => mocks.useChatConversationActions(runtime),
 }));
 
 vi.mock('../../../ai-employees/chatbox/hooks/useWorkflowTasks', () => ({
@@ -148,7 +147,7 @@ vi.mock('@ant-design/x', async (importOriginal) => {
 describe('AI chat box Conversations', () => {
   beforeEach(() => {
     mocks.runtime.mode = 'block';
-    mocks.runtime.scope = undefined;
+    mocks.runtime.getScope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.currentConversation = undefined;
     mocks.runtime.chatConversationModel.conversationSegmented = 'workflowTasks';
@@ -190,8 +189,8 @@ describe('AI chat box Conversations', () => {
     });
   });
 
-  it('renders only conversations and lets conversation actions read scope from runtime', () => {
-    mocks.runtime.scope = 'scope-a';
+  it('renders only conversations and lets conversation actions resolve scope from runtime', () => {
+    mocks.runtime.getScope = vi.fn().mockResolvedValue('scope-a');
     mocks.runtime.chatConversationModel.conversations = [
       {
         sessionId: 'session-1',
@@ -210,7 +209,7 @@ describe('AI chat box Conversations', () => {
 
     render(<Conversations />);
 
-    expect(mocks.useChatConversationActions).toHaveBeenCalledWith(mocks.runtime, undefined);
+    expect(mocks.useChatConversationActions).toHaveBeenCalledWith(mocks.runtime);
     expect(screen.getByTestId('conversation-list')).toHaveTextContent('Scoped conversation');
     expect(screen.queryByText('Workflow tasks')).toBeNull();
     expect(screen.getByTestId('unread-icon')).toBeInTheDocument();

@@ -42,7 +42,6 @@ describe('Sender options helpers', () => {
         defaultUserMessage: 'Summarize this block',
         skillSettings: null,
         webSearch: true,
-        scope: 'chat-box-1',
       }),
     ).toMatchObject({
       sessionId: undefined,
@@ -52,7 +51,6 @@ describe('Sender options helpers', () => {
       attachments: [{ filename: 'draft.txt', status: 'done' }],
       workContext: [context('manual-1')],
       webSearch: true,
-      scope: 'chat-box-1',
     });
   });
 

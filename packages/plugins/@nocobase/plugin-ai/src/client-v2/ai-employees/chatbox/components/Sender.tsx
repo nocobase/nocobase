@@ -69,7 +69,6 @@ export type SenderOptions = {
   defaultUserMessage?: string;
   allowedAIEmployees?: string[];
   allowedModels?: string[];
-  scope?: string;
 };
 
 export type BuildSenderSendOptionsInput = {
@@ -85,7 +84,6 @@ export type BuildSenderSendOptionsInput = {
   editingMessageId?: string | null;
   skillSettings?: SkillSettings | null;
   webSearch?: boolean;
-  scope?: string;
   uploadEnabled?: boolean;
   webSearchEnabled?: boolean;
 };
@@ -115,7 +113,6 @@ export const buildSenderSendOptions = ({
   editingMessageId,
   skillSettings,
   webSearch,
-  scope,
   uploadEnabled = true,
   webSearchEnabled = true,
 }: BuildSenderSendOptionsInput): SendOptions | null => {
@@ -144,7 +141,6 @@ export const buildSenderSendOptions = ({
     editingMessageId: isEditingMessage && editingMessageId ? editingMessageId : undefined,
     skillSettings: skillSettings || undefined,
     webSearch: webSearchEnabled ? webSearch : false,
-    scope,
   };
 };
 
@@ -175,7 +171,6 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const showUpload = options.showUpload !== false;
   const showWebSearch = options.showWebSearch !== false;
   const placeholder = options.placeholder || 'Enter your question';
-  const scope = options.scope ?? runtime.scope;
   const containerMargin = runtime.mode === 'block' ? '8px 0 0' : '8px 16px';
   const disclaimerMargin = runtime.mode === 'block' ? '10px 0 0' : '10px 0';
 
@@ -213,7 +208,6 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       editingMessageId,
       skillSettings,
       webSearch,
-      scope,
       uploadEnabled: showUpload,
       webSearchEnabled: showWebSearch,
     });

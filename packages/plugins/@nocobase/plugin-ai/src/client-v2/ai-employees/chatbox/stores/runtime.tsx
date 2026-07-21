@@ -19,9 +19,17 @@ import { WorkflowTaskModel } from './workflow-tasks';
 
 export type ChatBoxRuntimeMode = 'global' | 'block';
 
+export type ChatBoxScopeOperation = 'list' | 'create';
+
+export type ChatBoxScopeResolverOptions = {
+  operation?: ChatBoxScopeOperation;
+};
+
+export type ChatBoxScopeResolver = (options?: ChatBoxScopeResolverOptions) => Promise<string | undefined>;
+
 export type ChatBoxRuntime = {
   mode: ChatBoxRuntimeMode;
-  scope?: string;
+  getScope?: ChatBoxScopeResolver;
   chatBoxModel: ChatBoxModel;
   chatSenderModel: ChatSenderModel;
   chatConversationModel: ChatConversationModel;
@@ -38,7 +46,7 @@ export const createChatBoxRuntime = (runtime?: Partial<ChatBoxRuntime>): ChatBox
 
   return {
     mode: runtime?.mode ?? 'global',
-    scope: runtime?.scope,
+    getScope: runtime?.getScope,
     chatBoxModel,
     chatSenderModel,
     chatConversationModel: runtime?.chatConversationModel ?? new ChatConversationModel(),
@@ -76,4 +84,14 @@ export const useResolvedChatBoxRuntime = (runtime?: ChatBoxRuntime) => {
     throw new Error('ChatBox runtime is missing. Pass runtime or wrap chatbox UI with ChatBoxRuntimeProvider.');
   }
   return resolvedRuntime;
+};
+
+export const resolveChatBoxScope = async (runtime: ChatBoxRuntime, options: ChatBoxScopeResolverOptions = {}) => {
+  if (runtime.mode !== 'block') {
+    return undefined;
+  }
+
+  if (runtime.getScope) {
+    return runtime.getScope({ operation: options.operation });
+  }
 };

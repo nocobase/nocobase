@@ -19,7 +19,7 @@ import { parseTask } from '../utils';
 import { aiEmployeeRole } from '../roles';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
-import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
+import { resolveChatBoxScope, type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
@@ -82,8 +82,8 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
   );
 
   const send = useCallback(
-    (options: SendOptions) => {
-      const scope = options.scope === undefined ? resolvedRuntime.scope : options.scope;
+    async (options: SendOptions) => {
+      const scope = await resolveChatBoxScope(resolvedRuntime, { operation: 'create' });
       const sendOptions = {
         ...options,
         scope,
@@ -95,7 +95,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       clear();
       sendMessages(sendOptions);
     },
-    [chatConversationModel, clear, refreshConversations, resolvedRuntime.scope, sendMessages],
+    [chatConversationModel, clear, refreshConversations, resolvedRuntime, sendMessages],
   );
 
   const updateRole = useCallback(
@@ -284,7 +284,6 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
             workContext: workContext ?? [],
             skillSettings,
             webSearch: resolvedWebSearch,
-            scope: options.scope === undefined ? resolvedRuntime.scope : options.scope,
             model: resolvedModel,
           });
         }
@@ -308,7 +307,6 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       chatSenderModel,
       resolveTaskModel,
       send,
-      resolvedRuntime.scope,
       chatConversationModel,
       syncContextAttachments,
       t,

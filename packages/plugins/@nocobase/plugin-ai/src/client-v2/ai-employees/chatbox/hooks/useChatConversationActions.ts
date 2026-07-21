@@ -12,20 +12,15 @@ import { useRequest } from 'ahooks';
 import { Conversation } from '../../types';
 import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
+import { resolveChatBoxScope, type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-type ChatConversationActionOptions = {
-  scope?: string;
-};
-
-export const useChatConversationActions = (runtime?: ChatBoxRuntime, options?: ChatConversationActionOptions) => {
+export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
   const api = app.apiClient;
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
   const { chatConversationModel, workflowTaskModel } = resolvedRuntime;
   const keyword = chatConversationModel.keyword;
   const unreadCount = chatConversationModel.unreadCount;
-  const scope = options?.scope ?? resolvedRuntime.scope;
 
   const conversationsService = useRequest<
     {
@@ -34,8 +29,9 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime, options?: C
     },
     [number?, string?]
   >(
-    (page = 1, keyword = '') => {
+    async (page = 1, keyword = '') => {
       const filter: { title?: { $includes: string }; scope?: string } = {};
+      const scope = await resolveChatBoxScope(resolvedRuntime, { operation: 'list' });
 
       // Filter by keyword
       if (keyword) {

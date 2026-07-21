@@ -248,7 +248,7 @@ describe('AIEmployeeShortcut', () => {
   });
 
   it('uses the surrounding block runtime for AI employee buttons inside an AI chat box', async () => {
-    const blockRuntime = createChatBoxRuntime({ mode: 'block', scope: 'chat-box-1' });
+    const blockRuntime = createChatBoxRuntime({ mode: 'block', getScope: async () => 'chat-box-1' });
     const model = Object.create(AIEmployeeButtonModel.prototype) as AIEmployeeButtonModel;
     model.props = {
       aiEmployee: {

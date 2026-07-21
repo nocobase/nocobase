@@ -35,7 +35,12 @@ import {
 } from '../../../ai-employees/chatbox';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { isAIChatBoxCoreModel } from '../sub-models';
-import { getAIChatBoxConversationScope, getAIChatBoxCreateScope, getAIChatBoxSettings } from '../utils';
+import {
+  getAIChatBoxConversationScope,
+  getAIChatBoxCreateScope,
+  getAIChatBoxSettings,
+  renderAIChatBoxScope,
+} from '../utils';
 
 const { Header } = Layout;
 
@@ -251,8 +256,11 @@ export const AIChatBoxView: React.FC = observer(() => {
   const isSidePanelOpen = showConversations || showMessagesPanel;
 
   const runtime = useChatBoxRuntime();
+  const conversationScope = getAIChatBoxConversationScope(model);
   const conversationCreateScope = getAIChatBoxCreateScope(model);
-  runtime.scope = getAIChatBoxConversationScope(model);
+  runtime.getScope = async ({ operation } = {}) => {
+    return renderAIChatBoxScope(operation === 'create' ? conversationCreateScope : conversationScope, ctx);
+  };
   const currentConversation = runtime.chatConversationModel.currentConversation;
   const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
   const chat = useChat(currentConversation, runtime);
@@ -272,7 +280,7 @@ export const AIChatBoxView: React.FC = observer(() => {
     return registerMountedChatBox({
       uid: model.uid,
       runtime,
-      triggerTask: (options) => triggerTask({ ...options, scope: conversationCreateScope }),
+      triggerTask,
       clear,
       syncContextItems: (items) => {
         if (!items.length) {
@@ -282,7 +290,7 @@ export const AIChatBoxView: React.FC = observer(() => {
         syncContextAttachments(items);
       },
     });
-  }, [chat, clear, conversationCreateScope, model.uid, runtime, syncContextAttachments, triggerTask]);
+  }, [chat, clear, model.uid, runtime, syncContextAttachments, triggerTask]);
 
   useEffect(() => {
     refreshBlockConversations();
@@ -290,7 +298,7 @@ export const AIChatBoxView: React.FC = observer(() => {
     return () => {
       app.eventBus.removeEventListener('ws:message:ai-conversations:read', refreshBlockConversations);
     };
-  }, [app.eventBus, refreshBlockConversations, runtime.scope]);
+  }, [app.eventBus, conversationScope, refreshBlockConversations]);
 
   return (
     <Layout

@@ -17,7 +17,7 @@ import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBo
 import { useChatBoxEffect } from '../../../ai-employees/chatbox/hooks/useChatBoxEffect';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { getAIChatBoxCreateScope, getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
+import { getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
 
 export const AIChatBoxCoreView: React.FC = observer(() => {
   const ctx = useFlowContext<FlowModelContext>();
@@ -25,7 +25,6 @@ export const AIChatBoxCoreView: React.FC = observer(() => {
   const aiConfigRepository = useAIConfigRepository();
 
   const settings = getAIChatBoxSettings(model.props);
-  const conversationCreateScope = getAIChatBoxCreateScope(model);
 
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel } = runtime;
@@ -174,7 +173,6 @@ export const AIChatBoxCoreView: React.FC = observer(() => {
           showDisclaimer={settings.showDisclaimer}
           allowedAIEmployees={settings.allowedAIEmployees}
           allowedModels={settings.allowedModels}
-          scope={conversationCreateScope}
           defaultSystemMessage={settings.systemPrompt}
           defaultUserMessage={settings.defaultUserMessage}
         />

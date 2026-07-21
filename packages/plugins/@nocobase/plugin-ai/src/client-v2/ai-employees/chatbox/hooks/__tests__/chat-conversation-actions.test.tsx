@@ -51,8 +51,9 @@ describe('useChatConversationActions', () => {
     });
   });
 
-  it('sends non-empty runtime scope through the list filter', async () => {
-    const runtime = createChatBoxRuntime({ mode: 'block', scope: 'shared-sales' });
+  it('resolves block runtime scope before sending the list filter', async () => {
+    const getScope = vi.fn().mockResolvedValue('shared-sales');
+    const runtime = createChatBoxRuntime({ mode: 'block', getScope });
     const { result } = renderHook(() => useChatConversationActions(runtime));
 
     act(() => {
@@ -60,6 +61,7 @@ describe('useChatConversationActions', () => {
     });
 
     await waitFor(() => expect(mocks.list).toHaveBeenCalled());
+    expect(getScope).toHaveBeenCalledWith({ operation: 'list' });
     expect(mocks.list).toHaveBeenCalledWith(
       expect.objectContaining({
         filter: {
@@ -72,8 +74,8 @@ describe('useChatConversationActions', () => {
     );
   });
 
-  it('omits scope from the list filter when runtime scope is empty', async () => {
-    const runtime = createChatBoxRuntime({ mode: 'block', scope: undefined });
+  it('omits scope from the list filter when block scope resolves empty', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'block', getScope: vi.fn().mockResolvedValue(undefined) });
     const { result } = renderHook(() => useChatConversationActions(runtime));
 
     act(() => {
@@ -81,6 +83,24 @@ describe('useChatConversationActions', () => {
     });
 
     await waitFor(() => expect(mocks.list).toHaveBeenCalled());
+    expect(mocks.list).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {},
+      }),
+    );
+  });
+
+  it('does not read getScope for global conversation lists', async () => {
+    const getScope = vi.fn().mockResolvedValue('ignored-scope');
+    const runtime = createChatBoxRuntime({ mode: 'global', getScope });
+    const { result } = renderHook(() => useChatConversationActions(runtime));
+
+    act(() => {
+      result.current.runSearch();
+    });
+
+    await waitFor(() => expect(mocks.list).toHaveBeenCalled());
+    expect(getScope).not.toHaveBeenCalled();
     expect(mocks.list).toHaveBeenCalledWith(
       expect.objectContaining({
         filter: {},

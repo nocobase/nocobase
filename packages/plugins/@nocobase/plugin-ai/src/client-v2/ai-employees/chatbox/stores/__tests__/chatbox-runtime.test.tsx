@@ -16,6 +16,7 @@ import {
   ChatBoxRuntimeProvider,
   createChatBoxRuntime,
   getGlobalChatBoxRuntime,
+  resolveChatBoxScope,
   useChatBoxRuntime,
   useResolvedChatBoxRuntime,
 } from '../runtime';
@@ -25,11 +26,22 @@ const mocks = vi.hoisted(() => ({
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   },
+  getLLMServices: vi.fn(),
 }));
 
-vi.mock('@nocobase/client-v2', () => ({
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
   useApp: () => ({
     eventBus: mocks.eventBus,
+    pm: {
+      get: vi.fn(() => ({
+        aiManager: {
+          handleTriggerTaskEvent: vi.fn(),
+          onChatBoxMounted: vi.fn(),
+          onChatBoxUnmounted: vi.fn(),
+        },
+      })),
+    },
     apiClient: {
       resource: () => ({
         unreadCounts: async () => ({
@@ -42,6 +54,12 @@ vi.mock('@nocobase/client-v2', () => ({
         }),
       }),
     },
+  }),
+}));
+
+vi.mock('../../../../repositories/hooks/useAIConfigRepository', () => ({
+  useAIConfigRepository: () => ({
+    getLLMServices: mocks.getLLMServices,
   }),
 }));
 
@@ -126,6 +144,20 @@ describe('chatbox runtime context', () => {
     expect(createChatBoxRuntime().mode).toBe('global');
     expect(createChatBoxRuntime({ mode: 'block' }).mode).toBe('block');
     expect(getGlobalChatBoxRuntime().mode).toBe('global');
+  });
+
+  it('resolves scope from block runtimes only', async () => {
+    const getScope = vi.fn().mockResolvedValue('block-scope');
+
+    await expect(
+      resolveChatBoxScope(createChatBoxRuntime({ mode: 'block', getScope }), { operation: 'list' }),
+    ).resolves.toBe('block-scope');
+    expect(getScope).toHaveBeenCalledWith({ operation: 'list' });
+
+    await expect(
+      resolveChatBoxScope(createChatBoxRuntime({ mode: 'global', getScope }), { operation: 'list' }),
+    ).resolves.toBeUndefined();
+    expect(getScope).toHaveBeenCalledTimes(1);
   });
 
   it('throws a clear error when used without a provider', () => {

@@ -216,7 +216,6 @@ export type TriggerTaskOptions = {
   tasks?: Task[];
   auto?: boolean;
   open?: boolean;
-  scope?: string;
 };
 
 export type SendOptions = {
@@ -232,7 +231,6 @@ export type SendOptions = {
   editingMessageId?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
-  scope?: string;
   model?: {
     llmService: string;
     model: string;
