@@ -46,8 +46,9 @@ type FocusMediaTrackConstraintSet = MediaTrackConstraintSet & {
 };
 
 const QR_SCAN_IMAGE_SIZES = [3200, 2400, 1600, 1000];
-const LIVE_QR_SCAN_INTERVAL = 80;
-const LIVE_QR_SCAN_MAX_SIZE = 720;
+const LIVE_QR_SCAN_INTERVAL = 120;
+const LIVE_QR_SCAN_MAX_WIDTH = 960;
+const LIVE_QR_SCAN_MAX_HEIGHT = 540;
 const QR_SCAN_IMAGE_TRANSFORMS: JsQRImageTransform[] = [
   {},
   { contrast: 3, threshold: 105 },
@@ -85,19 +86,32 @@ export function scanQrVideoFrame(video: HTMLVideoElement, canvas: HTMLCanvasElem
     return;
   }
 
-  const sourceSize = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.75);
-  const sourceX = Math.floor((video.videoWidth - sourceSize) / 2);
-  const sourceY = Math.floor((video.videoHeight - sourceSize) / 2);
-  const targetSize = Math.min(sourceSize, LIVE_QR_SCAN_MAX_SIZE);
-  canvas.width = targetSize;
-  canvas.height = targetSize;
+  const viewfinderWidth = video.clientWidth || video.videoWidth;
+  const viewfinderHeight = video.clientHeight || video.videoHeight;
+  const scanBoxSize = getCodeScanBoxSize(viewfinderWidth, viewfinderHeight);
+  const sourceWidth = Math.min(video.videoWidth, Math.floor(scanBoxSize.width * (video.videoWidth / viewfinderWidth)));
+  const sourceHeight = Math.min(
+    video.videoHeight,
+    Math.floor(scanBoxSize.height * (video.videoHeight / viewfinderHeight)),
+  );
+  const sourceX = Math.floor((video.videoWidth - sourceWidth) / 2);
+  const sourceY = Math.floor((video.videoHeight - sourceHeight) / 2);
+  const targetScale = Math.min(1, LIVE_QR_SCAN_MAX_WIDTH / sourceWidth, LIVE_QR_SCAN_MAX_HEIGHT / sourceHeight);
+  const targetWidth = Math.max(1, Math.floor(sourceWidth * targetScale));
+  const targetHeight = Math.max(1, Math.floor(sourceHeight * targetScale));
+  if (canvas.width !== targetWidth) {
+    canvas.width = targetWidth;
+  }
+  if (canvas.height !== targetHeight) {
+    canvas.height = targetHeight;
+  }
   const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!context) {
     return;
   }
 
-  context.drawImage(video, sourceX, sourceY, sourceSize, sourceSize, 0, 0, targetSize, targetSize);
-  const imageData = context.getImageData(0, 0, targetSize, targetSize);
+  context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+  const imageData = context.getImageData(0, 0, targetWidth, targetHeight);
   return jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })?.data;
 }
 
@@ -297,11 +311,17 @@ export function useCodeScanner({
   const [scanner, setScanner] = useState<Html5Qrcode>();
   const liveQrScanStopRef = useRef<() => void>();
   const scanSucceededRef = useRef(false);
+  const scanSessionRef = useRef(0);
 
   const stopLiveQrScan = useCallback(() => {
     liveQrScanStopRef.current?.();
     liveQrScanStopRef.current = undefined;
   }, []);
+
+  const cancelActiveScan = useCallback(() => {
+    scanSessionRef.current += 1;
+    stopLiveQrScan();
+  }, [stopLiveQrScan]);
 
   const reportScanSuccess = useCallback(
     (text: string) => {
@@ -317,13 +337,14 @@ export function useCodeScanner({
 
   const startScanCamera = useCallback(
     async (scannerInstance: Html5Qrcode) => {
-      stopLiveQrScan();
+      cancelActiveScan();
+      const scanSession = scanSessionRef.current;
       scanSucceededRef.current = false;
       await scannerInstance.start(
         { facingMode: 'environment' },
         {
-          fps: 10,
-          disableFlip: true,
+          fps: 8,
+          disableFlip: false,
           videoConstraints: {
             facingMode: { ideal: 'environment' },
             width: { ideal: 1920 },
@@ -340,17 +361,21 @@ export function useCodeScanner({
         },
         undefined,
       );
+      if (scanSession !== scanSessionRef.current) {
+        await stopScanner(scannerInstance, { clear: true });
+        return;
+      }
       if (shouldScanQrWithJsQR(formatsToSupport)) {
         liveQrScanStopRef.current = startLiveQrScan(elementId, reportScanSuccess);
       }
       await enableContinuousFocus(scannerInstance);
     },
-    [elementId, formatsToSupport, onScannerSizeChanged, reportScanSuccess, stopLiveQrScan],
+    [cancelActiveScan, elementId, formatsToSupport, onScannerSizeChanged, reportScanSuccess],
   );
 
   const startScanFile = useCallback(
     async (file: File) => {
-      stopLiveQrScan();
+      cancelActiveScan();
       scanSucceededRef.current = false;
       if (isSafariBrowser() && shouldScanQrWithJsQR(formatsToSupport)) {
         try {
@@ -375,7 +400,7 @@ export function useCodeScanner({
         await startScanCamera(scanner);
       }
     },
-    [formatsToSupport, onScanFailure, reportScanSuccess, scanner, startScanCamera, stopLiveQrScan],
+    [cancelActiveScan, formatsToSupport, onScanFailure, reportScanSuccess, scanner, startScanCamera],
   );
 
   useEffect(() => {
@@ -397,10 +422,10 @@ export function useCodeScanner({
     });
 
     return () => {
-      stopLiveQrScan();
+      cancelActiveScan();
       stopScanner(scannerInstance, { clear: true }).catch(() => undefined);
     };
-  }, [elementId, enabled, formatsToSupport, onCameraStartFailure, onScanFailure, startScanCamera, stopLiveQrScan]);
+  }, [cancelActiveScan, elementId, enabled, formatsToSupport, onCameraStartFailure, onScanFailure, startScanCamera]);
 
   return {
     startScanFile,

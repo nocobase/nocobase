@@ -26,8 +26,7 @@ type CodeScannerProps = {
 };
 
 const MAX_CODE_IMAGE_SIZE = 10 * 1024 * 1024;
-const MIN_SCANNER_RENDER_WIDTH = 1280;
-const MAX_SCANNER_RENDER_WIDTH = 1920;
+const SCANNER_RENDER_WIDTH = 1280;
 
 function getViewportSize() {
   return {
@@ -46,10 +45,9 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
   const [scannerSize, setScannerSize] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(getViewportSize);
 
-  const scannerRenderWidth = Math.min(MAX_SCANNER_RENDER_WIDTH, Math.max(MIN_SCANNER_RENDER_WIDTH, viewport.width));
   const previewScale = scannerSize.width
     ? Math.min(viewport.width / scannerSize.width, viewport.height / scannerSize.height)
-    : Math.min(1, viewport.width / scannerRenderWidth);
+    : Math.min(1, viewport.width / SCANNER_RENDER_WIDTH);
   const scanBoxSize = scannerSize.width
     ? getCodeScanBoxSize(scannerSize.width, scannerSize.height)
     : { width: 0, height: 0 };
@@ -217,7 +215,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
         <div
           className={scannerSurfaceClass}
           style={{
-            width: `${scannerRenderWidth}px`,
+            width: `${SCANNER_RENDER_WIDTH}px`,
             transform: `translate(-50%, -50%) scale(${previewScale})`,
           }}
         >
@@ -225,23 +223,25 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
         </div>
       </div>
       {cameraAvailable && scannerSize.width > 0 && (
+        <ScanBox
+          style={{
+            position: 'fixed',
+            top: `${(viewport.height - visibleScanBoxSize.height) / 2}px`,
+            left: `${(viewport.width - visibleScanBoxSize.width) / 2}px`,
+            width: `${visibleScanBoxSize.width}px`,
+            height: `${visibleScanBoxSize.height}px`,
+          }}
+        />
+      )}
+      <Button
+        aria-label={t('Close')}
+        className={closeButtonClass}
+        icon={<LeftOutlined />}
+        type="text"
+        onClick={onClose}
+      />
+      {cameraAvailable && (
         <>
-          <ScanBox
-            style={{
-              position: 'fixed',
-              top: `${(viewport.height - visibleScanBoxSize.height) / 2}px`,
-              left: `${(viewport.width - visibleScanBoxSize.width) / 2}px`,
-              width: `${visibleScanBoxSize.width}px`,
-              height: `${visibleScanBoxSize.height}px`,
-            }}
-          />
-          <Button
-            aria-label={t('Close')}
-            className={closeButtonClass}
-            icon={<LeftOutlined />}
-            type="text"
-            onClick={onClose}
-          />
           <Button className={albumClass} icon={<FileImageOutlined />} type="text" onClick={handleImageButtonClick}>
             {t('Album')}
           </Button>

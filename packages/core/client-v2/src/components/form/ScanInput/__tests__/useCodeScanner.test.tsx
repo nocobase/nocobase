@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { useCallback } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_CODE_FORMATS, getCodeScanBoxSize, scanQrVideoFrame, useCodeScanner } from '../useCodeScanner';
@@ -218,8 +218,8 @@ describe('useCodeScanner', () => {
 
     expect(config?.qrbox?.(1280, 720)).toEqual({ width: 1152, height: 504 });
     expect(config).toMatchObject({
-      disableFlip: true,
-      fps: 10,
+      disableFlip: false,
+      fps: 8,
       videoConstraints: {
         facingMode: { ideal: 'environment' },
         width: { ideal: 1920 },
@@ -238,6 +238,8 @@ describe('useCodeScanner', () => {
     stubCanvas();
     const video = document.createElement('video');
     Object.defineProperties(video, {
+      clientHeight: { value: 720 },
+      clientWidth: { value: 1280 },
       readyState: { value: HTMLMediaElement.HAVE_CURRENT_DATA },
       videoHeight: { value: 1080 },
       videoWidth: { value: 1920 },
@@ -247,8 +249,8 @@ describe('useCodeScanner', () => {
     expect(scanQrVideoFrame(video, canvas)).toBe('FAST-QR');
 
     const context = canvas.getContext('2d');
-    expect(context?.drawImage).toHaveBeenCalledWith(video, 555, 135, 810, 810, 0, 0, 720, 720);
-    expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 720, 720, {
+    expect(context?.drawImage).toHaveBeenCalledWith(video, 96, 162, 1728, 756, 0, 0, 960, 420);
+    expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 960, 420, {
       inversionAttempts: 'dontInvert',
     });
   });
@@ -275,6 +277,27 @@ describe('useCodeScanner', () => {
 
     await waitFor(() => expect(handleCameraStartFailure).toHaveBeenCalledWith(cameraStartError));
     expect(handleScanFailure).not.toHaveBeenCalled();
+  });
+
+  it('stops a camera that finishes starting after the scanner unmounts', async () => {
+    let resolveStart: ((value: null) => void) | undefined;
+    mocks.start.mockReturnValueOnce(
+      new Promise<null>((resolve) => {
+        resolveStart = resolve;
+      }),
+    );
+    mocks.getState.mockReturnValueOnce(1).mockReturnValue(2);
+
+    const { unmount } = render(<ScannerHost />);
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    unmount();
+    await act(async () => {
+      resolveStart?.(null);
+    });
+
+    await waitFor(() => expect(mocks.stop).toHaveBeenCalledTimes(1));
+    expect(mocks.clear).toHaveBeenCalled();
   });
 
   it('uses jsQR first for Safari uploaded QR images', async () => {
