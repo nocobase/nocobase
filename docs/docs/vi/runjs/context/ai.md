@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "Dùng ctx.ai trong RunJS để kích hoạt tác vụ nhân viên AI, bằng nội dung tác vụ trực tiếp hoặc bằng tác vụ đã cấu hình trên hành động nhân viên AI."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "Dùng ctx.ai trong RunJS để kích hoạt tác vụ nhân viên AI trong hội thoại toàn cục hoặc một AI Chat Box được chỉ định, bằng nội dung trực tiếp hoặc tác vụ đã cấu hình trên hành động nhân viên AI."
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -30,6 +30,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | Nhân viên AI. Khi truyền chuỗi, NocoBase khớp chính xác với `AIEmployee.username`, và nhân viên AI đó phải khả dụng với người dùng hiện tại. |
 | `tasks` | `Task[]` | Danh sách tác vụ cần kích hoạt. |
+| `chatBoxUid` | `string` | uid FlowModel của khối AI Chat Box sẽ nhận tác vụ. |
 | `open` | `boolean` | Có mở bảng hội thoại nhân viên AI hay không. |
 | `auto` | `boolean` | Có dùng ngữ nghĩa tự động kích hoạt của hành động nhân viên AI hay không. |
 
@@ -45,6 +46,28 @@ Các trường thường dùng của `Task`:
 | `webSearch` | `boolean` | Có cho phép tác vụ dùng Web search hay không. |
 | `model` | `{ llmService: string; model: string } \| null` | Mô hình dùng cho tác vụ này. |
 | `skillSettings` | `SkillSettings` | Cấu hình skills / tools của tác vụ này. |
+
+### Chỉ định AI Chat Box
+
+Đặt `chatBoxUid` trong tùy chọn cấp cao nhất của `triggerTask()` để kích hoạt tác vụ trong một khối AI Chat Box đã được gắn trên trang, thay vì mở hộp thoại nhân viên AI toàn cục.
+
+```ts
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid: 'AI_CHAT_BOX_BLOCK_UID',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+uid phải thuộc về khối AI Chat Box bên ngoài hiện đang được gắn trên trang. Không đặt giá trị định tuyến này bên trong `tasks`. Nếu không tìm thấy khối đích, NocoBase sẽ báo lỗi và không quay về hộp thoại toàn cục. Khi bỏ qua `chatBoxUid`, tác vụ sẽ dùng hộp thoại nhân viên AI toàn cục.
 
 ### Thêm ngữ cảnh khối trang
 
@@ -151,6 +174,8 @@ Nếu `aiEmployee` là chuỗi, NocoBase sẽ khớp chính xác theo `username`
 
 Đọc một tác vụ từ model hành động nhân viên AI trên trang và kích hoạt nó.
 
+Tùy chọn công khai của `triggerModelTask()` không nhận `chatBoxUid`. Để chỉ định AI Chat Box, hãy cấu hình `chatBoxUid` trên tác vụ đặt trước của hành động nhân viên AI. `triggerModelTask()` tiếp tục sử dụng giá trị đặt trước này.
+
 ```ts
 ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTaskOptions): void
 ```
@@ -185,6 +210,8 @@ Nếu model đích không tồn tại, chưa cấu hình nhân viên AI, hoặc 
 - Chuỗi `aiEmployee` chỉ khớp chính xác với `AIEmployee.username`.
 - `triggerModelTask()` dùng `taskIndex` bắt đầu từ `0`.
 - `message.workContext` hiện chỉ mô tả ngữ cảnh khối trang.
+- `triggerTask().chatBoxUid` ở cấp cao nhất phải tham chiếu đến một khối AI Chat Box đang được gắn trên trang.
+- `triggerModelTask()` tiếp tục dùng `chatBoxUid` được cấu hình trên tác vụ đặt trước.
 
 ## Liên quan
 

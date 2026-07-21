@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "Use ctx.ai no RunJS para acionar tarefas de funcionário de IA, com conteúdo de tarefa direto ou com tarefas configuradas em uma ação de funcionário de IA."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "Use ctx.ai no RunJS para acionar tarefas de funcionário de IA na conversa global ou em um AI Chat Box específico, com conteúdo direto ou com tarefas configuradas em uma ação de funcionário de IA."
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -30,6 +30,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | Funcionário de IA. Ao passar uma string, NocoBase compara exatamente com `AIEmployee.username`, e o funcionário de IA deve estar acessível ao usuário atual. |
 | `tasks` | `Task[]` | Lista de tarefas a acionar. |
+| `chatBoxUid` | `string` | uid FlowModel do bloco AI Chat Box que deve receber a tarefa. |
 | `open` | `boolean` | Se o painel de conversa do funcionário de IA deve ser aberto. |
 | `auto` | `boolean` | Se deve usar a semântica de acionamento automático de uma ação de funcionário de IA. |
 
@@ -45,6 +46,28 @@ Campos comuns de `Task`:
 | `webSearch` | `boolean` | Se esta tarefa pode usar Web search. |
 | `model` | `{ llmService: string; model: string } \| null` | Modelo usado por esta tarefa. |
 | `skillSettings` | `SkillSettings` | Configuração de skills / tools usada por esta tarefa. |
+
+### Direcionar para um AI Chat Box
+
+Defina `chatBoxUid` nas opções de nível superior de `triggerTask()` para acionar a tarefa em um bloco AI Chat Box montado, em vez de abrir o diálogo global do funcionário de IA.
+
+```ts
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid: 'AI_CHAT_BOX_BLOCK_UID',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+O uid deve pertencer ao bloco AI Chat Box externo atualmente montado na página. Não coloque esse valor de roteamento dentro de `tasks`. Se o bloco de destino não for encontrado, NocoBase exibirá um erro e não retornará ao diálogo global. Quando `chatBoxUid` é omitido, a tarefa usa o diálogo global do funcionário de IA.
 
 ### Adicionar contexto de blocos da página
 
@@ -151,6 +174,8 @@ Se `aiEmployee` for uma string, NocoBase procura correspondência exata por `use
 
 Lê uma tarefa de um modelo de ação de funcionário de IA na página e a aciona.
 
+As opções públicas de `triggerModelTask()` não aceitam `chatBoxUid`. Para direcionar a um AI Chat Box, configure `chatBoxUid` na tarefa predefinida da ação de funcionário de IA. `triggerModelTask()` continuará reutilizando esse valor predefinido.
+
 ```ts
 ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTaskOptions): void
 ```
@@ -185,6 +210,8 @@ Se o modelo de destino não existir, não tiver funcionário de IA configurado, 
 - Strings em `aiEmployee` correspondem apenas exatamente a `AIEmployee.username`.
 - `triggerModelTask()` usa `taskIndex` começando em `0`.
 - `message.workContext` atualmente descreve apenas contexto de blocos da página.
+- O valor de nível superior `triggerTask().chatBoxUid` deve referenciar um bloco AI Chat Box atualmente montado na página.
+- `triggerModelTask()` continua usando o `chatBoxUid` configurado na tarefa predefinida.
 
 ## Relacionado
 

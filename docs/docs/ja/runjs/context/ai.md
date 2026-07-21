@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "RunJS で ctx.ai を使い、タスク内容を直接渡すか、AI 従業員アクションに設定されたタスクを再利用して AI 従業員タスクを実行します。"
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "RunJS で ctx.ai を使い、グローバル会話または指定した AI Chat Box で AI 従業員タスクを実行します。タスク内容の直接指定と、AI 従業員アクションに設定されたタスクの再利用に対応しています。"
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -30,6 +30,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | AI 従業員。文字列を渡す場合、`AIEmployee.username` と完全一致で検索され、現在のユーザーがアクセスできる必要があります。 |
 | `tasks` | `Task[]` | 実行するタスク一覧。 |
+| `chatBoxUid` | `string` | タスクを受け取る AI Chat Box ブロックの FlowModel uid。 |
 | `open` | `boolean` | AI 従業員の会話パネルを開くかどうか。 |
 | `auto` | `boolean` | AI 従業員アクションの自動実行セマンティクスを使うかどうか。 |
 
@@ -45,6 +46,28 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `webSearch` | `boolean` | このタスクで Web search を許可するかどうか。 |
 | `model` | `{ llmService: string; model: string } \| null` | このタスクで使うモデル。 |
 | `skillSettings` | `SkillSettings` | このタスクで使う skills / tools 設定。 |
+
+### AI Chat Box を指定する
+
+`triggerTask()` のトップレベルオプションに `chatBoxUid` を設定すると、グローバルな AI 従業員ダイアログではなく、ページにマウントされている AI Chat Box ブロックでタスクを実行できます。
+
+```ts
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid: 'AI_CHAT_BOX_BLOCK_UID',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+uid には、現在のページにマウントされている外側の AI Chat Box ブロックを指定します。このルーティング値を `tasks` 内に設定しないでください。対象ブロックが見つからない場合、NocoBase はエラーを表示し、グローバルダイアログにはフォールバックしません。`chatBoxUid` を省略すると、タスクはグローバルな AI 従業員ダイアログで実行されます。
 
 ### ページブロックコンテキストを追加する
 
@@ -151,6 +174,8 @@ ctx.message.success(ctx.t('AI employee task triggered.'));
 
 ページ上の AI 従業員アクションモデルからタスクを読み取り、実行します。
 
+`triggerModelTask()` の公開オプションは `chatBoxUid` を受け取りません。AI Chat Box を指定するには、AI 従業員アクションのプリセットタスクに `chatBoxUid` を設定します。`triggerModelTask()` はそのプリセット値を引き続き使用します。
+
 ```ts
 ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTaskOptions): void
 ```
@@ -185,6 +210,8 @@ ctx.message.success(ctx.t('Configured AI employee task triggered.'));
 - `aiEmployee` の文字列は `AIEmployee.username` と完全一致でのみ検索されます。
 - `triggerModelTask()` の `taskIndex` は `0` から始まります。
 - `message.workContext` は現在、ページブロックコンテキストのみを表します。
+- トップレベルの `triggerTask().chatBoxUid` には、現在のページにマウントされている AI Chat Box ブロックを指定する必要があります。
+- `triggerModelTask()` はプリセットタスクに設定された `chatBoxUid` を引き続き使用します。
 
 ## 関連
 

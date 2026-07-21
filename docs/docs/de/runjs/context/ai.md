@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "Verwenden Sie ctx.ai in RunJS, um KI-Mitarbeiteraufgaben auszulösen, entweder mit direkt übergebenem Aufgabeninhalt oder mit Aufgaben aus einer KI-Mitarbeiteraktion."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "Verwenden Sie ctx.ai in RunJS, um KI-Mitarbeiteraufgaben im globalen Dialog oder in einer angegebenen AI Chat Box auszulösen, entweder mit direkt übergebenem Aufgabeninhalt oder mit Aufgaben aus einer KI-Mitarbeiteraktion."
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -30,6 +30,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | KI-Mitarbeiter. Bei einer Zeichenkette wird exakt gegen `AIEmployee.username` abgeglichen, und der KI-Mitarbeiter muss für den aktuellen Benutzer zugänglich sein. |
 | `tasks` | `Task[]` | Auszulösende Aufgaben. |
+| `chatBoxUid` | `string` | FlowModel uid des AI-Chat-Box-Blocks, der die Aufgabe empfangen soll. |
 | `open` | `boolean` | Ob das Konversationspanel des KI-Mitarbeiters geöffnet wird. |
 | `auto` | `boolean` | Ob die automatische Auslösesemantik einer KI-Mitarbeiteraktion verwendet wird. |
 
@@ -45,6 +46,28 @@ Häufige Felder von `Task`:
 | `webSearch` | `boolean` | Ob diese Aufgabe Web search verwenden darf. |
 | `model` | `{ llmService: string; model: string } \| null` | Modell für diese Aufgabe. |
 | `skillSettings` | `SkillSettings` | Skills / tools für diese Aufgabe. |
+
+### Eine AI Chat Box als Ziel festlegen
+
+Setzen Sie `chatBoxUid` in den Optionen von `triggerTask()` auf oberster Ebene, um die Aufgabe in einem eingebundenen AI-Chat-Box-Block statt im globalen KI-Mitarbeiterdialog auszulösen.
+
+```ts
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid: 'AI_CHAT_BOX_BLOCK_UID',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+Die uid muss zum äußeren AI-Chat-Box-Block gehören, der aktuell auf der Seite eingebunden ist. Legen Sie diesen Routing-Wert nicht in `tasks` ab. Wenn der Zielblock nicht gefunden wird, meldet NocoBase einen Fehler und fällt nicht auf den globalen Dialog zurück. Ohne `chatBoxUid` wird die Aufgabe im globalen KI-Mitarbeiterdialog ausgelöst.
 
 ### Seitenblockkontext hinzufügen
 
@@ -151,6 +174,8 @@ Wenn `aiEmployee` eine Zeichenkette ist, sucht NocoBase exakt nach `username` un
 
 Liest eine Aufgabe aus einem KI-Mitarbeiteraktionsmodell auf der Seite und löst sie aus.
 
+Die öffentlichen Optionen von `triggerModelTask()` akzeptieren kein `chatBoxUid`. Um eine AI Chat Box als Ziel festzulegen, konfigurieren Sie `chatBoxUid` in der vordefinierten Aufgabe der KI-Mitarbeiteraktion. `triggerModelTask()` verwendet diesen voreingestellten Wert weiterhin.
+
 ```ts
 ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTaskOptions): void
 ```
@@ -185,6 +210,8 @@ Wenn das Zielmodell nicht existiert, kein KI-Mitarbeiter konfiguriert ist oder d
 - Zeichenketten in `aiEmployee` werden nur exakt gegen `AIEmployee.username` abgeglichen.
 - `triggerModelTask()` verwendet einen `taskIndex`, der bei `0` beginnt.
 - `message.workContext` beschreibt aktuell nur Seitenblockkontext.
+- `triggerTask().chatBoxUid` auf oberster Ebene muss auf einen aktuell eingebundenen AI-Chat-Box-Block verweisen.
+- `triggerModelTask()` verwendet weiterhin das in der vordefinierten Aufgabe konfigurierte `chatBoxUid`.
 
 ## Verwandte Themen
 

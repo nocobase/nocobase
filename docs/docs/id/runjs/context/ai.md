@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
-description: "Gunakan ctx.ai di RunJS untuk memicu tugas karyawan AI, baik dengan isi tugas langsung maupun dengan tugas yang dikonfigurasi pada aksi karyawan AI."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,RunJS,NocoBase"
+description: "Gunakan ctx.ai di RunJS untuk memicu tugas karyawan AI di percakapan global atau AI Chat Box tertentu, baik dengan isi tugas langsung maupun dengan tugas yang dikonfigurasi pada aksi karyawan AI."
+keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -30,6 +30,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 |------|------|------|
 | `aiEmployee` | `string \| AIEmployee` | Karyawan AI. Jika string diberikan, NocoBase mencocokkan secara persis dengan `AIEmployee.username`, dan karyawan AI tersebut harus dapat diakses oleh pengguna saat ini. |
 | `tasks` | `Task[]` | Daftar tugas yang akan dipicu. |
+| `chatBoxUid` | `string` | uid FlowModel dari blok AI Chat Box yang akan menerima tugas. |
 | `open` | `boolean` | Apakah panel percakapan karyawan AI dibuka. |
 | `auto` | `boolean` | Apakah menggunakan semantik pemicu otomatis dari aksi karyawan AI. |
 
@@ -45,6 +46,28 @@ Field umum pada `Task`:
 | `webSearch` | `boolean` | Apakah tugas ini boleh menggunakan Web search. |
 | `model` | `{ llmService: string; model: string } \| null` | Model yang digunakan oleh tugas ini. |
 | `skillSettings` | `SkillSettings` | Konfigurasi skills / tools yang digunakan tugas ini. |
+
+### Menargetkan AI Chat Box
+
+Atur `chatBoxUid` pada opsi tingkat atas `triggerTask()` untuk memicu tugas di blok AI Chat Box yang sudah dimuat, bukan membuka dialog global karyawan AI.
+
+```ts
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  chatBoxUid: 'AI_CHAT_BOX_BLOCK_UID',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+    },
+  ],
+});
+```
+
+uid harus berasal dari blok luar AI Chat Box yang saat ini dimuat pada halaman. Jangan tempatkan nilai routing ini di dalam `tasks`. Jika blok target tidak ditemukan, NocoBase menampilkan error dan tidak kembali ke dialog global. Jika `chatBoxUid` tidak diberikan, tugas menggunakan dialog global karyawan AI.
 
 ### Menambahkan konteks blok halaman
 
@@ -151,6 +174,8 @@ Jika `aiEmployee` berupa string, NocoBase mencocokkan secara persis berdasarkan 
 
 Membaca tugas dari model aksi karyawan AI pada halaman dan memicunya.
 
+Opsi publik `triggerModelTask()` tidak menerima `chatBoxUid`. Untuk menargetkan AI Chat Box, konfigurasikan `chatBoxUid` pada tugas preset dari aksi karyawan AI. `triggerModelTask()` akan tetap menggunakan nilai preset tersebut.
+
 ```ts
 ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTaskOptions): void
 ```
@@ -185,6 +210,8 @@ Jika model target tidak ada, belum mengonfigurasi karyawan AI, atau indeks yang 
 - String `aiEmployee` hanya cocok secara persis dengan `AIEmployee.username`.
 - `triggerModelTask()` menggunakan `taskIndex` berbasis `0`.
 - `message.workContext` saat ini hanya menjelaskan konteks blok halaman.
+- `triggerTask().chatBoxUid` tingkat atas harus merujuk ke blok AI Chat Box yang sedang dimuat pada halaman.
+- `triggerModelTask()` tetap menggunakan `chatBoxUid` yang dikonfigurasi pada tugas preset.
 
 ## Terkait
 
