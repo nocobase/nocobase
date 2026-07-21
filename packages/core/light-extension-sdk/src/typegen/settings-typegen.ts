@@ -8,6 +8,7 @@
  */
 
 import { buildLightExtensionSettingsSchema } from '../schema/contracts';
+import type { LightExtensionBindingContextTypegenResult } from './context-typegen';
 
 export type LightExtensionClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
 
@@ -144,6 +145,7 @@ function buildSettingsTypegenResult(
 
 export function createActiveEntryContextType(input: {
   activePath?: string;
+  bindingTypes?: LightExtensionBindingContextTypegenResult;
   entries: LightExtensionSettingsTypegenEntry[];
 }): LightExtensionActiveEntryContextResult {
   const activePath = normalizeSourcePath(input.activePath || '');
@@ -158,6 +160,15 @@ export function createActiveEntryContextType(input: {
     return {};
   }
 
+  const bindingTypes = bindingTypesMatchEntry(input.bindingTypes, entry) ? input.bindingTypes : undefined;
+  const contextImports = bindingTypes
+    ? [
+        `import type { Settings } from "${entry.virtualImport}";`,
+        'import type { LightExtensionBindingContext } from "./context";',
+      ]
+    : [`import type { Context } from "${entry.virtualImport}";`];
+  const contextType = bindingTypes ? 'LightExtensionBindingContext<Settings>' : 'Context';
+
   return {
     entry,
     globalContextType: LIGHT_EXTENSION_ACTIVE_CONTEXT_TYPE,
@@ -165,10 +176,15 @@ export function createActiveEntryContextType(input: {
       path: LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH,
       content: [
         generatedHeader(),
-        `import type { Context } from "${entry.virtualImport}";`,
+        ...contextImports,
+        '',
+        `type LightExtensionCurrentEntryContext = ${contextType};`,
+        'type LightExtensionRunJSBaseContext = {',
+        '  [TKey in keyof RunJSContext as TKey extends keyof LightExtensionCurrentEntryContext ? never : TKey]: RunJSContext[TKey];',
+        '};',
         '',
         'declare global {',
-        `  type ${LIGHT_EXTENSION_ACTIVE_CONTEXT_TYPE} = RunJSContext & Context;`,
+        `  type ${LIGHT_EXTENSION_ACTIVE_CONTEXT_TYPE} = LightExtensionRunJSBaseContext & LightExtensionCurrentEntryContext;`,
         '}',
         '',
         'export {};',
@@ -176,6 +192,21 @@ export function createActiveEntryContextType(input: {
       ].join('\n'),
     },
   };
+}
+
+function bindingTypesMatchEntry(
+  bindingTypes: LightExtensionBindingContextTypegenResult | undefined,
+  entry: LightExtensionSettingsTypegenEntry,
+): bindingTypes is LightExtensionBindingContextTypegenResult {
+  if (!bindingTypes || bindingTypes.entry.kind !== entry.kind || bindingTypes.entry.entryName !== entry.entryName) {
+    return false;
+  }
+  if (entry.descriptorPath === 'src/client/entry.json') {
+    return true;
+  }
+  return (
+    bindingTypes.entry.entryPath === entry.sourceRoot || bindingTypes.entry.entryPath.startsWith(`${entry.sourceRoot}/`)
+  );
 }
 
 export function parseSettingsTypeImport(
@@ -383,13 +414,20 @@ function buildSdkDeclarations(): string {
 declare module "@nocobase/light-extension-sdk/shared" {
   export interface LightExtensionSettingsContext<TSettings = unknown> { settings: TSettings; }
   export type LightExtensionRecord = Record<string, unknown>;
-  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-    record?: LightExtensionRecord | null;
-    records?: LightExtensionRecord[];
-    values?: LightExtensionRecord;
-    collection?: unknown;
-    collectionField?: unknown;
-    dataSource?: unknown;
+  const lightExtensionCollectionTypes: unique symbol;
+  export interface LightExtensionCollectionContext<TDataSourceKey extends string = string, TName extends string = string, TRecord = unknown, TCreateValues = unknown, TUpdateValues = unknown> {
+    readonly dataSourceKey?: TDataSourceKey;
+    readonly name?: TName;
+    readonly [lightExtensionCollectionTypes]?: { create: TCreateValues; record: TRecord; update: TUpdateValues };
+  }
+  export interface LightExtensionDataSourceContext<TKey extends string = string> { readonly key?: TKey; }
+  export interface LightExtensionDataContext<TSettings = unknown, TRecord = unknown, TValues = unknown, TCollection = unknown, TCollectionField = unknown, TDataSource = unknown> extends LightExtensionSettingsContext<TSettings> {
+    record?: TRecord | null;
+    records?: TRecord[];
+    values?: TValues;
+    collection?: TCollection;
+    collectionField?: TCollectionField;
+    dataSource?: TDataSource;
   }
   export function defineSettings<TSettings>(settings: TSettings): TSettings;
   export function assertSettings<TSettings>(settings: TSettings): TSettings;
@@ -397,15 +435,15 @@ declare module "@nocobase/light-extension-sdk/shared" {
 
 declare module "@nocobase/light-extension-sdk/client" {
   import type { LightExtensionDataContext, LightExtensionRecord } from "@nocobase/light-extension-sdk/shared";
-  export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from "@nocobase/light-extension-sdk/shared";
+  export type { LightExtensionCollectionContext, LightExtensionDataContext, LightExtensionDataSourceContext, LightExtensionRecord, LightExtensionSettingsContext } from "@nocobase/light-extension-sdk/shared";
   export { assertSettings, defineSettings } from "@nocobase/light-extension-sdk/shared";
-  export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+  export interface JSBlockContext<TSettings = unknown, TRecord = unknown, TValues = unknown, TCollection = unknown, TCollectionField = unknown, TDataSource = unknown> extends LightExtensionDataContext<TSettings, TRecord, TValues, TCollection, TCollectionField, TDataSource> {
     element?: HTMLElement | null;
     render?: (node: unknown) => void;
     i18n?: { t: (key: string, options?: Record<string, unknown>) => string };
   }
   export interface JSPageRuntimeFacade { readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void; }
-  export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSettings> { page: JSPageRuntimeFacade; }
+  export interface JSPageContext<TSettings = unknown, TRecord = unknown, TValues = unknown, TCollection = unknown, TCollectionField = unknown, TDataSource = unknown> extends JSBlockContext<TSettings, TRecord, TValues, TCollection, TCollectionField, TDataSource> { page: JSPageRuntimeFacade; }
   export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }
   export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> { event?: unknown; formValues?: LightExtensionRecord; }
   export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }

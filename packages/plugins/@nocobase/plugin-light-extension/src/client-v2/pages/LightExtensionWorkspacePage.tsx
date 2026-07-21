@@ -10,7 +10,9 @@
 import { DownloadOutlined, ImportOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   createActiveEntryContextType,
+  generateBindingContextTypes,
   generateClientSettingsTypes,
+  type LightExtensionBindingContextTypegenResult,
   type LightExtensionSettingsTypegenResult,
 } from '@nocobase/light-extension-sdk/typegen';
 import {
@@ -56,8 +58,10 @@ import type {
   LightExtensionFileChange,
   LightExtensionRepoRecord,
   LightExtensionCommitRecord,
+  LightExtensionReferenceOwnerLocator,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
+import type { LightExtensionContextPack } from '../../shared/context-pack';
 import { createLightExtensionProblemFactory } from '../../shared/problems';
 import ProblemsPanel from '../components/ProblemsPanel';
 import { isBrowserProvisionalPreviewEnabled } from '../browser-preview/BrowserPreviewSession';
@@ -100,6 +104,8 @@ interface LightExtensionWorkspacePageProps {
   initialPath?: string;
   workspaceScope?: LightExtensionWorkspaceScope;
   entryId?: string | null;
+  ownerLocator?: LightExtensionReferenceOwnerLocator;
+  referenceId?: string;
   onPreview?: (artifact: LightExtensionEntryRuntimeArtifact) => void | Promise<void>;
   onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
@@ -155,6 +161,8 @@ function LightExtensionWorkspacePage({
   initialPath,
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
   entryId,
+  ownerLocator,
+  referenceId,
   onPreview,
   onMoveToInline,
   onFooterActionsChange,
@@ -166,8 +174,16 @@ function LightExtensionWorkspacePage({
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
-  const { compileWorkspacePreview, getRepo, inspectSourceArchive, listCommits, pull, pullCommit, saveSource } =
-    useLightExtensionRepo();
+  const {
+    compileWorkspacePreview,
+    getContextPack,
+    getRepo,
+    inspectSourceArchive,
+    listCommits,
+    pull,
+    pullCommit,
+    saveSource,
+  } = useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
@@ -201,6 +217,8 @@ function LightExtensionWorkspacePage({
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
+  const [bindingContextPack, setBindingContextPack] = useState<LightExtensionContextPack>();
+  const [bindingContextStatus, setBindingContextStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const workspaceFullscreen = useFullscreenOverlay();
   const embeddedSaveRequestRef = useRef<{
     resolve: (result: EmbeddedRunJSEditorSaveResult) => void;
@@ -211,6 +229,8 @@ function LightExtensionWorkspacePage({
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
   const revealRequestSequenceRef = useRef(0);
+  const bindingContextRequestSequenceRef = useRef(0);
+  const ownerLocatorSignature = useMemo(() => JSON.stringify(ownerLocator || null), [ownerLocator]);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -224,6 +244,42 @@ function LightExtensionWorkspacePage({
     },
     [pathRestrictionReason, workspaceScope],
   );
+
+  const loadBindingContext = useCallback(async () => {
+    const requestSequence = bindingContextRequestSequenceRef.current + 1;
+    bindingContextRequestSequenceRef.current = requestSequence;
+    if (!repoId || !entryId) {
+      setBindingContextPack(undefined);
+      setBindingContextStatus('idle');
+      return;
+    }
+
+    setBindingContextPack(undefined);
+    setBindingContextStatus('loading');
+    try {
+      const nextContextPack = await getContextPack({
+        repoId,
+        entryId,
+        ...(referenceId ? { referenceId } : {}),
+        ...(ownerLocatorSignature !== 'null'
+          ? { ownerLocator: JSON.parse(ownerLocatorSignature) as LightExtensionReferenceOwnerLocator }
+          : {}),
+      });
+      if (bindingContextRequestSequenceRef.current !== requestSequence) {
+        return;
+      }
+      setBindingContextPack((current) =>
+        current?.contextHash === nextContextPack.contextHash ? current : nextContextPack,
+      );
+      setBindingContextStatus('ready');
+    } catch {
+      if (bindingContextRequestSequenceRef.current !== requestSequence) {
+        return;
+      }
+      setBindingContextPack(undefined);
+      setBindingContextStatus('error');
+    }
+  }, [entryId, getContextPack, ownerLocatorSignature, referenceId, repoId]);
 
   const loadWorkspace = useCallback(
     async (options: { resetNotice?: boolean } = {}) => {
@@ -289,18 +345,42 @@ function LightExtensionWorkspacePage({
     loadWorkspace();
   }, [loadWorkspace]);
 
+  useEffect(() => {
+    loadBindingContext();
+  }, [loadBindingContext]);
+
   const activeFile = files.find((file) => file.path === activePath);
   const textFiles = useMemo(() => files.filter((file) => !isBinaryWorkspaceFile(file)), [files]);
   const sourceFiles = useMemo(() => textFiles.filter((file) => !isPortalWorkspacePath(file.path)), [textFiles]);
   const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files: sourceFiles }), [sourceFiles]);
+  const activeBindingContextPack =
+    bindingContextPack?.repoId === repoId && bindingContextPack.entry.id === entryId ? bindingContextPack : undefined;
+  const bindingContextTypegen = useMemo<LightExtensionBindingContextTypegenResult | undefined>(
+    () => (activeBindingContextPack ? generateBindingContextTypes(activeBindingContextPack) : undefined),
+    [activeBindingContextPack],
+  );
   const activeEntryContext = useMemo(
-    () => createActiveEntryContextType({ activePath, entries: settingsTypegen.entries }),
-    [activePath, settingsTypegen.entries],
+    () =>
+      createActiveEntryContextType({
+        activePath,
+        bindingTypes: bindingContextTypegen,
+        entries: settingsTypegen.entries,
+      }),
+    [activePath, bindingContextTypegen, settingsTypegen.entries],
   );
   const authoringFiles = useMemo(
-    () => addSettingsTypeFiles(textFiles, settingsTypegen.files, activeEntryContext.file),
-    [activeEntryContext.file, settingsTypegen.files, textFiles],
+    () =>
+      addGeneratedTypeFiles(
+        textFiles,
+        [...settingsTypegen.files, ...(bindingContextTypegen?.files || [])],
+        activeEntryContext.file,
+      ),
+    [activeEntryContext.file, bindingContextTypegen?.files, settingsTypegen.files, textFiles],
   );
+  const showGenericContextHint =
+    Boolean(activeEntryContext.entry) &&
+    bindingContextStatus !== 'loading' &&
+    (bindingContextStatus === 'error' || !bindingContextTypegen?.precise);
   const filesForSave = files;
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
@@ -722,6 +802,7 @@ function LightExtensionWorkspacePage({
       setBaseHeadCommitId(result.commit.id);
       setBaseFiles(filesForSave);
       await onSaved?.();
+      await loadBindingContext();
       if (onRequestClose) {
         await onRequestClose();
       } else {
@@ -759,6 +840,7 @@ function LightExtensionWorkspacePage({
     filesForSave,
     hasBlockedDirtyChanges,
     loadWorkspace,
+    loadBindingContext,
     onSaved,
     onRequestClose,
     pathRestrictionReason,
@@ -1274,6 +1356,18 @@ function LightExtensionWorkspacePage({
                       {activeFileReadOnly && entryScoped && !isBinaryWorkspaceFile(activeFile) ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
                       ) : null}
+                      {showGenericContextHint ? (
+                        <Alert
+                          message={
+                            bindingContextStatus === 'error'
+                              ? t('Binding context types could not be loaded. Generic types are active.')
+                              : t('No binding is selected. Generic context types are active.')
+                          }
+                          showIcon
+                          style={{ marginBottom: 8 }}
+                          type="info"
+                        />
+                      ) : null}
                       {provisionalPreview.enabled ? (
                         <Alert
                           aria-live="polite"
@@ -1696,7 +1790,7 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
   return changes.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function addSettingsTypeFiles(
+function addGeneratedTypeFiles(
   files: WorkspaceFile[],
   settingsTypeFiles: LightExtensionSettingsTypegenResult['files'],
   activeContextFile?: LightExtensionSettingsTypegenResult['files'][number],

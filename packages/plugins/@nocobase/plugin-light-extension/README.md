@@ -73,6 +73,30 @@ The primary assertion coverage lives in `src/server/__tests__/save-source-runtim
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/save-source-runtime.test.ts --run
 ```
 
+## Agent CLI and MCP Workflow
+
+The supported local Agent workflow uses the stateless `nb light` commands. It keeps editable UTF-8 source in a normal directory and records only repository identity, the pulled Head, and content hashes under `.nocobase/light-extension-state.json`; credentials, tokens, and cookies are never written to the workspace.
+
+```bash
+nb light pull --repo <repo-id> --entry <entry-id> --dir ./my-light-extension
+nb light check --dir ./my-light-extension --json-output
+nb light save --dir ./my-light-extension --yes --json-output
+```
+
+`check` always sends the complete candidate workspace to `lightExtensions:compileWorkspacePreview`. Generated files under `.nocobase/**` and `.light-extension/types/**` are excluded. HTTP 200 is successful only when `data.accepted` is `true`; HTTP 422 is read exclusively from `errors[0].details` and blocks saving even when individual entries compiled successfully.
+
+`save` computes an `upsert/delete` delta against the pulled baseline and requires the current local snapshot to have passed the authoritative check. Without `--yes`, the user must confirm the file and line summary before the existing `lightExtensionFiles:saveSource` action is called. A Head conflict leaves the local files and baseline intact; pull the new Head and replay the local patch instead of replacing only `expectedHeadCommitId`.
+
+The first local workflow supports JS Block and JS Page text workspaces. It rejects `src/client/js-portals/**`, base64, NUL, and binary content. It never triggers Host Preview, publish, or an automatic rebase.
+
+MCP exposure is also opt-in. Clients must explicitly request the package:
+
+```http
+x-mcp-packages: @nocobase/plugin-light-extension
+```
+
+Only approved high-level authoring operations are generated as tools. Raw VSC/RunJS source access, artifact mutation, credentials, synchronization internals, and recovery operations remain excluded. MCP calls preserve the caller's allowlisted `authorization`, `x-role`, and `x-authenticator` headers and continue through the real Resource Action and ACL path. A source save still requires `writeSource` permission and an upstream user-reviewed diff; MCP does not automatically save or publish.
+
 ## Workspace ZIP Contract
 
 The workspace file manager exposes ZIP import and export. Export is client-side and packages the current working copy, including unsaved editor content. Repository workspaces export every source file; entry-bound workspaces export only paths writable in that scope, so other managed entries are excluded. Generated authoring-only type files are not exported.

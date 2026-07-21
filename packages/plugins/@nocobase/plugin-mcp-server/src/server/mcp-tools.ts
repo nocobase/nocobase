@@ -14,13 +14,24 @@ import { Application } from '@nocobase/server';
 import { requireModule } from '@nocobase/utils';
 import { merge as deepmerge } from '@nocobase/utils';
 import inject from 'light-my-request';
+import { buildMcpIdentityHeaders, isMcpIdentityHeader } from './request-headers';
 import { sanitizeJsonSchemaForOpenAITools } from './schema-utils';
 
 type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
+type McpExposure = boolean | { enabled?: boolean };
+type ApiErrorItem = {
+  code?: unknown;
+  details?: unknown;
+  message?: unknown;
+  status?: unknown;
+};
 
-const SWAGGER_TARGETS = ['swagger.json', 'swagger/index.json', 'swagger'];
 export const DEFAULT_MCP_PACKAGE_PATTERNS = [];
+
+function getSwaggerTargets() {
+  return ['swagger.json', 'swagger/index.json', 'swagger/index.ts', 'swagger/index.js', 'swagger'];
+}
 
 function getSwaggerPrefixes() {
   if (process.env.NODE_ENV === 'production') {
@@ -32,7 +43,7 @@ function getSwaggerPrefixes() {
 function loadSwagger(packageName: string): Partial<OpenAPIDocument> {
   const prefixes = getSwaggerPrefixes();
   for (const prefix of prefixes) {
-    for (const target of SWAGGER_TARGETS) {
+    for (const target of getSwaggerTargets()) {
       try {
         const file = `${packageName}/${prefix}/${target}`;
         const filePath = require.resolve(file);
@@ -111,6 +122,65 @@ function dereferenceNode(node: any, document: OpenAPIDocument, seen = new Set<st
   }
 
   return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, dereferenceNode(value, document, seen)]));
+}
+
+function readMcpExposure(value: unknown) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (value && typeof value === 'object' && 'enabled' in value) {
+    const enabled = (value as McpExposure & { enabled?: unknown }).enabled;
+    return typeof enabled === 'boolean' ? enabled : undefined;
+  }
+  return undefined;
+}
+
+function resolveMcpExposure(...values: unknown[]) {
+  for (const value of values) {
+    const exposure = readMcpExposure(value);
+    if (typeof exposure === 'boolean') {
+      return exposure;
+    }
+  }
+  return true;
+}
+
+export function filterSwaggerOperationsForMcp(document: OpenAPIDocument): OpenAPIDocument {
+  const paths: OpenAPIV3.PathsObject = {};
+
+  for (const [path, pathItem] of Object.entries(document.paths || {})) {
+    if (!pathItem) {
+      continue;
+    }
+
+    const filteredPathItem: Record<string, unknown> = {};
+    for (const key of ['$ref', 'summary', 'description', 'servers', 'parameters'] as const) {
+      if (typeof pathItem[key] !== 'undefined') {
+        filteredPathItem[key] = pathItem[key];
+      }
+    }
+
+    let hasOperation = false;
+    for (const method of ['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'] as const) {
+      const operation = pathItem[method];
+      if (!operation) {
+        continue;
+      }
+      if (!resolveMcpExposure(operation['x-mcp'], pathItem['x-mcp'], document['x-mcp'])) {
+        continue;
+      }
+      filteredPathItem[method] = operation;
+      hasOperation = true;
+    }
+
+    if (hasOperation) {
+      paths[path] = filteredPathItem as OpenAPIV3.PathItemObject;
+    }
+  }
+
+  const filteredDocument = { ...document, paths };
+  delete filteredDocument['x-mcp'];
+  return filteredDocument;
 }
 
 function prepareSwaggerForMcpTools(document: OpenAPIDocument): OpenAPIDocument {
@@ -255,6 +325,9 @@ function buildRequest(
       continue;
     }
     if (parameter.in === 'header') {
+      if (isMcpIdentityHeader(parameter.name)) {
+        continue;
+      }
       headers[parameter.name] = String(value);
       continue;
     }
@@ -263,9 +336,7 @@ function buildRequest(
     }
   }
 
-  if (context?.token && !headers.authorization && !headers.Authorization) {
-    headers.authorization = `Bearer ${context.token}`;
-  }
+  Object.assign(headers, buildMcpIdentityHeaders(context));
 
   let payload = args.requestBody;
   if (payload !== undefined && tool.requestBodyContentType && !headers['content-type']) {
@@ -295,6 +366,33 @@ function buildRequest(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getFirstApiError(body: unknown): ApiErrorItem | undefined {
+  if (!isRecord(body) || !Array.isArray(body.errors) || !isRecord(body.errors[0])) {
+    return undefined;
+  }
+  return body.errors[0];
+}
+
+function createStructuredMcpError(status: number, body: unknown) {
+  const apiError = getFirstApiError(body);
+  const errorContent: Record<string, unknown> = {
+    status,
+    code: typeof apiError?.code === 'string' ? apiError.code : 'MCP_HTTP_ERROR',
+    message:
+      typeof apiError?.message === 'string' ? apiError.message : `NocoBase resource action failed with HTTP ${status}`,
+  };
+
+  if (apiError && Object.prototype.hasOwnProperty.call(apiError, 'details')) {
+    errorContent.details = apiError.details;
+  }
+
+  return new Error(JSON.stringify(errorContent));
+}
+
 export async function collectMcpToolsFromSwagger(options: {
   app: Application;
   packagePatterns?: string[];
@@ -321,7 +419,10 @@ export async function collectMcpToolsFromSwagger(options: {
   } as OpenAPIDocument;
 
   if (shouldIncludePackage('@nocobase/server', packagePatterns)) {
-    swagger = mergeSwagger(swagger, loadSwagger('@nocobase/server'));
+    const serverSwagger = loadSwagger('@nocobase/server');
+    if (Object.keys(serverSwagger).length > 0) {
+      swagger = mergeSwagger(swagger, filterSwaggerOperationsForMcp(serverSwagger as OpenAPIDocument));
+    }
   }
 
   for (const plugin of plugins) {
@@ -333,7 +434,7 @@ export async function collectMcpToolsFromSwagger(options: {
     if (Object.keys(pluginSwagger).length === 0) {
       continue;
     }
-    swagger = mergeSwagger(swagger, pluginSwagger);
+    swagger = mergeSwagger(swagger, filterSwaggerOperationsForMcp(pluginSwagger as OpenAPIDocument));
   }
 
   // Resolve local refs used by tool inputs.
@@ -380,12 +481,7 @@ export async function collectMcpToolsFromSwagger(options: {
             : response.payload;
 
         if (response.statusCode >= 400) {
-          throw new Error(
-            JSON.stringify({
-              statusCode: response.statusCode,
-              body,
-            }),
-          );
+          throw createStructuredMcpError(response.statusCode, body);
         }
 
         return app.aiManager.mcpToolsManager.postProcessToolResult(mcpTool, body, {

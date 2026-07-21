@@ -61,6 +61,8 @@ import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
 import { externalReactRender, setupRunJSLibs } from './runjsLibs';
 import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
+import { RUNJS_EVALUATION_WRAPPER_LINE_OFFSET } from '@nocobase/runjs/compiler/line-map';
+import { setRunJSRuntimeReporting } from './runjsRuntimeReporter';
 
 function normalizePathname(pathname: string) {
   return pathname.endsWith('/') ? pathname : `${pathname}/`;
@@ -3596,6 +3598,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const modelClass = getModelClassName(this);
       const Ctor: new (delegate: any) => any = RunJSContextRegistry.resolve(version, modelClass) || FlowRunJSContext;
       const runCtx = new Ctor(this);
+      setRunJSRuntimeReporting(runCtx, options?.runtimeReporting);
       runCtx.defineMethod('t', (key: string, options?: any) => {
         return this.t(key, { ns: 'runjs', ...options });
       });
@@ -3620,8 +3623,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         browserGlobals.document = document;
       }
       const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
-      const { timeoutMs } = options || {};
-      return new JSRunner({ globals, timeoutMs });
+      const { timeoutMs, runtimeReporting } = options || {};
+      return new JSRunner({ globals, timeoutMs, runtimeReporting });
     });
     // Helper: build server contextParams for variables:resolve
     this.defineMethod('buildServerContextParams', function (this: BaseFlowEngineContext, input?: any) {
@@ -4235,7 +4238,6 @@ export function createRunJSDeprecationProxy(
     stack?: string,
   ): { line?: number; column?: number; rawLine?: number; rawColumn?: number } => {
     if (!stack || typeof stack !== 'string') return {};
-    const WRAPPER_PREFIX_LINES = 2; // JSRunner.run wraps user code with 2 lines before `${code}`
     const lines = stack.split('\n');
     for (const l of lines) {
       if (!l) continue;
@@ -4244,7 +4246,9 @@ export function createRunJSDeprecationProxy(
       const rawLine = Number(m[1]);
       const rawColumn = Number(m[2]);
       const line =
-        Number.isFinite(rawLine) && rawLine > WRAPPER_PREFIX_LINES ? rawLine - WRAPPER_PREFIX_LINES : rawLine;
+        Number.isFinite(rawLine) && rawLine > RUNJS_EVALUATION_WRAPPER_LINE_OFFSET
+          ? rawLine - RUNJS_EVALUATION_WRAPPER_LINE_OFFSET
+          : rawLine;
       const column = Number.isFinite(rawColumn) ? rawColumn : undefined;
       return { line, column, rawLine, rawColumn };
     }

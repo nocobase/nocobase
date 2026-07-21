@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     pullCommit: vi.fn(),
     saveSource: vi.fn(),
     compileWorkspacePreview: vi.fn(),
+    getContextPack: vi.fn(),
     listCommits: vi.fn(),
   },
   archive: {
@@ -427,6 +428,23 @@ describe('LightExtensionWorkspacePage', () => {
       },
     });
     mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
+    mocks.api.getContextPack.mockResolvedValue({
+      contextPackVersion: 'light-extension.context-pack.v1',
+      contextMode: 'generic',
+      reason: 'binding_not_selected',
+      repoId: 'ler_sales',
+      entry: {
+        id: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryName: 'sales-kpi',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        settingsSchema: null,
+      },
+      references: [],
+      supportedImports: [],
+      versions: { sdk: '2.2.0-beta.15', validator: '1' },
+      contextHash: 'generic_context_1',
+    });
     mocks.api.listCommits.mockResolvedValue([]);
     mocks.archive.createLightExtensionWorkspaceArchive.mockResolvedValue(
       new Blob(['workspace'], { type: 'application/zip' }),
@@ -1885,6 +1903,143 @@ describe('LightExtensionWorkspacePage', () => {
     expect(
       activeContextFiles.filter(([path]) => path === '.light-extension/types/__active-entry-context.d.ts'),
     ).toHaveLength(1);
+  });
+
+  it('refreshes precise binding declarations by context hash without reloading source files', async () => {
+    let releaseCustomerContext: (() => void) | undefined;
+    const customerContextGate = new Promise<void>((resolve) => {
+      releaseCustomerContext = resolve;
+    });
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 2, byteSize: 260 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/orders/index.tsx',
+          content: 'ctx.record?.total;\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/orders/entry.json',
+          content: '{"schemaVersion":1,"key":"orders","settings":{"title":{"type":"string"}}}',
+          language: 'json',
+        },
+      ],
+    });
+    mocks.api.getContextPack.mockImplementation(async ({ ownerLocator }: { ownerLocator?: { modelUid?: string } }) => {
+      const customerBinding = ownerLocator?.modelUid === 'customers_block';
+      if (customerBinding) {
+        await customerContextGate;
+      }
+      return {
+        contextPackVersion: 'light-extension.context-pack.v1',
+        contextMode: 'precise',
+        reason: 'precise_binding',
+        repoId: 'ler_sales',
+        entry: {
+          id: 'lee_orders',
+          kind: 'js-block',
+          entryName: 'orders',
+          entryPath: 'src/client/js-blocks/orders/index.tsx',
+          settingsSchema: null,
+        },
+        references: [],
+        binding: {
+          referenceId: customerBinding ? 'ref_customers' : 'ref_orders',
+          ownerLocatorHash: customerBinding ? 'owner_customers' : 'owner_orders',
+          owner: {
+            ownerKind: 'flowModel.step',
+            modelUid: ownerLocator?.modelUid || 'orders_block',
+            modelUse: 'JSBlockModel',
+            surface: 'js-model.render',
+            dataSourceKey: 'main',
+            collectionName: customerBinding ? 'customers' : 'orders',
+          },
+        },
+        collection: {
+          dataSourceKey: 'main',
+          name: customerBinding ? 'customers' : 'orders',
+          fields: [
+            {
+              name: customerBinding ? 'customerName' : 'total',
+              type: customerBinding ? 'string' : 'double',
+              nullable: false,
+              readable: true,
+              writable: true,
+            },
+            {
+              name: 'secret',
+              type: 'string',
+              nullable: true,
+              readable: false,
+              writable: false,
+            },
+          ],
+        },
+        supportedImports: [],
+        versions: { sdk: '2.2.0-beta.15', validator: '1' },
+        contextHash: customerBinding ? 'context_customers' : 'context_orders',
+      };
+    });
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/orders/index.tsx',
+      kind: 'js-block',
+    };
+    const ordersOwner = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'orders_block',
+      use: 'JSBlockModel' as const,
+      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
+    };
+    const view = render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          entryId="lee_orders"
+          initialPath="src/client/js-blocks/orders/index.tsx"
+          ownerLocator={ordersOwner}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    const codeTab = await screen.findByTestId('runjs-code-tab');
+    await waitFor(() => expect(codeTab.getAttribute('data-workspace-file-contents')).toContain('total?: number;'));
+    expect(codeTab.getAttribute('data-workspace-file-contents')).toContain('LightExtensionBindingContext<Settings>');
+    expect(codeTab.getAttribute('data-workspace-file-contents')).not.toContain('secret?:');
+    expect(screen.queryByText('No binding is selected. Generic context types are active.')).toBeNull();
+    expect(mocks.api.pull).toHaveBeenCalledTimes(1);
+
+    view.rerender(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          entryId="lee_orders"
+          initialPath="src/client/js-blocks/orders/index.tsx"
+          ownerLocator={{ ...ordersOwner, modelUid: 'customers_block' }}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(mocks.api.getContextPack).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).not.toContain(
+        'total?: number;',
+      ),
+    );
+    act(() => releaseCustomerContext?.());
+
+    await waitFor(() =>
+      expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).toContain(
+        'customerName?: string;',
+      ),
+    );
+    expect(mocks.api.pull).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Edit file content')).toHaveValue('ctx.record?.total;\n');
   });
 
   it('keeps generated SDK declarations out of saveSource changes', async () => {

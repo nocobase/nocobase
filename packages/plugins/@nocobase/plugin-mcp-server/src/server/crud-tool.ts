@@ -9,6 +9,7 @@
 
 import type { McpTool, McpToolCallContext, McpToolsManager } from '@nocobase/ai';
 import inject from 'light-my-request';
+import { buildMcpIdentityHeaders } from './request-headers';
 
 type CrudAction = 'list' | 'get' | 'create' | 'update' | 'destroy';
 type QueryAction = 'query';
@@ -108,13 +109,6 @@ type CollectionRequestQueryArgs = {
   forceUpdate?: boolean;
 };
 
-function normalizeHeaderValue(value?: string | string[]) {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
-
 function buildActionUrl(resource: string, action: ToolAction, sourceId?: string | number) {
   if (typeof sourceId === 'undefined' || sourceId === null || !resource.includes('.')) {
     return `${resource}:${action}`;
@@ -171,29 +165,7 @@ function buildRequestQuery(args: CollectionRequestQueryArgs) {
 }
 
 function buildHeaders(args: CollectionToolArgs, context?: McpToolCallContext) {
-  const incomingHeaders = context?.headers || {};
-  const headers: Record<string, any> = {};
-
-  const forwardedRole = normalizeHeaderValue(incomingHeaders['x-role'] || incomingHeaders['X-Role']);
-  if (forwardedRole) {
-    headers['x-role'] = forwardedRole;
-  }
-
-  const forwardedAuthenticator = normalizeHeaderValue(
-    incomingHeaders['x-authenticator'] || incomingHeaders['X-Authenticator'],
-  );
-  if (forwardedAuthenticator) {
-    headers['x-authenticator'] = forwardedAuthenticator;
-  }
-
-  if (context?.token) {
-    headers.authorization = `Bearer ${context.token}`;
-  } else {
-    const authorization = normalizeHeaderValue(incomingHeaders.authorization || incomingHeaders.Authorization);
-    if (authorization) {
-      headers.authorization = authorization;
-    }
-  }
+  const headers = buildMcpIdentityHeaders(context);
 
   headers['content-type'] = 'application/json';
 

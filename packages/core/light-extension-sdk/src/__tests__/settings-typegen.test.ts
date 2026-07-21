@@ -213,7 +213,9 @@ describe('light extension settings typegen', () => {
     expect(result.files.find((file) => file.path.endsWith('/js-page/orders.d.ts'))?.content).toContain(
       'export type Context = JSPageContext<Settings>;',
     );
-    expect(active.file?.content).toContain('type LightExtensionActiveEntryContext = RunJSContext & Context;');
+    expect(active.file?.content).toContain(
+      'type LightExtensionActiveEntryContext = LightExtensionRunJSBaseContext & LightExtensionCurrentEntryContext;',
+    );
     expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
       'export interface JSPageContext',
     );

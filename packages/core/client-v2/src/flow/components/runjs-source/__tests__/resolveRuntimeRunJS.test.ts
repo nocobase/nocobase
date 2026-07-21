@@ -9,6 +9,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { parseRunJSLineMapV1 } from '@nocobase/runjs/compiler/line-map';
 import {
   resolveRunJSSourceBinding,
   resolveRuntimeRunJS,
@@ -136,13 +137,18 @@ return {
   });
 
   it('resolves external source bindings through the registry', async () => {
+    const sourceMap = JSON.stringify({
+      version: 1,
+      kind: 'runjs-line-map',
+      sourceURL: 'nocobase-runjs://bundle/sales-kpi.js',
+      entryPath: 'src/client/index.tsx',
+      generatedCodeLineOffset: 2,
+      mappings: [{ generatedLine: 3, source: 'src/client/index.tsx', sourceLine: 1, sourceColumn: 1 }],
+    });
     const resolve = vi.fn(() => ({
       code: 'ctx.render("sales");',
       version: 'v2',
-      sourceMap: {
-        version: 3,
-        mappings: '',
-      },
+      sourceMap,
     }));
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
@@ -163,11 +169,12 @@ return {
       version: 'v2',
       sourceMode: 'light-extension',
       sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
-      sourceMap: {
-        version: 3,
-        mappings: '',
-      },
+      sourceMap,
       settings,
+    });
+    expect(parseRunJSLineMapV1(sourceMap)).toMatchObject({
+      sourceURL: 'nocobase-runjs://bundle/sales-kpi.js',
+      entryPath: 'src/client/index.tsx',
     });
     expect(resolve).toHaveBeenCalledWith(
       expect.objectContaining({

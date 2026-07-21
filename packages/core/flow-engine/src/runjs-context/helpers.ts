@@ -11,6 +11,7 @@ import type { FlowContext } from '../flowContext';
 import { createRunJSDeprecationProxy } from '../flowContext';
 import { JSRunner } from '../JSRunner';
 import type { JSRunnerOptions } from '../JSRunner';
+import { setRunJSRuntimeReporting } from '../runjsRuntimeReporter';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './registry';
 
 function getLocale(ctx: any): string | undefined {
@@ -37,6 +38,7 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
     throw new Error('[RunJS] No RunJSContext registered for version/model.');
   }
   const runCtx = new (Ctor as any)(ensureFlowContext(this));
+  setRunJSRuntimeReporting(runCtx, options?.runtimeReporting);
   let doc: any = {};
   try {
     const locale = getLocale(this);
@@ -58,8 +60,8 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
   }
   const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
   // 透传 JSRunnerOptions 其余配置（如 timeoutMs）
-  const { timeoutMs } = options || {};
-  return new JSRunner({ globals, timeoutMs });
+  const { timeoutMs, runtimeReporting } = options || {};
+  return new JSRunner({ globals, timeoutMs, runtimeReporting });
 }
 
 export function getRunJSScenesForModel(modelClass: string, version: RunJSVersion = 'v1'): string[] {

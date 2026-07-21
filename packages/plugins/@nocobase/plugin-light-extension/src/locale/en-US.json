@@ -454,5 +454,7 @@
   "deleted": "deleted",
   "modified": "modified",
   "renamed": "renamed",
-  "unchanged": "unchanged"
+  "unchanged": "unchanged",
+  "Binding context types could not be loaded. Generic types are active.": "Binding context types could not be loaded. Generic types are active.",
+  "No binding is selected. Generic context types are active.": "No binding is selected. Generic context types are active."
 }

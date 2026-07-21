@@ -8,17 +8,25 @@
  */
 
 import type { RunJSWorkspaceTypeScriptContextResolver } from '@nocobase/client-v2';
-import { createActiveEntryContextType, generateInlineClientSettingsTypes } from '@nocobase/light-extension-sdk/typegen';
+import {
+  createActiveEntryContextType,
+  generateBindingContextTypes,
+  generateInlineClientSettingsTypes,
+  type LightExtensionContextPackLike,
+} from '@nocobase/light-extension-sdk/typegen';
 
 import type { LightExtensionKind } from '../../constants';
 
 export function createInlineLightExtensionWorkspaceTypeScriptContextResolver(
   kind: LightExtensionKind,
+  contextPack?: LightExtensionContextPackLike,
 ): RunJSWorkspaceTypeScriptContextResolver {
   return (activePath, files) => {
     const settingsTypegen = generateInlineClientSettingsTypes({ files, kind });
+    const bindingTypes = contextPack ? generateBindingContextTypes(contextPack) : undefined;
     const activeEntryContext = createActiveEntryContextType({
       activePath,
+      bindingTypes,
       entries: settingsTypegen.entries,
     });
     if (!activeEntryContext.file || !activeEntryContext.globalContextType) {
@@ -26,7 +34,7 @@ export function createInlineLightExtensionWorkspaceTypeScriptContextResolver(
     }
 
     return {
-      declarationFiles: [...settingsTypegen.files, activeEntryContext.file],
+      declarationFiles: [...settingsTypegen.files, ...(bindingTypes?.files || []), activeEntryContext.file],
       globalContextType: activeEntryContext.globalContextType,
     };
   };

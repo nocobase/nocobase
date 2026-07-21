@@ -32,6 +32,7 @@ import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionEntryRuntimeArtifact,
   LightExtensionKind,
+  LightExtensionReferenceOwnerLocator,
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
 import {
@@ -366,6 +367,29 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const api = flowContext?.api || resolverApi;
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
+  const authoringModelUid = effectiveLocator && 'modelUid' in effectiveLocator ? effectiveLocator.modelUid : undefined;
+  const authoringOwnerLocator = React.useMemo<LightExtensionReferenceOwnerLocator | undefined>(() => {
+    if (!workspaceScope || !authoringModelUid) {
+      return undefined;
+    }
+    if (workspaceScope.kind === 'js-block') {
+      return {
+        kind: 'flowModel.step',
+        modelUid: authoringModelUid,
+        use: 'JSBlockModel',
+        stepPath: ['stepParams', 'jsSettings'],
+      };
+    }
+    if (workspaceScope.kind === 'js-page') {
+      return {
+        kind: 'flowModel.pageSettings',
+        modelUid: authoringModelUid,
+        use: 'JSPageModel',
+        stepPath: ['stepParams', 'jsSettings', 'runJs'],
+      };
+    }
+    return undefined;
+  }, [authoringModelUid, workspaceScope]);
   const readonly = Boolean(props.readOnly || props.disabled);
   const previewAppliedRef = React.useRef(false);
   const persistedPreviewValueRef = React.useRef(value);
@@ -624,6 +648,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         onPreview={canPreview ? handleWorkspacePreview : undefined}
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
+        ownerLocator={authoringOwnerLocator}
         repoId={currentBinding.repoId}
         workspaceScope={workspaceScope}
       />

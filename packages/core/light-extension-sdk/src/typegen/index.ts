@@ -7,4 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './context-typegen';
 export * from './settings-typegen';

@@ -7,6 +7,10 @@
     {
       "match": ["@nocobase/plugin-data-source-main", "@nocobase/plugin-data-source-manager"],
       "module": "data-modeling"
+    },
+    {
+      "match": ["@nocobase/plugin-light-extension"],
+      "module": "light-extension"
     }
   ],
   "modules": {
@@ -214,6 +218,78 @@
             "name": "flow-surfaces",
             "description": "Compose and mutate page, tab, block, field, and action surfaces.",
             "topLevel": true
+          }
+        }
+      }
+    },
+    "light-extension": {
+      "name": "light-extension",
+      "description": "Author Light Extension repositories, entries, contexts, and source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "lightExtensionRepos",
+          "lightExtensionEntries",
+          "lightExtensionReferences",
+          "lightExtensionContexts",
+          "lightExtensionFiles",
+          "lightExtensions"
+        ],
+        "excludes": [],
+        "overrides": {
+          "lightExtensionRepos": {
+            "name": "light-extension repos",
+            "segments": ["light-extension", "repos"],
+            "description": "List and inspect Light Extension repositories.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionRepos:list", "lightExtensionRepos:get"]
+            }
+          },
+          "lightExtensionEntries": {
+            "name": "light-extension entries",
+            "segments": ["light-extension", "entries"],
+            "description": "Inspect Light Extension entries.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionEntries:get"]
+            }
+          },
+          "lightExtensionReferences": {
+            "name": "light-extension references",
+            "segments": ["light-extension", "references"],
+            "description": "Read visible Light Extension references.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionReferences:readReferences"]
+            }
+          },
+          "lightExtensionContexts": {
+            "name": "light-extension contexts",
+            "segments": ["light-extension", "contexts"],
+            "description": "Read binding-aware Light Extension Context Packs.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionContexts:get"]
+            }
+          },
+          "lightExtensionFiles": {
+            "name": "light-extension files",
+            "segments": ["light-extension", "files"],
+            "description": "Pull, inspect, and save Light Extension source files.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionFiles:pull", "lightExtensionFiles:getFile", "lightExtensionFiles:saveSource"]
+            }
+          },
+          "lightExtensions": {
+            "name": "light-extension workspace",
+            "segments": ["light-extension", "workspace"],
+            "description": "Check a complete unsaved Light Extension workspace.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensions:compileWorkspacePreview"]
+            }
           }
         }
       }

@@ -9,8 +9,9 @@
 
 import { setDiagnostics, Diagnostic } from '@codemirror/lint';
 import { EditorView } from '@codemirror/view';
+import { RUNJS_EVALUATION_WRAPPER_LINE_OFFSET } from '@nocobase/runjs/compiler/line-map';
 
-export const WRAPPER_PRELUDE_LINES = 2; // (async () => {\n  try {\n  // user code starts at line 3
+export const WRAPPER_PRELUDE_LINES = RUNJS_EVALUATION_WRAPPER_LINE_OFFSET;
 
 export function clearDiagnostics(view: EditorView | null | undefined) {
   try {

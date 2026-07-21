@@ -43,6 +43,7 @@ describe('light-extension swagger', () => {
       title: 'NocoBase API - Light extension plugin',
       version: '1.0.0',
     });
+    expect(swaggerDocument['x-mcp']).toBe(false);
     expect(Object.keys(swaggerDocument.paths).sort()).toEqual(expectedPaths);
 
     for (const [resource, actions] of Object.entries(publicActions)) {
@@ -50,6 +51,7 @@ describe('light-extension swagger', () => {
         expect(registeredActions[resource as keyof typeof registeredActions]).toContain(action);
         expect(swaggerDocument.paths[`/${resource}:${action}`].post).toBeTruthy();
         expect(Object.keys(swaggerDocument.paths[`/${resource}:${action}`])).toEqual(['post']);
+        expect(swaggerDocument.paths[`/${resource}:${action}`].post['x-mcp']).toBe(true);
       }
     }
   });
@@ -151,6 +153,8 @@ describe('light-extension swagger', () => {
     expect(saveSource.description).toContain('files is a delta');
     expect(saveSource.description).toContain('--body-file');
     expect(saveSource.description).toContain('LIGHT_EXTENSION_SOURCE_OUTDATED');
+    expect(saveSource.description).toContain('reviewed and confirmed the intended Diff');
+    expect(saveSource.description).toContain('must never publish automatically');
     expect(Object.keys(saveSource.responses).map(Number).sort()).toEqual([200, 403, 409, 422]);
 
     expect(previewRequest.required).toEqual(['repoId', 'expectedHeadCommitId', 'files']);

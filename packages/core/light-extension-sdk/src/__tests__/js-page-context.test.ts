@@ -13,12 +13,26 @@ import type { JSBlockContext, JSPageContext, JSPageRuntimeFacade } from '@nocoba
 describe('JS Page public context', () => {
   it('extends the render context with a settings-aware page facade', () => {
     type Settings = { title: string };
+    type RecordType = { id: number; title: string };
+    type Values = { title?: string };
+    type Collection = { name?: 'orders' };
+    type CollectionField = { name?: 'title' };
+    type DataSource = { key?: 'main' };
 
-    expectTypeOf<JSPageContext<Settings>>().toMatchTypeOf<JSBlockContext<Settings>>();
-    expectTypeOf<JSPageContext<Settings>['settings']>().toEqualTypeOf<Settings>();
-    expectTypeOf<JSPageContext<Settings>['element']>().toEqualTypeOf<JSBlockContext<Settings>['element']>();
-    expectTypeOf<JSPageContext<Settings>['render']>().toEqualTypeOf<JSBlockContext<Settings>['render']>();
-    expectTypeOf<JSPageContext<Settings>['page']>().toEqualTypeOf<JSPageRuntimeFacade>();
+    type PageContext = JSPageContext<Settings, RecordType, Values, Collection, CollectionField, DataSource>;
+    type BlockContext = JSBlockContext<Settings, RecordType, Values, Collection, CollectionField, DataSource>;
+
+    expectTypeOf<PageContext>().toMatchTypeOf<BlockContext>();
+    expectTypeOf<PageContext['settings']>().toEqualTypeOf<Settings>();
+    expectTypeOf<PageContext['record']>().toEqualTypeOf<RecordType | null | undefined>();
+    expectTypeOf<PageContext['records']>().toEqualTypeOf<RecordType[] | undefined>();
+    expectTypeOf<PageContext['values']>().toEqualTypeOf<Values | undefined>();
+    expectTypeOf<PageContext['collection']>().toEqualTypeOf<Collection | undefined>();
+    expectTypeOf<PageContext['collectionField']>().toEqualTypeOf<CollectionField | undefined>();
+    expectTypeOf<PageContext['dataSource']>().toEqualTypeOf<DataSource | undefined>();
+    expectTypeOf<PageContext['element']>().toEqualTypeOf<BlockContext['element']>();
+    expectTypeOf<PageContext['render']>().toEqualTypeOf<BlockContext['render']>();
+    expectTypeOf<PageContext['page']>().toEqualTypeOf<JSPageRuntimeFacade>();
   });
 
   it('exposes only the stable page facade fields', () => {

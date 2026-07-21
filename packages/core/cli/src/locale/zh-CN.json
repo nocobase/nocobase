@@ -90,6 +90,120 @@
     }
   },
   "commands": {
+    "light": {
+      "flags": {
+        "repo": "Light Extension 仓库 ID",
+        "entry": "JS Block 或 JS Page 入口 ID",
+        "dir": "本地 Workspace 目录",
+        "env": "环境名称",
+        "apiBaseUrl": "NocoBase API 基础地址",
+        "role": "角色覆盖值，将通过 X-Role 发送",
+        "authenticator": "认证器覆盖值，将通过 X-Authenticator 发送",
+        "token": "API Key 覆盖值",
+        "jsonOutput": "输出机器可读的 JSON"
+      },
+      "operations": {
+        "entryRead": "读取 Light Extension 入口",
+        "pull": "拉取 Light Extension",
+        "contextRead": "读取 Light Extension Context Pack",
+        "workspaceCheck": "检查 Light Extension Workspace",
+        "save": "保存 Light Extension"
+      },
+      "pull": {
+        "summary": "将 JS Block 或 JS Page 拉取到本地源码 Workspace",
+        "flags": {
+          "force": "备份并替换目标目录中的本地源码修改",
+          "reference": "用于生成绑定感知类型的显式 Light Extension 引用 ID",
+          "ownerLocator": "JSON 对象格式的显式绑定所有者定位信息"
+        },
+        "dirtyRefusal": "目标目录存在本地源码修改（{{paths}}）。请使用 --force 重新执行，CLI 会先备份再拉取。",
+        "overwriteWarning": "替换前将备份以下本地修改：{{paths}}",
+        "unknownLocalState": "未知本地状态",
+        "localWorkspaceFiles": "本地 Workspace 文件",
+        "backup": "备份位置：{{path}}",
+        "backupPreserved": "本地备份已保留在 {{path}}。",
+        "success": "已将 {{count}} 个文件拉取到 {{workspace}}。",
+        "baseHead": "基线 Head：{{head}}",
+        "context": "上下文：{{mode}}（{{reason}}）",
+        "errors": {
+          "bindingFlagsConflict": "--reference 与 --owner-locator 只能使用其中一个。",
+          "entryRepoMismatch": "入口“{{entry}}”属于仓库“{{actualRepo}}”，而不是“{{selectedRepo}}”。",
+          "contextMismatch": "Context Pack 与所选仓库和入口不匹配。",
+          "changedDuringPull": "拉取请求执行期间目标目录发生了变化。请检查本地文件后重新执行，或使用 --force 先备份再替换。"
+        }
+      },
+      "check": {
+        "summary": "对完整的本地 Light Extension Workspace 执行权威检查",
+        "noProblems": "没有 Problem。",
+        "workspaceLocation": "workspace",
+        "success": "Workspace 检查已接受快照 {{snapshotId}}。",
+        "baseHead": "基线 Head：{{head}}",
+        "entriesAccepted": "已接受 {{count}} 个入口。",
+        "errors": {
+          "rejected": "Workspace 检查拒绝了快照 {{snapshotId}}。\n{{problems}}",
+          "notAccepted": "Workspace 检查未接受快照 {{snapshotId}}。\n{{problems}}"
+        }
+      },
+      "save": {
+        "summary": "检查并保存已校验的本地 Light Extension 源码差异",
+        "flags": {
+          "message": "源码提交说明",
+          "yes": "确认保存已显示的源码差异"
+        },
+        "defaultMessage": "更新 Light Extension 源码",
+        "deltaSummary": "差异：{{changedFiles}} 个文件，新增 {{additions}} 行，删除 {{deletions}} 行。",
+        "confirm": "将此源码差异保存到 Light Extension 仓库吗？",
+        "success": "已在 Head {{head}} 保存 {{count}} 个文件。",
+        "errors": {
+          "noChanges": "没有可保存的本地源码修改。",
+          "confirmationRequired": "保存操作需要交互确认，或显式传入 --yes。",
+          "cancelled": "已取消保存。",
+          "conflict": "{{message}} 本地文件和 Pull 基线保持不变。请拉取新的 Head 后重放此补丁；CLI 不会替换 Head 后自动重试。"
+        }
+      },
+      "errors": {
+        "invalidValue": "{{label}} 缺失或无效。",
+        "missingApiBaseUrl": "环境“{{envName}}”没有 API 基础地址。请使用 --api-base-url 或先配置该环境。",
+        "targetMismatch": "此 Workspace 属于其他 NocoBase 应用或环境。请针对当前目标重新拉取后再检查或保存。",
+        "checkAcceptedInvalid": "Workspace 检查结果中的 accepted 缺失或无效。",
+        "checkArraysInvalid": "Workspace 检查结果中的 problems 或 entries 缺失或无效。",
+        "check422Contract": "Workspace 检查的 HTTP 422 响应不符合要求的 errors[0].details 契约。",
+        "httpFailure": "{{operation}} 失败，HTTP 状态码为 {{status}}。",
+        "clientEntriesOnly": "本地 Light Extension 工作流仅支持客户端入口。",
+        "unsupportedEntryKind": "本地 Light Extension 工作流仅支持 JS Block 和 JS Page 入口；收到“{{kind}}”。其他类型请使用原始 API 命令。",
+        "pullFilesMissing": "拉取响应必须包含完整的 files 数组。",
+        "contextPackVersion": "Light Extension Context Pack 版本缺失或不受支持。",
+        "contextPackMode": "不支持的 Light Extension Context Pack 模式：{{contextMode}}",
+        "contextPackArrays": "Context Pack 的 references 或 supportedImports 缺失或无效。",
+        "contextPackFields": "Context Pack 的集合字段缺失或无效。",
+        "ownerLocatorObject": "--owner-locator 必须是 JSON 对象。",
+        "invalidWorkspacePath": "Workspace 路径无效：{{path}}",
+        "portalUnsupported": "首版本地 Agent 工作流不支持 JS Portal 源码：{{path}}。请改用原始 API 命令。",
+        "binaryUnsupported": "首版本地 Agent 工作流不支持二进制文件：{{path}}。",
+        "nonUtf8Unsupported": "首版本地 Agent 工作流不支持二进制或非 UTF-8 文件：{{path}}。",
+        "controlBytesUnsupported": "首版本地 Agent 工作流不支持二进制文件或包含 NUL/控制字节的源码：{{path}}。",
+        "symlinkUnsupported": "Light Extension Workspace 不支持符号链接：{{path}}",
+        "stateVersion": "不支持的 Light Extension Workspace 状态版本：{{version}}。请重新拉取 Workspace。",
+        "workspaceEntryKind": "不支持的 Workspace 入口类型：{{kind}}",
+        "stateMissing": "在 {{statePath}} 未找到 Light Extension Workspace 状态。请先运行 `nb light pull`。",
+        "stateInvalid": "{{statePath}} 中的 Light Extension Workspace 状态无效。",
+        "duplicatePullPath": "拉取响应包含重复路径：{{path}}",
+        "base64Unsupported": "首版本地 Agent 工作流不支持 Base64 或二进制文件：{{path}}。",
+        "pullUtf8Missing": "拉取响应未包含 {{path}} 的 UTF-8 内容。",
+        "generatedPathInvalid": "生成的声明路径无效或重复：{{path}}",
+        "pullSelectionMismatch": "所选仓库、入口与拉取响应不匹配。",
+        "archivedRepository": "已归档的 Light Extension 仓库不能进入本地 Agent 工作流。",
+        "entryFilesMissing": "拉取的仓库不包含所选入口的源码和描述文件。请修复仓库后再使用本地 Agent 工作流。",
+        "recordAcceptedOnly": "只能记录已接受的 Workspace 检查。",
+        "snapshotMismatch": "服务端返回的 Workspace 快照与当前本地文件不匹配，因此不会将 Workspace 标记为已检查。",
+        "checkedHeadMismatch": "已接受的检查使用了不同的基线 Head。请重新拉取 Workspace。",
+        "baselineMissing": "{{path}} 的 Pull 基线缺失。请重新拉取 Workspace 后再保存。",
+        "baselineHashMismatch": "{{path}} 的 Pull 基线与 Workspace 状态不匹配。请重新拉取 Workspace 后再检查或保存修改。",
+        "checkRequired": "当前本地快照尚未通过权威 Workspace 检查。请在最后一次文件修改后运行 `nb light check`。",
+        "saveRepoMismatch": "保存响应中的仓库与本地 Workspace 不匹配。",
+        "unsafeDirectory": "拒绝使用不安全的 Workspace 目录：{{path}}"
+      }
+    },
     "envAdd": {
       "prompts": {
         "name": {

@@ -25,6 +25,10 @@ function createTestApp() {
       headers: {
         dataSource: ctx.get('x-data-source'),
         timezone: ctx.get('x-timezone'),
+        authorization: ctx.get('authorization'),
+        role: ctx.get('x-role'),
+        authenticator: ctx.get('x-authenticator'),
+        untrusted: ctx.get('x-untrusted-admin'),
       },
       body: ctx.request.body,
     };
@@ -38,6 +42,14 @@ function createTestApp() {
       },
     },
   };
+}
+
+function getTool(tools: ReturnType<typeof createCrudTools>, name: string) {
+  const tool = tools.find((item) => item.name === name);
+  if (!tool) {
+    throw new Error(`Expected MCP tool ${name}`);
+  }
+  return tool;
 }
 
 describe('createCrudTools', () => {
@@ -90,7 +102,7 @@ describe('createCrudTools', () => {
       mcpToolsManager: manager,
     });
 
-    const tool = tools.find((item) => item.name === 'resource_list')!;
+    const tool = getTool(tools, 'resource_list');
     const result = await tool.call(
       {
         resource: 'dataSources',
@@ -116,7 +128,7 @@ describe('createCrudTools', () => {
       mcpToolsManager: new McpToolsManager(),
     });
 
-    const queryTool = tools.find((tool) => tool.name === 'resource_query')!;
+    const queryTool = getTool(tools, 'resource_query');
     const result = await queryTool.call({
       dataSource: 'analytics',
       resource: 'posts',
@@ -153,7 +165,7 @@ describe('createCrudTools', () => {
       mcpToolsManager: new McpToolsManager(),
     });
 
-    const listTool = tools.find((tool) => tool.name === 'resource_list')!;
+    const listTool = getTool(tools, 'resource_list');
     const result = await listTool.call({
       resource: 'posts.comments',
       sourceId: 1,
@@ -169,13 +181,41 @@ describe('createCrudTools', () => {
     });
   });
 
+  it('should forward only allowlisted identity headers from the MCP call context', async () => {
+    const tools = createCrudTools({
+      app: createTestApp(),
+      mcpToolsManager: new McpToolsManager(),
+    });
+    const listTool = getTool(tools, 'resource_list');
+
+    const result = await listTool.call(
+      { resource: 'posts' },
+      {
+        token: 'current-token',
+        headers: {
+          Authorization: 'Bearer ignored-token',
+          'X-Role': 'author-role',
+          'X-Authenticator': 'password',
+          'x-untrusted-admin': 'true',
+        },
+      },
+    );
+
+    expect(result.headers).toMatchObject({
+      authorization: 'Bearer current-token',
+      role: 'author-role',
+      authenticator: 'password',
+      untrusted: '',
+    });
+  });
+
   it('should expose detailed query item schemas', () => {
     const tools = createCrudTools({
       app: createTestApp(),
       mcpToolsManager: new McpToolsManager(),
     });
 
-    const queryTool = tools.find((tool) => tool.name === 'resource_query')!;
+    const queryTool = getTool(tools, 'resource_query');
     const measureItemSchema = queryTool.inputSchema.properties.measures.items;
     const dimensionItemSchema = queryTool.inputSchema.properties.dimensions.items;
     const orderItemSchema = queryTool.inputSchema.properties.orders.items;

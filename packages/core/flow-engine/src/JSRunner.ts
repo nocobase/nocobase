@@ -8,7 +8,14 @@
  */
 
 import 'ses';
+import { wrapRunJSCodeForEvaluation } from '@nocobase/runjs/compiler/line-map';
 import { FlowExitAllException, FlowExitException } from './utils/exceptions';
+import {
+  createRunJSRuntimeIssue,
+  reportRunJSRuntimeIssue,
+  setRunJSRuntimeReporting,
+  type RunJSRuntimeReportingOptions,
+} from './runjsRuntimeReporter';
 
 export interface JSRunnerOptions {
   /** Maximum execution time in milliseconds. Defaults to 5 seconds. */
@@ -21,6 +28,8 @@ export interface JSRunnerOptions {
    * the code will be rewritten to call `ctx.resolveJsonTemplate(...)` at runtime.
    */
   preprocessTemplates?: boolean;
+  /** Optional, execution-scoped reporting used by explicit preview hosts. */
+  runtimeReporting?: RunJSRuntimeReportingOptions;
 }
 
 export const DEFAULT_RUNJS_TIMEOUT_MS = 5_000;
@@ -201,6 +210,7 @@ function toCtxTemplateSyntaxHintError(
 export class JSRunner {
   private globals: Record<string, any>;
   private timeoutMs: number;
+  private runtimeReporting?: RunJSRuntimeReportingOptions;
 
   constructor(options: JSRunnerOptions = {}) {
     const bindWindowFn = (key: 'setTimeout' | 'clearTimeout' | 'setInterval' | 'clearInterval') => {
@@ -224,6 +234,8 @@ export class JSRunner {
       ...providedGlobals,
     };
     this.timeoutMs = options.timeoutMs ?? DEFAULT_RUNJS_TIMEOUT_MS;
+    this.runtimeReporting = options.runtimeReporting;
+    setRunJSRuntimeReporting(providedGlobals.ctx, this.runtimeReporting);
   }
 
   /**
@@ -246,19 +258,30 @@ export class JSRunner {
     if (typeof search === 'string' && search.includes('skipRunJs=true')) {
       return { success: true, value: null };
     }
-    const wrapped = `(async () => {
-      try {
-        ${code};
-      } catch (e) {
-        throw e;
-      }
-    })()`;
+    const wrapped = wrapRunJSCodeForEvaluation(code);
 
     const compartment = new Compartment(this.globals);
 
+    let task: Promise<unknown>;
+    try {
+      task = Promise.resolve(compartment.evaluate(wrapped));
+    } catch (error) {
+      if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
+        throw error;
+      }
+      const usage = extractDeprecatedCtxTemplateUsage(code);
+      const outError =
+        shouldHintCtxTemplateSyntax(error, usage) && usage ? toCtxTemplateSyntaxHintError(error, usage) : error;
+      reportRunJSRuntimeIssue(
+        this.runtimeReporting,
+        createRunJSRuntimeIssue({ kind: 'runtime-error', error: outError }, this.runtimeReporting?.identity),
+      );
+      console.error(outError);
+      return { success: false, error: outError, timeout: false };
+    }
+
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const task = compartment.evaluate(wrapped);
       const timeoutPromise = new Promise<never>((_resolve, reject) => {
         timeoutId = setTimeout(() => reject(new Error('Execution timed out')), this.timeoutMs);
       });
@@ -273,11 +296,18 @@ export class JSRunner {
       }
       const usage = extractDeprecatedCtxTemplateUsage(code);
       const outErr = shouldHintCtxTemplateSyntax(err, usage) && usage ? toCtxTemplateSyntaxHintError(err, usage) : err;
+      const timedOut = (outErr as { message?: unknown })?.message === 'Execution timed out';
+      reportRunJSRuntimeIssue(
+        this.runtimeReporting,
+        timedOut
+          ? createRunJSRuntimeIssue({ kind: 'timeout', timeoutMs: this.timeoutMs })
+          : createRunJSRuntimeIssue({ kind: 'promise-rejection', error: outErr }, this.runtimeReporting?.identity),
+      );
       console.error(outErr);
       return {
         success: false,
         error: outErr,
-        timeout: (outErr as any)?.message === 'Execution timed out',
+        timeout: timedOut,
       };
     } finally {
       if (typeof timeoutId !== 'undefined') {

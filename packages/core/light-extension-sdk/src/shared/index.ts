@@ -13,13 +13,42 @@ export interface LightExtensionSettingsContext<TSettings = unknown> {
 
 export type LightExtensionRecord = Record<string, unknown>;
 
-export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-  record?: LightExtensionRecord | null;
-  records?: LightExtensionRecord[];
-  values?: LightExtensionRecord;
-  collection?: unknown;
-  collectionField?: unknown;
-  dataSource?: unknown;
+declare const lightExtensionCollectionTypes: unique symbol;
+
+export interface LightExtensionCollectionContext<
+  TDataSourceKey extends string = string,
+  TName extends string = string,
+  TRecord = unknown,
+  TCreateValues = unknown,
+  TUpdateValues = unknown,
+> {
+  readonly dataSourceKey?: TDataSourceKey;
+  readonly name?: TName;
+  readonly [lightExtensionCollectionTypes]?: {
+    create: TCreateValues;
+    record: TRecord;
+    update: TUpdateValues;
+  };
+}
+
+export interface LightExtensionDataSourceContext<TKey extends string = string> {
+  readonly key?: TKey;
+}
+
+export interface LightExtensionDataContext<
+  TSettings = unknown,
+  TRecord = unknown,
+  TValues = unknown,
+  TCollection = unknown,
+  TCollectionField = unknown,
+  TDataSource = unknown,
+> extends LightExtensionSettingsContext<TSettings> {
+  record?: TRecord | null;
+  records?: TRecord[];
+  values?: TValues;
+  collection?: TCollection;
+  collectionField?: TCollectionField;
+  dataSource?: TDataSource;
 }
 
 export function defineSettings<TSettings>(settings: TSettings): TSettings {

@@ -454,5 +454,7 @@
   "deleted": "删除",
   "modified": "修改",
   "renamed": "重命名",
-  "unchanged": "未变更"
+  "unchanged": "未变更",
+  "Binding context types could not be loaded. Generic types are active.": "无法加载绑定上下文类型，当前使用通用类型。",
+  "No binding is selected. Generic context types are active.": "未选择绑定，当前使用通用上下文类型。"
 }

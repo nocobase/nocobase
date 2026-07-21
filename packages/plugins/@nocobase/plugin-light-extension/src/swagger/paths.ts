@@ -31,6 +31,7 @@ function errorResponse(description: string) {
 export const lightExtensionPaths = {
   '/lightExtensionRepos:list': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionRepos'],
       summary: 'List light-extension source repositories',
       description: 'List existing light-extension repositories that the current author can manage.',
@@ -45,6 +46,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionRepos:get': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionRepos'],
       summary: 'Get one light-extension source repository',
       description: 'Get repository metadata and the current Head commit used for optimistic source editing.',
@@ -77,6 +79,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionEntries:get': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionEntries'],
       summary: 'Get one light-extension entry',
       description: 'Get the persisted entry descriptor, source identity, health, and compile metadata.',
@@ -109,6 +112,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionReferences:readReferences': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionReferences'],
       summary: 'Read visible light-extension references',
       description:
@@ -145,6 +149,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionContexts:get': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionContexts'],
       summary: 'Get a binding-aware light-extension Context Pack',
       description:
@@ -178,6 +183,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionFiles:pull': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionFiles'],
       summary: 'Pull a light-extension source workspace',
       description:
@@ -230,6 +236,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionFiles:getFile': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionFiles'],
       summary: 'Read one light-extension source file',
       description: 'Read the complete UTF-8 content and immutable metadata for one source path at repository Head.',
@@ -270,11 +277,13 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionFiles:saveSource': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensionFiles'],
       summary: 'Save and compile an incremental light-extension source patch',
       description: [
         'Apply files as an incremental patch. Ordinary source creates one source commit and compiles runtime artifacts; src/client/js-portals files are stored outside source history and replace the Portal storage snapshot.',
         'files is a delta: include only changed upserts and deletes, not an implicit complete-workspace replacement. expectedHeadCommitId is required and must exactly match the current repository Head; pass null only for a repository without a Head.',
+        'Call this tool only after the user has reviewed and confirmed the intended Diff. Saving compiles source but does not publish or deploy the extension, and the tool must never publish automatically.',
         'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator problems. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
       ].join('\n\n'),
       requestBody: {
@@ -338,6 +347,7 @@ export const lightExtensionPaths = {
   },
   '/lightExtensions:compileWorkspacePreview': {
     post: {
+      'x-mcp': true,
       tags: ['lightExtensions'],
       summary: 'Compile an unsaved light-extension workspace preview',
       description: [

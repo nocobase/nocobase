@@ -43,10 +43,19 @@ import {
   RUNJS_BUILTIN_MODULES,
   runJSVirtualExtname,
 } from './portable';
+import {
+  appendRunJSSourceURL,
+  buildRunJSSourceURL,
+  RUNJS_EVALUATION_WRAPPER_LINE_OFFSET,
+  RUNJS_LINE_MAP_KIND,
+  RUNJS_LINE_MAP_VERSION,
+  type RunJSLineMapV1,
+} from './line-map';
 
 export * from './source-inspection';
 export * from './node-type-library';
 export * from './portable';
+export * from './line-map';
 export * from './build-identity';
 export * from './typescript-project';
 export * from '../completion-catalog/generator';
@@ -106,23 +115,9 @@ interface RunJSSourceReplacement {
   content: string;
 }
 
-interface RunJSSourceMapPayload {
-  version: 1;
-  kind: 'runjs-line-map';
-  sourceURL: string;
-  entryPath: string;
-  generatedCodeLineOffset: number;
-  mappings: Array<{
-    generatedLine: number;
-    source: string;
-    sourceLine: number;
-    sourceColumn?: number;
-  }>;
-}
-
 interface RunJSBundleOutput {
   code: string;
-  sourceMap: RunJSSourceMapPayload;
+  sourceMap: RunJSLineMapV1;
   warnings: RunJSCompileDiagnostic[];
 }
 
@@ -152,8 +147,6 @@ const entryModuleSpecifier = '__runjs_entry_module__';
 const commonJSGlobalHosts = new Set(['globalThis', 'global', 'window']);
 const commonJSRequireHosts = new Set(['globalThis', 'global', 'window', 'module']);
 const runtimeVersionDefault = 'v2';
-const runJSSourceURLPrefix = 'nocobase-runjs://bundle/';
-const jsRunnerGeneratedCodeLineOffset = 2;
 const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkflowSyntaxCheck() {})
   .constructor as AsyncFunctionConstructor;
 
@@ -163,7 +156,7 @@ export async function compileRunJSSourceWorkspace(
   const entryPath = normalizePath(input.entry);
   const files = contentFilesFromChanges(input.files);
   const filesHash = buildRunJSFilesHash(input.files);
-  const sourceURL = buildRunJSSourceURL(filesHash);
+  const sourceURL = buildRunJSSourceURL(sha256Hex(filesHash).slice(0, 16));
   const diagnostics: RunJSCompileDiagnostic[] = [];
   const entry = files.get(entryPath);
 
@@ -913,14 +906,14 @@ function convertSourceMap(
   entryPath: string,
   entryAdaptation: RunJSEntryAdaptation,
   sourceURL: string,
-): RunJSSourceMapPayload {
+): RunJSLineMapV1 {
   const traceMap = new TraceMap(standardSourceMap);
-  const mappings: RunJSSourceMapPayload['mappings'] = [];
-  const mappedGeneratedLines = new Set<number>();
+  const mappings: RunJSLineMapV1['mappings'] = [];
+  const mappedGeneratedLocations = new Set<string>();
 
   eachMapping(traceMap, (mapping) => {
     if (
-      mappedGeneratedLines.has(mapping.generatedLine) ||
+      mappedGeneratedLocations.has(`${mapping.generatedLine}:${mapping.generatedColumn}`) ||
       !mapping.source ||
       mapping.originalLine === null ||
       mapping.originalColumn === null
@@ -938,19 +931,20 @@ function convertSourceMap(
     }
     mappings.push({
       generatedLine: mapping.generatedLine,
+      generatedColumn: mapping.generatedColumn + 1,
       source,
       sourceLine: entryMapping?.sourceLine || mapping.originalLine,
       sourceColumn: entryMapping?.sourceColumn || mapping.originalColumn + 1,
     });
-    mappedGeneratedLines.add(mapping.generatedLine);
+    mappedGeneratedLocations.add(`${mapping.generatedLine}:${mapping.generatedColumn}`);
   });
 
   return {
-    version: 1,
-    kind: 'runjs-line-map',
+    version: RUNJS_LINE_MAP_VERSION,
+    kind: RUNJS_LINE_MAP_KIND,
     sourceURL,
     entryPath,
-    generatedCodeLineOffset: jsRunnerGeneratedCodeLineOffset,
+    generatedCodeLineOffset: RUNJS_EVALUATION_WRAPPER_LINE_OFFSET,
     mappings,
   };
 }
@@ -1255,14 +1249,6 @@ function getFailureCode(diagnostics: RunJSCompileDiagnostic[]): RunJSCompileFail
 
 function countLines(content: string): number {
   return content ? content.split('\n').length : 0;
-}
-
-function buildRunJSSourceURL(filesHash: string): string {
-  return `${runJSSourceURLPrefix}${sha256Hex(filesHash).slice(0, 16)}.js`;
-}
-
-function appendRunJSSourceURL(code: string, sourceURL: string): string {
-  return code ? `${code}\n//# sourceURL=${sourceURL}` : code;
 }
 
 function isRequireCallExpression(expression: ts.Expression): boolean {
