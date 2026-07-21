@@ -12,6 +12,8 @@ import {
   FlowCancelSaveException,
   FlowContext,
   getPageActive,
+  getRunJSRuntimeReporting,
+  setRunJSRuntimeReporting,
   tExpr,
   type CreateModelOptions,
   type ParamObject,
@@ -21,6 +23,7 @@ import { observable } from '@formily/reactive';
 import React from 'react';
 import {
   resolveRuntimeRunJS,
+  resolveRunJSHostPreviewReporting,
   shouldHideRunJSSourceMenu,
   type ResolvedRuntimeRunJS,
 } from '../../../components/runjs-source';
@@ -265,9 +268,22 @@ export class JSPageModel extends RootPageModel {
       },
     });
 
-    const result = await runtimeContext.runjs(resolved.runtime.code, undefined, {
-      version: resolved.runtime.version,
-    });
+    const reporting = resolveRunJSHostPreviewReporting(resolved.sourceRef);
+    const previousReporting = reporting ? getRunJSRuntimeReporting(runtimeContext) : undefined;
+    if (reporting) {
+      setRunJSRuntimeReporting(runtimeContext, reporting);
+    }
+    let result: unknown;
+    try {
+      result = await runtimeContext.runjs(resolved.runtime.code, undefined, {
+        runtimeReporting: reporting,
+        version: resolved.runtime.version,
+      });
+    } finally {
+      if (reporting) {
+        setRunJSRuntimeReporting(runtimeContext, previousReporting);
+      }
+    }
     const failure = readRunJSFailure(result, this.context.t('RunJS execution failed'));
     if (failure) {
       throw failure;

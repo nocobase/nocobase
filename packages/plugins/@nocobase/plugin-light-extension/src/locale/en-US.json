@@ -456,5 +456,14 @@
   "renamed": "renamed",
   "unchanged": "unchanged",
   "Binding context types could not be loaded. Generic types are active.": "Binding context types could not be loaded. Generic types are active.",
-  "No binding is selected. Generic context types are active.": "No binding is selected. Generic context types are active."
+  "No binding is selected. Generic context types are active.": "No binding is selected. Generic context types are active.",
+  "Host Preview runs this code in the current application and may create side effects.": "Host Preview runs this code in the current application and may create side effects.",
+  "Use a test application or a restricted role before clicking Run.": "Use a test application or a restricted role before clicking Run.",
+  "Preview artifact is missing a valid source map.": "Preview artifact is missing a valid source map.",
+  "Host Preview is unavailable for this surface.": "Host Preview is unavailable for this surface.",
+  "The saved host version could not be applied.": "The saved host version could not be applied.",
+  "Failed to restore the saved host version.": "Failed to restore the saved host version.",
+  "Keep the editor open, retry Cancel, or reload the page to restore the saved version.": "Keep the editor open, retry Cancel, or reload the page to restore the saved version.",
+  "The saved host version could not be restored. Retry Cancel or reload the page.": "The saved host version could not be restored. Retry Cancel or reload the page.",
+  "The saved host version could not be restored. Reload the page before continuing.": "The saved host version could not be restored. Reload the page before continuing."
 }

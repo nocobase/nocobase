@@ -9,6 +9,7 @@
 
 import type { Transaction } from '@nocobase/database';
 import {
+  buildRunJSArtifactHash,
   buildRunJSFilesHash,
   sha256Hex,
   type RunJSCompileDiagnostic,
@@ -19,7 +20,11 @@ import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
-import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE, type LightExtensionKind } from '../../constants';
+import {
+  LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
+  LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+  type LightExtensionKind,
+} from '../../constants';
 import { isLightExtensionError } from '../../shared/errors';
 import { createLightExtensionProblemFactory, sortLightExtensionProblems } from '../../shared/problems';
 import type { LightExtensionProblem } from '../../shared/types';
@@ -69,6 +74,7 @@ export interface LightExtensionWorkspaceCompileInput {
 export interface LightExtensionWorkspaceCompileResult {
   accepted: boolean;
   artifact: RunJSRuntimeArtifact;
+  artifactHash?: string;
   problems: LightExtensionProblem[];
   failureCode?: string;
   surface: LightExtensionAuthoringSurfaceSpec;
@@ -209,6 +215,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     return {
       accepted: compiled.accepted && !hasErrorProblem(compiled.problems),
       artifact,
+      artifactHash: compiled.accepted ? compiled.artifactHash : undefined,
       problems: sortLightExtensionProblems(compiled.problems),
       failureCode: 'failureCode' in compiled ? compiled.failureCode : undefined,
       surface,
@@ -313,9 +320,19 @@ export class LightExtensionWorkspaceCompilerBridge {
       },
     };
 
+    const accepted = !hasErrorProblem(problems);
     return {
-      accepted: !hasErrorProblem(problems),
+      accepted,
       artifact,
+      artifactHash: accepted
+        ? buildRunJSArtifactHash({
+            code: artifact.code,
+            sourceMap: artifact.sourceMap,
+            version: artifact.version,
+            entryPath: artifact.entryPath || input.entryPath,
+            runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+          })
+        : undefined,
       problems,
       failureCode: compiled.failureCode,
       surface,

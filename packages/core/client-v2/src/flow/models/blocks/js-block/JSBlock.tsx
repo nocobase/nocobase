@@ -12,7 +12,9 @@ import { Alert, Spin } from 'antd';
 import {
   ElementProxy,
   FlowCancelSaveException,
+  getRunJSRuntimeReporting,
   resetRunJSRuntimeElement,
+  setRunJSRuntimeReporting,
   tExpr,
   type FlowRuntimeContext,
   type FlowSettingsContext,
@@ -25,6 +27,7 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { RunJSEditorField } from '../../../components/runjs-studio';
 import {
   resolveRuntimeRunJS,
+  resolveRunJSHostPreviewReporting,
   readRunJSRuntimeError,
   createRunJSSourceCascadeMenuUIMode,
   shouldHideRunJSSourceMenu,
@@ -816,13 +819,27 @@ ctx.render(\`
                 sourceMode: resolved.sourceMode,
                 sourceBinding: resolved.sourceBinding,
                 sourceMap: resolved.sourceMap,
+                sourceRef: params?.sourceRef,
                 context: resolved.context,
               },
             });
 
-            const result = (await ctx.runjs(resolved.code, undefined, {
-              version: resolved.version,
-            })) as RunJSExecutionResult;
+            const reporting = resolveRunJSHostPreviewReporting(params?.sourceRef);
+            const previousReporting = reporting ? getRunJSRuntimeReporting(ctx) : undefined;
+            if (reporting) {
+              setRunJSRuntimeReporting(ctx, reporting);
+            }
+            let result: RunJSExecutionResult;
+            try {
+              result = (await ctx.runjs(resolved.code, undefined, {
+                runtimeReporting: reporting,
+                version: resolved.version,
+              })) as RunJSExecutionResult;
+            } finally {
+              if (reporting) {
+                setRunJSRuntimeReporting(ctx, previousReporting);
+              }
+            }
 
             if (result?.success === false) {
               throw result.error || new Error('RunJS execution failed');

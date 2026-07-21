@@ -11,7 +11,26 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { DATA_SOURCE_DIRTY_EVENT, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  createRunJSHostPreviewSession,
+  getActiveRunJSHostPreviewSessionCount,
+} from '../../../../components/runjs-source';
 import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
+
+const HOST_PREVIEW_SOURCE_MAP = JSON.stringify({
+  version: 1,
+  kind: 'runjs-line-map',
+  sourceURL: 'nocobase-runjs://bundle/js-page-host-preview.js',
+  entryPath: 'src/client/js-pages/example/index.tsx',
+  generatedCodeLineOffset: 2,
+  mappings: [
+    {
+      generatedLine: 1,
+      source: 'src/client/js-pages/example/index.tsx',
+      sourceLine: 1,
+    },
+  ],
+});
 
 function createEngine() {
   const engine = new FlowEngine();
@@ -157,6 +176,43 @@ describe('JSPageModel', () => {
     });
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.queryByText('Add tab')).not.toBeInTheDocument();
+  });
+
+  it('propagates one host preview execution reporter to the JS Page runtime', async () => {
+    const report = vi.fn();
+    const session = createRunJSHostPreviewSession({
+      artifactHash: 'b'.repeat(64),
+      snapshotId: 'snapshot-js-page',
+      sourceMap: HOST_PREVIEW_SOURCE_MAP,
+      reporter: { report },
+    });
+    const engine = createEngine();
+    const model = createModel(engine, {
+      jsSettings: {
+        runJs: {
+          code: 'throw new Error("js page preview failed")',
+          version: 'v2',
+          sourceMode: 'inline',
+          sourceRef: session.sourceRef,
+        },
+      },
+    });
+
+    renderModel(engine, model);
+
+    await waitFor(() => expect(report).toHaveBeenCalledTimes(1));
+    expect(report).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identity: expect.objectContaining({
+          executionId: session.sourceRef.executionId,
+          artifactHash: session.sourceRef.artifactHash,
+          sourceURL: session.sourceRef.sourceURL,
+        }),
+        issue: expect.objectContaining({ ruleId: 'promise-rejection' }),
+      }),
+    );
+    session.close();
+    expect(getActiveRunJSHostPreviewSessionCount()).toBe(0);
   });
 
   it('clears stale content on failure and disposes the runtime root on unmount', async () => {

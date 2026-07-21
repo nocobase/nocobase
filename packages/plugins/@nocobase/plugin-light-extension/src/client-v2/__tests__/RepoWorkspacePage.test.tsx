@@ -40,6 +40,13 @@ const mocks = vi.hoisted(() => ({
     downloadLightExtensionWorkspaceArchive: vi.fn(() => true),
     readLightExtensionWorkspaceArchive: vi.fn(),
   },
+  hostPreviewSessions: [] as Array<{
+    close: ReturnType<typeof vi.fn>;
+    input: {
+      reporter: { report: (event: unknown) => void };
+    };
+    sourceRef: Record<string, unknown>;
+  }>,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -49,6 +56,30 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
+  createRunJSHostPreviewSession: (input: {
+    artifactHash: string;
+    snapshotId: string;
+    sourceMap: string;
+    metadata?: Record<string, unknown>;
+    reporter: { report: (event: unknown) => void };
+  }) => {
+    const sequence = mocks.hostPreviewSessions.length + 1;
+    const sourceMap = JSON.parse(input.sourceMap) as { sourceURL: string };
+    const sourceRef = {
+      type: 'runjs-host-preview',
+      version: 1,
+      previewSessionId: `preview:${sequence}`,
+      executionId: `execution:${sequence}`,
+      artifactHash: input.artifactHash,
+      snapshotId: input.snapshotId,
+      sourceURL: sourceMap.sourceURL,
+      sourceMap: input.sourceMap,
+      metadata: input.metadata,
+    };
+    const session = { close: vi.fn(), input, sourceRef };
+    mocks.hostPreviewSessions.push(session);
+    return session;
+  },
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
 
@@ -357,6 +388,39 @@ function createSaveResult() {
   };
 }
 
+function createAcceptedPreviewResult(artifactHash = 'a'.repeat(64), requestId = 'workspace-preview-request-1') {
+  return {
+    baseHeadCommitId: 'commit-1',
+    snapshotId: 'workspace-preview-1',
+    requestId,
+    accepted: true,
+    problems: [],
+    entries: [],
+    artifact: {
+      artifactHash,
+      code: 'ctx.render(<div>preview</div>);',
+      sourceMap: JSON.stringify({
+        version: 1,
+        kind: 'runjs-line-map',
+        sourceURL: 'nocobase-runjs://bundle/workspace-preview.js',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        generatedCodeLineOffset: 2,
+        mappings: [
+          {
+            generatedLine: 1,
+            generatedColumn: 1,
+            source: 'src/client/js-blocks/sales-kpi/index.tsx',
+            sourceLine: 1,
+            sourceColumn: 1,
+          },
+        ],
+      }),
+      version: 'v2',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+    },
+  };
+}
+
 async function confirmSaveVersion(message: string) {
   const saveDialog = await screen.findByRole('dialog', { name: 'Save version' });
   fireEvent.change(within(saveDialog).getByLabelText('Version message'), {
@@ -414,19 +478,7 @@ describe('LightExtensionWorkspacePage', () => {
       ],
     });
     mocks.api.saveSource.mockResolvedValue(createSaveResult());
-    mocks.api.compileWorkspacePreview.mockResolvedValue({
-      baseHeadCommitId: 'commit-1',
-      snapshotId: 'workspace-preview-1',
-      requestId: 'workspace-preview-request-1',
-      accepted: true,
-      problems: [],
-      entries: [],
-      artifact: {
-        code: 'ctx.render(<div>preview</div>);',
-        version: 'v2',
-        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      },
-    });
+    mocks.api.compileWorkspacePreview.mockResolvedValue(createAcceptedPreviewResult());
     mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
     mocks.api.getContextPack.mockResolvedValue({
       contextPackVersion: 'light-extension.context-pack.v1',
@@ -451,6 +503,7 @@ describe('LightExtensionWorkspacePage', () => {
     );
     mocks.archive.downloadLightExtensionWorkspaceArchive.mockReturnValue(true);
     mocks.archive.readLightExtensionWorkspaceArchive.mockResolvedValue('zip-base64');
+    mocks.hostPreviewSessions.length = 0;
   });
 
   it('shows only a global loading state while the initial workspace is loading', async () => {
@@ -781,6 +834,9 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.queryByText('Building local provisional preview')).not.toBeInTheDocument();
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'true');
+    expect(
+      screen.getByText('Host Preview runs this code in the current application and may create side effects.'),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'ctx.render(<div>unsaved preview</div>);\n' },
     });
@@ -804,13 +860,256 @@ describe('LightExtensionWorkspacePage', () => {
     await waitFor(() =>
       expect(onPreview).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'ctx.render(<div>preview</div>);',
-          version: 'v2',
+          artifact: expect.objectContaining({
+            artifactHash: 'a'.repeat(64),
+            code: 'ctx.render(<div>preview</div>);',
+            version: 'v2',
+          }),
+          requestId: 'workspace-preview-request-1',
+          sourceRef: expect.objectContaining({
+            artifactHash: 'a'.repeat(64),
+            executionId: 'execution:1',
+            previewSessionId: 'preview:1',
+            snapshotId: expect.any(String),
+            sourceMap: expect.any(String),
+          }),
         }),
       ),
     );
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(screen.queryByText('Preview updated')).not.toBeInTheDocument();
+  });
+
+  it('maps host runtime events to the current workspace and ignores the closed session after source changes', async () => {
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onPreview={async () => undefined}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => expect(mocks.hostPreviewSessions).toHaveLength(1));
+    const session = mocks.hostPreviewSessions[0];
+    const identity = {
+      executionId: String(session.sourceRef.executionId),
+      artifactHash: String(session.sourceRef.artifactHash),
+      sourceURL: String(session.sourceRef.sourceURL),
+    };
+
+    for (const [ruleId, phase, messageText] of [
+      ['runtime-error', 'runtime', 'sync preview failure'],
+      ['promise-rejection', 'runtime', 'async preview failure'],
+      ['timeout', 'runtime', 'preview timeout'],
+      ['react-error', 'react', 'react preview failure'],
+    ] as const) {
+      act(() => {
+        session.input.reporter.report({
+          schemaVersion: 1,
+          identity,
+          issue: {
+            schemaVersion: 1,
+            type: 'runtime',
+            phase,
+            severity: 'error',
+            ruleId,
+            message: messageText,
+            generatedLocation: {
+              sourceURL: identity.sourceURL,
+              line: 3,
+              column: 5,
+            },
+            stack: `Error: ${messageText}\n    at ${identity.sourceURL}:3:5`,
+          },
+        });
+      });
+    }
+
+    expect(await screen.findByText('sync preview failure')).toBeInTheDocument();
+    expect(screen.getByText('async preview failure')).toBeInTheDocument();
+    expect(screen.getByText('preview timeout')).toBeInTheDocument();
+    expect(screen.getByText('react preview failure')).toBeInTheDocument();
+    expect(screen.getAllByText(/src\/client\/js-blocks\/sales-kpi\/index\.tsx \/ js-block \/ Line 1/)).toHaveLength(4);
+
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>changed</div>);\n' },
+    });
+    await waitFor(() => expect(session.close).toHaveBeenCalledTimes(1));
+    act(() => {
+      session.input.reporter.report({
+        schemaVersion: 1,
+        identity,
+        issue: {
+          schemaVersion: 1,
+          type: 'runtime',
+          phase: 'runtime',
+          severity: 'error',
+          ruleId: 'runtime-error',
+          message: 'stale preview failure',
+        },
+      });
+    });
+    expect(screen.queryByText('stale preview failure')).not.toBeInTheDocument();
+  });
+
+  it('ignores an older compile result when Run is clicked again for the same snapshot', async () => {
+    type PreviewResult = ReturnType<typeof createAcceptedPreviewResult>;
+    let resolveFirst: ((result: PreviewResult) => void) | undefined;
+    let resolveSecond: ((result: PreviewResult) => void) | undefined;
+    mocks.api.compileWorkspacePreview
+      .mockImplementationOnce(
+        () =>
+          new Promise<PreviewResult>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<PreviewResult>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    const onPreview = vi.fn(async () => undefined);
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onPreview={onPreview}
+          repoId="ler_sales"
+          workspaceScope={{
+            mode: 'entry',
+            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+            kind: 'js-block',
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Running' }));
+    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      resolveSecond?.(createAcceptedPreviewResult('b'.repeat(64), 'workspace-preview-request-2'));
+    });
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
+    expect(onPreview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        artifact: expect.objectContaining({ artifactHash: 'b'.repeat(64) }),
+        requestId: 'workspace-preview-request-2',
+      }),
+    );
+
+    await act(async () => {
+      resolveFirst?.(createAcceptedPreviewResult('a'.repeat(64), 'workspace-preview-request-1'));
+    });
+    expect(mocks.hostPreviewSessions).toHaveLength(1);
+    expect(onPreview).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Source changed while preview was compiling. Run again.')).not.toBeInTheDocument();
+  });
+
+  it('shows a structured problem when the saved host version cannot be restored', async () => {
+    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onFooterActionsChange={(actions) => {
+            footerActions = actions;
+          }}
+          onPreview={async () => undefined}
+          onRequestClose={async () => {
+            throw new Error('restore rejected');
+          }}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => expect(mocks.hostPreviewSessions).toHaveLength(1));
+    await act(async () => {
+      await footerActions?.onCancel();
+    });
+
+    expect(await screen.findByText('Failed to restore the saved host version.')).toBeInTheDocument();
+    expect(screen.getByText('host_preview_restore_failed')).toBeInTheDocument();
+    expect(
+      screen.getByText('The saved host version could not be restored. Retry Cancel or reload the page.'),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the structured restore problem when closing after a successful save fails', async () => {
+    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
+    const restoreError = new Error('saved host restore rejected');
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onFooterActionsChange={(actions) => {
+            footerActions = actions;
+          }}
+          onPreview={async () => undefined}
+          onRequestClose={async () => {
+            throw restoreError;
+          }}
+          onSaved={async () => undefined}
+          repoId="ler_sales"
+          workspaceScope={{
+            mode: 'entry',
+            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+            kind: 'js-block',
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => expect(mocks.hostPreviewSessions).toHaveLength(1));
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>saved source</div>);\n' },
+    });
+    await waitFor(() => expect(footerActions?.disabled).toBe(false));
+    const savePromise = footerActions?.requestSave();
+    await confirmSaveVersion('Save preview source');
+
+    await act(async () => {
+      await expect(savePromise).rejects.toBe(restoreError);
+    });
+    expect(mocks.hostPreviewSessions[0].close).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Failed to restore the saved host version.')).toBeInTheDocument();
+    expect(screen.getByText('host_preview_restore_failed')).toBeInTheDocument();
+    expect(
+      screen.getByText('The saved host version could not be restored. Retry Cancel or reload the page.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('saved host restore rejected')).not.toBeInTheDocument();
   });
 
   it('offers moving the current unsaved entry workspace back to inline code', async () => {

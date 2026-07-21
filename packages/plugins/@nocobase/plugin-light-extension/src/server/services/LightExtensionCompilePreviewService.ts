@@ -167,7 +167,7 @@ export class LightExtensionCompilePreviewService {
         problems: sortLightExtensionProblems([...target.problems, ...compiled.problems]),
         failureCode: compiled.failureCode,
         artifact: compiled.accepted
-          ? summarizeArtifact(compiled.artifact, target.validationEntry.entryPath)
+          ? summarizeArtifact(compiled.artifact, target.validationEntry.entryPath, compiled.artifactHash)
           : undefined,
       });
     }
@@ -396,6 +396,7 @@ export class LightExtensionCompilePreviewService {
       failureCode: compiled.failureCode,
       artifact: compiled.accepted
         ? {
+            artifactHash: requireArtifactHash(compiled.artifactHash),
             code: compiled.artifact.code,
             sourceMap: compiled.artifact.sourceMap,
             version: compiled.artifact.version,
@@ -416,7 +417,9 @@ export class LightExtensionCompilePreviewService {
           accepted: compiled.accepted && !hasErrorProblem(problems),
           problems,
           failureCode: compiled.failureCode,
-          artifact: compiled.accepted ? summarizeArtifact(compiled.artifact, validationEntry.entryPath) : undefined,
+          artifact: compiled.accepted
+            ? summarizeArtifact(compiled.artifact, validationEntry.entryPath, compiled.artifactHash)
+            : undefined,
         },
       ],
     };
@@ -487,7 +490,9 @@ export class LightExtensionCompilePreviewService {
         accepted,
         problems,
         failureCode: compiled.failureCode,
-        artifact: compiled.accepted ? summarizeArtifact(compiled.artifact, validationEntry.entryPath) : undefined,
+        artifact: compiled.accepted
+          ? summarizeArtifact(compiled.artifact, validationEntry.entryPath, compiled.artifactHash)
+          : undefined,
       });
     }
 
@@ -835,13 +840,22 @@ function summarizeArtifact(
     metadata?: Record<string, unknown>;
   },
   fallbackEntryPath: string,
+  artifactHash: string | undefined,
 ): LightExtensionCompilePreviewArtifactSummary {
   return {
+    artifactHash: requireArtifactHash(artifactHash),
     version: input.version,
     entryPath: input.entryPath || fallbackEntryPath,
     filesHash: input.filesHash,
     metadata: input.metadata,
   };
+}
+
+function requireArtifactHash(artifactHash: string | undefined): string {
+  if (!artifactHash || !/^[a-f0-9]{64}$/u.test(artifactHash)) {
+    throw new Error('Accepted light extension preview is missing its artifact hash');
+  }
+  return artifactHash;
 }
 
 function entryKey(entry: { target?: string; kind: string; entryName: string }): string {

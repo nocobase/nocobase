@@ -50,7 +50,12 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
       files: Array<{ path: string; content: string }>;
       version: string;
     }) => void | Promise<void>;
-    onPreview?: (artifact: { code: string; version: string; entryPath: string }) => void | Promise<void>;
+    onPreview?: (request: {
+      artifact: { artifactHash: string; code: string; version: string; entryPath: string };
+      requestId: string;
+      snapshotId: string;
+      sourceRef: Record<string, unknown>;
+    }) => void | Promise<void>;
     onFooterActionsChange?: (
       actions: {
         dirty: boolean;
@@ -110,9 +115,24 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
             type="button"
             onClick={() =>
               onPreview({
-                code: 'ctx.render(<div>workspace preview</div>);',
-                version: 'v2',
-                entryPath: initialPath || '',
+                artifact: {
+                  artifactHash: 'a'.repeat(64),
+                  code: 'ctx.render(<div>workspace preview</div>);',
+                  version: 'v2',
+                  entryPath: initialPath || '',
+                },
+                requestId: 'preview-request-1',
+                snapshotId: 'preview-snapshot-1',
+                sourceRef: {
+                  type: 'runjs-host-preview',
+                  version: 1,
+                  previewSessionId: 'preview-session-1',
+                  executionId: 'preview-execution-1',
+                  artifactHash: 'a'.repeat(64),
+                  snapshotId: 'preview-snapshot-1',
+                  sourceURL: 'nocobase-runjs://bundle/preview.js',
+                  sourceMap: '{}',
+                },
               })
             }
           >
@@ -448,6 +468,12 @@ describe('RunJSLightExtensionEditorProvider', () => {
       code: 'ctx.render(<div>workspace preview</div>);',
       version: 'v2',
       sourceMode: 'inline',
+      sourceRef: expect.objectContaining({
+        previewSessionId: 'preview-session-1',
+        executionId: 'preview-execution-1',
+        artifactHash: 'a'.repeat(64),
+        snapshotId: 'preview-snapshot-1',
+      }),
     });
     fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);
@@ -503,6 +529,10 @@ describe('RunJSLightExtensionEditorProvider', () => {
         code: 'ctx.render(<div>workspace preview</div>);',
         sourceMode: 'inline',
         sourceBinding: value.sourceBinding,
+        sourceRef: expect.objectContaining({
+          previewSessionId: 'preview-session-1',
+          executionId: 'preview-execution-1',
+        }),
       }),
     );
 
@@ -510,6 +540,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     fireEvent.click(within(footer).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value);
+    expect(model.getStepParams('jsSettings', 'runJs')).toHaveProperty('sourceRef', undefined);
     expect(rerender).toHaveBeenCalledTimes(2);
   });
 

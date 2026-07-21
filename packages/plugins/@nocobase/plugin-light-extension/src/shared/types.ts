@@ -226,6 +226,7 @@ export interface LightExtensionProblem {
 }
 
 export interface LightExtensionEntryRuntimeArtifact {
+  artifactHash?: string;
   code: string;
   sourceMap?: string;
   version: string;
@@ -349,6 +350,7 @@ export interface LightExtensionCapabilities {
 }
 
 export interface LightExtensionCompilePreviewArtifactSummary {
+  artifactHash?: string;
   version: string;
   entryPath: string;
   filesHash?: string;
@@ -404,7 +406,7 @@ export interface LightExtensionWorkspaceCheckResult {
   accepted: boolean;
   problems: LightExtensionProblem[];
   failureCode?: string;
-  artifact?: LightExtensionEntryRuntimeArtifact;
+  artifact?: LightExtensionEntryRuntimeArtifact & { artifactHash: string };
   entries: LightExtensionCompilePreviewEntryResult[];
 }
 

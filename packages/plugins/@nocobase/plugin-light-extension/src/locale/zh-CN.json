@@ -456,5 +456,14 @@
   "renamed": "重命名",
   "unchanged": "未变更",
   "Binding context types could not be loaded. Generic types are active.": "无法加载绑定上下文类型，当前使用通用类型。",
-  "No binding is selected. Generic context types are active.": "未选择绑定，当前使用通用上下文类型。"
+  "No binding is selected. Generic context types are active.": "未选择绑定，当前使用通用上下文类型。",
+  "Host Preview runs this code in the current application and may create side effects.": "Host Preview 会在当前应用中运行代码，并可能产生副作用。",
+  "Use a test application or a restricted role before clicking Run.": "点击运行前，请使用测试应用或受限角色。",
+  "Preview artifact is missing a valid source map.": "预览产物缺少有效的源码映射。",
+  "Host Preview is unavailable for this surface.": "当前界面无法使用 Host Preview。",
+  "The saved host version could not be applied.": "无法应用已保存的 Host 版本。",
+  "Failed to restore the saved host version.": "恢复已保存的 Host 版本失败。",
+  "Keep the editor open, retry Cancel, or reload the page to restore the saved version.": "请保持编辑器打开，重试取消，或重新加载页面以恢复已保存版本。",
+  "The saved host version could not be restored. Retry Cancel or reload the page.": "无法恢复已保存的 Host 版本。请重试取消或重新加载页面。",
+  "The saved host version could not be restored. Reload the page before continuing.": "无法恢复已保存的 Host 版本。继续操作前请重新加载页面。"
 }

@@ -25,7 +25,7 @@ import {
   type ParamObject,
   type RunJSValue,
 } from '@nocobase/flow-engine';
-import { Alert, Button, Flex, Space } from 'antd';
+import { Alert, Button, Flex, Space, message } from 'antd';
 import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
@@ -47,6 +47,7 @@ import {
 import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 import LightExtensionWorkspacePage, {
+  type LightExtensionHostPreviewRequest,
   type LightExtensionMoveToInlineRequest,
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
@@ -449,33 +450,58 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     if (!previewAppliedRef.current) {
       return;
     }
+    const restored = await previewValueApplierRef.current(persistedPreviewValueRef.current);
+    if (!restored) {
+      throw new Error(
+        translate?.('The saved host version could not be applied.') || 'The saved host version could not be applied.',
+      );
+    }
     previewAppliedRef.current = false;
-    await previewValueApplierRef.current(persistedPreviewValueRef.current);
-  }, []);
+  }, [translate]);
 
   React.useEffect(() => {
     return () => {
       if (!previewAppliedRef.current) {
         return;
       }
-      previewAppliedRef.current = false;
       previewValueApplierRef
         .current(persistedPreviewValueRef.current)
-        .catch((error) => console.error('Failed to restore light extension workspace preview', error));
+        .then((restored) => {
+          if (!restored) {
+            throw new Error(
+              translate?.('The saved host version could not be applied.') ||
+                'The saved host version could not be applied.',
+            );
+          }
+          previewAppliedRef.current = false;
+        })
+        .catch(() => {
+          message.error(
+            translate?.('The saved host version could not be restored. Reload the page before continuing.') ||
+              'The saved host version could not be restored. Reload the page before continuing.',
+          );
+        });
     };
-  }, []);
+  }, [translate]);
 
   const handleWorkspacePreview = React.useCallback(
-    async (artifact: LightExtensionEntryRuntimeArtifact) => {
+    async (request: LightExtensionHostPreviewRequest) => {
       const applied = await applyPreviewValue({
         ...value,
-        code: artifact.code,
-        version: artifact.version,
+        code: request.artifact.code,
+        version: request.artifact.version,
         sourceMode: INLINE_SOURCE_MODE,
+        sourceRef: request.sourceRef,
       });
+      if (!applied) {
+        throw new Error(
+          translate?.('Host Preview is unavailable for this surface.') ||
+            'Host Preview is unavailable for this surface.',
+        );
+      }
       previewAppliedRef.current = applied;
     },
-    [applyPreviewValue, value],
+    [applyPreviewValue, translate, value],
   );
 
   const closeEditorViewWithoutRestore = React.useCallback(async () => {
@@ -586,10 +612,12 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         }
       }
     }
-    await (props.onPersistedChange || props.onChange)?.({
+    const persistedValue = {
       ...nextValue,
       ...(refreshedBinding ? { sourceBinding: refreshedBinding } : {}),
-    });
+    };
+    persistedPreviewValueRef.current = persistedValue;
+    await (props.onPersistedChange || props.onChange)?.(persistedValue);
     await waitForHostRefreshCommit();
   }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value, resolverApi]);
 
@@ -755,12 +783,9 @@ async function applyFlowModelStepPreview(
   );
   const sourceConfigPath = locator.paramPath.slice(0, -1);
   setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceMode'], value.sourceMode);
-  if (Object.prototype.hasOwnProperty.call(value, 'sourceBinding')) {
-    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
-  }
-  if (Object.prototype.hasOwnProperty.call(value, 'settings')) {
-    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'settings'], value.settings);
-  }
+  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
+  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'settings'], value.settings);
+  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceRef'], value.sourceRef);
   model.setStepParams(locator.flowKey, locator.stepKey, currentParams);
   model.invalidateFlowCache('beforeRender', true);
   await model.rerender();

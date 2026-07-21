@@ -36,8 +36,18 @@ import {
   type CodeEditorDiagnostic,
   type CodeEditorRevealTarget,
   type EmbeddedRunJSEditorSaveResult,
+  createRunJSHostPreviewSession,
+  type RunJSHostPreviewSession,
+  type RunJSHostPreviewSourceRef,
   useFullscreenOverlay,
 } from '@nocobase/client-v2';
+import type { RunJSRuntimeEvent } from '@nocobase/flow-engine';
+import {
+  getFirstMappedRunJSStackFrame,
+  mapRunJSStack,
+  mapRunJSStackFrame,
+  parseRunJSLineMapV1,
+} from '@nocobase/runjs/compiler/line-map';
 import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -106,7 +116,7 @@ interface LightExtensionWorkspacePageProps {
   entryId?: string | null;
   ownerLocator?: LightExtensionReferenceOwnerLocator;
   referenceId?: string;
-  onPreview?: (artifact: LightExtensionEntryRuntimeArtifact) => void | Promise<void>;
+  onPreview?: (request: LightExtensionHostPreviewRequest) => void | Promise<void>;
   onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
@@ -117,6 +127,13 @@ export interface LightExtensionMoveToInlineRequest {
   entryPath: string;
   files: RunJSWorkspaceFile[];
   version: string;
+}
+
+export interface LightExtensionHostPreviewRequest {
+  artifact: LightExtensionEntryRuntimeArtifact;
+  requestId: string;
+  snapshotId: string;
+  sourceRef: RunJSHostPreviewSourceRef;
 }
 
 export interface LightExtensionWorkspaceFooterActions {
@@ -228,6 +245,8 @@ function LightExtensionWorkspacePage({
   const historyRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
+  const previewRequestSequenceRef = useRef(0);
+  const activePreviewSessionRef = useRef<RunJSHostPreviewSession | null>(null);
   const revealRequestSequenceRef = useRef(0);
   const bindingContextRequestSequenceRef = useRef(0);
   const ownerLocatorSignature = useMemo(() => JSON.stringify(ownerLocator || null), [ownerLocator]);
@@ -428,6 +447,11 @@ function LightExtensionWorkspacePage({
 
   useLayoutEffect(() => {
     problemStore.setSnapshot(previewSnapshotKey);
+    return () => {
+      previewRequestSequenceRef.current += 1;
+      activePreviewSessionRef.current?.close();
+      activePreviewSessionRef.current = null;
+    };
   }, [previewSnapshotKey, problemStore]);
 
   useEffect(() => {
@@ -778,6 +802,50 @@ function LightExtensionWorkspacePage({
     await loadVersionIntoEditor(commit);
   };
 
+  const closeActivePreviewSession = useCallback((): RunJSHostPreviewSourceRef | undefined => {
+    const session = activePreviewSessionRef.current;
+    activePreviewSessionRef.current = null;
+    session?.close();
+    return session?.sourceRef;
+  }, []);
+
+  const reportPreviewRestoreFailure = useCallback(
+    (error: unknown, sourceRef?: RunJSHostPreviewSourceRef) => {
+      const snapshotId = sourceRef?.snapshotId || previewSnapshotKey;
+      const createProblem = createLightExtensionProblemFactory({
+        snapshotId,
+        requestId: sourceRef?.executionId || `host-preview-restore:${Date.now()}`,
+        source: 'host-runtime',
+        phase: 'infrastructure',
+      });
+      problemStore.appendProblems({
+        producer: 'host-preview',
+        snapshotId,
+        problems: [
+          createProblem({
+            code: 'host_preview_restore_failed',
+            severity: 'error',
+            message: t('Failed to restore the saved host version.'),
+            path: workspaceScope.mode === 'entry' ? workspaceScope.entryPath : undefined,
+            kind: workspaceScope.mode === 'entry' ? workspaceScope.kind : undefined,
+            fixHint: t('Keep the editor open, retry Cancel, or reload the page to restore the saved version.'),
+            details: {
+              previewSessionId: sourceRef?.previewSessionId,
+              executionId: sourceRef?.executionId,
+              artifactHash: sourceRef?.artifactHash,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          }),
+        ],
+      });
+      setNotice({
+        type: 'error',
+        message: t('The saved host version could not be restored. Retry Cancel or reload the page.'),
+      });
+    },
+    [previewSnapshotKey, problemStore, t, workspaceScope],
+  );
+
   const saveChanges = useCallback(async () => {
     const commitMessage = versionMessage.trim();
     if (!repoId || !commitMessage || dirtyChanges.length === 0 || hasBlockedDirtyChanges) {
@@ -804,7 +872,18 @@ function LightExtensionWorkspacePage({
       await onSaved?.();
       await loadBindingContext();
       if (onRequestClose) {
-        await onRequestClose();
+        previewRequestSequenceRef.current += 1;
+        const sourceRef = closeActivePreviewSession();
+        try {
+          await onRequestClose();
+        } catch (error) {
+          reportPreviewRestoreFailure(error, sourceRef);
+          const request = embeddedSaveRequestRef.current;
+          embeddedSaveRequestRef.current = null;
+          embeddedSavePromiseRef.current = null;
+          request?.reject(error);
+          return;
+        }
       } else {
         await loadWorkspace();
       }
@@ -836,6 +915,7 @@ function LightExtensionWorkspacePage({
     }
   }, [
     baseHeadCommitId,
+    closeActivePreviewSession,
     dirtyChanges,
     filesForSave,
     hasBlockedDirtyChanges,
@@ -846,6 +926,7 @@ function LightExtensionWorkspacePage({
     pathRestrictionReason,
     previewSnapshotKey,
     problemStore,
+    reportPreviewRestoreFailure,
     repoId,
     saveSource,
     t,
@@ -888,13 +969,25 @@ function LightExtensionWorkspacePage({
       return;
     }
 
-    await onRequestClose?.();
-  }, [hasUnsavedLocalChanges, onRequestClose]);
+    previewRequestSequenceRef.current += 1;
+    const sourceRef = closeActivePreviewSession();
+    try {
+      await onRequestClose?.();
+    } catch (error) {
+      reportPreviewRestoreFailure(error, sourceRef);
+    }
+  }, [closeActivePreviewSession, hasUnsavedLocalChanges, onRequestClose, reportPreviewRestoreFailure]);
 
   const discardLocalAndClose = useCallback(async () => {
     setCloseConfirmOpen(false);
-    await onRequestClose?.();
-  }, [onRequestClose]);
+    previewRequestSequenceRef.current += 1;
+    const sourceRef = closeActivePreviewSession();
+    try {
+      await onRequestClose?.();
+    } catch (error) {
+      reportPreviewRestoreFailure(error, sourceRef);
+    }
+  }, [closeActivePreviewSession, onRequestClose, reportPreviewRestoreFailure]);
 
   const footerActions = useMemo<LightExtensionWorkspaceFooterActions>(
     () => ({
@@ -969,8 +1062,13 @@ function LightExtensionWorkspacePage({
     }
 
     const requestSnapshotKey = previewSnapshotKey;
+    closeActivePreviewSession();
+    const requestSequence = previewRequestSequenceRef.current + 1;
+    previewRequestSequenceRef.current = requestSequence;
+    problemStore.replaceProblems({ producer: 'host-preview', snapshotId: requestSnapshotKey, problems: [] });
     setPreviewing(true);
     setNotice(null);
+    let session: RunJSHostPreviewSession | null = null;
     try {
       const result = await compileWorkspacePreview({
         repoId,
@@ -986,6 +1084,9 @@ function LightExtensionWorkspacePage({
           mode: file.mode,
         })),
       });
+      if (previewRequestSequenceRef.current !== requestSequence) {
+        return;
+      }
       if (latestPreviewSnapshotRef.current !== requestSnapshotKey) {
         setNotice({ type: 'info', message: t('Source changed while preview was compiling. Run again.') });
         return;
@@ -1001,8 +1102,63 @@ function LightExtensionWorkspacePage({
         return;
       }
 
-      await onPreview(result.artifact);
+      const artifact = result.artifact;
+      const sourceMap = artifact.sourceMap;
+      if (!sourceMap || !parseRunJSLineMapV1(sourceMap)) {
+        throw new Error(t('Preview artifact is missing a valid source map.'));
+      }
+
+      session = createRunJSHostPreviewSession({
+        artifactHash: artifact.artifactHash,
+        snapshotId: requestSnapshotKey,
+        sourceMap,
+        metadata: {
+          repoId,
+          entryId: entryId || '',
+          kind: workspaceScope.kind,
+          entryPath: workspaceScope.entryPath,
+          ...(ownerLocatorSignature !== 'null' ? { ownerLocator: ownerLocatorSignature } : {}),
+        },
+        reporter: {
+          report(event) {
+            if (
+              !session ||
+              activePreviewSessionRef.current !== session ||
+              latestPreviewSnapshotRef.current !== requestSnapshotKey ||
+              event.identity.executionId !== session.sourceRef.executionId ||
+              event.identity.artifactHash !== session.sourceRef.artifactHash ||
+              event.identity.sourceURL !== session.sourceRef.sourceURL
+            ) {
+              return;
+            }
+            problemStore.appendProblems({
+              producer: 'host-preview',
+              snapshotId: requestSnapshotKey,
+              problems: [createHostPreviewRuntimeProblem(event, session.sourceRef, workspaceScope)],
+            });
+          },
+        },
+      });
+      activePreviewSessionRef.current = session;
+      await onPreview({
+        artifact,
+        requestId: result.requestId,
+        snapshotId: requestSnapshotKey,
+        sourceRef: session.sourceRef,
+      });
     } catch (error) {
+      if (session) {
+        if (activePreviewSessionRef.current === session) {
+          activePreviewSessionRef.current = null;
+        }
+        session.close();
+      }
+      if (
+        previewRequestSequenceRef.current !== requestSequence ||
+        latestPreviewSnapshotRef.current !== requestSnapshotKey
+      ) {
+        return;
+      }
       problemStore.replaceProblems({
         producer: 'canonical',
         snapshotId: requestSnapshotKey,
@@ -1010,14 +1166,18 @@ function LightExtensionWorkspacePage({
       });
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
     } finally {
-      setPreviewing(false);
+      if (previewRequestSequenceRef.current === requestSequence) {
+        setPreviewing(false);
+      }
     }
   }, [
     canPreview,
     baseHeadCommitId,
+    closeActivePreviewSession,
     compileWorkspacePreview,
     entryId,
     onPreview,
+    ownerLocatorSignature,
     previewSnapshotKey,
     problemStore,
     repoId,
@@ -1353,6 +1513,17 @@ function LightExtensionWorkspacePage({
                   ) : null}
                   {files.length > 0 ? (
                     <>
+                      {canPreview ? (
+                        <Alert
+                          message={t(
+                            'Host Preview runs this code in the current application and may create side effects.',
+                          )}
+                          description={t('Use a test application or a restricted role before clicking Run.')}
+                          showIcon
+                          style={{ marginBottom: 8 }}
+                          type="warning"
+                        />
+                      ) : null}
                       {activeFileReadOnly && entryScoped && !isBinaryWorkspaceFile(activeFile) ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
                       ) : null}
@@ -1544,6 +1715,63 @@ function getProvisionalPreviewStatusMessage(
     return t('Local provisional preview is ready. Server Save remains authoritative.');
   }
   return t('Building local provisional preview');
+}
+
+function createHostPreviewRuntimeProblem(
+  event: RunJSRuntimeEvent,
+  sourceRef: RunJSHostPreviewSourceRef,
+  workspaceScope: Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>,
+): LightExtensionProblem {
+  const lineMap = parseRunJSLineMapV1(sourceRef.sourceMap);
+  const generatedLocation = event.issue.generatedLocation;
+  const mappedGeneratedLocation =
+    lineMap && generatedLocation?.sourceURL === lineMap.sourceURL
+      ? mapRunJSStackFrame(lineMap, {
+          url: generatedLocation.sourceURL,
+          line: generatedLocation.line,
+          column: generatedLocation.column,
+          raw: `${generatedLocation.sourceURL}:${generatedLocation.line}:${generatedLocation.column}`,
+        })
+      : undefined;
+  const mappedStackLocation =
+    lineMap && event.issue.stack ? getFirstMappedRunJSStackFrame(event.issue.stack, lineMap) : undefined;
+  const mappedLocation = mappedGeneratedLocation || mappedStackLocation;
+  const path = event.issue.sourcePath || mappedLocation?.source || workspaceScope.entryPath;
+  const range = event.issue.location
+    ? event.issue.location
+    : mappedLocation
+      ? {
+          start: {
+            line: mappedLocation.sourceLine,
+            column: mappedLocation.sourceColumn || 1,
+          },
+        }
+      : undefined;
+  const source = event.issue.phase === 'react' ? 'react' : 'host-runtime';
+  const createProblem = createLightExtensionProblemFactory({
+    snapshotId: sourceRef.snapshotId,
+    requestId: event.identity.executionId,
+    source,
+    phase: event.issue.phase,
+  });
+  return createProblem({
+    code: `host_preview_${event.issue.ruleId.replace(/-/gu, '_')}`,
+    severity: event.issue.severity,
+    message: event.issue.message,
+    path,
+    range,
+    kind: workspaceScope.kind,
+    stack: event.issue.stack && lineMap ? mapRunJSStack(event.issue.stack, lineMap) : event.issue.stack,
+    details: {
+      previewSessionId: sourceRef.previewSessionId,
+      executionId: event.identity.executionId,
+      artifactHash: event.identity.artifactHash,
+      sourceURL: event.identity.sourceURL,
+      ruleId: event.issue.ruleId,
+      executionMayContinue: event.issue.executionMayContinue,
+      runtimeDetails: event.issue.details,
+    },
+  });
 }
 
 function normalizeWorkspaceFiles(files: LightExtensionTreeEntryInput[]): WorkspaceFile[] {

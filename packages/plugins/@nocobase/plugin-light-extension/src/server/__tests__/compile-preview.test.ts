@@ -158,6 +158,7 @@ describe('plugin-light-extension compile preview', () => {
       accepted: true,
       problems: [],
       artifact: {
+        artifactHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
         version: 'v2',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
         metadata: expect.objectContaining({
