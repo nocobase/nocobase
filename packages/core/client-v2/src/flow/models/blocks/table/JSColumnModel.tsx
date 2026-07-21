@@ -28,10 +28,10 @@ import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import {
   beginJSFieldRuntimeRun,
+  createJSFieldEmbeddedEditorUIMode,
   createJSFieldRunJsUISchema,
   createJSFieldSourceBindingStep,
   createJSFieldSourceModeStep,
-  getJSFieldRunJsEditorTitle,
   getJSFieldRuntimeFlowSettingSteps,
   INLINE_SOURCE_MODE,
   isCurrentJSFieldRuntimeRun,
@@ -254,24 +254,7 @@ JSColumnModel.registerFlow({
       title: tExpr('Write JavaScript'),
       useRawParams: true,
       uiSchema: createJSFieldRunJsUISchema({ scene: 'block' }),
-      uiMode: async (ctx) => ({
-        type: 'embed',
-        props: {
-          title: await getJSFieldRunJsEditorTitle(ctx),
-          footer: null,
-          maxWidth: '960px',
-          minWidth: '720px',
-          width: '45%',
-          styles: {
-            body: {
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      }),
+      uiMode: createJSFieldEmbeddedEditorUIMode,
       defaultParams() {
         return {
           version: 'v2',

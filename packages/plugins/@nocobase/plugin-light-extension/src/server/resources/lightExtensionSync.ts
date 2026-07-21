@@ -183,7 +183,8 @@ export function sanitizeUnsafeLightExtensionSyncTransport(ctx: LightExtensionRes
   const headers = ctx.request?.headers || ctx.request?.header;
   if (headers) {
     for (const key of Object.keys(headers)) {
-      if (credentialTransportKeyPattern.test(normalizeCredentialKey(key))) {
+      const normalizedKey = normalizeCredentialKey(key);
+      if (normalizedKey.toLowerCase() !== 'xcsrftoken' && credentialTransportKeyPattern.test(normalizedKey)) {
         headers[key] = redactedCredential;
         rejected = true;
       }

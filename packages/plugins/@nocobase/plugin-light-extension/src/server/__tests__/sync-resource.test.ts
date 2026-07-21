@@ -224,11 +224,15 @@ describe('lightExtensionSync resource', () => {
 
   it('allows createFromGit only with all permissions and returns no credential or internal identifiers', async () => {
     const fixture = createFixture();
-    const ctx = await runAction(fixture, 'createFromGit', createFromGitInput(), [
-      'create',
-      'manageSyncSource',
-      'pullFromSyncSource',
-    ]);
+    const ctx = await runAction(
+      fixture,
+      'createFromGit',
+      createFromGitInput(),
+      ['create', 'manageSyncSource', 'pullFromSyncSource'],
+      true,
+      {},
+      { headers: { 'x-csrf-token': 'csrf-token' } },
+    );
 
     expect(ctx.status).toBeUndefined();
     expect(fixture.runtime.fetchTarget).toHaveBeenCalledWith(

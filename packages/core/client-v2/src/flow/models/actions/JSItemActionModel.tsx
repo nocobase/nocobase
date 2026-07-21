@@ -13,9 +13,9 @@ import { ActionModel, ActionSceneEnum, CollectionActionGroupModel, RecordActionG
 import { FormActionGroupModel } from '../blocks/form/FormActionGroupModel';
 import {
   createJSItemRunJsUISchema,
+  createJSItemEmbeddedEditorUIMode,
   createJSItemSourceBindingStep,
   createJSItemSourceModeStep,
-  getJSItemRunJsEditorTitle,
   getJSItemRuntimeFlowSettingSteps,
   INLINE_SOURCE_MODE,
   resetJSItemRuntimeElement,
@@ -122,24 +122,7 @@ JSItemActionModel.registerFlow({
       title: tExpr('Write JavaScript'),
       useRawParams: true,
       uiSchema: createJSItemRunJsUISchema({ scene: 'block' }),
-      uiMode: async (ctx) => ({
-        type: 'embed',
-        props: {
-          title: await getJSItemRunJsEditorTitle(ctx),
-          footer: null,
-          maxWidth: '960px',
-          minWidth: '720px',
-          width: '45%',
-          styles: {
-            body: {
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      }),
+      uiMode: createJSItemEmbeddedEditorUIMode,
       defaultParams() {
         return {
           version: 'v2',

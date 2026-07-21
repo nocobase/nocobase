@@ -27,10 +27,12 @@ import {
   resolveRuntimeRunJS,
   readRunJSRuntimeError,
   createRunJSSourceCascadeMenuUIMode,
+  shouldHideRunJSSourceMenu,
   type RunJSSourceSettings,
 } from '../../../components/runjs-source';
 import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
 import {
+  createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
   normalizeLightExtensionSourceSettingsForBinding,
@@ -655,6 +657,7 @@ JSBlockModel.registerFlow({
     },
     sourceMode: {
       title: tExpr('Code source'),
+      hideInSettings: shouldHideRunJSSourceMenu,
       persistParams: false,
       uiMode: createRunJSSourceCascadeMenuUIMode({
         kind: 'js-block',
@@ -702,24 +705,8 @@ JSBlockModel.registerFlow({
           },
         },
       },
-      uiMode: async (ctx: FlowRuntimeContext<JSBlockModel>) => ({
-        type: 'embed',
-        props: {
-          title: await getRunJsEditorTitle(ctx),
-          footer: null,
-          maxWidth: '960px',
-          minWidth: '720px',
-          width: '45%',
-          styles: {
-            body: {
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      }),
+      uiMode: async (ctx: FlowRuntimeContext<JSBlockModel>) =>
+        createRunJSEditorEmbedUIMode(await getRunJsEditorTitle(ctx)),
       defaultParams(ctx) {
         return {
           version: 'v2',

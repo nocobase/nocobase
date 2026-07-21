@@ -35,6 +35,7 @@ import {
   readRunJSRuntimeError,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
+  shouldHideRunJSSourceMenu,
   validateRunJSSettings,
   validateRunJSSettingValue,
   type JsonSchemaLike,
@@ -42,7 +43,7 @@ import {
   type RunJSSourceSettings,
   type RunJSSourceSettingsDescriptor,
 } from '../../components/runjs-source';
-import { RunJSEditorField, type RunJSSourceLocator } from '../../components/runjs-studio';
+import { RunJSEditorField, RunJSEditorRegistry, type RunJSSourceLocator } from '../../components/runjs-studio';
 
 export const INLINE_SOURCE_MODE = 'inline';
 export const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
@@ -184,6 +185,7 @@ export function createLightExtensionSourceModeStep(options: {
 }): StepDefinition {
   return {
     title: '{{t("Code source")}}',
+    hideInSettings: shouldHideRunJSSourceMenu,
     persistParams: false,
     uiMode: options.createMenuUIMode({ kind: options.kind }),
     useRawParams: true,
@@ -255,6 +257,43 @@ export function createLightExtensionRunJsUISchema(options: {
           height: '100%',
           minHeight: 0,
           minWidth: 0,
+        },
+      },
+    },
+  };
+}
+
+export function createRunJSEditorEmbedUIMode(title?: string) {
+  const baseProps = {
+    ...(title ? { title } : {}),
+    styles: {
+      body: {
+        transform: 'translateX(0)',
+      },
+    },
+  };
+
+  if (!RunJSEditorRegistry.getProviders().length) {
+    return {
+      type: 'embed' as const,
+      props: baseProps,
+    };
+  }
+
+  return {
+    type: 'embed' as const,
+    props: {
+      ...baseProps,
+      footer: null,
+      maxWidth: '960px',
+      minWidth: '720px',
+      width: '45%',
+      styles: {
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          transform: 'translateX(0)',
         },
       },
     },

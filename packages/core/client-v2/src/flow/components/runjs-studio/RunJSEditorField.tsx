@@ -473,10 +473,22 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   };
 
   if (!providers.some((provider) => provider.canHandle?.(providerProps) ?? true)) {
+    const defaultFlowModelEditorProps = generatedLocator
+      ? {
+          ...providerProps,
+          height: '100%',
+          minHeight: 0,
+          wrapperStyle: {
+            position: 'fixed' as const,
+            inset: 8,
+            ...providerProps.wrapperStyle,
+          },
+        }
+      : providerProps;
     return (
       <>
         {renderInlineEditor({
-          ...providerProps,
+          ...defaultFlowModelEditorProps,
           onChange: (nextValue) =>
             onChange?.(typeof nextValue === 'string' ? nextValue : toFieldChangeValue(valueMode, nextValue)),
         })}

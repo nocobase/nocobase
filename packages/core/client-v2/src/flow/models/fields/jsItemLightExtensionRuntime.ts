@@ -31,6 +31,7 @@ import {
   cloneJsonValue,
   cloneRecord,
   createLightExtensionRunJsUISchema,
+  createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
@@ -200,6 +201,10 @@ export function createJSItemRunJsUISchema(options: { scene: string; minHeight?: 
     surfaceStyle: 'render',
     minHeight: options.minHeight,
   });
+}
+
+export async function createJSItemEmbeddedEditorUIMode(ctx: { model: JSItemRuntimeModel }) {
+  return createRunJSEditorEmbedUIMode(await getJSItemRunJsEditorTitle(ctx));
 }
 
 export async function getJSItemRunJsEditorTitle(ctx: { model: JSItemRuntimeModel }): Promise<string> {

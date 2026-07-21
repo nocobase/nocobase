@@ -8,9 +8,9 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { RunJSEditorField, type RunJSSurfaceStyle } from '../../components/runjs-studio';
+import { RunJSEditorField, RunJSEditorRegistry, type RunJSSurfaceStyle } from '../../components/runjs-studio';
 import { JSActionModel } from '../actions/JSActionModel';
 import { JSCollectionActionModel } from '../actions/JSCollectionActionModel';
 import { JSItemActionModel } from '../actions/JSItemActionModel';
@@ -159,6 +159,14 @@ function getRunJsCodeSchema(spec: SurfaceSpec): CodeSchema {
 }
 
 describe('RunJS FlowModel surfaces', () => {
+  beforeEach(() => {
+    RunJSEditorRegistry.clear();
+  });
+
+  afterEach(() => {
+    RunJSEditorRegistry.clear();
+  });
+
   it.each(surfaces)('$name uses RunJSEditorField with flowModel.step locator metadata', (spec) => {
     const codeSchema = getRunJsCodeSchema(spec);
 
@@ -173,7 +181,7 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it.each(surfaces)('$name uses the RunJS studio embed size while the provider owns the footer', async (spec) => {
+  it.each(surfaces)('$name keeps the next-style editor layout without a provider', async (spec) => {
     const flow = spec.modelClass.globalFlowRegistry.getFlow(spec.flowKey);
     const step = flow?.getStep('runJs');
     const codeSchema = getRunJsCodeSchema(spec);
@@ -204,18 +212,13 @@ describe('RunJS FlowModel surfaces', () => {
         : uiMode;
     const props = resolvedUiMode?.props;
     expect(props).toMatchObject({
-      footer: null,
-      maxWidth: '960px',
-      minWidth: '720px',
       styles: {
         body: {
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
           transform: 'translateX(0)',
         },
       },
-      width: '45%',
     });
+    expect(props?.footer).toBeUndefined();
+    expect(props?.width).toBeUndefined();
   });
 });

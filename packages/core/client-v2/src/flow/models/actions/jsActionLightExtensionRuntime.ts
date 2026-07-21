@@ -30,6 +30,7 @@ import {
   cloneJsonValue,
   cloneRecord,
   createLightExtensionRunJsUISchema,
+  createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
@@ -139,24 +140,7 @@ export function createJSActionRunJsUISchema(options: { minHeight?: string } = {}
 }
 
 export function createJSActionEmbeddedEditorUIMode(ctx: { model: JSActionRuntimeModel }) {
-  return {
-    type: 'embed' as const,
-    props: {
-      title: getJSActionRunJsEditorTitle(ctx),
-      footer: null,
-      maxWidth: '960px',
-      minWidth: '720px',
-      width: '45%',
-      styles: {
-        body: {
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-          transform: 'translateX(0)',
-        },
-      },
-    },
-  };
+  return createRunJSEditorEmbedUIMode(getJSActionRunJsEditorTitle(ctx));
 }
 
 export async function getJSActionRuntimeFlowSettingSteps(

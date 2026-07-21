@@ -19,9 +19,14 @@ import {
 } from '@nocobase/flow-engine';
 import { observable } from '@formily/reactive';
 import React from 'react';
-import { resolveRuntimeRunJS, type ResolvedRuntimeRunJS } from '../../../components/runjs-source';
+import {
+  resolveRuntimeRunJS,
+  shouldHideRunJSSourceMenu,
+  type ResolvedRuntimeRunJS,
+} from '../../../components/runjs-source';
 import {
   createLightExtensionRunJsUISchema,
+  createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
   getLightExtensionSettingsDescriptor,
   LIGHT_EXTENSION_SOURCE_MODE,
@@ -293,6 +298,7 @@ JSPageModel.registerFlow({
   steps: {
     sourceMode: {
       title: tExpr('Code source'),
+      hideInSettings: shouldHideRunJSSourceMenu,
       persistParams: false,
       useRawParams: true,
       uiSchema: {
@@ -354,22 +360,7 @@ JSPageModel.registerFlow({
         surfaceStyle: 'render',
         minHeight: 'calc(100vh - 42px)',
       }),
-      uiMode: {
-        type: 'embed',
-        props: {
-          footer: null,
-          width: '45%',
-          minWidth: '720px',
-          maxWidth: '960px',
-          styles: {
-            body: {
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-            },
-          },
-        },
-      },
+      uiMode: () => createRunJSEditorEmbedUIMode(),
       defaultParams: {
         version: 'v2',
         sourceMode: 'inline',

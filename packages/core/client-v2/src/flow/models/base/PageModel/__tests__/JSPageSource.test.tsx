@@ -11,7 +11,7 @@ import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTypeScriptProjectSession } from '../../../../components/code-editor/typescriptProject';
 import { RunJSSourceResolverRegistry } from '../../../../components/runjs-source';
-import { RunJSEditorField } from '../../../../components/runjs-studio';
+import { RunJSEditorField, RunJSEditorRegistry } from '../../../../components/runjs-studio';
 import { assertLightExtensionSettingsHostContract } from '../../../utils/__tests__/lightExtensionSettingsHostContract';
 import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
 import {
@@ -28,6 +28,7 @@ const SOURCE_BINDING = {
 
 describe('JSPageModel source authoring', () => {
   afterEach(() => {
+    RunJSEditorRegistry.clear();
     RunJSSourceResolverRegistry.clear();
   });
 
@@ -46,7 +47,7 @@ describe('JSPageModel source authoring', () => {
     expect(diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
   });
 
-  it('uses the replaceable source field and embedded RunJS Studio', () => {
+  it('uses the replaceable source field and keeps the default editor layout without a provider', () => {
     const engine = new FlowEngine();
     engine.registerModels({ JSPageModel });
     const model = engine.createModel<JSPageModel>({ uid: 'js-page-source', use: 'JSPageModel' });
@@ -64,7 +65,16 @@ describe('JSPageModel source authoring', () => {
       scene: 'page',
       surfaceStyle: 'render',
     });
-    expect(runJs?.uiMode).toMatchObject({ type: 'embed', props: { footer: null } });
+    expect(runJs?.uiMode).toBeTypeOf('function');
+    const uiMode = typeof runJs?.uiMode === 'function' ? runJs.uiMode({} as never) : runJs?.uiMode;
+    expect(uiMode).toMatchObject({
+      type: 'embed',
+      props: {
+        styles: { body: { transform: 'translateX(0)' } },
+      },
+    });
+    expect(uiMode?.props?.footer).toBeUndefined();
+    expect(code['x-component-props']).toMatchObject({ minHeight: 'calc(100vh - 42px)' });
   });
 
   it('reads source-mode defaults from the canonical runJs step', () => {

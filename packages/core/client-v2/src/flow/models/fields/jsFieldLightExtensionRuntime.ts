@@ -29,6 +29,7 @@ import {
   cloneJsonValue,
   cloneRecord,
   createLightExtensionRunJsUISchema,
+  createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
@@ -175,6 +176,10 @@ export function createJSFieldRunJsUISchema(options: { scene: string; minHeight?:
     surfaceStyle: 'render',
     minHeight: options.minHeight,
   });
+}
+
+export async function createJSFieldEmbeddedEditorUIMode(ctx: { model: JSFieldRuntimeModel }) {
+  return createRunJSEditorEmbedUIMode(await getJSFieldRunJsEditorTitle(ctx));
 }
 
 export async function getJSFieldRunJsEditorTitle(ctx: { model: JSFieldRuntimeModel }): Promise<string> {

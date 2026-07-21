@@ -135,6 +135,12 @@ export async function loadRunJSSourceMenuItems(input: RunJSSourceMenuInput): Pro
   return sourceItems.flat();
 }
 
+export function shouldHideRunJSSourceMenu(): boolean {
+  return !RunJSSourceResolverRegistry.getResolvers().some(
+    (resolver) => typeof resolver.listSourceMenuItems === 'function',
+  );
+}
+
 export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMenuOptions): StepCascadeMenuUIMode {
   return {
     type: 'cascadeMenu' as const,

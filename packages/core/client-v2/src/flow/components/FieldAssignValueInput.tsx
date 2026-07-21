@@ -1446,6 +1446,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return N;
   }, [flowCtx]);
 
+  const runJSPropsRef = React.useRef({
+    sourceLocator,
+    sourceLabel,
+    surfaceStyle,
+    onEmbeddedEditorControllerChange,
+  });
+  runJSPropsRef.current = { sourceLocator, sourceLabel, surfaceStyle, onEmbeddedEditorControllerChange };
+
   const RunJSComponent = React.useMemo(() => {
     const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange' | 'disabled'>): JSX.Element => (
       <RunJSValueEditor
@@ -1453,15 +1461,15 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         value={inputProps?.value}
         onChange={inputProps?.onChange}
         disabled={inputProps?.disabled}
-        sourceLocator={sourceLocator}
-        sourceLabel={sourceLabel}
-        surfaceStyle={surfaceStyle || 'value'}
+        sourceLocator={runJSPropsRef.current.sourceLocator}
+        sourceLabel={runJSPropsRef.current.sourceLabel}
+        surfaceStyle={runJSPropsRef.current.surfaceStyle || 'value'}
         editorChrome="embedded"
-        onEmbeddedEditorControllerChange={onEmbeddedEditorControllerChange}
+        onEmbeddedEditorControllerChange={runJSPropsRef.current.onEmbeddedEditorControllerChange}
       />
     );
     return C;
-  }, [flowCtx, onEmbeddedEditorControllerChange, sourceLabel, sourceLocator, surfaceStyle]);
+  }, [flowCtx]);
 
   const ConstantEditor = useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
 

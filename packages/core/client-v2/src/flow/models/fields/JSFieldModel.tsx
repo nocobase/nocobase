@@ -13,11 +13,11 @@ import { FieldModel } from '../base/FieldModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 import {
   beginJSFieldRuntimeRun,
+  createJSFieldEmbeddedEditorUIMode,
   createJSFieldRunJsUISchema,
   createJSFieldSourceBindingStep,
   createJSFieldSourceModeStep,
   getJSFieldContextSignature,
-  getJSFieldRunJsEditorTitle,
   getJSFieldRuntimeFlowSettingSteps,
   getJSFieldSourceSignature,
   INLINE_SOURCE_MODE,
@@ -207,24 +207,7 @@ JSFieldModel.registerFlow({
       title: tExpr('Write JavaScript'),
       useRawParams: true,
       uiSchema: createJSFieldRunJsUISchema({ scene: 'block' }),
-      uiMode: async (ctx) => ({
-        type: 'embed',
-        props: {
-          title: await getJSFieldRunJsEditorTitle(ctx),
-          footer: null,
-          maxWidth: '960px',
-          minWidth: '720px',
-          width: '45%',
-          styles: {
-            body: {
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      }),
+      uiMode: createJSFieldEmbeddedEditorUIMode,
       defaultParams(ctx) {
         return {
           version: 'v2',

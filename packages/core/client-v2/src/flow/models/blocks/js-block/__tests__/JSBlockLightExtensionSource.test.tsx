@@ -24,6 +24,7 @@ import {
   RunJSSourceResolverRegistry,
   type RunJSSourceSettingsDescriptor,
 } from '../../../../components/runjs-source';
+import { RunJSEditorRegistry } from '../../../../components/runjs-studio';
 import { PluginFlowEngine } from '../../../../index';
 import { createMockClient } from '../../../../../MockApplication';
 import { assertLightExtensionSettingsHostContract } from '../../../utils/__tests__/lightExtensionSettingsHostContract';
@@ -93,6 +94,7 @@ function renderJSBlock(stepParams: Record<string, unknown>) {
 
 describe('JSBlockModel light extension source', () => {
   afterEach(() => {
+    RunJSEditorRegistry.clear();
     RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
   });
@@ -193,7 +195,7 @@ describe('JSBlockModel light extension source', () => {
     expect(runJsStep?.uiSchema?.code?.['x-component']).toBeTypeOf('function');
     expect(runJsStep?.uiSchema?.code?.['x-reactions']).toBeUndefined();
     const runJsUiMode = await runJsStep?.uiMode?.(new FlowRuntimeContext(model, 'jsSettings', 'settings'));
-    expect(runJsUiMode?.props?.footer).toBeNull();
+    expect(runJsUiMode?.props?.footer).toBeUndefined();
     expect(model.getFlow('jsSettings')?.steps?.lightExtensionSource).toBeUndefined();
   });
 
