@@ -57,6 +57,35 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Whitelist target untuk request HTTP keluar yang dimulai oleh server. Ini berlaku untuk request sisi server dari fitur seperti node HTTP Request pada workflow, custom request, dan layanan AI.
+
+Saat variabel ini tidak dikonfigurasi, NocoBase tetap mengizinkan request `http` / `https` untuk menjaga kompatibilitas deployment yang sudah ada. Namun, jika target adalah alamat loopback, private, link-local, metadata, atau domain yang resolve ke salah satu alamat tersebut, server akan menulis warning di log. Versi mendatang dapat memperketat perilaku default secara bertahap. Jika deployment kamu perlu mengakses layanan internal, konfigurasikan whitelist eksplisit lebih awal.
+
+Saat variabel ini dikonfigurasi, request awal dan setiap tujuan redirect harus cocok dengan entri whitelist. Jika redirect mengarah ke host yang tidak cocok, NocoBase berhenti sebelum mengirim request hasil redirect.
+
+Entri yang didukung:
+
+- Alamat IPv4 eksak, seperti `192.168.1.10`
+- Range CIDR IPv4, seperti `10.0.0.0/8`
+- Alamat IPv6 eksak, seperti `::1`
+- Range CIDR IPv6, seperti `fc00::/7`
+- Domain eksak, seperti `api.example.com`
+- Subdomain wildcard satu level, seperti `*.example.com`
+
+Gunakan `,` untuk memisahkan beberapa target:
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+Jika domain dikonfigurasi dalam whitelist, pemeriksaan whitelist menggunakan host pada URL request. Dengan kata lain, setelah `internal.example.com` dikonfigurasi, target tersebut dianggap diizinkan secara eksplisit meskipun domain resolve ke `127.0.0.1` atau alamat private.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

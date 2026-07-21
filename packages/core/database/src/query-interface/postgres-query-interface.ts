@@ -110,31 +110,36 @@ export default class PostgresQueryInterface extends QueryInterface {
   async listViews(options?: { schema?: string }) {
     const targetSchema = options?.schema || this.db.options?.schema || 'public';
 
-    const sql = targetSchema
-      ? `
+    const sql = `
       SELECT viewname as name, definition, schemaname as schema
       FROM pg_views
-      WHERE schemaname = '${targetSchema}'
-      ORDER BY viewname;
-    `
-      : `
-      SELECT viewname as name, definition, schemaname as schema
-      FROM pg_views
-      WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+      WHERE schemaname = :targetSchema
       ORDER BY viewname;
     `;
 
-    return await this.db.sequelize.query(sql, { type: 'SELECT' });
+    return await this.db.sequelize.query(sql, {
+      replacements: {
+        targetSchema,
+      },
+      type: 'SELECT',
+    });
   }
 
-  async viewDef(viewName: string) {
-    const [schema, name] = viewName.split('.');
+  async viewDef(options: { viewName: string; schema?: string }) {
+    const { viewName } = options;
+    const schema = options.schema || this.db.options.schema || 'public';
 
     const viewDefQuery = await this.db.sequelize.query(
       `
-    select pg_get_viewdef(format('%I.%I', '${schema}', '${name}')::regclass, true) as definition
+    select pg_get_viewdef(format('%I.%I', :schema, :viewName)::regclass, true) as definition
     `,
-      { type: 'SELECT' },
+      {
+        replacements: {
+          schema,
+          viewName,
+        },
+        type: 'SELECT',
+      },
     );
 
     return lodash.trim(viewDefQuery[0]['definition']);
@@ -146,28 +151,35 @@ export default class PostgresQueryInterface extends QueryInterface {
     });
   }
 
-  async viewColumnUsage(options): Promise<{
+  async viewColumnUsage(options: { viewName: string; schema?: string }): Promise<{
     [view_column_name: string]: {
       column_name: string;
       table_name: string;
       table_schema?: string;
     };
   }> {
-    const { viewName, schema = 'public' } = options;
+    const { viewName } = options;
+    const schema = options.schema || this.db.options.schema || 'public';
     const sql = `
       SELECT *
       FROM information_schema.view_column_usage
-      WHERE view_schema = '${schema}'
-        AND view_name = '${viewName}';
+      WHERE view_schema = :schema
+        AND view_name = :viewName;
     `;
 
-    const columnUsages = (await this.db.sequelize.query(sql, { type: 'SELECT' })) as Array<{
+    const columnUsages = (await this.db.sequelize.query(sql, {
+      replacements: {
+        schema,
+        viewName,
+      },
+      type: 'SELECT',
+    })) as Array<{
       column_name: string;
       table_name: string;
       table_schema: string;
     }>;
 
-    const def = await this.viewDef(`${schema}.${viewName}`);
+    const def = await this.viewDef({ schema, viewName });
 
     try {
       const { ast } = this.parseSQL(def);

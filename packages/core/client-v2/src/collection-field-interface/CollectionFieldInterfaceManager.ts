@@ -31,6 +31,7 @@ interface FieldInterfaceLike {
   title?: ReactNode;
   group?: string;
   order?: number;
+  creatable?: boolean;
   isAssociation?: boolean;
   supportDataSourceType?: string[];
   notSupportDataSourceType?: string[];

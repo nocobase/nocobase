@@ -9,7 +9,6 @@
 
 import { type FlowEngine, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { deviceType } from 'react-device-detect';
 import { useParams } from 'react-router-dom';
 import { useApp } from '../../hooks/useApp';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
@@ -19,6 +18,7 @@ import { getLayoutModel, type BaseLayoutModel } from '../admin-shell/BaseLayoutM
 import { useLayoutRoutePage } from '../admin-shell/useLayoutRoutePage';
 import { AppNotFound } from '../../components';
 import { useKeepAlive } from '../../components/KeepAlive';
+import { registerDeviceTypeContext } from '../internal/registerDeviceTypeContext';
 
 type FlowRouteGuardState = {
   pending: boolean;
@@ -94,31 +94,9 @@ const BridgeFlowRoute = ({
   const layoutContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    flowEngine.context.defineProperty('deviceType', {
-      get: () => (deviceType === 'browser' ? 'computer' : deviceType),
-      cache: false,
-      meta: {
-        type: 'string',
-        title: flowEngine.translate('Current device type'),
-        interface: 'select',
-        uiSchema: {
-          enum: [
-            { label: flowEngine.translate('Computer'), value: 'computer' },
-            { label: flowEngine.translate('Mobile'), value: 'mobile' },
-            { label: flowEngine.translate('Tablet'), value: 'tablet' },
-            { label: flowEngine.translate('SmartTv'), value: 'smarttv' },
-            { label: flowEngine.translate('Console'), value: 'console' },
-            { label: flowEngine.translate('Wearable'), value: 'wearable' },
-            { label: flowEngine.translate('Embedded'), value: 'embedded' },
-          ],
-          'x-component': 'Select',
-        },
-      },
-      info: {
-        description: 'Current device type (computer/mobile/tablet/...).',
-        detail: 'string',
-      },
-    });
+    if (!flowEngine.context.getPropertyOptions('deviceType')) {
+      registerDeviceTypeContext(flowEngine);
+    }
   }, [flowEngine]);
 
   useLayoutRoutePage({
@@ -136,8 +114,8 @@ const BridgeFlowRoute = ({
 /**
  * 管理后台动态页面路由组件。
  *
- * 负责读取当前路由页面 UID，补充运行时设备变量，
- * 并把页面生命周期桥接到 AdminLayout host model。
+ * 负责读取当前路由页面 UID，并把页面生命周期桥接到 AdminLayout host model。
+ * 设备变量通常由 PluginFlowEngine 共享初始化提供；独立渲染时会在挂载后补充注册。
  *
  * @example
  * ```tsx

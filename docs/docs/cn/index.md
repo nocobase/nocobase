@@ -28,7 +28,7 @@ features:
         link: /ai/install-nocobase-app
       - title: 教程
         details: 从零开始，跟着教程一步步搭建真实项目。
-        link: /tutorials/v2/
+        link: /tutorials/
 
   - title: AI
     details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。

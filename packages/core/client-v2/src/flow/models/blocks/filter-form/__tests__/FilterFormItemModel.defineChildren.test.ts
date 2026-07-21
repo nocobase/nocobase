@@ -33,6 +33,42 @@ class DummyCollectionBlockModel extends CollectionBlockModel {
 }
 
 describe('FilterFormItemModel defineChildren association fields', () => {
+  it('hides default operator setting for association filter fields', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel,
+    });
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'association-filter-item-settings',
+      use: 'FilterFormItemModel',
+    });
+
+    const defaultOperatorStep = filterItem.getFlow('filterFormItemSettings')?.steps?.defaultOperator as {
+      hideInSettings?: (ctx: {
+        collectionField?: unknown;
+        model?: {
+          subModels?: {
+            field?: {
+              context?: {
+                collectionField?: unknown;
+              };
+            };
+          };
+        };
+      }) => boolean;
+    };
+    expect(defaultOperatorStep?.hideInSettings?.({ collectionField: { isAssociationField: () => true } })).toBe(true);
+    expect(
+      defaultOperatorStep?.hideInSettings?.({
+        model: { subModels: { field: { context: { collectionField: { target: 'departments' } } } } },
+      }),
+    ).toBe(true);
+    expect(defaultOperatorStep?.hideInSettings?.({ collectionField: { interface: 'input', type: 'string' } })).toBe(
+      false,
+    );
+  });
+
   it('groups association target fields and supports recursive paths', async () => {
     const engine = new FlowEngine();
     engine.registerModels({

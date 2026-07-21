@@ -24,6 +24,37 @@ const MANAGED_APP_PRODUCTION_ENV = {
   NODE_ENV: 'production',
 };
 
+async function createNpmSourceProject(
+  packageJson: Record<string, unknown>,
+  options?: { devtoolsInstalled?: boolean },
+): Promise<string> {
+  const actualFsp = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
+  const projectRoot = await actualFsp.mkdtemp(path.join(os.tmpdir(), 'nb-source-dev-'));
+  await actualFsp.writeFile(
+    path.join(projectRoot, 'package.json'),
+    `${JSON.stringify(packageJson, null, 2)}\n`,
+    'utf-8',
+  );
+
+  if (options?.devtoolsInstalled) {
+    const devtoolsDir = path.join(projectRoot, 'node_modules', '@nocobase', 'devtools');
+    await actualFsp.mkdir(devtoolsDir, { recursive: true });
+    await actualFsp.writeFile(
+      path.join(devtoolsDir, 'package.json'),
+      `${JSON.stringify({ name: '@nocobase/devtools', version: '2.1.10' }, null, 2)}\n`,
+      'utf-8',
+    );
+  }
+
+  return projectRoot;
+}
+
+async function readProjectPackageJson(projectRoot: string): Promise<Record<string, unknown>> {
+  const actualFsp = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
+  const content = await actualFsp.readFile(path.join(projectRoot, 'package.json'), 'utf-8');
+  return JSON.parse(content) as Record<string, unknown>;
+}
+
 const mocks = vi.hoisted(() => ({
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) =>
     envName
@@ -1533,8 +1564,6 @@ test('start recreates docker app containers through docker run', async () => {
       '-d',
       '--name',
       'nb-demo-docker-local-app',
-      '--restart',
-      'always',
       '--network',
       'nb-demo',
       '-p',
@@ -1592,6 +1621,49 @@ test('start recreates docker app containers through docker run', async () => {
       },
     ],
   ]);
+});
+
+test('start maps no-nginx docker app containers to the app port inside the container', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+        appKey: 'app-key-123',
+        timezone: 'Asia/Shanghai',
+        dbDialect: 'postgres',
+        dbHost: 'nb-demo-docker-local-postgres',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'next-full-no-nginx',
+        storagePath: './docker-local/storage',
+      },
+      appPort: 13000,
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      verbose: true,
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  const dockerRunCall = mocks.run.mock.calls.find(
+    ([bin, args]) => bin === 'docker' && Array.isArray(args) && args[0] === 'run',
+  );
+  expect(dockerRunCall?.[1]).toContain('13000:13000');
+  expect(dockerRunCall?.[1]).not.toContain('13000:80');
 });
 
 test('start enables NOCOBASE_EXTRACT_CLIENT_ASSETS for docker envs by default', async () => {
@@ -2177,10 +2249,7 @@ test('restart forwards app restart hook command for saved hook scripts', async (
   expect(runCommand.mock.calls).toEqual([
     ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']],
     ['app:stop', ['--env', 'local']],
-    [
-      'app:start',
-      ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins', '--hook-command', 'app:restart'],
-    ],
+    ['app:start', ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins', '--hook-command', 'app:restart']],
   ]);
 });
 
@@ -2759,6 +2828,9 @@ test('env info shows grouped app details with secrets masked by default', async 
 
   await EnvInfo.prototype.run.call(command);
 
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('Env');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('name');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('app1');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('App');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('sourcePath');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('/tmp/local-app');
@@ -2816,6 +2888,7 @@ test('env info supports the deprecated --env alias with grouped json output', as
 
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toEqual({
     ok: true,
+    name: 'remote',
     kind: 'http',
     env: 'remote',
     app: {
@@ -2892,6 +2965,7 @@ test('env info derives app url from api base urls with public paths and subapps'
 
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toMatchObject({
     ok: true,
+    name: 'remote',
     kind: 'http',
     env: 'remote',
     app: {
@@ -3049,6 +3123,7 @@ test('env info supports positional env name and shows grouped details', async ()
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['remote']]);
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toMatchObject({
     ok: true,
+    name: 'remote',
     kind: 'http',
     env: 'remote',
     api: {
@@ -3741,8 +3816,6 @@ test('test recreates the built-in test database before running tests', async () 
         '-d',
         '--name',
         'nb-app2-test-postgres',
-        '--restart',
-        'always',
         '--network',
         'nb-app2',
         '-e',
@@ -5838,7 +5911,7 @@ test('pm enable keeps API fallback for http envs and forwards the resolved env',
   }
 });
 
-test('dev runs local npm/git source envs with saved env settings', async () => {
+test('dev runs local npm/git source envs with a generated port when --port is omitted', async () => {
   const { default: Dev } = await import('../commands/source/dev.js');
   const runtime = {
     kind: 'local',
@@ -5874,19 +5947,32 @@ test('dev runs local npm/git source envs with saved env settings', async () => {
     [runtime, ['postinstall'], { stdio: 'inherit' }],
     [
       runtime,
-      ['dev', '--rsbuild', '--db-sync', '--port', '13000', '--client', '--inspect', '9229'],
+      ['dev', '--rsbuild', '--db-sync', '--port', '5544', '--client', '--inspect', '9229'],
       { stdio: 'inherit' },
     ],
   ]);
+  expect(mocks.findAvailableTcpPort.mock.calls.length).toBe(1);
+  expect(mocks.run.mock.calls.length).toBe(0);
 });
 
 test('dev uses an explicit port instead of the saved app port', async () => {
   const { default: Dev } = await import('../commands/source/dev.js');
+  const projectRoot = await createNpmSourceProject(
+    {
+      dependencies: {
+        '@nocobase/app': '2.1.10',
+      },
+      devDependencies: {
+        '@nocobase/devtools': '2.1.10',
+      },
+    },
+    { devtoolsInstalled: true },
+  );
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'dev',
     source: 'npm',
-    projectRoot: '/tmp/nocobase',
+    projectRoot,
     env: {
       appPort: 13000,
       envVars: {},
@@ -5905,6 +5991,140 @@ test('dev uses an explicit port instead of the saved app port', async () => {
 
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['dev', '--rsbuild', '--port', '12000', '--server']);
+  expect(mocks.findAvailableTcpPort.mock.calls.length).toBe(0);
+  expect(mocks.run.mock.calls.length).toBe(0);
+});
+
+test('dev adds devtools and installs dependencies for npm source envs', async () => {
+  const { default: Dev } = await import('../commands/source/dev.js');
+  const projectRoot = await createNpmSourceProject({
+    dependencies: {
+      '@nocobase/app': '2.1.10',
+    },
+  });
+  const runtime = {
+    kind: 'local',
+    envName: 'dev',
+    source: 'npm',
+    projectRoot,
+    env: {
+      appPort: 13000,
+      envVars: {},
+      config: {
+        npmRegistry: 'https://registry.npmmirror.com',
+      },
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'dev',
+      port: '12000',
+    },
+  });
+
+  await Dev.prototype.run.call(command);
+
+  const packageJson = await readProjectPackageJson(projectRoot);
+  expect(packageJson.devDependencies).toEqual({
+    '@nocobase/devtools': '2.1.10',
+  });
+  expect(mocks.run.mock.calls).toEqual([
+    [
+      'yarn',
+      ['install'],
+      {
+        cwd: projectRoot,
+        env: {
+          npm_config_registry: 'https://registry.npmmirror.com',
+        },
+        errorName: 'yarn install',
+        stdio: 'inherit',
+      },
+    ],
+  ]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['dev', '--rsbuild', '--port', '12000']);
+});
+
+test('dev installs dependencies when npm source devtools is declared but missing from node_modules', async () => {
+  const { default: Dev } = await import('../commands/source/dev.js');
+  const projectRoot = await createNpmSourceProject({
+    dependencies: {
+      '@nocobase/app': '2.1.10',
+    },
+    devDependencies: {
+      '@nocobase/devtools': '2.1.9',
+    },
+  });
+  const runtime = {
+    kind: 'local',
+    envName: 'dev',
+    source: 'npm',
+    projectRoot,
+    env: {
+      appPort: 13000,
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'dev',
+      port: '12000',
+    },
+  });
+
+  await Dev.prototype.run.call(command);
+
+  const packageJson = await readProjectPackageJson(projectRoot);
+  expect(packageJson.devDependencies).toEqual({
+    '@nocobase/devtools': '2.1.9',
+  });
+  expect(mocks.run.mock.calls[0]).toEqual([
+    'yarn',
+    ['install'],
+    {
+      cwd: projectRoot,
+      env: undefined,
+      errorName: 'yarn install',
+      stdio: 'inherit',
+    },
+  ]);
+});
+
+test('dev stops when npm source dependency installation fails', async () => {
+  const { default: Dev } = await import('../commands/source/dev.js');
+  const projectRoot = await createNpmSourceProject({
+    dependencies: {
+      '@nocobase/app': '2.1.10',
+    },
+  });
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'dev',
+    source: 'npm',
+    projectRoot,
+    env: {
+      appPort: 13000,
+      envVars: {},
+    },
+  });
+  mocks.run.mockRejectedValueOnce(new Error('install failed'));
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'dev',
+      port: '12000',
+    },
+  });
+
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(
+    /Couldn't start dev mode for "dev".*Couldn't prepare source dev dependencies.*@nocobase\/devtools.*yarn install.*install failed/s,
+  );
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('dev explains when the app is already running on the target port', async () => {
@@ -5930,11 +6150,12 @@ test('dev explains when the app is already running on the target port', async ()
   const command = createCommandHarness({
     flags: {
       env: 'dev',
+      port: '13000',
     },
   });
 
   await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(
-    /NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*nb app stop --env dev.*dev port/s,
+    /NocoBase is already running for "dev" at http:\/\/127\.0\.0\.1:13000\..*Choose another dev port.*nb app stop --env dev/s,
   );
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });

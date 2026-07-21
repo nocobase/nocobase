@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy start"
-description: "Справка по команде nb proxy caddy start: запускает proxy Caddy с текущим driver."
+description: "Справочник по команде nb proxy caddy start: запуск прокси Caddy с текущим драйвером."
 keywords: "nb proxy caddy start,NocoBase CLI,caddy,start"
 ---
 
 # nb proxy caddy start
 
-Запускает proxy Caddy с текущим driver.
+Запускает прокси Caddy с текущим драйвером.
 
 ## Использование
 
@@ -22,12 +22,11 @@ nb proxy caddy start
 
 ## Примечания
 
-- С driver `local` эта команда запускает локальный процесс Caddy
-- С driver `docker` эта команда запускает или создает Docker-контейнер
-- Если proxy уже запущен, команда сообщит об этом
+- С драйвером `local` команда запускает локальный процесс Caddy
+- С драйвером `docker` команда запускает или создаёт Docker-контейнер
+- Если прокси уже запущен, команда сообщит об этом
 
 ## Связанные команды
 
-- [`nb proxy caddy start`](./start.md)
 - [`nb proxy caddy stop`](./stop.md)
 - [`nb proxy caddy status`](./status.md)

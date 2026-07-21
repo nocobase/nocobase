@@ -44,6 +44,8 @@ import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { mimoProviderOptions } from './llm-providers/mimo';
+import { mistralProviderOptions } from './llm-providers/mistral';
+import { orcarouterProviderOptions } from './llm-providers/orcarouter';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -53,6 +55,7 @@ import {
 } from './workflow/nodes/employee';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
+import { appendAIFileAttachmentSource } from './attachments';
 
 type MCPClientModel = Model<{ useUserContext?: boolean }>;
 type TransactionOptions = {
@@ -174,10 +177,12 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
+    this.aiManager.registerLLMProvider('mistral', mistralProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
+    this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
   }
 
   registerTools() {
@@ -213,6 +218,20 @@ export class PluginAIServer extends Plugin {
         await next();
       },
       { before: 'createMiddleware' },
+    );
+
+    this.app.resourceManager.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.action.params.values);
+        }
+        await next();
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.body);
+        }
+      },
+      { after: 'createMiddleware' },
     );
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {

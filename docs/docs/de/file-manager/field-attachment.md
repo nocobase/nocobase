@@ -1,5 +1,11 @@
 # Anlagenfeld
 
+:::warning Hinweis
+
+Das Anhangsfeld wird in einer zukünftigen Version eingestellt. Verwenden Sie für neue Anwendungen oder Anpassungen bestehender Geschäftsprozesse möglichst früh eine benutzerdefinierte Dateitabelle und verwalten Sie zugehörige Dateien über Beziehungsfelder.
+
+:::
+
 ## Einführung
 
 Das System verfügt über einen integrierten Feldtyp „Anhang“, der das Hochladen von Dateien in benutzerdefinierten Sammlungen ermöglicht.

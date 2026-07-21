@@ -44,6 +44,7 @@ import { LLMTestFlight } from './component/LLMTestFlight';
 import { EnabledModelsSelect } from './component/EnabledModelsSelect';
 import { ModelOptionsSettings } from './component/ModelOptionsSettings';
 import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
+import { normalizeLLMServiceFormValues } from './utils';
 
 const useCreateFormProps = () => {
   const form = useMemo(
@@ -97,7 +98,7 @@ const useCreateActionProps = () => {
     type: 'primary',
     async onClick() {
       await form.submit();
-      const values = form.values;
+      const values = normalizeLLMServiceFormValues(form.values);
       await resource.create({
         values,
       });
@@ -124,7 +125,7 @@ const useEditActionProps = () => {
     type: 'primary',
     async onClick() {
       await form.submit();
-      const values = form.values;
+      const values = normalizeLLMServiceFormValues(form.values);
       await resource.update({
         values,
         filterByTk: values[filterTk],
@@ -148,6 +149,8 @@ const providerDescriptions: Record<string, string> = {
   xai: 'Grok models by xAI',
   ollama: 'Local models',
   mimo: 'Xiaomi MIMO',
+  mistral: 'Mistral models',
+  orcarouter: 'OrcaRouter (model routing gateway)',
 };
 
 const providerSortOrder: string[] = [
@@ -157,6 +160,8 @@ const providerSortOrder: string[] = [
   'deepseek',
   'dashscope',
   'kimi',
+  'mistral',
+  'orcarouter',
   'openai-completions',
   'ollama',
 ];

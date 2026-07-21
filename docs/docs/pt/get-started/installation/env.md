@@ -348,15 +348,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Lista de permissões de destinos para requisições HTTP de saída iniciadas pelo servidor, usada para prevenir ataques SSRF (Server-Side Request Forgery). Aceita uma lista separada por vírgulas de IPs exatos, intervalos CIDR, nomes de host exatos e subdomínios curinga de um único nível.
+Lista de permissões de destinos para requisições HTTP de saída iniciadas pelo servidor NocoBase. Aceita uma lista separada por vírgulas de IPs exatos, intervalos CIDR, nomes de host exatos e subdomínios curinga de um único nível.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Aplica-se a**: Nós de "Requisição HTTP" em workflows e botões de ação de requisição personalizada. Requisições com caminho relativo (chamadas à própria API do NocoBase) não são afetadas.
+**Aplica-se a**: Nós de "Requisição HTTP" em workflows, botões de ação de requisição personalizada, serviços AI e outras requisições do lado do servidor. Requisições com caminho relativo (chamadas à própria API do NocoBase) não são afetadas.
 
-**Sem configuração**: Todas as requisições `http`/`https` de saída são permitidas (comportamento existente). **Configurado**: Apenas requisições cujo host corresponda a uma entrada da lista de permissões são permitidas; requisições sem correspondência geram um erro.
+**Sem configuração**: Todas as requisições `http` / `https` de saída continuam permitidas para manter o comportamento existente. No entanto, se o destino for um endereço loopback, privado, link-local ou metadata, ou se um domínio resolver para um desses endereços, o servidor registra um warning nos logs.
+
+**Configurado**: A requisição inicial e cada destino de redirecionamento devem corresponder à lista de permissões. Se não houver correspondência, o NocoBase gera um erro antes de enviar a próxima requisição. Versões futuras podem tornar o comportamento padrão mais restrito. Se sua implantação precisar acessar serviços internos, configure uma lista de permissões explícita com antecedência.
 
 Formatos suportados:
 
@@ -364,8 +366,16 @@ Formatos suportados:
 | --- | --- | --- |
 | IPv4 exato | `1.2.3.4` | Apenas esse IP |
 | IPv4 CIDR | `10.0.0.0/8` | Todos os IPs na sub-rede |
+| IPv6 exato | `::1` | Apenas esse IP |
+| IPv6 CIDR | `fc00::/7` | Todos os IPs na sub-rede |
 | Nome de host exato | `api.example.com` | Apenas esse nome de host |
 | Subdomínio curinga | `*.example.com` | Um nível de subdomínio, ex. `foo.example.com`; **não** corresponde a `example.com` ou `a.b.example.com` |
+
+:::warning Note
+
+Se um domínio for configurado na lista de permissões, a verificação usa o host na URL da requisição. Em outras palavras, depois que `internal.example.com` for configurado, ele será tratado como explicitamente permitido mesmo que o domínio resolva para `127.0.0.1` ou para um endereço privado.
+
+:::
 
 ## Variáveis de Ambiente Experimentais
 

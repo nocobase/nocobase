@@ -9,7 +9,7 @@
 
 import { FlowEngineContext } from '../flowContext';
 import { define, observable } from '../reactive';
-import { ViewParam as SharedViewParam } from '../utils';
+import { encodeOpenViewRouteState, ViewParam as SharedViewParam } from '../utils';
 
 type ViewParams = Omit<SharedViewParam, 'viewUid'> & { viewUid?: string };
 
@@ -78,6 +78,11 @@ export function generatePathnameFromViewParams(
 
     // 添加视图 UID
     segments.push(viewParam.viewUid);
+
+    const openViewRouteStateToken = encodeOpenViewRouteState(viewParam.viewUid, viewParam.openViewRouteState);
+    if (openViewRouteStateToken) {
+      segments.push('opts', openViewRouteStateToken);
+    }
 
     // 添加参数
     if (viewParam.tabUid) {

@@ -13,6 +13,8 @@ const GlobalStyle = createGlobalStyle`
   .rbc-overlay {
     position: absolute;
     z-index: 50;
+    max-height: ${({ theme }) => `min(360px, calc(100vh - ${theme.marginXL * 2}px))`};
+    overflow-y: auto;
     margin-top: ${({ theme }) => `${theme.marginXXS}px`};
     border-radius: ${({ theme }) => `${theme.borderRadius}px`};
     background-color: ${({ theme }) => theme.colorBgElevated};

@@ -205,12 +205,6 @@ test('install syncs oauth env connection after the app becomes ready', async () 
   const saveInstalledEnv = vi.fn(async () => undefined);
   const waitForAppHealthCheck = vi.fn(async () => undefined);
   const downloadManagedSource = vi.fn(async () => undefined);
-  const installDockerApp = vi.fn(async () => ({
-    containerName: 'nb-chen-app1-app',
-    appPort: '13080',
-    appKey: 'app-key',
-    timeZone: 'Asia/Shanghai',
-  }));
   const runCommand = vi.fn(async () => undefined);
   const collectPromptResults = vi.fn(async () => ({
     envName: 'app1',
@@ -244,34 +238,27 @@ test('install syncs oauth env connection after the app becomes ready', async () 
     saveInstalledEnv,
     waitForAppHealthCheck,
     downloadManagedSource,
-    installDockerApp,
     commandStdio: vi.fn(() => 'ignore'),
     config: { runCommand },
   });
 
   await Install.prototype.run.call(command);
 
-  expect(waitForAppHealthCheck).toHaveBeenCalledTimes(1);
+  expect(waitForAppHealthCheck).not.toHaveBeenCalled();
   expect(runCommand.mock.calls).toEqual([
+    ['app:start', ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init']],
     ['env:auth', ['app1']],
     ['env:update', ['app1']],
   ]);
 });
 
-test('install prints the resolved app url when the app becomes ready', async () => {
+test('install saves the resolved app url before delegating startup', async () => {
   const { default: Install } = await import('../commands/install.js');
 
   await setCliConfigValue('default-api-host', '192.168.1.10');
 
-  const saveInstalledEnv = vi.fn(async () => undefined);
   const waitForAppHealthCheck = vi.fn(async () => undefined);
   const downloadManagedSource = vi.fn(async () => undefined);
-  const installDockerApp = vi.fn(async () => ({
-    containerName: 'nb-chen-app1-app',
-    appPort: '13080',
-    appKey: 'app-key',
-    timeZone: 'Asia/Shanghai',
-  }));
   const runCommand = vi.fn(async () => undefined);
   const collectPromptResults = vi.fn(async () => ({
     envName: 'app1',
@@ -301,17 +288,22 @@ test('install prints the resolved app url when the app becomes ready', async () 
       },
     })),
     collectPromptResults,
-    saveInstalledEnv,
     waitForAppHealthCheck,
     downloadManagedSource,
-    installDockerApp,
     commandStdio: vi.fn(() => 'ignore'),
     config: { runCommand },
   });
 
   await Install.prototype.run.call(command);
 
-  expect(mocks.printInfo).toHaveBeenCalledWith('NocoBase is ready at http://192.168.1.10:13080/');
+  expect(mocks.upsertEnv.mock.calls.at(-1)?.[1]).toMatchObject({
+    apiBaseUrl: 'http://192.168.1.10:13080/api',
+    appPort: '13080',
+  });
+  expect(runCommand.mock.calls[0]).toEqual([
+    'app:start',
+    ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'],
+  ]);
 });
 
 test('install syncs token env connection after the app becomes ready without oauth login', async () => {
@@ -320,11 +312,6 @@ test('install syncs token env connection after the app becomes ready without oau
   const saveInstalledEnv = vi.fn(async () => undefined);
   const waitForAppHealthCheck = vi.fn(async () => undefined);
   const downloadLocalApp = vi.fn(async () => '/tmp/app1/source');
-  const startLocalApp = vi.fn(async () => ({
-    appPort: '13080',
-    appKey: 'app-key',
-    timeZone: 'Asia/Shanghai',
-  }));
   const runCommand = vi.fn(async () => undefined);
   const collectPromptResults = vi.fn(async () => ({
     envName: 'app1',
@@ -359,14 +346,16 @@ test('install syncs token env connection after the app becomes ready without oau
     saveInstalledEnv,
     waitForAppHealthCheck,
     downloadLocalApp,
-    startLocalApp,
     commandStdio: vi.fn(() => 'ignore'),
     config: { runCommand },
   });
 
   await Install.prototype.run.call(command);
 
-  expect(runCommand.mock.calls).toEqual([['env:update', ['app1']]]);
+  expect(runCommand.mock.calls).toEqual([
+    ['app:start', ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init']],
+    ['env:update', ['app1']],
+  ]);
   expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('app1', { scope: 'global' });
 });
 
@@ -675,12 +664,7 @@ test('install reuses saved appKey and timezone before resuming docker startup', 
   const saveInstalledEnv = vi.fn(async () => undefined);
   const waitForAppHealthCheck = vi.fn(async () => undefined);
   const downloadManagedSource = vi.fn(async () => undefined);
-  const installDockerApp = vi.fn(async () => ({
-    containerName: 'nb-chen-app1-app',
-    appPort: '13080',
-    appKey: 'saved-app-key',
-    timeZone: 'Asia/Shanghai',
-  }));
+  const runCommand = vi.fn(async () => undefined);
 
   const command = Object.assign(Object.create(Install.prototype), {
     parse: vi.fn(async () => ({
@@ -712,17 +696,20 @@ test('install reuses saved appKey and timezone before resuming docker startup', 
     saveInstalledEnv,
     waitForAppHealthCheck,
     downloadManagedSource,
-    installDockerApp,
     commandStdio: vi.fn(() => 'ignore'),
-    config: { runCommand: vi.fn(async () => undefined) },
+    config: { runCommand },
   });
 
   await Install.prototype.run.call(command);
 
-  expect(installDockerApp.mock.calls[0]?.[0].appResults).toMatchObject({
+  expect(saveInstalledEnv.mock.calls.at(-1)?.[0].appResults).toMatchObject({
     appKey: 'saved-app-key',
     timeZone: 'Asia/Shanghai',
   });
+  expect(runCommand.mock.calls[0]).toEqual([
+    'app:start',
+    ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'],
+  ]);
 });
 
 test('install --resume keeps saved basic auth credentials editable in prompts', async () => {

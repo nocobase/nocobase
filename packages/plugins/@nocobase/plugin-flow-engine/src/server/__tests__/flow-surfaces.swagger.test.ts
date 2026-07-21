@@ -394,6 +394,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
+    expect(schemas.FlowSurfaceConfigureOption.properties.default).toEqual({});
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.rules.description).toContain('Pass `[]` to clear');
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.expectedFingerprint.description).toContain(
       '`getReactionMeta.capabilities[].fingerprint`',
@@ -1401,6 +1402,7 @@ describe('flowSurfaces swagger', () => {
       workflowKey: 'employee_status_changed',
       context: 'department',
     });
+    expect(configureRequest.examples.jsBlockSettings.value.changes.showBlockCard).toBe(true);
     expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
     expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('ctx.render');
