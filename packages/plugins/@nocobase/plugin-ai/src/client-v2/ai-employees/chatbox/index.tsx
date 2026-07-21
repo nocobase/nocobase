@@ -8,6 +8,7 @@
  */
 
 export { Conversations } from './components/Conversations';
+export { ChatBoxUnreadBadge } from './components/ChatBoxUnreadBadge';
 export { Messages } from './components/Messages';
 export { useChat } from './hooks/useChat';
 export { useChatBoxActions } from './hooks/useChatBoxActions';

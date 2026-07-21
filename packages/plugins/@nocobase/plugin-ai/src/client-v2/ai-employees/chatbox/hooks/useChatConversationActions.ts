@@ -19,8 +19,6 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
   const api = app.apiClient;
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
   const { chatConversationModel, workflowTaskModel } = resolvedRuntime;
-  const keyword = chatConversationModel.keyword;
-  const unreadCount = chatConversationModel.unreadCount;
 
   const conversationsService = useRequest<
     {
@@ -75,8 +73,8 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
     if (conversationsService.loading || (meta && meta.page >= meta.totalPage)) {
       return;
     }
-    await conversationsService.runAsync(meta?.page ? meta.page + 1 : 1, keyword);
-  }, [keyword]);
+    await conversationsService.runAsync(meta?.page ? meta.page + 1 : 1, chatConversationModel.keyword);
+  }, [chatConversationModel]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
   const loadUnreadCounts = useCallback(async () => {
@@ -97,6 +95,8 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
     lastConversationRef,
     runSearch,
     refresh,
-    unreadCount,
+    get unreadCount() {
+      return chatConversationModel.unreadCount;
+    },
   };
 };

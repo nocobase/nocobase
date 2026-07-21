@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Badge, Button, Divider, Layout, theme, Tooltip } from 'antd';
+import { Button, Divider, Layout, theme, Tooltip } from 'antd';
 import {
   BugOutlined,
   CloseOutlined,
@@ -27,10 +27,9 @@ import { Sender } from './Sender';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatBoxEffect } from '../hooks/useChatBoxEffect';
-import { useChatConversationActions } from '../hooks/useChatConversationActions';
-import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { observer } from '@nocobase/flow-engine';
 import { useChatBoxRuntime } from '../stores/runtime';
+import { ChatBoxUnreadBadge } from './ChatBoxUnreadBadge';
 
 const { Header, Footer, Sider } = Layout;
 
@@ -46,9 +45,6 @@ export const ChatBox: React.FC<{
   const currentEmployee = chatBoxModel.currentEmployee;
   const showDebugPanel = chatBoxModel.showDebugPanel;
   const { startNewConversation } = useChatBoxActions();
-  const { unreadCount: unreadConversationCount } = useChatConversationActions();
-  const { unreadCount: unreadWorkflowTaskCount } = useWorkflowTasks();
-  const unreadCount = unreadConversationCount + unreadWorkflowTaskCount;
   const { isMobileLayout } = useMobileLayout();
   useChatBoxEffect();
 
@@ -131,7 +127,7 @@ export const ChatBox: React.FC<{
         >
           <div>
             <Tooltip title={t('Conversation list')}>
-              <Badge dot={unreadCount > 0} offset={[-4, 4]}>
+              <ChatBoxUnreadBadge offset={[-4, 4]}>
                 <Button
                   aria-label={t('Conversation list')}
                   icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
@@ -141,7 +137,7 @@ export const ChatBox: React.FC<{
                     chatBoxModel.setShowConversations(!showConversations);
                   }}
                 />
-              </Badge>
+              </ChatBoxUnreadBadge>
             </Tooltip>
           </div>
           <div>

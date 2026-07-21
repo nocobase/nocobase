@@ -19,12 +19,13 @@ import {
   type FlowModelContext,
   type FlowModel,
 } from '@nocobase/flow-engine';
-import { Badge, Empty, Button, Flex, Layout, Tooltip, theme, Typography } from 'antd';
+import { Empty, Button, Flex, Layout, Tooltip, theme, Typography } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useT } from '../../../locale';
 import {
   Conversations,
+  ChatBoxUnreadBadge,
   Messages,
   registerMountedChatBox,
   useChat,
@@ -262,7 +263,6 @@ export const AIChatBoxView: React.FC = observer(() => {
     return renderAIChatBoxScope(operation === 'create' ? conversationCreateScope : conversationScope, ctx);
   };
   const currentConversation = runtime.chatConversationModel.currentConversation;
-  const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
   const chat = useChat(currentConversation, runtime);
   const { clear, startNewConversation, triggerTask } = useChatBoxActions(runtime);
   const { refresh: refreshConversations } = useChatConversationActions(runtime);
@@ -384,7 +384,7 @@ export const AIChatBoxView: React.FC = observer(() => {
         >
           <Flex align="center" gap={0}>
             <Tooltip title={t('Conversation list')}>
-              <Badge dot={hasUnreadConversations} offset={[-4, 4]}>
+              <ChatBoxUnreadBadge offset={[-4, 4]}>
                 <Button
                   aria-label={t('Conversation list')}
                   icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
@@ -395,7 +395,7 @@ export const AIChatBoxView: React.FC = observer(() => {
                     setShowConversations(!showConversations);
                   }}
                 />
-              </Badge>
+              </ChatBoxUnreadBadge>
             </Tooltip>
           </Flex>
           <Flex className={headerActionsClassName} align="center" gap={6}>
