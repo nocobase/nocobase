@@ -841,15 +841,15 @@ ctx.libs.antd.NotAComponent;
     const code = `ctx.logger.info('${'workspace-content-'.repeat(100)}');`;
     const session = createMainThreadTypeScriptProjectSession();
     sessions.add(session);
-    const retainedState = session as unknown as { latestStateKey: string };
+    const retainedState = session as unknown as { latestStateToken: unknown };
 
     await session.getDiagnostics(baseProject(code), code);
-    expect(retainedState.latestStateKey.length).toBeGreaterThan(code.length);
+    expect(retainedState.latestStateToken).not.toBeNull();
 
     session.dispose();
     await session.whenDisposed();
 
-    expect(retainedState.latestStateKey).toBe('');
+    expect(retainedState.latestStateToken).toBeNull();
     expect(session.getDebugState()).toEqual(
       expect.objectContaining({ allFileNames: [], disposed: true, rootFileNames: [], structureKey: undefined }),
     );

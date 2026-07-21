@@ -203,6 +203,7 @@ class InMemoryTypeScriptWorker {
               this.runtime.sync(
                 request.projectId,
                 request.documentVersion,
+                request.targetRevision,
                 request.snapshot,
                 this.loadPack(request.projectId, request.documentVersion),
               );
@@ -210,6 +211,8 @@ class InMemoryTypeScriptWorker {
               this.runtime.update(
                 request.projectId,
                 request.documentVersion,
+                request.baseRevision as number,
+                request.targetRevision,
                 request.update,
                 this.loadPack(request.projectId, request.documentVersion),
               );
@@ -245,6 +248,82 @@ class InMemoryTypeScriptWorker {
         }
       })
       .catch(fail);
+  }
+}
+
+class ProtocolTestWorker {
+  private readonly errorListeners: ErrorListener[] = [];
+  private readonly messageListeners: MessageListener[] = [];
+  private heldSyncResponses: TypeScriptWorkerResponse[] = [];
+  holdSync = false;
+  readonly messages: TypeScriptWorkerIncomingMessage[] = [];
+  terminateCount = 0;
+
+  constructor(private readonly responseProtocolVersion = RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION) {}
+
+  addEventListener(type: 'error' | 'message', listener: ErrorListener | MessageListener): void {
+    if (type === 'error') this.errorListeners.push(listener as ErrorListener);
+    else this.messageListeners.push(listener as MessageListener);
+  }
+
+  postMessage(message: TypeScriptWorkerIncomingMessage): void {
+    this.messages.push(message);
+    if (message.kind === 'load-pack-result') return;
+    const response = {
+      documentVersion: message.documentVersion,
+      projectId: message.projectId,
+      protocolVersion: this.responseProtocolVersion,
+      requestId: message.requestId,
+      ...(message.kind === 'sync'
+        ? { kind: 'synced', result: null }
+        : message.kind === 'diagnostics'
+          ? { kind: 'diagnostics-result', result: [] }
+          : message.kind === 'debug'
+            ? {
+                kind: 'debug-result',
+                result: {
+                  actualLoadIds: [],
+                  allFileNames: [],
+                  cacheHitIds: [],
+                  dependencyFileCount: 0,
+                  disposed: false,
+                  fileVersions: {},
+                  immutableCacheCharacterCount: 0,
+                  immutableFileCount: 0,
+                  immutableSnapshotCreationCount: 0,
+                  languageServiceCreationCount: 0,
+                  packRequestIds: [],
+                  peakDeclarationCharacterCount: 0,
+                  programSourceFileCount: 0,
+                  rootFileNames: [],
+                },
+              }
+            : message.kind === 'completion'
+              ? { kind: 'completion-result', result: null }
+              : message.kind === 'hover'
+                ? { kind: 'hover-result', result: null }
+                : { kind: 'disposed', result: null }),
+    } as TypeScriptWorkerResponse;
+    if (message.kind === 'sync' && this.holdSync) {
+      this.heldSyncResponses.push(response);
+      return;
+    }
+    queueMicrotask(() => this.emit(response));
+  }
+
+  releaseNextSync(): void {
+    const response = this.heldSyncResponses.shift();
+    if (response) this.emit(response);
+  }
+
+  terminate(): void {
+    this.terminateCount += 1;
+  }
+
+  private emit(message: TypeScriptWorkerResponse): void {
+    for (const listener of this.messageListeners) {
+      listener({ data: message } as MessageEvent<TypeScriptWorkerOutgoingMessage>);
+    }
   }
 }
 
@@ -301,13 +380,12 @@ describe('TypeScript worker project session', () => {
     const worker = new InMemoryTypeScriptWorker();
     const workerFactory = vi.fn(() => worker);
     const session = new WorkerBackedTypeScriptProjectSession(workerFactory);
-    const retainedState = session as unknown as { lastSnapshot: unknown; stateKey: string };
+    const retainedState = session as unknown as { acknowledgedState: unknown };
     const code = 'ctx.logger.info("ready");';
     sessions.add(session);
 
     expect(await session.getDiagnostics(project(code), code)).toEqual([]);
-    expect(retainedState.lastSnapshot).not.toBeNull();
-    expect(retainedState.stateKey.length).toBeGreaterThan(code.length);
+    expect(retainedState.acknowledgedState).not.toBeNull();
 
     session.dispose();
     session.dispose();
@@ -315,8 +393,7 @@ describe('TypeScript worker project session', () => {
 
     expect(workerFactory).toHaveBeenCalledTimes(1);
     expect(worker.terminateCount).toBe(1);
-    expect(retainedState.lastSnapshot).toBeNull();
-    expect(retainedState.stateKey).toBe('');
+    expect(retainedState.acknowledgedState).toBeNull();
     expect(await session.getDiagnostics(project(code), code)).toEqual([]);
     expect(workerFactory).toHaveBeenCalledTimes(1);
   });
@@ -514,6 +591,7 @@ void element; void button;
       .map(([message]) => message)
       .filter((message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync');
     expect(syncRequests[0].snapshot?.files[0].content).toBe(firstCode);
+    expect(syncRequests[0]).toEqual(expect.objectContaining({ baseRevision: null, targetRevision: 1 }));
     expect(syncRequests[1].snapshot).toBeUndefined();
     expect(syncRequests[1]).toEqual(
       expect.objectContaining({
@@ -521,8 +599,151 @@ void element; void button;
           fileRemovals: [],
           fileUpserts: [{ content: secondCode, path: 'src/main.ts' }],
         }),
+        baseRevision: 1,
+        targetRevision: 2,
       }),
     );
+  });
+
+  it('does not serialize or resend a warm 10 MiB project and sends only changed file revisions', async () => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const content = 'x'.repeat(50_000);
+    const files = Array.from({ length: 200 }, (_, index) => ({
+      content,
+      path: `src/file-${index}.ts`,
+      revision: index + 1,
+    }));
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: files[0].path,
+      documentRevision: 1,
+      files,
+      projectRevision: 1,
+    };
+
+    for (let index = 0; index < 100; index += 1) {
+      expect(await session.getDiagnostics(currentProject, content)).toEqual([]);
+    }
+    expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(1);
+
+    const changedContent = `export const changed = true;${'y'.repeat(50_000)}`;
+    const changedFiles = files.map((file, index) =>
+      index === 7 ? { ...file, content: changedContent, revision: 201 } : file,
+    );
+    await session.getDiagnostics({ ...currentProject, files: changedFiles, projectRevision: 2 }, content);
+    const changedSync = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    )[1];
+    expect(changedSync.snapshot).toBeUndefined();
+    expect(changedSync.update).toEqual(
+      expect.objectContaining({
+        fileRemovals: [],
+        fileUpserts: [{ content: changedContent, path: 'src/file-7.ts' }],
+      }),
+    );
+    expect(JSON.stringify(changedSync).length).toBeLessThan(100_000);
+
+    await session.getDiagnostics(
+      { ...currentProject, files: changedFiles.filter((file) => file.path !== 'src/file-8.ts'), projectRevision: 3 },
+      content,
+    );
+    const deletedSync = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    )[2];
+    expect(deletedSync.update).toEqual(
+      expect.objectContaining({
+        fileRemovals: ['src/file-8.ts'],
+        fileUpserts: [],
+      }),
+    );
+  });
+
+  it('shares one synchronization ACK for concurrent operations at the same revision', async () => {
+    const worker = new ProtocolTestWorker();
+    worker.holdSync = true;
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const code = 'export const value = 1;';
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'main.ts',
+      documentRevision: 1,
+      files: [{ content: code, path: 'main.ts', revision: 1 }],
+      projectRevision: 1,
+    };
+
+    const diagnostics = session.getDiagnostics(currentProject, code);
+    const hover = session.getHover(currentProject, 5, code);
+    await vi.waitFor(() => expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(1));
+    worker.releaseNextSync();
+
+    await expect(Promise.all([diagnostics, hover])).resolves.toEqual([[], null]);
+    expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(1);
+  });
+
+  it('applies different revisions in ACK order', async () => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const initialFiles = [
+      { content: 'export const a = 0;', path: 'a.ts', revision: 1 },
+      { content: 'export const b = 0;', path: 'b.ts', revision: 2 },
+    ];
+    const initialProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'a.ts',
+      documentRevision: 1,
+      files: initialFiles,
+      projectRevision: 1,
+    };
+    await session.getDiagnostics(initialProject, initialFiles[0].content);
+
+    worker.holdSync = true;
+    const revisionA: CodeEditorTypeScriptProject = {
+      ...initialProject,
+      documentRevision: 2,
+      files: [{ content: 'export const a = 1;', path: 'a.ts', revision: 3 }, initialFiles[1]],
+      projectRevision: 2,
+    };
+    const revisionB: CodeEditorTypeScriptProject = {
+      ...initialProject,
+      documentRevision: 3,
+      files: [initialFiles[0], { content: 'export const b = 2;', path: 'b.ts', revision: 4 }],
+      projectRevision: 3,
+    };
+    const requestA = session.getDiagnostics(revisionA, revisionA.files[0].content);
+    const requestB = session.getHover(revisionB, 5, revisionB.files[0].content);
+
+    await vi.waitFor(() => expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(2));
+    worker.releaseNextSync();
+    await vi.waitFor(() => expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(3));
+    const syncRequests = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(syncRequests[1]).toEqual(expect.objectContaining({ baseRevision: 1, targetRevision: 2 }));
+    expect(syncRequests[2]).toEqual(expect.objectContaining({ baseRevision: 2, targetRevision: 3 }));
+    expect(syncRequests[2].update?.fileUpserts).toEqual([
+      { content: 'export const a = 0;', path: 'a.ts' },
+      { content: 'export const b = 2;', path: 'b.ts' },
+    ]);
+    worker.releaseNextSync();
+    await Promise.all([requestA, requestB]);
+  });
+
+  it('fails deterministically when a cached worker responds with an older protocol', async () => {
+    const workers: ProtocolTestWorker[] = [];
+    const session = new WorkerBackedTypeScriptProjectSession(() => {
+      const worker = new ProtocolTestWorker(RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION - 1);
+      workers.push(worker);
+      return worker;
+    });
+    sessions.add(session);
+    const code = 'export const value = 1;';
+
+    expect(
+      await session.getDiagnostics({ currentFilePath: 'main.ts', files: [{ content: code, path: 'main.ts' }] }, code),
+    ).toEqual([]);
+    expect(workers).toHaveLength(2);
+    expect(workers.every((worker) => worker.terminateCount === 1)).toBe(true);
   });
 
   it('isolates project registries and releases worker-owned state', async () => {

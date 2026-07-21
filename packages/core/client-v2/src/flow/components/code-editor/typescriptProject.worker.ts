@@ -9,6 +9,7 @@
 
 import { TypeScriptWorkerRuntime } from './typescriptWorkerRuntime';
 import {
+  createTypeScriptWorkerProtocolMismatchResponse,
   isTypeScriptWorkerProtocolMessage,
   RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
   type TypeScriptWorkerIncomingMessage,
@@ -69,6 +70,7 @@ async function handleRequest(request: TypeScriptWorkerRequest): Promise<void> {
           runtime.sync(
             request.projectId,
             request.documentVersion,
+            request.targetRevision,
             request.snapshot,
             loadPack(request.projectId, request.documentVersion),
           );
@@ -76,6 +78,8 @@ async function handleRequest(request: TypeScriptWorkerRequest): Promise<void> {
           runtime.update(
             request.projectId,
             request.documentVersion,
+            request.baseRevision as number,
+            request.targetRevision,
             request.update,
             loadPack(request.projectId, request.documentVersion),
           );
@@ -128,7 +132,11 @@ async function handleRequest(request: TypeScriptWorkerRequest): Promise<void> {
 
 self.addEventListener('message', (event: MessageEvent<TypeScriptWorkerIncomingMessage>) => {
   const message = event.data;
-  if (!isTypeScriptWorkerProtocolMessage(message)) return;
+  if (!isTypeScriptWorkerProtocolMessage(message)) {
+    const response = createTypeScriptWorkerProtocolMismatchResponse(message);
+    if (response) self.postMessage(response);
+    return;
+  }
   if (message.kind === 'load-pack-result') {
     const pending = pendingPackLoads.get(message.bridgeRequestId);
     if (!pending) return;

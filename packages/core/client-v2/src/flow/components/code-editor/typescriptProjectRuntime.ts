@@ -189,19 +189,53 @@ function addPackFiles(files: Map<string, TypeScriptVirtualFileInput>, packs: rea
   }
 }
 
-function createRequestStateKey(project: CodeEditorTypeScriptProject, currentFileContent?: string): string {
-  const files = [...(project.files || []), ...(project.declarationFiles || [])]
-    .map((file) => [normalizeProjectPath(file.path), file.content] as const)
-    .sort(([left], [right]) => left.localeCompare(right));
-  return JSON.stringify({
-    compilerOptions: project.compilerOptions || {},
+type RequestStateToken = {
+  compilerOptions: CodeEditorTypeScriptProject['compilerOptions'];
+  currentFileContent?: string;
+  currentFilePath: string;
+  declarationFiles: CodeEditorTypeScriptProject['declarationFiles'];
+  documentRevision?: number;
+  files: CodeEditorTypeScriptProject['files'];
+  projectRevision?: number;
+  rewriteBuiltInAutoImports?: boolean;
+  runJSContext: CodeEditorTypeScriptProject['runJSContext'];
+  typeLibraryIds: CodeEditorTypeScriptProject['typeLibraryIds'];
+  typeLibraryRegistry?: string;
+};
+
+function createRequestStateToken(project: CodeEditorTypeScriptProject, currentFileContent?: string): RequestStateToken {
+  return {
+    compilerOptions: project.compilerOptions,
     currentFileContent,
     currentFilePath: normalizeProjectPath(project.currentFilePath),
-    files,
-    runJSContext: project.runJSContext || {},
-    typeLibraryIds: project.typeLibraryIds || [],
+    declarationFiles: project.declarationFiles,
+    documentRevision: project.documentRevision,
+    files: project.files,
+    projectRevision: project.projectRevision,
+    rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
+    runJSContext: project.runJSContext,
+    typeLibraryIds: project.typeLibraryIds,
     typeLibraryRegistry: project.typeLibraryRegistry?.getCacheKey(),
-  });
+  };
+}
+
+function isSameRequestState(left: RequestStateToken | null, right: RequestStateToken): boolean {
+  return Boolean(
+    left &&
+      left.compilerOptions === right.compilerOptions &&
+      (left.documentRevision !== undefined && right.documentRevision !== undefined
+        ? true
+        : left.currentFileContent === right.currentFileContent) &&
+      left.currentFilePath === right.currentFilePath &&
+      left.declarationFiles === right.declarationFiles &&
+      left.documentRevision === right.documentRevision &&
+      left.files === right.files &&
+      left.projectRevision === right.projectRevision &&
+      left.rewriteBuiltInAutoImports === right.rewriteBuiltInAutoImports &&
+      left.runJSContext === right.runJSContext &&
+      left.typeLibraryIds === right.typeLibraryIds &&
+      left.typeLibraryRegistry === right.typeLibraryRegistry,
+  );
 }
 
 async function prepareProject(
@@ -697,7 +731,7 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
   private languageServiceCreationCount = 0;
   private lastInternalError: CodeEditorTypeScriptProjectInternalError | null = null;
   private latestStateGeneration = 0;
-  private latestStateKey = '';
+  private latestStateToken: RequestStateToken | null = null;
   private pendingRequestCount = 0;
   private projectService: ProjectService | null = null;
   private requestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
@@ -713,7 +747,12 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     this.pendingRequestCount += 1;
     const request = this.beginRequest('completion', project, currentFileContent);
     try {
-      const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
+      const service = await this.prepareService(
+        project,
+        currentFileContent,
+        request.stateGeneration,
+        request.stateChanged,
+      );
       if (!service || !this.isCurrentRequest('completion', request)) return null;
       const result = getCompletionResultFromService(service, position, explicit, project.rewriteBuiltInAutoImports);
       return this.isCurrentRequest('completion', request) ? result : null;
@@ -734,7 +773,12 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     this.pendingRequestCount += 1;
     const request = this.beginRequest('diagnostics', project, currentFileContent);
     try {
-      const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
+      const service = await this.prepareService(
+        project,
+        currentFileContent,
+        request.stateGeneration,
+        request.stateChanged,
+      );
       if (!service || !this.isCurrentRequest('diagnostics', request)) return [];
       const diagnostics = filterIgnoredDiagnostics(project, getDiagnosticsFromService(service));
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
@@ -760,7 +804,12 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     this.pendingRequestCount += 1;
     const request = this.beginRequest('hover', project, currentFileContent);
     try {
-      const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
+      const service = await this.prepareService(
+        project,
+        currentFileContent,
+        request.stateGeneration,
+        request.stateChanged,
+      );
       if (!service || !this.isCurrentRequest('hover', request)) return null;
       const quickInfo = service.service.getQuickInfoAtPosition(service.currentFileName, position);
       if (!quickInfo || !this.isCurrentRequest('hover', request)) return null;
@@ -803,7 +852,7 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     this.projectService?.service.dispose();
     this.projectService = null;
     this.requestIds.clear();
-    this.latestStateKey = '';
+    this.latestStateToken = null;
     this.lastInternalError = null;
     this.latestStateGeneration += 1;
     if (this.pendingRequestCount > 0) {
@@ -828,15 +877,16 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     kind: 'completion' | 'diagnostics' | 'hover',
     project: CodeEditorTypeScriptProject,
     currentFileContent?: string,
-  ): { requestId: number; stateGeneration: number } {
-    const stateKey = createRequestStateKey(project, currentFileContent);
-    if (stateKey !== this.latestStateKey) {
-      this.latestStateKey = stateKey;
+  ): { requestId: number; stateChanged: boolean; stateGeneration: number } {
+    const stateToken = createRequestStateToken(project, currentFileContent);
+    const stateChanged = !isSameRequestState(this.latestStateToken, stateToken);
+    if (stateChanged) {
+      this.latestStateToken = stateToken;
       this.latestStateGeneration += 1;
     }
     const requestId = (this.requestIds.get(kind) || 0) + 1;
     this.requestIds.set(kind, requestId);
-    return { requestId, stateGeneration: this.latestStateGeneration };
+    return { requestId, stateChanged, stateGeneration: this.latestStateGeneration };
   }
 
   private isCurrentRequest(
@@ -854,8 +904,10 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     project: CodeEditorTypeScriptProject,
     currentFileContent: string | undefined,
     stateGeneration: number,
+    stateChanged: boolean,
   ): Promise<ProjectService | null> {
     if (this.disposed) return null;
+    if (!stateChanged && this.projectService) return this.projectService;
     const prepared = await prepareProject(project, currentFileContent);
     if (this.disposed || stateGeneration !== this.latestStateGeneration) return null;
 

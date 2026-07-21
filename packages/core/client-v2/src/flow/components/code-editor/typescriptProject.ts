@@ -20,6 +20,7 @@ import type { TypeScriptWorkerFactory } from './typescriptWorkerProjectSession';
 export interface CodeEditorTypeScriptFile {
   path: string;
   content: string;
+  revision?: number;
 }
 
 export interface CodeEditorTypeScriptProject {
@@ -36,6 +37,8 @@ export interface CodeEditorTypeScriptProject {
   };
   onInternalError?: (error: CodeEditorTypeScriptProjectInternalError) => void;
   rewriteBuiltInAutoImports?: boolean;
+  projectRevision?: number;
+  documentRevision?: number;
 }
 
 export interface CodeEditorTypeScriptProjectRef {

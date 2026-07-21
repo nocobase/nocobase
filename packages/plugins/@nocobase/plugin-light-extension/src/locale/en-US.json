@@ -387,6 +387,7 @@
   "Save version": "Save version",
   "Saved changes": "Saved changes",
   "Saved successfully": "Saved successfully",
+  "Saved successfully; newer local changes remain unsaved": "Saved successfully; newer local changes remain unsaved",
   "Select a file": "Select a file",
   "Select a version": "Select a version",
   "Seq": "Seq",

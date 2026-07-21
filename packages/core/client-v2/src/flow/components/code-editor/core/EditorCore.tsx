@@ -275,6 +275,10 @@ export const EditorCore: React.FC<{
           parent: resolveTooltipParent(editorRef.current),
         }),
         EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            const project = stableTypeScriptProjectRef.current;
+            if (project) project.documentRevision = (project.documentRevision || 0) + 1;
+          }
           if (update.docChanged && !readonlyRef.current) {
             const newValue = update.state.doc.toString();
             try {

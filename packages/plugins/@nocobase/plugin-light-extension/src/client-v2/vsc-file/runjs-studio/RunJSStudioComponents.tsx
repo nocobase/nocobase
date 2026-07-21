@@ -846,6 +846,7 @@ export function CodeTab(props: {
   onRunPreview?: () => void;
   openPaths: string[];
   previewing?: boolean;
+  projectRevision: number;
   readOnly: boolean;
   runJSModelUse?: string;
   runJSGlobalContextType?: string;
@@ -875,6 +876,7 @@ export function CodeTab(props: {
     onRunPreview,
     openPaths,
     previewing,
+    projectRevision,
     readOnly,
     runJSModelUse,
     runJSGlobalContextType,
@@ -903,8 +905,9 @@ export function CodeTab(props: {
         declarationFiles: workspaceTypeScriptContext?.declarationFiles,
         globalContextType: workspaceTypeScriptContext?.globalContextType || runJSGlobalContextType,
         modelUse: runJSModelUse,
+        projectRevision,
       }),
-    [activeFile, runJSGlobalContextType, runJSModelUse, workspaceFiles, workspaceTypeScriptContext],
+    [activeFile, projectRevision, runJSGlobalContextType, runJSModelUse, workspaceFiles, workspaceTypeScriptContext],
   );
   const jsonSchema = useMemo(
     () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),

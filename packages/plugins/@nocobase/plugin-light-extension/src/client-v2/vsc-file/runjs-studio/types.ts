@@ -32,6 +32,7 @@ export interface RunJSWorkspaceFile {
   content: string;
   language?: string;
   mode?: string;
+  revision?: number;
 }
 
 export interface RunJSSourceRepositoryRecord extends VscRepositoryRecord {

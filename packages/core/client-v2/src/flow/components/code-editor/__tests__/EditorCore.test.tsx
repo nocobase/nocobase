@@ -236,6 +236,27 @@ describe('EditorCore', () => {
     await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0), { timeout: 15_000 });
   });
 
+  it('advances the TypeScript document revision for user and external document changes', () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const project = {
+      currentFilePath: 'main.ts',
+      documentRevision: 0,
+      files: [{ content: 'const value = 1;', path: 'main.ts' }],
+    };
+    const typescriptProjectRef = { current: project };
+    const { rerender } = render(
+      <EditorCore typescriptProjectRef={typescriptProjectRef} value="const value = 1;" viewRef={viewRef} />,
+    );
+    const view = viewRef.current;
+    if (!view) throw new Error('EditorView was not initialized');
+
+    view.dispatch({ changes: { from: 14, to: 15, insert: '2' } });
+    expect(project.documentRevision).toBe(1);
+
+    rerender(<EditorCore typescriptProjectRef={typescriptProjectRef} value="const value = 3;" viewRef={viewRef} />);
+    expect(project.documentRevision).toBe(2);
+  });
+
   it('keeps focus when workspace module completions change', () => {
     const fullscreenControl = { isFullscreen: false, toggleFullscreen: vi.fn() };
     const { container, rerender } = render(

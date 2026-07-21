@@ -21,6 +21,7 @@ import type {
   CodeEditorTypeScriptProjectSession,
 } from './typescriptProject';
 import {
+  getTypeScriptWorkerProtocolVersion,
   isTypeScriptWorkerProtocolMessage,
   RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
   type TypeScriptWorkerCompletionEntry,
@@ -68,6 +69,34 @@ type TypeScriptWorkerOperationRequest = Extract<
   { kind: 'completion' | 'diagnostics' | 'hover' }
 >;
 
+type ProjectInputToken = {
+  compilerOptions: CodeEditorTypeScriptProject['compilerOptions'];
+  currentFileContent?: string;
+  currentFilePath: string;
+  declarationFiles: CodeEditorTypeScriptProject['declarationFiles'];
+  documentRevision?: number;
+  files: CodeEditorTypeScriptProject['files'];
+  projectRevision?: number;
+  registryKey: string;
+  rewriteBuiltInAutoImports?: boolean;
+  runJSContext: CodeEditorTypeScriptProject['runJSContext'];
+  typeLibraryIds: CodeEditorTypeScriptProject['typeLibraryIds'];
+};
+
+type SyncedFile = {
+  revision?: number;
+  wire: TypeScriptWorkerProjectSnapshot['files'][number];
+};
+
+type ProjectSyncState = {
+  declarationFiles: Map<string, SyncedFile>;
+  files: Map<string, SyncedFile>;
+  metadataKey: string;
+  revision: number;
+  snapshot: TypeScriptWorkerProjectSnapshot;
+  token: ProjectInputToken;
+};
+
 export function resolveTypeScriptWorkerUrl(): string | URL {
   const overrideUrl = (globalThis as { __NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__?: string })
     .__NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__;
@@ -87,32 +116,21 @@ function defaultWorkerFactory(): WorkerLike {
   return new Worker(new URL('./typescriptProject.worker.ts', import.meta.url), { type: 'module' });
 }
 
-function projectSnapshot(
-  project: CodeEditorTypeScriptProject,
-  currentFileContent?: string,
-): TypeScriptWorkerProjectSnapshot {
+function projectInputToken(project: CodeEditorTypeScriptProject, currentFileContent?: string): ProjectInputToken {
   ensureGeneratedRunJSTypeLibraryPackLoadersRegistered();
   const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
-  const currentPath = normalizePath(project.currentFilePath);
-  const files = (project.files || []).map((file) => ({ content: file.content, path: normalizePath(file.path) }));
-  if (typeof currentFileContent === 'string') {
-    const current = files.find((file) => file.path === currentPath);
-    if (current) current.content = currentFileContent;
-    else files.push({ content: currentFileContent, path: currentPath });
-  }
   return {
-    compilerOptions: project.compilerOptions as Record<string, unknown> | undefined,
-    currentFilePath: currentPath,
-    declarationFiles: (project.declarationFiles || []).map((file) => ({
-      content: file.content,
-      path: normalizePath(file.path),
-    })),
-    files,
+    compilerOptions: project.compilerOptions,
+    currentFileContent,
+    currentFilePath: project.currentFilePath,
+    declarationFiles: project.declarationFiles,
+    documentRevision: project.documentRevision,
+    files: project.files,
+    projectRevision: project.projectRevision,
     registryKey: registry.getCacheKey(),
-    runJSContext: project.runJSContext,
-    typeLibraryIds: [...(project.typeLibraryIds || [])],
-    typeLibraryUsageDefinitions: registry.getUsageDefinitions(),
     rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
+    runJSContext: project.runJSContext,
+    typeLibraryIds: project.typeLibraryIds,
   };
 }
 
@@ -125,41 +143,136 @@ function normalizePath(path: string): string {
   );
 }
 
-function snapshotKey(snapshot: TypeScriptWorkerProjectSnapshot): string {
-  return JSON.stringify(snapshot);
+function isSameProjectInput(left: ProjectInputToken | null, right: ProjectInputToken): boolean {
+  return Boolean(
+    left &&
+      left.compilerOptions === right.compilerOptions &&
+      (left.documentRevision !== undefined && right.documentRevision !== undefined
+        ? true
+        : left.currentFileContent === right.currentFileContent) &&
+      left.currentFilePath === right.currentFilePath &&
+      left.declarationFiles === right.declarationFiles &&
+      left.documentRevision === right.documentRevision &&
+      left.files === right.files &&
+      left.projectRevision === right.projectRevision &&
+      left.registryKey === right.registryKey &&
+      left.rewriteBuiltInAutoImports === right.rewriteBuiltInAutoImports &&
+      left.runJSContext === right.runJSContext &&
+      left.typeLibraryIds === right.typeLibraryIds,
+  );
 }
 
-function fileDelta(
-  previous: readonly { content: string; path: string }[],
-  next: readonly { content: string; path: string }[],
-): { removals: string[]; upserts: Array<{ content: string; path: string }> } {
-  const previousFiles = new Map(previous.map((file) => [file.path, file.content]));
-  const nextFiles = new Map(next.map((file) => [file.path, file.content]));
+function buildSyncedFiles(
+  files: CodeEditorTypeScriptProject['files'],
+  previous: Map<string, SyncedFile> | undefined,
+  currentFile?: { content: string; path: string; revision?: number },
+): Map<string, SyncedFile> {
+  const next = new Map<string, SyncedFile>();
+  for (const file of files || []) {
+    const path = normalizePath(file.path);
+    const content = currentFile?.path === path ? currentFile.content : file.content;
+    const revision = currentFile?.path === path ? currentFile.revision : file.revision;
+    const retained = previous?.get(path);
+    next.set(
+      path,
+      retained &&
+        ((revision !== undefined && retained.revision === revision) ||
+          (revision === undefined && retained.wire.content === content))
+        ? retained
+        : { revision, wire: { content, path } },
+    );
+  }
+  if (currentFile && !next.has(currentFile.path)) {
+    const retained = previous?.get(currentFile.path);
+    next.set(
+      currentFile.path,
+      retained &&
+        ((currentFile.revision !== undefined && retained.revision === currentFile.revision) ||
+          (currentFile.revision === undefined && retained.wire.content === currentFile.content))
+        ? retained
+        : { revision: currentFile.revision, wire: { content: currentFile.content, path: currentFile.path } },
+    );
+  }
+  return next;
+}
+
+function buildProjectSyncState(
+  project: CodeEditorTypeScriptProject,
+  currentFileContent: string | undefined,
+  token: ProjectInputToken,
+  revision: number,
+  previous?: ProjectSyncState,
+): ProjectSyncState {
+  ensureGeneratedRunJSTypeLibraryPackLoadersRegistered();
+  const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
+  const currentFilePath = normalizePath(project.currentFilePath);
+  const files = buildSyncedFiles(
+    project.files || [],
+    previous?.files,
+    typeof currentFileContent === 'string'
+      ? { content: currentFileContent, path: currentFilePath, revision: project.documentRevision }
+      : undefined,
+  );
+  const declarationFiles = buildSyncedFiles(project.declarationFiles || [], previous?.declarationFiles);
+  const metadata = {
+    compilerOptions: project.compilerOptions as Record<string, unknown> | undefined,
+    currentFilePath,
+    registryKey: token.registryKey,
+    rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
+    runJSContext: project.runJSContext,
+    typeLibraryIds: [...(project.typeLibraryIds || [])],
+    typeLibraryUsageDefinitions: registry.getUsageDefinitions(),
+  };
   return {
-    removals: [...previousFiles.keys()].filter((path) => !nextFiles.has(path)),
-    upserts: next.filter((file) => previousFiles.get(file.path) !== file.content),
+    declarationFiles,
+    files,
+    metadataKey: JSON.stringify(metadata),
+    revision,
+    snapshot: {
+      ...metadata,
+      declarationFiles: [...declarationFiles.values()].map((file) => file.wire),
+      files: [...files.values()].map((file) => file.wire),
+    },
+    token,
   };
 }
 
-function projectUpdate(
-  previous: TypeScriptWorkerProjectSnapshot,
-  next: TypeScriptWorkerProjectSnapshot,
-): TypeScriptWorkerProjectUpdate {
+function fileDelta(
+  previous: Map<string, SyncedFile>,
+  next: Map<string, SyncedFile>,
+): { removals: string[]; upserts: TypeScriptWorkerProjectSnapshot['files'] } {
+  return {
+    removals: [...previous.keys()].filter((path) => !next.has(path)),
+    upserts: [...next.entries()].filter(([path, file]) => previous.get(path) !== file).map(([, file]) => file.wire),
+  };
+}
+
+function projectUpdate(previous: ProjectSyncState, next: ProjectSyncState): TypeScriptWorkerProjectUpdate {
   const files = fileDelta(previous.files, next.files);
   const declarations = fileDelta(previous.declarationFiles, next.declarationFiles);
   return {
-    compilerOptions: next.compilerOptions,
-    currentFilePath: next.currentFilePath,
+    compilerOptions: next.snapshot.compilerOptions,
+    currentFilePath: next.snapshot.currentFilePath,
     declarationFileRemovals: declarations.removals,
     declarationFileUpserts: declarations.upserts,
     fileRemovals: files.removals,
     fileUpserts: files.upserts,
-    registryKey: next.registryKey,
-    runJSContext: next.runJSContext,
-    typeLibraryIds: next.typeLibraryIds,
-    typeLibraryUsageDefinitions: next.typeLibraryUsageDefinitions,
-    rewriteBuiltInAutoImports: next.rewriteBuiltInAutoImports,
+    registryKey: next.snapshot.registryKey,
+    runJSContext: next.snapshot.runJSContext,
+    typeLibraryIds: next.snapshot.typeLibraryIds,
+    typeLibraryUsageDefinitions: next.snapshot.typeLibraryUsageDefinitions,
+    rewriteBuiltInAutoImports: next.snapshot.rewriteBuiltInAutoImports,
   };
+}
+
+function hasProjectUpdate(update: TypeScriptWorkerProjectUpdate, previous: ProjectSyncState, next: ProjectSyncState) {
+  return (
+    previous.metadataKey !== next.metadataKey ||
+    update.fileRemovals.length > 0 ||
+    update.fileUpserts.length > 0 ||
+    update.declarationFileRemovals.length > 0 ||
+    update.declarationFileUpserts.length > 0
+  );
 }
 
 function toCompletion(entry: TypeScriptWorkerCompletionEntry): Completion {
@@ -244,7 +357,15 @@ class TypeScriptWorkerClient {
   }
 
   private onMessage(sourceWorker: WorkerLike, message: TypeScriptWorkerOutgoingMessage): void {
-    if (!isTypeScriptWorkerProtocolMessage(message)) return;
+    if (!isTypeScriptWorkerProtocolMessage(message)) {
+      const version = getTypeScriptWorkerProtocolVersion(message);
+      if (version !== null && this.worker === sourceWorker) {
+        this.reset(
+          `RunJS TypeScript worker protocol mismatch: client=${RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION}, worker=${version}`,
+        );
+      }
+      return;
+    }
     if (message.kind === 'load-pack') {
       this.loadPack(sourceWorker, message);
       return;
@@ -297,12 +418,13 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     rootFileNames: [],
   };
   private lastInternalError: CodeEditorTypeScriptProjectInternalError | null = null;
-  private lastSnapshot: TypeScriptWorkerProjectSnapshot | null = null;
+  private acknowledgedState: ProjectSyncState | null = null;
   private latestRequestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
   private pendingRequestCount = 0;
   private requestSequence = 0;
   private resolveDisposal: (() => void) | null = null;
-  private stateKey = '';
+  private syncChain: Promise<void> = Promise.resolve();
+  private workerNeedsFullSync = false;
   private workerUnavailable = false;
 
   constructor(
@@ -324,9 +446,9 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     }
     const requestId = this.begin('completion');
     try {
-      await this.sync(project, currentFileContent);
+      const documentVersion = await this.sync(project, currentFileContent);
       const response = await this.requestWithRecovery(project, currentFileContent, {
-        documentVersion: this.documentVersion,
+        documentVersion,
         explicit,
         kind: 'completion',
         position,
@@ -367,9 +489,9 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     if (this.workerUnavailable) return (await this.fallback?.getDiagnostics(project, currentFileContent)) ?? [];
     const requestId = this.begin('diagnostics');
     try {
-      await this.sync(project, currentFileContent);
+      const documentVersion = await this.sync(project, currentFileContent);
       const response = await this.requestWithRecovery(project, currentFileContent, {
-        documentVersion: this.documentVersion,
+        documentVersion,
         kind: 'diagnostics',
         projectId: this.projectId,
       });
@@ -392,9 +514,9 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     if (this.workerUnavailable) return (await this.fallback?.getHover(project, position, currentFileContent)) ?? null;
     const requestId = this.begin('hover');
     try {
-      await this.sync(project, currentFileContent);
+      const documentVersion = await this.sync(project, currentFileContent);
       const response = await this.requestWithRecovery(project, currentFileContent, {
-        documentVersion: this.documentVersion,
+        documentVersion,
         kind: 'hover',
         position,
         projectId: this.projectId,
@@ -430,8 +552,8 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
         : Promise.resolve();
     this.disposal = Promise.all([fallback?.whenDisposed(), requestsDisposed]).then(() => undefined);
     this.client.reset('TypeScript project session has been disposed.');
-    this.lastSnapshot = null;
-    this.stateKey = '';
+    this.acknowledgedState = null;
+    this.workerNeedsFullSync = false;
     this.lastInternalError = null;
     this.lastDebugState = {
       ...this.lastDebugState,
@@ -480,30 +602,77 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     );
   }
 
-  private async sync(project: CodeEditorTypeScriptProject, currentFileContent?: string, force = false): Promise<void> {
+  private sync(project: CodeEditorTypeScriptProject, currentFileContent?: string, force = false): Promise<number> {
+    const token = projectInputToken(project, currentFileContent);
+    const capturedProject = { ...project };
+    const pending = this.syncChain.then(() => this.performSync(capturedProject, currentFileContent, token, force));
+    this.syncChain = pending.then(
+      () => undefined,
+      () => undefined,
+    );
+    return pending;
+  }
+
+  private async performSync(
+    project: CodeEditorTypeScriptProject,
+    currentFileContent: string | undefined,
+    token: ProjectInputToken,
+    force: boolean,
+  ): Promise<number> {
     if (this.disposed) throw new Error('TypeScript project session has been disposed.');
+    const previous = this.acknowledgedState;
+    if (!force && !this.workerNeedsFullSync && isSameProjectInput(previous?.token || null, token)) {
+      return previous?.revision || 0;
+    }
+
     const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
-    const snapshot = projectSnapshot(project, currentFileContent);
-    const key = snapshotKey(snapshot);
+    const next =
+      previous && isSameProjectInput(previous.token, token)
+        ? previous
+        : buildProjectSyncState(
+            project,
+            currentFileContent,
+            token,
+            (previous?.revision || 0) + 1,
+            previous || undefined,
+          );
+    const update = previous && next !== previous ? projectUpdate(previous, next) : null;
+    if (previous && update && !hasProjectUpdate(update, previous, next)) {
+      previous.token = token;
+      return previous.revision;
+    }
+
+    const fullSync = force || this.workerNeedsFullSync || !previous;
+    const request: TypeScriptWorkerClientRequest = {
+      baseRevision: fullSync ? null : previous.revision,
+      documentVersion: next.revision,
+      kind: 'sync',
+      projectId: this.projectId,
+      targetRevision: next.revision,
+      ...(fullSync ? { snapshot: next.snapshot } : { update: update as TypeScriptWorkerProjectUpdate }),
+    };
     this.client.setRegistry(registry);
-    if (!force && key === this.stateKey) return;
-    this.stateKey = key;
-    this.documentVersion += 1;
-    const previousSnapshot = this.lastSnapshot;
+    let response: TypeScriptWorkerResponse;
     try {
-      const response = await this.client.request({
-        documentVersion: this.documentVersion,
+      response = await this.client.request(request);
+    } catch (error: unknown) {
+      if (error instanceof TypeScriptWorkerUnavailableError) throw error;
+      this.resetWorkerState('Rebuilding TypeScript worker after synchronization failure.');
+      this.client.setRegistry(registry);
+      response = await this.client.request({
+        baseRevision: null,
+        documentVersion: next.revision,
         kind: 'sync',
         projectId: this.projectId,
-        ...(force || !previousSnapshot ? { snapshot } : { update: projectUpdate(previousSnapshot, snapshot) }),
+        snapshot: next.snapshot,
+        targetRevision: next.revision,
       });
-      if (response.kind !== 'synced') throw new Error('TypeScript worker did not acknowledge project synchronization.');
-      this.lastSnapshot = snapshot;
-    } catch (error: unknown) {
-      if (force || error instanceof TypeScriptWorkerUnavailableError) throw error;
-      this.resetWorkerState('Rebuilding TypeScript worker after synchronization failure.');
-      await this.sync(project, currentFileContent, true);
     }
+    if (response.kind !== 'synced') throw new Error('TypeScript worker did not acknowledge project synchronization.');
+    this.acknowledgedState = next;
+    this.documentVersion = next.revision;
+    this.workerNeedsFullSync = false;
+    return next.revision;
   }
 
   private async requestWithRecovery(
@@ -518,8 +687,8 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     } catch (error: unknown) {
       if (error instanceof TypeScriptWorkerUnavailableError) throw error;
       this.resetWorkerState('Rebuilding TypeScript worker after failure.');
-      await this.sync(project, currentFileContent, true);
-      const recoveredRequest = { ...request, documentVersion: this.documentVersion };
+      const documentVersion = await this.sync(project, currentFileContent, true);
+      const recoveredRequest = { ...request, documentVersion };
       const response = await this.client.request(recoveredRequest);
       await this.refreshDebugState();
       return response;
@@ -528,8 +697,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
 
   private resetWorkerState(reason: string): void {
     this.client.reset(reason);
-    this.stateKey = '';
-    this.lastSnapshot = null;
+    this.workerNeedsFullSync = true;
     this.lastDebugState = { ...this.lastDebugState, languageServiceCreationCount: 0 };
   }
 

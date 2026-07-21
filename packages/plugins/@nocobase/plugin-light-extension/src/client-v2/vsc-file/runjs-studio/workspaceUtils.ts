@@ -44,6 +44,7 @@ export function normalizeWorkspaceFiles(files: RunJSWorkspaceFile[]): RunJSWorks
       content: file.content || '',
       language: file.language || inferLanguageFromPath(path),
       mode: file.mode,
+      revision: file.revision,
     });
   }
 
@@ -450,16 +451,30 @@ export function buildWorkspaceSnapshotKey(
   files: RunJSWorkspaceFile[],
   entryPath: string,
   version: string | undefined,
+  state?: {
+    locatorKey: string;
+    operationSequence: number;
+    projectRevision: number;
+    repoId?: string;
+    workspaceGeneration: number;
+  },
 ): string {
   return JSON.stringify({
     entryPath,
+    locatorKey: state?.locatorKey || '',
+    operationSequence: state?.operationSequence || 0,
+    projectRevision: state?.projectRevision || 0,
+    repoId: state?.repoId || '',
     version: version || '',
-    files: normalizeWorkspaceFiles(files).map((file) => ({
-      path: file.path,
-      content: file.content,
-      language: file.language || '',
-      mode: file.mode || '',
-    })),
+    workspaceGeneration: state?.workspaceGeneration || 0,
+    files: state
+      ? undefined
+      : normalizeWorkspaceFiles(files).map((file) => ({
+          path: file.path,
+          content: file.content,
+          language: file.language || '',
+          mode: file.mode || '',
+        })),
   });
 }
 

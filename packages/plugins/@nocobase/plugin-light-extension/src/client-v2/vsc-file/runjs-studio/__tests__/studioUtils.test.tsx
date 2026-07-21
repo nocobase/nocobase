@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildRunJSTypeScriptProject } from '../studioUtils';
+import { buildRunJSImportModuleCompletionSignature, buildRunJSTypeScriptProject } from '../studioUtils';
 import type { RunJSWorkspaceFile } from '../types';
 import { runJSManifestPath } from '../workspaceUtils';
 
@@ -18,6 +18,25 @@ function workspaceFile(path: string, content = ''): RunJSWorkspaceFile {
 }
 
 describe('buildRunJSTypeScriptProject', () => {
+  it('uses file revisions when available and content as the compatibility fallback', () => {
+    expect(
+      buildRunJSImportModuleCompletionSignature([workspaceFile('src/client/helper.ts', 'one')], 'src/client/index.tsx'),
+    ).not.toBe(
+      buildRunJSImportModuleCompletionSignature([workspaceFile('src/client/helper.ts', 'two')], 'src/client/index.tsx'),
+    );
+    expect(
+      buildRunJSImportModuleCompletionSignature(
+        [{ ...workspaceFile('src/client/helper.ts', 'one'), revision: 1 }],
+        'src/client/index.tsx',
+      ),
+    ).toBe(
+      buildRunJSImportModuleCompletionSignature(
+        [{ ...workspaceFile('src/client/helper.ts', 'two'), revision: 1 }],
+        'src/client/index.tsx',
+      ),
+    );
+  });
+
   it('returns no project when the active file is missing or is not a TypeScript project file', () => {
     const files = [workspaceFile('src/main.ts', 'export const value = 1;'), workspaceFile('src/data.json', '{}')];
 

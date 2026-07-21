@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RunJSSourceHistoryItem } from '../types';
-import { buildLineDiff, inferLanguageFromPath, mergeHistoryItems } from '../workspaceUtils';
+import { buildLineDiff, buildWorkspaceSnapshotKey, inferLanguageFromPath, mergeHistoryItems } from '../workspaceUtils';
 
 function createHistoryItem(id: string, seq: number, message: string): RunJSSourceHistoryItem {
   return {
@@ -27,6 +27,12 @@ function createHistoryItem(id: string, seq: number, message: string): RunJSSourc
 }
 
 describe('workspaceUtils', () => {
+  it('keeps content-sensitive snapshot keys for callers without revision state', () => {
+    expect(buildWorkspaceSnapshotKey([{ path: 'src/index.ts', content: 'one' }], 'src/index.ts', 'v2')).not.toBe(
+      buildWorkspaceSnapshotKey([{ path: 'src/index.ts', content: 'two' }], 'src/index.ts', 'v2'),
+    );
+  });
+
   it('builds line diff rows for changed content', () => {
     expect(
       buildLineDiff(

@@ -31,6 +31,7 @@ import {
   TypeScriptVirtualFileSystem,
   type TypeScriptVirtualFileInput,
 } from './typescriptVirtualFileSystem';
+import { RUNJS_TYPESCRIPT_WORKER_REVISION_MISMATCH } from './typescriptWorkerProtocol';
 import type {
   TypeScriptWorkerCompletionChange,
   TypeScriptWorkerCompletionEntry,
@@ -65,6 +66,7 @@ type ProjectState = {
   dependencyFileCount: number;
   disposed: boolean;
   documentVersion: number;
+  revision: number;
   languageServiceCreationCount: number;
   loadPack: TypeScriptWorkerPackLoader;
   loadedFullPackIds: Map<string, string>;
@@ -457,6 +459,7 @@ export class TypeScriptWorkerRuntime {
   sync(
     projectId: string,
     documentVersion: number,
+    targetRevision: number,
     snapshot: TypeScriptWorkerProjectSnapshot,
     loadPack: TypeScriptWorkerPackLoader,
   ): void {
@@ -471,6 +474,7 @@ export class TypeScriptWorkerRuntime {
         clearTypeScriptImmutableFileCacheNamespace(projectId);
       }
       existing.documentVersion = documentVersion;
+      existing.revision = targetRevision;
       existing.snapshot = snapshot;
       existing.loadPack = loadPack;
       existing.disposed = false;
@@ -482,6 +486,7 @@ export class TypeScriptWorkerRuntime {
       dependencyFileCount: 0,
       disposed: false,
       documentVersion,
+      revision: targetRevision,
       languageServiceCreationCount: 0,
       loadPack,
       loadedFullPackIds: new Map(),
@@ -496,11 +501,16 @@ export class TypeScriptWorkerRuntime {
   update(
     projectId: string,
     documentVersion: number,
+    baseRevision: number,
+    targetRevision: number,
     update: TypeScriptWorkerProjectUpdate,
     loadPack: TypeScriptWorkerPackLoader,
   ): void {
     const state = this.projects.get(projectId);
     if (!state) throw new Error(`TypeScript worker project is not initialized: ${projectId}`);
+    if (state.revision !== baseRevision) {
+      throw new Error(`${RUNJS_TYPESCRIPT_WORKER_REVISION_MISMATCH}:${state.revision}:${baseRevision}`);
+    }
     if (documentVersion < state.documentVersion) return;
     const files = new Map(state.snapshot.files.map((file) => [file.path, file]));
     for (const path of update.fileRemovals) files.delete(path);
@@ -511,6 +521,7 @@ export class TypeScriptWorkerRuntime {
     this.sync(
       projectId,
       documentVersion,
+      targetRevision,
       {
         compilerOptions: update.compilerOptions,
         currentFilePath: update.currentFilePath,
