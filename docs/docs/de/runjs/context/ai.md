@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Verwenden Sie ctx.ai in RunJS, um KI-Mitarbeiteraufgaben im globalen Dialog oder in einer angegebenen AI Chat Box auszulösen, entweder mit direkt übergebenem Aufgabeninhalt oder mit Aufgaben aus einer KI-Mitarbeiteraktion."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | FlowModel uid des AI-Chat-Box-Blocks, der die Aufgabe empfangen soll. |
 | `open` | `boolean` | Ob das Konversationspanel des KI-Mitarbeiters geöffnet wird. |
 | `auto` | `boolean` | Ob die automatische Auslösesemantik einer KI-Mitarbeiteraktion verwendet wird. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback für den Ladezustand der Modellantwort. Er wird nur ausgeführt, wenn diese Aufgabe automatisch gesendet wird. |
 
 Häufige Felder von `Task`:
 
@@ -75,6 +76,33 @@ Häufige Felder von `Task`:
 | `webSearch` | `boolean` | Ob diese Aufgabe Web search verwenden darf. |
 | `model` | `{ llmService: string; model: string } \| null` | Modell für diese Aufgabe. |
 | `skillSettings` | `SkillSettings` | Skills / tools für diese Aufgabe. |
+
+### Ladezustand der Antwort verfolgen
+
+Übergeben Sie `onResponseLoadingChange` in den Optionen auf oberster Ebene, um den Ladezustand der Modellantwort zu verfolgen. Der Callback erhält `true`, sobald NocoBase auf die Modellantwort wartet, und `false`, wenn sie abgeschlossen, abgebrochen oder fehlgeschlagen ist. Wenn die React-Komponente `setResponseLoading` bereits mit `useState` deklariert hat, können Sie Folgendes schreiben:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` verfolgt nur die Modellantwort, die direkt durch diesen `triggerTask()`-Aufruf gestartet wurde. Bei `autoSend: false` bleibt die Aufgabe im Chatentwurf und der Callback wird nicht ausgeführt. Wenn der Benutzer den Entwurf später manuell sendet, wird dieser Callback nicht wiederverwendet.
+
+In einer React-Komponente eines JS-Blocks löst diese Zustandsänderung ein erneutes Rendern aus, solange die Komponente eingebunden bleibt.
 
 ### Eine AI Chat Box als Ziel festlegen
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Ob das Konversationspanel des KI-Mitarbeiters geöffnet wird. |
 | `options.auto` | `boolean` | Ob die automatische Auslösesemantik einer KI-Mitarbeiteraktion verwendet wird. |
 | `options.attachments` | `Attachment[]` | Anhänge, die dynamisch an die konfigurierte Aufgabe angefügt werden. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback für den Ladezustand der Modellantwort. Er wird nur ausgeführt, wenn die konfigurierte Aufgabe automatisch gesendet wird. |
+
+`options.onResponseLoadingChange` verhält sich wie bei `triggerTask()`. Ob der Callback ausgeführt wird, hängt vom Wert `autoSend` der konfigurierten Aufgabe ab. Bei `autoSend: false` wird er nicht ausgeführt.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ Wenn das Zielmodell nicht existiert, kein KI-Mitarbeiter konfiguriert ist oder d
 - `triggerTask().chatBoxUid` auf oberster Ebene muss auf einen aktuell eingebundenen AI-Chat-Box-Block verweisen.
 - `triggerModelTask()` verwendet weiterhin das in der vordefinierten Aufgabe konfigurierte `chatBoxUid`.
 - Dynamische Anhänge von `triggerModelTask()` werden an vorhandene `message.attachments` der vordefinierten Aufgabe angefügt, ohne die gespeicherte Konfiguration zu ändern.
+- `onResponseLoadingChange` verfolgt nur eine von diesem Aufruf automatisch gesendete Modellantwort. Eine später manuell gesendete Nachricht wird nicht verfolgt.
 
 ## Verwandte Themen
 

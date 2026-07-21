@@ -98,8 +98,14 @@ describe('plugin-ai client-v2 public API contract', () => {
     const optionField: OptionField = { name: 'temperature', title: 'Temperature' };
     const skillSettings: SkillSettings = { tools: [], skills: [] };
     const task: Task = { title: 'Translate' };
-    const triggerModelTaskOptions: TriggerModelTaskOptions = { attachments: [attachment] };
-    const triggerTaskOptions: TriggerTaskOptions = { aiEmployee, tasks: [task], chatBoxUid: 'chat-box-1' };
+    const onResponseLoadingChange = (_loading: boolean) => {};
+    const triggerModelTaskOptions: TriggerModelTaskOptions = { attachments: [attachment], onResponseLoadingChange };
+    const triggerTaskOptions: TriggerTaskOptions = {
+      aiEmployee,
+      tasks: [task],
+      chatBoxUid: 'chat-box-1',
+      onResponseLoadingChange,
+    };
     const uploadOptions: UploadAIFileOptions = { onProgress: () => {} };
     const webSearching: WebSearching = { type: 'search', query: 'NocoBase' };
 

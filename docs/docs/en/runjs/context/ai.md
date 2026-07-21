@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Use ctx.ai in RunJS to trigger AI employee tasks in the global conversation or a specified AI Chat Box, either with inline task content or with tasks configured on an AI employee action."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | FlowModel uid of the AI Chat Box block that should receive the task. |
 | `open` | `boolean` | Whether to open the AI employee conversation panel. |
 | `auto` | `boolean` | Whether to use the auto-trigger semantics of an AI employee action. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Model response loading callback. It only runs when this task is sent automatically. |
 
 Common `Task` fields:
 
@@ -75,6 +76,33 @@ Common `Task` fields:
 | `webSearch` | `boolean` | Whether Web search is allowed for this task. |
 | `model` | `{ llmService: string; model: string } \| null` | Model used by this task. |
 | `skillSettings` | `SkillSettings` | Skills and tools available to this task. |
+
+### Track the Response Loading State
+
+Pass `onResponseLoadingChange` in the top-level options to track the model response loading state for this task. The callback receives `true` when NocoBase starts waiting for the model response, and `false` when the response completes, is canceled, or fails. If the React component has declared `setResponseLoading` with `useState`, you can write:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` only tracks the model response started directly by this `triggerTask()` call. With `autoSend: false`, the task is placed in the chat draft and the callback does not run. If the user sends the draft later, that manual send does not reuse this callback.
+
+In a React component inside a JS block, this state update rerenders the component while it remains mounted.
 
 ### Target an AI Chat Box
 
@@ -314,10 +342,13 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Whether to open the AI employee conversation panel. |
 | `options.auto` | `boolean` | Whether to use the auto-trigger semantics of an AI employee action. |
 | `options.attachments` | `Attachment[]` | Attachments dynamically appended to the configured task. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Model response loading callback. It only runs when the configured task is sent automatically. |
 
 This method reads the AI employee and task configuration from the target model. It is useful when the task has already been configured on an AI employee action on the page, and RunJS only needs to trigger it.
 
 The public `triggerModelTask()` options do not accept `chatBoxUid`. To target an AI Chat Box, configure `chatBoxUid` on the preset task of the AI employee action. `triggerModelTask()` continues to reuse that preset value.
+
+`options.onResponseLoadingChange` behaves the same as the option on `triggerTask()`. Whether it runs depends on the configured task's `autoSend` value. It does not run when that task uses `autoSend: false`.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -356,6 +387,7 @@ If the target model does not exist, has no AI employee configured, or the specif
 - Top-level `triggerTask().chatBoxUid` must reference an AI Chat Box block currently mounted on the page.
 - `triggerModelTask()` keeps using `chatBoxUid` configured on its preset task.
 - Dynamic `triggerModelTask()` attachments are appended to the preset task's existing `message.attachments` without changing the saved task configuration.
+- `onResponseLoadingChange` only tracks a model response automatically sent by the current call. It does not track a message the user sends manually later.
 
 ## Related
 

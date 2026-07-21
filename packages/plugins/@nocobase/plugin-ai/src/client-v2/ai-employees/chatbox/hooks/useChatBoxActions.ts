@@ -285,6 +285,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
             skillSettings,
             webSearch: resolvedWebSearch,
             model: resolvedModel,
+            onResponseLoadingChange: options.onResponseLoadingChange,
           });
         }
         return;

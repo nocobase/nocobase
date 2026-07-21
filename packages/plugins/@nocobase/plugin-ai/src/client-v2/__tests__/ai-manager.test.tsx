@@ -240,6 +240,7 @@ describe('AIManager v2', () => {
 
   it('triggers a model task by reading model AI employee and 0-based task index', () => {
     const task: Task = { title: 'Summarize', chatBoxUid: 'chat-box-1' };
+    const onResponseLoadingChange = vi.fn();
     const getModel = vi.fn(() => ({
       props: {
         aiEmployee: { username: 'nathan' },
@@ -250,10 +251,12 @@ describe('AIManager v2', () => {
     const details = listenTasks(eventBus);
 
     manager.onChatBoxMounted();
-    manager.triggerModelTask('flow-model-uid', 1, { open: true });
+    manager.triggerModelTask('flow-model-uid', 1, { open: true, onResponseLoadingChange });
 
     expect(getModel).toHaveBeenCalledWith('flow-model-uid', true);
-    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [task], chatBoxUid: 'chat-box-1', open: true }]);
+    expect(details).toEqual([
+      { aiEmployee: 'nathan', tasks: [task], chatBoxUid: 'chat-box-1', open: true, onResponseLoadingChange },
+    ]);
   });
 
   it('appends runtime attachments to the configured model task without mutating it', () => {

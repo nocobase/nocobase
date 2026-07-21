@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "RunJS で ctx.ai を使い、グローバル会話または指定した AI Chat Box で AI 従業員タスクを実行します。タスク内容の直接指定と、AI 従業員アクションに設定されたタスクの再利用に対応しています。"
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | タスクを受け取る AI Chat Box ブロックの FlowModel uid。 |
 | `open` | `boolean` | AI 従業員の会話パネルを開くかどうか。 |
 | `auto` | `boolean` | AI 従業員アクションの自動実行セマンティクスを使うかどうか。 |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | モデル応答の読み込み状態コールバック。このタスクが自動送信される場合にのみ呼び出されます。 |
 
 よく使う `Task` フィールド:
 
@@ -75,6 +76,33 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `webSearch` | `boolean` | このタスクで Web search を許可するかどうか。 |
 | `model` | `{ llmService: string; model: string } \| null` | このタスクで使うモデル。 |
 | `skillSettings` | `SkillSettings` | このタスクで使う skills / tools 設定。 |
+
+### レスポンスの読み込み状態を監視する
+
+トップレベルオプションに `onResponseLoadingChange` を渡すと、このタスクのモデル応答の読み込み状態を監視できます。モデル応答の待機開始時は `true`、完了、キャンセル、失敗時は `false` が渡されます。React コンポーネントで `useState` により `setResponseLoading` を宣言済みの場合は、次のように記述できます。
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` は、この `triggerTask()` 呼び出しが直接開始したモデル応答だけを監視します。`autoSend: false` の場合、タスクはチャットの下書きに入るだけで、コールバックは呼び出されません。ユーザーが後で手動送信しても、このコールバックは再利用されません。
+
+JS ブロック内の React コンポーネントでは、コンポーネントがマウントされている間、この状態更新によって再レンダリングされます。
 
 ### AI Chat Box を指定する
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | AI 従業員の会話パネルを開くかどうか。 |
 | `options.auto` | `boolean` | AI 従業員アクションの自動実行セマンティクスを使うかどうか。 |
 | `options.attachments` | `Attachment[]` | 設定済みタスクへ動的に追加する添付ファイル。 |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | モデル応答の読み込み状態コールバック。設定済みタスクが自動送信される場合にのみ呼び出されます。 |
+
+`options.onResponseLoadingChange` の動作は `triggerTask()` と同じです。呼び出されるかどうかは、設定済みタスクの `autoSend` によって決まります。`autoSend: false` のタスクでは呼び出されません。
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ ctx.message.success(ctx.t('Configured AI employee task triggered.'));
 - トップレベルの `triggerTask().chatBoxUid` には、現在のページにマウントされている AI Chat Box ブロックを指定する必要があります。
 - `triggerModelTask()` はプリセットタスクに設定された `chatBoxUid` を引き続き使用します。
 - `triggerModelTask()` の動的な添付ファイルは、保存済みタスク設定を変更せず、プリセットタスクの既存の `message.attachments` に追加されます。
+- `onResponseLoadingChange` は現在の呼び出しが自動送信したモデル応答だけを監視し、後でユーザーが手動送信したメッセージは監視しません。
 
 ## 関連
 

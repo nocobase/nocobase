@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Use ctx.ai no RunJS para acionar tarefas de funcionário de IA na conversa global ou em um AI Chat Box específico, com conteúdo direto ou com tarefas configuradas em uma ação de funcionário de IA."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | uid FlowModel do bloco AI Chat Box que deve receber a tarefa. |
 | `open` | `boolean` | Se o painel de conversa do funcionário de IA deve ser aberto. |
 | `auto` | `boolean` | Se deve usar a semântica de acionamento automático de uma ação de funcionário de IA. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback do estado de carregamento da resposta. Só é executado quando esta tarefa é enviada automaticamente. |
 
 Campos comuns de `Task`:
 
@@ -75,6 +76,33 @@ Campos comuns de `Task`:
 | `webSearch` | `boolean` | Se esta tarefa pode usar Web search. |
 | `model` | `{ llmService: string; model: string } \| null` | Modelo usado por esta tarefa. |
 | `skillSettings` | `SkillSettings` | Configuração de skills / tools usada por esta tarefa. |
+
+### Acompanhar o estado de carregamento da resposta
+
+Passe `onResponseLoadingChange` nas opções de nível superior para acompanhar o estado de carregamento da resposta do modelo. O callback recebe `true` quando o NocoBase começa a aguardar a resposta e `false` quando ela termina, é cancelada ou falha. Se o componente React já declarou `setResponseLoading` com `useState`, você pode escrever:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` acompanha apenas a resposta iniciada diretamente por esta chamada de `triggerTask()`. Com `autoSend: false`, a tarefa fica no rascunho do chat e o callback não é executado. Se o usuário enviar o rascunho depois, esse envio manual não reutiliza o callback.
+
+Em um componente React de um bloco JS, essa atualização renderiza novamente o componente enquanto ele permanecer montado.
 
 ### Direcionar para um AI Chat Box
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Se o painel de conversa do funcionário de IA deve ser aberto. |
 | `options.auto` | `boolean` | Se deve usar a semântica de acionamento automático de uma ação de funcionário de IA. |
 | `options.attachments` | `Attachment[]` | Anexos adicionados dinamicamente à tarefa configurada. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback do estado de carregamento da resposta. Só é executado quando a tarefa configurada é enviada automaticamente. |
+
+`options.onResponseLoadingChange` funciona da mesma forma que em `triggerTask()`. Sua execução depende do valor `autoSend` da tarefa configurada. Ele não é executado quando a tarefa usa `autoSend: false`.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ Se o modelo de destino não existir, não tiver funcionário de IA configurado, 
 - O valor de nível superior `triggerTask().chatBoxUid` deve referenciar um bloco AI Chat Box atualmente montado na página.
 - `triggerModelTask()` continua usando o `chatBoxUid` configurado na tarefa predefinida.
 - Os anexos dinâmicos de `triggerModelTask()` são adicionados aos `message.attachments` existentes da tarefa predefinida sem alterar a configuração salva.
+- `onResponseLoadingChange` acompanha apenas uma resposta enviada automaticamente pela chamada atual. Ele não acompanha uma mensagem enviada manualmente pelo usuário depois.
 
 ## Relacionado
 

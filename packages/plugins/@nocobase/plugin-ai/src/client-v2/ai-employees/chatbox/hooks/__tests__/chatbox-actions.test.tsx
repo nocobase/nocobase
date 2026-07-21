@@ -235,6 +235,49 @@ describe('chatbox action integration', () => {
     });
   });
 
+  it('notifies RunJS callers when an auto-sent response starts and stops loading', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'block' });
+    const onResponseLoadingChange = vi.fn();
+    const createConversation = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          sessionId: 'task-session',
+        },
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return {
+          create: createConversation,
+        };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+    mocks.request.mockResolvedValue({});
+
+    const { result } = renderHook(() => useChatBoxActions(runtime));
+
+    await act(async () => {
+      await result.current.triggerTask({
+        aiEmployee: employee,
+        tasks: [
+          {
+            title: 'Analyze in block',
+            message: {
+              user: 'Summarize this block',
+            },
+            autoSend: true,
+          },
+        ],
+        onResponseLoadingChange,
+      });
+    });
+
+    await waitFor(() => {
+      expect(onResponseLoadingChange.mock.calls).toEqual([[true], [false]]);
+    });
+  });
+
   it('runs edit, cancel, and resume actions against the provided runtime session', async () => {
     vi.useFakeTimers();
     const runtime = createChatBoxRuntime({ mode: 'block' });

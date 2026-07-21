@@ -48,7 +48,7 @@ export const registerPluginAIRunJSContextContribution = () => {
               type: 'function',
               description: 'Trigger an AI employee task. This is fire-and-forget and does not return a task result.',
               detail:
-                '(options: { aiEmployee?: string | AIEmployee; tasks?: Task[]; chatBoxUid?: string; auto?: boolean; open?: boolean }) => void',
+                '(options: { aiEmployee?: string | AIEmployee; tasks?: Task[]; chatBoxUid?: string; auto?: boolean; open?: boolean; onResponseLoadingChange?: (loading: boolean) => void }) => void',
               completion: {
                 insertText: `ctx.ai.triggerTask({ aiEmployee: 'username', tasks: [] })`,
               },
@@ -61,7 +61,7 @@ export const registerPluginAIRunJSContextContribution = () => {
               description:
                 'Trigger a task from a Flow model by uid and 0-based task index. This is fire-and-forget and does not return a task result.',
               detail:
-                '(uid: string, taskIndex: number, options?: { auto?: boolean; open?: boolean; attachments?: Attachment[] }) => void',
+                '(uid: string, taskIndex: number, options?: { auto?: boolean; open?: boolean; attachments?: Attachment[]; onResponseLoadingChange?: (loading: boolean) => void }) => void',
               completion: {
                 insertText: `ctx.ai.triggerModelTask('flow-model-uid', 0)`,
               },

@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Use ctx.ai en RunJS para activar tareas de empleados de IA en la conversación global o en un AI Chat Box específico, pasando el contenido directamente o reutilizando tareas configuradas en una acción de empleado de IA."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | uid de FlowModel del bloque AI Chat Box que debe recibir la tarea. |
 | `open` | `boolean` | Si se abre el panel de conversación del empleado de IA. |
 | `auto` | `boolean` | Si se usa la semántica de activación automática de una acción de empleado de IA. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback del estado de carga de la respuesta. Solo se ejecuta cuando esta tarea se envía automáticamente. |
 
 Campos comunes de `Task`:
 
@@ -75,6 +76,33 @@ Campos comunes de `Task`:
 | `webSearch` | `boolean` | Si esta tarea puede usar Web search. |
 | `model` | `{ llmService: string; model: string } \| null` | Modelo usado por esta tarea. |
 | `skillSettings` | `SkillSettings` | Configuración de skills / tools usada por esta tarea. |
+
+### Seguir el estado de carga de la respuesta
+
+Pase `onResponseLoadingChange` en las opciones de nivel superior para seguir el estado de carga de la respuesta del modelo. El callback recibe `true` cuando NocoBase empieza a esperar la respuesta y `false` cuando termina, se cancela o falla. Si el componente React ya declaró `setResponseLoading` mediante `useState`, puede escribir:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` solo sigue la respuesta iniciada directamente por esta llamada a `triggerTask()`. Con `autoSend: false`, la tarea queda en el borrador del chat y el callback no se ejecuta. Si el usuario envía el borrador más tarde, ese envío manual no reutiliza el callback.
+
+En un componente React de un bloque JS, esta actualización vuelve a renderizar el componente mientras permanezca montado.
 
 ### Seleccionar un AI Chat Box
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Si se abre el panel de conversación del empleado de IA. |
 | `options.auto` | `boolean` | Si se usa la semántica de activación automática de una acción de empleado de IA. |
 | `options.attachments` | `Attachment[]` | Archivos adjuntos que se agregan dinámicamente a la tarea configurada. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback del estado de carga de la respuesta. Solo se ejecuta cuando la tarea configurada se envía automáticamente. |
+
+`options.onResponseLoadingChange` se comporta igual que en `triggerTask()`. Su ejecución depende del valor `autoSend` de la tarea configurada. No se ejecuta cuando la tarea usa `autoSend: false`.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ Si el modelo de destino no existe, no tiene empleado de IA configurado, o el ín
 - El valor de nivel superior `triggerTask().chatBoxUid` debe hacer referencia a un bloque AI Chat Box montado en la página actual.
 - `triggerModelTask()` sigue usando el `chatBoxUid` configurado en su tarea predefinida.
 - Los archivos adjuntos dinámicos de `triggerModelTask()` se agregan a los `message.attachments` existentes de la tarea predefinida sin cambiar la configuración guardada.
+- `onResponseLoadingChange` solo sigue una respuesta enviada automáticamente por la llamada actual. No sigue un mensaje que el usuario envíe manualmente después.
 
 ## Relacionado
 

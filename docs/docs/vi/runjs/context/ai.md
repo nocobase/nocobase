@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Dùng ctx.ai trong RunJS để kích hoạt tác vụ nhân viên AI trong hội thoại toàn cục hoặc một AI Chat Box được chỉ định, bằng nội dung trực tiếp hoặc tác vụ đã cấu hình trên hành động nhân viên AI."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | uid FlowModel của khối AI Chat Box sẽ nhận tác vụ. |
 | `open` | `boolean` | Có mở bảng hội thoại nhân viên AI hay không. |
 | `auto` | `boolean` | Có dùng ngữ nghĩa tự động kích hoạt của hành động nhân viên AI hay không. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback trạng thái tải phản hồi của mô hình. Chỉ được gọi khi tác vụ này được gửi tự động. |
 
 Các trường thường dùng của `Task`:
 
@@ -75,6 +76,33 @@ Các trường thường dùng của `Task`:
 | `webSearch` | `boolean` | Có cho phép tác vụ dùng Web search hay không. |
 | `model` | `{ llmService: string; model: string } \| null` | Mô hình dùng cho tác vụ này. |
 | `skillSettings` | `SkillSettings` | Cấu hình skills / tools của tác vụ này. |
+
+### Theo dõi trạng thái tải phản hồi
+
+Truyền `onResponseLoadingChange` trong tùy chọn cấp cao nhất để theo dõi trạng thái tải phản hồi của mô hình. Callback nhận `true` khi NocoBase bắt đầu chờ phản hồi, sau đó nhận `false` khi phản hồi hoàn tất, bị hủy hoặc thất bại. Nếu component React đã khai báo `setResponseLoading` bằng `useState`, bạn có thể viết:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` chỉ theo dõi phản hồi được bắt đầu trực tiếp bởi lần gọi `triggerTask()` này. Với `autoSend: false`, tác vụ chỉ được đưa vào bản nháp chat và callback không được gọi. Nếu người dùng gửi bản nháp thủ công sau đó, lần gửi này không sử dụng lại callback.
+
+Trong component React của khối JS, thay đổi trạng thái này sẽ kích hoạt render lại khi component vẫn được gắn.
 
 ### Chỉ định AI Chat Box
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Có mở bảng hội thoại nhân viên AI hay không. |
 | `options.auto` | `boolean` | Có dùng ngữ nghĩa tự động kích hoạt của hành động nhân viên AI hay không. |
 | `options.attachments` | `Attachment[]` | Tệp đính kèm được thêm động vào tác vụ đã cấu hình. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback trạng thái tải phản hồi của mô hình. Chỉ được gọi khi tác vụ đã cấu hình được gửi tự động. |
+
+`options.onResponseLoadingChange` hoạt động giống tùy chọn của `triggerTask()`. Việc callback có được gọi hay không phụ thuộc vào giá trị `autoSend` của tác vụ đã cấu hình. Callback không được gọi khi tác vụ dùng `autoSend: false`.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ Nếu model đích không tồn tại, chưa cấu hình nhân viên AI, hoặc 
 - `triggerTask().chatBoxUid` ở cấp cao nhất phải tham chiếu đến một khối AI Chat Box đang được gắn trên trang.
 - `triggerModelTask()` tiếp tục dùng `chatBoxUid` được cấu hình trên tác vụ đặt trước.
 - Tệp đính kèm động của `triggerModelTask()` được nối vào `message.attachments` hiện có của tác vụ đặt trước mà không thay đổi cấu hình đã lưu.
+- `onResponseLoadingChange` chỉ theo dõi phản hồi mô hình được gửi tự động bởi lần gọi hiện tại. Callback không theo dõi tin nhắn được người dùng gửi thủ công sau đó.
 
 ## Liên quan
 

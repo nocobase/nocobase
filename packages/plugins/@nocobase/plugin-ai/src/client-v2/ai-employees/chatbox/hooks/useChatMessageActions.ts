@@ -314,7 +314,12 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
   );
 
   const processStreamResponse = useCallback(
-    async (stream: ReadableStream<Uint8Array>, sessionId: string, aiEmployee: AIEmployee) => {
+    async (
+      stream: ReadableStream<Uint8Array>,
+      sessionId: string,
+      aiEmployee: AIEmployee,
+      onResponseLoadingChange?: (loading: boolean) => void,
+    ) => {
       const sessionChat = getSessionChat(sessionId);
       sessionChat.setBackgroundWorking(false);
       const reader = stream.getReader();
@@ -606,6 +611,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
           if (done || error) {
             flushAllPendingStreamUpdates();
             sessionChat.setResponseLoading(false);
+            onResponseLoadingChange?.(false);
             sessionChat.setWebSearching(null);
             break;
           }
@@ -675,11 +681,14 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         if (getErrorName(err) === 'AbortError') {
           clearAllPendingStreamUpdates();
           sessionChat.setResponseLoading(false);
+          onResponseLoadingChange?.(false);
           sessionChat.setWebSearching(null);
           return;
         }
         error = true;
         result = getErrorMessage(err);
+        sessionChat.setResponseLoading(false);
+        onResponseLoadingChange?.(false);
 
         aiDebugLogger.log(sessionId, 'error', {
           message: getErrorMessage(err),
@@ -718,11 +727,20 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     webSearch,
     scope,
     model: inputModel,
+    onResponseLoadingChange,
   }: SendOptions & {
     scope?: string;
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;
+    let lastNotifiedResponseLoading: boolean | undefined;
+    const notifyResponseLoadingChange = (loading: boolean) => {
+      if (lastNotifiedResponseLoading === loading) {
+        return;
+      }
+      lastNotifiedResponseLoading = loading;
+      onResponseLoadingChange?.(loading);
+    };
     const draftSessionId = sessionId;
     let targetSessionId = sessionId;
     let sessionChat = getSessionChat(targetSessionId);
@@ -817,6 +835,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     }
     sessionChat.setWebSearching(null);
     sessionChat.setResponseLoading(true);
+    notifyResponseLoadingChange(true);
 
     if (lastRenderedMessage?.type === 'conversation-group' && !chatSenderModel.isEditingMessage) {
       sessionChat.addSubAgentMessage(lastRenderedMessage.key, {
@@ -858,17 +877,20 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
 
       if (!sendRes?.data) {
         sessionChat.setResponseLoading(false);
+        notifyResponseLoadingChange(false);
         return;
       }
 
-      await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      await processStreamResponse(sendRes.data, sessionId, aiEmployee, notifyResponseLoadingChange);
     } catch (err) {
       if (getErrorName(err) === 'CanceledError') {
         sessionChat.setResponseLoading(false);
+        notifyResponseLoadingChange(false);
         sessionChat.setWebSearching(null);
         return;
       }
       sessionChat.setResponseLoading(false);
+      notifyResponseLoadingChange(false);
       throw err;
     } finally {
       sessionChat.setAbortController(null);

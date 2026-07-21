@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Utilisez ctx.ai dans RunJS pour déclencher des tâches d'employé IA dans la conversation globale ou dans une AI Chat Box précise, avec un contenu direct ou avec les tâches configurées sur une action d'employé IA."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | uid FlowModel du bloc AI Chat Box qui doit recevoir la tâche. |
 | `open` | `boolean` | Indique s'il faut ouvrir le panneau de conversation de l'employé IA. |
 | `auto` | `boolean` | Indique s'il faut utiliser la sémantique de déclenchement automatique d'une action d'employé IA. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback de l'état de chargement de la réponse. Il s'exécute uniquement lorsque cette tâche est envoyée automatiquement. |
 
 Champs courants de `Task`:
 
@@ -75,6 +76,33 @@ Champs courants de `Task`:
 | `webSearch` | `boolean` | Indique si la tâche peut utiliser Web search. |
 | `model` | `{ llmService: string; model: string } \| null` | Modèle utilisé par cette tâche. |
 | `skillSettings` | `SkillSettings` | Configuration des skills / tools disponibles pour cette tâche. |
+
+### Suivre l'état de chargement de la réponse
+
+Passez `onResponseLoadingChange` dans les options de premier niveau pour suivre l'état de chargement de la réponse du modèle. Le callback reçoit `true` lorsque NocoBase commence à attendre la réponse, puis `false` lorsqu'elle se termine, est annulée ou échoue. Si le composant React a déjà déclaré `setResponseLoading` avec `useState`, vous pouvez écrire :
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` suit uniquement la réponse démarrée directement par cet appel à `triggerTask()`. Avec `autoSend: false`, la tâche reste dans le brouillon du chat et le callback ne s'exécute pas. Si l'utilisateur envoie le brouillon plus tard, cet envoi manuel ne réutilise pas le callback.
+
+Dans un composant React d'un bloc JS, cette mise à jour provoque un nouveau rendu tant que le composant reste monté.
 
 ### Cibler une AI Chat Box
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Indique s'il faut ouvrir le panneau de conversation de l'employé IA. |
 | `options.auto` | `boolean` | Indique s'il faut utiliser la sémantique de déclenchement automatique d'une action d'employé IA. |
 | `options.attachments` | `Attachment[]` | Pièces jointes ajoutées dynamiquement à la tâche configurée. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback de l'état de chargement de la réponse. Il s'exécute uniquement lorsque la tâche configurée est envoyée automatiquement. |
+
+`options.onResponseLoadingChange` fonctionne comme dans `triggerTask()`. Son exécution dépend de la valeur `autoSend` de la tâche configurée. Il ne s'exécute pas lorsque la tâche utilise `autoSend: false`.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ Si le modèle cible n'existe pas, si aucun employé IA n'est configuré, ou si l
 - La valeur de premier niveau `triggerTask().chatBoxUid` doit référencer un bloc AI Chat Box actuellement monté sur la page.
 - `triggerModelTask()` continue d'utiliser le `chatBoxUid` configuré sur sa tâche prédéfinie.
 - Les pièces jointes dynamiques de `triggerModelTask()` sont ajoutées aux `message.attachments` existants de la tâche prédéfinie sans modifier la configuration enregistrée.
+- `onResponseLoadingChange` suit uniquement une réponse envoyée automatiquement par l'appel actuel. Il ne suit pas un message envoyé manuellement plus tard par l'utilisateur.
 
 ## Liens associés
 

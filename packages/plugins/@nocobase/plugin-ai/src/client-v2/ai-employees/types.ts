@@ -241,6 +241,7 @@ export type TriggerTaskOptions = {
   chatBoxUid?: string;
   auto?: boolean;
   open?: boolean;
+  onResponseLoadingChange?: (loading: boolean) => void;
 };
 
 export type SendOptions = {
@@ -260,6 +261,7 @@ export type SendOptions = {
     llmService: string;
     model: string;
   } | null;
+  onResponseLoadingChange?: (loading: boolean) => void;
 };
 
 export type ResendOptions = {

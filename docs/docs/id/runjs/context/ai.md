@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Gunakan ctx.ai di RunJS untuk memicu tugas karyawan AI di percakapan global atau AI Chat Box tertentu, baik dengan isi tugas langsung maupun dengan tugas yang dikonfigurasi pada aksi karyawan AI."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | uid FlowModel dari blok AI Chat Box yang akan menerima tugas. |
 | `open` | `boolean` | Apakah panel percakapan karyawan AI dibuka. |
 | `auto` | `boolean` | Apakah menggunakan semantik pemicu otomatis dari aksi karyawan AI. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback status pemuatan respons model. Hanya dijalankan ketika tugas ini dikirim otomatis. |
 
 Field umum pada `Task`:
 
@@ -75,6 +76,33 @@ Field umum pada `Task`:
 | `webSearch` | `boolean` | Apakah tugas ini boleh menggunakan Web search. |
 | `model` | `{ llmService: string; model: string } \| null` | Model yang digunakan oleh tugas ini. |
 | `skillSettings` | `SkillSettings` | Konfigurasi skills / tools yang digunakan tugas ini. |
+
+### Melacak status pemuatan respons
+
+Berikan `onResponseLoadingChange` pada opsi tingkat atas untuk melacak status pemuatan respons model. Callback menerima `true` saat NocoBase mulai menunggu respons, lalu `false` saat respons selesai, dibatalkan, atau gagal. Jika komponen React sudah mendeklarasikan `setResponseLoading` dengan `useState`, Anda dapat menulis:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` hanya melacak respons yang dimulai langsung oleh pemanggilan `triggerTask()` ini. Dengan `autoSend: false`, tugas hanya masuk ke draft chat dan callback tidak dijalankan. Jika pengguna mengirim draft tersebut secara manual nanti, pengiriman itu tidak menggunakan kembali callback ini.
+
+Dalam komponen React pada blok JS, perubahan status ini akan memicu render ulang selama komponen masih dimuat.
 
 ### Menargetkan AI Chat Box
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Apakah panel percakapan karyawan AI dibuka. |
 | `options.auto` | `boolean` | Apakah menggunakan semantik pemicu otomatis dari aksi karyawan AI. |
 | `options.attachments` | `Attachment[]` | Lampiran yang ditambahkan secara dinamis ke tugas yang sudah dikonfigurasi. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback status pemuatan respons model. Hanya dijalankan ketika tugas yang dikonfigurasi dikirim otomatis. |
+
+`options.onResponseLoadingChange` berperilaku sama seperti pada `triggerTask()`. Callback dijalankan sesuai nilai `autoSend` pada tugas yang dikonfigurasi. Callback tidak dijalankan ketika tugas menggunakan `autoSend: false`.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ Jika model target tidak ada, belum mengonfigurasi karyawan AI, atau indeks yang 
 - `triggerTask().chatBoxUid` tingkat atas harus merujuk ke blok AI Chat Box yang sedang dimuat pada halaman.
 - `triggerModelTask()` tetap menggunakan `chatBoxUid` yang dikonfigurasi pada tugas preset.
 - Lampiran dinamis dari `triggerModelTask()` ditambahkan ke `message.attachments` yang sudah ada pada tugas preset tanpa mengubah konfigurasi tersimpan.
+- `onResponseLoadingChange` hanya melacak respons model yang dikirim otomatis oleh pemanggilan saat ini. Callback tidak melacak pesan yang dikirim manual oleh pengguna setelahnya.
 
 ## Terkait
 

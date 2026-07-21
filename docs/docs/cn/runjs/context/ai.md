@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "ctx.ai 在 RunJS 中触发 AI 员工任务，支持直接传入任务内容、指定 AI Chat Box，也支持复用页面上 AI 员工操作中已配置的任务。"
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -63,6 +63,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | 指定承载任务的 AI Chat Box 区块 FlowModel uid |
 | `open` | `boolean` | 是否打开 AI 员工对话面板 |
 | `auto` | `boolean` | 是否按 AI 员工操作的自动触发语义处理 |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | 模型响应加载状态变化回调，仅在本次任务自动发送时触发 |
 
 `Task` 常用字段如下：
 
@@ -77,6 +78,33 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `webSearch` | `boolean` | 是否允许本次任务使用 Web search |
 | `model` | `{ llmService: string; model: string } \| null` | 指定本次任务使用的模型 |
 | `skillSettings` | `SkillSettings` | 指定本次任务使用的 skills / tools 配置 |
+
+### 监听响应加载状态
+
+在顶层参数中传入 `onResponseLoadingChange`，可以监听本次任务的模型响应加载状态。开始等待模型响应时回调参数为 `true`；响应完成、取消或失败时为 `false`。如果 React 组件已经通过 `useState` 声明了 `setResponseLoading`，可以这样写：
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` 只跟踪这次 `triggerTask()` 直接启动的模型响应。如果任务设置为 `autoSend: false`，任务内容只会进入聊天窗口草稿，回调不会触发；用户之后在聊天窗口手动发送时，也不会继续使用这次调用传入的回调。
+
+在 JS 区块的 React 组件中，只要组件仍处于挂载状态，这类状态更新就会触发重新渲染。
 
 ### 指定 AI Chat Box
 
@@ -422,10 +450,13 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | 是否打开 AI 员工对话面板 |
 | `options.auto` | `boolean` | 是否按 AI 员工操作的自动触发语义处理 |
 | `options.attachments` | `Attachment[]` | 动态追加到预配置任务的附件 |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | 模型响应加载状态变化回调，仅在预配置任务自动发送时触发 |
 
 这个方法会从目标模型读取 AI 员工和任务配置。它适合复用页面上已经配置好的 AI 员工操作——运营人员可以在界面里调整任务内容，JSBlock 只负责触发。
 
 `triggerModelTask()` 的 `options` 不接收 `chatBoxUid`。如果要在指定 AI Chat Box 中触发，需要在目标 AI 员工操作的对应任务上配置 `chatBoxUid`。`triggerModelTask()` 读取该任务时会一并复用此字段。
+
+`options.onResponseLoadingChange` 的行为和 `triggerTask()` 相同。是否触发回调取决于目标 AI 员工操作中对应任务的 `autoSend` 配置；如果该任务设置为 `autoSend: false`，回调不会触发。
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -464,6 +495,7 @@ ctx.message.success(ctx.t('已触发配置好的 AI 员工任务。'));
 - `triggerTask()` 的顶层 `chatBoxUid` 必须指向当前已挂载的 AI Chat Box 区块。
 - `triggerModelTask()` 不接收顶层 `chatBoxUid`，它会继续使用预设 Task 上的 `chatBoxUid`。
 - `triggerModelTask()` 的动态附件会追加到预配置任务已有的 `message.attachments`，不会修改原任务配置。
+- `onResponseLoadingChange` 只监听由当前调用自动发送的模型响应，不会跟踪之后由用户手动发送的消息。
 
 ## 相关
 

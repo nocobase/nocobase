@@ -1,7 +1,7 @@
 ---
 title: "ctx.ai"
 description: "Используйте ctx.ai в RunJS, чтобы запускать задачи AI-сотрудника в глобальном диалоге или в указанном AI Chat Box: с содержимым задачи напрямую или с задачами, настроенными в действии AI-сотрудника."
-keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,onResponseLoadingChange,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
@@ -61,6 +61,7 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `chatBoxUid` | `string` | FlowModel uid блока AI Chat Box, который должен получить задачу. |
 | `open` | `boolean` | Открывать ли панель диалога AI-сотрудника. |
 | `auto` | `boolean` | Использовать ли семантику автоматического запуска действия AI-сотрудника. |
+| `onResponseLoadingChange` | `(loading: boolean) => void` | Callback состояния загрузки ответа модели. Он вызывается только при автоматической отправке этой задачи. |
 
 Часто используемые поля `Task`:
 
@@ -75,6 +76,33 @@ ctx.ai.triggerTask(options: TriggerTaskOptions): void
 | `webSearch` | `boolean` | Разрешен ли Web search для этой задачи. |
 | `model` | `{ llmService: string; model: string } \| null` | Модель, используемая этой задачей. |
 | `skillSettings` | `SkillSettings` | Настройки skills / tools для этой задачи. |
+
+### Отслеживать состояние загрузки ответа
+
+Передайте `onResponseLoadingChange` в параметрах верхнего уровня, чтобы отслеживать состояние загрузки ответа модели. Callback получает `true`, когда NocoBase начинает ожидать ответ, и `false`, когда ответ завершен, отменен или завершился ошибкой. Если React-компонент уже объявил `setResponseLoading` через `useState`, можно написать:
+
+```tsx
+ctx.ai.triggerTask({
+  aiEmployee: 'nathan',
+  open: true,
+  tasks: [
+    {
+      title: ctx.t('Review current page'),
+      message: {
+        user: 'Review the current page and summarize the main risks.',
+      },
+      autoSend: true,
+    },
+  ],
+  onResponseLoadingChange(loading) {
+    setResponseLoading(loading);
+  },
+});
+```
+
+`onResponseLoadingChange` отслеживает только ответ модели, запущенный непосредственно этим вызовом `triggerTask()`. При `autoSend: false` задача остается в черновике чата, а callback не вызывается. Если пользователь позже отправит черновик вручную, этот callback не будет использован повторно.
+
+В React-компоненте JS-блока такое изменение состояния вызывает повторный рендеринг, пока компонент остается смонтированным.
 
 ### Выбрать AI Chat Box
 
@@ -314,6 +342,9 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `options.open` | `boolean` | Открывать ли панель диалога AI-сотрудника. |
 | `options.auto` | `boolean` | Использовать ли семантику автоматического запуска действия AI-сотрудника. |
 | `options.attachments` | `Attachment[]` | Вложения, динамически добавляемые к настроенной задаче. |
+| `options.onResponseLoadingChange` | `(loading: boolean) => void` | Callback состояния загрузки ответа модели. Он вызывается только при автоматической отправке настроенной задачи. |
+
+`options.onResponseLoadingChange` работает так же, как в `triggerTask()`. Его вызов зависит от значения `autoSend` настроенной задачи. При `autoSend: false` callback не вызывается.
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -343,6 +374,7 @@ ctx.message.success(ctx.t('Configured AI employee task triggered.'));
 - Значение верхнего уровня `triggerTask().chatBoxUid` должно ссылаться на блок AI Chat Box, смонтированный на текущей странице.
 - `triggerModelTask()` продолжает использовать `chatBoxUid`, настроенный в предустановленной задаче.
 - Динамические вложения `triggerModelTask()` добавляются к существующим `message.attachments` предустановленной задачи без изменения сохраненной конфигурации.
+- `onResponseLoadingChange` отслеживает только ответ модели, автоматически отправленный текущим вызовом. Он не отслеживает сообщение, которое пользователь отправит вручную позже.
 
 ## Связанные разделы
 
