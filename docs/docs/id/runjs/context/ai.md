@@ -1,22 +1,50 @@
 ---
 title: "ctx.ai"
 description: "Gunakan ctx.ai di RunJS untuk memicu tugas karyawan AI di percakapan global atau AI Chat Box tertentu, baik dengan isi tugas langsung maupun dengan tugas yang dikonfigurasi pada aksi karyawan AI."
-keywords: "ctx.ai,AI employee,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
+keywords: "ctx.ai,AI employee,uploadFile,attachments,triggerTask,triggerModelTask,chatBoxUid,AI Chat Box,RunJS,NocoBase"
 ---
 
 # ctx.ai
 
 Di RunJS, `ctx.ai` digunakan untuk memicu **tugas karyawan AI**. API ini cocok untuk JSBlock, JSAction, dan interaksi lain ketika tombol, formulir, atau alur bisnis perlu menyerahkan pekerjaan kepada karyawan AI tertentu.
 
-`ctx.ai` hanya memicu tugas. API ini tidak mengembalikan hasil eksekusi tugas. Setelah dipanggil, tugas akan masuk ke alur percakapan karyawan AI.
+`ctx.ai` mengunggah lampiran untuk tugas AI dan memicu tugas. Unggahan file dapat ditunggu, tetapi pemicu tugas tidak mengembalikan hasil eksekusinya. Setelah dipanggil, tugas akan masuk ke alur percakapan karyawan AI.
 
 :::warning Catatan
 
-`ctx.ai` disediakan oleh plugin AI. Jika plugin AI belum diaktifkan, atau lingkungan RunJS saat ini belum memuat kemampuan client yang sesuai, `ctx.ai` mungkin tidak ada. Anda dapat memeriksa `ctx.ai?.triggerTask` atau `ctx.ai?.triggerModelTask` sebelum memanggilnya.
+`ctx.ai` disediakan oleh plugin AI. Jika plugin AI belum diaktifkan, atau lingkungan RunJS saat ini belum memuat kemampuan client yang sesuai, `ctx.ai` mungkin tidak ada. Anda dapat memeriksa `ctx.ai?.uploadFile`, `ctx.ai?.triggerTask`, atau `ctx.ai?.triggerModelTask` sebelum memanggilnya.
 
 :::
 
 ## Metode
+
+### ctx.ai.uploadFile()
+
+Mengunggah satu file dan mengembalikan objek lampiran yang dapat langsung diteruskan ke tugas karyawan AI.
+
+```ts
+const attachment = await ctx.ai.uploadFile(file, options);
+```
+
+| Parameter | Tipe | Deskripsi |
+|------|------|------|
+| `file` | `File` | Objek file browser yang akan diunggah. |
+| `options.onProgress` | `(percent: number) => void` | Callback progres unggahan. `percent` berada dalam rentang `0` hingga `100`. |
+| `options.signal` | `AbortSignal` | Sinyal untuk membatalkan unggahan. |
+
+Unggahan menggunakan penyimpanan file yang dikonfigurasi oleh plugin AI dan membuat record di `aiFiles`. Objek yang dikembalikan mencakup field seperti `id`, `filename`, `url`, dan `source`:
+
+```ts
+const attachment = await ctx.ai.uploadFile(file, {
+  onProgress(percent) {
+    console.log('upload progress', percent);
+  },
+});
+
+// attachment dapat langsung ditempatkan di message.attachments
+```
+
+Promise akan ditolak jika unggahan gagal. Menghapus lampiran dari daftar lokal tidak menghapus record yang sudah dibuat di `aiFiles`, sama seperti perilaku jendela chat AI default.
 
 ### ctx.ai.triggerTask()
 
@@ -41,6 +69,7 @@ Field umum pada `Task`:
 | `title` | `string` | Judul tugas. |
 | `message.system` | `string` | Pesan sistem untuk membatasi peran dan persyaratan keluaran karyawan AI. |
 | `message.user` | `string` | Pesan pengguna, yaitu instruksi utama tugas ini. |
+| `message.attachments` | `Attachment[]` | Lampiran yang digunakan oleh tugas, biasanya dikembalikan oleh `ctx.ai.uploadFile()`. |
 | `message.workContext` | `ContextItem[]` | Konteks blok halaman yang digunakan oleh tugas. |
 | `autoSend` | `boolean` | Apakah pesan tugas dikirim otomatis. |
 | `webSearch` | `boolean` | Apakah tugas ini boleh menggunakan Web search. |
@@ -68,6 +97,104 @@ ctx.ai.triggerTask({
 ```
 
 uid harus berasal dari blok luar AI Chat Box yang saat ini dimuat pada halaman. Jangan tempatkan nilai routing ini di dalam `tasks`. Jika blok target tidak ditemukan, NocoBase menampilkan error dan tidak kembali ke dialog global. Jika `chatBoxUid` tidak diberikan, tugas menggunakan dialog global karyawan AI.
+
+### Mengunggah dan mengirim lampiran di JSBlock
+
+Contoh berikut merender unggahan file, instruksi tugas, dan tombol kirim di JSBlock. File yang sudah diunggah diteruskan ke karyawan AI melalui `message.attachments`:
+
+```tsx
+if (!ctx.ai?.uploadFile || !ctx.ai?.triggerTask) {
+  ctx.message.error(ctx.t('AI employee task API is not available.'));
+  return;
+}
+
+const { React } = ctx.libs;
+const { useState } = React;
+const { Button, Card, Input, Space, Upload } = ctx.libs.antd;
+const { InboxOutlined, SendOutlined } = ctx.libs.antdIcons;
+
+const AttachmentTask = () => {
+  const [prompt, setPrompt] = useState('');
+  const [fileList, setFileList] = useState([]);
+
+  const uploadAttachment = async ({ file, onError, onProgress, onSuccess }) => {
+    try {
+      const attachment = await ctx.ai.uploadFile(file, {
+        onProgress(percent) {
+          onProgress?.({ percent });
+        },
+      });
+      onSuccess?.(attachment);
+    } catch (error) {
+      onError?.(error instanceof Error ? error : new Error(ctx.t('File upload failed')));
+    }
+  };
+
+  const sendTask = () => {
+    const attachments = fileList
+      .filter((file) => file.status === 'done' && file.response)
+      .map((file) => file.response);
+
+    if (!prompt.trim()) {
+      ctx.message.warning(ctx.t('Enter task instructions'));
+      return;
+    }
+
+    ctx.ai.triggerTask({
+      aiEmployee: 'viz',
+      open: true,
+      tasks: [
+        {
+          title: ctx.t('Analyze uploaded files'),
+          message: {
+            user: prompt.trim(),
+            attachments,
+          },
+          autoSend: true,
+        },
+      ],
+    });
+    setPrompt('');
+    setFileList([]);
+  };
+
+  const uploading = fileList.some((file) => file.status === 'uploading');
+
+  return (
+    <Card title={ctx.t('AI file analysis')}>
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Upload.Dragger
+          multiple
+          fileList={fileList}
+          customRequest={uploadAttachment}
+          onChange={({ fileList: nextFileList }) => setFileList(nextFileList)}
+        >
+          <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+          <p>{ctx.t('Click or drag files here to upload')}</p>
+        </Upload.Dragger>
+        <Input.TextArea
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          placeholder={ctx.t('Describe the task for the AI employee')}
+          autoSize={{ minRows: 3, maxRows: 8 }}
+        />
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
+          disabled={uploading || !prompt.trim()}
+          onClick={sendTask}
+        >
+          {ctx.t('Send to AI')}
+        </Button>
+      </Space>
+    </Card>
+  );
+};
+
+ctx.render(<AttachmentTask />);
+```
+
+Dengan `autoSend: false`, lampiran dan instruksi tugas ditempatkan di draft chat AI dan tidak langsung dikirim.
 
 ### Menambahkan konteks blok halaman
 
@@ -186,6 +313,7 @@ ctx.ai.triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTa
 | `taskIndex` | `number` | Indeks tugas, dimulai dari `0`. |
 | `options.open` | `boolean` | Apakah panel percakapan karyawan AI dibuka. |
 | `options.auto` | `boolean` | Apakah menggunakan semantik pemicu otomatis dari aksi karyawan AI. |
+| `options.attachments` | `Attachment[]` | Lampiran yang ditambahkan secara dinamis ke tugas yang sudah dikonfigurasi. |
 
 ```ts
 if (!ctx.ai?.triggerModelTask) {
@@ -197,6 +325,7 @@ const weeklyReviewActionUid = 'AI_EMPLOYEE_ACTION_MODEL_UID';
 
 ctx.ai.triggerModelTask(weeklyReviewActionUid, 0, {
   open: true,
+  attachments,
 });
 
 ctx.message.success(ctx.t('Configured AI employee task triggered.'));
@@ -207,11 +336,13 @@ Jika model target tidak ada, belum mengonfigurasi karyawan AI, atau indeks yang 
 ## Catatan
 
 - `triggerTask()` dan `triggerModelTask()` bersifat fire-and-forget. Keduanya tidak mengembalikan hasil eksekusi tugas.
+- `uploadFile()` mengembalikan Promise. Tunggu unggahan selesai sebelum memicu tugas yang menggunakan lampiran tersebut.
 - String `aiEmployee` hanya cocok secara persis dengan `AIEmployee.username`.
 - `triggerModelTask()` menggunakan `taskIndex` berbasis `0`.
 - `message.workContext` saat ini hanya menjelaskan konteks blok halaman.
 - `triggerTask().chatBoxUid` tingkat atas harus merujuk ke blok AI Chat Box yang sedang dimuat pada halaman.
 - `triggerModelTask()` tetap menggunakan `chatBoxUid` yang dikonfigurasi pada tugas preset.
+- Lampiran dinamis dari `triggerModelTask()` ditambahkan ke `message.attachments` yang sudah ada pada tugas preset tanpa mengubah konfigurasi tersimpan.
 
 ## Terkait
 
