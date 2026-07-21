@@ -15,7 +15,9 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  isCtxDateExpression,
   isRunJSValue,
+  parseCtxDateExpression,
   tExpr,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -49,6 +51,15 @@ import {
 
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'];
 const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'];
+const DATE_FILTER_OPERATORS = new Set([
+  '$dateOn',
+  '$dateNotOn',
+  '$dateBefore',
+  '$dateAfter',
+  '$dateNotBefore',
+  '$dateNotAfter',
+  '$dateBetween',
+]);
 
 function getFilterFormFieldMetaType(field: CollectionField) {
   if (RELATION_FIELD_TYPES.includes(field.type)) {
@@ -69,6 +80,14 @@ function getFilterFormFieldMetaType(field: CollectionField) {
     default:
       return 'string';
   }
+}
+
+function parseDateFilterDefaultValue(operator: string | undefined, rawValue: unknown) {
+  if (!operator || !DATE_FILTER_OPERATORS.has(operator) || !isCtxDateExpression(rawValue)) {
+    return undefined;
+  }
+
+  return parseCtxDateExpression(rawValue);
 }
 
 function shouldShowFilterFormFieldMeta(field: CollectionField) {
@@ -494,7 +513,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     const rules = (params?.value || []) as any[];
     if (!Array.isArray(rules) || rules.length === 0) return appliedValues;
 
-    const resolveValue = async (raw: unknown, index: number) => {
+    const resolveValue = async (raw: unknown, index: number, operator?: string) => {
       // RunJS support
       if (isRunJSValue(raw)) {
         const ownerLocator = buildRunJSOwnerLocator({
@@ -517,6 +536,11 @@ export class FilterFormBlockModel extends FilterBlockModel<{
         } catch {
           return undefined;
         }
+      }
+
+      const parsedDateFilterValue = parseDateFilterDefaultValue(operator, raw);
+      if (typeof parsedDateFilterValue !== 'undefined') {
+        return parsedDateFilterValue;
       }
 
       return await (this.context as any).resolveJsonTemplate?.(raw);
@@ -542,11 +566,11 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
       const current = (form as any).getFieldValue?.(name);
 
-      const resolved = await resolveValue(rule.value, index);
+      const operator = getDefaultOperator(itemModel as any);
+      const resolved = await resolveValue(rule.value, index, operator);
       if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return appliedValues;
       if (typeof resolved === 'undefined') continue;
 
-      const operator = getDefaultOperator(itemModel as any);
       const normalized = normalizeFilterValueByOperator(operator, resolved);
       const mode = this.normalizeFieldValueMode(rule.mode);
       if (mode === 'default' && !this.canApplyFormDefaultValue(String(name), current, force)) continue;

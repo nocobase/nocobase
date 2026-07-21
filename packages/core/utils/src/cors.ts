@@ -53,5 +53,9 @@ export function isTrustedOrigin(ctx: OriginContext, origin: string) {
   if (isSameOrigin(ctx, origin)) {
     return true;
   }
-  return getCorsWhitelist()?.has(origin) || false;
+  const whitelist = getCorsWhitelist();
+  if (!whitelist) {
+    return false;
+  }
+  return whitelist.has('*') || whitelist.has(origin);
 }

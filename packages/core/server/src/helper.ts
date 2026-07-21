@@ -41,22 +41,18 @@ export function createResourcer(options: ApplicationOptions) {
 
 function isWhitelistedCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
-  const whitelist = getCorsWhitelist();
 
   if (!origin) {
     return false;
   }
 
-  if (!whitelist) {
-    return isTrustedOrigin(ctx, origin);
-  }
-
-  return whitelist.has(origin);
+  return isTrustedOrigin(ctx, origin);
 }
 
-function resolveCorsOrigin(ctx: any) {
+export function resolveCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
   const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+  const whitelist = getCorsWhitelist();
 
   if (!origin && disallowNoOrigin) {
     return false;
@@ -66,7 +62,7 @@ function resolveCorsOrigin(ctx: any) {
     return origin;
   }
 
-  return getCorsWhitelist() ? false : origin;
+  return whitelist ? false : origin;
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
