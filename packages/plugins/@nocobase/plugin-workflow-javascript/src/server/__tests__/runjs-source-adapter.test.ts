@@ -17,14 +17,14 @@ import { createWorkflowJavaScriptRunJSSourceAdapter } from '../runjs-sources/wor
 describe('workflow-javascript RunJS source adapter', () => {
   let app: MockServer;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     app = await getApp({
       plugins: [PluginWorkflowJavaScriptServer],
     });
   });
 
-  afterEach(async () => {
-    await app.destroy();
+  afterAll(async () => {
+    await app?.destroy();
   });
 
   it('saves workflow JavaScript node content while preserving other config fields', async () => {

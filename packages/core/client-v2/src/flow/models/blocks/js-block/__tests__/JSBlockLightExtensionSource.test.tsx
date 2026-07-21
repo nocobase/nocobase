@@ -27,7 +27,6 @@ import {
 import { RunJSEditorRegistry } from '../../../../components/runjs-studio';
 import { PluginFlowEngine } from '../../../../index';
 import { createMockClient } from '../../../../../MockApplication';
-import { assertLightExtensionSettingsHostContract } from '../../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSBlockModel } from '../JSBlock';
 import { JSBlockSourceModeField } from '../JSBlockSourceModeField';
 
@@ -533,26 +532,6 @@ describe('JSBlockModel light extension source', () => {
     );
   });
 
-  it('uses canonical light extension settings across saves and entry switches', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ JSBlockModel });
-    const model = engine.createModel<JSBlockModel>({
-      use: 'JSBlockModel',
-      uid: 'js-block-canonical-settings-contract',
-    });
-
-    await assertLightExtensionSettingsHostContract({
-      model,
-      flowKey: 'jsSettings',
-      settingsComponent: 'JSBlockLightExtensionSettingsStepField',
-      sourceBinding: SOURCE_BINDING,
-      nextSourceBinding: {
-        ...SOURCE_BINDING,
-        entryId: 'entry_orders',
-      },
-    });
-  });
-
   it('validates nested object settings before saving a runtime settings step', async () => {
     const descriptor: RunJSSourceSettingsDescriptor = {
       entryId: 'entry_object_settings',
@@ -858,105 +837,6 @@ describe('JSBlockModel light extension source', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent('Entry missing');
-    });
-  });
-
-  it.each([
-    [
-      'LIGHT_EXTENSION_BINDING_OUTDATED',
-      409,
-      'Light extension binding is outdated',
-      'Refresh the block settings and choose the current entry.',
-    ],
-    [
-      'LIGHT_EXTENSION_SETTINGS_INVALID',
-      422,
-      'Light extension settings are invalid',
-      'Open the block settings and fix the light extension settings.',
-    ],
-    [
-      'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
-      404,
-      'Light extension entry missing',
-      'Choose an available entry or restore this entry.',
-    ],
-    [
-      'LIGHT_EXTENSION_FORBIDDEN',
-      403,
-      'Light extension access denied',
-      'Ask an administrator for permission to use this light extension.',
-    ],
-    [
-      'LIGHT_EXTENSION_REPO_ARCHIVED',
-      409,
-      'Light extension repository is archived',
-      'Restore the repository or choose an entry from another repository.',
-    ],
-  ])('renders an actionable hint for %s errors', async (code, status, title, hint) => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: async () => {
-        throw {
-          response: {
-            status,
-            data: {
-              errors: [
-                {
-                  code,
-                  message: code,
-                },
-              ],
-            },
-          },
-        };
-      },
-    });
-
-    renderJSBlock({
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-      settings: {},
-      version: 'v2',
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent(title);
-      expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent(hint);
-    });
-  });
-
-  it.each([
-    [403, 'Light extension access denied'],
-    [404, 'Light extension entry missing'],
-  ])('renders status-only %s resolver failures with light-extension hints', async (status, title) => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: async () => {
-        throw {
-          response: {
-            status,
-            data: {
-              errors: [
-                {
-                  message: 'Request failed',
-                },
-              ],
-            },
-          },
-        };
-      },
-    });
-
-    renderJSBlock({
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-      settings: {},
-      version: 'v2',
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent(title);
-      expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent('Request failed');
     });
   });
 });

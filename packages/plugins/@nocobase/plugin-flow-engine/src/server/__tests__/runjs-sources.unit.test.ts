@@ -132,102 +132,69 @@ describe('flow-engine RunJS source registration', () => {
     expect(registrar.adapters).toEqual([]);
   });
 
-  it('treats a recognized FlowModel RunJS step as uninitialized when its params are not persisted yet', async () => {
-    const registrar = createRegistrar();
-    const db = {
-      getCollection: () => ({
-        repository: {
-          findModelById: async () => ({
-            uid: 'js-step-model',
-            use: 'JSBlockModel',
-            stepParams: {
-              jsSettings: {},
-            },
-          }),
+  it.each([
+    ['JSBlockModel', 'jsSettings', 'render'],
+    ['JSPageModel', 'jsSettings', 'render'],
+    ['JSFieldModel', 'jsSettings', 'render'],
+    ['JSEditableFieldModel', 'jsSettings', 'render'],
+    ['JSItemModel', 'jsSettings', 'render'],
+    ['JSColumnModel', 'jsSettings', 'render'],
+    ['JSItemActionModel', 'jsSettings', 'render'],
+    ['JSActionModel', 'clickSettings', 'action'],
+    ['JSRecordActionModel', 'clickSettings', 'action'],
+    ['JSCollectionActionModel', 'clickSettings', 'action'],
+    ['JSFormActionModel', 'clickSettings', 'action'],
+    ['FilterFormJSActionModel', 'clickSettings', 'action'],
+  ] as const)(
+    'treats an unpersisted %s source as an initializable %s contract',
+    async (modelUse, flowKey, surfaceStyle) => {
+      const registrar = createRegistrar();
+      const db = {
+        getCollection: () => ({
+          repository: {
+            findModelById: async () => ({
+              uid: `initializable-${modelUse}`,
+              use: modelUse,
+              stepParams: {},
+            }),
+          },
+        }),
+      } as unknown as Database;
+      registerFlowModelRunJSSourceAdapters({
+        db,
+        app: {
+          pm: {
+            get: () => registrar,
+          },
         },
-      }),
-    } as unknown as Database;
-    registerFlowModelRunJSSourceAdapters({
-      db,
-      app: {
-        pm: {
-          get: () => registrar,
-        },
-      },
-    });
+      });
 
-    const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
-    expect(stepAdapter).toBeDefined();
+      const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
 
-    await expect(
-      stepAdapter?.readLegacy({
-        locator: {
-          kind: 'flowModel.step',
-          modelUid: 'js-step-model',
-          flowKey: 'jsSettings',
-          stepKey: 'runJs',
-          paramPath: ['code'],
+      await expect(
+        stepAdapter?.readLegacy({
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: `initializable-${modelUse}`,
+            flowKey,
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          ctx: {},
+        }),
+      ).resolves.toMatchObject({
+        code: '',
+        version: 'v2',
+        surfaceStyle,
+        entryPath: 'src/main.tsx',
+        entry: 'src/main.tsx',
+        uninitialized: true,
+        metadata: {
+          modelUse,
         },
-        ctx: {},
-      }),
-    ).resolves.toMatchObject({
-      code: '',
-      version: 'v2',
-      surfaceStyle: 'render',
-      uninitialized: true,
-      metadata: {
-        modelUse: 'JSBlockModel',
-      },
-    });
-  });
-
-  it('treats a JS Page RunJS step as an uninitialized render source', async () => {
-    const registrar = createRegistrar();
-    const db = {
-      getCollection: () => ({
-        repository: {
-          findModelById: async () => ({
-            uid: 'js-page-model',
-            use: 'JSPageModel',
-            stepParams: {},
-          }),
-        },
-      }),
-    } as unknown as Database;
-    registerFlowModelRunJSSourceAdapters({
-      db,
-      app: {
-        pm: {
-          get: () => registrar,
-        },
-      },
-    });
-
-    const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
-
-    await expect(
-      stepAdapter?.readLegacy({
-        locator: {
-          kind: 'flowModel.step',
-          modelUid: 'js-page-model',
-          flowKey: 'jsSettings',
-          stepKey: 'runJs',
-          paramPath: ['code'],
-        },
-        ctx: {},
-      }),
-    ).resolves.toMatchObject({
-      code: '',
-      version: 'v2',
-      surfaceStyle: 'render',
-      entryPath: 'src/main.tsx',
-      entry: 'src/main.tsx',
-      uninitialized: true,
-      metadata: {
-        modelUse: 'JSPageModel',
-      },
-    });
-  });
+      });
+    },
+  );
 
   it('keeps persisted non-empty FlowModel code without a version on v1 semantics', async () => {
     const registrar = createRegistrar();

@@ -297,6 +297,11 @@ describe('flowSurfaces source binding authoring validation', () => {
                 },
               ],
             },
+            {
+              type: 'jsBlock',
+              script: 'summary',
+              settings: sourceSettings('js-block'),
+            },
           ],
         },
       ],
@@ -315,6 +320,10 @@ describe('flowSurfaces source binding authoring validation', () => {
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].actions[0].stepParams',
           ruleId: 'runjs-stepParams-unsupported',
+        }),
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[1].script',
+          ruleId: 'jsBlock-mixed-script-and-light-extension',
         }),
       ]),
     );

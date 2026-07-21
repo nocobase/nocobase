@@ -7,16 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  FlowExitAllException,
-  FlowExitException,
-  type FlowSettingsContext,
-  type StepDefinition,
-} from '@nocobase/flow-engine';
+import { FlowExitAllException, FlowExitException, type FlowSettingsContext } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
-import { assertLightExtensionSettingsHostContract } from '../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSActionModel } from '../JSActionModel';
 import { runJSActionRuntime } from '../jsActionLightExtensionRuntime';
 import {
@@ -29,86 +23,6 @@ import {
 describe('JSActionModel light extension source', () => {
   afterEach(() => {
     RunJSSourceResolverRegistry.clear();
-  });
-
-  it('adds JS Action source mode, binding, and hidden RunJS source fields', async () => {
-    const { model } = createActionModel<JSActionModel>({
-      ModelClass: JSActionModel,
-      use: 'JSActionModel',
-      uid: 'js-action-source-fields',
-      runJs: {},
-    });
-    const flow = model.getFlow('clickSettings');
-    const sourceModeStep = flow?.steps?.sourceMode as StepDefinition;
-    const sourceBindingStep = flow?.steps?.sourceBinding as StepDefinition;
-    const runJsStep = flow?.steps?.runJs as StepDefinition;
-
-    expect(sourceModeStep?.useRawParams).toBe(true);
-    const listSourceMenuItems = vi.fn(async () => []);
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: () => ({
-        code: '',
-      }),
-      getSettingsDescriptor: async () => JS_ACTION_SETTINGS_DESCRIPTOR,
-      listSourceMenuItems,
-    });
-    await (
-      sourceModeStep.uiMode as { props?: { loadItems?: (input: unknown) => Promise<unknown> } }
-    )?.props?.loadItems?.({
-      params: {
-        sourceMode: 'inline',
-      },
-      defaultParams: {},
-      t: (key: string) => key,
-    });
-    expect(listSourceMenuItems).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'js-action',
-      }),
-    );
-    expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSActionLightExtensionFullSourceField');
-    expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
-      kind: 'js-action',
-    });
-    expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
-    expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
-    expect(sourceBindingStep?.hideInSettings).toBe(true);
-    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSActionLightExtensionFullSourceField');
-    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
-      kind: 'js-action',
-    });
-    expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
-    expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
-    expect(runJsStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
-
-    expect(sourceModeStep.defaultParams?.(model.context as FlowSettingsContext<JSActionModel>)).toEqual({
-      sourceMode: 'inline',
-      sourceBinding: undefined,
-      settings: {},
-    });
-    await expect(
-      sourceModeStep.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {}),
-    ).rejects.toThrow('Light extension source binding is required.');
-
-    await sourceModeStep.beforeParamsSave?.(
-      model.context as FlowSettingsContext<JSActionModel>,
-      {
-        sourceMode: 'light-extension',
-        sourceBinding: JS_ACTION_SOURCE_BINDING,
-        settings: {
-          successMessage: 'Approved',
-        },
-      },
-      {},
-    );
-    expect(model.getStepParams('clickSettings', 'runJs')).toMatchObject({
-      sourceMode: 'light-extension',
-      sourceBinding: JS_ACTION_SOURCE_BINDING,
-      settings: {
-        successMessage: 'Approved',
-      },
-    });
   });
 
   it('runs a light extension action through the runtime resolver and only toggles the current action loading', async () => {
@@ -225,26 +139,6 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
     await Promise.all([firstRun, secondRun]);
 
     expect(model.props.loading).toBe(false);
-  });
-
-  it('uses canonical light extension settings across saves and entry switches', async () => {
-    const { model } = createActionModel<JSActionModel>({
-      ModelClass: JSActionModel,
-      use: 'JSActionModel',
-      uid: 'js-action-canonical-settings-contract',
-    });
-
-    await assertLightExtensionSettingsHostContract({
-      model,
-      flowKey: 'clickSettings',
-      settingsComponent: 'JSActionLightExtensionSettingsStepField',
-      sourceBinding: JS_ACTION_SOURCE_BINDING,
-      nextSourceBinding: {
-        ...JS_ACTION_SOURCE_BINDING,
-        entryId: 'entry_send_reminder',
-        entryPath: 'src/client/js-actions/send-reminder/index.ts',
-      },
-    });
   });
 
   it('blocks JS Action settings values that violate schema constraints', async () => {

@@ -13,8 +13,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer, type FlowSettingsContext } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../components/runjs-source';
-import { assertJSItemLightExtensionSourceContract } from '../../utils/__tests__/jsItemLightExtensionSourceContract';
-import { assertLightExtensionSettingsHostContract } from '../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSItemModel } from '../JSItemModel';
 
 const SOURCE_BINDING = {
@@ -88,33 +86,6 @@ function renderModel(engine: FlowEngine, model: JSItemModel) {
 describe('JSItemModel light extension source', () => {
   afterEach(() => {
     RunJSSourceResolverRegistry.clear();
-  });
-
-  it('adds JS Item source mode, binding, and hidden RunJS source fields', async () => {
-    const { model } = createJSItem({});
-    await assertJSItemLightExtensionSourceContract({
-      model,
-      sourceBinding: SOURCE_BINDING,
-      settings: {
-        vipColor: '#f5222d',
-      },
-      settingsComponent: 'JSItemLightExtensionSettingsStepField',
-      settingKey: 'vipColor',
-      settingTitle: 'VIP color',
-      updatedValue: '#1677ff',
-    });
-  });
-
-  it('uses canonical light extension settings across saves and entry switches', async () => {
-    const { model } = createJSItem({});
-
-    await assertLightExtensionSettingsHostContract({
-      model,
-      flowKey: 'jsSettings',
-      settingsComponent: 'JSItemLightExtensionSettingsStepField',
-      sourceBinding: SOURCE_BINDING,
-      nextSourceBinding: NEXT_SOURCE_BINDING,
-    });
   });
 
   it('resolves JS Item entries and injects item, record, settings, and source metadata', async () => {

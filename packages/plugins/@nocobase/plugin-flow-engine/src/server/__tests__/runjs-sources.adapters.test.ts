@@ -21,11 +21,11 @@ describe('flow-engine RunJS source adapters', () => {
   let agent: ReturnType<MockServer['agent']>;
   let repository: FlowModelRepository;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     await resetApp([PluginLightExtensionServer, 'flow-engine']);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app?.destroy();
   });
 
@@ -339,52 +339,67 @@ describe('flow-engine RunJS source adapters', () => {
     });
   });
 
-  it('initializes and saves a new JS block RunJS source before its step params exist', async () => {
+  it.each([
+    {
+      label: 'render',
+      modelUse: 'JSBlockModel',
+      flowKey: 'jsSettings',
+      initialCode: 'ctx.render("new block");',
+      savedCode: 'ctx.render("saved block");',
+    },
+    {
+      label: 'action',
+      modelUse: 'JSActionModel',
+      flowKey: 'clickSettings',
+      initialCode: 'ctx.message.success("new action");',
+      savedCode: 'ctx.message.success("saved action");',
+    },
+  ])('initializes and saves a new $label RunJS source before its step params exist', async (input) => {
+    const modelUid = `new-js-${input.label}-model`;
     await repository.insertModel({
-      uid: 'new-js-block-model',
-      title: 'New JS block',
-      use: 'JSBlockModel',
+      uid: modelUid,
+      title: `New JS ${input.label}`,
+      use: input.modelUse,
       stepParams: {},
     });
 
     const locator: RunJSSourceLocator = {
       kind: 'flowModel.step',
-      modelUid: 'new-js-block-model',
-      flowKey: 'jsSettings',
+      modelUid,
+      flowKey: input.flowKey,
       stepKey: 'runJs',
       paramPath: ['code'],
     };
-    const initialCode = 'ctx.render("new block");';
     const open = await openSource(locator, agent, {
-      code: initialCode,
+      code: input.initialCode,
       version: 'v2',
     });
 
     expect(open.status).toBe(200);
     expect(open.body.data.legacy).toMatchObject({
-      code: initialCode,
+      code: input.initialCode,
       version: 'v2',
-      surfaceStyle: 'render',
+      surfaceStyle: input.label,
       uninitialized: true,
       metadata: {
-        modelUse: 'JSBlockModel',
+        modelUse: input.modelUse,
       },
     });
     expect(open.body.data.files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/index.tsx',
-          content: initialCode,
+          content: input.initialCode,
         }),
       ]),
     );
 
-    const save = await saveSource(locator, open.body.data, 'ctx.render("saved block");');
+    const save = await saveSource(locator, open.body.data, input.savedCode);
     expect(save.status).toBe(200);
 
-    const updated = await repository.findModelById('new-js-block-model');
-    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: runtimeCode('ctx.render("saved block");'),
+    const updated = await repository.findModelById(modelUid);
+    expect(getAtPath(updated, ['stepParams', input.flowKey, 'runJs'])).toMatchObject({
+      code: runtimeCode(input.savedCode),
       version: 'v2',
       sourceRef: {
         type: 'vsc-file',
@@ -633,8 +648,9 @@ describe('flow-engine RunJS source adapters', () => {
       expectedPath: 'stepParams.jsSettings.runJs.missingCode',
     },
   ])('rejects FlowModel step locators with a missing $label path', async (input) => {
+    const modelUid = `js-step-missing-${input.label}-path-model`;
     await repository.insertModel({
-      uid: 'js-step-missing-path-model',
+      uid: modelUid,
       title: 'JS block',
       use: 'JSBlockModel',
       stepParams: {
@@ -649,7 +665,7 @@ describe('flow-engine RunJS source adapters', () => {
 
     const response = await openSource({
       kind: 'flowModel.step',
-      modelUid: 'js-step-missing-path-model',
+      modelUid,
       flowKey: input.flowKey,
       stepKey: input.stepKey,
       paramPath: input.paramPath,

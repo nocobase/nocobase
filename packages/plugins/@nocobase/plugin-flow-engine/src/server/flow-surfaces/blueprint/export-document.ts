@@ -496,6 +496,7 @@ const FILTER_FIELD_PUBLIC_PROP_KEYS = new Set([
 ]);
 const FIELD_PUBLIC_PROP_KEYS_BY_USE: Record<string, ReadonlySet<string>> = {
   TableColumnModel: TABLE_FIELD_PUBLIC_PROP_KEYS,
+  JSColumnModel: TABLE_FIELD_PUBLIC_PROP_KEYS,
   FormItemModel: FORM_FIELD_PUBLIC_PROP_KEYS,
   PatternFormItemModel: FORM_FIELD_PUBLIC_PROP_KEYS,
   DetailsItemModel: DETAIL_FIELD_PUBLIC_PROP_KEYS,
@@ -1909,6 +1910,7 @@ function exportFilterFieldPublicSettings(fieldHost: FlowSurfaceExportNode) {
 function exportFieldPublicSettings(fieldHost: FlowSurfaceExportNode) {
   switch (fieldHost.use) {
     case 'TableColumnModel':
+    case 'JSColumnModel':
       return exportTableFieldPublicSettings(fieldHost);
     case 'FormItemModel':
     case 'PatternFormItemModel':
@@ -1934,9 +1936,14 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
   if (fieldHost.use === 'JSColumnModel' || fieldHost.use === 'JSItemModel') {
     const runJs = clonePlainObject(getByPath(fieldHost, ['stepParams', 'jsSettings', 'runJs']));
     const type = fieldHost.use === 'JSColumnModel' ? 'jsColumn' : 'jsItem';
+    const publicSettings = exportFieldPublicSettings(fieldHost);
+    const settings = buildDefinedPayload({
+      ...((publicSettings as { settings?: Record<string, unknown> }).settings || {}),
+      ...(runJs || {}),
+    });
     return buildDefinedPayload({
       type,
-      settings: runJs,
+      settings: Object.keys(settings).length ? settings : undefined,
     });
   }
 

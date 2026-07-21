@@ -9,7 +9,9 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
+import { vi } from 'vitest';
 
+import { commitHistoryDefaultLimit } from '../../../shared/vsc-file/constants';
 import { VscError } from '../../../shared/vsc-file/errors';
 import { sha256Hex } from '../../../shared/vsc-file/hash';
 import { VscFileService } from '../services/VscFileService';
@@ -512,6 +514,56 @@ describe('vsc-file repository and commit services', () => {
       path: 'README.md',
       content: '# Demo\n',
     });
+  });
+
+  it('pages commit history with seq cursors and validates list options in one repository', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'history-contract',
+      name: 'main',
+    });
+    let baseCommitId: string | null = null;
+    const sequences: number[] = [];
+    for (let index = 1; index <= 4; index += 1) {
+      const pushed = await service.push({
+        repoId: repository.id,
+        baseCommitId,
+        message: `commit ${index}`,
+        files: [{ path: 'README.md', content: `# Revision ${index}\n` }],
+      });
+      baseCommitId = pushed.commit.id;
+      sequences.push(pushed.commit.seq);
+    }
+    const commitFind = vi.spyOn(db.getRepository('vscFileCommits'), 'find');
+    const cases = [
+      { input: { limit: 2 }, expectedSequences: [4, 3], expectedLimit: 2, beforeSeq: undefined },
+      { input: { limit: 2, beforeSeq: 3 }, expectedSequences: [2, 1], expectedLimit: 2, beforeSeq: 3 },
+      { input: {}, expectedSequences: [4, 3, 2, 1], expectedLimit: commitHistoryDefaultLimit, beforeSeq: undefined },
+    ];
+
+    expect(sequences).toEqual([1, 2, 3, 4]);
+    for (const [index, testCase] of cases.entries()) {
+      const commits = await service.listCommits({ repoId: repository.id, ...testCase.input });
+      const query = commitFind.mock.calls[index]?.[0];
+
+      expect(commits.map((commit) => commit.seq)).toEqual(testCase.expectedSequences);
+      expect(query).toEqual(
+        expect.objectContaining({
+          filter: testCase.beforeSeq
+            ? { repoId: repository.id, seq: { $lt: testCase.beforeSeq } }
+            : { repoId: repository.id },
+          sort: expect.arrayContaining(['-seq']),
+          limit: testCase.expectedLimit,
+        }),
+      );
+      expect(query).not.toHaveProperty('offset');
+    }
+
+    for (const input of [{ limit: 0 }, { beforeSeq: 0 }]) {
+      await expect(service.listCommits({ repoId: repository.id, ...input })).rejects.toMatchObject<VscError>({
+        code: 'PATH_INVALID',
+      });
+    }
   });
 
   it('rejects hash-only pushes for blobs outside the current repository context', async () => {

@@ -345,6 +345,12 @@ describe('flowSurfaces public JS source contracts', () => {
     });
   });
 
+  it('exposes JS blocks as js-block sources with inline source references', () => {
+    expectSourceOptions('JSBlockModel', 'js-block');
+    expectSourceContract('JSBlockModel', 'jsSettings', 'js-block');
+    expect(getConfigureOptionsForUse('JSBlockModel').sourceRef).toMatchObject({ type: 'object' });
+  });
+
   it('exposes ordinary JS actions as js-action sources', () => {
     for (const use of [
       'JSCollectionActionModel',

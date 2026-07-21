@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { compileFlowSurfaceApplyBlueprintRequest } from '../flow-surfaces/blueprint';
 import { exportFlowSurfaceBlueprintDocument } from '../flow-surfaces/blueprint/export-document';
-import { getNodeContract } from '../flow-surfaces/catalog';
+import { actionCatalog, getNodeContract } from '../flow-surfaces/catalog';
 import { FlowSurfaceContractGuard } from '../flow-surfaces/contract-guard';
 import { clearInactiveRunJsSourceBinding, resolveRunJsSettingsGroupKey } from '../flow-surfaces/service';
 import { buildRunJsSourceChanges } from '../flow-surfaces/service-utils';
@@ -36,18 +36,27 @@ type RunJsState = {
 
 type RunJsStepParams = Partial<Record<RunJsGroupKey, { runJs: RunJsState }>>;
 
-const SURFACES: SurfaceCase[] = [
+const NON_ACTION_SURFACES: SurfaceCase[] = [
   { label: 'JS Block', use: 'JSBlockModel', kind: 'js-block', group: 'jsSettings' },
   { label: 'JS Item', use: 'JSItemModel', kind: 'js-item', group: 'jsSettings' },
+  { label: 'Form JS Item', use: 'FormJSFieldItemModel', kind: 'js-item', group: 'jsSettings' },
   { label: 'JS Item Action', use: 'JSItemActionModel', kind: 'js-item', group: 'jsSettings' },
-  { label: 'JS Collection Action', use: 'JSCollectionActionModel', kind: 'js-action', group: 'clickSettings' },
-  { label: 'JS Record Action', use: 'JSRecordActionModel', kind: 'js-action', group: 'clickSettings' },
-  { label: 'JS Form Action', use: 'JSFormActionModel', kind: 'js-action', group: 'clickSettings' },
-  { label: 'Generic JS Action', use: 'JSActionModel', kind: 'js-action', group: 'clickSettings' },
   { label: 'JS Field', use: 'JSFieldModel', kind: 'js-field', group: 'jsSettings' },
   { label: 'JS Editable Field', use: 'JSEditableFieldModel', kind: 'js-field', group: 'jsSettings' },
   { label: 'JS Column', use: 'JSColumnModel', kind: 'js-field', group: 'jsSettings' },
 ];
+
+const ACTION_SURFACES: SurfaceCase[] = Array.from(new Set(actionCatalog.map((item) => item.use))).flatMap((use) => {
+  const group = resolveRunJsSettingsGroupKey(use);
+  const kind =
+    getNodeContract(use).domains.stepParams?.groups?.[group || 'clickSettings']?.pathSchemas?.['runJs.sourceBinding']
+      ?.properties?.kind?.enum?.[0];
+  return group === 'clickSettings' && kind === 'js-action'
+    ? [{ label: use, use, kind: 'js-action', group: 'clickSettings' }]
+    : [];
+});
+
+const SURFACES = [...NON_ACTION_SURFACES, ...ACTION_SURFACES];
 
 function sourceBinding(kind: RunJsSourceBindingKind, entryId = `entry_${kind}`) {
   return {

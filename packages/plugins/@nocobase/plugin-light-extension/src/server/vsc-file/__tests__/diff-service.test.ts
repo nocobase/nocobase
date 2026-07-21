@@ -9,6 +9,7 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
+import { vi } from 'vitest';
 
 import { diffMaxFileSize } from '../../../shared/vsc-file/constants';
 import { sha256Hex } from '../../../shared/vsc-file/hash';
@@ -67,6 +68,7 @@ describe('vsc-file diff service', () => {
       message: 'change files',
       files: changedFiles(),
     });
+    const blobFindOne = vi.spyOn(db.getRepository('vscFileBlobs'), 'findOne');
     const diff = await service.diffCommits({
       repoId: repository.id,
       fromCommitId: initialCommit.id,
@@ -107,6 +109,7 @@ describe('vsc-file diff service', () => {
       additions: 0,
       deletions: 0,
     });
+    expect(blobFindOne).toHaveBeenCalledTimes(4);
   });
 
   it('classifies metadata-only tree entry changes as modified', async () => {
