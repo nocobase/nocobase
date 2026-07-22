@@ -341,6 +341,21 @@
           "message": "应用子路径（例如 /nocobase/）",
           "placeholder": "/ 或 /nocobase/"
         },
+        "developmentMode": {
+          "message": "开发模式",
+          "noCodeLabel": "无代码",
+          "noCodeHint": "通过可视化方式配置页面、字段、区块和工作流。",
+          "vibeCodingLabel": "Vibe Coding",
+          "vibeCodingHint": "基于 Git 模板初始化一个独立的 Portal SPA。"
+        },
+        "portalName": {
+          "message": "初始化 Portal 名称",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "初始化 Portal 模板 Git 地址",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
+        },
         "storagePath": {
           "message": "上传文件和本地存储目录",
           "placeholder": "./<env>/storage/"
@@ -440,6 +455,21 @@
         },
         "skipDownload": {
           "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
+        },
+        "developmentMode": {
+          "message": "开发模式",
+          "noCodeLabel": "无代码",
+          "noCodeHint": "通过可视化方式配置页面、字段、区块和工作流。",
+          "vibeCodingLabel": "Vibe Coding",
+          "vibeCodingHint": "基于 Git 模板初始化一个独立的 Portal SPA。"
+        },
+        "portalName": {
+          "message": "初始化 Portal 名称",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "初始化 Portal 模板 Git 地址",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
       "webUi": {

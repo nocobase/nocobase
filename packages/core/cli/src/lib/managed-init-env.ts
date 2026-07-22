@@ -26,6 +26,9 @@ export function isPreparedSetupState(value: unknown): boolean {
 export function buildInitAppEnvVarsFromConfig(
   config?: Pick<EnvConfigEntry, 'rootUsername' | 'rootEmail' | 'rootPassword' | 'rootNickname'> & {
     lang?: string;
+    developmentMode?: string;
+    portalName?: string;
+    portalTemplate?: string;
   },
 ): Record<string, string> {
   const out: Record<string, string> = {};
@@ -41,5 +44,8 @@ export function buildInitAppEnvVarsFromConfig(
   put('INIT_ROOT_EMAIL', config?.rootEmail);
   put('INIT_ROOT_PASSWORD', config?.rootPassword);
   put('INIT_ROOT_NICKNAME', config?.rootNickname);
+  put('INIT_DEVELOPMENT_MODE', config?.developmentMode);
+  put('INIT_PORTAL_NAME', config?.portalName);
+  put('INIT_PORTAL_TEMPLATE', config?.portalTemplate);
   return out;
 }

@@ -49,8 +49,11 @@ import Install, { defaultDbPortForDialect } from './install.ts';
 
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
+const DEFAULT_INIT_DEVELOPMENT_MODE = 'no-code';
+const DEFAULT_INIT_PORTAL_NAME = 'admin';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const INIT_SETUP_MODES = ['install-new', 'manage-local', 'connect-remote'] as const;
+const INIT_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
 type InitSetupMode = (typeof INIT_SETUP_MODES)[number];
 const INIT_ENV_ADD_FLAG_NAMES = [
   'locale',
@@ -105,6 +108,10 @@ function isInstallNewSetupMode(values: PromptCatalogValues | Record<string, unkn
 
 function isInstallLikeSetupMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
   return !isRemoteSetupMode(values);
+}
+
+function isVibeCodingMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return String(values.developmentMode ?? DEFAULT_INIT_DEVELOPMENT_MODE).trim() === 'vibe-coding';
 }
 
 function remoteConnectionOnly<T extends PromptBlock>(def: T): T {
@@ -420,6 +427,41 @@ Prompt modes:
     appPath: installLikeOnly(Install.appPrompts.appPath),
     appPort: installLikeOnly(Install.appPrompts.appPort),
     appPublicPath: installLikeOnly(Install.appPrompts.appPublicPath),
+    developmentMode: installNewOnly({
+      type: 'select',
+      message: initText('prompts.developmentMode.message'),
+      options: [
+        {
+          value: 'no-code',
+          label: initText('prompts.developmentMode.noCodeLabel'),
+          hint: initText('prompts.developmentMode.noCodeHint'),
+        },
+        {
+          value: 'vibe-coding',
+          label: initText('prompts.developmentMode.vibeCodingLabel'),
+          hint: initText('prompts.developmentMode.vibeCodingHint'),
+        },
+      ],
+      initialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
+      yesInitialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
+      required: true,
+    }),
+    portalName: installNewOnly({
+      type: 'text',
+      message: initText('prompts.portalName.message'),
+      placeholder: DEFAULT_INIT_PORTAL_NAME,
+      initialValue: DEFAULT_INIT_PORTAL_NAME,
+      yesInitialValue: DEFAULT_INIT_PORTAL_NAME,
+      hidden: (values) => !isVibeCodingMode(values),
+      required: true,
+    }),
+    portalTemplate: installNewOnly({
+      type: 'text',
+      message: initText('prompts.portalTemplate.message'),
+      placeholder: 'git@github.com:nocobase/admin-starter.git',
+      hidden: (values) => !isVibeCodingMode(values),
+      required: true,
+    }),
     skipDownload: installNewOnly({
       type: 'boolean',
       message: initText('prompts.skipDownload.message'),
@@ -546,6 +588,16 @@ Prompt modes:
     'setup-mode': Flags.string({
       description: 'Setup mode: install a new app, manage a local app by reusing its database, or connect a remote app',
       options: [...INIT_SETUP_MODES],
+    }),
+    'development-mode': Flags.string({
+      description: 'Initial development mode: no-code or vibe-coding',
+      options: [...INIT_DEVELOPMENT_MODES],
+    }),
+    'portal-name': Flags.string({
+      description: 'Initial Portal name when --development-mode vibe-coding is used',
+    }),
+    'portal-template': Flags.string({
+      description: 'Initial Portal template Git URL when --development-mode vibe-coding is used',
     }),
     ui: Flags.boolean({
       description: 'Open the guided setup flow in a local browser form (not valid with --yes)',
@@ -981,6 +1033,9 @@ Prompt modes:
           appPath: c.appPath,
           appPort: c.appPort,
           appPublicPath: c.appPublicPath,
+          developmentMode: c.developmentMode,
+          portalName: c.portalName,
+          portalTemplate: c.portalTemplate,
           skipDownload: c.skipDownload,
         } satisfies PromptsCatalog,
       },
@@ -1058,6 +1113,9 @@ Prompt modes:
     'app-port'?: string;
     'storage-path'?: string;
     'app-public-path'?: string;
+    'development-mode'?: string;
+    'portal-name'?: string;
+    'portal-template'?: string;
     'root-username'?: string;
     'root-email'?: string;
     'root-password'?: string;
@@ -1075,6 +1133,9 @@ Prompt modes:
     'db-underscored'?: boolean;
     'skip-download'?: boolean;
     'app-path'?: string;
+    'development-mode'?: string;
+    'portal-name'?: string;
+    'portal-template'?: string;
     source?: string;
     version?: string;
     replace?: boolean;
@@ -1149,6 +1210,15 @@ Prompt modes:
     }
     if (flags['app-public-path'] !== undefined && String(flags['app-public-path']).trim() !== '') {
       preset.appPublicPath = String(flags['app-public-path']).trim();
+    }
+    if (flags['development-mode'] !== undefined && String(flags['development-mode']).trim() !== '') {
+      preset.developmentMode = String(flags['development-mode']).trim();
+    }
+    if (flags['portal-name'] !== undefined && String(flags['portal-name']).trim() !== '') {
+      preset.portalName = String(flags['portal-name']).trim();
+    }
+    if (flags['portal-template'] !== undefined && String(flags['portal-template']).trim() !== '') {
+      preset.portalTemplate = String(flags['portal-template']).trim();
     }
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
@@ -1300,6 +1370,9 @@ Prompt modes:
     const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
     const appPort = String(results.appPort ?? '').trim();
     const appPublicPath = String(results.appPublicPath ?? '').trim();
+    const developmentMode = String(results.developmentMode ?? '').trim();
+    const portalName = String(results.portalName ?? '').trim();
+    const portalTemplate = String(results.portalTemplate ?? '').trim();
     const source = String(results.source ?? '').trim();
     const version = resolveInitDownloadVersion(results);
     const dockerRegistry = String(results.dockerRegistry ?? '').trim();
@@ -1377,6 +1450,9 @@ Prompt modes:
         ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
         ...(appPublicPath ? { appPublicPath } : {}),
+        ...(developmentMode && developmentMode !== DEFAULT_INIT_DEVELOPMENT_MODE ? { developmentMode } : {}),
+        ...(portalName ? { portalName } : {}),
+        ...(portalTemplate ? { portalTemplate } : {}),
         ...(appKey ? { appKey } : {}),
         ...(timeZone ? { timezone: timeZone } : {}),
         ...(!skipDownload && results.devDependencies !== undefined
@@ -1437,6 +1513,9 @@ Prompt modes:
       'skip-auth'?: boolean;
       'skip-download'?: boolean;
       'app-path'?: string;
+      'development-mode'?: string;
+      'portal-name'?: string;
+      'portal-template'?: string;
       'db-host'?: string;
       'db-schema'?: string;
       'db-table-prefix'?: string;
@@ -1543,6 +1622,21 @@ Prompt modes:
     const appPublicPath = String(results.appPublicPath ?? '').trim();
     if (appPublicPath) {
       argv.push('--app-public-path', appPublicPath);
+    }
+
+    const developmentMode = String(results.developmentMode ?? '').trim();
+    if (developmentMode && developmentMode !== DEFAULT_INIT_DEVELOPMENT_MODE) {
+      argv.push('--development-mode', developmentMode);
+    }
+
+    const portalName = String(results.portalName ?? '').trim();
+    if (portalName) {
+      argv.push('--portal-name', portalName);
+    }
+
+    const portalTemplate = String(results.portalTemplate ?? '').trim();
+    if (portalTemplate) {
+      argv.push('--portal-template', portalTemplate);
     }
 
     if (flags.force) {
@@ -1816,6 +1910,15 @@ Prompt modes:
       delete normalized.rootEmail;
       delete normalized.rootPassword;
       delete normalized.rootNickname;
+    }
+    const developmentMode = normalizeConnectionString(normalized.developmentMode) || DEFAULT_INIT_DEVELOPMENT_MODE;
+    normalized.developmentMode = developmentMode;
+    if (developmentMode === 'vibe-coding') {
+      normalized.portalName = normalizeConnectionString(normalized.portalName) || DEFAULT_INIT_PORTAL_NAME;
+      normalized.portalTemplate = normalizeConnectionString(normalized.portalTemplate);
+    } else {
+      delete normalized.portalName;
+      delete normalized.portalTemplate;
     }
     delete normalized.installApiBaseUrl;
     delete normalized.installAuthType;

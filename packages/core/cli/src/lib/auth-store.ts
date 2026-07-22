@@ -107,6 +107,12 @@ export interface EnvConfigEntry {
   setupState?: 'prepared' | 'installed';
   /** Initial install language saved for prepare/install flows. */
   lang?: string;
+  /** Initial development mode (INIT_DEVELOPMENT_MODE). */
+  developmentMode?: string;
+  /** Initial Portal name (INIT_PORTAL_NAME). */
+  portalName?: string;
+  /** Initial Portal template Git URL (INIT_PORTAL_TEMPLATE). */
+  portalTemplate?: string;
   rootUsername?: string;
   rootEmail?: string;
   rootPassword?: string;
