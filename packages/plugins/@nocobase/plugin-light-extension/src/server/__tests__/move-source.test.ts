@@ -16,8 +16,13 @@ import type {
   LightExtensionMoveSourceInput,
   LightExtensionRepoRecord,
 } from '../../shared/types';
-import { MoveSourceService, relocateRunJSWorkspace } from '../services/MoveSourceService';
+import {
+  MoveSourceService,
+  PersistentMoveSourceSnapshotValidator,
+  relocateRunJSWorkspace,
+} from '../services/MoveSourceService';
 import { buildApplicationDefaultLightExtensionIdentity } from '../services/LightExtensionRepoService';
+import { buildRunJSSourceRepositoryIdentity } from '../vsc-file/public-api';
 
 const locator = {
   kind: 'flowModel.step',
@@ -66,6 +71,62 @@ const entry: LightExtensionEntryRecord = {
   healthStatus: 'ready',
   diagnostics: [],
 };
+
+describe('PersistentMoveSourceSnapshotValidator', () => {
+  it('rejects a stale source head', async () => {
+    const identity = buildRunJSSourceRepositoryIdentity(locator);
+    const validator = new PersistentMoveSourceSnapshotValidator(
+      createSnapshotDatabase({
+        repository: {
+          id: 'runjs_repo',
+          ...identity,
+          status: 'active',
+          headCommitId: 'runjs_commit_current',
+        },
+      }),
+    );
+
+    await expect(
+      validator.assertCurrent({
+        locator,
+        sourceRepoId: 'runjs_repo',
+        sourceHeadCommitId: 'runjs_commit_stale',
+        expectedOwnerFingerprint: 'owner_before',
+      }),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
+      details: {
+        sourceRepoId: 'runjs_repo',
+        expectedHeadCommitId: 'runjs_commit_stale',
+        currentHeadCommitId: 'runjs_commit_current',
+      },
+    });
+  });
+
+  it('rejects a source repository owned by another host', async () => {
+    const identity = buildRunJSSourceRepositoryIdentity(locator);
+    const validator = new PersistentMoveSourceSnapshotValidator(
+      createSnapshotDatabase({
+        repository: {
+          id: 'runjs_repo',
+          ...identity,
+          ownerId: 'runjs:flowModel.step:another-host:forged',
+          status: 'active',
+          headCommitId: 'runjs_commit',
+        },
+      }),
+    );
+
+    await expect(
+      validator.assertCurrent({
+        locator,
+        sourceRepoId: 'runjs_repo',
+        sourceHeadCommitId: 'runjs_commit',
+        expectedOwnerFingerprint: 'owner_before',
+      }),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_PERMISSION_DENIED' });
+  });
+});
 
 describe('MoveSourceService', () => {
   it('derives one stable default repository identity per application', () => {
@@ -251,6 +312,7 @@ describe('MoveSourceService', () => {
         } as unknown as Database,
         {
           lockInternalRepoForUpdate: vi.fn(async () => ({ ...repo, vscRepoId: 'vsc_repo' })),
+          assertApplicationOwnership: vi.fn(),
         } as never,
         {
           pull: vi.fn(async () => ({
@@ -265,6 +327,8 @@ describe('MoveSourceService', () => {
         { prepareSaveSource, publishPreparedSave } as never,
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
+        'main',
+        { assertCurrent: vi.fn() },
       );
 
       const result = await service.moveSource(
@@ -358,7 +422,7 @@ describe('MoveSourceService', () => {
             run({ id: 'tx_create' } as unknown as Transaction),
         },
       } as unknown as Database,
-      { createRepo } as never,
+      { createRepo, assertApplicationOwnership: vi.fn() } as never,
       {} as never,
       {
         listEntries: vi.fn(async () => {
@@ -386,6 +450,8 @@ describe('MoveSourceService', () => {
             getFingerprint: vi.fn(async () => 'owner_after'),
           }),
         }) as unknown as RunJSSourceAdapterRegistry,
+      'main',
+      { assertCurrent: vi.fn() },
     );
 
     const result = await service.moveSource(
@@ -441,7 +507,7 @@ describe('MoveSourceService', () => {
             run({ id: 'tx_conflict' } as unknown as Transaction),
         },
       } as unknown as Database,
-      { lockInternalRepoForUpdate: vi.fn(async () => repo) } as never,
+      { lockInternalRepoForUpdate: vi.fn(async () => repo), assertApplicationOwnership: vi.fn() } as never,
       {
         pull: vi.fn(async () => ({
           repo,
@@ -471,6 +537,8 @@ describe('MoveSourceService', () => {
             writeExternalBinding: vi.fn(),
           }),
         }) as unknown as RunJSSourceAdapterRegistry,
+      'main',
+      { assertCurrent: vi.fn() },
     );
 
     await expect(
@@ -556,7 +624,7 @@ describe('MoveSourceService', () => {
       code: 'LIGHT_EXTENSION_INVALID_INPUT',
     });
 
-    expect(fixture.readLegacy).toHaveBeenCalledOnce();
+    expect(fixture.readLegacy).toHaveBeenCalledTimes(2);
     expectFailFastWritesNotCalled(fixture);
   });
 
@@ -577,7 +645,7 @@ describe('MoveSourceService', () => {
       ),
     ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
 
-    expect(fixture.readLegacy).toHaveBeenCalledOnce();
+    expect(fixture.readLegacy).toHaveBeenCalledTimes(2);
     expectFailFastWritesNotCalled(fixture);
   });
 
@@ -627,6 +695,35 @@ describe('MoveSourceService', () => {
         { adapterContext: {} },
       ),
     ).rejects.toThrow('permission denied');
+    expect(saveSource).not.toHaveBeenCalled();
+  });
+
+  it('authorizes before reserving an operation or creating the default destination', async () => {
+    const operationModel = createMoveOperationModel();
+    const getOrCreateApplicationDefaultRepo = vi.fn();
+    const saveSource = vi.fn();
+    const service = createFailureService({
+      saveSource,
+      operationModel,
+      getOrCreateApplicationDefaultRepo,
+      assertCanWrite: vi.fn(async () => {
+        throw new Error('permission denied');
+      }),
+    });
+
+    await expect(
+      service.moveSource(
+        createMoveSourceInput({
+          destination: { type: 'default' },
+          idempotencyKey: 'move-default-sales-kpi',
+        }),
+        { adapterContext: {} },
+      ),
+    ).rejects.toThrow('permission denied');
+
+    expect(operationModel.model.findOne).toHaveBeenCalledOnce();
+    expect(operationModel.model.findOrCreate).not.toHaveBeenCalled();
+    expect(getOrCreateApplicationDefaultRepo).not.toHaveBeenCalled();
     expect(saveSource).not.toHaveBeenCalled();
   });
 
@@ -848,6 +945,7 @@ function createFailureService(options: {
     } as unknown as Database,
     {
       lockInternalRepoForUpdate: vi.fn(async () => options.destinationRepo || repo),
+      assertApplicationOwnership: vi.fn(),
       getOrCreateApplicationDefaultRepo:
         options.getOrCreateApplicationDefaultRepo || vi.fn(async () => options.destinationRepo || repo),
     } as never,
@@ -893,6 +991,7 @@ function createFailureService(options: {
         }),
       }) as unknown as RunJSSourceAdapterRegistry,
     options.applicationName || 'main',
+    { assertCurrent: vi.fn() },
   );
 }
 
@@ -902,6 +1001,12 @@ function createMoveOperationModel() {
     get: (key: string) => values?.[key],
   } as Model;
   const model = {
+    findOne: vi.fn(async (options: { where: Record<string, unknown> }) => {
+      if (!values) {
+        return null;
+      }
+      return Object.entries(options.where).every(([key, value]) => values?.[key] === value) ? record : null;
+    }),
     findOrCreate: vi.fn(async (options: { defaults: Record<string, unknown> }) => {
       if (values) {
         return [record, false] as const;
@@ -927,6 +1032,25 @@ function createMoveOperationModel() {
     model,
     getValues: () => values,
   };
+}
+
+function createSnapshotDatabase(input: {
+  repository?: Record<string, unknown>;
+  commit?: Record<string, unknown>;
+}): Database {
+  const toModel = (values: Record<string, unknown> | undefined): Model | null =>
+    values ? ({ get: (key: string) => values[key] } as Model) : null;
+  return {
+    getRepository: (name: string) => {
+      if (name === 'vscFileRepositories') {
+        return { findOne: vi.fn(async () => toModel(input.repository)) };
+      }
+      if (name === 'vscFileCommits') {
+        return { findOne: vi.fn(async () => toModel(input.commit)) };
+      }
+      throw new Error(`Unexpected repository: ${name}`);
+    },
+  } as unknown as Database;
 }
 
 function createMoveSourceInput(overrides: Partial<LightExtensionMoveSourceInput> = {}): LightExtensionMoveSourceInput {
@@ -974,12 +1098,14 @@ function createFailFastService(modelUse = 'JSBlockModel') {
   }));
   const service = new MoveSourceService(
     { sequelize: { transaction } } as unknown as Database,
-    { createRepo } as never,
+    { createRepo, assertApplicationOwnership: vi.fn() } as never,
     { pull } as never,
     { getEntry, listEntries } as never,
     { prepareSaveSource, publishPreparedSave, compileCurrentRuntime } as never,
     { syncFlowModelReferencesForNodeTree } as never,
     () => ({ require: registryRequire }) as unknown as RunJSSourceAdapterRegistry,
+    'main',
+    { assertCurrent: vi.fn() },
   );
 
   return {

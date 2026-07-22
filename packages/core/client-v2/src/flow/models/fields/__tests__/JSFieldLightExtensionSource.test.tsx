@@ -165,13 +165,11 @@ describe('JSFieldModel light extension source', () => {
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
-      settings: {
-        prefix: 'tel:',
-      },
+      settings: {},
     });
   });
 
-  it('copies the selected source binding and initializes its descriptor defaults in the RunJS step', async () => {
+  it('copies the selected source binding without persisting its descriptor defaults in the RunJS step', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: () => ({ code: '' }),
@@ -197,9 +195,7 @@ describe('JSFieldModel light extension source', () => {
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
-      settings: {
-        prefix: 'tel:',
-      },
+      settings: {},
       code: 'ctx.render("inline");',
       version: 'v2',
     });

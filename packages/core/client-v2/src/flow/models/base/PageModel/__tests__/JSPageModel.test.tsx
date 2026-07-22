@@ -200,6 +200,43 @@ describe('JSPageModel', () => {
     expect(JSON.parse(host.textContent || '{}')).toEqual({ enabled: false, count: 0, label: '', tone: 'blue' });
   });
 
+  it('renders actionable inline settings diagnostics with invalid field paths', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-page-invalid-settings-test',
+      canHandle: () => true,
+      getSettingsDescriptor: async () => ({
+        entryId: 'inline:repo-page:invalid-settings',
+        settingsSchemaHash: 'schema-invalid',
+        defaults: { count: 5 },
+        schema: {
+          type: 'object',
+          properties: {
+            count: { type: 'integer' },
+          },
+        },
+      }),
+    });
+    const engine = createEngine();
+    const model = createModel(engine, {
+      jsSettings: {
+        runJs: {
+          code: 'ctx.render(String(ctx.settings.count));',
+          version: 'v2',
+          sourceMode: 'inline',
+          sourceRef: { type: 'vsc-file', repoId: 'repo-page', commitId: 'commit-1' },
+          settings: { count: 'invalid' },
+        },
+      },
+    });
+
+    renderModel(engine, model);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Light extension settings are invalid');
+    expect(alert).toHaveTextContent('Open the page settings and fix the light extension settings.');
+    expect(alert).toHaveTextContent('Fields: count');
+  });
+
   it('clears stale content on failure and disposes the runtime root on unmount', async () => {
     const engine = createEngine();
     const model = createModel(engine, {

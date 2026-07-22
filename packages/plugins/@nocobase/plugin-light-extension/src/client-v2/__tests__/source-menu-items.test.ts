@@ -139,9 +139,7 @@ describe('light extension source menu items', () => {
         entryPath: 'src/client/js-blocks/order-total/index.tsx',
         kind: 'js-block',
       },
-      settings: {
-        currency: 'USD',
-      },
+      settings: {},
       version: 'v2',
     });
     expect(selectedParams).not.toHaveProperty('settings.stale');

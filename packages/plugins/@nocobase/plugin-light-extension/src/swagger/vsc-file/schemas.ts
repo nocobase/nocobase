@@ -145,6 +145,34 @@ export const runJSSourceSchemas = {
       headSeq: { type: 'integer', minimum: 0 },
     },
   },
+  RunJSSourceSettingsDescriptor: {
+    type: 'object',
+    required: [
+      'descriptorPath',
+      'entryId',
+      'key',
+      'schema',
+      'defaults',
+      'settingsSchemaHash',
+      'settingsDefaultsHash',
+      'diagnostics',
+    ],
+    properties: {
+      descriptorPath: { type: 'string' },
+      entryId: { type: 'string', nullable: true },
+      key: { type: 'string', nullable: true },
+      schema: { type: 'object', nullable: true, additionalProperties: true },
+      defaults: { type: 'object', additionalProperties: true },
+      settingsSchemaHash: { type: 'string', nullable: true, pattern: '^[a-f0-9]{64}$' },
+      settingsDefaultsHash: { type: 'string', nullable: true, pattern: '^[a-f0-9]{64}$' },
+      diagnostics: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/RunJSSourceDiagnostic' },
+      },
+    },
+    description:
+      'Server-normalized Inline entry descriptor. Hashes and defaults use the same canonical contract as external light-extension entries.',
+  },
   RunJSSourceOpenResult: {
     type: 'object',
     required: [
@@ -158,6 +186,7 @@ export const runJSSourceSchemas = {
       'files',
       'permissions',
       'history',
+      'settingsDescriptor',
     ],
     properties: {
       locator: { $ref: '#/components/schemas/RunJSSourceLocator' },
@@ -187,6 +216,7 @@ export const runJSSourceSchemas = {
           items: { type: 'array', items: { type: 'object', additionalProperties: true } },
         },
       },
+      settingsDescriptor: { $ref: '#/components/schemas/RunJSSourceSettingsDescriptor' },
     },
   },
   RunJSSourceOpenEnvelope: {

@@ -465,7 +465,7 @@ describe('runjsSourceRuntimeCommon', () => {
     expect(result.missingRequiredPaths).toEqual(['options.limit']);
   });
 
-  it('treats schema defaults as satisfying required settings', () => {
+  it('treats schema defaults as satisfying required settings without persisting them as overrides', () => {
     const result = normalizeLightExtensionSourceSettingsForBinding({
       currentRunJs: {},
       nextSourceMode: 'light-extension',
@@ -483,20 +483,17 @@ describe('runjsSourceRuntimeCommon', () => {
       },
     });
 
-    expect(result).toEqual({ settings: { title: 'Default title' }, missingRequiredPaths: [] });
+    expect(result).toEqual({ settings: {}, missingRequiredPaths: [] });
   });
 
-  it.each([
-    [{ count: 'invalid' }, 'count'],
-    [{ unknown: true }, 'unknown'],
-  ])('rejects explicit invalid binding settings %j', (nextSettings, invalidPath) => {
+  it('rejects explicit invalid binding settings', () => {
     let caught: unknown;
     try {
       normalizeLightExtensionSourceSettingsForBinding({
         currentRunJs: { sourceBinding: { entryId: 'entry_invalid' }, settings: {} },
         nextSourceMode: 'light-extension',
         nextSourceBinding: { entryId: 'entry_invalid' },
-        nextSettings,
+        nextSettings: { count: 'invalid' },
         descriptor: {
           entryId: 'entry_invalid',
           settingsSchemaHash: 'schema_invalid',
@@ -510,20 +507,19 @@ describe('runjsSourceRuntimeCommon', () => {
     } catch (error) {
       caught = error;
     }
-    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: [invalidPath] });
+    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: ['count'] });
   });
 
-  it('rejects an explicitly submitted unknown path even when it already exists in canonical settings', () => {
-    let caught: unknown;
-    try {
+  it('prunes explicitly submitted and stored unknown paths for the same entry', () => {
+    expect(
       normalizeLightExtensionSourceSettingsForBinding({
         currentRunJs: {
           sourceBinding: { entryId: 'entry_existing_unknown' },
-          settings: { unknown: 'stored' },
+          settings: { count: 1, unknown: 'stored' },
         },
         nextSourceMode: 'light-extension',
         nextSourceBinding: { entryId: 'entry_existing_unknown' },
-        nextSettings: { unknown: 'submitted' },
+        nextSettings: { count: 2, unknown: 'submitted' },
         descriptor: {
           entryId: 'entry_existing_unknown',
           settingsSchemaHash: 'schema_existing_unknown',
@@ -533,12 +529,8 @@ describe('runjsSourceRuntimeCommon', () => {
             properties: { count: { type: 'integer' } },
           },
         },
-      });
-    } catch (error) {
-      caught = error;
-    }
-
-    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: ['unknown'] });
+      }),
+    ).toEqual({ settings: { count: 2 }, missingRequiredPaths: [] });
   });
 
   it('normalizes server error envelopes without changing surface-specific hints', () => {

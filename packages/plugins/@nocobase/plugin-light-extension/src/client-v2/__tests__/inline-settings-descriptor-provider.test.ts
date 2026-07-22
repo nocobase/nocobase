@@ -22,27 +22,31 @@ const locator = {
 };
 
 describe('inline light extension settings descriptor provider', () => {
-  it('opens the current RunJS workspace and parses src/client/entry.json settings', async () => {
+  it('consumes the server-canonical settings descriptor from the current RunJS workspace', async () => {
     const request = vi.fn(async () => ({
       data: {
         data: {
           repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_2' },
-          files: [
-            { path: 'src/client/index.tsx', content: 'ctx.render(<div />);' },
-            {
-              path: 'src/client/entry.json',
-              content: JSON.stringify({
-                schemaVersion: 1,
-                key: 'welcome-card',
-                settings: {
-                  title: { type: 'string', default: 'Welcome', required: true },
-                  enabled: { type: 'boolean', default: false },
-                  count: { type: 'integer', default: 0 },
-                  label: { type: 'string', default: '' },
-                },
-              }),
+          files: [{ path: 'src/client/entry.json', content: '{ client parsing must not run' }],
+          settingsDescriptor: {
+            descriptorPath: 'src/client/entry.json',
+            entryId: 'inline:repo_1:welcome-card',
+            key: 'welcome-card',
+            settingsSchemaHash: 'a'.repeat(64),
+            settingsDefaultsHash: 'b'.repeat(64),
+            schema: {
+              type: 'object',
+              required: ['title'],
+              properties: {
+                title: { type: 'string', default: 'Welcome' },
+                enabled: { type: 'boolean', default: false },
+                count: { type: 'integer', default: 0 },
+                label: { type: 'string', default: '' },
+              },
             },
-          ],
+            defaults: { title: 'Welcome', enabled: false, count: 0, label: '' },
+            diagnostics: [],
+          },
         },
       },
     }));
@@ -57,7 +61,7 @@ describe('inline light extension settings descriptor provider', () => {
       }),
     ).resolves.toEqual({
       entryId: 'inline:repo_1:welcome-card',
-      settingsSchemaHash: expect.stringMatching(/^commit_2:/u),
+      settingsSchemaHash: 'a'.repeat(64),
       schema: {
         type: 'object',
         required: ['title'],
@@ -81,29 +85,33 @@ describe('inline light extension settings descriptor provider', () => {
   });
 
   it.each([
-    ['missing file', [{ path: 'src/client/index.tsx', content: 'return 1;' }]],
-    ['bad JSON', [{ path: 'src/client/entry.json', content: '{' }]],
-    [
-      'conflicting settings forms',
-      [
-        {
-          path: 'src/client/entry.json',
-          content: JSON.stringify({
-            schemaVersion: 1,
-            key: 'legacy',
-            settings: {},
-            settingsSchema: { type: 'object', properties: {} },
-          }),
-        },
-      ],
-    ],
-  ])('returns no descriptor for %s', async (_label, files) => {
+    ['missing file', 'entry_descriptor_missing'],
+    ['bad JSON', 'entry_descriptor_json_invalid'],
+    ['conflicting settings forms', 'entry_descriptor_settings_conflict'],
+  ])('surfaces canonical diagnostics for %s', async (_label, diagnosticCode) => {
     const api = {
       request: vi.fn(async () => ({
         data: {
           data: {
             repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_1' },
-            files,
+            files: [],
+            settingsDescriptor: {
+              descriptorPath: 'src/client/entry.json',
+              entryId: null,
+              key: null,
+              settingsSchemaHash: null,
+              settingsDefaultsHash: null,
+              schema: null,
+              defaults: {},
+              diagnostics: [
+                {
+                  code: diagnosticCode,
+                  severity: 'error',
+                  message: `Canonical ${diagnosticCode}`,
+                  path: 'src/client/entry.json',
+                },
+              ],
+            },
           },
         },
       })),
@@ -116,31 +124,33 @@ describe('inline light extension settings descriptor provider', () => {
         sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
         locator,
       }),
-    ).resolves.toBeUndefined();
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      status: 422,
+      paths: ['src/client/entry.json'],
+      details: {
+        reasonCode: 'settings_invalid',
+        diagnostics: [expect.objectContaining({ code: diagnosticCode })],
+      },
+    });
   });
 
-  it('accepts the JSON Schema descriptor form with the same defaults contract', async () => {
+  it('accepts the canonical no-settings descriptor without inventing a hash', async () => {
     const request = vi.fn(async () => ({
       data: {
         data: {
           repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_3' },
-          files: [
-            {
-              path: 'src/client/entry.json',
-              content: JSON.stringify({
-                schemaVersion: 1,
-                key: 'schema-form',
-                settingsSchema: {
-                  type: 'object',
-                  properties: {
-                    enabled: { type: 'boolean', default: false },
-                    count: { type: 'integer', default: 0 },
-                    label: { type: 'string', default: '' },
-                  },
-                },
-              }),
-            },
-          ],
+          files: [],
+          settingsDescriptor: {
+            descriptorPath: 'src/client/entry.json',
+            entryId: 'inline:repo_1:no-settings',
+            key: 'no-settings',
+            settingsSchemaHash: null,
+            settingsDefaultsHash: null,
+            schema: null,
+            defaults: {},
+            diagnostics: [],
+          },
         },
       },
     }));
@@ -153,9 +163,10 @@ describe('inline light extension settings descriptor provider', () => {
         locator,
       }),
     ).resolves.toMatchObject({
-      entryId: 'inline:repo_1:schema-form',
-      schema: { type: 'object' },
-      defaults: { enabled: false, count: 0, label: '' },
+      entryId: 'inline:repo_1:no-settings',
+      settingsSchemaHash: null,
+      schema: null,
+      defaults: {},
     });
   });
 });

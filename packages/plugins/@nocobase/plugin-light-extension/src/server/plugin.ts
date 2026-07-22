@@ -278,6 +278,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
       sharedVscPermissionHooks,
       this.validator,
+      this.app.name,
     );
     this.fileService = new LightExtensionFileService(
       db,

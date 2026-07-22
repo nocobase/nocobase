@@ -25,7 +25,6 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { RunJSEditorField } from '../../../components/runjs-studio';
 import {
   resolveRuntimeRunJS,
-  readRunJSRuntimeError,
   createRunJSSourceCascadeMenuUIMode,
   shouldHideRunJSSourceMenu,
   type RunJSSourceSettings,
@@ -36,12 +35,14 @@ import {
   createLightExtensionSettingSteps,
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
   normalizeLightExtensionSourceSettingsForBinding,
+  normalizeLightExtensionRuntimeError,
   rememberLightExtensionBindingSettings,
   resolveEffectiveRunJSSettings,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
   showPendingLightExtensionRequiredSettings,
+  type RuntimeErrorInfo,
 } from '../../utils/runjsSourceRuntimeCommon';
 
 const NAMESPACE = 'client';
@@ -62,13 +63,7 @@ type JSBlockLightExtensionSourceBinding = {
   entryName?: unknown;
 };
 
-type JSBlockRuntimeError = {
-  title: string;
-  hint: string;
-  message: string;
-  code?: string;
-  status?: number;
-};
+type JSBlockRuntimeError = RuntimeErrorInfo;
 
 type JSBlockRuntimeState = {
   loading: boolean;
@@ -140,37 +135,13 @@ function toNonEmptyString(value: unknown): string | undefined {
 }
 
 function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
-  const source = readRunJSRuntimeError(error);
-  const code = source.code;
-  const normalizedCode = code?.toLowerCase() || '';
-  const status = source.status;
-
-  let title = 'JavaScript block runtime error';
-  let hint = 'Check the JavaScript block configuration and retry.';
-  if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
-    title = 'Light extension access denied';
-    hint = 'Ask an administrator for permission to use this light extension.';
-  } else if (status === 404 || normalizedCode.includes('entry_not_found') || normalizedCode.includes('missing')) {
-    title = 'Light extension entry missing';
-    hint = 'Choose an available entry or restore this entry.';
-  } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
-    title = 'Light extension binding is outdated';
-    hint = 'Refresh the block settings and choose the current entry.';
-  } else if (normalizedCode.includes('settings_invalid')) {
-    title = 'Light extension settings are invalid';
-    hint = 'Open the block settings and fix the light extension settings.';
-  } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
-    title = 'Light extension repository is archived';
-    hint = 'Restore the repository or choose an entry from another repository.';
-  }
-
-  return {
-    title,
-    hint,
-    message: source.message || 'Failed to run JavaScript block',
-    ...(code ? { code } : {}),
-    ...(typeof status === 'number' ? { status } : {}),
-  };
+  return normalizeLightExtensionRuntimeError(error, {
+    defaultTitle: 'JavaScript block runtime error',
+    defaultHint: 'Check the JavaScript block configuration and retry.',
+    defaultMessage: 'Failed to run JavaScript block',
+    outdatedHint: 'Refresh the block settings and choose the current entry.',
+    invalidSettingsHint: 'Open the block settings and fix the light extension settings.',
+  });
 }
 
 const getAddBlockContainer = (root: HTMLElement) => {
@@ -389,10 +360,11 @@ export class JSBlockModel extends BlockModel {
     }
 
     if (this.runtimeState.error) {
-      const { title, hint, message, code, status } = this.runtimeState.error;
+      const { title, hint, message, code, status, paths } = this.runtimeState.error;
       const description = [
         this.context.t(hint),
         this.context.t(message),
+        paths?.length ? `${this.context.t('Fields')}: ${paths.join(', ')}` : null,
         code ? `${this.context.t('Code')}: ${code}` : null,
         status ? `${this.context.t('Status')}: ${status}` : null,
       ]

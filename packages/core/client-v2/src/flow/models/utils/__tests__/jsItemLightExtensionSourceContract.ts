@@ -91,7 +91,7 @@ export async function assertJSItemLightExtensionSourceContract(options: {
   expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
     sourceMode: 'light-extension',
     sourceBinding,
-    settings,
+    settings: {},
   });
 
   const runtimeSteps = await model.getRuntimeFlowSettingSteps('jsSettings');
@@ -102,7 +102,6 @@ export async function assertJSItemLightExtensionSourceContract(options: {
   expect(settingStep?.persistParams).toBe(false);
   expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
     settings: {
-      ...settings,
       [settingKey]: updatedValue,
     },
   });

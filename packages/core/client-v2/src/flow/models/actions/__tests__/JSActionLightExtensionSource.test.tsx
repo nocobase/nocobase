@@ -105,9 +105,7 @@ describe('JSActionModel light extension source', () => {
     expect(model.getStepParams('clickSettings', 'runJs')).toMatchObject({
       sourceMode: 'light-extension',
       sourceBinding: JS_ACTION_SOURCE_BINDING,
-      settings: {
-        successMessage: 'Approved',
-      },
+      settings: {},
     });
   });
 

@@ -147,6 +147,7 @@
   "The current working copy of this entry and its referenced files will be copied to inline code. The light extension will remain unchanged.": "将把当前 Entry 的工作副本及其实际引用的文件复制到内联代码；原轻插件保持不变。",
   "Destination": "目标",
   "Existing light extension": "已有轻插件",
+  "Application default light extension": "应用默认轻插件",
   "Create new light extension": "创建新轻插件",
   "Select a light extension": "请选择轻插件",
   "Entry name": "Entry 名称",

@@ -12,6 +12,8 @@ export type RunJSRuntimeError = {
   status?: number;
   reasonCode?: string;
   message?: string;
+  details?: Record<string, unknown>;
+  paths?: string[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -36,6 +38,28 @@ function getFirstServerError(value: unknown): Record<string, unknown> | undefine
   return isRecord(value.error) ? value.error : undefined;
 }
 
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
+}
+
+function readSettingsPaths(error: Record<string, unknown>, details: Record<string, unknown> | undefined): string[] {
+  const paths = [...readStringArray(error.paths), ...readStringArray(details?.paths)];
+  if (Array.isArray(details?.issues)) {
+    for (const issue of details.issues) {
+      if (isRecord(issue)) {
+        const path = toNonEmptyString(issue.path);
+        if (path) {
+          paths.push(path);
+        }
+      }
+    }
+  }
+  return Array.from(new Set(paths));
+}
+
 export function readRunJSRuntimeError(error: unknown): RunJSRuntimeError {
   if (!isRecord(error)) {
     return typeof error === 'string' ? { message: error } : {};
@@ -43,18 +67,25 @@ export function readRunJSRuntimeError(error: unknown): RunJSRuntimeError {
 
   const response = isRecord(error.response) ? error.response : undefined;
   const serverError = getFirstServerError(response?.data) || getFirstServerError(error);
-  const details = isRecord(serverError?.details) ? serverError.details : undefined;
+  const details = isRecord(serverError?.details)
+    ? serverError.details
+    : isRecord(error.details)
+      ? error.details
+      : undefined;
   const code = toNonEmptyString(serverError?.code) || toNonEmptyString(error.code);
   const status = serverError
     ? toNumber(serverError.status) ?? toNumber(response?.status) ?? toNumber(error.status)
     : toNumber(error.status) ?? toNumber(response?.status);
   const reasonCode = toNonEmptyString(details?.reasonCode);
   const message = toNonEmptyString(serverError?.message) || toNonEmptyString(error.message);
+  const paths = readSettingsPaths(error, details);
 
   return {
     ...(code ? { code } : {}),
     ...(status !== undefined ? { status } : {}),
     ...(reasonCode ? { reasonCode } : {}),
     ...(message ? { message } : {}),
+    ...(details ? { details } : {}),
+    ...(paths.length ? { paths } : {}),
   };
 }

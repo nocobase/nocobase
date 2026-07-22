@@ -390,7 +390,7 @@ describe('flowSurfaces JS page contract', () => {
             type: 'jsBlock',
             settings: {
               title: 'Bootstrapped JS Block',
-              code: 'return null;',
+              code: 'ctx.render(null);',
             },
           },
         }),
@@ -442,7 +442,7 @@ describe('flowSurfaces JS page contract', () => {
           values: {
             target: { uid: page.tabSchemaUid },
             type: 'jsBlock',
-            settings: { title: 'Template source JS Block', code: 'return null;' },
+            settings: { title: 'Template source JS Block', code: 'ctx.render(null);' },
           },
         }),
       );
@@ -451,6 +451,7 @@ describe('flowSurfaces JS page contract', () => {
           values: {
             target: { uid: source.uid },
             name: `Reusable JS Block ${Date.now()}`,
+            description: 'Reusable JavaScript block for workspace bootstrap coverage',
             saveMode: 'duplicate',
           },
         }),

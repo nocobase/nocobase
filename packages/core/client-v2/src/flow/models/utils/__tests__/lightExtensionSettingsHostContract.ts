@@ -317,11 +317,9 @@ export async function assertLightExtensionSettingsHostContract(options: {
     displayOptions: {
       pageSize: 30,
       color: 'orange',
-      density: 'compact',
     },
-    showTitle: true,
   });
-  expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
+  expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(0);
 
   emit.mockClear();
   await sourceModeStep?.beforeParamsSave?.(
@@ -341,7 +339,7 @@ export async function assertLightExtensionSettingsHostContract(options: {
     {},
   );
 
-  expect(getRunJs(model, flowKey).settings).toEqual(nextDescriptor.defaults);
+  expect(getRunJs(model, flowKey).settings).toEqual({});
   expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
   expect(Object.keys(model.getStepParams(flowKey) || {})).toEqual(['runJs']);
 
@@ -374,11 +372,7 @@ export async function assertLightExtensionSettingsHostContract(options: {
   emit.mockClear();
   modeStep?.[1].beforeParamsSave?.(model.context as FlowSettingsContext<FlowModel>, { value: 2 });
   expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
-  expect(getRunJs(model, flowKey).settings).toMatchObject({
-    mode: 2,
-    mode1Options: { message: 'Mode 1' },
-    mode2Options: { color: '#1677ff' },
-  });
+  expect(getRunJs(model, flowKey).settings).toEqual({ mode: 2 });
 
   const switchedSteps = await model.getRuntimeFlowSettingSteps(flowKey);
   const switchedMode1Step = getStepByTitle(switchedSteps, 'Mode 1 settings');
@@ -402,10 +396,7 @@ export async function assertLightExtensionSettingsHostContract(options: {
   emit.mockClear();
   tagsStep?.[1].beforeParamsSave?.(model.context as FlowSettingsContext<FlowModel>, { value: ['saved'] });
   expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
-  expect(getRunJs(model, flowKey).settings).toMatchObject({
-    tags: ['saved'],
-    mode1Options: { message: 'Mode 1' },
-  });
+  expect(getRunJs(model, flowKey).settings).toEqual({ mode: 2, tags: ['saved'] });
 
   nextProperties.mode1Options = {
     ...nextProperties.mode1Options,

@@ -14,6 +14,8 @@ import { VscError } from '../../../shared/vsc-file/errors';
 import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../../shared/vsc-file/runjs-source-types';
 import { runJSManifestPath } from '../../../shared/vsc-file/runjs-workspace-path';
 import PluginLightExtensionServer from '../../plugin';
+import { buildLightExtensionSettingsHashes } from '../../services/LightExtensionEntryService';
+import { LightExtensionValidator } from '../../services/LightExtensionValidator';
 import { runJSSourceActionNames } from '../runjs-sources';
 
 describe('runJSSources resource', () => {
@@ -333,6 +335,140 @@ describe('runJSSources resource', () => {
         }),
       ]),
     );
+  });
+
+  it('returns canonical Inline settings descriptors and diagnostics from open and openLatest', async () => {
+    const locator = createLocator('fm_settings_descriptor');
+    registerFlowModelAdapter({
+      label: 'JS block / Settings descriptor',
+      modelUid: 'fm_settings_descriptor',
+      readCode: () => 'ctx.render("settings");',
+    });
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(opened.body.data.settingsDescriptor).toMatchObject({
+      descriptorPath: 'src/client/entry.json',
+      entryId: null,
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+      diagnostics: [expect.objectContaining({ code: 'entry_descriptor_missing', severity: 'error' })],
+    });
+
+    const descriptorContent = `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        key: 'canonical-inline',
+        settings: {
+          title: { type: 'string', default: 'Welcome', required: true },
+          enabled: { type: 'boolean', default: false },
+          count: { type: 'integer', default: 0 },
+        },
+      },
+      null,
+      2,
+    )}\n`;
+    const externalValidation = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-blocks/canonical-inline/index.tsx',
+          content: 'ctx.render(null);',
+        },
+        {
+          path: 'src/client/js-blocks/canonical-inline/entry.json',
+          content: descriptorContent,
+        },
+      ],
+    });
+    expect(externalValidation.accepted).toBe(true);
+    const externalSchema = externalValidation.entries[0].settingsSchema;
+    const externalHashes = buildLightExtensionSettingsHashes(externalSchema);
+
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Add canonical settings descriptor',
+        files: [
+          ...opened.body.data.files.map(
+            (file: { path: string; content?: string; language?: string; mode?: string }) => ({
+              path: file.path,
+              content: file.content || '',
+              language: file.language,
+              mode: file.mode,
+            }),
+          ),
+          {
+            path: 'src/client/entry.json',
+            content: descriptorContent,
+            language: 'json',
+          },
+        ],
+        entryPath: 'src/client/legacy.ts',
+        version: 'v2',
+      },
+    });
+    expect(saved.status).toBe(200);
+
+    const reopened = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(reopened.body.data.settingsDescriptor).toEqual({
+      descriptorPath: 'src/client/entry.json',
+      entryId: `inline:${opened.body.data.repository.id}:canonical-inline`,
+      key: 'canonical-inline',
+      schema: externalSchema,
+      defaults: { title: 'Welcome', enabled: false, count: 0 },
+      settingsSchemaHash: externalHashes.settingsSchemaHash,
+      settingsDefaultsHash: externalHashes.settingsDefaultsHash,
+      diagnostics: [],
+    });
+    expect(reopened.body.data.settingsDescriptor.settingsSchemaHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(reopened.body.data.settingsDescriptor.settingsDefaultsHash).toMatch(/^[a-f0-9]{64}$/u);
+
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.body.data.settingsDescriptor).toEqual(reopened.body.data.settingsDescriptor);
+
+    const malformedContent = `${JSON.stringify({
+      schemaVersion: 1,
+      key: 'canonical-inline',
+      settings: {},
+      settingsSchema: { type: 'object', properties: {} },
+    })}\n`;
+    const malformedSave = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: reopened.body.data.repository.id,
+        baseCommitId: reopened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: reopened.body.data.ownerFingerprint,
+        message: 'Add malformed settings descriptor',
+        files: reopened.body.data.files.map(
+          (file: { path: string; content?: string; language?: string; mode?: string }) => ({
+            path: file.path,
+            content: file.path === 'src/client/entry.json' ? malformedContent : file.content || '',
+            language: file.language,
+            mode: file.mode,
+          }),
+        ),
+        entryPath: 'src/client/legacy.ts',
+        version: 'v2',
+      },
+    });
+    expect(malformedSave.status).toBe(200);
+
+    const malformedOpen = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(malformedOpen.body.data.settingsDescriptor).toMatchObject({
+      entryId: `inline:${opened.body.data.repository.id}:canonical-inline`,
+      schema: null,
+      defaults: {},
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+      diagnostics: [
+        expect.objectContaining({
+          code: 'entry_descriptor_settings_conflict',
+          severity: 'error',
+          path: 'src/client/entry.json',
+        }),
+      ],
+    });
   });
 
   it('returns the RunJS-specific error contract when saving an unchanged workspace', async () => {
@@ -684,6 +820,111 @@ describe('runJSSources resource', () => {
     });
     expect(runtimeWritten).toBe(false);
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
+  });
+
+  it('recovers an owner conflict through openLatest, preview, and a merged full-snapshot save', async () => {
+    const locator = createLocator('fm_owner_recovery');
+    let ownerFingerprint = 'owner:fm_owner_recovery:v1';
+    let code = 'ctx.render("legacy");';
+    let writtenBaseOwnerFingerprint: string | undefined;
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Owner recovery',
+        code,
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: ({ artifact, baseOwnerFingerprint }) => {
+        writtenBaseOwnerFingerprint = baseOwnerFingerprint;
+        code = artifact.code;
+        ownerFingerprint = 'owner:fm_owner_recovery:v3';
+        return { ownerFingerprint };
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const initialHeadCommitId = opened.body.data.repository.headCommitId;
+    code = 'ctx.render("changed outside Studio");';
+    ownerFingerprint = 'owner:fm_owner_recovery:v2';
+
+    const staleSave = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: initialHeadCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Reject stale owner snapshot',
+        files: opened.body.data.files,
+      },
+    });
+    expect(staleSave.status).toBe(409);
+    expect(staleSave.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+    });
+
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.status).toBe(200);
+    expect(latest.body.data).toMatchObject({
+      ownerFingerprint: 'owner:fm_owner_recovery:v2',
+      legacy: {
+        code: 'ctx.render("changed outside Studio");',
+      },
+      repository: {
+        headCommitId: initialHeadCommitId,
+      },
+    });
+    const mergedFiles = latest.body.data.files.map(
+      (file: { path: string; content?: string; language?: string; mode?: string }) => ({
+        path: file.path,
+        operation: 'upsert' as const,
+        content:
+          file.path === 'src/client/index.tsx'
+            ? 'ctx.render("merged outside change and Studio edit");'
+            : file.content || '',
+        language: file.language,
+        mode: file.mode,
+      }),
+    );
+
+    const preview = await agent.resource('runJSSources').compilePreview({
+      values: {
+        locator,
+        repoId: latest.body.data.repository.id,
+        baseCommitId: latest.body.data.repository.headCommitId,
+        files: mergedFiles,
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.artifact.diagnostics).toEqual([]);
+
+    const recovered = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: latest.body.data.repository.id,
+        baseCommitId: latest.body.data.repository.headCommitId,
+        baseOwnerFingerprint: latest.body.data.ownerFingerprint,
+        message: 'Merge owner conflict',
+        files: mergedFiles,
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(recovered.status).toBe(200);
+    expect(recovered.body.data.commit.parentCommitId).toBe(initialHeadCommitId);
+    expect(recovered.body.data.ownerFingerprint).toBe('owner:fm_owner_recovery:v3');
+    expect(writtenBaseOwnerFingerprint).toBe('owner:fm_owner_recovery:v2');
   });
 
   it('rejects owner changes that happen after the preflight fingerprint check', async () => {

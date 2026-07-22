@@ -80,11 +80,20 @@ export function normalizeLightExtensionEntrySelection(
 ): RunJSSettingsRecord {
   const currentEntryId = getLightExtensionEntryId(input.currentBinding);
   const nextEntryId = getLightExtensionEntryId(input.nextBinding) || input.descriptor.entryId;
-  const retainedSettings =
-    currentEntryId && currentEntryId === nextEntryId
-      ? mergeSettings(input.currentSettings, input.submittedSettings)
-      : {};
-  return normalizeLightExtensionSettings(input.descriptor, retainedSettings);
+  return currentEntryId && currentEntryId === nextEntryId
+    ? pruneLightExtensionSettingsOverrides(
+        input.descriptor.schema,
+        mergeSettings(input.currentSettings, input.submittedSettings),
+      )
+    : {};
+}
+
+export function pruneLightExtensionSettingsOverrides(schema: unknown, settings: unknown): RunJSSettingsRecord {
+  if (!isRecord(settings) || !getSchemaProperties(schema)) {
+    return {};
+  }
+  const pruned = pruneSettingsValue(schema, settings);
+  return isRecord(pruned) ? pruned : {};
 }
 
 export function setLightExtensionTopLevelSetting(
@@ -120,6 +129,25 @@ export function cloneJsonValue<T>(value: T): T {
 
 function getSchemaProperties(schema: unknown): RunJSSettingsRecord | null {
   return isRecord(schema) && isRecord(schema.properties) ? schema.properties : null;
+}
+
+function pruneSettingsValue(schema: unknown, value: unknown): unknown {
+  if (Array.isArray(value)) {
+    const itemSchema = isRecord(schema) && isRecord(schema.items) ? schema.items : undefined;
+    return itemSchema ? value.map((item) => pruneSettingsValue(itemSchema, item)) : cloneJsonValue(value);
+  }
+
+  const properties = getSchemaProperties(schema);
+  if (!properties || !isRecord(value)) {
+    return cloneJsonValue(value);
+  }
+
+  return Object.fromEntries(
+    Object.entries(properties)
+      .filter(([key]) => Object.prototype.hasOwnProperty.call(value, key))
+      .map(([key, propertySchema]) => [key, pruneSettingsValue(propertySchema, value[key])])
+      .filter(([, propertyValue]) => typeof propertyValue !== 'undefined'),
+  );
 }
 
 function mergeDefaults(defaults: RunJSSettingsRecord, current: RunJSSettingsRecord): RunJSSettingsRecord {

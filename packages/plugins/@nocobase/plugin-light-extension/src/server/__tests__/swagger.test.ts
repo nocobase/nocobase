@@ -90,6 +90,22 @@ describe('light-extension swagger', () => {
         details: expect.objectContaining({ type: 'object' }),
       }),
     );
+    expect(schemas.RunJSSourceOpenResult.required).toContain('settingsDescriptor');
+    expect(schemas.RunJSSourceOpenResult.properties.settingsDescriptor).toEqual({
+      $ref: '#/components/schemas/RunJSSourceSettingsDescriptor',
+    });
+    expect(schemas.RunJSSourceSettingsDescriptor.required).toEqual(
+      expect.arrayContaining([
+        'descriptorPath',
+        'entryId',
+        'schema',
+        'defaults',
+        'settingsSchemaHash',
+        'settingsDefaultsHash',
+        'diagnostics',
+      ]),
+    );
+    expect(schemas.RunJSSourceSettingsDescriptor.properties.settingsSchemaHash.pattern).toBe('^[a-f0-9]{64}$');
     expect(schemas.LightExtensionErrorResponse.properties.errors.items).toEqual({
       $ref: '#/components/schemas/LightExtensionErrorItem',
     });

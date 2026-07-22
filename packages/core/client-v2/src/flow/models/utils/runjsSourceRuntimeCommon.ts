@@ -67,6 +67,8 @@ export type RuntimeErrorInfo = {
   message: string;
   code?: string;
   status?: number;
+  details?: Record<string, unknown>;
+  paths?: string[];
 };
 
 type RuntimeErrorLabels = {
@@ -734,20 +736,7 @@ export function normalizeLightExtensionSourceSettingsForBinding(options: {
     settings,
     mode: 'binding',
   });
-  const sameEntry =
-    getLightExtensionEntryId(options.currentRunJs.sourceBinding) ===
-    getLightExtensionEntryId(options.nextSourceBinding);
-  const submittedUnknownPaths =
-    sameEntry && isRecord(options.nextSettings)
-      ? validateRunJSSettings({
-          schema: options.descriptor.schema,
-          settings: options.nextSettings,
-          mode: 'binding',
-        })
-          .errors.filter((issue) => issue.code === 'unknown')
-          .map((issue) => issue.path)
-      : [];
-  const invalidPaths = [...validation.errors.map((issue) => issue.path), ...submittedUnknownPaths];
+  const invalidPaths = validation.errors.map((issue) => issue.path);
   if (invalidPaths.length > 0) {
     throw new LightExtensionSettingsValidationError(Array.from(new Set(invalidPaths)));
   }
@@ -878,6 +867,7 @@ export function normalizeLightExtensionRuntimeError(error: unknown, labels: Runt
   const source = readRunJSRuntimeError(error);
   const code = source.code;
   const normalizedCode = code?.toLowerCase() || '';
+  const normalizedReasonCode = source.reasonCode?.toLowerCase() || '';
   const status = source.status;
   let title = labels.defaultTitle;
   let hint = labels.defaultHint;
@@ -890,7 +880,7 @@ export function normalizeLightExtensionRuntimeError(error: unknown, labels: Runt
   } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
     title = 'Light extension binding is outdated';
     hint = labels.outdatedHint;
-  } else if (normalizedCode.includes('settings_invalid')) {
+  } else if (normalizedCode.includes('settings_invalid') || normalizedReasonCode.includes('settings_invalid')) {
     title = 'Light extension settings are invalid';
     hint = labels.invalidSettingsHint;
   } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
@@ -903,6 +893,8 @@ export function normalizeLightExtensionRuntimeError(error: unknown, labels: Runt
     message: source.message || labels.defaultMessage,
     ...(code ? { code } : {}),
     ...(typeof status === 'number' ? { status } : {}),
+    ...(source.details ? { details: source.details } : {}),
+    ...(source.paths ? { paths: source.paths } : {}),
   };
 }
 

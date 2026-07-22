@@ -25,7 +25,7 @@ import {
 } from '../api/lightExtensionEntriesRequests';
 import { useT } from '../locale';
 
-type MoveDestinationType = 'existing' | 'new';
+type MoveDestinationType = 'default' | 'existing' | 'new';
 
 interface MoveSourceFormValues {
   destinationType: MoveDestinationType;
@@ -89,7 +89,7 @@ export const MoveSourceToLightExtension: React.FC<{
   const [loadingRepos, setLoadingRepos] = React.useState(false);
   const [moving, setMoving] = React.useState(false);
   const [repos, setRepos] = React.useState<LightExtensionRepoRecord[]>([]);
-  const destinationType = Form.useWatch('destinationType', form) || 'existing';
+  const destinationType = Form.useWatch('destinationType', form) || 'default';
   const kind = resolveLightExtensionKind(context);
   const entryNameLabel = kind ? t(KIND_NAME_LABELS[kind]) : '';
 
@@ -113,16 +113,12 @@ export const MoveSourceToLightExtension: React.FC<{
     }
     const suggestedName = suggestDisplayName(context, kind);
     form.setFieldsValue({
-      destinationType: 'existing',
+      destinationType: 'default',
       entryTitle: suggestedName,
       repoTitle: suggestedName,
     });
     setOpen(true);
-    const loadedRepos = await loadRepos();
-    const selectableRepos = loadedRepos.filter((repo) => repo.lifecycleStatus === 'enabled');
-    if (selectableRepos.length === 0) {
-      form.setFieldValue('destinationType', 'new');
-    }
+    await loadRepos();
   };
 
   const submit = async () => {
@@ -132,30 +128,35 @@ export const MoveSourceToLightExtension: React.FC<{
     const values = await form.validateFields();
     const entryTitle = values.entryTitle.trim();
     const technicalNameSalt = `${context.workspace.ownerFingerprint}:${context.workspace.repository.repoId}`;
+    const entryName = createTechnicalName(entryTitle, kind, technicalNameSalt);
+    const destination =
+      values.destinationType === 'default'
+        ? ({ type: 'default' } as const)
+        : values.destinationType === 'existing'
+          ? ({ type: 'existing', repoId: String(values.repoId || '') } as const)
+          : ({
+              type: 'new',
+              name: createTechnicalName(String(values.repoTitle || ''), 'light-extension', technicalNameSalt),
+              title: values.repoTitle?.trim() || null,
+            } as const);
+    const moveInput = {
+      locator: context.locator,
+      expectedOwnerFingerprint: context.workspace.ownerFingerprint,
+      sourceRepoId: context.workspace.repository.repoId,
+      sourceHeadCommitId: context.workspace.repository.headCommitId || null,
+      entryPath: context.entryPath,
+      version: context.version,
+      files: context.files.map((file) => ({ ...file })),
+      originBinding: resolveOriginBinding(context.sourceBinding, kind),
+      destination,
+      entryName,
+      entryTitle,
+    };
     setMoving(true);
     try {
       const result = await moveSourceToLightExtension(api, {
-        locator: context.locator,
-        expectedOwnerFingerprint: context.workspace.ownerFingerprint,
-        sourceRepoId: context.workspace.repository.repoId,
-        sourceHeadCommitId: context.workspace.repository.headCommitId || null,
-        entryPath: context.entryPath,
-        version: context.version,
-        files: context.files.map((file) => ({ ...file })),
-        originBinding: resolveOriginBinding(context.sourceBinding, kind),
-        destination:
-          values.destinationType === 'existing'
-            ? {
-                type: 'existing',
-                repoId: String(values.repoId || ''),
-              }
-            : {
-                type: 'new',
-                name: createTechnicalName(String(values.repoTitle || ''), 'light-extension', technicalNameSalt),
-                title: values.repoTitle?.trim() || null,
-              },
-        entryName: createTechnicalName(entryTitle, kind, technicalNameSalt),
-        entryTitle,
+        ...moveInput,
+        idempotencyKey: createMoveSourceIdempotencyKey(moveInput),
       });
       setOpen(false);
       message.success(t('Moved to light extension'));
@@ -192,6 +193,7 @@ export const MoveSourceToLightExtension: React.FC<{
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item label={t('Destination')} name="destinationType">
             <Radio.Group>
+              <Radio value="default">{t('Application default light extension')}</Radio>
               <Radio value="existing">{t('Existing light extension')}</Radio>
               <Radio value="new">{t('Create new light extension')}</Radio>
             </Radio.Group>
@@ -213,7 +215,7 @@ export const MoveSourceToLightExtension: React.FC<{
                 optionFilterProp="label"
               />
             </Form.Item>
-          ) : (
+          ) : destinationType === 'new' ? (
             <Form.Item
               label={t('Light extension name')}
               name="repoTitle"
@@ -221,7 +223,7 @@ export const MoveSourceToLightExtension: React.FC<{
             >
               <Input autoComplete="off" />
             </Form.Item>
-          )}
+          ) : null}
           <Form.Item label={entryNameLabel} name="entryTitle" rules={displayNameRules(t, entryNameLabel)}>
             <Input autoComplete="off" />
           </Form.Item>
@@ -300,6 +302,35 @@ function createTechnicalName(displayName: string, fallbackPrefix: string, salt: 
 
 function hashTechnicalName(value: string): string {
   let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+export function createMoveSourceIdempotencyKey(value: unknown): string {
+  const serialized = JSON.stringify(sortObjectKeys(value));
+  return `move-source-${hashStableValue(serialized, 2166136261)}-${hashStableValue(serialized, 3339675911)}`;
+}
+
+function sortObjectKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortObjectKeys);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => typeof entryValue !== 'undefined')
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entryValue]) => [key, sortObjectKeys(entryValue)]),
+  );
+}
+
+function hashStableValue(value: string, seed: number): string {
+  let hash = seed;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);

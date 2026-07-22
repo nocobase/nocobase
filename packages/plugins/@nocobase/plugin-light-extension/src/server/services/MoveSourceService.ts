@@ -15,7 +15,7 @@ import type {
   RunJSSourceAdapterRegistry,
   RunJSSourceLocator,
 } from '../vsc-file/public-api';
-import { isVscError } from '../vsc-file/public-api';
+import { buildRunJSSourceRepositoryIdentity, isVscError } from '../vsc-file/public-api';
 import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
 import ts from 'typescript';
 import { posix as pathPosix } from 'path';
@@ -79,6 +79,72 @@ interface MoveSourceOperationResolution {
   replayResult?: LightExtensionMoveSourceResult;
 }
 
+interface MoveSourceSourceSnapshotInput {
+  locator: RunJSSourceLocator;
+  sourceRepoId: string;
+  sourceHeadCommitId: string | null;
+  expectedOwnerFingerprint: string;
+}
+
+export interface MoveSourceSourceSnapshotValidator {
+  assertCurrent(input: MoveSourceSourceSnapshotInput, transaction?: Transaction): Promise<void>;
+}
+
+export class PersistentMoveSourceSnapshotValidator implements MoveSourceSourceSnapshotValidator {
+  constructor(private readonly db: Database) {}
+
+  async assertCurrent(input: MoveSourceSourceSnapshotInput, transaction?: Transaction): Promise<void> {
+    const repository = await this.db.getRepository('vscFileRepositories').findOne({
+      filterByTk: input.sourceRepoId,
+      transaction,
+    });
+    if (!repository) {
+      throw sourceSnapshotOutdated(input, null);
+    }
+
+    const identity = buildRunJSSourceRepositoryIdentity(input.locator);
+    if (
+      repository.get('ownerType') !== identity.ownerType ||
+      repository.get('ownerId') !== identity.ownerId ||
+      repository.get('name') !== identity.name
+    ) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_PERMISSION_DENIED',
+        'RunJS source repository belongs to another host',
+        { details: { sourceRepoId: input.sourceRepoId } },
+      );
+    }
+
+    const currentHeadCommitId = readNullableModelString(repository, 'headCommitId');
+    if (currentHeadCommitId !== input.sourceHeadCommitId || repository.get('status') === 'archived') {
+      throw sourceSnapshotOutdated(input, currentHeadCommitId);
+    }
+    if (!input.sourceHeadCommitId) {
+      return;
+    }
+
+    const commit = await this.db.getRepository('vscFileCommits').findOne({
+      filter: {
+        id: input.sourceHeadCommitId,
+        repoId: input.sourceRepoId,
+      },
+      transaction,
+    });
+    if (!commit) {
+      throw sourceSnapshotOutdated(input, currentHeadCommitId);
+    }
+    const metadata = commit.get('metadata');
+    const headOwnerFingerprint = isRecord(metadata) ? metadata.ownerFingerprint : undefined;
+    if (
+      typeof headOwnerFingerprint === 'string' &&
+      headOwnerFingerprint &&
+      headOwnerFingerprint !== input.expectedOwnerFingerprint
+    ) {
+      throw sourceSnapshotOutdated(input, currentHeadCommitId);
+    }
+  }
+}
+
 type ExternalBindingAdapter = RunJSSourceAdapter & {
   writeExternalBinding: (input: {
     locator: RunJSSourceLocator;
@@ -98,6 +164,9 @@ export class MoveSourceService {
     private readonly referenceService: ReferenceService,
     private readonly getAdapterRegistry: AdapterRegistryProvider,
     private readonly applicationName = 'main',
+    private readonly sourceSnapshotValidator: MoveSourceSourceSnapshotValidator = new PersistentMoveSourceSnapshotValidator(
+      db,
+    ),
   ) {}
 
   async moveSource(
@@ -107,9 +176,14 @@ export class MoveSourceService {
     let operation: MoveSourceOperationReservation | undefined;
     try {
       assertMoveSourceInputSupported(input);
+      const completedResult = await this.findCompletedMoveOperation(input);
+      if (completedResult) {
+        await this.assertCanReplayMoveSource(input, ctx);
+        return completedResult;
+      }
+      await this.assertCanStartMoveSource(input, ctx);
       const operationResolution = await this.reserveMoveOperation(input);
       if (operationResolution.replayResult) {
-        await this.assertCanReplayMoveSource(input, ctx);
         return operationResolution.replayResult;
       }
       operation = operationResolution.reservation;
@@ -136,6 +210,25 @@ export class MoveSourceService {
       await this.failMoveOperation(operation, error);
       throw normalizeMoveSourceError(error);
     }
+  }
+
+  private async assertCanStartMoveSource(
+    input: LightExtensionMoveSourceInput,
+    ctx: MoveSourceServiceContext,
+  ): Promise<void> {
+    const registry = this.getAdapterRegistry();
+    if (!registry) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+    }
+    const adapter = registry.require(input.locator.kind);
+    if (!supportsExternalBinding(adapter)) {
+      throw unsupportedLocator(input.locator);
+    }
+    const adapterContext: RunJSSourceAdapterContext = { ...ctx.adapterContext };
+    await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
+    const legacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
+    assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
+    await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input));
   }
 
   private async assertCanReplayMoveSource(
@@ -188,6 +281,7 @@ export class MoveSourceService {
       settingsSchema: originSettingsSchema,
     });
     const entryKey = getRelocatedEntryKey(entryFiles, kind, input.entryName);
+    await this.repoService.assertApplicationOwnership(input.destination.repoId, this.applicationName, ctx);
     const current = await this.fileService.pull({
       repoId: input.destination.repoId,
       includeContent: 'none',
@@ -219,6 +313,39 @@ export class MoveSourceService {
       await this.completeMoveOperation(operation, result, transaction);
       return result;
     });
+  }
+
+  private async findCompletedMoveOperation(
+    input: LightExtensionMoveSourceInput,
+  ): Promise<LightExtensionMoveSourceResult | undefined> {
+    if (!input.idempotencyKey) {
+      return undefined;
+    }
+    const applicationName = this.applicationName.trim();
+    if (!applicationName) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
+    }
+    const identityHash = hashMoveOperation({
+      action: 'move-source',
+      applicationName,
+      idempotencyKey: input.idempotencyKey,
+    });
+    const record = await this.db.getRepository('lightExtensionMoveOperations').model.findOne({
+      where: { identityHash },
+    });
+    if (!record) {
+      return undefined;
+    }
+    const requestHash = hashMoveOperation({ ...input, idempotencyKey: undefined });
+    if (readModelString(record, 'requestHash') !== requestHash) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT',
+        'Move source idempotency key was already used with a different request',
+      );
+    }
+    return readModelString(record, 'status') === 'completed'
+      ? readMoveSourceOperationResult(record.get('result'))
+      : undefined;
   }
 
   private async reserveMoveOperation(input: LightExtensionMoveSourceInput): Promise<MoveSourceOperationResolution> {
@@ -359,6 +486,7 @@ export class MoveSourceService {
     await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
     const currentLegacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
+    await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
     const saved = await this.runtimeCompileService.publishPreparedSave(prepared, serviceContext);
     const entry = await this.requireEntry(saved.repo.id, kind, entryKey, serviceContext);
     const binding = buildSourceBinding(saved.repo, entry, kind);
@@ -428,6 +556,7 @@ export class MoveSourceService {
     await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
     const legacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
+    await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
 
     const kind = resolveLightExtensionKind(input.locator, legacy);
     const category = resolveMovedEntryCategory(kind, legacy);
@@ -996,6 +1125,37 @@ function sortObjectKeys(value: unknown): unknown {
 function readModelString(record: Model, key: string): string {
   const value = record.get(key);
   return typeof value === 'string' ? value : '';
+}
+
+function readNullableModelString(record: Model, key: string): string | null {
+  const value = record.get(key);
+  return typeof value === 'string' && value ? value : null;
+}
+
+function toSourceSnapshotInput(input: LightExtensionMoveSourceInput): MoveSourceSourceSnapshotInput {
+  return {
+    locator: input.locator,
+    sourceRepoId: input.sourceRepoId,
+    sourceHeadCommitId: input.sourceHeadCommitId,
+    expectedOwnerFingerprint: input.expectedOwnerFingerprint,
+  };
+}
+
+function sourceSnapshotOutdated(
+  input: MoveSourceSourceSnapshotInput,
+  currentHeadCommitId: string | null,
+): LightExtensionError {
+  return new LightExtensionError(
+    'LIGHT_EXTENSION_SOURCE_OUTDATED',
+    'RunJS workspace Head changed before it could be moved to a light extension',
+    {
+      details: {
+        sourceRepoId: input.sourceRepoId,
+        expectedHeadCommitId: input.sourceHeadCommitId,
+        currentHeadCommitId,
+      },
+    },
+  );
 }
 
 function readMoveSourceOperationResult(value: unknown): LightExtensionMoveSourceResult {

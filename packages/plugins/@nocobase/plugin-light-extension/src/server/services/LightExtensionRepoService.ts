@@ -50,6 +50,7 @@ export interface LightExtensionServiceContext {
 
 export interface LightExtensionRepoInternalRecord extends LightExtensionRepoRecord {
   vscRepoId: string;
+  applicationName: string | null;
 }
 
 export interface LightExtensionRemoteSyncLifecycleGate {
@@ -78,6 +79,7 @@ export class LightExtensionRepoService {
     private readonly permissionService: LightExtensionPermissionService,
     permissionHooks?: VscPermissionHookRegistry,
     private readonly validator = new LightExtensionValidator(),
+    private readonly applicationName = 'main',
   ) {
     this.useVscPermissionHookRegistry(
       permissionHooks || createLocalLightExtensionPermissionRegistry(permissionService),
@@ -149,6 +151,7 @@ export class LightExtensionRepoService {
         {
           id: repoId,
           vscRepoId: vscResult.repository.id,
+          applicationName: this.requireApplicationName(),
           name: metadata.name,
           normalizedName: metadata.normalizedName,
           title: metadata.title,
@@ -198,6 +201,7 @@ export class LightExtensionRepoService {
     applicationName: string,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRepoRecord> {
+    this.assertCurrentApplication(applicationName);
     const identity = buildApplicationDefaultLightExtensionIdentity(applicationName);
     const existing = await this.findInternalRepo(identity.repoId, ctx);
     if (existing) {
@@ -244,6 +248,7 @@ export class LightExtensionRepoService {
           {
             id: identity.repoId,
             vscRepoId: vscResult.repository.id,
+            applicationName: this.requireApplicationName(),
             name: identity.name,
             normalizedName: identity.name,
             title: identity.title,
@@ -319,37 +324,52 @@ export class LightExtensionRepoService {
   }
 
   async listRepos(ctx: LightExtensionServiceContext = {}): Promise<LightExtensionRepoRecord[]> {
-    const [records, entryRecords] = await Promise.all([
-      this.db.getRepository('lightExtensionRepos').find({
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      await this.claimLegacyApplicationRepos(transaction);
+      const records = await this.db.getRepository('lightExtensionRepos').find({
+        filter: { applicationName: this.requireApplicationName() },
         sort: ['name'],
-        transaction: ctx.transaction,
-      }),
-      this.db.getRepository('lightExtensionEntries').find({
-        transaction: ctx.transaction,
-      }),
-    ]);
-    const entrySummary = new Map<string, { count: number; kinds: Record<string, number> }>();
-    for (const entry of entryRecords) {
-      if (entry.get('healthStatus') === 'missing') {
-        continue;
+        transaction,
+      });
+      const repoIds = records.map((record) => String(record.get('id')));
+      const entryRecords = repoIds.length
+        ? await this.db.getRepository('lightExtensionEntries').find({
+            filter: { repoId: { $in: repoIds } },
+            transaction,
+          })
+        : [];
+      const entrySummary = new Map<string, { count: number; kinds: Record<string, number> }>();
+      for (const entry of entryRecords) {
+        if (entry.get('healthStatus') === 'missing') {
+          continue;
+        }
+        const repoId = String(entry.get('repoId'));
+        const kind = String(entry.get('kind'));
+        const summary = entrySummary.get(repoId) || { count: 0, kinds: {} };
+        summary.count += 1;
+        summary.kinds[kind] = (summary.kinds[kind] || 0) + 1;
+        entrySummary.set(repoId, summary);
       }
-      const repoId = String(entry.get('repoId'));
-      const kind = String(entry.get('kind'));
-      const summary = entrySummary.get(repoId) || { count: 0, kinds: {} };
-      summary.count += 1;
-      summary.kinds[kind] = (summary.kinds[kind] || 0) + 1;
-      entrySummary.set(repoId, summary);
-    }
 
-    return records.map((record) => {
-      const repo = repoFromModel(record);
-      const summary = entrySummary.get(repo.id);
-      return {
-        ...repo,
-        entryCount: summary?.count || 0,
-        entryKinds: summary?.kinds || {},
-      };
+      return records.map((record) => {
+        const repo = repoFromModel(record);
+        const summary = entrySummary.get(repo.id);
+        return {
+          ...repo,
+          entryCount: summary?.count || 0,
+          entryKinds: summary?.kinds || {},
+        };
+      });
     });
+  }
+
+  async assertApplicationOwnership(
+    repoId: string,
+    applicationName: string,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<void> {
+    this.assertCurrentApplication(applicationName);
+    await this.getInternalRepo(repoId, ctx);
   }
 
   async getRepo(repoId: string, ctx: LightExtensionServiceContext = {}): Promise<LightExtensionRepoRecord> {
@@ -421,7 +441,7 @@ export class LightExtensionRepoService {
         `Light extension repository "${repoId}" was not found`,
       );
     }
-
+    await this.claimOrAssertApplicationOwnership(record, ctx.transaction);
     return internalRepoFromModel(record);
   }
 
@@ -655,6 +675,7 @@ export class LightExtensionRepoService {
   private async assertRepoNameAvailable(name: string, normalizedName: string, transaction: Transaction): Promise<void> {
     const conflict = await this.db.getRepository('lightExtensionRepos').findOne({
       filter: {
+        applicationName: this.requireApplicationName(),
         $or: [{ name }, { normalizedName }],
       },
       transaction,
@@ -671,6 +692,7 @@ export class LightExtensionRepoService {
     values: {
       id: string;
       vscRepoId: string;
+      applicationName: string;
       name: string;
       normalizedName: string;
       title?: string | null;
@@ -701,7 +723,9 @@ export class LightExtensionRepoService {
       filterByTk: repoId,
       transaction: ctx.transaction,
     });
-
+    if (record) {
+      await this.claimOrAssertApplicationOwnership(record, ctx.transaction);
+    }
     return record ? internalRepoFromModel(record) : null;
   }
 
@@ -722,8 +746,56 @@ export class LightExtensionRepoService {
         `Light extension repository "${repoId}" was not found`,
       );
     }
-
+    await this.claimOrAssertApplicationOwnership(record, transaction);
     return internalRepoFromModel(record);
+  }
+
+  private requireApplicationName(): string {
+    const applicationName = this.applicationName.trim();
+    if (!applicationName) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
+    }
+    return applicationName;
+  }
+
+  private assertCurrentApplication(applicationName: string): void {
+    if (applicationName.trim() === this.requireApplicationName()) {
+      return;
+    }
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_PERMISSION_DENIED',
+      'Light extension repository belongs to another application',
+    );
+  }
+
+  private async claimLegacyApplicationRepos(transaction: Transaction): Promise<void> {
+    await this.db.getModel<Model>('lightExtensionRepos').update(
+      { applicationName: this.requireApplicationName() },
+      {
+        where: { applicationName: null },
+        transaction,
+      },
+    );
+  }
+
+  private async claimOrAssertApplicationOwnership(record: Model, transaction?: Transaction): Promise<void> {
+    const applicationName = record.get('applicationName');
+    if (applicationName === this.requireApplicationName()) {
+      return;
+    }
+    if (applicationName === null || typeof applicationName === 'undefined' || applicationName === '') {
+      await record.update({ applicationName: this.requireApplicationName() }, { transaction });
+      return;
+    }
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_PERMISSION_DENIED',
+      'Light extension repository belongs to another application',
+      {
+        details: {
+          repoId: String(record.get('id')),
+        },
+      },
+    );
   }
 
   private async countRepoReferences(repoId: string, transaction?: Transaction): Promise<number> {
@@ -847,6 +919,7 @@ export function internalRepoFromModel(record: Model): LightExtensionRepoInternal
   return {
     id: record.get('id') as string,
     vscRepoId: record.get('vscRepoId') as string,
+    applicationName: (record.get('applicationName') as string | null) || null,
     name: record.get('name') as string,
     normalizedName: record.get('normalizedName') as string,
     title: (record.get('title') as string | null) || null,
@@ -861,7 +934,7 @@ export function internalRepoFromModel(record: Model): LightExtensionRepoInternal
 }
 
 export function stripInternalRepo(repo: LightExtensionRepoInternalRecord): LightExtensionRepoRecord {
-  const { vscRepoId: _vscRepoId, ...publicRepo } = repo;
+  const { vscRepoId: _vscRepoId, applicationName: _applicationName, ...publicRepo } = repo;
   return publicRepo;
 }
 

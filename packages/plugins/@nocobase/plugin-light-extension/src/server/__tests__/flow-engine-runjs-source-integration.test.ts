@@ -271,6 +271,97 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
     );
   });
 
+  it('returns a non-retryable bootstrap error after rolling back partial workspace writes and can retry cleanly', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'invalid-inline-js-page',
+      use: 'JSPageModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render(',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'invalid-inline-js-page',
+      flowKey: 'jsSettings' as const,
+      stepKey: 'runJs' as const,
+      paramPath: ['code'] as ['code'],
+      versionPath: ['version'] as ['version'],
+    };
+    const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
+    const authoringContext = {
+      userId: String(user.get('id')),
+      currentUser: user,
+      state: { currentUser: user },
+      request: { resourceName: 'flowSurfaces', actionName: 'createPage' },
+      can: () => ({}),
+    };
+
+    const failed = await app.db.sequelize.transaction((transaction) =>
+      bootstrapFlowSurfaceRunJSWorkspace(app, {
+        hostKind: 'js-page',
+        locator,
+        transaction,
+        authoringContext,
+      }),
+    );
+
+    expect(failed).toMatchObject({
+      status: 'error',
+      retryable: false,
+      error: {
+        code: 'RUNJS_COMPILE_FAILED',
+      },
+    });
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
+    await expect(repository.findModelById('invalid-inline-js-page')).resolves.not.toHaveProperty(
+      'stepParams.jsSettings.runJs.sourceRef',
+    );
+
+    await repository.patch({
+      uid: 'invalid-inline-js-page',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render(null);',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const retried = await app.db.sequelize.transaction((transaction) =>
+      bootstrapFlowSurfaceRunJSWorkspace(app, {
+        hostKind: 'js-page',
+        locator,
+        transaction,
+        authoringContext,
+      }),
+    );
+
+    expect(retried).toEqual({ status: 'ready', retryable: false });
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount + 1);
+    await expect(repository.findModelById('invalid-inline-js-page')).resolves.toMatchObject({
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: expect.any(String),
+              commitId: expect.any(String),
+              entry: 'src/client/index.tsx',
+            },
+          },
+        },
+      },
+    });
+  });
+
   it('rolls back the ordinary repository and sourceRef when the surrounding Host transaction fails', async () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     await repository.insertModel({

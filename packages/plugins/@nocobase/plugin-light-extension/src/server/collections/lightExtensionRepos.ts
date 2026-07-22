@@ -35,6 +35,10 @@ export default defineCollection({
       fields: ['lifecycleStatus', 'healthStatus'],
     },
     {
+      name: 'le_repo_application_idx',
+      fields: ['applicationName'],
+    },
+    {
       name: 'le_repo_head_idx',
       fields: ['headCommitId'],
     },
@@ -51,6 +55,10 @@ export default defineCollection({
       name: 'vscRepoId',
       length: 64,
       allowNull: false,
+    },
+    {
+      type: 'string',
+      name: 'applicationName',
     },
     {
       type: 'string',

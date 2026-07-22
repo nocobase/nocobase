@@ -31,6 +31,7 @@ export type {
   RunJSSourceInitialSource,
   RunJSSourceLocator,
   RunJSSourceOpenResult,
+  RunJSSourceOpenSettingsDescriptor,
   RunJSSourcePermissionCheck,
   RunJSSourcePermissionResult,
   RunJSSourceSaveInput,

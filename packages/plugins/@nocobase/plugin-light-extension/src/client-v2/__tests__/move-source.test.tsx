@@ -14,6 +14,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  createMoveSourceIdempotencyKey,
   createMoveSourceToLightExtensionContribution,
   MoveSourceToLightExtension,
 } from '../components/MoveSourceToLightExtension';
@@ -135,10 +136,76 @@ describe('MoveSourceToLightExtension', () => {
     render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Existing light extension' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     expect(await screen.findByText('enabled-repo')).toBeTruthy();
     expect(screen.queryByText('disabled-repo')).toBeNull();
     expect(screen.queryByText('archived-repo')).toBeNull();
+  });
+
+  it('selects and submits the application default destination with a stable idempotency key', async () => {
+    const request = vi.fn(async ({ url }: { url: string }) => {
+      if (url === 'lightExtensionRepos:list') {
+        return { data: { data: [] } };
+      }
+      if (url === 'lightExtensions:moveSource') {
+        return {
+          data: {
+            data: {
+              binding: {
+                type: 'light-extension-entry',
+                repoId: 'ler_default',
+                entryId: 'lee_default',
+                entryName: 'js-block',
+                entryPath: 'src/client/js-blocks/js-block/index.tsx',
+                kind: 'js-block',
+              },
+            },
+          },
+        };
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    const defaultDestination = await screen.findByRole('radio', { name: 'Application default light extension' });
+    expect(defaultDestination).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: 'Move' }));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'lightExtensions:moveSource',
+          data: expect.objectContaining({
+            destination: { type: 'default' },
+            idempotencyKey: expect.stringMatching(/^move-source-[a-z0-9]+-[a-z0-9]+$/),
+          }),
+        }),
+      );
+    });
+  });
+
+  it('derives the same idempotency key for the same semantic request', () => {
+    const first = {
+      locator: { kind: 'flowModel.step', modelUid: 'fm_1' },
+      destination: { type: 'default' },
+      files: [{ path: 'src/main.ts', content: 'return 1;' }],
+    };
+    const reordered = {
+      files: [{ content: 'return 1;', path: 'src/main.ts' }],
+      destination: { type: 'default' },
+      locator: { modelUid: 'fm_1', kind: 'flowModel.step' },
+    };
+
+    expect(createMoveSourceIdempotencyKey(first)).toBe(createMoveSourceIdempotencyKey(reordered));
+    expect(createMoveSourceIdempotencyKey(first)).not.toBe(
+      createMoveSourceIdempotencyKey({ ...first, files: [{ path: 'src/main.ts', content: 'return 2;' }] }),
+    );
+    expect(createMoveSourceIdempotencyKey(first)).not.toBe(
+      createMoveSourceIdempotencyKey({ ...first, destination: { type: 'existing', repoId: 'ler_other' } }),
+    );
   });
 
   it('submits the current unsaved workspace to an existing light extension', async () => {
@@ -198,6 +265,7 @@ describe('MoveSourceToLightExtension', () => {
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensionRepos:list' })),
     );
+    fireEvent.click(screen.getByRole('radio', { name: 'Existing light extension' }));
     fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: 'Sales page' } });
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(await screen.findByText('Shared tools'));
@@ -268,6 +336,7 @@ describe('MoveSourceToLightExtension', () => {
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Create new light extension' }));
     await screen.findByLabelText('Light extension name');
     expect(screen.queryByLabelText('Light extension title')).toBeNull();
     expect(screen.queryByLabelText('Entry name')).toBeNull();
@@ -326,6 +395,7 @@ describe('MoveSourceToLightExtension', () => {
     render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Existing light extension' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     fireEvent.click(await screen.findByText('shared-tools'));
     fireEvent.click(screen.getByRole('button', { name: 'Move' }));

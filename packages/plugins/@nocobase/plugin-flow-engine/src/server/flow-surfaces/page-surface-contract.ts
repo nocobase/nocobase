@@ -60,7 +60,13 @@ export type FlowSurfaceJSPageCapabilities = {
   runJSWorkspace: true;
 };
 
-const runJSWorkspaceBootstrapPorts = new WeakMap<object, FlowSurfaceRunJSWorkspaceBootstrapPort>();
+const RUNJS_WORKSPACE_BOOTSTRAP_PORT = Symbol.for(
+  '@nocobase/plugin-flow-engine/flow-surface-runjs-workspace-bootstrap-port',
+);
+
+type FlowSurfaceRunJSWorkspaceBootstrapApp = object & {
+  [RUNJS_WORKSPACE_BOOTSTRAP_PORT]?: FlowSurfaceRunJSWorkspaceBootstrapPort;
+};
 
 export function buildFlowSurfaceRunJSLocator(modelUid: string): FlowSurfaceRunJSLocator {
   return {
@@ -88,10 +94,11 @@ export function registerFlowSurfaceRunJSWorkspaceBootstrapPort(
   app: object,
   port: FlowSurfaceRunJSWorkspaceBootstrapPort,
 ) {
-  runJSWorkspaceBootstrapPorts.set(app, port);
+  const bootstrapApp = app as FlowSurfaceRunJSWorkspaceBootstrapApp;
+  bootstrapApp[RUNJS_WORKSPACE_BOOTSTRAP_PORT] = port;
   return () => {
-    if (runJSWorkspaceBootstrapPorts.get(app) === port) {
-      runJSWorkspaceBootstrapPorts.delete(app);
+    if (bootstrapApp[RUNJS_WORKSPACE_BOOTSTRAP_PORT] === port) {
+      delete bootstrapApp[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
     }
   };
 }
@@ -100,7 +107,7 @@ export async function bootstrapFlowSurfaceRunJSWorkspace(
   app: object,
   input: FlowSurfaceRunJSWorkspaceBootstrapInput,
 ): Promise<FlowSurfaceRunJSWorkspaceBootstrapResult> {
-  const port = runJSWorkspaceBootstrapPorts.get(app);
+  const port = (app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
   if (!port) {
     return {
       status: 'pending',
