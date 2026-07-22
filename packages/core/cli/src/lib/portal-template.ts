@@ -45,6 +45,7 @@ type PortalPackageManager = {
 type RunOptions = {
   cwd?: string;
   env?: Record<string, string>;
+  envMode?: 'inherit' | 'replace';
   errorName?: string;
   stdio?: 'inherit' | 'pipe' | 'ignore';
   timeoutMs?: number;
@@ -78,6 +79,24 @@ export type PrepareInitialPortalResult = {
 
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
+}
+
+function buildPortalCommandEnv(env: Record<string, string> = {}): Record<string, string> {
+  const out: Record<string, string> = {};
+  const put = (key: string) => {
+    const value = process.env[key];
+    if (value) {
+      out[key] = value;
+    }
+  };
+
+  put('PATH');
+  put('Path');
+  put('PATHEXT');
+  put('SystemRoot');
+  put('WINDIR');
+  put('ComSpec');
+  return { ...out, ...env };
 }
 
 function normalizePortalName(value?: string): string {
@@ -179,15 +198,18 @@ async function installAndBuildPortal(params: {
   const stdio = params.verbose ? 'inherit' : 'ignore';
   await params.runCommand(packageManager.executable, packageManager.installArgs, {
     cwd: params.portalDir,
+    env: buildPortalCommandEnv(),
+    envMode: 'replace',
     errorName: `${packageManager.executable} install`,
     stdio,
   });
   await params.runCommand(packageManager.executable, packageManager.buildArgs, {
     cwd: params.portalDir,
-    env: {
+    env: buildPortalCommandEnv({
       NOCOBASE_API_URL: '/api',
       NOCOBASE_PORTAL_BASE: `/${PORTAL_CLIENT_PREFIX}/${params.portalName}/`,
-    },
+    }),
+    envMode: 'replace',
     errorName: `${packageManager.executable} build`,
     stdio,
   });

@@ -31,6 +31,7 @@ async function writePortalTemplate(templatePath: string, lockfile: LockfileName)
 }
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
@@ -60,15 +61,18 @@ test('prepares a local yarn portal template and writes the manifest', async () =
   await expect(fsp.access(path.join(portalDir, '.git'))).rejects.toThrow();
   expect(runCommand).toHaveBeenNthCalledWith(1, 'yarn', ['install'], {
     cwd: portalDir,
+    env: expect.any(Object),
+    envMode: 'replace',
     errorName: 'yarn install',
     stdio: 'ignore',
   });
   expect(runCommand).toHaveBeenNthCalledWith(2, 'yarn', ['build'], {
     cwd: portalDir,
-    env: {
+    env: expect.objectContaining({
       NOCOBASE_API_URL: '/api',
       NOCOBASE_PORTAL_BASE: '/x/admin/',
-    },
+    }),
+    envMode: 'replace',
     errorName: 'yarn build',
     stdio: 'ignore',
   });
@@ -129,6 +133,7 @@ test('uses pnpm and npm based on the copied portal lockfile', async () => {
         NOCOBASE_API_URL: '/api',
         NOCOBASE_PORTAL_BASE: '/x/pnpm_portal/',
       }),
+      envMode: 'replace',
     }),
   );
   expect(runCommand).toHaveBeenNthCalledWith(
@@ -147,8 +152,53 @@ test('uses pnpm and npm based on the copied portal lockfile', async () => {
         NOCOBASE_API_URL: '/api',
         NOCOBASE_PORTAL_BASE: '/x/npm_portal/',
       }),
+      envMode: 'replace',
     }),
   );
+});
+
+test('runs portal package manager commands with an isolated environment', async () => {
+  vi.stubEnv('NODE_OPTIONS', '--max-old-space-size=4096 --preserve-symlinks');
+  vi.stubEnv('INIT_PORTAL_TEMPLATE', '/tmp/parent-template');
+  vi.stubEnv('NOCOBASE_API_URL', 'http://127.0.0.1:13000/api');
+  const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-template-');
+  const runCommand = vi.fn().mockResolvedValue(undefined);
+  await writePortalTemplate(templatePath, 'pnpm-lock.yaml');
+
+  await prepareInitialPortalTemplate({
+    developmentMode: 'vibe-coding',
+    portalName: 'admin',
+    portalTemplate: templatePath,
+    storagePath,
+    runCommand,
+  });
+
+  expect(runCommand).toHaveBeenNthCalledWith(
+    1,
+    'pnpm',
+    ['install'],
+    expect.objectContaining({
+      envMode: 'replace',
+    }),
+  );
+  expect(runCommand).toHaveBeenNthCalledWith(
+    2,
+    'pnpm',
+    ['build'],
+    expect.objectContaining({
+      env: expect.objectContaining({
+        NOCOBASE_API_URL: '/api',
+        NOCOBASE_PORTAL_BASE: '/x/admin/',
+      }),
+      envMode: 'replace',
+    }),
+  );
+  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NODE_OPTIONS');
+  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('INIT_PORTAL_TEMPLATE');
+  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
+  expect(runCommand.mock.calls[1]?.[2]?.env).not.toHaveProperty('NODE_OPTIONS');
+  expect(runCommand.mock.calls[1]?.[2]?.env).not.toHaveProperty('INIT_PORTAL_TEMPLATE');
 });
 
 test('cleans up a copied portal when preparation fails', async () => {
