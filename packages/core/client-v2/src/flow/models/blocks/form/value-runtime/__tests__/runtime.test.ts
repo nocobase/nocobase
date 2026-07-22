@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { EventEmitter } from 'events';
 import dayjs from 'dayjs';
@@ -16,12 +16,7 @@ import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
 import { FormValueRuntime } from '..';
-import { RunJSSourceResolverRegistry } from '../../../../../components/runjs-source';
 import type { FormInstance } from 'antd';
-
-afterEach(() => {
-  RunJSSourceResolverRegistry.clear();
-});
 
 function createFormStub(initialValues: any = {}) {
   const store: any = JSON.parse(JSON.stringify(initialValues || {}));
@@ -701,107 +696,6 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
-  });
-
-  it('uses cached inline code and settings while ignoring stale external metadata', async () => {
-    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
-    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
-    const engineEmitter = new EventEmitter();
-    const blockEmitter = new EventEmitter();
-    const formStub = createFormStub({ b: 'X' });
-
-    const blockModel: any = {
-      uid: 'form-assign-runjs-le',
-      flowEngine: { emitter: engineEmitter },
-      emitter: blockEmitter,
-      dispatchEvent: vi.fn(),
-      getAclActionName: () => 'create',
-    };
-
-    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
-    runtime.mount({ sync: true });
-
-    const blockCtx = createFieldContext(runtime);
-    blockModel.context = blockCtx;
-
-    runtime.syncAssignRules([
-      {
-        key: 'r1',
-        enable: true,
-        targetPath: 'a',
-        mode: 'assign',
-        condition: { logic: '$and', items: [] },
-        value: {
-          code: 'return `${ctx.settings.prefix}${ctx.formValues.b}`',
-          version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: {
-            type: 'light-extension-entry',
-            repoId: 'ler_runjs',
-            entryId: 'lee_normalize_amount',
-            kind: 'runjs',
-          },
-          settings: { prefix: 'LE:' },
-        },
-      },
-    ]);
-
-    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('LE:X'));
-
-    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
-    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('LE:Y'));
-    expect(resolve).not.toHaveBeenCalled();
-  });
-
-  it('keeps the existing form value when stale external metadata has no inline code', async () => {
-    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
-    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
-    const engineEmitter = new EventEmitter();
-    const blockEmitter = new EventEmitter();
-    const formStub = createFormStub({ a: 'INIT' });
-
-    const blockModel: any = {
-      uid: 'form-assign-runjs-le-error',
-      flowEngine: { emitter: engineEmitter },
-      emitter: blockEmitter,
-      dispatchEvent: vi.fn(),
-      getAclActionName: () => 'create',
-    };
-
-    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
-    runtime.mount({ sync: true });
-
-    const blockCtx = createFieldContext(runtime);
-    const runjs = vi.fn();
-    blockCtx.defineMethod('runjs', runjs);
-    blockModel.context = blockCtx;
-
-    runtime.syncAssignRules([
-      {
-        key: 'r1',
-        enable: true,
-        targetPath: 'a',
-        mode: 'assign',
-        condition: { logic: '$and', items: [] },
-        value: {
-          code: '',
-          version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: {
-            type: 'light-extension-entry',
-            repoId: 'ler_runjs',
-            entryId: 'lee_normalize_amount',
-            kind: 'runjs',
-          },
-          settings: { prefix: 'LE:' },
-        },
-      },
-    ]);
-
-    await new Promise((_resolve) => setTimeout(_resolve, 0));
-    expect(runjs).not.toHaveBeenCalled();
-    expect(resolve).not.toHaveBeenCalled();
-    expect(formStub.getFieldValue(['a'])).toBe('INIT');
   });
 
   it('supports RunJSValue and tracks ctx var deps from code', async () => {

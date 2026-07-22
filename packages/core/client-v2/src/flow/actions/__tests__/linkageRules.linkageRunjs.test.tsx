@@ -91,46 +91,4 @@ describe('linkageRunjs', () => {
 
     expect(runjs).toHaveBeenCalledWith('return 7;', undefined, { version: 'v2' });
   });
-
-  it('does not revive a stale generic light-extension binding', async () => {
-    const runjs = vi.fn(async function (this: FlowContext) {
-      return { success: true, value: this.settings?.prefix };
-    });
-    const ctx = new FlowContext();
-    ctx.defineMethod('runjs', runjs);
-
-    await linkageRunjs.handler(ctx, {
-      value: {
-        code: 'return 8;',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'legacy_repo',
-          entryId: 'legacy_entry',
-          kind: 'runjs',
-        },
-        settings: { prefix: 'inline' },
-      },
-    });
-
-    expect(runjs).toHaveBeenCalledWith('return 8;', undefined, { version: 'v2' });
-  });
-
-  it('treats empty code as unconfigured even when stale source metadata exists', async () => {
-    const runjs = vi.fn();
-    const ctx = new FlowContext();
-    ctx.defineMethod('runjs', runjs);
-
-    await linkageRunjs.handler(ctx, {
-      value: {
-        code: '',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: { entryId: 'legacy_entry' },
-      },
-    });
-
-    expect(runjs).not.toHaveBeenCalled();
-  });
 });

@@ -141,33 +141,6 @@ describe('Field values legacy default migration', () => {
     expect(mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.sourceLocator).toBeUndefined();
   });
 
-  it('does not create a nested locator for persisted RunJS values', async () => {
-    const model = createModel('editItemSettings');
-    const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
-    model.setStepParams('formModelSettings', 'assignRules', { value: [rule] });
-    renderAction(formAssignRules, model, [rule]);
-
-    await waitFor(() => {
-      expect(mockState.editorProps.length).toBeGreaterThan(0);
-    });
-
-    expect(mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.sourceLocator).toBeUndefined();
-  });
-
-  it('does not register embedded RunJS save coordination', async () => {
-    const model = createModel('editItemSettings');
-    const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
-    model.setStepParams('formModelSettings', 'assignRules', { value: [rule] });
-    renderAction(formAssignRules, model, [rule]);
-
-    await waitFor(() => {
-      expect(mockState.editorProps.length).toBeGreaterThan(0);
-    });
-
-    expect(mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.onEmbeddedEditorControllerChange).toBeUndefined();
-    expect(model.context.saveEmbeddedRunJSEditors).toBeUndefined();
-  });
-
   it('does not re-import form legacy defaults after an empty form-level value is persisted', async () => {
     const model = createModel('editItemSettings');
     model.setStepParams('formModelSettings', 'assignRules', { value: [] });

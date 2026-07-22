@@ -249,31 +249,6 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/vsc-file/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
 ```
 
-## Generic RunJS hard-delete upgrade runbook
-
-The upgrade removes the former generic `runjs` entry kind and materializes every active generic binding back into its inline host. The latest reachable compiled artifact supplies `code`, `version`, and effective `settings`; stale compatibility snapshots are not treated as the source of truth. After migration, generic multi-file source is no longer independently editable, while complete JS Model entries remain external and versioned.
-
-Use this release procedure:
-
-1. Schedule a maintenance window. Stop application writes and wait for every Light Extension remote synchronization job to become idle.
-2. Back up the application database and the VSC storage that contains Light Extension repositories, commits, trees, blobs, and Head state. Verify that both backups can be restored together.
-3. On the previous version, resolve any mixed repository that contains both retained entries and generic source while an active remote is configured. Push the cleanup first or disconnect the remote; the upgrade will fail closed instead of rewriting an active remote-backed repository.
-4. Run `yarn nocobase upgrade`. The migration preflight verifies each active host, entry, repository Head, compiled artifact, settings payload, reference, remote state, and candidate repository tree before it writes anything.
-5. If preflight reports a missing artifact, Head mismatch, invalid settings, unknown host shape, active sync job, or mixed repository with an active remote, stop the rollout and repair that exact condition on the previous version. Do not bypass the check or edit nested FlowModel JSON directly.
-6. Start the application and, if the plugin was disabled during upgrade, enable it once. Normal startup asserts the hard-delete invariant; plugin enable also runs the migration before asserting it.
-7. Verify that active FlowModels have inline generic values, generic entries/references are gone, current repository Heads contain no `src/client/runjs/` files, managed entry directories use only the five supported roots, and unreferenced generic artifacts have been collected without deleting artifacts shared by retained entries. Shared helpers and repository-level metadata remain valid.
-
-The active-state zero-residual requirement covers generic FlowModel bindings, `runjs` entries, generic reference rows, active repository Head files under the removed root, and orphaned generic artifacts. It intentionally does not erase VSC historical commits/blobs, audit logs, or `runjs-source` repositories owned by retained workflow, chart, FlowRegistry, or complete JS Model surfaces. Remote repository cleanup is never performed implicitly by this migration.
-
-The migration is idempotent and transactional, but it is still a destructive product-boundary change. A successful database-only backup is insufficient because artifact materialization and repository cleanup also depend on the matching VSC state.
-
-Primary assertion coverage:
-
-```bash
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/generic-runjs-hard-delete-boundary.test.ts --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/migrations/remove-generic-runjs.test.ts --run --reporter=verbose
-```
-
 ## Remote Sync Facade
 
 Light-extension remote synchronization is exposed through the `lightExtensionSync` Resource. It is the public domain facade over the internal VSC `RemoteSyncRuntime`; raw VSC remote collections and internal Resources are deliberately denied to clients.

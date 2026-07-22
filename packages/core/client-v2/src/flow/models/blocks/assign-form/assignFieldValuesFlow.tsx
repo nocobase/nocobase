@@ -55,10 +55,6 @@ type AssignFieldValuesStepOptions = {
   clearRecordContext?: boolean;
 };
 
-type ResolveAssignFieldValuesOptions = {
-  settingsFlowKey?: string;
-};
-
 const SKIP_ASSIGN_VALUE = Symbol('SKIP_ASSIGN_VALUE');
 
 function getContextCollection(ctx: AssignFieldValuesContext | undefined): AssignFieldValuesCollection | undefined {
@@ -174,7 +170,6 @@ export async function resolveAssignFieldValues(
   },
   rawAssignedValues: unknown,
   logName = 'AssignFieldValues',
-  _options: ResolveAssignFieldValuesOptions = {},
 ): Promise<AssignedValues | null> {
   try {
     return await resolveAssignRunJSObjectValues(ctx, rawAssignedValues);

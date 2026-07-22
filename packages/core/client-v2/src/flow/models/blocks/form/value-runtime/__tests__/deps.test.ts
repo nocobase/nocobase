@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { collectStaticDepsFromRunJSValue, createFormValuesProxy, type DepCollector } from '../deps';
+import { createFormValuesProxy } from '../deps';
 
 describe('createFormValuesProxy', () => {
   it('does not proxy Date values (keeps Date prototype methods working)', () => {
@@ -24,42 +24,5 @@ describe('createFormValuesProxy', () => {
 
     expect(proxy.a).toBe(date);
     expect(() => proxy.a.getTime()).not.toThrow();
-  });
-});
-
-describe('collectStaticDepsFromRunJSValue', () => {
-  const createCollector = (): DepCollector => ({ deps: new Set(), wildcard: false });
-
-  it('extracts dependencies from cached inline code even with stale external metadata', () => {
-    const collector = createCollector();
-
-    collectStaticDepsFromRunJSValue(
-      {
-        code: 'return ctx.formValues.user.name + ctx.record.status;',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: { entryId: 'legacy_entry' },
-      },
-      collector,
-    );
-
-    expect(collector.wildcard).toBe(false);
-    expect(collector.deps).toEqual(new Set(['fv:user', 'fv:user.name', 'ctx:record:status']));
-  });
-
-  it('does not create dependencies for empty cached inline code', () => {
-    const collector = createCollector();
-
-    collectStaticDepsFromRunJSValue(
-      {
-        code: '',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: { entryId: 'legacy_entry' },
-      },
-      collector,
-    );
-
-    expect(collector).toEqual({ deps: new Set(), wildcard: false });
   });
 });
