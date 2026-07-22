@@ -54,7 +54,7 @@ export class BlockGridModel extends GridModel {
     });
   }
 
-  protected onMount() {
+  onMount() {
     super.onMount();
     if (this.context.view?.inputArgs?.scene !== 'select' || this.viewActivatedListener) {
       return;
