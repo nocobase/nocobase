@@ -44,21 +44,10 @@ const FilterFormDefaultValuesUI = observer(
     }, [ctx.model]);
 
     const getValueInputProps = React.useCallback(
-      (item: FieldAssignRuleItem, index: number) => {
+      (item: FieldAssignRuleItem) => {
         const targetPath = item?.targetPath ? String(item.targetPath) : '';
         const sourceProps = {
-          sourceLocator: ctx.model?.uid
-            ? {
-                kind: 'flowModel.nestedRunJS' as const,
-                modelUid: ctx.model.uid,
-                containerFlowKey: 'formFilterBlockModelSettings',
-                containerStepKey: 'defaultValues',
-                valuePath: ['value', index, 'value'],
-                scene: 'filterFormDefaultValues',
-              }
-            : undefined,
           sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
-          surfaceStyle: 'value' as const,
         };
         if (!targetPath) return sourceProps;
         const fieldModel: any = findFormItemModelByFieldPath(ctx.model, targetPath);

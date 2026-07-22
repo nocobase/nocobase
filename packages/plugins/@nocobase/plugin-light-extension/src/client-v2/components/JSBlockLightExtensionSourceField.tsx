@@ -561,10 +561,6 @@ export const JSPageLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensio
   props,
 ) => <JSBlockLightExtensionSourceField {...props} kind="js-page" />;
 
-export const RunJSLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensionSourceFieldProps, 'kind'>> = (
-  props,
-) => <JSBlockLightExtensionSourceField {...props} kind="runjs" />;
-
 function createLightExtensionRuntimeSourceBinding(
   entry: LightExtensionSelectableEntrySummary,
 ): LightExtensionRuntimeSourceBinding {

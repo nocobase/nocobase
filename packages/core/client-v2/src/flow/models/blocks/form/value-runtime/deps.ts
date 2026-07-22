@@ -154,10 +154,6 @@ export function collectStaticDepsFromTemplateValue(value: any, collector: DepCol
 
 export function collectStaticDepsFromRunJSValue(value: any, collector: DepCollector) {
   if (!isRunJSValue(value)) return;
-  if (value.sourceMode && value.sourceMode !== 'inline') {
-    collector.wildcard = true;
-    return;
-  }
   try {
     const usage = extractUsedVariablePathsFromRunJS(value.code) || {};
     for (const [varName, rawPaths] of Object.entries(usage)) {

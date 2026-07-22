@@ -39,35 +39,18 @@ describe('customVariable RunJS values', () => {
     expect(runjs).toHaveBeenCalledWith('return ctx.formValues.amount;', undefined, { version: 'v2' });
   });
 
-  it('treats stale light-extension metadata as ordinary inline RunJS', async () => {
+  it('treats empty RunJS code as unconfigured', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('model', { value: { context: ctx } });
-    const runjs = vi.fn(async () => ({ success: true, value: 9 }));
+    const runjs = vi.fn();
     ctx.defineMethod('runjs', runjs);
 
     await customVariable.handler(ctx, {
-      variables: [
-        {
-          key: 'total',
-          title: 'Total',
-          type: 'runjs',
-          runjs: {
-            code: 'return 9;',
-            version: 'v2',
-            sourceMode: 'light-extension',
-            sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'legacy_repo',
-              entryId: 'legacy_entry',
-              kind: 'runjs',
-            },
-          },
-        },
-      ],
+      variables: [{ key: 'total', title: 'Total', type: 'runjs', runjs: { code: '', version: 'v2' } }],
     });
 
-    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe(9);
-    expect(runjs).toHaveBeenCalledWith('return 9;', undefined, { version: 'v2' });
+    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBeUndefined();
+    expect(runjs).not.toHaveBeenCalled();
   });
 
   it('ignores unsafe variable identifiers', async () => {

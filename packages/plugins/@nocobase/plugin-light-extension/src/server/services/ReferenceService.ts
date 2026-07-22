@@ -14,7 +14,6 @@ import { randomUUID } from 'crypto';
 
 import type {
   LightExtensionKind,
-  LightExtensionModelOwnerLocator,
   LightExtensionReferenceOwnerLocator,
   LightExtensionReferenceRebuildItem,
   LightExtensionReferenceRebuildInput,
@@ -33,7 +32,6 @@ import {
   JS_BLOCK_REFERENCE_OWNER_ADAPTER,
   buildReferenceOwnerLocator,
   collectReferenceOwnerNodes,
-  getReferenceOwnerAdapterByKind,
   getReferenceOwnerAdapterByOwnerKind,
   getReferenceOwnerAdapterByUse,
   getReferenceOwnerModelUid,
@@ -166,7 +164,7 @@ export class ReferenceService {
     const modelUids = collectModelUids(node);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(ctx, new Set(modelUids));
     const seenOwnerHashes = new Set<string>();
-    const owners = [...collectReferenceOwnerNodes(node), ...collectRunJSReferenceOwners(node)];
+    const owners = collectReferenceOwnerNodes(node);
     for (const owner of owners) {
       const modelUid = normalizeString(owner.node.uid);
       if (modelUid) {
@@ -318,7 +316,6 @@ export class ReferenceService {
       }
       const adapter = getReferenceOwnerAdapterByUse(node.use || '');
       const owners: ReferenceOwnerSource[] = adapter ? [{ adapter, node }] : [];
-      owners.push(...collectRunJSReferenceOwners(node));
       for (const owner of owners) {
         const ownerLocator = buildOwnerLocatorForSource(owner, modelUid);
         seenOwnerHashes.add(hashOwnerLocator(ownerLocator));
@@ -839,7 +836,7 @@ export class ReferenceService {
       };
     }
     const adapter = getReferenceOwnerAdapterByOwnerKind(reference.ownerKind);
-    const source = readReferenceOwnerSource(owner, adapter, reference.ownerLocator);
+    const source = readReferenceOwnerSource(owner, adapter);
     const binding = source.sourceBinding;
     if (
       source.sourceMode !== 'light-extension' ||
@@ -1613,180 +1610,8 @@ function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): 
 function readReferenceOwnerSource(
   node: FlowModelNode,
   adapter: ReferenceOwnerAdapter | undefined,
-  ownerLocator: LightExtensionReferenceOwnerLocator,
 ): NormalizedJsBlockSource {
-  if (adapter?.ownerKind === 'flowModel.runjsHost' && hasHostPath(ownerLocator)) {
-    return readNestedRunJSHostSource(node, ownerLocator.hostPath);
-  }
   return readRunJsSource(node, adapter);
-}
-
-function collectRunJSReferenceOwners(
-  node: FlowModelNode | null | undefined,
-  bucket: ReferenceOwnerSource[] = [],
-): ReferenceOwnerSource[] {
-  const adapter = getReferenceOwnerAdapterByKind('runjs');
-  if (!adapter || !node || typeof node !== 'object') {
-    return bucket;
-  }
-
-  const modelUid = normalizeString(node.uid);
-  if (modelUid) {
-    const modelAdapter = getReferenceOwnerAdapterByUse(normalizeString(node.use));
-    const modelSettingsKey = modelAdapter?.settingsKey || 'jsSettings';
-    const pushOwner = (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => {
-      if (
-        modelAdapter &&
-        hostPath.length === 3 &&
-        hostPath[0] === 'stepParams' &&
-        hostPath[1] === modelSettingsKey &&
-        hostPath[2] === 'runJs'
-      ) {
-        return;
-      }
-      bucket.push({
-        adapter,
-        node,
-        ownerLocator: buildFlowModelOwnerLocator(adapter, modelUid, node.use, hostPath),
-        source,
-      });
-    };
-    collectFlowRegistryRunJSHosts(node.flowRegistry, pushOwner);
-    collectStepParamsRunJSHosts(node.stepParams, node.flowRegistry, pushOwner);
-  }
-
-  for (const value of Object.values(node.subModels || {})) {
-    for (const child of Array.isArray(value) ? value : value ? [value] : []) {
-      collectRunJSReferenceOwners(child, bucket);
-    }
-  }
-  return bucket;
-}
-
-function collectFlowRegistryRunJSHosts(
-  flowRegistry: Record<string, unknown> | undefined,
-  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
-): void {
-  if (!isPlainRecord(flowRegistry)) {
-    return;
-  }
-  for (const [flowKey, flowValue] of Object.entries(flowRegistry)) {
-    const steps = isPlainRecord(flowValue) && isPlainRecord(flowValue.steps) ? flowValue.steps : {};
-    for (const [stepKey, stepValue] of Object.entries(steps)) {
-      if (!isPlainRecord(stepValue)) {
-        continue;
-      }
-      const activeParamPaths = new Set<string>();
-      const paramsBase = ['flowRegistry', flowKey, 'steps', stepKey, 'params'];
-      collectNestedRunJSHosts(stepValue.params, paramsBase, (hostPath, source) => {
-        activeParamPaths.add(JSON.stringify(hostPath.slice(paramsBase.length)));
-        push(hostPath, source);
-      });
-      const defaultParamsBase = ['flowRegistry', flowKey, 'steps', stepKey, 'defaultParams'];
-      collectNestedRunJSHosts(stepValue.defaultParams, defaultParamsBase, (hostPath, source) => {
-        if (!activeParamPaths.has(JSON.stringify(hostPath.slice(defaultParamsBase.length)))) {
-          push(hostPath, source);
-        }
-      });
-    }
-  }
-}
-
-function collectStepParamsRunJSHosts(
-  stepParams: Record<string, unknown> | undefined,
-  flowRegistry: Record<string, unknown> | undefined,
-  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
-): void {
-  if (!isPlainRecord(stepParams)) {
-    return;
-  }
-  for (const [flowKey, flowValue] of Object.entries(stepParams)) {
-    if (!isPlainRecord(flowValue)) {
-      continue;
-    }
-    for (const [stepKey, stepValue] of Object.entries(flowValue)) {
-      if (hasFlowRegistryStep(flowRegistry, flowKey, stepKey)) {
-        continue;
-      }
-      collectNestedRunJSHosts(stepValue, ['stepParams', flowKey, stepKey], push);
-    }
-  }
-}
-
-function hasFlowRegistryStep(
-  flowRegistry: Record<string, unknown> | undefined,
-  flowKey: string,
-  stepKey: string,
-): boolean {
-  const flow = isPlainRecord(flowRegistry) ? flowRegistry[flowKey] : null;
-  const steps = isPlainRecord(flow) && isPlainRecord(flow.steps) ? flow.steps : null;
-  return Boolean(steps && Object.prototype.hasOwnProperty.call(steps, stepKey));
-}
-
-function hasHostPath(
-  ownerLocator: LightExtensionReferenceOwnerLocator,
-): ownerLocator is LightExtensionModelOwnerLocator & { hostPath: string[] } {
-  return 'hostPath' in ownerLocator && Array.isArray(ownerLocator.hostPath) && ownerLocator.hostPath.length > 0;
-}
-
-function collectNestedRunJSHosts(
-  value: unknown,
-  path: Array<string | number>,
-  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
-): void {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectNestedRunJSHosts(item, [...path, index], push));
-    return;
-  }
-  if (!isPlainRecord(value)) {
-    return;
-  }
-
-  const source = readRunJSValueSource(value);
-  if (source) {
-    push(path, source);
-  }
-
-  for (const [key, child] of Object.entries(value)) {
-    collectNestedRunJSHosts(child, [...path, key], push);
-  }
-}
-
-function readNestedRunJSHostSource(node: FlowModelNode, hostPath: string[]): NormalizedJsBlockSource {
-  return (
-    readRunJSValueSource(getAtPath(node, hostPath)) || {
-      sourceMode: 'inline',
-      settings: {},
-    }
-  );
-}
-
-function readRunJSValueSource(value: unknown): NormalizedJsBlockSource | null {
-  if (!isPlainRecord(value)) {
-    return null;
-  }
-  const sourceMode = normalizeString(value.sourceMode) || 'inline';
-  const sourceBinding = normalizeSourceBinding(value.sourceBinding);
-  const hasInlineCode = typeof value.code === 'string' || typeof value.script === 'string';
-  if (!hasInlineCode && sourceMode !== 'light-extension' && sourceBinding?.kind !== 'runjs') {
-    return null;
-  }
-  return {
-    sourceMode,
-    sourceBinding,
-    settings: normalizeSettings(value.settings),
-  };
-}
-
-function getAtPath(value: unknown, path: string[]): unknown {
-  let current = value;
-  for (const segment of path) {
-    if ((!isPlainRecord(current) && !Array.isArray(current)) || !(segment in current)) {
-      return undefined;
-    }
-    current = current[segment as keyof typeof current];
-  }
-  return current;
 }
 
 function normalizeSourceBinding(value: unknown): LightExtensionRuntimeSourceBinding | undefined {
@@ -1825,9 +1650,8 @@ function buildFlowModelOwnerLocator(
   adapter: ReferenceOwnerAdapter,
   modelUid: string,
   modelUse?: string,
-  hostPath?: Array<string | number>,
 ): LightExtensionReferenceOwnerLocator {
-  return buildReferenceOwnerLocator(adapter, modelUid, modelUse, hostPath);
+  return buildReferenceOwnerLocator(adapter, modelUid, modelUse);
 }
 
 function buildOwnerLocatorForSource(

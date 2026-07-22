@@ -9,15 +9,11 @@
 
 import {
   ApplicationContext,
-  CodeEditor,
   RunJSSourceResolverRegistry,
   type RunJSEditorProvider,
   type RunJSEditorProviderRenderProps,
   type RunJSSourceLocator,
-  type RunJSSourceSettingsDescriptor,
 } from '@nocobase/client-v2';
-import { createForm, type Form } from '@formily/core';
-import { createSchemaField, FormProvider } from '@formily/react';
 import {
   useFlowContext,
   type FlowEngineContext,
@@ -52,19 +48,9 @@ import LightExtensionWorkspacePage, {
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 import { createInlineLightExtensionWorkspaceTypeScriptContextResolver } from '../workspace/inlineLightExtensionWorkspaceTypeScript';
 import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
-import { RunJSLightExtensionSourceField } from './JSBlockLightExtensionSourceField';
-import { SettingsAutoForm } from './SettingsAutoForm';
 
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
-
-type RunJSValueFormValues = {
-  code?: string;
-  version?: string;
-  sourceMode?: string;
-  sourceBinding?: LightExtensionRuntimeSourceBinding;
-  settings?: Record<string, unknown>;
-};
 
 type LightExtensionEditorView = {
   close?: () => boolean | void | Promise<boolean | void>;
@@ -83,18 +69,8 @@ type ApplicationWithApi = {
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 type LightExtensionEntryWorkspaceScope = Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>;
-type BoundSettingsDescriptor = {
-  bindingKey: string;
-  descriptor: RunJSSourceSettingsDescriptor;
-};
 
 const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
-
-const SchemaField = createSchemaField({
-  components: {
-    RunJSLightExtensionSourceField,
-  },
-});
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -103,245 +79,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function cloneJsonRecord<T extends Record<string, unknown>>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
-
-function normalizeSourceMode(value: unknown): string {
-  return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
-}
-
-function normalizeFormValues(value: RunJSValue): RunJSValueFormValues {
-  const sourceMode = normalizeSourceMode(value.sourceMode);
-  return {
-    code: String(value.code ?? ''),
-    version: String(value.version ?? 'v2'),
-    sourceMode,
-    sourceBinding: isLightExtensionRuntimeSourceBinding(value.sourceBinding) ? { ...value.sourceBinding } : undefined,
-    settings: isRecord(value.settings) ? cloneJsonRecord(value.settings) : {},
-  };
-}
-
-function toRunJSValue(values: RunJSValueFormValues): RunJSValue {
-  const code = String(values.code ?? '');
-  const version = String(values.version ?? 'v2');
-  const sourceMode = normalizeSourceMode(values.sourceMode);
-  if (sourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
-    return {
-      code,
-      version,
-      sourceMode: INLINE_SOURCE_MODE,
-    };
-  }
-
-  return {
-    code,
-    version,
-    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-    ...(isLightExtensionRuntimeSourceBinding(values.sourceBinding)
-      ? { sourceBinding: { ...values.sourceBinding } }
-      : {}),
-    settings: isRecord(values.settings) ? cloneJsonRecord(values.settings) : {},
-  };
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-function setFormValues(form: Form, values: RunJSValueFormValues) {
-  form.setValuesIn('code', values.code);
-  form.setValuesIn('version', values.version);
-  form.setValuesIn('sourceMode', values.sourceMode);
-  form.setValuesIn('sourceBinding', values.sourceBinding);
-  form.setValuesIn('settings', values.settings);
-}
-
-const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
-  const { onChange, onPreview } = props;
-  const initialValuesRef = React.useRef(normalizeFormValues(props.value));
-  const form = React.useMemo(() => createForm({ initialValues: initialValuesRef.current }), []);
-  const [, rerender] = React.useReducer((count: number) => count + 1, 0);
-  const [boundSettingsDescriptor, setBoundSettingsDescriptor] = React.useState<BoundSettingsDescriptor | null>(null);
-  const applyingExternalValueRef = React.useRef(false);
-  const lastValueSignatureRef = React.useRef(stableSerialize(normalizeFormValues(props.value)));
-  const readonly = props.readOnly || props.disabled;
-
-  React.useEffect(() => {
-    const nextValues = normalizeFormValues(props.value);
-    const nextSignature = stableSerialize(nextValues);
-    if (nextSignature === lastValueSignatureRef.current) {
-      return;
-    }
-    const currentSignature = stableSerialize(normalizeFormValues(toRunJSValue(form.values as RunJSValueFormValues)));
-    lastValueSignatureRef.current = nextSignature;
-    if (currentSignature === nextSignature) {
-      return;
-    }
-
-    applyingExternalValueRef.current = true;
-    setFormValues(form, nextValues);
-    applyingExternalValueRef.current = false;
-    rerender();
-  }, [form, props.value]);
-
-  React.useEffect(() => {
-    const subscriptionId = form.subscribe(() => {
-      if (applyingExternalValueRef.current) {
-        return;
-      }
-      const nextValue = toRunJSValue(form.values as RunJSValueFormValues);
-      const nextSignature = stableSerialize(normalizeFormValues(nextValue));
-      if (nextSignature === lastValueSignatureRef.current) {
-        return;
-      }
-      lastValueSignatureRef.current = nextSignature;
-      rerender();
-      onChange?.(nextValue);
-    });
-    return () => {
-      form.unsubscribe(subscriptionId);
-    };
-  }, [form, onChange]);
-
-  const formValues = form.values as RunJSValueFormValues;
-  const sourceMode = normalizeSourceMode(formValues.sourceMode);
-  const sourceBindingKey = stableSerialize(formValues.sourceBinding);
-  const currentSourceBinding = isLightExtensionRuntimeSourceBinding(formValues.sourceBinding)
-    ? formValues.sourceBinding
-    : null;
-  const settingsDescriptor =
-    sourceMode === LIGHT_EXTENSION_SOURCE_MODE &&
-    currentSourceBinding &&
-    boundSettingsDescriptor?.bindingKey === sourceBindingKey &&
-    boundSettingsDescriptor.descriptor.entryId === currentSourceBinding.entryId
-      ? boundSettingsDescriptor.descriptor
-      : null;
-
-  React.useEffect(() => {
-    const currentValues = form.values as RunJSValueFormValues;
-    if (
-      sourceMode !== LIGHT_EXTENSION_SOURCE_MODE ||
-      !isLightExtensionRuntimeSourceBinding(currentValues.sourceBinding)
-    ) {
-      setBoundSettingsDescriptor(null);
-      return;
-    }
-    const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
-    if (typeof resolver?.getSettingsDescriptor !== 'function') {
-      setBoundSettingsDescriptor(null);
-      return;
-    }
-
-    let active = true;
-    const bindingKey = stableSerialize(currentValues.sourceBinding);
-    Promise.resolve(
-      resolver.getSettingsDescriptor({
-        sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-        sourceBinding: currentValues.sourceBinding,
-        settings: isRecord(currentValues.settings) ? currentValues.settings : {},
-      }),
-    )
-      .then((descriptor) => {
-        if (active) {
-          setBoundSettingsDescriptor(descriptor ? { bindingKey, descriptor } : null);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setBoundSettingsDescriptor(null);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [form, sourceBindingKey, sourceMode]);
-
-  const tip = props.t?.('Use return to output value') ?? 'Use return to output value';
-  const handleInlineEditorChange = React.useCallback(
-    (nextValue: RunJSValue | string) => {
-      const code = typeof nextValue === 'string' ? nextValue : nextValue.code;
-      const version = typeof nextValue === 'string' ? String(formValues.version ?? 'v2') : nextValue.version;
-      form.setValuesIn('code', code);
-      form.setValuesIn('version', version || 'v2');
-    },
-    [form, formValues.version],
-  );
-  const handleLightExtensionPreview = React.useCallback(
-    async (artifact: LightExtensionEntryRuntimeArtifact) => {
-      if (!onPreview) {
-        return;
-      }
-      await onPreview({
-        ...toRunJSValue(form.values as RunJSValueFormValues),
-        code: artifact.code,
-        version: artifact.version,
-        sourceMode: INLINE_SOURCE_MODE,
-      });
-    },
-    [form, onPreview],
-  );
-
-  return (
-    <Space direction="vertical" size={12} style={{ width: '100%', minWidth: 0 }}>
-      <FormProvider form={form}>
-        <SchemaField
-          schema={{
-            type: 'object',
-            properties: {
-              [sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? 'sourceBinding' : 'sourceMode']: {
-                type: sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? 'object' : 'string',
-                'x-component': 'RunJSLightExtensionSourceField',
-                'x-component-props': {
-                  disabled: readonly,
-                  onPreview: onPreview ? handleLightExtensionPreview : undefined,
-                },
-              },
-            },
-          }}
-        />
-      </FormProvider>
-      {sourceMode === LIGHT_EXTENSION_SOURCE_MODE && settingsDescriptor?.schema ? (
-        <SettingsAutoForm
-          disabled={readonly}
-          schema={settingsDescriptor.schema}
-          value={isRecord(formValues.settings) ? formValues.settings : {}}
-          onChange={(settings) => form.setValuesIn('settings', settings)}
-        />
-      ) : null}
-      {sourceMode === INLINE_SOURCE_MODE
-        ? props.renderNext?.({
-            value: toRunJSValue(formValues),
-            onChange: handleInlineEditorChange,
-          }) || (
-            <div style={props.containerStyle}>
-              <CodeEditor
-                value={String(formValues.code ?? '')}
-                onChange={(code) => form.setValuesIn('code', code)}
-                version={String(formValues.version ?? 'v2')}
-                height={props.height}
-                minHeight={props.minHeight}
-                theme={props.theme}
-                enableLinter={props.enableLinter}
-                wrapperStyle={props.wrapperStyle}
-                placeholder={`// ${tip}`}
-                scene={props.scene}
-                readonly={readonly}
-              />
-            </div>
-          )
-        : null}
-    </Space>
-  );
-};
 
 export function waitForHostRefreshCommit(): Promise<void> {
   if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
@@ -355,7 +92,7 @@ export function waitForHostRefreshCommit(): Promise<void> {
 
 const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
   const { locator, onPreview, sourceLocator, surfaceStyle, value } = props;
-  const effectiveLocator = sourceLocator || locator;
+  const effectiveLocator = sourceLocator ?? locator;
   const translate = props.t;
   const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
   const [currentBinding, setCurrentBinding] = React.useState(binding);
@@ -412,21 +149,21 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         return true;
       }
 
-      return applyFlowModelStepPreview(flowContext, sourceLocator || locator, surfaceStyle, value);
+      return applyFlowModelStepPreview(flowContext, sourceLocator ?? locator, surfaceStyle, value);
     },
     [flowContext, locator, onPreview, sourceLocator, surfaceStyle],
   );
   previewValueApplierRef.current = applyPreviewValue;
 
   const canPreview =
-    Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, sourceLocator || locator, surfaceStyle);
+    Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, sourceLocator ?? locator, surfaceStyle);
 
   const restoreWorkspacePreview = React.useCallback(async () => {
     if (!previewAppliedRef.current) {
       return;
     }
-    previewAppliedRef.current = false;
     await previewValueApplierRef.current(persistedPreviewValueRef.current);
+    previewAppliedRef.current = false;
   }, []);
 
   React.useEffect(() => {
@@ -434,9 +171,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       if (!previewAppliedRef.current) {
         return;
       }
-      previewAppliedRef.current = false;
       previewValueApplierRef
         .current(persistedPreviewValueRef.current)
+        .then(() => {
+          previewAppliedRef.current = false;
+        })
         .catch((error) => console.error('Failed to restore light extension workspace preview', error));
     };
   }, []);
@@ -562,10 +301,13 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         }
       }
     }
-    await (props.onPersistedChange || props.onChange)?.({
+    const persistedValue = {
       ...nextValue,
       ...(refreshedBinding ? { sourceBinding: refreshedBinding } : {}),
-    });
+    };
+    await (props.onPersistedChange || props.onChange)?.(persistedValue);
+    persistedPreviewValueRef.current = persistedValue;
+    previewAppliedRef.current = false;
     await waitForHostRefreshCommit();
   }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value, resolverApi]);
 
@@ -617,9 +359,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         initialPath={currentBinding.entryPath}
         onFooterActionsChange={setFooterActions}
         onMoveToInline={
-          workspaceScope.kind !== 'runjs' && effectiveLocator?.kind === 'flowModel.step' && api && !readonly
-            ? handleMoveToInline
-            : undefined
+          effectiveLocator?.kind === 'flowModel.step' && api && !readonly ? handleMoveToInline : undefined
         }
         onPreview={canPreview ? handleWorkspacePreview : undefined}
         onRequestClose={closeEditorView}
@@ -632,12 +372,12 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
 };
 
 const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
-  const { onPreview, surfaceStyle } = props;
+  const { onChange, onPersistedChange, onPreview, surfaceStyle } = props;
   const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
   const persistedValueRef = React.useRef(props.value);
   const previewAppliedRef = React.useRef(false);
   const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
-  const locator = props.sourceLocator || props.locator;
+  const locator = props.sourceLocator ?? props.locator;
   const applyPreviewValue = React.useCallback(
     async (value: RunJSValue): Promise<boolean> => {
       if (onPreview) {
@@ -662,9 +402,11 @@ const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       if (!previewAppliedRef.current) {
         return;
       }
-      previewAppliedRef.current = false;
       previewValueApplierRef
         .current(persistedValueRef.current)
+        .then(() => {
+          previewAppliedRef.current = false;
+        })
         .catch((error) => console.error('Failed to restore inline RunJS preview', error));
     };
   }, []);
@@ -674,6 +416,22 @@ const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       previewAppliedRef.current = await applyPreviewValue(value);
     },
     [applyPreviewValue],
+  );
+  const handleChange = React.useCallback(
+    (value: RunJSValue | string) => {
+      persistedValueRef.current = typeof value === 'string' ? { ...persistedValueRef.current, code: value } : value;
+      previewAppliedRef.current = false;
+      onChange?.(value);
+    },
+    [onChange],
+  );
+  const handlePersistedChange = React.useCallback(
+    async (value: RunJSValue) => {
+      persistedValueRef.current = value;
+      previewAppliedRef.current = false;
+      await (onPersistedChange || onChange)?.(value);
+    },
+    [onChange, onPersistedChange],
   );
 
   const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
@@ -686,6 +444,8 @@ const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         }
       : {}),
     onPreview: canPreview ? handlePreview : undefined,
+    onChange: handleChange,
+    onPersistedChange: handlePersistedChange,
   });
 };
 
@@ -694,26 +454,24 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
     key: 'light-extension-runjs-value',
     priority: 100,
     canHandle(props) {
-      const locator = props.sourceLocator || props.locator;
-      if (locator?.kind === 'flowModel.step') {
-        return (
-          props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ||
-          (normalizeSourceMode(props.value.sourceMode) === INLINE_SOURCE_MODE &&
-            isLightExtensionSourceMetadata(props.sourceMetadata))
-        );
+      const locator = props.sourceLocator ?? props.locator;
+      if (locator?.kind !== 'flowModel.step') {
+        return false;
       }
-      return props.surfaceStyle === 'value' && locator?.kind === 'flowModel.nestedRunJS';
+      return (
+        props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE || isLightExtensionSourceMetadata(props.sourceMetadata)
+      );
     },
     renderEditor(props) {
-      const locator = props.sourceLocator || props.locator;
-      if (locator?.kind === 'flowModel.step') {
-        return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
-          <LightExtensionSourceWorkspaceEditor {...props} />
-        ) : (
-          <InlineLightExtensionWorkspaceEditor {...props} />
-        );
+      const locator = props.sourceLocator ?? props.locator;
+      if (locator?.kind !== 'flowModel.step') {
+        return props.renderNext?.() ?? null;
       }
-      return <RunJSLightExtensionEditor {...props} />;
+      return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
+        <LightExtensionSourceWorkspaceEditor {...props} />
+      ) : (
+        <InlineLightExtensionWorkspaceEditor {...props} />
+      );
     },
   };
 }

@@ -17,6 +17,7 @@ import {
   Droppable,
   isCtxDateExpression,
   isRunJSValue,
+  normalizeRunJSValue,
   parseCtxDateExpression,
   tExpr,
   FlowModelRenderer,
@@ -42,12 +43,7 @@ import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils
 import { FormItemModel } from '../form/FormItemModel';
 import { getDefaultOperator } from '../filter-manager/utils';
 import { normalizeFilterValueByOperator } from './valueNormalization';
-import {
-  buildRunJSOwnerLocator,
-  evaluateResolvedRunJSValue,
-  getRunJSModelUse,
-  resolveRuntimeRunJS,
-} from '../../../components/runjs-source';
+import { evaluateInlineRunJSValue } from '../../../components/runjs-source';
 
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'];
 const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'];
@@ -513,26 +509,13 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     const rules = (params?.value || []) as any[];
     if (!Array.isArray(rules) || rules.length === 0) return appliedValues;
 
-    const resolveValue = async (raw: unknown, index: number, operator?: string) => {
+    const resolveValue = async (raw: unknown, operator?: string) => {
       // RunJS support
       if (isRunJSValue(raw)) {
-        const ownerLocator = buildRunJSOwnerLocator({
-          modelUid: this.uid,
-          use: getRunJSModelUse(this),
-          hostPath: ['stepParams', 'formFilterBlockModelSettings', 'defaultValues', 'value', index, 'value'],
-        });
+        const runJs = normalizeRunJSValue(raw);
+        if (!runJs.code.trim()) return undefined;
         try {
-          const resolved = await resolveRuntimeRunJS({
-            runJs: raw,
-            context: {
-              ownerKind: 'flowModel.runjsHost',
-              ownerLocator,
-            },
-          });
-          return await evaluateResolvedRunJSValue({
-            ctx: this.context,
-            resolved,
-          });
+          return await evaluateInlineRunJSValue({ ctx: this.context, runJs });
         } catch {
           return undefined;
         }
@@ -546,7 +529,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       return await (this.context as any).resolveJsonTemplate?.(raw);
     };
 
-    for (const [index, rule] of rules.entries()) {
+    for (const rule of rules) {
       if (!rule || typeof rule !== 'object') continue;
       if (rule.enable === false) continue;
       if (!(await this.matchDefaultValueCondition(rule.condition))) continue;
@@ -567,7 +550,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       const current = (form as any).getFieldValue?.(name);
 
       const operator = getDefaultOperator(itemModel as any);
-      const resolved = await resolveValue(rule.value, index, operator);
+      const resolved = await resolveValue(rule.value, operator);
       if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return appliedValues;
       if (typeof resolved === 'undefined') continue;
 

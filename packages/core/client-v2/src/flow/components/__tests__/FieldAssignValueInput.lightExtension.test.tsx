@@ -15,6 +15,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   useFlowContext: vi.fn(),
   variableInput: vi.fn((_props: Record<string, unknown>) => null),
+  runJSValueEditor: vi.fn((_props: Record<string, unknown>) => null),
+}));
+
+vi.mock('../RunJSValueEditor', () => ({
+  RunJSValueEditor: (props: Record<string, unknown>) => {
+    mocks.runJSValueEditor(props);
+    return null;
+  },
 }));
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -37,6 +45,7 @@ describe('FieldAssignValueInput RunJS menu', () => {
     RunJSSourceResolverRegistry.clear();
     mocks.useFlowContext.mockReset();
     mocks.variableInput.mockReset();
+    mocks.runJSValueEditor.mockReset();
   });
 
   it('keeps only the regular RunJS entry and does not query light-extension sources', async () => {
@@ -88,17 +97,16 @@ describe('FieldAssignValueInput RunJS menu', () => {
       version: 'v2',
     });
 
-    const staleLightExtensionValue: RunJSValue = {
-      code: '',
-      version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'repo_orders',
-        entryId: 'entry_total',
-        kind: 'runjs',
-      },
-    };
-    expect(variableInputProps.converters?.resolvePathFromValue?.(staleLightExtensionValue)).toEqual(['runjs']);
+    const inlineRunJSValue: RunJSValue = { code: 'return 1;', version: 'v2' };
+    expect(variableInputProps.converters?.resolvePathFromValue?.(inlineRunJSValue)).toEqual(['runjs']);
+
+    const RunJSComponent = metaTree?.find((item) => item.name === 'runjs')?.render as React.ComponentType<{
+      value?: RunJSValue;
+      onChange?: (value: RunJSValue) => void;
+    }>;
+    render(<RunJSComponent value={inlineRunJSValue} onChange={vi.fn()} />);
+    const editorProps = mocks.runJSValueEditor.mock.calls.at(-1)?.[0];
+    expect(editorProps?.sourceLocator).toBeUndefined();
+    expect(editorProps?.onEmbeddedEditorControllerChange).toBeUndefined();
   });
 });

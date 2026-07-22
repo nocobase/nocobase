@@ -294,18 +294,6 @@ export class AssignFormItemModel extends FormItemModel {
             value={inputProps?.value}
             onChange={inputProps?.onChange}
             containerStyle={{ width: '100%' }}
-            sourceLocator={
-              this.uid
-                ? {
-                    kind: 'flowModel.nestedRunJS',
-                    modelUid: this.uid,
-                    containerFlowKey: 'fieldSettings',
-                    containerStepKey: 'assignValue',
-                    valuePath: ['value'],
-                    scene: 'assignForm',
-                  }
-                : undefined
-            }
             sourceLabel={`${this.context.t('Assign field')} / ${this.context.t('RunJS')}`}
             surfaceStyle="value"
           />

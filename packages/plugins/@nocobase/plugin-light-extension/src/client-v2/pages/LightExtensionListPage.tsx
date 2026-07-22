@@ -41,7 +41,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { NAMESPACE } from '../../constants';
+import { LIGHT_EXTENSION_SUPPORTED_KINDS, NAMESPACE } from '../../constants';
 import type {
   LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
@@ -85,7 +85,7 @@ type ToggleLifecycleStatus = 'enabled' | 'disabled';
 type DetailPanel = 'source' | 'sync';
 type SyncConfigurationRequest = 'test' | 'configure';
 
-const entryKinds = ['js-block', 'js-page', 'js-action', 'js-field', 'js-item', 'runjs'] as const;
+const entryKinds = LIGHT_EXTENSION_SUPPORTED_KINDS;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
 const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };

@@ -98,6 +98,7 @@ describe('PluginLightExtensionClientV2', () => {
       [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
     });
     expect(app.flowEngine.flowSettings.components.SettingsAutoForm).toBeUndefined();
+    expect(app.flowEngine.flowSettings.components.RunJSLightExtensionSourceField).toBeUndefined();
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toContain(

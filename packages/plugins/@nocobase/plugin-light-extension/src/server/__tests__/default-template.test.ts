@@ -50,11 +50,6 @@ const ENTRY_CASES: Array<{ category: string; entryPath: string; kind: LightExten
     entryPath: 'src/client/js-items/form-total-preview/index.tsx',
     kind: 'js-item',
   },
-  {
-    category: 'runjs',
-    entryPath: 'src/client/runjs/calculate-subtotal/index.ts',
-    kind: 'runjs',
-  },
 ];
 
 describe('plugin-light-extension default source template', () => {
@@ -69,6 +64,8 @@ describe('plugin-light-extension default source template', () => {
     expect(pathSet.has('tsconfig.json')).toBe(true);
     expect(paths.some((path) => path.includes('/collection-') || path.includes('/create-form/'))).toBe(false);
     expect(paths.some((path) => path.includes('/edit-form/') || path.includes('/details/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('src/client/runjs/'))).toBe(false);
+    expect(DEFAULT_LIGHT_EXTENSION_README).not.toContain('src/client/runjs/');
 
     const categories: string[] = [];
     const keys = new Set<string>();
@@ -98,7 +95,7 @@ describe('plugin-light-extension default source template', () => {
     expect(categories.filter((category) => category === 'js-field')).toHaveLength(1);
     expect(categories.filter((category) => category === 'js-column')).toHaveLength(1);
     expect(categories.filter((category) => category === 'js-item')).toHaveLength(1);
-    expect(categories.filter((category) => category === 'runjs')).toHaveLength(1);
+    expect(categories).not.toContain('runjs');
   });
 
   it('uses a single multi-file entry to demonstrate local imports', () => {

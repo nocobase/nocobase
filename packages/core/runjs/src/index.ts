@@ -45,14 +45,6 @@ export type RunJSSourceLocator =
       versionPath?: string[];
     }
   | {
-      kind: 'flowModel.nestedRunJS';
-      modelUid: string;
-      containerFlowKey: string;
-      containerStepKey: string;
-      valuePath: Array<string | number>;
-      scene: string;
-    }
-  | {
       kind: 'flowModel.flowRegistry.runjs';
       modelUid: string;
       flowKey: string;

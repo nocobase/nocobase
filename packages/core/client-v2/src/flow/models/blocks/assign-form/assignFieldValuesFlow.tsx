@@ -20,11 +20,7 @@ import React, { useEffect } from 'react';
 import { CollectionActionModel } from '../../base/CollectionActionModel';
 import { RecordActionModel } from '../../base/RecordActionModel';
 import { AssignFormModel } from './AssignFormModel';
-import {
-  buildRunJSOwnerLocator,
-  evaluateResolvedRunJSValue,
-  resolveRuntimeRunJS,
-} from '../../../components/runjs-source';
+import { evaluateInlineRunJSValue } from '../../../components/runjs-source';
 
 export const ASSIGN_FIELD_VALUES_STEP_KEY = 'assignFieldValues';
 
@@ -57,10 +53,6 @@ type AssignFieldValuesStepOptions = {
   tipComponent?: React.ComponentType;
   validateBeforeSave?: boolean;
   clearRecordContext?: boolean;
-};
-
-type ResolveAssignFieldValuesOptions = {
-  settingsFlowKey?: string;
 };
 
 const SKIP_ASSIGN_VALUE = Symbol('SKIP_ASSIGN_VALUE');
@@ -178,13 +170,9 @@ export async function resolveAssignFieldValues(
   },
   rawAssignedValues: unknown,
   logName = 'AssignFieldValues',
-  options: ResolveAssignFieldValuesOptions = {},
 ): Promise<AssignedValues | null> {
   try {
-    const ownerPathPrefix = options.settingsFlowKey
-      ? ['stepParams', options.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY, 'assignedValues']
-      : ['assignedValues'];
-    return await resolveAssignRunJSObjectValues(ctx, rawAssignedValues, ownerPathPrefix);
+    return await resolveAssignRunJSObjectValues(ctx, rawAssignedValues);
   } catch (error) {
     console.error(`[${logName}] RunJS execution failed`, error);
     ctx.message?.error?.(ctx.t?.('RunJS execution failed') || 'RunJS execution failed');
@@ -197,7 +185,6 @@ async function resolveAssignRunJSObjectValues(
     model?: { uid?: string; use?: string };
   },
   rawAssignedValues: unknown,
-  ownerPathPrefix: Array<string | number> = ['assignedValues'],
 ): Promise<AssignedValues> {
   if (!rawAssignedValues || typeof rawAssignedValues !== 'object' || Array.isArray(rawAssignedValues)) {
     return {};
@@ -209,7 +196,7 @@ async function resolveAssignRunJSObjectValues(
       continue;
     }
 
-    const resolved = await resolveAssignRunJSValue(ctx, value, [...ownerPathPrefix, key]);
+    const resolved = await resolveAssignRunJSValue(ctx, value);
     if (resolved !== SKIP_ASSIGN_VALUE) {
       output[key] = resolved;
     }
@@ -223,26 +210,13 @@ async function resolveAssignRunJSValue(
     model?: { uid?: string; use?: string };
   },
   value: unknown,
-  hostPath: Array<string | number>,
 ): Promise<unknown> {
   if (isRunJSValue(value)) {
     const normalized = normalizeRunJSValue(value);
-    if (normalized.sourceMode !== 'light-extension' && !normalized.code.trim()) {
+    if (!normalized.code.trim()) {
       return SKIP_ASSIGN_VALUE;
     }
-    const ownerLocator = buildRunJSOwnerLocator({
-      modelUid: ctx.model?.uid,
-      use: ctx.model?.use,
-      hostPath,
-    });
-    const resolved = await resolveRuntimeRunJS({
-      runJs: value,
-      context: {
-        ownerKind: 'flowModel.runjsHost',
-        ownerLocator,
-      },
-    });
-    const evaluated = await evaluateResolvedRunJSValue({ ctx, resolved });
+    const evaluated = await evaluateInlineRunJSValue({ ctx, runJs: normalized });
     return typeof evaluated === 'undefined' ? SKIP_ASSIGN_VALUE : evaluated;
   }
 

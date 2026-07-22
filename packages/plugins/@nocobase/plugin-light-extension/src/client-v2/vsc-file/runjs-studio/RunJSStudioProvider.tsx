@@ -15,14 +15,14 @@ import { useRunJSStudioController } from './useRunJSStudioController';
 
 export const runJSStudioProvider: RunJSEditorProvider = {
   key: '@nocobase/plugin-vsc-file/runjs-studio',
-  canHandle: (props) => Boolean(props.locator),
+  canHandle: (props) => (props.sourceLocator ?? props.locator)?.kind === 'flowModel.step',
   renderEditor: (props) => <RunJSStudioEditorEntry {...props} />,
 };
 
 function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   return useRunJSStudioController({
     ...props,
-    locator: cloneRunJSSourceLocator(props.locator),
+    locator: cloneRunJSSourceLocator(props.sourceLocator ?? props.locator),
   });
 }
 
@@ -30,24 +30,12 @@ function cloneRunJSSourceLocator(locator: RunJSEditorProviderRenderProps['locato
   if (!locator) {
     return undefined;
   }
-  if (locator.kind === 'flowModel.step') {
-    return {
-      ...locator,
-      paramPath: [...locator.paramPath],
-      versionPath: locator.versionPath ? [...locator.versionPath] : undefined,
-    };
+  if (locator.kind !== 'flowModel.step') {
+    return undefined;
   }
-  if (locator.kind === 'flowModel.nestedRunJS') {
-    return {
-      ...locator,
-      valuePath: [...locator.valuePath],
-    };
-  }
-  if (locator.kind === 'flowModel.flowRegistry.runjs') {
-    return {
-      ...locator,
-      sourcePath: [...locator.sourcePath],
-    };
-  }
-  return { ...locator };
+  return {
+    ...locator,
+    paramPath: [...locator.paramPath],
+    versionPath: locator.versionPath ? [...locator.versionPath] : undefined,
+  };
 }

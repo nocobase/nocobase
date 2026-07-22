@@ -10,9 +10,8 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { FlowEngine } from '@nocobase/flow-engine';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { filterFormDefaultValues } from '../../../../actions/filterFormDefaultValues';
-import { RunJSSourceResolverRegistry } from '../../../../components/runjs-source';
 import { FilterFormBlockModel } from '../FilterFormBlockModel';
 
 function resolveTemplateValue(raw: any, values: Record<string, any>): any {
@@ -117,10 +116,6 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
 }
 
 describe('filter-form defaultValues wiring', () => {
-  afterEach(() => {
-    RunJSSourceResolverRegistry.clear();
-  });
-
   it('loads action and model modules', () => {
     expect(filterFormDefaultValues).toBeTruthy();
     expect(FilterFormBlockModel).toBeTruthy();
@@ -485,58 +480,7 @@ describe('filter-form defaultValues wiring', () => {
     expect(values.username_user).toBe('Matched');
   });
 
-  it('resolves light-extension RunJS filter field values with settings', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'return `${ctx.settings.currency}:${ctx.runJsSource.sourceBinding.entryId}`',
-        version: 'v2',
-        settings: input.settings || {},
-      }),
-    });
-    const { model, values } = createFilterFormDefaultValuesModel([
-      {
-        key: 'username-runjs',
-        enable: true,
-        targetPath: 'username',
-        mode: 'assign',
-        value: {
-          code: '',
-          version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: {
-            type: 'light-extension-entry',
-            repoId: 'ler_runjs',
-            entryId: 'lee_normalize_amount',
-            kind: 'runjs',
-          },
-          settings: { currency: 'USD' },
-        },
-      },
-    ]);
-    (model.context as any).runjs = async function (this: any, code: string) {
-      return {
-        success: true,
-        value: `${this.settings.currency}:${this.runJsSource.sourceBinding.entryId}:${code.includes('ctx.settings')}`,
-      };
-    };
-
-    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
-
-    expect(values.username_user).toBe('USD:lee_normalize_amount:true');
-  });
-
-  it('skips a light-extension RunJS filter default when execution fails', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'throw new Error("boom")',
-        version: 'v2',
-        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
-        settings: input.settings || {},
-        context: input.context,
-      }),
-    });
+  it('skips an inline RunJS filter default when execution fails', async () => {
     const { model, values } = createFilterFormDefaultValuesModel([
       {
         key: 'username-runjs-error',
@@ -544,15 +488,8 @@ describe('filter-form defaultValues wiring', () => {
         targetPath: 'username',
         mode: 'assign',
         value: {
-          code: '',
+          code: 'throw new Error("boom")',
           version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: {
-            type: 'light-extension-entry',
-            repoId: 'ler_runjs',
-            entryId: 'lee_normalize_amount',
-            kind: 'runjs',
-          },
           settings: { currency: 'USD' },
         },
       },

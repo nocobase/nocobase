@@ -36,7 +36,6 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor, type RunJSValueEditorProps } from './RunJSValueEditor';
-import type { EmbeddedRunJSEditorController, RunJSSourceLocator, RunJSSurfaceStyle } from './runjs-studio';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
@@ -351,10 +350,7 @@ interface Props {
   /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
   allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
-  sourceLocator?: RunJSSourceLocator;
   sourceLabel?: string;
-  surfaceStyle?: RunJSSurfaceStyle;
-  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
   disabled?: boolean;
   variableConverters?: VariableInputConverters;
 }
@@ -729,10 +725,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   enableDateVariableAsConstant = false,
   allowRunJS = true,
   maxAssociationFieldDepth = 2,
-  sourceLocator,
   sourceLabel,
-  surfaceStyle,
-  onEmbeddedEditorControllerChange,
   disabled = false,
   variableConverters,
 }) => {
@@ -1446,13 +1439,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return N;
   }, [flowCtx]);
 
-  const runJSPropsRef = React.useRef({
-    sourceLocator,
-    sourceLabel,
-    surfaceStyle,
-    onEmbeddedEditorControllerChange,
-  });
-  runJSPropsRef.current = { sourceLocator, sourceLabel, surfaceStyle, onEmbeddedEditorControllerChange };
+  const sourceLabelRef = React.useRef(sourceLabel);
+  sourceLabelRef.current = sourceLabel;
 
   const RunJSComponent = React.useMemo(() => {
     const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange' | 'disabled'>): JSX.Element => (
@@ -1461,11 +1449,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         value={inputProps?.value}
         onChange={inputProps?.onChange}
         disabled={inputProps?.disabled}
-        sourceLocator={runJSPropsRef.current.sourceLocator}
-        sourceLabel={runJSPropsRef.current.sourceLabel}
-        surfaceStyle={runJSPropsRef.current.surfaceStyle || 'value'}
+        sourceLabel={sourceLabelRef.current}
+        surfaceStyle="value"
         editorChrome="embedded"
-        onEmbeddedEditorControllerChange={runJSPropsRef.current.onEmbeddedEditorControllerChange}
       />
     );
     return C;

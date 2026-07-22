@@ -65,7 +65,7 @@ describe('MoveSourceToLightExtension', () => {
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
-  it('uses the RunJS name label for nested value-return sources', async () => {
+  it('does not render Move Source for legacy nested RunJS locators', () => {
     const context = createContext(vi.fn());
     const locator = {
       kind: 'flowModel.nestedRunJS',
@@ -74,33 +74,25 @@ describe('MoveSourceToLightExtension', () => {
       containerStepKey: 'configure',
       valuePath: ['runJs'],
       scene: 'field-linkage',
-    } as const;
+    } as unknown as RunJSStudioToolbarContext['locator'];
     context.locator = locator;
     context.workspace.locator = locator;
     context.workspace.legacy.surfaceStyle = 'value';
     context.workspace.source.surfaceStyle = 'value';
-    const request = vi.fn(async () => ({ data: { data: [] } }));
 
-    render(<MoveSourceToLightExtension api={{ request }} context={context} />);
+    render(<MoveSourceToLightExtension api={{ request: vi.fn() }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
-    expect(await screen.findByLabelText('RunJS name')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Move to light extension' })).toBeNull();
   });
 
-  it('does not render Move Source for nested action-style RunJS', () => {
+  it('does not render Move Source for non-step locators', () => {
     const context = createContext(vi.fn());
     const locator = {
-      kind: 'flowModel.nestedRunJS',
-      modelUid: 'fm_1',
-      containerFlowKey: 'settings',
-      containerStepKey: 'configure',
-      valuePath: ['runJs'],
-      scene: 'event-flow',
+      kind: 'workflow.javascript',
+      nodeId: 'node-1',
     } as const;
     context.locator = locator;
     context.workspace.locator = locator;
-    context.workspace.legacy.surfaceStyle = 'action';
-    context.workspace.source.surfaceStyle = 'action';
 
     render(<MoveSourceToLightExtension api={{ request: vi.fn() }} context={context} />);
 

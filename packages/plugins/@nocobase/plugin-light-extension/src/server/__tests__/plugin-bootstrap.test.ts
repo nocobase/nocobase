@@ -70,11 +70,12 @@ describe('plugin-light-extension bootstrap', () => {
 
   it('hosts VSC capabilities and recovers Push before Pull with one listener across reloads', async () => {
     const afterStartListeners = new Set<() => Promise<void>>();
+    const defineResource = vi.fn();
     const app = {
       db: {} as Database,
       environment: { getVariables: vi.fn(() => ({})) },
       acl: { allow: vi.fn(), registerSnippet: vi.fn() },
-      resourceManager: { define: vi.fn(), options: {} },
+      resourceManager: { define: defineResource, options: {} },
       auditManager: {
         registerActions: vi.fn(),
         log: vi.fn(),
@@ -95,7 +96,6 @@ describe('plugin-light-extension bootstrap', () => {
       name: 'light-extension',
       packageName: NAMESPACE,
     });
-
     await plugin.load();
     expect(afterStartListeners).toHaveLength(1);
     await plugin.load();

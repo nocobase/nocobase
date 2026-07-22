@@ -34,7 +34,6 @@ import {
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
   JSPageLightExtensionSourceField,
-  RunJSLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
 import { createMoveSourceToLightExtensionContribution } from './components/MoveSourceToLightExtension';
@@ -69,7 +68,6 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
       [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      RunJSLightExtensionSourceField,
     };
     const flowSettings = this.flowEngine.flowSettings;
     const previousComponents = new Map(

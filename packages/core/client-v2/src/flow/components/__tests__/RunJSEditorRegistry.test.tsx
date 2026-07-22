@@ -89,7 +89,7 @@ describe('RunJSEditorRegistry', () => {
     RunJSEditorRegistry.registerProvider({
       key: 'specialized-provider',
       priority: 100,
-      canHandle: (props) => props.locator?.kind === 'flowModel.nestedRunJS',
+      canHandle: (props) => props.locator?.kind === 'flowModel.flowRegistry.runjs',
       renderEditor: () => <div>specialized provider</div>,
     });
     RunJSEditorRegistry.registerProvider({
@@ -106,12 +106,11 @@ describe('RunJSEditorRegistry', () => {
     render(
       <RunJSEditorField
         locator={{
-          kind: 'flowModel.nestedRunJS',
+          kind: 'flowModel.flowRegistry.runjs',
           modelUid: 'fm_1',
-          containerFlowKey: 'settings',
-          containerStepKey: 'rules',
-          valuePath: ['value', 'rule_1', 'value'],
-          scene: 'formValue',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          sourcePath: ['defaultParams', 'code'],
         }}
         value={{ code: 'return ctx;', version: 'v2' }}
       />,
@@ -125,7 +124,7 @@ describe('RunJSEditorRegistry', () => {
     RunJSEditorRegistry.registerProvider({
       key: 'wrapper-provider',
       priority: 100,
-      canHandle: (props) => props.locator?.kind === 'flowModel.nestedRunJS',
+      canHandle: (props) => props.locator?.kind === 'flowModel.flowRegistry.runjs',
       renderEditor: (props) => (
         <section aria-label="wrapper provider">
           <span>wrapper provider</span>
@@ -142,12 +141,11 @@ describe('RunJSEditorRegistry', () => {
     render(
       <RunJSEditorField
         locator={{
-          kind: 'flowModel.nestedRunJS',
+          kind: 'flowModel.flowRegistry.runjs',
           modelUid: 'fm_1',
-          containerFlowKey: 'settings',
-          containerStepKey: 'rules',
-          valuePath: ['value', 'rule_1', 'value'],
-          scene: 'formValue',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          sourcePath: ['defaultParams', 'code'],
         }}
         value={{ code: 'return ctx;', version: 'v2' }}
       />,
@@ -201,7 +199,7 @@ describe('RunJSEditorRegistry', () => {
   it('normalizes sourceLocator and sourceLabel aliases before provider selection', () => {
     RunJSEditorRegistry.registerProvider({
       key: 'source-locator-provider',
-      canHandle: (props) => props.locator?.kind === 'flowModel.nestedRunJS',
+      canHandle: (props) => props.locator?.kind === 'flowModel.flowRegistry.runjs',
       renderEditor: (props) => <button type="button">{props.label || props.locator?.kind}</button>,
     });
 
@@ -209,12 +207,11 @@ describe('RunJSEditorRegistry', () => {
       <RunJSEditorField
         sourceLabel="Rule value"
         sourceLocator={{
-          kind: 'flowModel.nestedRunJS',
+          kind: 'flowModel.flowRegistry.runjs',
           modelUid: 'fm_1',
-          containerFlowKey: 'settings',
-          containerStepKey: 'rules',
-          valuePath: ['value', 'rule_1', 'value'],
-          scene: 'formValue',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          sourcePath: ['defaultParams', 'code'],
         }}
         value={{ code: 'return ctx;', version: 'v2' }}
       />,

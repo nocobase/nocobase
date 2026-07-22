@@ -13,6 +13,7 @@ import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles'
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
+import { runJSSourceActionNames } from '../vsc-file/runjs-sources';
 
 const publicActions = {
   lightExtensionRepos: ['list', 'get'],
@@ -20,6 +21,7 @@ const publicActions = {
   lightExtensionReferences: ['readReferences'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview'],
+  runJSSources: ['open', 'openLatest', 'compilePreview', 'save'],
 } as const;
 
 describe('light-extension swagger', () => {
@@ -30,6 +32,7 @@ describe('light-extension swagger', () => {
       lightExtensionReferences: lightExtensionReferenceActionNames,
       lightExtensionFiles: lightExtensionFileActionNames,
       lightExtensions: lightExtensionActionNames,
+      runJSSources: runJSSourceActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))
@@ -102,6 +105,16 @@ describe('light-extension swagger', () => {
     expect(saveSource.responses[409].content['application/json'].schema.oneOf).toContainEqual({
       $ref: '#/components/schemas/LightExtensionSourceOutdatedErrorResponse',
     });
+  });
+
+  it('documents exactly the five retained authoring kinds, including JS Page', () => {
+    expect(swaggerDocument.components.schemas.LightExtensionKind.enum).toEqual([
+      'js-block',
+      'js-page',
+      'js-field',
+      'js-action',
+      'js-item',
+    ]);
   });
 
   it('documents root business payloads, incremental saves, and preview/save status semantics', () => {

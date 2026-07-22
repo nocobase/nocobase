@@ -8,7 +8,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -316,6 +316,24 @@ describe('nb light pull/check/save', () => {
     expect(requests).toHaveLength(0);
     expect(await readFile(join(workspace, 'local.ts'), 'utf8')).toBe('keep me\n');
   });
+
+  test.each(['.nocobase', '.light-extension/types', 'node_modules', 'src'])(
+    'rejects the workspace when %s is a symbolic link',
+    async (linkPath) => {
+      const workspace = await createTempWorkspace();
+      const outside = join(workspace, '..', 'outside');
+      const linkSegments = linkPath.split('/');
+      await mkdir(join(workspace, ...linkSegments.slice(0, -1)), { recursive: true });
+      await mkdir(outside, { recursive: true });
+      await writeFile(join(outside, 'sentinel.txt'), 'keep me\n', 'utf8');
+      await symlink(outside, join(workspace, ...linkSegments), 'dir');
+
+      await expect(runPull(workspace)).rejects.toMatchObject({ exitCode: 1 });
+
+      expect(requests).toHaveLength(0);
+      expect(await readFile(join(outside, 'sentinel.txt'), 'utf8')).toBe('keep me\n');
+    },
+  );
 
   test('rejects a modified Pull baseline before saving', async () => {
     const workspace = await createTempWorkspace();

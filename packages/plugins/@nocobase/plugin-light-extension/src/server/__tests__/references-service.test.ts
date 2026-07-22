@@ -23,8 +23,6 @@ import {
   createReferenceRecord,
   createReferenceServiceFixture,
   createRepoRecord,
-  createRunJSEntryRecord,
-  createRunJSHostNode,
   stableJsonHash,
 } from './reference-test-helpers';
 import {
@@ -348,30 +346,33 @@ describe('plugin-light-extension references service', () => {
     }
   });
 
-  it('indexes JS field, action, item, and RunJS host references', async () => {
+  it('indexes references for all five retained light extension kinds', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {
         root: {
           uid: 'root',
           subModels: {
+            block: createJsBlockNode(),
+            page: createJsPageNode(),
             field: createJsFieldNode(),
             action: createJsActionNode(),
             item: createJsItemNode(),
-            runjs: createRunJSHostNode({ storage: 'flowRegistry' }),
           },
         },
       },
       repos: [
+        createRepoRecord(),
+        createRepoRecord({ id: 'ler_pages' }),
         createRepoRecord({ id: 'ler_fields' }),
         createRepoRecord({ id: 'ler_actions' }),
         createRepoRecord({ id: 'ler_items' }),
-        createRepoRecord({ id: 'ler_runjs' }),
       ],
       entries: [
+        createEntryRecord(),
+        createJsPageEntryRecord(),
         createJsFieldEntryRecord(),
         createJsActionEntryRecord(),
         createJsItemEntryRecord(),
-        createRunJSEntryRecord(),
       ],
     });
 
@@ -381,17 +382,18 @@ describe('plugin-light-extension references service', () => {
     });
 
     expect(result).toMatchObject({
-      scanned: 4,
-      upserted: 4,
+      scanned: 5,
+      upserted: 5,
       statusCounts: {
-        active: 4,
+        active: 5,
       },
     });
     expect(repositories.lightExtensionReferences.records.map((record) => record.get('kind')).sort()).toEqual([
       'js-action',
+      'js-block',
       'js-field',
       'js-item',
-      'runjs',
+      'js-page',
     ]);
   });
 
@@ -477,37 +479,33 @@ describe('plugin-light-extension references service', () => {
     });
   });
 
-  it('removes a RunJS host reference after the value switches back to inline source', async () => {
+  it('indexes JSColumnModel as a js-field reference owner', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {
-        flow_form_runjs: createRunJSHostNode(),
+        flow_js_column: createJsFieldNode({ uid: 'flow_js_column', use: 'JSColumnModel' }),
       },
-      repos: [createRepoRecord({ id: 'ler_runjs' })],
-      entries: [createRunJSEntryRecord()],
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [createJsFieldEntryRecord()],
     });
-
-    await service.syncFlowModelReferencesForNodeTree({
-      rootUid: 'flow_form_runjs',
-      action: 'flowModels.save',
-    });
-    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
-
-    repositories.flowModels.findModelById.mockResolvedValueOnce(
-      createRunJSHostNode({
-        sourceMode: 'inline',
-      }),
-    );
 
     const result = await service.syncFlowModelReferencesForNodeTree({
-      rootUid: 'flow_form_runjs',
+      rootUid: 'flow_js_column',
       action: 'flowModels.save',
     });
 
     expect(result).toMatchObject({
       scanned: 1,
-      removed: 1,
+      upserted: 1,
+      statusCounts: { active: 1 },
     });
-    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      kind: 'js-field',
+      ownerKind: 'flowModel.fieldSettings',
+      ownerLocator: expect.objectContaining({
+        use: 'JSColumnModel',
+      }),
+    });
   });
 
   it('refreshes existing references after their runtime no longer matches the repo head', async () => {

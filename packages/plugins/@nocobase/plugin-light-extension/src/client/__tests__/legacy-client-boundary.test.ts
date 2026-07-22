@@ -125,6 +125,7 @@ describe('plugin-light-extension legacy client boundary', () => {
       { warnOnOverwrite: false },
     );
     const registeredComponents = registerComponents.mock.calls[0][0];
+    expect(registeredComponents.RunJSLightExtensionSourceField).toBeUndefined();
     expect(registeredComponents[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(JSPageLightExtensionSourceField);
     expect(registeredComponents[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBe(SettingsSingleField);
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();

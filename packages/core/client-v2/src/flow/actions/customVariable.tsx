@@ -22,6 +22,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { RunJSValueEditor } from '../components/RunJSValueEditor';
+import { evaluateInlineRunJSValue } from '../components/runjs-source';
 
 export const customVariable = defineAction({
   name: 'customVariable',
@@ -46,13 +47,8 @@ export const customVariable = defineAction({
       if (variable.type === 'runjs') {
         const getFunction = async () => {
           const runJs = normalizeRunJSValue(variable.runjs);
-          const result = await ctx.runjs(runJs.code, undefined, {
-            version: runJs.version,
-          });
-          if (!result?.success) {
-            throw result?.error || new Error('RunJS execution failed');
-          }
-          return result.value;
+          if (!runJs.code.trim()) return undefined;
+          return evaluateInlineRunJSValue({ ctx, runJs });
         };
         const metaFunction = () => ({
           title: variable.title,
@@ -134,12 +130,6 @@ interface VariableEditorProps {
   value?: FlowVariable[];
   onChange?: (value: FlowVariable[]) => void;
   disabled?: boolean;
-  runJSSource?: {
-    modelUid: string;
-    flowKey: string;
-    stepKey: string;
-    persistedVariables?: Array<{ key?: unknown }>;
-  };
 }
 
 interface VariableFormValues {
@@ -158,18 +148,13 @@ const generateVariableKey = () => `var_${uid().slice(0, 4)}`;
 const createDefaultRunJSValue = (): RunJSValue => ({ code: '', version: 'v2' });
 
 function VariableEditor(props: VariableEditorProps) {
-  const { value = [], onChange, disabled, runJSSource } = props;
+  const { value = [], onChange, disabled } = props;
   const ctx = useFlowContext();
   const t = React.useMemo(() => ctx.model.translate.bind(ctx.model), [ctx.model]);
   const [form] = Form.useForm<VariableFormValues>();
-  const variableKey = Form.useWatch('key', form);
   const [modalVisible, setModalVisible] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [currentType, setCurrentType] = React.useState<FlowVariableType>('formValue');
-  const hasPersistedRunJSSource = React.useMemo(() => {
-    if (!variableKey) return false;
-    return !!runJSSource?.persistedVariables?.some((variable) => variable?.key === variableKey);
-  }, [runJSSource?.persistedVariables, variableKey]);
 
   const resetForm = React.useCallback(() => {
     form.resetFields();
@@ -430,18 +415,6 @@ function VariableEditor(props: VariableEditorProps) {
                 scene="eventFlow"
                 height="240px"
                 containerStyle={{ width: '100%' }}
-                sourceLocator={
-                  runJSSource?.modelUid && variableKey && hasPersistedRunJSSource
-                    ? {
-                        kind: 'flowModel.nestedRunJS',
-                        modelUid: runJSSource.modelUid,
-                        containerFlowKey: runJSSource.flowKey,
-                        containerStepKey: runJSSource.stepKey,
-                        valuePath: ['variables', String(variableKey), 'runjs'],
-                        scene: 'eventFlow',
-                      }
-                    : undefined
-                }
                 sourceLabel={`${t('Custom variable')} / ${t('RunJS')}`}
                 surfaceStyle="value"
               />

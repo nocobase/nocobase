@@ -129,7 +129,7 @@ describe('Field values legacy default migration', () => {
     ]);
   });
 
-  it('uses the inline editor before a new nested RunJS value is persisted', async () => {
+  it('always uses the inline editor for RunJS field values', async () => {
     const model = createModel('editItemSettings');
     const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
     renderAction(formAssignRules, model, [rule]);
@@ -139,47 +139,6 @@ describe('Field values legacy default migration', () => {
     });
 
     expect(mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.sourceLocator).toBeUndefined();
-  });
-
-  it('locates persisted nested RunJS values on the delegated grid model', async () => {
-    const model = createModel('editItemSettings');
-    const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
-    model.setStepParams('formModelSettings', 'assignRules', { value: [rule] });
-    renderAction(formAssignRules, model, [rule]);
-
-    await waitFor(() => {
-      expect(mockState.editorProps.length).toBeGreaterThan(0);
-    });
-
-    expect(mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.sourceLocator).toEqual({
-      kind: 'flowModel.nestedRunJS',
-      modelUid: 'grid-editItemSettings',
-      containerFlowKey: 'formModelSettings',
-      containerStepKey: 'assignRules',
-      valuePath: ['value', 0, 'value'],
-      scene: 'formValue',
-    });
-  });
-
-  it('waits for dirty embedded RunJS editors before saving field values', async () => {
-    const model = createModel('editItemSettings');
-    const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
-    model.setStepParams('formModelSettings', 'assignRules', { value: [rule] });
-    renderAction(formAssignRules, model, [rule]);
-
-    await waitFor(() => {
-      expect(mockState.editorProps.length).toBeGreaterThan(0);
-    });
-
-    const requestSave = vi.fn().mockResolvedValue('saved');
-    mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.onEmbeddedEditorControllerChange({
-      dirty: true,
-      saving: false,
-      requestSave,
-    });
-
-    await expect(model.context.saveEmbeddedRunJSEditors()).resolves.toEqual([rule]);
-    expect(requestSave).toHaveBeenCalledTimes(1);
   });
 
   it('does not re-import form legacy defaults after an empty form-level value is persisted', async () => {

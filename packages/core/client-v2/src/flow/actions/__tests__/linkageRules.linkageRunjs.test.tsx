@@ -44,7 +44,7 @@ describe('linkageRunjs', () => {
     vi.restoreAllMocks();
   });
 
-  it('normalizes legacy script values and persists the complete RunJSValue with a nested source locator', () => {
+  it('normalizes legacy script values and keeps the editor inline-only', () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'form-block-runjs', flowEngine: engine });
     model.context.defineProperty('flowKey', { value: 'eventSettings' });
@@ -68,14 +68,7 @@ describe('linkageRunjs', () => {
       code: 'return ctx.formValues.amount;',
       version: 'v2',
     });
-    expect(editorProps?.sourceLocator).toEqual({
-      kind: 'flowModel.nestedRunJS',
-      modelUid: 'form-block-runjs',
-      containerFlowKey: 'eventSettings',
-      containerStepKey: 'linkageRules',
-      valuePath: ['value', 2, 'actions', 3, 'params', 'value'],
-      scene: 'linkage',
-    });
+    expect(editorProps?.sourceLocator).toBeUndefined();
 
     const nextValue: RunJSValue = {
       code: 'return 8;',
@@ -97,27 +90,5 @@ describe('linkageRunjs', () => {
     });
 
     expect(runjs).toHaveBeenCalledWith('return 7;', undefined, { version: 'v2' });
-  });
-
-  it('does not revive a stale generic light-extension binding', async () => {
-    const runjs = vi.fn(async () => ({ success: true, value: 8 }));
-    const ctx = new FlowContext();
-    ctx.defineMethod('runjs', runjs);
-
-    await linkageRunjs.handler(ctx, {
-      value: {
-        code: 'return 8;',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'legacy_repo',
-          entryId: 'legacy_entry',
-          kind: 'runjs',
-        },
-      },
-    });
-
-    expect(runjs).toHaveBeenCalledWith('return 8;', undefined, { version: 'v2' });
   });
 });

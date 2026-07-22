@@ -455,7 +455,7 @@ describe('LightExtensionListPage', () => {
     expect(screen.getByText('Sales dashboard helpers')).toBeInTheDocument();
     expect(screen.getByText('js-block 1')).toBeInTheDocument();
     expect(screen.getByText('js-action 1')).toBeInTheDocument();
-    expect(screen.getByText('runjs 2')).toBeInTheDocument();
+    expect(screen.queryByText('runjs 2')).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Status' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reference contract diagnostics' })).not.toBeInTheDocument();

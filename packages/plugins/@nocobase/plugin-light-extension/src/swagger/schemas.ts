@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../constants';
+
 const nullableString = {
   type: 'string',
   nullable: true,
@@ -21,7 +23,7 @@ const nullableDateTime = {
 export const lightExtensionSchemas = {
   LightExtensionKind: {
     type: 'string',
-    enum: ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'],
+    enum: [...LIGHT_EXTENSION_SUPPORTED_KINDS],
     description: 'Supported client-side light-extension authoring surface kind.',
   },
   LightExtensionWorkspaceFile: {
@@ -398,12 +400,6 @@ export const lightExtensionSchemas = {
         type: 'string',
       },
       stepPath: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-      },
-      hostPath: {
         type: 'array',
         items: {
           type: 'string',

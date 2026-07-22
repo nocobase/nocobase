@@ -183,8 +183,5 @@ export function getLightExtensionPreviewSurfaceStyle(
   if (kind === 'js-action') {
     return 'action';
   }
-  if (kind === 'runjs') {
-    return 'value';
-  }
   return 'render';
 }

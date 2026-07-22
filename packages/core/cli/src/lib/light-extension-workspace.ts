@@ -534,6 +534,34 @@ function shouldExcludePath(path: string): boolean {
   return segments.length > 1 && TOP_LEVEL_GENERATED_DIRECTORIES.has(segments[0]);
 }
 
+async function assertWorkspacePathHasNoSymlinks(workspaceRoot: string, workspacePath?: string): Promise<void> {
+  const root = resolve(workspaceRoot);
+  const segments = workspacePath ? normalizeWorkspacePath(workspacePath).split('/') : [];
+  const candidates: Array<{ absolutePath: string; workspacePath: string }> = [{ absolutePath: root, workspacePath: '.' }];
+  let currentPath = root;
+  for (let index = 0; index < segments.length; index += 1) {
+    currentPath = join(currentPath, segments[index]);
+    candidates.push({ absolutePath: currentPath, workspacePath: segments.slice(0, index + 1).join('/') });
+  }
+  for (const candidate of candidates) {
+    try {
+      const stats = await fs.lstat(candidate.absolutePath);
+      if (stats.isSymbolicLink()) {
+        throw new LightExtensionCliError(
+          translateCli('commands.light.errors.symlinkUnsupported', { path: candidate.workspacePath }, {
+            fallback: 'Symbolic links are not supported in a Light Extension workspace: {{path}}',
+          }),
+        );
+      }
+    } catch (error: unknown) {
+      if (isNodeError(error) && error.code === 'ENOENT') {
+        return;
+      }
+      throw error;
+    }
+  }
+}
+
 async function walkWorkspaceFiles(root: string): Promise<string[]> {
   const files: string[] = [];
 
@@ -542,7 +570,6 @@ async function walkWorkspaceFiles(root: string): Promise<string[]> {
     for (const entry of entries) {
       const absolutePath = join(directory, entry.name);
       const workspacePath = relative(root, absolutePath).replace(/\\/g, '/');
-      if (shouldExcludePath(workspacePath)) continue;
       if (entry.isSymbolicLink()) {
         throw new LightExtensionCliError(
           translateCli('commands.light.errors.symlinkUnsupported', { path: workspacePath }, {
@@ -550,6 +577,7 @@ async function walkWorkspaceFiles(root: string): Promise<string[]> {
           }),
         );
       }
+      if (shouldExcludePath(workspacePath)) continue;
       if (entry.isDirectory()) {
         await walk(absolutePath);
       } else if (entry.isFile()) {
@@ -559,6 +587,7 @@ async function walkWorkspaceFiles(root: string): Promise<string[]> {
   }
 
   try {
+    await assertWorkspacePathHasNoSymlinks(root);
     await walk(root);
   } catch (error: unknown) {
     if (isNodeError(error) && error.code === 'ENOENT') return [];
@@ -576,6 +605,7 @@ export async function readWorkspaceFiles(
   const files: LightExtensionWorkspaceFile[] = [];
   for (const path of paths) {
     assertAgentSourcePath(path);
+    await assertWorkspacePathHasNoSymlinks(root, path);
     const content = decodeUtf8Source(await fs.readFile(join(root, ...path.split('/'))), path);
     const baseline = state?.files[path];
     files.push({
@@ -663,6 +693,7 @@ export async function loadWorkspaceState(workspaceRoot: string): Promise<LightEx
   const statePath = join(resolve(workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
   let content: string;
   try {
+    await assertWorkspacePathHasNoSymlinks(workspaceRoot, LIGHT_EXTENSION_STATE_PATH);
     content = await fs.readFile(statePath, 'utf8');
   } catch (error: unknown) {
     if (isNodeError(error) && error.code === 'ENOENT') {
@@ -692,6 +723,7 @@ export async function loadWorkspaceState(workspaceRoot: string): Promise<LightEx
 async function loadWorkspaceStateIfPresent(workspaceRoot: string): Promise<LightExtensionWorkspaceState | undefined> {
   const statePath = join(resolve(workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
   try {
+    await assertWorkspacePathHasNoSymlinks(workspaceRoot, LIGHT_EXTENSION_STATE_PATH);
     const content = await fs.readFile(statePath, 'utf8');
     return parseWorkspaceState(JSON.parse(content));
   } catch (error: unknown) {
@@ -734,6 +766,7 @@ export async function inspectPullTarget(workspaceRoot: string): Promise<PullTarg
   const currentPathSet = new Set(currentPaths);
   for (const path of currentPaths) {
     try {
+      await assertWorkspacePathHasNoSymlinks(root, path);
       const content = decodeUtf8Source(await fs.readFile(join(root, ...path.split('/'))), path);
       if (state.files[path]?.hash !== sha256(content)) changedPaths.add(path);
     } catch {
@@ -796,16 +829,25 @@ async function writeStateAndBaseline(
   const root = resolve(workspaceRoot);
   const statePath = join(root, ...LIGHT_EXTENSION_STATE_PATH.split('/'));
   const baselineRoot = join(root, ...LIGHT_EXTENSION_BASELINE_PATH.split('/'));
+  await assertWorkspacePathHasNoSymlinks(root);
+  await assertWorkspacePathHasNoSymlinks(root, LIGHT_EXTENSION_BASELINE_PATH);
   await fs.rm(baselineRoot, { recursive: true, force: true });
   await fs.mkdir(baselineRoot, { recursive: true });
+  await assertWorkspacePathHasNoSymlinks(root, LIGHT_EXTENSION_BASELINE_PATH);
   for (const file of files) {
     const target = join(baselineRoot, ...file.path.split('/'));
+    const baselinePath = `${LIGHT_EXTENSION_BASELINE_PATH}/${file.path}`;
+    await assertWorkspacePathHasNoSymlinks(root, baselinePath);
     await fs.mkdir(dirname(target), { recursive: true });
+    await assertWorkspacePathHasNoSymlinks(root, baselinePath);
     await fs.writeFile(target, file.content, 'utf8');
   }
+  await assertWorkspacePathHasNoSymlinks(root, LIGHT_EXTENSION_STATE_PATH);
   await fs.mkdir(dirname(statePath), { recursive: true });
   const temporaryPath = `${statePath}.${process.pid}.tmp`;
+  await assertWorkspacePathHasNoSymlinks(root, `${LIGHT_EXTENSION_STATE_PATH}.${process.pid}.tmp`);
   await fs.writeFile(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+  await assertWorkspacePathHasNoSymlinks(root, LIGHT_EXTENSION_STATE_PATH);
   await fs.rename(temporaryPath, statePath);
 }
 
@@ -843,14 +885,21 @@ export async function materializePulledWorkspace(options: {
     );
   }
   const root = resolve(options.workspaceRoot);
+  await assertWorkspacePathHasNoSymlinks(root);
   await fs.mkdir(root, { recursive: true });
+  await assertWorkspacePathHasNoSymlinks(root);
   const newPaths = new Set(files.map((file) => file.path));
   for (const path of Object.keys(options.previousState?.files || {})) {
-    if (!newPaths.has(path)) await fs.rm(join(root, ...path.split('/')), { force: true });
+    if (!newPaths.has(path)) {
+      await assertWorkspacePathHasNoSymlinks(root, path);
+      await fs.rm(join(root, ...path.split('/')), { force: true });
+    }
   }
   for (const file of files) {
     const target = join(root, ...file.path.split('/'));
+    await assertWorkspacePathHasNoSymlinks(root, file.path);
     await fs.mkdir(dirname(target), { recursive: true });
+    await assertWorkspacePathHasNoSymlinks(root, file.path);
     await fs.writeFile(target, file.content, 'utf8');
   }
   const fileStates = Object.fromEntries(files.map((file) => [file.path, stateFileFromWorkspaceFile(file)]));
@@ -888,7 +937,13 @@ export async function recordSuccessfulWorkspaceCheck(options: {
   };
   const statePath = join(resolve(options.workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
   const temporaryPath = `${statePath}.${process.pid}.tmp`;
+  await assertWorkspacePathHasNoSymlinks(options.workspaceRoot, LIGHT_EXTENSION_STATE_PATH);
+  await assertWorkspacePathHasNoSymlinks(
+    options.workspaceRoot,
+    `${LIGHT_EXTENSION_STATE_PATH}.${process.pid}.tmp`,
+  );
   await fs.writeFile(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+  await assertWorkspacePathHasNoSymlinks(options.workspaceRoot, LIGHT_EXTENSION_STATE_PATH);
   await fs.rename(temporaryPath, statePath);
   return state;
 }
@@ -896,6 +951,7 @@ export async function recordSuccessfulWorkspaceCheck(options: {
 async function readBaselineContent(workspaceRoot: string, path: string): Promise<string> {
   const baselinePath = join(resolve(workspaceRoot), ...LIGHT_EXTENSION_BASELINE_PATH.split('/'), ...path.split('/'));
   try {
+    await assertWorkspacePathHasNoSymlinks(workspaceRoot, `${LIGHT_EXTENSION_BASELINE_PATH}/${path}`);
     return await fs.readFile(baselinePath, 'utf8');
   } catch (error: unknown) {
     throw new LightExtensionCliError(

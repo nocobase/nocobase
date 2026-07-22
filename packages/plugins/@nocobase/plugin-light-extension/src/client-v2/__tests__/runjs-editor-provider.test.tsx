@@ -186,51 +186,16 @@ function EditorViewHarness(props: {
 }
 
 describe('RunJSLightExtensionEditorProvider', () => {
-  it('handles value-return nested RunJS values before and after they bind to a light-extension entry', () => {
+  it('handles only light-extension-capable flow model steps', () => {
     const provider = createRunJSLightExtensionEditorProvider();
-    const nestedLocator = {
-      kind: 'flowModel.nestedRunJS' as const,
-      modelUid: 'form_1',
-      containerFlowKey: 'formModelSettings',
-      containerStepKey: 'assignRules',
-      valuePath: ['value', 0, 'value'],
-      scene: 'formValue',
+    const stepLocator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'model_1',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
     };
-
-    expect(
-      provider.canHandle?.({
-        value: { code: 'return 1;', version: 'v2' },
-        locator: nestedLocator,
-        surfaceStyle: 'value',
-      }),
-    ).toBe(true);
-    expect(
-      provider.canHandle?.({
-        value: { code: 'return 1;', version: 'v2' },
-        surfaceStyle: 'value',
-      }),
-    ).toBe(false);
-    expect(
-      provider.canHandle?.({
-        value: { code: 'return 1;', version: 'v2' },
-        locator: nestedLocator,
-        surfaceStyle: 'action',
-      }),
-    ).toBe(false);
-    expect(
-      provider.canHandle?.({
-        value: { code: 'return 1;', version: 'v2' },
-        locator: {
-          kind: 'flowModel.step',
-          modelUid: 'model_1',
-          flowKey: 'jsSettings',
-          stepKey: 'runJs',
-          paramPath: ['code'],
-        },
-        surfaceStyle: 'value',
-      }),
-    ).toBe(false);
-
+    const sourceMetadata = { lightExtensionKind: 'js-block' };
     const lightExtensionValue = {
       code: '',
       version: 'v2',
@@ -239,152 +204,70 @@ describe('RunJSLightExtensionEditorProvider', () => {
         type: 'light-extension-entry',
         repoId: 'repo_1',
         entryId: 'entry_1',
-        entryPath: 'src/client/runjs/example/index.ts',
-        kind: 'runjs',
+        entryPath: 'src/client/js-blocks/example/index.tsx',
+        kind: 'js-block',
       },
     };
+
     expect(
-      provider.canHandle?.({
-        value: lightExtensionValue,
-        locator: nestedLocator,
-        surfaceStyle: 'value',
-      }),
+      provider.canHandle?.({ value: { code: 'return 1;', version: 'v2' }, locator: stepLocator, sourceMetadata }),
     ).toBe(true);
+    expect(provider.canHandle?.({ value: { code: 'return 1;', version: 'v2' }, locator: stepLocator })).toBe(false);
+    expect(provider.canHandle?.({ value: lightExtensionValue, locator: stepLocator })).toBe(true);
+
+    const nonStepLocators = [
+      {
+        kind: 'flowModel.flowRegistry.runjs' as const,
+        modelUid: 'model_1',
+        flowKey: 'eventFlow',
+        stepKey: 'runJs',
+        sourcePath: ['params', 'code'],
+      },
+      { kind: 'workflow.javascript' as const, nodeId: 'node-1' },
+      { kind: 'chart.option' as const, modelUid: 'chart-1' },
+      { kind: 'chart.events' as const, modelUid: 'chart-1' },
+    ];
+    for (const locator of nonStepLocators) {
+      expect(provider.canHandle?.({ value: lightExtensionValue, locator })).toBe(false);
+    }
+
     expect(
       provider.canHandle?.({
         value: lightExtensionValue,
-        locator: nestedLocator,
-        surfaceStyle: 'action',
+        locator: stepLocator,
+        sourceLocator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        sourceMetadata,
       }),
     ).toBe(false);
+    expect(
+      provider.canHandle?.({
+        value: { code: 'return 1;', version: 'v2' },
+        locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        sourceLocator: stepLocator,
+        sourceMetadata,
+      }),
+    ).toBe(true);
   });
 
-  it('does not render or write back the previous entry settings while the next descriptor is loading', async () => {
+  it('delegates non-step locators to the next editor provider', () => {
     const provider = createRunJSLightExtensionEditorProvider();
-    const onChange = vi.fn();
-    let resolveNextDescriptor:
-      | ((descriptor: { entryId: string; settingsSchemaHash: string; schema: Record<string, unknown> }) => void)
-      | undefined;
-    const nextDescriptor = new Promise<{
-      entryId: string;
-      settingsSchemaHash: string;
-      schema: Record<string, unknown>;
-    }>((resolve) => {
-      resolveNextDescriptor = resolve;
-    });
-    const getSettingsDescriptor = vi.fn(({ sourceBinding }: { sourceBinding?: Record<string, unknown> | null }) => {
-      if (sourceBinding?.entryId === 'entry_a') {
-        return {
-          entryId: 'entry_a',
-          settingsSchemaHash: 'schema_a',
-          schema: {
-            type: 'object',
-            properties: {
-              alpha: { type: 'string', title: 'Alpha setting', default: 'alpha-default' },
-            },
-          },
-        };
-      }
-      return nextDescriptor;
-    });
-    const unregisterResolver = RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: async () => ({ code: 'return 1;', version: 'v2' }),
-      getSettingsDescriptor,
-    });
-    const api: ApiClientLike = {
-      request: vi.fn(async () => ({ data: { data: [] } })),
-    };
-    const locator = {
-      kind: 'flowModel.nestedRunJS' as const,
-      modelUid: 'form_1',
-      containerFlowKey: 'formModelSettings',
-      containerStepKey: 'assignRules',
-      valuePath: ['value', 0, 'value'],
-      scene: 'formValue',
-    };
-    const entryAValue = {
-      code: '',
-      version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry' as const,
-        repoId: 'repo_1',
-        entryId: 'entry_a',
-        entryPath: 'src/client/runjs/entry-a/index.ts',
-        kind: 'runjs' as const,
-      },
-      settings: { alpha: 'saved-alpha' },
-    };
-    const entryBValue = {
-      ...entryAValue,
-      sourceBinding: {
-        ...entryAValue.sourceBinding,
-        entryId: 'entry_b',
-        entryPath: 'src/client/runjs/entry-b/index.ts',
-      },
-      settings: { beta: 'saved-beta' },
-    };
+    const renderNext = vi.fn(() => <div>workflow inline fallback</div>);
 
-    try {
-      const view = render(
-        <ApplicationContext.Provider
-          value={{ apiClient: api } as unknown as React.ContextType<typeof ApplicationContext>}
-        >
-          {provider.renderEditor({
-            value: entryAValue,
-            locator,
-            surfaceStyle: 'value',
-            onChange,
-          })}
-        </ApplicationContext.Provider>,
-      );
+    render(
+      <>
+        {provider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+          renderNext,
+        })}
+      </>,
+    );
 
-      expect(await screen.findByRole('textbox', { name: 'Alpha setting' })).toHaveValue('saved-alpha');
-      onChange.mockClear();
-
-      view.rerender(
-        <ApplicationContext.Provider
-          value={{ apiClient: api } as unknown as React.ContextType<typeof ApplicationContext>}
-        >
-          {provider.renderEditor({
-            value: entryBValue,
-            locator,
-            surfaceStyle: 'value',
-            onChange,
-          })}
-        </ApplicationContext.Provider>,
-      );
-
-      await waitFor(() =>
-        expect(getSettingsDescriptor).toHaveBeenCalledWith(
-          expect.objectContaining({
-            sourceBinding: expect.objectContaining({ entryId: 'entry_b' }),
-          }),
-        ),
-      );
-      expect(screen.queryByRole('textbox', { name: 'Alpha setting' })).not.toBeInTheDocument();
-      expect(onChange).not.toHaveBeenCalled();
-
-      resolveNextDescriptor?.({
-        entryId: 'entry_b',
-        settingsSchemaHash: 'schema_b',
-        schema: {
-          type: 'object',
-          properties: {
-            beta: { type: 'string', title: 'Beta setting', default: 'beta-default' },
-          },
-        },
-      });
-
-      expect(await screen.findByRole('textbox', { name: 'Beta setting' })).toHaveValue('saved-beta');
-      expect(onChange).not.toHaveBeenCalled();
-    } finally {
-      unregisterResolver();
-    }
+    expect(screen.getByText('workflow inline fallback')).toBeInTheDocument();
+    expect(renderNext).toHaveBeenCalledWith();
   });
 
-  it('opens the selected light extension workspace for JS block render editors', () => {
+  it('keeps the saved value after previewing and closing a JS block workspace', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onChange = vi.fn();
     const onPersistedChange = vi.fn();
@@ -443,14 +326,17 @@ describe('RunJSLightExtensionEditorProvider', () => {
       'lee_example',
     );
     fireEvent.click(screen.getByRole('button', { name: 'preview workspace' }));
-    expect(onPreview).toHaveBeenCalledWith({
-      ...props.value,
-      code: 'ctx.render(<div>workspace preview</div>);',
-      version: 'v2',
-      sourceMode: 'inline',
-    });
+    await waitFor(() =>
+      expect(onPreview).toHaveBeenCalledWith({
+        ...props.value,
+        code: 'ctx.render(<div>workspace preview</div>);',
+        version: 'v2',
+        sourceMode: 'inline',
+      }),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
-    expect(onPersistedChange).toHaveBeenCalledWith(props.value);
+    await waitFor(() => expect(onPersistedChange).toHaveBeenCalledWith(props.value));
+    expect(onPreview).toHaveBeenCalledTimes(1);
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -816,6 +702,58 @@ describe('RunJSLightExtensionEditorProvider', () => {
     rendered.unmount();
     await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
     expect(rerender).toHaveBeenCalledTimes(2);
+  });
+
+  it('commits an inline preview before an async onChange fallback closes the editor', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const value = {
+      code: 'ctx.render(<div>persisted</div>);',
+      version: 'v2',
+      sourceMode: 'inline',
+    };
+    let resolveChange: (() => void) | undefined;
+    const onChange = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveChange = resolve;
+        }),
+    );
+    const onPreview = vi.fn(async () => undefined);
+    const renderNext = vi.fn(() => <div>inline studio</div>);
+    const rendered = render(
+      <>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_inline_saved',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          sourceMetadata: { lightExtensionKind: 'js-block' },
+          surfaceStyle: 'render',
+          onChange,
+          onPreview,
+          renderNext,
+        })}
+      </>,
+    );
+    const overrides = renderNext.mock.calls[0]?.[0] as Partial<RunJSEditorProviderRenderProps>;
+    const committedValue = { ...value, code: 'ctx.render(<div>saved</div>);' };
+
+    await act(async () => {
+      await overrides.onPreview?.({ ...value, code: 'ctx.render(<div>preview</div>);' });
+    });
+    const persistedChange = overrides.onPersistedChange?.(committedValue);
+    rendered.unmount();
+
+    expect(onChange).toHaveBeenCalledWith(committedValue);
+    expect(onPreview).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveChange?.();
+      await persistedChange;
+    });
   });
 
   it('offers move to inline for JS column light extension entries', async () => {

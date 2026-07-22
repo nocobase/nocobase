@@ -576,9 +576,6 @@ function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => str
   if (kind === 'js-item') {
     return t('JS Item');
   }
-  if (kind === 'runjs') {
-    return t('RunJS');
-  }
   return String(kind);
 }
 

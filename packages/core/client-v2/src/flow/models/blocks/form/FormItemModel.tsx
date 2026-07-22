@@ -392,16 +392,6 @@ FormItemModel.registerFlow({
             'x-component': 'DefaultValue',
             'x-decorator': 'FormItem',
             'x-component-props': {
-              sourceLocator: ctx.model?.uid
-                ? {
-                    kind: 'flowModel.nestedRunJS',
-                    modelUid: ctx.model.uid,
-                    containerFlowKey: 'editItemSettings',
-                    containerStepKey: 'initialValue',
-                    valuePath: ['defaultValue'],
-                    scene: 'formValue',
-                  }
-                : undefined,
               sourceLabel: ctx.t('Default value'),
             },
           },

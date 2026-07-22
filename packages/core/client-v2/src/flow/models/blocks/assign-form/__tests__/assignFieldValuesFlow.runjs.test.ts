@@ -7,69 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FlowContext } from '@nocobase/flow-engine';
 
-import { RunJSSourceResolverRegistry } from '../../../../components/runjs-source';
 import { resolveAssignFieldValues } from '../assignFieldValuesFlow';
 
 describe('assignFieldValuesFlow RunJS values', () => {
-  afterEach(() => {
-    RunJSSourceResolverRegistry.clear();
-  });
-
-  it('resolves nested light-extension RunJS assignment values with settings', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'return `${ctx.settings.currency}:${ctx.record.id}`',
-        version: 'v2',
-        settings: input.settings || {},
-      }),
-    });
-
-    const ctx: any = new FlowContext();
-    ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'CreateRecordActionModel' } });
-    ctx.defineProperty('record', { value: { id: 7 } });
-    const message = { error: vi.fn() };
-    ctx.defineProperty('message', { value: message });
-    ctx.defineMethod('runjs', async function (this: any, code: string) {
-      return { success: true, value: `${this.settings.currency}:7:${code.includes('record.id')}` };
-    });
-
-    await expect(
-      resolveAssignFieldValues(ctx, {
-        amountText: {
-          code: '',
-          version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: {
-            type: 'light-extension-entry',
-            repoId: 'ler_runjs',
-            entryId: 'lee_normalize_amount',
-            kind: 'runjs',
-          },
-          settings: { currency: 'USD' },
-        },
-      }),
-    ).resolves.toEqual({
-      amountText: 'USD:7:true',
-    });
-    expect(message.error).not.toHaveBeenCalled();
-  });
-
   it('shows an error and aborts assignment when RunJS fails', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'throw new Error("boom")',
-        version: 'v2',
-        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
-        settings: input.settings || {},
-        context: input.context,
-      }),
-    });
-
     const ctx: any = new FlowContext();
     ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'UpdateRecordActionModel' } });
     ctx.defineMethod('runjs', async () => ({ success: false, error: new Error('boom') }));
@@ -82,20 +26,12 @@ describe('assignFieldValuesFlow RunJS values', () => {
         ctx,
         {
           amountText: {
-            code: '',
+            code: 'throw new Error("boom")',
             version: 'v2',
-            sourceMode: 'light-extension',
-            sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'ler_runjs',
-              entryId: 'lee_normalize_amount',
-              kind: 'runjs',
-            },
             settings: { currency: 'USD' },
           },
         },
         'UpdateRecordAction',
-        { settingsFlowKey: 'assignSettings' },
       ),
     ).resolves.toBeNull();
 

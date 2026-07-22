@@ -669,15 +669,6 @@ FormBlockModel.registerFlow({
       use: 'formAssignRules',
       title: tExpr('Field values'),
       async beforeParamsSave(ctx, params) {
-        const latestRules = await (
-          ctx as typeof ctx & {
-            saveEmbeddedRunJSEditors?: () => Promise<unknown[]>;
-          }
-        ).saveEmbeddedRunJSEditors?.();
-        if (Array.isArray(latestRules)) {
-          params.value = latestRules;
-          ctx.model.setStepParams('formModelSettings', 'assignRules', params);
-        }
         // 迁移：保存表单级规则后，移除字段级默认值配置（editItemSettings/formItemSettings.initialValue）
         // 字段级默认值会在 UI 打开时自动合并到本步骤表单值中，因此此处仅做清理即可。
         const cleared = clearLegacyDefaultValuesFromFormModel(ctx.model);

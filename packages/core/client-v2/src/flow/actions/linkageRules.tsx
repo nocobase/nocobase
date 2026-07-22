@@ -36,6 +36,7 @@ import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { RunJSValueEditor } from '../components/RunJSValueEditor';
+import { evaluateInlineRunJSValue } from '../components/runjs-source';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { AssignMode, FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
@@ -51,7 +52,6 @@ import {
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
-import { INLINE_RUNJS_SOURCE_MODE } from '../components/runjs-source';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -489,14 +489,11 @@ async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: unkn
   }
 
   const runJs = normalizeRunJSValue(rawValue);
+  if (!runJs.code.trim()) {
+    return SKIP_RUNJS_ASSIGN_VALUE;
+  }
   try {
-    const result = await ctx.runjs(runJs.code, undefined, {
-      version: runJs.version,
-    });
-    if (!result?.success) {
-      throw result?.error || new Error('RunJS execution failed');
-    }
-    return result.value;
+    return await evaluateInlineRunJSValue({ ctx, runJs });
   } catch (error) {
     console.warn('[linkageRules] Failed to evaluate RunJS assign value', error);
     return SKIP_RUNJS_ASSIGN_VALUE;
@@ -925,11 +922,6 @@ type ArrayFieldComponentProps = {
   linkageActionIndex?: number;
 };
 
-function getCurrentStepKey(ctx: FlowContext): string | undefined {
-  const currentStep = (ctx as { currentStep?: { key?: unknown } }).currentStep;
-  return typeof currentStep?.key === 'string' ? currentStep.key : undefined;
-}
-
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
 const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
 const LINKAGE_ASSIGN_MODE_PROP = '__linkageAssignMode';
@@ -953,7 +945,7 @@ const FieldAssignRulesActionComponent: React.FC<
     fixedMode?: 'assign' | 'default';
   }
 > = (props) => {
-  const { value, onChange, legacy, fixedMode, linkageRuleIndex, linkageActionIndex } = props;
+  const { value, onChange, legacy, fixedMode } = props;
   const ctx = useFlowContext();
 
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
@@ -977,42 +969,11 @@ const FieldAssignRulesActionComponent: React.FC<
     [onChange],
   );
 
-  const getValueInputProps = React.useCallback(
-    (_item: FieldAssignRuleItem, index: number) => {
-      const containerFlowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
-      const containerStepKey = getCurrentStepKey(ctx);
-
-      return {
-        sourceLocator:
-          ctx.model?.uid &&
-          containerFlowKey &&
-          containerStepKey &&
-          typeof linkageRuleIndex === 'number' &&
-          typeof linkageActionIndex === 'number'
-            ? {
-                kind: 'flowModel.nestedRunJS' as const,
-                modelUid: ctx.model.uid,
-                containerFlowKey,
-                containerStepKey,
-                valuePath: [
-                  'value',
-                  linkageRuleIndex,
-                  'actions',
-                  linkageActionIndex,
-                  'params',
-                  'value',
-                  index,
-                  'value',
-                ],
-                scene: 'formValue',
-              }
-            : undefined,
-        sourceLabel: `${t('Linkage rule')} / ${t('Field assignment')} / ${t('RunJS')}`,
-        surfaceStyle: 'value' as const,
-      };
-    },
-    [ctx, linkageActionIndex, linkageRuleIndex, t],
-  );
+  const getValueInputProps = React.useCallback(() => {
+    return {
+      sourceLabel: `${t('Linkage rule')} / ${t('Field assignment')} / ${t('RunJS')}`,
+    };
+  }, [t]);
 
   return (
     <FieldAssignRulesEditor
@@ -1054,30 +1015,10 @@ function normalizeLinkageRunJSValue(value: unknown): RunJSValue | undefined {
 }
 
 const LinkageRunJSValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {
-  const { value, onChange, linkageRuleIndex, linkageActionIndex } = props;
+  const { value, onChange } = props;
   const ctx = useFlowContext();
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
   const runJSValue = React.useMemo(() => normalizeLinkageRunJSValue(value) || { code: '', version: 'v2' }, [value]);
-  const containerFlowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
-  const containerStepKey = getCurrentStepKey(ctx);
-  const sourceLocator = React.useMemo(
-    () =>
-      ctx.model?.uid &&
-      containerFlowKey &&
-      containerStepKey &&
-      typeof linkageRuleIndex === 'number' &&
-      typeof linkageActionIndex === 'number'
-        ? {
-            kind: 'flowModel.nestedRunJS' as const,
-            modelUid: ctx.model.uid,
-            containerFlowKey,
-            containerStepKey,
-            valuePath: ['value', linkageRuleIndex, 'actions', linkageActionIndex, 'params', 'value'],
-            scene: 'linkage',
-          }
-        : undefined,
-    [containerFlowKey, containerStepKey, ctx.model?.uid, linkageActionIndex, linkageRuleIndex],
-  );
   const handleChange = React.useCallback((next: RunJSValue) => onChange?.(next), [onChange]);
 
   return (
@@ -1089,7 +1030,6 @@ const LinkageRunJSValueComponent: React.FC<ArrayFieldComponentProps> = (props) =
           onChange={handleChange}
           height="200px"
           scene="linkage"
-          sourceLocator={sourceLocator}
           sourceLabel={`${t('Linkage rule')} / ${t('Execute JavaScript')}`}
           surfaceStyle="action"
         />
@@ -1495,17 +1435,12 @@ export const linkageRunjs = defineAction({
   },
   handler: async (ctx, { value }) => {
     const runJs = normalizeLinkageRunJSValue(value);
-    if (!runJs || (!runJs.code.trim() && (!runJs.sourceMode || runJs.sourceMode === INLINE_RUNJS_SOURCE_MODE))) {
+    if (!runJs?.code.trim()) {
       return;
     }
 
     try {
-      const result = await ctx.runjs(runJs.code, undefined, {
-        version: runJs.version,
-      });
-      if (!result?.success) {
-        throw result?.error || new Error('RunJS execution failed');
-      }
+      await evaluateInlineRunJSValue({ ctx, runJs });
     } catch (error) {
       console.error('[linkageRules] RunJS execution failed', error);
       const translate =

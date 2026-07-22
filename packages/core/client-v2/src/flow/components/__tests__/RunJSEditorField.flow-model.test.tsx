@@ -12,7 +12,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FlowContextProvider, FlowEngine, FlowModel, FlowRuntimeContext, FlowStepContext } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { RunJSEditorField, RunJSEditorRegistry } from '../runjs-studio';
+import { RunJSEditorField, RunJSEditorRegistry, type RunJSSourceLocator } from '../runjs-studio';
 
 vi.mock('../code-editor', () => ({
   CodeEditor: ({
@@ -757,6 +757,40 @@ describe('RunJSEditorField FlowModel integration', () => {
 
     expect(onChange).toHaveBeenCalledWith({ code: 'return 3;', version: 'v2' });
     expect(setStepParams).not.toHaveBeenCalled();
+  });
+
+  it.each<{ name: string; locator?: RunJSSourceLocator }>([
+    { name: 'generic inline host' },
+    {
+      name: 'FlowRegistry RunJS',
+      locator: {
+        kind: 'flowModel.flowRegistry.runjs',
+        modelUid: 'fm_registry',
+        flowKey: 'eventFlow',
+        stepKey: 'runJs',
+        sourcePath: ['code'],
+      },
+    },
+    { name: 'workflow JavaScript', locator: { kind: 'workflow.javascript', nodeId: 42 } },
+    { name: 'chart option', locator: { kind: 'chart.option', modelUid: 'chart_option' } },
+    { name: 'chart events', locator: { kind: 'chart.events', modelUid: 'chart_events' } },
+  ])('keeps $name on the inline editor when a step-only Studio provider is installed', ({ locator }) => {
+    const harness = createFlowModelHarness();
+    const renderStudio = vi.fn(() => <div>step studio</div>);
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'step-only-studio-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: renderStudio,
+    });
+
+    harness.renderEditor(
+      <RunJSEditorField sourceLocator={locator} surfaceStyle="value" value={{ code: 'return 1;', version: 'v2' }} />,
+    );
+
+    expect(renderStudio).not.toHaveBeenCalled();
+    expect(screen.queryByText('step studio')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('// Use return to output value')).toHaveValue('return 1;');
   });
 
   it('preserves string-valued code field changes while syncing saved model params', () => {

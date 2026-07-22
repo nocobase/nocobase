@@ -2,16 +2,30 @@
 
 `@nocobase/plugin-light-extension` is the domain layer for NocoBase light extensions.
 
-Light extensions organize multi-file RunJS entries on the package's internal VSC repository module. Existing RunJS surfaces reference an entry by repository, entry, and kind instead of copying code into each FlowModel.
+Light extensions organize multi-file RunJS entries for complete JavaScript models on the package's internal VSC repository module. A supported model references an entry by repository, entry, and kind instead of copying the active source into each FlowModel.
 
 ## Boundaries
 
 - A light extension repository is not a NocoBase plugin package and does not have plugin lifecycle hooks.
 - This package must reuse the shared RunJS compiler, artifact contract, and runtime. Repository creation and source saves are compile-gated and atomic: validation or compilation errors leave repository metadata, Head, runtime artifacts, and existing references unchanged.
 - Light extension entries cannot define collections, migrations, resources, ACL rules, app providers, server middleware, or package dependencies.
-- Runtime code is resolved by existing RunJS surfaces through entry bindings. The plugin owns repository organization, entry metadata, compiled runtime artifacts, settings validation, reference indexes, and selection UI; it does not add a separate publication/version-policy layer.
+- Runtime code is resolved by supported JS Model surfaces through entry bindings. The plugin owns repository organization, entry metadata, compiled runtime artifacts, settings validation, reference indexes, and selection UI; it does not add a separate publication/version-policy layer.
 - Runtime resolution is available to logged-in page users, matching the existing RunJS source runtime. Repository authoring and management remain behind `pm.light-extension`, so page users do not receive create, save, archive, or delete permissions merely to execute an existing binding.
 - Core MVP targets client-v2 first. During the current admin-shell transition, the legacy client bundle also registers the same minimal settings page so `/admin/settings/light-extension` can load without a remote-plugin 404. That bridge must stay thin: no `@nocobase/client` imports, no SchemaComponent runtime, and no ordinary plugin-management concepts.
+
+## Supported product model
+
+Light Extension exposes exactly five entry kinds:
+
+| Entry kind | Complete model surface | Source root |
+| --- | --- | --- |
+| `js-block` | JS Block | `src/client/js-blocks/<entry-name>/` |
+| `js-page` | JS Page | `src/client/js-pages/<entry-name>/` |
+| `js-field` | JS Field, editable JS Field, and JS Column | `src/client/js-fields/<entry-name>/` |
+| `js-action` | JS Action families | `src/client/js-actions/<entry-name>/` |
+| `js-item` | JS Item families | `src/client/js-items/<entry-name>/` |
+
+JS Column deliberately reuses `js-field`; its entry descriptor uses `category: "js-column"` when it needs a column-specific presentation. Generic JavaScript values in defaults, assignment rules, linkage rules, custom variables, and similar nested settings are inline-only. They continue to use the shared RunJS compiler/runtime/editor, but they cannot be selected, moved, versioned, or edited as independent Light Extension entries.
 
 ## SDK Shape
 
@@ -169,9 +183,11 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 
 ## UI Integration Contract
 
-Light extensions are selected from the code-source settings of existing JS Block, JS Item, JS Field, JS Column, JS Action, and value-return RunJS surfaces. JS Column reuses the `js-field` kind because both surfaces share the same render contract. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
+Light extensions are selected from the code-source settings of existing JS Block, JS Page, JS Item, JS Field, JS Column, and JS Action surfaces. JS Column reuses the `js-field` kind because both surfaces share the same render contract. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
 
-An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, `js-fields`, and `runjs` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-pages`, `js-actions`, `js-items`, and `js-fields` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+
+Generic inline hosts behave the same whether this plugin is enabled or disabled. They use the ordinary inline code editor and inline runtime; the Light Extension Studio providers only accept canonical `flowModel.step` locators for complete JS Models. Workflow JavaScript, chart option/events, and `flowModel.flowRegistry.runjs` keep their public RunJS contracts but are not handled by this plugin's Studio provider.
 
 ## Move RunJS Source Contract
 
@@ -214,8 +230,10 @@ If any step fails, destination source, compiled artifacts, host binding, and ref
 | RunJS locator | Derived light-extension kind | Move action |
 | --- | --- | --- |
 | `flowModel.step` with `JSBlockModel` | `js-block` | Supported |
-| `flowModel.step` with JS Field/Action/Item owner metadata | `js-field`, `js-action`, or `js-item` | Supported |
-| `flowModel.nestedRunJS` with a value-return RunJS host | `runjs` | Supported |
+| `flowModel.step` with `JSPageModel` | `js-page` | Supported |
+| `flowModel.step` with JS Field/Column owner metadata | `js-field` | Supported |
+| `flowModel.step` with JS Action/Item owner metadata | `js-action` or `js-item` | Supported |
+| Generic default, assignment, linkage, or custom-variable JavaScript | N/A | Inline-only; not exposed |
 | Workflow JavaScript, chart option/events, or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
 
 ### Validation and errors

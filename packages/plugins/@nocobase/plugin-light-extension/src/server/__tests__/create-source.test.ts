@@ -69,7 +69,7 @@ describe('plugin-light-extension initial source creation', () => {
       DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => file.path).sort(),
     );
     expect(historyResponse.body.data).toHaveLength(1);
-    expect(entriesResponse.body.data).toHaveLength(7);
+    expect(entriesResponse.body.data).toHaveLength(6);
     expect(entriesResponse.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'js-block', entryName: 'welcome-card', healthStatus: 'ready' }),
@@ -77,11 +77,41 @@ describe('plugin-light-extension initial source creation', () => {
         expect.objectContaining({ kind: 'js-field', entryName: 'status-tag', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-field', entryName: 'record-status-column', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-item', entryName: 'form-total-preview', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'runjs', entryName: 'calculate-subtotal', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-page', entryName: 'hello-page', healthStatus: 'ready' }),
       ]),
     );
+    expect(entriesResponse.body.data.some((entry) => entry.kind === 'runjs')).toBe(false);
     expect(entriesResponse.body.data.every((entry) => Boolean(entry.runtimeArtifact?.code))).toBe(true);
+  });
+
+  it('rejects uploaded source that uses the removed generic RunJS root', async () => {
+    const zip = new JSZip();
+    zip.file('src/client/runjs/example/index.ts', 'return 1;\n');
+    zip.file('src/client/runjs/example/entry.json', '{"schemaVersion":1,"key":"example"}\n');
+    const zipBase64 = await zip.generateAsync({ type: 'base64' });
+
+    const createResponse = await app
+      .agent()
+      .resource('lightExtensionRepos')
+      .create({
+        values: {
+          name: 'Removed RunJS Source',
+          zipBase64,
+        },
+      });
+
+    expect(createResponse.status).toBe(422);
+    expect(createResponse.body.errors[0]).toMatchObject({
+      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'workspace_path_not_allowed',
+            path: 'src/client/runjs/example/index.ts',
+          }),
+        ]),
+      },
+    });
   });
 
   it('uses uploaded ZIP source for the first version and compiles it immediately', async () => {

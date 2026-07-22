@@ -7,20 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext } from '@nocobase/flow-engine';
+import { FlowContext, normalizeRunJSValue, type RunJSValue } from '@nocobase/flow-engine';
 
 import type { ResolvedRuntimeRunJS } from './types';
-import type { RunJSSourceLocator } from '../runjs-studio';
-
-export const RUNJS_OWNER_KIND = 'flowModel.runjsHost';
-
-export type RunJSOwnerLocator = {
-  kind: typeof RUNJS_OWNER_KIND;
-  modelUid?: string;
-  use?: string;
-  hostPath?: string[];
-  descriptor?: string;
-};
+import { INLINE_RUNJS_SOURCE_MODE } from './types';
 
 type RunJSExecutionResult = {
   success?: boolean;
@@ -88,53 +78,21 @@ export async function evaluateResolvedRunJSValue(input: {
   return ret.value;
 }
 
-function hasRunJSRuntimeExecutor(value: unknown): value is RunJSRuntimeExecutor {
-  return Boolean(value) && typeof value === 'object' && typeof (value as RunJSRuntimeExecutor).runjs === 'function';
-}
-
-export function buildRunJSOwnerLocator(input: {
-  modelUid?: string;
-  use?: string;
-  hostPath?: Array<string | number>;
-  descriptor?: string;
-}): RunJSOwnerLocator {
-  return {
-    kind: RUNJS_OWNER_KIND,
-    ...(toNonEmptyString(input.modelUid) ? { modelUid: toNonEmptyString(input.modelUid) } : {}),
-    ...(toNonEmptyString(input.use) ? { use: toNonEmptyString(input.use) } : {}),
-    ...(input.hostPath?.length ? { hostPath: input.hostPath.map(String) } : {}),
-    ...(toNonEmptyString(input.descriptor) ? { descriptor: toNonEmptyString(input.descriptor) } : {}),
-  };
-}
-
-export function buildRunJSOwnerLocatorFromSourceLocator(
-  locator: RunJSSourceLocator | undefined,
-  fallback: { modelUid?: string; use?: string; hostPath?: Array<string | number> } = {},
-): RunJSOwnerLocator {
-  const fromLocator = getRunJSHostPathFromSourceLocator(locator);
-  const modelUid =
-    locator && 'modelUid' in locator && typeof locator.modelUid === 'string' ? locator.modelUid : fallback.modelUid;
-  return buildRunJSOwnerLocator({
-    modelUid,
-    use: fallback.use,
-    hostPath: fromLocator.length ? fromLocator : fallback.hostPath,
+export async function evaluateInlineRunJSValue(input: { ctx: unknown; runJs: RunJSValue }): Promise<unknown> {
+  const runJs = normalizeRunJSValue(input.runJs);
+  return evaluateResolvedRunJSValue({
+    ctx: input.ctx,
+    resolved: {
+      code: runJs.code,
+      version: runJs.version,
+      sourceMode: INLINE_RUNJS_SOURCE_MODE,
+      settings: runJs.settings || {},
+    },
   });
 }
 
-export function getRunJSHostPathFromSourceLocator(locator: RunJSSourceLocator | undefined): string[] {
-  if (!locator) {
-    return [];
-  }
-  if (locator.kind === 'flowModel.nestedRunJS') {
-    return ['stepParams', locator.containerFlowKey, locator.containerStepKey, ...locator.valuePath.map(String)];
-  }
-  if (locator.kind === 'flowModel.step') {
-    return ['stepParams', locator.flowKey, locator.stepKey, ...locator.paramPath.map(String)];
-  }
-  if (locator.kind === 'flowModel.flowRegistry.runjs') {
-    return ['flowRegistry', locator.flowKey, locator.stepKey, ...locator.sourcePath.map(String)];
-  }
-  return [locator.kind];
+function hasRunJSRuntimeExecutor(value: unknown): value is RunJSRuntimeExecutor {
+  return Boolean(value) && typeof value === 'object' && typeof (value as RunJSRuntimeExecutor).runjs === 'function';
 }
 
 export function getRunJSModelUse(model: unknown): string | undefined {

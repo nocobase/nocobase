@@ -269,17 +269,6 @@ export function createJsItemSourceBinding(
   });
 }
 
-export function createRunJSSourceBinding(
-  input: Partial<LightExtensionRuntimeSourceBinding> = {},
-): LightExtensionRuntimeSourceBinding {
-  return createSourceBinding({
-    repoId: 'ler_runjs',
-    entryId: 'lee_normalize_amount',
-    kind: 'runjs',
-    ...input,
-  });
-}
-
 export function createJsBlockNode(
   input: {
     uid?: string;
@@ -403,50 +392,6 @@ export function createJsItemNode(
   };
 }
 
-export function createRunJSHostNode(
-  input: {
-    uid?: string;
-    storage?: 'stepParams' | 'flowRegistry';
-    sourceMode?: string;
-    sourceBinding?: LightExtensionRuntimeSourceBinding;
-    settings?: Record<string, unknown>;
-  } = {},
-): FlowModelNode {
-  const runJsValue = {
-    code: '',
-    version: 'v2',
-    sourceMode: input.sourceMode || 'light-extension',
-    sourceBinding: input.sourceBinding || createRunJSSourceBinding(),
-    settings: input.settings || {},
-  };
-  if (input.storage === 'flowRegistry') {
-    return {
-      uid: input.uid || 'flow_form_runjs',
-      use: 'FormBlockModel',
-      flowRegistry: {
-        formModelSettings: {
-          steps: {
-            defaultValue: {
-              params: {
-                value: runJsValue,
-              },
-            },
-          },
-        },
-      },
-    };
-  }
-  return {
-    uid: input.uid || 'flow_form_runjs',
-    use: 'FormBlockModel',
-    stepParams: {
-      formModelSettings: {
-        defaultValue: runJsValue,
-      },
-    },
-  };
-}
-
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
@@ -491,16 +436,6 @@ export function createJsItemEntryRecord(input: Record<string, unknown> = {}): Re
     id: 'lee_level_label',
     repoId: 'ler_items',
     kind: 'js-item',
-    healthStatus: 'ready',
-    ...input,
-  });
-}
-
-export function createRunJSEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createEntryRecord({
-    id: 'lee_normalize_amount',
-    repoId: 'ler_runjs',
-    kind: 'runjs',
     healthStatus: 'ready',
     ...input,
   });
@@ -565,7 +500,7 @@ export function createEntryRecord(input: Record<string, unknown> = {}): Record<s
       metadata: {},
     },
     runtimeVersion: 'v2',
-    surfaceStyle: kind === 'js-action' ? 'action' : kind === 'runjs' ? 'value' : 'render',
+    surfaceStyle: kind === 'js-action' ? 'action' : 'render',
     runtimeCodeHash: 'runtime_hash_1',
     artifactHash: 'artifact_hash_1',
     filesHash: 'files_hash_1',
@@ -625,9 +560,6 @@ function kindToFolder(kind: string): string {
   }
   if (kind === 'js-item') {
     return 'js-items';
-  }
-  if (kind === 'runjs') {
-    return 'runjs';
   }
   if (kind === 'js-page') {
     return 'js-pages';
@@ -698,7 +630,6 @@ export function hashOwnerLocator(ownerLocator: LightExtensionReferenceOwnerLocat
     modelUid: ownerLocator.modelUid,
     ...(ownerLocator.use ? { use: ownerLocator.use } : {}),
     ...(ownerLocator.stepPath?.length ? { stepPath: ownerLocator.stepPath } : {}),
-    ...(ownerLocator.hostPath?.length ? { hostPath: ownerLocator.hostPath } : {}),
   });
 }
 

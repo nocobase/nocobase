@@ -546,46 +546,6 @@ describe('linkage assign actions - legacy params', () => {
     expect(setProps).toHaveBeenCalledWith(fieldModel, { value: 'from-runjs' });
   });
 
-  it('linkageAssignField should not revive a stale generic light-extension binding', async () => {
-    const fieldModel = { uid: 'f-runjs-stale', fieldPath: 'a.b' };
-    const runjs = vi.fn(async () => ({ success: true, value: 'inline-value' }));
-    const ctx = new FlowContext();
-    ctx.defineProperty('model', {
-      value: { subModels: { grid: { subModels: { items: [fieldModel] } } } },
-    });
-    ctx.defineProperty('engine', { value: { getModel: vi.fn(() => ({ fieldPath: 'a.b' })) } });
-    ctx.defineProperty('app', { value: { jsonLogic: { apply: vi.fn() } } });
-    ctx.defineMethod('runjs', runjs);
-    const setProps = vi.fn();
-
-    await linkageAssignField.handler(ctx, {
-      value: [
-        {
-          key: 'r-runjs-stale',
-          enable: true,
-          targetPath: 'a.b',
-          mode: 'assign',
-          condition: { logic: '$and', items: [] },
-          value: {
-            code: 'return "inline-value";',
-            version: 'v2',
-            sourceMode: 'light-extension',
-            sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'legacy_repo',
-              entryId: 'legacy_entry',
-              kind: 'runjs',
-            },
-          },
-        },
-      ],
-      setProps,
-    });
-
-    expect(runjs).toHaveBeenCalledWith('return "inline-value";', undefined, { version: 'v2' });
-    expect(setProps).toHaveBeenCalledWith(fieldModel, { value: 'inline-value' });
-  });
-
   it('linkageAssignField should skip assign when RunJS evaluation fails', async () => {
     const fieldModel: any = { uid: 'f-runjs-fail', fieldPath: 'a.b' };
     const runjs = vi.fn(async () => ({ success: false }));
