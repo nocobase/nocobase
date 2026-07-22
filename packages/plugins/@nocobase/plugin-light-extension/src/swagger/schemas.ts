@@ -405,12 +405,6 @@ export const lightExtensionSchemas = {
           type: 'string',
         },
       },
-      hostPath: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-      },
       descriptor: {
         type: 'string',
       },

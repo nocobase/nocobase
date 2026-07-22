@@ -37,24 +37,6 @@ export const runJSSourceSchemas = {
       },
       {
         type: 'object',
-        required: ['kind', 'modelUid', 'containerFlowKey', 'containerStepKey', 'valuePath', 'scene'],
-        properties: {
-          kind: { type: 'string', enum: ['flowModel.nestedRunJS'] },
-          modelUid,
-          containerFlowKey: { type: 'string', minLength: 1 },
-          containerStepKey: { type: 'string', minLength: 1 },
-          valuePath: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              oneOf: [{ type: 'string' }, { type: 'integer', minimum: 0, maximum: 100000 }],
-            },
-          },
-          scene: { type: 'string', minLength: 1 },
-        },
-      },
-      {
-        type: 'object',
         required: ['kind', 'modelUid', 'flowKey', 'stepKey', 'sourcePath'],
         properties: {
           kind: { type: 'string', enum: ['flowModel.flowRegistry.runjs'] },

@@ -15,7 +15,6 @@ import type { RunJSSourceLocator } from './runjs-source-contracts';
 import type { VscRepositoryIdentity } from './types';
 
 const unsafePathSegments = new Set(['__proto__', 'constructor', 'prototype']);
-const MAX_RUNJS_PATH_ARRAY_INDEX = 100_000;
 
 export type {
   RunJSCompileDiagnostic,
@@ -51,17 +50,6 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
       stepKey: requirePathSegment(input.stepKey, 'stepKey'),
       paramPath: requireStringArray(input.paramPath, 'paramPath'),
       versionPath: optionalStringArray(input.versionPath, 'versionPath'),
-    };
-  }
-
-  if (kind === 'flowModel.nestedRunJS') {
-    return {
-      kind,
-      modelUid: requireString(input.modelUid, 'modelUid'),
-      containerFlowKey: requirePathSegment(input.containerFlowKey, 'containerFlowKey'),
-      containerStepKey: requirePathSegment(input.containerStepKey, 'containerStepKey'),
-      valuePath: requirePathArray(input.valuePath, 'valuePath'),
-      scene: requireString(input.scene, 'scene'),
     };
   }
 
@@ -137,15 +125,6 @@ function getSourcePathSegments(
     return toTypedPathSegments([locator.flowKey, locator.stepKey, ...locator.paramPath]);
   }
 
-  if (locator.kind === 'flowModel.nestedRunJS') {
-    return toTypedPathSegments([
-      locator.containerFlowKey,
-      locator.containerStepKey,
-      ...locator.valuePath,
-      locator.scene,
-    ]);
-  }
-
   if (locator.kind === 'flowModel.flowRegistry.runjs') {
     return toTypedPathSegments([locator.flowKey, locator.stepKey, ...locator.sourcePath]);
   }
@@ -212,28 +191,6 @@ function optionalStringArray(value: unknown, field: string): string[] | undefine
   }
 
   return requireStringArray(value, field);
-}
-
-function requirePathArray(value: unknown, field: string): Array<string | number> {
-  if (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every(
-      (item) =>
-        (typeof item === 'string' && item.trim()) ||
-        (isNonNegativeSafeInteger(item) && item <= MAX_RUNJS_PATH_ARRAY_INDEX),
-    )
-  ) {
-    const path = [...value] as Array<string | number>;
-    path.forEach((segment, index) => {
-      if (typeof segment === 'string') {
-        assertSafePathSegment(segment, `${field}[${index}]`);
-      }
-    });
-    return path;
-  }
-
-  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source locator field "${field}" is invalid`);
 }
 
 function isNonNegativeSafeInteger(value: unknown): value is number {

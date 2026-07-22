@@ -499,8 +499,7 @@ export type LightExtensionReferenceOwnerKind =
   | 'flowModel.pageSettings'
   | 'flowModel.fieldSettings'
   | 'flowModel.actionSettings'
-  | 'flowModel.itemSettings'
-  | 'flowModel.runjsHost';
+  | 'flowModel.itemSettings';
 
 export interface LightExtensionFlowModelOwnerLocator {
   kind: 'flowModel.step';
@@ -514,7 +513,6 @@ export interface LightExtensionModelOwnerLocator {
   modelUid?: string;
   use?: string;
   stepPath?: string[];
-  hostPath?: string[];
   descriptor?: string;
 }
 

@@ -58,7 +58,6 @@ const ENTRY_ROOTS: Record<LightExtensionKind, string> = {
   'js-field': 'src/client/js-fields',
   'js-action': 'src/client/js-actions',
   'js-item': 'src/client/js-items',
-  runjs: 'src/client/runjs',
 };
 
 export interface MoveSourceServiceContext extends LightExtensionServiceContext {
@@ -92,6 +91,7 @@ export class MoveSourceService {
     ctx: MoveSourceServiceContext,
   ): Promise<LightExtensionMoveSourceResult> {
     try {
+      assertMoveSourceInputSupported(input);
       if (input.destination.type === 'existing') {
         return await this.moveSourceToExistingRepo(input, ctx);
       }
@@ -547,12 +547,6 @@ function normalizeWorkspacePath(value: string): string {
 }
 
 function resolveLightExtensionKind(locator: RunJSSourceLocator, legacy: RunJSLegacySource): LightExtensionKind {
-  if (locator.kind === 'flowModel.nestedRunJS') {
-    if (legacy.surfaceStyle !== 'value') {
-      throw unsupportedLocator(locator);
-    }
-    return 'runjs';
-  }
   if (locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(locator);
   }
@@ -562,7 +556,27 @@ function resolveLightExtensionKind(locator: RunJSSourceLocator, legacy: RunJSLeg
   if (!ownerAdapter || !(LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(ownerAdapter.kind)) {
     throw unsupportedLocator(locator, modelUse);
   }
+  assertCanonicalModelSourceLocator(locator, ownerAdapter.kind, modelUse);
   return ownerAdapter.kind;
+}
+
+function assertCanonicalModelSourceLocator(
+  locator: Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>,
+  kind: LightExtensionKind,
+  modelUse: string,
+): void {
+  const expectedFlowKey = kind === 'js-action' ? 'clickSettings' : 'jsSettings';
+  const hasCanonicalVersionPath =
+    !locator.versionPath || (locator.versionPath.length === 1 && locator.versionPath[0] === 'version');
+  if (
+    locator.flowKey !== expectedFlowKey ||
+    locator.stepKey !== 'runJs' ||
+    locator.paramPath.length !== 1 ||
+    locator.paramPath[0] !== 'code' ||
+    !hasCanonicalVersionPath
+  ) {
+    throw unsupportedLocator(locator, modelUse);
+  }
 }
 
 function resolveMovedEntryCategory(kind: LightExtensionKind, legacy: RunJSLegacySource): string | null {
@@ -594,10 +608,22 @@ function getEntryRoot(kind: LightExtensionKind, entryName: string): string {
 }
 
 function getFlowModelUid(locator: RunJSSourceLocator): string {
-  if (locator.kind === 'flowModel.step' || locator.kind === 'flowModel.nestedRunJS') {
+  if (locator.kind === 'flowModel.step') {
     return locator.modelUid;
   }
   throw unsupportedLocator(locator);
+}
+
+function assertMoveSourceInputSupported(input: LightExtensionMoveSourceInput): void {
+  if (input.locator.kind !== 'flowModel.step') {
+    throw unsupportedLocator(input.locator);
+  }
+  if (
+    input.originBinding &&
+    !(LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(input.originBinding.kind)
+  ) {
+    throw unsupportedLocator(input.locator, undefined, input.originBinding.kind);
+  }
 }
 
 function assertOwnerFingerprint(expected: string, current: string): void {
@@ -626,12 +652,16 @@ function entryConflict(repoId: string, kind: LightExtensionKind, entryName: stri
   );
 }
 
-function unsupportedLocator(locator: RunJSSourceLocator, modelUse?: string): LightExtensionError {
+function unsupportedLocator(
+  locator: RunJSSourceLocator,
+  modelUse?: string,
+  originBindingKind?: string,
+): LightExtensionError {
   return new LightExtensionError(
     'LIGHT_EXTENSION_INVALID_INPUT',
     'This RunJS source cannot be moved to a light extension',
     {
-      details: { locatorKind: locator.kind, modelUse },
+      details: { locatorKind: locator.kind, modelUse, originBindingKind },
     },
   );
 }

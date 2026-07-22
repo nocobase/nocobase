@@ -98,7 +98,7 @@ describe('vsc-file shared utilities', () => {
     expect(identity.ownerId).toMatch(/^runjs:flowModel\.step:fm_1:[a-f0-9]{16}$/);
   });
 
-  it('keeps RunJS source path boundaries and segment types in repository identity hashes', () => {
+  it('keeps RunJS source path boundaries and retained locator kinds in repository identity hashes', () => {
     const dottedA = buildRunJSSourceRepositoryIdentity(
       normalizeRunJSSourceLocator({
         kind: 'flowModel.step',
@@ -117,26 +117,6 @@ describe('vsc-file shared utilities', () => {
         paramPath: ['code'],
       }),
     );
-    const numericPath = buildRunJSSourceRepositoryIdentity(
-      normalizeRunJSSourceLocator({
-        kind: 'flowModel.nestedRunJS',
-        modelUid: 'fm_1',
-        containerFlowKey: 'settings',
-        containerStepKey: 'rules',
-        valuePath: ['items', 1],
-        scene: 'defaultValue',
-      }),
-    );
-    const stringPath = buildRunJSSourceRepositoryIdentity(
-      normalizeRunJSSourceLocator({
-        kind: 'flowModel.nestedRunJS',
-        modelUid: 'fm_1',
-        containerFlowKey: 'settings',
-        containerStepKey: 'rules',
-        valuePath: ['items', '1'],
-        scene: 'defaultValue',
-      }),
-    );
     const flowRegistryPath = buildRunJSSourceRepositoryIdentity(
       normalizeRunJSSourceLocator({
         kind: 'flowModel.flowRegistry.runjs',
@@ -146,10 +126,29 @@ describe('vsc-file shared utilities', () => {
         sourcePath: ['defaultParams', 'code'],
       }),
     );
+    const workflowPath = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'workflow.javascript',
+        nodeId: 1,
+      }),
+    );
+    const chartOptionPath = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'chart.option',
+        modelUid: 'chart_1',
+      }),
+    );
+    const chartEventsPath = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'chart.events',
+        modelUid: 'chart_1',
+      }),
+    );
 
     expect(dottedA.ownerId).not.toBe(dottedB.ownerId);
-    expect(numericPath.ownerId).not.toBe(stringPath.ownerId);
     expect(flowRegistryPath.ownerId).toMatch(/^runjs:flowModel\.flowRegistry\.runjs:fm_1:[a-f0-9]{16}$/);
+    expect(workflowPath.ownerId).toMatch(/^runjs:workflow\.javascript:node_1:[a-f0-9]{16}$/);
+    expect(chartOptionPath.ownerId).not.toBe(chartEventsPath.ownerId);
   });
 
   it('rejects malformed RunJS source locators', () => {
@@ -167,6 +166,30 @@ describe('vsc-file shared utilities', () => {
       normalizeRunJSSourceLocator({ kind: 'unknown' });
     } catch (error) {
       expect(error).toMatchObject({ code: 'RUNJS_SOURCE_KIND_UNSUPPORTED' });
+    }
+  });
+
+  it('rejects legacy nested RunJS locators as unsupported', () => {
+    const locator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'fm_1',
+      containerFlowKey: 'settings',
+      containerStepKey: 'runjs',
+      valuePath: ['items', 0],
+      scene: 'defaultValue',
+    };
+
+    expect(() => normalizeRunJSSourceLocator(locator)).toThrowError(VscError);
+
+    try {
+      normalizeRunJSSourceLocator(locator);
+    } catch (error) {
+      expect(error).toMatchObject({
+        code: 'RUNJS_SOURCE_KIND_UNSUPPORTED',
+        details: {
+          kind: 'flowModel.nestedRunJS',
+        },
+      });
     }
   });
 
@@ -194,15 +217,14 @@ describe('vsc-file shared utilities', () => {
       },
     },
     {
-      label: 'nested value path',
+      label: 'flow registry source path',
       segment: 'prototype',
       locator: {
-        kind: 'flowModel.nestedRunJS',
+        kind: 'flowModel.flowRegistry.runjs',
         modelUid: 'fm_1',
-        containerFlowKey: 'settings',
-        containerStepKey: 'runjs',
-        valuePath: ['prototype'],
-        scene: 'defaultValue',
+        flowKey: 'submit',
+        stepKey: 'runjs',
+        sourcePath: ['defaultParams', 'prototype'],
       },
     },
   ])('rejects unsafe RunJS locator $label segments', ({ locator, segment }) => {
@@ -221,25 +243,6 @@ describe('vsc-file shared utilities', () => {
   });
 
   it.each([
-    { label: 'NaN', segment: Number.NaN },
-    { label: 'infinity', segment: Number.POSITIVE_INFINITY },
-    { label: 'negative', segment: -1 },
-    { label: 'fractional', segment: 1.5 },
-    { label: 'over-limit', segment: 100_001 },
-  ])('rejects invalid RunJS locator numeric path segment: $label', ({ segment }) => {
-    expect(() =>
-      normalizeRunJSSourceLocator({
-        kind: 'flowModel.nestedRunJS',
-        modelUid: 'fm_1',
-        containerFlowKey: 'settings',
-        containerStepKey: 'runjs',
-        valuePath: ['items', segment],
-        scene: 'defaultValue',
-      }),
-    ).toThrowError(VscError);
-  });
-
-  it.each([
     { label: 'NaN', nodeId: Number.NaN },
     { label: 'infinity', nodeId: Number.POSITIVE_INFINITY },
     { label: 'negative', nodeId: -1 },
@@ -252,20 +255,5 @@ describe('vsc-file shared utilities', () => {
         nodeId,
       }),
     ).toThrowError(VscError);
-  });
-
-  it('accepts the maximum supported RunJS locator array index', () => {
-    expect(
-      normalizeRunJSSourceLocator({
-        kind: 'flowModel.nestedRunJS',
-        modelUid: 'fm_1',
-        containerFlowKey: 'settings',
-        containerStepKey: 'runjs',
-        valuePath: ['items', 100_000],
-        scene: 'defaultValue',
-      }),
-    ).toMatchObject({
-      valuePath: ['items', 100_000],
-    });
   });
 });

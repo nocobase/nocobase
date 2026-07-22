@@ -11,7 +11,11 @@ import type { Database, Transaction } from '@nocobase/database';
 import type { RunJSSourceAdapterRegistry } from '../vsc-file';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { LightExtensionEntryRecord, LightExtensionRepoRecord } from '../../shared/types';
+import type {
+  LightExtensionEntryRecord,
+  LightExtensionMoveSourceInput,
+  LightExtensionRepoRecord,
+} from '../../shared/types';
 import { MoveSourceService, relocateRunJSWorkspace } from '../services/MoveSourceService';
 
 const locator = {
@@ -181,6 +185,10 @@ describe('MoveSourceService', () => {
   ] as const)(
     'moves a %s source into an existing repository and writes the host binding in the same transaction',
     async (modelUse, kind, entryRoot) => {
+      const sourceLocator = {
+        ...locator,
+        flowKey: kind === 'js-action' ? 'clickSettings' : 'jsSettings',
+      } as const;
       const transaction = { id: 'tx_move' } as unknown as Transaction;
       const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
       const movedEntry: LightExtensionEntryRecord = {
@@ -251,7 +259,7 @@ describe('MoveSourceService', () => {
 
       const result = await service.moveSource(
         {
-          locator,
+          locator: sourceLocator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: 'runjs_commit',
@@ -295,7 +303,7 @@ describe('MoveSourceService', () => {
       expect(descriptor.settingsSchema).toEqual(originSettingsSchema);
       expect(getEntry).toHaveBeenCalledWith('lee_origin', expect.anything());
       expect(writeExternalBinding).toHaveBeenCalledWith({
-        locator,
+        locator: sourceLocator,
         baseOwnerFingerprint: 'owner_before',
         binding: {
           sourceMode: 'light-extension',
@@ -304,7 +312,7 @@ describe('MoveSourceService', () => {
         ctx: expect.objectContaining({ transaction }),
       });
       expect(syncReferences).toHaveBeenCalledWith(
-        expect.objectContaining({ rootUid: locator.modelUid }),
+        expect.objectContaining({ rootUid: sourceLocator.modelUid }),
         expect.objectContaining({ transaction }),
       );
       expect(result.binding).toMatchObject({ repoId: repo.id, entryId: movedEntry.id, kind });
@@ -500,12 +508,8 @@ describe('MoveSourceService', () => {
     expect(saveSource).not.toHaveBeenCalled();
   });
 
-  it('rejects action-style nested RunJS sources', async () => {
-    const saveSource = vi.fn();
-    const service = createFailureService({
-      saveSource,
-      surfaceStyle: 'action',
-    });
+  it('rejects nested RunJS locators before any repository, VSC, host, or reference write', async () => {
+    const fixture = createFailFastService();
     const nestedLocator = {
       kind: 'flowModel.nestedRunJS',
       modelUid: 'flow_action',
@@ -516,7 +520,7 @@ describe('MoveSourceService', () => {
     } as const;
 
     await expect(
-      service.moveSource(
+      fixture.service.moveSource(
         {
           locator: nestedLocator,
           expectedOwnerFingerprint: 'owner_before',
@@ -525,13 +529,67 @@ describe('MoveSourceService', () => {
           entryPath: 'src/main.ts',
           version: 'v2',
           files: [{ path: 'src/main.ts', content: 'ctx.message.success("done");' }],
-          destination: { type: 'existing', repoId: repo.id },
+          destination: { type: 'new', name: 'forbidden-runjs' },
           entryName: 'action-script',
         },
         { adapterContext: {} },
       ),
     ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
-    expect(saveSource).not.toHaveBeenCalled();
+    expect(fixture.registryRequire).not.toHaveBeenCalled();
+    expectFailFastWritesNotCalled(fixture);
+  });
+
+  it('rejects unsupported FlowModel uses before any repository, VSC, host, or reference write', async () => {
+    const fixture = createFailFastService('FormBlockModel');
+
+    await expect(fixture.service.moveSource(createMoveSourceInput(), { adapterContext: {} })).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_INVALID_INPUT',
+    });
+
+    expect(fixture.readLegacy).toHaveBeenCalledOnce();
+    expectFailFastWritesNotCalled(fixture);
+  });
+
+  it('rejects a forged step locator that targets a nested generic value', async () => {
+    const fixture = createFailFastService('JSBlockModel');
+
+    await expect(
+      fixture.service.moveSource(
+        createMoveSourceInput({
+          locator: {
+            ...locator,
+            flowKey: 'formSettings',
+            stepKey: 'defaultValue',
+            paramPath: ['value', 'code'],
+          },
+        }),
+        { adapterContext: {} },
+      ),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
+
+    expect(fixture.readLegacy).toHaveBeenCalledOnce();
+    expectFailFastWritesNotCalled(fixture);
+  });
+
+  it('rejects a forged runjs origin binding before any repository, VSC, host, or reference write', async () => {
+    const fixture = createFailFastService();
+
+    await expect(
+      fixture.service.moveSource(
+        createMoveSourceInput({
+          originBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_legacy_runjs',
+            entryId: 'lee_legacy_runjs',
+            kind: 'runjs',
+          },
+        }),
+        { adapterContext: {} },
+      ),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
+
+    expect(fixture.registryRequire).not.toHaveBeenCalled();
+    expectFailFastWritesNotCalled(fixture);
   });
 
   it('requires host write permission before changing the destination', async () => {
@@ -740,4 +798,88 @@ function createFailureService(options: {
         }),
       }) as unknown as RunJSSourceAdapterRegistry,
   );
+}
+
+function createMoveSourceInput(overrides: Partial<LightExtensionMoveSourceInput> = {}): LightExtensionMoveSourceInput {
+  return {
+    locator,
+    expectedOwnerFingerprint: 'owner_before',
+    sourceRepoId: 'runjs_repo',
+    sourceHeadCommitId: 'runjs_commit',
+    entryPath: 'src/main.ts',
+    version: 'v2',
+    files: [{ path: 'src/main.ts', content: 'return 1;' }],
+    destination: { type: 'existing', repoId: repo.id },
+    entryName: 'sales-kpi',
+    ...overrides,
+  };
+}
+
+function createFailFastService(modelUse = 'JSBlockModel') {
+  const transaction = vi.fn();
+  const createRepo = vi.fn();
+  const pull = vi.fn();
+  const getEntry = vi.fn();
+  const listEntries = vi.fn();
+  const prepareSaveSource = vi.fn();
+  const publishPreparedSave = vi.fn();
+  const compileCurrentRuntime = vi.fn();
+  const syncFlowModelReferencesForNodeTree = vi.fn();
+  const assertCanWrite = vi.fn();
+  const readLegacy = vi.fn(async () => ({
+    code: 'return 1;',
+    version: 'v2',
+    label: 'RunJS',
+    surfaceStyle: 'render' as const,
+    language: 'typescript',
+    ownerFingerprint: 'owner_before',
+    metadata: { modelUse },
+  }));
+  const writeExternalBinding = vi.fn();
+  const registryRequire = vi.fn(() => ({
+    kind: 'flowModel.step',
+    assertCanWrite,
+    readLegacy,
+    writeExternalBinding,
+    getFingerprint: vi.fn(),
+  }));
+  const service = new MoveSourceService(
+    { sequelize: { transaction } } as unknown as Database,
+    { createRepo } as never,
+    { pull } as never,
+    { getEntry, listEntries } as never,
+    { prepareSaveSource, publishPreparedSave, compileCurrentRuntime } as never,
+    { syncFlowModelReferencesForNodeTree } as never,
+    () => ({ require: registryRequire }) as unknown as RunJSSourceAdapterRegistry,
+  );
+
+  return {
+    service,
+    transaction,
+    createRepo,
+    pull,
+    getEntry,
+    listEntries,
+    prepareSaveSource,
+    publishPreparedSave,
+    compileCurrentRuntime,
+    syncFlowModelReferencesForNodeTree,
+    assertCanWrite,
+    readLegacy,
+    writeExternalBinding,
+    registryRequire,
+  };
+}
+
+function expectFailFastWritesNotCalled(fixture: ReturnType<typeof createFailFastService>): void {
+  expect(fixture.transaction).not.toHaveBeenCalled();
+  expect(fixture.createRepo).not.toHaveBeenCalled();
+  expect(fixture.pull).not.toHaveBeenCalled();
+  expect(fixture.getEntry).not.toHaveBeenCalled();
+  expect(fixture.listEntries).not.toHaveBeenCalled();
+  expect(fixture.prepareSaveSource).not.toHaveBeenCalled();
+  expect(fixture.publishPreparedSave).not.toHaveBeenCalled();
+  expect(fixture.compileCurrentRuntime).not.toHaveBeenCalled();
+  expect(fixture.writeExternalBinding).not.toHaveBeenCalled();
+  expect(fixture.syncFlowModelReferencesForNodeTree).not.toHaveBeenCalled();
 }

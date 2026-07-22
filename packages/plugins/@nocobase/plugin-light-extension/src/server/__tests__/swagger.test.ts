@@ -13,6 +13,7 @@ import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles'
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
+import { runJSSourceActionNames } from '../vsc-file/runjs-sources';
 
 const publicActions = {
   lightExtensionRepos: ['list', 'get'],
@@ -20,6 +21,7 @@ const publicActions = {
   lightExtensionReferences: ['readReferences'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview'],
+  runJSSources: ['open', 'openLatest', 'compilePreview', 'save'],
 } as const;
 
 describe('light-extension swagger', () => {
@@ -30,6 +32,7 @@ describe('light-extension swagger', () => {
       lightExtensionReferences: lightExtensionReferenceActionNames,
       lightExtensionFiles: lightExtensionFileActionNames,
       lightExtensions: lightExtensionActionNames,
+      runJSSources: runJSSourceActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))

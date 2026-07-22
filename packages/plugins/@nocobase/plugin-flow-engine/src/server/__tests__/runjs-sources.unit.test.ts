@@ -38,7 +38,12 @@ describe('flow-engine RunJS source registration', () => {
       },
     });
 
-    expect(lightExtension.adapters.length).toBeGreaterThan(0);
+    expect(lightExtension.adapters.map((adapter) => adapter.kind)).toEqual([
+      'flowModel.step',
+      'flowModel.flowRegistry.runjs',
+      'chart.option',
+      'chart.events',
+    ]);
     expect(legacyVsc.adapters).toEqual([]);
     cleanup();
     expect(lightExtension.adapters).toEqual([]);
@@ -274,61 +279,6 @@ describe('flow-engine RunJS source registration', () => {
       code: 'return {{ ctx.record.id }};',
       version: 'v1',
       uninitialized: undefined,
-    });
-  });
-
-  it('keeps persisted nested RunJS code without a version on v1 semantics', async () => {
-    const registrar = createRegistrar();
-    const db = {
-      getCollection: () => ({
-        repository: {
-          findModelById: async () => ({
-            uid: 'legacy-nested-model',
-            use: 'FormModel',
-            stepParams: {
-              eventSettings: {
-                customVariable: {
-                  variables: [
-                    {
-                      key: 'legacy_variable',
-                      runjs: {
-                        code: 'return {{ ctx.record.id }};',
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          }),
-        },
-      }),
-    } as unknown as Database;
-    registerFlowModelRunJSSourceAdapters({
-      db,
-      app: {
-        pm: {
-          get: () => registrar,
-        },
-      },
-    });
-
-    const nestedAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.nestedRunJS');
-
-    await expect(
-      nestedAdapter?.readLegacy({
-        locator: {
-          kind: 'flowModel.nestedRunJS',
-          modelUid: 'legacy-nested-model',
-          containerFlowKey: 'eventSettings',
-          containerStepKey: 'customVariable',
-          valuePath: ['variables', 'legacy_variable', 'runjs'],
-          scene: 'eventFlow',
-        },
-        ctx: {},
-      }),
-    ).resolves.toMatchObject({
-      code: 'return {{ ctx.record.id }};',
-      version: 'v1',
     });
   });
 

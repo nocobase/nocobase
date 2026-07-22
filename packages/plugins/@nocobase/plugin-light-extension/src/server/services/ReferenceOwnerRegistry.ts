@@ -73,12 +73,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     modelUse: 'JSItemModel',
     modelUses: ['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel'],
   },
-  {
-    kind: 'runjs',
-    ownerKind: 'flowModel.runjsHost',
-    title: 'RunJS',
-    locatorContract: 'RunJS value host locator for defaults, assignments, and linkage values',
-  },
 ];
 
 export const JS_BLOCK_REFERENCE_OWNER_ADAPTER = REFERENCE_OWNER_ADAPTERS[0];
@@ -124,7 +118,6 @@ export function buildReferenceOwnerLocator(
   adapter: ReferenceOwnerAdapter,
   modelUid: string,
   modelUse?: string,
-  hostPath?: Array<string | number>,
 ): LightExtensionReferenceOwnerLocator {
   if (adapter.ownerKind === 'flowModel.step') {
     return {
@@ -140,7 +133,6 @@ export function buildReferenceOwnerLocator(
     modelUid,
     use: normalizeString(modelUse) || adapter.modelUse,
     ...(adapter.stepPath ? { stepPath: adapter.stepPath } : {}),
-    ...(hostPath?.length ? { hostPath: hostPath.map(String) } : {}),
     descriptor: adapter.locatorContract,
   };
 }
@@ -167,7 +159,6 @@ export function normalizeReferenceOwnerLocator(value: unknown): LightExtensionRe
     modelUid,
     use: normalizeString(value.use) || undefined,
     stepPath: Array.isArray(value.stepPath) ? value.stepPath.map(String) : undefined,
-    hostPath: Array.isArray(value.hostPath) ? value.hostPath.map(String) : undefined,
     descriptor: normalizeString(value.descriptor) || adapter.locatorContract,
   };
 }
@@ -209,7 +200,6 @@ function toOwnerLocatorHashIdentity(ownerLocator: LightExtensionReferenceOwnerLo
     modelUid: ownerLocator.modelUid,
     ...(ownerLocator.use ? { use: ownerLocator.use } : {}),
     ...(ownerLocator.stepPath?.length ? { stepPath: ownerLocator.stepPath } : {}),
-    ...(ownerLocator.hostPath?.length ? { hostPath: ownerLocator.hostPath } : {}),
   };
 }
 

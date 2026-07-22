@@ -21,6 +21,7 @@ import {
   stableJsonHash,
 } from './reference-test-helpers';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
+import { listReferenceOwnerAdapters } from '../services/ReferenceOwnerRegistry';
 
 describe('plugin-light-extension reference rebuild audit', () => {
   it('rebuilds a JS Page root idempotently and supports dry-run root filtering', async () => {
@@ -84,6 +85,52 @@ describe('plugin-light-extension reference rebuild audit', () => {
       ],
     });
     expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+  });
+
+  it('does not recreate generic RunJS owners when rebuilding a legacy nested binding', async () => {
+    const legacyNestedNode = {
+      uid: 'flow_legacy_runjs',
+      use: 'FormBlockModel',
+      stepParams: {
+        formModelSettings: {
+          defaultValue: {
+            code: 'return 1;',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'ler_legacy_runjs',
+              entryId: 'lee_legacy_runjs',
+              kind: 'runjs',
+            },
+          },
+        },
+      },
+    };
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_legacy_runjs: legacyNestedNode,
+      },
+    });
+    const can = vi.fn(({ resource, action }: { resource: string; action: string }) => {
+      if (resource === 'lightExtension' && action === 'updateReferences') {
+        return {};
+      }
+      return false;
+    });
+
+    const first = await service.rebuildIndex({ rootUid: 'flow_legacy_runjs' }, { can });
+    const second = await service.rebuildIndex({ rootUid: 'flow_legacy_runjs' }, { can });
+
+    expect(first).toMatchObject({ scanned: 0, upserted: 0, removed: 0 });
+    expect(second).toMatchObject({ scanned: 0, upserted: 0, removed: 0 });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+    expect(listReferenceOwnerAdapters()).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: 'runjs' })]),
+    );
+    expect(listReferenceOwnerAdapters()).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ ownerKind: 'flowModel.runjsHost' })]),
+    );
   });
 
   it('rebuilds the service-side index and removes owners that are inline or no longer reference adapters', async () => {
