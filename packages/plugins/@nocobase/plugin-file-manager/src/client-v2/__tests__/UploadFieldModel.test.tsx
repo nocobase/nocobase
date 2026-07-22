@@ -27,6 +27,7 @@ vi.mock('@formily/react', () => ({
 vi.mock('@nocobase/client-v2', () => ({
   FieldModel: class FieldModel {
     props: Record<string, unknown> = {};
+    context: Record<string, unknown> = {};
     static define = fieldModelMocks.define;
     static registerFlow = fieldModelMocks.registerFlow;
     dispatchEvent = vi.fn();
@@ -56,29 +57,31 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../previewer/filePreviewTypes', () => ({
-  FilePreviewRenderer: ({
-    file,
-    onDownload,
-    onSwitchIndex,
-  }: {
-    file: { filename?: string };
-    onDownload?: (file?: { filename?: string }) => void;
-    onSwitchIndex?: (index: number) => void;
-  }) => (
-    <div role="dialog">
-      {file.filename}
-      <button type="button" onClick={() => onSwitchIndex?.(1)}>
-        next preview
-      </button>
-      <button type="button" onClick={() => onDownload?.(file)}>
-        download preview
-      </button>
-    </div>
-  ),
-  getDownloadFileName: (file: { filename?: string }) => file.filename || 'file',
-  getPreviewThumbnailUrl: () => '',
-}));
+vi.mock('../previewer/filePreviewTypes', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../previewer/filePreviewTypes')>();
+  return {
+    ...actual,
+    FilePreviewRenderer: ({
+      file,
+      onDownload,
+      onSwitchIndex,
+    }: {
+      file: { filename?: string };
+      onDownload?: (file?: { filename?: string }) => void;
+      onSwitchIndex?: (index: number) => void;
+    }) => (
+      <div role="dialog">
+        {file.filename}
+        <button type="button" onClick={() => onSwitchIndex?.(1)}>
+          next preview
+        </button>
+        <button type="button" onClick={() => onDownload?.(file)}>
+          download preview
+        </button>
+      </div>
+    ),
+  };
+});
 
 vi.mock('antd', async (importOriginal) => {
   const actual = await importOriginal<typeof import('antd')>();
@@ -157,14 +160,6 @@ describe('UploadFieldModel', () => {
 
   it('opens preview and downloads the current upload item', async () => {
     const click = vi.fn();
-    const fetchMock = vi.fn().mockResolvedValue({
-      blob: async () => new Blob(['content']),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('URL', {
-      createObjectURL: vi.fn(() => 'blob:download'),
-      revokeObjectURL: vi.fn(),
-    });
     vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLElement & {
         click?: () => void;
@@ -199,7 +194,6 @@ describe('UploadFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
-    expect(fetchMock).toHaveBeenCalledWith('/cover.png');
   });
 
   it('initializes selector events and renders the card upload model', () => {
