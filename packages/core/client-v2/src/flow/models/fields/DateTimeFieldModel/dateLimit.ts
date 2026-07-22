@@ -8,140 +8,176 @@
  */
 
 import { autorun } from '@formily/reactive';
-import { Form } from 'antd';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { Form, type FormInstance } from 'antd';
+import { resolveRunJSObjectValues, useFlowContext } from '@nocobase/flow-engine';
 import { dayjs } from '@nocobase/utils/client';
+import type { ConfigType, Dayjs } from 'dayjs';
 import { first, last } from 'lodash';
-import React, { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type DateLimitProps = {
-  _minDate?: any;
-  _maxDate?: any;
-  currentForm?: any;
+  _minDate?: unknown;
+  _maxDate?: unknown;
+  currentForm?: unknown;
 };
+
+type DisabledTimeConfig = {
+  disabledHours: () => number[];
+  disabledMinutes: (selectedHour: number) => number[];
+  disabledSeconds: (selectedHour: number, selectedMinute: number) => number[];
+};
+
+type DisabledDate = (current: Dayjs) => boolean;
+type DisabledTime = (current: Dayjs | null) => DisabledTimeConfig;
+
+function isAntdFormInstance(value: unknown): value is FormInstance {
+  if (!value || typeof value !== 'object') return false;
+  return typeof (value as Partial<FormInstance>).getFieldsValue === 'function';
+}
+
+function parseDateLimitValue(value: unknown): Dayjs | null {
+  if (!value) return null;
+  const parsed = dayjs(value as ConfigType);
+  return parsed.isValid() ? parsed : null;
+}
 
 export function useDateLimit(props: DateLimitProps) {
   const ctx = useFlowContext();
-  const isAntdFormInstance = typeof props.currentForm?.getFieldsValue === 'function';
-  const currentFormValues = Form.useWatch([], isAntdFormInstance ? props.currentForm : undefined);
-  const [minDate, setMinDate] = useState<dayjs.Dayjs | null>(null);
-  const [maxDate, setMaxDate] = useState<dayjs.Dayjs | null>(null);
-  const [disabledDate, setDisabledDate] = useState<any>(null);
-  const [disabledTime, setDisabledTime] = useState<any>(null);
-  const disposeRef = useRef<any>(null);
+  const currentForm = isAntdFormInstance(props.currentForm) ? props.currentForm : undefined;
+  const currentFormValues = Form.useWatch([], currentForm);
+  const [minDate, setMinDate] = useState<Dayjs | null>(null);
+  const [maxDate, setMaxDate] = useState<Dayjs | null>(null);
+  const [disabledDate, setDisabledDate] = useState<DisabledDate | null>(null);
+  const [disabledTime, setDisabledTime] = useState<DisabledTime | null>(null);
+  const evaluationIdRef = useRef(0);
+
+  const limitDate = useCallback(async () => {
+    const evaluationId = ++evaluationIdRef.current;
+
+    try {
+      const runJSResolvedParams = await resolveRunJSObjectValues(ctx, {
+        _minDate: props._minDate,
+        _maxDate: props._maxDate,
+      });
+      const resolvedParams = (await ctx.resolveJsonTemplate({
+        _minDate: runJSResolvedParams._minDate,
+        _maxDate: runJSResolvedParams._maxDate,
+      })) as { _minDate?: unknown; _maxDate?: unknown };
+
+      if (evaluationId !== evaluationIdRef.current) return;
+
+      const nextMinRaw = Array.isArray(resolvedParams?._minDate)
+        ? first(resolvedParams._minDate)
+        : resolvedParams?._minDate;
+      const nextMaxRaw = Array.isArray(resolvedParams?._maxDate)
+        ? last(resolvedParams._maxDate)
+        : resolvedParams?._maxDate;
+      const nextMinDate = parseDateLimitValue(nextMinRaw);
+      const nextMaxDate = parseDateLimitValue(nextMaxRaw);
+
+      setMinDate(nextMinDate);
+      setMaxDate(nextMaxDate);
+
+      const fullTimeArr = Array.from({ length: 60 }, (_, i) => i);
+
+      const nextDisabledDate: DisabledDate = (current) => {
+        if (!dayjs.isDayjs(current)) return false;
+
+        const min = nextMinDate?.startOf('day') || null;
+        const max = nextMaxDate?.endOf('day') || null;
+
+        if (min && current.startOf('day').isBefore(min)) {
+          return true;
+        }
+        if (max && current.startOf('day').isAfter(max)) {
+          return true;
+        }
+        return false;
+      };
+
+      const nextDisabledTime: DisabledTime = (current) => {
+        if (!current || (!nextMinDate && !nextMaxDate)) {
+          return { disabledHours: () => [], disabledMinutes: () => [], disabledSeconds: () => [] };
+        }
+
+        const isCurrentMinDay = !!nextMinDate && current.isSame(nextMinDate, 'day');
+        const isCurrentMaxDay = !!nextMaxDate && current.isSame(nextMaxDate, 'day');
+
+        const disabledHours = () => {
+          const hours = [];
+          if (isCurrentMinDay && nextMinDate) {
+            for (let hour = 0; hour < nextMinDate.hour(); hour++) {
+              hours.push(hour);
+            }
+          }
+          if (isCurrentMaxDay && nextMaxDate) {
+            for (let hour = nextMaxDate.hour() + 1; hour < 24; hour++) {
+              hours.push(hour);
+            }
+          }
+          return hours;
+        };
+
+        const disabledMinutes = (selectedHour: number) => {
+          if (isCurrentMinDay && nextMinDate && selectedHour === nextMinDate.hour()) {
+            return fullTimeArr.filter((minute) => minute < nextMinDate.minute());
+          }
+          if (isCurrentMaxDay && nextMaxDate && selectedHour === nextMaxDate.hour()) {
+            return fullTimeArr.filter((minute) => minute > nextMaxDate.minute());
+          }
+          return [];
+        };
+
+        const disabledSeconds = (selectedHour: number, selectedMinute: number) => {
+          if (
+            isCurrentMinDay &&
+            nextMinDate &&
+            selectedHour === nextMinDate.hour() &&
+            selectedMinute === nextMinDate.minute()
+          ) {
+            return fullTimeArr.filter((second) => second < nextMinDate.second());
+          }
+          if (
+            isCurrentMaxDay &&
+            nextMaxDate &&
+            selectedHour === nextMaxDate.hour() &&
+            selectedMinute === nextMaxDate.minute()
+          ) {
+            return fullTimeArr.filter((second) => second > nextMaxDate.second());
+          }
+          return [];
+        };
+
+        return {
+          disabledHours,
+          disabledMinutes,
+          disabledSeconds,
+        };
+      };
+
+      setDisabledDate(() => nextDisabledDate);
+      setDisabledTime(() => nextDisabledTime);
+    } catch (error) {
+      if (evaluationId !== evaluationIdRef.current) return;
+
+      ctx.logger?.warn?.({ err: error }, 'Failed to resolve date range limit');
+      setMinDate(null);
+      setMaxDate(null);
+      setDisabledDate(null);
+      setDisabledTime(null);
+    }
+  }, [ctx, props._maxDate, props._minDate]);
 
   useEffect(() => {
-    if (disposeRef.current) {
-      disposeRef.current();
-    }
-
-    disposeRef.current = autorun(() => {
-      void limitDate();
+    const dispose = autorun(() => {
+      limitDate();
     });
 
     return () => {
-      disposeRef.current?.();
+      evaluationIdRef.current += 1;
+      dispose();
     };
-  }, [ctx, currentFormValues, props._maxDate, props._minDate]);
-
-  const limitDate = async () => {
-    const resolvedParams = await ctx.resolveJsonTemplate({
-      _minDate: props._minDate,
-      _maxDate: props._maxDate,
-    });
-
-    const nextMinRaw = Array.isArray(resolvedParams?._minDate)
-      ? first(resolvedParams._minDate)
-      : resolvedParams?._minDate;
-    const nextMaxRaw = Array.isArray(resolvedParams?._maxDate)
-      ? last(resolvedParams._maxDate)
-      : resolvedParams?._maxDate;
-    const nextMinDate = nextMinRaw ? dayjs(nextMinRaw) : null;
-    const nextMaxDate = nextMaxRaw ? dayjs(nextMaxRaw) : null;
-
-    setMinDate(nextMinDate?.isValid?.() ? nextMinDate : null);
-    setMaxDate(nextMaxDate?.isValid?.() ? nextMaxDate : null);
-
-    const fullTimeArr = Array.from({ length: 60 }, (_, i) => i);
-
-    const nextDisabledDate = (current: dayjs.Dayjs) => {
-      if (!dayjs.isDayjs(current)) return false;
-
-      const min = nextMinDate?.isValid?.() ? nextMinDate.startOf('day') : null;
-      const max = nextMaxDate?.isValid?.() ? nextMaxDate.endOf('day') : null;
-
-      if (min && current.startOf('day').isBefore(min)) {
-        return true;
-      }
-      if (max && current.startOf('day').isAfter(max)) {
-        return true;
-      }
-      return false;
-    };
-
-    const nextDisabledTime = (current: dayjs.Dayjs) => {
-      if (!current || (!nextMinDate?.isValid?.() && !nextMaxDate?.isValid?.())) {
-        return { disabledHours: () => [], disabledMinutes: () => [], disabledSeconds: () => [] };
-      }
-
-      const isCurrentMinDay = !!nextMinDate?.isValid?.() && current.isSame(nextMinDate, 'day');
-      const isCurrentMaxDay = !!nextMaxDate?.isValid?.() && current.isSame(nextMaxDate, 'day');
-
-      const disabledHours = () => {
-        const hours = [];
-        if (isCurrentMinDay && nextMinDate) {
-          for (let hour = 0; hour < nextMinDate.hour(); hour++) {
-            hours.push(hour);
-          }
-        }
-        if (isCurrentMaxDay && nextMaxDate) {
-          for (let hour = nextMaxDate.hour() + 1; hour < 24; hour++) {
-            hours.push(hour);
-          }
-        }
-        return hours;
-      };
-
-      const disabledMinutes = (selectedHour: number) => {
-        if (isCurrentMinDay && nextMinDate && selectedHour === nextMinDate.hour()) {
-          return fullTimeArr.filter((minute) => minute < nextMinDate.minute());
-        }
-        if (isCurrentMaxDay && nextMaxDate && selectedHour === nextMaxDate.hour()) {
-          return fullTimeArr.filter((minute) => minute > nextMaxDate.minute());
-        }
-        return [];
-      };
-
-      const disabledSeconds = (selectedHour: number, selectedMinute: number) => {
-        if (
-          isCurrentMinDay &&
-          nextMinDate &&
-          selectedHour === nextMinDate.hour() &&
-          selectedMinute === nextMinDate.minute()
-        ) {
-          return fullTimeArr.filter((second) => second < nextMinDate.second());
-        }
-        if (
-          isCurrentMaxDay &&
-          nextMaxDate &&
-          selectedHour === nextMaxDate.hour() &&
-          selectedMinute === nextMaxDate.minute()
-        ) {
-          return fullTimeArr.filter((second) => second > nextMaxDate.second());
-        }
-        return [];
-      };
-
-      return {
-        disabledHours,
-        disabledMinutes,
-        disabledSeconds,
-      };
-    };
-
-    setDisabledDate(() => nextDisabledDate);
-    setDisabledTime(() => nextDisabledTime);
-  };
+  }, [currentFormValues, limitDate]);
 
   return {
     minDate,
