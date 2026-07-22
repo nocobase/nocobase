@@ -36,17 +36,11 @@ export class TokenController implements TokenControlService {
   app: Application;
   db: Database;
   logger: SystemLogger;
-  private pendingSessionExpiredTokenCleanupTasks = new Set<Promise<void>>();
 
   constructor({ cache, app, logger }: { cache: Cache; app: Application; logger: SystemLogger }) {
     this.cache = cache;
     this.app = app;
     this.logger = logger;
-    this.app.on('beforeStop', async () => {
-      while (this.pendingSessionExpiredTokenCleanupTasks.size) {
-        await Promise.all(this.pendingSessionExpiredTokenCleanupTasks);
-      }
-    });
   }
 
   async setTokenInfo(id: string, value: TokenInfo): Promise<void> {
@@ -98,13 +92,6 @@ export class TokenController implements TokenControlService {
     }
   }
 
-  private cleanupSessionExpiredTokensInBackground(userId: number) {
-    const cleanupTask = this.cleanupSessionExpiredTokens(userId).finally(() => {
-      this.pendingSessionExpiredTokenCleanupTasks.delete(cleanupTask);
-    });
-    this.pendingSessionExpiredTokenCleanupTasks.add(cleanupTask);
-  }
-
   async add({ userId, authenticator }: { userId: number; authenticator?: string }) {
     const jti = randomUUID();
     const currTS = Date.now();
@@ -122,7 +109,7 @@ export class TokenController implements TokenControlService {
       // SQLITE does not support concurrent operations
       await this.cleanupSessionExpiredTokens(userId);
     } else {
-      this.cleanupSessionExpiredTokensInBackground(userId);
+      this.cleanupSessionExpiredTokens(userId);
     }
 
     return data;
