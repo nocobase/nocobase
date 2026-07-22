@@ -30,8 +30,10 @@ export {
   NameField,
   ParanoidField,
   PathField,
+  PublicAccessField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from './components';
 export type { DefaultFieldProps } from './components/DefaultField';
 export type { PathFieldProps } from './components/PathField';

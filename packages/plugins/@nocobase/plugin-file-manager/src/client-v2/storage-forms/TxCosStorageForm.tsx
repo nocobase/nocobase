@@ -18,8 +18,10 @@ import {
   NameField,
   ParanoidField,
   PathField,
+  PublicAccessField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from '../components';
 import { useT } from '../locale';
 
@@ -50,6 +52,8 @@ export default function TxCosStorageForm() {
       <RenameModeField />
       <FileSizeField />
       <MimetypeField />
+      <UseOriginalUrlField />
+      <PublicAccessField />
       <DefaultField />
       <ParanoidField />
     </>

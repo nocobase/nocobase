@@ -16,8 +16,10 @@ import {
   NameField,
   ParanoidField,
   PathField,
+  PublicAccessField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from '../components';
 
 export default function LocalStorageForm() {
@@ -35,6 +37,8 @@ export default function LocalStorageForm() {
       <RenameModeField />
       <FileSizeField />
       <MimetypeField />
+      <UseOriginalUrlField />
+      <PublicAccessField />
       <DefaultField />
       <ParanoidField />
     </>

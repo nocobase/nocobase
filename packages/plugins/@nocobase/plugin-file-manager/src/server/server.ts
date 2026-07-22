@@ -437,9 +437,14 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async setFileResponseURLs(record: AttachmentRecord, collectionName: string) {
-    const url = this.getPermanentFileURL(record, false, { collectionName });
-    const previewUrl = this.getPermanentFileURL(record, true, { collectionName });
     const storage = this.storagesCache.get(record.get('storageId'));
+    const useOriginalUrl = Boolean(storage?.options?.useOriginalUrl);
+    const [url, previewUrl] = useOriginalUrl
+      ? await Promise.all([this.getFileURL(record), this.getFileURL(record, true)])
+      : [
+          this.getPermanentFileURL(record, false, { collectionName }),
+          this.getPermanentFileURL(record, true, { collectionName }),
+        ];
     record.set('url', url);
     record.set('preview', previewUrl);
     record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
@@ -508,10 +513,7 @@ export class PluginFileManagerServer extends Plugin {
       });
     }
     storage = this.parseStorage(storage);
-    if (['local', 'ali-oss', 's3', 'tx-cos'].includes(storage.type)) {
-      return true;
-    }
-    return !!storage.options?.public;
+    return Boolean(storage.options?.public || storage.options?.useOriginalUrl);
   }
   async getFileStream(
     file: AttachmentModel,

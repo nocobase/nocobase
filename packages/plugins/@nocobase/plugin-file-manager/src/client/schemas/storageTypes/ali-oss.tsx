@@ -69,6 +69,8 @@ export default {
           },
           description: '{{ renderThumbnailRuleDesc("ali-oss") }}',
         },
+        public: common.public,
+        useOriginalUrl: common.useOriginalUrl,
       },
     },
     path: common.path,

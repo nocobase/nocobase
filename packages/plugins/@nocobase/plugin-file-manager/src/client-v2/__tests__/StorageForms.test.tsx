@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DefaultField } from '../components';
@@ -42,6 +42,12 @@ function expectFormLabel(title: string) {
   expect(document.querySelector(`[title="${title}"]`)).toBeInTheDocument();
 }
 
+function PublicAccessValue() {
+  const form = Form.useFormInstance();
+  const publicAccess = Form.useWatch(['options', 'public'], { form, preserve: true });
+  return <span data-testid="public-access-value">{String(publicAccess)}</span>;
+}
+
 describe('storage forms', () => {
   afterEach(() => {
     cleanup();
@@ -54,6 +60,13 @@ describe('storage forms', () => {
     expectFormLabel('Storage name :');
     expect(screen.getByLabelText('storage/uploads/')).toBeInTheDocument();
     expectFormLabel('File size limit :');
+    expect(screen.getByRole('checkbox', { name: 'Public access' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Use original URL' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'When checked, anyone who obtains a file URL can access the file without NocoBase permission checks. Make sure the underlying storage also permits access to the file.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText('Default storage')).toBeInTheDocument();
     expect(screen.getByText('Keep file in storage when destroy the file record')).toBeInTheDocument();
   });
@@ -71,6 +84,8 @@ describe('storage forms', () => {
       screen.getByLabelText('?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('json-text-area')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Public access' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Use original URL' })).toBeInTheDocument();
   });
 
   it('renders S3 and Tencent COS provider-specific fields', () => {
@@ -78,6 +93,8 @@ describe('storage forms', () => {
 
     expectFormLabel('AccessKey Secret :');
     expectFormLabel('Endpoint :');
+    expect(screen.getByRole('checkbox', { name: 'Public access' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Use original URL' })).toBeInTheDocument();
 
     rerender(
       <Form>
@@ -88,11 +105,28 @@ describe('storage forms', () => {
     expectFormLabel('SecretId :');
     expectFormLabel('SecretKey :');
     expectFormLabel('Thumbnail rule :');
+    expect(screen.getByRole('checkbox', { name: 'Public access' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Use original URL' })).toBeInTheDocument();
   });
 
   it('disables the default checkbox when editing the current default storage', () => {
     renderStorageForm(<DefaultField disabled />);
 
     expect(screen.getByRole('checkbox', { name: 'Default storage' })).toBeDisabled();
+  });
+
+  it('hides public access when original URLs are enabled', async () => {
+    render(
+      <Form initialValues={{ options: { public: true, useOriginalUrl: true } }}>
+        <LocalStorageForm />
+        <PublicAccessValue />
+      </Form>,
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Use original URL' })).toBeChecked();
+    await waitFor(() => {
+      expect(screen.queryByRole('checkbox', { name: 'Public access' })).not.toBeInTheDocument();
+      expect(screen.getByTestId('public-access-value')).toHaveTextContent('false');
+    });
   });
 });

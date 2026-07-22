@@ -18,8 +18,10 @@ import {
   NameField,
   ParanoidField,
   PathField,
+  PublicAccessField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from '../components';
 import { useT } from '../locale';
 
@@ -62,6 +64,8 @@ export default function AliOssStorageForm() {
       <RenameModeField />
       <FileSizeField />
       <MimetypeField />
+      <UseOriginalUrlField />
+      <PublicAccessField />
       <DefaultField />
       <ParanoidField />
       <Form.Item

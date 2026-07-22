@@ -56,6 +56,8 @@ export default {
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
         },
+        public: common.public,
+        useOriginalUrl: common.useOriginalUrl,
       },
     },
     path: common.path,

@@ -70,6 +70,29 @@ export default {
     'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
   },
+  public: {
+    type: 'boolean',
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-content': `{{t("Public access", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("When checked, anyone who obtains a file URL can access the file without NocoBase permission checks. Make sure the underlying storage also permits access to the file.", { ns: "${NAMESPACE}" })}}`,
+    'x-reactions': {
+      dependencies: ['options.useOriginalUrl'],
+      fulfill: {
+        state: {
+          visible: '{{$deps[0] !== true}}',
+          value: '{{$deps[0] === true ? false : $self.value}}',
+        },
+      },
+    },
+  },
+  useOriginalUrl: {
+    type: 'boolean',
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    'x-content': `{{t("Use original URL", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("When checked, file records return the storage engine's original URL instead of the stable NocoBase URL. Original URLs do not pass through NocoBase permission checks and may change when the storage configuration changes.", { ns: "${NAMESPACE}" })}}`,
+  },
   renameMode: {
     title: `{{t("Renaming", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Renaming strategy to avoid filename conflicts when uploading files.", { ns: "${NAMESPACE}" })}}`,

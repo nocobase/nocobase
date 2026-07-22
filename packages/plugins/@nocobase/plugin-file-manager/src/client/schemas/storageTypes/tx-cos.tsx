@@ -62,6 +62,8 @@ export default {
           },
           description: '{{ renderThumbnailRuleDesc("tx-cos") }}',
         },
+        public: common.public,
+        useOriginalUrl: common.useOriginalUrl,
       },
     },
     path: common.path,
