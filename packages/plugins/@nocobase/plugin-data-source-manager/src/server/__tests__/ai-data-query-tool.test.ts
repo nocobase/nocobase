@@ -22,6 +22,7 @@ describe('dataQuery tool', () => {
   const repositoryQuery = vi.fn();
   const getCollection = vi.fn();
   const getDataSource = vi.fn();
+  const isAllowed = vi.fn();
 
   const ctx: any = {
     app: {
@@ -42,9 +43,13 @@ describe('dataQuery tool', () => {
     vi.clearAllMocks();
 
     repositoryQuery.mockResolvedValue([{ status: 'paid', count: 2 }]);
+    isAllowed.mockResolvedValue(false);
     getCollection.mockReturnValue({ name: 'orders' });
     getDataSource.mockReturnValue({
-      acl: { name: 'ds-acl' },
+      acl: {
+        name: 'ds-acl',
+        allowManager: { isAllowed },
+      },
       collectionManager: {
         getCollection,
         db: {
@@ -83,15 +88,47 @@ describe('dataQuery tool', () => {
     expect(getDataSource).toHaveBeenCalledWith('analytics');
     expect(applyQueryPermission).toHaveBeenCalledWith(
       expect.objectContaining({
-        acl: { name: 'ds-acl' },
+        acl: expect.objectContaining({ name: 'ds-acl' }),
         resourceName: 'orders',
         timezone: 'Asia/Shanghai',
       }),
     );
+    expect(isAllowed).toHaveBeenCalledWith('orders', 'query', ctx);
     expect(repositoryQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         context: ctx,
         timezone: 'Asia/Shanghai',
+        limit: 50,
+        offset: 0,
+      }),
+    );
+    expect(result).toEqual({
+      status: 'success',
+      content: JSON.stringify([{ status: 'paid', count: 2 }]),
+    });
+  });
+
+  it('should skip role ACL checks when allowManager permits the aggregate query', async () => {
+    isAllowed.mockResolvedValue(true);
+
+    const result = await invokeTool(
+      ctx,
+      {
+        datasource: 'analytics',
+        collectionName: 'orders',
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+        dimensions: [{ field: ['status'], alias: 'status' }],
+        filter: { status: { $eq: 'paid' } },
+      },
+      { toolCallId: 'tool-call-skip', writer: vi.fn() },
+    );
+
+    expect(applyQueryPermission).not.toHaveBeenCalled();
+    expect(repositoryQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        measures: [{ field: ['id'], aggregation: 'count', alias: 'count' }],
+        dimensions: [{ field: ['status'], alias: 'status' }],
+        filter: { status: { $eq: 'paid' } },
         limit: 50,
         offset: 0,
       }),
