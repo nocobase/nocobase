@@ -150,7 +150,7 @@ export class ACLRole {
     const effectiveSnippets = this.effectiveSnippets();
 
     const getActions = (snippets) => {
-      return snippets.map((snippetName) => this.acl.snippetManager.snippets.get(snippetName).actions).flat();
+      return snippets.map((snippetName) => this.acl.snippetManager.snippets.get(snippetName)?.actions ?? []).flat();
     };
 
     const allowedActions = getActions(effectiveSnippets.allowed);
