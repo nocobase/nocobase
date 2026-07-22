@@ -9,8 +9,6 @@
 
 import { lazy, Plugin } from '@nocobase/client';
 import 'vditor/dist/index.css';
-import { DisplayVditorFieldModel } from '../client-v2/models/DisplayVditorFieldModel';
-import { VditorFieldModel } from '../client-v2/models/VditorFieldModel';
 const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
 import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
@@ -24,16 +22,12 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
   async load() {
     this.app.addComponents({ MarkdownVditor });
     this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
-    this.flowEngine.registerModels({
-      VditorFieldModel,
-      DisplayVditorFieldModel,
-    });
     this.app.schemaSettingsManager.addItem('fieldSettings:component:MarkdownVditor', 'editMode', editModeSettingsItem);
   }
 
   getCDN() {
     if (process.env.NODE_ENV === 'production') {
-      return this.app.getCdnUrl() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
     }
     return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
   }

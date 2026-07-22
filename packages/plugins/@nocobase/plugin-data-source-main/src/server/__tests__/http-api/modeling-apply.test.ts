@@ -296,7 +296,7 @@ describe('modeling apply actions', () => {
   it('should apply a comment collection with content baseline', async () => {
     await app.destroy();
     app = await createApp({
-      plugins: ['comments', 'field-markdown-vditor'],
+      plugins: ['comments', 'markdown'],
     });
     agent = app.agent();
 
@@ -550,7 +550,7 @@ describe('modeling apply actions', () => {
   it('should normalize vditor fields when plugin is enabled', async () => {
     await app.destroy();
     app = await createApp({
-      plugins: ['field-markdown-vditor'],
+      plugins: ['markdown'],
     });
     agent = app.agent();
 

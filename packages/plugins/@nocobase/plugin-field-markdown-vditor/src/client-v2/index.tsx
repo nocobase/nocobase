@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { MarkdownVditorFieldInterface } from './interface';
-export * from './models';
 export { default } from './plugin';

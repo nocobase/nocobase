@@ -9,8 +9,59 @@
 
 import { describe, expect, it } from 'vitest';
 import { getSupportedFieldComponentUseSet, resolveSupportedFieldCapability } from '../flow-surfaces/catalog';
+import { resolveRegisteredFieldBinding } from '../flow-surfaces/field-binding-registry';
+import { FLOW_SURFACE_BLOCK_SUPPORT_BY_KEY } from '../flow-surfaces/support-matrix';
 
 describe('flowSurfaces field binding registry', () => {
+  it('should resolve Markdown block and Vditor field ownership to the unified markdown plugin', () => {
+    const enabledPackages = new Set(['@nocobase/plugin-markdown']);
+    const legacyEnabledPackages = new Set(['@nocobase/plugin-field-markdown-vditor']);
+    const vditorField = {
+      interface: 'vditor',
+      type: 'text',
+    };
+
+    expect(FLOW_SURFACE_BLOCK_SUPPORT_BY_KEY.get('markdown')).toMatchObject({
+      modelUse: 'MarkdownBlockModel',
+      ownerPlugin: '@nocobase/plugin-markdown',
+    });
+
+    expect(
+      resolveRegisteredFieldBinding({
+        containerUse: 'EditFormModel',
+        field: vditorField,
+        enabledPackages,
+        useStrictOnly: true,
+      }),
+    ).toMatchObject({
+      modelClassName: 'VditorFieldModel',
+      ownerPlugin: '@nocobase/plugin-markdown',
+      isDefault: true,
+    });
+
+    expect(
+      resolveRegisteredFieldBinding({
+        containerUse: 'DetailsBlockModel',
+        field: vditorField,
+        enabledPackages,
+        useStrictOnly: true,
+      }),
+    ).toMatchObject({
+      modelClassName: 'DisplayVditorFieldModel',
+      ownerPlugin: '@nocobase/plugin-markdown',
+      isDefault: true,
+    });
+
+    expect(
+      resolveRegisteredFieldBinding({
+        containerUse: 'EditFormModel',
+        field: vditorField,
+        enabledPackages: legacyEnabledPackages,
+        useStrictOnly: true,
+      }),
+    ).toBeNull();
+  });
+
   it('should prefer file-manager attachment bindings over titleField fallback models', () => {
     const enabledPackages = new Set(['@nocobase/plugin-file-manager', '@nocobase/plugin-field-attachment-url']);
     const attachmentField = {
