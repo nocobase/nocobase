@@ -33,9 +33,14 @@ import { IPCSocketServer } from './ipc-socket-server';
 import { getStorageUploadSecurityHeaders } from './static-file-security';
 import {
   injectRuntimeScript,
+  DEFAULT_PORTAL_NAME,
   MODERN_CLIENT_DIST_DIR,
+  PORTAL_CLIENT_PREFIX,
+  PORTAL_MANIFEST_FILE,
   normalizeModernClientPrefix,
+  normalizePortalName,
   resolvePublicPath,
+  resolvePortalPublicPath,
   resolveV2PublicPath,
   rewriteV2AssetPublicPath,
 } from './utils';
@@ -111,6 +116,7 @@ export class Gateway extends EventEmitter {
   private host = '0.0.0.0';
   private socketPath = getSocketPath();
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
+  private portalManifestCache: { file: string; mtimeMs: number; defaultPortal: string } | null = null;
   private terminating = false;
 
   private getOriginalRequestUrl(req: IncomingMessage) {
@@ -323,6 +329,98 @@ export class Gateway extends EventEmitter {
     return resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
   }
 
+  private getPortalRootPublicPath() {
+    return `${this.getAppPublicPath().replace(/\/$/, '')}/${PORTAL_CLIENT_PREFIX}/`;
+  }
+
+  private readDefaultPortalName() {
+    const file = storagePathJoin('portals', PORTAL_MANIFEST_FILE);
+    if (!fs.existsSync(file)) {
+      return normalizePortalName(process.env.INIT_PORTAL_NAME || DEFAULT_PORTAL_NAME);
+    }
+
+    const stat = fs.statSync(file);
+    if (
+      this.portalManifestCache &&
+      this.portalManifestCache.file === file &&
+      this.portalManifestCache.mtimeMs === stat.mtimeMs
+    ) {
+      return this.portalManifestCache.defaultPortal;
+    }
+
+    let defaultPortal = DEFAULT_PORTAL_NAME;
+    try {
+      const manifest = JSON.parse(fs.readFileSync(file, 'utf-8')) as { defaultPortal?: unknown };
+      defaultPortal = normalizePortalName(String(manifest.defaultPortal ?? ''));
+    } catch (error: unknown) {
+      console.warn('Failed to read portal manifest', { error, file });
+    }
+
+    this.portalManifestCache = {
+      file,
+      mtimeMs: stat.mtimeMs,
+      defaultPortal,
+    };
+    return defaultPortal;
+  }
+
+  private getPortalMatch(pathname: string): { distSegments: string[]; portalName: string; publicPath: string } | null {
+    const portalRootPublicPath = this.getPortalRootPublicPath();
+    if (pathname === portalRootPublicPath.slice(0, -1) || pathname === portalRootPublicPath) {
+      const defaultPortal = this.readDefaultPortalName();
+      return {
+        distSegments: [PORTAL_CLIENT_PREFIX, defaultPortal],
+        portalName: defaultPortal,
+        publicPath: resolvePortalPublicPath(defaultPortal, process.env.APP_PUBLIC_PATH || '/'),
+      };
+    }
+
+    if (!pathname.startsWith(portalRootPublicPath)) {
+      return null;
+    }
+
+    const restPath = pathname.slice(portalRootPublicPath.length);
+    const [firstSegment, secondSegment, thirdSegment] = restPath.split('/');
+    if (firstSegment === 'apps') {
+      const subApp = normalizePortalName(secondSegment);
+      const portalName = normalizePortalName(thirdSegment || this.readDefaultPortalName());
+      const publicPath = `${portalRootPublicPath}apps/${subApp}/${portalName}/`;
+      return {
+        distSegments: [PORTAL_CLIENT_PREFIX, 'apps', subApp, portalName],
+        portalName,
+        publicPath,
+      };
+    }
+
+    const portalName = firstSegment;
+    if (!portalName) {
+      const defaultPortal = this.readDefaultPortalName();
+      return {
+        distSegments: [PORTAL_CLIENT_PREFIX, defaultPortal],
+        portalName: defaultPortal,
+        publicPath: resolvePortalPublicPath(defaultPortal, process.env.APP_PUBLIC_PATH || '/'),
+      };
+    }
+
+    const normalizedPortalName = normalizePortalName(portalName);
+    return {
+      distSegments: [PORTAL_CLIENT_PREFIX, normalizedPortalName],
+      portalName: normalizedPortalName,
+      publicPath: resolvePortalPublicPath(normalizedPortalName, process.env.APP_PUBLIC_PATH || '/'),
+    };
+  }
+
+  private isPortalIndexRequest(pathname: string, portalPublicPath: string) {
+    if (
+      pathname === portalPublicPath ||
+      pathname === portalPublicPath.slice(0, -1) ||
+      pathname === `${portalPublicPath}index.html`
+    ) {
+      return true;
+    }
+    return !extname(pathname);
+  }
+
   private isV2Request(pathname: string) {
     const v2PublicPath = this.getV2PublicPath();
     return pathname === v2PublicPath.slice(0, -1) || pathname.startsWith(v2PublicPath);
@@ -495,6 +593,37 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      const portalMatch = this.getPortalMatch(pathname);
+      if (portalMatch) {
+        if (handleApp !== 'main') {
+          const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+          if (isProxy) {
+            return;
+          }
+        }
+
+        const portalRootPublicPath = this.getPortalRootPublicPath();
+        if (!pathname.startsWith(portalMatch.publicPath)) {
+          res.statusCode = 302;
+          res.setHeader('Location', portalMatch.publicPath);
+          res.end();
+          return;
+        }
+
+        const portalDistRoot = storagePathJoin('dist-client', ...portalMatch.distSegments);
+        const portalIndex = resolve(portalDistRoot, 'index.html');
+        if (this.isPortalIndexRequest(pathname, portalMatch.publicPath) && fs.existsSync(portalIndex)) {
+          req.url = '/index.html';
+        } else {
+          req.url = req.url.substring(portalMatch.publicPath.length - 1);
+        }
+        await compress(req, res);
+        return handler(req, res, {
+          public: portalDistRoot,
+          directoryListing: false,
+        });
+      }
+
       if (this.isV2Request(pathname)) {
         if (handleApp !== 'main') {
           const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);

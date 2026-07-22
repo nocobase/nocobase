@@ -341,6 +341,21 @@
           "message": "App subpath (for example, /nocobase/)",
           "placeholder": "/ or /nocobase/"
         },
+        "developmentMode": {
+          "message": "Development mode",
+          "noCodeLabel": "No-code",
+          "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
+          "vibeCodingLabel": "Vibe Coding",
+          "vibeCodingHint": "Initialize an independent Portal SPA from a Git template."
+        },
+        "portalName": {
+          "message": "Initial Portal name",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "Initial Portal template Git URL",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
+        },
         "storagePath": {
           "message": "Uploads and local files directory",
           "placeholder": "./<env>/storage/"
@@ -440,6 +455,21 @@
         },
         "skipDownload": {
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
+        },
+        "developmentMode": {
+          "message": "Development mode",
+          "noCodeLabel": "No-code",
+          "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
+          "vibeCodingLabel": "Vibe Coding",
+          "vibeCodingHint": "Initialize an independent Portal SPA from a Git template."
+        },
+        "portalName": {
+          "message": "Initial Portal name",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "Initial Portal template Git URL",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
       "webUi": {
