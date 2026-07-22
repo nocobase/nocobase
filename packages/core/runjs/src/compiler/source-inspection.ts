@@ -182,13 +182,6 @@ export class RunJSSourceWorkspaceInspector {
 
   inspectWithDependencies(input: InspectRunJSSourceWorkspaceInput): RunJSSourceWorkspaceInspectionResult {
     this.assertActive();
-    if (input.surfaceStyle === 'workflow') {
-      return {
-        diagnostics: [],
-        typeDependencies: { files: [], edges: [], contracts: [], unresolved: [] },
-      };
-    }
-
     const prepared = prepareTypeScriptProject(input);
     if (!this.project || this.structureFingerprint !== prepared.structureFingerprint) {
       this.project?.dispose();

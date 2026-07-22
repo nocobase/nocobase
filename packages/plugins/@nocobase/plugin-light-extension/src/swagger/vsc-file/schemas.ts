@@ -48,19 +48,6 @@ export const runJSSourceSchemas = {
       },
       {
         type: 'object',
-        required: ['kind', 'nodeId'],
-        properties: {
-          kind: { type: 'string', enum: ['workflow.javascript'] },
-          nodeId: {
-            oneOf: [
-              { type: 'string', minLength: 1 },
-              { type: 'integer', minimum: 0 },
-            ],
-          },
-        },
-      },
-      {
-        type: 'object',
         required: ['kind', 'modelUid'],
         properties: {
           kind: { type: 'string', enum: ['chart.option'] },

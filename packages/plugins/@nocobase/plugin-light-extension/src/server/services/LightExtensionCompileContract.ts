@@ -28,7 +28,7 @@ export type LightExtensionSurfaceStyle = 'render' | 'value' | 'action';
 export interface LightExtensionAuthoringSurfaceSpec {
   kind: LightExtensionKind;
   surfaceStyle: LightExtensionSurfaceStyle;
-  compilerSurfaceStyle: Exclude<RunJSSurfaceStyle, 'workflow'>;
+  compilerSurfaceStyle: RunJSSurfaceStyle;
   modelUse: string;
   surface: string;
 }

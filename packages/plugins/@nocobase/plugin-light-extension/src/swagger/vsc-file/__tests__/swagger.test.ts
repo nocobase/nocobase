@@ -11,13 +11,12 @@ import { expect, test } from 'vitest';
 
 import swagger from '../..';
 
-test('documents exactly the five retained RunJS source locator kinds', () => {
+test('documents exactly the four retained RunJS source locator kinds', () => {
   const locator = swagger.components.schemas.RunJSSourceLocator;
 
   expect(locator.oneOf.map((schema) => schema.properties.kind.enum[0])).toEqual([
     'flowModel.step',
     'flowModel.flowRegistry.runjs',
-    'workflow.javascript',
     'chart.option',
     'chart.events',
   ]);

@@ -223,7 +223,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
         stepKey: 'runJs',
         sourcePath: ['params', 'code'],
       },
-      { kind: 'workflow.javascript' as const, nodeId: 'node-1' },
       { kind: 'chart.option' as const, modelUid: 'chart-1' },
       { kind: 'chart.events' as const, modelUid: 'chart-1' },
     ];
@@ -235,14 +234,14 @@ describe('RunJSLightExtensionEditorProvider', () => {
       provider.canHandle?.({
         value: lightExtensionValue,
         locator: stepLocator,
-        sourceLocator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        sourceLocator: { kind: 'chart.option', modelUid: 'chart-1' },
         sourceMetadata,
       }),
     ).toBe(false);
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
-        locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        locator: { kind: 'chart.option', modelUid: 'chart-1' },
         sourceLocator: stepLocator,
         sourceMetadata,
       }),
@@ -251,19 +250,19 @@ describe('RunJSLightExtensionEditorProvider', () => {
 
   it('delegates non-step locators to the next editor provider', () => {
     const provider = createRunJSLightExtensionEditorProvider();
-    const renderNext = vi.fn(() => <div>workflow inline fallback</div>);
+    const renderNext = vi.fn(() => <div>inline fallback</div>);
 
     render(
       <>
         {provider.renderEditor({
           value: { code: 'return 1;', version: 'v2' },
-          locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+          locator: { kind: 'chart.option', modelUid: 'chart-1' },
           renderNext,
         })}
       </>,
     );
 
-    expect(screen.getByText('workflow inline fallback')).toBeInTheDocument();
+    expect(screen.getByText('inline fallback')).toBeInTheDocument();
     expect(renderNext).toHaveBeenCalledWith();
   });
 

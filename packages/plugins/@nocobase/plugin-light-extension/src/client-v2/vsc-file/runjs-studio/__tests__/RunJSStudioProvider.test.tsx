@@ -444,7 +444,6 @@ describe('runJSStudioProvider', () => {
         stepKey: 'runjs',
         sourcePath: ['params', 'code'],
       },
-      { kind: 'workflow.javascript' as const, nodeId: 'node-1' },
       { kind: 'chart.option' as const, modelUid: 'chart-1' },
       { kind: 'chart.events' as const, modelUid: 'chart-1' },
     ];
@@ -458,13 +457,13 @@ describe('runJSStudioProvider', () => {
       runJSStudioProvider.canHandle?.({
         value: { code: '', version: 'v2' },
         locator,
-        sourceLocator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        sourceLocator: { kind: 'chart.option', modelUid: 'chart-1' },
       }),
     ).toBe(false);
     expect(
       runJSStudioProvider.canHandle?.({
         value: { code: '', version: 'v2' },
-        locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        locator: { kind: 'chart.option', modelUid: 'chart-1' },
         sourceLocator: locator,
       }),
     ).toBe(true);

@@ -338,10 +338,6 @@ function normalizeAuditRunJSSourceLocator(value: unknown): RunJSSourceLocator | 
 }
 
 function getRunJSSourceAuditOwnerId(locator: RunJSSourceLocator): string {
-  if (locator.kind === 'workflow.javascript') {
-    return String(locator.nodeId);
-  }
-
   return locator.modelUid;
 }
 

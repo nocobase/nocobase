@@ -771,7 +771,6 @@ describe('RunJSEditorField FlowModel integration', () => {
         sourcePath: ['code'],
       },
     },
-    { name: 'workflow JavaScript', locator: { kind: 'workflow.javascript', nodeId: 42 } },
     { name: 'chart option', locator: { kind: 'chart.option', modelUid: 'chart_option' } },
     { name: 'chart events', locator: { kind: 'chart.events', modelUid: 'chart_events' } },
   ])('keeps $name on the inline editor when a step-only Studio provider is installed', ({ locator }) => {

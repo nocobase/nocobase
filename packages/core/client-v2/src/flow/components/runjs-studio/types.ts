@@ -50,10 +50,6 @@ export type RunJSSourceLocator =
       sourcePath: readonly string[];
     }
   | {
-      kind: 'workflow.javascript';
-      nodeId: string | number;
-    }
-  | {
       kind: 'chart.option';
       modelUid: string;
     }
@@ -64,7 +60,7 @@ export type RunJSSourceLocator =
 
 export type RunJSSourceKind = RunJSSourceLocator['kind'];
 
-export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow';
+export type RunJSSurfaceStyle = 'render' | 'action' | 'value';
 
 export type EmbeddedRunJSEditorSaveResult = 'saved' | 'unchanged' | 'cancelled';
 
