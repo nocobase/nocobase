@@ -138,7 +138,7 @@ describe('PluginFileManagerClientV2', () => {
         dataSourceKey: 'external',
         query: { attachmentField: 'users.avatar' },
       }),
-    ).resolves.toEqual({ data: { id: 1 } });
+    ).resolves.toEqual({ data: { id: 1, local: false } });
 
     expect(upload).toHaveBeenCalledWith(
       expect.objectContaining({
