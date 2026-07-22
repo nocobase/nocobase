@@ -14,8 +14,6 @@ import { ValueBlock } from '@nocobase/plugin-workflow/client';
 import { lang } from '../locale';
 
 export default class extends V2ScriptInstruction {
-  FieldsetLoader = () => import('./WorkflowScriptFieldset');
-
   constructor() {
     super();
     this.bindTranslate(lang);

@@ -11,11 +11,8 @@ import { Plugin } from '@nocobase/server';
 import WorkflowPlugin from '@nocobase/plugin-workflow';
 
 import ScriptInstruction from './ScriptInstruction';
-import { registerWorkflowJavaScriptRunJSSourceAdapter } from './runjs-sources';
 
 export class PluginWorkflowScriptServer extends Plugin {
-  private unregisterRunJSSourceAdapter?: () => void;
-
   async afterAdd() {}
 
   async beforeLoad() {}
@@ -23,23 +20,15 @@ export class PluginWorkflowScriptServer extends Plugin {
   async load() {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('script', ScriptInstruction);
-    this.unregisterRunJSSourceAdapter?.();
-    this.unregisterRunJSSourceAdapter = registerWorkflowJavaScriptRunJSSourceAdapter(this);
   }
 
   async install() {}
 
   async afterEnable() {}
 
-  async afterDisable() {
-    this.unregisterRunJSSourceAdapter?.();
-    this.unregisterRunJSSourceAdapter = undefined;
-  }
+  async afterDisable() {}
 
-  async remove() {
-    this.unregisterRunJSSourceAdapter?.();
-    this.unregisterRunJSSourceAdapter = undefined;
-  }
+  async remove() {}
 }
 
 export default PluginWorkflowScriptServer;

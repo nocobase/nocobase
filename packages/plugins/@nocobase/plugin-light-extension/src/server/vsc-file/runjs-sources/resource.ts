@@ -1273,7 +1273,7 @@ function defaultRunJSManifest(
   const manifest: Record<string, unknown> = {
     schemaVersion: 1,
     entry,
-    runtimeVersion: resolveRunJSManifestRuntimeVersion(surfaceStyle, runtimeVersion),
+    runtimeVersion,
     surfaceStyle,
     compiler: {
       module: 'virtual-esm',
@@ -1338,13 +1338,6 @@ function resolveLegacyEntryPath(_legacy: RunJSLegacySource): string {
 
 function withRunJSManifestChange(files: VscFileChange[], manifestFile: VscFileChange): VscFileChange[] {
   return [...files.filter((file) => normalizePath(file.path) !== runJSManifestPath), manifestFile];
-}
-
-function resolveRunJSManifestRuntimeVersion(
-  surfaceStyle: RunJSLegacySource['surfaceStyle'],
-  runtimeVersion: string,
-): string {
-  return surfaceStyle === 'workflow' ? 'workflow-js' : runtimeVersion;
 }
 
 async function getRunJSRepository(

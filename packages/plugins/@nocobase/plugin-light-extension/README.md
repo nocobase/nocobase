@@ -187,7 +187,7 @@ Light extensions are selected from the code-source settings of existing JS Block
 
 An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-pages`, `js-actions`, `js-items`, and `js-fields` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
 
-Generic inline hosts behave the same whether this plugin is enabled or disabled. They use the ordinary inline code editor and inline runtime; the Light Extension Studio providers only accept canonical `flowModel.step` locators for complete JS Models. Workflow JavaScript, chart option/events, and `flowModel.flowRegistry.runjs` keep their public RunJS contracts but are not handled by this plugin's Studio provider.
+Generic inline hosts behave the same whether this plugin is enabled or disabled. They use the ordinary inline code editor and inline runtime; the Light Extension Studio providers only accept canonical `flowModel.step` locators for complete JS Models. Workflow JavaScript uses its own inline editor and runtime and has no RunJS source locator, source binding, Studio, or Light Extension authoring contract. Chart option/events and `flowModel.flowRegistry.runjs` keep their public RunJS contracts but are not handled by this plugin's Studio provider.
 
 ## Move RunJS Source Contract
 
@@ -234,7 +234,8 @@ If any step fails, destination source, compiled artifacts, host binding, and ref
 | `flowModel.step` with JS Field/Column owner metadata | `js-field` | Supported |
 | `flowModel.step` with JS Action/Item owner metadata | `js-action` or `js-item` | Supported |
 | Generic default, assignment, linkage, or custom-variable JavaScript | N/A | Inline-only; not exposed |
-| Workflow JavaScript, chart option/events, or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
+| Workflow JavaScript | N/A | Inline-only; no RunJS source adapter or external binding |
+| Chart option/events or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
 
 ### Validation and errors
 

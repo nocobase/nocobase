@@ -51,12 +51,11 @@ export type RunJSSourceLocator =
       stepKey: string;
       sourcePath: string[];
     }
-  | { kind: 'workflow.javascript'; nodeId: string | number }
   | { kind: 'chart.option'; modelUid: string }
   | { kind: 'chart.events'; modelUid: string };
 
 export type RunJSSourceKind = RunJSSourceLocator['kind'];
-export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow';
+export type RunJSSurfaceStyle = 'render' | 'action' | 'value';
 export type RunJSLanguage = 'typescript' | 'javascript' | 'tsx' | 'jsx';
 
 export interface RunJSCompileDiagnostic {
@@ -81,7 +80,7 @@ export interface RunJSSourceAuthoringInspectionInput {
   code: string;
   path: string;
   runtimeVersion: string;
-  surfaceStyle: Exclude<RunJSSurfaceStyle, 'workflow'>;
+  surfaceStyle: RunJSSurfaceStyle;
   locator?: RunJSSourceLocator;
   legacy?: RunJSSourceAuthoringLegacyInfo;
 }

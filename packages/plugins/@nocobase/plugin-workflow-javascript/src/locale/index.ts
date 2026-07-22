@@ -21,6 +21,6 @@ export function lang(key: string, options = {}) {
   return i18n.t(key, { ...options, ns: NAMESPACE });
 }
 
-export function usePluginTranslation(options = {}) {
+export function usePluginTranslation(options) {
   return useTranslation(NAMESPACE, options);
 }

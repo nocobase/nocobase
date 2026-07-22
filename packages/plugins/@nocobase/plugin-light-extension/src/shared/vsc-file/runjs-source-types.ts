@@ -63,13 +63,6 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     };
   }
 
-  if (kind === 'workflow.javascript') {
-    return {
-      kind,
-      nodeId: requireStringOrNumber(input.nodeId, 'nodeId'),
-    };
-  }
-
   if (kind === 'chart.option' || kind === 'chart.events') {
     return {
       kind,
@@ -111,10 +104,6 @@ export function getRunJSSourceOwnerId(locator: RunJSSourceLocator): string {
 }
 
 function getStableOwnerId(locator: RunJSSourceLocator): string {
-  if (locator.kind === 'workflow.javascript') {
-    return `node_${locator.nodeId}`;
-  }
-
   return locator.modelUid;
 }
 
@@ -127,10 +116,6 @@ function getSourcePathSegments(
 
   if (locator.kind === 'flowModel.flowRegistry.runjs') {
     return toTypedPathSegments([locator.flowKey, locator.stepKey, ...locator.sourcePath]);
-  }
-
-  if (locator.kind === 'workflow.javascript') {
-    return toTypedPathSegments(['content']);
   }
 
   return toTypedPathSegments([locator.kind]);
@@ -167,14 +152,6 @@ function requirePathSegment(value: unknown, field: string): string {
   return segment;
 }
 
-function requireStringOrNumber(value: unknown, field: string): string | number {
-  if ((typeof value === 'string' && value.trim()) || isNonNegativeSafeInteger(value)) {
-    return value;
-  }
-
-  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source locator field "${field}" is invalid`);
-}
-
 function requireStringArray(value: unknown, field: string): string[] {
   if (Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === 'string' && item.trim())) {
     const path = [...value] as string[];
@@ -191,10 +168,6 @@ function optionalStringArray(value: unknown, field: string): string[] | undefine
   }
 
   return requireStringArray(value, field);
-}
-
-function isNonNegativeSafeInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
 function assertSafePathSegment(segment: string, field: string): void {

@@ -13,8 +13,11 @@ import type { RunJSRuntimeArtifact as ServerArtifact, RunJSSourceLocator as Serv
 describe('RunJS contracts identity', () => {
   it('re-exports the core locator and artifact contracts from server', () => {
     const coreLocator: CoreLocator = {
-      kind: 'workflow.javascript',
-      nodeId: 1,
+      kind: 'flowModel.step',
+      modelUid: 'fm_1',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
     };
     const serverLocator: ServerLocator = coreLocator;
     const coreArtifact: CoreArtifact = {

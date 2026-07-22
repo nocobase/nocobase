@@ -10,7 +10,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { compileRunJSSourceWorkspace } from '..';
-import type { RunJSCompileDiagnostic } from '../../../../../shared/vsc-file/runjs-source-types';
 
 type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
@@ -325,7 +324,7 @@ describe('compileRunJSSourceWorkspace', () => {
     }
   });
 
-  it('rejects CommonJS require aliases and properties on workflow surfaces', async () => {
+  it('rejects CommonJS require aliases and properties', async () => {
     const blockedSources = [
       "const r = require;\nconst fs = r('fs');\nreturn Boolean(fs);",
       "const fs = globalThis.require('fs');\nreturn Boolean(fs);",
@@ -335,8 +334,8 @@ describe('compileRunJSSourceWorkspace', () => {
     for (const content of blockedSources) {
       const result = await compileRunJSSourceWorkspace({
         entry: 'src/main.js',
-        runtimeVersion: 'workflow-js',
-        surfaceStyle: 'workflow',
+        runtimeVersion: 'v2',
+        surfaceStyle: 'action',
         files: [
           {
             path: 'src/main.js',
@@ -357,24 +356,12 @@ describe('compileRunJSSourceWorkspace', () => {
         content: 'module.exports = { value: 1 };\nctx.message.info("done");',
       },
       {
-        surfaceStyle: 'workflow' as const,
-        content: 'exports.value = 1;\nreturn exports.value;',
-      },
-      {
         surfaceStyle: 'action' as const,
         content: 'module["exports"] = { value: 1 };\nctx.message.info("done");',
       },
       {
-        surfaceStyle: 'workflow' as const,
-        content: 'module["exports"].value = 1;\nreturn module["exports"].value;',
-      },
-      {
         surfaceStyle: 'action' as const,
         content: 'exports.value += 1;\nctx.message.info("done");',
-      },
-      {
-        surfaceStyle: 'workflow' as const,
-        content: 'exports.value++;\nreturn exports.value;',
       },
       {
         surfaceStyle: 'action' as const,
@@ -385,16 +372,8 @@ describe('compileRunJSSourceWorkspace', () => {
         content: 'Object.defineProperty(module["exports"], "value", { value: 1 });',
       },
       {
-        surfaceStyle: 'workflow' as const,
-        content: 'globalThis.module.exports = { value: 1 };\nreturn true;',
-      },
-      {
         surfaceStyle: 'action' as const,
         content: 'globalThis.exports.value = 1;\nctx.message.info("done");',
-      },
-      {
-        surfaceStyle: 'workflow' as const,
-        content: 'const m = module;\nm.exports = { value: 1 };\nreturn true;',
       },
       {
         surfaceStyle: 'action' as const,
@@ -405,7 +384,7 @@ describe('compileRunJSSourceWorkspace', () => {
     for (const source of blockedSources) {
       const result = await compileRunJSSourceWorkspace({
         entry: 'src/main.js',
-        runtimeVersion: source.surfaceStyle === 'workflow' ? 'workflow-js' : 'v2',
+        runtimeVersion: 'v2',
         surfaceStyle: source.surfaceStyle,
         files: [
           {
@@ -536,57 +515,6 @@ describe('compileRunJSSourceWorkspace', () => {
       unsupportedExport.failureCode,
       JSON.stringify(unsupportedExport.artifact.diagnostics, null, 2),
     ).toBeUndefined();
-  });
-
-  it('keeps workflow artifacts out of browser authoring inspection', async () => {
-    const diagnostics: RunJSCompileDiagnostic[] = [
-      {
-        severity: 'error',
-        code: 'RUNJS_COMPILE_FAILED',
-        message: 'browser validation should not run',
-      },
-    ];
-    const result = await compileRunJSSourceWorkspace({
-      entry: 'src/main.js',
-      runtimeVersion: 'workflow-js',
-      surfaceStyle: 'workflow',
-      inspectAuthoring: () => diagnostics,
-      files: [
-        {
-          path: 'src/main.js',
-          content: 'return input.value;',
-        },
-      ],
-    });
-
-    expect(result.failureCode).toBeUndefined();
-    expect(result.artifact.version).toBe('workflow-js');
-    expect(result.artifact.diagnostics).toEqual([]);
-  });
-
-  it('reports workflow syntax errors after module transform', async () => {
-    const result = await compileRunJSSourceWorkspace({
-      entry: 'src/main.js',
-      runtimeVersion: 'workflow-js',
-      surfaceStyle: 'workflow',
-      files: [
-        {
-          path: 'src/main.js',
-          content: "import { value as duplicate } from './helper';\nconst duplicate = 2;\nreturn duplicate;",
-        },
-        {
-          path: 'src/helper.js',
-          content: 'export const value = 1;',
-        },
-      ],
-    });
-
-    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
-    expect(result.artifact.diagnostics[0]).toMatchObject({
-      code: 'RUNJS_COMPILE_FAILED',
-      path: 'src/main.js',
-    });
-    expect(result.artifact.diagnostics[0].message).toContain('already been declared');
   });
 
   it('reports browser surface syntax errors after module transform', async () => {

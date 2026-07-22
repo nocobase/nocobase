@@ -711,11 +711,7 @@ function inferStepSurfaceStyle(model: JsonRecord): RunJSSurfaceStyle {
 }
 
 function inferLanguage(version: string): RunJSLanguage {
-  return version === 'jsx'
-    ? 'jsx'
-    : version === 'javascript' || version === 'workflow-js'
-      ? 'javascript'
-      : 'typescript';
+  return version === 'jsx' ? 'jsx' : version === 'javascript' ? 'javascript' : 'typescript';
 }
 
 function buildFlowModelLabel(model: JsonRecord, fallback: string): string {

@@ -88,8 +88,8 @@ describe('MoveSourceToLightExtension', () => {
   it('does not render Move Source for non-step locators', () => {
     const context = createContext(vi.fn());
     const locator = {
-      kind: 'workflow.javascript',
-      nodeId: 'node-1',
+      kind: 'chart.option',
+      modelUid: 'chart-1',
     } as const;
     context.locator = locator;
     context.workspace.locator = locator;

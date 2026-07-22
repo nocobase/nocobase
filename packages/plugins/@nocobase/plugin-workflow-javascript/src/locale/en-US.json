@@ -29,6 +29,5 @@
   "The maximum execution time of the script. 0 means no timeout.": "The maximum execution time of the script. 0 means no timeout.",
   "Timeout": "Timeout",
   "Try it out": "Try it out",
-  "Workflow JavaScript": "Workflow JavaScript",
   "https://docs.nocobase.com/handbook/workflow-javascript": "https://docs.nocobase.com/handbook/workflow-javascript"
 }

@@ -211,10 +211,10 @@ export async function compileRunJSSourceWorkspace(
   if (!hasErrorDiagnostic(diagnostics) && bundled) {
     code = appendRunJSSourceURL(bundled.code, sourceURL);
     sourceMap = JSON.stringify(bundled.sourceMap);
-    collectRuntimeSyntaxDiagnostics(code, entryPath, input.surfaceStyle, diagnostics);
+    collectRuntimeSyntaxDiagnostics(code, entryPath, diagnostics);
   }
 
-  if (!hasErrorDiagnostic(diagnostics) && input.surfaceStyle !== 'workflow' && input.inspectAuthoring) {
+  if (!hasErrorDiagnostic(diagnostics) && input.inspectAuthoring) {
     diagnostics.push(
       ...input.inspectAuthoring({
         code,
@@ -227,7 +227,7 @@ export async function compileRunJSSourceWorkspace(
     );
   }
 
-  const version = resolveArtifactVersion(input.surfaceStyle, input.runtimeVersion);
+  const version = resolveArtifactVersion(input.runtimeVersion);
   return {
     artifact: {
       code,
@@ -1052,12 +1052,7 @@ function filesafeDiagnosticPath(path: string, fallbackPath: string): string {
   return path;
 }
 
-function collectRuntimeSyntaxDiagnostics(
-  code: string,
-  entryPath: string,
-  surfaceStyle: RunJSSurfaceStyle,
-  diagnostics: RunJSCompileDiagnostic[],
-): void {
+function collectRuntimeSyntaxDiagnostics(code: string, entryPath: string, diagnostics: RunJSCompileDiagnostic[]): void {
   try {
     new asyncFunctionConstructor(code);
   } catch (error) {
@@ -1066,9 +1061,7 @@ function collectRuntimeSyntaxDiagnostics(
       severity: 'error',
       code: 'RUNJS_COMPILE_FAILED',
       path: entryPath,
-      message: `${
-        surfaceStyle === 'workflow' ? 'Workflow JavaScript' : 'RunJS'
-      } artifact has invalid syntax: ${message}`,
+      message: `RunJS artifact has invalid syntax: ${message}`,
     });
   }
 }
@@ -1231,8 +1224,8 @@ function buildInternalSymbol(prefix: string, path: string): string {
   return `${prefix}_${sha256Hex(path).slice(0, 12)}`;
 }
 
-function resolveArtifactVersion(surfaceStyle: RunJSSurfaceStyle, runtimeVersion?: string): string {
-  return surfaceStyle === 'workflow' ? 'workflow-js' : runtimeVersion || runtimeVersionDefault;
+function resolveArtifactVersion(runtimeVersion?: string): string {
+  return runtimeVersion || runtimeVersionDefault;
 }
 
 function hasErrorDiagnostic(diagnostics: RunJSCompileDiagnostic[]): boolean {

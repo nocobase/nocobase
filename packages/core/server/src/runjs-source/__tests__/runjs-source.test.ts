@@ -14,22 +14,25 @@ describe('RunJS source server contracts', () => {
     expect(
       buildRunJSOwnerFingerprint({
         locator: {
-          kind: 'workflow.javascript',
-          nodeId: 42,
+          kind: 'flowModel.step',
+          modelUid: 'fm_1',
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
         },
         ownerUpdatedAt: '2026-07-11T00:00:00.000Z',
         selectedLegacyValue: {
           code: 'return 1;',
           nested: { b: 2, a: 1 },
         },
-        selectedVersion: 'workflow-js',
+        selectedVersion: 'v2',
       }),
-    ).toBe('aff337c19f5160664a0761c258811fe9c9a40f064e22b80caba8b3946c356c5b');
+    ).toBe('42a00f8df46b459d0e61a49b4806bc026ff02b8da90202064c3c35193eb8efbb');
   });
 
   it('maps source errors to stable HTTP responses', () => {
     const error = new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', 'Source not found', {
-      details: { locatorKind: 'workflow.javascript' },
+      details: { locatorKind: 'flowModel.step' },
     });
 
     expect(error.status).toBe(404);
@@ -39,7 +42,7 @@ describe('RunJS source server contracts', () => {
           code: 'RUNJS_SOURCE_NOT_FOUND',
           message: 'Source not found',
           status: 404,
-          details: { locatorKind: 'workflow.javascript' },
+          details: { locatorKind: 'flowModel.step' },
         },
       ],
     });

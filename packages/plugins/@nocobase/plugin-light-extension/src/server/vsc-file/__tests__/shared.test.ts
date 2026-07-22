@@ -126,12 +126,6 @@ describe('vsc-file shared utilities', () => {
         sourcePath: ['defaultParams', 'code'],
       }),
     );
-    const workflowPath = buildRunJSSourceRepositoryIdentity(
-      normalizeRunJSSourceLocator({
-        kind: 'workflow.javascript',
-        nodeId: 1,
-      }),
-    );
     const chartOptionPath = buildRunJSSourceRepositoryIdentity(
       normalizeRunJSSourceLocator({
         kind: 'chart.option',
@@ -147,7 +141,6 @@ describe('vsc-file shared utilities', () => {
 
     expect(dottedA.ownerId).not.toBe(dottedB.ownerId);
     expect(flowRegistryPath.ownerId).toMatch(/^runjs:flowModel\.flowRegistry\.runjs:fm_1:[a-f0-9]{16}$/);
-    expect(workflowPath.ownerId).toMatch(/^runjs:workflow\.javascript:node_1:[a-f0-9]{16}$/);
     expect(chartOptionPath.ownerId).not.toBe(chartEventsPath.ownerId);
   });
 
@@ -240,20 +233,5 @@ describe('vsc-file shared utilities', () => {
         },
       });
     }
-  });
-
-  it.each([
-    { label: 'NaN', nodeId: Number.NaN },
-    { label: 'infinity', nodeId: Number.POSITIVE_INFINITY },
-    { label: 'negative', nodeId: -1 },
-    { label: 'fractional', nodeId: 1.5 },
-    { label: 'unsafe integer', nodeId: Number.MAX_SAFE_INTEGER + 1 },
-  ])('rejects invalid numeric workflow node id: $label', ({ nodeId }) => {
-    expect(() =>
-      normalizeRunJSSourceLocator({
-        kind: 'workflow.javascript',
-        nodeId,
-      }),
-    ).toThrowError(VscError);
   });
 });
