@@ -341,4 +341,136 @@ describe('SequenceRulesConfigureField', () => {
     expect((await screen.findAllByTitle('A')).length).toBeGreaterThan(0);
     expect(await screen.findByTitle('B')).toBeInTheDocument();
   });
+
+  it('stores fixed text entered in the rule configuration form', async () => {
+    let formRef: FormInstance | undefined;
+    const customRuleTypes = [
+      {
+        value: 'string',
+        label: 'Fixed text',
+        defaults: { value: '' },
+        fields: [{ name: 'value', label: 'Text content', component: 'Input', required: true }],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'string', options: { value: '' } }]}
+        onForm={(form) => (formRef = form)}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const input = await screen.findByRole('textbox');
+    fireEvent.change(input, { target: { value: '11' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(formRef?.getFieldValue(['patterns', 0, 'options', 'value'])).toBe('11');
+    });
+  });
+
+  it('loads and stores numeric rule options', async () => {
+    let formRef: FormInstance | undefined;
+    const customRuleTypes = [
+      {
+        value: 'integer',
+        label: 'Autoincrement',
+        defaults: { digits: 4 },
+        fields: [{ name: 'digits', label: 'Digits', component: 'InputNumber', required: true }],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'integer', options: { digits: 4 } }]}
+        onForm={(form) => (formRef = form)}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const input = await screen.findByRole('spinbutton');
+    expect(input).toHaveValue('4');
+
+    fireEvent.change(input, { target: { value: '6' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(formRef?.getFieldValue(['patterns', 0, 'options', 'digits'])).toBe(6);
+    });
+  });
+
+  it('stores selected character sets', async () => {
+    let formRef: FormInstance | undefined;
+    const customRuleTypes = [
+      {
+        value: 'randomChar',
+        label: 'Random character',
+        defaults: { charsets: ['number'] },
+        fields: [
+          {
+            name: 'charsets',
+            label: 'Character sets',
+            component: 'Select',
+            componentProps: { mode: 'multiple' },
+            enum: [
+              { label: 'Number', value: 'number' },
+              { label: 'Uppercase letters', value: 'uppercase' },
+            ],
+            required: true,
+          },
+        ],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'randomChar', options: { charsets: ['number'] } }]}
+        onForm={(form) => (formRef = form)}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const select = await screen.findByLabelText('Character sets');
+    fireEvent.mouseDown(select);
+    fireEvent.click(await screen.findByText('Uppercase letters'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(formRef?.getFieldValue(['patterns', 0, 'options', 'charsets'])).toEqual(['number', 'uppercase']);
+    });
+  });
+
+  it('stores the selected reset cycle', async () => {
+    let formRef: FormInstance | undefined;
+    const customRuleTypes = [
+      {
+        value: 'integer',
+        label: 'Autoincrement',
+        defaults: { cycle: null },
+        fields: [{ name: 'cycle', label: 'Reset cycle', component: 'CronCycle' }],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'integer', options: { cycle: null } }]}
+        onForm={(form) => (formRef = form)}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const select = await screen.findByLabelText('Reset cycle');
+    fireEvent.mouseDown(select);
+    fireEvent.click(await screen.findByText('Daily'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(formRef?.getFieldValue(['patterns', 0, 'options', 'cycle'])).toBe('0 0 * * *');
+    });
+  });
 });
