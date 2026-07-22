@@ -254,6 +254,9 @@ describe('AIEmployeeShortcut', () => {
       aiEmployee: {
         username: 'atlas',
       },
+      context: {
+        workContext: [{ type: 'flow-model', uid: 'chat-box-1' }],
+      },
     };
     model.parent = {
       uid: 'chat-box-1',
@@ -277,6 +280,8 @@ describe('AIEmployeeShortcut', () => {
     });
     expect(actionRuntimes).toContain(blockRuntime);
     expect(actionRuntimes).not.toContain(getGlobalChatBoxRuntime());
+    expect(addContextItems).not.toHaveBeenCalled();
+    expect(syncContextAttachments).not.toHaveBeenCalled();
   });
 
   it('reports a missing target AI chat box without falling back to the global chatbox', async () => {

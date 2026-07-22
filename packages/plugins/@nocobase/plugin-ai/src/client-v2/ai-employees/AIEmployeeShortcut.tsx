@@ -94,13 +94,17 @@ export const AIEmployeeShortcut: React.FC<{
       if (!workContext.length) {
         return workContext;
       }
+      const shouldSkipFlowModelContext = resolvedRuntime.mode === 'block';
       const nextWorkContext = workContext.filter((item) => {
         if (item.type !== 'flow-model') {
           return true;
         }
+        if (shouldSkipFlowModelContext) {
+          return false;
+        }
         return Boolean(ctx.engine.getModel(item.uid));
       });
-      if (nextWorkContext.every((item) => item.type !== 'flow-model')) {
+      if (!shouldSkipFlowModelContext && nextWorkContext.every((item) => item.type !== 'flow-model')) {
         const parent = ctx.model.parent;
         if (parent) {
           nextWorkContext.push({
@@ -110,7 +114,7 @@ export const AIEmployeeShortcut: React.FC<{
         }
       }
       return nextWorkContext;
-    }, [context?.workContext, ctx.engine, ctx.model.parent]);
+    }, [context?.workContext, ctx.engine, ctx.model.parent, resolvedRuntime.mode]);
 
     const syncShortcutContext = useCallback(
       (targetChatBox?: MountedChatBoxEntry) => {
