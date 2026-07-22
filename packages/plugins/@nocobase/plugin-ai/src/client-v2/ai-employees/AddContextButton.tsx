@@ -102,6 +102,7 @@ export const AddContextButton: React.FC<{
     });
 
     const handleClick: MenuProps['onClick'] = (event) => {
+      event.domEvent.stopPropagation();
       const key = String(event.key);
       const workContextItem = contextItemMapping.get(key);
       workContextItem?.menu?.onClick?.({
