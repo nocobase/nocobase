@@ -35,8 +35,19 @@ class DummyDefaultEditableFieldModel extends FieldModel {}
 class DummyFormGridModel extends FlowModel {}
 class DummyDetailsGridModel extends FlowModel {}
 class DummyFormItemModel extends FlowModel {}
-class DummyDetailsItemModel extends FlowModel {}
 class DummyInputFieldModel extends FieldModel {}
+
+DummyDisplaySubItemFieldModel.define({
+  createModelOptions: {
+    use: 'DisplaySubItemFieldModel',
+    subModels: {
+      grid: {
+        use: 'DetailsGridModel',
+        uid: 'details-grid-default',
+      },
+    },
+  },
+});
 
 describe('association field component state actions', () => {
   let engine: FlowEngine;
@@ -57,7 +68,6 @@ describe('association field component state actions', () => {
       FormGridModel: DummyFormGridModel,
       DetailsGridModel: DummyDetailsGridModel,
       FormItemModel: DummyFormItemModel,
-      DetailsItemModel: DummyDetailsItemModel,
       InputFieldModel: DummyInputFieldModel,
     });
     parentModel = engine.createModel<DummyAssociationFormItemModel>({
@@ -136,7 +146,7 @@ describe('association field component state actions', () => {
     vi.restoreAllMocks();
   });
 
-  it('migrates Subform to Sub-detail and restores Subform after returning to editable mode', async () => {
+  it('uses Sub-detail defaults and restores each mode after switching back and forth', async () => {
     await pattern.beforeParamsSave?.(ctx, { pattern: 'readPretty' }, { pattern: 'editable' });
     await pattern.afterParamsSave?.(ctx, { pattern: 'readPretty' }, { pattern: 'editable' });
 
@@ -150,11 +160,11 @@ describe('association field component state actions', () => {
 
     const detailsGrid = parentModel.subModels.field?.subModels.grid;
     expect(parentModel.subModels.field?.use).toBe('DisplaySubItemFieldModel');
-    expect(detailsGrid.use).toBe('DetailsGridModel');
-    expect(detailsGrid.subModels.items[0]).toMatchObject({
-      uid: 'form-item-name',
-      use: 'DetailsItemModel',
+    expect(detailsGrid).toMatchObject({
+      uid: 'details-grid-default',
+      use: 'DetailsGridModel',
     });
+    expect(detailsGrid.subModels.items).toBeUndefined();
 
     await pattern.beforeParamsSave?.(ctx, { pattern: 'editable' }, { pattern: 'readPretty' });
     await pattern.afterParamsSave?.(ctx, { pattern: 'editable' }, { pattern: 'readPretty' });
@@ -168,6 +178,15 @@ describe('association field component state actions', () => {
     });
     expect(parentModel.subModels.field?.getStepParams('eventSettings', 'linkageRules')).toEqual({
       rules: [{ key: 'keep-me' }],
+    });
+
+    await pattern.beforeParamsSave?.(ctx, { pattern: 'readPretty' }, { pattern: 'editable' });
+    await pattern.afterParamsSave?.(ctx, { pattern: 'readPretty' }, { pattern: 'editable' });
+
+    expect(parentModel.subModels.field?.use).toBe('DisplaySubItemFieldModel');
+    expect(parentModel.subModels.field?.subModels.grid).toMatchObject({
+      uid: 'details-grid-default',
+      use: 'DetailsGridModel',
     });
   });
 });

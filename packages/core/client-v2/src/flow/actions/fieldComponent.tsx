@@ -98,7 +98,6 @@ export const fieldComponent = defineAction({
         ctx.collectionField?.isAssociationField?.() && shouldUseAssociationFieldComponentState(ctx.model, params.use);
       if (useAssociationState) {
         await rebuildAssociationFieldSubModel({
-          ctx,
           parentModel: ctx.model,
           targetUse: params.use,
           defaultProps,

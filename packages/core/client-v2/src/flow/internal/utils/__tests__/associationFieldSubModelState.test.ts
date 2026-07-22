@@ -7,13 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionField, CreateModelOptions, FlowEngine, FlowEngineContext, FlowModel } from '@nocobase/flow-engine';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DetailsItemModel } from '../../../models/blocks/details/DetailsItemModel';
+import { CreateModelOptions, FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { FieldModel } from '../../../models/base/FieldModel';
 import {
   getAssociationFieldModeUse,
-  migrateFormSubModelsToDetails,
   normalizeLegacyAssociationDisplaySubModels,
   rebuildAssociationFieldSubModel,
 } from '../associationFieldSubModelState';
@@ -29,40 +27,34 @@ class DummyDisplaySubItemFieldModel extends FieldModel {}
 class DummyFormGridModel extends FlowModel {}
 class DummyDetailsGridModel extends FlowModel {}
 class DummyFormItemModel extends FlowModel {}
-class DummyDetailsItemModel extends FlowModel {}
 class DummyInputFieldModel extends FieldModel {}
-class DummyDisplayFieldModel extends FieldModel {}
+class DummyOtherModel extends FlowModel {}
+
+DummyDisplaySubItemFieldModel.define({
+  createModelOptions: {
+    use: 'DisplaySubItemFieldModel',
+    subModels: {
+      grid: {
+        use: 'DetailsGridModel',
+        uid: 'details-grid-default',
+      },
+    },
+  },
+});
 
 function createFormSubModels(): NonNullable<CreateModelOptions['subModels']> {
   return {
     grid: {
-      uid: 'grid-1',
+      uid: 'form-grid',
       use: 'FormGridModel',
-      props: { layout: [[['item-1']]] },
       subModels: {
         items: [
           {
-            uid: 'item-1',
+            uid: 'form-item-name',
             use: 'FormItemModel',
-            sortIndex: 2,
-            props: {
-              disabled: true,
-              label: 'Name',
-            },
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  fieldPath: 'profile.name',
-                },
-              },
-              editItemSettings: {
-                showLabel: { showLabel: true },
-                label: { label: 'Custom name' },
-              },
-            },
             subModels: {
               field: {
-                uid: 'input-field-1',
+                uid: 'input-name',
                 use: 'InputFieldModel',
               },
             },
@@ -76,7 +68,6 @@ function createFormSubModels(): NonNullable<CreateModelOptions['subModels']> {
 describe('associationFieldSubModelState', () => {
   let engine: FlowEngine;
   let parentModel: DummyAssociationParentModel;
-  let ctx: FlowEngineContext & { collectionField: CollectionField };
 
   beforeEach(() => {
     engine = new FlowEngine();
@@ -87,9 +78,8 @@ describe('associationFieldSubModelState', () => {
       FormGridModel: DummyFormGridModel,
       DetailsGridModel: DummyDetailsGridModel,
       FormItemModel: DummyFormItemModel,
-      DetailsItemModel: DummyDetailsItemModel,
       InputFieldModel: DummyInputFieldModel,
-      DisplayFieldModel: DummyDisplayFieldModel,
+      OtherModel: DummyOtherModel,
     });
     parentModel = engine.createModel<DummyAssociationParentModel>({
       use: DummyAssociationParentModel,
@@ -98,105 +88,69 @@ describe('associationFieldSubModelState', () => {
         field: {
           uid: 'association-field',
           use: 'SubFormFieldModel',
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                rules: [{ key: 'keep-me' }],
+              },
+            },
+          },
           subModels: createFormSubModels(),
         },
       },
     });
-    const targetField = { name: 'name' } as unknown as CollectionField;
-    const collectionField = {
-      targetCollection: {
-        getField: vi.fn(() => targetField),
-      },
-    } as unknown as CollectionField;
-    ctx = {
-      engine,
-      collectionField,
-    } as FlowEngineContext & { collectionField: CollectionField };
-    vi.spyOn(DetailsItemModel, 'getDefaultBindingByField').mockReturnValue({
-      modelName: 'DisplayFieldModel',
-      defaultProps: { display: true },
-    } as ReturnType<typeof DetailsItemModel.getDefaultBindingByField>);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('migrates a form grid to a details grid without reusing editable item models', () => {
-    const migrated = migrateFormSubModelsToDetails(createFormSubModels(), { ctx, parentModel });
-    const grid = migrated?.grid as CreateModelOptions;
-    const items = grid.subModels?.items as CreateModelOptions[];
-
-    expect(grid).toMatchObject({
-      uid: 'grid-1',
-      use: 'DetailsGridModel',
-      props: { layout: [[['item-1']]] },
-    });
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({
-      uid: 'item-1',
-      use: 'DetailsItemModel',
-      sortIndex: 2,
-      props: { label: 'Name' },
-      stepParams: {
-        fieldSettings: {
-          init: { fieldPath: 'profile.name' },
-        },
-        detailItemSettings: {
-          showLabel: { showLabel: true },
-          label: { title: 'Custom name' },
-        },
-      },
-      subModels: {
-        field: {
-          uid: 'input-field-1',
-          use: 'DisplayFieldModel',
-          props: { display: true },
-        },
-      },
-    });
-    expect(items[0].props).not.toHaveProperty('disabled');
-  });
-
-  it('restores the saved editable component tree after leaving display-only mode', async () => {
+  it('uses target defaults and restores the editable snapshot after a mode round trip', async () => {
     await rebuildAssociationFieldSubModel({
-      ctx,
       parentModel,
       targetUse: 'DisplaySubItemFieldModel',
       sourceMode: 'editable',
       targetMode: 'readPretty',
     });
 
-    expect(parentModel.subModels.field?.subModels.grid.use).toBe('DetailsGridModel');
+    expect(parentModel.subModels.field?.subModels.grid).toMatchObject({
+      uid: 'details-grid-default',
+      use: 'DetailsGridModel',
+    });
     expect(getAssociationFieldModeUse(parentModel, 'editable')).toBe('SubFormFieldModel');
 
     await rebuildAssociationFieldSubModel({
-      ctx,
       parentModel,
       targetUse: 'SubFormFieldModel',
       sourceMode: 'readPretty',
       targetMode: 'editable',
     });
 
-    const restoredGrid = parentModel.subModels.field?.subModels.grid;
-    expect(parentModel.subModels.field?.use).toBe('SubFormFieldModel');
-    expect(restoredGrid.use).toBe('FormGridModel');
-    expect(restoredGrid.subModels.items[0]).toMatchObject({
-      uid: 'item-1',
+    expect(parentModel.subModels.field?.subModels.grid).toMatchObject({
+      uid: 'form-grid',
+      use: 'FormGridModel',
+    });
+    expect(parentModel.subModels.field?.subModels.grid.subModels.items[0]).toMatchObject({
+      uid: 'form-item-name',
       use: 'FormItemModel',
     });
+    expect(parentModel.subModels.field?.getStepParams('eventSettings', 'linkageRules')).toEqual({
+      rules: [{ key: 'keep-me' }],
+    });
+    const state = parentModel.getStepParams('editItemSettings', 'model')?.associationFieldComponentState;
+    expect(Object.keys(state.byMode).sort()).toEqual(['editable', 'readPretty']);
+    expect(state).not.toHaveProperty('subModelsByUse');
   });
 
-  it('repairs legacy display sub-detail configurations that still contain a form grid', () => {
-    const migrated = normalizeLegacyAssociationDisplaySubModels({
-      ctx,
-      parentModel,
-      displayUse: 'DisplaySubItemFieldModel',
-      subModels: createFormSubModels(),
+  it('drops incompatible legacy form grids and keeps unrelated submodels', () => {
+    const normalized = normalizeLegacyAssociationDisplaySubModels({
+      ...createFormSubModels(),
+      other: {
+        use: 'OtherModel',
+        uid: 'other-model',
+      },
     });
 
-    expect((migrated?.grid as CreateModelOptions).use).toBe('DetailsGridModel');
-    expect(getAssociationFieldModeUse(parentModel, 'editable')).toBe('SubFormFieldModel');
-    expect(getAssociationFieldModeUse(parentModel, 'readPretty')).toBe('DisplaySubItemFieldModel');
+    expect(normalized?.grid).toBeUndefined();
+    expect(normalized?.other).toMatchObject({
+      use: 'OtherModel',
+      uid: 'other-model',
+    });
   });
 });

@@ -161,7 +161,6 @@ export const pattern = defineAction({
         isAssociationField && shouldUseAssociationFieldComponentState(model, binding.modelName);
       if (useAssociationState) {
         await rebuildAssociationFieldSubModel({
-          ctx,
           parentModel: model,
           targetUse: binding.modelName,
           defaultProps: resolveDefaultProps(binding, bindingField),
@@ -191,7 +190,6 @@ export const pattern = defineAction({
           isAssociationField && shouldUseAssociationFieldComponentState(model, binding.modelName);
         if (useAssociationState) {
           await rebuildAssociationFieldSubModel({
-            ctx,
             parentModel: model,
             targetUse: binding.modelName,
             defaultProps: resolveDefaultProps(binding),

@@ -43,12 +43,7 @@ export class DisplaySubItemFieldModel extends FieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
-    options.subModels = normalizeLegacyAssociationDisplaySubModels({
-      ctx: (this.parent as FormItemModel).context,
-      parentModel: this.parent as FormItemModel,
-      displayUse: 'DisplaySubItemFieldModel',
-      subModels: options.subModels,
-    });
+    options.subModels = normalizeLegacyAssociationDisplaySubModels(options.subModels);
   }
   public render() {
     return <ObjectNester {...this.props} />;
