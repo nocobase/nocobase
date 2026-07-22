@@ -52,6 +52,10 @@ const MISSING_COMMAND_SPECS = {
     displayName: 'pnpm',
     configKey: 'bin.pnpm',
   },
+  npm: {
+    displayName: 'npm',
+    configKey: 'bin.npm',
+  },
 } as const;
 const DOCKER_DAEMON_UNAVAILABLE_PATTERNS = [
   /cannot connect to the docker daemon/i,

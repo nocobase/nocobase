@@ -30,6 +30,7 @@ export function buildInitAppEnvVarsFromConfig(
     portalName?: string;
     portalTemplate?: string;
   },
+  options: { includePortal?: boolean } = {},
 ): Record<string, string> {
   const out: Record<string, string> = {};
   const put = (key: string, value: unknown) => {
@@ -44,8 +45,10 @@ export function buildInitAppEnvVarsFromConfig(
   put('INIT_ROOT_EMAIL', config?.rootEmail);
   put('INIT_ROOT_PASSWORD', config?.rootPassword);
   put('INIT_ROOT_NICKNAME', config?.rootNickname);
-  put('INIT_DEVELOPMENT_MODE', config?.developmentMode);
-  put('INIT_PORTAL_NAME', config?.portalName);
-  put('INIT_PORTAL_TEMPLATE', config?.portalTemplate);
+  if (options.includePortal !== false) {
+    put('INIT_DEVELOPMENT_MODE', config?.developmentMode);
+    put('INIT_PORTAL_NAME', config?.portalName);
+    put('INIT_PORTAL_TEMPLATE', config?.portalTemplate);
+  }
   return out;
 }

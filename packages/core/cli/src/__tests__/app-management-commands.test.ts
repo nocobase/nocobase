@@ -118,6 +118,7 @@ const mocks = vi.hoisted(() => ({
   commandSucceeds: vi.fn(),
   commandOutput: vi.fn(),
   ensureDockerDaemonRunning: vi.fn(),
+  prepareInitialPortalTemplate: vi.fn(),
   resolveProjectCwd: vi.fn((cwd?: string) => cwd ?? process.cwd()),
   findAvailableTcpPort: vi.fn(),
   validateAvailableTcpPort: vi.fn(),
@@ -235,6 +236,10 @@ vi.mock('../lib/run-npm.js', () => ({
   resolveProjectCwd: mocks.resolveProjectCwd,
 }));
 
+vi.mock('../lib/portal-template.js', () => ({
+  prepareInitialPortalTemplate: mocks.prepareInitialPortalTemplate,
+}));
+
 vi.mock('../lib/prompt-validators.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();
   return {
@@ -319,6 +324,7 @@ beforeEach(() => {
   mocks.commandSucceeds.mockResolvedValue(true);
   mocks.commandOutput.mockResolvedValue('');
   mocks.ensureDockerDaemonRunning.mockResolvedValue(undefined);
+  mocks.prepareInitialPortalTemplate.mockResolvedValue({ prepared: false, skippedReason: 'no-code' });
   mocks.isAppReady.mockResolvedValue(false);
   mocks.waitForAppReady.mockResolvedValue(undefined);
   mocks.resolveManagedAppApiBaseUrl.mockImplementation((runtime: any, options?: { portOverride?: string }) => {
@@ -547,6 +553,7 @@ test('start injects init env vars for prepared local envs and marks them install
     projectRoot: '/tmp/nocobase',
     env: {
       appPort: 13000,
+      storagePath: TEST_STORAGE_PATH,
       config: {
         setupState: 'prepared',
         lang: 'en-US',
@@ -554,6 +561,9 @@ test('start injects init env vars for prepared local envs and marks them install
         rootEmail: 'admin@nocobase.com',
         rootPassword: 'admin123',
         rootNickname: 'Admin',
+        developmentMode: 'vibe-coding',
+        portalName: 'admin',
+        portalTemplate: '/tmp/portal-template',
       },
       envVars: { APP_PORT: '13000' },
     },
@@ -577,6 +587,16 @@ test('start injects init env vars for prepared local envs and marks them install
       INIT_ROOT_NICKNAME: 'Admin',
     },
     stdio: 'ignore',
+  });
+  expect(mocks.prepareInitialPortalTemplate).toHaveBeenCalledWith({
+    developmentMode: 'vibe-coding',
+    portalName: 'admin',
+    portalTemplate: '/tmp/portal-template',
+    storagePath: TEST_STORAGE_PATH,
+    verbose: undefined,
+    onStartTask: mocks.startTask,
+    onSucceedTask: mocks.succeedTask,
+    onFailTask: mocks.failTask,
   });
   expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('prepared-local');
   expect(mocks.upsertEnv).toHaveBeenCalledWith('prepared-local', { setupState: 'installed' });

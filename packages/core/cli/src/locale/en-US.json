@@ -346,14 +346,14 @@
           "noCodeLabel": "No-code",
           "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
           "vibeCodingLabel": "Vibe Coding",
-          "vibeCodingHint": "Initialize an independent Portal SPA from a Git template."
+          "vibeCodingHint": "Initialize an independent Portal SPA from a Git or local template."
         },
         "portalName": {
           "message": "Initial Portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
-          "message": "Initial Portal template Git URL",
+          "message": "Initial Portal template Git URL or local path",
           "placeholder": "git@github.com:nocobase/admin-starter.git"
         },
         "storagePath": {
@@ -461,14 +461,14 @@
           "noCodeLabel": "No-code",
           "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
           "vibeCodingLabel": "Vibe Coding",
-          "vibeCodingHint": "Initialize an independent Portal SPA from a Git template."
+          "vibeCodingHint": "Initialize an independent Portal SPA from a Git or local template."
         },
         "portalName": {
           "message": "Initial Portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
-          "message": "Initial Portal template Git URL",
+          "message": "Initial Portal template Git URL or local path",
           "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },

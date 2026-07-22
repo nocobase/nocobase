@@ -33,3 +33,21 @@ test('buildInitAppEnvVarsFromConfig includes initial development mode and portal
     INIT_PORTAL_TEMPLATE: 'git@github.com:nocobase/admin-starter.git',
   });
 });
+
+test('buildInitAppEnvVarsFromConfig can omit portal init settings', () => {
+  expect(
+    buildInitAppEnvVarsFromConfig(
+      {
+        lang: 'en-US',
+        rootUsername: 'nocobase',
+        developmentMode: 'vibe-coding',
+        portalName: 'admin',
+        portalTemplate: '/tmp/portal-template',
+      },
+      { includePortal: false },
+    ),
+  ).toEqual({
+    INIT_APP_LANG: 'en-US',
+    INIT_ROOT_USERNAME: 'nocobase',
+  });
+});

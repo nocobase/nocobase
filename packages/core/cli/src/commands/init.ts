@@ -597,7 +597,7 @@ Prompt modes:
       description: 'Initial Portal name when --development-mode vibe-coding is used',
     }),
     'portal-template': Flags.string({
-      description: 'Initial Portal template Git URL when --development-mode vibe-coding is used',
+      description: 'Initial Portal template Git URL or local path when --development-mode vibe-coding is used',
     }),
     ui: Flags.boolean({
       description: 'Open the guided setup flow in a local browser form (not valid with --yes)',

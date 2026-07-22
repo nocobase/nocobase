@@ -252,6 +252,70 @@ test('install syncs oauth env connection after the app becomes ready', async () 
   ]);
 });
 
+test('install prepares the initial portal before delegating app startup', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadManagedSource = vi.fn(async () => undefined);
+  const prepareInitialPortalIfNeeded = vi.fn(async () => undefined);
+  const runCommand = vi.fn(async () => undefined);
+  const collectPromptResults = vi.fn(async () => ({
+    envName: 'app1',
+    envResults: {},
+    appResults: {
+      appPort: '13080',
+      storagePath: './app1/storage/',
+      developmentMode: 'vibe-coding',
+      portalName: 'admin',
+      portalTemplate: '/tmp/portal-template',
+    },
+    downloadResults: {
+      source: 'docker',
+    },
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
+      authType: 'oauth',
+    },
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: false,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults,
+    waitForAppHealthCheck,
+    downloadManagedSource,
+    prepareInitialPortalIfNeeded,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(prepareInitialPortalIfNeeded).toHaveBeenCalledWith({
+    envName: 'app1',
+    appResults: expect.objectContaining({
+      developmentMode: 'vibe-coding',
+      portalName: 'admin',
+      portalTemplate: '/tmp/portal-template',
+    }),
+    verbose: false,
+  });
+  expect(runCommand.mock.calls[0]).toEqual([
+    'app:start',
+    ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'],
+  ]);
+  expect(prepareInitialPortalIfNeeded.mock.invocationCallOrder[0]).toBeLessThan(runCommand.mock.invocationCallOrder[0]);
+});
+
 test('install saves the resolved app url before delegating startup', async () => {
   const { default: Install } = await import('../commands/install.js');
 
