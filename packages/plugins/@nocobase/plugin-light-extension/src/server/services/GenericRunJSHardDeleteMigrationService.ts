@@ -46,6 +46,7 @@ import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspace
 const LEGACY_KIND = 'runjs';
 const LEGACY_OWNER_KIND = 'flowModel.runjsHost';
 const LEGACY_ENTRY_ROOT = 'src/client/runjs';
+const ARTIFACT_GC_BATCH_SIZE = 500;
 const BLOCKING_SYNC_JOB_STATUSES = ['pending', 'running', 'finalize-pending'] as const;
 const REQUIRED_COLLECTIONS = [
   'flowModels',
@@ -124,6 +125,7 @@ export interface GenericRunJSLegacyState {
   entryCount: number;
   referenceCount: number;
   unknownReferenceCount: number;
+  orphanArtifactCount: number;
   legacyHeadPathCount: number;
   orphanLegacyVscRepoCount: number;
 }
@@ -215,13 +217,14 @@ export class GenericRunJSHardDeleteMigrationService {
     if (!(await this.isAvailable())) {
       return emptyLegacyState();
     }
-    const [models, entryCount, references, lightRepos, vscRepositories] = await Promise.all([
+    const [models, entries, references, artifacts, lightRepos, vscRepositories] = await Promise.all([
       this.scanFlowModels(),
-      this.db.getRepository('lightExtensionEntries').count({ filter: { kind: LEGACY_KIND } }),
+      this.db.getRepository('lightExtensionEntries').find({ fields: ['kind', 'artifactHash'] }),
       this.db.getRepository('lightExtensionReferences').find({
         filter: { $or: [{ kind: LEGACY_KIND }, { ownerKind: LEGACY_OWNER_KIND }] },
         fields: ['kind', 'ownerKind'],
       }),
+      this.db.getRepository('lightExtensionRuntimeArtifacts').find({ fields: ['artifactHash', 'entryPath'] }),
       this.db.getRepository('lightExtensionRepos').find({ fields: ['id', 'vscRepoId'] }),
       this.db.getRepository('vscFileRepositories').find({
         filter: { ownerType: 'light-extension', status: 'active' },
@@ -242,23 +245,32 @@ export class GenericRunJSHardDeleteMigrationService {
         orphanLegacyVscRepoCount += 1;
       }
     }
+    const referencedArtifactHashes = new Set(
+      entries.map((record) => readString(record, 'artifactHash')).filter(Boolean),
+    );
     return {
       bindingCount: models.reduce((count, model) => count + model.bindings.length, 0),
-      entryCount,
+      entryCount: entries.filter((record) => readString(record, 'kind') === LEGACY_KIND).length,
       referenceCount: references.filter(isKnownGenericReference).length,
       unknownReferenceCount: references.filter((record) => !isKnownGenericReference(record)).length,
+      orphanArtifactCount: artifacts.filter(
+        (record) =>
+          isLegacyPath(readString(record, 'entryPath')) &&
+          !referencedArtifactHashes.has(readString(record, 'artifactHash')),
+      ).length,
       legacyHeadPathCount,
       orphanLegacyVscRepoCount,
     };
   }
 
   private async preflight(): Promise<MigrationPreflight> {
-    const [models, entryModels, referenceModels, repoModels, vscModels] = await Promise.all([
+    const [models, entryModels, referenceModels, artifactModels, repoModels, vscModels] = await Promise.all([
       this.scanFlowModels(),
       this.db.getRepository('lightExtensionEntries').find(),
       this.db.getRepository('lightExtensionReferences').find({
         filter: { $or: [{ kind: LEGACY_KIND }, { ownerKind: LEGACY_OWNER_KIND }] },
       }),
+      this.db.getRepository('lightExtensionRuntimeArtifacts').find({ fields: ['artifactHash', 'entryPath'] }),
       this.db.getRepository('lightExtensionRepos').find(),
       this.db.getRepository('vscFileRepositories').find({ filter: { ownerType: 'light-extension' } }),
     ]);
@@ -279,6 +291,11 @@ export class GenericRunJSHardDeleteMigrationService {
     const reposById = new Map(repoModels.map((record) => [readString(record, 'id'), record]));
     const vscById = new Map(vscModels.map((record) => [readString(record, 'id'), record]));
     const artifactHashes = new Set<string>();
+    for (const artifact of artifactModels) {
+      if (isLegacyPath(readString(artifact, 'entryPath'))) {
+        artifactHashes.add(readString(artifact, 'artifactHash'));
+      }
+    }
 
     for (const model of models) {
       for (const binding of model.bindings) {
@@ -798,19 +815,23 @@ export class GenericRunJSHardDeleteMigrationService {
       })) || 0,
     );
     let artifactCount = 0;
-    for (const artifactHash of preflight.artifactHashes) {
-      const survivingReferenceCount = await this.db.getRepository('lightExtensionEntries').count({
-        filter: { artifactHash },
-        transaction,
-      });
-      if (survivingReferenceCount === 0) {
-        artifactCount += Number(
-          (await this.db.getRepository('lightExtensionRuntimeArtifacts').destroy({
-            filterByTk: artifactHash,
-            transaction,
-          })) || 0,
-        );
-      }
+    const survivingArtifactEntries = await this.db.getRepository('lightExtensionEntries').find({
+      fields: ['artifactHash'],
+      transaction,
+    });
+    const survivingArtifactHashes = new Set(
+      survivingArtifactEntries.map((record) => readString(record, 'artifactHash')).filter(Boolean),
+    );
+    const orphanArtifactHashes = preflight.artifactHashes.filter(
+      (artifactHash) => artifactHash && !survivingArtifactHashes.has(artifactHash),
+    );
+    for (const artifactHashBatch of chunkValues(orphanArtifactHashes, ARTIFACT_GC_BATCH_SIZE)) {
+      artifactCount += Number(
+        (await this.db.getRepository('lightExtensionRuntimeArtifacts').destroy({
+          filter: { artifactHash: { $in: artifactHashBatch } },
+          transaction,
+        })) || 0,
+      );
     }
     return {
       bindingCount,
@@ -828,15 +849,22 @@ export class GenericRunJSHardDeleteMigrationService {
   }
 
   private async scanFlowModels(transaction?: Transaction): Promise<FlowModelSnapshot[]> {
-    const records = await this.db.getRepository('flowModels').find({
-      fields: ['uid', 'options'],
-      sort: ['uid'],
-      transaction,
-    });
+    const [records, entryModels] = await Promise.all([
+      this.db.getRepository('flowModels').find({
+        fields: ['uid', 'options'],
+        sort: ['uid'],
+        transaction,
+      }),
+      this.db.getRepository('lightExtensionEntries').find({
+        fields: ['id', 'kind'],
+        transaction,
+      }),
+    ]);
+    const entryKindsById = new Map(entryModels.map((record) => [readString(record, 'id'), readString(record, 'kind')]));
     return records.map((record) => {
       const uid = readString(record, 'uid');
       const options = readRecord(record, 'options');
-      return { uid, options: cloneRecord(options), bindings: collectBindings(uid, options) };
+      return { uid, options: cloneRecord(options), bindings: collectBindings(uid, options, entryKindsById) };
     });
   }
 }
@@ -850,15 +878,52 @@ class MigrationNoopAuditService extends LightExtensionAuditService {
   async recordSyncEvent(_input: LightExtensionSyncAuditInput): Promise<void> {}
 }
 
-function collectBindings(modelUid: string, options: JsonRecord): GenericRunJSBindingSnapshot[] {
+function collectBindings(
+  modelUid: string,
+  options: JsonRecord,
+  entryKindsById: ReadonlyMap<string, string>,
+): GenericRunJSBindingSnapshot[] {
   const bindings: GenericRunJSBindingSnapshot[] = [];
   walkJson(options, [], (value, path) => {
-    if (value.sourceMode !== 'light-extension' || !isRecord(value.sourceBinding)) {
+    if (value.sourceMode !== 'light-extension') {
       return;
     }
+    if (!isRecord(value.sourceBinding)) {
+      throw malformedBindingBlocker(modelUid, path, 'A light-extension source binding must be an object', {
+        reasonCode: 'binding-shape-invalid',
+      });
+    }
     const sourceBinding = value.sourceBinding;
-    if (sourceBinding.type !== 'light-extension-entry' || sourceBinding.kind !== LEGACY_KIND) {
+    const entryId = optionalBindingString(sourceBinding, 'entryId');
+    const bindingKind = optionalBindingString(sourceBinding, 'kind');
+    const persistedEntryKind = entryId ? entryKindsById.get(entryId) : undefined;
+    if (isSupportedSurvivingKind(bindingKind)) {
+      if (persistedEntryKind && persistedEntryKind !== bindingKind) {
+        throw malformedBindingBlocker(modelUid, path, 'The light-extension binding kind does not match its entry', {
+          reasonCode: 'binding-kind-mismatch',
+          bindingKind,
+          entryId,
+          persistedEntryKind,
+        });
+      }
       return;
+    }
+    if (!bindingKind && isSupportedSurvivingKind(persistedEntryKind || '')) {
+      return;
+    }
+    if (bindingKind !== LEGACY_KIND) {
+      throw malformedBindingBlocker(modelUid, path, 'A light-extension source binding cannot be classified safely', {
+        reasonCode: 'binding-kind-invalid',
+        bindingKind: bindingKind || null,
+        entryId: entryId || null,
+        persistedEntryKind: persistedEntryKind || null,
+      });
+    }
+    if (sourceBinding.type !== 'light-extension-entry') {
+      throw malformedBindingBlocker(modelUid, path, 'Generic RunJS binding type is invalid', {
+        reasonCode: 'binding-type-invalid',
+        bindingType: optionalBindingString(sourceBinding, 'type') || null,
+      });
     }
     bindings.push({
       modelUid,
@@ -871,6 +936,24 @@ function collectBindings(modelUid: string, options: JsonRecord): GenericRunJSBin
     });
   });
   return bindings;
+}
+
+function optionalBindingString(binding: JsonRecord, key: string): string {
+  const value = binding[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function malformedBindingBlocker(
+  modelUid: string,
+  path: JsonPath,
+  message: string,
+  details: JsonRecord,
+): LightExtensionError {
+  return migrationBlocked(message, {
+    ...details,
+    modelUid,
+    path: formatPath(path),
+  });
 }
 
 function walkJson(value: unknown, path: JsonPath, visit: (record: JsonRecord, path: JsonPath) => void): void {
@@ -936,6 +1019,14 @@ function groupEntries(entries: EntrySnapshot[]): Map<string, EntrySnapshot[]> {
   return grouped;
 }
 
+function chunkValues<T>(values: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function isKnownGenericReference(record: Model): boolean {
   return readString(record, 'kind') === LEGACY_KIND && readString(record, 'ownerKind') === LEGACY_OWNER_KIND;
 }
@@ -950,6 +1041,7 @@ function emptyLegacyState(): GenericRunJSLegacyState {
     entryCount: 0,
     referenceCount: 0,
     unknownReferenceCount: 0,
+    orphanArtifactCount: 0,
     legacyHeadPathCount: 0,
     orphanLegacyVscRepoCount: 0,
   };

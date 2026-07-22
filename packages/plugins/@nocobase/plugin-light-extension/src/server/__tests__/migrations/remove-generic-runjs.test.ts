@@ -21,6 +21,35 @@ import { VscFileService, VscPermissionHookRegistry } from '../../vsc-file/public
 
 const genericCode = 'return Number(ctx.settings.quantity) * Number(ctx.settings.price);';
 const genericEntryPath = 'src/client/runjs/calculate-total/index.ts';
+const malformedBindingCases: Array<{
+  title: string;
+  reasonCode: string;
+  build: (fixture: GenericFixture) => unknown;
+}> = [
+  {
+    title: 'a non-object sourceBinding',
+    reasonCode: 'binding-shape-invalid',
+    build: () => 'lee_malformed',
+  },
+  {
+    title: 'an invalid generic binding type',
+    reasonCode: 'binding-type-invalid',
+    build: (fixture) => ({ ...genericBinding(fixture), type: 'legacy-entry' }),
+  },
+  {
+    title: 'a missing kind that points to a generic entry',
+    reasonCode: 'binding-kind-invalid',
+    build: (fixture) => {
+      const { kind: _kind, ...binding } = genericBinding(fixture);
+      return binding;
+    },
+  },
+  {
+    title: 'a retained kind that points to a generic entry',
+    reasonCode: 'binding-kind-mismatch',
+    build: (fixture) => ({ ...genericBinding(fixture), kind: 'js-action' }),
+  },
+];
 
 describe('remove generic RunJS migration', () => {
   let db: Database;
@@ -176,6 +205,34 @@ describe('remove generic RunJS migration', () => {
     await expect(new GenericRunJSHardDeleteMigrationService(db).migrate()).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_SOURCE_ERROR',
       details: expect.objectContaining({ reasonCode: 'artifact-missing', modelUid: 'fm_missing' }),
+    });
+    expect(await snapshot(db, fixture)).toEqual(before);
+  });
+
+  it.each(malformedBindingCases)('fails closed with zero writes for $title', async ({ build, reasonCode }) => {
+    const fixture = await seedGenericRepo(db, vsc, { repoId: 'ler_malformed', entryId: 'lee_malformed' });
+    await db.getRepository('flowModels').create({
+      values: {
+        uid: 'fm_malformed',
+        options: {
+          stepParams: {
+            fieldSettings: {
+              defaultValue: {
+                code: 'return "stale";',
+                version: 'v1',
+                sourceMode: 'light-extension',
+                sourceBinding: build(fixture),
+              },
+            },
+          },
+        },
+      },
+    });
+    const before = await snapshot(db, fixture);
+
+    await expect(new GenericRunJSHardDeleteMigrationService(db).migrate()).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SOURCE_ERROR',
+      details: expect.objectContaining({ reasonCode, modelUid: 'fm_malformed' }),
     });
     expect(await snapshot(db, fixture)).toEqual(before);
   });
@@ -394,6 +451,51 @@ describe('remove generic RunJS migration', () => {
     ).resolves.toBeNull();
   });
 
+  it('deletes an orphaned generic artifact even when no entry, binding, repository, or reference remains', async () => {
+    const artifact = await seedRuntimeArtifact(db, 'src/client/runjs/orphan/index.ts', 'return "orphan";');
+    const service = new GenericRunJSHardDeleteMigrationService(db);
+
+    await expect(service.inspectLegacyState()).resolves.toMatchObject({ orphanArtifactCount: 1 });
+    await expect(service.migrate()).resolves.toMatchObject({ artifactCount: 1, changed: true });
+    await expect(
+      db.getRepository('lightExtensionRuntimeArtifacts').findOne({ filterByTk: artifact.artifactHash }),
+    ).resolves.toBeNull();
+    await expect(service.assertNoLegacyData()).resolves.toBeUndefined();
+  });
+
+  it('preserves a legacy-path artifact that is still shared by a retained entry', async () => {
+    const artifact = await seedRuntimeArtifact(db, 'src/client/runjs/shared/index.ts', 'return "shared";');
+    await db.getRepository('lightExtensionEntries').create({
+      values: {
+        id: 'lee_retained_shared_artifact',
+        repoId: 'ler_retained_shared_artifact',
+        kind: 'js-action',
+        entryName: 'retained-shared-artifact',
+        entryPath: 'src/client/js-actions/retained-shared-artifact/index.ts',
+        descriptorPath: 'src/client/js-actions/retained-shared-artifact/entry.json',
+        runtimeVersion: 'v2',
+        runtimeCodeHash: artifact.runtimeCodeHash,
+        artifactHash: artifact.artifactHash,
+        healthStatus: 'ready',
+        diagnostics: [],
+      },
+    });
+    const service = new GenericRunJSHardDeleteMigrationService(db);
+
+    await expect(service.inspectLegacyState()).resolves.toMatchObject({ orphanArtifactCount: 0 });
+    await expect(service.migrate()).resolves.toEqual({
+      bindingCount: 0,
+      repoCount: 0,
+      entryCount: 0,
+      referenceCount: 0,
+      artifactCount: 0,
+      changed: false,
+    });
+    await expect(
+      db.getRepository('lightExtensionRuntimeArtifacts').findOne({ filterByTk: artifact.artifactHash }),
+    ).resolves.not.toBeNull();
+  });
+
   it('uses the same service for afterSync migration and disabled-at-upgrade beforeEnable', async () => {
     const migrationFixture = await seedGenericRepo(db, vsc, { repoId: 'ler_upgrade', entryId: 'lee_upgrade' });
     await seedFlowModel(db, migrationFixture, 'fm_upgrade');
@@ -580,6 +682,29 @@ function genericBinding(fixture: GenericFixture) {
     entryPath: fixture.entryPath,
     kind: 'runjs',
   };
+}
+
+async function seedRuntimeArtifact(db: Database, entryPath: string, code: string) {
+  const version = 'v2';
+  const runtimeCodeHash = buildRunJSRuntimeCodeHash(code);
+  const artifactHash = buildRunJSArtifactHash({
+    code,
+    version,
+    entryPath,
+    runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+  });
+  await db.getRepository('lightExtensionRuntimeArtifacts').create({
+    values: {
+      artifactHash,
+      runtimeCodeHash,
+      code,
+      version,
+      entryPath,
+      runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+      byteSize: Buffer.byteLength(code, 'utf8'),
+    },
+  });
+  return { artifactHash, runtimeCodeHash };
 }
 
 function validActionFiles() {
