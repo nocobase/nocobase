@@ -14,6 +14,8 @@ import { useChatMessageActions } from './useChatMessageActions';
 import { UserDecision } from '../../types';
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 export const useToolCallActions = ({ messageId }: { messageId: string }) => {
   const app = useApp();
   const api = app.apiClient;
@@ -60,12 +62,23 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
     const toolCallResults: { id: string; result: unknown }[] = [];
     for (const toolCall of res.data.toolCalls) {
       const t = toolsMap.get(toolCall.name);
-      if (t?.invoke) {
-        const result = await t.invoke(app, toolCall.args);
-        toolCallResults.push({
-          id: toolCall.id,
-          result,
-        });
+      const decision = toolCall.userDecision as { type?: unknown } | undefined;
+      if (t?.invoke && decision?.type !== 'reject') {
+        try {
+          const result = await t.invoke(app, toolCall.args);
+          toolCallResults.push({
+            id: toolCall.id,
+            result,
+          });
+        } catch (error) {
+          toolCallResults.push({
+            id: toolCall.id,
+            result: {
+              status: 'error',
+              content: getErrorMessage(error),
+            },
+          });
+        }
       }
       toolCallIds.push(toolCall.id);
     }

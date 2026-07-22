@@ -11,12 +11,14 @@ import { Model, Op, Transaction, Transactionable } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
+import type { FrontendToolManifest } from '../../common/frontend-tools';
 
 export type AIConversationsOptions = {
   systemMessage?: unknown;
   skillSettings?: unknown;
   conversationSettings?: unknown;
   modelSettings?: unknown;
+  frontendTools?: FrontendToolManifest[];
   [key: string]: unknown;
 };
 
