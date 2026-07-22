@@ -1229,12 +1229,11 @@ export const flowSurfaceExamples = {
   },
   createPage: {
     menuRouteId: 1002,
-    title: 'Employees',
-    tabTitle: 'Overview',
-    enableTabs: true,
+    pageType: 'js-page',
+    idempotencyKey: 'employees-js-page-v1',
+    title: 'Employees workspace',
     displayTitle: true,
     documentTitle: 'Employees workspace',
-    tabDocumentTitle: 'Employees overview',
   },
   addTab: {
     target: {

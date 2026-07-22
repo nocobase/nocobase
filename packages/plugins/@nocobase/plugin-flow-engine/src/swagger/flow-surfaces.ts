@@ -1021,9 +1021,9 @@ const actionDocs: Record<string, any> = {
   },
   createPage: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Initialize a modern page for an existing bindable menu item',
+    summary: 'Create JS page',
     description: valuesCompatibilityNote(
-      'Initializes a modern page (v2) for an existing bindable menu item through `menuRouteId` first, and fills in the default BlockGridModel. Optional `layoutUid` asserts that the existing menu route belongs to the target UI layout. Optional `portalUid` asserts that it belongs to one enabled, role-accessible Multi-portal workspace and is mutually exclusive with `layoutUid`. Omitted values preserve the route scope and keep default admin compatibility. In compatibility mode, if `menuRouteId` is omitted, the old behavior still applies and a top-level menu plus page will be created automatically. Before initialization, do not call page/tab lifecycle actions such as `addTab`, `updateTab`, `moveTab`, `removeTab`, or `destroyPage`.',
+      'Pass `pageType="js-page"` to create a JS Page host without tabs or a grid. The response provides the backend-generated RunJS locator, authoring capabilities, idempotent replay signal, and truthful workspace bootstrap status. `idempotencyKey` is bound to the app and route scope; reusing it with a different request returns a conflict. If the workspace is pending or retryable after an error, retry the same request and key. When `pageType` is omitted, the existing Root Page behavior remains available and fills in the default tab and BlockGridModel. Optional `layoutUid` or `portalUid` preserves the existing navigation scope rules.',
     ),
     requestBody: requestBody('FlowSurfaceCreatePageRequest', examples.createPage),
     responses: responses('FlowSurfaceCreatePageResult'),
@@ -5151,6 +5151,17 @@ const schemas = {
           'Optional enabled, role-accessible custom Multi-portal uid. Mutually exclusive with layoutUid. With menuRouteId, the route must already belong to this portal.',
       },
       menuRouteId: STRING_OR_INTEGER_SCHEMA,
+      pageType: {
+        type: 'string',
+        enum: ['root-page', 'js-page'],
+      },
+      idempotencyKey: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 255,
+        description:
+          'Persistent create key scoped to the current app and navigation route scope. The same key and request returns the original JS Page identity.',
+      },
       pageSchemaUid: {
         type: 'string',
       },
@@ -5222,6 +5233,89 @@ const schemas = {
       gridUid: {
         type: 'string',
       },
+      pageType: {
+        type: 'string',
+        enum: ['js-page'],
+      },
+      modelUse: {
+        type: 'string',
+        enum: ['JSPageModel'],
+      },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      capabilities: ref('FlowSurfaceJSPageCapabilities'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
+      idempotentReplay: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRunJSLocator: {
+    type: 'object',
+    required: ['kind', 'modelUid', 'flowKey', 'stepKey', 'paramPath', 'versionPath'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['flowModel.step'],
+      },
+      modelUid: {
+        type: 'string',
+      },
+      flowKey: {
+        type: 'string',
+        enum: ['jsSettings'],
+      },
+      stepKey: {
+        type: 'string',
+        enum: ['runJs'],
+      },
+      paramPath: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'string',
+          enum: ['code'],
+        },
+      },
+      versionPath: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'string',
+          enum: ['version'],
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceJSPageCapabilities: {
+    type: 'object',
+    required: ['tabs', 'blocks', 'compose', 'blueprint', 'export', 'runJSWorkspace'],
+    properties: {
+      tabs: { type: 'boolean', enum: [false] },
+      blocks: { type: 'boolean', enum: [false] },
+      compose: { type: 'boolean', enum: [false] },
+      blueprint: { type: 'boolean', enum: [false] },
+      export: { type: 'boolean', enum: [false] },
+      runJSWorkspace: { type: 'boolean', enum: [true] },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRunJSWorkspaceError: {
+    type: 'object',
+    required: ['code', 'message'],
+    properties: {
+      code: { type: 'string' },
+      message: { type: 'string' },
     },
     additionalProperties: false,
   },
@@ -5561,6 +5655,15 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
     },
     additionalProperties: false,
   },

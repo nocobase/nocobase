@@ -11,3 +11,13 @@ export { default } from './plugin';
 export { inspectRunJsAuthoringCode } from './flow-surfaces/runjs-authoring';
 export { FlowModelRepository } from './repository';
 export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
+export {
+  buildFlowSurfaceRunJSLocator,
+  registerFlowSurfaceRunJSWorkspaceBootstrapPort,
+  type FlowSurfaceRunJSLocator,
+  type FlowSurfaceRunJSAuthoringContext,
+  type FlowSurfaceRunJSWorkspaceBootstrapInput,
+  type FlowSurfaceRunJSWorkspaceBootstrapPort,
+  type FlowSurfaceRunJSWorkspaceBootstrapResult,
+  type FlowSurfaceRunJSWorkspaceStatus,
+} from './flow-surfaces/page-surface-contract';

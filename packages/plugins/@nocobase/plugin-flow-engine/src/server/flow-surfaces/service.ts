@@ -157,12 +157,16 @@ import type { FlowSurfaceComposeRuntimeBlockState } from './compose-runtime';
 import { SurfaceLocator } from './locator';
 import { isPageModelUse, isPopupHostUse } from './placement';
 import {
+  bootstrapFlowSurfaceRunJSWorkspace,
+  buildFlowSurfaceJSPageCapabilities,
+  buildFlowSurfaceRunJSLocator,
   isRouteBackedPageUse,
   JS_PAGE_MODEL_USE,
   supportsPageBlockAuthoring,
   supportsPageTabs,
   supportsStandardPageBlueprint,
   throwJSPageOperationUnsupported,
+  type FlowSurfaceRunJSAuthoringContext,
 } from './page-surface-contract';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
@@ -668,6 +672,7 @@ const FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE = 'exportBlueprint v1 only
 type FlowSurfaceRuntimeOptions = {
   transaction?: any;
   currentRoles?: FlowSurfaceRequestRoles;
+  authoringContext?: FlowSurfaceRunJSAuthoringContext;
   enabledPackages?: ReadonlySet<string>;
   popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
   popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
@@ -2538,6 +2543,7 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
   ) {
+    const createJSPageHost = values.pageType === 'js-page';
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
     const routeScope = await this.resolveRequestedDesktopRouteScope(values, parentRoute, 'createMenu', options);
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
@@ -2566,22 +2572,24 @@ export class FlowSurfacesService {
         options: {
           [FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]: true,
         },
-        children: [
-          {
-            type: 'tabs',
-            sort: this.allocateRouteSortValue(1),
-            title: tabTitle,
-            icon: values.tabIcon,
-            schemaUid: tabSchemaUid,
-            tabSchemaName,
-            hidden: true,
-            parentId: null,
-            options: {
-              documentTitle: values.tabDocumentTitle,
-              flowRegistry: this.normalizeEventFlowRegistry('createMenu', values.tabFlowRegistry || {}),
-            },
-          },
-        ],
+        children: createJSPageHost
+          ? []
+          : [
+              {
+                type: 'tabs',
+                sort: this.allocateRouteSortValue(1),
+                title: tabTitle,
+                icon: values.tabIcon,
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hidden: true,
+                parentId: null,
+                options: {
+                  documentTitle: values.tabDocumentTitle,
+                  flowRegistry: this.normalizeEventFlowRegistry('createMenu', values.tabFlowRegistry || {}),
+                },
+              },
+            ],
       },
       transaction: options.transaction,
     });
@@ -2599,6 +2607,13 @@ export class FlowSurfacesService {
     const tabRoute = _.sortBy(_.castArray(route?.get?.('children') || []), 'sort')[0];
 
     await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, options.transaction);
+    if (createJSPageHost) {
+      return this.buildMenuResult(route, {
+        pageSchemaUid,
+        menuSchemaUid,
+        pageUid,
+      });
+    }
     const pageTree = buildPersistedRootPageModel({
       pageUid,
       pageTitle: title,
@@ -9170,10 +9185,336 @@ export class FlowSurfacesService {
     };
   }
 
+  private isBindableMenuRoutePendingJSPageInitialization(
+    route: any,
+    structure: Awaited<ReturnType<FlowSurfacesService['loadRouteBackedPageStructure']>>,
+  ) {
+    const routeOptions = this.readRouteOptions(route);
+    if (this.readRouteField(route, 'type') !== 'flowPage' || !routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
+      return false;
+    }
+    if (!structure.pageModel && !structure.tabRoutes.length) {
+      return true;
+    }
+    return this.isBindableMenuRoutePendingInitialization(route, structure);
+  }
+
+  private async bootstrapRunJSHost(
+    hostKind: 'js-page' | 'js-block',
+    modelUid: string,
+    transaction: any,
+    authoringContext?: FlowSurfaceRunJSAuthoringContext,
+  ) {
+    if (!transaction) {
+      throwInternalError(
+        `flowSurfaces ${hostKind} RunJS workspace bootstrap requires the create transaction`,
+        'FLOW_SURFACE_RUNJS_BOOTSTRAP_TRANSACTION_REQUIRED',
+      );
+    }
+    const runJSLocator = buildFlowSurfaceRunJSLocator(modelUid);
+    const workspace = await bootstrapFlowSurfaceRunJSWorkspace(this.plugin.app, {
+      hostKind,
+      locator: runJSLocator,
+      transaction,
+      authoringContext: authoringContext || {},
+    });
+    return {
+      runJSLocator,
+      workspaceStatus: workspace.status,
+      workspaceRetryable: workspace.retryable,
+      ...(workspace.error ? { workspaceError: workspace.error } : {}),
+    };
+  }
+
+  private async initializeJSPageForRoute(
+    route: any,
+    values: Record<string, any>,
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
+  ) {
+    const transaction = options.transaction;
+    const routeId = this.readRouteField(route, 'id');
+    const pageSchemaUid = this.readRouteField(route, 'schemaUid');
+    const structure = await this.loadRouteBackedPageStructure(route, transaction);
+    await this.resolveExistingDesktopRouteScope(values, route, 'createPage', options);
+    const routeOptions = this.readRouteOptions(route);
+    if (!this.isBindableMenuRoutePendingJSPageInitialization(route, structure)) {
+      throwBadRequest(`flowSurfaces createPage does not allow re-initializing menu route '${routeId}'`);
+    }
+    this.assertVisibleNavigationRouteIconUpdate('createPage', 'values', route, values);
+
+    if (structure.pageModel?.uid) {
+      await this.removeNodeTreeWithBindings(structure.pageModel.uid, transaction);
+    }
+    for (const tabRoute of structure.tabRoutes) {
+      const tabSchemaUid = this.readRouteField(tabRoute, 'schemaUid');
+      if (tabSchemaUid) {
+        await this.routeSync.removeTabAnchorTree(String(tabSchemaUid), transaction);
+      }
+      await this.db.getRepository('desktopRoutes').destroy({
+        filterByTk: String(this.readRouteField(tabRoute, 'id')),
+        transaction,
+      });
+    }
+
+    const menuSchemaUid = this.readRouteField(route, 'menuSchemaUid');
+    const title = values.title || this.readRouteField(route, 'title') || pageSchemaUid;
+    const displayTitle = values.displayTitle !== false;
+    await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
+    await this.db.getRepository('desktopRoutes').update({
+      filterByTk: String(routeId),
+      values: {
+        title,
+        icon: Object.prototype.hasOwnProperty.call(values, 'icon') ? values.icon : this.readRouteField(route, 'icon'),
+        ...(!_.isNil(menuSchemaUid) && menuSchemaUid !== '' ? { menuSchemaUid } : {}),
+        enableTabs: false,
+        enableHeader: values.enableHeader,
+        displayTitle,
+        options: {
+          ...routeOptions,
+          ...(values.routeOptions || {}),
+          pageType: 'js-page',
+        },
+      },
+      transaction,
+    });
+
+    const pageUid = await this.repository.upsertModel(
+      {
+        uid: values.pageUid || uid(),
+        parentId: pageSchemaUid,
+        subKey: 'page',
+        subType: 'object',
+        use: JS_PAGE_MODEL_USE,
+        props: {
+          routeId,
+          title,
+          displayTitle,
+        },
+        stepParams: {
+          pageSettings: {
+            general: {
+              title,
+              documentTitle: values.documentTitle,
+              displayTitle,
+            },
+          },
+        },
+      },
+      { transaction },
+    );
+    const workspace = await this.bootstrapRunJSHost('js-page', pageUid, transaction, options.authoringContext);
+
+    return {
+      routeId,
+      parentMenuRouteId: this.readRouteField(route, 'parentId') ?? null,
+      pageSchemaUid,
+      ...(!_.isNil(menuSchemaUid) && menuSchemaUid !== '' ? { menuSchemaUid } : {}),
+      pageUid,
+      pageType: 'js-page',
+      modelUse: JS_PAGE_MODEL_USE,
+      capabilities: buildFlowSurfaceJSPageCapabilities(),
+      ...workspace,
+      idempotentReplay: false,
+    };
+  }
+
+  private normalizeJSPageIdempotencyKey(value: unknown) {
+    if (_.isNil(value) || value === '') {
+      return undefined;
+    }
+    const idempotencyKey = String(value).trim();
+    if (!idempotencyKey) {
+      throwBadRequest(
+        'flowSurfaces createPage idempotencyKey must be a non-empty string',
+        'FLOW_SURFACE_IDEMPOTENCY_KEY_INVALID',
+      );
+    }
+    if (idempotencyKey.length > 255) {
+      throwBadRequest(
+        'flowSurfaces createPage idempotencyKey must be at most 255 characters',
+        'FLOW_SURFACE_IDEMPOTENCY_KEY_INVALID',
+      );
+    }
+    return idempotencyKey;
+  }
+
+  private async resolveJSPageIdempotencyScope(
+    values: Record<string, any>,
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    },
+  ) {
+    let route;
+    let parentMenuRouteId: string | null = null;
+    let routeScope: FlowSurfaceDesktopRouteScope;
+    if (!_.isNil(values.menuRouteId) && values.menuRouteId !== '') {
+      route = await this.assertMenuRouteBindable(values.menuRouteId, options.transaction);
+      routeScope = await this.resolveExistingDesktopRouteScope(values, route, 'createPage', options);
+      parentMenuRouteId = String(this.readRouteField(route, 'id'));
+    } else {
+      const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
+      routeScope = await this.resolveRequestedDesktopRouteScope(values, parentRoute, 'createPage', options);
+      const resolvedParentId = this.readRouteField(parentRoute, 'id');
+      parentMenuRouteId = _.isNil(resolvedParentId) ? null : String(resolvedParentId);
+    }
+    const scopeKey = this.buildSurfaceFingerprint({
+      parentMenuRouteId,
+      portalUids: [...routeScope.portalUids].sort(),
+      layoutUids: [...routeScope.layoutUids].sort(),
+    });
+    return { route, scopeKey };
+  }
+
+  private getFlowSurfaceAppName() {
+    const app = this.plugin.app as typeof this.plugin.app & { name?: string };
+    const appName = String(app.name || '').trim();
+    if (!appName) {
+      throwInternalError(
+        'flowSurfaces createPage requires a stable application name for idempotency',
+        'FLOW_SURFACE_APPLICATION_IDENTITY_REQUIRED',
+      );
+    }
+    return appName;
+  }
+
+  private async retryJSPageWorkspaceBootstrap(
+    storedResult: Record<string, unknown>,
+    transaction: any,
+    authoringContext?: FlowSurfaceRunJSAuthoringContext,
+  ): Promise<Record<string, unknown>> {
+    if (storedResult.workspaceStatus === 'ready') {
+      return storedResult;
+    }
+    const pageUid = String(storedResult.pageUid || '').trim();
+    if (!pageUid) {
+      throwInternalError(
+        'flowSurfaces createPage idempotency record is missing pageUid',
+        'FLOW_SURFACE_IDEMPOTENCY_RESULT_INVALID',
+      );
+    }
+    const workspace = await this.bootstrapRunJSHost('js-page', pageUid, transaction, authoringContext);
+    const { workspaceError: _previousWorkspaceError, ...currentResult } = storedResult;
+    return {
+      ...currentResult,
+      ...workspace,
+    };
+  }
+
+  private async createJSPage(
+    values: Record<string, any>,
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
+  ) {
+    const idempotencyKey = this.normalizeJSPageIdempotencyKey(values.idempotencyKey);
+    const idempotencyContext = idempotencyKey ? await this.resolveJSPageIdempotencyScope(values, options) : undefined;
+    const appName = this.getFlowSurfaceAppName();
+    const requestHash = this.buildSurfaceFingerprint(_.omit(values, ['idempotencyKey']));
+    const identityHash = idempotencyKey
+      ? this.buildSurfaceFingerprint({
+          action: 'create-js-page',
+          appName,
+          scopeKey: idempotencyContext?.scopeKey,
+          idempotencyKey,
+        })
+      : undefined;
+    const idempotencyRepository = this.db.getRepository('flowSurfaceIdempotencyKeys');
+    let existingRecord = null;
+    if (identityHash && idempotencyKey && idempotencyContext) {
+      const [record, created] = await idempotencyRepository.model.findOrCreate({
+        where: { identityHash },
+        defaults: {
+          uid: uid(),
+          identityHash,
+          appName,
+          action: 'create-js-page',
+          scopeKey: idempotencyContext.scopeKey,
+          idempotencyKey,
+          requestHash,
+          status: 'creating',
+        },
+        transaction: options.transaction,
+      });
+      if (!created) {
+        existingRecord = record;
+      }
+    }
+
+    if (existingRecord) {
+      if (this.readRouteField(existingRecord, 'requestHash') !== requestHash) {
+        throwConflict(
+          'flowSurfaces createPage idempotencyKey was already used with a different request in this route scope',
+          'FLOW_SURFACE_IDEMPOTENCY_CONFLICT',
+        );
+      }
+      const storedResult = this.readRouteField(existingRecord, 'result') as Record<string, unknown> | null;
+      if (!storedResult) {
+        throwConflict(
+          'flowSurfaces createPage with this idempotencyKey is still in progress; retry the same request',
+          'FLOW_SURFACE_IDEMPOTENCY_IN_PROGRESS',
+        );
+      }
+      const refreshedResult = await this.retryJSPageWorkspaceBootstrap(
+        storedResult,
+        options.transaction,
+        options.authoringContext,
+      );
+      await idempotencyRepository.update({
+        filter: { identityHash },
+        values: { result: refreshedResult },
+        transaction: options.transaction,
+      });
+      return {
+        ...refreshedResult,
+        idempotentReplay: true,
+      };
+    }
+
+    let route = idempotencyContext?.route;
+    if (!route) {
+      if (!_.isNil(values.menuRouteId) && values.menuRouteId !== '') {
+        route = await this.assertMenuRouteBindable(values.menuRouteId, options.transaction);
+      } else {
+        const createdMenu = await this.createFlowMenuItem(values, options);
+        route = await this.assertMenuRouteBindable(createdMenu.routeId, options.transaction);
+      }
+    }
+    const result = await this.initializeJSPageForRoute(route, values, options);
+    if (identityHash) {
+      await idempotencyRepository.update({
+        filter: { identityHash },
+        values: {
+          status: 'completed',
+          result,
+        },
+        transaction: options.transaction,
+      });
+    }
+    return result;
+  }
+
   async createPage(
     values: Record<string, any>,
-    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
   ) {
+    const createJSPageHost = values.pageType === 'js-page';
+    if (createJSPageHost) {
+      const result = await this.createJSPage(values, options);
+      await this.persistCreatedKeysForAction('createPage', values, result, options.transaction);
+      return result;
+    }
     let result;
     if (!_.isNil(values.menuRouteId) && values.menuRouteId !== '') {
       const route = await this.assertMenuRouteBindable(values.menuRouteId, options.transaction);
@@ -9835,6 +10176,7 @@ export class FlowSurfacesService {
       {
         ...options,
         skipDefaultBlockActions: true,
+        skipRunJSWorkspaceBootstrap: true,
       },
     );
     const templateFieldsResult = await this.applyTemplateFieldsToBlock(
@@ -10191,6 +10533,8 @@ export class FlowSurfacesService {
       skipAuthoringValidation?: boolean;
       explicitFields?: boolean;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+      skipRunJSWorkspaceBootstrap?: boolean;
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
@@ -10221,9 +10565,18 @@ export class FlowSurfacesService {
     }
     if (templateRef) {
       const result = await this.addBlockFromTemplate(values, templateRef, options);
-      await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(result?.uid, 'flowSurfaces.addBlock', options);
-      return result;
+      const createdNode = await this.repository.findModelById(result.uid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      const runJSWorkspace =
+        createdNode?.use === 'JSBlockModel' && !options.skipRunJSWorkspaceBootstrap
+          ? await this.bootstrapRunJSHost('js-block', result.uid, options.transaction, options.authoringContext)
+          : undefined;
+      const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
+      await this.persistCreatedKeysForAction('addBlock', values, publicResult, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addBlock', options);
+      return publicResult;
     }
     const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
     const target = await this.prepareWriteTarget('addBlock', values?.target, values, options);
@@ -10671,9 +11024,14 @@ export class FlowSurfacesService {
         options,
       );
     }
-    await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addBlock', options);
-    return result;
+    const runJSWorkspace =
+      catalogItem.use === 'JSBlockModel' && !options.skipRunJSWorkspaceBootstrap
+        ? await this.bootstrapRunJSHost('js-block', result.uid, options.transaction, options.authoringContext)
+        : undefined;
+    const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
+    await this.persistCreatedKeysForAction('addBlock', values, publicResult, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addBlock', options);
+    return publicResult;
   }
 
   async addField(
@@ -11439,7 +11797,10 @@ export class FlowSurfacesService {
     return result;
   }
 
-  async addBlocks(values: Record<string, any>) {
+  async addBlocks(
+    values: Record<string, any>,
+    requestOptions: { authoringContext?: FlowSurfaceRunJSAuthoringContext } = {},
+  ) {
     const enabledPackages = await this.resolveEnabledPluginPackages();
     await assertFlowSurfaceAuthoringPayload('addBlocks', values, {
       enabledPackages,
@@ -11463,6 +11824,7 @@ export class FlowSurfacesService {
             ...options,
             preserveSingleScopeDataBlockTitle,
             skipAuthoringValidation: true,
+            authoringContext: requestOptions.authoringContext,
           },
         ),
     });
