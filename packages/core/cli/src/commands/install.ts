@@ -107,6 +107,7 @@ const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
 const DEFAULT_INSTALL_DEVELOPMENT_MODE = 'no-code';
 const DEFAULT_INSTALL_PORTAL_NAME = 'admin';
+const DEFAULT_INSTALL_PORTAL_TEMPLATE = 'git@github.com:nocobase/admin-starter.git';
 const INSTALL_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
 
 function toOptionalPromptString(value: unknown): string | undefined {
@@ -798,7 +799,8 @@ export default class Install extends Command {
       portalTemplate: {
         type: 'text',
         message: installText('prompts.portalTemplate.message'),
-        placeholder: 'git@github.com:nocobase/admin-starter.git',
+        placeholder: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        yesInitialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
         hidden: (values) => !isVibeCodingMode(values),
         required: true,
       },

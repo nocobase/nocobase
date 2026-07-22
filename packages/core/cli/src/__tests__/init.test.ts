@@ -2259,6 +2259,8 @@ test('nb init seeds the configured docker registry into web UI defaults', async 
 
 test('nb init seeds the configured default portal template into setup defaults', async () => {
   const { default: Init } = await import('../commands/init.js');
+  const previous = process.env.NB_CLI_ROOT;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-portal-template-'));
 
   const buildDynamicInitialValuesForInstall = (
     Init as unknown as {
@@ -2271,8 +2273,10 @@ test('nb init seeds the configured default portal template into setup defaults',
 
   const { setCliConfigValue, deleteCliConfigValue } = await import('../lib/cli-config.js');
 
-  await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
   try {
+    process.env.NB_CLI_ROOT = tempHome;
+    await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
+
     await expect(
       buildDynamicInitialValuesForInstall(
         { yes: false },
@@ -2302,6 +2306,158 @@ test('nb init seeds the configured default portal template into setup defaults',
     ).resolves.not.toHaveProperty('portalTemplate');
   } finally {
     await deleteCliConfigValue('default-portal-template', { scope: 'global' });
+    if (previous === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previous;
+    }
+    await rm(tempHome, { recursive: true, force: true });
+  }
+});
+
+test('nb init --yes uses the configured default portal template as a yes initial value', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const { setCliConfigValue, deleteCliConfigValue } = await import('../lib/cli-config.js');
+  const { runPromptCatalog } =
+    await vi.importActual<typeof import('../lib/prompt-catalog.js')>('../lib/prompt-catalog.js');
+  const previousCliRoot = process.env.NB_CLI_ROOT;
+  const originalArgv = process.argv;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-portal-template-yes-'));
+  process.argv = [
+    'node',
+    'nb',
+    'init',
+    '--yes',
+    '--env',
+    'app2628',
+    '--version=pr-10155',
+    '--docker-registry=registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
+    '--docker-platform=linux/amd64',
+    '--db-dialect=mysql',
+    '--db-underscored',
+    '--auth-type=basic',
+    '--development-mode',
+    'vibe-coding',
+  ];
+
+  try {
+    process.env.NB_CLI_ROOT = tempHome;
+    await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
+    mocks.runPromptCatalog.mockImplementation(runPromptCatalog);
+
+    const runCommand = vi.fn(async () => undefined);
+    const command = Object.assign(Object.create(Init.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          yes: true,
+          ui: false,
+          env: 'app2628',
+          version: 'pr-10155',
+          'docker-registry': 'registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
+          'docker-platform': 'linux/amd64',
+          'db-dialect': 'mysql',
+          'db-underscored': true,
+          'auth-type': 'basic',
+          'development-mode': 'vibe-coding',
+        },
+      })),
+      config: { runCommand },
+      log: mocks.log,
+      error: mocks.error,
+      exit: (code?: number) => {
+        throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+      },
+    });
+
+    await Init.prototype.run.call(command);
+
+    expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.yesInitialValues).toMatchObject({
+      portalTemplate: '/workspace/portal-template',
+    });
+    const installArgv = runCommand.mock.calls.find(([commandName]) => commandName === 'install')?.[1] as
+      | string[]
+      | undefined;
+    expect(installArgv).toEqual(expect.arrayContaining(['--portal-template', '/workspace/portal-template']));
+  } finally {
+    process.argv = originalArgv;
+    await deleteCliConfigValue('default-portal-template', { scope: 'global' });
+    if (previousCliRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousCliRoot;
+    }
+    await rm(tempHome, { recursive: true, force: true });
+  }
+});
+
+test('nb init --yes uses the built-in portal template when no config default is set', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const { runPromptCatalog } =
+    await vi.importActual<typeof import('../lib/prompt-catalog.js')>('../lib/prompt-catalog.js');
+  const previousCliRoot = process.env.NB_CLI_ROOT;
+  const originalArgv = process.argv;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-portal-template-builtin-'));
+  process.argv = [
+    'node',
+    'nb',
+    'init',
+    '--yes',
+    '--env',
+    'app2628',
+    '--version=pr-10155',
+    '--docker-registry=registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
+    '--docker-platform=linux/amd64',
+    '--db-dialect=mysql',
+    '--db-underscored',
+    '--auth-type=basic',
+    '--development-mode',
+    'vibe-coding',
+  ];
+
+  try {
+    process.env.NB_CLI_ROOT = tempHome;
+    mocks.runPromptCatalog.mockImplementation(runPromptCatalog);
+
+    const runCommand = vi.fn(async () => undefined);
+    const command = Object.assign(Object.create(Init.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          yes: true,
+          ui: false,
+          env: 'app2628',
+          version: 'pr-10155',
+          'docker-registry': 'registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
+          'docker-platform': 'linux/amd64',
+          'db-dialect': 'mysql',
+          'db-underscored': true,
+          'auth-type': 'basic',
+          'development-mode': 'vibe-coding',
+        },
+      })),
+      config: { runCommand },
+      log: mocks.log,
+      error: mocks.error,
+      exit: (code?: number) => {
+        throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+      },
+    });
+
+    await Init.prototype.run.call(command);
+
+    const installArgv = runCommand.mock.calls.find(([commandName]) => commandName === 'install')?.[1] as
+      | string[]
+      | undefined;
+    expect(installArgv).toEqual(
+      expect.arrayContaining(['--portal-template', 'git@github.com:nocobase/admin-starter.git']),
+    );
+  } finally {
+    process.argv = originalArgv;
+    if (previousCliRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousCliRoot;
+    }
+    await rm(tempHome, { recursive: true, force: true });
   }
 });
 

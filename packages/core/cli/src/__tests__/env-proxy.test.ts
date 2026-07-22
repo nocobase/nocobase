@@ -177,11 +177,14 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
     'if ($uri !~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {',
   );
   expect(bundle.appConfigContent).toContain('root /workspace/app/storage;');
+  expect(bundle.appConfigContent).toContain('if ($portal_path = "") {');
+  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/$subapp/$portal/dist/index.html break;');
   expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path');
   expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path/');
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
   expect(bundle.appConfigContent).toContain('return 308 /console/x/$portal/$is_args$args;');
   expect(bundle.appConfigContent).toContain('if ($uri !~ ^/console/x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {');
+  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/index.html break;');
   expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path');
   expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path/');
   expect(bundle.appConfigContent.indexOf('location ^~ /console/x/apps/ {')).toBeLessThan(

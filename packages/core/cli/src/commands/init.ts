@@ -51,6 +51,7 @@ const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DEFAULT_INIT_DEVELOPMENT_MODE = 'no-code';
 const DEFAULT_INIT_PORTAL_NAME = 'admin';
+const DEFAULT_INIT_PORTAL_TEMPLATE = 'git@github.com:nocobase/admin-starter.git';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const INIT_SETUP_MODES = ['install-new', 'manage-local', 'connect-remote'] as const;
 const INIT_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
@@ -502,7 +503,8 @@ Prompt modes:
     portalTemplate: installNewOnly({
       type: 'text',
       message: initText('prompts.portalTemplate.message'),
-      placeholder: 'git@github.com:nocobase/admin-starter.git',
+      placeholder: DEFAULT_INIT_PORTAL_TEMPLATE,
+      yesInitialValue: DEFAULT_INIT_PORTAL_TEMPLATE,
       hidden: (values) => !isVibeCodingMode(values),
       required: true,
     }),
@@ -527,11 +529,21 @@ Prompt modes:
     installAccessToken: installConnectionAccessTokenPrompt,
   };
 
-  private buildPromptCatalog(flags: { 'skip-auth'?: boolean }, options: { defaultApiHost: string }): PromptsCatalog {
+  private buildPromptCatalog(
+    flags: { 'skip-auth'?: boolean },
+    options: { defaultApiHost: string; defaultPortalTemplate?: string },
+  ): PromptsCatalog {
     const prompts: PromptsCatalog = {
       ...Init.prompts,
       installApiBaseUrl: createInstallConnectionApiBaseUrlPrompt(options.defaultApiHost),
     };
+    const defaultPortalTemplate = String(options.defaultPortalTemplate ?? '').trim();
+    if (defaultPortalTemplate) {
+      prompts.portalTemplate = {
+        ...prompts.portalTemplate,
+        yesInitialValue: defaultPortalTemplate,
+      } as TextPromptBlock;
+    }
 
     if (flags['skip-auth']) {
       const accessTokenPrompt: TextPromptBlock = {
@@ -831,7 +843,8 @@ Prompt modes:
     );
     const defaultUiHost = await resolveDefaultUiHost();
     const defaultApiHost = await resolveDefaultApiHost();
-    const promptCatalog = this.buildPromptCatalog(normalizedFlags, { defaultApiHost });
+    const defaultPortalTemplate = String(dynamicInitialValues.portalTemplate ?? '').trim();
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags, { defaultApiHost, defaultPortalTemplate });
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
         stages: Init.buildWebUiStages(promptCatalog),
@@ -861,6 +874,7 @@ Prompt modes:
           ? { setupMode: normalizeInitSetupMode(presetValues.hasNocobase) }
           : {}),
       },
+      yesInitialValues: pickKeys(dynamicInitialValues, ['portalTemplate']),
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
       hooks: {
