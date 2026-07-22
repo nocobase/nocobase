@@ -54,6 +54,11 @@ const STRUCTURED_ASSOCIATION_FIELD_USES = new Set([
   'DisplaySubListFieldModel',
 ]);
 
+const DISPLAY_TO_EDITABLE_USE: Record<string, string> = {
+  DisplaySubItemFieldModel: 'SubFormFieldModel',
+  DisplaySubListFieldModel: 'SubFormListFieldModel',
+};
+
 function createEmptyState(): AssociationFieldComponentState {
   return {
     version: 2,
@@ -159,7 +164,8 @@ export async function rebuildAssociationFieldSubModel({
 
   const savedTarget = isModeChange ? state.byMode[targetMode] : undefined;
   const targetSnapshot = savedTarget?.use === targetUse ? savedTarget : undefined;
-  state.byMode[targetMode] = targetSnapshot || { use: targetUse };
+  // The active model already owns the restored tree. Keep only its use in state to avoid storing a duplicate snapshot.
+  state.byMode[targetMode] = { use: targetUse };
   setComponentState(parentModel, state);
 
   return rebuildFieldSubModel({
@@ -173,9 +179,16 @@ export async function rebuildAssociationFieldSubModel({
   });
 }
 
-export function normalizeLegacyAssociationDisplaySubModels(
-  subModels?: CreateModelOptions['subModels'],
-): CreateModelOptions['subModels'] {
+export function normalizeLegacyAssociationDisplaySubModels(options: {
+  parentModel: AssociationFieldParentModel;
+  displayUse: string;
+  subModels?: CreateModelOptions['subModels'];
+}): CreateModelOptions['subModels'] {
+  const { parentModel, displayUse, subModels } = options;
+  const editableUse = DISPLAY_TO_EDITABLE_USE[displayUse];
+  if (!editableUse) {
+    return subModels;
+  }
   const sourceGrid = subModels?.grid;
   if (Array.isArray(sourceGrid) || !isCreateModelOptions(sourceGrid)) {
     return subModels;
@@ -183,6 +196,18 @@ export function normalizeLegacyAssociationDisplaySubModels(
   if (normalizeModelUse(sourceGrid.use) !== 'FormGridModel') {
     return subModels;
   }
+
+  const state = getComponentState(parentModel);
+  if (!state.byMode.editable) {
+    state.byMode.editable = {
+      use: editableUse,
+      subModels: {
+        grid: cloneDeep(sourceGrid),
+      },
+    };
+  }
+  state.byMode.readPretty = { use: displayUse };
+  setComponentState(parentModel, state);
 
   const { grid: _grid, ...compatibleSubModels } = cloneDeep(subModels);
   return compatibleSubModels;

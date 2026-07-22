@@ -188,5 +188,16 @@ describe('association field component state actions', () => {
       uid: 'details-grid-default',
       use: 'DetailsGridModel',
     });
+    const state = parentModel.getStepParams('editItemSettings', 'model')?.associationFieldComponentState;
+    expect(state.byMode.readPretty).toEqual({ use: 'DisplaySubItemFieldModel' });
+    expect(state.byMode.editable).toMatchObject({
+      use: 'SubFormFieldModel',
+      subModels: {
+        grid: {
+          uid: 'form-grid',
+          use: 'FormGridModel',
+        },
+      },
+    });
   });
 });

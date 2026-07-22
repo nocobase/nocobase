@@ -135,15 +135,31 @@ describe('associationFieldSubModelState', () => {
     });
     const state = parentModel.getStepParams('editItemSettings', 'model')?.associationFieldComponentState;
     expect(Object.keys(state.byMode).sort()).toEqual(['editable', 'readPretty']);
+    expect(state.byMode.editable).toEqual({ use: 'SubFormFieldModel' });
+    expect(state.byMode.readPretty).toMatchObject({
+      use: 'DisplaySubItemFieldModel',
+      subModels: {
+        grid: {
+          use: 'DetailsGridModel',
+        },
+      },
+    });
     expect(state).not.toHaveProperty('subModelsByUse');
   });
 
-  it('drops incompatible legacy form grids and keeps unrelated submodels', () => {
+  it.each([
+    ['DisplaySubItemFieldModel', 'SubFormFieldModel'],
+    ['DisplaySubListFieldModel', 'SubFormListFieldModel'],
+  ])('preserves legacy %s form grids as the %s editable snapshot', (displayUse, editableUse) => {
     const normalized = normalizeLegacyAssociationDisplaySubModels({
-      ...createFormSubModels(),
-      other: {
-        use: 'OtherModel',
-        uid: 'other-model',
+      parentModel,
+      displayUse,
+      subModels: {
+        ...createFormSubModels(),
+        other: {
+          use: 'OtherModel',
+          uid: 'other-model',
+        },
       },
     });
 
@@ -151,6 +167,52 @@ describe('associationFieldSubModelState', () => {
     expect(normalized?.other).toMatchObject({
       use: 'OtherModel',
       uid: 'other-model',
+    });
+    const state = parentModel.getStepParams('editItemSettings', 'model')?.associationFieldComponentState;
+    expect(state.byMode.editable).toMatchObject({
+      use: editableUse,
+      subModels: {
+        grid: {
+          uid: 'form-grid',
+          use: 'FormGridModel',
+        },
+      },
+    });
+    expect(state.byMode.readPretty).toEqual({ use: displayUse });
+  });
+
+  it('does not overwrite an existing editable snapshot during legacy normalization', () => {
+    parentModel.setStepParams('editItemSettings', 'model', {
+      associationFieldComponentState: {
+        version: 2,
+        byMode: {
+          editable: {
+            use: 'OtherModel',
+            subModels: {
+              other: {
+                use: 'OtherModel',
+                uid: 'existing-editable-snapshot',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    normalizeLegacyAssociationDisplaySubModels({
+      parentModel,
+      displayUse: 'DisplaySubItemFieldModel',
+      subModels: createFormSubModels(),
+    });
+
+    const state = parentModel.getStepParams('editItemSettings', 'model')?.associationFieldComponentState;
+    expect(state.byMode.editable).toMatchObject({
+      use: 'OtherModel',
+      subModels: {
+        other: {
+          uid: 'existing-editable-snapshot',
+        },
+      },
     });
   });
 });
