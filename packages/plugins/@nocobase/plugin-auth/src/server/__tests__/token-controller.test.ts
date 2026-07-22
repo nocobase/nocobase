@@ -12,6 +12,7 @@ import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { AuthErrorType } from '@nocobase/auth';
 import { RENEWED_JTI_CACHE_MS } from '../../constants';
+import { TokenController } from '../token-controller';
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -184,6 +185,47 @@ describe('auth', () => {
     });
 
     expect(record.get('authenticator')).toBe('app-sso');
+  });
+
+  it('waits for pending expired session token cleanup before stopping', async () => {
+    const tokenController = auth.tokenController as TokenController;
+    let resolveCleanup: (value: number) => void = () => undefined;
+    const cleanupPromise = new Promise<number>((resolve) => {
+      resolveCleanup = resolve;
+    });
+    const cleanupSpy = vi.spyOn(tokenController, 'removeSessionExpiredTokens').mockReturnValue(cleanupPromise);
+    let addSettled = false;
+    const originalDialect = process.env.DB_DIALECT;
+    process.env.DB_DIALECT = 'postgres';
+
+    try {
+      const addPromise = tokenController.add({ userId: user.id }).then(() => {
+        addSettled = true;
+      });
+
+      await vi.waitFor(() => expect(cleanupSpy).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(addSettled).toBe(true));
+      await addPromise;
+
+      let beforeStopSettled = false;
+      const beforeStopPromise = app.emitAsync('beforeStop').then(() => {
+        beforeStopSettled = true;
+      });
+
+      await Promise.resolve();
+      expect(beforeStopSettled).toBe(false);
+
+      resolveCleanup(0);
+      await beforeStopPromise;
+      expect(beforeStopSettled).toBe(true);
+    } finally {
+      resolveCleanup(0);
+      if (originalDialect === undefined) {
+        delete process.env.DB_DIALECT;
+      } else {
+        process.env.DB_DIALECT = originalDialect;
+      }
+    }
   });
 
   it('after JTI is renewed for 10s, any further renewal should fail.', async () => {
