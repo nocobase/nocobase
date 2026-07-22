@@ -1133,6 +1133,9 @@ Prompt modes:
     'db-underscored'?: boolean;
     'skip-download'?: boolean;
     'app-path'?: string;
+    'development-mode'?: string;
+    'portal-name'?: string;
+    'portal-template'?: string;
     source?: string;
     version?: string;
     replace?: boolean;
