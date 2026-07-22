@@ -419,6 +419,7 @@ export type LightExtensionMoveSourceOriginBinding = Pick<
 >;
 
 export interface LightExtensionMoveSourceInput {
+  idempotencyKey?: string;
   locator: RunJSSourceLocator;
   expectedOwnerFingerprint: string;
   sourceRepoId: string;

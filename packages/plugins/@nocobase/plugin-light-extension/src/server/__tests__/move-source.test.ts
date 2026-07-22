@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Transaction } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import type { RunJSSourceAdapterRegistry } from '../vsc-file';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -647,6 +647,58 @@ describe('MoveSourceService', () => {
     );
   });
 
+  it('returns the persisted result when a completed move operation is replayed', async () => {
+    const operationModel = createMoveOperationModel();
+    const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+    const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
+    const service = createFailureService({ saveSource, writeExternalBinding, operationModel });
+    const input = createMoveSourceInput({ idempotencyKey: 'move-sales-kpi-v1' });
+
+    const first = await service.moveSource(input, { adapterContext: {} });
+    const replay = await service.moveSource(input, { adapterContext: {} });
+
+    expect(replay).toEqual(first);
+    expect(saveSource).toHaveBeenCalledTimes(1);
+    expect(writeExternalBinding).toHaveBeenCalledTimes(1);
+    expect(operationModel.getValues()).toMatchObject({
+      idempotencyKey: 'move-sales-kpi-v1',
+      status: 'completed',
+      result: first,
+    });
+  });
+
+  it('rejects reuse of a move operation key with a different request', async () => {
+    const operationModel = createMoveOperationModel();
+    const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+    const service = createFailureService({ saveSource, operationModel });
+    const input = createMoveSourceInput({ idempotencyKey: 'move-sales-kpi-v1' });
+
+    await service.moveSource(input, { adapterContext: {} });
+    await expect(
+      service.moveSource({ ...input, entryName: 'different-entry' }, { adapterContext: {} }),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT' });
+    expect(saveSource).toHaveBeenCalledTimes(1);
+  });
+
+  it('reclaims a failed move operation for the same request', async () => {
+    const operationModel = createMoveOperationModel();
+    const saveSource = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('compile failed'))
+      .mockResolvedValueOnce({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] });
+    const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([entry]);
+    const service = createFailureService({ saveSource, operationModel, listEntries });
+    const input = createMoveSourceInput({ idempotencyKey: 'move-sales-kpi-retry' });
+
+    await expect(service.moveSource(input, { adapterContext: {} })).rejects.toThrow('compile failed');
+    await expect(service.moveSource(input, { adapterContext: {} })).resolves.toMatchObject({
+      ownerFingerprint: 'owner_after',
+    });
+
+    expect(saveSource).toHaveBeenCalledTimes(2);
+    expect(operationModel.getValues()).toMatchObject({ status: 'completed' });
+  });
+
   it.each([
     ['disabled', 'LIGHT_EXTENSION_REPO_DISABLED'],
     ['archived', 'LIGHT_EXTENSION_REPO_ARCHIVED'],
@@ -774,6 +826,8 @@ function createFailureService(options: {
   getOrCreateApplicationDefaultRepo?: ReturnType<typeof vi.fn>;
   applicationName?: string;
   onTransactionSuccess?: () => void;
+  operationModel?: ReturnType<typeof createMoveOperationModel>;
+  listEntries?: ReturnType<typeof vi.fn>;
 }): MoveSourceService {
   const transaction = options.transaction || ({ id: 'tx_failure' } as unknown as Transaction);
   return new MoveSourceService(
@@ -784,6 +838,12 @@ function createFailureService(options: {
           options.onTransactionSuccess?.();
           return result;
         },
+      },
+      getRepository: (name: string) => {
+        if (name !== 'lightExtensionMoveOperations' || !options.operationModel) {
+          throw new Error(`Unexpected repository: ${name}`);
+        }
+        return { model: options.operationModel.model };
       },
     } as unknown as Database,
     {
@@ -801,10 +861,12 @@ function createFailureService(options: {
       })),
     } as never,
     {
-      listEntries: vi
-        .fn()
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([options.movedEntry || entry]),
+      listEntries:
+        options.listEntries ||
+        vi
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([options.movedEntry || entry]),
     } as never,
     {
       prepareSaveSource: vi.fn(async () => ({ candidate: { repoId: repo.id } })),
@@ -832,6 +894,39 @@ function createFailureService(options: {
       }) as unknown as RunJSSourceAdapterRegistry,
     options.applicationName || 'main',
   );
+}
+
+function createMoveOperationModel() {
+  let values: Record<string, unknown> | undefined;
+  const record = {
+    get: (key: string) => values?.[key],
+  } as Model;
+  const model = {
+    findOrCreate: vi.fn(async (options: { defaults: Record<string, unknown> }) => {
+      if (values) {
+        return [record, false] as const;
+      }
+      values = { ...options.defaults, updatedAt: new Date() };
+      return [record, true] as const;
+    }),
+    update: vi.fn(
+      async (nextValues: Record<string, unknown>, options: { where: Record<string, unknown> }): Promise<[number]> => {
+        if (!values) {
+          return [0];
+        }
+        const matches = Object.entries(options.where).every(([key, value]) => values?.[key] === value);
+        if (!matches) {
+          return [0];
+        }
+        values = { ...values, ...nextValues, updatedAt: new Date() };
+        return [1];
+      },
+    ),
+  };
+  return {
+    model,
+    getValues: () => values,
+  };
 }
 
 function createMoveSourceInput(overrides: Partial<LightExtensionMoveSourceInput> = {}): LightExtensionMoveSourceInput {

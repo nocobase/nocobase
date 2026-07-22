@@ -123,6 +123,7 @@ function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtens
 
 function normalizeMoveSourceInput(input: ResourceActionInput): LightExtensionMoveSourceInput {
   return {
+    idempotencyKey: optionalIdempotencyKey(input),
     locator: normalizeRunJSSourceLocator(input.locator),
     expectedOwnerFingerprint: requireString(input, 'expectedOwnerFingerprint'),
     sourceRepoId: requireString(input, 'sourceRepoId'),
@@ -135,6 +136,21 @@ function normalizeMoveSourceInput(input: ResourceActionInput): LightExtensionMov
     entryName: requireString(input, 'entryName'),
     entryTitle: optionalNullableString(input, 'entryTitle'),
   };
+}
+
+function optionalIdempotencyKey(input: ResourceActionInput): string | undefined {
+  const value = input.idempotencyKey;
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (typeof value !== 'string' || !value.trim()) {
+    throw invalidInput('idempotencyKey must be a non-empty string');
+  }
+  const idempotencyKey = value.trim();
+  if (idempotencyKey.length > 255) {
+    throw invalidInput('idempotencyKey must be at most 255 characters');
+  }
+  return idempotencyKey;
 }
 
 function normalizeMoveSourceOriginBinding(value: unknown): LightExtensionMoveSourceInput['originBinding'] | undefined {
