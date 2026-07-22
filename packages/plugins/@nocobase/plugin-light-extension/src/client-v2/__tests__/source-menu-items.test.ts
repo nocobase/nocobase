@@ -83,7 +83,7 @@ describe('light extension source menu items', () => {
     expect(lightExtensionItem?.children).toBeUndefined();
     expect(repoItem?.label).toBe('Orders');
     expect(repoItem?.children).toHaveLength(1);
-    expect(entryItem?.label).toBe('Order total calculator');
+    expect(entryItem?.label).toBe('order-total');
     expect(entryItem?.searchText).toContain('Orders');
     expect(entryItem?.searchText).toContain('order-total');
 
@@ -108,7 +108,7 @@ describe('light extension source menu items', () => {
         repoName: 'orders',
         repoTitle: 'Orders',
         entryId: 'entry_order_total',
-        entryTitle: 'Order total calculator',
+        entryTitle: 'order-total',
         entryName: 'order-total',
         entryPath: 'src/client/js-blocks/order-total/index.tsx',
         kind: 'js-block',
@@ -129,7 +129,7 @@ describe('light extension source menu items', () => {
           kind: 'js-block',
         },
       }),
-    ).resolves.toBe('Orders / Order total calculator');
+    ).resolves.toBe('Orders / order-total');
     expect(request).toHaveBeenCalledTimes(1);
   });
 
@@ -153,7 +153,7 @@ describe('light extension source menu items', () => {
 
     expect(items?.[0]?.label).toBe('Light extensions');
     expect(repoItem?.label).toBe('Orders');
-    expect(repoItem?.children?.map((item) => item.label)).toEqual(['Order total calculator', 'Order chart block']);
+    expect(repoItem?.children?.map((item) => item.label)).toEqual(['order-total', 'order-chart']);
     expect(repoItem?.searchText).toContain('order-chart');
     expect(request).toHaveBeenCalledTimes(1);
   });
@@ -178,7 +178,7 @@ describe('light extension source menu items', () => {
           kind: 'js-block',
         },
       }),
-    ).resolves.toBe('repo_orders / Order total calculator');
+    ).resolves.toBe('repo_orders / order-total');
   });
 });
 

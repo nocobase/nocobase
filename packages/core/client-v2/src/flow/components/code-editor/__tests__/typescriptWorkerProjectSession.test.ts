@@ -8,7 +8,7 @@
  */
 
 import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createTypeScriptProjectSession as createProjectSession,
@@ -35,6 +35,7 @@ import {
   WorkerBackedTypeScriptProjectSession,
   type TypeScriptWorkerFactory,
 } from '../typescriptWorkerProjectSession';
+import { shutdownTypeScriptProjectSessionSuite } from './helpers/withTypeScriptProjectSession';
 
 function fakePack(answer = 42): RunJSTypeLibraryPack {
   return {
@@ -74,6 +75,7 @@ function deferred<T>() {
 }
 
 const sessions = new Set<CodeEditorTypeScriptProjectSession>();
+const owners = new Set<SharedTypeScriptWorkerOwner>();
 
 function createTypeScriptProjectSession(
   options?: Parameters<typeof createProjectSession>[0],
@@ -362,8 +364,12 @@ afterEach(async () => {
   for (const session of sessions) session.dispose();
   await Promise.all([...sessions].map((session) => session.whenDisposed()));
   sessions.clear();
+  for (const owner of owners) owner.dispose();
+  owners.clear();
   clearRunJSTypeLibraryPackRegistryForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('TypeScript worker project session', () => {
   it('does not create a Worker when an unused session is disposed', async () => {
@@ -606,6 +612,53 @@ void element; void button;
     );
   });
 
+  const metadataChanges: Array<[string, (project: CodeEditorTypeScriptProject) => CodeEditorTypeScriptProject]> = [
+    ['current file', (current) => ({ ...current, currentFilePath: 'src/second.ts' })],
+    ['compiler options', (current) => ({ ...current, compilerOptions: { strict: false } })],
+    ['RunJS context', (current) => ({ ...current, runJSContext: { modelUse: 'JSBlockModel' } })],
+    ['registry', (current) => ({ ...current, typeLibraryRegistry: createRunJSTypeLibraryRegistry() })],
+    [
+      'library IDs',
+      (current) => ({
+        ...current,
+        typeLibraryIds: ['fake-lib'],
+      }),
+    ],
+    [
+      'declaration files',
+      (current) => ({
+        ...current,
+        declarationFiles: [{ content: 'declare const extra: string;', path: 'src/extra.d.ts' }],
+      }),
+    ],
+    ['auto-import rewriting', (current) => ({ ...current, rewriteBuiltInAutoImports: true })],
+  ];
+
+  it.each(metadataChanges)('increments the sync revision when %s changes', async (_name, change) => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const files = [
+      { content: 'export const first = 1;', path: 'src/first.ts', revision: 1 },
+      { content: 'export const second = 2;', path: 'src/second.ts', revision: 2 },
+    ];
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/first.ts',
+      documentRevision: 1,
+      files,
+      projectRevision: 1,
+    };
+
+    await session.getDiagnostics(currentProject);
+    await session.getDiagnostics(change(currentProject));
+
+    const syncRequests = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(syncRequests).toHaveLength(2);
+    expect(syncRequests[1]).toEqual(expect.objectContaining({ baseRevision: 1, targetRevision: 2 }));
+  });
+
   it('does not serialize or resend a warm 10 MiB project and sends only changed file revisions', async () => {
     const worker = new ProtocolTestWorker();
     const session = new WorkerBackedTypeScriptProjectSession(() => worker);
@@ -753,6 +806,7 @@ void element; void button;
     const second = createRunJSTypeLibraryRegistry();
     second.register({ id: 'fake-lib', libraryName: 'fakeLib', loader: () => fakePack(7), topLevelNames: ['fakeLib'] });
     const owner = new SharedTypeScriptWorkerOwner();
+    owners.add(owner);
     const workers: InMemoryTypeScriptWorker[] = [];
     const workerFactory = () => {
       const worker = new InMemoryTypeScriptWorker();

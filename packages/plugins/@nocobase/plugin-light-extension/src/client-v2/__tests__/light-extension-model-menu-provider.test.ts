@@ -107,6 +107,7 @@ describe('createLightExtensionModelMenuProvider', () => {
     const leaf = await findLeaf(root, entryId);
     const runJs = leaf.createModelOptions?.stepParams?.[flowKey]?.runJs;
 
+    expect(leaf.label).toBe(entryId);
     expect(leaf.createModelOptions).toMatchObject({ use: expectedUse });
     expect(leaf.useModel).toBe(expectedUse);
     expect(runJs).toEqual({
@@ -126,7 +127,7 @@ describe('createLightExtensionModelMenuProvider', () => {
     });
     if (options.target === 'column') {
       expect(leaf.createModelOptions).toMatchObject({
-        stepParams: { tableColumnSettings: { title: { title: 'Summary column' } } },
+        stepParams: { tableColumnSettings: { title: { title: 'column' } } },
       });
     }
   });

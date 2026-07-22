@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 
 import { TypeScriptWorkerOwnerProvider, useTypeScriptWorkerOwner } from '../TypeScriptWorkerOwnerProvider';
@@ -26,6 +26,7 @@ import {
   type TypeScriptWorkerRequest,
   type TypeScriptWorkerResponse,
 } from '../typescriptWorkerProtocol';
+import { shutdownTypeScriptProjectSessionSuite } from './helpers/withTypeScriptProjectSession';
 
 type ErrorListener = (event: ErrorEvent) => void;
 type MessageListener = (event: MessageEvent<TypeScriptWorkerOutgoingMessage>) => void;
@@ -122,14 +123,37 @@ const project: CodeEditorTypeScriptProject = {
   files: [{ content: 'const answer: number = 42;', path: 'src/main.ts' }],
 };
 
+const clients = new Set<TypeScriptWorkerClient>();
+const trackedOwners = new Set<SharedTypeScriptWorkerOwner>();
+const sessions = new Set<CodeEditorTypeScriptProjectSession>();
+
+function owner(): SharedTypeScriptWorkerOwner {
+  const current = new SharedTypeScriptWorkerOwner();
+  trackedOwners.add(current);
+  return current;
+}
+
 function session(owner: SharedTypeScriptWorkerOwner, factory: TypeScriptWorkerFactory) {
-  return createTypeScriptProjectSession({ workerFactory: factory, workerOwner: owner });
+  const current = createTypeScriptProjectSession({ workerFactory: factory, workerOwner: owner });
+  sessions.add(current);
+  return current;
 }
 
 async function dispose(...sessions: CodeEditorTypeScriptProjectSession[]) {
   for (const current of sessions) current.dispose();
   await Promise.all(sessions.map((current) => current.whenDisposed()));
 }
+
+afterEach(async () => {
+  await dispose(...sessions);
+  sessions.clear();
+  for (const client of clients) client.stop();
+  clients.clear();
+  for (const current of trackedOwners) current.dispose();
+  trackedOwners.clear();
+});
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('SharedTypeScriptWorkerOwner', () => {
   it('provides one lazy owner per application provider', () => {
@@ -170,9 +194,9 @@ describe('SharedTypeScriptWorkerOwner', () => {
       workers.push(worker);
       return worker;
     };
-    const owner = new SharedTypeScriptWorkerOwner();
-    const first = session(owner, factory);
-    const second = session(owner, factory);
+    const sharedOwner = owner();
+    const first = session(sharedOwner, factory);
+    const second = session(sharedOwner, factory);
 
     await first.getDiagnostics(project);
     await second.getDiagnostics(project);
@@ -185,11 +209,11 @@ describe('SharedTypeScriptWorkerOwner', () => {
     await dispose(second);
     expect(workers[0].terminateCount).toBe(1);
 
-    const third = session(owner, factory);
+    const third = session(sharedOwner, factory);
     await third.getDiagnostics(project);
     expect(workers).toHaveLength(2);
     await dispose(third);
-    owner.dispose();
+    sharedOwner.dispose();
   });
 
   it('recovers active projects after the shared worker crashes', async () => {
@@ -199,18 +223,41 @@ describe('SharedTypeScriptWorkerOwner', () => {
       workers.push(worker);
       return worker;
     };
-    const owner = new SharedTypeScriptWorkerOwner();
-    const first = session(owner, factory);
-    const second = session(owner, factory);
+    const sharedOwner = owner();
+    const first = session(sharedOwner, factory);
+    const second = session(sharedOwner, factory);
+    const firstProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/first.ts',
+      files: [{ content: 'const first: 1 = 1;', path: 'src/first.ts' }],
+    };
+    const secondProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/second.ts',
+      files: [{ content: 'const second: 2 = 2;', path: 'src/second.ts' }],
+    };
 
-    await expect(Promise.all([first.getDiagnostics(project), second.getDiagnostics(project)])).resolves.toEqual([
-      [],
-      [],
-    ]);
+    await expect(
+      Promise.all([first.getDiagnostics(firstProject), second.getDiagnostics(secondProject)]),
+    ).resolves.toEqual([[], []]);
     expect(workers).toHaveLength(2);
+    const recoveredSyncs = workers[1].messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(
+      recoveredSyncs
+        .map((message) => ({ currentFilePath: message.snapshot?.currentFilePath, files: message.snapshot?.files }))
+        .sort((left, right) => String(left.currentFilePath).localeCompare(String(right.currentFilePath))),
+    ).toEqual([
+      { currentFilePath: 'src/first.ts', files: firstProject.files },
+      { currentFilePath: 'src/second.ts', files: secondProject.files },
+    ]);
+    expect(
+      new Set(
+        workers[1].messages.filter((message) => message.kind === 'diagnostics').map((message) => message.projectId),
+      ),
+    ).toEqual(new Set(recoveredSyncs.map((message) => message.projectId)));
 
     await dispose(first, second);
-    owner.dispose();
+    sharedOwner.dispose();
   });
 
   it('keeps owners from separate applications isolated', async () => {
@@ -220,8 +267,8 @@ describe('SharedTypeScriptWorkerOwner', () => {
       workers.push(worker);
       return worker;
     };
-    const firstOwner = new SharedTypeScriptWorkerOwner();
-    const secondOwner = new SharedTypeScriptWorkerOwner();
+    const firstOwner = owner();
+    const secondOwner = owner();
     const first = session(firstOwner, factory);
     const second = session(secondOwner, factory);
 
@@ -239,6 +286,7 @@ describe('SharedTypeScriptWorkerOwner', () => {
   it('round-robins queued requests between projects', async () => {
     const worker = new FakeWorker(false, true);
     const client = new TypeScriptWorkerClient(() => worker);
+    clients.add(client);
     const first = client.request({ documentVersion: 1, kind: 'debug', projectId: 'project-a' });
     const second = client.request({ documentVersion: 1, kind: 'debug', projectId: 'project-a' });
     const third = client.request({ documentVersion: 1, kind: 'debug', projectId: 'project-b' });

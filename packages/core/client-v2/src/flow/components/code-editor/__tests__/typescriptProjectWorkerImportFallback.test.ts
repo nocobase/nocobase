@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { expect, it, vi } from 'vitest';
+import { afterAll, expect, it, vi } from 'vitest';
 
 vi.mock('../typescriptWorkerProjectSession', () => {
   throw new Error('worker chunk failed to load');
@@ -52,13 +52,21 @@ it('uses the main-thread fallback when the Worker runtime chunk fails to load', 
   const { createTypeScriptProjectSession } = await import('../typescriptProject');
   const session = createTypeScriptProjectSession();
 
-  await expect(
-    session.getDiagnostics(
-      { currentFilePath: 'main.ts', files: [{ content: 'const value = 1;', path: 'main.ts' }] },
-      'const value = 1;',
-    ),
-  ).resolves.toEqual([]);
-  expect(createMainThreadSession).toHaveBeenCalledTimes(1);
-  session.dispose();
-  await session.whenDisposed();
+  try {
+    await expect(
+      session.getDiagnostics(
+        { currentFilePath: 'main.ts', files: [{ content: 'const value = 1;', path: 'main.ts' }] },
+        'const value = 1;',
+      ),
+    ).resolves.toEqual([]);
+    expect(createMainThreadSession).toHaveBeenCalledTimes(1);
+  } finally {
+    session.dispose();
+    await session.whenDisposed();
+  }
+});
+
+afterAll(async () => {
+  const { shutdownTypeScriptProjectSessionSuite } = await import('./helpers/withTypeScriptProjectSession');
+  await shutdownTypeScriptProjectSessionSuite();
 });

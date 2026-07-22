@@ -276,7 +276,7 @@ function getRepoLabel(entry?: LightExtensionSelectableEntrySummary): string {
 }
 
 function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
-  return entry.title?.trim() || entry.entryName || entry.id;
+  return entry.entryName || entry.id;
 }
 
 function translate(ctx: FlowModelContext, key: string): string {

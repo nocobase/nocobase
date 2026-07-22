@@ -7,9 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { expect, it, vi } from 'vitest';
+import { afterAll, afterEach, expect, it, vi } from 'vitest';
 
-import { createTypeScriptProjectSession, type CodeEditorTypeScriptProject } from '../typescriptProject';
+import {
+  createTypeScriptProjectSession as createProjectSession,
+  type CodeEditorTypeScriptProject,
+  type CodeEditorTypeScriptProjectSession,
+} from '../typescriptProject';
+import { shutdownTypeScriptProjectSessionSuite } from './helpers/withTypeScriptProjectSession';
 
 const counters = vi.hoisted(() => ({
   mainRuntimeLoads: vi.fn(),
@@ -79,6 +84,24 @@ vi.mock('../typescriptProjectRuntime', () => {
     },
   };
 });
+
+const sessions = new Set<CodeEditorTypeScriptProjectSession>();
+
+function createTypeScriptProjectSession(
+  options?: Parameters<typeof createProjectSession>[0],
+): CodeEditorTypeScriptProjectSession {
+  const session = createProjectSession(options);
+  sessions.add(session);
+  return session;
+}
+
+afterEach(async () => {
+  for (const session of sessions) session.dispose();
+  await Promise.all([...sessions].map((session) => session.whenDisposed()));
+  sessions.clear();
+});
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 it('loads TypeScript implementations only for requests and keeps the main runtime out of the Worker path', async () => {
   const workerFactory = () => {

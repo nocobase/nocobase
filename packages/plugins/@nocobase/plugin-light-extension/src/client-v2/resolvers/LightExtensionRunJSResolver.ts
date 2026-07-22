@@ -437,7 +437,7 @@ function isArtifactNotFoundError(error: unknown): boolean {
 }
 
 function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
-  return entry.title?.trim() || entry.entryName || entry.id;
+  return entry.entryName || entry.id;
 }
 
 async function listLightExtensionSourceMenuItems(

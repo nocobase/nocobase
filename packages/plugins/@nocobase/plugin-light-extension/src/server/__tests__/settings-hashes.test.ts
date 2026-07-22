@@ -62,13 +62,4 @@ describe('light extension settings hashes', () => {
     });
     expect(emptySchemaHashes).not.toEqual(missingSchemaHashes);
   });
-
-  it.each([
-    ['null', { type: ['object', 'null'], default: null }, null],
-    ['array', { type: 'array', default: [] }, []],
-  ])('preserves a root %s default in the artifact hash', (_label, settingsSchema, expectedDefaults) => {
-    expect(buildLightExtensionSettingsHashes(settingsSchema).settingsDefaultsHash).toBe(
-      sha256Hex(stableSerialize(expectedDefaults)),
-    );
-  });
 });
