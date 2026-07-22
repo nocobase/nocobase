@@ -457,15 +457,9 @@ describe('filter-form defaultValues wiring', () => {
     expect(values.username_user).toBe('Matched');
   });
 
-  it('resolves light-extension RunJS filter field values with settings', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'return `${ctx.settings.currency}:${ctx.runJsSource.sourceBinding.entryId}`',
-        version: 'v2',
-        settings: input.settings || {},
-      }),
-    });
+  it('executes cached inline RunJS filter field values with settings', async () => {
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
     const { model, values } = createFilterFormDefaultValuesModel([
       {
         key: 'username-runjs',
@@ -473,7 +467,7 @@ describe('filter-form defaultValues wiring', () => {
         targetPath: 'username',
         mode: 'assign',
         value: {
-          code: '',
+          code: 'return `${ctx.settings.currency}:inline`',
           version: 'v2',
           sourceMode: 'light-extension',
           sourceBinding: {
@@ -489,26 +483,17 @@ describe('filter-form defaultValues wiring', () => {
     (model.context as any).runjs = async function (this: any, code: string) {
       return {
         success: true,
-        value: `${this.settings.currency}:${this.runJsSource.sourceBinding.entryId}:${code.includes('ctx.settings')}`,
+        value: `${this.settings.currency}:inline:${code.includes('ctx.settings')}`,
       };
     };
 
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
 
-    expect(values.username_user).toBe('USD:lee_normalize_amount:true');
+    expect(values.username_user).toBe('USD:inline:true');
+    expect(resolve).not.toHaveBeenCalled();
   });
 
-  it('skips a light-extension RunJS filter default when execution fails', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'throw new Error("boom")',
-        version: 'v2',
-        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
-        settings: input.settings || {},
-        context: input.context,
-      }),
-    });
+  it('skips an inline RunJS filter default when execution fails', async () => {
     const { model, values } = createFilterFormDefaultValuesModel([
       {
         key: 'username-runjs-error',
@@ -516,7 +501,7 @@ describe('filter-form defaultValues wiring', () => {
         targetPath: 'username',
         mode: 'assign',
         value: {
-          code: '',
+          code: 'throw new Error("boom")',
           version: 'v2',
           sourceMode: 'light-extension',
           sourceBinding: {
@@ -535,6 +520,33 @@ describe('filter-form defaultValues wiring', () => {
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
 
     expect(values.username_user).toBeUndefined();
+  });
+
+  it('skips stale external filter defaults when cached inline code is empty', async () => {
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'username-runjs-empty',
+        enable: true,
+        targetPath: 'username',
+        mode: 'assign',
+        value: {
+          code: '',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: { entryId: 'legacy_entry' },
+        },
+      },
+    ]);
+    const runjs = vi.fn();
+    (model.context as any).runjs = runjs;
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.username_user).toBeUndefined();
+    expect(runjs).not.toHaveBeenCalled();
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('emits formValuesChange with final values after applying dependent field values', async () => {

@@ -1779,6 +1779,13 @@ describe('LightExtensionWorkspacePage', () => {
     await screen.findByTestId('runjs-code-tab');
     fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
     expect(await screen.findByText('src/client/js-pages')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
+    expect(await screen.findByText('src/client/js-fields')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
+    expect(await screen.findByText('src/client/js-actions')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
+    expect(await screen.findByText('src/client/js-items')).toBeInTheDocument();
+    expect(screen.queryByText('src/client/runjs')).not.toBeInTheDocument();
   });
 
   it('injects generated multi-entry settings type files into the source workspace editor', async () => {

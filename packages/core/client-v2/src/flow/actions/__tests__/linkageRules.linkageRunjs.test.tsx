@@ -44,7 +44,7 @@ describe('linkageRunjs', () => {
     vi.restoreAllMocks();
   });
 
-  it('normalizes legacy script values and persists the complete RunJSValue with a nested source locator', () => {
+  it('normalizes legacy script values and keeps the editor inline-only', () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'form-block-runjs', flowEngine: engine });
     model.context.defineProperty('flowKey', { value: 'eventSettings' });
@@ -68,14 +68,7 @@ describe('linkageRunjs', () => {
       code: 'return ctx.formValues.amount;',
       version: 'v2',
     });
-    expect(editorProps?.sourceLocator).toEqual({
-      kind: 'flowModel.nestedRunJS',
-      modelUid: 'form-block-runjs',
-      containerFlowKey: 'eventSettings',
-      containerStepKey: 'linkageRules',
-      valuePath: ['value', 2, 'actions', 3, 'params', 'value'],
-      scene: 'linkage',
-    });
+    expect(editorProps?.sourceLocator).toBeUndefined();
 
     const nextValue: RunJSValue = {
       code: 'return 8;',
@@ -100,7 +93,9 @@ describe('linkageRunjs', () => {
   });
 
   it('does not revive a stale generic light-extension binding', async () => {
-    const runjs = vi.fn(async () => ({ success: true, value: 8 }));
+    const runjs = vi.fn(async function (this: FlowContext) {
+      return { success: true, value: this.settings?.prefix };
+    });
     const ctx = new FlowContext();
     ctx.defineMethod('runjs', runjs);
 
@@ -115,9 +110,27 @@ describe('linkageRunjs', () => {
           entryId: 'legacy_entry',
           kind: 'runjs',
         },
+        settings: { prefix: 'inline' },
       },
     });
 
     expect(runjs).toHaveBeenCalledWith('return 8;', undefined, { version: 'v2' });
+  });
+
+  it('treats empty code as unconfigured even when stale source metadata exists', async () => {
+    const runjs = vi.fn();
+    const ctx = new FlowContext();
+    ctx.defineMethod('runjs', runjs);
+
+    await linkageRunjs.handler(ctx, {
+      value: {
+        code: '',
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding: { entryId: 'legacy_entry' },
+      },
+    });
+
+    expect(runjs).not.toHaveBeenCalled();
   });
 });

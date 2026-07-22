@@ -425,6 +425,43 @@ describe('runJSStudioProvider', () => {
     });
   });
 
+  it('handles only flow model step locators and prefers sourceLocator', () => {
+    expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator })).toBe(true);
+
+    const nonStepLocators = [
+      {
+        kind: 'flowModel.flowRegistry.runjs' as const,
+        modelUid: 'fm_1',
+        flowKey: 'eventFlow',
+        stepKey: 'runjs',
+        sourcePath: ['params', 'code'],
+      },
+      { kind: 'workflow.javascript' as const, nodeId: 'node-1' },
+      { kind: 'chart.option' as const, modelUid: 'chart-1' },
+      { kind: 'chart.events' as const, modelUid: 'chart-1' },
+    ];
+    for (const nonStepLocator of nonStepLocators) {
+      expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator: nonStepLocator })).toBe(
+        false,
+      );
+    }
+
+    expect(
+      runJSStudioProvider.canHandle?.({
+        value: { code: '', version: 'v2' },
+        locator,
+        sourceLocator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+      }),
+    ).toBe(false);
+    expect(
+      runJSStudioProvider.canHandle?.({
+        value: { code: '', version: 'v2' },
+        locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
+        sourceLocator: locator,
+      }),
+    ).toBe(true);
+  });
+
   it('passes host source metadata to shared toolbar contributions', async () => {
     const unregister = runJSStudioToolbarRegistry.register({
       key: 'test-source-metadata',
@@ -1303,35 +1340,6 @@ describe('runJSStudioProvider', () => {
     );
     expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();
-  });
-
-  it('does not add a step sourceRef to nested RunJS values', async () => {
-    const onChange = vi.fn();
-    renderEditor(onChange, {
-      locator: {
-        kind: 'flowModel.nestedRunJS',
-        modelUid: 'fm_1',
-        containerFlowKey: 'settings',
-        containerStepKey: 'runjs',
-        valuePath: ['variables', 0, 'runjs'],
-        scene: 'custom-variable',
-      },
-    });
-    const editor = await screen.findByLabelText('Edit file content');
-
-    fireEvent.change(editor, { target: { value: 'return 3;' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
-      target: { value: 'Update nested code' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(onChange).toHaveBeenCalled());
-    const savedValue = onChange.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(savedValue).toMatchObject({ code: 'return 3;', version: 'v2' });
-    expect(savedValue).not.toHaveProperty('sourceRef');
   });
 
   it('confirms and restores a history version even when the editor is dirty', async () => {

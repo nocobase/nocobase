@@ -31,6 +31,7 @@ import {
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
 import { runJSStudioProvider } from '../../client-v2/vsc-file/public-api';
+import { legacyRunJSStudioProvider } from '../vsc-file/runjs-studio/LegacyRunJSStudioProvider';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {
@@ -118,47 +119,70 @@ describe('legacy Light Extension runtime integration', () => {
     ]);
   });
 
-  it('saves through the legacy Studio and restores the inline editor across disable and re-enable', async () => {
+  it('uses legacy Studio only for flow model steps and preserves workflow fallback across reloads', async () => {
     const inlineProvider: LegacyRunJSEditorProvider = {
       key: 'workflow-inline',
+      canHandle: (providerProps) => providerProps.locator?.kind === 'workflow.javascript',
       renderEditor: () => <div>Workflow inline editor</div>,
     };
-    const props: LegacyRunJSEditorProviderRenderProps = {
+    const workflowProps: LegacyRunJSEditorProviderRenderProps = {
       locator: { kind: 'workflow.javascript', nodeId: 'node-1' },
       value: { code: 'return 1;', version: 'workflow-js' },
       onChange: vi.fn(),
     };
+    const stepProps: LegacyRunJSEditorProviderRenderProps = {
+      locator: {
+        kind: 'flowModel.step',
+        modelUid: 'model-1',
+        flowKey: 'jsSettings',
+        stepKey: 'runJs',
+        paramPath: ['code'],
+      },
+      value: { code: 'return 1;', version: 'v2' },
+      onChange: vi.fn(),
+    };
     LegacyRunJSEditorRegistry.registerProvider(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(props)).toBe(inlineProvider);
+    expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
+    expect(
+      legacyRunJSStudioProvider.canHandle?.({
+        ...workflowProps,
+        sourceLocator: stepProps.locator,
+      }),
+    ).toBe(true);
+    expect(
+      legacyRunJSStudioProvider.canHandle?.({
+        ...stepProps,
+        sourceLocator: workflowProps.locator,
+      }),
+    ).toBe(false);
 
     vi.spyOn(runJSStudioProvider, 'renderEditor').mockImplementation((studioProps) => (
-      <button
-        type="button"
-        onClick={() => studioProps.onPersistedChange?.({ code: 'return 2;', version: 'workflow-js' })}
-      >
-        Save workflow source
+      <button type="button" onClick={() => studioProps.onPersistedChange?.({ code: 'return 2;', version: 'v2' })}>
+        Save step source
       </button>
     ));
 
     const app = createLegacyApplication();
     await app.load();
     const lightExtension = await loadLegacyPlugins(app);
-    const studioProvider = LegacyRunJSEditorRegistry.getProvider(props);
+    const studioProvider = LegacyRunJSEditorRegistry.getProvider(stepProps);
 
     expect(studioProvider?.key).toBe('@nocobase/plugin-vsc-file/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
     const studio = render(
-      <ApplicationContext.Provider value={app}>{studioProvider?.renderEditor(props)}</ApplicationContext.Provider>,
+      <ApplicationContext.Provider value={app}>{studioProvider?.renderEditor(stepProps)}</ApplicationContext.Provider>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Save workflow source' }));
-    expect(props.onChange).toHaveBeenCalledWith({ code: 'return 2;', version: 'workflow-js' });
+    fireEvent.click(screen.getByRole('button', { name: 'Save step source' }));
+    expect(stepProps.onChange).toHaveBeenCalledWith({ code: 'return 2;', version: 'v2' });
 
     lightExtension.dispose();
-    expect(LegacyRunJSEditorRegistry.getProvider(props)).toBe(inlineProvider);
+    expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)).toBeNull();
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(0);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     studio.unmount();
-    render(<>{LegacyRunJSEditorRegistry.getProvider(props)?.renderEditor(props)}</>);
+    render(<>{LegacyRunJSEditorRegistry.getProvider(workflowProps)?.renderEditor(workflowProps)}</>);
     expect(screen.getByText('Workflow inline editor')).toBeVisible();
 
     await lightExtension.load();
@@ -172,9 +196,11 @@ describe('legacy Light Extension runtime integration', () => {
       ),
     ).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
-    expect(LegacyRunJSEditorRegistry.getProvider(props)?.key).toBe('@nocobase/plugin-vsc-file/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/plugin-vsc-file/legacy-runjs-studio');
 
     lightExtension.dispose();
-    expect(LegacyRunJSEditorRegistry.getProvider(props)).toBe(inlineProvider);
+    expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)).toBeNull();
   });
 });

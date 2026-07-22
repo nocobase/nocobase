@@ -18,15 +18,9 @@ describe('assignFieldValuesFlow RunJS values', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('resolves nested light-extension RunJS assignment values with settings', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'return `${ctx.settings.currency}:${ctx.record.id}`',
-        version: 'v2',
-        settings: input.settings || {},
-      }),
-    });
+  it('executes cached inline code with settings and ignores stale external metadata', async () => {
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
 
     const ctx: any = new FlowContext();
     ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'CreateRecordActionModel' } });
@@ -40,7 +34,7 @@ describe('assignFieldValuesFlow RunJS values', () => {
     await expect(
       resolveAssignFieldValues(ctx, {
         amountText: {
-          code: '',
+          code: 'return `${ctx.settings.currency}:${ctx.record.id}`',
           version: 'v2',
           sourceMode: 'light-extension',
           sourceBinding: {
@@ -56,20 +50,10 @@ describe('assignFieldValuesFlow RunJS values', () => {
       amountText: 'USD:7:true',
     });
     expect(message.error).not.toHaveBeenCalled();
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('shows an error and aborts assignment when RunJS fails', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'throw new Error("boom")',
-        version: 'v2',
-        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
-        settings: input.settings || {},
-        context: input.context,
-      }),
-    });
-
     const ctx: any = new FlowContext();
     ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'UpdateRecordActionModel' } });
     ctx.defineMethod('runjs', async () => ({ success: false, error: new Error('boom') }));
@@ -82,7 +66,7 @@ describe('assignFieldValuesFlow RunJS values', () => {
         ctx,
         {
           amountText: {
-            code: '',
+            code: 'throw new Error("boom")',
             version: 'v2',
             sourceMode: 'light-extension',
             sourceBinding: {
@@ -100,6 +84,29 @@ describe('assignFieldValuesFlow RunJS values', () => {
     ).resolves.toBeNull();
 
     expect(message.error).toHaveBeenCalledWith('RunJS execution failed');
+  });
+
+  it('skips stale external values when cached inline code is empty', async () => {
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
+    const ctx: any = new FlowContext();
+    const runjs = vi.fn();
+    ctx.defineMethod('runjs', runjs);
+
+    await expect(
+      resolveAssignFieldValues(ctx, {
+        skipped: {
+          code: '',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: { entryId: 'legacy_entry' },
+        },
+        preserved: 'ok',
+      }),
+    ).resolves.toEqual({ preserved: 'ok' });
+
+    expect(runjs).not.toHaveBeenCalled();
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('skips assignment fields when RunJS returns undefined', async () => {

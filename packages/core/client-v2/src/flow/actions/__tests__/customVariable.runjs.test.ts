@@ -8,11 +8,16 @@
  */
 
 import { FlowContext } from '@nocobase/flow-engine';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { customVariable } from '../customVariable';
+import { RunJSSourceResolverRegistry } from '../../components/runjs-source';
 
 describe('customVariable RunJS values', () => {
+  afterEach(() => {
+    RunJSSourceResolverRegistry.clear();
+  });
+
   it('executes regular inline RunJS values', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('flowKey', { value: 'eventSettings' });
@@ -42,7 +47,11 @@ describe('customVariable RunJS values', () => {
   it('treats stale light-extension metadata as ordinary inline RunJS', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('model', { value: { context: ctx } });
-    const runjs = vi.fn(async () => ({ success: true, value: 9 }));
+    const resolve = vi.fn(async () => ({ code: 'return 99;', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
+    const runjs = vi.fn(async function (this: FlowContext & { settings?: { offset?: number } }) {
+      return { success: true, value: 9 + (this.settings?.offset || 0) };
+    });
     ctx.defineMethod('runjs', runjs);
 
     await customVariable.handler(ctx, {
@@ -61,13 +70,29 @@ describe('customVariable RunJS values', () => {
               entryId: 'legacy_entry',
               kind: 'runjs',
             },
+            settings: { offset: 1 },
           },
         },
       ],
     });
 
-    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe(9);
+    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe(10);
     expect(runjs).toHaveBeenCalledWith('return 9;', undefined, { version: 'v2' });
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it('treats empty RunJS code as unconfigured', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', { value: { context: ctx } });
+    const runjs = vi.fn();
+    ctx.defineMethod('runjs', runjs);
+
+    await customVariable.handler(ctx, {
+      variables: [{ key: 'total', title: 'Total', type: 'runjs', runjs: { code: '', version: 'v2' } }],
+    });
+
+    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBeUndefined();
+    expect(runjs).not.toHaveBeenCalled();
   });
 
   it('ignores unsafe variable identifiers', async () => {

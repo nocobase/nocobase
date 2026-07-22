@@ -10,7 +10,7 @@
 import React from 'react';
 import { act, render, screen, userEvent, waitFor, sleep } from '@nocobase/test/client';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider, FlowModelRenderer } from '@nocobase/flow-engine';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import { ConfigProvider, App } from 'antd';
 import { createForm } from '@formily/core';
 import { FormProvider, Field } from '@formily/react';
@@ -21,6 +21,7 @@ import { VariableFieldFormModel } from '../../models/fields/VariableFieldFormMod
 import { RecordSelectFieldModel } from '../../models/fields/AssociationFieldModel';
 import { SelectFieldModel } from '../../models/fields/SelectFieldModel';
 import { RichTextFieldModel } from '../../models/fields/RichTextFieldModel';
+import { RunJSSourceResolverRegistry } from '../runjs-source';
 
 // 简易 Form stub（非 Formily 分支），用于验证写回逻辑
 function createFormStub(initial: any = {}) {
@@ -130,6 +131,10 @@ describe('DefaultValue component', () => {
         },
       },
     });
+  });
+
+  afterEach(() => {
+    RunJSSourceResolverRegistry.clear();
   });
 
   it('readPretty mode: constant editor stays editable even if origin field is display-only', async () => {
@@ -644,7 +649,7 @@ describe('DefaultValue component', () => {
     expect(formStub.getFieldValue('nickname')).toBe('userInput');
   });
 
-  it('runjs default value: backfill uses computed result instead of object', async () => {
+  it('runjs default value: backfill uses cached inline code and settings', async () => {
     const formStub = createFormStub();
 
     const host = engine.createModel<HostModel>({
@@ -654,14 +659,10 @@ describe('DefaultValue component', () => {
     });
     host.context.defineProperty('form', { value: formStub });
     host.context.defineProperty('collectionField', { value: { interface: 'input', type: 'string' } });
-    host.context.defineMethod('runjs', async (code: string) => {
-      try {
-        // eslint-disable-next-line no-new-func
-        const fn = new Function(code);
-        return { success: true, value: fn() };
-      } catch (e) {
-        return { success: false, error: e };
-      }
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
+    host.context.defineMethod('runjs', async function (this: { settings?: { prefix?: string } }, code: string) {
+      return { success: true, value: `${this.settings?.prefix}:${code.includes('inline')}` };
     });
 
     render(
@@ -683,16 +684,23 @@ describe('DefaultValue component', () => {
 
     await act(async () => {
       await host.setStepParams('formItemSettings', 'initialValue', {
-        defaultValue: { code: "return 'test';", version: 'v1' },
+        defaultValue: {
+          code: "return 'inline';",
+          version: 'v1',
+          sourceMode: 'light-extension',
+          sourceBinding: { entryId: 'legacy_entry' },
+          settings: { prefix: 'cached' },
+        },
       });
     });
 
     await waitFor(
       () => {
-        expect(formStub.getFieldValue('nickname')).toBe('test');
+        expect(formStub.getFieldValue('nickname')).toBe('cached:true');
       },
       { timeout: 1000 },
     );
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('variable resolution: supports resolveJsonTemplate and ctx-based path fallback', async () => {

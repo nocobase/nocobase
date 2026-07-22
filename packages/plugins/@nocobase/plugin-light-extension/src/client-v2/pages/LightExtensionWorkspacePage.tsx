@@ -126,14 +126,12 @@ const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
   'src/client/js-fields/status-tag/index.tsx',
   'src/client/js-actions/refresh-data/index.ts',
   'src/client/js-items/form-total-preview/index.tsx',
-  'src/client/runjs/calculate-subtotal/index.ts',
 ] as const;
 const LIGHT_EXTENSION_CLIENT_KIND_ROOTS = [
   'src/client/js-pages',
   'src/client/js-fields',
   'src/client/js-actions',
   'src/client/js-items',
-  'src/client/runjs',
 ] as const;
 const DEFAULT_NEW_FILE_NAME = 'helper';
 const DEFAULT_NEW_FILE_EXTENSION = '.ts';

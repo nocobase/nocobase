@@ -106,6 +106,7 @@ describe('light extension entry workspace access', () => {
     });
     expect(getManagedLightExtensionEntryRoot('src/client/js-actions')).toBeNull();
     expect(getManagedLightExtensionEntryRoot('src/client/js-actions/send-email/helpers')).toBeNull();
+    expect(getManagedLightExtensionEntryRoot('src/client/runjs/calculate-subtotal')).toBeNull();
     expect(getManagedLightExtensionEntryRoot('src/shared/send-email')).toBeNull();
   });
 });

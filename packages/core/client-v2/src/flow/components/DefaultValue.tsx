@@ -32,13 +32,7 @@ import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOpt
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { RunJSValueEditor } from './RunJSValueEditor';
 import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
-import type { RunJSSourceLocator } from './runjs-studio';
-import {
-  buildRunJSOwnerLocatorFromSourceLocator,
-  evaluateResolvedRunJSValue,
-  getRunJSModelUse,
-  resolveRuntimeRunJS,
-} from './runjs-source';
+import { evaluateInlineRunJSValue } from './runjs-source';
 
 interface Props {
   value: any;
@@ -46,7 +40,6 @@ interface Props {
   metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
   model: FieldModel;
   flags?: Record<string, any>;
-  sourceLocator?: RunJSSourceLocator;
   sourceLabel?: string;
 }
 
@@ -182,15 +175,7 @@ function createTempFieldClass(Base: any) {
 }
 
 export const DefaultValue = connect((props: Props) => {
-  const {
-    value,
-    onChange,
-    metaTree: propMetaTree,
-    flags: componentFlags,
-    sourceLocator,
-    sourceLabel,
-    ...restProps
-  } = props;
+  const { value, onChange, metaTree: propMetaTree, flags: componentFlags, sourceLabel, ...restProps } = props;
   const flowContext = useFlowContext();
   const { model } = flowContext;
   // no side-effects to original form until confirmed
@@ -254,20 +239,8 @@ export const DefaultValue = connect((props: Props) => {
       // RunJS default: execute and use the computed result for preview/backfill
       if (isRunJSValue(out)) {
         try {
-          const resolved = await resolveRuntimeRunJS({
-            runJs: out,
-            context: {
-              ownerKind: 'flowModel.runjsHost',
-              ownerLocator: buildRunJSOwnerLocatorFromSourceLocator(sourceLocator, {
-                modelUid: model?.uid,
-                use: getRunJSModelUse(model),
-              }),
-            },
-          });
-          out = await evaluateResolvedRunJSValue({
-            ctx: model?.context,
-            resolved,
-          });
+          if (!out.code.trim()) return undefined;
+          out = await evaluateInlineRunJSValue({ ctx: model?.context, runJs: out });
         } catch {
           out = undefined;
         }
@@ -283,7 +256,7 @@ export const DefaultValue = connect((props: Props) => {
       }
       return out;
     },
-    [model, sourceLocator],
+    [model],
   );
 
   // 构建动态 NamePath（兼容数组子表单的行索引）
@@ -688,13 +661,12 @@ export const DefaultValue = connect((props: Props) => {
         t={flowContext.t}
         value={inputProps?.value}
         onChange={inputProps?.onChange}
-        sourceLocator={sourceLocator}
         sourceLabel={sourceLabel}
         surfaceStyle="value"
       />
     );
     return C;
-  }, [flowContext, sourceLabel, sourceLocator]);
+  }, [flowContext, sourceLabel]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       let base: MetaTreeNode[] = [];

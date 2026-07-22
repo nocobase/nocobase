@@ -33,7 +33,6 @@ const KIND_ROOTS: Record<LightExtensionKind, string> = {
   'js-page': 'src/client/js-pages',
   'js-field': 'src/client/js-fields',
   'js-item': 'src/client/js-items',
-  runjs: 'src/client/runjs',
 };
 
 const MANAGED_ENTRY_ROOTS = Object.values(KIND_ROOTS);

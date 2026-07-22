@@ -703,15 +703,9 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
   });
 
-  it('supports light-extension RunJSValue settings and dependency refresh', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'return `${ctx.settings.prefix}${ctx.formValues.b}`',
-        version: 'v2',
-        settings: input.settings || {},
-      }),
-    });
+  it('uses cached inline code and settings while ignoring stale external metadata', async () => {
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({ b: 'X' });
@@ -738,7 +732,7 @@ describe('FormValueRuntime (form assign rules)', () => {
         mode: 'assign',
         condition: { logic: '$and', items: [] },
         value: {
-          code: '',
+          code: 'return `${ctx.settings.prefix}${ctx.formValues.b}`',
           version: 'v2',
           sourceMode: 'light-extension',
           sourceBinding: {
@@ -756,19 +750,12 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('LE:Y'));
+    expect(resolve).not.toHaveBeenCalled();
   });
 
-  it('keeps the existing form value when light-extension RunJS execution fails', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'throw new Error("bad")',
-        version: 'v2',
-        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
-        settings: input.settings || {},
-        context: input.context,
-      }),
-    });
+  it('keeps the existing form value when stale external metadata has no inline code', async () => {
+    const resolve = vi.fn(() => ({ code: 'return "external";', version: 'v2' }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'light-extension', resolve });
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
     const formStub = createFormStub({ a: 'INIT' });
@@ -785,7 +772,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     runtime.mount({ sync: true });
 
     const blockCtx = createFieldContext(runtime);
-    const runjs = vi.fn(async () => ({ success: false, error: new Error('bad') }));
+    const runjs = vi.fn();
     blockCtx.defineMethod('runjs', runjs);
     blockModel.context = blockCtx;
 
@@ -811,7 +798,9 @@ describe('FormValueRuntime (form assign rules)', () => {
       },
     ]);
 
-    await waitFor(() => expect(runjs).toHaveBeenCalled());
+    await new Promise((_resolve) => setTimeout(_resolve, 0));
+    expect(runjs).not.toHaveBeenCalled();
+    expect(resolve).not.toHaveBeenCalled();
     expect(formStub.getFieldValue(['a'])).toBe('INIT');
   });
 

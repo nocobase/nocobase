@@ -25,7 +25,7 @@ type LegacyFlowContext = {
 
 export const legacyRunJSStudioProvider: LegacyRunJSEditorProvider = {
   key: '@nocobase/plugin-vsc-file/legacy-runjs-studio',
-  canHandle: (props) => Boolean(props.locator),
+  canHandle: (props) => (props.sourceLocator ?? props.locator)?.kind === 'flowModel.step',
   renderEditor: (props) => <LegacyRunJSStudioEditorEntry {...props} />,
 };
 

@@ -12,6 +12,7 @@ import type { RunJSStudioToolbarContext, RunJSStudioToolbarContribution } from '
 import { Button, Form, Input, Modal, Radio, Select, Tooltip, message } from 'antd';
 import React from 'react';
 
+import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionKind,
   LightExtensionMoveSourceOriginBinding,
@@ -39,7 +40,6 @@ const DEFAULT_KIND_NAMES: Record<LightExtensionKind, string> = {
   'js-action': 'JS Action',
   'js-field': 'JS Field',
   'js-item': 'JS Item',
-  runjs: 'RunJS',
 };
 
 const KIND_NAME_LABELS: Record<LightExtensionKind, string> = {
@@ -48,7 +48,6 @@ const KIND_NAME_LABELS: Record<LightExtensionKind, string> = {
   'js-action': 'JS Action name',
   'js-field': 'JS Field name',
   'js-item': 'JS Item name',
-  runjs: 'RunJS name',
 };
 
 const MODEL_USE_KIND = new Map<string, LightExtensionKind>([
@@ -233,9 +232,6 @@ export const MoveSourceToLightExtension: React.FC<{
 };
 
 function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExtensionKind | null {
-  if (context.locator.kind === 'flowModel.nestedRunJS') {
-    return context.workspace.source.surfaceStyle === 'value' ? 'runjs' : null;
-  }
   if (context.locator.kind !== 'flowModel.step') {
     return null;
   }
@@ -252,14 +248,7 @@ function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExt
 }
 
 function isLightExtensionKind(value: unknown): value is LightExtensionKind {
-  return (
-    value === 'js-block' ||
-    value === 'js-page' ||
-    value === 'js-action' ||
-    value === 'js-field' ||
-    value === 'js-item' ||
-    value === 'runjs'
-  );
+  return typeof value === 'string' && (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value);
 }
 
 function resolveOriginBinding(
