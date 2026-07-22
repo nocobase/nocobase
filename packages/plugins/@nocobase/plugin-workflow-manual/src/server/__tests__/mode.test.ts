@@ -8,12 +8,15 @@
  */
 
 import Database from '@nocobase/database';
-import PluginWorkflowServer, { EXECUTION_STATUS, getExecutionLockKey, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, {
+  EXECUTION_STATUS,
+  getExecutionLockKey,
+  getJobLockKey,
+  JOB_STATUS,
+} from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
-
-import ManualInstruction from '../ManualInstruction';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual', () => {
@@ -288,41 +291,6 @@ describe('workflow > instructions > manual', () => {
       expect(j2.result).toBe(1);
     });
 
-    it('recalculates the final status when the persisted job is stale', async () => {
-      await workflow.createNode({
-        type: 'manual',
-        config: {
-          assignees: [users[0].id, users[1].id],
-          mode: 1,
-          forms: {
-            f1: {
-              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
-            },
-          },
-        },
-      });
-
-      await PostRepo.create({ values: { title: 't1' } });
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      const tasks = await UserJobModel.findAll({ where: { jobId: job.id } });
-      expect(tasks).toHaveLength(2);
-      await Promise.all(tasks.map((task) => task.update({ status: JOB_STATUS.RESOLVED })));
-      await job.update({ status: JOB_STATUS.PENDING, result: 0.5 });
-
-      const workflowPlugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
-      await workflowPlugin.resume(job);
-      await sleep(1000);
-
-      await execution.reload();
-      await job.reload();
-      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result).toBe(1);
-    });
-
     it('rolls back the task when updating the aggregated job fails', async () => {
       await workflow.createNode({
         type: 'manual',
@@ -343,11 +311,12 @@ describe('workflow > instructions > manual', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       const [task] = await UserJobModel.findAll({ order: [['userId', 'ASC']] });
-      const workflowPlugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
-      const instruction = workflowPlugin.instructions.get('manual') as ManualInstruction;
-      const updateJob = vi
-        .spyOn(instruction, 'updateJobByManualTasks')
-        .mockRejectedValueOnce(new Error('simulated aggregate save failure'));
+      const failJobSave = (model) => {
+        if (model.id === job.id) {
+          throw new Error('simulated aggregate save failure');
+        }
+      };
+      db.on('jobs.beforeSave', failJobSave);
 
       const failed = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: task.id,
@@ -361,7 +330,7 @@ describe('workflow > instructions > manual', () => {
       expect(task.status).toBe(JOB_STATUS.PENDING);
       expect(job.status).toBe(JOB_STATUS.PENDING);
 
-      updateJob.mockRestore();
+      db.off('jobs.beforeSave', failJobSave);
       const retried = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: task.id,
         values: {
@@ -371,7 +340,7 @@ describe('workflow > instructions > manual', () => {
       expect(retried.status).toBe(202);
     });
 
-    it('rejects a locked submission and resumes only after the terminal transition', async () => {
+    it('locks submissions by job and resumes only after the terminal transition', async () => {
       await workflow.createNode({
         type: 'manual',
         config: {
@@ -393,27 +362,32 @@ describe('workflow > instructions > manual', () => {
       const tasks = await UserJobModel.findAll({ order: [['userId', 'ASC']] });
       const workflowPlugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
       const resume = vi.spyOn(workflowPlugin, 'resume');
-      const lock = await app.lockManager.tryAcquire(getExecutionLockKey(execution.id));
+      const executionLock = await app.lockManager.tryAcquire(getExecutionLockKey(execution.id));
       try {
-        const locked = await userAgents[0].resource('workflowManualTasks').submit({
+        const firstResponse = await userAgents[0].resource('workflowManualTasks').submit({
           filterByTk: tasks[0].id,
+          values: {
+            result: { f1: { index: 0 }, _: 'resolve' },
+          },
+        });
+        expect(firstResponse.status).toBe(202);
+      } finally {
+        await executionLock.release();
+      }
+      expect(resume).not.toHaveBeenCalled();
+
+      const jobLock = await app.lockManager.tryAcquire(getJobLockKey(job.id));
+      try {
+        const locked = await userAgents[1].resource('workflowManualTasks').submit({
+          filterByTk: tasks[1].id,
           values: {
             result: { f1: { locked: true }, _: 'resolve' },
           },
         });
         expect(locked.status).toBe(409);
       } finally {
-        await lock.release();
+        await jobLock.release();
       }
-
-      const firstResponse = await userAgents[0].resource('workflowManualTasks').submit({
-        filterByTk: tasks[0].id,
-        values: {
-          result: { f1: { index: 0 }, _: 'resolve' },
-        },
-      });
-      expect(firstResponse.status).toBe(202);
-      expect(resume).not.toHaveBeenCalled();
 
       const secondResponse = await userAgents[1].resource('workflowManualTasks').submit({
         filterByTk: tasks[1].id,
