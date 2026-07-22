@@ -18,6 +18,7 @@ export interface LegacyRunJSEditorProviderRenderProps {
   value: RunJSValue;
   onChange?: (value: RunJSValue) => void;
   locator?: RunJSSourceLocator;
+  sourceLocator?: RunJSSourceLocator;
   label?: string;
   sourceLabel?: string;
   scene?: string;
