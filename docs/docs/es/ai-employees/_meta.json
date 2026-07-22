@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Bloques de página",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Empleados de IA incorporados",
     "items": [
       {
