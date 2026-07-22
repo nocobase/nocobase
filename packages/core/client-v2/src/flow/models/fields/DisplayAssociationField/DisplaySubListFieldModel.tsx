@@ -8,9 +8,10 @@
  */
 
 import { css } from '@emotion/css';
-import { tExpr, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { CreateModelOptions, tExpr, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React from 'react';
+import { normalizeLegacyAssociationDisplaySubModels } from '../../../internal/utils/associationFieldSubModelState';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
@@ -105,7 +106,7 @@ export class DisplaySubListFieldModel extends FieldModel {
       subModelBaseClass: subClass,
     };
   }
-  onInit(options) {
+  onInit(options: CreateModelOptions) {
     super.onInit(options);
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
@@ -114,6 +115,12 @@ export class DisplaySubListFieldModel extends FieldModel {
       get: () => {
         return (this.parent as FormItemModel).fieldPath;
       },
+    });
+    options.subModels = normalizeLegacyAssociationDisplaySubModels({
+      ctx: (this.parent as FormItemModel).context,
+      parentModel: this.parent as FormItemModel,
+      displayUse: 'DisplaySubListFieldModel',
+      subModels: options.subModels,
     });
   }
   render() {

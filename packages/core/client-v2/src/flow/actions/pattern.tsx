@@ -9,6 +9,12 @@
 
 import { uid } from '@formily/shared';
 import { defineAction, tExpr } from '@nocobase/flow-engine';
+import {
+  getAssociationFieldModeUse,
+  rebuildAssociationFieldSubModel,
+  shouldUseAssociationFieldComponentState,
+  type AssociationFieldPatternMode,
+} from '../internal/utils/associationFieldSubModelState';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
 
@@ -19,6 +25,10 @@ type PatternAwareFieldModelMeta = {
 type PatternAwareFieldModel = {
   scheduleApplyJsSettings?: () => void;
 };
+
+function getAssociationFieldPatternMode(pattern?: string): AssociationFieldPatternMode {
+  return pattern === 'readPretty' ? 'readPretty' : 'editable';
+}
 
 function resolveAssociationTitleField(ctx: any) {
   return (
@@ -109,6 +119,9 @@ export const pattern = defineAction({
     const associationTitleField = resolveAssociationTitleField(ctx);
     const targetCollectionTitleField = targetCollection?.getField(associationTitleField);
     const { model } = ctx;
+    const isAssociationField = !!ctx.collectionField?.isAssociationField?.();
+    const sourceMode = getAssociationFieldPatternMode(previousParams.pattern);
+    const targetMode = getAssociationFieldPatternMode(params.pattern);
     const resolveDefaultProps = (binding, field = ctx.collectionField) => {
       if (!binding) return undefined;
       const defaultProps =
@@ -122,28 +135,82 @@ export const pattern = defineAction({
       };
     };
     if (params.pattern === 'readPretty') {
-      const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
-        fallbackToTargetTitleField: true,
-        targetCollectionTitleField,
-      });
-      await rebuildFieldSubModel({
-        parentModel: model,
-        targetUse: binding.modelName,
-        defaultProps: resolveDefaultProps(binding, targetCollectionTitleField || ctx.collectionField),
-      });
+      const directBindings = isAssociationField
+        ? DetailsItemModel.getBindingsByField(ctx, ctx.collectionField) || []
+        : [];
+      const titleFieldBindings =
+        isAssociationField && targetCollectionTitleField
+          ? DetailsItemModel.getBindingsByField(ctx, targetCollectionTitleField) || []
+          : [];
+      const savedUse = isAssociationField ? getAssociationFieldModeUse(model, targetMode) : undefined;
+      const savedDirectBinding = directBindings.find((item) => item.modelName === savedUse);
+      const savedTitleFieldBinding = titleFieldBindings.find((item) => item.modelName === savedUse);
+      const binding =
+        savedDirectBinding ||
+        savedTitleFieldBinding ||
+        DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
+          fallbackToTargetTitleField: true,
+          targetCollectionTitleField,
+        });
+      const bindingField = savedDirectBinding
+        ? ctx.collectionField
+        : savedTitleFieldBinding
+          ? targetCollectionTitleField
+          : targetCollectionTitleField || ctx.collectionField;
+      const useAssociationState =
+        isAssociationField && shouldUseAssociationFieldComponentState(model, binding.modelName);
+      if (useAssociationState) {
+        await rebuildAssociationFieldSubModel({
+          ctx,
+          parentModel: model,
+          targetUse: binding.modelName,
+          defaultProps: resolveDefaultProps(binding, bindingField),
+          sourceMode,
+          targetMode,
+        });
+      } else {
+        await rebuildFieldSubModel({
+          parentModel: model,
+          targetUse: binding.modelName,
+          defaultProps: resolveDefaultProps(binding, bindingField),
+        });
+      }
       if (binding.modelName) {
         ctx.model.setStepParams('editItemSettings', 'model', { use: binding.modelName });
       }
     } else {
-      const binding = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
+      const bindings = isAssociationField
+        ? ctx.model.constructor.getBindingsByField?.(ctx, ctx.collectionField) || []
+        : [];
+      const savedUse = isAssociationField ? getAssociationFieldModeUse(model, targetMode) : undefined;
+      const binding =
+        bindings.find((item) => item.modelName === savedUse) ||
+        ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
       if (previousParams.pattern === 'readPretty') {
-        await rebuildFieldSubModel({
-          parentModel: model,
-          targetUse: binding.modelName,
-          defaultProps: resolveDefaultProps(binding),
-        });
+        const useAssociationState =
+          isAssociationField && shouldUseAssociationFieldComponentState(model, binding.modelName);
+        if (useAssociationState) {
+          await rebuildAssociationFieldSubModel({
+            ctx,
+            parentModel: model,
+            targetUse: binding.modelName,
+            defaultProps: resolveDefaultProps(binding),
+            sourceMode,
+            targetMode,
+          });
+          ctx.model.setStepParams('editItemSettings', 'model', { use: binding.modelName });
+        } else {
+          await rebuildFieldSubModel({
+            parentModel: model,
+            targetUse: binding.modelName,
+            defaultProps: resolveDefaultProps(binding),
+          });
+        }
       }
     }
+    ctx.model.subModels.field?.setProps({
+      disabled: params.pattern === 'disabled',
+    });
     await refreshPatternRuntime(ctx);
   },
   async beforeParamsSave(ctx, params, previousParams) {
@@ -154,15 +221,18 @@ export const pattern = defineAction({
         disabled: false,
         titleField,
       });
+      ctx.model.subModels.field?.setProps({ disabled: false });
       if (ctx.collectionField.isAssociationField())
         await ctx.model.setStepParams('editItemSettings', 'titleField', {
           titleField,
         });
     } else {
+      const disabled = params.pattern === 'disabled';
       ctx.model.setProps({
-        disabled: params.pattern === 'disabled',
+        disabled,
         pattern: 'editable',
       });
+      ctx.model.subModels.field?.setProps({ disabled });
     }
   },
   handler(ctx, params) {
@@ -170,11 +240,14 @@ export const pattern = defineAction({
       ctx.model.setProps({
         pattern: 'readPretty',
       });
+      ctx.model.subModels.field?.setProps({ disabled: false });
     } else {
+      const disabled = params.pattern === 'disabled';
       ctx.model.setProps({
-        disabled: params.pattern === 'disabled',
+        disabled,
         pattern: null,
       });
+      ctx.model.subModels.field?.setProps({ disabled });
     }
   },
 });

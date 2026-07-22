@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr } from '@nocobase/flow-engine';
+import { CreateModelOptions, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
+import { normalizeLegacyAssociationDisplaySubModels } from '../../../internal/utils/associationFieldSubModelState';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { ObjectNester } from '../AssociationFieldModel/SubFormFieldModel';
 import { FieldModel } from '../../base';
@@ -32,7 +33,7 @@ export class DisplaySubItemFieldModel extends FieldModel {
       subModelBaseClass: subClass,
     };
   }
-  onInit(options) {
+  onInit(options: CreateModelOptions) {
     super.onInit(options);
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
@@ -41,6 +42,12 @@ export class DisplaySubItemFieldModel extends FieldModel {
       get: () => {
         return (this.parent as FormItemModel).fieldPath;
       },
+    });
+    options.subModels = normalizeLegacyAssociationDisplaySubModels({
+      ctx: (this.parent as FormItemModel).context,
+      parentModel: this.parent as FormItemModel,
+      displayUse: 'DisplaySubItemFieldModel',
+      subModels: options.subModels,
     });
   }
   public render() {

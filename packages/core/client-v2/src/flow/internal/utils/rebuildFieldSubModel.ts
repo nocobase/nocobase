@@ -16,7 +16,7 @@
  * - 重建后触发 beforeRender（useCache: false）
  */
 import { FieldModel } from '../../models/base/FieldModel';
-import { FlowEngine, FlowModel, StepParams } from '@nocobase/flow-engine';
+import { CreateModelOptions, FlowEngine, FlowModel, StepParams } from '@nocobase/flow-engine';
 
 type FieldBindingParams = {
   fieldBinding?: { use?: string };
@@ -38,6 +38,9 @@ type RebuildOptions = {
   defaultProps?: Record<string, unknown>;
   pattern?: string;
   fieldSettingsInit?: unknown;
+  preserveSubModels?: boolean;
+  subModels?: CreateModelOptions['subModels'];
+  stepParams?: StepParams;
 };
 
 function normalizeModelUse(value: unknown): string | undefined {
@@ -61,6 +64,9 @@ export async function rebuildFieldSubModel({
   defaultProps,
   pattern,
   fieldSettingsInit,
+  preserveSubModels = true,
+  subModels,
+  stepParams,
 }: RebuildOptions) {
   const fieldModel = parentModel.subModels['field'];
   const fieldUid = fieldModel?.uid;
@@ -68,15 +74,19 @@ export async function rebuildFieldSubModel({
   // RecordPickerFieldModel 的子model提前创建会报错
   for (const key in prevSubModels) {
     const subModel = prevSubModels[key];
-    if (subModel.delegateToParent === false) {
+    if (Array.isArray(subModel)) {
+      prevSubModels[key] = subModel.filter((item) => item.delegateToParent !== false);
+    } else if (subModel.delegateToParent === false) {
       delete prevSubModels[key];
     }
   }
   const currentUse = normalizeModelUse(getFieldBindingUse(fieldModel) || fieldModel?.use);
   const shouldPreserveStepParams = currentUse === targetUse;
-  const prevStepParams: FieldStepParams = shouldPreserveStepParams
-    ? (fieldModel?.stepParams as FieldStepParams) || {}
-    : {};
+  const prevStepParams: FieldStepParams = stepParams
+    ? (stepParams as FieldStepParams)
+    : shouldPreserveStepParams
+      ? (fieldModel?.stepParams as FieldStepParams) || {}
+      : {};
   const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
   const { fieldBinding: _fieldBinding, ...restStepParams } = prevStepParams;
 
@@ -89,22 +99,28 @@ export async function rebuildFieldSubModel({
   };
 
   const engine: FlowEngine = parentModel.flowEngine;
+  const nextSubModels = subModels ?? (preserveSubModels ? prevSubModels : undefined);
 
   if (fieldUid) {
     fieldModel?.invalidateFlowCache('beforeRender', true);
     engine.removeModelWithSubModels(fieldUid);
   }
 
-  const subModel = parentModel.setSubModel('field', {
+  const nextFieldOptions: CreateModelOptions = {
     uid: fieldUid,
     use: targetUse,
     props: { ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
     stepParams: nextStepParams as StepParams,
-    // Preserve existing subModels (e.g. SubTable columns) so switching field component back and forth
-    // does not require a full page refresh to restore the UI.
-    subModels: prevSubModels,
-  });
+  };
+
+  if (nextSubModels) {
+    // 默认仍保留旧行为；需要隔离不同组件子模型的调用方可以显式关闭保留，或传入目标组件快照。
+    nextFieldOptions.subModels = nextSubModels;
+  }
+
+  const subModel = parentModel.setSubModel('field', nextFieldOptions);
 
   await subModel.dispatchEvent('beforeRender', undefined, { useCache: false });
   await parentModel.save();
+  return subModel;
 }
