@@ -18,6 +18,7 @@ import type { ContextItem, WorkContextOptions } from '../types';
 import { useT } from '../../locale';
 import { FlowUtils } from '../flow';
 import { aiSelection } from '../stores/ai-selection';
+import { getFrontendToolRegistry } from '../../manager/frontend-tool-registry';
 import { dialogController } from '../stores/dialog-controller';
 
 type SimplifyComponentNode = {
@@ -465,6 +466,9 @@ export const FlowModelsContext: WorkContextOptions = {
       });
     }
     return parsedContent;
+  },
+  getFrontendTools: async (app, { uid }) => {
+    return getFrontendToolRegistry(app)?.list(uid) ?? [];
   },
 };
 

@@ -156,24 +156,30 @@ export const parseWorkContext = async (app: WorkContextApplication, workContext:
     aiManager?: {
       getWorkContext?: (type: string) => {
         getContent?: (app: WorkContextApplication, item: ContextItem) => Promise<unknown>;
+        getFrontendTools?: (
+          app: WorkContextApplication,
+          item: ContextItem,
+        ) => Promise<NonNullable<ContextItem['frontendTools']>>;
       };
     };
   };
   for (const context of workContext) {
-    if (context.content) {
-      parsed.push(context);
-      continue;
-    }
     const contextOptions = plugin.aiManager?.getWorkContext?.(context.type);
-    if (!(contextOptions && contextOptions.getContent)) {
-      parsed.push(context);
-      continue;
+    let parsedContext = { ...context };
+    if (!context.content && contextOptions?.getContent) {
+      const content = await contextOptions.getContent(app, context);
+      parsedContext = {
+        ...parsedContext,
+        content,
+      };
     }
-    const content = await contextOptions.getContent(app, context);
-    parsed.push({
-      ...context,
-      content,
-    });
+    if (contextOptions?.getFrontendTools) {
+      const frontendTools = await contextOptions.getFrontendTools(app, context);
+      if (frontendTools.length) {
+        parsedContext.frontendTools = frontendTools;
+      }
+    }
+    parsed.push(parsedContext);
   }
   return parsed;
 };

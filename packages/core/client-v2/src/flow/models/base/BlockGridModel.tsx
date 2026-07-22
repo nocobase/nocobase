@@ -15,9 +15,11 @@ import {
   buildSubModelGroups,
   buildSubModelItems,
   type CreateModelOptions,
+  type FlowModel,
   type FlowModelContext,
   type SubModelItem,
   type SubModelItemsType,
+  VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
@@ -98,6 +100,8 @@ function appendOtherBlockItems(
 }
 
 export class BlockGridModel extends GridModel {
+  private viewActivatedListener?: () => void;
+
   dragOverlayConfig: DragOverlayConfig = {
     // 列内插入
     columnInsert: {
@@ -122,6 +126,28 @@ export class BlockGridModel extends GridModel {
         return new FilterManager(this, options['filterManager']);
       },
     });
+  }
+
+  onMount() {
+    super.onMount();
+    if (this.context.view?.inputArgs?.scene !== 'select' || this.viewActivatedListener) {
+      return;
+    }
+
+    this.viewActivatedListener = () => {
+      this.mapSubModels('items', (item) => {
+        (item as FlowModel & { onActive?: () => void }).onActive?.();
+      });
+    };
+    this.flowEngine.emitter.on(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
+  }
+
+  protected onUnmount() {
+    if (this.viewActivatedListener) {
+      this.flowEngine.emitter.off(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
+      this.viewActivatedListener = undefined;
+    }
+    super.onUnmount();
   }
 
   get subModelBaseClasses() {
