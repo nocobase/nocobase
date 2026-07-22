@@ -158,20 +158,9 @@ describe('RuntimeResolveService', () => {
 
   it('loads selectable entries and repo runtime metadata with a constant query count', async () => {
     const { service, entriesRepository, reposRepository } = createRuntimeResolveService();
-    entriesRepository.find.mockResolvedValue(
-      Array.from({ length: 100 }, (_, index) =>
-        createModel({
-          ...createEntryRecord(),
-          id: `lee_${index}`,
-          repoId: `ler_${index}`,
-        }),
-      ),
-    );
-    reposRepository.find.mockResolvedValue(
-      Array.from({ length: 100 }, (_, index) =>
-        createModel({ id: `ler_${index}`, lifecycleStatus: 'enabled', headCommitId: 'vsc_commit_1' }),
-      ),
-    );
+    const catalog = createSelectableCatalog();
+    entriesRepository.find.mockResolvedValue(catalog.entries);
+    reposRepository.find.mockResolvedValue(catalog.repos);
 
     await expect(service.listSelectableEntries()).resolves.toHaveLength(100);
     expect(entriesRepository.find).toHaveBeenCalledOnce();
@@ -181,6 +170,82 @@ describe('RuntimeResolveService', () => {
         fields: ['id', 'lifecycleStatus', 'headCommitId'],
       }),
     );
+  });
+
+  it('loads 100 static-filtered repo labels with one constant projection query', async () => {
+    const { service, entriesRepository, reposRepository, usersRepository } = createRuntimeResolveService();
+    const catalog = createSelectableCatalog();
+    entriesRepository.find.mockResolvedValue(catalog.entries);
+    reposRepository.find
+      .mockResolvedValueOnce(catalog.repos)
+      .mockResolvedValueOnce(catalog.repoIds.map((id, index) => createModel({ id, title: `Repo ${index}` })));
+
+    await expect(
+      service.listSelectableEntries(
+        {},
+        {
+          can: async () => ({
+            params: {
+              fields: ['id', 'title'],
+              filter: { title: { $ne: 'hidden' } },
+            },
+          }),
+        },
+      ),
+    ).resolves.toHaveLength(100);
+    expect(entriesRepository.find).toHaveBeenCalledOnce();
+    expect(reposRepository.find).toHaveBeenCalledTimes(2);
+    expect(reposRepository.find).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        fields: ['id', 'lifecycleStatus', 'headCommitId'],
+      }),
+    );
+    expect(reposRepository.find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        fields: ['id', 'title'],
+      }),
+    );
+    expect(usersRepository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('loads 100 dynamic user-filtered labels with one additional user query', async () => {
+    const { service, entriesRepository, reposRepository, usersRepository } = createRuntimeResolveService();
+    const catalog = createSelectableCatalog();
+    entriesRepository.find.mockResolvedValue(catalog.entries);
+    reposRepository.find
+      .mockResolvedValueOnce(catalog.repos)
+      .mockResolvedValueOnce(catalog.repoIds.map((id) => createModel({ id, name: 'visible' })));
+    usersRepository.findOne.mockResolvedValue({ nickname: 'visible' });
+
+    await expect(
+      service.listSelectableEntries(
+        {},
+        {
+          can: async () => ({
+            params: {
+              fields: ['id', 'name'],
+              filter: { name: '{{$user.nickname}}' },
+            },
+          }),
+          currentUser: { id: 7 },
+        },
+      ),
+    ).resolves.toHaveLength(100);
+    expect(entriesRepository.find).toHaveBeenCalledOnce();
+    expect(reposRepository.find).toHaveBeenCalledTimes(2);
+    expect(reposRepository.find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        fields: ['id', 'name'],
+        filter: {
+          $and: [expect.anything(), { name: 'visible' }],
+        },
+      }),
+    );
+    expect(usersRepository.findOne).toHaveBeenCalledOnce();
+    expect(usersRepository.findOne).toHaveBeenCalledWith({ filterByTk: 7, fields: ['nickname'] });
   });
 
   it('projects only ACL-visible repo labels and merges the parsed row filter with catalog repo ids', async () => {
@@ -367,14 +432,21 @@ function createRuntimeResolveService(
     find: vi.fn().mockResolvedValue([createModel(entryRecord)]),
     findOne: vi.fn().mockResolvedValue(createModel(entryRecord)),
   };
+  const usersRepository = {
+    findOne: vi.fn(),
+  };
   const db = {
     getCollection: vi.fn(() => ({})),
+    getFieldByPath: vi.fn((path: string) => (path === 'users.nickname' ? {} : undefined)),
     getRepository: (name: string) => {
       if (name === 'lightExtensionRepos') {
         return reposRepository;
       }
       if (name === 'lightExtensionEntries') {
         return entriesRepository;
+      }
+      if (name === 'users') {
+        return usersRepository;
       }
       throw new Error(`Unexpected repository ${name}`);
     },
@@ -384,6 +456,22 @@ function createRuntimeResolveService(
     service: new RuntimeResolveService(db, serviceOptions),
     reposRepository,
     entriesRepository,
+    usersRepository,
+  };
+}
+
+function createSelectableCatalog() {
+  const repoIds = Array.from({ length: 100 }, (_, index) => `ler_${index}`);
+  return {
+    repoIds,
+    entries: repoIds.map((repoId, index) =>
+      createModel({
+        ...createEntryRecord(),
+        id: `lee_${index}`,
+        repoId,
+      }),
+    ),
+    repos: repoIds.map((id) => createModel({ id, lifecycleStatus: 'enabled', headCommitId: 'vsc_commit_1' })),
   };
 }
 
