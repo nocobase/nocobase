@@ -13,6 +13,7 @@ import {
   buildEmployeeSubmitValues,
   createAIEmployee,
   deleteAIEmployee,
+  isAIEmployeeUsernameConflictError,
   isKnowledgeBaseEnabled,
   listAIEmployees,
   listKnowledgeBases,
@@ -89,6 +90,28 @@ describe('EmployeesPage request helpers', () => {
         builtIn: false,
       },
     });
+  });
+
+  it('recognizes the stable duplicate username business error', () => {
+    expect(
+      isAIEmployeeUsernameConflictError({
+        response: {
+          data: {
+            errors: [{ code: 'AI_EMPLOYEE_USERNAME_CONFLICT', message: 'Username already exists' }],
+          },
+        },
+      }),
+    ).toBe(true);
+    expect(
+      isAIEmployeeUsernameConflictError({
+        response: {
+          data: {
+            errors: [{ code: 'OTHER_ERROR' }],
+          },
+        },
+      }),
+    ).toBe(false);
+    expect(isAIEmployeeUsernameConflictError(new Error('network failure'))).toBe(false);
   });
 
   it('updates an employee by username and strips edit-only fields', async () => {

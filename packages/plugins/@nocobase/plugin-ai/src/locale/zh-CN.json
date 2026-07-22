@@ -212,6 +212,7 @@
   "Please choose an AI employee": "请选择 AI 员工",
   "Please select file objects.": "请选择文件对象。",
   "Popup blocked. Please allow popups and try again.": "弹窗被拦截，请允许弹窗后重试。",
+  "Username already exists": "用户名已存在",
   "Position": "职位",
   "Position description": "AI 员工职责的简短描述",
   "Position placeholder": "例如：翻译员等",

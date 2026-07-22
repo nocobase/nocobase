@@ -48,6 +48,7 @@ import type { AIEmployee as ChatAIEmployee } from '../ai-employees/types';
 import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 import { getLLMModelValue, LLMModelMultiSelect, parseLLMModelValue } from '../llm-services/model-select';
+import { AI_EMPLOYEE_USERNAME_CONFLICT } from '../../common/error-codes';
 
 type EmployeeCategory = 'business' | 'developer';
 type APIClientLike = Pick<APIClient, 'resource'>;
@@ -144,6 +145,14 @@ const fillHeightTableClassName = css`
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
+
+export const isAIEmployeeUsernameConflictError = (error: unknown): boolean => {
+  if (!isRecord(error) || !isRecord(error.response) || !isRecord(error.response.data)) {
+    return false;
+  }
+  const errors = error.response.data.errors;
+  return Array.isArray(errors) && errors.some((item) => isRecord(item) && item.code === AI_EMPLOYEE_USERNAME_CONFLICT);
+};
 
 const isResourceAction = (value: unknown): value is ResourceAction => typeof value === 'function';
 
@@ -1343,6 +1352,18 @@ const AIEmployeeDrawerContent: React.FC<{
       message.success(t('Saved successfully'));
       await onSubmitted();
       await ctx.view.close(undefined, true);
+    } catch (error) {
+      if (!editingRecord && isAIEmployeeUsernameConflictError(error)) {
+        setActiveFormTab('profile');
+        form.setFields([
+          {
+            name: 'username',
+            errors: [t('Username already exists')],
+          },
+        ]);
+        return;
+      }
+      throw error;
     } finally {
       setSaving(false);
     }

@@ -211,6 +211,7 @@
   "Please choose an AI employee": "Please choose an AI employee",
   "Please select file objects.": "Please select file objects.",
   "Popup blocked. Please allow popups and try again.": "Popup blocked. Please allow popups and try again.",
+  "Username already exists": "Username already exists",
   "Position": "Position",
   "Position description": "A short label indicating the AI employee’s responsibility.",
   "Position placeholder": "e.g. Translator, etc.",

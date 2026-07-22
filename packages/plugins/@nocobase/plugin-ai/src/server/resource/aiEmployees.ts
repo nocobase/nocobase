@@ -8,11 +8,45 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
+import { UniqueConstraintError } from '@nocobase/database';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
 import { EEFeatures } from '../manager/ai-feature-manager';
+import { AI_EMPLOYEE_USERNAME_CONFLICT } from '../../common/error-codes';
+
+const isUniqueConstraintError = (error: unknown) =>
+  error instanceof UniqueConstraintError ||
+  (typeof error === 'object' && error !== null && 'name' in error && error.name === 'SequelizeUniqueConstraintError');
+
+const throwUsernameConflict = (ctx: Context): never =>
+  ctx.throw(409, {
+    code: AI_EMPLOYEE_USERNAME_CONFLICT,
+    message: ctx.t('Username already exists'),
+  });
+
+export const create = async (ctx: Context, next: Next) => {
+  const username = ctx.action.params.values?.username;
+
+  if (typeof username === 'string') {
+    const existingEmployee = await ctx.db.getRepository('aiEmployees').findOne({
+      filter: { username },
+    });
+    if (existingEmployee) {
+      throwUsernameConflict(ctx);
+    }
+  }
+
+  try {
+    await actions.create(ctx, next);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throwUsernameConflict(ctx);
+    }
+    throw error;
+  }
+};
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
