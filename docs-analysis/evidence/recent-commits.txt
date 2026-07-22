@@ -1,0 +1,30 @@
+a1878e8d8a (HEAD -> main, origin/main, origin/HEAD) fix(utils): validate server request redirect targets (#10109)
+6915e79c4b fix(workflow): order pre-action middleware before default (#10119)
+cb2d9954e0 fix(client-v2): guard missing collection (#10116)
+f3a2e7f915 fix(flow-engine): constrain mobile popup (#10118)
+2ff1f1996f fix(client-v2): avoid stale tab route updates (#10117)
+13206a595c docs: update changelogs
+80ed434efe chore(versions): 😊 publish v2.1.26
+5f0630e32b fix(database): prevent SQL injection in view metadata queries (#10115)
+15b4be297b fix(client-v2): reset markdown heading styles (#10107)
+e276f7bc05 fix(file-manager): prevent active XML content XSS (#10104)
+1c4c8f304c docs: clarify AI form setup in JS blocks (#10114)
+18109492cb docs: reapply data sources documentation (#10112)
+646eea1480 docs: explain AI form filling in JS blocks (#10110)
+51c4594f21 Revert "docs: update data sources documentation (#10108)" (#10111)
+47490a684e docs: update data sources documentation (#10108)
+eb87e1f9e4 fix: correct system language labels (#10090)
+4bc801d943 fix(plugin-ai): preserve pasted file attachment source (#10106)
+18f621f4d3 docs: update changelogs
+de40c2e007 chore(versions): 😊 publish v2.1.25
+1e63e0a55d Revert "refactor(plugin-file-manager): use permanent url for files (#10047)" (#10102)
+3827a8cf01 refactor(plugin-file-manager): use permanent url for files (#10047)
+fb2cfddb56 fix: support external data source attachments in AI workflows (#10098)
+5620f2c382 fix(markdown): sanitize iframe rendering in v1 (#10096)
+32660cdba0 fix(plugin-ai): load documents from temp files in worker (#10083)
+37889ec38c ci(frontend): reduce test timeout
+d5489b1ab2 fix(plugin-workflow): omit hidden fields in workflow toJSON (#10086)
+23e18129f5 fix(plugin-ai): authorize tool-call approvals by message session (#10077)
+b3b471d06d fix(plugin-user-data-sync): preserve incoming record order (#10028)
+01ed39bb9d docs: add multilingual tutorial hub and practice guides (#10071)
+afd774db47 docs: update changelogs
