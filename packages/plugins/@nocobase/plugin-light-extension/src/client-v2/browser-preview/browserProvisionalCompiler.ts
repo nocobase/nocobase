@@ -19,8 +19,7 @@ import type { Loader, Message, OnResolveArgs, Plugin } from 'esbuild-wasm/esm/br
 import * as esbuild from 'esbuild-wasm/esm/browser';
 import ts from 'typescript';
 
-import { createLightExtensionProblemFactory } from '../../shared/problems';
-import type { LightExtensionProblem } from '../../shared/types';
+import type { LightExtensionDiagnostic } from '../../shared/types';
 import {
   LIGHT_EXTENSION_BROWSER_PREVIEW_COMPILER_BUILD_ID,
   type BrowserPreviewEntryContract,
@@ -112,15 +111,7 @@ export class BrowserProvisionalCompiler {
     vfs: BrowserPreviewVirtualFileSystem,
     entry: BrowserPreviewEntryContract,
     workerRestartCount: number,
-    requestId: string,
-    snapshotId: string,
   ): Promise<ProvisionalCompileResult> {
-    const createProblem = createLightExtensionProblemFactory({
-      snapshotId,
-      requestId,
-      source: 'browser-preview',
-      phase: 'compile',
-    });
     if (!this.initialized) {
       throw new BrowserPreviewCompilerError(
         'PREVIEW_WASM_INITIALIZE_FAILED',
@@ -129,12 +120,12 @@ export class BrowserProvisionalCompiler {
     }
     if (!vfs.has(entry.entryPath)) {
       return this.buildRejectedResult(vfs, entry, workerRestartCount, [
-        createProblem({
+        {
           code: 'RUNJS_ENTRY_NOT_FOUND',
           severity: 'error',
           message: `Entry file "${entry.entryPath}" was not found`,
           path: entry.entryPath,
-        }),
+        },
       ]);
     }
 
@@ -172,18 +163,17 @@ export class BrowserProvisionalCompiler {
           'The provisional preview compiler did not produce JavaScript output',
         );
       }
-      const problems = result.warnings.map((message) => toProblem(message, entry.entryPath, 'warning', createProblem));
+      const diagnostics = result.warnings.map((message) => toDiagnostic(message, entry.entryPath, 'warning'));
 
       return {
         provisional: true,
-        snapshotId,
-        requestId,
-        accepted: !problems.some((problem) => problem.severity === 'error'),
+        accepted: !diagnostics.some((diagnostic) => diagnostic.severity === 'error'),
         artifact: {
           code: removeSourceMapComment(javascript).trimEnd(),
           sourceMap,
           version: entry.runtimeVersion,
           entryPath: entry.entryPath,
+          diagnostics,
           metadata: {
             provisional: true,
             trust: 'client-advisory',
@@ -193,7 +183,7 @@ export class BrowserProvisionalCompiler {
             kind: entry.kind,
           },
         },
-        problems,
+        diagnostics,
         metafile: result.metafile as unknown as Record<string, unknown>,
         metrics,
       };
@@ -201,18 +191,18 @@ export class BrowserProvisionalCompiler {
       if (error instanceof BrowserPreviewCompilerError) {
         throw error;
       }
-      const problems = isBuildFailure(error)
-        ? error.errors.map((message) => toProblem(message, entry.entryPath, 'error', createProblem))
+      const diagnostics = isBuildFailure(error)
+        ? error.errors.map((message) => toDiagnostic(message, entry.entryPath, 'error'))
         : [
-            createProblem({
+            {
               code: 'PREVIEW_BUILD_FAILED',
               severity: 'error' as const,
               message: toErrorMessage(error),
               path: entry.entryPath,
               details: { provisional: true },
-            }),
+            },
           ];
-      return this.buildRejectedResult(vfs, entry, workerRestartCount, problems, performance.now() - buildStartedAt);
+      return this.buildRejectedResult(vfs, entry, workerRestartCount, diagnostics, performance.now() - buildStartedAt);
     }
   }
 
@@ -226,18 +216,17 @@ export class BrowserProvisionalCompiler {
     vfs: BrowserPreviewVirtualFileSystem,
     entry: BrowserPreviewEntryContract,
     workerRestartCount: number,
-    problems: LightExtensionProblem[],
+    diagnostics: LightExtensionDiagnostic[],
     elapsedMs = 0,
   ): ProvisionalCompileResult {
     return {
       provisional: true,
-      snapshotId: problems[0]?.snapshotId || `browser-preview:${vfs.version}`,
-      requestId: problems[0]?.requestId || 'browser-preview:unknown',
       accepted: false,
       artifact: {
         code: '',
         version: entry.runtimeVersion,
         entryPath: entry.entryPath,
+        diagnostics,
         metadata: {
           provisional: true,
           trust: 'client-advisory',
@@ -247,10 +236,10 @@ export class BrowserProvisionalCompiler {
           kind: entry.kind,
         },
       },
-      problems,
+      diagnostics,
       metrics: {
         ...this.buildMetrics(vfs, workerRestartCount, elapsedMs),
-        previewFailureCode: problems[0]?.code || 'PREVIEW_BUILD_FAILED',
+        previewFailureCode: diagnostics[0]?.code || 'PREVIEW_BUILD_FAILED',
       },
     };
   }
@@ -446,30 +435,19 @@ function scriptKind(path: string): ts.ScriptKind {
   }
 }
 
-function toProblem(
-  message: Message,
-  fallbackPath: string,
-  severity: 'error' | 'warning',
-  createProblem: ReturnType<typeof createLightExtensionProblemFactory>,
-): LightExtensionProblem {
-  return createProblem({
-    code: inferProblemCode(message.text),
+function toDiagnostic(message: Message, fallbackPath: string, severity: 'error' | 'warning'): LightExtensionDiagnostic {
+  return {
+    code: inferDiagnosticCode(message.text),
     severity,
     message: message.text,
     path: normalizeEsbuildPath(message.location?.file || fallbackPath),
-    range: message.location
-      ? {
-          start: {
-            line: message.location.line,
-            column: message.location.column + 1,
-          },
-        }
-      : undefined,
+    line: message.location?.line,
+    column: message.location ? message.location.column + 1 : undefined,
     details: { provisional: true },
-  });
+  };
 }
 
-function inferProblemCode(message: string): string {
+function inferDiagnosticCode(message: string): string {
   if (message.includes('not allowed') || message.includes('escapes the RunJS workspace')) {
     return 'RUNJS_IMPORT_NOT_ALLOWED';
   }
@@ -510,14 +488,14 @@ function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function toPortableProblems(problems: LightExtensionProblem[]): RunJSPortableCompileDiagnostic[] {
-  return problems.map((problem) => ({
-    code: problem.code,
-    severity: problem.severity,
-    message: problem.message,
-    path: problem.path,
-    line: problem.range?.start.line,
-    column: problem.range?.start.column,
-    details: problem.details,
+export function toPortableDiagnostics(diagnostics: LightExtensionDiagnostic[]): RunJSPortableCompileDiagnostic[] {
+  return diagnostics.map((diagnostic) => ({
+    code: diagnostic.code,
+    severity: diagnostic.severity,
+    message: diagnostic.message,
+    path: diagnostic.path,
+    line: diagnostic.line,
+    column: diagnostic.column,
+    details: diagnostic.details,
   }));
 }

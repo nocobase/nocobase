@@ -9,10 +9,10 @@
 
 import { lightExtensionPaths } from './paths';
 import { lightExtensionSchemas } from './schemas';
+import vscFileSwagger from './vsc-file';
 
 export default {
   openapi: '3.0.2',
-  'x-mcp': false,
   info: {
     title: 'NocoBase API - Light extension plugin',
     version: '1.0.0',
@@ -21,16 +21,18 @@ export default {
     { name: 'lightExtensionRepos', description: 'Discover existing light-extension source repositories.' },
     { name: 'lightExtensionEntries', description: 'Inspect persisted light-extension entries.' },
     { name: 'lightExtensionReferences', description: 'Inspect visible light-extension usage references.' },
-    { name: 'lightExtensionContexts', description: 'Inspect ACL-filtered binding-aware authoring context.' },
     { name: 'lightExtensionFiles', description: 'Read and save light-extension source files.' },
     { name: 'lightExtensions', description: 'Preview light-extension source compilation.' },
-    {
-      name: 'lightExtensionPreviewProblems',
-      description: 'Exchange short-lived preview problems through a user- and role-scoped cursor channel.',
-    },
+    ...vscFileSwagger.tags,
   ],
-  paths: lightExtensionPaths,
+  paths: {
+    ...lightExtensionPaths,
+    ...vscFileSwagger.paths,
+  },
   components: {
-    schemas: lightExtensionSchemas,
+    schemas: {
+      ...lightExtensionSchemas,
+      ...vscFileSwagger.components.schemas,
+    },
   },
 };

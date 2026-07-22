@@ -12,8 +12,8 @@ import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '../vs
 import { createHash, randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';
-import { sortLightExtensionProblems } from '../../shared/problems';
-import type { LightExtensionProblem } from '../../shared/types';
+import type { LightExtensionDiagnostic } from '../../shared/types';
+import { sortDiagnostics } from './LightExtensionValidator';
 
 export interface LightExtensionRawResourceDeniedAuditInput {
   permission: VscPermissionHookInput;
@@ -85,10 +85,10 @@ export interface LightExtensionCompileAuditInput {
   entryPath?: string;
   surfaceStyle?: string;
   runtimeVersion?: string;
-  problemCount: number;
+  diagnosticCount: number;
   errorCount: number;
   warningCount: number;
-  problems?: LightExtensionProblem[];
+  diagnostics?: LightExtensionDiagnostic[];
   message: string;
   reasonCode?: string;
   details?: Record<string, unknown>;
@@ -241,10 +241,10 @@ export class LightExtensionAuditService {
           entryPath: sanitizeText(input.entryPath),
           surfaceStyle: sanitizeText(input.surfaceStyle),
           runtimeVersion: sanitizeText(input.runtimeVersion),
-          problemCount: input.problemCount,
+          diagnosticCount: input.diagnosticCount,
           errorCount: input.errorCount,
           warningCount: input.warningCount,
-          problems: summarizeProblems(input.problems || []),
+          diagnostics: summarizeDiagnostics(input.diagnostics || []),
           ...(input.details ? sanitizeReferenceAuditDetails(input.details) : {}),
         }),
         createdAt: new Date(),
@@ -378,12 +378,12 @@ function compactObject<T extends Record<string, unknown>>(input: T): T {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => typeof value !== 'undefined')) as T;
 }
 
-function summarizeProblems(problems: LightExtensionProblem[]): Array<Record<string, unknown>> | undefined {
-  if (!problems.length) {
+function summarizeDiagnostics(diagnostics: LightExtensionDiagnostic[]): Array<Record<string, unknown>> | undefined {
+  if (!diagnostics.length) {
     return undefined;
   }
 
-  return sortLightExtensionProblems(problems)
+  return sortDiagnostics(diagnostics)
     .slice(0, 20)
     .map((item) =>
       compactObject({
@@ -392,11 +392,8 @@ function summarizeProblems(problems: LightExtensionProblem[]): Array<Record<stri
         path: sanitizeText(item.path),
         kind: sanitizeText(item.kind),
         entryName: sanitizeText(item.entryName),
-        line: item.range?.start.line,
-        column: item.range?.start.column,
-        phase: item.phase,
-        source: item.source,
-        fingerprint: item.fingerprint,
+        line: item.line,
+        column: item.column,
       }),
     );
 }

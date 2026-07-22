@@ -65,6 +65,7 @@ const entry = {
   settingsDefaultsHash: null,
   compiledAt: '2026-07-09T00:00:00.000Z',
   healthStatus: 'ready',
+  diagnostics: [],
 };
 
 describe('JSPageLightExtensionSourceField copyback', () => {

@@ -10,18 +10,15 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Modal, message } from 'antd';
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI } from '@nocobase/light-extension-sdk/schema';
-import { decodeLightExtensionPreviewSessionDescriptor } from '@nocobase/light-extension-sdk/agent-loop';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
-import { createLightExtensionProblem } from '../../shared/problems';
 import { LightExtensionHookError, type UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
 import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
-import { LightExtensionPreviewProblemClient } from '../problems/previewProblemClient';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 
 const mocks = vi.hoisted(() => ({
@@ -33,7 +30,6 @@ const mocks = vi.hoisted(() => ({
     pullCommit: vi.fn(),
     saveSource: vi.fn(),
     compileWorkspacePreview: vi.fn(),
-    getContextPack: vi.fn(),
     listCommits: vi.fn(),
   },
   archive: {
@@ -42,16 +38,6 @@ const mocks = vi.hoisted(() => ({
     downloadLightExtensionWorkspaceArchive: vi.fn(() => true),
     readLightExtensionWorkspaceArchive: vi.fn(),
   },
-  hostPreviewSessions: [] as Array<{
-    close: ReturnType<typeof vi.fn>;
-    input: {
-      apiFailureReporter?: { report: (event: unknown) => void | Promise<void> };
-      executionId?: string;
-      previewSessionId?: string;
-      reporter: { report: (event: unknown) => void };
-    };
-    sourceRef: Record<string, unknown>;
-  }>,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -61,33 +47,6 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
-  createRunJSHostPreviewSession: (input: {
-    apiFailureReporter?: { report: (event: unknown) => void | Promise<void> };
-    artifactHash: string;
-    executionId?: string;
-    previewSessionId?: string;
-    snapshotId: string;
-    sourceMap: string;
-    metadata?: Record<string, unknown>;
-    reporter: { report: (event: unknown) => void };
-  }) => {
-    const sequence = mocks.hostPreviewSessions.length + 1;
-    const sourceMap = JSON.parse(input.sourceMap) as { sourceURL: string };
-    const sourceRef = {
-      type: 'runjs-host-preview',
-      version: 1,
-      previewSessionId: input.previewSessionId || `preview:${sequence}`,
-      executionId: input.executionId || `execution:${sequence}`,
-      artifactHash: input.artifactHash,
-      snapshotId: input.snapshotId,
-      sourceURL: sourceMap.sourceURL,
-      sourceMap: input.sourceMap,
-      metadata: input.metadata,
-    };
-    const session = { close: vi.fn(), input, sourceRef };
-    mocks.hostPreviewSessions.push(session);
-    return session;
-  },
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
 
@@ -232,7 +191,6 @@ vi.mock('../vsc-file/public-api', () => {
       activeFile,
       onChange,
       onRunPreview,
-      onDiffToggle,
       scene,
       showRunButton,
       previewing,
@@ -243,12 +201,10 @@ vi.mock('../vsc-file/public-api', () => {
       onFilesCollapsedChange,
       filesCollapsed,
       jsonSchemaResolver,
-      revealTarget,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
       onRunPreview?: () => void;
-      onDiffToggle?: () => void;
       scene?: string;
       showRunButton?: boolean;
       previewing?: boolean;
@@ -262,7 +218,6 @@ vi.mock('../vsc-file/public-api', () => {
         path: string,
         files: Array<{ content: string; path: string }>,
       ) => { uri: string } | undefined;
-      revealTarget?: { path: string; line: number; column: number; requestId: string };
     }) => (
       <div
         data-has-run-preview={String(Boolean(onRunPreview))}
@@ -271,10 +226,6 @@ vi.mock('../vsc-file/public-api', () => {
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
-        data-reveal-column={revealTarget?.column || ''}
-        data-reveal-line={revealTarget?.line || ''}
-        data-reveal-path={revealTarget?.path || ''}
-        data-reveal-request-id={revealTarget?.requestId || ''}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -284,11 +235,6 @@ vi.mock('../vsc-file/public-api', () => {
         {showRunButton ? (
           <button disabled={!onRunPreview} onClick={onRunPreview} type="button">
             {previewing ? 'Running' : 'Run'}
-          </button>
-        ) : null}
-        {onDiffToggle ? (
-          <button onClick={onDiffToggle} type="button">
-            View diff
           </button>
         ) : null}
         {toolbarActions}
@@ -399,40 +345,7 @@ function createSaveResult() {
       status: 'success',
       entries: [],
     },
-    problems: [],
-  };
-}
-
-function createAcceptedPreviewResult(artifactHash = 'a'.repeat(64), requestId = 'workspace-preview-request-1') {
-  return {
-    baseHeadCommitId: 'commit-1',
-    snapshotId: 'workspace-preview-1',
-    requestId,
-    accepted: true,
-    problems: [],
-    entries: [],
-    artifact: {
-      artifactHash,
-      code: 'ctx.render(<div>preview</div>);',
-      sourceMap: JSON.stringify({
-        version: 1,
-        kind: 'runjs-line-map',
-        sourceURL: 'nocobase-runjs://bundle/workspace-preview.js',
-        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        generatedCodeLineOffset: 2,
-        mappings: [
-          {
-            generatedLine: 1,
-            generatedColumn: 1,
-            source: 'src/client/js-blocks/sales-kpi/index.tsx',
-            sourceLine: 1,
-            sourceColumn: 1,
-          },
-        ],
-      }),
-      version: 'v2',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-    },
+    diagnostics: [],
   };
 }
 
@@ -493,32 +406,22 @@ describe('LightExtensionWorkspacePage', () => {
       ],
     });
     mocks.api.saveSource.mockResolvedValue(createSaveResult());
-    mocks.api.compileWorkspacePreview.mockResolvedValue(createAcceptedPreviewResult());
-    mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
-    mocks.api.getContextPack.mockResolvedValue({
-      contextPackVersion: 'light-extension.context-pack.v1',
-      contextMode: 'generic',
-      reason: 'binding_not_selected',
-      repoId: 'ler_sales',
-      entry: {
-        id: 'lee_sales_kpi',
-        kind: 'js-block',
-        entryName: 'sales-kpi',
+    mocks.api.compileWorkspacePreview.mockResolvedValue({
+      accepted: true,
+      diagnostics: [],
+      artifact: {
+        code: 'ctx.render(<div>preview</div>);',
+        version: 'v2',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        settingsSchema: null,
       },
-      references: [],
-      supportedImports: [],
-      versions: { sdk: '2.2.0-beta.15', validator: '1' },
-      contextHash: 'generic_context_1',
     });
+    mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
     mocks.api.listCommits.mockResolvedValue([]);
     mocks.archive.createLightExtensionWorkspaceArchive.mockResolvedValue(
       new Blob(['workspace'], { type: 'application/zip' }),
     );
     mocks.archive.downloadLightExtensionWorkspaceArchive.mockReturnValue(true);
     mocks.archive.readLightExtensionWorkspaceArchive.mockResolvedValue('zip-base64');
-    mocks.hostPreviewSessions.length = 0;
   });
 
   it('shows only a global loading state while the initial workspace is loading', async () => {
@@ -556,7 +459,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByTestId('runjs-code-tab')).toBeInTheDocument();
   });
 
-  it('starts embedded field-value workspaces with files collapsed and keeps problems inside the workspace shell', async () => {
+  it('starts embedded field-value workspaces with files collapsed and keeps diagnostics inside the workspace shell', async () => {
     render(
       <MemoryRouter>
         <LightExtensionWorkspacePage defaultFilesCollapsed embedded repoId="ler_sales" />
@@ -565,10 +468,10 @@ describe('LightExtensionWorkspacePage', () => {
 
     const workspace = await screen.findByTestId('light-extension-runjs-studio-workspace');
     expect(screen.queryByTestId('runjs-files-panel')).not.toBeInTheDocument();
-    expect(within(workspace).getByTestId('light-extension-workspace-problems')).toHaveStyle({
+    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({
       overflowY: 'hidden',
     });
-    expect(within(workspace).getByTestId('light-extension-workspace-problems')).toHaveTextContent('Problems');
+    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveTextContent('Diagnostics');
 
     fireEvent.click(within(workspace).getByRole('button', { name: 'Expand files' }));
     expect(await screen.findByTestId('runjs-files-panel')).toHaveAttribute('data-collapsed', 'false');
@@ -675,7 +578,7 @@ describe('LightExtensionWorkspacePage', () => {
     ]);
   });
 
-  it('keeps local edits open and shows problems when saveSource rejects invalid source with 422', async () => {
+  it('keeps local edits open and shows diagnostics when saveSource rejects invalid source with 422', async () => {
     const onRequestClose = vi.fn();
     const onSaved = vi.fn();
     mocks.api.saveSource.mockRejectedValueOnce(
@@ -685,17 +588,13 @@ describe('LightExtensionWorkspacePage', () => {
         status: 422,
         message: 'Light extension source cannot be compiled',
         details: {
-          problems: [
-            createLightExtensionProblem({
-              phase: 'typecheck',
-              source: 'typescript',
+          diagnostics: [
+            {
               code: 'RUNJS_COMPILE_FAILED',
               severity: 'error',
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
               message: "Type 'string' is not assignable to type 'number'.",
-              snapshotId: 'snapshot-invalid-source',
-              requestId: 'request-invalid-source',
-            }),
+            },
           ],
         },
       }),
@@ -849,9 +748,6 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.queryByText('Building local provisional preview')).not.toBeInTheDocument();
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'true');
-    expect(
-      screen.getByText('Host Preview runs this code in the current application and may create side effects.'),
-    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'ctx.render(<div>unsaved preview</div>);\n' },
     });
@@ -860,7 +756,6 @@ describe('LightExtensionWorkspacePage', () => {
     await waitFor(() => expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(1));
     expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
       repoId: 'ler_sales',
-      expectedHeadCommitId: 'commit-1',
       entryId: 'lee_sales_kpi',
       kind: 'js-block',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -875,612 +770,13 @@ describe('LightExtensionWorkspacePage', () => {
     await waitFor(() =>
       expect(onPreview).toHaveBeenCalledWith(
         expect.objectContaining({
-          artifact: expect.objectContaining({
-            artifactHash: 'a'.repeat(64),
-            code: 'ctx.render(<div>preview</div>);',
-            version: 'v2',
-          }),
-          requestId: 'workspace-preview-request-1',
-          sourceRef: expect.objectContaining({
-            artifactHash: 'a'.repeat(64),
-            executionId: 'execution:1',
-            previewSessionId: 'preview:1',
-            snapshotId: expect.any(String),
-            sourceMap: expect.any(String),
-          }),
+          code: 'ctx.render(<div>preview</div>);',
+          version: 'v2',
         }),
       ),
     );
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(screen.queryByText('Preview updated')).not.toBeInTheDocument();
-  });
-
-  it('opens the remote problem channel before host preview, appends scoped API failures, and stales on source change', async () => {
-    const operations: string[] = [];
-    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
-    const onPreview = vi.fn(async () => {
-      operations.push('preview');
-    });
-    const ownerLocator = {
-      kind: 'flowModel.step' as const,
-      modelUid: 'block_1',
-      use: 'JSBlockModel' as const,
-      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
-    };
-    const request = vi.fn(async (options: { url: string; data: Record<string, unknown> }) => {
-      operations.push(options.url);
-      const identity = {
-        sessionId: 'preview:server',
-        repoId: 'ler_sales',
-        entryId: 'lee_sales_kpi',
-        ownerLocator,
-        snapshotId: String(options.data.snapshotId || 'snapshot'),
-        artifactHash: 'a'.repeat(64),
-        executionId: 'execution:server',
-      };
-      return {
-        data: {
-          data: {
-            schemaVersion: 1,
-            ...identity,
-            state: options.url.endsWith(':close') ? options.data.state : 'active',
-            cursor: options.url.endsWith(':append') ? 1 : 0,
-            nextCursor: options.url.endsWith(':append') ? 1 : 0,
-            expiresAt: '2026-07-21T00:02:00.000Z',
-            droppedCount: 0,
-            items: [],
-          },
-        },
-      };
-    });
-    const previewProblemClient = new LightExtensionPreviewProblemClient({ request } as never);
-    const workspaceScope: LightExtensionWorkspaceScope = {
-      mode: 'entry',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onFooterActionsChange={(actions) => {
-            footerActions = actions;
-          }}
-          onPreview={onPreview}
-          ownerLocator={ownerLocator}
-          previewProblemClient={previewProblemClient}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>Agent-managed patch</div>);' },
-    });
-    await waitFor(() => expect(footerActions?.disabled).toBe(true));
-    act(() => {
-      footerActions?.onSave();
-    });
-    expect(screen.queryByRole('dialog', { name: 'Save version' })).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
-      ),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
-    expect(operations.slice(0, 2)).toEqual(['lightExtensionPreviewProblems:open', 'preview']);
-    expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'lightExtensionPreviewProblems:open',
-        data: expect.objectContaining({ snapshotId: 'workspace-preview-1' }),
-      }),
-    );
-    const session = mocks.hostPreviewSessions[0];
-    expect(session.sourceRef).toMatchObject({
-      previewSessionId: 'preview:server',
-      executionId: 'execution:server',
-    });
-    const agentStatus = screen.getByTestId('light-extension-agent-loop-status');
-    expect(within(agentStatus).getByText('workspace-preview-1')).toBeInTheDocument();
-    expect(within(agentStatus).getByText('Preview session status: active')).toBeInTheDocument();
-    const previewToken = within(agentStatus).getByText((content) =>
-      content.startsWith('light-preview-v1.'),
-    ).textContent;
-    expect(decodeLightExtensionPreviewSessionDescriptor(previewToken || '')).toMatchObject({
-      sessionId: 'preview:server',
-      repoId: 'ler_sales',
-      entryId: 'lee_sales_kpi',
-      snapshotId: 'workspace-preview-1',
-      contextHash: 'generic_context_1',
-      executionId: 'execution:server',
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'View diff' }));
-    expect(within(agentStatus).getByText('Reviewed')).toBeInTheDocument();
-    expect(within(agentStatus).getByText('Ready')).toBeInTheDocument();
-    await waitFor(() => expect(footerActions?.disabled).toBe(false));
-    act(() => {
-      footerActions?.onSave();
-    });
-    expect(await screen.findByRole('dialog', { name: 'Save version' })).toBeInTheDocument();
-
-    await act(async () => {
-      await session.input.apiFailureReporter?.report({
-        schemaVersion: 1,
-        identity: {
-          executionId: 'execution:server',
-          artifactHash: 'a'.repeat(64),
-          sourceURL: session.sourceRef.sourceURL,
-        },
-        issue: {
-          schemaVersion: 1,
-          type: 'api',
-          phase: 'permission',
-          severity: 'error',
-          method: 'POST',
-          resource: 'posts',
-          action: 'update',
-          status: 403,
-          reasonCode: 'NO_PERMISSION',
-        },
-      });
-    });
-    expect(await screen.findByText('Preview API permission denied')).toBeInTheDocument();
-    expect(within(agentStatus).getByText('Locked')).toBeInTheDocument();
-    await waitFor(() => expect(footerActions?.disabled).toBe(true));
-    expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'lightExtensionPreviewProblems:append',
-        data: expect.objectContaining({
-          sessionId: 'preview:server',
-          executionId: 'execution:server',
-          problems: [
-            expect.objectContaining({
-              phase: 'permission',
-              source: 'api',
-              details: expect.objectContaining({
-                method: 'POST',
-                resource: 'posts',
-                action: 'update',
-                status: 403,
-                reasonCode: 'NO_PERMISSION',
-              }),
-            }),
-          ],
-        }),
-      }),
-    );
-    await confirmSaveVersion('Blocked Agent save');
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
-        ),
-      ).toBeInTheDocument(),
-    );
-    expect(mocks.api.saveSource).not.toHaveBeenCalled();
-
-    fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>changed</div>);' },
-    });
-    await waitFor(() =>
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'lightExtensionPreviewProblems:close',
-          data: expect.objectContaining({ state: 'stale' }),
-        }),
-      ),
-    );
-    expect(within(agentStatus).getByText('Preview session status: stale')).toBeInTheDocument();
-    expect(
-      within(agentStatus).queryByText((content) => content.startsWith('light-preview-v1.')),
-    ).not.toBeInTheDocument();
-  });
-
-  it('stales a remote session without running host preview when source changes while open is pending', async () => {
-    const onPreview = vi.fn();
-    const ownerLocator = {
-      kind: 'flowModel.step' as const,
-      modelUid: 'block_1',
-      use: 'JSBlockModel' as const,
-      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
-    };
-    let resolveOpen: ((value: unknown) => void) | undefined;
-    const request = vi.fn((options: { url: string; data: Record<string, unknown> }) => {
-      const result = {
-        schemaVersion: 1,
-        sessionId: 'preview:pending',
-        repoId: 'ler_sales',
-        entryId: 'lee_sales_kpi',
-        ownerLocator,
-        snapshotId: String(options.data.snapshotId || 'snapshot'),
-        artifactHash: 'a'.repeat(64),
-        executionId: 'execution:pending',
-        state: options.url.endsWith(':close') ? options.data.state : 'active',
-        cursor: 0,
-        nextCursor: 0,
-        expiresAt: '2026-07-21T00:02:00.000Z',
-        droppedCount: 0,
-        items: [],
-      };
-      if (options.url.endsWith(':open')) {
-        return new Promise((resolve) => {
-          resolveOpen = resolve;
-        });
-      }
-      return Promise.resolve({ data: { data: result } });
-    });
-    const previewProblemClient = new LightExtensionPreviewProblemClient({ request } as never);
-    const workspaceScope: LightExtensionWorkspaceScope = {
-      mode: 'entry',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onPreview={onPreview}
-          ownerLocator={ownerLocator}
-          previewProblemClient={previewProblemClient}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    await waitFor(() =>
-      expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensionPreviewProblems:open' })),
-    );
-    fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>changed while opening</div>);' },
-    });
-    const openRequest = request.mock.calls.find(([options]) => options.url.endsWith(':open'))?.[0];
-    await act(async () => {
-      resolveOpen?.({
-        data: {
-          data: {
-            schemaVersion: 1,
-            sessionId: 'preview:pending',
-            repoId: 'ler_sales',
-            entryId: 'lee_sales_kpi',
-            ownerLocator,
-            snapshotId: String(openRequest?.data.snapshotId || 'snapshot'),
-            artifactHash: 'a'.repeat(64),
-            executionId: 'execution:pending',
-            state: 'active',
-            cursor: 0,
-            nextCursor: 0,
-            expiresAt: '2026-07-21T00:02:00.000Z',
-            droppedCount: 0,
-            items: [],
-          },
-        },
-      });
-    });
-
-    await waitFor(() =>
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'lightExtensionPreviewProblems:close',
-          data: expect.objectContaining({ state: 'stale' }),
-        }),
-      ),
-    );
-    expect(onPreview).not.toHaveBeenCalled();
-    expect(mocks.hostPreviewSessions).toHaveLength(0);
-  });
-
-  it('keeps remote close failures observational when closing host preview', async () => {
-    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
-    const onPreview = vi.fn();
-    const onRequestClose = vi.fn();
-    const ownerLocator = {
-      kind: 'flowModel.step' as const,
-      modelUid: 'block_1',
-      use: 'JSBlockModel' as const,
-      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
-    };
-    const request = vi.fn(async (options: { url: string; data: Record<string, unknown> }) => {
-      if (options.url.endsWith(':close')) {
-        throw new Error('problem channel unavailable');
-      }
-      return {
-        data: {
-          data: {
-            schemaVersion: 1,
-            sessionId: 'preview:server',
-            repoId: 'ler_sales',
-            entryId: 'lee_sales_kpi',
-            ownerLocator,
-            snapshotId: String(options.data.snapshotId || 'snapshot'),
-            artifactHash: 'a'.repeat(64),
-            executionId: 'execution:server',
-            state: 'active',
-            cursor: 0,
-            nextCursor: 0,
-            expiresAt: '2026-07-21T00:02:00.000Z',
-            droppedCount: 0,
-            items: [],
-          },
-        },
-      };
-    });
-    const previewProblemClient = new LightExtensionPreviewProblemClient({ request } as never);
-    const workspaceScope: LightExtensionWorkspaceScope = {
-      mode: 'entry',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onFooterActionsChange={(actions) => {
-            footerActions = actions;
-          }}
-          onPreview={onPreview}
-          onRequestClose={onRequestClose}
-          ownerLocator={ownerLocator}
-          previewProblemClient={previewProblemClient}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
-    await act(async () => {
-      await footerActions?.onCancel();
-    });
-
-    expect(mocks.hostPreviewSessions[0].close).toHaveBeenCalledTimes(1);
-    expect(onRequestClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('maps host runtime events to the current workspace and ignores the closed session after source changes', async () => {
-    const workspaceScope: LightExtensionWorkspaceScope = {
-      mode: 'entry',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onPreview={async () => undefined}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    await waitFor(() => expect(mocks.hostPreviewSessions).toHaveLength(1));
-    const session = mocks.hostPreviewSessions[0];
-    const identity = {
-      executionId: String(session.sourceRef.executionId),
-      artifactHash: String(session.sourceRef.artifactHash),
-      sourceURL: String(session.sourceRef.sourceURL),
-    };
-
-    for (const [ruleId, phase, messageText] of [
-      ['runtime-error', 'runtime', 'sync preview failure'],
-      ['promise-rejection', 'runtime', 'async preview failure'],
-      ['timeout', 'runtime', 'preview timeout'],
-      ['react-error', 'react', 'react preview failure'],
-    ] as const) {
-      act(() => {
-        session.input.reporter.report({
-          schemaVersion: 1,
-          identity,
-          issue: {
-            schemaVersion: 1,
-            type: 'runtime',
-            phase,
-            severity: 'error',
-            ruleId,
-            message: messageText,
-            generatedLocation: {
-              sourceURL: identity.sourceURL,
-              line: 3,
-              column: 5,
-            },
-            stack: `Error: ${messageText}\n    at ${identity.sourceURL}:3:5`,
-          },
-        });
-      });
-    }
-
-    expect(await screen.findByText('sync preview failure')).toBeInTheDocument();
-    expect(screen.getByText('async preview failure')).toBeInTheDocument();
-    expect(screen.getByText('preview timeout')).toBeInTheDocument();
-    expect(screen.getByText('react preview failure')).toBeInTheDocument();
-    expect(screen.getAllByText(/src\/client\/js-blocks\/sales-kpi\/index\.tsx \/ js-block \/ Line 1/)).toHaveLength(4);
-
-    fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>changed</div>);\n' },
-    });
-    await waitFor(() => expect(session.close).toHaveBeenCalledTimes(1));
-    act(() => {
-      session.input.reporter.report({
-        schemaVersion: 1,
-        identity,
-        issue: {
-          schemaVersion: 1,
-          type: 'runtime',
-          phase: 'runtime',
-          severity: 'error',
-          ruleId: 'runtime-error',
-          message: 'stale preview failure',
-        },
-      });
-    });
-    expect(screen.queryByText('stale preview failure')).not.toBeInTheDocument();
-  });
-
-  it('ignores an older compile result when Run is clicked again for the same snapshot', async () => {
-    type PreviewResult = ReturnType<typeof createAcceptedPreviewResult>;
-    let resolveFirst: ((result: PreviewResult) => void) | undefined;
-    let resolveSecond: ((result: PreviewResult) => void) | undefined;
-    mocks.api.compileWorkspacePreview
-      .mockImplementationOnce(
-        () =>
-          new Promise<PreviewResult>((resolve) => {
-            resolveFirst = resolve;
-          }),
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise<PreviewResult>((resolve) => {
-            resolveSecond = resolve;
-          }),
-      );
-    const onPreview = vi.fn(async () => undefined);
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onPreview={onPreview}
-          repoId="ler_sales"
-          workspaceScope={{
-            mode: 'entry',
-            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-            kind: 'js-block',
-          }}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Running' }));
-    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(2);
-
-    await act(async () => {
-      resolveSecond?.(createAcceptedPreviewResult('b'.repeat(64), 'workspace-preview-request-2'));
-    });
-    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
-    expect(onPreview).toHaveBeenCalledWith(
-      expect.objectContaining({
-        artifact: expect.objectContaining({ artifactHash: 'b'.repeat(64) }),
-        requestId: 'workspace-preview-request-2',
-      }),
-    );
-
-    await act(async () => {
-      resolveFirst?.(createAcceptedPreviewResult('a'.repeat(64), 'workspace-preview-request-1'));
-    });
-    expect(mocks.hostPreviewSessions).toHaveLength(1);
-    expect(onPreview).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('Source changed while preview was compiling. Run again.')).not.toBeInTheDocument();
-  });
-
-  it('shows a structured problem when the saved host version cannot be restored', async () => {
-    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
-    const workspaceScope: LightExtensionWorkspaceScope = {
-      mode: 'entry',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onFooterActionsChange={(actions) => {
-            footerActions = actions;
-          }}
-          onPreview={async () => undefined}
-          onRequestClose={async () => {
-            throw new Error('restore rejected');
-          }}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    await waitFor(() => expect(mocks.hostPreviewSessions).toHaveLength(1));
-    await act(async () => {
-      await footerActions?.onCancel();
-    });
-
-    expect(await screen.findByText('Failed to restore the saved host version.')).toBeInTheDocument();
-    expect(screen.getByText('host_preview_restore_failed')).toBeInTheDocument();
-    expect(
-      screen.getByText('The saved host version could not be restored. Retry Cancel or reload the page.'),
-    ).toBeInTheDocument();
-  });
-
-  it('keeps the structured restore problem when closing after a successful save fails', async () => {
-    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
-    const restoreError = new Error('saved host restore rejected');
-
-    render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          embedded
-          entryId="lee_sales_kpi"
-          onFooterActionsChange={(actions) => {
-            footerActions = actions;
-          }}
-          onPreview={async () => undefined}
-          onRequestClose={async () => {
-            throw restoreError;
-          }}
-          onSaved={async () => undefined}
-          repoId="ler_sales"
-          workspaceScope={{
-            mode: 'entry',
-            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-            kind: 'js-block',
-          }}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-    await waitFor(() => expect(mocks.hostPreviewSessions).toHaveLength(1));
-    fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>saved source</div>);\n' },
-    });
-    await waitFor(() => expect(footerActions?.disabled).toBe(false));
-    const savePromise = footerActions?.requestSave();
-    await confirmSaveVersion('Save preview source');
-
-    await act(async () => {
-      await expect(savePromise).rejects.toBe(restoreError);
-    });
-    expect(mocks.hostPreviewSessions[0].close).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText('Failed to restore the saved host version.')).toBeInTheDocument();
-    expect(screen.getByText('host_preview_restore_failed')).toBeInTheDocument();
-    expect(
-      screen.getByText('The saved host version could not be restored. Retry Cancel or reload the page.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('saved host restore rejected')).not.toBeInTheDocument();
   });
 
   it('offers moving the current unsaved entry workspace back to inline code', async () => {
@@ -2575,143 +1871,6 @@ describe('LightExtensionWorkspacePage', () => {
     ).toHaveLength(1);
   });
 
-  it('refreshes precise binding declarations by context hash without reloading source files', async () => {
-    let releaseCustomerContext: (() => void) | undefined;
-    const customerContextGate = new Promise<void>((resolve) => {
-      releaseCustomerContext = resolve;
-    });
-    mocks.api.pull.mockResolvedValueOnce({
-      repo: { id: 'ler_sales' },
-      commit: { id: 'commit-1' },
-      tree: { hash: 'tree-1', entryCount: 2, byteSize: 260 },
-      unchanged: false,
-      files: [
-        {
-          path: 'src/client/js-blocks/orders/index.tsx',
-          content: 'ctx.record?.total;\n',
-          language: 'typescript',
-        },
-        {
-          path: 'src/client/js-blocks/orders/entry.json',
-          content: '{"schemaVersion":1,"key":"orders","settings":{"title":{"type":"string"}}}',
-          language: 'json',
-        },
-      ],
-    });
-    mocks.api.getContextPack.mockImplementation(async ({ ownerLocator }: { ownerLocator?: { modelUid?: string } }) => {
-      const customerBinding = ownerLocator?.modelUid === 'customers_block';
-      if (customerBinding) {
-        await customerContextGate;
-      }
-      return {
-        contextPackVersion: 'light-extension.context-pack.v1',
-        contextMode: 'precise',
-        reason: 'precise_binding',
-        repoId: 'ler_sales',
-        entry: {
-          id: 'lee_orders',
-          kind: 'js-block',
-          entryName: 'orders',
-          entryPath: 'src/client/js-blocks/orders/index.tsx',
-          settingsSchema: null,
-        },
-        references: [],
-        binding: {
-          referenceId: customerBinding ? 'ref_customers' : 'ref_orders',
-          ownerLocatorHash: customerBinding ? 'owner_customers' : 'owner_orders',
-          owner: {
-            ownerKind: 'flowModel.step',
-            modelUid: ownerLocator?.modelUid || 'orders_block',
-            modelUse: 'JSBlockModel',
-            surface: 'js-model.render',
-            dataSourceKey: 'main',
-            collectionName: customerBinding ? 'customers' : 'orders',
-          },
-        },
-        collection: {
-          dataSourceKey: 'main',
-          name: customerBinding ? 'customers' : 'orders',
-          fields: [
-            {
-              name: customerBinding ? 'customerName' : 'total',
-              type: customerBinding ? 'string' : 'double',
-              nullable: false,
-              readable: true,
-              writable: true,
-            },
-            {
-              name: 'secret',
-              type: 'string',
-              nullable: true,
-              readable: false,
-              writable: false,
-            },
-          ],
-        },
-        supportedImports: [],
-        versions: { sdk: '2.2.0-beta.15', validator: '1' },
-        contextHash: customerBinding ? 'context_customers' : 'context_orders',
-      };
-    });
-    const workspaceScope: LightExtensionWorkspaceScope = {
-      mode: 'entry',
-      entryPath: 'src/client/js-blocks/orders/index.tsx',
-      kind: 'js-block',
-    };
-    const ordersOwner = {
-      kind: 'flowModel.step' as const,
-      modelUid: 'orders_block',
-      use: 'JSBlockModel' as const,
-      stepPath: ['stepParams', 'jsSettings'] as ['stepParams', 'jsSettings'],
-    };
-    const view = render(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          entryId="lee_orders"
-          initialPath="src/client/js-blocks/orders/index.tsx"
-          ownerLocator={ordersOwner}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    const codeTab = await screen.findByTestId('runjs-code-tab');
-    await waitFor(() => expect(codeTab.getAttribute('data-workspace-file-contents')).toContain('total?: number;'));
-    expect(codeTab.getAttribute('data-workspace-file-contents')).toContain('LightExtensionBindingContext<Settings>');
-    expect(codeTab.getAttribute('data-workspace-file-contents')).not.toContain('secret?:');
-    expect(screen.queryByText('No binding is selected. Generic context types are active.')).toBeNull();
-    expect(mocks.api.pull).toHaveBeenCalledTimes(1);
-
-    view.rerender(
-      <MemoryRouter>
-        <LightExtensionWorkspacePage
-          entryId="lee_orders"
-          initialPath="src/client/js-blocks/orders/index.tsx"
-          ownerLocator={{ ...ordersOwner, modelUid: 'customers_block' }}
-          repoId="ler_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => expect(mocks.api.getContextPack).toHaveBeenCalledTimes(2));
-    await waitFor(() =>
-      expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).not.toContain(
-        'total?: number;',
-      ),
-    );
-    act(() => releaseCustomerContext?.());
-
-    await waitFor(() =>
-      expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).toContain(
-        'customerName?: string;',
-      ),
-    );
-    expect(mocks.api.pull).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText('Edit file content')).toHaveValue('ctx.record?.total;\n');
-  });
-
   it('keeps generated SDK declarations out of saveSource changes', async () => {
     mocks.api.pull.mockResolvedValueOnce({
       repo: { id: 'ler_sales' },
@@ -2758,7 +1917,7 @@ describe('LightExtensionWorkspacePage', () => {
     ]);
   });
 
-  it('shows persisted save problems after validation failure', async () => {
+  it('shows persisted save diagnostics after validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
       new LightExtensionHookError({
         operation: 'saveSource',
@@ -2766,19 +1925,15 @@ describe('LightExtensionWorkspacePage', () => {
         status: 422,
         message: 'Light extension source cannot be compiled',
         details: {
-          problems: [
-            createLightExtensionProblem({
-              phase: 'policy',
-              source: 'validator',
+          diagnostics: [
+            {
               code: 'import_not_allowed',
               severity: 'error',
               message: 'Import "react" is not allowed',
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
-              snapshotId: 'snapshot-import-policy',
-              requestId: 'request-import-policy',
               kind: 'js-block',
               entryName: 'sales-kpi',
-            }),
+            },
           ],
         },
       }),
@@ -2799,10 +1954,10 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
-    expect(screen.getByTestId('light-extension-workspace-problems')).toHaveStyle({ overflowY: 'auto' });
+    expect(screen.getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({ overflowY: 'auto' });
   });
 
-  it('opens problem source locations after save validation failure', async () => {
+  it('opens diagnostic source locations after save validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
       new LightExtensionHookError({
         operation: 'saveSource',
@@ -2810,20 +1965,17 @@ describe('LightExtensionWorkspacePage', () => {
         status: 422,
         message: 'Light extension source workspace is invalid',
         details: {
-          problems: [
-            createLightExtensionProblem({
-              phase: 'compile',
-              source: 'runjs-compiler',
+          diagnostics: [
+            {
               code: 'RUNJS_IMPORT_NOT_FOUND',
               severity: 'error',
               message: 'Import target was not found',
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
-              range: { start: { line: 1, column: 8 } },
-              snapshotId: 'snapshot-save-validation',
-              requestId: 'request-save-validation',
+              line: 1,
+              column: 8,
               kind: 'js-block',
               entryName: 'sales-kpi',
-            }),
+            },
           ],
         },
       }),
@@ -2843,13 +1995,8 @@ describe('LightExtensionWorkspacePage', () => {
     await confirmSaveVersion('Check missing import');
 
     expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Open problem source.*Line 1/ }));
-    expect(await screen.findByText('Opened problem source')).toBeInTheDocument();
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-reveal-line', '1');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-reveal-column', '8');
-    const firstRequestId = screen.getByTestId('runjs-code-tab').getAttribute('data-reveal-request-id');
-    fireEvent.click(screen.getByRole('button', { name: /Open problem source.*Line 1/ }));
-    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-reveal-request-id')).not.toBe(firstRequestId);
+    fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));
+    expect(await screen.findByText('Opened diagnostic source')).toBeInTheDocument();
   });
 
   it('loads a history version through pullCommit instead of pull ref', async () => {

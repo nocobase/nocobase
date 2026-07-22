@@ -15,7 +15,6 @@ import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionMoveSourceInput,
   LightExtensionMoveToInlineInput,
-  LightExtensionWorkspaceCheckResult,
   LightExtensionWorkspacePreviewInput,
 } from '../../shared/types';
 import {
@@ -56,7 +55,7 @@ const resourceActionRunners: Record<LightExtensionActionName, ResourceActionRunn
   compilePreview: (services, input, currentUser) =>
     services.compilePreviewService.compilePreview(normalizeCompilePreviewInput(input), currentUser),
   compileWorkspacePreview: (services, input, currentUser) =>
-    compileWorkspacePreview(services, normalizeWorkspacePreviewInput(input), currentUser),
+    services.compilePreviewService.compileWorkspacePreview(normalizeWorkspacePreviewInput(input), currentUser),
   moveSource: (services, input, currentUser) => {
     if (!services.moveSourceService) {
       throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Move source service is unavailable');
@@ -99,26 +98,8 @@ function createLightExtensionAction(services: LightExtensionActionServices, run:
     services,
     run,
     getServiceContext: getMoveSourceServiceContext,
+    getHttpStatus: readHttpStatus,
   });
-}
-
-async function compileWorkspacePreview(
-  services: LightExtensionActionServices,
-  input: LightExtensionWorkspacePreviewInput,
-  currentUser: MoveSourceServiceContext,
-): Promise<LightExtensionWorkspaceCheckResult> {
-  const result = await services.compilePreviewService.compileWorkspacePreview(input, currentUser);
-  if (result.accepted) {
-    return result;
-  }
-  throw new LightExtensionError(
-    'LIGHT_EXTENSION_WORKSPACE_REJECTED',
-    'Light extension workspace check rejected one or more entries',
-    {
-      status: 422,
-      details: { ...result },
-    },
-  );
 }
 
 function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensionCompilePreviewInput {
@@ -131,7 +112,7 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
 function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtensionWorkspacePreviewInput {
   return compactObject({
     repoId: requireRepoId(input),
-    expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
+    expectedHeadCommitId: optionalNullableString(input, 'expectedHeadCommitId'),
     entryId: optionalNullableString(input, 'entryId'),
     kind: optionalLightExtensionKind(input, 'kind'),
     entryPath: optionalString(input, 'entryPath', 'entryPath'),
@@ -239,17 +220,6 @@ function optionalNullableString(input: ResourceActionInput, key: string): string
   return value.trim() || null;
 }
 
-function requireNullableString(input: ResourceActionInput, key: string): string | null {
-  if (!Object.prototype.hasOwnProperty.call(input, key)) {
-    throw invalidInput(`${key} is required and must be a string or null`);
-  }
-  const value = optionalNullableString(input, key);
-  if (typeof value === 'undefined') {
-    throw invalidInput(`${key} is required and must be a string or null`);
-  }
-  return value;
-}
-
 function requireArray<T>(
   input: ResourceActionInput,
   key: string,
@@ -272,21 +242,6 @@ function normalizeMoveSourceFile(value: unknown, index: number): LightExtensionM
   };
 }
 
-function optionalWorkspaceEncoding(
-  input: ResourceActionInput,
-  key: string,
-  label: string,
-): 'utf8' | 'base64' | undefined {
-  const value = optionalString(input, key, label);
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (value !== 'utf8' && value !== 'base64') {
-    throw invalidInput(`${label} must be "utf8" or "base64"`);
-  }
-  return value;
-}
-
 function normalizeWorkspacePreviewFile(
   value: unknown,
   index: number,
@@ -295,7 +250,6 @@ function normalizeWorkspacePreviewFile(
   return {
     path: requireString(file, 'path', `files[${index}].path`),
     content: requireStringValue(file, 'content', `files[${index}].content`),
-    encoding: optionalWorkspaceEncoding(file, 'encoding', `files[${index}].encoding`),
     language: optionalString(file, 'language', `files[${index}].language`),
     mode: optionalString(file, 'mode', `files[${index}].mode`),
   };
@@ -400,4 +354,13 @@ function normalizeAdapterPermission(value: unknown): RunJSSourcePermissionResult
     return {};
   }
   return { params: permission.params as RunJSSourcePermissionResult['params'] };
+}
+
+function readHttpStatus(value: unknown): 200 | 207 | 422 | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const status = (value as { httpStatus?: unknown }).httpStatus;
+  return status === 200 || status === 207 || status === 422 ? status : undefined;
 }

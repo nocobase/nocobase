@@ -10,12 +10,9 @@
 import { DownloadOutlined, ImportOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   createActiveEntryContextType,
-  generateBindingContextTypes,
   generateClientSettingsTypes,
-  type LightExtensionBindingContextTypegenResult,
   type LightExtensionSettingsTypegenResult,
 } from '@nocobase/light-extension-sdk/typegen';
-import { encodeLightExtensionPreviewSessionDescriptor } from '@nocobase/light-extension-sdk/agent-loop';
 import {
   CodeTab,
   CloseConfirmModal,
@@ -33,23 +30,9 @@ import {
   type RunJSWorkspaceFile,
   useVscFileT,
 } from '../vsc-file/public-api';
-import {
-  type CodeEditorDiagnostic,
-  type CodeEditorRevealTarget,
-  type EmbeddedRunJSEditorSaveResult,
-  createRunJSHostPreviewSession,
-  type RunJSHostPreviewSourceRef,
-  useFullscreenOverlay,
-} from '@nocobase/client-v2';
-import type { RunJSApiFailureEvent, RunJSRuntimeEvent } from '@nocobase/flow-engine';
-import {
-  getFirstMappedRunJSStackFrame,
-  mapRunJSStack,
-  mapRunJSStackFrame,
-  parseRunJSLineMapV1,
-} from '@nocobase/runjs/compiler/line-map';
-import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tag, Tooltip, Typography, message, theme } from 'antd';
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type EmbeddedRunJSEditorSaveResult, useFullscreenOverlay } from '@nocobase/client-v2';
+import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -62,25 +45,22 @@ import {
 } from '../../constants';
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import type {
-  LightExtensionProblem,
+  LightExtensionDiagnostic,
   LightExtensionEntryRuntimeArtifact,
   LightExtensionFileEncoding,
   LightExtensionFileChange,
   LightExtensionRepoRecord,
   LightExtensionCommitRecord,
-  LightExtensionReferenceOwnerLocator,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
-import type { LightExtensionContextPack } from '../../shared/context-pack';
-import { createLightExtensionProblemFactory } from '../../shared/problems';
-import ProblemsPanel from '../components/ProblemsPanel';
+import DiagnosticsPanel from '../components/DiagnosticsPanel';
 import { isBrowserProvisionalPreviewEnabled } from '../browser-preview/BrowserPreviewSession';
 import {
   getLightExtensionPreviewSurfaceStyle,
   useBrowserProvisionalPreview,
 } from '../browser-preview/useBrowserProvisionalPreview';
 import {
-  getLightExtensionErrorProblems,
+  getLightExtensionErrorDiagnostics,
   LightExtensionHookError,
   useLightExtensionRepo,
 } from '../hooks/useLightExtensionRepo';
@@ -99,12 +79,6 @@ import {
   readLightExtensionWorkspaceArchive,
 } from '../workspace/lightExtensionWorkspaceArchive';
 import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
-import { useWorkspaceProblemStore, WorkspaceProblemStore } from '../problems/workspaceProblemStore';
-import {
-  LightExtensionPreviewProblemClient,
-  openLightExtensionPreviewProblemSession,
-  type ActiveLightExtensionPreviewProblemSession,
-} from '../problems/previewProblemClient';
 
 interface WorkspaceFile extends RunJSWorkspaceFile {
   encoding?: LightExtensionFileEncoding;
@@ -119,43 +93,17 @@ interface LightExtensionWorkspacePageProps {
   initialPath?: string;
   workspaceScope?: LightExtensionWorkspaceScope;
   entryId?: string | null;
-  ownerLocator?: LightExtensionReferenceOwnerLocator;
-  previewProblemClient?: LightExtensionPreviewProblemClient;
-  referenceId?: string;
-  onPreview?: (request: LightExtensionHostPreviewRequest) => void | Promise<void>;
+  onPreview?: (artifact: LightExtensionEntryRuntimeArtifact) => void | Promise<void>;
   onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
   onSaved?: () => void | Promise<void>;
 }
 
-interface ActiveHostPreviewSession {
-  sourceRef: RunJSHostPreviewSourceRef;
-  close(): void;
-  closeRemote(state: 'completed' | 'stale'): Promise<void>;
-  remote?: ActiveLightExtensionPreviewProblemSession;
-}
-
-type PreviewAgentStatus = 'idle' | 'active' | 'completed' | 'stale' | 'expired';
-
-interface PreviewAgentSessionState {
-  status: PreviewAgentStatus;
-  snapshotId?: string;
-  sessionId?: string;
-  token?: string;
-}
-
 export interface LightExtensionMoveToInlineRequest {
   entryPath: string;
   files: RunJSWorkspaceFile[];
   version: string;
-}
-
-export interface LightExtensionHostPreviewRequest {
-  artifact: LightExtensionEntryRuntimeArtifact;
-  requestId: string;
-  snapshotId: string;
-  sourceRef: RunJSHostPreviewSourceRef;
 }
 
 export interface LightExtensionWorkspaceFooterActions {
@@ -200,9 +148,6 @@ function LightExtensionWorkspacePage({
   initialPath,
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
   entryId,
-  ownerLocator,
-  previewProblemClient,
-  referenceId,
   onPreview,
   onMoveToInline,
   onFooterActionsChange,
@@ -214,16 +159,8 @@ function LightExtensionWorkspacePage({
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
-  const {
-    compileWorkspacePreview,
-    getContextPack,
-    getRepo,
-    inspectSourceArchive,
-    listCommits,
-    pull,
-    pullCommit,
-    saveSource,
-  } = useLightExtensionRepo();
+  const { compileWorkspacePreview, getRepo, inspectSourceArchive, listCommits, pull, pullCommit, saveSource } =
+    useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
@@ -235,17 +172,13 @@ function LightExtensionWorkspacePage({
   const [filesCollapsed, setFilesCollapsed] = useState(defaultFilesCollapsed);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
-  const problemStore = useMemo(() => new WorkspaceProblemStore(), []);
-  const problemState = useWorkspaceProblemStore(problemStore);
-  const [revealTarget, setRevealTarget] = useState<CodeEditorRevealTarget>();
+  const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
   const [loading, setLoading] = useState(false);
   const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
-  const [previewAgentSession, setPreviewAgentSession] = useState<PreviewAgentSessionState>({ status: 'idle' });
-  const [diffReviewedSnapshotKey, setDiffReviewedSnapshotKey] = useState<string>();
   const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
@@ -259,8 +192,6 @@ function LightExtensionWorkspacePage({
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
-  const [bindingContextPack, setBindingContextPack] = useState<LightExtensionContextPack>();
-  const [bindingContextStatus, setBindingContextStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const workspaceFullscreen = useFullscreenOverlay();
   const embeddedSaveRequestRef = useRef<{
     resolve: (result: EmbeddedRunJSEditorSaveResult) => void;
@@ -270,12 +201,6 @@ function LightExtensionWorkspacePage({
   const historyRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
-  const previousPreviewSnapshotKeyRef = useRef('');
-  const previewRequestSequenceRef = useRef(0);
-  const activePreviewSessionRef = useRef<ActiveHostPreviewSession | null>(null);
-  const revealRequestSequenceRef = useRef(0);
-  const bindingContextRequestSequenceRef = useRef(0);
-  const ownerLocatorSignature = useMemo(() => JSON.stringify(ownerLocator || null), [ownerLocator]);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -289,42 +214,6 @@ function LightExtensionWorkspacePage({
     },
     [pathRestrictionReason, workspaceScope],
   );
-
-  const loadBindingContext = useCallback(async () => {
-    const requestSequence = bindingContextRequestSequenceRef.current + 1;
-    bindingContextRequestSequenceRef.current = requestSequence;
-    if (!repoId || !entryId) {
-      setBindingContextPack(undefined);
-      setBindingContextStatus('idle');
-      return;
-    }
-
-    setBindingContextPack(undefined);
-    setBindingContextStatus('loading');
-    try {
-      const nextContextPack = await getContextPack({
-        repoId,
-        entryId,
-        ...(referenceId ? { referenceId } : {}),
-        ...(ownerLocatorSignature !== 'null'
-          ? { ownerLocator: JSON.parse(ownerLocatorSignature) as LightExtensionReferenceOwnerLocator }
-          : {}),
-      });
-      if (bindingContextRequestSequenceRef.current !== requestSequence) {
-        return;
-      }
-      setBindingContextPack((current) =>
-        current?.contextHash === nextContextPack.contextHash ? current : nextContextPack,
-      );
-      setBindingContextStatus('ready');
-    } catch {
-      if (bindingContextRequestSequenceRef.current !== requestSequence) {
-        return;
-      }
-      setBindingContextPack(undefined);
-      setBindingContextStatus('error');
-    }
-  }, [entryId, getContextPack, ownerLocatorSignature, referenceId, repoId]);
 
   const loadWorkspace = useCallback(
     async (options: { resetNotice?: boolean } = {}) => {
@@ -374,7 +263,7 @@ function LightExtensionWorkspacePage({
           setHistoryItems(toRunJSHistoryItems(commits));
           setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
         }
-        problemStore.clear();
+        setDiagnostics([]);
         setIsDiff(false);
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
@@ -383,49 +272,25 @@ function LightExtensionWorkspacePage({
         setInitializedRepoId(repoId);
       }
     },
-    [getRepo, initialPath, listCommits, problemStore, pull, repoId, t],
+    [getRepo, initialPath, listCommits, pull, repoId, t],
   );
 
   useEffect(() => {
     loadWorkspace();
   }, [loadWorkspace]);
 
-  useEffect(() => {
-    loadBindingContext();
-  }, [loadBindingContext]);
-
   const activeFile = files.find((file) => file.path === activePath);
   const textFiles = useMemo(() => files.filter((file) => !isBinaryWorkspaceFile(file)), [files]);
   const sourceFiles = useMemo(() => textFiles.filter((file) => !isPortalWorkspacePath(file.path)), [textFiles]);
   const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files: sourceFiles }), [sourceFiles]);
-  const activeBindingContextPack =
-    bindingContextPack?.repoId === repoId && bindingContextPack.entry.id === entryId ? bindingContextPack : undefined;
-  const bindingContextTypegen = useMemo<LightExtensionBindingContextTypegenResult | undefined>(
-    () => (activeBindingContextPack ? generateBindingContextTypes(activeBindingContextPack) : undefined),
-    [activeBindingContextPack],
-  );
   const activeEntryContext = useMemo(
-    () =>
-      createActiveEntryContextType({
-        activePath,
-        bindingTypes: bindingContextTypegen,
-        entries: settingsTypegen.entries,
-      }),
-    [activePath, bindingContextTypegen, settingsTypegen.entries],
+    () => createActiveEntryContextType({ activePath, entries: settingsTypegen.entries }),
+    [activePath, settingsTypegen.entries],
   );
   const authoringFiles = useMemo(
-    () =>
-      addGeneratedTypeFiles(
-        textFiles,
-        [...settingsTypegen.files, ...(bindingContextTypegen?.files || [])],
-        activeEntryContext.file,
-      ),
-    [activeEntryContext.file, bindingContextTypegen?.files, settingsTypegen.files, textFiles],
+    () => addSettingsTypeFiles(textFiles, settingsTypegen.files, activeEntryContext.file),
+    [activeEntryContext.file, settingsTypegen.files, textFiles],
   );
-  const showGenericContextHint =
-    Boolean(activeEntryContext.entry) &&
-    bindingContextStatus !== 'loading' &&
-    (bindingContextStatus === 'error' || !bindingContextTypegen?.precise);
   const filesForSave = files;
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
@@ -445,19 +310,10 @@ function LightExtensionWorkspacePage({
     Boolean(activeFile && isBinaryWorkspaceFile(activeFile)) ||
     !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
   const previewSnapshotKey = useMemo(
-    () => buildWorkspacePreviewSnapshot(sourceFiles, workspaceScope, repoId, entryId),
-    [entryId, repoId, sourceFiles, workspaceScope],
+    () => buildWorkspacePreviewSnapshot(sourceFiles, workspaceScope),
+    [sourceFiles, workspaceScope],
   );
   latestPreviewSnapshotRef.current = previewSnapshotKey;
-  const previewHasErrors = problemState.problems.some((problem) => problem.severity === 'error');
-  const previewDiffReviewed = diffReviewedSnapshotKey === previewSnapshotKey;
-  const agentSaveGateEnabled = Boolean(previewProblemClient && ownerLocator);
-  const previewSaveGateReady =
-    (previewAgentSession.status === 'active' || previewAgentSession.status === 'completed') &&
-    Boolean(previewAgentSession.snapshotId) &&
-    previewDiffReviewed &&
-    !previewHasErrors;
-  const agentSaveBlocked = agentSaveGateEnabled && !previewSaveGateReady;
   const canPreview = entryScoped && Boolean(onPreview);
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
   const browserPreviewEntry = useMemo(
@@ -477,41 +333,14 @@ function LightExtensionWorkspacePage({
     enabled: browserPreviewEnabled,
     files: sourceFiles,
     entry: browserPreviewEntry,
-    workspaceSnapshotId: previewSnapshotKey,
   });
-
-  useLayoutEffect(() => {
-    problemStore.setSnapshot(previewSnapshotKey);
-    return () => {
-      previewRequestSequenceRef.current += 1;
-      const session = activePreviewSessionRef.current;
-      activePreviewSessionRef.current = null;
-      session?.close();
-      session?.closeRemote('stale').catch(() => undefined);
-    };
-  }, [previewSnapshotKey, problemStore]);
-
-  useEffect(() => {
-    const previousSnapshotKey = previousPreviewSnapshotKeyRef.current;
-    previousPreviewSnapshotKeyRef.current = previewSnapshotKey;
-    if (!previousSnapshotKey || previousSnapshotKey === previewSnapshotKey) {
-      return;
-    }
-    setPreviewAgentSession((current) =>
-      current.status === 'idle' ? current : { ...current, status: 'stale', token: undefined },
-    );
-  }, [previewSnapshotKey]);
-
-  useEffect(() => {
-    if (!provisionalPreview.enabled || provisionalPreview.workspaceSnapshotId !== previewSnapshotKey) {
-      return;
-    }
-    problemStore.replaceProblems({
-      producer: 'provisional',
-      snapshotId: previewSnapshotKey,
-      problems: provisionalPreview.problems,
-    });
-  }, [previewSnapshotKey, problemStore, provisionalPreview]);
+  const visibleDiagnostics = useMemo(
+    () =>
+      provisionalPreview.enabled && provisionalPreview.diagnostics.length > 0
+        ? [...provisionalPreview.diagnostics, ...diagnostics]
+        : diagnostics,
+    [diagnostics, provisionalPreview.diagnostics, provisionalPreview.enabled],
+  );
 
   const openFilePath = useCallback((path?: string) => {
     if (!path) {
@@ -577,33 +406,6 @@ function LightExtensionWorkspacePage({
 
     setFiles((current) => current.map((file) => (file.path === activePath ? { ...file, content: value } : file)));
   };
-
-  const updateTypeScriptProblems = useCallback(
-    (path: string, diagnostics: CodeEditorDiagnostic[]) => {
-      const createProblem = createLightExtensionProblemFactory({
-        snapshotId: previewSnapshotKey,
-        requestId: `typescript:${previewSnapshotKey}:${path}`,
-        source: 'typescript',
-        phase: 'typecheck',
-      });
-      problemStore.replaceProblems({
-        producer: `typescript:${path}`,
-        snapshotId: previewSnapshotKey,
-        problems: diagnostics
-          .filter((diagnostic) => diagnostic.severity === 'error' || diagnostic.severity === 'warning')
-          .map((diagnostic) =>
-            createProblem({
-              code: typeof diagnostic.code === 'undefined' ? 'TYPESCRIPT_PROBLEM' : `TS${diagnostic.code}`,
-              severity: diagnostic.severity === 'error' ? 'error' : 'warning',
-              message: diagnostic.message,
-              path,
-              range: { start: diagnostic.start, end: diagnostic.end },
-            }),
-          ),
-      });
-    },
-    [previewSnapshotKey, problemStore],
-  );
 
   const removeFile = (path: string) => {
     if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, path, 'file').canDelete) {
@@ -850,77 +652,8 @@ function LightExtensionWorkspacePage({
     await loadVersionIntoEditor(commit);
   };
 
-  const closeActivePreviewSession = useCallback(
-    async (state: 'completed' | 'stale'): Promise<RunJSHostPreviewSourceRef | undefined> => {
-      const session = activePreviewSessionRef.current;
-      activePreviewSessionRef.current = null;
-      session?.close();
-      await session?.closeRemote(state).catch(() => undefined);
-      if (session) {
-        setPreviewAgentSession((current) => ({
-          ...current,
-          status: state,
-          token: state === 'completed' ? current.token : undefined,
-        }));
-      }
-      return session?.sourceRef;
-    },
-    [],
-  );
-
-  const reportPreviewRestoreFailure = useCallback(
-    (error: unknown, sourceRef?: RunJSHostPreviewSourceRef) => {
-      const snapshotId = sourceRef?.snapshotId || previewSnapshotKey;
-      const createProblem = createLightExtensionProblemFactory({
-        snapshotId,
-        requestId: sourceRef?.executionId || `host-preview-restore:${Date.now()}`,
-        source: 'host-runtime',
-        phase: 'infrastructure',
-      });
-      problemStore.appendProblems({
-        producer: 'host-preview',
-        snapshotId,
-        problems: [
-          createProblem({
-            code: 'host_preview_restore_failed',
-            severity: 'error',
-            message: t('Failed to restore the saved host version.'),
-            path: workspaceScope.mode === 'entry' ? workspaceScope.entryPath : undefined,
-            kind: workspaceScope.mode === 'entry' ? workspaceScope.kind : undefined,
-            fixHint: t('Keep the editor open, retry Cancel, or reload the page to restore the saved version.'),
-            details: {
-              previewSessionId: sourceRef?.previewSessionId,
-              executionId: sourceRef?.executionId,
-              artifactHash: sourceRef?.artifactHash,
-              error: error instanceof Error ? error.message : String(error),
-            },
-          }),
-        ],
-      });
-      setNotice({
-        type: 'error',
-        message: t('The saved host version could not be restored. Retry Cancel or reload the page.'),
-      });
-    },
-    [previewSnapshotKey, problemStore, t, workspaceScope],
-  );
-
   const saveChanges = useCallback(async () => {
     const commitMessage = versionMessage.trim();
-    if (agentSaveBlocked) {
-      setSaveOpen(false);
-      const request = embeddedSaveRequestRef.current;
-      embeddedSaveRequestRef.current = null;
-      embeddedSavePromiseRef.current = null;
-      request?.resolve('cancelled');
-      setNotice({
-        type: 'warning',
-        message: t(
-          'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
-        ),
-      });
-      return;
-    }
     if (!repoId || !commitMessage || dirtyChanges.length === 0 || hasBlockedDirtyChanges) {
       if (hasBlockedDirtyChanges) {
         setNotice({ type: 'warning', message: pathRestrictionReason });
@@ -931,7 +664,6 @@ function LightExtensionWorkspacePage({
     setSaveOpen(false);
     setSaving(true);
     setNotice(null);
-    const requestSnapshotId = previewSnapshotKey;
     try {
       const result = await saveSource({
         repoId,
@@ -939,24 +671,12 @@ function LightExtensionWorkspacePage({
         message: commitMessage,
         files: dirtyChanges,
       });
-      problemStore.replaceProblems({ producer: 'canonical', snapshotId: requestSnapshotId, problems: result.problems });
+      setDiagnostics(result.diagnostics);
       setBaseHeadCommitId(result.commit.id);
       setBaseFiles(filesForSave);
       await onSaved?.();
-      await loadBindingContext();
       if (onRequestClose) {
-        previewRequestSequenceRef.current += 1;
-        const sourceRef = await closeActivePreviewSession('completed');
-        try {
-          await onRequestClose();
-        } catch (error) {
-          reportPreviewRestoreFailure(error, sourceRef);
-          const request = embeddedSaveRequestRef.current;
-          embeddedSaveRequestRef.current = null;
-          embeddedSavePromiseRef.current = null;
-          request?.reject(error);
-          return;
-        }
+        await onRequestClose();
       } else {
         await loadWorkspace();
       }
@@ -969,11 +689,7 @@ function LightExtensionWorkspacePage({
       embeddedSaveRequestRef.current = null;
       embeddedSavePromiseRef.current = null;
       request?.reject(error);
-      problemStore.replaceProblems({
-        producer: 'canonical',
-        snapshotId: requestSnapshotId,
-        problems: getLightExtensionErrorProblems(error) as LightExtensionProblem[],
-      });
+      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
       setNotice({
         type: 'error',
         message:
@@ -987,20 +703,14 @@ function LightExtensionWorkspacePage({
       setSaving(false);
     }
   }, [
-    agentSaveBlocked,
     baseHeadCommitId,
-    closeActivePreviewSession,
     dirtyChanges,
     filesForSave,
     hasBlockedDirtyChanges,
     loadWorkspace,
-    loadBindingContext,
     onSaved,
     onRequestClose,
     pathRestrictionReason,
-    previewSnapshotKey,
-    problemStore,
-    reportPreviewRestoreFailure,
     repoId,
     saveSource,
     t,
@@ -1008,15 +718,6 @@ function LightExtensionWorkspacePage({
   ]);
 
   const openSaveModal = useCallback((): boolean => {
-    if (agentSaveBlocked) {
-      setNotice({
-        type: 'warning',
-        message: t(
-          'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
-        ),
-      });
-      return false;
-    }
     if (!canWrite || !hasUnsavedLocalChanges || hasBlockedDirtyChanges) {
       return false;
     }
@@ -1024,7 +725,7 @@ function LightExtensionWorkspacePage({
     setVersionMessage('');
     setSaveOpen(true);
     return true;
-  }, [agentSaveBlocked, canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges, t]);
+  }, [canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges]);
 
   const requestSave = useCallback(async (): Promise<EmbeddedRunJSEditorSaveResult> => {
     if (!hasUnsavedLocalChanges) {
@@ -1052,37 +753,24 @@ function LightExtensionWorkspacePage({
       return;
     }
 
-    previewRequestSequenceRef.current += 1;
-    const sourceRef = await closeActivePreviewSession('completed');
-    try {
-      await onRequestClose?.();
-    } catch (error) {
-      reportPreviewRestoreFailure(error, sourceRef);
-    }
-  }, [closeActivePreviewSession, hasUnsavedLocalChanges, onRequestClose, reportPreviewRestoreFailure]);
+    await onRequestClose?.();
+  }, [hasUnsavedLocalChanges, onRequestClose]);
 
   const discardLocalAndClose = useCallback(async () => {
     setCloseConfirmOpen(false);
-    previewRequestSequenceRef.current += 1;
-    const sourceRef = await closeActivePreviewSession('completed');
-    try {
-      await onRequestClose?.();
-    } catch (error) {
-      reportPreviewRestoreFailure(error, sourceRef);
-    }
-  }, [closeActivePreviewSession, onRequestClose, reportPreviewRestoreFailure]);
+    await onRequestClose?.();
+  }, [onRequestClose]);
 
   const footerActions = useMemo<LightExtensionWorkspaceFooterActions>(
     () => ({
       dirty: hasUnsavedLocalChanges,
-      disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges || agentSaveBlocked,
+      disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges,
       loading: saving,
       onCancel: requestClose,
       onSave: openSaveModal,
       requestSave,
     }),
     [
-      agentSaveBlocked,
       canWrite,
       hasBlockedDirtyChanges,
       hasUnsavedLocalChanges,
@@ -1108,36 +796,20 @@ function LightExtensionWorkspacePage({
     };
   }, [onFooterActionsChange]);
 
-  const openProblemSource = useCallback(
-    (problem: LightExtensionProblem) => {
-      if (!problem.path || !problem.range?.start) {
+  const openDiagnosticSource = useCallback(
+    (diagnostic: LightExtensionDiagnostic) => {
+      if (!diagnostic.path) {
         return;
       }
-      const sourceFile = files.find((file) => file.path === problem.path);
-      if (!sourceFile) {
-        setNotice({ type: 'warning', message: t('Problem source is not loaded') });
-        return;
-      }
-      if (!canChangeLightExtensionWorkspacePath(workspaceScope, problem.path)) {
-        setNotice({ type: 'warning', message: t('Problem source is outside the current entry scope') });
-        return;
-      }
-      if (isBinaryWorkspaceFile(sourceFile)) {
-        setNotice({ type: 'warning', message: t('Problem source is a binary file') });
+      if (!files.some((file) => file.path === diagnostic.path)) {
+        setNotice({ type: 'warning', message: t('Diagnostic source is not loaded') });
         return;
       }
 
-      openFilePath(problem.path);
-      revealRequestSequenceRef.current += 1;
-      setRevealTarget({
-        path: problem.path,
-        line: problem.range.start.line,
-        column: problem.range.start.column,
-        requestId: `problem-reveal:${revealRequestSequenceRef.current}`,
-      });
-      setNotice({ type: 'info', message: t('Opened problem source') });
+      openFilePath(diagnostic.path);
+      setNotice({ type: 'info', message: t('Opened diagnostic source') });
     },
-    [files, openFilePath, t, workspaceScope],
+    [files, openFilePath, t],
   );
 
   const runPreview = useCallback(async () => {
@@ -1146,24 +818,11 @@ function LightExtensionWorkspacePage({
     }
 
     const requestSnapshotKey = previewSnapshotKey;
-    const previousSession = activePreviewSessionRef.current;
-    activePreviewSessionRef.current = null;
-    previousSession?.close();
-    previousSession?.closeRemote('stale').catch(() => undefined);
-    if (previousSession) {
-      setPreviewAgentSession((current) => ({ ...current, status: 'stale', token: undefined }));
-    }
-    const requestSequence = previewRequestSequenceRef.current + 1;
-    previewRequestSequenceRef.current = requestSequence;
-    problemStore.replaceProblems({ producer: 'host-preview', snapshotId: requestSnapshotKey, problems: [] });
     setPreviewing(true);
     setNotice(null);
-    let session: ActiveHostPreviewSession | null = null;
-    let remoteSession: ActiveLightExtensionPreviewProblemSession | undefined;
     try {
       const result = await compileWorkspacePreview({
         repoId,
-        expectedHeadCommitId: baseHeadCommitId,
         entryId,
         kind: workspaceScope.kind,
         entryPath: workspaceScope.entryPath,
@@ -1175,182 +834,30 @@ function LightExtensionWorkspacePage({
           mode: file.mode,
         })),
       });
-      if (previewRequestSequenceRef.current !== requestSequence) {
-        return;
-      }
       if (latestPreviewSnapshotRef.current !== requestSnapshotKey) {
         setNotice({ type: 'info', message: t('Source changed while preview was compiling. Run again.') });
         return;
       }
 
-      problemStore.replaceProblems({
-        producer: 'canonical',
-        snapshotId: requestSnapshotKey,
-        problems: result.problems,
-      });
+      setDiagnostics(result.diagnostics);
       if (!result.accepted || !result.artifact) {
-        setPreviewAgentSession({ status: 'idle', snapshotId: result.snapshotId });
         setNotice({ type: 'error', message: t('Preview failed') });
         return;
       }
 
-      const artifact = result.artifact;
-      const sourceMap = artifact.sourceMap;
-      if (!sourceMap || !parseRunJSLineMapV1(sourceMap)) {
-        throw new Error(t('Preview artifact is missing a valid source map.'));
-      }
-
-      remoteSession =
-        previewProblemClient && ownerLocator
-          ? await openLightExtensionPreviewProblemSession(previewProblemClient, {
-              repoId,
-              entryId: entryId || '',
-              ownerLocator,
-              snapshotId: result.snapshotId,
-              artifactHash: artifact.artifactHash,
-            })
-          : undefined;
-      if (
-        previewRequestSequenceRef.current !== requestSequence ||
-        latestPreviewSnapshotRef.current !== requestSnapshotKey
-      ) {
-        await remoteSession?.close('stale').catch(() => undefined);
-        return;
-      }
-      const previewSessionToken =
-        remoteSession && activeBindingContextPack
-          ? encodeLightExtensionPreviewSessionDescriptor({
-              schemaVersion: 1,
-              sessionId: remoteSession.result.sessionId,
-              repoId,
-              entryId: entryId || '',
-              ownerLocator: ownerLocator || {},
-              snapshotId: remoteSession.result.snapshotId,
-              contextHash: activeBindingContextPack.contextHash,
-              artifactHash: remoteSession.result.artifactHash,
-              executionId: remoteSession.result.executionId,
-            })
-          : undefined;
-      setPreviewAgentSession({
-        status: remoteSession ? 'active' : 'idle',
-        snapshotId: result.snapshotId,
-        sessionId: remoteSession?.result.sessionId,
-        token: previewSessionToken,
-      });
-      const hostSession = createRunJSHostPreviewSession({
-        ...(remoteSession
-          ? {
-              previewSessionId: remoteSession.result.sessionId,
-              executionId: remoteSession.result.executionId,
-            }
-          : {}),
-        artifactHash: artifact.artifactHash,
-        snapshotId: requestSnapshotKey,
-        sourceMap,
-        metadata: {
-          repoId,
-          entryId: entryId || '',
-          kind: workspaceScope.kind,
-          entryPath: workspaceScope.entryPath,
-          ...(ownerLocatorSignature !== 'null' ? { ownerLocator: ownerLocatorSignature } : {}),
-        },
-        reporter: {
-          async report(event) {
-            if (
-              !session ||
-              activePreviewSessionRef.current !== session ||
-              latestPreviewSnapshotRef.current !== requestSnapshotKey ||
-              event.identity.executionId !== session.sourceRef.executionId ||
-              event.identity.artifactHash !== session.sourceRef.artifactHash ||
-              event.identity.sourceURL !== session.sourceRef.sourceURL
-            ) {
-              return;
-            }
-            const problem = createHostPreviewRuntimeProblem(event, session.sourceRef, workspaceScope);
-            problemStore.appendProblems({
-              producer: 'host-preview',
-              snapshotId: requestSnapshotKey,
-              problems: [problem],
-            });
-            await session.remote?.append([problem]).catch(() => undefined);
-          },
-        },
-        apiFailureReporter: {
-          async report(event) {
-            if (
-              !session ||
-              activePreviewSessionRef.current !== session ||
-              latestPreviewSnapshotRef.current !== requestSnapshotKey ||
-              event.identity.executionId !== session.sourceRef.executionId ||
-              event.identity.artifactHash !== session.sourceRef.artifactHash ||
-              event.identity.sourceURL !== session.sourceRef.sourceURL
-            ) {
-              return;
-            }
-            const problem = createHostPreviewApiProblem(event, session.sourceRef, workspaceScope, t);
-            problemStore.appendProblems({
-              producer: 'host-preview',
-              snapshotId: requestSnapshotKey,
-              problems: [problem],
-            });
-            await session.remote?.append([problem]).catch(() => undefined);
-          },
-        },
-      });
-      session = {
-        ...hostSession,
-        remote: remoteSession,
-        async closeRemote(state) {
-          await remoteSession?.close(state).then(() => undefined);
-        },
-      };
-      activePreviewSessionRef.current = session;
-      await onPreview({
-        artifact,
-        requestId: result.requestId,
-        snapshotId: requestSnapshotKey,
-        sourceRef: session.sourceRef,
-      });
+      await onPreview(result.artifact);
     } catch (error) {
-      if (session) {
-        if (activePreviewSessionRef.current === session) {
-          activePreviewSessionRef.current = null;
-        }
-        session.close();
-        await session.closeRemote('stale').catch(() => undefined);
-      } else {
-        await remoteSession?.close('stale').catch(() => undefined);
-      }
-      setPreviewAgentSession((current) => ({ ...current, status: 'stale', token: undefined }));
-      if (
-        previewRequestSequenceRef.current !== requestSequence ||
-        latestPreviewSnapshotRef.current !== requestSnapshotKey
-      ) {
-        return;
-      }
-      problemStore.replaceProblems({
-        producer: 'canonical',
-        snapshotId: requestSnapshotKey,
-        problems: getLightExtensionErrorProblems(error) as LightExtensionProblem[],
-      });
+      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
     } finally {
-      if (previewRequestSequenceRef.current === requestSequence) {
-        setPreviewing(false);
-      }
+      setPreviewing(false);
     }
   }, [
     canPreview,
-    baseHeadCommitId,
     compileWorkspacePreview,
     entryId,
-    activeBindingContextPack,
     onPreview,
-    ownerLocatorSignature,
-    ownerLocator,
-    previewProblemClient,
     previewSnapshotKey,
-    problemStore,
     repoId,
     sourceFiles,
     t,
@@ -1496,7 +1003,7 @@ function LightExtensionWorkspacePage({
         setFolders(collectWorkspaceFolders(nextFiles));
         setActivePath(nextActivePath);
         setOpenPaths(nextActivePath ? [nextActivePath] : []);
-        problemStore.clear();
+        setDiagnostics([]);
         setIsDiff(false);
         message.success(t('ZIP imported. Save to create a new version.'));
       } catch (error) {
@@ -1505,7 +1012,7 @@ function LightExtensionWorkspacePage({
         setImporting(false);
       }
     },
-    [activePath, canWrite, files, importing, inspectSourceArchive, problemStore, repoId, t, workspaceScope],
+    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, t, workspaceScope],
   );
 
   if (!repoId) {
@@ -1684,80 +1191,8 @@ function LightExtensionWorkspacePage({
                   ) : null}
                   {files.length > 0 ? (
                     <>
-                      {canPreview ? (
-                        <Alert
-                          message={t(
-                            'Host Preview runs this code in the current application and may create side effects.',
-                          )}
-                          description={t('Use a test application or a restricted role before clicking Run.')}
-                          showIcon
-                          style={{ marginBottom: 8 }}
-                          type="warning"
-                        />
-                      ) : null}
-                      {canPreview ? (
-                        <Alert
-                          data-testid="light-extension-agent-loop-status"
-                          description={
-                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                              <Flex align="center" gap={8} wrap="wrap">
-                                <Typography.Text>{t('Agent snapshot')}:</Typography.Text>
-                                <Typography.Text code>
-                                  {previewAgentSession.snapshotId || t('Awaiting authoritative Preview check')}
-                                </Typography.Text>
-                              </Flex>
-                              <Flex align="center" gap={8} wrap="wrap">
-                                <Typography.Text>{t('Preview session')}:</Typography.Text>
-                                <Tag>{t(`Preview session status: ${previewAgentSession.status}`)}</Tag>
-                                {previewAgentSession.sessionId ? (
-                                  <Typography.Text code>{previewAgentSession.sessionId}</Typography.Text>
-                                ) : null}
-                              </Flex>
-                              {previewAgentSession.token ? (
-                                <Typography.Paragraph
-                                  copyable={{ text: previewAgentSession.token }}
-                                  ellipsis={{ rows: 1 }}
-                                  style={{ margin: 0 }}
-                                >
-                                  {previewAgentSession.token}
-                                </Typography.Paragraph>
-                              ) : (
-                                <Typography.Text type="secondary">
-                                  {t('Run Host Preview to create a copyable Agent session token.')}
-                                </Typography.Text>
-                              )}
-                              <Flex align="center" gap={8} wrap="wrap">
-                                <Typography.Text>{t('Diff review')}:</Typography.Text>
-                                <Tag color={previewDiffReviewed ? 'success' : 'default'}>
-                                  {previewDiffReviewed ? t('Reviewed') : t('Review required')}
-                                </Tag>
-                                <Typography.Text>{t('Agent save gate')}:</Typography.Text>
-                                <Tag color={previewSaveGateReady ? 'success' : 'warning'}>
-                                  {previewSaveGateReady ? t('Ready') : t('Locked')}
-                                </Tag>
-                              </Flex>
-                            </Space>
-                          }
-                          message={t('Agent loop status')}
-                          showIcon
-                          style={{ marginBottom: 8 }}
-                          type={previewSaveGateReady ? 'success' : 'info'}
-                        />
-                      ) : null}
                       {activeFileReadOnly && entryScoped && !isBinaryWorkspaceFile(activeFile) ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
-                      ) : null}
-                      {showGenericContextHint ? (
-                        <Alert
-                          message={
-                            bindingContextStatus === 'error'
-                              ? t('Binding context types could not be loaded. Generic types are active.')
-                              : t('No binding is selected. Generic context types are active.')
-                          }
-                          showIcon
-                          style={{ marginBottom: 8 }}
-                          type="info"
-                        />
                       ) : null}
                       {provisionalPreview.enabled ? (
                         <Alert
@@ -1768,7 +1203,7 @@ function LightExtensionWorkspacePage({
                           type={
                             provisionalPreview.status === 'degraded'
                               ? 'warning'
-                              : provisionalPreview.status === 'problem'
+                              : provisionalPreview.status === 'diagnostic'
                                 ? 'info'
                                 : provisionalPreview.status === 'ready'
                                   ? 'success'
@@ -1793,23 +1228,13 @@ function LightExtensionWorkspacePage({
                           jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
                           onChange={updateActiveFile}
                           onCloseFile={closeOpenFile}
-                          onDiffToggle={() =>
-                            setIsDiff((current) => {
-                              const next = !current;
-                              if (next) {
-                                setDiffReviewedSnapshotKey(previewSnapshotKey);
-                              }
-                              return next;
-                            })
-                          }
+                          onDiffToggle={() => setIsDiff((current) => !current)}
                           onFilesCollapsedChange={setFilesCollapsed}
                           onOpenFile={openFilePath}
                           onRunPreview={canPreview ? runPreview : undefined}
-                          onDiagnosticsChange={updateTypeScriptProblems}
                           openPaths={openPaths}
                           previewing={previewing}
                           readOnly={activeFileReadOnly}
-                          revealTarget={revealTarget}
                           runJSGlobalContextType={activeEntryContext.globalContextType}
                           savedFiles={baseFiles}
                           showRunButton={canPreview}
@@ -1837,23 +1262,18 @@ function LightExtensionWorkspacePage({
                 </main>
               </div>
               <div
-                data-testid="light-extension-workspace-problems"
+                data-testid="light-extension-workspace-diagnostics"
                 style={{
                   borderTop: `1px solid ${token.colorBorderSecondary}`,
                   flex: '0 0 auto',
                   maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
                   minHeight: 96,
                   overflowX: 'hidden',
-                  overflowY:
-                    problemState.problems.length > 0 || problemState.staleProblems.length > 0 ? 'auto' : 'hidden',
+                  overflowY: visibleDiagnostics.length > 0 ? 'auto' : 'hidden',
                   padding: 12,
                 }}
               >
-                <ProblemsPanel
-                  problems={problemState.problems}
-                  staleProblems={problemState.staleProblems}
-                  onOpenProblem={openProblemSource}
-                />
+                <DiagnosticsPanel diagnostics={visibleDiagnostics} onOpenDiagnostic={openDiagnosticSource} />
               </div>
             </div>,
             workspaceFullscreen.container,
@@ -1936,101 +1356,13 @@ function getProvisionalPreviewStatusMessage(
   if (status === 'degraded') {
     return t('Local provisional preview is unavailable. Save will continue on the server.');
   }
-  if (status === 'problem') {
-    return t('Local provisional preview reported problems. Server Save remains authoritative.');
+  if (status === 'diagnostic') {
+    return t('Local provisional preview reported diagnostics. Server Save remains authoritative.');
   }
   if (status === 'ready') {
     return t('Local provisional preview is ready. Server Save remains authoritative.');
   }
   return t('Building local provisional preview');
-}
-
-function createHostPreviewRuntimeProblem(
-  event: RunJSRuntimeEvent,
-  sourceRef: RunJSHostPreviewSourceRef,
-  workspaceScope: Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>,
-): LightExtensionProblem {
-  const lineMap = parseRunJSLineMapV1(sourceRef.sourceMap);
-  const generatedLocation = event.issue.generatedLocation;
-  const mappedGeneratedLocation =
-    lineMap && generatedLocation?.sourceURL === lineMap.sourceURL
-      ? mapRunJSStackFrame(lineMap, {
-          url: generatedLocation.sourceURL,
-          line: generatedLocation.line,
-          column: generatedLocation.column,
-          raw: `${generatedLocation.sourceURL}:${generatedLocation.line}:${generatedLocation.column}`,
-        })
-      : undefined;
-  const mappedStackLocation =
-    lineMap && event.issue.stack ? getFirstMappedRunJSStackFrame(event.issue.stack, lineMap) : undefined;
-  const mappedLocation = mappedGeneratedLocation || mappedStackLocation;
-  const path = event.issue.sourcePath || mappedLocation?.source || workspaceScope.entryPath;
-  const range = event.issue.location
-    ? event.issue.location
-    : mappedLocation
-      ? {
-          start: {
-            line: mappedLocation.sourceLine,
-            column: mappedLocation.sourceColumn || 1,
-          },
-        }
-      : undefined;
-  const source = event.issue.phase === 'react' ? 'react' : 'host-runtime';
-  const createProblem = createLightExtensionProblemFactory({
-    snapshotId: sourceRef.snapshotId,
-    requestId: event.identity.executionId,
-    source,
-    phase: event.issue.phase,
-  });
-  return createProblem({
-    code: `host_preview_${event.issue.ruleId.replace(/-/gu, '_')}`,
-    severity: event.issue.severity,
-    message: event.issue.message,
-    path,
-    range,
-    kind: workspaceScope.kind,
-    stack: event.issue.stack && lineMap ? mapRunJSStack(event.issue.stack, lineMap) : event.issue.stack,
-    details: {
-      previewSessionId: sourceRef.previewSessionId,
-      executionId: event.identity.executionId,
-      artifactHash: event.identity.artifactHash,
-      sourceURL: event.identity.sourceURL,
-      ruleId: event.issue.ruleId,
-      executionMayContinue: event.issue.executionMayContinue,
-      runtimeDetails: event.issue.details,
-    },
-  });
-}
-
-function createHostPreviewApiProblem(
-  event: RunJSApiFailureEvent,
-  sourceRef: RunJSHostPreviewSourceRef,
-  workspaceScope: Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>,
-  t: (key: string) => string,
-): LightExtensionProblem {
-  const createProblem = createLightExtensionProblemFactory({
-    snapshotId: sourceRef.snapshotId,
-    requestId: event.identity.executionId,
-    source: 'api',
-    phase: event.issue.phase,
-  });
-  return createProblem({
-    code: event.issue.phase === 'permission' ? 'host_preview_api_permission_denied' : 'host_preview_api_failed',
-    severity: 'error',
-    message: t(event.issue.phase === 'permission' ? 'Preview API permission denied' : 'Preview API request failed'),
-    path: workspaceScope.entryPath,
-    kind: workspaceScope.kind,
-    details: {
-      previewSessionId: sourceRef.previewSessionId,
-      executionId: event.identity.executionId,
-      artifactHash: event.identity.artifactHash,
-      method: event.issue.method,
-      resource: event.issue.resource,
-      action: event.issue.action,
-      status: event.issue.status,
-      reasonCode: event.issue.reasonCode,
-    },
-  });
 }
 
 function normalizeWorkspaceFiles(files: LightExtensionTreeEntryInput[]): WorkspaceFile[] {
@@ -2277,7 +1609,7 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
   return changes.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function addGeneratedTypeFiles(
+function addSettingsTypeFiles(
   files: WorkspaceFile[],
   settingsTypeFiles: LightExtensionSettingsTypegenResult['files'],
   activeContextFile?: LightExtensionSettingsTypegenResult['files'][number],
@@ -2297,15 +1629,8 @@ function inferLightExtensionLanguageFromPath(path: string): string {
   return inferLanguageFromPath(path, { cssLanguage: 'text', jsxLanguage: 'language-family' });
 }
 
-function buildWorkspacePreviewSnapshot(
-  files: WorkspaceFile[],
-  workspaceScope: LightExtensionWorkspaceScope,
-  repoId: string,
-  entryId?: string,
-): string {
+function buildWorkspacePreviewSnapshot(files: WorkspaceFile[], workspaceScope: LightExtensionWorkspaceScope): string {
   return JSON.stringify({
-    repoId,
-    entryId: entryId || null,
     workspaceScope,
     files: files.map((file) => [file.path, file.content, file.language || '', file.mode || '']),
   });

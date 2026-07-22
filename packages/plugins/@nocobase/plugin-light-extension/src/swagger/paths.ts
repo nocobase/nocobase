@@ -31,7 +31,6 @@ function errorResponse(description: string) {
 export const lightExtensionPaths = {
   '/lightExtensionRepos:list': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionRepos'],
       summary: 'List light-extension source repositories',
       description: 'List existing light-extension repositories that the current author can manage.',
@@ -46,7 +45,6 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionRepos:get': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionRepos'],
       summary: 'Get one light-extension source repository',
       description: 'Get repository metadata and the current Head commit used for optimistic source editing.',
@@ -79,10 +77,9 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionEntries:get': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionEntries'],
       summary: 'Get one light-extension entry',
-      description: 'Get the persisted entry descriptor, source identity, health, and compile metadata.',
+      description: 'Get the entry descriptor, source identity, health, compile metadata, and diagnostics.',
       requestBody: {
         required: true,
         content: {
@@ -112,7 +109,6 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionReferences:readReferences': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionReferences'],
       summary: 'Read visible light-extension references',
       description:
@@ -147,44 +143,8 @@ export const lightExtensionPaths = {
       },
     },
   },
-  '/lightExtensionContexts:get': {
-    post: {
-      'x-mcp': true,
-      tags: ['lightExtensionContexts'],
-      summary: 'Get a binding-aware light-extension Context Pack',
-      description:
-        'Return an ACL-filtered Context Pack for one entry. Supply referenceId or ownerLocator for a precise binding; an unselected reusable entry remains generic or multiple.',
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              required: ['repoId', 'entryId'],
-              properties: {
-                repoId: { type: 'string' },
-                entryId: { type: 'string' },
-                referenceId: { type: 'string' },
-                ownerLocator: { $ref: '#/components/schemas/LightExtensionReferenceOwnerLocator' },
-              },
-            },
-          },
-        },
-      },
-      responses: {
-        200: {
-          description: 'Generic, multiple, or precise Context Pack.',
-          content: jsonContent('LightExtensionContextPackEnvelope'),
-        },
-        403: errorResponse('The current user cannot read the entry references or owner context.'),
-        404: errorResponse('The repository or entry does not exist.'),
-        422: errorResponse('The generated Context Pack exceeds the public response size limit.'),
-      },
-    },
-  },
   '/lightExtensionFiles:pull': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionFiles'],
       summary: 'Pull a light-extension source workspace',
       description:
@@ -237,7 +197,6 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionFiles:getFile': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionFiles'],
       summary: 'Read one light-extension source file',
       description: 'Read the complete UTF-8 content and immutable metadata for one source path at repository Head.',
@@ -278,14 +237,12 @@ export const lightExtensionPaths = {
   },
   '/lightExtensionFiles:saveSource': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensionFiles'],
       summary: 'Save and compile an incremental light-extension source patch',
       description: [
         'Apply files as an incremental patch. Ordinary source creates one source commit and compiles runtime artifacts; src/client/js-portals files are stored outside source history and replace the Portal storage snapshot.',
         'files is a delta: include only changed upserts and deletes, not an implicit complete-workspace replacement. expectedHeadCommitId is required and must exactly match the current repository Head; pass null only for a repository without a Head.',
-        'Call this tool only after the user has reviewed and confirmed the intended Diff. Saving compiles source but does not publish or deploy the extension, and the tool must never publish automatically.',
-        'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator problems. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
+        'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator diagnostics. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -341,19 +298,18 @@ export const lightExtensionPaths = {
           },
         },
         422: errorResponse(
-          'The final workspace failed validation or compilation. Problems are preserved in the response body.',
+          'The final workspace failed validation or compilation. diagnostics are preserved in the response body.',
         ),
       },
     },
   },
   '/lightExtensions:compileWorkspacePreview': {
     post: {
-      'x-mcp': true,
       tags: ['lightExtensions'],
       summary: 'Compile an unsaved light-extension workspace preview',
       description: [
         'Validate and compile the supplied complete unsaved workspace without creating a source commit or changing repository Head.',
-        'Use --body-file for multi-file UTF-8 source payloads. HTTP 200 returns { data: LightExtensionWorkspaceCheckResult } only when every requested entry is accepted. If any entry is rejected, HTTP 422 returns the same CheckResult at errors[0].details. Problems use one-based original-source ranges.',
+        'Use --body-file for multi-file payloads. HTTP 200 means every requested entry was accepted. HTTP 207 means a whole-workspace preview compiled at least one entry and rejected at least one. HTTP 422 means the targeted entry or every workspace entry was rejected. All three statuses preserve diagnostics, including path, line, and column.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -363,13 +319,15 @@ export const lightExtensionPaths = {
           'application/json': {
             schema: {
               type: 'object',
-              required: ['repoId', 'expectedHeadCommitId', 'files'],
+              required: ['repoId', 'files'],
               properties: {
                 repoId: {
                   type: 'string',
                 },
                 expectedHeadCommitId: {
-                  $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
+                  type: 'string',
+                  nullable: true,
+                  description: 'Optional pulled Head used to reject a stale local workspace before compilation.',
                 },
                 entryId: {
                   type: 'string',
@@ -381,8 +339,7 @@ export const lightExtensionPaths = {
                 },
                 entryPath: {
                   type: 'string',
-                  description:
-                    'Target entry path. entryId, kind, and entryPath must be supplied together for targeted preview.',
+                  description: 'Target entry path. kind and entryPath must be supplied together for targeted preview.',
                 },
                 runtimeVersion: {
                   type: 'string',
@@ -403,163 +360,19 @@ export const lightExtensionPaths = {
       responses: {
         200: {
           description: 'Every requested preview entry was accepted.',
-          content: jsonContent('LightExtensionWorkspaceCheckEnvelope'),
+          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
+        },
+        207: {
+          description: 'Some whole-workspace preview entries were accepted and some were rejected.',
+          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
         },
         403: errorResponse('The current user cannot compile light-extension previews.'),
-        409: {
-          description: 'The supplied expectedHeadCommitId does not match the current repository Head.',
-          content: jsonContent('LightExtensionSourceOutdatedErrorResponse'),
-        },
+        409: errorResponse('The supplied expected Head no longer matches the repository Head.'),
         422: {
           description:
-            'At least one targeted or whole-workspace entry was rejected. Inspect errors[0].details.problems.',
-          content: jsonContent('LightExtensionWorkspaceRejectedErrorResponse'),
+            'The targeted entry or every whole-workspace entry was rejected. Inspect diagnostics before retrying.',
+          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
         },
-      },
-    },
-  },
-  '/lightExtensionPreviewProblems:open': {
-    post: {
-      'x-mcp': false,
-      tags: ['lightExtensionPreviewProblems'],
-      summary: 'Open a scoped preview problem session',
-      requestBody: {
-        required: true,
-        content: jsonContent('LightExtensionPreviewProblemOpenInput'),
-      },
-      responses: {
-        200: {
-          description: 'Opened preview problem session.',
-          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
-        },
-        403: errorResponse('The current user cannot open a preview problem session.'),
-      },
-    },
-  },
-  '/lightExtensionPreviewProblems:append': {
-    post: {
-      'x-mcp': false,
-      tags: ['lightExtensionPreviewProblems'],
-      summary: 'Append sanitized browser problems to a preview session',
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              allOf: [
-                schemaRef('LightExtensionPreviewProblemSessionInput'),
-                {
-                  type: 'object',
-                  required: ['problems'],
-                  properties: {
-                    problems: {
-                      type: 'array',
-                      items: schemaRef('LightExtensionProblem'),
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        },
-      },
-      responses: {
-        200: {
-          description: 'Updated preview problem session.',
-          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
-        },
-        403: errorResponse('The preview problem session is outside the current user or role scope.'),
-        404: errorResponse('The preview problem session does not exist.'),
-        409: errorResponse('The preview problem session is no longer active.'),
-      },
-    },
-  },
-  '/lightExtensionPreviewProblems:list': {
-    post: {
-      'x-mcp': true,
-      tags: ['lightExtensionPreviewProblems'],
-      summary: 'List preview problems after a cursor',
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              allOf: [
-                schemaRef('LightExtensionPreviewProblemSessionInput'),
-                { type: 'object', properties: { cursor: { type: 'integer', minimum: 0 } } },
-              ],
-            },
-          },
-        },
-      },
-      responses: {
-        200: {
-          description: 'Problems after the supplied cursor and the next cursor.',
-          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
-        },
-        403: errorResponse('The preview problem session is outside the current user or role scope.'),
-        404: errorResponse('The preview problem session does not exist.'),
-      },
-    },
-  },
-  '/lightExtensionPreviewProblems:watch': {
-    post: {
-      'x-mcp': true,
-      tags: ['lightExtensionPreviewProblems'],
-      summary: 'Poll a preview problem session after a cursor',
-      description: 'The first version uses ordinary cursor polling; clients may call this operation repeatedly.',
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              allOf: [
-                schemaRef('LightExtensionPreviewProblemSessionInput'),
-                { type: 'object', properties: { cursor: { type: 'integer', minimum: 0 } } },
-              ],
-            },
-          },
-        },
-      },
-      responses: {
-        200: {
-          description: 'Current preview problem state and problems after the supplied cursor.',
-          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
-        },
-        403: errorResponse('The preview problem session is outside the current user or role scope.'),
-        404: errorResponse('The preview problem session does not exist.'),
-      },
-    },
-  },
-  '/lightExtensionPreviewProblems:close': {
-    post: {
-      'x-mcp': false,
-      tags: ['lightExtensionPreviewProblems'],
-      summary: 'Close or stale a preview problem session',
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              allOf: [
-                schemaRef('LightExtensionPreviewProblemSessionInput'),
-                {
-                  type: 'object',
-                  required: ['state'],
-                  properties: { state: { type: 'string', enum: ['completed', 'stale'] } },
-                },
-              ],
-            },
-          },
-        },
-      },
-      responses: {
-        200: {
-          description: 'Closed preview problem session.',
-          content: jsonContent('LightExtensionPreviewProblemSessionEnvelope'),
-        },
-        403: errorResponse('The preview problem session is outside the current user or role scope.'),
-        404: errorResponse('The preview problem session does not exist.'),
       },
     },
   },

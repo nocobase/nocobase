@@ -114,9 +114,7 @@ test('parseBody should still enforce required body fields when flag mode is used
     bodyRequired: true,
   };
 
-  await expect((() => parseBody({ 'primary-value': 'ok' }, operation))()).rejects.toThrow(
-    /Missing required body field --items/,
-  );
+  await expect((() => parseBody({ 'primary-value': 'ok' }, operation))()).rejects.toThrow(/Missing required body field --items/);
 });
 
 test('parseBody should accept raw body JSON without checking sibling flags', async () => {
@@ -152,32 +150,6 @@ test('parseBody should parse --body-file with UTF-8 BOM', async () => {
   }
 });
 
-test('parseBody should preserve Light Extension multi-file Unicode, newlines, and nullable Head from --body-file', async () => {
-  const operation: RequestOperation = {
-    method: 'post',
-    pathTemplate: '/lightExtensions:compileWorkspacePreview',
-    parameters: [],
-    hasBody: true,
-    bodyRequired: true,
-  };
-  const payload = {
-    repoId: 'ler_demo',
-    expectedHeadCommitId: null,
-    files: [
-      { path: 'src/client/demo/entry.json', content: '{\n  "name": "演示"\n}\n', encoding: 'utf8' },
-      { path: 'src/client/demo/index.tsx', content: 'export default () => `你好\\nworld`;\n', encoding: 'utf8' },
-    ],
-  };
-  const filePath = join(tmpdir(), `nocobase-cli-light-body-${Date.now()}.json`);
-  await fs.writeFile(filePath, JSON.stringify(payload), 'utf8');
-
-  try {
-    await expect(parseBody({ 'body-file': filePath }, operation)).resolves.toEqual(payload);
-  } finally {
-    await fs.unlink(filePath).catch(() => undefined);
-  }
-});
-
 test('parseBody should reject invalid JSON for json-encoded body fields', async () => {
   const operation: RequestOperation = {
     method: 'post',
@@ -187,9 +159,7 @@ test('parseBody should reject invalid JSON for json-encoded body fields', async 
     bodyRequired: true,
   };
 
-  await expect((() => parseBody({ 'primary-value': 'ok', items: '[{name:item}]' }, operation))()).rejects.toThrow(
-    /Invalid JSON for --items/,
-  );
+  await expect((() => parseBody({ 'primary-value': 'ok', items: '[{name:item}]' }, operation))()).rejects.toThrow(/Invalid JSON for --items/);
 });
 
 test('parseBody should describe conflicting raw body and body flags clearly', async () => {
@@ -201,11 +171,7 @@ test('parseBody should describe conflicting raw body and body flags clearly', as
     bodyRequired: true,
   };
 
-  await expect(
-    (() => parseBody({ body: '{"primaryValue":"ok","items":[]}', 'primary-value': 'ok' }, operation))(),
-  ).rejects.toThrow(
-    /Conflicting request body inputs: received --body together with body field flags \(--primary-value\)/,
-  );
+  await expect((() => parseBody({ body: '{"primaryValue":"ok","items":[]}', 'primary-value': 'ok' }, operation))()).rejects.toThrow(/Conflicting request body inputs: received --body together with body field flags \(--primary-value\)/);
 });
 
 test('buildExamples should not mix required body flags with --body examples', () => {

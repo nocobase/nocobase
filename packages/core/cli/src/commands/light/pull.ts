@@ -8,31 +8,19 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import * as lightExtensionTypegenModule from '@nocobase/light-extension-sdk/typegen';
 import { executeRawApiRequest } from '../../lib/api-client.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import {
   assertSafeWorkspaceDirectory,
-  assertPullSupportedByLocalWorkspace,
-  backupAndClearPullTarget,
   buildHttpError,
-  extractContextPack,
   extractEntryRecord,
   extractPullResult,
   inspectPullTarget,
   LightExtensionCliError,
   materializePulledWorkspace,
-  parseOwnerLocatorFlag,
   resolveLightExtensionTarget,
   unwrapResponseData,
 } from '../../lib/light-extension-workspace.js';
-
-type LightExtensionTypegenModule = typeof import('@nocobase/light-extension-sdk/typegen');
-const lightExtensionTypegenRuntime = lightExtensionTypegenModule as LightExtensionTypegenModule & {
-  default?: LightExtensionTypegenModule;
-};
-const { createActiveEntryContextType, generateBindingContextTypes, generateClientSettingsTypes } =
-  lightExtensionTypegenRuntime.default || lightExtensionTypegenRuntime;
 
 export default class LightPull extends Command {
   static override summary = translateCli('commands.light.pull.summary', undefined, {
@@ -41,7 +29,6 @@ export default class LightPull extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --repo ler_demo --entry lee_demo --dir ./light-demo',
-    '<%= config.bin %> <%= command.id %> --repo ler_demo --entry lee_demo --dir ./light-demo --force',
     '<%= config.bin %> <%= command.id %> --repo ler_demo --entry lee_demo --dir ./light-demo --json-output',
   ];
 
@@ -57,22 +44,6 @@ export default class LightPull extends Command {
     dir: Flags.string({
       description: translateCli('commands.light.flags.dir', undefined, { fallback: 'Local workspace directory' }),
       required: true,
-    }),
-    force: Flags.boolean({
-      description: translateCli('commands.light.pull.flags.force', undefined, {
-        fallback: 'Back up and replace local source changes in the target directory',
-      }),
-      default: false,
-    }),
-    reference: Flags.string({
-      description: translateCli('commands.light.pull.flags.reference', undefined, {
-        fallback: 'Explicit Light Extension reference id for binding-aware types',
-      }),
-    }),
-    'owner-locator': Flags.string({
-      description: translateCli('commands.light.pull.flags.ownerLocator', undefined, {
-        fallback: 'Explicit binding owner locator as a JSON object',
-      }),
     }),
     env: Flags.string({
       char: 'e',
@@ -105,20 +76,11 @@ export default class LightPull extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(LightPull);
     const jsonOutput = flags['json-output'];
-    let backupPath: string | undefined;
 
     try {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
-      if (flags.reference && flags['owner-locator']) {
-        throw new LightExtensionCliError(
-          translateCli('commands.light.pull.errors.bindingFlagsConflict', undefined, {
-            fallback: 'Use either --reference or --owner-locator, not both.',
-          }),
-        );
-      }
-      const ownerLocator = parseOwnerLocatorFlag(flags['owner-locator']);
       const inspection = await inspectPullTarget(workspaceRoot);
-      if (inspection.dirty && !flags.force) {
+      if (inspection.dirty) {
         throw new LightExtensionCliError(
           translateCli(
             'commands.light.pull.dirtyRefusal',
@@ -129,8 +91,7 @@ export default class LightPull extends Command {
                 translateCli('commands.light.pull.unknownLocalState', undefined, { fallback: 'unknown local state' }),
             },
             {
-              fallback:
-                'The target directory has local source changes ({{paths}}). Re-run with --force to back them up before pulling.',
+              fallback: 'The target directory has local source changes ({{paths}}). Review or remove them before pulling.',
             },
           ),
           { details: { changedPaths: inspection.changedPaths, stateError: inspection.stateError } },
@@ -184,101 +145,13 @@ export default class LightPull extends Command {
           translateCli('commands.light.operations.pull', undefined, { fallback: 'Light Extension pull' }),
         );
       const pull = extractPullResult(unwrapResponseData(pullResponse.data));
-      assertPullSupportedByLocalWorkspace(pull);
-      const contextResponse = await executeRawApiRequest({
-        ...requestOptions,
-        method: 'POST',
-        path: '/lightExtensionContexts:get',
-        body: {
-          repoId: flags.repo,
-          entryId: flags.entry,
-          ...(flags.reference ? { referenceId: flags.reference } : {}),
-          ...(ownerLocator ? { ownerLocator } : {}),
-        },
-      });
-      if (!contextResponse.ok) {
-        throw buildHttpError(
-          contextResponse.status,
-          contextResponse.data,
-          translateCli('commands.light.operations.contextRead', undefined, {
-            fallback: 'Light Extension Context Pack read',
-          }),
-        );
-      }
-      const contextPack = extractContextPack(unwrapResponseData(contextResponse.data));
-      if (contextPack.repoId !== flags.repo || contextPack.entry.id !== flags.entry) {
-        throw new LightExtensionCliError(
-          translateCli('commands.light.pull.errors.contextMismatch', undefined, {
-            fallback: 'The Context Pack does not match the selected repository and entry.',
-          }),
-        );
-      }
-      const sourceFiles = (pull.files || []).map((file) => ({ path: file.path, content: file.content || '' }));
-      const settingsTypes = generateClientSettingsTypes({ files: sourceFiles });
-      const bindingTypes = generateBindingContextTypes(contextPack);
-      const activeEntryContext = createActiveEntryContextType({
-        activePath: entry.entryPath,
-        bindingTypes,
-        entries: settingsTypes.entries,
-      });
-      const generatedTypeFiles = [
-        ...settingsTypes.files,
-        ...bindingTypes.files,
-        ...(activeEntryContext.file ? [activeEntryContext.file] : []),
-      ];
-
-      const latestInspection = await inspectPullTarget(workspaceRoot);
-      if (latestInspection.dirty && !flags.force) {
-        throw new LightExtensionCliError(
-          translateCli('commands.light.pull.errors.changedDuringPull', undefined, {
-            fallback:
-              'The target directory changed while the pull request was running. Re-run the command after reviewing the local files, or use --force to back them up.',
-          }),
-          { details: { changedPaths: latestInspection.changedPaths, stateError: latestInspection.stateError } },
-        );
-      }
-      if (latestInspection.dirty && !jsonOutput) {
-        this.log(
-          translateCli(
-            'commands.light.pull.overwriteWarning',
-            {
-              paths:
-                latestInspection.changedPaths.join(', ') ||
-                translateCli('commands.light.pull.localWorkspaceFiles', undefined, {
-                  fallback: 'local workspace files',
-                }),
-            },
-            { fallback: 'Local changes will be backed up before replacement: {{paths}}' },
-          ),
-        );
-      }
-      backupPath = flags.force
-        ? await backupAndClearPullTarget(workspaceRoot, latestInspection, {
-            onBackupReady: (path) => {
-              backupPath = path;
-              const announcement = translateCli(
-                'commands.light.pull.backup',
-                { path },
-                { fallback: 'Backup: {{path}}' },
-              );
-              if (jsonOutput) {
-                this.logToStderr(JSON.stringify({ ok: true, stage: 'backup', backupPath: path }, null, 2));
-              } else {
-                this.log(announcement);
-              }
-            },
-          })
-        : undefined;
       const state = await materializePulledWorkspace({
         workspaceRoot,
         target,
         repoId: flags.repo,
         entry,
         pull,
-        contextHash: contextPack.contextHash,
-        contextReferenceId: contextPack.binding?.referenceId,
-        generatedTypeFiles,
-        previousState: backupPath ? undefined : latestInspection.state,
+        previousState: inspection.state,
       });
 
       const output = {
@@ -287,14 +160,8 @@ export default class LightPull extends Command {
         repo: state.repo,
         entry: state.entry,
         baseHeadCommitId: state.baseHeadCommitId,
-        treeHash: state.treeHash,
+        treeHash: pull.tree?.hash ?? null,
         files: Object.keys(state.files),
-        context: {
-          contextHash: contextPack.contextHash,
-          mode: contextPack.contextMode,
-          reason: contextPack.reason,
-        },
-        ...(backupPath ? { backupPath } : {}),
       };
       if (jsonOutput) {
         this.log(JSON.stringify(output, null, 2));
@@ -315,35 +182,14 @@ export default class LightPull extends Command {
             },
           ),
         );
-        this.log(
-          translateCli(
-            'commands.light.pull.context',
-            { mode: contextPack.contextMode, reason: contextPack.reason },
-            { fallback: 'Context: {{mode}} ({{reason}})' },
-          ),
-        );
       }
     } catch (error: unknown) {
       const failure =
         error instanceof LightExtensionCliError
           ? error
           : new LightExtensionCliError(error instanceof Error ? error.message : String(error), { cause: error });
-      const failureOutput = backupPath ? { ...failure.toJSON(), backupPath } : failure.toJSON();
-      if (jsonOutput) this.logToStderr(JSON.stringify(failureOutput, null, 2));
-      else {
-        if (backupPath) {
-          this.logToStderr(
-            translateCli(
-              'commands.light.pull.backupPreserved',
-              { path: backupPath },
-              {
-                fallback: 'The local backup was preserved at {{path}}.',
-              },
-            ),
-          );
-        }
-        this.logToStderr(failure.message);
-      }
+      if (jsonOutput) this.logToStderr(JSON.stringify(failure.toJSON(), null, 2));
+      else this.logToStderr(failure.message);
       this.exit(failure.exitCode);
     }
   }

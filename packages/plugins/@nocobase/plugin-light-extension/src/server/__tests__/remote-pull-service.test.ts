@@ -215,7 +215,7 @@ describe('LightExtensionRemotePullService', () => {
     await expect(remotePullService.pull(input, { requestId: 'req_oversized_pull' })).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([expect.objectContaining({ code: 'repo_file_count_exceeded' })]),
+        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'repo_file_count_exceeded' })]),
       },
     });
     await expect(repoService.getRepo(setup.repo.id)).resolves.toMatchObject({
@@ -265,7 +265,7 @@ describe('LightExtensionRemotePullService', () => {
       }),
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      details: { problems: expect.arrayContaining([expect.objectContaining({ code: 'sync_batch_too_large' })]) },
+      details: { diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'sync_batch_too_large' })]) },
     });
   });
 

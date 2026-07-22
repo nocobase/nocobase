@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import swaggerDocument from '../../swagger';
-import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
 import {
@@ -18,11 +16,6 @@ import {
 } from '../services/ReferenceOwnerRegistry';
 
 describe('plugin-light-extension supported kinds validator', () => {
-  it('keeps the Swagger kind enum aligned with the runtime contract', () => {
-    expect(swaggerDocument.components.schemas.LightExtensionKind.enum).toEqual([...LIGHT_EXTENSION_SUPPORTED_KINDS]);
-    expect(swaggerDocument.components.schemas.LightExtensionKind.enum).toContain('js-page');
-  });
-
   it('uses the JS Page render and reference owner contracts', () => {
     expect(LIGHT_EXTENSION_AUTHORING_SURFACES['js-page']).toEqual({
       kind: 'js-page',
@@ -104,7 +97,7 @@ describe('plugin-light-extension supported kinds validator', () => {
       'js-page:hello-page',
       'runjs:calculate-total',
     ]);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(result.capabilities.allowedPaths.entries.runjs).toEqual(
       expect.arrayContaining([
         'src/client/runjs/<entryName>/index.ts',
@@ -166,8 +159,8 @@ describe('plugin-light-extension supported kinds validator', () => {
 
     expect(result.accepted).toBe(true);
     expect(result.entries).toHaveLength(1);
-    expect(result.problems.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
   });
 
   it('rejects forbidden server, cross-entry, shared-boundary, and npm imports for future client kinds', () => {
@@ -193,7 +186,7 @@ describe('plugin-light-extension supported kinds validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.problems).toEqual(
+    expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'import_not_allowed',
@@ -206,7 +199,7 @@ describe('plugin-light-extension supported kinds validator', () => {
         }),
       ]),
     );
-    expect(result.problems.filter((item) => item.code === 'import_not_allowed')).toHaveLength(4);
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toHaveLength(4);
   });
 
   it('rejects empty runtime imports from SDK subpaths before compile preview', () => {
@@ -223,7 +216,7 @@ describe('plugin-light-extension supported kinds validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.problems).toContainEqual(
+    expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         code: 'import_not_allowed',
         kind: 'js-field',
@@ -245,7 +238,7 @@ describe('plugin-light-extension supported kinds validator', () => {
     expect(result.entries).toEqual([
       expect.objectContaining({ kind: 'runjs', entryName: 'example', entryPath: 'src/client/runjs/example/index.ts' }),
     ]);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
   });
 });
 

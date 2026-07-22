@@ -12,7 +12,6 @@ import { runJSSourceSchemas } from './schemas';
 
 export default {
   openapi: '3.0.2',
-  'x-mcp': false,
   info: {
     title: 'NocoBase API - VSC file plugin',
     version: '1.0.0',

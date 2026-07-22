@@ -10,7 +10,6 @@
 import * as antdIcons from '@ant-design/icons';
 import { autorun } from '@formily/reactive';
 import type { FlowContext } from './flowContext';
-import { createRunJSRuntimeIssue, getRunJSRuntimeReporting, reportRunJSRuntimeIssue } from './runjsRuntimeReporter';
 
 export type RunJSLibCache = 'global' | 'context';
 export type RunJSLibLoader<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -381,18 +380,10 @@ function getRunjsErrorBoundary(ReactLike: any): any {
 
     state: { error?: any } = {};
 
-    componentDidCatch(error: any, info?: { componentStack?: string }) {
+    componentDidCatch(error: any) {
       try {
         const enhance = (this.props as any)?.enhanceReactError;
         const enhanced = typeof enhance === 'function' ? enhance(error) : error;
-        const reporting = getRunJSRuntimeReporting((this.props as any)?.ctx);
-        reportRunJSRuntimeIssue(
-          reporting,
-          createRunJSRuntimeIssue(
-            { kind: 'react-error', error: enhanced, componentStack: info?.componentStack },
-            reporting?.identity,
-          ),
-        );
         const msg = String(enhanced?.message || '');
         if (msg && /\[RunJS Hint\]/.test(msg)) {
           // React 18/19 often logs the original error (or swallows it from caller of root.render).

@@ -9,16 +9,16 @@
 
 import { expect, test } from 'vitest';
 
-import swagger from '..';
+import swagger from '../..';
 
-test('marks owner-aware RunJS workspace operations as internal MCP actions', () => {
-  expect(swagger['x-mcp']).toBe(false);
+test('publishes only owner-aware RunJS workspace authoring actions', () => {
   expect(Object.keys(swagger.paths)).toEqual(
     expect.arrayContaining([
       '/runJSSources:compilePreview',
       '/runJSSources:open',
       '/runJSSources:openLatest',
       '/runJSSources:save',
+      '/lightExtensionFiles:saveSource',
     ]),
   );
   expect(Object.keys(swagger.paths)).not.toEqual(
@@ -29,9 +29,6 @@ test('marks owner-aware RunJS workspace operations as internal MCP actions', () 
       '/vscFile:push',
     ]),
   );
-  for (const path of Object.values(swagger.paths)) {
-    expect(path.post['x-mcp']).toBe(false);
-  }
 });
 
 test('documents save as a guarded complete snapshot', () => {

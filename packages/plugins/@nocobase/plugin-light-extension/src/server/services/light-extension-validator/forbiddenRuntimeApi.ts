@@ -9,7 +9,8 @@
 
 import ts from 'typescript';
 
-import { problemAt } from './problems';
+import type { LightExtensionDiagnostic } from '../../../shared/types';
+import { diagnosticAt } from './diagnostics';
 import {
   getImportEqualsSpecifier,
   getImportSpecifier,
@@ -21,9 +22,9 @@ import {
   validateExternalSdkImport,
   validateSettingsImportTypeNode,
 } from './importPolicy';
-import type { LightExtensionValidatorProblem, NormalizedSourceFile, ProblemTarget } from './types';
+import type { DiagnosticTarget, NormalizedSourceFile } from './types';
 
-type ForbiddenStoredProblem = { code: 'require_not_allowed' | 'blocked_global_api'; message: string };
+type ForbiddenStoredDiagnostic = { code: 'require_not_allowed' | 'blocked_global_api'; message: string };
 
 type SourceFileWithParseDiagnostics = ts.SourceFile & { parseDiagnostics?: readonly ts.Diagnostic[] };
 
@@ -65,10 +66,10 @@ const privilegedGlobalDescriptorProperties = new Set([
 class ForbiddenRuntimeApiValidator {
   validateCodeFile(
     file: NormalizedSourceFile,
-    target: Omit<ProblemTarget, 'path'>,
+    target: Omit<DiagnosticTarget, 'path'>,
     boundary: 'entry' | 'shared' = 'entry',
     entryRootPath?: string,
-  ): LightExtensionValidatorProblem[] {
+  ): LightExtensionDiagnostic[] {
     const sourceFile = ts.createSourceFile(
       file.path,
       file.content,
@@ -77,8 +78,8 @@ class ForbiddenRuntimeApiValidator {
       scriptKind(file.path),
     );
     const parseDiagnostics = (sourceFile as SourceFileWithParseDiagnostics).parseDiagnostics || [];
-    const problems: LightExtensionValidatorProblem[] = parseDiagnostics.map((item) =>
-      problemAt(
+    const diagnostics: LightExtensionDiagnostic[] = parseDiagnostics.map((item) =>
+      diagnosticAt(
         sourceFile,
         item.start || 0,
         'source_parse_error',
@@ -103,10 +104,10 @@ class ForbiddenRuntimeApiValidator {
       if (ts.isImportDeclaration(node)) {
         const specifier = getImportSpecifier(node.moduleSpecifier);
         if (specifier && !specifier.startsWith('.')) {
-          problems.push(...validateExternalSdkImport(node, sourceFile, specifier, target));
+          diagnostics.push(...validateExternalSdkImport(node, sourceFile, specifier, target));
         } else if (specifier && isEntryDescriptorImport(file.path, specifier)) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'entry_descriptor_import_not_allowed',
@@ -121,8 +122,8 @@ class ForbiddenRuntimeApiValidator {
             ? isRelativeImportOutsideSharedRoot(file.path, specifier)
             : isRelativeImportOutsideCurrentEntry(file.path, specifier, target, entryRootPath))
         ) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'import_not_allowed',
@@ -139,15 +140,15 @@ class ForbiddenRuntimeApiValidator {
       if (ts.isImportTypeNode(node)) {
         const specifier = getImportTypeSpecifier(node);
         if (specifier?.startsWith('light-extension:settings/')) {
-          problems.push(...validateSettingsImportTypeNode(node, sourceFile, specifier, target));
+          diagnostics.push(...validateSettingsImportTypeNode(node, sourceFile, specifier, target));
         }
       }
 
       if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
         const specifier = getImportSpecifier(node.moduleSpecifier);
         if (specifier && !specifier.startsWith('.')) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'import_not_allowed',
@@ -157,8 +158,8 @@ class ForbiddenRuntimeApiValidator {
             ),
           );
         } else if (specifier && isEntryDescriptorImport(file.path, specifier)) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'entry_descriptor_import_not_allowed',
@@ -173,8 +174,8 @@ class ForbiddenRuntimeApiValidator {
             ? isRelativeImportOutsideSharedRoot(file.path, specifier)
             : isRelativeImportOutsideCurrentEntry(file.path, specifier, target, entryRootPath))
         ) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'import_not_allowed',
@@ -191,8 +192,8 @@ class ForbiddenRuntimeApiValidator {
       if (ts.isImportEqualsDeclaration(node)) {
         const specifier = getImportEqualsSpecifier(node);
         if (specifier) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleReference.getStart(sourceFile),
               'require_not_allowed',
@@ -203,8 +204,8 @@ class ForbiddenRuntimeApiValidator {
           );
         }
         if (specifier && !specifier.startsWith('.')) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.moduleReference.getStart(sourceFile),
               'import_not_allowed',
@@ -217,8 +218,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'dynamic_import_not_allowed',
@@ -241,8 +242,8 @@ class ForbiddenRuntimeApiValidator {
           globalPropertyDescriptorsObjectAliases,
         )
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'require_not_allowed',
@@ -263,8 +264,8 @@ class ForbiddenRuntimeApiValidator {
         globalPropertyDescriptorsObjectAliases,
       );
       if (forbiddenRequireReference) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             forbiddenRequireReference.getStart(sourceFile),
             'require_not_allowed',
@@ -282,8 +283,8 @@ class ForbiddenRuntimeApiValidator {
         staticStringAliases,
       );
       if (forbiddenReflectGetReference) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             forbiddenReflectGetReference.getStart(sourceFile),
             'blocked_global_api',
@@ -298,8 +299,8 @@ class ForbiddenRuntimeApiValidator {
         ts.isCallExpression(node) &&
         isReflectGetHighOrderCall(node.expression, reflectObjectAliases, reflectGetAliases, staticStringAliases)
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -323,8 +324,8 @@ class ForbiddenRuntimeApiValidator {
           globalPropertyDescriptorsObjectAliases,
         )
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'require_not_allowed',
@@ -340,8 +341,8 @@ class ForbiddenRuntimeApiValidator {
         !isDirectCallee(node) &&
         isReflectGetCallHelperAccess(node, reflectObjectAliases, reflectGetAliases, staticStringAliases)
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -356,7 +357,7 @@ class ForbiddenRuntimeApiValidator {
         this.recordForbiddenContainerValues({
           expression: node,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -382,8 +383,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         );
         if (forbiddenReturn) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               forbiddenReturn.code,
@@ -408,8 +409,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         );
         for (const item of forbiddenArguments) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               item.argument.getStart(sourceFile),
               item.forbidden.code,
@@ -423,7 +424,7 @@ class ForbiddenRuntimeApiValidator {
         this.recordForbiddenObjectWriteCall({
           expression: node,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -446,8 +447,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         )
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -463,8 +464,8 @@ class ForbiddenRuntimeApiValidator {
         (isUnknownObjectStaticCall(node, staticStringAliases) ||
           isReflectApplyPrivilegedStaticCall(node, reflectObjectAliases, staticStringAliases))
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -489,8 +490,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         )
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -511,8 +512,8 @@ class ForbiddenRuntimeApiValidator {
           globalPropertyDescriptorsObjectAliases,
         );
         if (forbiddenComputedAccess) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               forbiddenComputedAccess.code,
@@ -527,8 +528,8 @@ class ForbiddenRuntimeApiValidator {
       if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
         const privilegedObjectStaticAccessName = getPrivilegedObjectStaticAccessName(node, staticStringAliases);
         if (privilegedObjectStaticAccessName) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               'blocked_global_api',
@@ -541,8 +542,8 @@ class ForbiddenRuntimeApiValidator {
 
         const staticHelperName = getPrivilegedStaticCallHelperName(node, reflectObjectAliases, staticStringAliases);
         if (staticHelperName) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               'blocked_global_api',
@@ -561,8 +562,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         );
         if (globalConstructorName) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               'blocked_global_api',
@@ -589,8 +590,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         )
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -612,8 +613,8 @@ class ForbiddenRuntimeApiValidator {
           globalPropertyDescriptorsObjectAliases,
         );
         if (computedBlockedApiName) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               computedBlockedApiName === 'require' ? 'require_not_allowed' : 'blocked_global_api',
@@ -638,8 +639,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         );
         for (const item of forbiddenArguments) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               item.argument.getStart(sourceFile),
               item.forbidden.code,
@@ -658,7 +659,7 @@ class ForbiddenRuntimeApiValidator {
             name: assignmentTarget.text,
             expression: node.right,
             sourceFile,
-            problems,
+            diagnostics,
             target,
             globalObjectAliases,
             reflectObjectAliases,
@@ -674,7 +675,7 @@ class ForbiddenRuntimeApiValidator {
             pattern: assignmentTarget,
             initializer: node.right,
             sourceFile,
-            problems,
+            diagnostics,
             target,
             globalObjectAliases,
             reflectObjectAliases,
@@ -690,7 +691,7 @@ class ForbiddenRuntimeApiValidator {
             pattern: assignmentTarget,
             initializer: node.right,
             sourceFile,
-            problems,
+            diagnostics,
             target,
             globalObjectAliases,
             reflectObjectAliases,
@@ -706,7 +707,7 @@ class ForbiddenRuntimeApiValidator {
             targetExpression: assignmentTarget,
             expression: node.right,
             sourceFile,
-            problems,
+            diagnostics,
             target,
             globalObjectAliases,
             reflectObjectAliases,
@@ -725,7 +726,7 @@ class ForbiddenRuntimeApiValidator {
           name: node.name.text,
           expression: node.initializer,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -743,7 +744,7 @@ class ForbiddenRuntimeApiValidator {
           pattern: node.name,
           initializer: node.initializer,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -761,7 +762,7 @@ class ForbiddenRuntimeApiValidator {
           pattern: node.name,
           initializer: node.initializer,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -779,7 +780,7 @@ class ForbiddenRuntimeApiValidator {
           name: node.name.text,
           expression: node.initializer,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -797,7 +798,7 @@ class ForbiddenRuntimeApiValidator {
           pattern: node.name,
           initializer: node.initializer,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -815,7 +816,7 @@ class ForbiddenRuntimeApiValidator {
           pattern: node.name,
           initializer: node.initializer,
           sourceFile,
-          problems,
+          diagnostics,
           target,
           globalObjectAliases,
           reflectObjectAliases,
@@ -838,8 +839,8 @@ class ForbiddenRuntimeApiValidator {
         staticStringAliases,
       );
       if (descriptorValueMemberName) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             descriptorValueMemberName === 'require' ? 'require_not_allowed' : 'blocked_global_api',
@@ -855,8 +856,8 @@ class ForbiddenRuntimeApiValidator {
         isBlockedGlobalMemberAccess(node, globalObjectAliases, reflectObjectAliases, reflectGetAliases)
       ) {
         const memberName = getBlockedMemberDisplayName(node);
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -873,8 +874,8 @@ class ForbiddenRuntimeApiValidator {
         isBlockedGlobalMemberAccess(node.expression, globalObjectAliases, reflectObjectAliases, reflectGetAliases)
       ) {
         const memberName = getAccessedPropertyName(node.expression);
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -894,8 +895,8 @@ class ForbiddenRuntimeApiValidator {
           staticStringAliases,
         );
         if (reflectedMemberName) {
-          problems.push(
-            problemAt(
+          diagnostics.push(
+            diagnosticAt(
               sourceFile,
               node.getStart(sourceFile),
               'blocked_global_api',
@@ -909,8 +910,8 @@ class ForbiddenRuntimeApiValidator {
 
       const blockedIdentifierApi = getBlockedApiIdentifierName(node, blockedApiAliases);
       if (blockedIdentifierApi) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -922,8 +923,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (isProcessGlobalMemberAccess(node, globalObjectAliases, reflectObjectAliases, reflectGetAliases)) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -940,8 +941,8 @@ class ForbiddenRuntimeApiValidator {
         !isDeclarationName(node) &&
         !isAccessPropertyName(node)
       ) {
-        problems.push(
-          problemAt(
+        diagnostics.push(
+          diagnosticAt(
             sourceFile,
             node.getStart(sourceFile),
             'blocked_global_api',
@@ -976,7 +977,7 @@ class ForbiddenRuntimeApiValidator {
     };
 
     ts.forEachChild(sourceFile, visit);
-    return problems.map((item) => ({
+    return diagnostics.map((item) => ({
       ...item,
       path: item.path || file.path,
       ...target,
@@ -987,8 +988,8 @@ class ForbiddenRuntimeApiValidator {
     name: string;
     expression: ts.Expression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -1005,8 +1006,8 @@ class ForbiddenRuntimeApiValidator {
       input.staticStringAliases,
     );
     if (isObjectConstructorExpression(expression, input.staticStringAliases) || privilegedObjectStaticMethodName) {
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           expression.getStart(input.sourceFile),
           'blocked_global_api',
@@ -1074,8 +1075,8 @@ class ForbiddenRuntimeApiValidator {
       )
     ) {
       input.requireAliases.add(input.name);
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           expression.getStart(input.sourceFile),
           'require_not_allowed',
@@ -1097,8 +1098,8 @@ class ForbiddenRuntimeApiValidator {
         input.globalPropertyDescriptorsObjectAliases,
       )
     ) {
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           expression.getStart(input.sourceFile),
           'require_not_allowed',
@@ -1117,8 +1118,8 @@ class ForbiddenRuntimeApiValidator {
         input.staticStringAliases,
       )
     ) {
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           expression.getStart(input.sourceFile),
           'blocked_global_api',
@@ -1154,8 +1155,8 @@ class ForbiddenRuntimeApiValidator {
     }
 
     input.blockedApiAliases.set(input.name, blockedApiName);
-    input.problems.push(
-      problemAt(
+    input.diagnostics.push(
+      diagnosticAt(
         input.sourceFile,
         expression.getStart(input.sourceFile),
         'blocked_global_api',
@@ -1170,8 +1171,8 @@ class ForbiddenRuntimeApiValidator {
     pattern: ts.ObjectBindingPattern;
     initializer: ts.Expression | undefined;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -1247,8 +1248,8 @@ class ForbiddenRuntimeApiValidator {
           input.staticStringAliases,
         );
         if (forbidden) {
-          input.problems.push(
-            problemAt(
+          input.diagnostics.push(
+            diagnosticAt(
               input.sourceFile,
               element.getStart(input.sourceFile),
               forbidden.code,
@@ -1262,7 +1263,7 @@ class ForbiddenRuntimeApiValidator {
           name: element.name,
           expression: input.initializer,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -1282,7 +1283,7 @@ class ForbiddenRuntimeApiValidator {
           name: element.name,
           expression: element.initializer,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -1302,8 +1303,8 @@ class ForbiddenRuntimeApiValidator {
           bindsFromReflectObject ||
           bindsFromObjectConstructor
         ) {
-          input.problems.push(
-            problemAt(
+          input.diagnostics.push(
+            diagnosticAt(
               input.sourceFile,
               element.getStart(input.sourceFile),
               bindsFromGlobalPropertyDescriptor === 'require' ? 'require_not_allowed' : 'blocked_global_api',
@@ -1316,8 +1317,8 @@ class ForbiddenRuntimeApiValidator {
         }
       }
       if (bindsFromObjectConstructor && memberName && privilegedObjectStaticMethods.has(memberName)) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1335,7 +1336,7 @@ class ForbiddenRuntimeApiValidator {
             name: element.name,
             expression: input.initializer,
             sourceFile: input.sourceFile,
-            problems: input.problems,
+            diagnostics: input.diagnostics,
             target: input.target,
             globalObjectAliases: input.globalObjectAliases,
             reflectObjectAliases: input.reflectObjectAliases,
@@ -1350,8 +1351,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromGlobalObject && memberName === 'require') {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'require_not_allowed',
@@ -1365,8 +1366,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromRequireFunction && functionHelperMembers.has(memberName)) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'require_not_allowed',
@@ -1385,8 +1386,8 @@ class ForbiddenRuntimeApiValidator {
             ? memberName
             : null;
       if (blockedMemberName) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1406,8 +1407,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromReflectGetFunction && functionHelperMembers.has(memberName)) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1419,8 +1420,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromGlobalPropertyDescriptor === 'require' && memberName === 'value') {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'require_not_allowed',
@@ -1438,8 +1439,8 @@ class ForbiddenRuntimeApiValidator {
         blockedGlobalMembers.has(bindsFromGlobalPropertyDescriptor) &&
         memberName === 'value'
       ) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1469,8 +1470,8 @@ class ForbiddenRuntimeApiValidator {
         privilegedGlobalDescriptorProperties.has(memberName) &&
         !ts.isIdentifier(element.name)
       ) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             element.getStart(input.sourceFile),
             memberName === 'require' ? 'require_not_allowed' : 'blocked_global_api',
@@ -1496,8 +1497,8 @@ class ForbiddenRuntimeApiValidator {
     pattern: ts.ObjectLiteralExpression;
     initializer: ts.Expression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -1568,8 +1569,8 @@ class ForbiddenRuntimeApiValidator {
           input.staticStringAliases,
         );
         if (forbidden) {
-          input.problems.push(
-            problemAt(
+          input.diagnostics.push(
+            diagnosticAt(
               input.sourceFile,
               property.getStart(input.sourceFile),
               forbidden.code,
@@ -1585,7 +1586,7 @@ class ForbiddenRuntimeApiValidator {
             name: restTarget.text,
             expression: input.initializer,
             sourceFile: input.sourceFile,
-            problems: input.problems,
+            diagnostics: input.diagnostics,
             target: input.target,
             globalObjectAliases: input.globalObjectAliases,
             reflectObjectAliases: input.reflectObjectAliases,
@@ -1601,7 +1602,7 @@ class ForbiddenRuntimeApiValidator {
             targetExpression: restTarget,
             expression: input.initializer,
             sourceFile: input.sourceFile,
-            problems: input.problems,
+            diagnostics: input.diagnostics,
             target: input.target,
             globalObjectAliases: input.globalObjectAliases,
             reflectObjectAliases: input.reflectObjectAliases,
@@ -1621,7 +1622,7 @@ class ForbiddenRuntimeApiValidator {
           name: property.name.text,
           expression: property.objectAssignmentInitializer,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -1648,8 +1649,8 @@ class ForbiddenRuntimeApiValidator {
           bindsFromGlobalPropertyDescriptorsObject ||
           bindsFromObjectConstructor
         ) {
-          input.problems.push(
-            problemAt(
+          input.diagnostics.push(
+            diagnosticAt(
               input.sourceFile,
               property.getStart(input.sourceFile),
               bindsFromRequireFunction ? 'require_not_allowed' : 'blocked_global_api',
@@ -1665,8 +1666,8 @@ class ForbiddenRuntimeApiValidator {
         continue;
       }
       if (bindsFromObjectConstructor && privilegedObjectStaticMethods.has(propertyTarget.memberName)) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1702,7 +1703,7 @@ class ForbiddenRuntimeApiValidator {
           pattern: nestedAssignmentTarget,
           initializer: input.initializer,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -1722,8 +1723,8 @@ class ForbiddenRuntimeApiValidator {
         propertyTarget.targetExpression &&
         isMemberAssignmentTarget(propertyTarget.targetExpression)
       ) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1736,8 +1737,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromGlobalObject && propertyTarget.memberName === 'require') {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'require_not_allowed',
@@ -1753,8 +1754,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromRequireFunction && functionHelperMembers.has(propertyTarget.memberName)) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'require_not_allowed',
@@ -1767,8 +1768,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromReflectGetFunction && functionHelperMembers.has(propertyTarget.memberName)) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1781,8 +1782,8 @@ class ForbiddenRuntimeApiValidator {
       }
 
       if (bindsFromGlobalPropertyDescriptor === 'require' && propertyTarget.memberName === 'value') {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'require_not_allowed',
@@ -1802,8 +1803,8 @@ class ForbiddenRuntimeApiValidator {
         blockedGlobalMembers.has(bindsFromGlobalPropertyDescriptor) &&
         propertyTarget.memberName === 'value'
       ) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             'blocked_global_api',
@@ -1835,8 +1836,8 @@ class ForbiddenRuntimeApiValidator {
         propertyTarget.targetExpression &&
         ts.isObjectLiteralExpression(stripParentheses(propertyTarget.targetExpression))
       ) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             propertyTarget.memberName === 'require' ? 'require_not_allowed' : 'blocked_global_api',
@@ -1863,8 +1864,8 @@ class ForbiddenRuntimeApiValidator {
         propertyTarget.targetExpression &&
         isMemberAssignmentTarget(propertyTarget.targetExpression)
       ) {
-        input.problems.push(
-          problemAt(
+        input.diagnostics.push(
+          diagnosticAt(
             input.sourceFile,
             property.getStart(input.sourceFile),
             propertyTarget.memberName === 'require' ? 'require_not_allowed' : 'blocked_global_api',
@@ -1886,8 +1887,8 @@ class ForbiddenRuntimeApiValidator {
         continue;
       }
 
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           property.getStart(input.sourceFile),
           'blocked_global_api',
@@ -1906,8 +1907,8 @@ class ForbiddenRuntimeApiValidator {
     targetExpression: ts.Expression;
     expression: ts.Expression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -1932,8 +1933,8 @@ class ForbiddenRuntimeApiValidator {
       return;
     }
 
-    input.problems.push(
-      problemAt(
+    input.diagnostics.push(
+      diagnosticAt(
         input.sourceFile,
         input.targetExpression.getStart(input.sourceFile),
         forbidden.code,
@@ -1947,8 +1948,8 @@ class ForbiddenRuntimeApiValidator {
   private recordForbiddenContainerValues(input: {
     expression: ts.ObjectLiteralExpression | ts.ArrayLiteralExpression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -1983,8 +1984,8 @@ class ForbiddenRuntimeApiValidator {
             input.staticStringAliases,
           );
           if (forbidden) {
-            input.problems.push(
-              problemAt(
+            input.diagnostics.push(
+              diagnosticAt(
                 input.sourceFile,
                 property.getStart(input.sourceFile),
                 forbidden.code,
@@ -2022,8 +2023,8 @@ class ForbiddenRuntimeApiValidator {
         continue;
       }
 
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           item.position.getStart(input.sourceFile),
           forbidden.code,
@@ -2038,8 +2039,8 @@ class ForbiddenRuntimeApiValidator {
   private recordForbiddenObjectWriteCall(input: {
     expression: ts.CallExpression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -2071,8 +2072,8 @@ class ForbiddenRuntimeApiValidator {
         continue;
       }
 
-      input.problems.push(
-        problemAt(
+      input.diagnostics.push(
+        diagnosticAt(
           input.sourceFile,
           argument.getStart(input.sourceFile),
           forbidden.code,
@@ -2088,8 +2089,8 @@ class ForbiddenRuntimeApiValidator {
     pattern: ts.ArrayBindingPattern;
     initializer: ts.Expression | undefined;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -2121,7 +2122,7 @@ class ForbiddenRuntimeApiValidator {
         name: targetElement.name,
         expression: sourceExpression,
         sourceFile: input.sourceFile,
-        problems: input.problems,
+        diagnostics: input.diagnostics,
         target: input.target,
         globalObjectAliases: input.globalObjectAliases,
         reflectObjectAliases: input.reflectObjectAliases,
@@ -2139,8 +2140,8 @@ class ForbiddenRuntimeApiValidator {
     name: ts.BindingName;
     expression: ts.Expression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -2155,7 +2156,7 @@ class ForbiddenRuntimeApiValidator {
         name: input.name.text,
         expression: input.expression,
         sourceFile: input.sourceFile,
-        problems: input.problems,
+        diagnostics: input.diagnostics,
         target: input.target,
         globalObjectAliases: input.globalObjectAliases,
         reflectObjectAliases: input.reflectObjectAliases,
@@ -2174,7 +2175,7 @@ class ForbiddenRuntimeApiValidator {
         pattern: input.name,
         initializer: input.expression,
         sourceFile: input.sourceFile,
-        problems: input.problems,
+        diagnostics: input.diagnostics,
         target: input.target,
         globalObjectAliases: input.globalObjectAliases,
         reflectObjectAliases: input.reflectObjectAliases,
@@ -2193,7 +2194,7 @@ class ForbiddenRuntimeApiValidator {
         pattern: input.name,
         initializer: input.expression,
         sourceFile: input.sourceFile,
-        problems: input.problems,
+        diagnostics: input.diagnostics,
         target: input.target,
         globalObjectAliases: input.globalObjectAliases,
         reflectObjectAliases: input.reflectObjectAliases,
@@ -2211,8 +2212,8 @@ class ForbiddenRuntimeApiValidator {
     pattern: ts.ArrayLiteralExpression;
     initializer: ts.ArrayLiteralExpression;
     sourceFile: ts.SourceFile;
-    problems: LightExtensionValidatorProblem[];
-    target: Omit<ProblemTarget, 'path'>;
+    diagnostics: LightExtensionDiagnostic[];
+    target: Omit<DiagnosticTarget, 'path'>;
     globalObjectAliases: Set<string>;
     reflectObjectAliases: Set<string>;
     reflectGetAliases: Set<string>;
@@ -2242,7 +2243,7 @@ class ForbiddenRuntimeApiValidator {
           name: assignmentTarget.text,
           expression: initializerExpression,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -2261,7 +2262,7 @@ class ForbiddenRuntimeApiValidator {
           targetExpression: assignmentTarget,
           expression: initializerExpression,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -2285,7 +2286,7 @@ class ForbiddenRuntimeApiValidator {
             name: aliasTarget.text,
             expression: initializerExpression,
             sourceFile: input.sourceFile,
-            problems: input.problems,
+            diagnostics: input.diagnostics,
             target: input.target,
             globalObjectAliases: input.globalObjectAliases,
             reflectObjectAliases: input.reflectObjectAliases,
@@ -2301,7 +2302,7 @@ class ForbiddenRuntimeApiValidator {
           name: aliasTarget.text,
           expression: assignmentTarget.right,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -2317,7 +2318,7 @@ class ForbiddenRuntimeApiValidator {
           pattern: assignmentTarget,
           initializer: initializerExpression,
           sourceFile: input.sourceFile,
-          problems: input.problems,
+          diagnostics: input.diagnostics,
           target: input.target,
           globalObjectAliases: input.globalObjectAliases,
           reflectObjectAliases: input.reflectObjectAliases,
@@ -2337,10 +2338,10 @@ const forbiddenRuntimeApiValidator = new ForbiddenRuntimeApiValidator();
 
 export function validateCodeFile(
   file: NormalizedSourceFile,
-  target: Omit<ProblemTarget, 'path'>,
+  target: Omit<DiagnosticTarget, 'path'>,
   boundary: 'entry' | 'shared' = 'entry',
   entryRootPath?: string,
-): LightExtensionValidatorProblem[] {
+): LightExtensionDiagnostic[] {
   return forbiddenRuntimeApiValidator.validateCodeFile(file, target, boundary, entryRootPath);
 }
 
@@ -3456,7 +3457,7 @@ function getForbiddenFunctionReturnDiagnostic(
   globalPropertyDescriptorsObjectAliases: Set<string>,
   blockedApiAliases: Map<string, string>,
   staticStringAliases: Map<string, string> = emptyStaticStringAliases,
-): ForbiddenStoredProblem | null {
+): ForbiddenStoredDiagnostic | null {
   const body = node.body;
   if (!body) {
     return null;
@@ -3491,7 +3492,7 @@ function getForbiddenFunctionReturnDiagnostic(
     );
   }
 
-  let forbidden: ForbiddenStoredProblem | null = null;
+  let forbidden: ForbiddenStoredDiagnostic | null = null;
   const visit = (child: ts.Node) => {
     if (forbidden || isNestedFunctionLikeNode(child)) {
       return;
@@ -4083,7 +4084,7 @@ function getForbiddenContainerExpressionDiagnostic(
   globalPropertyDescriptorsObjectAliases: Set<string>,
   blockedApiAliases: Map<string, string>,
   staticStringAliases: Map<string, string> = emptyStaticStringAliases,
-): ForbiddenStoredProblem | null {
+): ForbiddenStoredDiagnostic | null {
   if (ts.isObjectLiteralExpression(expression)) {
     for (const property of expression.properties) {
       if (ts.isSpreadAssignment(property)) {
@@ -4201,8 +4202,8 @@ function getForbiddenPrivilegedCallArguments(
   globalPropertyDescriptorsObjectAliases: Set<string>,
   blockedApiAliases: Map<string, string>,
   staticStringAliases: Map<string, string> = emptyStaticStringAliases,
-): Array<{ argument: ts.Expression; forbidden: ForbiddenStoredProblem }> {
-  const findings: Array<{ argument: ts.Expression; forbidden: ForbiddenStoredProblem }> = [];
+): Array<{ argument: ts.Expression; forbidden: ForbiddenStoredDiagnostic }> {
+  const findings: Array<{ argument: ts.Expression; forbidden: ForbiddenStoredDiagnostic }> = [];
   for (const argument of expression.arguments || []) {
     const targetExpression = ts.isSpreadElement(argument) ? argument.expression : argument;
     const forbidden = getForbiddenStoredExpressionDiagnostic(
@@ -4244,7 +4245,7 @@ function getForbiddenStoredExpressionDiagnostic(
   globalPropertyDescriptorsObjectAliases: Set<string>,
   blockedApiAliases: Map<string, string>,
   staticStringAliases: Map<string, string> = emptyStaticStringAliases,
-): ForbiddenStoredProblem | null {
+): ForbiddenStoredDiagnostic | null {
   const branchExpressions = getConditionalOrLogicalBranchExpressions(expression);
   if (branchExpressions) {
     for (const branch of branchExpressions) {
@@ -4519,7 +4520,7 @@ function getForbiddenComputedElementAccessDiagnostic(
   reflectObjectAliases: Set<string>,
   reflectGetAliases: Set<string>,
   globalPropertyDescriptorsObjectAliases: Set<string>,
-): ForbiddenStoredProblem | null {
+): ForbiddenStoredDiagnostic | null {
   const memberName = getStaticStringValue(expression.argumentExpression, staticStringAliases);
   if (!memberName) {
     if (

@@ -8,7 +8,6 @@
  */
 
 import type { Database } from '@nocobase/database';
-import { sha256Hex, stableSerialize } from '@nocobase/runjs';
 import type {
   RemoteSyncRuntime,
   VscFileRemoteRecord,
@@ -17,12 +16,11 @@ import type {
 } from '../vsc-file/public-api';
 
 import { LightExtensionError } from '../../shared/errors';
-import { createLightExtensionProblem } from '../../shared/problems';
 import type { LightExtensionRepoRecord, LightExtensionTreeEntryInput } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionRepoService, type LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from './LightExtensionRuntimeCompileService';
-import { hasErrorProblem } from './LightExtensionValidator';
+import { hasErrorDiagnostic } from './LightExtensionValidator';
 
 const remoteName = 'origin';
 
@@ -66,7 +64,7 @@ export class LightExtensionCreateFromRemoteService {
     });
     const revision = requireRemoteRevision(fetched.snapshot.revision);
     const initialFiles = toInitialFiles(fetched.snapshot.files);
-    this.assertValidInitialFiles(initialFiles, ctx.requestId || `remote:${revision}`);
+    this.assertValidInitialFiles(initialFiles);
 
     return this.db.sequelize.transaction(async (transaction) => {
       const transactionContext: LightExtensionServiceContext = {
@@ -138,33 +136,20 @@ export class LightExtensionCreateFromRemoteService {
     });
   }
 
-  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[], requestId: string): void {
-    const snapshotId = sha256Hex(stableSerialize(files));
+  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[]): void {
     if (!files.length) {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Remote source is empty', {
         status: 422,
-        details: {
-          problems: [
-            createLightExtensionProblem({
-              phase: 'schema',
-              source: 'server',
-              severity: 'error',
-              code: 'remote_source_empty',
-              message: 'Remote source is empty',
-              snapshotId,
-              requestId,
-            }),
-          ],
-        },
+        details: { diagnostics: [] },
       });
     }
-    const problems = this.repoService.getValidator().validateInitialFiles({ files, snapshotId, requestId });
-    if (!hasErrorProblem(problems)) {
+    const diagnostics = this.repoService.getValidator().validateInitialFiles({ files });
+    if (!hasErrorDiagnostic(diagnostics)) {
       return;
     }
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension initial source is invalid', {
       status: 422,
-      details: { problems },
+      details: { diagnostics },
     });
   }
 }

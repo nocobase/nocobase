@@ -9,23 +9,10 @@
 
 import type { LightExtensionDataContext, LightExtensionRecord } from '../shared';
 
-export type {
-  LightExtensionCollectionContext,
-  LightExtensionDataContext,
-  LightExtensionDataSourceContext,
-  LightExtensionRecord,
-  LightExtensionSettingsContext,
-} from '../shared';
+export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from '../shared';
 export { assertSettings, defineSettings } from '../shared';
 
-export interface JSBlockContext<
-  TSettings = unknown,
-  TRecord = unknown,
-  TValues = unknown,
-  TCollection = unknown,
-  TCollectionField = unknown,
-  TDataSource = unknown,
-> extends LightExtensionDataContext<TSettings, TRecord, TValues, TCollection, TCollectionField, TDataSource> {
+export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
   element?: HTMLElement | null;
   render?: (node: unknown) => void;
   i18n?: {
@@ -40,14 +27,7 @@ export interface JSPageRuntimeFacade {
   setDocumentTitle(title: string): void;
 }
 
-export interface JSPageContext<
-  TSettings = unknown,
-  TRecord = unknown,
-  TValues = unknown,
-  TCollection = unknown,
-  TCollectionField = unknown,
-  TDataSource = unknown,
-> extends JSBlockContext<TSettings, TRecord, TValues, TCollection, TCollectionField, TDataSource> {
+export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSettings> {
   page: JSPageRuntimeFacade;
 }
 

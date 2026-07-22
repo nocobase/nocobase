@@ -8,15 +8,12 @@
  */
 
 import JSZip, { type JSZipObject } from 'jszip';
-import { sha256Hex, stableSerialize } from '@nocobase/runjs';
-import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import { TextDecoder } from 'util';
 
 import { LightExtensionError } from '../../shared/errors';
-import { createLightExtensionProblem } from '../../shared/problems';
-import type { LightExtensionProblem, LightExtensionTreeEntryInput } from '../../shared/types';
-import { LightExtensionValidator, hasErrorProblem } from './LightExtensionValidator';
+import type { LightExtensionDiagnostic, LightExtensionTreeEntryInput } from '../../shared/types';
+import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
 import { JS_PORTAL_WORKSPACE_ROOT } from './JsPortalStorage';
 
 type ZipEntrySizeData = {
@@ -90,17 +87,13 @@ export async function parseLightExtensionSourceArchive(
   }
 
   assertZipBudget(archive.byteLength, extractedBytes, validator);
-  const snapshotId = sha256Hex(stableSerialize(files));
-  const requestId = randomUUID();
-  const problems = validator.validateInitialFiles({
+  const diagnostics = validator.validateInitialFiles({
     files: files.filter((file) => !isJsPortalWorkspacePath(file.path)),
-    snapshotId,
-    requestId,
   });
-  if (hasErrorProblem(problems)) {
+  if (hasErrorDiagnostic(diagnostics)) {
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension ZIP source is invalid', {
       status: 422,
-      details: { problems },
+      details: { diagnostics },
     });
   }
 
@@ -290,32 +283,25 @@ function isSymbolicLink(entry: JSZipObject): boolean {
 }
 
 function assertZipBudget(compressedBytes: number, uncompressedBytes: number, validator: LightExtensionValidator): void {
-  const snapshotId = sha256Hex(stableSerialize({ compressedBytes, uncompressedBytes }));
-  const requestId = randomUUID();
-  const problems = validator.validateZipBudget({ compressedBytes, uncompressedBytes, snapshotId, requestId });
-  if (hasErrorProblem(problems)) {
+  const diagnostics = validator.validateZipBudget({ compressedBytes, uncompressedBytes });
+  if (hasErrorDiagnostic(diagnostics)) {
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension ZIP source is invalid', {
       status: 422,
-      details: { problems },
+      details: { diagnostics },
     });
   }
 }
 
 function throwArchiveValidation(code: string, message: string, path?: string): never {
-  const snapshotId = sha256Hex(stableSerialize({ code, message, path: path || null }));
-  const problem: LightExtensionProblem = createLightExtensionProblem({
-    phase: 'schema',
-    source: 'server',
+  const diagnostic: LightExtensionDiagnostic = {
     code,
     severity: 'error',
     message,
-    snapshotId,
-    requestId: `source-archive:${snapshotId.slice(0, 16)}`,
     ...(path ? { path } : {}),
-  });
+  };
   throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', message, {
     status: 422,
-    details: { problems: [problem] },
+    details: { diagnostics: [diagnostic] },
   });
 }
 

@@ -28,22 +28,17 @@ import {
 } from '../../constants';
 import type {
   LightExtensionCapabilities,
-  LightExtensionProblem,
+  LightExtensionDiagnostic,
   LightExtensionPulledFile,
   LightExtensionValidationLimits,
 } from '../../shared/types';
-import {
-  createLightExtensionProblemFactory,
-  sortLightExtensionProblems,
-  uniqueLightExtensionProblems,
-} from '../../shared/problems';
-import { problem, stableProblemDetailsKey } from './light-extension-validator/problems';
+import { diagnostic, stableDetailsKey } from './light-extension-validator/diagnostics';
 import { validateCodeFile } from './light-extension-validator/forbiddenRuntimeApi';
 import { LightExtensionSchemaValidator } from './light-extension-validator/schemaPolicy';
 import type {
+  DiagnosticTarget,
   EntryBucket,
   LightExtensionSourceFileInput,
-  LightExtensionValidatorProblem,
   NormalizedSourceFile,
 } from './light-extension-validator/types';
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
@@ -60,7 +55,7 @@ import {
   validateZipBudget as validateWorkspaceZipBudget,
 } from './light-extension-validator/workspacePolicy';
 
-export const LIGHT_EXTENSION_VALIDATOR_VERSION = 'light-extension-validator-v4';
+export const LIGHT_EXTENSION_VALIDATOR_VERSION = 'light-extension-validator-v3';
 export const LIGHT_EXTENSION_SDK_TEMPLATE_VERSION = 'light-extension-sdk-template-v2';
 
 export const LIGHT_EXTENSION_VALIDATION_LIMITS: LightExtensionValidationLimits = {
@@ -92,25 +87,14 @@ export interface LightExtensionEntryValidationResult {
   tags: string[] | null;
   sort: number | null;
   settingsSchema: Record<string, unknown> | null;
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
 }
 
 export interface LightExtensionWorkspaceValidationResult {
-  snapshotId: string;
-  requestId: string;
   accepted: boolean;
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
   entries: LightExtensionEntryValidationResult[];
   capabilities: LightExtensionCapabilities;
-}
-
-export interface LightExtensionValidationContext {
-  snapshotId: string;
-  requestId: string;
-}
-
-interface LightExtensionEntryValidationDraftResult extends Omit<LightExtensionEntryValidationResult, 'problems'> {
-  problems: LightExtensionValidatorProblem[];
 }
 
 export class LightExtensionValidator {
@@ -155,51 +139,40 @@ export class LightExtensionValidator {
     };
   }
 
-  validateWorkspace(
-    input: { files: LightExtensionSourceFileInput[] } & LightExtensionValidationContext,
-  ): LightExtensionWorkspaceValidationResult {
-    const problems: LightExtensionValidatorProblem[] = [];
-    const normalizedFiles = normalizeFiles(input.files, problems, this.capabilities.limits);
-    const entryBuckets = collectEntryBuckets(normalizedFiles, problems, this.capabilities.limits);
-    const entryDrafts = entryBuckets.map((bucket) => this.validateEntry(bucket));
-    problems.push(...validateUniqueEntryKeys(entryDrafts));
-    problems.push(...this.validateSharedFiles(normalizedFiles));
-    attachProblemsToEntries(problems, entryDrafts);
-    removeBlockedGlobalProblemsFromEntries(entryDrafts);
-    const allProblemDrafts = sortValidatorProblems(
-      removeBlockedGlobalProblems(
-        uniqueValidatorProblems([...problems, ...entryDrafts.flatMap((entry) => entry.problems)]),
+  validateWorkspace(input: { files: LightExtensionSourceFileInput[] }): LightExtensionWorkspaceValidationResult {
+    const diagnostics: LightExtensionDiagnostic[] = [];
+    const normalizedFiles = normalizeFiles(input.files, diagnostics, this.capabilities.limits);
+    const entryBuckets = collectEntryBuckets(normalizedFiles, diagnostics, this.capabilities.limits);
+    const entries = entryBuckets.map((bucket) => this.validateEntry(bucket));
+    diagnostics.push(...validateUniqueEntryKeys(entries));
+    diagnostics.push(...this.validateSharedFiles(normalizedFiles));
+    attachDiagnosticsToEntries(diagnostics, entries);
+    removeBlockedGlobalDiagnosticsFromEntries(entries);
+    const allDiagnostics = sortDiagnostics(
+      removeBlockedGlobalDiagnostics(
+        uniqueDiagnostics([...diagnostics, ...entries.flatMap((entry) => entry.diagnostics)]),
       ),
     );
-    const allProblems = finalizeValidatorProblems(allProblemDrafts, input);
-    const entries = entryDrafts.map((entry) => ({
-      ...entry,
-      problems: finalizeValidatorProblems(entry.problems, input),
-    }));
 
     return {
-      snapshotId: input.snapshotId,
-      requestId: input.requestId,
-      accepted: !hasErrorProblem(allProblems),
-      problems: allProblems,
+      accepted: !hasErrorDiagnostic(allDiagnostics),
+      diagnostics: allDiagnostics,
       entries,
       capabilities: this.getCapabilities(),
     };
   }
 
-  validateSyncBatch(
-    input: {
-      files: LightExtensionSourceFileInput[];
-      existingPaths?: Iterable<string>;
-    } & LightExtensionValidationContext,
-  ): LightExtensionProblem[] {
-    const problems: LightExtensionValidatorProblem[] = [];
+  validateSyncBatch(input: {
+    files: LightExtensionSourceFileInput[];
+    existingPaths?: Iterable<string>;
+  }): LightExtensionDiagnostic[] {
+    const diagnostics: LightExtensionDiagnostic[] = [];
     const existingPathSet = input.existingPaths
       ? new Set([...input.existingPaths].map(normalizeSourcePath))
       : undefined;
     if (input.files.length > this.capabilities.limits.maxSyncBatchFiles) {
-      problems.push(
-        problem('sync_batch_too_large', 'error', 'Sync batch contains too many files', {
+      diagnostics.push(
+        diagnostic('sync_batch_too_large', 'error', 'Sync batch contains too many files', {
           details: {
             fileCount: input.files.length,
             maxFiles: this.capabilities.limits.maxSyncBatchFiles,
@@ -209,7 +182,7 @@ export class LightExtensionValidator {
     }
     for (const file of input.files) {
       if (file.operation === 'delete') {
-        problems.push(...validateDeleteSourcePath(file.path, existingPathSet));
+        diagnostics.push(...validateDeleteSourcePath(file.path, existingPathSet));
         continue;
       }
       if (typeof file.content === 'string') {
@@ -225,8 +198,8 @@ export class LightExtensionValidator {
               entryName: pathKind.entryName,
             }
           : {};
-      problems.push(
-        problem('source_content_required', 'error', 'Source file content is required for validation', {
+      diagnostics.push(
+        diagnostic('source_content_required', 'error', 'Source file content is required for validation', {
           path,
           ...pathTarget,
         }),
@@ -234,14 +207,14 @@ export class LightExtensionValidator {
     }
     const normalizedFiles = normalizeFiles(
       input.files.filter((file) => file.operation !== 'delete'),
-      problems,
+      diagnostics,
       this.capabilities.limits,
     );
     for (const file of normalizedFiles) {
       const pathKind = classifySourcePath(file.path);
       if (pathKind.status !== 'enabled') {
         if (pathKind.status === 'shared') {
-          problems.push(...this.validateSharedFile(file));
+          diagnostics.push(...this.validateSharedFile(file));
         }
         continue;
       }
@@ -251,50 +224,46 @@ export class LightExtensionValidator {
         entryName: pathKind.entryName,
       };
       if (isCodeFile(file.path)) {
-        problems.push(...validateCodeFile(file, target));
+        diagnostics.push(...validateCodeFile(file, target));
       } else if (pathPosix.basename(file.path) === LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE) {
-        this.schemaValidator.validateEntryDescriptor(file, problems, target);
+        this.schemaValidator.validateEntryDescriptor(file, diagnostics, target);
       }
     }
 
-    return finalizeValidatorProblems(
-      sortValidatorProblems(removeBlockedGlobalProblems(uniqueValidatorProblems(problems))),
-      input,
-    );
+    return sortDiagnostics(removeBlockedGlobalDiagnostics(uniqueDiagnostics(diagnostics)));
   }
 
-  validateInitialFiles(
-    input: { files: LightExtensionSourceFileInput[] } & LightExtensionValidationContext,
-  ): LightExtensionProblem[] {
-    const writeProblems = this.validateSyncBatch(input);
+  validateInitialFiles(input: { files: LightExtensionSourceFileInput[] }): LightExtensionDiagnostic[] {
+    const writeDiagnostics = this.validateSyncBatch(input);
     const workspaceValidation = this.validateWorkspace(input);
-    return uniqueLightExtensionProblems([...writeProblems, ...workspaceValidation.problems]);
+    return sortDiagnostics(uniqueDiagnostics([...writeDiagnostics, ...workspaceValidation.diagnostics]));
+  }
+  validateZipBudget(input: { compressedBytes: number; uncompressedBytes: number }): LightExtensionDiagnostic[] {
+    return validateWorkspaceZipBudget(input, this.capabilities.limits);
   }
 
-  validateZipBudget(
-    input: { compressedBytes: number; uncompressedBytes: number } & LightExtensionValidationContext,
-  ): LightExtensionProblem[] {
-    return finalizeValidatorProblems(validateWorkspaceZipBudget(input, this.capabilities.limits), input);
-  }
-
-  private validateEntry(bucket: EntryBucket): LightExtensionEntryValidationDraftResult {
+  private validateEntry(bucket: EntryBucket): LightExtensionEntryValidationResult {
     const folderTarget = {
       kind: bucket.kind,
       entryName: bucket.entryName,
     };
-    const problems: LightExtensionValidatorProblem[] = [];
+    const diagnostics: LightExtensionDiagnostic[] = [];
     const descriptorPath = `${bucket.rootPath}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`;
     const indexFile = findEntryIndexFile(bucket);
     const descriptorFile = bucket.files.find((file) => file.path === descriptorPath);
-    const descriptorProblems: LightExtensionValidatorProblem[] = [];
-    const descriptor = this.schemaValidator.validateEntryDescriptor(descriptorFile, descriptorProblems, folderTarget);
+    const descriptorDiagnostics: LightExtensionDiagnostic[] = [];
+    const descriptor = this.schemaValidator.validateEntryDescriptor(
+      descriptorFile,
+      descriptorDiagnostics,
+      folderTarget,
+    );
     const entryName = descriptor?.key || bucket.entryName;
     const target = {
       kind: bucket.kind,
       entryName,
     };
-    problems.push(
-      ...descriptorProblems.map((item) => ({
+    diagnostics.push(
+      ...descriptorDiagnostics.map((item) => ({
         ...item,
         entryName,
       })),
@@ -302,8 +271,8 @@ export class LightExtensionValidator {
     const codeFiles = bucket.files.filter((file) => isCodeFile(file.path));
 
     if (bucket.files.length > this.capabilities.limits.maxEntryFiles) {
-      problems.push(
-        problem('entry_file_count_exceeded', 'error', 'Entry contains too many files', {
+      diagnostics.push(
+        diagnostic('entry_file_count_exceeded', 'error', 'Entry contains too many files', {
           ...target,
           details: {
             fileCount: bucket.files.length,
@@ -314,8 +283,8 @@ export class LightExtensionValidator {
     }
 
     if (!indexFile) {
-      problems.push(
-        problem('entry_index_missing', 'error', 'Entry must include index.tsx, index.ts, index.jsx, or index.js', {
+      diagnostics.push(
+        diagnostic('entry_index_missing', 'error', 'Entry must include index.tsx, index.ts, index.jsx, or index.js', {
           ...target,
           path: bucket.rootPath,
         }),
@@ -323,7 +292,7 @@ export class LightExtensionValidator {
     }
 
     for (const file of codeFiles) {
-      problems.push(...validateCodeFile(file, target, 'entry', bucket.rootPath));
+      diagnostics.push(...validateCodeFile(file, target, 'entry', bucket.rootPath));
     }
 
     return {
@@ -339,17 +308,17 @@ export class LightExtensionValidator {
       tags: descriptor?.tags || null,
       sort: descriptor?.sort ?? null,
       settingsSchema: descriptor?.settingsSchema || null,
-      problems,
+      diagnostics,
     };
   }
 
-  private validateSharedFiles(files: NormalizedSourceFile[]): LightExtensionValidatorProblem[] {
+  private validateSharedFiles(files: NormalizedSourceFile[]): LightExtensionDiagnostic[] {
     return files
       .filter((file) => classifySourcePath(file.path).status === 'shared')
       .flatMap((file) => this.validateSharedFile(file));
   }
 
-  private validateSharedFile(file: NormalizedSourceFile): LightExtensionValidatorProblem[] {
+  private validateSharedFile(file: NormalizedSourceFile): LightExtensionDiagnostic[] {
     if (!isCodeFile(file.path)) {
       return [];
     }
@@ -407,18 +376,16 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
   };
 }
 
-export function hasErrorProblem(problems: readonly LightExtensionProblem[]): boolean {
-  return problems.some((item) => item.severity === 'error');
+export function hasErrorDiagnostic(diagnostics: LightExtensionDiagnostic[]): boolean {
+  return diagnostics.some((item) => item.severity === 'error');
 }
 
-export function getWorkspaceLevelProblems(problems: readonly LightExtensionProblem[]): LightExtensionProblem[] {
-  return problems.filter((item) => !item.kind || !item.entryName);
+export function getWorkspaceLevelDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
+  return diagnostics.filter((item) => !item.kind || !item.entryName);
 }
 
-function validateUniqueEntryKeys(
-  entries: LightExtensionEntryValidationDraftResult[],
-): LightExtensionValidatorProblem[] {
-  const entryGroups = new Map<string, LightExtensionEntryValidationDraftResult[]>();
+function validateUniqueEntryKeys(entries: LightExtensionEntryValidationResult[]): LightExtensionDiagnostic[] {
+  const entryGroups = new Map<string, LightExtensionEntryValidationResult[]>();
   for (const entry of entries) {
     const key = `${entry.target}:${entry.kind}:${entry.entryName}`;
     const group = entryGroups.get(key) || [];
@@ -430,7 +397,7 @@ function validateUniqueEntryKeys(
     .filter((group) => group.length > 1)
     .flatMap((group) =>
       group.map((entry) =>
-        problem('duplicate_entry_key', 'error', `Entry key "${entry.entryName}" must be unique for ${entry.kind}`, {
+        diagnostic('duplicate_entry_key', 'error', `Entry key "${entry.entryName}" must be unique for ${entry.kind}`, {
           path: entry.descriptorPath,
           kind: entry.kind,
           entryName: entry.entryName,
@@ -439,31 +406,37 @@ function validateUniqueEntryKeys(
     );
 }
 
-function attachProblemsToEntries(
-  problems: LightExtensionValidatorProblem[],
-  entries: LightExtensionEntryValidationDraftResult[],
+function attachDiagnosticsToEntries(
+  diagnostics: LightExtensionDiagnostic[],
+  entries: LightExtensionEntryValidationResult[],
 ): void {
   for (const entry of entries) {
-    const entryProblems = problems.filter((item) => item.kind === entry.kind && item.entryName === entry.entryName);
-    entry.problems = sortValidatorProblems(uniqueValidatorProblems([...entry.problems, ...entryProblems]));
+    const entryDiagnostics = diagnostics.filter(
+      (item) => item.kind === entry.kind && item.entryName === entry.entryName,
+    );
+    entry.diagnostics = sortDiagnostics(uniqueDiagnostics([...entry.diagnostics, ...entryDiagnostics]));
   }
 }
 
-function uniqueValidatorProblems(problems: LightExtensionValidatorProblem[]): LightExtensionValidatorProblem[] {
-  const seen = new Set<string>();
-  const result: LightExtensionValidatorProblem[] = [];
+export function sortDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
+  return [...diagnostics].sort((left, right) => diagnosticSortKey(left).localeCompare(diagnosticSortKey(right)));
+}
 
-  for (const item of problems) {
+function uniqueDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
+  const seen = new Set<string>();
+  const result: LightExtensionDiagnostic[] = [];
+
+  for (const item of diagnostics) {
     const key = [
       item.code,
       item.severity,
       item.path || '',
-      item.range?.start.line || '',
-      item.range?.start.column || '',
+      item.line || '',
+      item.column || '',
       item.kind || '',
       item.entryName || '',
       item.message,
-      stableProblemDetailsKey(item.details),
+      stableDetailsKey(item.details),
     ].join('\u0000');
     if (seen.has(key)) {
       continue;
@@ -475,44 +448,28 @@ function uniqueValidatorProblems(problems: LightExtensionValidatorProblem[]): Li
   return result;
 }
 
-function removeBlockedGlobalProblems(problems: LightExtensionValidatorProblem[]): LightExtensionValidatorProblem[] {
-  return problems.filter((item) => item.code !== 'blocked_global_api');
+function removeBlockedGlobalDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
+  return diagnostics.filter((item) => item.code !== 'blocked_global_api');
 }
 
-function removeBlockedGlobalProblemsFromEntries(entries: LightExtensionEntryValidationDraftResult[]): void {
+function removeBlockedGlobalDiagnosticsFromEntries(entries: LightExtensionEntryValidationResult[]): void {
   for (const entry of entries) {
-    entry.problems = removeBlockedGlobalProblems(entry.problems);
+    entry.diagnostics = removeBlockedGlobalDiagnostics(entry.diagnostics);
   }
 }
 
-function sortValidatorProblems(problems: LightExtensionValidatorProblem[]): LightExtensionValidatorProblem[] {
-  return [...problems].sort((left, right) => problemSortKey(left).localeCompare(problemSortKey(right)));
-}
-
-function problemSortKey(item: LightExtensionValidatorProblem): string {
+function diagnosticSortKey(item: LightExtensionDiagnostic): string {
   return [
     item.path || '',
     item.kind || '',
     item.entryName || '',
     item.severity || '',
     item.code || '',
-    String(item.range?.start.line || 0).padStart(8, '0'),
-    String(item.range?.start.column || 0).padStart(8, '0'),
+    String(item.line || 0).padStart(8, '0'),
+    String(item.column || 0).padStart(8, '0'),
     item.message || '',
-    stableProblemDetailsKey(item.details),
+    stableDetailsKey(item.details),
   ].join('\u0000');
-}
-
-function finalizeValidatorProblems(
-  problems: LightExtensionValidatorProblem[],
-  context: LightExtensionValidationContext,
-): LightExtensionProblem[] {
-  const createProblem = createLightExtensionProblemFactory({
-    snapshotId: context.snapshotId,
-    requestId: context.requestId,
-    source: 'validator',
-  });
-  return sortLightExtensionProblems(problems.map((item) => createProblem(item)));
 }
 
 export function toValidatorFiles(files: LightExtensionPulledFile[]): LightExtensionSourceFileInput[] {

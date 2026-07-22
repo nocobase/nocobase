@@ -184,7 +184,7 @@ export class RuntimeResolveService {
   ): Promise<LightExtensionEntryRecord> {
     const record = await this.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: entryId,
-      except: ['runtimeArtifact'],
+      except: ['runtimeArtifact', 'diagnostics'],
       transaction: ctx.transaction,
     });
     if (!record) {

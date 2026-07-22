@@ -590,7 +590,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     runtimeCompileService: {
       compileCurrentRuntime: vi.fn(async () => {
         const { vscRepoId: _vscRepoId, ...publicRepo } = repo;
-        return { repo: publicRepo, status: 'success', entries: [], problems: [] };
+        return { repo: publicRepo, status: 'success', entries: [], diagnostics: [] };
       }),
     },
     getRemoteSyncRuntime: () => runtime,

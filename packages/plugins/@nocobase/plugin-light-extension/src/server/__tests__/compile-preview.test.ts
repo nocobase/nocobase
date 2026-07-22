@@ -19,8 +19,6 @@ import type {
 import { createLightExtensionsResource } from '../resources/lightExtensions';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
-import type { LightExtensionCompileExecutor } from '../services/LightExtensionCompileContract';
-import { executeLightExtensionCompileJob } from '../services/LightExtensionCompileJobExecutor';
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
@@ -86,16 +84,12 @@ describe('plugin-light-extension compile preview', () => {
       status: 'failed',
       accepted: false,
     });
-    expect(salesTrend?.problems).toEqual(
+    expect(salesTrend?.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/js-blocks/sales-trend/index.tsx',
-          range: {
-            start: {
-              line: expect.any(Number),
-              column: expect.any(Number),
-            },
-          },
+          line: expect.any(Number),
+          column: expect.any(Number),
         }),
       ]),
     );
@@ -122,16 +116,14 @@ describe('plugin-light-extension compile preview', () => {
 
   it('compiles an unsaved workspace into a temporary preview artifact without pulling or persisting source', async () => {
     const repo = createRepo();
-    const { db, entriesRepository, persistenceRepositories } = createDbStub([
-      createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
-    ]);
+    const { db, entriesRepository, persistenceRepositories } = createDbStub([]);
     const fileService = createFileServiceStub(repo, validSalesKpiFiles());
-    const { service, submitWithBackpressure } = createPreviewService(db, fileService);
+    const { service } = createPreviewService(db, fileService);
 
     const result = await service.compileWorkspacePreview(
       {
         repoId: repo.id,
-        expectedHeadCommitId: 'vsc_commit_1',
+        expectedHeadCommitId: repo.headCommitId,
         entryId: 'lee_sales_kpi',
         kind: 'js-block',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -156,9 +148,8 @@ describe('plugin-light-extension compile preview', () => {
 
     expect(result).toMatchObject({
       accepted: true,
-      problems: [],
+      diagnostics: [],
       artifact: {
-        artifactHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
         version: 'v2',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
         metadata: expect.objectContaining({
@@ -169,10 +160,6 @@ describe('plugin-light-extension compile preview', () => {
       },
     });
     expect(result.artifact?.code).toContain('Unsaved preview');
-    expect(submitWithBackpressure).toHaveBeenCalledTimes(1);
-    expect(submitWithBackpressure).toHaveBeenCalledWith(
-      expect.objectContaining({ problemSnapshotId: result.snapshotId, requestId: 'req_workspace_preview' }),
-    );
     expect(fileService.pull).not.toHaveBeenCalled();
     expect(entriesRepository.create).not.toHaveBeenCalled();
     expect(entriesRepository.update).not.toHaveBeenCalled();
@@ -183,15 +170,29 @@ describe('plugin-light-extension compile preview', () => {
     }
   });
 
+  it('rejects an unsaved workspace check when the pulled Head is stale', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([]);
+    const fileService = createFileServiceStub(repo, validSalesKpiFiles());
+    const { service } = createPreviewService(db, fileService);
+
+    await expect(
+      service.compileWorkspacePreview({
+        repoId: repo.id,
+        expectedHeadCommitId: 'stale_commit',
+        files: validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' })),
+      }),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_SOURCE_OUTDATED' });
+  });
+
   it('rejects invalid settings visibility conditions before compiling an unsaved preview', async () => {
     const repo = createRepo();
-    const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
+    const { db } = createDbStub([]);
     const fileService = createFileServiceStub(repo, []);
     const { service } = createPreviewService(db, fileService);
 
     const result = await service.compileWorkspacePreview({
       repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
       entryId: 'lee_sales_kpi',
       kind: 'js-block',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -221,7 +222,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result).toMatchObject({
       accepted: false,
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      problems: [
+      diagnostics: [
         expect.objectContaining({
           code: 'settings_condition_value_invalid',
           path: 'src/client/js-blocks/sales-kpi/entry.json',
@@ -244,7 +245,6 @@ describe('plugin-light-extension compile preview', () => {
 
     const result = await service.compileWorkspacePreview({
       repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
       runtimeVersion: 'v2',
       files: [
         ...validSalesKpiFiles(),
@@ -271,7 +271,7 @@ describe('plugin-light-extension compile preview', () => {
         expect.objectContaining({ entryName: 'sales-trend', accepted: false, status: 'failed' }),
       ]),
     );
-    expect(result.problems).toEqual(
+    expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/js-blocks/sales-trend/index.tsx',
@@ -284,14 +284,12 @@ describe('plugin-light-extension compile preview', () => {
 
   it('rejects invalid unsaved workspace paths before compiling the preview', async () => {
     const repo = createRepo();
-    const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
+    const { db } = createDbStub([]);
     const fileService = createFileServiceStub(repo, []);
     const { service } = createPreviewService(db, fileService);
 
     const result = await service.compileWorkspacePreview({
       repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
-      entryId: 'lee_sales_kpi',
       kind: 'js-block',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       files: [
@@ -313,7 +311,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result).toMatchObject({
       accepted: false,
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      problems: [
+      diagnostics: [
         expect.objectContaining({
           code: 'workspace_path_not_allowed',
           path: 'src/client/not-allowed.ts',
@@ -321,163 +319,6 @@ describe('plugin-light-extension compile preview', () => {
       ],
     });
     expect(result.artifact).toBeUndefined();
-  });
-
-  it('computes a stable server snapshot and changes it for source byte changes', async () => {
-    const repo = createRepo();
-    const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
-    const { service } = createPreviewService(db, createFileServiceStub(repo, []));
-    const files = validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' }));
-    const baseInput = {
-      repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
-      runtimeVersion: 'v2',
-      files,
-    };
-
-    const first = await service.compileWorkspacePreview({ ...baseInput, snapshotId: 'forged' } as typeof baseInput);
-    const reordered = await service.compileWorkspacePreview({ ...baseInput, files: [...files].reverse() });
-    const changed = await service.compileWorkspacePreview({
-      ...baseInput,
-      files: files.map((file, index) => (index === 0 ? { ...file, content: `${file.content} ` } : file)),
-    });
-
-    expect(first.snapshotId).not.toBe('forged');
-    expect(reordered.snapshotId).toBe(first.snapshotId);
-    expect(changed.snapshotId).not.toBe(first.snapshotId);
-  });
-
-  it('rejects an outdated source head before validation or worker compilation', async () => {
-    const repo = createRepo();
-    const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
-    const { service, submitWithBackpressure } = createPreviewService(db, createFileServiceStub(repo, []));
-
-    await expect(
-      service.compileWorkspacePreview({
-        repoId: repo.id,
-        expectedHeadCommitId: 'stale-head',
-        files: validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' })),
-      }),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
-      status: 409,
-      details: { expectedHeadCommitId: 'stale-head', currentHeadCommitId: 'vsc_commit_1' },
-    });
-    expect(submitWithBackpressure).not.toHaveBeenCalled();
-  });
-
-  it('accepts an explicit null expected head for an empty-head repository', async () => {
-    const repo = createRepo();
-    const { db } = createDbStub([], { headCommitId: null });
-    const { service } = createPreviewService(db, createFileServiceStub(repo, []));
-
-    const result = await service.compileWorkspacePreview({
-      repoId: repo.id,
-      expectedHeadCommitId: null,
-      files: validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' })),
-    });
-
-    expect(result.baseHeadCommitId).toBeNull();
-    expect(result.accepted).toBe(true);
-  });
-
-  it('rejects targeted checks whose persisted entry identity does not match the repository, kind, or path', async () => {
-    const repo = createRepo();
-    const { db } = createDbStub([
-      createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
-      createEntryRecord({ id: 'lee_other_repo', repoId: 'ler_other', entryName: 'sales-kpi' }),
-    ]);
-    const { service, submitWithBackpressure } = createPreviewService(db, createFileServiceStub(repo, []));
-    const files = validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' }));
-    const common = {
-      repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
-      kind: 'js-block' as const,
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      files,
-    };
-
-    const wrongRepo = await service.compileWorkspacePreview({ ...common, entryId: 'lee_other_repo' });
-    const wrongKind = await service.compileWorkspacePreview({ ...common, entryId: 'lee_sales_kpi', kind: 'js-page' });
-    const wrongPath = await service.compileWorkspacePreview({
-      ...common,
-      entryId: 'lee_sales_kpi',
-      entryPath: 'src/client/js-blocks/other/index.tsx',
-    });
-
-    expect(wrongRepo.problems).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'entry_not_found' })]));
-    expect(wrongKind.problems).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'light_extension_preview_target_kind_mismatch' })]),
-    );
-    expect(wrongPath.problems).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'light_extension_preview_target_path_mismatch' })]),
-    );
-    expect(submitWithBackpressure).not.toHaveBeenCalled();
-  });
-
-  it('rejects archived repositories, base64 files, and JS Portal workspace files before compilation', async () => {
-    const repo = createRepo();
-    const archived = createDbStub([], { lifecycleStatus: 'archived' });
-    const archivedService = createPreviewService(archived.db, createFileServiceStub(repo, [])).service;
-    await expect(
-      archivedService.compileWorkspacePreview({
-        repoId: repo.id,
-        expectedHeadCommitId: 'vsc_commit_1',
-        files: [{ path: 'src/client/js-blocks/sales-kpi/index.tsx', content: 'ctx.render(null);' }],
-      }),
-    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_REPO_ARCHIVED' });
-
-    const { db } = createDbStub([]);
-    const { service, submitWithBackpressure } = createPreviewService(db, createFileServiceStub(repo, []));
-    const result = await service.compileWorkspacePreview({
-      repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
-      files: [{ path: 'src/client/js-portals/app/index.tsx', content: 'Y29uc29sZS5sb2coMSk=', encoding: 'base64' }],
-    });
-
-    expect(result.accepted).toBe(false);
-    expect(result.problems).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 'light_extension_agent_base64_not_supported' }),
-        expect.objectContaining({ code: 'light_extension_agent_portal_not_supported' }),
-      ]),
-    );
-    expect(submitWithBackpressure).not.toHaveBeenCalled();
-  });
-
-  it('returns a sanitized infrastructure Problem when the compile executor throws', async () => {
-    const repo = createRepo();
-    const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
-    const failingExecutor: LightExtensionCompileExecutor = {
-      submitWithBackpressure: vi
-        .fn()
-        .mockRejectedValue(new Error('/root/private/source.ts failed: ctx.render("secret source") token=secret-token')),
-    };
-    const { service } = createPreviewService(db, createFileServiceStub(repo, []), failingExecutor);
-
-    const result = await service.compileWorkspacePreview({
-      repoId: repo.id,
-      expectedHeadCommitId: 'vsc_commit_1',
-      entryId: 'lee_sales_kpi',
-      kind: 'js-block',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      files: validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' })),
-    });
-
-    expect(result).toMatchObject({
-      accepted: false,
-      failureCode: 'LIGHT_EXTENSION_COMPILE_INFRASTRUCTURE_FAILED',
-      problems: [
-        expect.objectContaining({
-          phase: 'infrastructure',
-          code: 'LIGHT_EXTENSION_COMPILE_INFRASTRUCTURE_FAILED',
-          message: 'Light extension compile infrastructure failed',
-        }),
-      ],
-    });
-    expect(JSON.stringify(result)).not.toContain('/root/private');
-    expect(JSON.stringify(result)).not.toContain('secret source');
-    expect(JSON.stringify(result)).not.toContain('secret-token');
   });
 
   it('blocks compile preview entries when workspace validator failures are present', async () => {
@@ -509,7 +350,7 @@ describe('plugin-light-extension compile preview', () => {
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
     });
     expect(salesKpi?.artifact).toBeUndefined();
-    expect(salesKpi?.problems).toEqual(
+    expect(salesKpi?.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'workspace_path_not_allowed',
@@ -517,7 +358,7 @@ describe('plugin-light-extension compile preview', () => {
         }),
       ]),
     );
-    expect(result.problems).toEqual(
+    expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'workspace_path_not_allowed',
@@ -570,7 +411,7 @@ describe('plugin-light-extension compile preview', () => {
       status: 'success',
       accepted: true,
     });
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         entryId: 'lee_sales_kpi',
@@ -674,7 +515,7 @@ describe('plugin-light-extension compile preview', () => {
 
     expect(result).toMatchObject({
       accepted: true,
-      problems: [],
+      diagnostics: [],
       entries: [
         {
           entryId: 'lee_orders',
@@ -719,7 +560,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result.entries[0]).toMatchObject({
       entryId: 'lee_sales_trend',
       status: 'skipped',
-      problems: [
+      diagnostics: [
         expect.objectContaining({
           code: 'entry_missing',
         }),
@@ -733,7 +574,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result.entries[2]).toMatchObject({
       entryId: 'lee_unknown',
       status: 'skipped',
-      problems: [
+      diagnostics: [
         expect.objectContaining({
           code: 'entry_not_found',
         }),
@@ -822,13 +663,10 @@ describe('plugin-light-extension compile preview', () => {
 
   it('normalizes the unsaved workspace preview resource input', async () => {
     const previewResult = {
-      baseHeadCommitId: 'vsc_commit_1',
-      snapshotId: 'snapshot_1',
-      requestId: 'request_1',
       accepted: false,
+      httpStatus: 422,
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      problems: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
-      entries: [],
+      diagnostics: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
     };
     const compileWorkspacePreview = vi.fn().mockResolvedValue(previewResult);
     const resource = createLightExtensionsResource({
@@ -870,7 +708,6 @@ describe('plugin-light-extension compile preview', () => {
           {
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
             content: 'ctx.render(<div />);',
-            encoding: undefined,
             language: 'typescript',
             mode: undefined,
           },
@@ -879,65 +716,15 @@ describe('plugin-light-extension compile preview', () => {
       expect.any(Object),
     );
     expect((ctx as { status?: number }).status).toBe(422);
-    expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBe(true);
-    expect((ctx as { body?: unknown }).body).toEqual({
-      errors: [
-        {
-          code: 'LIGHT_EXTENSION_WORKSPACE_REJECTED',
-          message: 'Light extension workspace check rejected one or more entries',
-          status: 422,
-          details: previewResult,
-        },
-      ],
-    });
-  });
-
-  it('leaves accepted workspace checks data-wrapped with the canonical result body', async () => {
-    const checkResult = {
-      baseHeadCommitId: 'vsc_commit_1',
-      snapshotId: 'snapshot_1',
-      requestId: 'request_1',
-      accepted: true,
-      problems: [],
-      entries: [],
-    };
-    const compileWorkspacePreview = vi.fn().mockResolvedValue(checkResult);
-    const resource = createLightExtensionsResource({
-      compileWorkspacePreview,
-    } as unknown as LightExtensionCompilePreviewService);
-    const ctx = {
-      action: {
-        params: {
-          values: {
-            repoId: 'ler_sales',
-            expectedHeadCommitId: 'vsc_commit_1',
-            files: [{ path: 'src/client/js-blocks/sales-kpi/index.tsx', content: 'ctx.render(<div />);' }],
-          },
-        },
-      },
-    } as unknown as Context;
-
-    await resource.actions?.compileWorkspacePreview?.(ctx, async () => {});
-
-    expect((ctx as { status?: number }).status).toBeUndefined();
-    expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBeUndefined();
-    expect((ctx as { body?: unknown }).body).toBe(checkResult);
+    expect((ctx as { body?: unknown }).body).toBe(previewResult);
   });
 });
 
-function createPreviewService(
-  db: Database,
-  fileService: LightExtensionFileService,
-  executor?: LightExtensionCompileExecutor,
-) {
+function createPreviewService(db: Database, fileService: LightExtensionFileService) {
   const auditService = new LightExtensionAuditService(db);
   const recordCompileEvent = vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
   const permissionService = new LightExtensionPermissionService(auditService);
   const bridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-  const submitWithBackpressure = vi.fn((job) =>
-    executeLightExtensionCompileJob({ job, workerId: 1, attempt: 1, executingThreadId: 1 }),
-  );
-  const compileExecutor: LightExtensionCompileExecutor = executor || { submitWithBackpressure };
   const service = new LightExtensionCompilePreviewService(
     db,
     auditService,
@@ -945,26 +732,17 @@ function createPreviewService(
     permissionService,
     bridge,
     undefined,
-    compileExecutor,
   );
 
   return {
     service,
     recordCompileEvent,
-    submitWithBackpressure,
   };
 }
 
-function createDbStub(
-  entries: Record<string, unknown>[],
-  repoValues: { headCommitId?: string | null; lifecycleStatus?: string } = {},
-) {
+function createDbStub(entries: Record<string, unknown>[]) {
   const entriesRepository = {
-    find: vi
-      .fn()
-      .mockImplementation(async (options?: { filter?: { repoId?: string } }) =>
-        entries.filter((entry) => !options?.filter?.repoId || entry.repoId === options.filter.repoId).map(createModel),
-      ),
+    find: vi.fn().mockResolvedValue(entries.map(createModel)),
     create: vi.fn(),
     update: vi.fn(),
   };
@@ -978,15 +756,7 @@ function createDbStub(
       },
     ]),
   );
-  persistenceRepositories.lightExtensionRepos.findOne = vi.fn().mockResolvedValue(
-    createModel({
-      id: 'ler_sales',
-      headCommitId: Object.prototype.hasOwnProperty.call(repoValues, 'headCommitId')
-        ? repoValues.headCommitId
-        : 'vsc_commit_1',
-      lifecycleStatus: repoValues.lifecycleStatus || 'enabled',
-    }),
-  );
+  persistenceRepositories.lightExtensionRepos.findOne = vi.fn().mockResolvedValue(createModel(createRepo()));
   const db = {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntries') {
@@ -1086,7 +856,7 @@ function createEntryRecord(input: {
     settingsDefaultsHash: null,
     compiledAt: input.compiledCommitId ? new Date('2026-07-06T00:00:00.000Z') : null,
     healthStatus: 'ready',
-    problems: [],
+    diagnostics: [],
     createdAt: null,
     updatedAt: null,
   };

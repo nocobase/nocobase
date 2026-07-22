@@ -11,29 +11,6 @@ import { ComponentType } from 'react';
 import { SnippetEntry } from './runjsCompletions';
 import { RunLog } from './hooks/useCodeRunner';
 
-export interface CodeEditorRevealTarget {
-  path: string;
-  line: number;
-  column: number;
-  requestId: string;
-}
-
-export interface CodeEditorDiagnostic {
-  from: number;
-  to: number;
-  start: {
-    line: number;
-    column: number;
-  };
-  end: {
-    line: number;
-    column: number;
-  };
-  severity: 'error' | 'warning' | 'info' | 'hint';
-  message: string;
-  code?: number | string;
-}
-
 /**
  * Shared types for CodeEditor components
  */

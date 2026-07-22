@@ -19,10 +19,9 @@ import {
   type LightExtensionKind,
 } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
-import { sortLightExtensionProblems } from '../../shared/problems';
 import type {
+  LightExtensionDiagnostic,
   LightExtensionEntryRecord,
-  LightExtensionProblem,
   LightExtensionSaveSourceInput,
   LightExtensionSaveSourceResult,
 } from '../../shared/types';
@@ -52,6 +51,7 @@ import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } fro
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
+import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
 
 type ReferenceRefreshService = {
@@ -94,7 +94,7 @@ export interface LightExtensionPreparedSave {
   readonly entryPlan: LightExtensionEntryReconcilePlan;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
   readonly compileEntries: ReadonlyArray<LightExtensionSaveSourceResult['compile']['entries'][number]>;
-  readonly problems: readonly LightExtensionProblem[];
+  readonly diagnostics: readonly LightExtensionDiagnostic[];
   readonly compiledEntryCount: number;
   readonly compiledEntryIds: readonly string[];
 }
@@ -105,7 +105,7 @@ export interface LightExtensionRemoteSnapshotCompileResult {
   contentHash: string;
   changed: boolean;
   compile: LightExtensionSaveSourceResult['compile'];
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
 }
 
 export class LightExtensionRuntimeCompileService {
@@ -156,23 +156,12 @@ export class LightExtensionRuntimeCompileService {
     }
     try {
       const prepared = await this.prepareSaveSource(input, operationContext);
-      const maxPublishAttempts = this.db.options.dialect === 'sqlite' ? 5 : 1;
-      for (let attempt = 1; attempt <= maxPublishAttempts; attempt += 1) {
-        try {
-          return await this.db.sequelize.transaction((transaction) =>
-            this.publishPreparedSave(prepared, {
-              ...operationContext,
-              transaction,
-            }),
-          );
-        } catch (error) {
-          if (attempt === maxPublishAttempts || !isSqliteBusyError(error)) {
-            throw error;
-          }
-          await new Promise((resolve) => setTimeout(resolve, attempt * 20));
-        }
-      }
-      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source publish did not complete');
+      return await this.db.sequelize.transaction((transaction) =>
+        this.publishPreparedSave(prepared, {
+          ...operationContext,
+          transaction,
+        }),
+      );
     } catch (error) {
       for (const recordRejectedPush of deferredRejectedPushAudits) {
         await recordRejectedPush();
@@ -213,7 +202,7 @@ export class LightExtensionRuntimeCompileService {
     const preparedEntries: LightExtensionPreparedEntries = {
       repo: candidate.repo,
       commitId: candidate.expectedHeadCommitId || '',
-      problems: sortLightExtensionProblems(candidate.validation.problems),
+      diagnostics: sortDiagnostics(candidate.validation.diagnostics),
       entries: entryPlan.result.entries,
       reconcile: entryPlan.result,
     };
@@ -223,9 +212,9 @@ export class LightExtensionRuntimeCompileService {
       this.compilerBuildIdentity,
     );
     const compilePreparation = await this.prepareCompileResults(candidate.repo.id, readyInputs, ctx);
-    const problems = sortLightExtensionProblems([
-      ...preparedEntries.problems,
-      ...compilePreparation.results.flatMap((entry) => entry.problems),
+    const diagnostics = sortDiagnostics([
+      ...preparedEntries.diagnostics,
+      ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
@@ -233,7 +222,7 @@ export class LightExtensionRuntimeCompileService {
         status: 422,
         details: {
           repoId: candidate.repo.id,
-          problems,
+          diagnostics,
           entries: failures.map(toFailedCompileEntryResult),
         },
       });
@@ -248,7 +237,7 @@ export class LightExtensionRuntimeCompileService {
       entryPlan,
       compileResults: Object.freeze(successfulResults.map((entry) => Object.freeze(entry))),
       compileEntries: Object.freeze(compileEntries),
-      problems: Object.freeze(problems),
+      diagnostics: Object.freeze(diagnostics),
       compiledEntryCount: compilePreparation.compiledEntryCount,
       compiledEntryIds: Object.freeze([...compilePreparation.compiledEntryIds]),
     });
@@ -306,7 +295,7 @@ export class LightExtensionRuntimeCompileService {
         status: prepared.compiledEntryCount === 0 ? 'skipped' : 'success',
         entries: [...prepared.compileEntries],
       },
-      problems: [...prepared.problems],
+      diagnostics: [...prepared.diagnostics],
     };
   }
 
@@ -324,7 +313,7 @@ export class LightExtensionRuntimeCompileService {
           entryPath: result.entryPath,
           runtimeVersion: result.artifact.version,
           requestId: result.requestId,
-          problems: result.problems,
+          diagnostics: result.diagnostics,
           filesHash: result.artifact.filesHash,
           artifactEntryPath: result.artifact.entryPath,
         },
@@ -410,7 +399,7 @@ export class LightExtensionRuntimeCompileService {
       return {
         ...compileResultIdentity(job),
         accepted: false,
-        problems: compiled.problems,
+        diagnostics: compiled.diagnostics,
         failureCode: compiled.failureCode || 'compile_failed',
       };
     }
@@ -428,7 +417,7 @@ export class LightExtensionRuntimeCompileService {
       artifact: compiled.artifact,
       artifactHash,
       runtimeCodeHash,
-      problems: compiled.problems,
+      diagnostics: compiled.diagnostics,
     };
   }
 
@@ -461,7 +450,7 @@ export class LightExtensionRuntimeCompileService {
         contentHash: replacement.contentHash,
         changed: false,
         compile: { status: 'skipped', entries: [] },
-        problems: [],
+        diagnostics: [],
       };
     }
 
@@ -480,7 +469,7 @@ export class LightExtensionRuntimeCompileService {
         status: compile.status,
         entries: compile.entries,
       },
-      problems: sortLightExtensionProblems(compile.problems),
+      diagnostics: sortDiagnostics(compile.diagnostics),
     };
   }
 
@@ -490,7 +479,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      problems: LightExtensionProblem[];
+      diagnostics: LightExtensionDiagnostic[];
     }
   > {
     const transaction = ctx.transaction;
@@ -511,7 +500,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      problems: LightExtensionProblem[];
+      diagnostics: LightExtensionDiagnostic[];
     }
   > {
     if (ctx.transaction) {
@@ -530,7 +519,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      problems: LightExtensionProblem[];
+      diagnostics: LightExtensionDiagnostic[];
     }
   > {
     const prepared = await this.entryService.prepareEntries(repoId, ctx);
@@ -560,7 +549,7 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      problems: LightExtensionProblem[];
+      diagnostics: LightExtensionDiagnostic[];
     }
   > {
     const transaction = ctx.transaction;
@@ -590,14 +579,14 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
-      problems: LightExtensionProblem[];
+      diagnostics: LightExtensionDiagnostic[];
     }
   > {
     const readyInputs = prepareEntryCompileInputs(prepared.entries, files, this.compilerBuildIdentity);
     const compilePreparation = await this.prepareCompileResults(repoId, readyInputs, ctx);
-    const problems = sortLightExtensionProblems([
-      ...prepared.problems,
-      ...compilePreparation.results.flatMap((entry) => entry.problems),
+    const diagnostics = sortDiagnostics([
+      ...prepared.diagnostics,
+      ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
@@ -606,7 +595,7 @@ export class LightExtensionRuntimeCompileService {
         details: {
           repoId,
           commitId,
-          problems,
+          diagnostics,
           entries: failures.map(toFailedCompileEntryResult),
         },
       });
@@ -648,26 +637,9 @@ export class LightExtensionRuntimeCompileService {
       repo: withEntrySummary(repo ? repoFromModelLike(repo) : prepared.repo, entryModels.map(entryFromModel)),
       status: compilePreparation.compiledEntryCount === 0 ? 'skipped' : 'success',
       entries: compileEntries,
-      problems,
+      diagnostics,
     };
   }
-}
-
-function isSqliteBusyError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const candidate = error as {
-    code?: unknown;
-    message?: unknown;
-    original?: { code?: unknown; message?: unknown };
-    parent?: { code?: unknown; message?: unknown };
-  };
-  return [candidate, candidate.original, candidate.parent].some(
-    (value) =>
-      value?.code === 'SQLITE_BUSY' ||
-      (typeof value?.message === 'string' && value.message.includes('SQLITE_BUSY: database is locked')),
-  );
 }
 
 function createCompileJob(
@@ -777,12 +749,12 @@ function reuseCompiledEntry(
       version: artifact.version,
       entryPath: artifact.entryPath,
       filesHash: artifact.filesHash,
-      diagnostics: [],
+      diagnostics: sortDiagnostics(artifact.diagnostics || []),
       metadata: artifact.metadata,
     },
     artifactHash,
     runtimeCodeHash,
-    problems: [],
+    diagnostics: sortDiagnostics(artifact.diagnostics || []),
   };
 }
 
@@ -797,7 +769,7 @@ function toSuccessfulCompileEntryResult(
     entryPath: result.entryPath,
     status: 'success',
     execution: compiled ? 'compiled' : 'skipped',
-    problems: result.problems,
+    diagnostics: result.diagnostics,
     artifact: {
       version: result.artifact.version,
       entryPath: result.artifact.entryPath || result.entryPath,
@@ -817,7 +789,7 @@ function toFailedCompileEntryResult(
     entryPath: result.entryPath,
     status: 'failed',
     execution: 'compiled',
-    problems: result.problems,
+    diagnostics: result.diagnostics,
     failureCode: result.failureCode,
   };
 }

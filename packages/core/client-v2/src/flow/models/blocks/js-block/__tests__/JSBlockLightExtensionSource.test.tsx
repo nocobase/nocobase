@@ -8,7 +8,6 @@
  */
 
 import { App, ConfigProvider } from 'antd';
-import { cleanup } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@nocobase/test/client';
@@ -21,8 +20,6 @@ import {
   type FlowSettingsContext,
 } from '@nocobase/flow-engine';
 import {
-  createRunJSHostPreviewSession,
-  getActiveRunJSHostPreviewSessionCount,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
   type RunJSSourceSettingsDescriptor,
@@ -69,21 +66,6 @@ const SETTINGS_DESCRIPTOR = {
   },
 };
 
-const HOST_PREVIEW_SOURCE_MAP = JSON.stringify({
-  version: 1,
-  kind: 'runjs-line-map',
-  sourceURL: 'nocobase-runjs://bundle/js-block-host-preview.js',
-  entryPath: 'src/client/js-blocks/example/index.tsx',
-  generatedCodeLineOffset: 2,
-  mappings: [
-    {
-      generatedLine: 1,
-      source: 'src/client/js-blocks/example/index.tsx',
-      sourceLine: 1,
-    },
-  ],
-});
-
 function renderJSBlock(stepParams: Record<string, unknown>) {
   const engine = new FlowEngine();
   engine.registerModels({ JSBlockModel });
@@ -112,7 +94,6 @@ function renderJSBlock(stepParams: Record<string, unknown>) {
 
 describe('JSBlockModel light extension source', () => {
   afterEach(() => {
-    cleanup();
     RunJSEditorRegistry.clear();
     RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
@@ -744,38 +725,6 @@ describe('JSBlockModel light extension source', () => {
     expect(Object.keys(model.getStepParams('jsSettings') || {})).toEqual(['runJs']);
   });
 
-  it('propagates one host preview execution reporter to the JS Block runtime', async () => {
-    const report = vi.fn();
-    const session = createRunJSHostPreviewSession({
-      artifactHash: 'a'.repeat(64),
-      snapshotId: 'snapshot-js-block',
-      sourceMap: HOST_PREVIEW_SOURCE_MAP,
-      reporter: { report },
-    });
-
-    renderJSBlock({
-      code: 'throw new Error("js block preview failed")',
-      version: 'v2',
-      sourceMode: 'inline',
-      sourceRef: session.sourceRef,
-    });
-
-    await waitFor(() => expect(report).toHaveBeenCalledTimes(1));
-    expect(report).toHaveBeenCalledWith(
-      expect.objectContaining({
-        identity: expect.objectContaining({
-          executionId: session.sourceRef.executionId,
-          artifactHash: session.sourceRef.artifactHash,
-          sourceURL: session.sourceRef.sourceURL,
-        }),
-        issue: expect.objectContaining({ ruleId: 'promise-rejection' }),
-      }),
-    );
-    cleanup();
-    session.close();
-    expect(getActiveRunJSHostPreviewSessionCount()).toBe(0);
-  });
-
   it('resolves external source through the RunJS source registry', async () => {
     const resolve = vi.fn(() => ({
       code: 'ctx.render(<span data-testid="external-js-block">{ctx.settings.title}:{ctx.runJsSource.context.lightExtension.entryId}</span>);',
@@ -999,7 +948,6 @@ describe('JSBlockModel light extension source', () => {
     });
 
     renderJSBlock({
-      code: '',
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {},

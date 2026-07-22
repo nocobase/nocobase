@@ -18,7 +18,7 @@ import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { createPortal } from 'react-dom';
 import { EditorCore } from './core/EditorCore';
-import type { CodeEditorDiagnostic, CodeEditorRevealTarget, EditorRef } from './types';
+import type { EditorRef } from './types';
 import { RightExtra as RightExtraPanel } from './panels/RightExtra';
 import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
@@ -53,8 +53,6 @@ export interface CodeEditorProps {
   runButton?: React.ReactNode;
   showLogs?: boolean;
   fullscreenControl?: CodeEditorFullscreenControl;
-  revealTarget?: CodeEditorRevealTarget;
-  onDiagnosticsChange?: (diagnostics: CodeEditorDiagnostic[]) => void;
 }
 
 export interface CodeEditorFullscreenControl {
@@ -93,8 +91,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   runButton,
   showLogs = true,
   fullscreenControl,
-  revealTarget,
-  onDiagnosticsChange,
 }) => {
   const viewRef = useRef<EditorView | null>(null);
   const typescriptProjectRef = useRef<CodeEditorTypeScriptProject | undefined>();
@@ -287,8 +283,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         typescriptProjectRef={typescriptProject ? typescriptProjectRef : undefined}
         language={language}
         jsonSchema={jsonSchema}
-        onDiagnosticsChange={onDiagnosticsChange}
-        revealTarget={revealTarget?.path === name ? revealTarget : undefined}
         viewRef={viewRef}
       />
       {showLogs ? (

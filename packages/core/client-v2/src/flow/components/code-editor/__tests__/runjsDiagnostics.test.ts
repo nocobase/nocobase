@@ -21,24 +21,6 @@ describe('runjsDiagnostics', () => {
     return ctx;
   };
 
-  const createFailingRuntimeCtx = (stack: string) => {
-    const ctx = new FlowContext();
-    ctx.defineMethod('createJSRunner', async () => {
-      const runner = new JSRunner({ globals: { ctx: new FlowContext() } });
-      vi.spyOn(runner, 'run').mockResolvedValue({
-        success: false,
-        timeout: false,
-        error: {
-          name: 'Error',
-          message: 'boom',
-          stack,
-        },
-      });
-      return runner;
-    });
-    return ctx;
-  };
-
   it('returns multiple syntax issues in one pass (Lezer error recovery)', async () => {
     const ctx = createTestCtx();
     const code = `const a = ;\nconst b = ;\n`;
@@ -176,15 +158,31 @@ ctx.render(<div />);
   });
 
   it('simplifies nested eval stack and long bundle urls in runtime issue stack', async () => {
-    const frames = Array.from(
-      { length: 12 },
-      (_, index) =>
-        `    at Object.eval (eval at <anonymous> (eval at makeEvaluate (http://localhost:23000/vendors-node_modules_ant-design_pro-layout_es_index_js-node_modules_antv_g2plot_esm_index_js--e29f87.async.js:818802:86)), <anonymous>:${
-          33 + index
-        }:1)`,
-    );
-    const stack = ['Error: boom', ...frames].join('\n');
-    const ctx = createFailingRuntimeCtx(stack);
+    const ctx = new FlowContext() as any;
+    ctx.defineMethod('createJSRunner', async () => {
+      const runjsCtx = new FlowContext();
+      const frames = Array.from(
+        { length: 12 },
+        (_, index) =>
+          `    at Object.eval (eval at <anonymous> (eval at makeEvaluate (http://localhost:23000/vendors-node_modules_ant-design_pro-layout_es_index_js-node_modules_antv_g2plot_esm_index_js--e29f87.async.js:818802:86)), <anonymous>:${
+            33 + index
+          }:1)`,
+      );
+      const stack = ['Error: boom', ...frames].join('\n');
+
+      return {
+        globals: { ctx: runjsCtx },
+        run: async () => ({
+          success: false,
+          timeout: false,
+          error: {
+            name: 'Error',
+            message: 'boom',
+            stack,
+          },
+        }),
+      } as any;
+    });
 
     const res = await diagnoseRunJS('1 + 1;', ctx);
     const runtimeIssue = res.issues.find((i) => i.type === 'runtime' && i.ruleId === 'runtime-error');
@@ -200,15 +198,33 @@ ctx.render(<div />);
   });
 
   it('maps runtime error stacks back to RunJS workspace files', async () => {
-    const stack = ['Error: boom', '    at test (nocobase-runjs://bundle/test.js:5:9)'].join('\n');
-    const ctx = createFailingRuntimeCtx(stack);
+    const ctx = new FlowContext() as any;
+    ctx.defineMethod('createJSRunner', async () => {
+      const runjsCtx = new FlowContext();
+      const stack = [
+        'Error: boom',
+        '    at test (eval at <anonymous> (eval at makeEvaluate (http://localhost:23000/vendor.js:1:1)), <anonymous>:5:9)',
+      ].join('\n');
+
+      return {
+        globals: { ctx: runjsCtx },
+        run: async () => ({
+          success: false,
+          timeout: false,
+          error: {
+            name: 'Error',
+            message: 'boom',
+            stack,
+          },
+        }),
+      } as any;
+    });
 
     const res = await diagnoseRunJS('1 + 1;', ctx, {
       sourceMap: JSON.stringify({
         version: 1,
         kind: 'runjs-line-map',
         sourceURL: 'nocobase-runjs://bundle/test.js',
-        entryPath: 'src/main.ts',
         generatedCodeLineOffset: 2,
         mappings: [
           {
@@ -227,31 +243,7 @@ ctx.render(<div />);
       location: { start: { line: 2, column: 3 } },
     });
     expect(runtimeIssue?.stack).toContain('src/helper.ts:2:3');
-    expect(runtimeIssue?.stack).not.toContain('nocobase-runjs://bundle/test.js:5:9');
-  });
-
-  it('does not map anonymous or unrelated stack frames through an Artifact line map', async () => {
-    const ctx = createFailingRuntimeCtx(
-      ['Error: boom', '    at anonymous (<anonymous>:5:9)', '    at other (nocobase-runjs://bundle/other.js:5:9)'].join(
-        '\n',
-      ),
-    );
-
-    const res = await diagnoseRunJS('1 + 1;', ctx, {
-      sourceMap: JSON.stringify({
-        version: 1,
-        kind: 'runjs-line-map',
-        sourceURL: 'nocobase-runjs://bundle/test.js',
-        entryPath: 'src/main.ts',
-        generatedCodeLineOffset: 2,
-        mappings: [{ generatedLine: 3, source: 'src/helper.ts', sourceLine: 2, sourceColumn: 3 }],
-      }),
-    });
-    const runtimeIssue = res.issues.find((issue) => issue.type === 'runtime');
-
-    expect(runtimeIssue?.sourcePath).toBeUndefined();
-    expect(runtimeIssue?.location).toBeUndefined();
-    expect(runtimeIssue?.stack).not.toContain('src/helper.ts');
+    expect(runtimeIssue?.stack).not.toContain('<anonymous>:5:9');
   });
 
   it('previewRunJS returns message with truncation note when exceeding length limit', async () => {

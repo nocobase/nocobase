@@ -35,7 +35,6 @@ import type {
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
 import { LightExtensionError } from '../../shared/errors';
-import { createLightExtensionProblemFactory } from '../../shared/problems';
 import { LightExtensionEntryService } from './LightExtensionEntryService';
 import { rewriteRelativeImports } from './MoveSourceService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
@@ -211,7 +210,7 @@ export class MoveToInlineService {
         details: {
           repoId: input.repoId,
           entryId: input.entryId,
-          problems: compileResult.problems,
+          diagnostics: compileResult.diagnostics,
           failureCode: compileResult.failureCode,
         },
       });
@@ -251,30 +250,12 @@ export class MoveToInlineService {
       (diagnostic) => diagnostic.severity === 'error',
     );
     if (canonicalCompileErrors.length > 0) {
-      const createProblem = createLightExtensionProblemFactory({
-        snapshotId: compileResult.artifact.filesHash,
-        requestId: serviceContext.requestId || `move-to-inline:${input.entryId}`,
-        source: 'runjs-compiler',
-        phase: 'compile',
-      });
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Inline source could not be compiled', {
         status: 422,
         details: {
           repoId: input.repoId,
           entryId: input.entryId,
-          problems: canonicalCompileErrors.map((problem) =>
-            createProblem({
-              code: problem.code || problem.ruleId || 'RUNJS_COMPILE_FAILED',
-              severity: problem.severity === 'warning' ? 'warning' : 'error',
-              message: problem.message,
-              path: problem.path,
-              range:
-                problem.line || problem.column
-                  ? { start: { line: problem.line || 1, column: problem.column || 1 } }
-                  : undefined,
-              details: problem.details,
-            }),
-          ),
+          diagnostics: canonicalCompileErrors,
           failureCode: canonicalCompileResult.failureCode,
         },
       });

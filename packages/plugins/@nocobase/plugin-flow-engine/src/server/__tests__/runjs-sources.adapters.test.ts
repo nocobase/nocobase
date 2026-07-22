@@ -12,10 +12,7 @@ import type { RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/se
 
 import PluginLightExtensionServer from '../../../../plugin-light-extension/src/server';
 import FlowModelRepository from '../repository';
-import {
-  createFlowModelReferenceOwnerContextResolver,
-  createFlowModelRunJSSourceAdapters,
-} from '../runjs-sources/flow-model-adapters';
+import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
 
 const basePlugins = ['field-sort', 'system-settings', 'users', 'auth', 'acl', 'data-source-manager'];
 
@@ -30,59 +27,6 @@ describe('flow-engine RunJS source adapters', () => {
 
   afterEach(async () => {
     await app?.destroy();
-  });
-
-  it('describes JS Block and JS Page authoring owners without exposing private FlowModel state', () => {
-    const resolver = createFlowModelReferenceOwnerContextResolver();
-    const block = resolver.describe({
-      reference: {
-        kind: 'js-block',
-        ownerKind: 'flowModel.step',
-        ownerLocator: { modelUid: 'block_owner' },
-      },
-      owner: {
-        uid: 'block_owner',
-        use: 'JSBlockModel',
-        stepParams: {
-          resourceSettings: { init: { dataSourceKey: 'analytics', collectionName: 'orders' } },
-          jsSettings: { runJs: { code: 'secret source' } },
-        },
-      },
-    });
-    const page = resolver.describe({
-      reference: {
-        kind: 'js-page',
-        ownerKind: 'flowModel.pageSettings',
-        ownerLocator: { modelUid: 'page_owner' },
-      },
-      owner: { uid: 'page_owner', use: 'JSPageModel', stepParams: { pageSettings: { private: 'value' } } },
-    });
-
-    expect(block).toEqual({
-      ownerKind: 'flowModel.step',
-      modelUid: 'block_owner',
-      modelUse: 'JSBlockModel',
-      surface: 'js-model.render',
-      dataSourceKey: 'analytics',
-      collectionName: 'orders',
-    });
-    expect(page).toEqual({
-      ownerKind: 'flowModel.pageSettings',
-      modelUid: 'page_owner',
-      modelUse: 'JSPageModel',
-      surface: 'js-model.render',
-    });
-    expect(JSON.stringify(block)).not.toContain('secret source');
-    expect(
-      resolver.describe({
-        reference: {
-          kind: 'js-page',
-          ownerKind: 'flowModel.pageSettings',
-          ownerLocator: { modelUid: 'block_owner' },
-        },
-        owner: { uid: 'block_owner', use: 'JSBlockModel' },
-      }),
-    ).toBeNull();
   });
 
   it('reads and writes FlowModel step jsSettings.runJs code/version without replacing sibling settings', async () => {

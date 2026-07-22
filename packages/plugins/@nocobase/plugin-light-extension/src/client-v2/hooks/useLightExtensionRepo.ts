@@ -12,7 +12,6 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionContextPack, LightExtensionContextPackInput } from '../../shared/context-pack';
 import type {
   LightExtensionChangeLifecycleInput,
   LightExtensionCommitRecord,
@@ -103,7 +102,6 @@ export interface UseLightExtensionRepoResult {
   pullCommit(input: LightExtensionPullCommitInput): Promise<LightExtensionPullResult>;
   saveSource(input: LightExtensionSaveSourceInput): Promise<LightExtensionSaveSourceResult>;
   compileWorkspacePreview(input: LightExtensionWorkspacePreviewInput): Promise<LightExtensionWorkspacePreviewResult>;
-  getContextPack(input: LightExtensionContextPackInput): Promise<LightExtensionContextPack>;
   listCommits(input: LightExtensionListCommitsInput): Promise<LightExtensionCommitRecord[]>;
 }
 
@@ -139,7 +137,6 @@ type OperationInputMap = {
   pullCommit: LightExtensionPullCommitInput;
   saveSource: LightExtensionSaveSourceInput;
   compileWorkspacePreview: LightExtensionWorkspacePreviewInput;
-  getContextPack: LightExtensionContextPackInput;
   listCommits: LightExtensionListCommitsInput;
 };
 
@@ -155,7 +152,6 @@ type OperationResultMap = {
   pullCommit: LightExtensionPullResult;
   saveSource: LightExtensionSaveSourceResult;
   compileWorkspacePreview: LightExtensionWorkspacePreviewResult;
-  getContextPack: LightExtensionContextPack;
   listCommits: LightExtensionCommitRecord[];
 };
 
@@ -171,7 +167,6 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   pullCommit: 'lightExtensionFiles:pullCommit',
   saveSource: 'lightExtensionFiles:saveSource',
   compileWorkspacePreview: 'lightExtensions:compileWorkspacePreview',
-  getContextPack: 'lightExtensionContexts:get',
   listCommits: 'lightExtensionFiles:listCommits',
 };
 
@@ -249,10 +244,6 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     (input: LightExtensionWorkspacePreviewInput) => requestOperation('compileWorkspacePreview', input),
     [requestOperation],
   );
-  const getContextPack = useCallback(
-    (input: LightExtensionContextPackInput) => requestOperation('getContextPack', input),
-    [requestOperation],
-  );
   const listCommits = useCallback(
     (input: LightExtensionListCommitsInput) => requestOperation('listCommits', input),
     [requestOperation],
@@ -271,7 +262,6 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       pullCommit,
       saveSource,
       compileWorkspacePreview,
-      getContextPack,
       listCommits,
     }),
     [
@@ -280,7 +270,6 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       createRepo,
       deleteRepo,
       getRepo,
-      getContextPack,
       inspectSourceArchive,
       listCommits,
       listRepos,
@@ -360,11 +349,11 @@ function toNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-export function getLightExtensionErrorProblems(error: unknown) {
+export function getLightExtensionErrorDiagnostics(error: unknown) {
   if (!isLightExtensionHookError(error)) {
     return [];
   }
 
-  const problems = error.details?.problems;
-  return Array.isArray(problems) ? problems : [];
+  const diagnostics = error.details?.diagnostics;
+  return Array.isArray(diagnostics) ? diagnostics : [];
 }

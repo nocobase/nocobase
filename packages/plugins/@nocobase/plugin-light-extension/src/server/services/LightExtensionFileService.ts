@@ -8,7 +8,6 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import { sha256Hex, stableSerialize } from '@nocobase/runjs';
 import type {
   VscCommitRecord,
   VscFileChange,
@@ -41,7 +40,7 @@ import type { LightExtensionRepoInternalRecord, LightExtensionServiceContext } f
 import { LightExtensionRepoService, stripInternalRepo } from './LightExtensionRepoService';
 import {
   LightExtensionValidator,
-  hasErrorProblem,
+  hasErrorDiagnostic,
   type LightExtensionWorkspaceValidationResult,
 } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
@@ -263,7 +262,6 @@ export class LightExtensionFileService {
               this.assertValidSyncBatch(
                 input.files,
                 entries.map((entry) => entry.path),
-                requestId,
               ),
           },
         ),
@@ -276,14 +274,12 @@ export class LightExtensionFileService {
           size: file.size,
           language: file.language,
         })),
-        snapshotId: buildValidationSnapshotId(vscPreparedPush.candidate.files),
-        requestId,
       });
-      if (hasErrorProblem(validation.problems)) {
+      if (hasErrorDiagnostic(validation.diagnostics)) {
         throw new LightExtensionError(
           'LIGHT_EXTENSION_VALIDATION_FAILED',
           'Light extension source workspace is invalid',
-          { details: { problems: validation.problems } },
+          { details: { diagnostics: validation.diagnostics } },
         );
       }
       const prepared: LightExtensionPreparedSourceCandidate = Object.freeze({
@@ -429,7 +425,6 @@ export class LightExtensionFileService {
                 this.assertValidSyncBatch(
                   input.files,
                   entries.map((entry) => entry.path),
-                  requestId,
                 ),
             },
           ),
@@ -442,16 +437,14 @@ export class LightExtensionFileService {
             size: file.size,
             language: file.language,
           })),
-          snapshotId: buildValidationSnapshotId(result.candidate.files),
-          requestId,
         });
-        if (hasErrorProblem(validation.problems)) {
+        if (hasErrorDiagnostic(validation.diagnostics)) {
           throw new LightExtensionError(
             'LIGHT_EXTENSION_VALIDATION_FAILED',
             'Light extension source workspace is invalid',
             {
               details: {
-                problems: validation.problems,
+                diagnostics: validation.diagnostics,
               },
             },
           );
@@ -519,18 +512,14 @@ export class LightExtensionFileService {
         assertRepoNotArchived(repo, 'replace source');
         assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
         assertCompleteSnapshot(input.snapshot);
-        const validation = this.validator.validateWorkspace({
-          files: input.snapshot.files,
-          snapshotId: input.snapshot.contentHash,
-          requestId,
-        });
-        if (hasErrorProblem(validation.problems)) {
+        const validation = this.validator.validateWorkspace({ files: input.snapshot.files });
+        if (hasErrorDiagnostic(validation.diagnostics)) {
           throw new LightExtensionError(
             'LIGHT_EXTENSION_VALIDATION_FAILED',
             'Light extension source snapshot is invalid',
             {
               details: {
-                problems: validation.problems,
+                diagnostics: validation.diagnostics,
               },
             },
           );
@@ -619,24 +608,18 @@ export class LightExtensionFileService {
     }
   }
 
-  private assertValidSyncBatch(
-    files: LightExtensionFileChange[],
-    existingPaths: Iterable<string>,
-    requestId: string,
-  ): void {
-    const problems = this.validator.validateSyncBatch({
+  private assertValidSyncBatch(files: LightExtensionFileChange[], existingPaths: Iterable<string> = []): void {
+    const diagnostics = this.validator.validateSyncBatch({
       files,
       existingPaths,
-      snapshotId: buildValidationSnapshotId(files),
-      requestId,
     });
-    if (!hasErrorProblem(problems)) {
+    if (!hasErrorDiagnostic(diagnostics)) {
       return;
     }
 
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source batch is invalid', {
       details: {
-        problems,
+        diagnostics,
       },
     });
   }
@@ -1089,23 +1072,6 @@ function assertCompleteSnapshot(snapshot: VscRemoteSnapshot): void {
 
 function normalizeLightExtensionFilePath(path: string): string {
   return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
-}
-
-function buildValidationSnapshotId(
-  files: readonly { path: string; content?: string; blobHash?: string; operation?: string }[],
-): string {
-  return sha256Hex(
-    stableSerialize(
-      files
-        .map((file) => ({
-          path: normalizeLightExtensionFilePath(file.path),
-          content: file.content || null,
-          blobHash: file.blobHash || null,
-          operation: file.operation || 'upsert',
-        }))
-        .sort((left, right) => left.path.localeCompare(right.path)),
-    ),
-  );
 }
 
 function summarizeFileChange(file: LightExtensionFileChange) {

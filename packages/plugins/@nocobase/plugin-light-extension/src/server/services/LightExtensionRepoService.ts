@@ -9,7 +9,6 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
-import { sha256Hex, stableSerialize } from '@nocobase/runjs';
 import { RemoteSyncError, VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
@@ -34,14 +33,13 @@ import { LightExtensionAuditService } from './LightExtensionAuditService';
 import type { ClientAppReference, ClientAppService } from './ClientAppService';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { ReferenceService } from './ReferenceService';
-import { LightExtensionValidator, hasErrorProblem } from './LightExtensionValidator';
+import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
 
 export interface LightExtensionServiceContext {
   actorUserId?: string | null;
   can?: LightExtensionCanFunction;
   requestId?: string;
-  snapshotId?: string;
   requestSource?: string;
   transaction?: Transaction;
   /** @internal */
@@ -116,7 +114,7 @@ export class LightExtensionRepoService {
     const metadata = this.normalizeCreateMetadata(input);
     const repoId = `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
-    this.assertValidInitialFiles(initialFiles, requestId);
+    this.assertValidInitialFiles(initialFiles);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.assertRepoNameAvailable(metadata.name, metadata.normalizedName, transaction);
@@ -208,24 +206,22 @@ export class LightExtensionRepoService {
     };
   }
 
-  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined, requestId: string): void {
+  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined): void {
     if (!files) {
       return;
     }
 
-    const problems = this.validator.validateInitialFiles({
+    const diagnostics = this.validator.validateInitialFiles({
       files,
-      snapshotId: sha256Hex(stableSerialize(files)),
-      requestId,
     });
-    if (!hasErrorProblem(problems)) {
+    if (!hasErrorDiagnostic(diagnostics)) {
       return;
     }
 
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension initial source is invalid', {
       status: 422,
       details: {
-        problems,
+        diagnostics,
       },
     });
   }

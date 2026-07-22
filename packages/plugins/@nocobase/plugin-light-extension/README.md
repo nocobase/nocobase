@@ -50,10 +50,22 @@ P1 does not include creating a page directly from an Entry, an App Bridge API, o
 
 `lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It performs the VSC commit, workspace validation, entry reconciliation, and runtime compilation in one database transaction. There is no separate scan action or scan state.
 
+The CLI exposes the same contract for UTF-8 JS Block and JS Page workspaces:
+
+```bash
+nb light pull --repo <repo-id> --entry <entry-id> --dir ./workspace
+nb light check --dir ./workspace --json-output
+nb light save --dir ./workspace --yes --json-output
+```
+
+`pull` refuses to overwrite local changes. `check` sends the complete workspace with the Head recorded by `pull`, while `save` sends only the reviewed delta and uses the same Head for conflict detection. A file change after `check` requires another check before saving.
+
+This workflow validates and saves source only. It does not launch a browser, perform Host Preview, report browser runtime errors to the terminal, generate a Context Pack, or generate precise host declarations. Autonomous Agent preview requires a separate browser-capable execution layer.
+
 Repository source operations use a different request shape from RunJS Studio workspaces:
 
 1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.
-2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`, passing the retained Head as the required nullable `expectedHeadCommitId`. A successful check returns HTTP 200 with `{ data: LightExtensionWorkspaceCheckResult }`; any rejected Entry returns HTTP 422 with the same result in `errors[0].details`.
+2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A whole-workspace preview may return HTTP 207 when only part of the Entry set compiles; HTTP 207 or 422 must not proceed to save.
 3. Call `lightExtensionFiles:saveSource` with only the changed file delta plus the unchanged `expectedHeadCommitId`. Do not send the complete workspace as a replacement snapshot.
 4. On HTTP 409, pull again and rebuild the candidate. Never resolve a conflict by replacing only the expected Head while reusing stale source.
 5. Verify the new Head, all affected Entry artifacts, reference rows, and the bound Flow Surface. Updating a retained inline fallback `code` field does not change the active runtime while `sourceMode` remains `light-extension`.
@@ -62,8 +74,8 @@ Raw `vscFile`, `runJSSources`, direct artifact writes, and ZIP round-trips are n
 
 | Case | Result | Persistent state |
 | --- | --- | --- |
-| Valid changed source | Returns the commit, tree, entry compile results, and Problems | Repository Head and current runtime artifacts advance together |
-| Validation or compilation error | Returns `LIGHT_EXTENSION_VALIDATION_FAILED` with HTTP 422 Problems | The transaction rolls back; Head, source, entries, runtime artifacts, and references remain unchanged |
+| Valid changed source | Returns the commit, tree, entry compile results, and diagnostics | Repository Head and current runtime artifacts advance together |
+| Validation or compilation error | Returns `LIGHT_EXTENSION_VALIDATION_FAILED` with HTTP 422 diagnostics | The transaction rolls back; Head, source, entries, runtime artifacts, and references remain unchanged |
 | Empty/no-change save | Returns the VSC `NO_CHANGES` source error | Nothing changes |
 | Archived repository | Returns `LIGHT_EXTENSION_REPO_ARCHIVED` | Nothing changes |
 
@@ -72,36 +84,6 @@ The primary assertion coverage lives in `src/server/__tests__/save-source-runtim
 ```bash
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/save-source-runtime.test.ts --run
 ```
-
-## Agent CLI and MCP Workflow
-
-The supported local Agent workflow uses a finite `nb light` state machine. It keeps editable UTF-8 source in a normal directory and records repository identity, the pulled Head, content hashes, the current snapshot/Context identity, check rounds, and manual Preview state under `.nocobase/light-extension-state.json`; credentials, tokens, and cookies are never written to the workspace.
-
-```bash
-nb light pull --repo <repo-id> --entry <entry-id> --dir ./my-light-extension
-nb light dev --dir ./my-light-extension
-# In NocoBase, review the diff and click Run manually. Copy the Agent session token.
-nb light problems --dir ./my-light-extension --follow <session-token>
-nb light save --dir ./my-light-extension --yes --json-output
-```
-
-`dev` watches only local text source. After a debounce it sends the complete candidate workspace to `lightExtensions:compileWorkspacePreview`, emits snapshot, state, and Problem records as JSONL, and stops at `ready_for_preview`; it never clicks Run, opens Host Preview, saves, or publishes. Use `--once` for one deterministic check. Generated files under `.nocobase/**` and `.light-extension/types/**` are excluded. HTTP 200 is successful only when `data.accepted` is `true`; HTTP 422 is read exclusively from `errors[0].details` and blocks saving even when individual entries compiled successfully. `nb light check --json-output` remains available for a single human-readable or JSON check.
-
-Host Preview is deliberately manual because it executes trusted administrator code inside the current application and may create real side effects. Use a test application or restricted role, review the diff, click **Run**, and copy the session token shown beside the authoritative snapshot. Keep `nb light problems --follow <session-token>` running while observing the host result; it accepts only Problems whose repository, entry, snapshot, Context Pack hash, artifact, and execution identities match the current local workspace. Closing or cancelling the Preview workspace completes the remote session. A source edit marks the old session stale, clears its runtime Problems from the current snapshot, and requires another authoritative check and manual Run.
-
-The loop is finite. `nb light dev` accepts maximum check rounds, maximum duration, and repeated-fingerprint thresholds. Reaching any budget moves the workspace to `needs_attention` instead of rechecking indefinitely. Static failures, runtime failures, session closure, and budget exhaustion have stable nonzero exits and JSONL/JSON details suitable for an external coding Agent.
-
-`save` computes an `upsert/delete` delta against the pulled baseline and requires the current local snapshot to have passed the authoritative check, completed the matching manual Preview without runtime errors, and reached the user-reviewed diff gate. Without `--yes`, the user must confirm the file and line summary before the existing `lightExtensionFiles:saveSource` action is called. A Head conflict enters `conflict` and leaves the local files and baseline intact: copy or retain the patch, pull the new Head, replay the patch, re-check, and run Preview again. Never replace only `expectedHeadCommitId`, and never automatically retry a save against a new Head.
-
-The first local workflow supports JS Block and JS Page text workspaces. It rejects `src/client/js-portals/**`, base64, NUL, and binary content. No CLI path automatically triggers Host Preview, save, publish, or rebase.
-
-MCP exposure is also opt-in. Clients must explicitly request the package:
-
-```http
-x-mcp-packages: @nocobase/plugin-light-extension
-```
-
-Only approved high-level authoring operations are generated as tools. Raw VSC/RunJS source access, artifact mutation, credentials, synchronization internals, and recovery operations remain excluded. CLI, MCP, and the browser share the same complete-workspace snapshot, `LightExtensionProblem`, Context Pack hash, artifact, and execution identities; there is no server-side patch session. MCP calls preserve the caller's allowlisted `authorization`, `x-role`, and `x-authenticator` headers and continue through the real Resource Action and ACL path. A source save still requires `writeSource` permission and an upstream user-reviewed diff; MCP does not automatically preview, save, or publish.
 
 ## Workspace ZIP Contract
 
@@ -125,10 +107,6 @@ interface LightExtensionInspectSourceArchiveResult {
 After validation, repository workspaces replace the complete local working copy. Entry-bound workspaces replace only editable paths and preserve other read-only entries. An entry-bound import is rejected when the ZIP contains another managed entry or omits the currently bound `entryPath`. Import never saves automatically; the user must use the drawer footer **Save** action to create and compile a new version.
 
 ZIP is an interactive import/export boundary, not the Agent local-edit workflow for an existing repository. Agent edits must use pull, full-workspace preview, and delta save so concurrency and Entry reconciliation remain explicit.
-
-The first Agent workflow supports only complete UTF-8 text workspaces for JS Block and JS Page entries. It rejects `src/client/js-portals/**`, base64 or binary content, and does not treat ZIP or raw VSC operations as a CAS-protected authoring path.
-
-Every authoring failure uses the single `LightExtensionProblem` contract. Source locations are one-based `range.start.line` and `range.start.column`; `snapshotId`, `requestId`, and `fingerprint` bind Problems to a specific check without persisting them in Entry records or runtime artifacts.
 
 | Condition | Result |
 | --- | --- |
@@ -177,7 +155,7 @@ Compatibility cases:
 | Case | Result |
 | --- | --- |
 | Keyed entry renamed | Reuses the existing `entryId`, updates `entryPath`, recompiles, and keeps runtime bindings active. |
-| Duplicate key in two directories of the same kind | Save is rejected with validation Problems. |
+| Duplicate key in two directories of the same kind | Save is rejected with validation diagnostics. |
 
 Entries that were already split into stale and replacement database records before this contract was introduced are not automatically repaired or merged. The stable-key guarantee applies to moves and renames performed after this behavior is available.
 

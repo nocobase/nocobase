@@ -138,20 +138,19 @@ class InMemoryPreviewWorker {
 function provisionalResult(entryPath: string): ProvisionalCompileResult {
   return {
     provisional: true,
-    snapshotId: 'browser-preview-snapshot',
-    requestId: 'browser-preview-request',
     accepted: true,
     artifact: {
       code: 'globalThis.__nocobaseProvisionalPreviewRun__ = async () => undefined;',
       version: 'v2',
       entryPath,
+      diagnostics: [],
       metadata: {
         provisional: true,
         trust: 'client-advisory',
         compilerBuildId: LIGHT_EXTENSION_BROWSER_PREVIEW_COMPILER_BUILD_ID,
       },
     },
-    problems: [],
+    diagnostics: [],
     metrics: {
       workerRestartCount: 0,
       inputFileCount: 1,
@@ -198,7 +197,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
         throw new TypeError('Failed to fetch');
       }),
     },
-  ])('reports a stable fetch problem for $name', async ({ fetchCompiler }) => {
+  ])('reports a stable fetch diagnostic for $name', async ({ fetchCompiler }) => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     vi.stubGlobal('fetch', fetchCompiler);
     const compiler = new BrowserProvisionalCompiler();
@@ -209,7 +208,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
     });
   });
 
-  it('reports a stable problem code for a wrong WASM MIME type', async () => {
+  it('reports a stable diagnostic code for a wrong WASM MIME type', async () => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     vi.stubGlobal(
       'fetch',
@@ -240,7 +239,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
     });
   });
 
-  it('initializes once and produces bundle, source map, problems, and metafile from the browser VFS', async () => {
+  it('initializes once and produces bundle, source map, diagnostics, and metafile from the browser VFS', async () => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     const { readFile } = await import('node:fs/promises');
     const wasm = await readFile(`${process.cwd()}/node_modules/esbuild-wasm/esbuild.wasm`);
@@ -265,7 +264,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
 
     const firstInitialization = await compiler.initialize('/assets/esbuild.wasm');
     const secondInitialization = await compiler.initialize('/assets/esbuild.wasm');
-    const result = await compiler.build(vfs, entry(), 0, 'build:test', 'browser-preview:1');
+    const result = await compiler.build(vfs, entry(), 0);
 
     expect(fetchCompiler).toHaveBeenCalledTimes(1);
     expect(secondInitialization).toEqual(firstInitialization);
@@ -281,7 +280,7 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
           canonical: false,
         },
       },
-      problems: [],
+      diagnostics: [],
       metafile: expect.any(Object),
       metrics: {
         firstBuildMs: expect.any(Number),
@@ -528,7 +527,6 @@ describe('useBrowserProvisionalPreview', () => {
       debounceMs: 0,
       sessionFactory,
       sandboxFactory,
-      workspaceSnapshotId: 'workspace-first',
     };
     const { result, rerender, unmount } = renderHook((props) => useBrowserProvisionalPreview(props), {
       initialProps,
@@ -539,7 +537,7 @@ describe('useBrowserProvisionalPreview', () => {
       expect.objectContaining({ provisional: true, trust: 'client-advisory' }),
     );
 
-    rerender({ ...initialProps, files: file('second'), workspaceSnapshotId: 'workspace-second' });
+    rerender({ ...initialProps, files: file('second') });
     await waitFor(() =>
       expect(
         worker.requests.some(
@@ -550,7 +548,6 @@ describe('useBrowserProvisionalPreview', () => {
       ).toBe(true),
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    expect(result.current.workspaceSnapshotId).toBe('workspace-second');
     unmount();
   });
 });

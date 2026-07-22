@@ -14,6 +14,7 @@ import {
   assertSafeWorkspaceDirectory,
   assertTargetMatchesState,
   buildHttpError,
+  buildWorkspaceSnapshotId,
   extractRejectedWorkspaceCheckResult,
   extractWorkspaceCheckResult,
   getFirstError,
@@ -21,23 +22,21 @@ import {
   LightExtensionCliError,
   loadWorkspaceState,
   readWorkspaceFiles,
-  recordRejectedWorkspaceCheck,
   recordSuccessfulWorkspaceCheck,
-  recordWorkspaceAgentLoopEvent,
   resolveLightExtensionTarget,
   unwrapResponseData,
   type LightExtensionWorkspaceCheckResult,
 } from '../../lib/light-extension-workspace.js';
 
-function formatProblems(result: LightExtensionWorkspaceCheckResult): string {
-  if (!result.problems.length)
-    return translateCli('commands.light.check.noProblems', undefined, { fallback: 'No Problems.' });
-  return result.problems
-    .map((problem) => {
-      const location = problem.path
-        ? `${problem.path}${problem.range ? `:${problem.range.start.line}:${problem.range.start.column}` : ''}`
+function formatDiagnostics(result: LightExtensionWorkspaceCheckResult): string {
+  if (!result.diagnostics.length)
+    return translateCli('commands.light.check.noProblems', undefined, { fallback: 'No diagnostics.' });
+  return result.diagnostics
+    .map((diagnostic) => {
+      const location = diagnostic.path
+        ? `${diagnostic.path}${diagnostic.line ? `:${diagnostic.line}:${diagnostic.column || 1}` : ''}`
         : translateCli('commands.light.check.workspaceLocation', undefined, { fallback: 'workspace' });
-      return `${problem.severity.toUpperCase()} ${problem.code} ${location} ${problem.message}`;
+      return `${diagnostic.severity.toUpperCase()} ${diagnostic.code} ${location} ${diagnostic.message}`;
     })
     .join('\n');
 }
@@ -91,19 +90,14 @@ export default class LightCheck extends Command {
 
     try {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
-      let state = await loadWorkspaceState(workspaceRoot);
+      const state = await loadWorkspaceState(workspaceRoot);
       const target = await resolveLightExtensionTarget({
         env: flags.env ?? state.env.name,
         apiBaseUrl: flags['api-base-url'] ?? state.app.apiBaseUrl,
       });
       assertTargetMatchesState(target, state);
       const files = await readWorkspaceFiles(workspaceRoot, state);
-      state = await recordWorkspaceAgentLoopEvent({
-        workspaceRoot,
-        state,
-        files,
-        event: { type: 'check_started' },
-      });
+      const snapshotId = buildWorkspaceSnapshotId(files);
       const response = await executeRawApiRequest({
         envName: target.envName,
         baseUrl: target.apiBaseUrl,
@@ -121,17 +115,17 @@ export default class LightCheck extends Command {
 
       if (response.status === 422) {
         const result = extractRejectedWorkspaceCheckResult(response.data);
-        await recordRejectedWorkspaceCheck({ workspaceRoot, state, files, result });
         const output = {
           ok: false,
           httpStatus: 422,
+          exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
           error: getFirstError(response.data),
           check: result,
         };
         throw new LightExtensionCliError(
           translateCli(
             'commands.light.check.errors.rejected',
-            { snapshotId: result.snapshotId, problems: formatProblems(result) },
+            { snapshotId, problems: formatDiagnostics(result) },
             { fallback: 'Workspace check rejected snapshot {{snapshotId}}.\n{{problems}}' },
           ),
           {
@@ -153,12 +147,16 @@ export default class LightCheck extends Command {
 
       const result = extractWorkspaceCheckResult(unwrapResponseData(response.data));
       if (!result.accepted) {
-        await recordRejectedWorkspaceCheck({ workspaceRoot, state, files, result });
-        const output = { ok: false, httpStatus: response.status, check: result };
+        const output = {
+          ok: false,
+          httpStatus: response.status,
+          exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+          check: result,
+        };
         throw new LightExtensionCliError(
           translateCli(
             'commands.light.check.errors.notAccepted',
-            { snapshotId: result.snapshotId, problems: formatProblems(result) },
+            { snapshotId, problems: formatDiagnostics(result) },
             { fallback: 'Workspace check did not accept snapshot {{snapshotId}}.\n{{problems}}' },
           ),
           {
@@ -169,14 +167,14 @@ export default class LightCheck extends Command {
           },
         );
       }
-      await recordSuccessfulWorkspaceCheck({ workspaceRoot, state, files, result });
-      const output = { ok: true, httpStatus: response.status, check: result };
+      await recordSuccessfulWorkspaceCheck({ workspaceRoot, state, files });
+      const output = { ok: true, httpStatus: response.status, snapshotId, check: result };
       if (jsonOutput) this.log(JSON.stringify(output, null, 2));
       else {
         this.log(
           translateCli(
             'commands.light.check.success',
-            { snapshotId: result.snapshotId },
+            { snapshotId },
             {
               fallback: 'Workspace check accepted snapshot {{snapshotId}}.',
             },
@@ -185,7 +183,7 @@ export default class LightCheck extends Command {
         this.log(
           translateCli(
             'commands.light.check.baseHead',
-            { head: result.baseHeadCommitId ?? 'null' },
+            { head: state.baseHeadCommitId ?? 'null' },
             {
               fallback: 'Base Head: {{head}}',
             },
@@ -194,7 +192,7 @@ export default class LightCheck extends Command {
         this.log(
           translateCli(
             'commands.light.check.entriesAccepted',
-            { count: result.entries.length },
+            { count: result.entries?.length || 0 },
             {
               fallback: '{{count}} entries accepted.',
             },

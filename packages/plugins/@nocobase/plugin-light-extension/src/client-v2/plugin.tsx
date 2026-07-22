@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Application } from '@nocobase/client-v2';
 import { runJSStudioToolbarRegistry } from './vsc-file/public-api';
 import { installRunJSStudioClientV2 } from './vsc-file/plugin';
 import {
@@ -44,7 +45,7 @@ import { createInlineLightExtensionSettingsDescriptorProvider } from './resolver
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
 
-export class PluginLightExtensionClientV2 extends Plugin {
+export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, Application> {
   private readonly disposers: Array<() => void> = [];
 
   async beforeLoad() {

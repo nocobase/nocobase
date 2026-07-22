@@ -43,25 +43,14 @@ export * from './data-source';
 export * from './entry-actions';
 export * from './flow';
 export { CodeEditorExtension } from './flow/components/code-editor/extension';
-export type {
-  CodeEditorDiagnostic,
-  CodeEditorExtra,
-  CodeEditorExtraRegistry,
-  CodeEditorRevealTarget,
-  EditorRef,
-} from './flow/components/code-editor/types';
+export type { CodeEditorExtra, CodeEditorExtraRegistry, EditorRef } from './flow/components/code-editor/types';
 export {
-  createRunJSHostPreviewSession,
-  getActiveRunJSHostPreviewSessionCount,
-  isRunJSHostPreviewSourceRef,
-  resolveRunJSHostPreviewReporting,
   RunJSSourceResolverError,
   RunJSSourceResolverRegistry,
   resolveRunJSSourceBinding,
   resolveRuntimeRunJS,
 } from './flow/components/runjs-source';
 export type {
-  CreateRunJSHostPreviewSessionInput,
   ResolvedRuntimeRunJS,
   ResolveRunJSSourceBindingInput,
   RuntimeRunJSInput,
@@ -71,8 +60,6 @@ export type {
   RunJSSourceResolverResult,
   RunJSSourceSettingsDescriptor,
   RunJSSourceSettings,
-  RunJSHostPreviewSession,
-  RunJSHostPreviewSourceRef,
 } from './flow/components/runjs-source';
 export {
   DEFAULT_DATA_SOURCE_KEY,

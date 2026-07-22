@@ -10,7 +10,6 @@
 import type { RunJSLegacySource, RunJSSourceAdapter, RunJSSourceLocator } from '../vsc-file';
 import { VscFileService } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
-import { vi } from 'vitest';
 
 import PluginLightExtensionServer from '../plugin';
 
@@ -227,7 +226,6 @@ describe('plugin-light-extension raw resource bypass guard', () => {
         version: 'v2',
       },
     });
-    const transaction = vi.spyOn(app.db.sequelize, 'transaction');
     const save = await agent.resource('runJSSources').save({
       values: {
         locator,
@@ -273,8 +271,6 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     expect(serializedLogs).not.toContain('preview secret');
     expect(serializedLogs).not.toContain('save secret');
     expect(serializedLogs).not.toContain(repoId);
-    expect(transaction.mock.calls.some((args) => typeof args[0] === 'function')).toBe(false);
-    transaction.mockRestore();
   });
 
   it('registers the owner hook without a second plugin instance', async () => {

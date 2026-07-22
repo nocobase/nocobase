@@ -14,8 +14,6 @@ import { FlowEngine } from '../flowEngine';
 import { setupRunJSContexts } from '../runjs-context/setup';
 import { createJSRunnerWithVersion } from '..';
 import { RunJSContextRegistry } from '../runjs-context/registry';
-import { externalReactRender } from '../runjsLibs';
-import { getRunJSRuntimeReporting, setRunJSRuntimeReporting, type RunJSRuntimeEvent } from '../runjsRuntimeReporter';
 
 describe('RunJS Runtime Features', () => {
   let engine: FlowEngine;
@@ -86,124 +84,6 @@ describe('RunJS Runtime Features', () => {
         hasCreateElement: true,
         hasCreateRoot: true,
       });
-    });
-  });
-
-  describe('scoped React runtime reporting', () => {
-    it('propagates execution reporting through createJSRunnerWithVersion and its RunJS context', async () => {
-      const events: RunJSRuntimeEvent[] = [];
-      const ctx = new FlowContext();
-      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
-      const runner = createJSRunnerWithVersion.call(ctx, {
-        version: 'v1',
-        runtimeReporting: {
-          identity: {
-            executionId: 'context-execution',
-            artifactHash: 'context-artifact',
-            sourceURL: 'nocobase-runjs://bundle/context-artifact.js',
-          },
-          reporter: {
-            report: (event) => events.push(event),
-          },
-        },
-      });
-
-      expect(
-        getRunJSRuntimeReporting((runner as unknown as { globals: { ctx: unknown } }).globals.ctx)?.identity,
-      ).toMatchObject({
-        executionId: 'context-execution',
-        artifactHash: 'context-artifact',
-      });
-      vi.spyOn(console, 'error').mockImplementationOnce(() => undefined);
-      await runner.run('throw new Error("context failed")');
-      expect(events).toHaveLength(1);
-      expect(events[0].identity.executionId).toBe('context-execution');
-    });
-
-    it('reports ErrorBoundary failures with the current execution identity and keeps fallback rendering', () => {
-      class TestComponent {
-        props: Record<string, unknown>;
-        state: Record<string, unknown> = {};
-
-        constructor(props: Record<string, unknown>) {
-          this.props = props;
-        }
-
-        setState(nextState: Record<string, unknown>) {
-          this.state = { ...this.state, ...nextState };
-        }
-      }
-
-      const ReactLike = {
-        Component: TestComponent,
-        createElement: (type: unknown, props: Record<string, unknown> | null, ...children: unknown[]) => ({
-          type,
-          props: {
-            ...(props || {}),
-            children: children.length === 1 ? children[0] : children,
-          },
-        }),
-      };
-      const events: RunJSRuntimeEvent[] = [];
-      const ctx = {
-        React: ReactLike,
-        ReactDOM: { __nbRunjsInternalShim: true },
-        antd: {},
-      };
-      setRunJSRuntimeReporting(ctx, {
-        identity: {
-          executionId: 'react-execution',
-          artifactHash: 'react-artifact',
-          sourceURL: 'nocobase-runjs://bundle/react-artifact.js',
-        },
-        reporter: {
-          report: (event) => events.push(event),
-        },
-      });
-      const root = { render: vi.fn(), unmount: vi.fn() };
-
-      externalReactRender({
-        ctx,
-        entry: { root },
-        vnode: { type: 'BrokenComponent' },
-        containerEl: document.createElement('div'),
-        rootMap: new WeakMap(),
-        unmountContainerRoot: vi.fn(),
-        internalReact: {},
-        internalAntd: ctx.antd,
-      });
-
-      const boundaryElement = root.render.mock.calls[0][0] as {
-        type: new (props: Record<string, unknown>) => TestComponent & {
-          componentDidCatch(error: unknown, info?: { componentStack?: string }): void;
-          render(): { type: unknown };
-        };
-        props: Record<string, unknown>;
-      };
-      const boundary = new boundaryElement.type(boundaryElement.props);
-      const error = new Error('render failed');
-      error.stack = `Error: render failed\n    at Broken (nocobase-runjs://bundle/react-artifact.js:7:4)`;
-      boundary.componentDidCatch(error, { componentStack: '\n    at BrokenComponent' });
-      boundary.state = { error };
-
-      expect(events).toHaveLength(1);
-      expect(events[0]).toMatchObject({
-        identity: {
-          executionId: 'react-execution',
-          artifactHash: 'react-artifact',
-        },
-        issue: {
-          phase: 'react',
-          ruleId: 'react-error',
-          message: 'render failed',
-          generatedLocation: {
-            sourceURL: 'nocobase-runjs://bundle/react-artifact.js',
-            line: 7,
-            column: 4,
-          },
-        },
-      });
-      expect(boundary.render().type).toBe('div');
     });
   });
 

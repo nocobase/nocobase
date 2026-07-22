@@ -10,7 +10,6 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import type { OpenAPIV3 } from 'openapi-types';
 import { test, expect } from 'vitest';
 import { generateRuntime } from '../lib/runtime-generator.js';
 
@@ -59,7 +58,7 @@ test('generateRuntime can map one resource to multiple command segments', async 
             },
           },
         },
-      } as OpenAPIV3.Document,
+      } as any,
       configFile,
     );
 
@@ -149,7 +148,7 @@ test('data modeling includes external data source modeling commands', async () =
           },
         },
       },
-    } as OpenAPIV3.Document,
+    } as any,
     resolve('packages/core/cli/nocobase-ctl.config.json'),
   );
 
@@ -159,51 +158,4 @@ test('data modeling includes external data source modeling commands', async () =
     'data-modeling data-sources-collections fields apply',
     'data-modeling data-sources-collections fields list',
   ]);
-});
-
-test('Light Extension public authoring resources generate raw API commands under stable segments', async () => {
-  const runtime = await generateRuntime(
-    {
-      openapi: '3.0.2',
-      info: { title: 'test', version: 'test' },
-      paths: {
-        '/lightExtensionRepos:list': {
-          post: { tags: ['lightExtensionRepos'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensionEntries:get': {
-          post: { tags: ['lightExtensionEntries'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensionReferences:readReferences': {
-          post: { tags: ['lightExtensionReferences'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensionContexts:get': {
-          post: { tags: ['lightExtensionContexts'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensionFiles:pull': {
-          post: { tags: ['lightExtensionFiles'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensionFiles:saveSource': {
-          post: { tags: ['lightExtensionFiles'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensions:compileWorkspacePreview': {
-          post: { tags: ['lightExtensions'], responses: { 200: { description: 'OK' } } },
-        },
-        '/lightExtensionRuntime:getArtifact': {
-          post: { tags: ['lightExtensionRuntime'], responses: { 200: { description: 'OK' } } },
-        },
-      },
-    } as OpenAPIV3.Document,
-    resolve('packages/core/cli/nocobase-ctl.config.json'),
-  );
-
-  expect(runtime.commands.map((command) => command.commandId)).toEqual([
-    'light-extension contexts get',
-    'light-extension entries get',
-    'light-extension files pull',
-    'light-extension files save-source',
-    'light-extension references read-references',
-    'light-extension repos list',
-    'light-extension workspace compile-workspace-preview',
-  ]);
-  expect(runtime.commands.some((command) => command.pathTemplate.includes('lightExtensionRuntime'))).toBe(false);
 });

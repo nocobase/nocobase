@@ -10,10 +10,8 @@
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 
 describe('plugin-light-extension import validator', () => {
-  it('rejects forbidden module forms with located problems', () => {
+  it('rejects forbidden module forms with located diagnostics', () => {
     const result = new LightExtensionValidator().validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -29,41 +27,24 @@ describe('plugin-light-extension import validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.problems.map((item) => item.code)).toEqual(
+    expect(result.diagnostics.map((item) => item.code)).toEqual(
       expect.arrayContaining(['import_not_allowed', 'require_not_allowed', 'dynamic_import_not_allowed']),
     );
-    expect(result.problems.filter((item) => item.code === 'import_not_allowed')).toHaveLength(3);
-    expect(result.problems.filter((item) => item.code === 'require_not_allowed')).toHaveLength(2);
-    expect(result.problems.filter((item) => item.code === 'dynamic_import_not_allowed')).toHaveLength(1);
-    expect(result.problems.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
-    expect(result.problems.find((item) => item.code === 'import_not_allowed')).toEqual(
-      expect.objectContaining({
-        schemaVersion: 1,
-        phase: 'policy',
-        source: 'validator',
-        snapshotId: 'snapshot-test',
-        requestId: 'request-test',
-        fingerprint: expect.stringMatching(/^problem-v1:/u),
-      }),
-    );
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toHaveLength(3);
+    expect(result.diagnostics.filter((item) => item.code === 'require_not_allowed')).toHaveLength(2);
+    expect(result.diagnostics.filter((item) => item.code === 'dynamic_import_not_allowed')).toHaveLength(1);
+    expect(result.diagnostics.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
     expect(
-      result.problems
+      result.diagnostics
         .filter((item) =>
           ['import_not_allowed', 'require_not_allowed', 'dynamic_import_not_allowed'].includes(item.code),
         )
-        .every(
-          (item) =>
-            item.path === 'src/client/js-blocks/sales-kpi/index.tsx' &&
-            item.range?.start.line &&
-            item.range.start.column,
-        ),
+        .every((item) => item.path === 'src/client/js-blocks/sales-kpi/index.tsx' && item.line && item.column),
     ).toBe(true);
   });
 
   it('allows built-in module imports that compile to ctx.libs', () => {
     const result = new LightExtensionValidator().validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/react-hooks/index.tsx',
@@ -84,15 +65,13 @@ describe('plugin-light-extension import validator', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.problems.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
   });
 
   it.each([`import 'react';`, `import {} from 'react';`])(
     'rejects built-in runtime imports without bindings: %s',
     (importStatement) => {
       const result = new LightExtensionValidator().validateWorkspace({
-        snapshotId: 'snapshot-test',
-        requestId: 'request-test',
         files: [
           {
             path: 'src/client/js-blocks/react-side-effect/index.tsx',
@@ -106,7 +85,7 @@ describe('plugin-light-extension import validator', () => {
       });
 
       expect(result.accepted).toBe(false);
-      expect(result.problems).toContainEqual(
+      expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           code: 'import_not_allowed',
           message: 'Runtime import from "react" must bind a default, namespace, or named export',
@@ -120,8 +99,6 @@ describe('plugin-light-extension import validator', () => {
     'rejects unsupported module specifier %s',
     (specifier) => {
       const result = new LightExtensionValidator().validateWorkspace({
-        snapshotId: 'snapshot-test',
-        requestId: 'request-test',
         files: [
           {
             path: 'src/client/js-blocks/unsupported-subpath/index.tsx',
@@ -135,7 +112,7 @@ describe('plugin-light-extension import validator', () => {
       });
 
       expect(result.accepted).toBe(false);
-      expect(result.problems).toContainEqual(
+      expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           code: 'import_not_allowed',
           message: `Import "${specifier}" is not allowed in light-extension source`,
@@ -147,8 +124,6 @@ describe('plugin-light-extension import validator', () => {
 
   it('still rejects require references and aliases', () => {
     const result = new LightExtensionValidator().validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -167,14 +142,12 @@ describe('plugin-light-extension import validator', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.problems.filter((item) => item.code === 'require_not_allowed').length).toBeGreaterThanOrEqual(6);
-    expect(result.problems.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
+    expect(result.diagnostics.filter((item) => item.code === 'require_not_allowed').length).toBeGreaterThanOrEqual(6);
+    expect(result.diagnostics.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
   });
 
   it('allows bare global APIs that are allowed by RunJS on next', () => {
     const result = new LightExtensionValidator().validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/global-api/index.tsx',
@@ -195,7 +168,7 @@ describe('plugin-light-extension import validator', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.problems.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
+    expect(result.diagnostics.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
   });
 
   it('rejects relative imports that leave the current entry root', () => {
@@ -220,8 +193,6 @@ describe('plugin-light-extension import validator', () => {
 
     for (const [index, item] of cases.entries()) {
       const result = new LightExtensionValidator().validateWorkspace({
-        snapshotId: 'snapshot-test',
-        requestId: 'request-test',
         files: [
           {
             path: `src/client/js-blocks/import-boundary-${index}/index.tsx`,
@@ -232,7 +203,7 @@ describe('plugin-light-extension import validator', () => {
 
       expect(result.accepted, item.name).toBe(false);
       expect(
-        result.problems.some((problem) => problem.code === 'import_not_allowed'),
+        result.diagnostics.some((diagnostic) => diagnostic.code === 'import_not_allowed'),
         item.name,
       ).toBe(true);
     }
@@ -240,8 +211,6 @@ describe('plugin-light-extension import validator', () => {
 
   it('allows relative imports within the same entry root', () => {
     const result = new LightExtensionValidator().validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-blocks/local-import/index.tsx',
@@ -263,14 +232,12 @@ describe('plugin-light-extension import validator', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.problems.filter((item) => item.code === 'import_not_allowed')).toHaveLength(0);
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toHaveLength(0);
   });
 
   it('allows JS Page entry and shared imports but rejects another JS Page root', () => {
     const validator = new LightExtensionValidator();
     const accepted = validator.validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/shared/format.ts',
@@ -292,8 +259,6 @@ describe('plugin-light-extension import validator', () => {
       ],
     });
     const rejected = validator.validateWorkspace({
-      snapshotId: 'snapshot-test',
-      requestId: 'request-test',
       files: [
         {
           path: 'src/client/js-pages/orders/index.tsx',
@@ -307,9 +272,9 @@ describe('plugin-light-extension import validator', () => {
     });
 
     expect(accepted.accepted).toBe(true);
-    expect(accepted.problems).toEqual([]);
+    expect(accepted.diagnostics).toEqual([]);
     expect(rejected.accepted).toBe(false);
-    expect(rejected.problems).toContainEqual(
+    expect(rejected.diagnostics).toContainEqual(
       expect.objectContaining({
         code: 'import_not_allowed',
         kind: 'js-page',

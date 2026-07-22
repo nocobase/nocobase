@@ -313,14 +313,6 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
     const adapter = registry.require(saveInput.locator.kind);
     const service = new VscFileService(db, permissionHooks);
 
-    if (saveInput.repoId) {
-      const preflightCtx = createAdapterContext(ctx);
-      await service.getRepository(
-        { repoId: saveInput.repoId },
-        { authorId: preflightCtx.userId, request: preflightCtx.request },
-      );
-    }
-
     return db.sequelize.transaction(async (transaction) => {
       const adapterCtx = createAdapterContext(ctx, transaction);
       const request = adapterCtx.request;

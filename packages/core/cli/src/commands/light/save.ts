@@ -17,13 +17,11 @@ import {
   assertWorkspaceReadyToSave,
   buildHttpError,
   buildWorkspaceDelta,
-  extractContextPack,
   extractSaveResult,
   LightExtensionCliError,
   loadWorkspaceState,
   readWorkspaceFiles,
   recordSuccessfulSave,
-  recordWorkspaceAgentLoopEvent,
   resolveLightExtensionTarget,
   unwrapResponseData,
 } from '../../lib/light-extension-workspace.js';
@@ -92,7 +90,7 @@ export default class LightSave extends Command {
 
     try {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
-      let state = await loadWorkspaceState(workspaceRoot);
+      const state = await loadWorkspaceState(workspaceRoot);
       const target = await resolveLightExtensionTarget({
         env: flags.env ?? state.env.name,
         apiBaseUrl: flags['api-base-url'] ?? state.app.apiBaseUrl,
@@ -107,68 +105,6 @@ export default class LightSave extends Command {
             fallback: 'There are no local source changes to save.',
           }),
         );
-      const contextResponse = await executeRawApiRequest({
-        envName: target.envName,
-        baseUrl: target.apiBaseUrl,
-        role: flags.role,
-        token: flags.token,
-        headers: { 'x-authenticator': flags.authenticator },
-        method: 'POST',
-        path: '/lightExtensionContexts:get',
-        body: {
-          repoId: state.repo.id,
-          entryId: state.entry.id,
-          ...(state.contextReferenceId ? { referenceId: state.contextReferenceId } : {}),
-        },
-      });
-      if (!contextResponse.ok) {
-        throw buildHttpError(
-          contextResponse.status,
-          contextResponse.data,
-          translateCli('commands.light.operations.contextRead', undefined, {
-            fallback: 'Light Extension Context Pack read',
-          }),
-        );
-      }
-      const authoritativeContext = extractContextPack(unwrapResponseData(contextResponse.data));
-      if (authoritativeContext.repoId !== state.repo.id || authoritativeContext.entry.id !== state.entry.id) {
-        throw new LightExtensionCliError(
-          translateCli('commands.light.pull.errors.contextMismatch', undefined, {
-            fallback: 'The Context Pack does not match the selected repository and entry.',
-          }),
-        );
-      }
-      if (authoritativeContext.contextHash !== state.contextHash) {
-        const details = {
-          code: 'LIGHT_EXTENSION_CONTEXT_OUTDATED',
-          expectedContextHash: state.contextHash,
-          authoritativeContextHash: authoritativeContext.contextHash,
-          repoId: state.repo.id,
-          entryId: state.entry.id,
-        };
-        const message = translateCli(
-          'commands.light.save.errors.contextOutdated',
-          {
-            expectedContextHash: state.contextHash,
-            authoritativeContextHash: authoritativeContext.contextHash,
-          },
-          {
-            fallback:
-              'The authoritative Context Pack changed from {{expectedContextHash}} to {{authoritativeContextHash}}. Pull the workspace again before saving.',
-          },
-        );
-        throw new LightExtensionCliError(message, {
-          details,
-          jsonOutput: {
-            ok: false,
-            error: {
-              code: 'LIGHT_EXTENSION_CONTEXT_OUTDATED',
-              message,
-              details,
-            },
-          },
-        });
-      }
 
       const review = {
         snapshotId,
@@ -212,39 +148,21 @@ export default class LightSave extends Command {
           );
       }
 
-      state = await recordWorkspaceAgentLoopEvent({
-        workspaceRoot,
-        state,
-        files,
-        event: { type: 'save_started' },
+      const response = await executeRawApiRequest({
+        envName: target.envName,
+        baseUrl: target.apiBaseUrl,
+        role: flags.role,
+        token: flags.token,
+        headers: { 'x-authenticator': flags.authenticator },
+        method: 'POST',
+        path: '/lightExtensionFiles:saveSource',
+        body: {
+          repoId: state.repo.id,
+          expectedHeadCommitId: state.baseHeadCommitId,
+          message: flags.message,
+          files: delta.files,
+        },
       });
-
-      let response: Awaited<ReturnType<typeof executeRawApiRequest>>;
-      try {
-        response = await executeRawApiRequest({
-          envName: target.envName,
-          baseUrl: target.apiBaseUrl,
-          role: flags.role,
-          token: flags.token,
-          headers: { 'x-authenticator': flags.authenticator },
-          method: 'POST',
-          path: '/lightExtensionFiles:saveSource',
-          body: {
-            repoId: state.repo.id,
-            expectedHeadCommitId: state.baseHeadCommitId,
-            message: flags.message,
-            files: delta.files,
-          },
-        });
-      } catch (error: unknown) {
-        await recordWorkspaceAgentLoopEvent({
-          workspaceRoot,
-          state,
-          files,
-          event: { type: 'save_failed' },
-        });
-        throw error;
-      }
       if (!response.ok) {
         const failure = buildHttpError(
           response.status,
@@ -252,12 +170,6 @@ export default class LightSave extends Command {
           translateCli('commands.light.operations.save', undefined, { fallback: 'Light Extension save' }),
         );
         if (response.status === 409) {
-          await recordWorkspaceAgentLoopEvent({
-            workspaceRoot,
-            state,
-            files,
-            event: { type: 'save_conflict' },
-          });
           throw new LightExtensionCliError(
             translateCli(
               'commands.light.save.errors.conflict',
@@ -274,12 +186,6 @@ export default class LightSave extends Command {
             },
           );
         }
-        await recordWorkspaceAgentLoopEvent({
-          workspaceRoot,
-          state,
-          files,
-          event: { type: 'save_failed' },
-        });
         throw failure;
       }
       const result = extractSaveResult(unwrapResponseData(response.data));

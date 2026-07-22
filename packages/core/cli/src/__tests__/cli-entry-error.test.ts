@@ -8,12 +8,7 @@
  */
 
 import { expect, test } from 'vitest';
-import {
-  appendDiagnosticLogPath,
-  formatCliEntryError,
-  getCliRequestedExitCode,
-  getCommandPathTokens,
-} from '../lib/cli-entry-error.js';
+import { appendDiagnosticLogPath, formatCliEntryError, getCommandPathTokens } from '../lib/cli-entry-error.js';
 
 test('getCommandPathTokens keeps the full command path before flags', () => {
   expect(getCommandPathTokens(['api', 'flow-surfaces', 'move-menus', '-h'])).toEqual([
@@ -52,10 +47,4 @@ test('appendDiagnosticLogPath adds the log file path when available', () => {
 
 test('appendDiagnosticLogPath leaves the message unchanged when no log file is available', () => {
   expect(appendDiagnosticLogPath('Something failed.')).toBe('Something failed.');
-});
-
-test('getCliRequestedExitCode preserves explicit oclif exit codes', () => {
-  expect(getCliRequestedExitCode({ code: 'EEXIT', oclif: { exit: 3 } })).toBe(3);
-  expect(getCliRequestedExitCode({ code: 'EEXIT', oclif: { exit: 0 } })).toBeUndefined();
-  expect(getCliRequestedExitCode(new Error('boom'))).toBeUndefined();
 });

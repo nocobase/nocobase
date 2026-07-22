@@ -102,7 +102,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const runtimeArtifact = await runtimeResolveService.getArtifact(runtime.artifactHash);
 
     expect(result.compile.status).toBe('success');
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(compileLogs).toHaveLength(1);
     expect(entry?.get('compiledCommitId')).toBe(result.commit.id);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
@@ -119,65 +119,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     expect(runtime).not.toHaveProperty('code');
     expect(runtimeArtifact.code).toContain('Sales KPI');
-  });
-
-  it('retries a transient SQLite publish lock without duplicating the commit or compile audit', async () => {
-    const repo = await repoService.createRepo({
-      name: 'Retry SQLite Runtime Publish',
-      initialFiles: baselineSalesKpiFiles(),
-    });
-    const input = {
-      repoId: repo.id,
-      expectedHeadCommitId: repo.headCommitId,
-      message: 'retry transient SQLite lock',
-      files: validSalesKpiFiles(),
-    };
-    const prepared = await runtimeCompileService.prepareSaveSource(input);
-    const commitCount = await app.db.getRepository('vscFileCommits').count();
-    vi.spyOn(runtimeCompileService, 'prepareSaveSource').mockResolvedValue(prepared);
-    const transaction = app.db.sequelize.transaction.bind(app.db.sequelize);
-    const transactionSpy = vi.spyOn(app.db.sequelize, 'transaction');
-    let rootTransactionCalls = 0;
-    let publishing = false;
-    transactionSpy.mockImplementation(async (...args) => {
-      const rootTransaction = !publishing;
-      if (rootTransaction) {
-        rootTransactionCalls += 1;
-        if (rootTransactionCalls === 1) {
-          const callback = args[0];
-          if (typeof callback !== 'function') {
-            throw new Error('Expected a managed publish transaction callback');
-          }
-          publishing = true;
-          try {
-            return await transaction(async (activeTransaction) => {
-              await callback(activeTransaction);
-              throw Object.assign(new Error('SQLITE_BUSY: database is locked'), { code: 'SQLITE_BUSY' });
-            });
-          } finally {
-            publishing = false;
-          }
-        }
-        publishing = true;
-      }
-      try {
-        return await transaction(...args);
-      } finally {
-        if (rootTransaction) {
-          publishing = false;
-        }
-      }
-    });
-
-    const result = await runtimeCompileService.saveSource(input);
-    const compileLogs = await app.db.getRepository('lightExtensionLogs').find({
-      filter: { repoId: repo.id, action: 'runtimeCompile', result: 'success' },
-    });
-
-    expect(rootTransactionCalls).toBe(2);
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount + 1);
-    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: result.commit.id });
-    expect(compileLogs).toHaveLength(1);
   });
 
   it('only recompiles the Entry whose local source changed', async () => {
@@ -441,7 +382,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     const artifact = await runtimeResolveService.getArtifact(runtime.artifactHash);
 
-    expect(result).toMatchObject({ compile: { status: 'success' }, problems: [] });
+    expect(result).toMatchObject({ compile: { status: 'success' }, diagnostics: [] });
     expect(entry?.get('kind')).toBe('js-page');
     expect(entry?.get('surfaceStyle')).toBe('render');
     expect(entry?.get('runtimeArtifact')).toMatchObject({
@@ -714,7 +655,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       status: 422,
       details: {
-        problems: expect.arrayContaining([expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' })]),
+        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' })]),
       },
     });
 
@@ -761,7 +702,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       status: 422,
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'settings_condition_value_invalid',
             path: 'src/client/js-blocks/sales-kpi/entry.json',
@@ -999,7 +940,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             severity: 'error',
             path: 'src/client/js-blocks/entry-b/index.tsx',
@@ -1152,26 +1093,24 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const compileEntry = vi.spyOn(compilerBridge, 'compileEntry');
     const publisher = PublishCompiledEntriesService.forDatabase(app.db);
     const publish = publisher.publishCompiledEntries.bind(publisher);
-    const publishSpy = vi.spyOn(publisher, 'publishCompiledEntries').mockImplementation(async (batch, transaction) => {
+    vi.spyOn(publisher, 'publishCompiledEntries').mockImplementation(async (batch, transaction) => {
       await publish(batch, transaction);
       throw new Error('forced compile publish rollback');
     });
     const failingRuntime = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge, {
       publishCompiledEntries: publisher,
     });
-    const input = {
-      repoId: repo.id,
-      expectedHeadCommitId: repo.headCommitId,
-      message: 'rollback runtime compile audit',
-      files: validSalesKpiFiles(),
-    };
-    const prepared = await failingRuntime.prepareSaveSource(input);
-    vi.spyOn(failingRuntime, 'prepareSaveSource').mockResolvedValue(prepared);
 
-    await expect(failingRuntime.saveSource(input)).rejects.toThrow('forced compile publish rollback');
+    await expect(
+      failingRuntime.saveSource({
+        repoId: repo.id,
+        expectedHeadCommitId: repo.headCommitId,
+        message: 'rollback runtime compile audit',
+        files: validSalesKpiFiles(),
+      }),
+    ).rejects.toThrow('forced compile publish rollback');
 
     expect(compileEntry).toHaveBeenCalledTimes(1);
-    expect(publishSpy).toHaveBeenCalledTimes(1);
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
     await expect(
       app.db.getRepository('lightExtensionLogs').count({

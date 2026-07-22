@@ -8,11 +8,9 @@
  */
 
 import swaggerDocument from '../../swagger';
-import { lightExtensionContextActionNames } from '../resources/lightExtensionContexts';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
-import { lightExtensionPreviewProblemActionNames } from '../resources/lightExtensionPreviewProblems';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
 
@@ -20,10 +18,8 @@ const publicActions = {
   lightExtensionRepos: ['list', 'get'],
   lightExtensionEntries: ['get'],
   lightExtensionReferences: ['readReferences'],
-  lightExtensionContexts: ['get'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview'],
-  lightExtensionPreviewProblems: ['open', 'append', 'list', 'watch', 'close'],
 } as const;
 
 describe('light-extension swagger', () => {
@@ -32,10 +28,8 @@ describe('light-extension swagger', () => {
       lightExtensionRepos: lightExtensionRepoActionNames,
       lightExtensionEntries: lightExtensionEntryActionNames,
       lightExtensionReferences: lightExtensionReferenceActionNames,
-      lightExtensionContexts: lightExtensionContextActionNames,
       lightExtensionFiles: lightExtensionFileActionNames,
       lightExtensions: lightExtensionActionNames,
-      lightExtensionPreviewProblems: lightExtensionPreviewProblemActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))
@@ -46,7 +40,6 @@ describe('light-extension swagger', () => {
       title: 'NocoBase API - Light extension plugin',
       version: '1.0.0',
     });
-    expect(swaggerDocument['x-mcp']).toBe(false);
     expect(Object.keys(swaggerDocument.paths).sort()).toEqual(expectedPaths);
 
     for (const [resource, actions] of Object.entries(publicActions)) {
@@ -54,14 +47,11 @@ describe('light-extension swagger', () => {
         expect(registeredActions[resource as keyof typeof registeredActions]).toContain(action);
         expect(swaggerDocument.paths[`/${resource}:${action}`].post).toBeTruthy();
         expect(Object.keys(swaggerDocument.paths[`/${resource}:${action}`])).toEqual(['post']);
-        expect(swaggerDocument.paths[`/${resource}:${action}`].post['x-mcp']).toBe(
-          resource !== 'lightExtensionPreviewProblems' || ['list', 'watch'].includes(action),
-        );
       }
     }
   });
 
-  it('reuses shared schemas for files, bindings, artifacts, problems, errors, and expected Head conflicts', () => {
+  it('reuses shared schemas for files, bindings, artifacts, diagnostics, errors, and expected Head conflicts', () => {
     const schemas = swaggerDocument.components.schemas;
     const saveSource = swaggerDocument.paths['/lightExtensionFiles:saveSource'].post;
     const saveRequest = saveSource.requestBody.content['application/json'].schema;
@@ -70,7 +60,6 @@ describe('light-extension swagger', () => {
         .schema;
 
     expect(schemas.LightExtensionWorkspaceFile).toBeTruthy();
-    expect(schemas.LightExtensionWorkspaceFile.properties.encoding).toMatchObject({ enum: ['utf8', 'base64'] });
     expect(schemas.LightExtensionFileChange).toBeTruthy();
     expect(schemas.LightExtensionSourceBinding.properties.kind).toEqual({
       $ref: '#/components/schemas/LightExtensionKind',
@@ -87,46 +76,17 @@ describe('light-extension swagger', () => {
         compilerBuildId: expect.objectContaining({ nullable: true }),
       }),
     );
-    expect(schemas.LightExtensionProblem.required).toEqual([
-      'schemaVersion',
-      'phase',
-      'source',
-      'severity',
-      'code',
-      'message',
-      'snapshotId',
-      'requestId',
-      'fingerprint',
-    ]);
-    expect(schemas.LightExtensionProblem.properties).toEqual(
+    expect(schemas.LightExtensionDiagnostic.required).toEqual(['code', 'severity', 'message']);
+    expect(schemas.LightExtensionDiagnostic.properties).toEqual(
       expect.objectContaining({
         path: expect.objectContaining({ type: 'string' }),
-        range: { $ref: '#/components/schemas/LightExtensionProblemRange' },
+        line: expect.objectContaining({ type: 'integer' }),
+        column: expect.objectContaining({ type: 'integer' }),
         kind: { $ref: '#/components/schemas/LightExtensionKind' },
         entryName: expect.objectContaining({ type: 'string' }),
         details: expect.objectContaining({ type: 'object' }),
       }),
     );
-    expect(schemas.LightExtensionProblemRange).toMatchObject({
-      required: ['start'],
-      properties: {
-        start: { $ref: '#/components/schemas/LightExtensionProblemPosition' },
-        end: { $ref: '#/components/schemas/LightExtensionProblemPosition' },
-      },
-    });
-    expect(schemas.LightExtensionPreviewProblemSessionResult).toBeTruthy();
-    expect(schemas.LightExtensionPreviewProblemSessionResult.allOf[1].properties.state.enum).toEqual([
-      'active',
-      'completed',
-      'stale',
-      'expired',
-    ]);
-    expect(schemas.LightExtensionEntry.required).not.toContain('problems');
-    expect(schemas.LightExtensionEntry.properties.problems).toBeUndefined();
-    expect(schemas.LightExtensionRuntimeArtifact.properties.problems).toBeUndefined();
-    expect(schemas.LightExtensionRuntimeArtifact.properties.diagnostics).toBeUndefined();
-    expect('LightExtensionDiagnostic' in schemas).toBe(false);
-    expect('LightExtensionWorkspacePreviewResult' in schemas).toBe(false);
     expect(schemas.LightExtensionErrorResponse.properties.errors.items).toEqual({
       $ref: '#/components/schemas/LightExtensionErrorItem',
     });
@@ -139,15 +99,6 @@ describe('light-extension swagger', () => {
     expect(previewRequest.properties.files.items).toEqual({
       $ref: '#/components/schemas/LightExtensionWorkspaceFile',
     });
-    expect(previewRequest.properties.expectedHeadCommitId).toEqual({
-      $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
-    });
-    expect(schemas.LightExtensionContextPack.properties.collection.properties.fields.items).toEqual({
-      $ref: '#/components/schemas/LightExtensionContextField',
-    });
-    expect(Object.keys(swaggerDocument.paths['/lightExtensionContexts:get'].post.responses).map(Number).sort()).toEqual(
-      [200, 403, 404, 422],
-    );
     expect(saveSource.responses[409].content['application/json'].schema.oneOf).toContainEqual({
       $ref: '#/components/schemas/LightExtensionSourceOutdatedErrorResponse',
     });
@@ -168,45 +119,16 @@ describe('light-extension swagger', () => {
     expect(saveSource.description).toContain('files is a delta');
     expect(saveSource.description).toContain('--body-file');
     expect(saveSource.description).toContain('LIGHT_EXTENSION_SOURCE_OUTDATED');
-    expect(saveSource.description).toContain('reviewed and confirmed the intended Diff');
-    expect(saveSource.description).toContain('must never publish automatically');
     expect(Object.keys(saveSource.responses).map(Number).sort()).toEqual([200, 403, 409, 422]);
 
-    expect(previewRequest.required).toEqual(['repoId', 'expectedHeadCommitId', 'files']);
+    expect(previewRequest.required).toEqual(['repoId', 'files']);
     expect(Object.keys(previewRequest.properties).sort()).toEqual(
       ['entryId', 'entryPath', 'expectedHeadCommitId', 'files', 'kind', 'repoId', 'runtimeVersion'].sort(),
     );
     expect(previewRequest.properties.values).toBeUndefined();
     expect(preview.description).toContain('HTTP 200');
+    expect(preview.description).toContain('HTTP 207');
     expect(preview.description).toContain('HTTP 422');
-    expect(preview.description).toContain('errors[0].details');
-    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 403, 409, 422]);
-    expect(preview.responses[200].content['application/json'].schema).toEqual({
-      $ref: '#/components/schemas/LightExtensionWorkspaceCheckEnvelope',
-    });
-    expect(preview.responses[422].content['application/json'].schema).toEqual({
-      $ref: '#/components/schemas/LightExtensionWorkspaceRejectedErrorResponse',
-    });
-    expect(preview.responses[409].content['application/json'].schema).toEqual({
-      $ref: '#/components/schemas/LightExtensionSourceOutdatedErrorResponse',
-    });
-    expect(swaggerDocument.components.schemas.LightExtensionWorkspaceCheckResult.required).toEqual([
-      'baseHeadCommitId',
-      'snapshotId',
-      'requestId',
-      'accepted',
-      'problems',
-      'entries',
-    ]);
-    expect(swaggerDocument.components.schemas.LightExtensionWorkspaceCheckResult.properties.httpStatus).toBeUndefined();
-    expect(
-      swaggerDocument.components.schemas.LightExtensionWorkspaceRejectedErrorResponse.properties.errors.items,
-    ).toMatchObject({
-      properties: {
-        code: { enum: ['LIGHT_EXTENSION_WORKSPACE_REJECTED'] },
-        status: { enum: [422] },
-        details: { $ref: '#/components/schemas/LightExtensionWorkspaceCheckResult' },
-      },
-    });
+    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 207, 403, 409, 422]);
   });
 });

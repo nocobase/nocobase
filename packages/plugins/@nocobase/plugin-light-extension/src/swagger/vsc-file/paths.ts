@@ -69,7 +69,6 @@ const openLatestResponses = {
 export const runJSSourcePaths = {
   '/runJSSources:open': {
     post: {
-      'x-mcp': false,
       tags: ['runJSSources'],
       summary: 'Open a RunJS Studio workspace with owner consistency checks',
       description: [
@@ -82,7 +81,6 @@ export const runJSSourcePaths = {
   },
   '/runJSSources:openLatest': {
     post: {
-      'x-mcp': false,
       tags: ['runJSSources'],
       summary: 'Open the latest RunJS Studio workspace snapshot',
       description: [
@@ -95,7 +93,6 @@ export const runJSSourcePaths = {
   },
   '/runJSSources:compilePreview': {
     post: {
-      'x-mcp': false,
       tags: ['runJSSources'],
       summary: 'Compile a RunJS workspace preview without saving',
       description: [
@@ -158,7 +155,6 @@ export const runJSSourcePaths = {
   },
   '/runJSSources:save': {
     post: {
-      'x-mcp': false,
       tags: ['runJSSources'],
       summary: 'Save a complete RunJS workspace snapshot and update its owner runtime',
       description: [

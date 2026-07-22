@@ -14,11 +14,9 @@ import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } from '../../constants';
 import { lightExtensionCapabilitiesActionNames } from '../resources/lightExtensionCapabilities';
-import { lightExtensionContextActionNames } from '../resources/lightExtensionContexts';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
-import { lightExtensionPreviewProblemActionNames } from '../resources/lightExtensionPreviewProblems';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionRuntimeActionNames } from '../resources/lightExtensionRuntime';
@@ -62,11 +60,6 @@ describe('plugin-light-extension permission service', () => {
 
     expect(acl.allow).toHaveBeenCalledWith('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     expect(acl.allow).toHaveBeenCalledWith(
-      'lightExtensionPreviewProblems',
-      [...lightExtensionPreviewProblemActionNames],
-      'loggedIn',
-    );
-    expect(acl.allow).toHaveBeenCalledWith(
       'lightExtensionCapabilities',
       [...lightExtensionCapabilitiesActionNames],
       'public',
@@ -78,7 +71,6 @@ describe('plugin-light-extension permission service', () => {
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
-        ...lightExtensionContextActionNames.map((action) => `lightExtensionContexts:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
@@ -87,13 +79,11 @@ describe('plugin-light-extension permission service', () => {
     });
     const managementSnippet = registeredSnippets.find((snippet) => snippet.name === LIGHT_EXTENSION_ACL_SNIPPET);
     expect(managementSnippet?.actions).not.toContain('lightExtensionRuntime:resolve');
-    expect(managementSnippet?.actions).not.toContain('lightExtensionPreviewProblems:append');
     expect(managementSnippet?.actions).not.toContain('lightExtension:updateMeta');
     expect(managementSnippet?.actions).not.toContain('lightExtension:viewLogs');
     expect(managementSnippet?.actions).not.toContain('lightExtension:sync');
     expect(managementSnippet?.actions).toContain('lightExtensionFiles:saveSource');
     expect(managementSnippet?.actions).toContain('lightExtensionCapabilities:get');
-    expect(managementSnippet?.actions).toContain('lightExtensionContexts:get');
   });
 
   it('registers and removes the hosted VSC permission hook directly', async () => {

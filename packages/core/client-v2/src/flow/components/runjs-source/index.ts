@@ -9,7 +9,6 @@
 
 export * from './RunJSSourceResolverRegistry';
 export * from './RunJSSettingsDescriptorProviderRegistry';
-export * from './hostPreviewSession';
 export * from './resolveRuntimeRunJS';
 export * from './runJSRuntime';
 export * from './runJSRuntimeError';

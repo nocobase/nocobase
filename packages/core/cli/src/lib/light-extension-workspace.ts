@@ -9,36 +9,13 @@
 
 import { createHash } from 'node:crypto';
 import { constants as fsConstants, promises as fs } from 'node:fs';
-import { basename, dirname, extname, isAbsolute, join, posix, relative, resolve } from 'node:path';
-import type {
-  LightExtensionContextPackLike,
-  LightExtensionSettingsTypegenFile,
-} from '@nocobase/light-extension-sdk/typegen';
-import * as lightExtensionAgentLoopModule from '@nocobase/light-extension-sdk/agent-loop';
-import type {
-  LightExtensionAgentLoopBudget,
-  LightExtensionAgentLoopEvent,
-  LightExtensionAgentLoopState,
-} from '@nocobase/light-extension-sdk/agent-loop';
+import { dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { getCurrentEnvName, getEnv } from './auth-store.js';
 import { translateCli } from './cli-locale.js';
-
-type LightExtensionAgentLoopModule = typeof import('@nocobase/light-extension-sdk/agent-loop');
-const lightExtensionAgentLoopRuntime = lightExtensionAgentLoopModule as LightExtensionAgentLoopModule & {
-  default?: LightExtensionAgentLoopModule;
-};
-const {
-  advanceLightExtensionAgentLoop,
-  canSaveLightExtensionAgentLoop,
-  createLightExtensionAgentLoopState,
-  parseLightExtensionAgentLoopState,
-  updateLightExtensionAgentLoopBudget,
-} = lightExtensionAgentLoopRuntime.default || lightExtensionAgentLoopRuntime;
 
 export const LIGHT_EXTENSION_STATE_VERSION = 1;
 export const LIGHT_EXTENSION_STATE_PATH = '.nocobase/light-extension-state.json';
 export const LIGHT_EXTENSION_BASELINE_PATH = '.nocobase/light-extension-baseline';
-export const LIGHT_EXTENSION_GENERATED_TYPES_PATH = '.light-extension/types';
 
 export const LIGHT_EXTENSION_EXIT_CODES = {
   general: 1,
@@ -60,81 +37,25 @@ const TOP_LEVEL_GENERATED_DIRECTORIES = new Set([
   'temp',
   'tmp',
 ]);
-const BINARY_EXTENSIONS = new Set([
-  '.7z',
-  '.avi',
-  '.bmp',
-  '.eot',
-  '.gif',
-  '.gz',
-  '.ico',
-  '.jpeg',
-  '.jpg',
-  '.mov',
-  '.mp3',
-  '.mp4',
-  '.pdf',
-  '.png',
-  '.tar',
-  '.ttf',
-  '.wasm',
-  '.webm',
-  '.webp',
-  '.woff',
-  '.woff2',
-  '.zip',
-]);
-
-export interface LightExtensionProblemPosition {
-  line: number;
-  column: number;
-}
-
-export interface LightExtensionProblemRange {
-  start: LightExtensionProblemPosition;
-  end?: LightExtensionProblemPosition;
-}
-
-export interface LightExtensionProblem {
-  schemaVersion: number;
-  phase: string;
-  source: string;
+export interface LightExtensionDiagnostic {
   severity: 'error' | 'warning';
   code: string;
   message: string;
-  snapshotId: string;
-  requestId: string;
-  fingerprint: string;
   path?: string;
-  range?: LightExtensionProblemRange;
+  line?: number;
+  column?: number;
   kind?: string;
   entryName?: string;
   details?: Record<string, unknown>;
 }
 
-export interface LightExtensionCheckEntryResult {
-  entryId: string | null;
-  repoId: string;
-  target: 'client';
-  kind: string;
-  entryName: string;
-  entryPath: string | null;
-  status: 'success' | 'failed' | 'skipped';
-  accepted: boolean;
-  problems: LightExtensionProblem[];
-  failureCode?: string;
-  artifact?: Record<string, unknown>;
-}
-
 export interface LightExtensionWorkspaceCheckResult {
-  baseHeadCommitId: string | null;
-  snapshotId: string;
-  requestId: string;
   accepted: boolean;
-  problems: LightExtensionProblem[];
+  httpStatus: 200 | 207 | 422;
+  diagnostics: LightExtensionDiagnostic[];
   failureCode?: string;
   artifact?: Record<string, unknown>;
-  entries: LightExtensionCheckEntryResult[];
+  entries?: Array<Record<string, unknown>>;
 }
 
 export interface LightExtensionEntryRecord {
@@ -180,7 +101,7 @@ export interface LightExtensionSaveResult {
     status: 'success' | 'skipped';
     entries: Array<Record<string, unknown>>;
   };
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
 }
 
 export interface LightExtensionWorkspaceFile {
@@ -193,10 +114,8 @@ export interface LightExtensionWorkspaceFile {
 
 export interface LightExtensionWorkspaceFileState {
   hash: string;
-  size: number;
   language: string;
   mode: string;
-  encoding: 'utf8';
 }
 
 export interface LightExtensionWorkspaceState {
@@ -219,27 +138,16 @@ export interface LightExtensionWorkspaceState {
     descriptorPath: string;
   };
   baseHeadCommitId: string | null;
-  treeHash: string | null;
-  contextHash?: string;
-  contextReferenceId?: string;
   files: Record<string, LightExtensionWorkspaceFileState>;
-  pulledAt: string;
-  agentLoop?: LightExtensionAgentLoopState;
   lastCheck?: {
-    accepted: true;
     localSnapshotId: string;
-    serverSnapshotId: string;
-    requestId: string;
     baseHeadCommitId: string | null;
-    checkedAt: string;
   };
 }
 
 export interface LightExtensionApiTargetFlags {
   env?: string;
   apiBaseUrl?: string;
-  token?: string;
-  role?: string;
 }
 
 export interface LightExtensionResolvedTarget {
@@ -270,7 +178,6 @@ export interface LightExtensionWorkspaceDelta {
 }
 
 export interface PullTargetInspection {
-  exists: boolean;
   dirty: boolean;
   changedPaths: string[];
   state?: LightExtensionWorkspaceState;
@@ -343,24 +250,6 @@ function requireNullableString(value: unknown, label: string): string | null {
   return requireString(value, label);
 }
 
-function requireNonNegativeNumber(value: unknown, label: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.invalidValue', { label }, { fallback: '{{label}} is missing or invalid.' }),
-    );
-  }
-  return value;
-}
-
-function requireTrue(value: unknown, label: string): true {
-  if (value !== true) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.invalidValue', { label }, { fallback: '{{label}} is missing or invalid.' }),
-    );
-  }
-  return true;
-}
-
 function isSupportedKind(value: string): value is 'js-block' | 'js-page' {
   return SUPPORTED_KINDS.has(value);
 }
@@ -428,9 +317,6 @@ export function getFirstError(value: unknown): Record<string, unknown> | undefin
 
 export function extractWorkspaceCheckResult(value: unknown): LightExtensionWorkspaceCheckResult {
   const record = requireRecord(value, 'Workspace check result');
-  const baseHeadCommitId = requireNullableString(record.baseHeadCommitId, 'Workspace check baseHeadCommitId');
-  const snapshotId = requireString(record.snapshotId, 'Workspace check snapshotId');
-  const requestId = requireString(record.requestId, 'Workspace check requestId');
   if (typeof record.accepted !== 'boolean') {
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.checkAcceptedInvalid', undefined, {
@@ -438,35 +324,32 @@ export function extractWorkspaceCheckResult(value: unknown): LightExtensionWorks
       }),
     );
   }
-  if (!Array.isArray(record.problems) || !Array.isArray(record.entries)) {
+  if (!Array.isArray(record.diagnostics)) {
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.checkArraysInvalid', undefined, {
-        fallback: 'Workspace check problems or entries are missing or invalid.',
+        fallback: 'Workspace check diagnostics are missing or invalid.',
       }),
     );
   }
+  const httpStatus = record.httpStatus;
+  if (httpStatus !== 200 && httpStatus !== 207 && httpStatus !== 422) {
+    throw new LightExtensionCliError('Workspace check status is missing or invalid.');
+  }
   return {
     ...(record as unknown as LightExtensionWorkspaceCheckResult),
-    baseHeadCommitId,
-    snapshotId,
-    requestId,
     accepted: record.accepted,
-    problems: record.problems as LightExtensionProblem[],
-    entries: record.entries as LightExtensionCheckEntryResult[],
+    httpStatus,
+    diagnostics: record.diagnostics as LightExtensionDiagnostic[],
+    ...(Array.isArray(record.entries) ? { entries: record.entries as Array<Record<string, unknown>> } : {}),
   };
 }
 
 export function extractRejectedWorkspaceCheckResult(value: unknown): LightExtensionWorkspaceCheckResult {
   const error = getFirstError(value);
-  if (!error || error.code !== 'LIGHT_EXTENSION_WORKSPACE_REJECTED') {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.check422Contract', undefined, {
-        fallback: 'Workspace check HTTP 422 response does not match the required errors[0].details contract.',
-      }),
-      { httpStatus: 422, details: value },
-    );
+  if (error?.details) {
+    return extractWorkspaceCheckResult(error.details);
   }
-  return extractWorkspaceCheckResult(error.details);
+  return extractWorkspaceCheckResult(unwrapResponseData(value));
 }
 
 export function exitCodeForHttpStatus(status: number): number {
@@ -565,78 +448,6 @@ export function extractSaveResult(value: unknown): LightExtensionSaveResult {
   };
 }
 
-export function extractContextPack(value: unknown): LightExtensionContextPackLike {
-  const record = requireRecord(value, 'Light extension Context Pack');
-  if (record.contextPackVersion !== 'light-extension.context-pack.v1') {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.contextPackVersion', undefined, {
-        fallback: 'Light Extension Context Pack version is missing or unsupported.',
-      }),
-    );
-  }
-  const contextMode = requireString(record.contextMode, 'Context Pack mode');
-  if (contextMode !== 'generic' && contextMode !== 'multiple' && contextMode !== 'precise') {
-    throw new LightExtensionCliError(
-      translateCli(
-        'commands.light.errors.contextPackMode',
-        { contextMode },
-        { fallback: 'Unsupported Light Extension Context Pack mode: {{contextMode}}' },
-      ),
-    );
-  }
-  const entry = requireRecord(record.entry, 'Context Pack entry');
-  requireString(entry.id, 'Context Pack entry id');
-  requireString(entry.kind, 'Context Pack entry kind');
-  requireString(entry.entryName, 'Context Pack entry name');
-  requireString(entry.entryPath, 'Context Pack entry path');
-  requireString(record.repoId, 'Context Pack repository id');
-  requireString(record.reason, 'Context Pack reason');
-  requireString(record.contextHash, 'Context Pack hash');
-  if (!Array.isArray(record.references) || !Array.isArray(record.supportedImports)) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.contextPackArrays', undefined, {
-        fallback: 'Context Pack references or supported imports are missing or invalid.',
-      }),
-    );
-  }
-  if (record.collection !== undefined) {
-    const collection = requireRecord(record.collection, 'Context Pack collection');
-    requireString(collection.dataSourceKey, 'Context Pack collection data source key');
-    requireString(collection.name, 'Context Pack collection name');
-    if (!Array.isArray(collection.fields)) {
-      throw new LightExtensionCliError(
-        translateCli('commands.light.errors.contextPackFields', undefined, {
-          fallback: 'Context Pack collection fields are missing or invalid.',
-        }),
-      );
-    }
-  }
-  return record as unknown as LightExtensionContextPackLike;
-}
-
-export function parseOwnerLocatorFlag(value: string | undefined): Record<string, unknown> | undefined {
-  if (!value) return undefined;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch (error: unknown) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.ownerLocatorObject', undefined, {
-        fallback: '--owner-locator must be a JSON object.',
-      }),
-      { cause: error },
-    );
-  }
-  if (!isRecord(parsed)) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.ownerLocatorObject', undefined, {
-        fallback: '--owner-locator must be a JSON object.',
-      }),
-    );
-  }
-  return parsed;
-}
-
 export function normalizeWorkspacePath(value: string): string {
   const slashPath = value.replace(/\\/g, '/').replace(/^\.\/+/, '');
   const normalized = posix.normalize(slashPath);
@@ -658,42 +469,18 @@ export function normalizeWorkspacePath(value: string): string {
   return normalized;
 }
 
-function isPortalPath(path: string): boolean {
-  return path === PORTAL_ROOT || path.startsWith(`${PORTAL_ROOT}/`);
-}
-
 function assertAgentSourcePath(path: string): void {
-  if (isPortalPath(path)) {
+  if (path === PORTAL_ROOT || path.startsWith(`${PORTAL_ROOT}/`)) {
     throw new LightExtensionCliError(
-      translateCli(
-        'commands.light.errors.portalUnsupported',
-        { path },
-        {
-          fallback:
-            'JS Portal source is not supported by the first local Agent workflow: {{path}}. Use the raw API command instead.',
-        },
-      ),
+      translateCli('commands.light.errors.portalUnsupported', { path }, {
+        fallback: 'JS Portal source is not supported by this local workflow: {{path}}.',
+      }),
     );
   }
 }
 
 function sha256(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex');
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
-      .join(',')}}`;
-  }
-  const serialized = JSON.stringify(value);
-  return serialized === undefined ? 'undefined' : serialized;
 }
 
 function inferLanguage(path: string): string {
@@ -718,13 +505,6 @@ function hasDisallowedBinaryControls(content: string): boolean {
 }
 
 function decodeUtf8Source(bytes: Buffer, path: string): string {
-  if (BINARY_EXTENSIONS.has(extname(path).toLowerCase())) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.binaryUnsupported', { path }, {
-        fallback: 'Binary files are not supported by the first local Agent workflow: {{path}}.',
-      }),
-    );
-  }
   let content: string;
   try {
     content = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
@@ -810,32 +590,17 @@ export async function readWorkspaceFiles(
 }
 
 export function buildWorkspaceSnapshotId(files: readonly LightExtensionWorkspaceFile[]): string {
-  return sha256(
-    stableSerialize(
-      files
-        .map((file) => ({
-          path: normalizeWorkspacePath(file.path),
-          content: file.content || '',
-          encoding: file.encoding || 'utf8',
-          language: file.language || '',
-          mode: file.mode || '',
-        }))
-        .sort((left, right) => {
-          const leftValue = stableSerialize(left);
-          const rightValue = stableSerialize(right);
-          return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0;
-        }),
-    ),
-  );
+  const snapshot = files
+    .map((file) => [normalizeWorkspacePath(file.path), file.content, file.language, file.mode])
+    .sort(([left], [right]) => left.localeCompare(right));
+  return sha256(JSON.stringify(snapshot));
 }
 
 function stateFileFromWorkspaceFile(file: LightExtensionWorkspaceFile): LightExtensionWorkspaceFileState {
   return {
     hash: sha256(file.content),
-    size: Buffer.byteLength(file.content, 'utf8'),
     language: file.language,
     mode: file.mode,
-    encoding: 'utf8',
   };
 }
 
@@ -861,10 +626,8 @@ function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
     const file = requireRecord(rawFile, `Workspace file ${path}`);
     parsedFiles[path] = {
       hash: requireString(file.hash, `Workspace file hash ${path}`),
-      size: requireNonNegativeNumber(file.size, `Workspace file size ${path}`),
       language: requireString(file.language, `Workspace file language ${path}`),
       mode: requireString(file.mode, `Workspace file mode ${path}`),
-      encoding: 'utf8',
     };
   }
   const kind = requireString(entry.kind, 'Workspace entry kind');
@@ -875,8 +638,8 @@ function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
       }),
     );
   }
-  const lastCheck = record.lastCheck === undefined ? undefined : requireRecord(record.lastCheck, 'Workspace last check');
   return {
+    ...(record as unknown as LightExtensionWorkspaceState),
     version: 1,
     app: { apiBaseUrl: sanitizeApiBaseUrl(requireString(app.apiBaseUrl, 'Workspace API base URL')) },
     env: { name: requireString(env.name, 'Workspace env name') },
@@ -892,31 +655,7 @@ function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
       descriptorPath: normalizeWorkspacePath(requireString(entry.descriptorPath, 'Workspace entry descriptor path')),
     },
     baseHeadCommitId: requireNullableString(record.baseHeadCommitId, 'Workspace base Head'),
-    treeHash: record.treeHash === null ? null : requireString(record.treeHash, 'Workspace tree hash'),
-    ...(record.contextHash === undefined
-      ? {}
-      : { contextHash: requireString(record.contextHash, 'Workspace Context Pack hash') }),
-    ...(record.contextReferenceId === undefined
-      ? {}
-      : { contextReferenceId: requireString(record.contextReferenceId, 'Workspace Context Pack reference id') }),
     files: parsedFiles,
-    pulledAt: requireString(record.pulledAt, 'Workspace pulledAt'),
-    ...(record.agentLoop === undefined ? {} : { agentLoop: parseLightExtensionAgentLoopState(record.agentLoop) }),
-    ...(lastCheck === undefined
-      ? {}
-      : {
-          lastCheck: {
-            accepted: requireTrue(lastCheck.accepted, 'Workspace last check accepted'),
-            localSnapshotId: requireString(lastCheck.localSnapshotId, 'Workspace last check local snapshot'),
-            serverSnapshotId: requireString(lastCheck.serverSnapshotId, 'Workspace last check server snapshot'),
-            requestId: requireString(lastCheck.requestId, 'Workspace last check request id'),
-            baseHeadCommitId: requireNullableString(
-              lastCheck.baseHeadCommitId,
-              'Workspace last check base Head',
-            ),
-            checkedAt: requireString(lastCheck.checkedAt, 'Workspace last check timestamp'),
-          },
-        }),
   };
 }
 
@@ -971,7 +710,7 @@ export async function inspectPullTarget(workspaceRoot: string): Promise<PullTarg
     await fs.access(root, fsConstants.F_OK);
   } catch (error: unknown) {
     if (isNodeError(error) && error.code === 'ENOENT') {
-      return { exists: false, dirty: false, changedPaths: [] };
+      return { dirty: false, changedPaths: [] };
     }
     throw error;
   }
@@ -986,7 +725,6 @@ export async function inspectPullTarget(workspaceRoot: string): Promise<PullTarg
   const currentPaths = await walkWorkspaceFiles(root);
   if (!state) {
     return {
-      exists: true,
       dirty: currentPaths.length > 0 || Boolean(stateError),
       changedPaths: currentPaths,
       stateError,
@@ -1006,52 +744,10 @@ export async function inspectPullTarget(workspaceRoot: string): Promise<PullTarg
     if (!currentPathSet.has(path)) changedPaths.add(path);
   }
   return {
-    exists: true,
     dirty: changedPaths.size > 0,
     changedPaths: [...changedPaths].sort(),
     state,
   };
-}
-
-async function copyFilePreservingPath(sourceRoot: string, targetRoot: string, path: string): Promise<void> {
-  const source = join(sourceRoot, ...path.split('/'));
-  const target = join(targetRoot, ...path.split('/'));
-  await fs.mkdir(dirname(target), { recursive: true });
-  await fs.copyFile(source, target);
-}
-
-function buildBackupPath(workspaceRoot: string): string {
-  const root = resolve(workspaceRoot);
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  return join(dirname(root), `.${basename(root)}.light-extension-backup-${timestamp}`);
-}
-
-export async function backupAndClearPullTarget(
-  workspaceRoot: string,
-  inspection: PullTargetInspection,
-  options: { onBackupReady?: (backupPath: string) => void } = {},
-): Promise<string | undefined> {
-  if (!inspection.exists || !inspection.dirty) return undefined;
-  const root = resolve(workspaceRoot);
-  const backupRoot = buildBackupPath(root);
-  await fs.mkdir(backupRoot, { recursive: false });
-  for (const path of await walkWorkspaceFiles(root)) {
-    await copyFilePreservingPath(root, backupRoot, path);
-  }
-  const stateSource = join(root, ...LIGHT_EXTENSION_STATE_PATH.split('/'));
-  try {
-    const stateTarget = join(backupRoot, ...LIGHT_EXTENSION_STATE_PATH.split('/'));
-    await fs.mkdir(dirname(stateTarget), { recursive: true });
-    await fs.copyFile(stateSource, stateTarget);
-  } catch (error: unknown) {
-    if (!(isNodeError(error) && error.code === 'ENOENT')) throw error;
-  }
-  options.onBackupReady?.(backupRoot);
-  for (const path of await walkWorkspaceFiles(root)) {
-    await fs.rm(join(root, ...path.split('/')), { force: true });
-  }
-  await fs.rm(join(root, '.nocobase'), { recursive: true, force: true });
-  return backupRoot;
 }
 
 function validatePulledFiles(files: readonly LightExtensionPulledFile[]): LightExtensionWorkspaceFile[] {
@@ -1066,7 +762,6 @@ function validatePulledFiles(files: readonly LightExtensionPulledFile[]): LightE
           }),
         );
       paths.add(path);
-      assertAgentSourcePath(path);
       if (file.encoding === 'base64') {
         throw new LightExtensionCliError(
           translateCli('commands.light.errors.base64Unsupported', { path }, {
@@ -1093,10 +788,6 @@ function validatePulledFiles(files: readonly LightExtensionPulledFile[]): LightE
     .sort((left, right) => left.path.localeCompare(right.path));
 }
 
-export function assertPullSupportedByLocalWorkspace(pull: LightExtensionPullResult): void {
-  validatePulledFiles(pull.files || []);
-}
-
 async function writeStateAndBaseline(
   workspaceRoot: string,
   state: LightExtensionWorkspaceState,
@@ -1118,50 +809,12 @@ async function writeStateAndBaseline(
   await fs.rename(temporaryPath, statePath);
 }
 
-export async function writeLightExtensionWorkspaceState(
-  workspaceRoot: string,
-  state: LightExtensionWorkspaceState,
-): Promise<void> {
-  const statePath = join(resolve(workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
-  await fs.mkdir(dirname(statePath), { recursive: true });
-  const temporaryPath = `${statePath}.${process.pid}.tmp`;
-  await fs.writeFile(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
-  await fs.rename(temporaryPath, statePath);
-}
-
-export async function writeGeneratedTypeFiles(
-  workspaceRoot: string,
-  files: readonly LightExtensionSettingsTypegenFile[],
-): Promise<void> {
-  const root = resolve(workspaceRoot);
-  const generatedRoot = join(root, ...LIGHT_EXTENSION_GENERATED_TYPES_PATH.split('/'));
-  await fs.rm(generatedRoot, { recursive: true, force: true });
-  const paths = new Set<string>();
-  for (const file of [...files].sort((left, right) => left.path.localeCompare(right.path))) {
-    const path = normalizeWorkspacePath(file.path);
-    if (!path.startsWith(`${LIGHT_EXTENSION_GENERATED_TYPES_PATH}/`) || paths.has(path)) {
-      throw new LightExtensionCliError(
-        translateCli('commands.light.errors.generatedPathInvalid', { path }, {
-          fallback: 'Invalid or duplicate generated declaration path: {{path}}',
-        }),
-      );
-    }
-    paths.add(path);
-    const target = join(root, ...path.split('/'));
-    await fs.mkdir(dirname(target), { recursive: true });
-    await fs.writeFile(target, file.content, 'utf8');
-  }
-}
-
 export async function materializePulledWorkspace(options: {
   workspaceRoot: string;
   target: LightExtensionResolvedTarget;
   repoId: string;
   entry: LightExtensionEntryRecord;
   pull: LightExtensionPullResult;
-  contextHash: string;
-  contextReferenceId?: string;
-  generatedTypeFiles: LightExtensionSettingsTypegenFile[];
   previousState?: LightExtensionWorkspaceState;
 }): Promise<LightExtensionWorkspaceState> {
   if (options.pull.repo.id !== options.repoId || options.entry.repoId !== options.repoId) {
@@ -1214,18 +867,8 @@ export async function materializePulledWorkspace(options: {
       descriptorPath: options.entry.descriptorPath,
     },
     baseHeadCommitId: options.pull.repo.headCommitId,
-    treeHash: options.pull.tree?.hash || null,
-    contextHash: options.contextHash,
-    ...(options.contextReferenceId ? { contextReferenceId: options.contextReferenceId } : {}),
     files: fileStates,
-    pulledAt: new Date().toISOString(),
-    agentLoop: createLightExtensionAgentLoopState({
-      snapshotId: buildWorkspaceSnapshotId(files),
-      contextHash: options.contextHash,
-      baseHeadCommitId: options.pull.repo.headCommitId,
-    }),
   };
-  await writeGeneratedTypeFiles(root, options.generatedTypeFiles);
   await writeStateAndBaseline(root, state, files);
   return state;
 }
@@ -1234,155 +877,19 @@ export async function recordSuccessfulWorkspaceCheck(options: {
   workspaceRoot: string;
   state: LightExtensionWorkspaceState;
   files: readonly LightExtensionWorkspaceFile[];
-  result: LightExtensionWorkspaceCheckResult;
 }): Promise<LightExtensionWorkspaceState> {
-  if (!options.result.accepted) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.recordAcceptedOnly', undefined, {
-        fallback: 'Only an accepted workspace check can be recorded.',
-      }),
-    );
-  }
   const localSnapshotId = buildWorkspaceSnapshotId(options.files);
-  if (localSnapshotId !== options.result.snapshotId) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.snapshotMismatch', undefined, {
-        fallback:
-          'The server returned a workspace snapshot that does not match the current local files. Refusing to mark the workspace as checked.',
-      }),
-      { details: { localSnapshotId, serverSnapshotId: options.result.snapshotId } },
-    );
-  }
-  if (options.result.baseHeadCommitId !== options.state.baseHeadCommitId) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.checkedHeadMismatch', undefined, {
-        fallback: 'The accepted check used a different base Head. Pull the workspace again.',
-      }),
-    );
-  }
-  const synchronizedState = synchronizeWorkspaceAgentLoop(options.state, options.files);
-  let agentLoop = synchronizedState.agentLoop;
-  if (agentLoop && agentLoop.status !== 'checking') {
-    agentLoop = advanceLightExtensionAgentLoop(agentLoop, { type: 'check_started' });
-  }
-  if (agentLoop) {
-    agentLoop = advanceLightExtensionAgentLoop(agentLoop, {
-      type: 'check_completed',
-      accepted: true,
-      snapshotId: localSnapshotId,
-      contextHash: synchronizedState.contextHash || agentLoop.contextHash,
-      problems: options.result.problems,
-    });
-  }
   const state: LightExtensionWorkspaceState = {
-    ...synchronizedState,
-    ...(agentLoop ? { agentLoop } : {}),
+    ...options.state,
     lastCheck: {
-      accepted: true,
       localSnapshotId,
-      serverSnapshotId: options.result.snapshotId,
-      requestId: options.result.requestId,
-      baseHeadCommitId: options.result.baseHeadCommitId,
-      checkedAt: new Date().toISOString(),
+      baseHeadCommitId: options.state.baseHeadCommitId,
     },
   };
-  await writeLightExtensionWorkspaceState(options.workspaceRoot, state);
-  return state;
-}
-
-export async function recordRejectedWorkspaceCheck(options: {
-  workspaceRoot: string;
-  state: LightExtensionWorkspaceState;
-  files: readonly LightExtensionWorkspaceFile[];
-  result: LightExtensionWorkspaceCheckResult;
-}): Promise<LightExtensionWorkspaceState> {
-  const localSnapshotId = buildWorkspaceSnapshotId(options.files);
-  if (localSnapshotId !== options.result.snapshotId) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.snapshotMismatch', undefined, {
-        fallback:
-          'The server returned a workspace snapshot that does not match the current local files. Refusing to record the failed check.',
-      }),
-      { details: { localSnapshotId, serverSnapshotId: options.result.snapshotId } },
-    );
-  }
-  const synchronizedState = synchronizeWorkspaceAgentLoop(options.state, options.files);
-  let agentLoop = synchronizedState.agentLoop;
-  if (agentLoop && agentLoop.status !== 'checking') {
-    agentLoop = advanceLightExtensionAgentLoop(agentLoop, { type: 'check_started' });
-  }
-  if (agentLoop) {
-    agentLoop = advanceLightExtensionAgentLoop(agentLoop, {
-      type: 'check_completed',
-      accepted: false,
-      snapshotId: localSnapshotId,
-      contextHash: synchronizedState.contextHash || agentLoop.contextHash,
-      problems: options.result.problems,
-    });
-  }
-  const state: LightExtensionWorkspaceState = {
-    ...synchronizedState,
-    ...(agentLoop ? { agentLoop } : {}),
-  };
-  delete state.lastCheck;
-  await writeLightExtensionWorkspaceState(options.workspaceRoot, state);
-  return state;
-}
-
-export function synchronizeWorkspaceAgentLoop(
-  state: LightExtensionWorkspaceState,
-  files: readonly LightExtensionWorkspaceFile[],
-  budget?: Partial<LightExtensionAgentLoopBudget>,
-): LightExtensionWorkspaceState {
-  if (!state.contextHash) {
-    return state;
-  }
-  const snapshotId = buildWorkspaceSnapshotId(files);
-  let agentLoop = state.agentLoop;
-  if (
-    !agentLoop ||
-    agentLoop.contextHash !== state.contextHash ||
-    agentLoop.baseHeadCommitId !== state.baseHeadCommitId
-  ) {
-    agentLoop = createLightExtensionAgentLoopState({
-      snapshotId,
-      contextHash: state.contextHash,
-      baseHeadCommitId: state.baseHeadCommitId,
-      budget,
-    });
-  } else if (agentLoop.snapshotId !== snapshotId) {
-    agentLoop = advanceLightExtensionAgentLoop(agentLoop, {
-      type: 'local_changed',
-      snapshotId,
-      contextHash: state.contextHash,
-    });
-  }
-  if (budget) {
-    agentLoop = updateLightExtensionAgentLoopBudget(agentLoop, budget);
-  }
-  return { ...state, agentLoop };
-}
-
-export async function recordWorkspaceAgentLoopEvent(options: {
-  workspaceRoot: string;
-  state: LightExtensionWorkspaceState;
-  files: readonly LightExtensionWorkspaceFile[];
-  event: LightExtensionAgentLoopEvent;
-  budget?: Partial<LightExtensionAgentLoopBudget>;
-}): Promise<LightExtensionWorkspaceState> {
-  const synchronizedState = synchronizeWorkspaceAgentLoop(options.state, options.files, options.budget);
-  if (!synchronizedState.agentLoop) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.contextHashMissing', undefined, {
-        fallback: 'The local workspace does not contain a Context Pack hash. Pull it again before using the Agent loop.',
-      }),
-    );
-  }
-  const state = {
-    ...synchronizedState,
-    agentLoop: advanceLightExtensionAgentLoop(synchronizedState.agentLoop, options.event),
-  };
-  await writeLightExtensionWorkspaceState(options.workspaceRoot, state);
+  const statePath = join(resolve(options.workspaceRoot), ...LIGHT_EXTENSION_STATE_PATH.split('/'));
+  const temporaryPath = `${statePath}.${process.pid}.tmp`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+  await fs.rename(temporaryPath, statePath);
   return state;
 }
 
@@ -1518,9 +1025,8 @@ export function assertWorkspaceReadyToSave(
 ): string {
   const snapshotId = buildWorkspaceSnapshotId(files);
   if (
-    !state.lastCheck?.accepted ||
+    !state.lastCheck ||
     state.lastCheck.localSnapshotId !== snapshotId ||
-    state.lastCheck.serverSnapshotId !== snapshotId ||
     state.lastCheck.baseHeadCommitId !== state.baseHeadCommitId
   ) {
     throw new LightExtensionCliError(
@@ -1531,23 +1037,10 @@ export function assertWorkspaceReadyToSave(
       {
         details: {
           currentSnapshotId: snapshotId,
-          checkedSnapshotId: state.lastCheck?.serverSnapshotId,
+          checkedSnapshotId: state.lastCheck?.localSnapshotId,
           baseHeadCommitId: state.baseHeadCommitId,
         },
       },
-    );
-  }
-  if (
-    !state.contextHash ||
-    !state.agentLoop ||
-    !canSaveLightExtensionAgentLoop(state.agentLoop, { snapshotId, contextHash: state.contextHash })
-  ) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.previewRequired', undefined, {
-        fallback:
-          'The current snapshot has not completed its manual Host Preview without runtime errors. Run Preview in NocoBase, then follow its session with `nb light problems`.',
-      }),
-      { details: { snapshotId, agentLoop: state.agentLoop } },
     );
   }
   return snapshotId;
@@ -1566,26 +1059,10 @@ export async function recordSuccessfulSave(options: {
       }),
     );
   }
-  let agentLoop = options.state.agentLoop;
-  if (agentLoop) {
-    if (agentLoop.status === 'ready_to_save') {
-      agentLoop = advanceLightExtensionAgentLoop(agentLoop, { type: 'save_started' });
-    }
-    agentLoop = {
-      ...advanceLightExtensionAgentLoop(agentLoop, {
-        type: 'save_completed',
-        headCommitId: options.result.commit.id,
-      }),
-      baseHeadCommitId: options.result.commit.id,
-    };
-  }
   const state: LightExtensionWorkspaceState = {
     ...options.state,
     baseHeadCommitId: options.result.commit.id,
-    treeHash: options.result.tree.hash,
     files: Object.fromEntries(options.files.map((file) => [file.path, stateFileFromWorkspaceFile(file)])),
-    pulledAt: new Date().toISOString(),
-    ...(agentLoop ? { agentLoop } : {}),
     lastCheck: undefined,
   };
   delete state.lastCheck;
@@ -1595,7 +1072,7 @@ export async function recordSuccessfulSave(options: {
 
 export function assertSafeWorkspaceDirectory(value: string): string {
   const root = resolve(value);
-  if (!isAbsolute(root) || root === dirname(root)) {
+  if (root === dirname(root)) {
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.unsafeDirectory', { path: value }, {
         fallback: 'Refusing to use an unsafe workspace directory: {{path}}',

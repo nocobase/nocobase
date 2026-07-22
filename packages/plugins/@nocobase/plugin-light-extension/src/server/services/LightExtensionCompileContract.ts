@@ -16,10 +16,10 @@ import {
   LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
   type LightExtensionKind,
 } from '../../constants';
-import { createLightExtensionProblem, sortLightExtensionProblems } from '../../shared/problems';
-import type { LightExtensionProblem } from '../../shared/types';
+import type { LightExtensionDiagnostic } from '../../shared/types';
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import type { CompileInputManifest } from './LightExtensionCompileKey';
+import { sortDiagnostics } from './LightExtensionValidator';
 import { LIGHT_EXTENSION_SDK_TEMPLATE_VERSION, LIGHT_EXTENSION_VALIDATOR_VERSION } from './LightExtensionValidator';
 
 export type LightExtensionSurfaceStyle = 'render' | 'value' | 'action';
@@ -153,7 +153,6 @@ export interface LightExtensionCompileJob {
   ordinal: number;
   compileKey: string;
   filesHash: string;
-  problemSnapshotId?: string;
   kind: LightExtensionKind;
   entryPath: string;
   runtimeVersion: string;
@@ -185,7 +184,7 @@ interface LightExtensionCompileResultBase {
   entryPath: string;
   compilerBuildId: string;
   inputManifest: CompileInputManifest;
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
   observation: LightExtensionCompileObservation;
 }
 
@@ -206,7 +205,7 @@ export type LightExtensionCompileResult = LightExtensionCompileSuccessResult | L
 export interface LightExtensionCompileBatchAggregate {
   accepted: boolean;
   results: LightExtensionCompileResult[];
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
 }
 
 export interface LightExtensionCompileExecutor {
@@ -232,9 +231,6 @@ export function assertLightExtensionCompileJob(job: LightExtensionCompileJob): v
   }
   assertSha256(job.compileKey, 'compileKey');
   assertSha256(job.filesHash, 'filesHash');
-  if (job.problemSnapshotId) {
-    assertSha256(job.problemSnapshotId, 'problemSnapshotId');
-  }
   assertSha256(job.compilerBuildIdentity.compilerBuildId, 'compilerBuildIdentity.compilerBuildId');
   if (job.inputManifest.compilerBuildId !== job.compilerBuildIdentity.compilerBuildId) {
     throw new TypeError('Compile job build identity does not match its input manifest');
@@ -364,7 +360,7 @@ export function aggregateLightExtensionCompileResults(
   return {
     accepted: ordered.every((result) => result.accepted),
     results: ordered,
-    problems: ordered.flatMap((result) => sortLightExtensionProblems(result.problems)),
+    diagnostics: ordered.flatMap((result) => sortDiagnostics(result.diagnostics)),
   };
 }
 
@@ -376,7 +372,7 @@ export function createLightExtensionCompileInfrastructureFailure(input: {
   queueDurationMs: number;
   runDurationMs: number;
   failureCode: string;
-  message?: string;
+  message: string;
 }): LightExtensionCompileFailureResult {
   const { job } = input;
   return {
@@ -395,19 +391,15 @@ export function createLightExtensionCompileInfrastructureFailure(input: {
     entryPath: job.entryPath,
     compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
     inputManifest: job.inputManifest,
-    problems: [
-      createLightExtensionProblem({
-        phase: 'infrastructure',
-        source: 'server',
+    diagnostics: [
+      {
         code: input.failureCode,
         severity: 'error',
-        message: 'Light extension compile infrastructure failed',
+        message: input.message,
         path: job.entryPath,
         kind: job.kind,
         entryName: job.entryName,
-        snapshotId: job.problemSnapshotId || job.filesHash,
-        requestId: job.requestId,
-      }),
+      },
     ],
     observation: {
       workerId: input.workerId,

@@ -25,14 +25,13 @@ import {
   type ParamObject,
   type RunJSValue,
 } from '@nocobase/flow-engine';
-import { Alert, Button, Flex, Space, message } from 'antd';
+import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionEntryRuntimeArtifact,
   LightExtensionKind,
-  LightExtensionReferenceOwnerLocator,
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
 import {
@@ -46,9 +45,7 @@ import {
 } from '../resolvers/LightExtensionRunJSResolver';
 import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
-import { LightExtensionPreviewProblemClient } from '../problems/previewProblemClient';
 import LightExtensionWorkspacePage, {
-  type LightExtensionHostPreviewRequest,
   type LightExtensionMoveToInlineRequest,
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
@@ -367,35 +364,8 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
   const resolverApi = app?.apiClient;
   const api = flowContext?.api || resolverApi;
-  const previewProblemClient = React.useMemo(
-    () => (api ? new LightExtensionPreviewProblemClient(api) : undefined),
-    [api],
-  );
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
-  const authoringModelUid = effectiveLocator && 'modelUid' in effectiveLocator ? effectiveLocator.modelUid : undefined;
-  const authoringOwnerLocator = React.useMemo<LightExtensionReferenceOwnerLocator | undefined>(() => {
-    if (!workspaceScope || !authoringModelUid) {
-      return undefined;
-    }
-    if (workspaceScope.kind === 'js-block') {
-      return {
-        kind: 'flowModel.step',
-        modelUid: authoringModelUid,
-        use: 'JSBlockModel',
-        stepPath: ['stepParams', 'jsSettings'],
-      };
-    }
-    if (workspaceScope.kind === 'js-page') {
-      return {
-        kind: 'flowModel.pageSettings',
-        modelUid: authoringModelUid,
-        use: 'JSPageModel',
-        stepPath: ['stepParams', 'jsSettings', 'runJs'],
-      };
-    }
-    return undefined;
-  }, [authoringModelUid, workspaceScope]);
   const readonly = Boolean(props.readOnly || props.disabled);
   const previewAppliedRef = React.useRef(false);
   const persistedPreviewValueRef = React.useRef(value);
@@ -455,58 +425,33 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     if (!previewAppliedRef.current) {
       return;
     }
-    const restored = await previewValueApplierRef.current(persistedPreviewValueRef.current);
-    if (!restored) {
-      throw new Error(
-        translate?.('The saved host version could not be applied.') || 'The saved host version could not be applied.',
-      );
-    }
     previewAppliedRef.current = false;
-  }, [translate]);
+    await previewValueApplierRef.current(persistedPreviewValueRef.current);
+  }, []);
 
   React.useEffect(() => {
     return () => {
       if (!previewAppliedRef.current) {
         return;
       }
+      previewAppliedRef.current = false;
       previewValueApplierRef
         .current(persistedPreviewValueRef.current)
-        .then((restored) => {
-          if (!restored) {
-            throw new Error(
-              translate?.('The saved host version could not be applied.') ||
-                'The saved host version could not be applied.',
-            );
-          }
-          previewAppliedRef.current = false;
-        })
-        .catch(() => {
-          message.error(
-            translate?.('The saved host version could not be restored. Reload the page before continuing.') ||
-              'The saved host version could not be restored. Reload the page before continuing.',
-          );
-        });
+        .catch((error) => console.error('Failed to restore light extension workspace preview', error));
     };
-  }, [translate]);
+  }, []);
 
   const handleWorkspacePreview = React.useCallback(
-    async (request: LightExtensionHostPreviewRequest) => {
+    async (artifact: LightExtensionEntryRuntimeArtifact) => {
       const applied = await applyPreviewValue({
         ...value,
-        code: request.artifact.code,
-        version: request.artifact.version,
+        code: artifact.code,
+        version: artifact.version,
         sourceMode: INLINE_SOURCE_MODE,
-        sourceRef: request.sourceRef,
       });
-      if (!applied) {
-        throw new Error(
-          translate?.('Host Preview is unavailable for this surface.') ||
-            'Host Preview is unavailable for this surface.',
-        );
-      }
       previewAppliedRef.current = applied;
     },
-    [applyPreviewValue, translate, value],
+    [applyPreviewValue, value],
   );
 
   const closeEditorViewWithoutRestore = React.useCallback(async () => {
@@ -617,12 +562,10 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         }
       }
     }
-    const persistedValue = {
+    await (props.onPersistedChange || props.onChange)?.({
       ...nextValue,
       ...(refreshedBinding ? { sourceBinding: refreshedBinding } : {}),
-    };
-    persistedPreviewValueRef.current = persistedValue;
-    await (props.onPersistedChange || props.onChange)?.(persistedValue);
+    });
     await waitForHostRefreshCommit();
   }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value, resolverApi]);
 
@@ -681,13 +624,69 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         onPreview={canPreview ? handleWorkspacePreview : undefined}
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
-        ownerLocator={authoringOwnerLocator}
-        previewProblemClient={previewProblemClient}
         repoId={currentBinding.repoId}
         workspaceScope={workspaceScope}
       />
     </Flex>
   );
+};
+
+const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
+  const { onPreview, surfaceStyle } = props;
+  const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
+  const persistedValueRef = React.useRef(props.value);
+  const previewAppliedRef = React.useRef(false);
+  const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
+  const locator = props.sourceLocator || props.locator;
+  const applyPreviewValue = React.useCallback(
+    async (value: RunJSValue): Promise<boolean> => {
+      if (onPreview) {
+        await onPreview(value);
+        return true;
+      }
+      return applyFlowModelStepPreview(flowContext, locator, surfaceStyle, value);
+    },
+    [flowContext, locator, onPreview, surfaceStyle],
+  );
+  previewValueApplierRef.current = applyPreviewValue;
+  const canPreview = Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, locator, surfaceStyle);
+
+  React.useEffect(() => {
+    if (!previewAppliedRef.current) {
+      persistedValueRef.current = props.value;
+    }
+  }, [props.value]);
+
+  React.useEffect(() => {
+    return () => {
+      if (!previewAppliedRef.current) {
+        return;
+      }
+      previewAppliedRef.current = false;
+      previewValueApplierRef
+        .current(persistedValueRef.current)
+        .catch((error) => console.error('Failed to restore inline RunJS preview', error));
+    };
+  }, []);
+
+  const handlePreview = React.useCallback(
+    async (value: RunJSValue) => {
+      previewAppliedRef.current = await applyPreviewValue(value);
+    },
+    [applyPreviewValue],
+  );
+
+  const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
+  return props.renderNext?.({
+    workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
+    ...(lightExtensionKind
+      ? {
+          workspaceTypeScriptContextResolver:
+            createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
+        }
+      : {}),
+    onPreview: canPreview ? handlePreview : undefined,
+  });
 };
 
 export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
@@ -708,19 +707,10 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
     renderEditor(props) {
       const locator = props.sourceLocator || props.locator;
       if (locator?.kind === 'flowModel.step') {
-        const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
         return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
           <LightExtensionSourceWorkspaceEditor {...props} />
         ) : (
-          props.renderNext?.({
-            workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
-            ...(lightExtensionKind
-              ? {
-                  workspaceTypeScriptContextResolver:
-                    createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
-                }
-              : {}),
-          })
+          <InlineLightExtensionWorkspaceEditor {...props} />
         );
       }
       return <RunJSLightExtensionEditor {...props} />;
@@ -789,9 +779,12 @@ async function applyFlowModelStepPreview(
   );
   const sourceConfigPath = locator.paramPath.slice(0, -1);
   setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceMode'], value.sourceMode);
-  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
-  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'settings'], value.settings);
-  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceRef'], value.sourceRef);
+  if (Object.prototype.hasOwnProperty.call(value, 'sourceBinding')) {
+    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
+  }
+  if (Object.prototype.hasOwnProperty.call(value, 'settings')) {
+    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'settings'], value.settings);
+  }
   model.setStepParams(locator.flowKey, locator.stepKey, currentParams);
   model.invalidateFlowCache('beforeRender', true);
   await model.rerender();

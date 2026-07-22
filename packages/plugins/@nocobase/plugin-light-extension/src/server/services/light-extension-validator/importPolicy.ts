@@ -16,8 +16,9 @@ import {
   LIGHT_EXTENSION_SUPPORTED_KINDS,
   type LightExtensionKind,
 } from '../../../constants';
-import { problemAt } from './problems';
-import type { LightExtensionValidatorProblem, ProblemTarget } from './types';
+import type { LightExtensionDiagnostic } from '../../../shared/types';
+import { diagnosticAt } from './diagnostics';
+import type { DiagnosticTarget } from './types';
 import { getEntryRootPath, normalizeSourcePath, sharedSourceRoot } from './workspacePolicy';
 
 const allowedClientSdkImports = new Set([
@@ -40,8 +41,8 @@ export function validateExternalSdkImport(
   node: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   specifier: string,
-  target: Omit<ProblemTarget, 'path'>,
-): LightExtensionValidatorProblem[] {
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
   if (specifier.startsWith('light-extension:settings/')) {
     return validateSettingsTypeImport(node, sourceFile, specifier, target);
   }
@@ -52,7 +53,7 @@ export function validateExternalSdkImport(
 
   if (!allowedClientSdkImports.has(specifier)) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         node.moduleSpecifier.getStart(sourceFile),
         'import_not_allowed',
@@ -66,7 +67,7 @@ export function validateExternalSdkImport(
   const importClause = node.importClause;
   if (!importClause) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         node.moduleSpecifier.getStart(sourceFile),
         'import_not_allowed',
@@ -78,7 +79,7 @@ export function validateExternalSdkImport(
   }
   if (importClause.name) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         importClause.name.getStart(sourceFile),
         'import_not_allowed',
@@ -92,7 +93,7 @@ export function validateExternalSdkImport(
     return importClause.isTypeOnly
       ? []
       : [
-          problemAt(
+          diagnosticAt(
             sourceFile,
             importClause.getStart(sourceFile),
             'import_not_allowed',
@@ -106,7 +107,7 @@ export function validateExternalSdkImport(
     return importClause.isTypeOnly
       ? []
       : [
-          problemAt(
+          diagnosticAt(
             sourceFile,
             importClause.namedBindings.getStart(sourceFile),
             'import_not_allowed',
@@ -118,7 +119,7 @@ export function validateExternalSdkImport(
   }
   if (!importClause.isTypeOnly && importClause.namedBindings.elements.length === 0) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         importClause.namedBindings.getStart(sourceFile),
         'import_not_allowed',
@@ -129,7 +130,7 @@ export function validateExternalSdkImport(
     ];
   }
 
-  const problems: LightExtensionValidatorProblem[] = [];
+  const diagnostics: LightExtensionDiagnostic[] = [];
   for (const element of importClause.namedBindings.elements) {
     if (importClause.isTypeOnly || element.isTypeOnly) {
       continue;
@@ -138,8 +139,8 @@ export function validateExternalSdkImport(
     if (allowedSdkRuntimeHelpers.has(imported)) {
       continue;
     }
-    problems.push(
-      problemAt(
+    diagnostics.push(
+      diagnosticAt(
         sourceFile,
         element.getStart(sourceFile),
         'import_not_allowed',
@@ -150,7 +151,7 @@ export function validateExternalSdkImport(
     );
   }
 
-  return problems;
+  return diagnostics;
 }
 
 function isAllowedRunJSBuiltInImport(specifier: string): boolean {
@@ -161,8 +162,8 @@ function validateRunJSBuiltInImport(
   node: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   specifier: string,
-  target: Omit<ProblemTarget, 'path'>,
-): LightExtensionValidatorProblem[] {
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
   const importClause = node.importClause;
   if (importClause?.isTypeOnly) {
     return [];
@@ -184,7 +185,7 @@ function validateRunJSBuiltInImport(
 
   if (!hasRuntimeBinding && !hasTypeOnlyNamedBindings) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         node.moduleSpecifier.getStart(sourceFile),
         'import_not_allowed',
@@ -201,12 +202,12 @@ export function validateSettingsTypeImport(
   node: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   specifier: string,
-  target: Omit<ProblemTarget, 'path'>,
-): LightExtensionValidatorProblem[] {
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
   const importClause = node.importClause;
   if (!importClause?.isTypeOnly) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         node.moduleSpecifier.getStart(sourceFile),
         'settings_type_import_runtime_not_allowed',
@@ -218,7 +219,7 @@ export function validateSettingsTypeImport(
   }
   if (importClause.name) {
     return [
-      problemAt(
+      diagnosticAt(
         sourceFile,
         importClause.name.getStart(sourceFile),
         'settings_type_import_invalid',
@@ -236,8 +237,8 @@ export function validateSettingsImportTypeNode(
   node: ts.ImportTypeNode,
   sourceFile: ts.SourceFile,
   specifier: string,
-  target: Omit<ProblemTarget, 'path'>,
-): LightExtensionValidatorProblem[] {
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
   return validateSettingsTypeSpecifier(sourceFile, node.argument.getStart(sourceFile), specifier, target);
 }
 
@@ -245,14 +246,14 @@ export function validateSettingsTypeSpecifier(
   sourceFile: ts.SourceFile,
   position: number,
   specifier: string,
-  target: Omit<ProblemTarget, 'path'>,
-): LightExtensionValidatorProblem[] {
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
   if (parseSettingsTypeImport(specifier)) {
     return [];
   }
 
   return [
-    problemAt(
+    diagnosticAt(
       sourceFile,
       position,
       'settings_type_import_invalid',
@@ -266,7 +267,7 @@ export function validateSettingsTypeSpecifier(
 export function isRelativeImportOutsideCurrentEntry(
   filePath: string,
   specifier: string,
-  target: Omit<ProblemTarget, 'path'>,
+  target: Omit<DiagnosticTarget, 'path'>,
   entryRootPath?: string,
 ): boolean {
   if (!specifier.startsWith('.') || !target.kind || !target.entryName || !isLightExtensionKind(target.kind)) {

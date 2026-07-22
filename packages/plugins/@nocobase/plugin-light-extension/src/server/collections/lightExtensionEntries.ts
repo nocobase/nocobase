@@ -179,5 +179,9 @@ export default defineCollection({
       allowNull: false,
       defaultValue: 'missing',
     },
+    {
+      type: 'json',
+      name: 'diagnostics',
+    },
   ],
 });

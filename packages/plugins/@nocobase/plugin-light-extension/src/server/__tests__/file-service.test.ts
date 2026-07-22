@@ -754,7 +754,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'sync_batch_too_large',
           }),
@@ -791,7 +791,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'file_size_limit_exceeded',
           }),
@@ -828,7 +828,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'source_content_required',
             path: 'src/client/js-blocks/blob-hash-only/index.tsx',
@@ -873,7 +873,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'workspace_path_not_allowed',
             path: 'package.json',
@@ -996,7 +996,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'entry_count_limit_exceeded',
           }),
@@ -1068,7 +1068,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'repo_budget_limit_exceeded',
           }),
@@ -1104,7 +1104,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'require_not_allowed',
             path: 'src/client/js-blocks/forbidden-api/index.tsx',
@@ -1141,7 +1141,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(response.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             code: 'path_traversal_not_allowed',
           }),

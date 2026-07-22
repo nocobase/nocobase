@@ -64,13 +64,7 @@ describe('plugin-light-extension default source template', () => {
     const pathSet = new Set(paths);
 
     expect(pathSet.size).toBe(paths.length);
-    expect(
-      new LightExtensionValidator().validateInitialFiles({
-        files,
-        snapshotId: 'snapshot-test',
-        requestId: 'request-test',
-      }),
-    ).toEqual([]);
+    expect(new LightExtensionValidator().validateInitialFiles({ files })).toEqual([]);
     expect(pathSet.has('README.md')).toBe(true);
     expect(pathSet.has('tsconfig.json')).toBe(true);
     expect(paths.some((path) => path.includes('/collection-') || path.includes('/create-form/'))).toBe(false);
@@ -157,8 +151,10 @@ describe('plugin-light-extension default source template', () => {
         files: files.filter((file) => file.path.startsWith(`${rootPath}/`)),
       });
 
-      expect(result.accepted, `${item.kind}:${item.entryPath}\n${JSON.stringify(result.problems, null, 2)}`).toBe(true);
-      expect(result.problems).toEqual([]);
+      expect(result.accepted, `${item.kind}:${item.entryPath}\n${JSON.stringify(result.diagnostics, null, 2)}`).toBe(
+        true,
+      );
+      expect(result.diagnostics).toEqual([]);
       expect(result.artifact?.code).toEqual(expect.stringMatching(/[\s\S]*/u));
     }
   });

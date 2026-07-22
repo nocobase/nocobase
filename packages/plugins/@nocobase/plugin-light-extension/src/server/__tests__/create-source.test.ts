@@ -154,7 +154,7 @@ describe('plugin-light-extension initial source creation', () => {
     expect(createResponse.body.errors[0]).toMatchObject({
       code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       details: {
-        problems: expect.arrayContaining([
+        diagnostics: expect.arrayContaining([
           expect.objectContaining({
             severity: 'error',
             path: 'src/client/js-blocks/broken/index.tsx',

@@ -202,7 +202,7 @@ async function currentSaveSourceResult(
     commit: current.commit,
     tree: current.tree,
     compile: { status: 'skipped' as const, entries: [] },
-    problems: [],
+    diagnostics: [],
   };
 }
 

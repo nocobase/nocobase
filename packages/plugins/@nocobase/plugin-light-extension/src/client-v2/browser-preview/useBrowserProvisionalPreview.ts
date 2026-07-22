@@ -9,8 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { createLightExtensionProblemFactory } from '../../shared/problems';
-import type { LightExtensionProblem, LightExtensionKind, LightExtensionTreeEntryInput } from '../../shared/types';
+import type { LightExtensionDiagnostic, LightExtensionKind, LightExtensionTreeEntryInput } from '../../shared/types';
 import { BrowserPreviewSession, BrowserPreviewSessionError } from './BrowserPreviewSession';
 import { ProvisionalPreviewSandbox } from './ProvisionalPreviewSandbox';
 import type {
@@ -25,14 +24,13 @@ export type BrowserProvisionalPreviewStatus =
   | 'initializing'
   | 'building'
   | 'ready'
-  | 'problem'
+  | 'diagnostic'
   | 'degraded';
 
 export interface BrowserProvisionalPreviewState {
   enabled: boolean;
   status: BrowserProvisionalPreviewStatus;
-  workspaceSnapshotId: string;
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
   failureCode?: BrowserPreviewFailureCode | string;
   metrics?: BrowserPreviewMetrics;
   result?: ProvisionalCompileResult;
@@ -45,14 +43,12 @@ interface UseBrowserProvisionalPreviewInput {
   debounceMs?: number;
   sessionFactory?: () => BrowserPreviewSession;
   sandboxFactory?: () => ProvisionalPreviewSandbox;
-  workspaceSnapshotId: string;
 }
 
 const DISABLED_STATE: BrowserProvisionalPreviewState = {
   enabled: false,
   status: 'disabled',
-  workspaceSnapshotId: '',
-  problems: [],
+  diagnostics: [],
 };
 
 export function useBrowserProvisionalPreview({
@@ -62,7 +58,6 @@ export function useBrowserProvisionalPreview({
   debounceMs = 350,
   sessionFactory,
   sandboxFactory,
-  workspaceSnapshotId,
 }: UseBrowserProvisionalPreviewInput): BrowserProvisionalPreviewState {
   const [state, setState] = useState<BrowserProvisionalPreviewState>(DISABLED_STATE);
   const sessionRef = useRef<BrowserPreviewSession | null>(null);
@@ -105,26 +100,13 @@ export function useBrowserProvisionalPreview({
       ...current,
       enabled: true,
       status: 'building',
-      workspaceSnapshotId,
-      problems: [],
+      diagnostics: [],
       failureCode: undefined,
       result: undefined,
     }));
 
     const runBuild = async () => {
-      const createHookProblem = createLightExtensionProblemFactory({
-        snapshotId: `browser-preview:${sequence}`,
-        requestId: `browser-preview-hook:${sequence}`,
-        source: 'browser-preview',
-        phase: 'infrastructure',
-      });
-      setState((current) => ({
-        ...current,
-        enabled: true,
-        status: 'building',
-        workspaceSnapshotId,
-        failureCode: undefined,
-      }));
+      setState((current) => ({ ...current, enabled: true, status: 'building', failureCode: undefined }));
       try {
         try {
           await session.cancelLatestBuild();
@@ -136,25 +118,19 @@ export function useBrowserProvisionalPreview({
         if (!result || buildSequenceRef.current !== sequence) {
           return;
         }
-        let problems = result.problems;
+        let diagnostics = result.diagnostics;
         if (result.accepted && result.artifact.code) {
           const sandboxResult = await sandbox.execute(result.artifact.code);
           if (!sandboxResult.accepted) {
-            const createRuntimeProblem = createLightExtensionProblemFactory({
-              snapshotId: result.snapshotId,
-              requestId: result.requestId,
-              source: 'browser-preview',
-              phase: 'runtime',
-            });
-            problems = [
-              ...problems,
-              createRuntimeProblem({
+            diagnostics = [
+              ...diagnostics,
+              {
                 code: 'PREVIEW_SANDBOX_RUNTIME_FAILED',
                 severity: 'warning',
                 message: sandboxResult.message || 'Provisional preview sandbox execution failed',
                 path: entry.entryPath,
                 details: { provisional: true },
-              }),
+              },
             ];
           }
         }
@@ -163,9 +139,8 @@ export function useBrowserProvisionalPreview({
         }
         setState({
           enabled: true,
-          status: result.accepted ? (problems.length ? 'problem' : 'ready') : 'problem',
-          workspaceSnapshotId,
-          problems,
+          status: result.accepted ? (diagnostics.length ? 'diagnostic' : 'ready') : 'diagnostic',
+          diagnostics,
           failureCode: result.accepted ? undefined : result.metrics.previewFailureCode,
           metrics: result.metrics,
           result,
@@ -179,16 +154,15 @@ export function useBrowserProvisionalPreview({
         setState({
           enabled: true,
           status: 'degraded',
-          workspaceSnapshotId,
           failureCode,
-          problems: [
-            createHookProblem({
+          diagnostics: [
+            {
               code: failureCode,
               severity: 'warning',
               message,
               path: entry.entryPath,
               details: { provisional: true },
-            }),
+            },
           ],
         });
       }
@@ -198,7 +172,7 @@ export function useBrowserProvisionalPreview({
     return () => {
       clearTimeout(timer);
     };
-  }, [debounceMs, enabled, entry, workspaceFiles, workspaceSnapshotId]);
+  }, [debounceMs, enabled, entry, workspaceFiles]);
 
   return state;
 }

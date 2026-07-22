@@ -12,12 +12,6 @@ import { Text } from '@codemirror/state';
 import type { TreeCursor } from '@lezer/common';
 import * as acorn from 'acorn';
 import jsx from 'acorn-jsx';
-import {
-  getFirstMappedRunJSStackFrame,
-  mapRunJSStack,
-  parseRunJSLineMapV1,
-  type RunJSLineMapV1,
-} from '@nocobase/runjs/compiler/line-map';
 // acorn-walk is only used for lightweight AST traversal in heuristic checks (not type-checking).
 // Its types can be absent in some environments, so we keep it as any-friendly.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -29,9 +23,6 @@ import {
   prepareRunJsCode,
   RUNJS_ALLOWED_BARE_GLOBAL_NAMES,
   shouldPreprocessRunJSTemplates,
-  createRunJSRuntimeIssue,
-  type RunJSRuntimeIssue as CoreRunJSRuntimeIssue,
-  type RunJSRuntimeIssueRuleId,
 } from '@nocobase/flow-engine';
 
 const acornWalkBase = {
@@ -78,8 +69,8 @@ const acornWalkBase = {
   JSXClosingFragment() {},
 };
 
-export type RunJSLintIssue = {
-  type: 'lint';
+export type RunJSIssue = {
+  type: 'lint' | 'runtime';
   message: string;
   ruleId?: string;
   sourcePath?: string;
@@ -88,9 +79,6 @@ export type RunJSLintIssue = {
   };
   stack?: string;
 };
-
-export type RunJSRuntimeIssue = CoreRunJSRuntimeIssue;
-export type RunJSIssue = RunJSLintIssue | RunJSRuntimeIssue;
 
 export type RunJSLog = {
   level: 'log' | 'info' | 'warn' | 'error';
@@ -125,6 +113,27 @@ const MAX_STACK_FRAMES = 1;
 
 const JS_PARSER = javascript({ jsx: true }).language.parser;
 
+type RunJSDebugLineMapping = {
+  generatedLine: number;
+  source: string;
+  sourceLine: number;
+  sourceColumn?: number;
+};
+
+type RunJSDebugSourceMap = {
+  version: 1;
+  kind: 'runjs-line-map';
+  sourceURL?: string;
+  generatedCodeLineOffset?: number;
+  mappings: RunJSDebugLineMapping[];
+};
+
+type MappedRunJSStackFrame = {
+  source: string;
+  line: number;
+  column: number;
+};
+
 const mustacheCtxClosed = /\{\{[^}]*ctx[^}]*\}\}/;
 const mustacheCtxOpen = /\{\{[^}]*ctx[^}]*$/;
 
@@ -151,6 +160,130 @@ function shortenMiddle(text: string, maxChars: number): string {
   const head = Math.floor((maxChars - 3) / 2);
   const tail = maxChars - 3 - head;
   return `${src.slice(0, head)}...${src.slice(-tail)}`;
+}
+
+function parseRunJSDebugSourceMap(sourceMap?: string): RunJSDebugSourceMap | undefined {
+  if (!sourceMap) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(sourceMap) as Partial<RunJSDebugSourceMap>;
+    if (parsed.kind !== 'runjs-line-map' || !Array.isArray(parsed.mappings)) {
+      return undefined;
+    }
+
+    const mappings = parsed.mappings
+      .map((mapping) => ({
+        generatedLine: Number(mapping?.generatedLine),
+        source: String(mapping?.source || ''),
+        sourceLine: Number(mapping?.sourceLine),
+        sourceColumn: Number(mapping?.sourceColumn || 1),
+      }))
+      .filter(
+        (mapping) =>
+          Number.isFinite(mapping.generatedLine) &&
+          mapping.generatedLine > 0 &&
+          !!mapping.source &&
+          Number.isFinite(mapping.sourceLine) &&
+          mapping.sourceLine > 0,
+      );
+
+    if (!mappings.length) {
+      return undefined;
+    }
+
+    return {
+      version: 1,
+      kind: 'runjs-line-map',
+      sourceURL: typeof parsed.sourceURL === 'string' ? parsed.sourceURL : undefined,
+      generatedCodeLineOffset: Number(parsed.generatedCodeLineOffset || 0),
+      mappings,
+    };
+  } catch (_) {
+    return undefined;
+  }
+}
+
+function findRunJSMapping(
+  sourceMap: RunJSDebugSourceMap | undefined,
+  generatedLine: number,
+): RunJSDebugLineMapping | undefined {
+  if (!sourceMap || !Number.isFinite(generatedLine)) {
+    return undefined;
+  }
+
+  const runtimeLine = Math.max(1, Math.floor(generatedLine - (sourceMap.generatedCodeLineOffset || 0)));
+  return sourceMap.mappings.find((mapping) => mapping.generatedLine === runtimeLine);
+}
+
+function getLastRunJSStackLocation(line: string): { raw: string; line: number; column: number } | undefined {
+  const matches = Array.from(String(line || '').matchAll(/(?:nocobase-runjs:\/\/[^\s)]+|<anonymous>):(\d+):(\d+)/g));
+  const match = matches[matches.length - 1];
+  if (!match) {
+    return undefined;
+  }
+
+  return {
+    raw: match[0],
+    line: Number(match[1]),
+    column: Number(match[2]),
+  };
+}
+
+function mapRunJSStackLine(line: string, sourceMap: RunJSDebugSourceMap | undefined): string {
+  const location = getLastRunJSStackLocation(line);
+  if (!location) {
+    return line;
+  }
+
+  const mapping = findRunJSMapping(sourceMap, location.line);
+  if (!mapping) {
+    return line;
+  }
+
+  const mappedColumn = mapping.sourceColumn || location.column || 1;
+  const mappedLocation = `${mapping.source}:${mapping.sourceLine}:${mappedColumn}`;
+  return String(line).replace(location.raw, mappedLocation);
+}
+
+function mapRunJSStack(raw: string, sourceMap: RunJSDebugSourceMap | undefined): string {
+  if (!sourceMap) {
+    return raw;
+  }
+
+  return String(raw || '')
+    .split('\n')
+    .map((line) => mapRunJSStackLine(line, sourceMap))
+    .join('\n');
+}
+
+function getFirstMappedRunJSStackFrame(
+  raw: string,
+  sourceMap: RunJSDebugSourceMap | undefined,
+): MappedRunJSStackFrame | undefined {
+  if (!sourceMap) {
+    return undefined;
+  }
+
+  for (const line of String(raw || '').split('\n')) {
+    const location = getLastRunJSStackLocation(line);
+    if (!location) {
+      continue;
+    }
+    const mapping = findRunJSMapping(sourceMap, location.line);
+    if (!mapping) {
+      continue;
+    }
+
+    return {
+      source: mapping.source,
+      line: mapping.sourceLine,
+      column: mapping.sourceColumn || location.column || 1,
+    };
+  }
+
+  return undefined;
 }
 
 function shortenStackUrl(url: string): string {
@@ -201,49 +334,12 @@ function simplifyStack(raw: string, maxFrames = MAX_STACK_FRAMES): string {
   return output.join('\n');
 }
 
-function safeStack(err: any, maxChars = MAX_STACK_CHARS, sourceMap?: RunJSLineMapV1): string | undefined {
+function safeStack(err: any, maxChars = MAX_STACK_CHARS, sourceMap?: RunJSDebugSourceMap): string | undefined {
   const raw = err?.stack ? String(err.stack) : '';
   if (!raw) return undefined;
-  const simplified = simplifyStack(sourceMap ? mapRunJSStack(raw, sourceMap) : raw);
+  const simplified = simplifyStack(mapRunJSStack(raw, sourceMap));
   if (simplified.length <= maxChars) return simplified;
   return `${simplified.slice(0, Math.max(0, maxChars - 16))}\n... (stack truncated)`;
-}
-
-function createDiagnosticsRuntimeIssue(options: {
-  ruleId: RunJSRuntimeIssueRuleId;
-  error?: unknown;
-  timeoutMs?: number;
-  messagePrefix?: string;
-  sourceMap?: RunJSLineMapV1;
-}): RunJSRuntimeIssue {
-  const base =
-    options.ruleId === 'timeout'
-      ? createRunJSRuntimeIssue({ kind: 'timeout', timeoutMs: options.timeoutMs || PREVIEW_TIMEOUT_MS })
-      : createRunJSRuntimeIssue(
-          { kind: 'runtime-error', error: options.error },
-          options.sourceMap ? { sourceURL: options.sourceMap.sourceURL } : undefined,
-        );
-  const mappedFrame = options.sourceMap
-    ? getFirstMappedRunJSStackFrame(base.stack || '', options.sourceMap)
-    : undefined;
-  const stack = safeStack({ stack: base.stack }, MAX_STACK_CHARS, options.sourceMap);
-  return {
-    ...base,
-    ruleId: options.ruleId,
-    message: options.messagePrefix ? `${options.messagePrefix}${base.message}` : base.message,
-    ...(mappedFrame
-      ? {
-          sourcePath: mappedFrame.source,
-          location: {
-            start: {
-              line: mappedFrame.sourceLine,
-              column: mappedFrame.sourceColumn || 1,
-            },
-          },
-        }
-      : {}),
-    ...(stack ? { stack } : {}),
-  };
 }
 
 function createIgnoredPosChecker(code: string): (pos: number) => boolean {
@@ -1043,7 +1139,7 @@ export async function diagnoseRunJS(
   const logs: RunJSLog[] = [];
   const issues: RunJSIssue[] = [];
   const version = options?.version;
-  const debugSourceMap = parseRunJSLineMapV1(options?.sourceMap);
+  const debugSourceMap = parseRunJSDebugSourceMap(options?.sourceMap);
   const preprocessTemplates = shouldPreprocessRunJSTemplates({ version });
 
   // Lint: multi syntax errors (Lezer) + heuristics (acorn)
@@ -1076,17 +1172,14 @@ export async function diagnoseRunJS(
     } catch (e) {
       // Compilation/preprocess failure is treated as runtime issue
       const name = String((e as any)?.name || '');
-      const message = safeToString((e as any)?.message || e);
-      const looksLikeSyntax =
-        e instanceof SyntaxError || /^SyntaxError\b/i.test(name) || /SyntaxError\b/i.test(message);
-      issues.push(
-        createDiagnosticsRuntimeIssue({
-          ruleId: looksLikeSyntax ? 'preview-start-failed' : 'internal',
-          error: e,
-          messagePrefix: looksLikeSyntax ? undefined : 'Preview internal failure: ',
-          sourceMap: debugSourceMap,
-        }),
-      );
+      const msg = safeToString((e as any)?.message || e);
+      const looksLikeSyntax = e instanceof SyntaxError || /^SyntaxError\b/i.test(name) || /SyntaxError\b/i.test(msg);
+      issues.push({
+        type: 'runtime',
+        ruleId: looksLikeSyntax ? 'preview-start-failed' : 'internal',
+        message: looksLikeSyntax ? msg : `Preview internal failure: ${msg}`,
+        stack: safeStack(e, MAX_STACK_CHARS, debugSourceMap),
+      });
       execution.finished = true;
       execution.timeout = false;
       return { issues: sortIssuesStable(issues), logs, execution };
@@ -1112,27 +1205,44 @@ export async function diagnoseRunJS(
 
     if (!res?.success) {
       const err = res?.error;
+      const msg = res?.timeout ? 'Execution timed out' : safeToString((err as any)?.message || err || 'Unknown error');
       const isSyntax = err instanceof SyntaxError || /^SyntaxError\b/i.test(String((err as any)?.name || ''));
-      issues.push(
-        createDiagnosticsRuntimeIssue({
-          ruleId: res?.timeout ? 'timeout' : isSyntax ? 'preview-start-failed' : 'runtime-error',
-          error: err,
-          timeoutMs: PREVIEW_TIMEOUT_MS,
-          sourceMap: debugSourceMap,
-        }),
-      );
+      const mappedFrame = getFirstMappedRunJSStackFrame((err as any)?.stack || '', debugSourceMap);
+      issues.push({
+        type: 'runtime',
+        ruleId: res?.timeout ? 'timeout' : isSyntax ? 'preview-start-failed' : 'runtime-error',
+        message: msg,
+        sourcePath: mappedFrame?.source,
+        location: mappedFrame
+          ? {
+              start: {
+                line: mappedFrame.line,
+                column: mappedFrame.column,
+              },
+            }
+          : undefined,
+        stack: safeStack(err, MAX_STACK_CHARS, debugSourceMap),
+      });
     }
   } catch (e) {
     execution.finished = true;
     execution.timeout = false;
-    issues.push(
-      createDiagnosticsRuntimeIssue({
-        ruleId: 'internal',
-        error: e,
-        messagePrefix: 'Preview internal failure: ',
-        sourceMap: debugSourceMap,
-      }),
-    );
+    const mappedFrame = getFirstMappedRunJSStackFrame((e as any)?.stack || '', debugSourceMap);
+    issues.push({
+      type: 'runtime',
+      ruleId: 'internal',
+      message: `Preview internal failure: ${safeToString((e as any)?.message || e)}`,
+      sourcePath: mappedFrame?.source,
+      location: mappedFrame
+        ? {
+            start: {
+              line: mappedFrame.line,
+              column: mappedFrame.column,
+            },
+          }
+        : undefined,
+      stack: safeStack(e, MAX_STACK_CHARS, debugSourceMap),
+    });
   } finally {
     const endedAt =
       typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();

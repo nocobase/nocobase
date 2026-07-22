@@ -10,15 +10,14 @@
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 import { uid } from '@nocobase/utils';
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 
 import { LightExtensionError } from '../../shared/errors';
-import { sortLightExtensionProblems } from '../../shared/problems';
 import type {
+  LightExtensionDiagnostic,
   LightExtensionEntryHealthStatus,
   LightExtensionEntryRecord,
   LightExtensionEntryRuntimeArtifact,
-  LightExtensionProblem,
   LightExtensionRepoRecord,
 } from '../../shared/types';
 import { LightExtensionFileService } from './LightExtensionFileService';
@@ -28,7 +27,8 @@ import { LightExtensionRepoService } from './LightExtensionRepoService';
 import {
   type LightExtensionEntryValidationResult,
   LightExtensionValidator,
-  hasErrorProblem,
+  hasErrorDiagnostic,
+  sortDiagnostics,
   toValidatorFiles,
 } from './LightExtensionValidator';
 import { hasUsableRuntimeArtifact } from './runtimeArtifact';
@@ -70,7 +70,7 @@ export interface EntryReconcileResult {
 export interface LightExtensionPreparedEntries {
   repo: LightExtensionRepoRecord;
   commitId: string;
-  problems: LightExtensionProblem[];
+  diagnostics: LightExtensionDiagnostic[];
   entries: LightExtensionEntryRecord[];
   reconcile: EntryReconcileResult;
 }
@@ -121,11 +121,9 @@ export class LightExtensionEntryService {
 
       const validation = this.validator.validateWorkspace({
         files: toValidatorFiles(pull.files || []),
-        snapshotId: pull.tree?.hash || commitId,
-        requestId: operationContext.requestId || randomUUID(),
       });
-      const problems = sortLightExtensionProblems(validation.problems);
-      if (hasErrorProblem(problems)) {
+      const diagnostics = sortDiagnostics(validation.diagnostics);
+      if (hasErrorDiagnostic(diagnostics)) {
         throw new LightExtensionError(
           'LIGHT_EXTENSION_VALIDATION_FAILED',
           'Light extension source cannot be compiled',
@@ -134,7 +132,7 @@ export class LightExtensionEntryService {
             details: {
               repoId,
               commitId,
-              problems,
+              diagnostics,
             },
           },
         );
@@ -144,7 +142,7 @@ export class LightExtensionEntryService {
       return {
         repo: await this.repoService.getRepo(repoId, operationContext),
         commitId,
-        problems,
+        diagnostics,
         entries: reconcile.entries,
         reconcile,
       };
@@ -168,14 +166,14 @@ export class LightExtensionEntryService {
       commitId: candidate.commit.id,
     });
 
-    const problems = sortLightExtensionProblems(candidate.validation.problems);
-    if (hasErrorProblem(problems)) {
+    const diagnostics = sortDiagnostics(candidate.validation.diagnostics);
+    if (hasErrorDiagnostic(diagnostics)) {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
           repoId: candidate.repo.id,
           commitId: candidate.commit.id,
-          problems,
+          diagnostics,
         },
       });
     }
@@ -190,7 +188,7 @@ export class LightExtensionEntryService {
     return {
       repo: candidate.repo,
       commitId: candidate.commit.id,
-      problems,
+      diagnostics,
       entries: reconcile.entries,
       reconcile,
     };
@@ -279,6 +277,7 @@ export class LightExtensionEntryService {
       const beforeEntry = entryFromModel(record);
       const changedValues = getChangedModelValues(record, {
         healthStatus: 'missing',
+        diagnostics: [],
         ...emptyRuntimeFields(),
       });
       const entry = { ...beforeEntry, ...normalizePlannedEntryValues(changedValues) } as LightExtensionEntryRecord;
@@ -421,6 +420,7 @@ export class LightExtensionEntryService {
         settingsSchemaHash: settingsHashes.settingsSchemaHash,
         settingsDefaultsHash: settingsHashes.settingsDefaultsHash,
         healthStatus: 'ready',
+        diagnostics: sourceEntry.diagnostics,
       };
 
       if (existing) {
@@ -467,6 +467,7 @@ export class LightExtensionEntryService {
       const beforeEntry = entryFromModel(record);
       const changedValues = getChangedModelValues(record, {
         healthStatus: 'missing',
+        diagnostics: [],
         ...emptyRuntimeFields(),
       });
       if (Object.keys(changedValues).length > 0) {
@@ -508,6 +509,7 @@ const METADATA_FIELDS = new Set([
   'icon',
   'tags',
   'sort',
+  'diagnostics',
 ]);
 
 function indexExistingEntries(repoId: string, records: Model[]): Map<string, Model> {
@@ -567,6 +569,7 @@ function buildSourceEntryValues(
     settingsSchemaHash: settingsHashes.settingsSchemaHash,
     settingsDefaultsHash: settingsHashes.settingsDefaultsHash,
     healthStatus: 'ready',
+    diagnostics: sourceEntry.diagnostics,
   };
 }
 
@@ -599,6 +602,7 @@ function entryFromPlannedValues(values: Record<string, unknown>): LightExtension
     settingsDefaultsHash: nullableString(values.settingsDefaultsHash),
     compiledAt: null,
     healthStatus: values.healthStatus as LightExtensionEntryHealthStatus,
+    diagnostics: normalizeDiagnostics(values.diagnostics),
     createdAt: null,
     updatedAt: null,
   };
@@ -768,6 +772,7 @@ export function entryFromModel(record: Model): LightExtensionEntryRecord {
     settingsDefaultsHash: nullableString(record.get('settingsDefaultsHash')),
     compiledAt: normalizeDate(record.get('compiledAt')),
     healthStatus: record.get('healthStatus') as LightExtensionEntryHealthStatus,
+    diagnostics: normalizeDiagnostics(record.get('diagnostics')),
     createdAt: normalizeDate(record.get('createdAt')),
     updatedAt: normalizeDate(record.get('updatedAt')),
   };
@@ -796,6 +801,14 @@ function normalizeTags(value: unknown): string[] | null {
   return value;
 }
 
+function normalizeDiagnostics(value: unknown): LightExtensionDiagnostic[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(isDiagnostic);
+}
+
 function normalizeRuntimeArtifact(value: unknown): LightExtensionEntryRuntimeArtifact | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -811,8 +824,13 @@ function normalizeRuntimeArtifact(value: unknown): LightExtensionEntryRuntimeArt
     version: typeof artifact.version === 'string' ? artifact.version : 'v2',
     entryPath: typeof artifact.entryPath === 'string' ? artifact.entryPath : '',
     filesHash: typeof artifact.filesHash === 'string' ? artifact.filesHash : undefined,
+    diagnostics: normalizeDiagnostics(artifact.diagnostics),
     metadata: normalizeRecord(artifact.metadata) || undefined,
   };
+}
+
+function isDiagnostic(value: unknown): value is LightExtensionDiagnostic {
+  return Boolean(value) && typeof value === 'object' && typeof (value as { code?: unknown }).code === 'string';
 }
 
 function normalizeDate(value: unknown): string | null {

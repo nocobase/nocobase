@@ -13,11 +13,7 @@ import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import {
-  LIGHT_EXTENSION_AUTHORING_SURFACES,
-  type LightExtensionCompileExecutor,
-} from '../services/LightExtensionCompileContract';
-import { executeLightExtensionCompileJob } from '../services/LightExtensionCompileJobExecutor';
+import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
@@ -69,7 +65,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(result.artifact).toMatchObject({
       version: 'v2',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -104,7 +100,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(recordCompileEvent.mock.calls[0][0]).toMatchObject({
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       surfaceStyle: 'render',
-      problemCount: 0,
+      diagnosticCount: 0,
       errorCount: 0,
       warningCount: 0,
     });
@@ -143,7 +139,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
 
     expect(result).toMatchObject({
       accepted: true,
-      problems: [],
+      diagnostics: [],
       surface: {
         kind: 'js-page',
         surfaceStyle: 'render',
@@ -174,45 +170,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       render: (value: unknown) => rendered.push(value),
     });
     expect(rendered).toEqual(['page-1:Orders']);
-  });
-
-  it('keeps direct and worker compile problem semantics identical for the same snapshot', async () => {
-    const input = {
-      repoId: 'ler_sales',
-      entryId: 'lee_sales_kpi',
-      kind: 'js-block' as const,
-      entryName: 'sales-kpi',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      files: [
-        {
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
-          content: "const value: number = 'invalid';\nctx.render(<div>{value}</div>);\n",
-        },
-      ],
-    };
-    const context = { requestId: 'req_problem_parity', snapshotId: sha256Hex('workspace-snapshot') };
-    const executor: LightExtensionCompileExecutor = {
-      submitWithBackpressure: (job) =>
-        executeLightExtensionCompileJob({ job, workerId: 1, attempt: 1, executingThreadId: 1 }),
-    };
-
-    const direct = await bridge.compileEntry(input, context);
-    const worker = await bridge.compileEntry(input, context, executor);
-    const selectProblemContract = (problem: (typeof direct.problems)[number]) => ({
-      code: problem.code,
-      phase: problem.phase,
-      source: problem.source,
-      severity: problem.severity,
-      message: problem.message,
-      range: problem.range,
-      details: problem.details,
-      snapshotId: problem.snapshotId,
-      requestId: problem.requestId,
-      fingerprint: problem.fingerprint,
-    });
-
-    expect(worker.accepted).toBe(false);
-    expect(worker.problems.map(selectProblemContract)).toEqual(direct.problems.map(selectProblemContract));
   });
 
   it('defers a successful runtime compile audit until the result is published', async () => {
@@ -252,7 +209,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         entryPath: 'src/client/js-blocks/deferred-audit/index.tsx',
         runtimeVersion: result.artifact.version,
         requestId: 'req_deferred_audit',
-        problems: result.problems,
+        diagnostics: result.diagnostics,
         filesHash: result.artifact.filesHash,
         artifactEntryPath: result.artifact.entryPath,
       },
@@ -303,7 +260,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(result.artifact.code).toContain('Revenue');
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
   });
@@ -330,7 +287,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     const React = {
       createElement: (type: unknown, props: unknown, child: unknown) => ({ type, props, child }),
       useEffect: () => undefined,
@@ -408,7 +365,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
     expect(result.artifact.code).toContain('function defineSettings');
   });
@@ -428,7 +385,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
 
     expect(result.accepted).toBe(false);
-    expect(result.problems).toEqual(
+    expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           message: expect.stringContaining("Cannot find module '@nocobase/light-extension-sdk/client'"),
@@ -460,7 +417,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     const helperIndex = result.artifact.code.indexOf('function defineSettings');
     const callIndex = result.artifact.code.indexOf('defineSettings({');
     expect(helperIndex).toBeGreaterThanOrEqual(0);
@@ -470,7 +427,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
   });
 
-  it('keeps problems on original source lines when rewriting zero-runtime SDK helpers', async () => {
+  it('keeps diagnostics on original source lines when rewriting zero-runtime SDK helpers', async () => {
     const result = await bridge.compileEntry(
       {
         repoId: 'ler_sales',
@@ -488,16 +445,16 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         ],
       },
       {
-        requestId: 'req_compile_sdk_import_problem_lines',
+        requestId: 'req_compile_sdk_import_diagnostic_lines',
       },
     );
 
     expect(result.accepted).toBe(false);
     expect(result.failureCode).toBe('RUNJS_IMPORT_NOT_FOUND');
-    expect(result.problems[0]).toMatchObject({
+    expect(result.diagnostics[0]).toMatchObject({
       code: 'RUNJS_IMPORT_NOT_FOUND',
       path: 'src/client/js-blocks/sales-kpi/index.tsx',
-      range: { start: { line: 2 } },
+      line: 2,
     });
   });
 
@@ -530,7 +487,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(result.surface).toMatchObject({
       kind: 'js-field',
       surfaceStyle: 'render',
@@ -574,7 +531,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.problems).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
     expect(result.surface).toMatchObject({
       kind: 'js-item',
       surfaceStyle: 'render',
@@ -625,12 +582,13 @@ describe('plugin-light-extension workspace compiler bridge', () => {
 
     expect(result.accepted).toBe(false);
     expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
-    expect(result.problems).toEqual(
+    expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'RUNJS_COMPILE_FAILED',
           path: 'src/client/js-blocks/unknown-global/index.tsx',
-          range: { start: { line: 2, column: 1 } },
+          line: 2,
+          column: 1,
           message: expect.stringContaining("Cannot find name 'sdfsdfw21212'"),
           details: expect.objectContaining({
             ruleId: 'runjs-global-unknown',
@@ -639,6 +597,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         }),
       ]),
     );
-    expect(result.problems.every((problem) => !problem.message.includes('flowSurfaces authoring'))).toBe(true);
+    expect(result.diagnostics.every((diagnostic) => !diagnostic.message.includes('flowSurfaces authoring'))).toBe(true);
   });
 });

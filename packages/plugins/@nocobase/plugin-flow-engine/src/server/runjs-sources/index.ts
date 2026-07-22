@@ -10,11 +10,7 @@
 import type { Database } from '@nocobase/database';
 import type { RunJSSourceAdapter } from '@nocobase/server';
 
-import {
-  createFlowModelReferenceOwnerContextResolver,
-  createFlowModelRunJSSourceAdapters,
-  type FlowModelReferenceOwnerContextResolver,
-} from './flow-model-adapters';
+import { createFlowModelRunJSSourceAdapters } from './flow-model-adapters';
 
 type PluginWithApp = {
   db: Database;
@@ -35,9 +31,6 @@ type PluginManagerLike = {
 
 type RunJSSourceAdapterRegistrar = {
   registerRunJSSourceAdapter: (adapter: RunJSSourceAdapter) => () => void;
-  registerLightExtensionReferenceOwnerContextResolver?: (
-    resolver: FlowModelReferenceOwnerContextResolver,
-  ) => () => void;
 };
 
 const LIGHT_EXTENSION_PLUGIN_ALIASES = [
@@ -63,11 +56,6 @@ export function registerFlowModelRunJSSourceAdapters(plugin: PluginWithApp): () 
     unregisterAdapters = createFlowModelRunJSSourceAdapters(plugin.db).map((adapter) =>
       registrar.registerRunJSSourceAdapter(adapter),
     );
-    if (registrar.registerLightExtensionReferenceOwnerContextResolver) {
-      unregisterAdapters.push(
-        registrar.registerLightExtensionReferenceOwnerContextResolver(createFlowModelReferenceOwnerContextResolver()),
-      );
-    }
 
     return true;
   };

@@ -145,7 +145,7 @@ function createSourceEntry(
         },
       },
     },
-    problems: [],
+    diagnostics: [],
     ...overrides,
   };
 }
@@ -165,6 +165,7 @@ function createStoredEntry(
       code: 'ctx.render("ok");',
       version: 'v2',
       entryPath: sourceEntry.entryPath,
+      diagnostics: [],
     },
     runtimeVersion: 'v2',
     surfaceStyle: 'render',

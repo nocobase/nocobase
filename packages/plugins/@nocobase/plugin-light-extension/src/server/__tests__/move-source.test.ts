@@ -59,6 +59,7 @@ const entry: LightExtensionEntryRecord = {
   settingsDefaultsHash: null,
   compiledAt: '2026-07-11T00:00:00.000Z',
   healthStatus: 'ready',
+  diagnostics: [],
 };
 
 describe('MoveSourceService', () => {
@@ -221,7 +222,7 @@ describe('MoveSourceService', () => {
       };
       const preparedSave = { candidate: { repoId: repo.id } };
       const prepareSaveSource = vi.fn(async () => preparedSave);
-      const publishPreparedSave = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, problems: [] }));
+      const publishPreparedSave = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
       const syncReferences = vi.fn(async () => undefined);
       const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([movedEntry]);
       const service = new MoveSourceService(
@@ -329,7 +330,7 @@ describe('MoveSourceService', () => {
         repo: createdRepo,
         status: 'success',
         entries: [createdEntry],
-        problems: [],
+        diagnostics: [],
       };
     });
     const service = new MoveSourceService(
@@ -633,7 +634,7 @@ describe('MoveSourceService', () => {
   it('keeps destination and host writes under one rejected transaction when binding fails', async () => {
     const transaction = { id: 'tx_rollback' } as unknown as Transaction;
     let committed = false;
-    const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, problems: [] }));
+    const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
     const movedPageEntry = {
       ...entry,
       kind: 'js-page' as const,
