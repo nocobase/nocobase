@@ -111,7 +111,7 @@ export interface EnvConfigEntry {
   developmentMode?: string;
   /** Initial Portal name (INIT_PORTAL_NAME). */
   portalName?: string;
-  /** Initial Portal template Git URL (INIT_PORTAL_TEMPLATE). */
+  /** Initial Portal template Git URL or local path (INIT_PORTAL_TEMPLATE). */
   portalTemplate?: string;
   rootUsername?: string;
   rootEmail?: string;

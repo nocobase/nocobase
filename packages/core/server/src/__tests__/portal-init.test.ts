@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { execFile } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { promisify } from 'util';
 import { afterEach, expect, test } from 'vitest';
 import {
   initializePortalFromEnv,
@@ -21,7 +19,6 @@ import {
   type PortalManifest,
 } from '../portal-init';
 
-const execFileAsync = promisify(execFile);
 const originalStoragePath = process.env.STORAGE_PATH;
 const originalInitDevelopmentMode = process.env.INIT_DEVELOPMENT_MODE;
 const originalInitPortalName = process.env.INIT_PORTAL_NAME;
@@ -82,7 +79,7 @@ test('skips portal initialization in no-code mode', async () => {
   }
 });
 
-test('clones a git portal template into storage/portals/<app>/<portal>', async () => {
+test('copies a local portal template into storage/portals/<app>/<portal>', async () => {
   const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-storage-'));
   const templatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-'));
   process.env.STORAGE_PATH = storagePath;
@@ -91,11 +88,8 @@ test('clones a git portal template into storage/portals/<app>/<portal>', async (
     await fs.promises.writeFile(path.join(templatePath, 'package.json'), '{"name":"portal-template"}\n');
     await fs.promises.mkdir(path.join(templatePath, 'src'), { recursive: true });
     await fs.promises.writeFile(path.join(templatePath, 'src', 'index.tsx'), 'export default null;\n');
-    await execFileAsync('git', ['init'], { cwd: templatePath });
-    await execFileAsync('git', ['add', '.'], { cwd: templatePath });
-    await execFileAsync('git', ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', 'init'], {
-      cwd: templatePath,
-    });
+    await fs.promises.mkdir(path.join(templatePath, '.git'), { recursive: true });
+    await fs.promises.writeFile(path.join(templatePath, 'local-only.ts'), 'export const localOnly = true;\n');
 
     await initializePortalFromEnv({
       developmentMode: 'vibe-coding',
@@ -104,6 +98,9 @@ test('clones a git portal template into storage/portals/<app>/<portal>', async (
     });
 
     await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin', 'package.json'))).resolves.toBe(
+      undefined,
+    );
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin', 'local-only.ts'))).resolves.toBe(
       undefined,
     );
     await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin', '.git'))).rejects.toThrow();
@@ -117,7 +114,7 @@ test('clones a git portal template into storage/portals/<app>/<portal>', async (
       name: 'admin',
       path: '/admin',
       source: {
-        type: 'git',
+        type: 'local',
         url: templatePath,
       },
     });
@@ -127,7 +124,7 @@ test('clones a git portal template into storage/portals/<app>/<portal>', async (
   }
 });
 
-test('clones a git portal template into a sub-app portal directory and appends manifest entry', async () => {
+test('copies a local portal template into a sub-app portal directory and appends manifest entry', async () => {
   const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-storage-'));
   const mainTemplatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-main-'));
   const subTemplatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-sub-'));
@@ -136,15 +133,6 @@ test('clones a git portal template into a sub-app portal directory and appends m
   try {
     for (const templatePath of [mainTemplatePath, subTemplatePath]) {
       await fs.promises.writeFile(path.join(templatePath, 'package.json'), '{"name":"portal-template"}\n');
-      await execFileAsync('git', ['init'], { cwd: templatePath });
-      await execFileAsync('git', ['add', '.'], { cwd: templatePath });
-      await execFileAsync(
-        'git',
-        ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', 'init'],
-        {
-          cwd: templatePath,
-        },
-      );
     }
 
     await initializePortalFromEnv({
@@ -174,7 +162,7 @@ test('clones a git portal template into a sub-app portal directory and appends m
       name: 'admin',
       path: '/admin',
       source: {
-        type: 'git',
+        type: 'local',
         url: subTemplatePath,
       },
     });

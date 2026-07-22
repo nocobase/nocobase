@@ -12,6 +12,7 @@ import { execFile } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import {
   DEFAULT_PORTAL_APP_NAME,
@@ -32,7 +33,7 @@ export interface PortalManifest {
     name: string;
     path: string;
     source: {
-      type: 'git';
+      type: 'git' | 'local';
       url: string;
       commit?: string;
     };
@@ -97,6 +98,34 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
+function tryResolveLocalTemplatePath(templateSource: string): string {
+  if (templateSource.startsWith('file://')) {
+    return fileURLToPath(templateSource);
+  }
+  return templateSource;
+}
+
+async function getLocalTemplateDir(templateSource: string): Promise<string | undefined> {
+  let localPath: string;
+  try {
+    localPath = tryResolveLocalTemplatePath(templateSource);
+  } catch {
+    return undefined;
+  }
+
+  let stat: fs.Stats;
+  try {
+    stat = await fs.promises.stat(localPath);
+  } catch {
+    return undefined;
+  }
+
+  if (!stat.isDirectory()) {
+    throw new Error(`Portal template "${templateSource}" is invalid: expected a directory.`);
+  }
+  return localPath;
+}
+
 async function copyTemplate(sourceDir: string, targetDir: string): Promise<void> {
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
@@ -127,6 +156,7 @@ async function writePortalManifestForApp(
   appName: string,
   portalName: string,
   templateUrl: string,
+  sourceType: PortalManifest['portals'][number]['source']['type'],
   commit?: string,
 ): Promise<void> {
   const manifestPath = storagePathJoin('portals', PORTAL_MANIFEST_FILE);
@@ -163,7 +193,7 @@ async function writePortalManifestForApp(
     name: portalName,
     path: `/${portalName}`,
     source: {
-      type: 'git' as const,
+      type: sourceType,
       url: templateUrl,
       ...(commit ? { commit } : {}),
     },
@@ -211,16 +241,22 @@ export async function initializePortalFromEnv(options: InitPortalOptions = {}): 
   const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-'));
   let cleanupPortalDir = false;
   try {
-    await execFileAsync('git', ['clone', '--depth', '1', templateUrl, tempDir]);
-    const packageJsonPath = path.join(tempDir, 'package.json');
+    const localTemplateDir = await getLocalTemplateDir(templateUrl);
+    const templateDir = localTemplateDir || tempDir;
+    if (!localTemplateDir) {
+      await execFileAsync('git', ['clone', '--depth', '1', templateUrl, tempDir]);
+    }
+
+    const packageJsonPath = path.join(templateDir, 'package.json');
     if (!(await pathExists(packageJsonPath))) {
       throw new Error(`Portal template "${templateUrl}" is invalid: package.json is missing.`);
     }
+    const sourceType = localTemplateDir ? 'local' : 'git';
     const commit =
-      (await readGitCommit(tempDir)) || (await readGitCommit(templateUrl)) || (await readGitRemoteHead(templateUrl));
+      sourceType === 'git' ? (await readGitCommit(tempDir)) || (await readGitRemoteHead(templateUrl)) : undefined;
     cleanupPortalDir = true;
-    await copyTemplate(tempDir, portalDir);
-    await writePortalManifestForApp(appName, portalName, templateUrl, commit);
+    await copyTemplate(templateDir, portalDir);
+    await writePortalManifestForApp(appName, portalName, templateUrl, sourceType, commit);
     cleanupPortalDir = false;
   } catch (error) {
     if (cleanupPortalDir) {
