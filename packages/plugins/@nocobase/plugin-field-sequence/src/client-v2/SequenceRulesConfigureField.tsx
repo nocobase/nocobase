@@ -73,6 +73,7 @@ function CronCycleEditor(props: {
   value?: string | null;
   onChange?: (value?: string | null) => void;
   disabled?: boolean;
+  id?: string;
 }) {
   const t = useT();
   const value = props.value ?? null;
@@ -84,6 +85,7 @@ function CronCycleEditor(props: {
     <Space direction="vertical" style={{ width: '100%' }}>
       <Select
         disabled={props.disabled}
+        id={props.id}
         value={selectedValue}
         options={cronCycleOptions.map((option) => ({
           value: option.value,
@@ -110,8 +112,11 @@ function SequenceRuleOptionControl(props: {
   form: FormInstance;
   ruleType?: Record<string, any>;
   disabled?: boolean;
+  id?: string;
+  value?: string | number | string[] | null;
+  onChange?: (value: string | number | string[] | null) => void;
 }) {
-  const { field, form, ruleType, disabled } = props;
+  const { field, form, ruleType, disabled, id, onChange, value } = props;
   const t = useT();
   const digits = Form.useWatch('digits', form);
   const componentProps = { ...(field.componentProps || {}) };
@@ -121,18 +126,50 @@ function SequenceRuleOptionControl(props: {
   }
 
   if (field.component === 'InputNumber') {
-    return <InputNumber style={{ width: '100%' }} disabled={disabled} {...componentProps} />;
+    return (
+      <InputNumber
+        style={{ width: '100%' }}
+        disabled={disabled}
+        {...componentProps}
+        id={id}
+        value={typeof value === 'number' ? value : null}
+        onChange={(nextValue) => onChange?.(nextValue)}
+      />
+    );
   }
 
   if (field.component === 'Select') {
-    return <Select disabled={disabled} options={normalizeSchemaEnum(field.enum, t)} {...componentProps} />;
+    return (
+      <Select
+        disabled={disabled}
+        options={normalizeSchemaEnum(field.enum, t)}
+        {...componentProps}
+        id={id}
+        value={value}
+        onChange={(nextValue) => onChange?.(nextValue)}
+      />
+    );
   }
 
   if (field.component === 'CronCycle') {
-    return <CronCycleEditor disabled={disabled} />;
+    return (
+      <CronCycleEditor
+        disabled={disabled}
+        id={id}
+        value={typeof value === 'string' ? value : null}
+        onChange={(nextValue) => onChange?.(nextValue ?? null)}
+      />
+    );
   }
 
-  return <Input disabled={disabled} />;
+  return (
+    <Input
+      disabled={disabled}
+      id={id}
+      value={typeof value === 'string' ? value : ''}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
+  );
 }
 
 function SequenceRuleOptionsForm(props: { form: FormInstance; ruleType?: Record<string, any>; disabled?: boolean }) {
