@@ -10,6 +10,7 @@
 import type { Application } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs';
+import { execFileSync } from 'node:child_process';
 import { vi } from 'vitest';
 
 import { NAMESPACE } from '../../constants';
@@ -24,6 +25,30 @@ import packageJson from '../../../package.json';
 import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension bootstrap', () => {
+  it('keeps the RunJS compiler unloaded until the first compile', () => {
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [
+          '--import',
+          'tsx',
+          '--input-type=module',
+          '--eval',
+          `
+            import { createRequire } from 'node:module';
+            const require = createRequire(import.meta.url);
+            await import('@nocobase/plugin-light-extension/server');
+            const loaded = Object.keys(require.cache).some((file) =>
+              /\\/packages\\/core\\/runjs\\/(?:src|lib)\\/compiler\\/index\\.[cm]?[jt]s$/u.test(file),
+            );
+            if (loaded) process.exit(1);
+          `,
+        ],
+        { cwd: process.cwd(), stdio: 'pipe' },
+      ),
+    ).not.toThrow();
+  }, 20_000);
+
   it('keeps lifecycle hooks safe without a full app', async () => {
     expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-vsc-file');
     expect(packageJson.peerDependencies).toHaveProperty('@nocobase/client');

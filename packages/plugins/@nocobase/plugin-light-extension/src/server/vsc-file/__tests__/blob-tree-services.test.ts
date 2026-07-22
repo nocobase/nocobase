@@ -22,20 +22,27 @@ describe('vsc-file blob and tree services', () => {
   let blobService: BlobService;
   let treeService: TreeService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
     await db.import({
       directory: path.resolve(__dirname, '../collections'),
     });
     await db.sync();
+  });
 
+  beforeEach(async () => {
+    await db.sequelize.truncate({ cascade: true });
     blobService = new BlobService(db);
     treeService = new TreeService(db, blobService);
   });
 
-  afterEach(async () => {
-    await db?.close();
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await db.close();
   });
 
   it('writes one blob for identical normalized content', async () => {
@@ -59,39 +66,40 @@ describe('vsc-file blob and tree services', () => {
     const second = await blobService.ensureBlob('second\n');
     const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
     const transaction = await db.sequelize.transaction();
+    try {
+      const blobs = await blobService.loadBlobs([first.hash, second.hash, first.hash], { transaction });
 
-    const blobs = await blobService.loadBlobs([first.hash, second.hash, first.hash], { transaction });
+      expect(blobFind).toHaveBeenCalledTimes(1);
+      expect(blobFind).toHaveBeenCalledWith({
+        filter: {
+          hash: { $in: [first.hash, second.hash] },
+        },
+        fields: ['hash', 'size', 'content'],
+        transaction,
+      });
+      expect([...blobs.keys()]).toEqual(expect.arrayContaining([first.hash, second.hash]));
+      expect(blobs.get(first.hash)).toEqual(first);
+      expect(blobs.get(second.hash)).toEqual(second);
+      expect(blobs.get(first.hash)?.content).toBe('你好\nline 2\nline 3');
+      expect(blobs.get(first.hash)?.size).toBe(Buffer.byteLength('你好\nline 2\nline 3', 'utf8'));
 
-    expect(blobFind).toHaveBeenCalledTimes(1);
-    expect(blobFind).toHaveBeenCalledWith({
-      filter: {
-        hash: { $in: [first.hash, second.hash] },
-      },
-      fields: ['hash', 'size', 'content'],
-      transaction,
-    });
-    expect([...blobs.keys()]).toEqual(expect.arrayContaining([first.hash, second.hash]));
-    expect(blobs.get(first.hash)).toEqual(first);
-    expect(blobs.get(second.hash)).toEqual(second);
-    expect(blobs.get(first.hash)?.content).toBe('你好\nline 2\nline 3');
-    expect(blobs.get(first.hash)?.size).toBe(Buffer.byteLength('你好\nline 2\nline 3', 'utf8'));
+      blobFind.mockClear();
+      const metadata = await blobService.loadBlobMetadata([second.hash, first.hash, second.hash], { transaction });
 
-    blobFind.mockClear();
-    const metadata = await blobService.loadBlobMetadata([second.hash, first.hash, second.hash], { transaction });
-
-    expect(blobFind).toHaveBeenCalledTimes(1);
-    expect(blobFind).toHaveBeenCalledWith({
-      filter: {
-        hash: { $in: [second.hash, first.hash] },
-      },
-      fields: ['hash', 'size'],
-      transaction,
-    });
-    expect(metadata.get(first.hash)).toEqual({ hash: first.hash, size: first.size });
-    expect(metadata.get(second.hash)).toEqual({ hash: second.hash, size: second.size });
-    expect(metadata.get(first.hash)).not.toHaveProperty('content');
-
-    await transaction.rollback();
+      expect(blobFind).toHaveBeenCalledTimes(1);
+      expect(blobFind).toHaveBeenCalledWith({
+        filter: {
+          hash: { $in: [second.hash, first.hash] },
+        },
+        fields: ['hash', 'size'],
+        transaction,
+      });
+      expect(metadata.get(first.hash)).toEqual({ hash: first.hash, size: first.size });
+      expect(metadata.get(second.hash)).toEqual({ hash: second.hash, size: second.size });
+      expect(metadata.get(first.hash)).not.toHaveProperty('content');
+    } finally {
+      await transaction.rollback();
+    }
   });
 
   it('restores shared files in tree order, resolves getFile by hash, and rejects incomplete pulls', async () => {

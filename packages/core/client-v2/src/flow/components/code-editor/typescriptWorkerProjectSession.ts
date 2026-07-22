@@ -10,7 +10,6 @@
 import type { Completion, CompletionResult } from '@codemirror/autocomplete';
 import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryRequest } from '@nocobase/runjs/client-v2';
 
-import { runJSTypeScriptEnvironmentPack } from './generated/runJSTypeScriptEnvironmentFiles';
 import type { TypeScriptWorkerOwner, TypeScriptWorkerOwnerResource } from './sharedTypeScriptWorkerOwner';
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
@@ -438,7 +437,7 @@ export class TypeScriptWorkerClient {
     };
     try {
       if (message.request.packId === RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID) {
-        response.pack = runJSTypeScriptEnvironmentPack;
+        response.pack = (await import('./generated/runJSTypeScriptEnvironmentFiles')).runJSTypeScriptEnvironmentPack;
         if (this.worker === sourceWorker) sourceWorker.postMessage(response);
         return;
       }

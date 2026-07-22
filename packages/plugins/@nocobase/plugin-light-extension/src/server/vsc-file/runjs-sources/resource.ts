@@ -53,7 +53,8 @@ import { VscFileService, type PulledFile, type VscServiceContext } from '../serv
 import type { RunJSSourceAuthoringInspectorRegistry } from './RunJSSourceAuthoringInspectorRegistry';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
 import { canonicalizeRunJSCompileFile } from './canonicalCompileFiles';
-import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from './compiler';
+import { compileRunJSSourceWorkspace } from './lazyCompiler';
+import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 
 export const runJSSourceActionNames = [
   'open',

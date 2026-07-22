@@ -35,21 +35,28 @@ describe('vsc-file diff service', () => {
   let blobService: BlobService;
   let diffService: DiffService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
     await db.import({
       directory: path.resolve(__dirname, '../collections'),
     });
     await db.sync();
+  });
 
+  beforeEach(async () => {
+    await db.sequelize.truncate({ cascade: true });
     service = new VscFileService(db);
     blobService = new BlobService(db);
     diffService = new DiffService(db);
   });
 
-  afterEach(async () => {
-    await db?.close();
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await db.close();
   });
 
   it('classifies commit file changes and detects simple renames by matching blob hash', async () => {

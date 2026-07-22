@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
+import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -161,7 +161,11 @@ class InMemoryTypeScriptWorker {
         protocolVersion: RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
         request,
       });
-      if (this.crashAfterFirstPackRequest && !this.crashedAfterPackRequest) {
+      if (
+        this.crashAfterFirstPackRequest &&
+        !this.crashedAfterPackRequest &&
+        request.packId !== RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID
+      ) {
         this.crashedAfterPackRequest = true;
         this.terminated = true;
         this.emitError('simulated pack bridge crash');
@@ -845,7 +849,7 @@ void element; void button;
     const code = 'ctx.libs.fakeLib.answer satisfies 42;';
     const diagnostics = session.getDiagnostics(project(code, registry), code);
 
-    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2), { timeout: 5_000 });
     oldLoad.resolve(fakePack(99));
     await Promise.resolve();
     replacementLoad.resolve(fakePack(42));
@@ -861,12 +865,18 @@ void element; void button;
       requestId: 9,
     };
     expect(JSON.parse(JSON.stringify(request))).toEqual(request);
-    const source = await import('node:fs/promises').then((fs) =>
-      fs.readFile(
-        `${process.cwd()}/packages/core/client-v2/src/flow/components/code-editor/typescriptWorkerProjectSession.ts`,
-        'utf8',
+    const [source, runtimeSource] = await import('node:fs/promises').then((fs) =>
+      Promise.all(
+        ['typescriptWorkerProjectSession.ts', 'typescriptWorkerRuntime.ts'].map((fileName) =>
+          fs.readFile(`${process.cwd()}/packages/core/client-v2/src/flow/components/code-editor/${fileName}`, 'utf8'),
+        ),
       ),
     );
+    expect(source).not.toContain(
+      "import { runJSTypeScriptEnvironmentPack } from './generated/runJSTypeScriptEnvironmentFiles'",
+    );
+    expect(source).toContain("await import('./generated/runJSTypeScriptEnvironmentFiles')");
+    expect(runtimeSource).toContain("import('./generated/runJSTypeScriptEnvironmentFiles')");
     expect(source).toContain("new URL('./typescriptProject.worker.ts', import.meta.url)");
     expect(source).toContain("type: 'module'");
     const workerGlobals = globalThis as typeof globalThis & { __NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__?: string };

@@ -20,19 +20,26 @@ describe('vsc-file repository and commit services', () => {
   let db: Database;
   let service: VscFileService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
     await db.import({
       directory: path.resolve(__dirname, '../collections'),
     });
     await db.sync();
+  });
 
+  beforeEach(async () => {
+    await db.sequelize.truncate({ cascade: true });
     service = new VscFileService(db);
   });
 
-  afterEach(async () => {
-    await db?.close();
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await db.close();
   });
 
   it('creates and pulls an empty repository', async () => {

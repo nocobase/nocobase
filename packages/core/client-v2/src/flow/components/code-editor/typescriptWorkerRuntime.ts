@@ -91,6 +91,9 @@ const completionFormatOptions: import('typescript').FormatCodeSettings = {
   tabSize: 2,
 };
 let typeScriptPromise: Promise<TypeScriptModule> | null = null;
+const typeScriptEnvironmentPackPromise = import('./generated/runJSTypeScriptEnvironmentFiles').then(
+  (module) => module.runJSTypeScriptEnvironmentPack,
+);
 
 async function loadTypeScript(): Promise<TypeScriptModule> {
   typeScriptPromise ||= import('typescript');
@@ -195,7 +198,11 @@ async function loadPackWithDependencies(
   let loading = state.packCache.get(request.packId);
   if (!loading) {
     state.actualLoadIds.push(request.packId);
-    loading = state.loadPack(request).catch((error: unknown) => {
+    loading = (
+      request.packId === RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID
+        ? typeScriptEnvironmentPackPromise
+        : state.loadPack(request)
+    ).catch((error: unknown) => {
       if (state.packCache.get(request.packId) === loading) state.packCache.delete(request.packId);
       throw error;
     });

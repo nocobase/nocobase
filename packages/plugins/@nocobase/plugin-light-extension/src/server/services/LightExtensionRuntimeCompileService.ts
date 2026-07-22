@@ -48,7 +48,6 @@ import {
 } from './LightExtensionCompileContract';
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
-import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
 import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
@@ -110,7 +109,7 @@ export interface LightExtensionRemoteSnapshotCompileResult {
 export class LightExtensionRuntimeCompileService {
   private referenceService?: ReferenceRefreshService;
 
-  private readonly compilerBuildIdentity: LightExtensionCompilerBuildIdentity;
+  private readonly configuredCompilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
 
   private readonly compileExecutor?: LightExtensionCompileExecutor;
 
@@ -125,17 +124,22 @@ export class LightExtensionRuntimeCompileService {
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
     options: LightExtensionRuntimeCompileServiceOptions = {},
   ) {
-    this.compilerBuildIdentity =
-      options.compilerBuildIdentity ||
-      (typeof compilerBridge.getCompilerBuildIdentity === 'function'
-        ? compilerBridge.getCompilerBuildIdentity()
-        : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
+    this.configuredCompilerBuildIdentity = options.compilerBuildIdentity;
     this.compileExecutor = options.compileExecutor;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
   }
 
   useReferenceService(referenceService: ReferenceRefreshService): void {
     this.referenceService = referenceService;
+  }
+
+  private get compilerBuildIdentity(): LightExtensionCompilerBuildIdentity {
+    return (
+      this.configuredCompilerBuildIdentity ||
+      (typeof this.compilerBridge.getCompilerBuildIdentity === 'function'
+        ? this.compilerBridge.getCompilerBuildIdentity()
+        : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY)
+    );
   }
 
   async saveSource(
@@ -360,7 +364,7 @@ export class LightExtensionRuntimeCompileService {
         compiledResults.push(
           this.compilerBridge
             ? await this.compileEntryWithoutWorker(job, input, ctx)
-            : await executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 }),
+            : await this.executeCompileJobWithoutWorker(job),
         );
       }
     }
@@ -371,6 +375,11 @@ export class LightExtensionRuntimeCompileService {
       compiledEntryCount: compileJobs.length,
       compiledEntryIds: compileJobs.map(({ job }) => job.entryId),
     };
+  }
+
+  private async executeCompileJobWithoutWorker(job: LightExtensionCompileJob): Promise<LightExtensionCompileResult> {
+    const { executeLightExtensionCompileJob } = await import('./LightExtensionCompileJobExecutor');
+    return executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 });
   }
 
   private async compileEntryWithoutWorker(
