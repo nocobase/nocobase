@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { isCurrentLiveMessage } from '../utils';
+import { isCurrentLiveMessage, parseWorkContext } from '../utils';
 
 describe('client-v2 chatbox utils', () => {
   it('matches live messages by rendered message id', () => {
@@ -24,5 +24,37 @@ describe('client-v2 chatbox utils', () => {
   it('falls back to the tool call message id when the rendered message id is empty', () => {
     expect(isCurrentLiveMessage('message-1', '', 'message-1')).toBe(true);
     expect(isCurrentLiveMessage('message-1', '', 'message-2')).toBe(false);
+  });
+
+  it('parses frontend tool manifests from the selected work context provider', async () => {
+    const frontendTool = {
+      id: 'block-1:refresh_dashboard',
+      blockUid: 'block-1',
+      name: 'refresh_dashboard',
+      description: 'Refresh the dashboard.',
+      permission: 'ALLOW' as const,
+      inputSchema: { type: 'object', properties: {} },
+    };
+    const app = {
+      pm: {
+        get: () => ({
+          aiManager: {
+            getWorkContext: () => ({
+              getContent: async () => 'dashboard context',
+              getFrontendTools: async () => [frontendTool],
+            }),
+          },
+        }),
+      },
+    };
+
+    await expect(parseWorkContext(app, [{ type: 'flow-model', uid: 'block-1' }])).resolves.toEqual([
+      {
+        type: 'flow-model',
+        uid: 'block-1',
+        content: 'dashboard context',
+        frontendTools: [frontendTool],
+      },
+    ]);
   });
 });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
@@ -37,9 +37,11 @@ const V1_REGISTERED_TOOL_NAMES = [
   'lintAndTestJS',
 ];
 
+const V2_ONLY_TOOL_NAMES = ['loadFrontendTool', 'executeFrontendTool'];
+
 describe('plugin-ai client-v2 tools registration', () => {
-  it('keeps v2 builtin tool names aligned with v1 registration', () => {
-    expect(pluginAIClientV2BuiltinToolNames).toEqual(V1_REGISTERED_TOOL_NAMES);
+  it('keeps shared tool names aligned with v1 and registers v2-only tools afterwards', () => {
+    expect(pluginAIClientV2BuiltinToolNames).toEqual([...V1_REGISTERED_TOOL_NAMES, ...V2_ONLY_TOOL_NAMES]);
   });
 
   it('registers every builtin tool exactly once', () => {
@@ -50,8 +52,30 @@ describe('plugin-ai client-v2 tools registration', () => {
       },
     });
 
-    expect(registered).toEqual(V1_REGISTERED_TOOL_NAMES);
+    expect(registered).toEqual([...V1_REGISTERED_TOOL_NAMES, ...V2_ONLY_TOOL_NAMES]);
     expect(new Set(registered).size).toBe(pluginAIClientV2BuiltinTools.length);
+  });
+
+  it('loads and executes registered frontend tools through the AI plugin registry', async () => {
+    const getManifest = vi.fn().mockReturnValue({ id: 'block-1:read_dashboard' });
+    const execute = vi.fn().mockResolvedValue({ refreshed: true });
+    const app = {
+      pm: {
+        get: () => ({ aiManager: { frontendTools: { getManifest, execute } } }),
+      },
+    };
+    const tools = new Map(pluginAIClientV2BuiltinTools);
+
+    await expect(tools.get('loadFrontendTool')?.invoke?.(app, { toolId: 'block-1:read_dashboard' })).resolves.toEqual({
+      id: 'block-1:read_dashboard',
+    });
+    await expect(
+      tools.get('executeFrontendTool')?.invoke?.(app, {
+        toolId: 'block-1:read_dashboard',
+        args: { refresh: true },
+      }),
+    ).resolves.toEqual({ refreshed: true });
+    expect(execute).toHaveBeenCalledWith('block-1:read_dashboard', { refresh: true });
   });
 
   it('registers v2 UI for tools with v1 custom cards or modals', () => {
