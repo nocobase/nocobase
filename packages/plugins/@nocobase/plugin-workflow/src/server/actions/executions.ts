@@ -71,12 +71,9 @@ export async function rerun(context: Context, next: Next) {
     return context.throw(400, 'Only started executions can be rerun');
   }
 
-  await workflowPlugin.run({
-    execution,
-    rerun: {
-      nodeId,
-      overwrite: overwrite === true,
-    },
+  await workflowPlugin.rerun(execution, {
+    nodeId,
+    overwrite: overwrite === true,
   });
 
   context.body = execution;
