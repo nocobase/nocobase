@@ -95,6 +95,7 @@ export class AIEmployee {
   employee: Model;
   aiChatConversation: AIChatConversation;
   skillSettings?: Record<string, any>;
+  userMessageCount = 0;
   private plugin: PluginAIServer;
   private db: Database;
 
@@ -258,6 +259,7 @@ export class AIEmployee {
     const { provider, model, service } = await this.plugin.aiManager.getLLMService({
       ...this.model,
     });
+    this.userMessageCount = (userMessages ?? []).filter((message) => message.role === 'user').length;
     const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
