@@ -2222,7 +2222,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           }
 
           rememberOriginalProp(key, model.props?.[key]);
-          if (key === 'hiddenText') {
+          if (key === 'hiddenText' && normalizedProps[key]) {
             rememberOriginalProp('title', model.props?.title);
           }
           if (key === 'required') {
@@ -2286,7 +2286,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
     const prevHidden = !!model.hidden;
     const nextHidden = !!newProps.hiddenModel;
-
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText', LINKAGE_ASSIGN_MODE_PROP]));
     syncFieldOptionsToForks(model, patchProps);
     if (typeof model.setHidden === 'function') {
