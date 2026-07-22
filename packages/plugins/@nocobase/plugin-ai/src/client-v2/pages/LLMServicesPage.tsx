@@ -35,6 +35,7 @@ import { EnvVariableInput, Table, useApp } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
+import { getCustomModelIdIssues, type ModelIdIssue } from '../../common/llm-service-models';
 import { getRecommendedModels, isRecommendedModel } from '../../common/recommended-models';
 import type { LLMProviderOptions } from '../manager/ai-manager';
 import { formatModelLabel } from '../llm-services/model-label';
@@ -89,6 +90,9 @@ type AIPluginLike = {
 
 const LLM_SERVICE_SORT_FIELD = 'sort';
 const PROVIDER_SELECT_LIST_HEIGHT = 400;
+
+const getModelIdIssueMessage = (issue: ModelIdIssue, t: ReturnType<typeof useT>) =>
+  issue.type === 'required' ? t('Model ID is required') : t('Model ID already exists');
 
 const fillHeightTableClassName = css`
   flex: 1;
@@ -430,6 +434,7 @@ const EnabledModelsInput: React.FC<{
     provider: [],
     custom: [],
   });
+  const modelIdIssues = new Map(getCustomModelIdIssues(config).map((issue) => [issue.index, issue]));
 
   useEffect(() => {
     modelsCache.current[config.mode] = config.models;
@@ -532,36 +537,48 @@ const EnabledModelsInput: React.FC<{
         <Radio value="custom">{t('Manual input')}</Radio>
         {config.mode === 'custom' ? (
           <Flex vertical gap="small" style={{ paddingInlineStart: enabledModelsIndent }}>
-            {config.models.map((model, index) => (
-              <Flex key={`${model.value}:${index}`} gap="small" align="baseline">
-                <Input
-                  placeholder={t('Model id')}
-                  style={{ width: customModelInputWidth }}
-                  value={model.value}
-                  onChange={(event) => {
-                    const nextModels = [...config.models];
-                    nextModels[index] = { ...nextModels[index], value: event.target.value };
-                    changeModels(nextModels);
-                  }}
-                />
-                <Input
-                  placeholder={t('Display name')}
-                  style={{ width: customModelInputWidth }}
-                  value={model.label}
-                  onChange={(event) => {
-                    const nextModels = [...config.models];
-                    nextModels[index] = { ...nextModels[index], label: event.target.value };
-                    changeModels(nextModels);
-                  }}
-                />
-                <Button
-                  type="text"
-                  icon={<DeleteOutlined />}
-                  aria-label={t('Delete')}
-                  onClick={() => changeModels(config.models.filter((_, currentIndex) => currentIndex !== index))}
-                />
-              </Flex>
-            ))}
+            {config.models.map((model, index) => {
+              const modelIdIssue = modelIdIssues.get(index);
+              return (
+                <Flex key={`${model.value}:${index}`} gap="small" align="baseline">
+                  <Flex vertical gap={token.paddingXXS} style={{ width: customModelInputWidth }}>
+                    <Input
+                      aria-describedby={modelIdIssue ? `model-id-error-${index}` : undefined}
+                      aria-invalid={!!modelIdIssue}
+                      placeholder={t('Model id')}
+                      status={modelIdIssue ? 'error' : undefined}
+                      value={model.value}
+                      onChange={(event) => {
+                        const nextModels = [...config.models];
+                        nextModels[index] = { ...nextModels[index], value: event.target.value };
+                        changeModels(nextModels);
+                      }}
+                    />
+                    {modelIdIssue ? (
+                      <Typography.Text id={`model-id-error-${index}`} role="alert" type="danger">
+                        {getModelIdIssueMessage(modelIdIssue, t)}
+                      </Typography.Text>
+                    ) : null}
+                  </Flex>
+                  <Input
+                    placeholder={t('Display name')}
+                    style={{ width: customModelInputWidth }}
+                    value={model.label}
+                    onChange={(event) => {
+                      const nextModels = [...config.models];
+                      nextModels[index] = { ...nextModels[index], label: event.target.value };
+                      changeModels(nextModels);
+                    }}
+                  />
+                  <Button
+                    type="text"
+                    icon={<DeleteOutlined />}
+                    aria-label={t('Delete')}
+                    onClick={() => changeModels(config.models.filter((_, currentIndex) => currentIndex !== index))}
+                  />
+                </Flex>
+              );
+            })}
             <Button
               type="dashed"
               icon={<PlusOutlined />}
@@ -630,7 +647,19 @@ export const LLMServiceForm: React.FC<{
         </Form.Item>
       ) : null}
       {providerKey ? (
-        <Form.Item name="enabledModels" label={labelWithColon(t('Enabled Models'))}>
+        <Form.Item
+          name="enabledModels"
+          label={labelWithColon(t('Enabled Models'))}
+          help={false}
+          rules={[
+            {
+              validator: (_rule: unknown, value: unknown) => {
+                const issue = getCustomModelIdIssues(value)[0];
+                return issue ? Promise.reject(new Error(getModelIdIssueMessage(issue, t))) : Promise.resolve();
+              },
+            },
+          ]}
+        >
           <EnabledModelsInput />
         </Form.Item>
       ) : null}

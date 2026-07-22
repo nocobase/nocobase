@@ -97,6 +97,10 @@ describe('LLMServicesPage request helpers', () => {
         apiKey: 'secret',
         baseURL: '',
       },
+      enabledModels: {
+        mode: 'custom',
+        models: [{ value: ' gpt-4o ', label: ' GPT 4o ' }],
+      },
     });
 
     expect(create).toHaveBeenCalledWith(
@@ -107,6 +111,10 @@ describe('LLMServicesPage request helpers', () => {
           provider: 'openai',
           options: {
             apiKey: 'secret',
+          },
+          enabledModels: {
+            mode: 'custom',
+            models: [{ value: 'gpt-4o', label: 'GPT 4o' }],
           },
         },
       },
