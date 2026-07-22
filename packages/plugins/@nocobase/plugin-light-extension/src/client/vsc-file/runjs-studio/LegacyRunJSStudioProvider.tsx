@@ -11,6 +11,7 @@ import {
   useAPIClient,
   type LegacyRunJSEditorProvider,
   type LegacyRunJSEditorProviderRenderProps,
+  type RunJSSourceLocator,
 } from '@nocobase/client';
 import { FlowContextProvider, type FlowContext, type RunJSValue } from '@nocobase/flow-engine';
 import type { RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
@@ -23,13 +24,20 @@ type LegacyFlowContext = {
   api: ReturnType<typeof useAPIClient>;
 };
 
+type LegacyRunJSStudioEditorProps = LegacyRunJSEditorProviderRenderProps & {
+  sourceLocator?: RunJSSourceLocator;
+};
+
 export const legacyRunJSStudioProvider: LegacyRunJSEditorProvider = {
   key: '@nocobase/plugin-vsc-file/legacy-runjs-studio',
-  canHandle: (props) => (props.sourceLocator ?? props.locator)?.kind === 'flowModel.step',
+  canHandle: (props) => {
+    const studioProps = props as LegacyRunJSStudioEditorProps;
+    return (studioProps.sourceLocator ?? studioProps.locator)?.kind === 'flowModel.step';
+  },
   renderEditor: (props) => <LegacyRunJSStudioEditorEntry {...props} />,
 };
 
-function LegacyRunJSStudioEditorEntry(props: LegacyRunJSEditorProviderRenderProps) {
+function LegacyRunJSStudioEditorEntry(props: LegacyRunJSStudioEditorProps) {
   const api = useAPIClient();
   const t = useT();
   const context = React.useMemo<LegacyFlowContext>(
