@@ -38,6 +38,7 @@ import type {
   RunJSSourceHistoryItem,
   RunJSSourceLocator,
   RunJSSourceOpenWorkspaceResult,
+  RunJSSourceSaveResult,
   RunJSWorkspaceFile,
 } from './types';
 import type {
@@ -75,7 +76,11 @@ import {
   revokeRunJSWorkspaceObjectUrl,
   validateRunJSWorkspaceForSave,
 } from './studioUtils';
-import { formatRunJSSourceRequestTechnicalDetails, useRunJSSourceResource } from './useRunJSSourceResource';
+import {
+  formatRunJSSourceRequestTechnicalDetails,
+  RunJSSourceRequestError,
+  useRunJSSourceResource,
+} from './useRunJSSourceResource';
 import {
   buildLineDiff,
   buildWorkspaceChanges,
@@ -86,6 +91,7 @@ import {
   hasWorkspaceChanges,
   inferLanguageFromPath,
   mergeHistoryItems,
+  mergeRunJSWorkspaceFiles,
   normalizeRunJSWorkspaceFolderPath,
   normalizeRunJSWorkspacePath,
   normalizeWorkspaceFiles,
@@ -771,14 +777,70 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return;
       }
 
-      const result = await runJSSourceRequest('save', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-        message: versionMessage.trim(),
-        files: buildWorkspaceChanges([], requestFiles),
-        entryPath: requestEntryPath,
-        version: compiled.version,
-      });
+      let savedArtifact = compiled;
+      let result: RunJSSourceSaveResult;
+      try {
+        result = await runJSSourceRequest('save', {
+          locator: props.locator,
+          repoId: workspace.repository.repoId,
+          baseCommitId: workspace.repository.headCommitId,
+          baseOwnerFingerprint: workspace.ownerFingerprint,
+          message: versionMessage.trim(),
+          files: buildWorkspaceChanges([], requestFiles),
+          entryPath: requestEntryPath,
+          version: compiled.version,
+        });
+      } catch (error) {
+        if (!(error instanceof RunJSSourceRequestError) || error.code !== 'BASE_COMMIT_OUTDATED') {
+          throw error;
+        }
+
+        const latest = await runJSSourceRequest('openLatest', { locator: props.locator });
+        const merged = mergeRunJSWorkspaceFiles(baseFiles, requestFiles, latest.files);
+        if (merged.conflictPaths.length) {
+          throw new Error(
+            `${t('RunJS workspace has conflicting changes. Resolve them and save again.')} ${merged.conflictPaths.join(
+              ', ',
+            )}`,
+          );
+        }
+        if (!latest.repository.repoId) {
+          throw error;
+        }
+
+        const recoveredFiles = merged.files;
+        const recoveredEntryPath = resolveWorkspaceEntryPath(recoveredFiles, requestEntryPath);
+        const preview = await runJSSourceRequest('compilePreview', {
+          locator: props.locator,
+          repoId: latest.repository.repoId,
+          baseCommitId: latest.repository.headCommitId,
+          files: buildWorkspaceChanges([], recoveredFiles),
+          entryPath: recoveredEntryPath,
+          version: value.version,
+        });
+        setPreviewDiagnostics(preview.artifact.diagnostics);
+        appendDiagnostics(preview.artifact.diagnostics, appendConsole);
+        if (hasCompileErrorDiagnostics(preview.artifact.diagnostics)) {
+          showSaveDiagnostics(preview.artifact.diagnostics);
+          finishEmbeddedSaveRequest('cancelled');
+          return;
+        }
+        savedArtifact = {
+          code: preview.artifact.code,
+          version: preview.artifact.version,
+          snapshotKey: buildWorkspaceSnapshotKey(recoveredFiles, recoveredEntryPath, preview.artifact.version),
+        };
+        result = await runJSSourceRequest('save', {
+          locator: props.locator,
+          repoId: latest.repository.repoId,
+          baseCommitId: latest.repository.headCommitId,
+          baseOwnerFingerprint: latest.ownerFingerprint,
+          message: versionMessage.trim(),
+          files: buildWorkspaceChanges([], recoveredFiles),
+          entryPath: recoveredEntryPath,
+          version: preview.artifact.version,
+        });
+      }
       if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
         appendConsole({
           level: 'info',
@@ -796,8 +858,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         withSavedSourceRef(
           {
             ...value,
-            code: compiled.code,
-            version: compiled.version,
+            code: savedArtifact.code,
+            version: savedArtifact.version,
           },
           result,
           props.locator,
@@ -1451,6 +1513,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       const result = await runJSSourceRequest('importZip', {
         locator: props.locator,
         repoId: workspace.repository.repoId,
+        baseCommitId: workspace.repository.headCommitId,
+        baseOwnerFingerprint: workspace.ownerFingerprint,
         message: 'Import RunJS workspace',
         zipBase64,
       });

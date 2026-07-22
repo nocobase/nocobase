@@ -427,6 +427,7 @@
   "Workspace export is ready": "工作区导出已就绪",
   "Workspace exported": "工作区已导出",
   "Workspace imported": "工作区已导入",
+  "RunJS workspace has conflicting changes. Resolve them and save again.": "RunJS 工作区存在冲突修改，请处理冲突后重新保存。",
   "{{files}} file(s) changed, +{{additions}} -{{deletions}}": "{{files}} 个文件变更，+{{additions}} -{{deletions}}",
   "added": "新增",
   "deleted": "删除",

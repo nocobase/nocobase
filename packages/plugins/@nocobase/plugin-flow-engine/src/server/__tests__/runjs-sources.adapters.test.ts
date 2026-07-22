@@ -290,6 +290,8 @@ describe('flow-engine RunJS source adapters', () => {
     const save = await agent.resource('runJSSources').save({
       values: {
         locator,
+        baseCommitId: null,
+        baseOwnerFingerprint: 'unsupported-owner',
         message: 'Attempt legacy nested save',
         files: [],
       },
@@ -406,6 +408,8 @@ describe('flow-engine RunJS source adapters', () => {
       values: {
         locator,
         repoId: open.body.data.repository.repoId,
+        baseCommitId: open.body.data.repository.headCommitId,
+        baseOwnerFingerprint: open.body.data.ownerFingerprint,
         message: 'Update JS Page source',
         entryPath: 'src/main.tsx',
         files: [
@@ -1820,6 +1824,8 @@ describe('flow-engine RunJS source adapters', () => {
       values: {
         locator,
         repoId: opened?.repository.repoId,
+        baseCommitId: opened?.repository.headCommitId ?? null,
+        baseOwnerFingerprint: opened?.ownerFingerprint || 'missing-owner-fingerprint',
         message: 'Update RunJS source',
         entryPath,
         files: [

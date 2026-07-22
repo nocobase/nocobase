@@ -230,6 +230,8 @@ describe('plugin-light-extension raw resource bypass guard', () => {
       values: {
         locator,
         repoId,
+        baseCommitId: null,
+        baseOwnerFingerprint: 'raw-resource-owner',
         message: 'raw save should fail',
         files: [
           {

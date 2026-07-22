@@ -65,8 +65,8 @@ export interface RunJSSourceSaveResult {
 export interface RunJSSourceSaveInput {
   locator: RunJSSourceLocator;
   repoId?: string;
-  baseCommitId?: string | null;
-  baseOwnerFingerprint?: string;
+  baseCommitId: string | null;
+  baseOwnerFingerprint: string;
   message: string;
   files: VscFileChange[];
   entryPath?: string;

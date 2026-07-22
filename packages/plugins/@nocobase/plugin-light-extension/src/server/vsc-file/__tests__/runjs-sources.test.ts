@@ -271,6 +271,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: firstOpen.body.data.repository.id,
+        baseCommitId: firstOpen.body.data.repository.headCommitId,
+        baseOwnerFingerprint: firstOpen.body.data.ownerFingerprint,
         message: 'Save workspace files',
         files: [
           {
@@ -348,6 +350,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
         message: 'Save unchanged workspace',
         files: [
           {
@@ -430,7 +434,7 @@ describe('runJSSources resource', () => {
     );
   });
 
-  it('saves an independently opened editor snapshot as the next linear version', async () => {
+  it('saves a complete snapshot against an explicit latest baseline', async () => {
     const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_overwrite_stale');
 
@@ -453,6 +457,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
         message: 'Save first writer',
         files: [
           {
@@ -479,6 +485,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: firstSave.body.data.repository.headCommitId,
+        baseOwnerFingerprint: firstSave.body.data.ownerFingerprint,
         message: 'Save second editor',
         files: [
           {
@@ -653,6 +661,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
         message: 'Do not overwrite diverged host code',
         files: [
           {
@@ -730,6 +740,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
         message: 'Reject owner race',
         files: [
           {
@@ -791,6 +803,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
         message: 'Import RunJS workspace',
         zipBase64,
       },
@@ -871,6 +885,8 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
         message: 'Import legacy RunJS workspace',
         zipBase64,
       },
@@ -913,6 +929,8 @@ describe('runJSSources resource', () => {
       values: {
         locator: createLocator('fm_repo_guard'),
         repoId: wrongRepositoryResponse.body.data.repository.id,
+        baseCommitId: null,
+        baseOwnerFingerprint: 'wrong-repository-owner',
         message: 'Update guarded RunJS source',
         files: [
           {
