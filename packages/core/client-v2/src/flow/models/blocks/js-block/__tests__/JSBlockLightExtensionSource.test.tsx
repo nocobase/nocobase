@@ -948,6 +948,7 @@ describe('JSBlockModel light extension source', () => {
     });
 
     renderJSBlock({
+      code: '',
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {},

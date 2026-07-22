@@ -2,16 +2,30 @@
 
 `@nocobase/plugin-light-extension` is the domain layer for NocoBase light extensions.
 
-Light extensions organize multi-file RunJS entries on the package's internal VSC repository module. Existing RunJS surfaces reference an entry by repository, entry, and kind instead of copying code into each FlowModel.
+Light extensions organize multi-file RunJS entries for complete JavaScript models on the package's internal VSC repository module. A supported model references an entry by repository, entry, and kind instead of copying the active source into each FlowModel.
 
 ## Boundaries
 
 - A light extension repository is not a NocoBase plugin package and does not have plugin lifecycle hooks.
 - This package must reuse the shared RunJS compiler, artifact contract, and runtime. Repository creation and source saves are compile-gated and atomic: validation or compilation errors leave repository metadata, Head, runtime artifacts, and existing references unchanged.
 - Light extension entries cannot define collections, migrations, resources, ACL rules, app providers, server middleware, or package dependencies.
-- Runtime code is resolved by existing RunJS surfaces through entry bindings. The plugin owns repository organization, entry metadata, compiled runtime artifacts, settings validation, reference indexes, and selection UI; it does not add a separate publication/version-policy layer.
+- Runtime code is resolved by supported JS Model surfaces through entry bindings. The plugin owns repository organization, entry metadata, compiled runtime artifacts, settings validation, reference indexes, and selection UI; it does not add a separate publication/version-policy layer.
 - Runtime resolution is available to logged-in page users, matching the existing RunJS source runtime. Repository authoring and management remain behind `pm.light-extension`, so page users do not receive create, save, archive, or delete permissions merely to execute an existing binding.
 - Core MVP targets client-v2 first. During the current admin-shell transition, the legacy client bundle also registers the same minimal settings page so `/admin/settings/light-extension` can load without a remote-plugin 404. That bridge must stay thin: no `@nocobase/client` imports, no SchemaComponent runtime, and no ordinary plugin-management concepts.
+
+## Supported product model
+
+Light Extension exposes exactly five entry kinds:
+
+| Entry kind | Complete model surface | Source root |
+| --- | --- | --- |
+| `js-block` | JS Block | `src/client/js-blocks/<entry-name>/` |
+| `js-page` | JS Page | `src/client/js-pages/<entry-name>/` |
+| `js-field` | JS Field, editable JS Field, and JS Column | `src/client/js-fields/<entry-name>/` |
+| `js-action` | JS Action families | `src/client/js-actions/<entry-name>/` |
+| `js-item` | JS Item families | `src/client/js-items/<entry-name>/` |
+
+JS Column deliberately reuses `js-field`; its entry descriptor uses `category: "js-column"` when it needs a column-specific presentation. Generic JavaScript values in defaults, assignment rules, linkage rules, custom variables, and similar nested settings are inline-only. They continue to use the shared RunJS compiler/runtime/editor, but they cannot be selected, moved, versioned, or edited as independent Light Extension entries.
 
 ## SDK Shape
 
@@ -157,9 +171,11 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 
 ## UI Integration Contract
 
-Light extensions are selected from the code-source settings of existing JS Block, JS Item, JS Field, JS Column, JS Action, and value-return RunJS surfaces. JS Column reuses the `js-field` kind because both surfaces share the same render contract. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
+Light extensions are selected from the code-source settings of existing JS Block, JS Page, JS Item, JS Field, JS Column, and JS Action surfaces. JS Column reuses the `js-field` kind because both surfaces share the same render contract. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
 
-An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, `js-fields`, and `runjs` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-pages`, `js-actions`, `js-items`, and `js-fields` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+
+Generic inline hosts behave the same whether this plugin is enabled or disabled. They use the ordinary inline code editor and inline runtime; the Light Extension Studio providers only accept canonical `flowModel.step` locators for complete JS Models. Workflow JavaScript, chart option/events, and `flowModel.flowRegistry.runjs` keep their public RunJS contracts but are not handled by this plugin's Studio provider.
 
 ## Move RunJS Source Contract
 
@@ -202,8 +218,10 @@ If any step fails, destination source, compiled artifacts, host binding, and ref
 | RunJS locator | Derived light-extension kind | Move action |
 | --- | --- | --- |
 | `flowModel.step` with `JSBlockModel` | `js-block` | Supported |
-| `flowModel.step` with JS Field/Action/Item owner metadata | `js-field`, `js-action`, or `js-item` | Supported |
-| `flowModel.nestedRunJS` with a value-return RunJS host | `runjs` | Supported |
+| `flowModel.step` with `JSPageModel` | `js-page` | Supported |
+| `flowModel.step` with JS Field/Column owner metadata | `js-field` | Supported |
+| `flowModel.step` with JS Action/Item owner metadata | `js-action` or `js-item` | Supported |
+| Generic default, assignment, linkage, or custom-variable JavaScript | N/A | Inline-only; not exposed |
 | Workflow JavaScript, chart option/events, or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
 
 ### Validation and errors
@@ -229,6 +247,31 @@ Primary assertion coverage:
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.test.ts --run --reporter=verbose
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/move-source.test.tsx --run --reporter=verbose
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/vsc-file/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
+```
+
+## Generic RunJS hard-delete upgrade runbook
+
+The upgrade removes the former generic `runjs` entry kind and materializes every active generic binding back into its inline host. The latest reachable compiled artifact supplies `code`, `version`, and effective `settings`; stale compatibility snapshots are not treated as the source of truth. After migration, generic multi-file source is no longer independently editable, while complete JS Model entries remain external and versioned.
+
+Use this release procedure:
+
+1. Schedule a maintenance window. Stop application writes and wait for every Light Extension remote synchronization job to become idle.
+2. Back up the application database and the VSC storage that contains Light Extension repositories, commits, trees, blobs, and Head state. Verify that both backups can be restored together.
+3. On the previous version, resolve any mixed repository that contains both retained entries and generic source while an active remote is configured. Push the cleanup first or disconnect the remote; the upgrade will fail closed instead of rewriting an active remote-backed repository.
+4. Run `yarn nocobase upgrade`. The migration preflight verifies each active host, entry, repository Head, compiled artifact, settings payload, reference, remote state, and candidate repository tree before it writes anything.
+5. If preflight reports a missing artifact, Head mismatch, invalid settings, unknown host shape, active sync job, or mixed repository with an active remote, stop the rollout and repair that exact condition on the previous version. Do not bypass the check or edit nested FlowModel JSON directly.
+6. Start the application and, if the plugin was disabled during upgrade, enable it once. Normal startup asserts the hard-delete invariant; plugin enable also runs the migration before asserting it.
+7. Verify that active FlowModels have inline generic values, generic entries/references are gone, current repository Heads contain no `src/client/runjs/` files, managed entry directories use only the five supported roots, and unreferenced generic artifacts have been collected without deleting artifacts shared by retained entries. Shared helpers and repository-level metadata remain valid.
+
+The active-state zero-residual requirement covers generic FlowModel bindings, `runjs` entries, generic reference rows, active repository Head files under the removed root, and orphaned generic artifacts. It intentionally does not erase VSC historical commits/blobs, audit logs, or `runjs-source` repositories owned by retained workflow, chart, FlowRegistry, or complete JS Model surfaces. Remote repository cleanup is never performed implicitly by this migration.
+
+The migration is idempotent and transactional, but it is still a destructive product-boundary change. A successful database-only backup is insufficient because artifact materialization and repository cleanup also depend on the matching VSC state.
+
+Primary assertion coverage:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/generic-runjs-hard-delete-boundary.test.ts --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/migrations/remove-generic-runjs.test.ts --run --reporter=verbose
 ```
 
 ## Remote Sync Facade

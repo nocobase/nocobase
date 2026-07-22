@@ -19,6 +19,7 @@ import { FilterFormJSActionModel } from '../blocks/filter-form/FilterFormJSActio
 import { JSFormActionModel } from '../blocks/form/JSFormActionModel';
 import { JSBlockModel } from '../blocks/js-block/JSBlock';
 import { JSColumnModel } from '../blocks/table/JSColumnModel';
+import { JSPageModel } from '../base/PageModel/JSPageModel';
 import { JSEditableFieldModel } from '../fields/JSEditableFieldModel';
 import { JSFieldModel } from '../fields/JSFieldModel';
 import { JSItemModel } from '../fields/JSItemModel';
@@ -27,7 +28,7 @@ type SurfaceSpec = {
   name: string;
   modelClass: typeof FlowModel;
   flowKey: string;
-  lightExtensionKind: 'js-block' | 'js-action' | 'js-field' | 'js-item';
+  lightExtensionKind: 'js-block' | 'js-page' | 'js-action' | 'js-field' | 'js-item';
   surfaceStyle: RunJSSurfaceStyle;
   scene: string;
 };
@@ -62,6 +63,14 @@ const surfaces: SurfaceSpec[] = [
     lightExtensionKind: 'js-block',
     surfaceStyle: 'render',
     scene: 'block',
+  },
+  {
+    name: 'JSPageModel',
+    modelClass: JSPageModel,
+    flowKey: 'jsSettings',
+    lightExtensionKind: 'js-page',
+    surfaceStyle: 'render',
+    scene: 'page',
   },
   {
     name: 'JSFieldModel',
@@ -186,7 +195,7 @@ describe('RunJS FlowModel surfaces', () => {
     const step = flow?.getStep('runJs');
     const codeSchema = getRunJsCodeSchema(spec);
 
-    if (spec.name === 'JSBlockModel') {
+    if (spec.name === 'JSBlockModel' || spec.name === 'JSPageModel') {
       expect(codeSchema['x-component-props']?.minHeight).toBe('calc(100vh - 42px)');
     } else {
       expect(codeSchema['x-component-props']?.height).toBe('100%');

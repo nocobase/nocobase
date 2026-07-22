@@ -140,7 +140,7 @@ describe('JSFieldModel light extension source', () => {
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
     const runJsUiMode = await runJsStep?.uiMode?.(new FlowRuntimeContext(model, 'jsSettings', 'settings'));
-    expect(runJsUiMode?.props?.footer).toBeNull();
+    expect(runJsUiMode?.props?.footer).toBeUndefined();
 
     expect(sourceModeStep.defaultParams?.(model.context as FlowSettingsContext<JSFieldModel>)).toEqual({
       sourceMode: 'inline',
