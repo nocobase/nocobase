@@ -621,8 +621,9 @@ describe('workflow > instructions > parallel', () => {
 
       await sleep(500);
 
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
     });
 
