@@ -12,7 +12,7 @@ import { BuildOutlined } from '@ant-design/icons';
 import { Space } from 'antd';
 import { BlockModel, CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/client-v2';
 import type { FlowEngineContext, FlowModel } from '@nocobase/flow-engine';
-import { MultiRecordResource, useFlowEngine } from '@nocobase/flow-engine';
+import { MultiRecordResource, SingleRecordResource, useFlowEngine } from '@nocobase/flow-engine';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
 import type { ContextItem, WorkContextOptions } from '../types';
 import { useT } from '../../locale';
@@ -288,7 +288,24 @@ const safeGet = <T = unknown,>(record: Record<string, unknown>, key: string): T 
   }
 };
 
+const isSingleRecordResource = (resource: unknown): boolean => {
+  if (resource instanceof SingleRecordResource) {
+    return true;
+  }
+  if (!resource || typeof resource !== 'object') {
+    return false;
+  }
+  const candidate = resource as {
+    constructor?: { name?: string };
+    isNewRecord?: unknown;
+  };
+  return candidate.constructor?.name === 'SingleRecordResource' || 'isNewRecord' in candidate;
+};
+
 const isMultiRecordResource = (resource: unknown): resource is MultiRecordResource & { getFilter?: () => unknown } => {
+  if (isSingleRecordResource(resource)) {
+    return false;
+  }
   if (resource instanceof MultiRecordResource) {
     return true;
   }
