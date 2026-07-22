@@ -43,6 +43,11 @@ test('prepares a local yarn portal template and writes the manifest', async () =
   await writePortalTemplate(templatePath, 'yarn.lock');
   await fsp.mkdir(path.join(templatePath, '.git'), { recursive: true });
   await fsp.writeFile(path.join(templatePath, 'local-only.ts'), 'export const localOnly = true;\n');
+  await fsp.mkdir(path.join(templatePath, 'node_modules', 'stale-dependency'), { recursive: true });
+  await fsp.writeFile(
+    path.join(templatePath, 'node_modules', 'stale-dependency', 'index.js'),
+    'module.exports = null;\n',
+  );
 
   await expect(
     prepareInitialPortalTemplate({
@@ -59,6 +64,7 @@ test('prepares a local yarn portal template and writes the manifest', async () =
   await expect(fsp.access(path.join(portalDir, 'package.json'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, 'local-only.ts'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.git'))).rejects.toThrow();
+  await expect(fsp.access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
   expect(runCommand).toHaveBeenNthCalledWith(1, 'yarn', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),

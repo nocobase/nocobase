@@ -386,6 +386,7 @@ export async function prepareInitialPortalTemplate(
         : undefined;
     cleanupPortalDir = true;
     await copyTemplate(templateDir, portalDir);
+    await rm(path.join(portalDir, 'node_modules'), { recursive: true, force: true });
     await installAndBuildPortal({
       portalDir,
       portalName,
