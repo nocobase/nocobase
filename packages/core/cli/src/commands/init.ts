@@ -950,6 +950,7 @@ Prompt modes:
       'app-root-path'?: string;
       'app-port'?: string;
       'storage-path'?: string;
+      'portal-template'?: string;
       'db-port'?: string;
       yes?: boolean;
     },
@@ -957,7 +958,10 @@ Prompt modes:
   ): Promise<PromptInitialValues> {
     const out: PromptInitialValues = {};
 
-    if (!Object.prototype.hasOwnProperty.call(presetValues, 'appPort')) {
+    const shouldResolveAppInitialValues =
+      !Object.prototype.hasOwnProperty.call(presetValues, 'appPort') ||
+      !Object.prototype.hasOwnProperty.call(presetValues, 'portalTemplate');
+    if (shouldResolveAppInitialValues) {
       const appInitialValues = await Install.buildAppPromptInitialValues({
         envName: String(presetValues.appName ?? '').trim(),
         flags: {
@@ -965,11 +969,22 @@ Prompt modes:
           'app-path': flags['app-path'] ?? '',
           'app-root-path': flags['app-root-path'] ?? '',
           'storage-path': flags['storage-path'] ?? '',
+          'portal-template':
+            flags['portal-template'] ??
+            (Object.prototype.hasOwnProperty.call(presetValues, 'portalTemplate')
+              ? String(presetValues.portalTemplate ?? '')
+              : undefined),
         },
         warnOnPortFallback: false,
       });
-      if (appInitialValues.appPort !== undefined) {
+      if (appInitialValues.appPort !== undefined && !Object.prototype.hasOwnProperty.call(presetValues, 'appPort')) {
         out.appPort = appInitialValues.appPort;
+      }
+      if (
+        appInitialValues.portalTemplate !== undefined &&
+        !Object.prototype.hasOwnProperty.call(presetValues, 'portalTemplate')
+      ) {
+        out.portalTemplate = appInitialValues.portalTemplate;
       }
     }
 

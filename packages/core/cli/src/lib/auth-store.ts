@@ -178,6 +178,7 @@ export interface AuthConfig {
     init?: {
       defaultUiHost?: string;
       defaultApiHost?: string;
+      defaultPortalTemplate?: string;
     };
   };
   lastEnv?: string;
@@ -301,6 +302,7 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
   const locale = normalizeOptionalCliLocale(settings.locale);
   const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
   const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
+  const defaultPortalTemplate = normalizeOptionalString(settings.init?.defaultPortalTemplate);
   const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
   const logRetentionDays =
     typeof settings.log?.retentionDays === 'number' && Number.isInteger(settings.log.retentionDays)
@@ -324,11 +326,12 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(locale ? { locale } : {}),
-      ...(defaultUiHost || defaultApiHost
+      ...(defaultUiHost || defaultApiHost || defaultPortalTemplate
         ? {
             init: {
               ...(defaultUiHost ? { defaultUiHost } : {}),
               ...(defaultApiHost ? { defaultApiHost } : {}),
+              ...(defaultPortalTemplate ? { defaultPortalTemplate } : {}),
             },
           }
         : {}),

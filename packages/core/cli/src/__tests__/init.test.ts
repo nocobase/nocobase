@@ -2257,6 +2257,54 @@ test('nb init seeds the configured docker registry into web UI defaults', async 
   }
 });
 
+test('nb init seeds the configured default portal template into setup defaults', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  const buildDynamicInitialValuesForInstall = (
+    Init as unknown as {
+      buildDynamicInitialValuesForInstall: (
+        flags: { yes?: boolean; 'app-port'?: string; 'db-port'?: string; 'portal-template'?: string },
+        presetValues: Record<string, string | number | boolean>,
+      ) => Promise<Record<string, string | number | boolean>>;
+    }
+  ).buildDynamicInitialValuesForInstall;
+
+  const { setCliConfigValue, deleteCliConfigValue } = await import('../lib/cli-config.js');
+
+  await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
+  try {
+    await expect(
+      buildDynamicInitialValuesForInstall(
+        { yes: false },
+        {
+          appName: 'app1',
+          appPort: '13000',
+          source: 'docker',
+          builtinDb: true,
+          dbDialect: 'postgres',
+        },
+      ),
+    ).resolves.toMatchObject({
+      portalTemplate: '/workspace/portal-template',
+    });
+    await expect(
+      buildDynamicInitialValuesForInstall(
+        { yes: false, 'portal-template': '/explicit/portal-template' },
+        {
+          appName: 'app1',
+          appPort: '13000',
+          portalTemplate: '/explicit/portal-template',
+          source: 'docker',
+          builtinDb: true,
+          dbDialect: 'postgres',
+        },
+      ),
+    ).resolves.not.toHaveProperty('portalTemplate');
+  } finally {
+    await deleteCliConfigValue('default-portal-template', { scope: 'global' });
+  }
+});
+
 test('nb init preserves argument values that contain spaces when building install argv', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;

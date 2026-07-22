@@ -167,10 +167,31 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
+  expect(bundle.appConfigContent).toContain('location ^~ /console/x/apps/ {');
+  expect(bundle.appConfigContent).toContain('absolute_redirect off;');
+  expect(bundle.appConfigContent).toContain(
+    'if ($uri ~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {',
+  );
+  expect(bundle.appConfigContent).toContain('return 308 /console/x/apps/$subapp/$portal/$is_args$args;');
+  expect(bundle.appConfigContent).toContain(
+    'if ($uri !~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {',
+  );
+  expect(bundle.appConfigContent).toContain('root /workspace/app/storage;');
+  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path');
+  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path/');
+  expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
+  expect(bundle.appConfigContent).toContain('return 308 /console/x/$portal/$is_args$args;');
+  expect(bundle.appConfigContent).toContain('if ($uri !~ ^/console/x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {');
+  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path');
+  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path/');
+  expect(bundle.appConfigContent.indexOf('location ^~ /console/x/apps/ {')).toBeLessThan(
+    bundle.appConfigContent.indexOf('location = /console/api {'),
+  );
   expect(bundle.appConfigContent).toContain('location ^~ /console/admin/ {');
   expect(bundle.appConfigContent).toContain('alias /workspace/.nocobase/proxy/nginx/demo/public/;');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v2.html =404;');
-  expect(bundle.appConfigContent).toContain('location ^~ /console/ {');
+  expect(bundle.appConfigContent).toContain('location /console/ {');
+  expect(bundle.appConfigContent).not.toContain('location ^~ /console/ {');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
   expect(bundle.appConfigContent.indexOf('location = /console/admin {')).toBeGreaterThan(
     bundle.appConfigContent.indexOf('location = /console/ws {'),
@@ -179,7 +200,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
     bundle.appConfigContent.indexOf('location = /console/admin {'),
   );
   expect(bundle.appConfigContent.indexOf('location / {')).toBeGreaterThan(
-    bundle.appConfigContent.indexOf('location ^~ /console/ {'),
+    bundle.appConfigContent.indexOf('location /console/ {'),
   );
   expect(bundle.mainConfigContent).toContain('include /workspace/.nocobase/proxy/nginx/snippets/log-format-http.conf;');
   expect(bundle.mainConfigContent).toContain('include /workspace/.nocobase/proxy/nginx/snippets/maps-http.conf;');
@@ -201,7 +222,14 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
 
   const bundle = await buildEnvProxyNginxBundle(runtime);
 
-  expect(bundle.appConfigContent).toContain('location ^~ / {');
+  expect(bundle.appConfigContent).toContain('location / {');
+  expect(bundle.appConfigContent).not.toContain('location ^~ / {');
+  expect(bundle.appConfigContent).toContain('location ^~ /x/apps/ {');
+  expect(bundle.appConfigContent).toContain(
+    'if ($uri ~ ^/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {',
+  );
+  expect(bundle.appConfigContent).toContain('location ^~ /x/ {');
+  expect(bundle.appConfigContent).toContain('if ($uri ~ ^/x/(?<portal>[A-Za-z0-9_-]+)$) {');
   expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
   expect(bundle.appConfigContent).not.toContain('return 302 /$is_args$args;');
@@ -230,6 +258,7 @@ test('buildManualEnvProxyNginxBundle derives the websocket path from appPublicPa
   expect(bundle.wsPath).toBe('/console/ws');
   expect(bundle.backendUrl).toBe('http://host.docker.internal:13000');
   expect(bundle.appConfigContent).toContain('location = /console/ws {');
+  expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
   expect(bundle.indexV1Content).toContain(`window['__nocobase_ws_path__'] = "/console/ws";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/v/";`);
 });
@@ -317,6 +346,8 @@ test('writeNginxProxyBundle overwrites non-managed app.conf when force is enable
   expect(result.status).toBe('updated');
   expect(content).toContain('# BEGIN NocoBase managed config');
   expect(content).toContain('listen 8080;');
+  expect(content).toContain('location ^~ /x/ {');
+  expect(content).toContain('/portals/main/$portal/dist/index.html');
 });
 
 test('buildEnvProxyNginxBundle prefers CDN_BASE_URL from the managed env file', async () => {

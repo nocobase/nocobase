@@ -1718,7 +1718,7 @@ export default class Install extends Command {
 
   static async buildAppPromptInitialValues(params: {
     envName?: string;
-    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path'>;
+    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path' | 'portal-template'>;
     warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
     const initialValues: PromptInitialValues = {};
@@ -1741,6 +1741,13 @@ export default class Install extends Command {
         label: 'Default app port',
         warn: params.warnOnPortFallback ?? true,
       });
+    }
+
+    if (params.flags['portal-template'] === undefined) {
+      const defaultPortalTemplate = Install.toOptionalPromptString(await getCliConfigValue('default-portal-template'));
+      if (defaultPortalTemplate) {
+        initialValues.portalTemplate = defaultPortalTemplate;
+      }
     }
 
     return initialValues;
@@ -3309,6 +3316,7 @@ export default class Install extends Command {
           'app-root-path': parsed['app-root-path'] ?? Install.toOptionalPromptString(appPreset.appRootPath),
           'app-port': parsed['app-port'] ?? Install.toOptionalPromptString(appPreset.appPort),
           'storage-path': parsed['storage-path'] ?? Install.toOptionalPromptString(appPreset.storagePath),
+          'portal-template': parsed['portal-template'] ?? Install.toOptionalPromptString(appPreset.portalTemplate),
         },
       }),
       values: appPreset,
