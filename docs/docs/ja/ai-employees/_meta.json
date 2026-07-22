@@ -289,6 +289,11 @@
       },
       {
         "type": "custom-link",
+        "label": "企業背景調査の自動化",
+        "link": "/ai-employees/scenarios/company-background-research"
+      },
+      {
+        "type": "custom-link",
         "label": "Viz: CRMシナリオ設定",
         "link": "/ai-employees/scenarios/viz-crm"
       },

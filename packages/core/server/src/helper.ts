@@ -39,7 +39,7 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-function resolveCorsOrigin(ctx: any) {
+export function resolveCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
   const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
   const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
@@ -59,7 +59,7 @@ function resolveCorsOrigin(ctx: any) {
       .filter(Boolean),
   );
 
-  if (whitelist.has(origin)) {
+  if (whitelist.has('*') || whitelist.has(origin)) {
     return origin;
   }
 

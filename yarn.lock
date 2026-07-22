@@ -12638,6 +12638,16 @@ axios@^0.18.1:
     follow-redirects "1.5.10"
     is-buffer "^2.0.2"
 
+axios@^1.4.0:
+  version "1.18.1"
+  resolved "https://registry.npmjs.org/axios/-/axios-1.18.1.tgz#d63f9863bcd8938815c86f9e2abd380189d96dfe"
+  integrity sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==
+  dependencies:
+    follow-redirects "^1.16.0"
+    form-data "^4.0.5"
+    https-proxy-agent "^5.0.1"
+    proxy-from-env "^2.1.0"
+
 axios@^1.7.0:
   version "1.7.7"
   resolved "https://registry.npmmirror.com/axios/-/axios-1.7.7.tgz#2f554296f9892a72ac8d8e4c5b79c14a91d0a47f"
@@ -16454,6 +16464,15 @@ dingtalk-jsapi@3.1.1:
   dependencies:
     promise-polyfill "^7.1.0"
 
+dingtalk-stream@2.1.6-beta.1:
+  version "2.1.6-beta.1"
+  resolved "https://registry.npmjs.org/dingtalk-stream/-/dingtalk-stream-2.1.6-beta.1.tgz#8a7212a9c45b6241bbf3ff5299842219068ce8f4"
+  integrity sha512-uYcBnf0Z4rfHHyN1ae4YnAFA6hUW2DmGVb0OZ53r/A272kuHnZynylE5pEJIJHkNIer6R9PCqpnsfsk9IuvglQ==
+  dependencies:
+    axios "^1.4.0"
+    debug "^4.3.4"
+    ws "^8.13.0"
+
 dir-glob@^3.0.1:
   version "3.0.1"
   resolved "https://registry.npmmirror.com/dir-glob/-/dir-glob-3.0.1.tgz#56dbf73d992a4a93ba1584f4534063fd2e41717f"
@@ -18943,7 +18962,7 @@ follow-redirects@1.5.10:
   dependencies:
     debug "=3.1.0"
 
-follow-redirects@^1.0.0:
+follow-redirects@^1.0.0, follow-redirects@^1.16.0:
   version "1.16.0"
   resolved "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.16.0.tgz#28474a159d3b9d11ef62050a14ed60e4df6d61bc"
   integrity sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==
@@ -20802,7 +20821,7 @@ https-proxy-agent@^2.1.0:
     agent-base "^4.3.0"
     debug "^3.1.0"
 
-https-proxy-agent@^5.0.0:
+https-proxy-agent@^5.0.0, https-proxy-agent@^5.0.1:
   version "5.0.1"
   resolved "https://registry.npmmirror.com/https-proxy-agent/-/https-proxy-agent-5.0.1.tgz#c59ef224a04fe8b754f3db0063a25ea30d0005d6"
   integrity sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==
@@ -22706,6 +22725,11 @@ jsprim@^1.2.2:
     extsprintf "1.3.0"
     json-schema "0.4.0"
     verror "1.10.0"
+
+jsqr@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.npmmirror.com/jsqr/-/jsqr-1.4.0.tgz#8efb8d0a7cc6863cb6d95116b9069123ce9eb2d1"
+  integrity sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==
 
 jstat@^1.9.6:
   version "1.9.6"
@@ -28824,6 +28848,11 @@ proxy-from-env@^1.1.0:
   resolved "https://registry.npmmirror.com/proxy-from-env/-/proxy-from-env-1.1.0.tgz#e102f16ca355424865755d2c9e8ea4f24d58c3e2"
   integrity sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==
 
+proxy-from-env@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/proxy-from-env/-/proxy-from-env-2.1.0.tgz#a7487568adad577cfaaa7e88c49cab3ab3081aba"
+  integrity sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==
+
 prr@~1.0.1:
   version "1.0.1"
   resolved "https://registry.npmmirror.com/prr/-/prr-1.0.1.tgz#d3fc114ba06995a45ec6893f484ceb1d78f5f476"
@@ -34935,10 +34964,10 @@ vasync@^2.2.1:
   dependencies:
     verror "1.10.0"
 
-vditor@^3.10.3:
-  version "3.10.4"
-  resolved "https://registry.npmmirror.com/vditor/-/vditor-3.10.4.tgz#df7e5cdf8c737b588152b2119942ff0e0904c9cd"
-  integrity sha512-NWaMom0buUvRjOCaK/jKeJEVfZNmfTgblK4+pxBoeTdiCYn5yWokcGYMh9GzHIvt5gy6FiQFc1VQvytIwyeIwA==
+vditor@^3.10.3, vditor@^3.11.2:
+  version "3.11.2"
+  resolved "https://registry.npmmirror.com/vditor/-/vditor-3.11.2.tgz#612a405c74b71278a4eea188db3c7d93c0884c11"
+  integrity sha512-8QguQQUPWbBFocnfQmWjz4jiykQnvsmCuhOomGIVVK7vc+dQq2h8w9qQQuEjUTZpnZT5fEdYbj4aLr1NGdAZaA==
   dependencies:
     diff-match-patch "^1.0.5"
 

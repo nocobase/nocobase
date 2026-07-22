@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-hello",
-  "version": "2.1.21",
+  "version": "2.1.29",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

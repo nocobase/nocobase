@@ -411,7 +411,7 @@ describe('transformItems - searchable flags', () => {
     await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
   });
 
-  it('closes searchable submenu after focus without input', async () => {
+  it('keeps searchable submenu open while interacting with its input', async () => {
     const engine = new FlowEngine();
     await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
@@ -451,7 +451,11 @@ describe('transformItems - searchable flags', () => {
     await user.click(screen.getByRole('textbox'));
     fireEvent.mouseLeave(screen.getByText('Fields'));
 
-    await waitFor(() => expect(screen.queryByText('Field 1')).not.toBeInTheDocument());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
   });
 
   it('closes active searchable submenu after outside click', async () => {
@@ -497,6 +501,85 @@ describe('transformItems - searchable flags', () => {
     fireEvent.pointerDown(document.body);
 
     await waitFor(() => expect(screen.queryByText('Fields')).not.toBeInTheDocument());
+  });
+
+  it('keeps the dropdown open when clicking its already-hovered trigger', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+    const user = userEvent.setup();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="items"
+              items={[
+                {
+                  key: 'child',
+                  label: 'Child',
+                  createModelOptions: { use: 'Parent' },
+                },
+              ]}
+            >
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const trigger = screen.getByText('Open');
+    await user.hover(trigger);
+    await waitFor(() => expect(screen.getByText('Child')).toBeInTheDocument());
+    expect(trigger).toHaveClass('ant-dropdown-open');
+
+    await user.click(trigger);
+
+    expect(screen.getByText('Child')).toBeInTheDocument();
+  });
+
+  it('closes the dropdown when clicking another dropdown trigger', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+    const user = userEvent.setup();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="firstItems"
+              items={[{ key: 'first-child', label: 'First child', createModelOptions: { use: 'Parent' } }]}
+            >
+              Open first
+            </AddSubModelButton>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="secondItems"
+              items={[{ key: 'second-child', label: 'Second child', createModelOptions: { use: 'Parent' } }]}
+            >
+              Open second
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.hover(screen.getByText('Open first'));
+    await waitFor(() => expect(screen.getByText('First child')).toBeInTheDocument());
+
+    fireEvent.pointerDown(screen.getByText('Open second'));
+
+    await waitFor(() => expect(screen.queryByText('First child')).not.toBeInTheDocument());
   });
 
   it('switches away from active searchable submenu and resets its input', async () => {

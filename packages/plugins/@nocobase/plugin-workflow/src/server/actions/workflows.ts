@@ -185,6 +185,12 @@ export async function execute(context: Context, next) {
   let processor;
   try {
     processor = (await plugin.execute(workflow, values, { manually: true })) as Processor;
+    if (processor === null) {
+      context.body = {
+        execution: null,
+      };
+      return next();
+    }
     if (!processor) {
       return context.throw(400, 'workflow not triggered');
     }
