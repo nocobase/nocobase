@@ -211,13 +211,24 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     appPublicPath: expect.any(Object),
     skipDownload: expect.any(Object),
   });
+  expect(webUiOptions?.stages[3]?.sectionTitle).toEqual({
+    key: 'commands.init.webUi.downloadAppFiles.title',
+  });
   expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
+    developmentMode: expect.objectContaining({ variant: 'radio' }),
+    portalName: expect.any(Object),
+    portalTemplate: expect.any(Object),
+  });
+  expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
+    key: 'commands.init.webUi.developmentMode.title',
+  });
+  expect(webUiOptions?.stages[5]?.catalog).toMatchObject({
     dbPassword: expect.any(Object),
     dbSchema: expect.any(Object),
     dbTablePrefix: expect.any(Object),
     dbUnderscored: expect.any(Object),
   });
-  expect(webUiOptions?.stages[6]?.catalog).toMatchObject({
+  expect(webUiOptions?.stages[7]?.catalog).toMatchObject({
     installApiBaseUrl: expect.any(Object),
     installAuthType: expect.any(Object),
     installAccessToken: expect.any(Object),
@@ -669,7 +680,7 @@ test('nb init does not expose duplicate username/password fields in the final co
   await Init.prototype.run.call(command);
 
   const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
-  const finalCatalog = webUiOptions?.stages[6]?.catalog as Record<string, unknown>;
+  const finalCatalog = webUiOptions?.stages[7]?.catalog as Record<string, unknown>;
   expect(finalCatalog.installUsername).toBe(undefined);
   expect(finalCatalog.installPassword).toBe(undefined);
   expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({

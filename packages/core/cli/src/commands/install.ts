@@ -651,10 +651,10 @@ export default class Install extends Command {
       options: [...INSTALL_DEVELOPMENT_MODES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial Portal name when --development-mode vibe-coding is used',
+      description: 'Initial portal name when --development-mode vibe-coding is used',
     }),
     'portal-template': Flags.string({
-      description: 'Initial Portal template Git URL or local path when --development-mode vibe-coding is used',
+      description: 'Initial portal template Git URL or local path when --development-mode vibe-coding is used',
     }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',

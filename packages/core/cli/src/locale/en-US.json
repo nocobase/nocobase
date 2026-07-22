@@ -345,15 +345,15 @@
           "message": "Development mode",
           "noCodeLabel": "No-code",
           "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
-          "vibeCodingLabel": "Vibe Coding",
-          "vibeCodingHint": "Initialize an independent Portal SPA from a Git or local template."
+          "vibeCodingLabel": "Vibe coding",
+          "vibeCodingHint": "Initialize an independent portal SPA from a Git or local template."
         },
         "portalName": {
-          "message": "Initial Portal name",
+          "message": "Initial portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
-          "message": "Initial Portal template Git URL or local path",
+          "message": "Initial portal template (Git URL or local path)",
           "placeholder": "git@github.com:nocobase/admin-starter.git"
         },
         "storagePath": {
@@ -460,15 +460,15 @@
           "message": "Development mode",
           "noCodeLabel": "No-code",
           "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
-          "vibeCodingLabel": "Vibe Coding",
-          "vibeCodingHint": "Initialize an independent Portal SPA from a Git or local template."
+          "vibeCodingLabel": "Vibe coding",
+          "vibeCodingHint": "Initialize an independent portal SPA from a Git or local template."
         },
         "portalName": {
-          "message": "Initial Portal name",
+          "message": "Initial portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
-          "message": "Initial Portal template Git URL or local path",
+          "message": "Initial portal template (Git URL or local path)",
           "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
@@ -491,6 +491,10 @@
         "downloadAppFiles": {
           "title": "App source and version",
           "description": "Choose how to get the app and which source and version to use."
+        },
+        "developmentMode": {
+          "title": "Development mode",
+          "description": "Choose whether to use visual configuration or initialize a portal template."
         },
         "configureDatabase": {
           "title": "Configure the database",

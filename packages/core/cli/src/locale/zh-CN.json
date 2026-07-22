@@ -345,8 +345,8 @@
           "message": "开发模式",
           "noCodeLabel": "无代码",
           "noCodeHint": "通过可视化方式配置页面、字段、区块和工作流。",
-          "vibeCodingLabel": "Vibe Coding",
-          "vibeCodingHint": "基于 Git 或本地模板初始化一个独立的 Portal SPA。"
+          "vibeCodingLabel": "Vibe coding",
+          "vibeCodingHint": "基于 Git 或本地模板初始化一个独立的 portal SPA。"
         },
         "portalName": {
           "message": "初始化 Portal 名称",
@@ -460,8 +460,8 @@
           "message": "开发模式",
           "noCodeLabel": "无代码",
           "noCodeHint": "通过可视化方式配置页面、字段、区块和工作流。",
-          "vibeCodingLabel": "Vibe Coding",
-          "vibeCodingHint": "基于 Git 或本地模板初始化一个独立的 Portal SPA。"
+          "vibeCodingLabel": "Vibe coding",
+          "vibeCodingHint": "基于 Git 或本地模板初始化一个独立的 portal SPA。"
         },
         "portalName": {
           "message": "初始化 Portal 名称",
@@ -491,6 +491,10 @@
         "downloadAppFiles": {
           "title": "应用来源和版本",
           "description": "选择应用的获取方式，以及要使用的来源和版本。"
+        },
+        "developmentMode": {
+          "title": "开发模式",
+          "description": "选择使用可视化配置，或初始化 Portal 模板。"
         },
         "configureDatabase": {
           "title": "配置数据库",

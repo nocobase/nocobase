@@ -427,41 +427,6 @@ Prompt modes:
     appPath: installLikeOnly(Install.appPrompts.appPath),
     appPort: installLikeOnly(Install.appPrompts.appPort),
     appPublicPath: installLikeOnly(Install.appPrompts.appPublicPath),
-    developmentMode: installNewOnly({
-      type: 'select',
-      message: initText('prompts.developmentMode.message'),
-      options: [
-        {
-          value: 'no-code',
-          label: initText('prompts.developmentMode.noCodeLabel'),
-          hint: initText('prompts.developmentMode.noCodeHint'),
-        },
-        {
-          value: 'vibe-coding',
-          label: initText('prompts.developmentMode.vibeCodingLabel'),
-          hint: initText('prompts.developmentMode.vibeCodingHint'),
-        },
-      ],
-      initialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
-      yesInitialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
-      required: true,
-    }),
-    portalName: installNewOnly({
-      type: 'text',
-      message: initText('prompts.portalName.message'),
-      placeholder: DEFAULT_INIT_PORTAL_NAME,
-      initialValue: DEFAULT_INIT_PORTAL_NAME,
-      yesInitialValue: DEFAULT_INIT_PORTAL_NAME,
-      hidden: (values) => !isVibeCodingMode(values),
-      required: true,
-    }),
-    portalTemplate: installNewOnly({
-      type: 'text',
-      message: initText('prompts.portalTemplate.message'),
-      placeholder: 'git@github.com:nocobase/admin-starter.git',
-      hidden: (values) => !isVibeCodingMode(values),
-      required: true,
-    }),
     skipDownload: installNewOnly({
       type: 'boolean',
       message: initText('prompts.skipDownload.message'),
@@ -505,6 +470,42 @@ Prompt modes:
     devDependencies: installLikeDownloadExecutionOnly(Download.prompts.devDependencies),
     build: installLikeDownloadExecutionOnly(Download.prompts.build),
     buildDts: installLikeDownloadExecutionOnly(Download.prompts.buildDts),
+    developmentMode: installNewOnly({
+      type: 'select',
+      variant: 'radio',
+      message: initText('prompts.developmentMode.message'),
+      options: [
+        {
+          value: 'no-code',
+          label: initText('prompts.developmentMode.noCodeLabel'),
+          hint: initText('prompts.developmentMode.noCodeHint'),
+        },
+        {
+          value: 'vibe-coding',
+          label: initText('prompts.developmentMode.vibeCodingLabel'),
+          hint: initText('prompts.developmentMode.vibeCodingHint'),
+        },
+      ],
+      initialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
+      yesInitialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
+      required: true,
+    }),
+    portalName: installNewOnly({
+      type: 'text',
+      message: initText('prompts.portalName.message'),
+      placeholder: DEFAULT_INIT_PORTAL_NAME,
+      initialValue: DEFAULT_INIT_PORTAL_NAME,
+      yesInitialValue: DEFAULT_INIT_PORTAL_NAME,
+      hidden: (values) => !isVibeCodingMode(values),
+      required: true,
+    }),
+    portalTemplate: installNewOnly({
+      type: 'text',
+      message: initText('prompts.portalTemplate.message'),
+      placeholder: 'git@github.com:nocobase/admin-starter.git',
+      hidden: (values) => !isVibeCodingMode(values),
+      required: true,
+    }),
     dbDialect: installLikeOnly(Install.dbPrompts.dbDialect),
     builtinDb: installLikeOnly(Install.dbPrompts.builtinDb),
     builtinDbImage: installLikeOnly(Install.dbPrompts.builtinDbImage),
@@ -594,10 +595,10 @@ Prompt modes:
       options: [...INIT_DEVELOPMENT_MODES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial Portal name when --development-mode vibe-coding is used',
+      description: 'Initial portal name when --development-mode vibe-coding is used',
     }),
     'portal-template': Flags.string({
-      description: 'Initial Portal template Git URL or local path when --development-mode vibe-coding is used',
+      description: 'Initial portal template Git URL or local path when --development-mode vibe-coding is used',
     }),
     ui: Flags.boolean({
       description: 'Open the guided setup flow in a local browser form (not valid with --yes)',
@@ -1033,9 +1034,6 @@ Prompt modes:
           appPath: c.appPath,
           appPort: c.appPort,
           appPublicPath: c.appPublicPath,
-          developmentMode: c.developmentMode,
-          portalName: c.portalName,
-          portalTemplate: c.portalTemplate,
           skipDownload: c.skipDownload,
         } satisfies PromptsCatalog,
       },
@@ -1056,6 +1054,15 @@ Prompt modes:
           devDependencies: c.devDependencies,
           build: c.build,
           buildDts: c.buildDts,
+        } satisfies PromptsCatalog,
+      },
+      {
+        sectionTitle: initText('webUi.developmentMode.title'),
+        sectionDescription: initText('webUi.developmentMode.description'),
+        catalog: {
+          developmentMode: c.developmentMode,
+          portalName: c.portalName,
+          portalTemplate: c.portalTemplate,
         } satisfies PromptsCatalog,
       },
       {
