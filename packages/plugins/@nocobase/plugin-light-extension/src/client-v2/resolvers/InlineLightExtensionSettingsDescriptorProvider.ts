@@ -113,14 +113,22 @@ function parseInlineSettingsDescriptor(
   if (!key || !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(key)) {
     return undefined;
   }
-  if (Object.prototype.hasOwnProperty.call(descriptor, 'settingsSchema')) {
+  const hasSettings = Object.prototype.hasOwnProperty.call(descriptor, 'settings');
+  const hasSettingsSchema = Object.prototype.hasOwnProperty.call(descriptor, 'settingsSchema');
+  if (hasSettings && hasSettingsSchema) {
     return undefined;
   }
-  const hasSettings = Object.prototype.hasOwnProperty.call(descriptor, 'settings');
   if (hasSettings && !isRecord(descriptor.settings)) {
     return undefined;
   }
-  const schema = hasSettings ? buildLightExtensionSettingsSchema(descriptor.settings as Record<string, unknown>) : null;
+  if (hasSettingsSchema && !isRecord(descriptor.settingsSchema)) {
+    return undefined;
+  }
+  const schema: Record<string, unknown> | null = hasSettings
+    ? buildLightExtensionSettingsSchema(descriptor.settings as Record<string, unknown>)
+    : hasSettingsSchema && isRecord(descriptor.settingsSchema)
+      ? descriptor.settingsSchema
+      : null;
   if (!schema || !isRecord(schema.properties) || Object.keys(schema.properties).length === 0) {
     return {
       entryId: `inline:${repoId}:${key}`,

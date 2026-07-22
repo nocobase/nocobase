@@ -98,6 +98,13 @@ describe('@nocobase/runjs/settings', () => {
     expect(current).toEqual({ mode: 1 });
   });
 
+  it('removes a cleared override so the descriptor default becomes effective again', () => {
+    const cleared = setLightExtensionTopLevelSetting({ mode: 2 }, 'mode', undefined);
+
+    expect(cleared).toEqual({});
+    expect(normalizeLightExtensionSettings(descriptor, cleared)).toMatchObject({ mode: 1 });
+  });
+
   it('keeps step identity stable for schema changes and changes it for another entry', () => {
     expect(getLightExtensionSettingStepKey('entry-sales', 'displayOptions')).toBe(
       getLightExtensionSettingStepKey('entry-sales', 'displayOptions'),

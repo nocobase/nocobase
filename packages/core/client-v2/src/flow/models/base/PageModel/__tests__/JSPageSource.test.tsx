@@ -10,7 +10,10 @@
 import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTypeScriptProjectSession } from '../../../../components/code-editor/typescriptProject';
-import { RunJSSourceResolverRegistry } from '../../../../components/runjs-source';
+import {
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
+} from '../../../../components/runjs-source';
 import { RunJSEditorField, RunJSEditorRegistry } from '../../../../components/runjs-studio';
 import { assertLightExtensionSettingsHostContract } from '../../../utils/__tests__/lightExtensionSettingsHostContract';
 import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
@@ -29,6 +32,7 @@ const SOURCE_BINDING = {
 describe('JSPageModel source authoring', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
+    RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
   });
 
@@ -160,6 +164,59 @@ describe('JSPageModel source authoring', () => {
 
     expect(first.getStepParams('jsSettings', 'runJs')?.settings).toEqual({ label: 'Updated first' });
     expect(second.getStepParams('jsSettings', 'runJs')?.settings).toEqual({ label: 'Second' });
+  });
+
+  it('persists inline overrides across reload and removes cleared overrides', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-page-settings-persistence',
+      canHandle: () => true,
+      getSettingsDescriptor: async () => ({
+        entryId: 'inline:repo-page:page-settings',
+        settingsSchemaHash: 'schema-v1',
+        defaults: { title: 'Default title' },
+        schema: { type: 'object', properties: { title: { type: 'string', title: 'Title' } } },
+      }),
+    });
+    const engine = new FlowEngine();
+    engine.registerModels({ JSPageModel });
+    const model = engine.createModel<JSPageModel>({
+      uid: 'inline-js-page-settings',
+      use: 'JSPageModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceMode: 'inline',
+            sourceRef: { type: 'vsc-file', repoId: 'repo-page', commitId: 'commit-1' },
+            settings: {},
+          },
+        },
+      },
+    });
+    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
+    const titleStep = Object.values(steps || {}).find((step) => step.title === 'Title');
+
+    titleStep?.beforeParamsSave?.(model.context, { value: 'Saved title' });
+    const persistedStepParams = JSON.parse(JSON.stringify(model.stepParams)) as typeof model.stepParams;
+    const reloaded = engine.createModel<JSPageModel>({
+      uid: 'inline-js-page-settings-reloaded',
+      use: 'JSPageModel',
+      stepParams: persistedStepParams,
+    });
+    expect(reloaded.getStepParams('jsSettings', 'runJs')?.settings).toEqual({ title: 'Saved title' });
+
+    const reloadedSteps = await reloaded.getRuntimeFlowSettingSteps('jsSettings');
+    const reloadedTitleStep = Object.values(reloadedSteps || {}).find((step) => step.title === 'Title');
+    reloadedTitleStep?.beforeParamsSave?.(reloaded.context, { value: undefined });
+
+    expect(reloaded.getStepParams('jsSettings', 'runJs')?.settings).toEqual({});
+    const defaultedSteps = await reloaded.getRuntimeFlowSettingSteps('jsSettings');
+    const defaultedTitleStep = Object.values(defaultedSteps || {}).find((step) => step.title === 'Title');
+    expect(defaultedTitleStep?.defaultParams).toBeTypeOf('function');
+    expect(
+      typeof defaultedTitleStep?.defaultParams === 'function'
+        ? defaultedTitleStep.defaultParams({ model: reloaded } as never)
+        : defaultedTitleStep?.defaultParams,
+    ).toEqual({ value: 'Default title' });
   });
 
   it('reruns the page once after Studio saves', async () => {

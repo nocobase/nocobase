@@ -84,13 +84,14 @@ describe('inline light extension settings descriptor provider', () => {
     ['missing file', [{ path: 'src/client/index.tsx', content: 'return 1;' }]],
     ['bad JSON', [{ path: 'src/client/entry.json', content: '{' }]],
     [
-      'non-canonical settingsSchema',
+      'conflicting settings forms',
       [
         {
           path: 'src/client/entry.json',
           content: JSON.stringify({
             schemaVersion: 1,
             key: 'legacy',
+            settings: {},
             settingsSchema: { type: 'object', properties: {} },
           }),
         },
@@ -116,5 +117,45 @@ describe('inline light extension settings descriptor provider', () => {
         locator,
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it('accepts the JSON Schema descriptor form with the same defaults contract', async () => {
+    const request = vi.fn(async () => ({
+      data: {
+        data: {
+          repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_3' },
+          files: [
+            {
+              path: 'src/client/entry.json',
+              content: JSON.stringify({
+                schemaVersion: 1,
+                key: 'schema-form',
+                settingsSchema: {
+                  type: 'object',
+                  properties: {
+                    enabled: { type: 'boolean', default: false },
+                    count: { type: 'integer', default: 0 },
+                    label: { type: 'string', default: '' },
+                  },
+                },
+              }),
+            },
+          ],
+        },
+      },
+    }));
+    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+
+    await expect(
+      provider.getSettingsDescriptor({
+        sourceMode: 'inline',
+        sourceRef: { type: 'vsc-file', repoId: 'repo_1' },
+        locator,
+      }),
+    ).resolves.toMatchObject({
+      entryId: 'inline:repo_1:schema-form',
+      schema: { type: 'object' },
+      defaults: { enabled: false, count: 0, label: '' },
+    });
   });
 });

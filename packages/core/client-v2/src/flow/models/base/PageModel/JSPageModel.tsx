@@ -33,6 +33,7 @@ import {
   normalizeLightExtensionSourceMode,
   normalizeLightExtensionSourceSettingsForBinding,
   rememberLightExtensionBindingSettings,
+  resolveEffectiveRunJSSettings,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
   showPendingLightExtensionRequiredSettings,
@@ -225,14 +226,18 @@ export class JSPageModel extends RootPageModel {
 
   private async resolveRuntimeSource(): Promise<ResolvedJSPageRun> {
     const params = readRunParams(this);
+    const sourceMode = normalizeLightExtensionSourceMode(params.sourceMode);
+    const storedSettings = isRecord(params.settings) ? params.settings : {};
+    const descriptor = sourceMode === 'inline' ? await getJSPageLightExtensionSettingsDescriptor(this, params) : null;
+    const runtimeSettings = descriptor ? resolveEffectiveRunJSSettings(descriptor, storedSettings) : storedSettings;
     const runtime = await resolveRuntimeRunJS({
       runJs: {
         code: typeof params.code === 'string' ? params.code : '',
         version: typeof params.version === 'string' ? params.version : 'v2',
       },
-      sourceMode: typeof params.sourceMode === 'string' ? params.sourceMode : undefined,
+      sourceMode,
       sourceBinding: isRecord(params.sourceBinding) ? params.sourceBinding : undefined,
-      settings: isRecord(params.settings) ? params.settings : undefined,
+      settings: runtimeSettings,
       context: {
         modelUid: this.uid,
       },

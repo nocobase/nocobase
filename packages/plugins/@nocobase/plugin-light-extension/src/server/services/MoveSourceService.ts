@@ -84,6 +84,7 @@ export class MoveSourceService {
     private readonly runtimeCompileService: LightExtensionRuntimeCompileService,
     private readonly referenceService: ReferenceService,
     private readonly getAdapterRegistry: AdapterRegistryProvider,
+    private readonly applicationName = 'main',
   ) {}
 
   async moveSource(
@@ -92,6 +93,16 @@ export class MoveSourceService {
   ): Promise<LightExtensionMoveSourceResult> {
     try {
       assertMoveSourceInputSupported(input);
+      if (input.destination.type === 'default') {
+        const defaultRepo = await this.repoService.getOrCreateApplicationDefaultRepo(this.applicationName, ctx);
+        return await this.moveSourceToExistingRepo(
+          {
+            ...input,
+            destination: { type: 'existing', repoId: defaultRepo.id },
+          },
+          ctx,
+        );
+      }
       if (input.destination.type === 'existing') {
         return await this.moveSourceToExistingRepo(input, ctx);
       }
@@ -136,6 +147,7 @@ export class MoveSourceService {
       category: resolveMovedEntryCategory(kind, legacy),
       settingsSchema: originSettingsSchema,
     });
+    const entryKey = getRelocatedEntryKey(entryFiles, kind, input.entryName);
     const current = await this.fileService.pull({
       repoId: input.destination.repoId,
       includeContent: 'none',
@@ -145,6 +157,7 @@ export class MoveSourceService {
       input.destination.repoId,
       kind,
       input.entryName,
+      entryKey,
       entryFiles,
       current.files || [],
       await this.entryService.listEntries(input.destination.repoId),
@@ -162,7 +175,7 @@ export class MoveSourceService {
       },
     );
     return this.db.sequelize.transaction((transaction) =>
-      this.publishExistingMove(input, ctx, adapter, kind, prepared, transaction),
+      this.publishExistingMove(input, ctx, adapter, kind, entryKey, prepared, transaction),
     );
   }
 
@@ -171,6 +184,7 @@ export class MoveSourceService {
     ctx: MoveSourceServiceContext,
     adapter: ExternalBindingAdapter,
     kind: LightExtensionKind,
+    entryKey: string,
     prepared: LightExtensionPreparedSave,
     transaction: Transaction,
   ): Promise<LightExtensionMoveSourceResult> {
@@ -180,7 +194,7 @@ export class MoveSourceService {
     const currentLegacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
     const saved = await this.runtimeCompileService.publishPreparedSave(prepared, serviceContext);
-    const entry = await this.requireEntry(saved.repo.id, kind, input.entryName, serviceContext);
+    const entry = await this.requireEntry(saved.repo.id, kind, entryKey, serviceContext);
     const binding = buildSourceBinding(saved.repo, entry, kind);
     const writeResult = await adapter.writeExternalBinding({
       locator: input.locator,
@@ -200,17 +214,18 @@ export class MoveSourceService {
   private assertDestinationEntryAvailable(
     repoId: string,
     kind: LightExtensionKind,
-    entryName: string,
+    entryDirectory: string,
+    entryKey: string,
     entryFiles: LightExtensionFileChange[],
     currentFiles: Array<{ path: string }>,
     entries: LightExtensionEntryRecord[],
   ): void {
-    const entryRoot = getEntryRoot(kind, entryName);
+    const entryRoot = getEntryRoot(kind, entryDirectory);
     if (currentFiles.some((file) => file.path === entryRoot || file.path.startsWith(`${entryRoot}/`))) {
-      throw entryConflict(repoId, kind, entryName);
+      throw entryConflict(repoId, kind, entryDirectory);
     }
-    if (entries.some((entry) => entry.kind === kind && entry.entryName === entryName)) {
-      throw entryConflict(repoId, kind, entryName);
+    if (entries.some((entry) => entry.kind === kind && entry.entryName === entryKey)) {
+      throw entryConflict(repoId, kind, entryKey);
     }
     if (!entryFiles.some((file) => file.path.startsWith(`${entryRoot}/`))) {
       throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Moved entry workspace is incomplete');
@@ -260,11 +275,12 @@ export class MoveSourceService {
       category,
       settingsSchema: originSettingsSchema,
     });
+    const entryKey = getRelocatedEntryKey(entryFiles, kind, input.entryName);
     const commitMessage = buildMoveCommitMessage(input);
 
     const repo = await this.createDestinationRepo(input, entryFiles, commitMessage, serviceContext);
 
-    const entry = await this.requireEntry(repo.id, kind, input.entryName, serviceContext);
+    const entry = await this.requireEntry(repo.id, kind, entryKey, serviceContext);
     const binding = buildSourceBinding(repo, entry, kind);
     const writeResult = await adapter.writeExternalBinding({
       locator: input.locator,
@@ -687,9 +703,13 @@ function upsertEntryDescriptor(
   const descriptorPath = `${entryRoot}/entry.json`;
   const existing = files.find((file) => file.path === descriptorPath);
   const sourceDescriptor = existing ? parseEntryDescriptor(existing.content, descriptorPath) : {};
+  const sourceKey =
+    typeof sourceDescriptor.key === 'string' && LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(sourceDescriptor.key)
+      ? sourceDescriptor.key
+      : key;
   const descriptor: Record<string, unknown> = {
     schemaVersion: 1,
-    key,
+    key: sourceKey,
   };
   if (title) {
     descriptor.title = title;
@@ -728,6 +748,27 @@ function upsertEntryDescriptor(
   existing.content = content;
   existing.language = 'json';
   existing.operation = 'upsert';
+}
+
+function getRelocatedEntryKey(
+  files: LightExtensionFileChange[],
+  kind: LightExtensionKind,
+  entryDirectory: string,
+): string {
+  const descriptorPath = `${getEntryRoot(kind, entryDirectory)}/entry.json`;
+  const descriptorFile = files.find((file) => file.path === descriptorPath);
+  if (!descriptorFile) {
+    throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Moved entry descriptor is missing', {
+      details: { descriptorPath },
+    });
+  }
+  const descriptor = parseEntryDescriptor(descriptorFile.content, descriptorPath);
+  if (typeof descriptor.key !== 'string' || !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(descriptor.key)) {
+    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'RunJS entry descriptor key is invalid', {
+      details: { descriptorPath },
+    });
+  }
+  return descriptor.key;
 }
 
 function parseEntryDescriptor(content: string, path: string): Record<string, unknown> {

@@ -37,6 +37,7 @@ import {
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
   normalizeLightExtensionSourceSettingsForBinding,
   rememberLightExtensionBindingSettings,
+  resolveEffectiveRunJSSettings,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
@@ -793,10 +794,16 @@ ctx.render(\`
                 },
               },
             });
-            const runtimeSettings = resolveLightExtensionRuntimeSettings(params || {});
+            const storedSettings = resolveLightExtensionRuntimeSettings(params || {});
+            const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+            const descriptor =
+              sourceMode === INLINE_SOURCE_MODE ? await getLightExtensionSettingsDescriptor(model, params || {}) : null;
+            const runtimeSettings = descriptor
+              ? resolveEffectiveRunJSSettings(descriptor, storedSettings)
+              : storedSettings;
             const resolved = await resolveRuntimeRunJS({
               runJs: inlineRunJs,
-              sourceMode: params?.sourceMode,
+              sourceMode,
               sourceBinding: params?.sourceBinding,
               settings: runtimeSettings,
               context: {

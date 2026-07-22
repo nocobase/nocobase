@@ -325,6 +325,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.runtimeCompileService,
       this.referenceService,
       () => vscFileServerModule.getRunJSSourceAdapterRegistry(),
+      this.app.name,
     );
     this.moveToInlineService = new MoveToInlineService(
       db,

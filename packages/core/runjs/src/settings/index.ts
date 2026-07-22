@@ -92,10 +92,13 @@ export function setLightExtensionTopLevelSetting(
   propertyName: string,
   value: unknown,
 ): RunJSSettingsRecord {
-  return {
-    ...(isRecord(settings) ? cloneJsonValue(settings) : {}),
-    [propertyName]: cloneJsonValue(value),
-  };
+  const next = isRecord(settings) ? cloneJsonValue(settings) : {};
+  if (typeof value === 'undefined') {
+    delete next[propertyName];
+  } else {
+    next[propertyName] = cloneJsonValue(value);
+  }
+  return next;
 }
 
 export function getLightExtensionSettingStepKey(entryId: string, propertyPath: string): string {

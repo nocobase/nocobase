@@ -652,6 +652,34 @@ export function createLightExtensionSettingSteps<TModel extends FlowModel>(optio
   );
 }
 
+export function resolveEffectiveRunJSSettings(
+  descriptor: RunJSSourceSettingsDescriptor,
+  settings: unknown,
+): Record<string, unknown> {
+  const overrides = isRecord(settings) ? settings : {};
+  const effectiveSettings = normalizeLightExtensionSettings(descriptor, overrides);
+  if (!isRecord(descriptor.schema)) {
+    return effectiveSettings;
+  }
+
+  const overrideValidation = validateRunJSSettings({
+    schema: descriptor.schema,
+    settings: overrides,
+    mode: 'binding',
+  });
+  const runtimeValidation = validateRunJSSettings({
+    schema: descriptor.schema,
+    settings: effectiveSettings,
+    mode: 'runtime',
+  });
+  const invalidPaths = [...overrideValidation.errors, ...runtimeValidation.errors].map((issue) => issue.path);
+  if (invalidPaths.length) {
+    throw new LightExtensionSettingsValidationError(Array.from(new Set(invalidPaths)));
+  }
+
+  return effectiveSettings;
+}
+
 export function normalizeLightExtensionSourceSettings(options: {
   currentRunJs: Record<string, unknown>;
   nextSourceMode: LightExtensionSourceMode;

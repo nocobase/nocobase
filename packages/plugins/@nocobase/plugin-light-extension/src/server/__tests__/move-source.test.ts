@@ -17,6 +17,7 @@ import type {
   LightExtensionRepoRecord,
 } from '../../shared/types';
 import { MoveSourceService, relocateRunJSWorkspace } from '../services/MoveSourceService';
+import { buildApplicationDefaultLightExtensionIdentity } from '../services/LightExtensionRepoService';
 
 const locator = {
   kind: 'flowModel.step',
@@ -67,6 +68,15 @@ const entry: LightExtensionEntryRecord = {
 };
 
 describe('MoveSourceService', () => {
+  it('derives one stable default repository identity per application', () => {
+    expect(buildApplicationDefaultLightExtensionIdentity('sales-app')).toEqual(
+      buildApplicationDefaultLightExtensionIdentity('sales-app'),
+    );
+    expect(buildApplicationDefaultLightExtensionIdentity('sales-app')).not.toEqual(
+      buildApplicationDefaultLightExtensionIdentity('support-app'),
+    );
+  });
+
   it('relocates the current multi-file workspace and rewrites relative imports', () => {
     const files = relocateRunJSWorkspace({
       kind: 'js-block',
@@ -164,7 +174,7 @@ describe('MoveSourceService', () => {
     ]);
     expect(JSON.parse(files.find((file) => file.path.endsWith('/entry.json'))?.content || '{}')).toEqual({
       schemaVersion: 1,
-      key: 'normalize-order',
+      key: 'old-key',
       title: 'Normalize order',
       description: 'Keep this description',
       category: category || 'old-category',
@@ -620,6 +630,23 @@ describe('MoveSourceService', () => {
     expect(saveSource).not.toHaveBeenCalled();
   });
 
+  it('resolves the default destination from the stable application identity', async () => {
+    const getOrCreateApplicationDefaultRepo = vi.fn(async () => repo);
+    const service = createFailureService({
+      saveSource: vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] })),
+      getOrCreateApplicationDefaultRepo,
+      applicationName: 'sales-app',
+    });
+
+    await expect(
+      service.moveSource(createMoveSourceInput({ destination: { type: 'default' } }), { adapterContext: {} }),
+    ).resolves.toMatchObject({ repo: { id: repo.id }, entry: { id: entry.id } });
+    expect(getOrCreateApplicationDefaultRepo).toHaveBeenCalledWith(
+      'sales-app',
+      expect.objectContaining({ adapterContext: {} }),
+    );
+  });
+
   it.each([
     ['disabled', 'LIGHT_EXTENSION_REPO_DISABLED'],
     ['archived', 'LIGHT_EXTENSION_REPO_ARCHIVED'],
@@ -744,6 +771,8 @@ function createFailureService(options: {
   writeExternalBinding?: ReturnType<typeof vi.fn>;
   assertCanWrite?: ReturnType<typeof vi.fn>;
   syncReferences?: ReturnType<typeof vi.fn>;
+  getOrCreateApplicationDefaultRepo?: ReturnType<typeof vi.fn>;
+  applicationName?: string;
   onTransactionSuccess?: () => void;
 }): MoveSourceService {
   const transaction = options.transaction || ({ id: 'tx_failure' } as unknown as Transaction);
@@ -757,7 +786,11 @@ function createFailureService(options: {
         },
       },
     } as unknown as Database,
-    { lockInternalRepoForUpdate: vi.fn(async () => options.destinationRepo || repo) } as never,
+    {
+      lockInternalRepoForUpdate: vi.fn(async () => options.destinationRepo || repo),
+      getOrCreateApplicationDefaultRepo:
+        options.getOrCreateApplicationDefaultRepo || vi.fn(async () => options.destinationRepo || repo),
+    } as never,
     {
       pull: vi.fn(async () => ({
         repo: options.destinationRepo || repo,
@@ -797,6 +830,7 @@ function createFailureService(options: {
           getFingerprint: vi.fn(async () => 'owner_after'),
         }),
       }) as unknown as RunJSSourceAdapterRegistry,
+    options.applicationName || 'main',
   );
 }
 
