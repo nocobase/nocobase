@@ -20,12 +20,15 @@ import {
   compactPatchForDisplay,
   shouldSkipCodeToolCardRender,
 } from '../../../client-v2/ai-employees/tools/CodeToolCard';
+import { createChatBoxRuntime } from '../../../client-v2/ai-employees/chatbox/stores/runtime';
 import type { ChatEditorRef } from '../../../client-v2/ai-employees/types';
 
-const createEditorToolState = (uid: string, editorRef: ChatEditorRef) => ({
-  currentEditorRefUid: uid,
-  editorRef,
-});
+const createEditorToolState = (uid: string, editorRef: ChatEditorRef) => {
+  const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
+  chatBoxRuntime.chatMessageModel.setEditorRef(uid, editorRef);
+  chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid(uid);
+  return { chatBoxRuntime };
+};
 
 describe('ai coding context tools', () => {
   it('applies a model-generated hunk by searching old lines instead of trusting the hunk line number', () => {
@@ -157,6 +160,70 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 
     expect(result.status).toBe('success');
     expect(code).toBe('const label = "new";\nctx.render(label);\n');
+  });
+
+  it('resolves the latest editor when invoking a patch after the editor reopens', async () => {
+    let oldCode = 'const label = "old editor";\nctx.render(label);\n';
+    let newCode = 'const label = "new editor";\nctx.render(label);\n';
+    const oldEditorRef = {
+      read: () => oldCode,
+      write: (nextCode: string) => {
+        oldCode = nextCode;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const newEditorRef = {
+      read: () => newCode,
+      write: (nextCode: string) => {
+        newCode = nextCode;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const editorState = createEditorToolState('editor-reopen', oldEditorRef);
+    editorState.chatBoxRuntime.chatMessageModel.setEditorRef('editor-reopen', newEditorRef);
+    const app = {} as Parameters<NonNullable<(typeof patchJSCodeTool)[1]['invoke']>>[0];
+
+    const result = await patchJSCodeTool[1].invoke.call(editorState, app, {
+      patch: `@@ -1,2 +1,2 @@
+-const label = "new editor";
++const label = "patched editor";
+ ctx.render(label);
+`,
+    });
+
+    expect(result.status).toBe('success');
+    expect(oldCode).toBe('const label = "old editor";\nctx.render(label);\n');
+    expect(newCode).toBe('const label = "patched editor";\nctx.render(label);\n');
+  });
+
+  it('does not let an old editor cleanup unregister its replacement', () => {
+    const oldEditorRef = {
+      read: () => '',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const newEditorRef = {
+      read: () => '',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const editorState = createEditorToolState('editor-cleanup', oldEditorRef);
+    const chatMessageModel = editorState.chatBoxRuntime.chatMessageModel;
+    chatMessageModel.setEditorRef('editor-cleanup', newEditorRef);
+
+    chatMessageModel.unregisterEditorRef('editor-cleanup', oldEditorRef);
+
+    expect(chatMessageModel.editorRef['editor-cleanup']).toBe(newEditorRef);
+    expect(chatMessageModel.currentEditorRefUid).toBe('editor-cleanup');
+
+    chatMessageModel.unregisterEditorRef('editor-cleanup', newEditorRef);
+
+    expect(chatMessageModel.editorRef['editor-cleanup']).toBeNull();
+    expect(chatMessageModel.currentEditorRefUid).toBeNull();
   });
 
   it('returns a structured error when writeJSCode receives invalid params', async () => {

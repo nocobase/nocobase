@@ -67,6 +67,8 @@ const createChatFacade = (chatMessageModel: ChatMessageModel, sessionId?: string
     updateSubAgentConversationStatus: (subSessionId: string, status: 'pending' | 'completed') =>
       chatMessageModel.updateSessionSubAgentConversationStatus(sessionKey, subSessionId, status),
     setEditorRef: (uid: string, editorRef: ChatEditorRef | null) => chatMessageModel.setEditorRef(uid, editorRef),
+    unregisterEditorRef: (uid: string, editorRef: ChatEditorRef) =>
+      chatMessageModel.unregisterEditorRef(uid, editorRef),
     setCurrentEditorRefUid: (uid: string) => chatMessageModel.setCurrentEditorRefUid(uid),
     setFlowContext: (flowContext: unknown) => chatMessageModel.setFlowContext(flowContext),
     migrateSessionState: (toSessionId: string) => chatMessageModel.migrateSessionState(sessionKey, toSessionId),

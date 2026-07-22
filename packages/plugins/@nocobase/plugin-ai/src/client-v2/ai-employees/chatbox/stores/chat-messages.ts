@@ -84,6 +84,7 @@ export class ChatMessageModel {
       currentEditorRefUid: observable.ref,
       flowContext: observable.ref,
       setEditorRef: action,
+      unregisterEditorRef: action,
       setCurrentEditorRefUid: action,
       setFlowContext: action,
       resetSessionState: action,
@@ -143,6 +144,16 @@ export class ChatMessageModel {
 
   setEditorRef = (uid: string, editorRef: ChatEditorRef | null) => {
     this.editorRef = { ...this.editorRef, [uid]: editorRef };
+  };
+
+  unregisterEditorRef = (uid: string, editorRef: ChatEditorRef) => {
+    if (this.editorRef[uid] !== editorRef) {
+      return;
+    }
+    this.editorRef = { ...this.editorRef, [uid]: null };
+    if (this.currentEditorRefUid === uid) {
+      this.currentEditorRefUid = null;
+    }
   };
 
   setCurrentEditorRefUid = (uid: string | null | undefined) => {

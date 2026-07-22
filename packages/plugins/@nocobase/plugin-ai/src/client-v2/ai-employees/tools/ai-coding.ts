@@ -12,7 +12,7 @@ import type { FlowContext } from '@nocobase/flow-engine';
 import { getSnippetBody } from '@nocobase/flow-engine';
 import { applyPatch } from 'diff';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatBoxRuntime } from '../chatbox/stores/runtime';
+import { type ChatBoxRuntime, useChatBoxRuntime } from '../chatbox/stores/runtime';
 import type { ChatEditorRef } from '../types';
 
 type FlowInfoContext = FlowContext & {
@@ -27,8 +27,7 @@ type FlowContextToolState = ToolsOptions & {
 };
 
 type EditorToolState = ToolsOptions & {
-  editorRef?: ChatEditorRef | null;
-  currentEditorRefUid?: string;
+  chatBoxRuntime?: ChatBoxRuntime;
 };
 
 type FlowEditorToolState = FlowContextToolState & EditorToolState;
@@ -46,17 +45,14 @@ function getErrorMessage(error: unknown) {
 }
 
 function useEditorToolState<T extends EditorToolState>(state: T) {
-  const chat = useCurrentRuntimeChat();
-  const editorRefMap = chat.use.editorRef() ?? {};
-  const currentEditorRefUid = chat.use.currentEditorRefUid();
-  state.currentEditorRefUid = currentEditorRefUid;
-  state.editorRef = currentEditorRefUid ? editorRefMap[currentEditorRefUid] : null;
+  state.chatBoxRuntime = useChatBoxRuntime();
   return state;
 }
 
 function getCurrentEditorRef(state: EditorToolState) {
-  const uid = state.currentEditorRefUid;
-  const editorRef = uid ? state.editorRef : null;
+  const chatMessageModel = state.chatBoxRuntime?.chatMessageModel;
+  const uid = chatMessageModel?.currentEditorRefUid;
+  const editorRef = uid ? chatMessageModel?.editorRef[uid] : null;
   return { uid, editorRef };
 }
 
@@ -154,7 +150,8 @@ export const listCodeSnippetTool: [string, ToolsOptions] = [
   'listCodeSnippet',
   {
     invoke(this: EditorToolState) {
-      return (this.editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
+      const { editorRef } = getCurrentEditorRef(this);
+      return (editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
     },
     useHooks(this: EditorToolState) {
       return useEditorToolState(this);
