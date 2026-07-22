@@ -123,12 +123,12 @@ describe('light-extension swagger', () => {
 
     expect(previewRequest.required).toEqual(['repoId', 'files']);
     expect(Object.keys(previewRequest.properties).sort()).toEqual(
-      ['entryId', 'entryPath', 'files', 'kind', 'repoId', 'runtimeVersion'].sort(),
+      ['entryId', 'entryPath', 'expectedHeadCommitId', 'files', 'kind', 'repoId', 'runtimeVersion'].sort(),
     );
     expect(previewRequest.properties.values).toBeUndefined();
     expect(preview.description).toContain('HTTP 200');
     expect(preview.description).toContain('HTTP 207');
     expect(preview.description).toContain('HTTP 422');
-    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 207, 403, 422]);
+    expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 207, 403, 409, 422]);
   });
 });

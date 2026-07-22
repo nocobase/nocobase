@@ -757,6 +757,67 @@ describe('RunJSLightExtensionEditorProvider', () => {
     ).toContain('columns?: Array<{}>;');
   });
 
+  it.each([
+    ['JS block', 'js-block'],
+    ['JS page', 'js-page'],
+  ] as const)('previews inline %s code through its rendered FlowModel surface', async (_label, lightExtensionKind) => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const value = {
+      code: 'ctx.render(<div>persisted</div>);',
+      version: 'v2',
+      sourceMode: 'inline',
+    };
+    const engine = new FlowEngine();
+    const model = new FlowModel({
+      uid: `model_${lightExtensionKind}`,
+      flowEngine: engine,
+      stepParams: {
+        jsSettings: {
+          runJs: value,
+        },
+      },
+    });
+    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+    const renderNext = vi.fn(() => <div>inline studio</div>);
+    const rendered = render(
+      <EditorViewHarness model={model} onClose={vi.fn()}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: model.uid,
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+            versionPath: ['version'],
+          },
+          sourceMetadata: { lightExtensionKind },
+          surfaceStyle: 'render',
+          renderNext,
+        })}
+      </EditorViewHarness>,
+    );
+    const overrides = renderNext.mock.calls[0]?.[0] as Partial<RunJSEditorProviderRenderProps>;
+
+    await act(async () => {
+      await overrides.onPreview?.({
+        ...value,
+        code: 'ctx.render(<div>preview</div>);',
+      });
+    });
+
+    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+      code: 'ctx.render(<div>preview</div>);',
+      version: 'v2',
+      sourceMode: 'inline',
+    });
+    expect(rerender).toHaveBeenCalledTimes(1);
+
+    rendered.unmount();
+    await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
+    expect(rerender).toHaveBeenCalledTimes(2);
+  });
+
   it('offers move to inline for JS column light extension entries', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const api: ApiClientLike = {

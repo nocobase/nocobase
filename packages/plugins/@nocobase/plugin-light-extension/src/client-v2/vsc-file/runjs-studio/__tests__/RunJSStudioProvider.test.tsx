@@ -1113,6 +1113,22 @@ describe('runJSStudioProvider', () => {
     expect(await screen.findByText(/\[log\] hello!/)).toBeTruthy();
   });
 
+  it('uses the host preview without executing host-dependent code in the generic diagnostics context', async () => {
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() =>
+      expect(onPreview).toHaveBeenCalledWith({
+        code: 'return 1;',
+        version: 'v2',
+      }),
+    );
+    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+  });
+
   it('resolves the fixed src/client index entry by extension priority', async () => {
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
       if (url === 'runJSSources:open') {

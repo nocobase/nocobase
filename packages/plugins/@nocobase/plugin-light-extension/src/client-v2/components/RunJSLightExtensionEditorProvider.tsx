@@ -631,6 +631,64 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   );
 };
 
+const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
+  const { onPreview, surfaceStyle } = props;
+  const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
+  const persistedValueRef = React.useRef(props.value);
+  const previewAppliedRef = React.useRef(false);
+  const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
+  const locator = props.sourceLocator || props.locator;
+  const applyPreviewValue = React.useCallback(
+    async (value: RunJSValue): Promise<boolean> => {
+      if (onPreview) {
+        await onPreview(value);
+        return true;
+      }
+      return applyFlowModelStepPreview(flowContext, locator, surfaceStyle, value);
+    },
+    [flowContext, locator, onPreview, surfaceStyle],
+  );
+  previewValueApplierRef.current = applyPreviewValue;
+  const canPreview = Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, locator, surfaceStyle);
+
+  React.useEffect(() => {
+    if (!previewAppliedRef.current) {
+      persistedValueRef.current = props.value;
+    }
+  }, [props.value]);
+
+  React.useEffect(() => {
+    return () => {
+      if (!previewAppliedRef.current) {
+        return;
+      }
+      previewAppliedRef.current = false;
+      previewValueApplierRef
+        .current(persistedValueRef.current)
+        .catch((error) => console.error('Failed to restore inline RunJS preview', error));
+    };
+  }, []);
+
+  const handlePreview = React.useCallback(
+    async (value: RunJSValue) => {
+      previewAppliedRef.current = await applyPreviewValue(value);
+    },
+    [applyPreviewValue],
+  );
+
+  const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
+  return props.renderNext?.({
+    workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
+    ...(lightExtensionKind
+      ? {
+          workspaceTypeScriptContextResolver:
+            createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
+        }
+      : {}),
+    onPreview: canPreview ? handlePreview : undefined,
+  });
+};
+
 export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
   return {
     key: 'light-extension-runjs-value',
@@ -649,19 +707,10 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
     renderEditor(props) {
       const locator = props.sourceLocator || props.locator;
       if (locator?.kind === 'flowModel.step') {
-        const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
         return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
           <LightExtensionSourceWorkspaceEditor {...props} />
         ) : (
-          props.renderNext?.({
-            workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
-            ...(lightExtensionKind
-              ? {
-                  workspaceTypeScriptContextResolver:
-                    createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
-                }
-              : {}),
-          })
+          <InlineLightExtensionWorkspaceEditor {...props} />
         );
       }
       return <RunJSLightExtensionEditor {...props} />;

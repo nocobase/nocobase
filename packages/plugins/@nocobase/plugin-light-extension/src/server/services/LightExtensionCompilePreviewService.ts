@@ -192,6 +192,29 @@ export class LightExtensionCompilePreviewService {
       throw error;
     }
 
+    if (typeof input.expectedHeadCommitId !== 'undefined') {
+      const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+        filter: { id: input.repoId },
+        fields: ['id', 'headCommitId'],
+        transaction: previewContext.transaction,
+      });
+      if (!repo) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_REPO_NOT_FOUND',
+          `Light extension repo "${input.repoId}" was not found`,
+        );
+      }
+      if (repo.get('headCommitId') !== input.expectedHeadCommitId) {
+        throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_OUTDATED', 'Light extension source head is outdated', {
+          details: {
+            repoId: input.repoId,
+            expectedHeadCommitId: input.expectedHeadCommitId,
+            currentHeadCommitId: repo.get('headCommitId'),
+          },
+        });
+      }
+    }
+
     const previewFiles = input.files;
     const validation = this.validator.validateWorkspace({
       files: previewFiles.map((file) => ({ ...file })),
