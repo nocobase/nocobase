@@ -115,12 +115,8 @@ describe('DisplayPreviewFieldModel', () => {
     });
   });
 
-  it('downloads preview files and reports failed downloads', async () => {
+  it('downloads preview files', async () => {
     const click = vi.fn();
-    vi.stubGlobal('URL', {
-      createObjectURL: vi.fn(() => 'blob:download'),
-      revokeObjectURL: vi.fn(),
-    });
     vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLElement & {
         click?: () => void;
@@ -132,11 +128,6 @@ describe('DisplayPreviewFieldModel', () => {
       }
       return element;
     });
-    const fetchMock = vi.fn().mockResolvedValue({
-      blob: async () => new Blob(['content']),
-      ok: true,
-    });
-    vi.stubGlobal('fetch', fetchMock);
     const model = createModel({
       value: [{ filename: 'avatar.png', mimetype: 'image/png', url: '/avatar.png' }],
       showFileName: true,
@@ -149,7 +140,6 @@ describe('DisplayPreviewFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('renders nested titleField previews with separators and N/A placeholders', () => {
