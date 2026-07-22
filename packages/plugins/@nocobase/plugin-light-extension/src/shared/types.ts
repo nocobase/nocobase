@@ -340,6 +340,7 @@ export interface LightExtensionWorkspacePreviewFile {
 
 export interface LightExtensionWorkspacePreviewInput {
   repoId: string;
+  expectedHeadCommitId?: string | null;
   entryId?: string | null;
   kind?: LightExtensionKind;
   entryPath?: string;

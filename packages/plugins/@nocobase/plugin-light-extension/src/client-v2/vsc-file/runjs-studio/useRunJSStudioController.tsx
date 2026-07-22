@@ -653,7 +653,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
       if (!hasCompileError) {
-        if (flowCtx) {
+        if (props.onPreview) {
+          await props.onPreview({
+            ...value,
+            code: result.artifact.code,
+            version: result.artifact.version,
+          } as RunJSValue);
+        } else if (flowCtx) {
           const runDiagnostics = await diagnoseRunJS(result.artifact.code, flowCtx as unknown as FlowContext, {
             sourceMap: result.artifact.sourceMap,
             version: result.artifact.version,
@@ -663,11 +669,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           }
           appendRunDiagnostics(runDiagnostics, appendConsole);
         }
-        await props.onPreview?.({
-          ...value,
-          code: result.artifact.code,
-          version: result.artifact.version,
-        } as RunJSValue);
       }
       appendConsole({
         level: hasCompileError ? 'error' : 'info',

@@ -162,8 +162,8 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     if (!previewAppliedRef.current) {
       return;
     }
-    previewAppliedRef.current = false;
     await previewValueApplierRef.current(persistedPreviewValueRef.current);
+    previewAppliedRef.current = false;
   }, []);
 
   React.useEffect(() => {
@@ -171,9 +171,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       if (!previewAppliedRef.current) {
         return;
       }
-      previewAppliedRef.current = false;
       previewValueApplierRef
         .current(persistedPreviewValueRef.current)
+        .then(() => {
+          previewAppliedRef.current = false;
+        })
         .catch((error) => console.error('Failed to restore light extension workspace preview', error));
     };
   }, []);
@@ -299,10 +301,13 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         }
       }
     }
-    await (props.onPersistedChange || props.onChange)?.({
+    const persistedValue = {
       ...nextValue,
       ...(refreshedBinding ? { sourceBinding: refreshedBinding } : {}),
-    });
+    };
+    await (props.onPersistedChange || props.onChange)?.(persistedValue);
+    persistedPreviewValueRef.current = persistedValue;
+    previewAppliedRef.current = false;
     await waitForHostRefreshCommit();
   }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value, resolverApi]);
 
@@ -366,6 +371,84 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   );
 };
 
+const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
+  const { onChange, onPersistedChange, onPreview, surfaceStyle } = props;
+  const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
+  const persistedValueRef = React.useRef(props.value);
+  const previewAppliedRef = React.useRef(false);
+  const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
+  const locator = props.sourceLocator ?? props.locator;
+  const applyPreviewValue = React.useCallback(
+    async (value: RunJSValue): Promise<boolean> => {
+      if (onPreview) {
+        await onPreview(value);
+        return true;
+      }
+      return applyFlowModelStepPreview(flowContext, locator, surfaceStyle, value);
+    },
+    [flowContext, locator, onPreview, surfaceStyle],
+  );
+  previewValueApplierRef.current = applyPreviewValue;
+  const canPreview = Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, locator, surfaceStyle);
+
+  React.useEffect(() => {
+    if (!previewAppliedRef.current) {
+      persistedValueRef.current = props.value;
+    }
+  }, [props.value]);
+
+  React.useEffect(() => {
+    return () => {
+      if (!previewAppliedRef.current) {
+        return;
+      }
+      previewValueApplierRef
+        .current(persistedValueRef.current)
+        .then(() => {
+          previewAppliedRef.current = false;
+        })
+        .catch((error) => console.error('Failed to restore inline RunJS preview', error));
+    };
+  }, []);
+
+  const handlePreview = React.useCallback(
+    async (value: RunJSValue) => {
+      previewAppliedRef.current = await applyPreviewValue(value);
+    },
+    [applyPreviewValue],
+  );
+  const handleChange = React.useCallback(
+    (value: RunJSValue | string) => {
+      persistedValueRef.current = typeof value === 'string' ? { ...persistedValueRef.current, code: value } : value;
+      previewAppliedRef.current = false;
+      onChange?.(value);
+    },
+    [onChange],
+  );
+  const handlePersistedChange = React.useCallback(
+    async (value: RunJSValue) => {
+      persistedValueRef.current = value;
+      previewAppliedRef.current = false;
+      await (onPersistedChange || onChange)?.(value);
+    },
+    [onChange, onPersistedChange],
+  );
+
+  const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
+  return props.renderNext?.({
+    workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
+    ...(lightExtensionKind
+      ? {
+          workspaceTypeScriptContextResolver:
+            createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
+        }
+      : {}),
+    onPreview: canPreview ? handlePreview : undefined,
+    onChange: handleChange,
+    onPersistedChange: handlePersistedChange,
+  });
+};
+
 export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
   return {
     key: 'light-extension-runjs-value',
@@ -384,19 +467,10 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
       if (locator?.kind !== 'flowModel.step') {
         return props.renderNext?.() ?? null;
       }
-      const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
       return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
         <LightExtensionSourceWorkspaceEditor {...props} />
       ) : (
-        props.renderNext?.({
-          workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
-          ...(lightExtensionKind
-            ? {
-                workspaceTypeScriptContextResolver:
-                  createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
-              }
-            : {}),
-        }) ?? null
+        <InlineLightExtensionWorkspaceEditor {...props} />
       );
     },
   };

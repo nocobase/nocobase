@@ -324,6 +324,11 @@ export const lightExtensionPaths = {
                 repoId: {
                   type: 'string',
                 },
+                expectedHeadCommitId: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Optional pulled Head used to reject a stale local workspace before compilation.',
+                },
                 entryId: {
                   type: 'string',
                   nullable: true,
@@ -362,6 +367,7 @@ export const lightExtensionPaths = {
           content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
         },
         403: errorResponse('The current user cannot compile light-extension previews.'),
+        409: errorResponse('The supplied expected Head no longer matches the repository Head.'),
         422: {
           description:
             'The targeted entry or every whole-workspace entry was rejected. Inspect diagnostics before retrying.',

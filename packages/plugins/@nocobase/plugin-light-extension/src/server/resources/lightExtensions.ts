@@ -112,6 +112,7 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
 function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtensionWorkspacePreviewInput {
   return compactObject({
     repoId: requireRepoId(input),
+    expectedHeadCommitId: optionalNullableString(input, 'expectedHeadCommitId'),
     entryId: optionalNullableString(input, 'entryId'),
     kind: optionalLightExtensionKind(input, 'kind'),
     entryPath: optionalString(input, 'entryPath', 'entryPath'),

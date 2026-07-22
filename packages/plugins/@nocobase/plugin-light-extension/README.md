@@ -64,6 +64,18 @@ P1 does not include creating a page directly from an Entry, an App Bridge API, o
 
 `lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It performs the VSC commit, workspace validation, entry reconciliation, and runtime compilation in one database transaction. There is no separate scan action or scan state.
 
+The CLI exposes the same contract for UTF-8 JS Block and JS Page workspaces:
+
+```bash
+nb light pull --repo <repo-id> --entry <entry-id> --dir ./workspace
+nb light check --dir ./workspace --json-output
+nb light save --dir ./workspace --yes --json-output
+```
+
+`pull` refuses to overwrite local changes. `check` sends the complete workspace with the Head recorded by `pull`, while `save` sends only the reviewed delta and uses the same Head for conflict detection. A file change after `check` requires another check before saving.
+
+This workflow validates and saves source only. It does not launch a browser, perform Host Preview, report browser runtime errors to the terminal, generate a Context Pack, or generate precise host declarations. Autonomous Agent preview requires a separate browser-capable execution layer.
+
 Repository source operations use a different request shape from RunJS Studio workspaces:
 
 1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.

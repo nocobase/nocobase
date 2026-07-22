@@ -123,6 +123,7 @@ describe('plugin-light-extension compile preview', () => {
     const result = await service.compileWorkspacePreview(
       {
         repoId: repo.id,
+        expectedHeadCommitId: repo.headCommitId,
         entryId: 'lee_sales_kpi',
         kind: 'js-block',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -167,6 +168,21 @@ describe('plugin-light-extension compile preview', () => {
       expect(repository.update).not.toHaveBeenCalled();
       expect(repository.destroy).not.toHaveBeenCalled();
     }
+  });
+
+  it('rejects an unsaved workspace check when the pulled Head is stale', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([]);
+    const fileService = createFileServiceStub(repo, validSalesKpiFiles());
+    const { service } = createPreviewService(db, fileService);
+
+    await expect(
+      service.compileWorkspacePreview({
+        repoId: repo.id,
+        expectedHeadCommitId: 'stale_commit',
+        files: validSalesKpiFiles().map((file) => ({ path: file.path, content: file.content || '' })),
+      }),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_SOURCE_OUTDATED' });
   });
 
   it('rejects invalid settings visibility conditions before compiling an unsaved preview', async () => {
@@ -661,6 +677,7 @@ describe('plugin-light-extension compile preview', () => {
         params: {
           values: {
             repoId: 'ler_sales',
+            expectedHeadCommitId: 'vsc_commit_1',
             entryId: 'lee_sales_kpi',
             kind: 'js-block',
             entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -682,6 +699,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(compileWorkspacePreview).toHaveBeenCalledWith(
       {
         repoId: 'ler_sales',
+        expectedHeadCommitId: 'vsc_commit_1',
         entryId: 'lee_sales_kpi',
         kind: 'js-block',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -738,6 +756,7 @@ function createDbStub(entries: Record<string, unknown>[]) {
       },
     ]),
   );
+  persistenceRepositories.lightExtensionRepos.findOne = vi.fn().mockResolvedValue(createModel(createRepo()));
   const db = {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntries') {
