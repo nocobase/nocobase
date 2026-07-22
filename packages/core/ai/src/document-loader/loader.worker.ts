@@ -37,7 +37,7 @@ const loadDoc = async (filePath: string, type: 'docx' | 'doc'): Promise<Document
   return loader.load();
 };
 
-const loadPpt = async (filePath: string): Promise<Document[]> => {
+const loadPptx = async (filePath: string): Promise<Document[]> => {
   const loader = new PPTXLoader(filePath);
   return loader.load();
 };
@@ -56,9 +56,8 @@ const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
   switch (payload.extname) {
     case '.pdf':
       return loadPdf(payload.filePath);
-    case '.ppt':
     case '.pptx':
-      return loadPpt(payload.filePath);
+      return loadPptx(payload.filePath);
     case '.doc':
       return loadDoc(payload.filePath, 'doc');
     case '.docx':

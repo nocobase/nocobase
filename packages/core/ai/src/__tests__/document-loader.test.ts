@@ -60,4 +60,15 @@ describe('Document loader worker', () => {
     expect(documents[0].pageContent).toBe('Sheet: Sheet1\nname\tvalue\nalpha\t1');
     expect(documents[0].metadata.source).toBe(filePath);
   });
+
+  it('does not parse legacy ppt files', async () => {
+    const filePath = await createTempFile('source.ppt', 'legacy powerpoint content');
+
+    const documents = await loadByWorker('.ppt', {
+      filePath,
+      mimeType: 'application/vnd.ms-powerpoint',
+    });
+
+    expect(documents).toEqual([]);
+  });
 });
