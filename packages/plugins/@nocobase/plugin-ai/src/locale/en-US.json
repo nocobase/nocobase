@@ -214,6 +214,8 @@
   "Please select file objects.": "Please select file objects.",
   "Popup blocked. Please allow popups and try again.": "Popup blocked. Please allow popups and try again.",
   "Username already exists": "Username already exists",
+  "Use 1-64 letters, numbers, underscores, or hyphens.": "Use 1-64 letters, numbers, underscores, or hyphens.",
+  "Use 1-64 letters, numbers, spaces, or . _ - ' ( ) & ·.": "Use 1-64 letters, numbers, spaces, or . _ - ' ( ) & ·.",
   "Position": "Position",
   "Position description": "A short label indicating the AI employee’s responsibility.",
   "Position placeholder": "e.g. Translator, etc.",

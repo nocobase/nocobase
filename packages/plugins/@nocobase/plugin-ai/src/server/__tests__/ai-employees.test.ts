@@ -9,17 +9,22 @@
 
 import actions, { Context, Next } from '@nocobase/actions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AI_EMPLOYEE_USERNAME_CONFLICT } from '../../common/error-codes';
-import { create } from '../resource/aiEmployees';
+import {
+  AI_EMPLOYEE_NICKNAME_INVALID,
+  AI_EMPLOYEE_USERNAME_CONFLICT,
+  AI_EMPLOYEE_USERNAME_INVALID,
+} from '../../common/error-codes';
+import { create, update } from '../resource/aiEmployees';
 
-const createContext = (existingEmployee: unknown = null) => {
+const createContext = (
+  existingEmployee: unknown = null,
+  values: Record<string, unknown> = { username: 'atlas', nickname: 'Atlas' },
+) => {
   const findOne = vi.fn().mockResolvedValue(existingEmployee);
   const ctx = {
     action: {
       params: {
-        values: {
-          username: 'atlas',
-        },
+        values,
       },
     },
     db: {
@@ -75,5 +80,52 @@ describe('aiEmployees.create', () => {
     vi.spyOn(actions, 'create').mockRejectedValue(originalError);
 
     await expect(create(ctx, vi.fn() as Next)).rejects.toBe(originalError);
+  });
+
+  it('trims valid profile names before inserting', async () => {
+    const values = { username: '  sales-assistant_2  ', nickname: '  销售助理 2  ' };
+    const { ctx, findOne } = createContext(null, values);
+    const actionCreate = vi.spyOn(actions, 'create').mockResolvedValue(undefined);
+
+    await create(ctx, vi.fn() as Next);
+
+    expect(values).toEqual({ username: 'sales-assistant_2', nickname: '销售助理 2' });
+    expect(findOne).toHaveBeenCalledWith({ filter: { username: 'sales-assistant_2' } });
+    expect(actionCreate).toHaveBeenCalledOnce();
+  });
+
+  it('rejects invalid usernames before inserting', async () => {
+    const { ctx } = createContext(null, { username: 'sales assistant!', nickname: 'Sales Assistant' });
+    const actionCreate = vi.spyOn(actions, 'create').mockResolvedValue(undefined);
+
+    await expect(create(ctx, vi.fn() as Next)).rejects.toMatchObject({
+      status: 400,
+      code: AI_EMPLOYEE_USERNAME_INVALID,
+      message: 'Use 1-64 letters, numbers, underscores, or hyphens.',
+    });
+    expect(actionCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid nicknames before inserting', async () => {
+    const { ctx } = createContext(null, { username: 'sales-assistant', nickname: '!!!///[]' });
+    const actionCreate = vi.spyOn(actions, 'create').mockResolvedValue(undefined);
+
+    await expect(create(ctx, vi.fn() as Next)).rejects.toMatchObject({
+      status: 400,
+      code: AI_EMPLOYEE_NICKNAME_INVALID,
+      message: "Use 1-64 letters, numbers, spaces, or . _ - ' ( ) & ·.",
+    });
+    expect(actionCreate).not.toHaveBeenCalled();
+  });
+
+  it('validates and trims profile names on update', async () => {
+    const values = { username: '  atlas  ', nickname: '  Atlas Admin  ' };
+    const { ctx } = createContext(null, values);
+    const actionUpdate = vi.spyOn(actions, 'update').mockResolvedValue(undefined);
+
+    await update(ctx, vi.fn() as Next);
+
+    expect(values).toEqual({ username: 'atlas', nickname: 'Atlas Admin' });
+    expect(actionUpdate).toHaveBeenCalledOnce();
   });
 });
