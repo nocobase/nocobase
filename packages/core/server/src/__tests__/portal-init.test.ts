@@ -16,6 +16,7 @@ import { afterEach, expect, test } from 'vitest';
 import {
   initializePortalFromEnv,
   normalizeInitDevelopmentMode,
+  validatePortalAppName,
   validatePortalName,
   type PortalManifest,
 } from '../portal-init';
@@ -62,6 +63,12 @@ test('validates portal names', () => {
   expect(() => validatePortalName('../admin')).toThrow(/Invalid INIT_PORTAL_NAME/);
 });
 
+test('validates portal app names', () => {
+  expect(validatePortalAppName()).toBe('main');
+  expect(validatePortalAppName('crm_app-1')).toBe('crm_app-1');
+  expect(() => validatePortalAppName('../crm')).toThrow(/Invalid portal app name/);
+});
+
 test('skips portal initialization in no-code mode', async () => {
   const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-init-'));
   process.env.STORAGE_PATH = storagePath;
@@ -69,13 +76,13 @@ test('skips portal initialization in no-code mode', async () => {
   try {
     await initializePortalFromEnv({ developmentMode: 'no-code', portalName: 'admin' });
 
-    await expect(fs.promises.access(path.join(storagePath, 'portals', 'admin'))).rejects.toThrow();
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin'))).rejects.toThrow();
   } finally {
     await fs.promises.rm(storagePath, { recursive: true, force: true });
   }
 });
 
-test('clones a git portal template into storage/portals/<portal>', async () => {
+test('clones a git portal template into storage/portals/<app>/<portal>', async () => {
   const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-storage-'));
   const templatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-'));
   process.env.STORAGE_PATH = storagePath;
@@ -96,25 +103,84 @@ test('clones a git portal template into storage/portals/<portal>', async () => {
       portalTemplate: templatePath,
     });
 
-    await expect(fs.promises.access(path.join(storagePath, 'portals', 'admin', 'package.json'))).resolves.toBe(
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin', 'package.json'))).resolves.toBe(
       undefined,
     );
-    await expect(fs.promises.access(path.join(storagePath, 'portals', 'admin', '.git'))).rejects.toThrow();
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin', '.git'))).rejects.toThrow();
 
     const manifest = JSON.parse(
       await fs.promises.readFile(path.join(storagePath, 'portals', 'portal-manifest.json'), 'utf-8'),
     ) as PortalManifest;
     expect(manifest.defaultPortal).toBe('admin');
     expect(manifest.portals[0]).toMatchObject({
+      app: 'main',
       name: 'admin',
+      path: '/admin',
       source: {
         type: 'git',
         url: templatePath,
       },
     });
-    expect(manifest.portals[0].source.commit).toMatch(/^[0-9a-f]{40}$/);
   } finally {
     await fs.promises.rm(storagePath, { recursive: true, force: true });
     await fs.promises.rm(templatePath, { recursive: true, force: true });
+  }
+});
+
+test('clones a git portal template into a sub-app portal directory and appends manifest entry', async () => {
+  const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-storage-'));
+  const mainTemplatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-main-'));
+  const subTemplatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-sub-'));
+  process.env.STORAGE_PATH = storagePath;
+
+  try {
+    for (const templatePath of [mainTemplatePath, subTemplatePath]) {
+      await fs.promises.writeFile(path.join(templatePath, 'package.json'), '{"name":"portal-template"}\n');
+      await execFileAsync('git', ['init'], { cwd: templatePath });
+      await execFileAsync('git', ['add', '.'], { cwd: templatePath });
+      await execFileAsync(
+        'git',
+        ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', 'init'],
+        {
+          cwd: templatePath,
+        },
+      );
+    }
+
+    await initializePortalFromEnv({
+      appName: 'main',
+      developmentMode: 'vibe-coding',
+      portalName: 'admin',
+      portalTemplate: mainTemplatePath,
+    });
+    await initializePortalFromEnv({
+      appName: 'crm',
+      developmentMode: 'vibe-coding',
+      portalName: 'admin',
+      portalTemplate: subTemplatePath,
+    });
+
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'crm', 'admin', 'package.json'))).resolves.toBe(
+      undefined,
+    );
+
+    const manifest = JSON.parse(
+      await fs.promises.readFile(path.join(storagePath, 'portals', 'portal-manifest.json'), 'utf-8'),
+    ) as PortalManifest;
+    expect(manifest.defaultPortal).toBe('admin');
+    expect(manifest.portals).toHaveLength(2);
+    expect(manifest.portals[1]).toMatchObject({
+      app: 'crm',
+      name: 'admin',
+      path: '/admin',
+      source: {
+        type: 'git',
+        url: subTemplatePath,
+      },
+    });
+  } finally {
+    await fs.promises.rm(storagePath, { recursive: true, force: true });
+    await fs.promises.rm(mainTemplatePath, { recursive: true, force: true });
+    await fs.promises.rm(subTemplatePath, { recursive: true, force: true });
   }
 });

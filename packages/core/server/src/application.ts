@@ -1072,7 +1072,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterInstall', this, options);
 
     this.setMaintainingMessage('initialize portal...');
-    await initializePortalFromEnv();
+    await initializePortalFromEnv({ appName: this.name });
 
     if (this._maintainingStatusBeforeCommand?.error) {
       return;

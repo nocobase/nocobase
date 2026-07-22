@@ -17,6 +17,7 @@ import { IncomingRequest } from '.';
 // (DEFAULT_MODERN_CLIENT_PREFIX). See docs/adr/0001-modern-client-prefix.md.
 export const MODERN_CLIENT_DIST_DIR = 'v';
 export const PORTAL_CLIENT_PREFIX = 'x';
+export const DEFAULT_PORTAL_APP_NAME = 'main';
 export const DEFAULT_PORTAL_NAME = 'admin';
 export const PORTAL_MANIFEST_FILE = 'portal-manifest.json';
 
@@ -46,6 +47,13 @@ export function normalizePortalName(value?: string) {
     .trim()
     .replace(/^\/+|\/+$/g, '');
   return segment || DEFAULT_PORTAL_NAME;
+}
+
+export function normalizePortalAppName(value?: string) {
+  const segment = String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  return segment || DEFAULT_PORTAL_APP_NAME;
 }
 
 export function resolvePortalPublicPath(portalName: string, appPublicPath = '/') {
