@@ -14,18 +14,26 @@ import type {
   LightExtensionContextPackLike,
   LightExtensionSettingsTypegenFile,
 } from '@nocobase/light-extension-sdk/typegen';
-import {
+import * as lightExtensionAgentLoopModule from '@nocobase/light-extension-sdk/agent-loop';
+import type {
+  LightExtensionAgentLoopBudget,
+  LightExtensionAgentLoopEvent,
+  LightExtensionAgentLoopState,
+} from '@nocobase/light-extension-sdk/agent-loop';
+import { getCurrentEnvName, getEnv } from './auth-store.js';
+import { translateCli } from './cli-locale.js';
+
+type LightExtensionAgentLoopModule = typeof import('@nocobase/light-extension-sdk/agent-loop');
+const lightExtensionAgentLoopRuntime = lightExtensionAgentLoopModule as LightExtensionAgentLoopModule & {
+  default?: LightExtensionAgentLoopModule;
+};
+const {
   advanceLightExtensionAgentLoop,
   canSaveLightExtensionAgentLoop,
   createLightExtensionAgentLoopState,
   parseLightExtensionAgentLoopState,
   updateLightExtensionAgentLoopBudget,
-  type LightExtensionAgentLoopBudget,
-  type LightExtensionAgentLoopEvent,
-  type LightExtensionAgentLoopState,
-} from '@nocobase/light-extension-sdk/agent-loop';
-import { getCurrentEnvName, getEnv } from './auth-store.js';
-import { translateCli } from './cli-locale.js';
+} = lightExtensionAgentLoopRuntime.default || lightExtensionAgentLoopRuntime;
 
 export const LIGHT_EXTENSION_STATE_VERSION = 1;
 export const LIGHT_EXTENSION_STATE_PATH = '.nocobase/light-extension-state.json';
@@ -213,6 +221,7 @@ export interface LightExtensionWorkspaceState {
   baseHeadCommitId: string | null;
   treeHash: string | null;
   contextHash?: string;
+  contextReferenceId?: string;
   files: Record<string, LightExtensionWorkspaceFileState>;
   pulledAt: string;
   agentLoop?: LightExtensionAgentLoopState;
@@ -341,6 +350,15 @@ function requireNonNegativeNumber(value: unknown, label: string): number {
     );
   }
   return value;
+}
+
+function requireTrue(value: unknown, label: string): true {
+  if (value !== true) {
+    throw new LightExtensionCliError(
+      translateCli('commands.light.errors.invalidValue', { label }, { fallback: '{{label}} is missing or invalid.' }),
+    );
+  }
+  return true;
 }
 
 function isSupportedKind(value: string): value is 'js-block' | 'js-page' {
@@ -802,7 +820,11 @@ export function buildWorkspaceSnapshotId(files: readonly LightExtensionWorkspace
           language: file.language || '',
           mode: file.mode || '',
         }))
-        .sort((left, right) => stableSerialize(left).localeCompare(stableSerialize(right))),
+        .sort((left, right) => {
+          const leftValue = stableSerialize(left);
+          const rightValue = stableSerialize(right);
+          return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0;
+        }),
     ),
   );
 }
@@ -853,8 +875,8 @@ function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
       }),
     );
   }
+  const lastCheck = record.lastCheck === undefined ? undefined : requireRecord(record.lastCheck, 'Workspace last check');
   return {
-    ...(record as unknown as LightExtensionWorkspaceState),
     version: 1,
     app: { apiBaseUrl: sanitizeApiBaseUrl(requireString(app.apiBaseUrl, 'Workspace API base URL')) },
     env: { name: requireString(env.name, 'Workspace env name') },
@@ -874,9 +896,27 @@ function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
     ...(record.contextHash === undefined
       ? {}
       : { contextHash: requireString(record.contextHash, 'Workspace Context Pack hash') }),
+    ...(record.contextReferenceId === undefined
+      ? {}
+      : { contextReferenceId: requireString(record.contextReferenceId, 'Workspace Context Pack reference id') }),
     files: parsedFiles,
     pulledAt: requireString(record.pulledAt, 'Workspace pulledAt'),
     ...(record.agentLoop === undefined ? {} : { agentLoop: parseLightExtensionAgentLoopState(record.agentLoop) }),
+    ...(lastCheck === undefined
+      ? {}
+      : {
+          lastCheck: {
+            accepted: requireTrue(lastCheck.accepted, 'Workspace last check accepted'),
+            localSnapshotId: requireString(lastCheck.localSnapshotId, 'Workspace last check local snapshot'),
+            serverSnapshotId: requireString(lastCheck.serverSnapshotId, 'Workspace last check server snapshot'),
+            requestId: requireString(lastCheck.requestId, 'Workspace last check request id'),
+            baseHeadCommitId: requireNullableString(
+              lastCheck.baseHeadCommitId,
+              'Workspace last check base Head',
+            ),
+            checkedAt: requireString(lastCheck.checkedAt, 'Workspace last check timestamp'),
+          },
+        }),
   };
 }
 
@@ -1120,6 +1160,7 @@ export async function materializePulledWorkspace(options: {
   entry: LightExtensionEntryRecord;
   pull: LightExtensionPullResult;
   contextHash: string;
+  contextReferenceId?: string;
   generatedTypeFiles: LightExtensionSettingsTypegenFile[];
   previousState?: LightExtensionWorkspaceState;
 }): Promise<LightExtensionWorkspaceState> {
@@ -1175,6 +1216,7 @@ export async function materializePulledWorkspace(options: {
     baseHeadCommitId: options.pull.repo.headCommitId,
     treeHash: options.pull.tree?.hash || null,
     contextHash: options.contextHash,
+    ...(options.contextReferenceId ? { contextReferenceId: options.contextReferenceId } : {}),
     files: fileStates,
     pulledAt: new Date().toISOString(),
     agentLoop: createLightExtensionAgentLoopState({

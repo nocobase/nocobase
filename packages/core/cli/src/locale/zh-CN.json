@@ -195,6 +195,7 @@
           "noChanges": "没有可保存的本地源码修改。",
           "confirmationRequired": "保存操作需要交互确认，或显式传入 --yes。",
           "cancelled": "已取消保存。",
+          "contextOutdated": "权威 Context Pack 已从 {{expectedContextHash}} 变为 {{authoritativeContextHash}}。请重新拉取 Workspace 后再保存。",
           "conflict": "{{message}} 本地文件和 Pull 基线保持不变。请拉取新的 Head 后重放此补丁；CLI 不会替换 Head 后自动重试。"
         }
       },

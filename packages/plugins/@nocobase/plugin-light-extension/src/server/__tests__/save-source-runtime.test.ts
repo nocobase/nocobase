@@ -121,6 +121,65 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(runtimeArtifact.code).toContain('Sales KPI');
   });
 
+  it('retries a transient SQLite publish lock without duplicating the commit or compile audit', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Retry SQLite Runtime Publish',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const input = {
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'retry transient SQLite lock',
+      files: validSalesKpiFiles(),
+    };
+    const prepared = await runtimeCompileService.prepareSaveSource(input);
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    vi.spyOn(runtimeCompileService, 'prepareSaveSource').mockResolvedValue(prepared);
+    const transaction = app.db.sequelize.transaction.bind(app.db.sequelize);
+    const transactionSpy = vi.spyOn(app.db.sequelize, 'transaction');
+    let rootTransactionCalls = 0;
+    let publishing = false;
+    transactionSpy.mockImplementation(async (...args) => {
+      const rootTransaction = !publishing;
+      if (rootTransaction) {
+        rootTransactionCalls += 1;
+        if (rootTransactionCalls === 1) {
+          const callback = args[0];
+          if (typeof callback !== 'function') {
+            throw new Error('Expected a managed publish transaction callback');
+          }
+          publishing = true;
+          try {
+            return await transaction(async (activeTransaction) => {
+              await callback(activeTransaction);
+              throw Object.assign(new Error('SQLITE_BUSY: database is locked'), { code: 'SQLITE_BUSY' });
+            });
+          } finally {
+            publishing = false;
+          }
+        }
+        publishing = true;
+      }
+      try {
+        return await transaction(...args);
+      } finally {
+        if (rootTransaction) {
+          publishing = false;
+        }
+      }
+    });
+
+    const result = await runtimeCompileService.saveSource(input);
+    const compileLogs = await app.db.getRepository('lightExtensionLogs').find({
+      filter: { repoId: repo.id, action: 'runtimeCompile', result: 'success' },
+    });
+
+    expect(rootTransactionCalls).toBe(2);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount + 1);
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: result.commit.id });
+    expect(compileLogs).toHaveLength(1);
+  });
+
   it('only recompiles the Entry whose local source changed', async () => {
     const repo = await repoService.createRepo({
       name: 'Incremental Entry Save',
@@ -1093,24 +1152,26 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const compileEntry = vi.spyOn(compilerBridge, 'compileEntry');
     const publisher = PublishCompiledEntriesService.forDatabase(app.db);
     const publish = publisher.publishCompiledEntries.bind(publisher);
-    vi.spyOn(publisher, 'publishCompiledEntries').mockImplementation(async (batch, transaction) => {
+    const publishSpy = vi.spyOn(publisher, 'publishCompiledEntries').mockImplementation(async (batch, transaction) => {
       await publish(batch, transaction);
       throw new Error('forced compile publish rollback');
     });
     const failingRuntime = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge, {
       publishCompiledEntries: publisher,
     });
+    const input = {
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'rollback runtime compile audit',
+      files: validSalesKpiFiles(),
+    };
+    const prepared = await failingRuntime.prepareSaveSource(input);
+    vi.spyOn(failingRuntime, 'prepareSaveSource').mockResolvedValue(prepared);
 
-    await expect(
-      failingRuntime.saveSource({
-        repoId: repo.id,
-        expectedHeadCommitId: repo.headCommitId,
-        message: 'rollback runtime compile audit',
-        files: validSalesKpiFiles(),
-      }),
-    ).rejects.toThrow('forced compile publish rollback');
+    await expect(failingRuntime.saveSource(input)).rejects.toThrow('forced compile publish rollback');
 
     expect(compileEntry).toHaveBeenCalledTimes(1);
+    expect(publishSpy).toHaveBeenCalledTimes(1);
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
     await expect(
       app.db.getRepository('lightExtensionLogs').count({

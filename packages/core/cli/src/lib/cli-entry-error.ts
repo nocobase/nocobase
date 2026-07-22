@@ -53,6 +53,18 @@ export function formatCliEntryError(error: unknown, argv: string[]) {
   ].join('\n');
 }
 
+export function getCliRequestedExitCode(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+  const record = error as Record<string, unknown>;
+  if (record.code !== 'EEXIT' || !record.oclif || typeof record.oclif !== 'object') {
+    return undefined;
+  }
+  const exitCode = (record.oclif as Record<string, unknown>).exit;
+  return Number.isInteger(exitCode) && Number(exitCode) > 0 && Number(exitCode) <= 255 ? Number(exitCode) : undefined;
+}
+
 export function appendDiagnosticLogPath(message: string, logFile?: string) {
   const normalizedMessage = String(message ?? '').trim();
   const normalizedLogFile = String(logFile ?? '').trim();

@@ -8,11 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import {
-  createActiveEntryContextType,
-  generateBindingContextTypes,
-  generateClientSettingsTypes,
-} from '@nocobase/light-extension-sdk/typegen';
+import * as lightExtensionTypegenModule from '@nocobase/light-extension-sdk/typegen';
 import { executeRawApiRequest } from '../../lib/api-client.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import {
@@ -30,6 +26,13 @@ import {
   resolveLightExtensionTarget,
   unwrapResponseData,
 } from '../../lib/light-extension-workspace.js';
+
+type LightExtensionTypegenModule = typeof import('@nocobase/light-extension-sdk/typegen');
+const lightExtensionTypegenRuntime = lightExtensionTypegenModule as LightExtensionTypegenModule & {
+  default?: LightExtensionTypegenModule;
+};
+const { createActiveEntryContextType, generateBindingContextTypes, generateClientSettingsTypes } =
+  lightExtensionTypegenRuntime.default || lightExtensionTypegenRuntime;
 
 export default class LightPull extends Command {
   static override summary = translateCli('commands.light.pull.summary', undefined, {
@@ -273,6 +276,7 @@ export default class LightPull extends Command {
         entry,
         pull,
         contextHash: contextPack.contextHash,
+        contextReferenceId: contextPack.binding?.referenceId,
         generatedTypeFiles,
         previousState: backupPath ? undefined : latestInspection.state,
       });

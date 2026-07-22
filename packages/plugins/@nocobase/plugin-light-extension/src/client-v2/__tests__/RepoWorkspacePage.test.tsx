@@ -897,6 +897,7 @@ describe('LightExtensionWorkspacePage', () => {
 
   it('opens the remote problem channel before host preview, appends scoped API failures, and stales on source change', async () => {
     const operations: string[] = [];
+    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
     const onPreview = vi.fn(async () => {
       operations.push('preview');
     });
@@ -944,6 +945,9 @@ describe('LightExtensionWorkspacePage', () => {
         <LightExtensionWorkspacePage
           embedded
           entryId="lee_sales_kpi"
+          onFooterActionsChange={(actions) => {
+            footerActions = actions;
+          }}
           onPreview={onPreview}
           ownerLocator={ownerLocator}
           previewProblemClient={previewProblemClient}
@@ -954,6 +958,20 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>Agent-managed patch</div>);' },
+    });
+    await waitFor(() => expect(footerActions?.disabled).toBe(true));
+    act(() => {
+      footerActions?.onSave();
+    });
+    expect(screen.queryByRole('dialog', { name: 'Save version' })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
+      ),
+    ).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Run' }));
     await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
     expect(operations.slice(0, 2)).toEqual(['lightExtensionPreviewProblems:open', 'preview']);
@@ -984,7 +1002,12 @@ describe('LightExtensionWorkspacePage', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'View diff' }));
     expect(within(agentStatus).getByText('Reviewed')).toBeInTheDocument();
-    expect(within(agentStatus).getByText('Locked')).toBeInTheDocument();
+    expect(within(agentStatus).getByText('Ready')).toBeInTheDocument();
+    await waitFor(() => expect(footerActions?.disabled).toBe(false));
+    act(() => {
+      footerActions?.onSave();
+    });
+    expect(await screen.findByRole('dialog', { name: 'Save version' })).toBeInTheDocument();
 
     await act(async () => {
       await session.input.apiFailureReporter?.report({
@@ -1008,6 +1031,8 @@ describe('LightExtensionWorkspacePage', () => {
       });
     });
     expect(await screen.findByText('Preview API permission denied')).toBeInTheDocument();
+    expect(within(agentStatus).getByText('Locked')).toBeInTheDocument();
+    await waitFor(() => expect(footerActions?.disabled).toBe(true));
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'lightExtensionPreviewProblems:append',
@@ -1030,6 +1055,15 @@ describe('LightExtensionWorkspacePage', () => {
         }),
       }),
     );
+    await confirmSaveVersion('Blocked Agent save');
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
+        ),
+      ).toBeInTheDocument(),
+    );
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'ctx.render(<div>changed</div>);' },

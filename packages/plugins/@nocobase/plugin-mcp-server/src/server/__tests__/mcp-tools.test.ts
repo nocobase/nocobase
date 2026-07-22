@@ -285,6 +285,60 @@ describe('sanitizeJsonSchemaForOpenAITools', () => {
     expect(requestHeaders).not.toHaveProperty('x-untrusted-admin');
   });
 
+  it('should keep concurrent MCP call role and authenticator headers isolated', async () => {
+    const tools = await collectLightExtensionTools(
+      createSwaggerTestApp((ctx) => {
+        const body = ctx.request.body as Record<string, unknown>;
+        ctx.body = {
+          data: {
+            repoId: body.repoId,
+            authorization: ctx.get('authorization'),
+            role: ctx.get('x-role'),
+            authenticator: ctx.get('x-authenticator'),
+          },
+        };
+      }),
+    );
+    const pull = tools.find((tool) => tool.resourceName === 'lightExtensionFiles' && tool.actionName === 'pull');
+    expect(pull).toBeDefined();
+
+    const [authorResult, reviewerResult] = await Promise.all([
+      pull?.call(
+        { requestBody: { repoId: 'repo-author' } },
+        {
+          token: 'author-token',
+          headers: {
+            'x-role': 'author-role',
+            'x-authenticator': 'password',
+          },
+        },
+      ),
+      pull?.call(
+        { requestBody: { repoId: 'repo-reviewer' } },
+        {
+          token: 'reviewer-token',
+          headers: {
+            'x-role': 'reviewer-role',
+            'x-authenticator': 'oidc',
+          },
+        },
+      ),
+    ]);
+
+    expect(authorResult?.data).toEqual({
+      repoId: 'repo-author',
+      authorization: 'Bearer author-token',
+      role: 'author-role',
+      authenticator: 'password',
+    });
+    expect(reviewerResult?.data).toEqual({
+      repoId: 'repo-reviewer',
+      authorization: 'Bearer reviewer-token',
+      role: 'reviewer-role',
+      authenticator: 'oidc',
+    });
+  });
+
   it('should return structured 422 CheckResult details without guessing from legacy fields', async () => {
     const checkResult = {
       accepted: false,

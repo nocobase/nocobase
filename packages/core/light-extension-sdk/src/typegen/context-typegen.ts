@@ -165,6 +165,7 @@ function buildCollectionTypes(
   const writableFields = readableFields.filter((field) => field.writable);
   const recordLines = buildProperties(readableFields, collection.name);
   const valueLines = buildProperties(writableFields, collection.name);
+  const collectionFieldType = buildCollectionFieldType(readableFields, collection.name);
   const collectionName = JSON.stringify(collection.name);
   const dataSourceKey = JSON.stringify(collection.dataSourceKey);
 
@@ -186,7 +187,7 @@ function buildCollectionTypes(
     '',
     'export type CurrentValues = CurrentCreateValues | CurrentUpdateValues;',
     `export type CurrentCollection = LightExtensionCollectionContext<${dataSourceKey}, ${collectionName}, CurrentRecord, CurrentCreateValues, CurrentUpdateValues>;`,
-    'export type CurrentCollectionField = unknown;',
+    `export type CurrentCollectionField = ${collectionFieldType};`,
     `export type CurrentDataSource = LightExtensionDataSourceContext<${dataSourceKey}>;`,
     '',
     'export interface LightExtensionCollections {',
@@ -198,6 +199,27 @@ function buildCollectionTypes(
     '}',
     '',
   ].join('\n');
+}
+
+function buildCollectionFieldType(fields: NormalizedField[], currentCollectionName: string): string {
+  if (!fields.length) {
+    return 'never';
+  }
+  return fields
+    .map((field) => {
+      const properties = [
+        `readonly name: ${JSON.stringify(field.name)}`,
+        ...(field.interface ? [`readonly interface: ${JSON.stringify(field.interface)}`] : []),
+        ...(field.type ? [`readonly type: ${JSON.stringify(field.type)}`] : []),
+        `readonly nullable: ${String(field.nullable)}`,
+        'readonly readable: true',
+        `readonly writable: ${String(field.writable)}`,
+        ...(field.associationTarget ? [`readonly associationTarget: ${JSON.stringify(field.associationTarget)}`] : []),
+        `readonly value?: ${fieldType(field, currentCollectionName)}`,
+      ];
+      return `{ ${properties.join('; ')} }`;
+    })
+    .join(' | ');
 }
 
 function buildBindingContextType(

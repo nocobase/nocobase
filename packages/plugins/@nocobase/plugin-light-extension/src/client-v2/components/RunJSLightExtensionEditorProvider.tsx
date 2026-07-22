@@ -368,8 +368,8 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const resolverApi = app?.apiClient;
   const api = flowContext?.api || resolverApi;
   const previewProblemClient = React.useMemo(
-    () => (resolverApi ? new LightExtensionPreviewProblemClient(resolverApi) : undefined),
-    [resolverApi],
+    () => (api ? new LightExtensionPreviewProblemClient(api) : undefined),
+    [api],
   );
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;

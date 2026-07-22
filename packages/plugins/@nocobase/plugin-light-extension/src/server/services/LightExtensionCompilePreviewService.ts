@@ -885,7 +885,11 @@ function buildWorkspaceSnapshotId(
           language: file.language || '',
           mode: file.mode || '',
         }))
-        .sort((left, right) => stableSerialize(left).localeCompare(stableSerialize(right))),
+        .sort((left, right) => {
+          const leftValue = stableSerialize(left);
+          const rightValue = stableSerialize(right);
+          return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0;
+        }),
     ),
   );
 }

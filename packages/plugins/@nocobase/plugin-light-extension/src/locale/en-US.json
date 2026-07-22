@@ -480,8 +480,9 @@
   "Run Host Preview to create a copyable Agent session token.": "Run Host Preview to create a copyable Agent session token.",
   "Diff review": "Diff review",
   "Reviewed": "Reviewed",
-  "Required": "Required",
+  "Review required": "Review required",
   "Agent save gate": "Agent save gate",
+  "Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.": "Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.",
   "Ready": "Ready",
   "Locked": "Locked"
 }

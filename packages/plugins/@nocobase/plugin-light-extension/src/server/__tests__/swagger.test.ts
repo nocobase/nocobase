@@ -145,6 +145,9 @@ describe('light-extension swagger', () => {
     expect(schemas.LightExtensionContextPack.properties.collection.properties.fields.items).toEqual({
       $ref: '#/components/schemas/LightExtensionContextField',
     });
+    expect(Object.keys(swaggerDocument.paths['/lightExtensionContexts:get'].post.responses).map(Number).sort()).toEqual(
+      [200, 403, 404, 422],
+    );
     expect(saveSource.responses[409].content['application/json'].schema.oneOf).toContainEqual({
       $ref: '#/components/schemas/LightExtensionSourceOutdatedErrorResponse',
     });

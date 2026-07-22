@@ -42,6 +42,10 @@ const SUPPORTED_IMPORTS = [
   '@formulajs/formulajs',
 ];
 const MAX_CONTEXT_FIELDS = 512;
+const MAX_CONTEXT_REFERENCES = 128;
+const MAX_CONTEXT_ENUM_VALUES = 128;
+const MAX_CONTEXT_SETTINGS_SCHEMA_BYTES = 64 * 1024;
+const MAX_CONTEXT_PACK_BYTES = 256 * 1024;
 
 export interface LightExtensionContextCollectionFieldLike {
   name?: string;
@@ -94,7 +98,10 @@ export class LightExtensionContextPackService {
       ctx,
     );
     const entry = await this.getEntry(input.repoId, input.entryId, ctx);
-    const referenceSummaries = references.map(toReferenceSummary);
+    const referenceSummaries = references.slice(0, MAX_CONTEXT_REFERENCES).map(toReferenceSummary);
+    const settingsSchema = isJsonWithinByteLimit(entry.settingsSchema, MAX_CONTEXT_SETTINGS_SCHEMA_BYTES)
+      ? entry.settingsSchema
+      : null;
     const base: Pick<
       LightExtensionContextPack,
       'contextPackVersion' | 'repoId' | 'entry' | 'references' | 'supportedImports' | 'versions'
@@ -106,7 +113,7 @@ export class LightExtensionContextPackService {
         kind: entry.kind as LightExtensionKind,
         entryName: entry.entryName,
         entryPath: entry.entryPath,
-        settingsSchema: entry.settingsSchema,
+        settingsSchema,
       },
       references: referenceSummaries,
       supportedImports: [...SUPPORTED_IMPORTS],
@@ -116,12 +123,19 @@ export class LightExtensionContextPackService {
       },
     };
 
+    if (entry.settingsSchema && !settingsSchema) {
+      return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'settings_schema_limit_exceeded' });
+    }
+
     if (!isSupportedContextKind(entry.kind)) {
       return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'entry_kind_unsupported' });
     }
 
     const selectedReference = selectReference(input, references);
     if (!input.referenceId && !input.ownerLocator) {
+      if (references.length > MAX_CONTEXT_REFERENCES) {
+        return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'reference_limit_exceeded' });
+      }
       return finalizeContextPack({
         ...base,
         contextMode: references.length > 1 ? 'multiple' : 'generic',
@@ -132,16 +146,17 @@ export class LightExtensionContextPackService {
     if (!selectedReference) {
       return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'binding_not_visible_or_missing' });
     }
+    const selectedBase = { ...base, references: [toReferenceSummary(selectedReference)] };
     if (selectedReference.kind !== entry.kind) {
-      return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'binding_kind_mismatch' });
+      return finalizeContextPack({ ...selectedBase, contextMode: 'generic', reason: 'binding_kind_mismatch' });
     }
     if (selectedReference.resolvedStatus !== 'active') {
-      return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'binding_not_active' });
+      return finalizeContextPack({ ...selectedBase, contextMode: 'generic', reason: 'binding_not_active' });
     }
 
     const owner = await this.referenceService.readVisibleReferenceOwner(selectedReference.ownerLocator, ctx);
     if (!owner) {
-      return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'owner_missing_or_denied' });
+      return finalizeContextPack({ ...selectedBase, contextMode: 'generic', reason: 'owner_missing_or_denied' });
     }
     const ownerContext = this.ownerContextResolvers.describe(selectedReference.ownerKind, {
       reference: {
@@ -153,7 +168,7 @@ export class LightExtensionContextPackService {
       owner,
     });
     if (!ownerContext) {
-      return finalizeContextPack({ ...base, contextMode: 'generic', reason: 'owner_context_unsupported' });
+      return finalizeContextPack({ ...selectedBase, contextMode: 'generic', reason: 'owner_context_unsupported' });
     }
 
     const binding = {
@@ -163,7 +178,7 @@ export class LightExtensionContextPackService {
     };
     if (!ownerContext.collectionName) {
       return finalizeContextPack({
-        ...base,
+        ...selectedBase,
         contextMode: 'precise',
         reason: 'precise_binding_no_collection',
         binding,
@@ -177,14 +192,14 @@ export class LightExtensionContextPackService {
     );
     if (!collectionResult.collection) {
       return finalizeContextPack({
-        ...base,
+        ...selectedBase,
         contextMode: 'generic',
         reason: collectionResult.reason,
       });
     }
 
     return finalizeContextPack({
-      ...base,
+      ...selectedBase,
       contextMode: 'precise',
       reason: 'precise_binding',
       binding,
@@ -315,9 +330,18 @@ function isSupportedContextKind(kind: string): kind is 'js-block' | 'js-page' {
 }
 
 function finalizeContextPack(input: Omit<LightExtensionContextPack, 'contextHash'>): LightExtensionContextPack {
+  const serialized = stableSerialize(input);
+  if (Buffer.byteLength(serialized, 'utf8') > MAX_CONTEXT_PACK_BYTES) {
+    throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension Context Pack is too large', {
+      details: {
+        reasonCode: 'context_pack_too_large',
+        maxBytes: MAX_CONTEXT_PACK_BYTES,
+      },
+    });
+  }
   return {
     ...input,
-    contextHash: sha256Hex(stableSerialize(input)),
+    contextHash: sha256Hex(serialized),
   };
 }
 
@@ -409,12 +433,17 @@ function normalizeEnumValues(value: unknown): Array<string | number | boolean> |
   if (!values) {
     return undefined;
   }
-  return values.flatMap((item) => {
+  const normalized = values.flatMap((item) => {
     const enumValue = isRecord(item) ? item.value : item;
     return typeof enumValue === 'string' || typeof enumValue === 'number' || typeof enumValue === 'boolean'
       ? [enumValue]
       : [];
   });
+  return normalized.length <= MAX_CONTEXT_ENUM_VALUES ? normalized : undefined;
+}
+
+function isJsonWithinByteLimit(value: unknown, maxBytes: number): boolean {
+  return value === null || Buffer.byteLength(stableSerialize(value), 'utf8') <= maxBytes;
 }
 
 function normalizeString(value: unknown): string {

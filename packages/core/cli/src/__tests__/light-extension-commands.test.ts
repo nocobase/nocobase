@@ -150,7 +150,7 @@ function pullEnvelope(expectedHeadCommitId: string | null = null) {
   };
 }
 
-function contextPackEnvelope(options: { precise?: boolean } = {}) {
+function contextPackEnvelope(options: { contextHash?: string; precise?: boolean } = {}) {
   const precise = options.precise === true;
   return {
     data: {
@@ -192,7 +192,7 @@ function contextPackEnvelope(options: { precise?: boolean } = {}) {
         : {}),
       supportedImports: [],
       versions: { sdk: '2.2.0-beta.15', validator: '1' },
-      contextHash: precise ? 'context_orders' : 'context_generic',
+      contextHash: options.contextHash || (precise ? 'context_orders' : 'context_generic'),
     },
   };
 }
@@ -407,6 +407,30 @@ describe('nb light pull/check/save', () => {
     });
   });
 
+  test('drops unknown sensitive state fields while preserving validated check state', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1' });
+    await runAcceptedCheck(workspace);
+    const statePath = join(workspace, ...LIGHT_EXTENSION_STATE_PATH.split('/'));
+    const state = JSON.parse(await readFile(statePath, 'utf8')) as Record<string, unknown>;
+    await writeFile(
+      statePath,
+      JSON.stringify({
+        ...state,
+        token: 'persisted-token',
+        cookie: 'persisted-cookie',
+        privateKey: 'persisted-private-key',
+      }),
+      'utf8',
+    );
+
+    const loaded = await loadWorkspaceState(workspace);
+    expect(loaded.lastCheck).toMatchObject({ accepted: true, baseHeadCommitId: 'commit_1' });
+    await runAcceptedCheck(workspace);
+    const rewritten = await readFile(statePath, 'utf8');
+    expect(rewritten).not.toMatch(/persisted-token|persisted-cookie|persisted-private-key/u);
+  });
+
   test('preserves text, authentication semantics, expectedHeadCommitId null, full checks, and delta-only saves', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
@@ -506,10 +530,67 @@ describe('nb light pull/check/save', () => {
     expect(collections).toContain('status?: "done" | "draft";');
     const state = await loadWorkspaceState(workspace);
     expect(state.contextHash).toBe('context_orders');
+    expect(state.contextReferenceId).toBe('ref_orders');
     expect(Object.keys(state.files)).not.toContain('.light-extension/types/collections.d.ts');
     expect((await readWorkspaceFiles(workspace, state)).map((file) => file.path)).not.toContain(
       '.light-extension/types/collections.d.ts',
     );
+  });
+
+  test('blocks save with a machine-readable error when the authoritative Context Pack changed after check', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, { head: 'commit_1', precise: true, reference: 'ref_orders' });
+    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default () => "changed";\n', 'utf8');
+    await runAcceptedCheck(workspace);
+    await completeManualPreview(workspace);
+
+    fakeHandlers['/api/lightExtensionContexts:get'] = () => ({
+      body: contextPackEnvelope({ contextHash: 'context_changed', precise: true }),
+    });
+    fakeHandlers['/api/lightExtensionFiles:saveSource'] = () => {
+      throw new Error('saveSource must not run with a stale Context Pack');
+    };
+    const saveCommand = createCommandHarness({
+      dir: workspace,
+      message: 'Do not save stale context',
+      yes: true,
+      env: 'test',
+      'api-base-url': apiBaseUrl,
+      role: 'developer',
+      authenticator: 'password',
+      token: 'secret-api-key',
+      'json-output': true,
+    });
+
+    await expect(LightSave.prototype.run.call(saveCommand as never)).rejects.toMatchObject({
+      exitCode: LIGHT_EXTENSION_EXIT_CODES.general,
+    });
+    const output = JSON.parse(String(saveCommand.logToStderr.mock.calls[0]?.[0])) as {
+      error: {
+        code: string;
+        details: { authoritativeContextHash: string; expectedContextHash: string };
+      };
+      ok: boolean;
+    };
+    expect(output).toMatchObject({
+      ok: false,
+      error: {
+        code: 'LIGHT_EXTENSION_CONTEXT_OUTDATED',
+        details: {
+          expectedContextHash: 'context_orders',
+          authoritativeContextHash: 'context_changed',
+        },
+      },
+    });
+    const contextRequests = requests.filter((request) => request.path.endsWith('lightExtensionContexts:get'));
+    expect(contextRequests).toHaveLength(2);
+    expect(contextRequests[1]?.body).toEqual({
+      repoId: 'ler_demo',
+      entryId: 'lee_demo',
+      referenceId: 'ref_orders',
+    });
+    expect(requests.some((request) => request.path.endsWith('saveSource'))).toBe(false);
+    expect((await loadWorkspaceState(workspace)).contextHash).toBe('context_orders');
   });
 
   test('uses only errors[0].details for HTTP 422 and exits with the stable rejection code', async () => {

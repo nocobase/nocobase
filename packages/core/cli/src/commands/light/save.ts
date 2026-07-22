@@ -17,6 +17,7 @@ import {
   assertWorkspaceReadyToSave,
   buildHttpError,
   buildWorkspaceDelta,
+  extractContextPack,
   extractSaveResult,
   LightExtensionCliError,
   loadWorkspaceState,
@@ -106,6 +107,68 @@ export default class LightSave extends Command {
             fallback: 'There are no local source changes to save.',
           }),
         );
+      const contextResponse = await executeRawApiRequest({
+        envName: target.envName,
+        baseUrl: target.apiBaseUrl,
+        role: flags.role,
+        token: flags.token,
+        headers: { 'x-authenticator': flags.authenticator },
+        method: 'POST',
+        path: '/lightExtensionContexts:get',
+        body: {
+          repoId: state.repo.id,
+          entryId: state.entry.id,
+          ...(state.contextReferenceId ? { referenceId: state.contextReferenceId } : {}),
+        },
+      });
+      if (!contextResponse.ok) {
+        throw buildHttpError(
+          contextResponse.status,
+          contextResponse.data,
+          translateCli('commands.light.operations.contextRead', undefined, {
+            fallback: 'Light Extension Context Pack read',
+          }),
+        );
+      }
+      const authoritativeContext = extractContextPack(unwrapResponseData(contextResponse.data));
+      if (authoritativeContext.repoId !== state.repo.id || authoritativeContext.entry.id !== state.entry.id) {
+        throw new LightExtensionCliError(
+          translateCli('commands.light.pull.errors.contextMismatch', undefined, {
+            fallback: 'The Context Pack does not match the selected repository and entry.',
+          }),
+        );
+      }
+      if (authoritativeContext.contextHash !== state.contextHash) {
+        const details = {
+          code: 'LIGHT_EXTENSION_CONTEXT_OUTDATED',
+          expectedContextHash: state.contextHash,
+          authoritativeContextHash: authoritativeContext.contextHash,
+          repoId: state.repo.id,
+          entryId: state.entry.id,
+        };
+        const message = translateCli(
+          'commands.light.save.errors.contextOutdated',
+          {
+            expectedContextHash: state.contextHash,
+            authoritativeContextHash: authoritativeContext.contextHash,
+          },
+          {
+            fallback:
+              'The authoritative Context Pack changed from {{expectedContextHash}} to {{authoritativeContextHash}}. Pull the workspace again before saving.',
+          },
+        );
+        throw new LightExtensionCliError(message, {
+          details,
+          jsonOutput: {
+            ok: false,
+            error: {
+              code: 'LIGHT_EXTENSION_CONTEXT_OUTDATED',
+              message,
+              details,
+            },
+          },
+        });
+      }
 
       const review = {
         snapshotId,

@@ -39,6 +39,9 @@ describe('light extension binding context typegen', () => {
     expect(collections).toContain('title?: string | null;');
     expect(collections).toContain('customer?: Record<string, unknown> | null;');
     expect(collections).toContain('mystery?: unknown | null;');
+    expect(collections).toContain('readonly name: "amount"');
+    expect(collections).toContain('readonly value?: number');
+    expect(collections).not.toContain('readonly name: "secret"');
     expect(collections).not.toContain('secret');
     const createValues = collections.slice(
       collections.indexOf('export interface CurrentCreateValues'),
@@ -81,13 +84,16 @@ describe('light extension binding context typegen', () => {
           'ctx.record?.secret;',
           'ctx.values?.amount;',
           'ctx.values?.status;',
+          'ctx.collectionField?.name;',
+          'ctx.collectionField?.missing;',
           'ctx.settings.title;',
         ].join('\n'),
       },
     ]);
     expect(diagnostics.some((message) => /secret/u.test(message))).toBe(true);
     expect(diagnostics.some((message) => /status/u.test(message))).toBe(true);
-    expect(diagnostics.some((message) => /amount|title/u.test(message))).toBe(false);
+    expect(diagnostics.some((message) => /missing/u.test(message))).toBe(true);
+    expect(diagnostics.some((message) => /Property '(amount|title)'/u.test(message))).toBe(false);
   });
 
   it.each([

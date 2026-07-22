@@ -480,8 +480,9 @@
   "Run Host Preview to create a copyable Agent session token.": "运行 Host Preview 后会生成可复制的 Agent 会话 Token。",
   "Diff review": "差异审阅",
   "Reviewed": "已审阅",
-  "Required": "必需",
+  "Review required": "需要审阅",
   "Agent save gate": "Agent 保存门禁",
+  "Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.": "保存该 Agent 托管的工作区前，请运行 Host Preview、审查当前差异并解决 Preview 错误。",
   "Ready": "就绪",
   "Locked": "锁定"
 }

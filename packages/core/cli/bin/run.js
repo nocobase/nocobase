@@ -86,7 +86,9 @@ const { maybeRunStartupUpdate } = await import(pathToFileURL(startupUpdatePath).
 const cliEntryErrorPath = isDev
   ? path.join(root, 'src/lib/cli-entry-error.ts')
   : path.join(root, 'dist/lib/cli-entry-error.js');
-const { appendDiagnosticLogPath, formatCliEntryError } = await import(pathToFileURL(cliEntryErrorPath).href);
+const { appendDiagnosticLogPath, formatCliEntryError, getCliRequestedExitCode } = await import(
+  pathToFileURL(cliEntryErrorPath).href
+);
 const { flush, run, settings } = await import('@oclif/core');
 const forcedColors = pc.createColors(true);
 
@@ -144,6 +146,11 @@ try {
   flush();
   finalizeCommandLogOnce({ exitCode: 0 });
 } catch (error) {
+  const requestedExitCode = getCliRequestedExitCode(error);
+  if (requestedExitCode !== undefined) {
+    finalizeCommandLogOnce({ exitCode: requestedExitCode });
+    process.exit(requestedExitCode);
+  }
   const message = appendDiagnosticLogPath(
     formatCliEntryError(error, process.argv.slice(2)),
     commandLogSession?.logFile,

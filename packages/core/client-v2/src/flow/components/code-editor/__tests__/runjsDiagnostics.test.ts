@@ -176,31 +176,15 @@ ctx.render(<div />);
   });
 
   it('simplifies nested eval stack and long bundle urls in runtime issue stack', async () => {
-    const ctx = new FlowContext() as any;
-    ctx.defineMethod('createJSRunner', async () => {
-      const runjsCtx = new FlowContext();
-      const frames = Array.from(
-        { length: 12 },
-        (_, index) =>
-          `    at Object.eval (eval at <anonymous> (eval at makeEvaluate (http://localhost:23000/vendors-node_modules_ant-design_pro-layout_es_index_js-node_modules_antv_g2plot_esm_index_js--e29f87.async.js:818802:86)), <anonymous>:${
-            33 + index
-          }:1)`,
-      );
-      const stack = ['Error: boom', ...frames].join('\n');
-
-      return {
-        globals: { ctx: runjsCtx },
-        run: async () => ({
-          success: false,
-          timeout: false,
-          error: {
-            name: 'Error',
-            message: 'boom',
-            stack,
-          },
-        }),
-      } as any;
-    });
+    const frames = Array.from(
+      { length: 12 },
+      (_, index) =>
+        `    at Object.eval (eval at <anonymous> (eval at makeEvaluate (http://localhost:23000/vendors-node_modules_ant-design_pro-layout_es_index_js-node_modules_antv_g2plot_esm_index_js--e29f87.async.js:818802:86)), <anonymous>:${
+          33 + index
+        }:1)`,
+    );
+    const stack = ['Error: boom', ...frames].join('\n');
+    const ctx = createFailingRuntimeCtx(stack);
 
     const res = await diagnoseRunJS('1 + 1;', ctx);
     const runtimeIssue = res.issues.find((i) => i.type === 'runtime' && i.ruleId === 'runtime-error');
@@ -216,24 +200,8 @@ ctx.render(<div />);
   });
 
   it('maps runtime error stacks back to RunJS workspace files', async () => {
-    const ctx = new FlowContext() as any;
-    ctx.defineMethod('createJSRunner', async () => {
-      const runjsCtx = new FlowContext();
-      const stack = ['Error: boom', '    at test (nocobase-runjs://bundle/test.js:5:9)'].join('\n');
-
-      return {
-        globals: { ctx: runjsCtx },
-        run: async () => ({
-          success: false,
-          timeout: false,
-          error: {
-            name: 'Error',
-            message: 'boom',
-            stack,
-          },
-        }),
-      } as any;
-    });
+    const stack = ['Error: boom', '    at test (nocobase-runjs://bundle/test.js:5:9)'].join('\n');
+    const ctx = createFailingRuntimeCtx(stack);
 
     const res = await diagnoseRunJS('1 + 1;', ctx, {
       sourceMap: JSON.stringify({

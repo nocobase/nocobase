@@ -451,11 +451,13 @@ function LightExtensionWorkspacePage({
   latestPreviewSnapshotRef.current = previewSnapshotKey;
   const previewHasErrors = problemState.problems.some((problem) => problem.severity === 'error');
   const previewDiffReviewed = diffReviewedSnapshotKey === previewSnapshotKey;
+  const agentSaveGateEnabled = Boolean(previewProblemClient && ownerLocator);
   const previewSaveGateReady =
-    previewAgentSession.status === 'completed' &&
+    (previewAgentSession.status === 'active' || previewAgentSession.status === 'completed') &&
     Boolean(previewAgentSession.snapshotId) &&
     previewDiffReviewed &&
     !previewHasErrors;
+  const agentSaveBlocked = agentSaveGateEnabled && !previewSaveGateReady;
   const canPreview = entryScoped && Boolean(onPreview);
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
   const browserPreviewEntry = useMemo(
@@ -905,6 +907,20 @@ function LightExtensionWorkspacePage({
 
   const saveChanges = useCallback(async () => {
     const commitMessage = versionMessage.trim();
+    if (agentSaveBlocked) {
+      setSaveOpen(false);
+      const request = embeddedSaveRequestRef.current;
+      embeddedSaveRequestRef.current = null;
+      embeddedSavePromiseRef.current = null;
+      request?.resolve('cancelled');
+      setNotice({
+        type: 'warning',
+        message: t(
+          'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
+        ),
+      });
+      return;
+    }
     if (!repoId || !commitMessage || dirtyChanges.length === 0 || hasBlockedDirtyChanges) {
       if (hasBlockedDirtyChanges) {
         setNotice({ type: 'warning', message: pathRestrictionReason });
@@ -971,6 +987,7 @@ function LightExtensionWorkspacePage({
       setSaving(false);
     }
   }, [
+    agentSaveBlocked,
     baseHeadCommitId,
     closeActivePreviewSession,
     dirtyChanges,
@@ -991,6 +1008,15 @@ function LightExtensionWorkspacePage({
   ]);
 
   const openSaveModal = useCallback((): boolean => {
+    if (agentSaveBlocked) {
+      setNotice({
+        type: 'warning',
+        message: t(
+          'Run Host Preview, review the current Diff, and resolve Preview errors before saving this Agent-managed workspace.',
+        ),
+      });
+      return false;
+    }
     if (!canWrite || !hasUnsavedLocalChanges || hasBlockedDirtyChanges) {
       return false;
     }
@@ -998,7 +1024,7 @@ function LightExtensionWorkspacePage({
     setVersionMessage('');
     setSaveOpen(true);
     return true;
-  }, [canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges]);
+  }, [agentSaveBlocked, canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges, t]);
 
   const requestSave = useCallback(async (): Promise<EmbeddedRunJSEditorSaveResult> => {
     if (!hasUnsavedLocalChanges) {
@@ -1049,13 +1075,14 @@ function LightExtensionWorkspacePage({
   const footerActions = useMemo<LightExtensionWorkspaceFooterActions>(
     () => ({
       dirty: hasUnsavedLocalChanges,
-      disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges,
+      disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges || agentSaveBlocked,
       loading: saving,
       onCancel: requestClose,
       onSave: openSaveModal,
       requestSave,
     }),
     [
+      agentSaveBlocked,
       canWrite,
       hasBlockedDirtyChanges,
       hasUnsavedLocalChanges,
@@ -1702,7 +1729,7 @@ function LightExtensionWorkspacePage({
                               <Flex align="center" gap={8} wrap="wrap">
                                 <Typography.Text>{t('Diff review')}:</Typography.Text>
                                 <Tag color={previewDiffReviewed ? 'success' : 'default'}>
-                                  {previewDiffReviewed ? t('Reviewed') : t('Required')}
+                                  {previewDiffReviewed ? t('Reviewed') : t('Review required')}
                                 </Tag>
                                 <Typography.Text>{t('Agent save gate')}:</Typography.Text>
                                 <Tag color={previewSaveGateReady ? 'success' : 'warning'}>

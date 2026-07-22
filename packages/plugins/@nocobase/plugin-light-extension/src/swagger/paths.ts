@@ -178,6 +178,7 @@ export const lightExtensionPaths = {
         },
         403: errorResponse('The current user cannot read the entry references or owner context.'),
         404: errorResponse('The repository or entry does not exist.'),
+        422: errorResponse('The generated Context Pack exceeds the public response size limit.'),
       },
     },
   },

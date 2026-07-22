@@ -195,6 +195,7 @@
           "noChanges": "There are no local source changes to save.",
           "confirmationRequired": "Saving requires an interactive confirmation or the explicit --yes flag.",
           "cancelled": "Save cancelled.",
+          "contextOutdated": "The authoritative Context Pack changed from {{expectedContextHash}} to {{authoritativeContextHash}}. Pull the workspace again before saving.",
           "conflict": "{{message}} Local files and the Pull baseline were kept unchanged. Pull the new Head and replay this patch; the CLI will not retry with a replaced Head."
         }
       },

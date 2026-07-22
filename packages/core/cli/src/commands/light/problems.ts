@@ -8,10 +8,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import {
-  decodeLightExtensionPreviewSessionDescriptor,
-  type LightExtensionPreviewProblemSessionState,
-} from '@nocobase/light-extension-sdk/agent-loop';
+import * as lightExtensionAgentLoopModule from '@nocobase/light-extension-sdk/agent-loop';
+import type { LightExtensionPreviewProblemSessionState } from '@nocobase/light-extension-sdk/agent-loop';
 import { executeRawApiRequest } from '../../lib/api-client.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import {
@@ -29,6 +27,13 @@ import {
   type LightExtensionProblem,
   type LightExtensionWorkspaceState,
 } from '../../lib/light-extension-workspace.js';
+
+type LightExtensionAgentLoopModule = typeof import('@nocobase/light-extension-sdk/agent-loop');
+const lightExtensionAgentLoopRuntime = lightExtensionAgentLoopModule as LightExtensionAgentLoopModule & {
+  default?: LightExtensionAgentLoopModule;
+};
+const { decodeLightExtensionPreviewSessionDescriptor } =
+  lightExtensionAgentLoopRuntime.default || lightExtensionAgentLoopRuntime;
 
 interface PreviewProblemItem {
   cursor: number;

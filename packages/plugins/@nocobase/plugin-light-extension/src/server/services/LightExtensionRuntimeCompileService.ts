@@ -156,12 +156,23 @@ export class LightExtensionRuntimeCompileService {
     }
     try {
       const prepared = await this.prepareSaveSource(input, operationContext);
-      return await this.db.sequelize.transaction((transaction) =>
-        this.publishPreparedSave(prepared, {
-          ...operationContext,
-          transaction,
-        }),
-      );
+      const maxPublishAttempts = this.db.options.dialect === 'sqlite' ? 5 : 1;
+      for (let attempt = 1; attempt <= maxPublishAttempts; attempt += 1) {
+        try {
+          return await this.db.sequelize.transaction((transaction) =>
+            this.publishPreparedSave(prepared, {
+              ...operationContext,
+              transaction,
+            }),
+          );
+        } catch (error) {
+          if (attempt === maxPublishAttempts || !isSqliteBusyError(error)) {
+            throw error;
+          }
+          await new Promise((resolve) => setTimeout(resolve, attempt * 20));
+        }
+      }
+      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source publish did not complete');
     } catch (error) {
       for (const recordRejectedPush of deferredRejectedPushAudits) {
         await recordRejectedPush();
@@ -640,6 +651,23 @@ export class LightExtensionRuntimeCompileService {
       problems,
     };
   }
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    code?: unknown;
+    message?: unknown;
+    original?: { code?: unknown; message?: unknown };
+    parent?: { code?: unknown; message?: unknown };
+  };
+  return [candidate, candidate.original, candidate.parent].some(
+    (value) =>
+      value?.code === 'SQLITE_BUSY' ||
+      (typeof value?.message === 'string' && value.message.includes('SQLITE_BUSY: database is locked')),
+  );
 }
 
 function createCompileJob(
