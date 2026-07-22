@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { render } from '@testing-library/react';
+import { Form } from 'antd';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createLLMService,
   deleteLLMService,
   deleteLLMServices,
+  LLMServiceForm,
   listLLMProviders,
   listLLMServices,
   listProviderModels,
@@ -23,7 +27,54 @@ import {
   updateLLMServiceEnabled,
 } from '../pages/LLMServicesPage';
 
+type CapturedSelectProps = {
+  popupClassName?: string;
+  popupMatchSelectWidth?: boolean;
+};
+
+const capturedSelectProps = vi.hoisted(() => ({ current: undefined as CapturedSelectProps | undefined }));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  const ReactModule = await import('react');
+
+  return {
+    ...actual,
+    Select: (props: CapturedSelectProps) => {
+      capturedSelectProps.current = props;
+      return ReactModule.createElement('div', { 'data-testid': 'provider-select' });
+    },
+  };
+});
+
+vi.mock('../locale', () => ({
+  useT: () => (key: string) => key,
+}));
+
 describe('LLMServicesPage request helpers', () => {
+  it('constrains the provider popup to the select width', () => {
+    render(
+      React.createElement(
+        Form,
+        null,
+        React.createElement(LLMServiceForm, {
+          editing: false,
+          providers: [
+            {
+              key: 'openai-completions',
+              value: 'openai-completions',
+              label: 'OpenAI (completions)',
+              supportedModel: ['LLM', 'EMBEDDING'],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(capturedSelectProps.current?.popupMatchSelectWidth).toBe(true);
+    expect(capturedSelectProps.current?.popupClassName).toBeTruthy();
+  });
+
   it('detects the v1-compatible auto-open add-new route state', () => {
     expect(shouldAutoOpenAddNew({ autoOpenAddNew: true })).toBe(true);
     expect(shouldAutoOpenAddNew({ autoOpenAddNew: false })).toBe(false);

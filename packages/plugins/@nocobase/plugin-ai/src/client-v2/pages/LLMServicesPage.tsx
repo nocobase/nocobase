@@ -129,6 +129,19 @@ const fillHeightTableClassName = css`
   }
 `;
 
+const providerSelectPopupClassName = css`
+  .ant-select-item,
+  .ant-select-item-option,
+  .ant-select-item-option-content {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-select-item-option-content {
+    overflow: hidden;
+  }
+`;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -369,6 +382,7 @@ const ProviderSelect: React.FC<{
       [...providers]
         .sort((a, b) => getProviderSortIndex(a.value) - getProviderSortIndex(b.value))
         .map((provider) => {
+          const description = getProviderDescription(provider.value, t);
           const capabilities = [
             provider.supportedModel.includes('LLM') ? 'LLM' : null,
             provider.supportedModel.includes('EMBEDDING') ? 'EMBEDDING' : null,
@@ -377,11 +391,17 @@ const ProviderSelect: React.FC<{
             value: provider.value,
             selectedLabel: provider.label,
             label: (
-              <Flex vertical gap="small">
+              <Flex vertical gap="small" style={{ width: '100%', minWidth: 0 }}>
                 <Typography.Text strong>{provider.label}</Typography.Text>
-                <Flex align="center" justify="space-between" gap="small">
-                  <Typography.Text type="secondary">{getProviderDescription(provider.value, t)}</Typography.Text>
-                  <Space size="small" wrap>
+                <Flex align="center" justify="space-between" gap="small" style={{ minWidth: 0 }}>
+                  <Typography.Text
+                    type="secondary"
+                    ellipsis={description ? { tooltip: description } : undefined}
+                    style={{ flex: 1, minWidth: 0 }}
+                  >
+                    {description}
+                  </Typography.Text>
+                  <Space size="small" wrap style={{ flexShrink: 0 }}>
                     {capabilities.map((capability) => (
                       <Tag key={capability} bordered={false} color="default">
                         {capability}
@@ -403,6 +423,8 @@ const ProviderSelect: React.FC<{
       optionLabelProp="selectedLabel"
       style={{ width: '100%' }}
       listHeight={PROVIDER_SELECT_LIST_HEIGHT}
+      popupMatchSelectWidth
+      popupClassName={providerSelectPopupClassName}
     />
   );
 };
