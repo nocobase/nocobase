@@ -10,7 +10,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AIEmployee, Task } from '../ai-employees/types';
+import type { AIEmployee, ContextItem, Task } from '../ai-employees/types';
 import { AIEmployeeShortcut } from '../ai-employees/AIEmployeeShortcut';
 import {
   ChatBoxRuntimeProvider,
@@ -24,6 +24,7 @@ import { AIEmployeeButtonModel } from '../models/ai-employees';
 const triggerTask = vi.fn().mockResolvedValue(undefined);
 const clear = vi.fn();
 const addContextItems = vi.fn();
+const addContextItemsForSession = vi.fn();
 const syncContextAttachments = vi.fn();
 const messageError = vi.fn();
 const actionRuntimes: ChatBoxRuntime[] = [];
@@ -105,9 +106,19 @@ vi.mock('../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 }));
 
 vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
-  useChat: () => ({
-    addContextItems,
-  }),
+  useChat: (sessionId: string | undefined, runtime: ChatBoxRuntime) => {
+    const addItems = (targetSessionId: string | undefined, items: ContextItem | ContextItem[]) => {
+      addContextItems(items);
+      addContextItemsForSession(targetSessionId, items);
+      runtime.chatMessageModel.addSessionContextItems(targetSessionId, items);
+    };
+    return {
+      addContextItems: (items: ContextItem | ContextItem[]) => addItems(sessionId, items),
+      for: (targetSessionId?: string) => ({
+        addContextItems: (items: ContextItem | ContextItem[]) => addItems(targetSessionId, items),
+      }),
+    };
+  },
 }));
 
 describe('AIEmployeeShortcut', () => {
@@ -115,11 +126,35 @@ describe('AIEmployeeShortcut', () => {
     triggerTask.mockClear();
     clear.mockClear();
     addContextItems.mockClear();
+    addContextItemsForSession.mockClear();
     syncContextAttachments.mockClear();
     messageError.mockClear();
     actionRuntimes.length = 0;
     clearMountedChatBoxes();
     getGlobalChatBoxRuntime().chatConversationModel.setCurrentConversation(undefined);
+  });
+
+  it('syncs shortcut context to the new draft after replacing an existing conversation', async () => {
+    const runtime = createChatBoxRuntime();
+    const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
+    runtime.chatConversationModel.setCurrentConversation('session-1');
+    triggerTask.mockImplementationOnce(async () => {
+      runtime.chatConversationModel.setCurrentConversation(undefined);
+    });
+
+    const { container } = render(
+      <AIEmployeeShortcut aiEmployee={employee} context={{ workContext }} runtime={runtime} />,
+    );
+
+    const shortcut = container.querySelector('.ant-avatar');
+    expect(shortcut).toBeTruthy();
+    fireEvent.click(shortcut);
+
+    await waitFor(() => {
+      expect(addContextItemsForSession).toHaveBeenCalledWith(undefined, workContext);
+    });
+    expect(runtime.chatMessageModel.getSessionState(undefined).contextItems).toEqual(workContext);
+    expect(runtime.chatMessageModel.getSessionState('session-1').contextItems).toEqual([]);
   });
 
   it('triggers a popover task like v1 without inheriting shortcut auto=false', async () => {

@@ -46,6 +46,7 @@ const mocks = vi.hoisted(() => ({
   triggerTask: vi.fn().mockResolvedValue(undefined),
   refreshConversations: vi.fn(),
   addContextItems: vi.fn(),
+  addContextItemsForSession: vi.fn(),
   syncContextAttachments: vi.fn(),
   flowModelRendererProps: [] as FlowModelRendererProps[],
   renderActions: vi.fn(() => null),
@@ -110,6 +111,12 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
   useChat: () => ({
     addContextItems: mocks.addContextItems,
+    for: (sessionId?: string) => ({
+      addContextItems: (items: unknown) => {
+        mocks.addContextItemsForSession(sessionId, items);
+        mocks.addContextItems(items);
+      },
+    }),
   }),
 }));
 
@@ -172,6 +179,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.refreshConversations.mockClear();
     mocks.runtime.chatConversationModel.setConversationRead.mockClear();
     mocks.addContextItems.mockClear();
+    mocks.addContextItemsForSession.mockClear();
     mocks.syncContextAttachments.mockClear();
     mocks.renderActions.mockClear();
     mocks.renderConfigureActions.mockClear();
@@ -180,6 +188,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.runtime.getScope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
+    mocks.runtime.chatConversationModel.currentConversation = undefined;
   });
 
   it('registers the mounted block runtime and removes it on unmount', () => {
@@ -199,8 +208,10 @@ describe('AIChatBoxView mounted registry', () => {
     expect(mocks.triggerTask).toHaveBeenCalledWith({
       aiEmployee: { username: 'sales' },
     });
+    mocks.runtime.chatConversationModel.currentConversation = 'session-2';
     entry?.syncContextItems([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.addContextItems).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
+    expect(mocks.addContextItemsForSession).toHaveBeenCalledWith('session-2', [{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.syncContextAttachments).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
 
     unmount();
