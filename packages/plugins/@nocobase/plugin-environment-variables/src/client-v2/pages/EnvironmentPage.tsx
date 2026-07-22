@@ -53,6 +53,10 @@ function createEmptyFilter(): FilterGroupValue {
   return observable({ logic: '$and', items: [] }) as FilterGroupValue;
 }
 
+const EnvVariableFilterContentItem: NonNullable<React.ComponentProps<typeof FilterContent>['FilterItem']> = (props) => (
+  <EnvVariableFilterItem {...props} />
+);
+
 function FilterPopover({
   value,
   onSubmit,
@@ -91,7 +95,7 @@ function FilterPopover({
       placement="bottomLeft"
       content={
         <div style={{ minWidth: 480 }}>
-          <FilterContent value={value} ctx={fakeCtx} FilterItem={EnvVariableFilterItem} />
+          <FilterContent value={value} ctx={fakeCtx} FilterItem={EnvVariableFilterContentItem} />
         </div>
       }
     >
