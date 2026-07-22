@@ -31,7 +31,7 @@ import { Conversations as AntConversations, type ConversationsProps as AntConver
 import { useApp } from '@nocobase/client-v2';
 import { dayjs } from '@nocobase/utils/client';
 import { useT } from '../../../locale';
-import type { Conversation } from '../../types';
+import type { AIEmployee, Conversation } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
@@ -189,7 +189,7 @@ export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen })
   }, [currentConversation, pendingWorkflowTask]);
 
   const openConversation = useCallback(
-    (sessionId: string, username?: string, model?: ModelRef | null) => {
+    (sessionId: string, username?: string, model?: ModelRef | null, fallbackAIEmployee?: AIEmployee | null) => {
       if (sessionId === currentConversation) {
         chatBoxModel.setShowConversations(false);
         onOpen?.();
@@ -198,7 +198,7 @@ export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen })
 
       const conversation = conversations.find((item) => item.sessionId === sessionId);
       chatConversationModel.setCurrentConversation(sessionId);
-      const aiEmployee = username ? aiEmployeesMap[username] : conversation?.aiEmployee;
+      const aiEmployee = username ? aiEmployeesMap[username] ?? fallbackAIEmployee : conversation?.aiEmployee;
       if (username) {
         chatBoxModel.setCurrentEmployee(aiEmployee);
       } else {
@@ -254,7 +254,7 @@ export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen })
         chatBoxModel.setReadonly(task?.readonly === true);
         chat.for(sessionId).setResponseLoading(task?.status === 'processing');
         chatBoxModel.setShowConversations(false);
-        openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined);
+        openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined, task?.aiEmployee);
       } catch (error) {
         setPendingWorkflowTask(undefined);
         throw error;

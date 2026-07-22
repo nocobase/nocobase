@@ -8,10 +8,11 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Conversation } from '../../../ai-employees/types';
 import type { ChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
+import type { WorkflowTask } from '../../../ai-employees/chatbox/stores/workflow-tasks';
 import {
   Conversations,
   getConversationItems,
@@ -23,6 +24,12 @@ const mocks = vi.hoisted(() => ({
   runSearch: vi.fn(),
   lastConversationRef: vi.fn(),
   useChatConversationActions: vi.fn(),
+  workflowTasks: [] as WorkflowTask[],
+  acceptWorkflowTask: vi.fn(),
+  getWorkflowTaskBySession: vi.fn(),
+  setResponseLoading: vi.fn(),
+  loadMessages: vi.fn(),
+  clear: vi.fn(),
   runtime: {
     mode: 'block',
     getScope: undefined as undefined | ((options?: { operation?: 'list' | 'create' }) => Promise<string | undefined>),
@@ -83,21 +90,21 @@ vi.mock('../../../ai-employees/chatbox/hooks/useWorkflowTasks', () => ({
     refresh: vi.fn(),
     runSearch: vi.fn(),
     runJobStatusFilter: vi.fn(),
-    workflowTasks: [],
+    workflowTasks: mocks.workflowTasks,
     loading: false,
     selectedJobStatus: undefined,
     hasMore: false,
     loadMoreWorkflowTasks: vi.fn(),
     lastWorkflowTaskRef: vi.fn(),
     unreadCount: 0,
-    acceptWorkflowTask: vi.fn(),
-    getWorkflowTaskBySession: vi.fn(),
+    acceptWorkflowTask: mocks.acceptWorkflowTask,
+    getWorkflowTaskBySession: mocks.getWorkflowTaskBySession,
   }),
 }));
 
 vi.mock('../../../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
   useChatMessageActions: () => ({
-    loadMessages: vi.fn(),
+    loadMessages: mocks.loadMessages,
     getConversationLLMActiveState: vi.fn(),
     resumeStream: vi.fn(),
   }),
@@ -105,7 +112,7 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 
 vi.mock('../../../ai-employees/chatbox/hooks/useChatBoxActions', () => ({
   useChatBoxActions: () => ({
-    clear: vi.fn(),
+    clear: mocks.clear,
     startNewConversation: vi.fn(),
   }),
 }));
@@ -115,6 +122,7 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
     for: () => ({
       getState: () => ({ responseLoading: false, abortController: null, messages: [] }),
       setMessages: vi.fn(),
+      setResponseLoading: mocks.setResponseLoading,
     }),
   }),
 }));
@@ -146,11 +154,15 @@ vi.mock('@ant-design/x', async (importOriginal) => {
 
 describe('AI chat box Conversations', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mocks.runtime.mode = 'block';
     mocks.runtime.getScope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.currentConversation = undefined;
     mocks.runtime.chatConversationModel.conversationSegmented = 'workflowTasks';
+    mocks.workflowTasks = [];
+    mocks.acceptWorkflowTask.mockResolvedValue(undefined);
+    mocks.loadMessages.mockResolvedValue(undefined);
     mocks.useChatConversationActions.mockReset();
     mocks.useChatConversationActions.mockReturnValue({
       refresh: mocks.refresh,
@@ -222,5 +234,40 @@ describe('AI chat box Conversations', () => {
     render(<Conversations />);
 
     expect(screen.getByText('Workflow tasks')).toBeInTheDocument();
+  });
+
+  it('uses the workflow task employee when the selectable employee map has no match', async () => {
+    const aiEmployee = {
+      username: 'atlas',
+      nickname: 'Atlas',
+    };
+    const workflowTask: WorkflowTask = {
+      id: 'task-1',
+      sessionId: 'session-1',
+      workflowTitle: 'Approval task',
+      nodeTitle: 'AI employee',
+      status: 'pending_approval',
+      jobStatus: 0,
+    };
+    mocks.runtime.mode = 'global';
+    mocks.workflowTasks = [workflowTask];
+    mocks.getWorkflowTaskBySession.mockResolvedValue({
+      ...workflowTask,
+      aiEmployee,
+      config: {
+        username: 'atlas',
+      },
+      readonly: false,
+    });
+
+    render(<Conversations />);
+
+    fireEvent.click(screen.getByText('Approval task'));
+
+    await waitFor(() => {
+      expect(mocks.runtime.chatBoxModel.setCurrentEmployee).toHaveBeenCalledWith(aiEmployee);
+    });
+    expect(mocks.getWorkflowTaskBySession).toHaveBeenCalledWith('session-1');
+    expect(mocks.loadMessages).toHaveBeenCalledWith('session-1');
   });
 });
