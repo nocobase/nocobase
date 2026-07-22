@@ -14,6 +14,7 @@ import {
   generateClientSettingsTypes,
   generateInlineClientSettingsTypes,
   LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH,
+  parseSettingsTypeImport,
 } from '../typegen';
 
 describe('light extension settings typegen', () => {
@@ -105,7 +106,9 @@ describe('light extension settings typegen', () => {
       files: [
         descriptor('js-blocks', 'sales-dir', 'sales', 'mode', 'number'),
         descriptor('js-actions', 'order-dir', 'orders', 'confirm', 'boolean'),
-        descriptor('runjs', 'subtotal-dir', 'subtotal', 'precision', 'number'),
+        descriptor('js-pages', 'page-dir', 'page', 'title', 'string'),
+        descriptor('js-fields', 'field-dir', 'field', 'color', 'string'),
+        descriptor('js-items', 'item-dir', 'item', 'label', 'string'),
       ],
     });
     const sales = createActiveEntryContextType({
@@ -116,18 +119,30 @@ describe('light extension settings typegen', () => {
       activePath: 'src/client/js-actions/order-dir/index.ts',
       entries: result.entries,
     });
-    const subtotal = createActiveEntryContextType({
-      activePath: 'src/client/runjs/subtotal-dir/index.ts',
-      entries: result.entries,
-    });
-
     expect(sales.file?.path).toBe(LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH);
     expect(sales.file?.content).toContain('client/js-block/sales');
     expect(orders.file?.path).toBe(LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH);
     expect(orders.file?.content).toContain('client/js-action/orders');
     expect(orders.file?.content).not.toContain('client/js-block/sales');
-    expect(subtotal.file?.content).toContain('client/runjs/subtotal');
-    if (!sales.file || !orders.file || !subtotal.file) {
+    expect(result.entries.map((entry) => entry.kind).sort()).toEqual(
+      ['js-action', 'js-block', 'js-field', 'js-item', 'js-page'].sort(),
+    );
+    expect(result.files.find((file) => file.path.endsWith('/js-block/sales.d.ts'))?.content).toContain(
+      'export type Context = JSBlockContext<Settings>;',
+    );
+    expect(result.files.find((file) => file.path.endsWith('/js-action/orders.d.ts'))?.content).toContain(
+      'export type Context = JSActionContext<Settings>;',
+    );
+    expect(result.files.find((file) => file.path.endsWith('/js-page/page.d.ts'))?.content).toContain(
+      'export type Context = JSPageContext<Settings>;',
+    );
+    expect(result.files.find((file) => file.path.endsWith('/js-field/field.d.ts'))?.content).toContain(
+      'export type Context = JSFieldContext<Settings>;',
+    );
+    expect(result.files.find((file) => file.path.endsWith('/js-item/item.d.ts'))?.content).toContain(
+      'export type Context = JSItemContext<Settings>;',
+    );
+    if (!sales.file || !orders.file) {
       throw new Error('Expected active Entry context declarations');
     }
 
@@ -147,6 +162,19 @@ describe('light extension settings typegen', () => {
     ]);
     expect(ordersDiagnostics.some((message) => /mode/.test(message))).toBe(true);
     expect(ordersDiagnostics.some((message) => /confirm/.test(message))).toBe(false);
+  });
+
+  it('ignores the removed generic RunJS root and import while retaining the RunJSContext SDK type', () => {
+    const result = generateClientSettingsTypes({
+      files: [descriptor('runjs', 'subtotal-dir', 'subtotal', 'precision', 'number')],
+    });
+
+    expect(result.entries).toEqual([]);
+    expect(result.files.some((file) => file.path.includes('/client/runjs/'))).toBe(false);
+    expect(parseSettingsTypeImport('light-extension:settings/client/runjs/subtotal')).toBeNull();
+    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
+      'export interface RunJSContext',
+    );
   });
 
   it('generates the active settings context from an inline src/client/entry.json file', () => {

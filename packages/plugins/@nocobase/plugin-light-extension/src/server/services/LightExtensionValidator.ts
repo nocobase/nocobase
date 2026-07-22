@@ -44,6 +44,7 @@ import type {
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import {
   buildEntryAllowedPaths,
+  buildEntryRepoAllowedPaths,
   classifySourcePath,
   collectEntryBuckets,
   findEntryIndexFile,
@@ -334,18 +335,7 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
       keyPattern: LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
     },
     allowedPaths: {
-      repo: [
-        'README.md',
-        'light-extension.json',
-        'tsconfig.json',
-        'src/shared/**',
-        'src/client/js-blocks/**',
-        'src/client/js-pages/**',
-        'src/client/js-fields/**',
-        'src/client/js-actions/**',
-        'src/client/js-items/**',
-        'src/client/runjs/**',
-      ],
+      repo: ['README.md', 'light-extension.json', 'tsconfig.json', 'src/shared/**', ...buildEntryRepoAllowedPaths()],
       entries: buildEntryAllowedPaths(),
     },
     schemaSubset: {

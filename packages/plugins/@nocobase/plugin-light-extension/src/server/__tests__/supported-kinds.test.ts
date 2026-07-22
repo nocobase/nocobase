@@ -72,38 +72,20 @@ describe('plugin-light-extension supported kinds validator', () => {
           content: 'ctx.render(<div>{ctx.page.uid}</div>);\n',
         },
         entryDescriptor('src/client/js-pages/hello-page', 'hello-page'),
-        {
-          path: 'src/client/runjs/calculate-total/index.ts',
-          content: 'return Number(ctx.input || 0);\n',
-        },
-        entryDescriptor('src/client/runjs/calculate-total', 'calculate-total'),
       ],
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.capabilities.supportedKinds).toEqual([
-      'js-block',
-      'js-page',
-      'js-field',
-      'js-action',
-      'js-item',
-      'runjs',
-    ]);
+    expect(result.capabilities.supportedKinds).toEqual(['js-block', 'js-page', 'js-field', 'js-action', 'js-item']);
     expect(result.entries.map((entry) => `${entry.kind}:${entry.entryName}`)).toEqual([
       'js-action:batch-approve',
       'js-block:sales-kpi',
       'js-field:phone-link',
       'js-item:customer-menu',
       'js-page:hello-page',
-      'runjs:calculate-total',
     ]);
     expect(result.diagnostics).toEqual([]);
-    expect(result.capabilities.allowedPaths.entries.runjs).toEqual(
-      expect.arrayContaining([
-        'src/client/runjs/<entryName>/index.ts',
-        'src/client/runjs/<entryName>/**/*.{ts,tsx,js,jsx,json,md}',
-      ]),
-    );
+    expect(result.capabilities.allowedPaths.entries.runjs).toBeUndefined();
     expect(result.capabilities.allowedPaths.entries['js-field']).toEqual(
       expect.arrayContaining([
         'src/client/js-fields/<entryName>/index.tsx',
@@ -122,9 +104,14 @@ describe('plugin-light-extension supported kinds validator', () => {
         'light-extension.json',
         'tsconfig.json',
         'src/shared/**',
+        'src/client/js-blocks/**',
         'src/client/js-pages/**',
+        'src/client/js-fields/**',
+        'src/client/js-actions/**',
+        'src/client/js-items/**',
       ]),
     );
+    expect(result.capabilities.allowedPaths.repo).not.toContain('src/client/runjs/**');
   });
 
   it('allows future client kinds to import shared helpers and SDK type/helper imports', () => {
@@ -226,19 +213,28 @@ describe('plugin-light-extension supported kinds validator', () => {
     );
   });
 
-  it('accepts value-return RunJS entries', () => {
-    const result = new LightExtensionValidator().validateWorkspace({
-      files: [
-        { path: 'src/client/runjs/example/index.ts', content: 'return 1;\n' },
-        entryDescriptor('src/client/runjs/example', 'example'),
-      ],
-    });
+  it('rejects the removed generic RunJS authoring root in full-workspace and incremental validation', () => {
+    const validator = new LightExtensionValidator();
+    const files = [
+      { path: 'src/client/runjs/example/index.ts', content: 'return 1;\n' },
+      entryDescriptor('src/client/runjs/example', 'example'),
+    ];
+    const workspace = validator.validateWorkspace({ files });
+    const initial = validator.validateInitialFiles({ files });
+    const syncBatch = validator.validateSyncBatch({ files });
 
-    expect(result.accepted).toBe(true);
-    expect(result.entries).toEqual([
-      expect.objectContaining({ kind: 'runjs', entryName: 'example', entryPath: 'src/client/runjs/example/index.ts' }),
-    ]);
-    expect(result.diagnostics).toEqual([]);
+    expect(workspace.accepted).toBe(false);
+    expect(workspace.entries).toEqual([]);
+    expect(workspace.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'workspace_path_not_allowed', path: 'src/client/runjs/example/index.ts' }),
+        expect.objectContaining({ code: 'workspace_path_not_allowed', path: 'src/client/runjs/example/entry.json' }),
+      ]),
+    );
+    expect(initial).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'workspace_path_not_allowed' })]));
+    expect(syncBatch).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'workspace_path_not_allowed' })]),
+    );
   });
 });
 

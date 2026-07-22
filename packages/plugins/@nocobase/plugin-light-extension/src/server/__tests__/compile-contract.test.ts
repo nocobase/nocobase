@@ -8,6 +8,7 @@
  */
 
 import { sha256Hex } from '@nocobase/runjs';
+import { RUNJS_COMPILER_BUILD_IDENTITY } from '@nocobase/runjs/compiler';
 
 import {
   aggregateLightExtensionCompileResults,
@@ -20,6 +21,50 @@ import {
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 
 describe('LightExtensionCompileContract', () => {
+  it('publishes only the five retained authoring surfaces while preserving the shared RunJS compiler identity', () => {
+    expect(LIGHT_EXTENSION_AUTHORING_SURFACES).toEqual({
+      'js-block': {
+        kind: 'js-block',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+        modelUse: 'JSBlockModel',
+        surface: 'js-model.render',
+      },
+      'js-page': {
+        kind: 'js-page',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+        modelUse: 'JSPageModel',
+        surface: 'js-model.render',
+      },
+      'js-field': {
+        kind: 'js-field',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+        modelUse: 'JSEditableFieldModel',
+        surface: 'js-model.render',
+      },
+      'js-action': {
+        kind: 'js-action',
+        surfaceStyle: 'action',
+        compilerSurfaceStyle: 'action',
+        modelUse: 'JSActionModel',
+        surface: 'js-model.action',
+      },
+      'js-item': {
+        kind: 'js-item',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+        modelUse: 'JSItemActionModel',
+        surface: 'js-model.render',
+      },
+    });
+    expect(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.runjs).toEqual(RUNJS_COMPILER_BUILD_IDENTITY);
+    expect(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.components.runjsCompilerBuildId).toBe(
+      RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId,
+    );
+  });
+
   it('orders a complete batch by ordinal and rejects process-local values', () => {
     const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2)];
     const results = [jobs[2], jobs[0], jobs[1]].map((job) =>

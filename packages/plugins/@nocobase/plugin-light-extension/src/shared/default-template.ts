@@ -20,7 +20,6 @@ Put each reusable entry in its own directory:
 - JS Action: \`src/client/js-actions/<entry-name>/index.ts\`
 - JS Field / JS Column: \`src/client/js-fields/<entry-name>/index.tsx\`
 - JS Item: \`src/client/js-items/<entry-name>/index.tsx\`
-- RunJS value: \`src/client/runjs/<entry-name>/index.ts\`
 
 Every entry root must include \`entry.json\` with \`schemaVersion\` and a stable \`key\`. Entry settings are available through \`ctx.settings\`; use \`ctx.t()\` for runtime-visible strings.
 
@@ -178,37 +177,6 @@ ctx.render(<Statistic title={ctx.t('Calculated total')} value={quantity * unitPr
   "description": "Minimal JS Item example.",
   "category": "js-item",
   "tags": ["JS Item"],
-  "sort": 10,
-  "settings": {
-    "quantityField": { "type": "string", "title": "Quantity field", "default": "quantity", "required": true, "x-component": "Input" },
-    "unitPriceField": { "type": "string", "title": "Unit price field", "default": "unitPrice", "required": true, "x-component": "Input" }
-  }
-}
-`,
-    language: 'json',
-  },
-  {
-    path: 'src/client/runjs/calculate-subtotal/index.ts',
-    content: `const resolvedValues = await ctx.getVar('ctx.formValues');
-const values = resolvedValues && typeof resolvedValues === 'object' && !Array.isArray(resolvedValues)
-  ? (resolvedValues as Record<string, unknown>)
-  : {};
-const quantity = Number(values[String(ctx.settings?.quantityField || 'quantity')] || 0);
-const unitPrice = Number(values[String(ctx.settings?.unitPriceField || 'unitPrice')] || 0);
-
-return quantity * unitPrice;
-`,
-    language: 'typescript',
-  },
-  {
-    path: 'src/client/runjs/calculate-subtotal/entry.json',
-    content: `{
-  "schemaVersion": 1,
-  "key": "calculate-subtotal",
-  "title": "Calculate subtotal",
-  "description": "Minimal value-return RunJS example.",
-  "category": "runjs",
-  "tags": ["RunJS"],
   "sort": 10,
   "settings": {
     "quantityField": { "type": "string", "title": "Quantity field", "default": "quantity", "required": true, "x-component": "Input" },

@@ -78,8 +78,9 @@ describe('plugin-light-extension canonical entry schema', () => {
       entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
       entrySchemaSha256: lightExtensionEntryV1SchemaSha256,
     });
-    expect(capabilities.supportedKinds).toContain('runjs');
-    expect(capabilities.allowedPaths.entries.runjs).toBeDefined();
+    expect(capabilities.supportedKinds).toEqual(['js-block', 'js-page', 'js-field', 'js-action', 'js-item']);
+    expect(capabilities.allowedPaths.entries.runjs).toBeUndefined();
+    expect(capabilities.allowedPaths.repo).not.toContain('src/client/runjs/**');
     expect(JSON.stringify(capabilities)).not.toMatch(/meta\.json|settings\.json|\$not"/u);
   });
 
@@ -89,6 +90,7 @@ describe('plugin-light-extension canonical entry schema', () => {
     const app = {
       db: {} as Database,
       acl,
+      auditManager: { registerActions: vi.fn() },
       pm: { get: vi.fn(() => null), getPlugins: vi.fn(() => new Map()) },
       resourceManager: { define: vi.fn(), options: { prefix: '/api' } },
       on: vi.fn(),

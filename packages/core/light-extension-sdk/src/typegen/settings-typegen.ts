@@ -9,7 +9,7 @@
 
 import { buildLightExtensionSettingsSchema } from '../schema/contracts';
 
-export type LightExtensionClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
+export type LightExtensionClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
 
 export interface LightExtensionSettingsTypegenSourceFile {
   path: string;
@@ -81,7 +81,6 @@ const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: stri
   { kind: 'js-field', root: 'src/client/js-fields' },
   { kind: 'js-action', root: 'src/client/js-actions' },
   { kind: 'js-item', root: 'src/client/js-items' },
-  { kind: 'runjs', root: 'src/client/runjs' },
 ];
 
 const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
@@ -90,7 +89,6 @@ const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
   'js-field': 'JSFieldContext',
   'js-action': 'JSActionContext',
   'js-item': 'JSItemContext',
-  runjs: 'RunJSContext',
 };
 
 export function generateClientSettingsTypes(input: {

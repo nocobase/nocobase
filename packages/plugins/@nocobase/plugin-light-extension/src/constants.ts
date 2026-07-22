@@ -20,14 +20,7 @@ export const LIGHT_EXTENSION_ACL_SNIPPET = 'pm.light-extension';
 
 export const LIGHT_EXTENSION_OWNER_TYPE = 'light-extension';
 
-export const LIGHT_EXTENSION_SUPPORTED_KINDS = [
-  'js-block',
-  'js-page',
-  'js-field',
-  'js-action',
-  'js-item',
-  'runjs',
-] as const;
+export const LIGHT_EXTENSION_SUPPORTED_KINDS = ['js-block', 'js-page', 'js-field', 'js-action', 'js-item'] as const;
 export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = new RegExp(LIGHT_EXTENSION_ENTRY_KEY_PATTERN_SOURCE);
 export { LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION };
 export const LIGHT_EXTENSION_ENTRY_SCHEMA_URL = LIGHT_EXTENSION_ENTRY_SCHEMA_URI;

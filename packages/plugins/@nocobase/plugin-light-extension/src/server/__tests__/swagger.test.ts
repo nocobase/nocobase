@@ -104,6 +104,16 @@ describe('light-extension swagger', () => {
     });
   });
 
+  it('documents exactly the five retained authoring kinds, including JS Page', () => {
+    expect(swaggerDocument.components.schemas.LightExtensionKind.enum).toEqual([
+      'js-block',
+      'js-page',
+      'js-field',
+      'js-action',
+      'js-item',
+    ]);
+  });
+
   it('documents root business payloads, incremental saves, and preview/save status semantics', () => {
     const saveSource = swaggerDocument.paths['/lightExtensionFiles:saveSource'].post;
     const saveRequest = saveSource.requestBody.content['application/json'].schema;

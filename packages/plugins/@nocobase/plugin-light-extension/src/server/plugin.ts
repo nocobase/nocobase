@@ -69,6 +69,7 @@ import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
 import { MoveSourceService } from './services/MoveSourceService';
 import { MoveToInlineService } from './services/MoveToInlineService';
+import { GenericRunJSHardDeleteMigrationService } from './services/GenericRunJSHardDeleteMigrationService';
 
 type AppWithPluginEvents = {
   log?: unknown;
@@ -247,6 +248,7 @@ export class PluginLightExtensionServer extends Plugin {
 
     this.unregisterVscPermissionHookWhenNeeded();
     const vscFileServerModule = this.requireVscFileServerModule();
+    await this.runGenericRunJSMigrationGate();
     await vscFileServerModule.load();
 
     this.auditService = new LightExtensionAuditService(db);
@@ -365,6 +367,10 @@ export class PluginLightExtensionServer extends Plugin {
     await this.vscFileServerModule?.afterDisable();
   }
 
+  async beforeEnable() {
+    await this.createGenericRunJSMigrationService()?.migrate();
+  }
+
   async afterEnable() {
     await this.runRemoteRecovery();
   }
@@ -385,6 +391,25 @@ export class PluginLightExtensionServer extends Plugin {
       this.vscFileServerModule = new VscFileServerModule(this.app, db);
     }
     return this.vscFileServerModule;
+  }
+
+  private createGenericRunJSMigrationService(): GenericRunJSHardDeleteMigrationService | null {
+    const db = this.db;
+    if (!db || typeof db.hasCollection !== 'function') {
+      return null;
+    }
+    return new GenericRunJSHardDeleteMigrationService(db);
+  }
+
+  private async runGenericRunJSMigrationGate(): Promise<void> {
+    const service = this.createGenericRunJSMigrationService();
+    if (!service) {
+      return;
+    }
+    if (!this.enabled) {
+      await service.migrate();
+    }
+    await service.assertNoLegacyData();
   }
 
   private requireClientAppService(): ClientAppService {
