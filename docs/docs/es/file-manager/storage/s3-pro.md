@@ -11,7 +11,7 @@ Basándose en el **plugin** de gestión de archivos, se añade soporte para tipo
 ## Características
 
 1.  **Carga desde el cliente**: El proceso de carga de archivos no necesita pasar por el servidor de NocoBase, sino que se conecta directamente al servicio de almacenamiento de archivos, lo que permite una experiencia de carga más eficiente y rápida.
-2.  **Acceso privado**: Al acceder a los archivos, todas las URL son direcciones temporales autorizadas y firmadas, lo que garantiza la seguridad y la vigencia del acceso a los archivos.
+2.  **Acceso privado**: De forma predeterminada se utilizan URL firmadas con caducidad. También se pueden generar URL sin firma para buckets públicos.
 
 ## Casos de Uso
 
@@ -29,6 +29,57 @@ Basándose en el **plugin** de gestión de archivos, se añade soporte para tipo
 4.  Una vez que aparezca la ventana emergente, verá un formulario con muchos campos que deberá completar. Puede consultar la documentación posterior para obtener la información de los parámetros relevantes para el servicio de archivos correspondiente y rellenarlos correctamente en el formulario.
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
+
+## Configuración de URL
+
+Además de las opciones comunes «URL de NocoBase», «URL original» y «Permitir acceso público» del administrador de archivos, S3 Pro permite configurar por separado los formatos de URL de carga y acceso, así como decidir si se utilizan URL firmadas. Consulte [Información general de los motores de almacenamiento](./index.md#url-de-archivos-y-control-de-acceso) para conocer las opciones comunes.
+
+Estas opciones controlan distintas etapas:
+
+- «URL de NocoBase / URL original» controla qué dirección devuelve el registro del archivo
+- «Permitir acceso público» controla si se comprueban los permisos de visualización del registro al acceder a una URL de NocoBase
+- «No usar URL firmada» controla si el almacenamiento de objetos valida la firma de la URL
+
+Estas configuraciones se pueden combinar de forma independiente. La opción predeterminada recomendada es usar la URL de NocoBase, dejar «Permitir acceso público» sin marcar y mantener activadas las URL firmadas.
+
+![Configuración de URL de S3 Pro](https://static-docs.nocobase.com/20260723221441.png)
+
+### Cómo elegir
+
+| Caso de uso | URL del archivo | Permitir acceso público | No usar URL firmada |
+| --- | --- | --- | --- |
+| Los archivos deben respetar los permisos de rol y de datos mientras el bucket permanece privado | URL de NocoBase | Sin marcar | Sin marcar |
+| Se necesita una dirección pública de NocoBase mientras el bucket permanece privado | URL de NocoBase | Marcado | Sin marcar |
+| Un servicio externo necesita acceso temporal a la dirección de almacenamiento | URL original | No aplicable | Sin marcar; configure Access URL expiration |
+| Un bucket público o una CDN necesita una dirección original sin firma | URL original | No aplicable | Marcado |
+
+### Formato de URL de carga
+
+«Formato de URL de carga» controla la URL de S3 utilizada por el cliente para subir archivos. Seleccione el formato admitido por el servicio de almacenamiento. El formulario muestra un ejemplo basado en el Endpoint, el Bucket y la ruta actuales:
+
+- «Bucket as subdomain»: `https://bucket-name.s3.example.com/path/to/object`
+- «Bucket as subpath»: `https://s3.example.com/bucket-name/path/to/object`
+- «Ignore bucket»: `https://upload.example.com/path/to/object`
+
+### Formato de URL de acceso
+
+«Formato de URL de acceso» controla si el Bucket aparece en el dominio, en la ruta o no aparece en la URL cuando S3 Pro genera una dirección de acceso. Ofrece los mismos tres formatos que la URL de carga, pero se puede configurar por separado; por ejemplo, la carga puede usar un Endpoint de S3 y el acceso un dominio CDN que no incluya el Bucket.
+
+Esta opción afecta a las URL originales y a la dirección de almacenamiento a la que finalmente redirige una URL de NocoBase, pero no cambia el formato de la propia URL de NocoBase.
+
+### No usar URL firmada
+
+S3 Pro utiliza URL firmadas de forma predeterminada. Una URL original generada incluye parámetros de firma, por ejemplo:
+
+```text
+https://bucket-name.s3.example.com/path/to/object?X-Amz-Signature=xxxx
+```
+
+La URL firmada permanece válida durante el periodo configurado en «Access URL expiration» y el bucket puede seguir siendo privado. Al utilizar una URL de NocoBase, NocoBase genera una dirección firmada o redirige a ella después de superar la comprobación de permisos.
+
+Al marcar «No usar URL firmada», S3 Pro genera una dirección sin parámetros de firma. El bucket y los objetos subidos deben permitir la lectura pública y «Access URL expiration» deja de tener efecto.
+
+«No usar URL firmada» solo controla si el servicio de almacenamiento valida la firma; no cambia los permisos de los registros de NocoBase. Si se selecciona la URL de NocoBase y «Permitir acceso público» no está marcado, la solicitud debe superar primero la comprobación de permisos de NocoBase.
 
 ## Configuración del Proveedor de Servicios
 
@@ -109,9 +160,9 @@ Basándose en el **plugin** de gestión de archivos, se añade soporte para tipo
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
-#### Acceso Público (Opcional)
+#### Acceso público sin firma (opcional)
 
-Esta es una configuración opcional. Configúrela cuando necesite que los archivos cargados sean completamente públicos.
+Configure esta opción solo cuando necesite URL sin firma, ya que el bucket y los objetos subidos deben permitir la lectura pública. Si solo necesita compartir una URL pública de NocoBase, marque «Permitir acceso público» y mantenga activadas las URL firmadas; no es necesario hacer público el bucket.
 
 1.  Vaya al panel de "Permissions" (Permisos), desplácese hasta "Object Ownership" (Propiedad de objetos), haga clic en "Edit" (Editar) y habilite las ACLs.
 
@@ -121,7 +172,7 @@ Esta es una configuración opcional. Configúrela cuando necesite que los archiv
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
-3.  Marque "Public access" (Acceso público) en NocoBase.
+3.  Marque «No usar URL firmada» en NocoBase.
 
 #### Configuración de Miniaturas (Opcional)
 
@@ -145,7 +196,7 @@ Esta configuración es opcional y se utiliza para optimizar el tamaño o los efe
 5.  En la configuración de NocoBase, hay varios puntos a tener en cuenta:
     1.  `Thumbnail rule` (Regla de miniatura): Rellene los parámetros relacionados con el procesamiento de imágenes, por ejemplo, `?width=100`. Para más detalles, consulte la [documentación de AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
     2.  `Access endpoint` (Punto de acceso): Rellene el valor de Outputs -> ApiEndpoint después del despliegue.
-    3.  `Full access URL style` (Estilo de URL de acceso completo): Debe marcar **Ignore** (Ignorar) (ya que el nombre del bucket ya se rellenó durante la configuración, no es necesario para el acceso).
+    3.  «Formato de URL de acceso»: Seleccione «Ignore bucket», ya que el nombre del bucket ya está incluido en la configuración y no se necesita en la URL de acceso.
 
     ![](https://static-docs.nocobase.com/20250414152135514.png)
 
@@ -227,7 +278,7 @@ Esta configuración es opcional y solo debe utilizarse cuando necesite optimizar
 
 1.  Rellene los parámetros relacionados con `Thumbnail rule` (Regla de miniatura). Para la configuración específica de los parámetros, consulte [Parámetros de procesamiento de imágenes](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1).
 
-2.  `Full upload URL style` (Estilo de URL de carga completa) y `Full access URL style` (Estilo de URL de acceso completo) pueden mantenerse iguales.
+2.  «Formato de URL de carga» y «Formato de URL de acceso» pueden usar la misma configuración.
 
 #### Ejemplo de Configuración
 
@@ -264,7 +315,7 @@ Esta configuración es opcional y solo debe utilizarse cuando necesite optimizar
     -   El **AccessKey ID** y el **AccessKey Secret** son los textos guardados en el paso anterior.
     -   **Region**: Un MinIO autoalojado no tiene el concepto de región, por lo que puede configurarse como "auto".
     -   **Endpoint**: Rellene el nombre de dominio o la dirección IP de su despliegue.
-    -   El "Full access URL style" (Estilo de URL de acceso completo) debe configurarse como "Path-Style".
+    -   Configure «Formato de URL de acceso» como «Bucket as subpath».
 
 #### Ejemplo de Configuración
 
