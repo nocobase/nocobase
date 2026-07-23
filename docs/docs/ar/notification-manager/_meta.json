@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "قنوات الإشعارات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "رسائل داخل التطبيق",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "البريد الإلكتروني",
+        "link": "/notification-manager/notification-email"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "التطوير",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "توسيع نوع القناة",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "واجهة API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]
