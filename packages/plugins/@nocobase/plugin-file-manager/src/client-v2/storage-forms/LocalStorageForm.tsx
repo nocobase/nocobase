@@ -34,9 +34,9 @@ export default function LocalStorageForm() {
       </Form.Item>
       <PathField addonBefore="storage/uploads/" />
       <RenameModeField />
+      <UseOriginalUrlField />
       <FileSizeField />
       <MimetypeField />
-      <UseOriginalUrlField />
       <DefaultField />
       <ParanoidField />
     </>

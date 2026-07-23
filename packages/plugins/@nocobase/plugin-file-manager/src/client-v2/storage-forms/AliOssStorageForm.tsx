@@ -61,9 +61,9 @@ export default function AliOssStorageForm() {
       </Form.Item>
       <PathField />
       <RenameModeField />
+      <UseOriginalUrlField />
       <FileSizeField />
       <MimetypeField />
-      <UseOriginalUrlField />
       <DefaultField />
       <ParanoidField />
       <Form.Item

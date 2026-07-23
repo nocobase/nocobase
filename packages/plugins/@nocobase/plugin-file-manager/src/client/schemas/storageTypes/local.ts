@@ -34,8 +34,6 @@ export default {
           'x-display': 'hidden',
           default: 'storage/uploads',
         },
-        useOriginalUrl: common.useOriginalUrl,
-        public: common.public,
       },
     },
     path: {
@@ -46,6 +44,8 @@ export default {
       },
     },
     renameMode: common.renameMode,
+    'options.useOriginalUrl': common.useOriginalUrl,
+    'options.public': common.public,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,

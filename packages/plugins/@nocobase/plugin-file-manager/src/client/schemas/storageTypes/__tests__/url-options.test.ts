@@ -15,20 +15,24 @@ import txCos from '../tx-cos';
 
 describe('storage URL options schema', () => {
   it.each([local, aliOss, s3, txCos])(
-    'uses the shared original URL radio and public access checkbox',
+    'places the shared URL options after renaming and before upload rules',
     (storageType) => {
-      const properties = storageType.fieldset.options.properties;
+      const properties = storageType.fieldset;
+      const fieldNames = Object.keys(properties);
 
-      expect(properties.useOriginalUrl).toMatchObject({
+      expect(properties['options.useOriginalUrl']).toMatchObject({
         type: 'boolean',
         'x-component': 'UseOriginalUrlRadio',
         default: false,
       });
-      expect(properties.public).toMatchObject({
+      expect(properties['options.public']).toMatchObject({
         type: 'boolean',
         'x-display': 'hidden',
         default: false,
       });
+      expect(fieldNames.indexOf('path')).toBeLessThan(fieldNames.indexOf('options.useOriginalUrl'));
+      expect(fieldNames.indexOf('renameMode')).toBeLessThan(fieldNames.indexOf('options.useOriginalUrl'));
+      expect(fieldNames.indexOf('options.useOriginalUrl')).toBeLessThan(fieldNames.indexOf('rules'));
     },
   );
 });

@@ -42,6 +42,14 @@ function expectFormLabel(title: string) {
   expect(document.querySelector(`[title="${title}"]`)).toBeInTheDocument();
 }
 
+function expectFormLabelOrder(...titles: string[]) {
+  const labels = titles.map((title) => document.querySelector(`[title="${title}"]`));
+  labels.forEach((label) => expect(label).toBeInTheDocument());
+  for (let index = 1; index < labels.length; index += 1) {
+    expect(labels[index - 1]?.compareDocumentPosition(labels[index] as Node)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  }
+}
+
 function UrlOptionsValue() {
   const form = Form.useFormInstance();
   const useOriginalUrl = Form.useWatch(['options', 'useOriginalUrl'], { form, preserve: true });
@@ -84,6 +92,7 @@ describe('storage forms', () => {
     });
     expect(screen.getByText('Default storage')).toBeInTheDocument();
     expect(screen.getByText('Keep file in storage when destroy the file record')).toBeInTheDocument();
+    expectFormLabelOrder('Path :', 'Renaming :', 'File URL :', 'File size limit :');
   });
 
   it('renders Aliyun OSS fields including timeout, thumbnail and request options', () => {
@@ -102,6 +111,7 @@ describe('storage forms', () => {
     expect(screen.getByRole('radio', { name: /NocoBase URL/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Original URL/ })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Allow public access' })).toBeInTheDocument();
+    expectFormLabelOrder('Path :', 'Renaming :', 'File URL :', 'File size limit :');
   });
 
   it('renders S3 and Tencent COS provider-specific fields', () => {
@@ -112,6 +122,7 @@ describe('storage forms', () => {
     expect(screen.getByRole('radio', { name: /NocoBase URL/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Original URL/ })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Allow public access' })).toBeInTheDocument();
+    expectFormLabelOrder('Path :', 'Renaming :', 'File URL :', 'File size limit :');
 
     rerender(
       <Form>
@@ -125,6 +136,7 @@ describe('storage forms', () => {
     expect(screen.getByRole('radio', { name: /NocoBase URL/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Original URL/ })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Allow public access' })).toBeInTheDocument();
+    expectFormLabelOrder('Path :', 'Renaming :', 'File URL :', 'File size limit :');
   });
 
   it('disables the default checkbox when editing the current default storage', () => {

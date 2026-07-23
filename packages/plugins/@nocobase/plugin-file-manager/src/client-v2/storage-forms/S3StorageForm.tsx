@@ -49,9 +49,9 @@ export default function S3StorageForm() {
       </Form.Item>
       <PathField />
       <RenameModeField />
+      <UseOriginalUrlField />
       <FileSizeField />
       <MimetypeField />
-      <UseOriginalUrlField />
       <DefaultField />
       <ParanoidField />
     </>
