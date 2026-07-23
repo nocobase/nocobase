@@ -30,7 +30,6 @@ import { FlowExitAllException } from '../../../../utils/exceptions';
 import { observer } from '../../../../reactive';
 
 const SchemaField = createSchemaField();
-const fillContentClassName = 'nb-flow-step-settings-fill-content';
 
 /**
  * StepSettingsDialog组件 - 使用 FormDialog 显示单个步骤的配置界面
@@ -211,7 +210,6 @@ const openStepSettingsDialog = async ({
           <FormProvider form={form}>
             <FlowSettingsContextProvider value={flowRuntimeContext}>
               <div
-                className={fillAvailableContent ? fillContentClassName : undefined}
                 style={
                   fillAvailableContent
                     ? {
@@ -223,33 +221,6 @@ const openStepSettingsDialog = async ({
                     : undefined
                 }
               >
-                {fillAvailableContent ? (
-                  <style>
-                    {`
-                      .${fillContentClassName} > .ant-formily-layout {
-                        display: flex;
-                        flex: 1 1 0%;
-                        flex-direction: column;
-                        height: 100%;
-                        min-height: 0;
-                      }
-                      .${fillContentClassName} > .ant-formily-layout > .ant-formily-item {
-                        display: flex;
-                        flex: 1 1 0%;
-                        flex-direction: column;
-                        margin-bottom: 0;
-                        min-height: 0;
-                      }
-                      .${fillContentClassName} .ant-formily-item-control,
-                      .${fillContentClassName} .ant-formily-item-control-content,
-                      .${fillContentClassName} .ant-formily-item-control-content-component {
-                        display: flex;
-                        flex: 1 1 0%;
-                        min-height: 0;
-                      }
-                    `}
-                  </style>
-                ) : null}
                 <SchemaField
                   schema={compiledFormSchema}
                   components={{

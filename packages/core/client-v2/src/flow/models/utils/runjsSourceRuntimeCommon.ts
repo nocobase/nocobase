@@ -266,14 +266,7 @@ export function createLightExtensionRunJsUISchema(options: {
 }
 
 export function createRunJSEditorEmbedUIMode(title?: string) {
-  const baseProps = {
-    ...(title ? { title } : {}),
-    styles: {
-      body: {
-        transform: 'translateX(0)',
-      },
-    },
-  };
+  const baseProps = title ? { title } : {};
 
   if (!RunJSEditorRegistry.getProviders().length) {
     return {
@@ -287,15 +280,11 @@ export function createRunJSEditorEmbedUIMode(title?: string) {
     props: {
       ...baseProps,
       footer: null,
-      maxWidth: '960px',
-      minWidth: '720px',
-      width: '45%',
       styles: {
         body: {
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
-          transform: 'translateX(0)',
         },
       },
     },

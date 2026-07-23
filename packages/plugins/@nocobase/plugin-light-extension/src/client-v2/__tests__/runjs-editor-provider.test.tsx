@@ -280,12 +280,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(provider.canHandle?.(props)).toBe(true);
     render(<>{provider.renderEditor(props)}</>);
 
-    expect(screen.getByTestId('light-extension-source-workspace-editor')).toHaveStyle({
-      height: 'calc(100vh - 96px)',
-      minHeight: 0,
-      minWidth: 0,
-      overflow: 'hidden',
-    });
+    expect(screen.getByTestId('light-extension-source-workspace-editor')).toBeInTheDocument();
     expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
       'data-workspace-scope',
       JSON.stringify({

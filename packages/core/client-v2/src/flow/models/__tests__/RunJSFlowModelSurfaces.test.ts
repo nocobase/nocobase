@@ -190,22 +190,9 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it.each(surfaces)('$name keeps the next-style editor layout without a provider', async (spec) => {
+  it.each(surfaces)('$name resolves its embedded editor mode without a provider', async (spec) => {
     const flow = spec.modelClass.globalFlowRegistry.getFlow(spec.flowKey);
     const step = flow?.getStep('runJs');
-    const codeSchema = getRunJsCodeSchema(spec);
-
-    if (spec.name === 'JSBlockModel' || spec.name === 'JSPageModel') {
-      expect(codeSchema['x-component-props']?.minHeight).toBe('calc(100vh - 42px)');
-    } else {
-      expect(codeSchema['x-component-props']?.height).toBe('100%');
-    }
-    expect(codeSchema['x-component-props']?.wrapperStyle).toBeUndefined();
-    expect(codeSchema['x-component-props']?.containerStyle).toMatchObject({
-      height: '100%',
-      minHeight: 0,
-      minWidth: 0,
-    });
     const uiMode = (step?.serialize() as SerializedRunJSStep | undefined)?.uiMode;
     expect(uiMode).toBeTypeOf('function');
     const resolvedUiMode =
@@ -220,14 +207,6 @@ describe('RunJS FlowModel surfaces', () => {
           })
         : uiMode;
     const props = resolvedUiMode?.props;
-    expect(props).toMatchObject({
-      styles: {
-        body: {
-          transform: 'translateX(0)',
-        },
-      },
-    });
     expect(props?.footer).toBeUndefined();
-    expect(props?.width).toBeUndefined();
   });
 });

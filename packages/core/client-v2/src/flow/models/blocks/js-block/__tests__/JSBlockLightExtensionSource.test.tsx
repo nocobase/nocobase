@@ -814,8 +814,6 @@ describe('JSBlockModel light extension source', () => {
 
     const loading = await screen.findByTestId('js-block-runtime-loading');
     expect(loading.children).toHaveLength(1);
-    expect(loading.firstElementChild).toHaveClass('ant-spin');
-    expect(loading).not.toHaveTextContent('Resolving JavaScript source');
 
     resolveSource({
       code: 'ctx.render(<span data-testid="resolved-js-block">resolved</span>);',

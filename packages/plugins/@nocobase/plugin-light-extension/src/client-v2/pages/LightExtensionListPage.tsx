@@ -7,7 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
+import {
+  CodeOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
 import {
   CollectionFilter,
   DEFAULT_PAGE_SIZE,
@@ -87,8 +96,6 @@ type SyncConfigurationRequest = 'test' | 'configure';
 
 const entryKinds = LIGHT_EXTENSION_SUPPORTED_KINDS;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
-const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
-const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 export const LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES = [
   'name',
   'description',
@@ -634,47 +641,34 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 350,
         render: (_value, repo) => (
-          <Space size="small" onClick={(event) => event.stopPropagation()}>
+          <Space size={4} onClick={(event) => event.stopPropagation()}>
             <Button
               aria-label={t('Edit code')}
+              icon={<CodeOutlined />}
               onClick={() => selectRepo(repo.id, { panel: 'source' })}
               size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Edit code')}
-            </Button>
+            />
             <Button
               aria-label={t('Sync code')}
+              icon={<SyncOutlined />}
               onClick={() => selectRepo(repo.id, { panel: 'sync' })}
               size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Sync code')}
-            </Button>
+            />
             <Button
               aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
+              icon={<EditOutlined />}
               onClick={() => openEditDrawer(repo)}
               size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Edit details')}
-            </Button>
+            />
             <Button
               aria-label={t('Remove')}
               danger
+              icon={<DeleteOutlined />}
               loading={removingRepoIds.has(repo.id)}
               onClick={() => setRemoveTarget(repo)}
               size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Remove')}
-            </Button>
+            />
           </Space>
         ),
       },
@@ -818,7 +812,6 @@ function LightExtensionListPageInner() {
         onClose={closeEditDrawer}
         open={Boolean(editTarget)}
         title={t('Edit light extension')}
-        width={520}
       >
         <Form form={editForm} id="light-extension-edit-form" layout="vertical" onFinish={updateRepo}>
           <Form.Item
@@ -861,7 +854,7 @@ function LightExtensionListPageInner() {
         onClose={closeDetailDrawer}
         open={detailDrawerOpen}
         styles={{
-          body: { overflow: activePanel === 'source' ? 'hidden' : 'auto', padding: 16 },
+          body: { overflow: activePanel === 'source' ? 'hidden' : 'auto' },
         }}
         footer={
           activePanel === 'source' ? (
@@ -891,7 +884,6 @@ function LightExtensionListPageInner() {
             ? `${detailPanelTitle(t, activePanel)}: ${selectedRepo.title || selectedRepo.name}`
             : null
         }
-        width={SOURCE_DRAWER_WIDTH}
       >
         {detailDrawerOpen ? renderDrawerContent() : null}
       </Drawer>

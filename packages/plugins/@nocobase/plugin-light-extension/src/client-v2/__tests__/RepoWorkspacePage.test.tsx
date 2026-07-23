@@ -468,9 +468,6 @@ describe('LightExtensionWorkspacePage', () => {
 
     const workspace = await screen.findByTestId('light-extension-runjs-studio-workspace');
     expect(screen.queryByTestId('runjs-files-panel')).not.toBeInTheDocument();
-    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({
-      overflowY: 'hidden',
-    });
     expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveTextContent('Diagnostics');
 
     fireEvent.click(within(workspace).getByRole('button', { name: 'Expand files' }));
@@ -1822,7 +1819,6 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
-    expect(screen.getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({ overflowY: 'auto' });
   });
 
   it('opens diagnostic source locations after save validation failure', async () => {

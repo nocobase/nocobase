@@ -667,7 +667,7 @@ JSBlockModel.registerFlow({
             },
             surfaceStyle: 'render',
             scene: 'block',
-            minHeight: 'calc(100vh - 42px)',
+            minHeight: '320px',
             theme: 'light',
             enableLinter: true,
             containerStyle: {
