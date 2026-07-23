@@ -33,6 +33,8 @@ export function UsersSelect({ disabled = false, multiple = false, value, onChang
     <Variable.Input
       scope={scope}
       value={value}
+      changeOnSelect={false}
+      nullable={false}
       onChange={(next) => {
         onChange([next]);
       }}
