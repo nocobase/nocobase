@@ -128,7 +128,9 @@ async function loadRoutes(prefix: string): Promise<Map<string, RouteMiddleware>>
   const routes = new Map<string, RouteMiddleware>();
   const app = {
     db: {} as Database,
+    environment: { getVariables: vi.fn(() => ({})) },
     acl: { allow: vi.fn(), registerSnippet: vi.fn() },
+    auditManager: { registerActions: vi.fn(), log: vi.fn() },
     pm: {
       get: vi.fn(() => null),
       getPlugins: vi.fn(() => new Map()),

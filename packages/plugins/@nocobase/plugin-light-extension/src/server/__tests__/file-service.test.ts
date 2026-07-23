@@ -21,6 +21,8 @@ import { LightExtensionPermissionService } from '../services/LightExtensionPermi
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
 import { LIGHT_EXTENSION_VALIDATION_LIMITS, LightExtensionValidator } from '../services/LightExtensionValidator';
 
+import './file-service-expected-head.cases';
+
 describe('plugin-light-extension file service resource bridge', () => {
   let app: MockServer;
   let agent: ReturnType<MockServer['agent']>;

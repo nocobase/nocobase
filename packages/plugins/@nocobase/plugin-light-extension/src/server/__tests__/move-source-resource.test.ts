@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LightExtensionError } from '../../shared/errors';
 import { createLightExtensionsResource } from '../resources/lightExtensions';
 import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
+import type { MoveSourceService } from '../services/MoveSourceService';
 import type { MoveToInlineService } from '../services/MoveToInlineService';
 
 // Old case -> new owner:
@@ -37,6 +38,57 @@ const binding = {
 const entryPath = 'src/client/js-blocks/sales/index.tsx';
 
 describe('move-to-inline resource', () => {
+  it('normalizes moveSource input and request context', async () => {
+    const moveSource = vi.fn(async () => ({ repo: { id: 'ler_default' }, ownerFingerprint: 'owner_after' }));
+    const resource = createLightExtensionsResource(
+      {} as LightExtensionCompilePreviewService,
+      { moveSource } as unknown as MoveSourceService,
+    );
+    const can = vi.fn().mockReturnValue({});
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            idempotencyKey: 'externalize-sales-page-v1',
+            locator,
+            expectedOwnerFingerprint: 'owner_before',
+            sourceRepoId: 'runjs_sales_page',
+            sourceHeadCommitId: 'commit_inline',
+            entryPath: 'src/client/index.tsx',
+            version: 'v2',
+            files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
+            destination: { type: 'default' },
+            entryName: 'sales-page',
+          },
+        },
+      },
+      auth: { user: { id: 9 } },
+      can,
+      request: { headers: { 'x-request-id': 'req_externalize', 'x-request-source': 'resource-contract' } },
+    } as unknown as Context;
+
+    await resource.actions?.moveSource?.(ctx, async () => undefined);
+
+    expect(moveSource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: 'externalize-sales-page-v1',
+        destination: { type: 'default' },
+        entryName: 'sales-page',
+        files: [expect.objectContaining({ path: 'src/client/index.tsx', content: 'ctx.render(null);' })],
+      }),
+      expect.objectContaining({
+        actorUserId: '9',
+        requestId: 'req_externalize',
+        requestSource: 'resource-contract',
+        can,
+      }),
+    );
+    expect((ctx as { body?: unknown }).body).toEqual({
+      repo: { id: 'ler_default' },
+      ownerFingerprint: 'owner_after',
+    });
+  });
+
   it('normalizes the moveToInline resource input and request context', async () => {
     const moveToInline = vi.fn(async () => ({ code: 'ctx.render(<div />);', version: 'v2' }));
     const resource = createLightExtensionsResource({} as LightExtensionCompilePreviewService, undefined, {

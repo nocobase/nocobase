@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelContext, SubModelItem } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionSelectableEntrySummary } from '../../shared/types';
@@ -30,6 +30,12 @@ type StaticCreateModelOptions = {
   };
 };
 
+class JSBlockModel extends FlowModel {}
+class JSRecordActionModel extends FlowModel {}
+class JSColumnModel extends FlowModel {}
+class FormItemModel extends FlowModel<{ subModels: { field?: JSEditableFieldModel } }> {}
+class JSEditableFieldModel extends FlowModel {}
+
 const entries: LightExtensionSelectableEntrySummary[] = [
   createEntry({ id: 'block', kind: 'js-block', repoId: 'repo-a', title: 'Dashboard block' }),
   createEntry({ id: 'action', kind: 'js-action', repoId: 'repo-a', title: 'Refresh action' }),
@@ -40,6 +46,64 @@ const entries: LightExtensionSelectableEntrySummary[] = [
 ];
 
 describe('createLightExtensionModelMenuProvider', () => {
+  it('persists the four direct-menu model shapes through FlowEngine serialization and reload', async () => {
+    const api = createApi();
+    const block = await findLeaf(await getRootItem(api, { target: 'block' }), 'block');
+    const action = await findLeaf(
+      await getRootItem(api, { target: 'action', modelUse: 'JSRecordActionModel' }),
+      'action',
+    );
+    const column = await findLeaf(await getRootItem(api, { target: 'column' }), 'column');
+    const fieldRoot = await getRootItem(api, {
+      target: 'field',
+      itemModelUse: 'FormItemModel',
+      fieldModelUse: 'JSEditableFieldModel',
+      refreshTargets: ['FormItemModel'],
+    });
+    const fieldEntry = await findEntryItem(fieldRoot, 'field');
+    const field = (await resolveChildren(fieldEntry, createFieldContext())).find((item) => item.key === 'status');
+    if (!field?.createModelOptions) {
+      throw new Error('Bound field item was not found');
+    }
+    const fieldOptions =
+      typeof field.createModelOptions === 'function'
+        ? await field.createModelOptions(createFieldContext())
+        : field.createModelOptions;
+    const cases = [
+      { label: 'block', options: block.createModelOptions, path: ['stepParams', 'jsSettings', 'runJs'] },
+      { label: 'action', options: action.createModelOptions, path: ['stepParams', 'clickSettings', 'runJs'] },
+      {
+        label: 'field wrapper',
+        options: fieldOptions,
+        path: ['subModels', 'field', 'stepParams', 'jsSettings', 'runJs'],
+      },
+      { label: 'column', options: column.createModelOptions, path: ['stepParams', 'jsSettings', 'runJs'] },
+    ];
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel, JSRecordActionModel, JSColumnModel, FormItemModel, JSEditableFieldModel });
+
+    for (const item of cases) {
+      if (!item.options) {
+        throw new Error(`${item.label} model options were not created`);
+      }
+      const created = engine.createModel(item.options as never);
+      const persisted = created.serialize();
+      const reloaded = engine.createModel(persisted as never);
+      const runJs = getAtPath(reloaded.serialize(), item.path);
+
+      expect(runJs, item.label).toMatchObject({
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding: expect.objectContaining({ type: 'light-extension-entry' }),
+      });
+      if (item.label === 'column') {
+        expect(getAtPath(reloaded.serialize(), ['stepParams', 'tableColumnSettings', 'title'])).toEqual({
+          title: 'Summary column',
+        });
+      }
+    }
+  });
+
   it.each<{
     options: LightExtensionModelMenuOptions;
     entryId: string;
@@ -163,6 +227,17 @@ describe('createLightExtensionModelMenuProvider', () => {
     ]);
   });
 });
+
+function getAtPath(value: unknown, path: string[]): unknown {
+  let current = value;
+  for (const segment of path) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return current;
+}
 
 async function getRootItem(api: ApiClientLike, options: LightExtensionModelMenuOptions): Promise<SubModelItem> {
   const provider = createLightExtensionModelMenuProvider(api, options);

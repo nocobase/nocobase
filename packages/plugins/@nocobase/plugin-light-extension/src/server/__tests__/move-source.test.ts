@@ -24,6 +24,8 @@ import {
 import { buildApplicationDefaultLightExtensionIdentity } from '../services/LightExtensionRepoService';
 import { buildRunJSSourceRepositoryIdentity } from '../vsc-file/public-api';
 
+import './move-source-to-inline.cases';
+
 const locator = {
   kind: 'flowModel.step',
   modelUid: 'fm_js_block',

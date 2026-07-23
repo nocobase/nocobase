@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createHash } from 'crypto';
+
 import type { LightExtensionEntryRecord } from '../../shared/types';
+import { buildLightExtensionSettingsHashes } from '../services/LightExtensionEntryService';
 import {
   buildLightExtensionCompileKey,
   type CompileInputManifestSourceFile,
@@ -89,6 +92,28 @@ describe('light extension compiler identity and compile key', () => {
     expect(moved.compileKey).not.toBe(first.compileKey);
     expect(changedBuild.compileKey).not.toBe(first.compileKey);
     expect(changedDisplayMetadata.compileKey).toBe(first.compileKey);
+  });
+});
+
+describe('settings hash identity', () => {
+  it('preserves explicit root null and array defaults in the defaults hash', () => {
+    expect(buildLightExtensionSettingsHashes({ type: ['object', 'null'], default: null }).settingsDefaultsHash).toBe(
+      createHash('sha256').update('null').digest('hex'),
+    );
+    expect(buildLightExtensionSettingsHashes({ type: 'array', default: [] }).settingsDefaultsHash).toBe(
+      createHash('sha256').update('[]').digest('hex'),
+    );
+  });
+
+  it('distinguishes missing settings schemas from explicit empty schemas', () => {
+    expect(buildLightExtensionSettingsHashes(null)).toEqual({
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+    });
+    expect(buildLightExtensionSettingsHashes({})).toEqual({
+      settingsSchemaHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      settingsDefaultsHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+    });
   });
 });
 
