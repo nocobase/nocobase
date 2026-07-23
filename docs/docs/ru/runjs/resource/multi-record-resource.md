@@ -1,27 +1,27 @@
 # MultiRecordResource
 
-Ресурс, ориентированный на коллекции (таблицы данных): запросы возвращают массив, поддерживается пагинация, фильтрация, сортировка и операции CRUD. Подходит для сценариев с «несколькими записями», таких как таблицы и списки. В отличие от [APIResource](./api-resource.md), MultiRecordResource определяет имя ресурса через `setResourceName()`, автоматически создает URL-адреса вида `users:list`, `users:create` и обладает встроенными возможностями для пагинации, фильтрации и выбора строк.
+Ресурс для **таблиц/списков данных**: запрос возвращает массив; поддерживает пагинацию, фильтрацию, сортировку и CRUD. Используется для таблиц, списков и других сценариев "множественных записей". В отличие от [APIResource](./api-resource.md), MultiRecordResource использует `setResourceName()` для указания имени ресурса и автоматически строит URL вида `users:list`, `users:create`, а также включает встроенные механизмы пагинации, фильтрации и выбранных строк.
 
-**Наследование**: FlowResource → APIResource → BaseRecordResource → MultiRecordResource.
+**Наследование:** `FlowResource` → `APIResource` → `BaseRecordResource` → `MultiRecordResource`.
 
-**Способ создания**: `ctx.makeResource('MultiRecordResource')` или `ctx.initResource('MultiRecordResource')`. Перед использованием необходимо вызвать `setResourceName('имя_коллекции')` (например, `'users'`); в RunJS `ctx.api` внедряется средой выполнения.
+**Создание:** `ctx.makeResource('MultiRecordResource')` или `ctx.initResource('MultiRecordResource')`. Перед использованием вызовите `setResourceName('collectionName')` (например, `'users'`); в RunJS `ctx.api` подставляется автоматически.
 
 ---
 
 ## Сценарии использования
 
 | Сценарий | Описание |
-|------|------|
-| **Блоки таблиц** | Блоки таблиц и списков по умолчанию используют MultiRecordResource, поддерживая пагинацию, фильтрацию и сортировку. |
-| **Списки в JSBlock** | Загрузка данных из коллекций (например, пользователи или заказы) в JSBlock с последующим пользовательским рендерингом. |
-| **Массовые операции** | Использование `getSelectedRows()` для получения выбранных строк и `destroySelectedRows()` для массового удаления. |
-| **Связанные ресурсы** | Загрузка связанных коллекций в формате `users.tags`, что требует вызова `setSourceId(ID_родительской_записи)`. |
+|----------|----------|
+| **Блок таблицы** | Табличные и списковые блоки по умолчанию используют `MultiRecordResource`; доступны пагинация, фильтр и сортировка |
+| **Список в JS-блоке** | Загрузка пользователей, заказов и т. п. в JS-блоке с пользовательским рендером |
+| **Пакетные операции** | Использование `getSelectedRows()` для выбранных строк и `destroySelectedRows()` для пакетного удаления |
+| **Ресурсы ассоциаций** | Загрузка связанных данных через `users.tags`; требуется `setSourceId(parentRecordId)` |
 
 ---
 
 ## Формат данных
 
-- `getData()` возвращает **массив записей** (поле `data` из ответа API списка).
+- `getData()` возвращает **массив записей**, то есть поле `data` API списка.
 - `getMeta()` возвращает метаданные пагинации: `page`, `pageSize`, `count`, `totalPage` и т. д.
 
 ---
@@ -29,68 +29,68 @@
 ## Имя ресурса и источник данных
 
 | Метод | Описание |
-|------|------|
-| `setResourceName(name)` / `getResourceName()` | Имя ресурса, например `'users'`, `'users.tags'` (связанный ресурс). |
-| `setSourceId(id)` / `getSourceId()` | ID родительской записи для связанных ресурсов (например, для `users.tags` нужно передать первичный ключ пользователя). |
-| `setDataSourceKey(key)` / `getDataSourceKey()` | Идентификатор источника данных (используется в сценариях с несколькими источниками данных). |
+|-------|----------|
+| `setResourceName(name)` / `getResourceName()` | Имя ресурса, например `'users'`, `'users.tags'` (ассоциация) |
+| `setSourceId(id)` / `getSourceId()` | ID родительской записи для ресурсов ассоциаций (например, `users.tags` требует первичный ключ пользователя) |
+| `setDataSourceKey(key)` / `getDataSourceKey()` | Ключ источника данных (для нескольких источников данных) |
 
 ---
 
-## Параметры запроса (Фильтрация / Поля / Сортировка)
+## Параметры запроса (фильтр, поля, сортировка)
 
 | Метод | Описание |
-|------|------|
-| `setFilterByTk(tk)` / `getFilterByTk()` | Фильтрация по основному ключу (для получения одной записи `get` и т. д.). |
-| `setFilter(filter)` / `getFilter()` / `resetFilter()` | Условия фильтрации, поддерживающие операторы `$eq`, `$ne`, `$in` и др. |
-| `addFilterGroup(key, filter)` / `removeFilterGroup(key)` | Группы фильтров (для комбинирования нескольких условий). |
-| `setFields(fields)` / `getFields()` | Запрашиваемые поля (белый список). |
-| `setSort(sort)` / `getSort()` | Сортировка, например `['-createdAt']` для сортировки по убыванию даты создания. |
-| `setAppends(appends)` / `getAppends()` / `addAppends` / `removeAppends` | Загрузка ассоциаций (например, `['user', 'tags']`). |
+|-------|----------|
+| `setFilterByTk(tk)` / `getFilterByTk()` | Фильтр по первичному ключу (получение одной записи и т. д.) |
+| `setFilter(filter)` / `getFilter()` / `resetFilter()` | Фильтр; поддерживаются `$eq`, `$ne`, `$in` и т. д. |
+| `addFilterGroup(key, filter)` / `removeFilterGroup(key)` | Группы фильтров (комбинирование условий) |
+| `setFields(fields)` / `getFields()` | Запрашиваемые поля (белый список) |
+| `setSort(sort)` / `getSort()` | Сортировка, например `['-createdAt']` для сортировки по убыванию даты создания |
+| `setAppends(appends)` / `getAppends()` / `addAppends` / `removeAppends` | Расширение ассоциаций (например, `['user', 'tags']`) |
 
 ---
 
 ## Пагинация
 
 | Метод | Описание |
-|------|------|
-| `setPage(page)` / `getPage()` | Текущая страница (начиная с 1). |
-| `setPageSize(size)` / `getPageSize()` | Количество элементов на странице, по умолчанию 20. |
-| `getTotalPage()` | Общее количество страниц. |
-| `getCount()` | Общее количество записей (из метаданных сервера). |
-| `next()` / `previous()` / `goto(page)` | Переход по страницам с вызовом `refresh`. |
+|-------|----------|
+| `setPage(page)` / `getPage()` | Текущая страница (нумерация с 1) |
+| `setPageSize(size)` / `getPageSize()` | Размер страницы, по умолчанию 20 |
+| `getTotalPage()` | Общее число страниц |
+| `getCount()` | Общее количество записей (из meta сервера) |
+| `next()` / `previous()` / `goto(page)` | Сменить страницу и запустить `refresh` |
 
 ---
 
-## Выбранные строки (для таблиц)
+## Выбранные строки (таблица)
 
 | Метод | Описание |
-|------|------|
-| `setSelectedRows(rows)` / `getSelectedRows()` | Данные текущих выбранных строк, используемые для массового удаления и других операций. |
+|-------|----------|
+| `setSelectedRows(rows)` / `getSelectedRows()` | Текущие выбранные строки, например для пакетного удаления |
 
 ---
 
-## CRUD и операции со списком
+## Операции CRUD и работа со списком
 
 | Метод | Описание |
-|------|------|
-| `refresh()` | Запрашивает список с текущими параметрами, обновляет `getData()` и метаданные пагинации, вызывает событие `'refresh'`. |
-| `get(filterByTk)` | Запрашивает одну запись и возвращает её (не записывает в `getData`). |
-| `create(data, options?)` | Создает запись. Опция `{ refresh: false }` предотвращает автоматическое обновление. Вызывает `'saved'`. |
-| `update(filterByTk, data, options?)` | Обновляет запись по её основному ключу. |
-| `destroy(target)` | Удаляет записи; `target` может быть основным ключом, объектом строки или массивом ключей/объектов (массовое удаление). |
-| `destroySelectedRows()` | Удаляет текущие выбранные строки (выдает ошибку, если ничего не выбрано). |
-| `setItem(index, item)` | Локально заменяет конкретную строку данных (не инициирует запрос). |
-| `runAction(actionName, options)` | Вызывает любое действие ресурса (например, кастомные экшены). |
+|-------|----------|
+| `refresh()` | Запросить список с текущими параметрами; обновить `getData()` и meta пагинации; сгенерировать `'refresh'` |
+| `get(filterByTk)` | Запросить одну запись; возвращает эту запись (не записывает в `getData`) |
+| `create(data, options?)` | Создать запись; опционально `{ refresh: false }` для отключения автоматического `refresh`; генерирует `'saved'` |
+| `update(filterByTk, data, options?)` | Обновить запись по первичному ключу |
+| `destroy(target)` | Удалить; `target` может быть первичным ключом, объектом строки или массивом (пакетное удаление) |
+| `destroySelectedRows()` | Удалить выбранные строки (если нет выбранных, выбрасывает ошибку) |
+| `setItem(index, item)` | Локально заменить строку по индексу (без запроса) |
+| `runAction(actionName, options)` | Вызвать любое действие ресурса (например, пользовательское действие) |
 
 ---
 
 ## Конфигурация и события
 
 | Метод | Описание |
-|------|------|
-| `setRefreshAction(name)` | Экшен, вызываемый при обновлении, по умолчанию `'list'`. |
-| `setCreateActionOptions(options)` / `setUpdateActionOptions(options)` | Конфигурация запроса для создания/обновления. |
-| `on('refresh', fn)` / `on('saved', fn)` | Срабатывает после завершения обновления или после сохранения. |
+|-------|----------|
+| `setRefreshAction(name)` | Действие, используемое для `refresh`; по умолчанию `'list'` |
+| `setCreateActionOptions(options)` / `setUpdateActionOptions(options)` | Конфигурация запроса для create/update |
+| `on('refresh', fn)` / `on('saved', fn)` | Срабатывает после refresh или после сохранения |
 
 ---
 
@@ -107,7 +107,7 @@ const rows = ctx.resource.getData();
 const total = ctx.resource.getCount();
 ```
 
-### Фильтрация и сортировка
+### Фильтр и сортировка
 
 ```js
 ctx.resource.setResourceName('users');
@@ -117,7 +117,7 @@ ctx.resource.setFields(['id', 'nickname', 'email']);
 await ctx.resource.refresh();
 ```
 
-### Загрузка ассоциаций
+### Расширение ассоциаций
 
 ```js
 ctx.resource.setResourceName('orders');
@@ -129,26 +129,26 @@ const orders = ctx.resource.getData();
 ### Создание и пагинация
 
 ```js
-await ctx.resource.create({ name: 'Иван Иванов', email: 'ivan.ivanov@example.com' });
+await ctx.resource.create({ name: 'John', email: 'john@example.com' });
 
 await ctx.resource.next();
 await ctx.resource.previous();
 await ctx.resource.goto(3);
 ```
 
-### Массовое удаление выбранных строк
+### Пакетное удаление выбранных строк
 
 ```js
 const rows = ctx.resource?.getSelectedRows?.() || [];
 if (rows.length === 0) {
-  ctx.message.warning('Пожалуйста, сначала выберите данные');
+  ctx.message.warning('Сначала выберите данные');
   return;
 }
 await ctx.resource.destroySelectedRows();
-ctx.message.success(ctx.t('Удалено'));
+ctx.message.success(ctx.t('Deleted'));
 ```
 
-### Прослушивание события refresh
+### Подписка на событие обновления refresh
 
 ```js
 ctx.resource?.on?.('refresh', () => {
@@ -158,7 +158,7 @@ ctx.resource?.on?.('refresh', () => {
 await ctx.resource?.refresh?.();
 ```
 
-### Связанный ресурс (дочерняя таблица)
+### Ресурс ассоциации — дочерняя таблица
 
 ```js
 const res = ctx.makeResource('MultiRecordResource');
@@ -172,17 +172,17 @@ const roles = res.getData();
 
 ## Примечания
 
-- **setResourceName обязательно**: Вы должны вызвать `setResourceName('имя_коллекции')` перед использованием, иначе URL запроса не сможет быть сформирован.
-- **Связанные ресурсы**: Если имя ресурса указано в формате `parent.child` (например, `users.tags`), необходимо сначала вызвать `setSourceId(первичный_ключ_родителя)`.
-- **Дебаунсинг refresh**: Несколько вызовов `refresh()` в одном цикле событий выполнят только последний вызов, чтобы избежать избыточных запросов.
-- **getData возвращает массив**: Поле `data`, возвращаемое API списка, является массивом записей, и `getData()` возвращает этот массив напрямую.
+- **Требуется setResourceName**: до использования обязательно вызовите `setResourceName('collectionName')`, иначе URL запроса не будет построен.
+- **Ресурсы ассоциаций**: когда имя ресурса имеет вид `parent.child` (например, `users.tags`), сначала вызовите `setSourceId(parentPrimaryKey)`.
+- **Дебаунс refresh**: несколько вызовов `refresh()` в одном цикле событий выполнит только последний, чтобы избежать дублей.
+- **getData возвращает массив**: API списка возвращает `data` как массив записей; `getData()` возвращает именно этот массив.
 
 ---
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.resource](../context/resource.md) — Экземпляр ресурса в текущем контексте
-- [ctx.initResource()](../context/init-resource.md) — Инициализация и привязка к ctx.resource
-- [ctx.makeResource()](../context/make-resource.md) — Создание нового экземпляра ресурса без привязки
-- [APIResource](./api-resource.md) — Общий API-ресурс, запрашиваемый по URL
-- [SingleRecordResource](./single-record-resource.md) — Ориентирован на одну запись
+- [ctx.resource](../context/resource.md) - экземпляр ресурса текущего контекста
+- [ctx.initResource()](../context/init-resource.md) - инициализация и привязка к ctx.resource
+- [ctx.makeResource()](../context/make-resource.md) - создание ресурса без привязки
+- [APIResource](./api-resource.md) - универсальный API-ресурс с запросом по URL
+- [SingleRecordResource](./single-record-resource.md) - для одиночных записей

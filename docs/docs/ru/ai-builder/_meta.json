@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Быстрый старт",
+    "label": "Быстрый старт Мастера ИИ-разработки",
     "link": "/ai-builder/"
   },
   {
@@ -12,7 +12,7 @@
   {
     "type": "file",
     "name": "env-bootstrap",
-    "label": "Управление окружениями"
+    "label": "Управление окружением"
   },
   {
     "type": "file",
@@ -32,12 +32,12 @@
   {
     "type": "file",
     "name": "acl",
-    "label": "Настройка прав доступа"
+    "label": "Настройка ACL"
   },
   {
     "type": "file",
     "name": "dsl-reconciler",
-    "label": "Готовые решения"
+    "label": "Решения"
   },
   {
     "type": "file",
@@ -47,11 +47,11 @@
   {
     "type": "file",
     "name": "publish",
-    "label": "Управление публикацией"
+    "label": "Управление релизами"
   },
   {
     "type": "file",
     "name": "version-control",
-    "label": "Управление версиями"
+    "label": "Контроль версий"
   }
 ]

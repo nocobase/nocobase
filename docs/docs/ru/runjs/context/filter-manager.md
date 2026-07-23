@@ -1,28 +1,28 @@
 # ctx.filterManager
 
-Менеджер соединений фильтров, используемый для управления связями фильтрации между формами фильтрации (FilterForm) и блоками данных (таблицы, списки, диаграммы и т. д.). Предоставляется `BlockGridModel` и доступен только в его контексте (например, в блоках форм фильтрации или блоках данных).
+Менеджер связей фильтров, который соединяет формы фильтра (FilterForm) с блоками данных (таблицы, списки, графики и т. д.). Предоставляется `BlockGridModel` и доступен только в этом контексте (например, на страницах с блоком формы фильтра).
 
 ## Сценарии использования
 
 | Сценарий | Описание |
-|------|------|
-| **Блок формы фильтрации** | Управляет конфигурациями соединений между элементами фильтра и целевыми блоками; обновляет целевые данные при изменении фильтров. |
-| **Блок данных (таблица/список)** | Выступает в качестве цели фильтрации, привязывая условия фильтра через `bindToTarget`. |
-| **Правила связки / Пользовательская FilterModel** | Вызывает `refreshTargetsByFilter` внутри `doFilter` или `doReset` для запуска обновления целевых блоков. |
-| **Конфигурация полей соединения** | Использует `getConnectFieldsConfig` и `saveConnectFieldsConfig` для поддержки сопоставления полей между фильтрами и целями. |
+|----------|----------|
+| **Блок формы фильтра** | Управление связями между элементами фильтра и целевыми блоками; обновление целей при изменении фильтра |
+| **Блок данных (таблица/список)** | Работа в роли цели фильтра; привязка условий фильтра через `bindToTarget` |
+| **Связывание / пользовательский FilterModel** | В `doFilter`, `doReset` вызов `refreshTargetsByFilter` для обновления целей |
+| **Конфигурация связанных полей** | Использование `getConnectFieldsConfig`, `saveConnectFieldsConfig` для сопоставления полей фильтра и цели |
 
-> Примечание: `ctx.filterManager` доступен только в контекстах RunJS, имеющих `BlockGridModel` (например, внутри страницы, содержащей форму фильтрации); в обычных JSBlock или на независимых страницах он имеет значение `undefined`. Перед обращением рекомендуется использовать опциональную цепочку.
+> **Примечание**: `ctx.filterManager` доступен только в контекстах RunJS с `BlockGridModel` (например, на страницах с формой фильтра). В обычном **JS-блоке** или на автономной странице это может быть `undefined` — проверяйте перед использованием.
 
-## Определение типов
+## Тип
 
 ```ts
 filterManager: FilterManager;
 
 type FilterConfig = {
-  filterId: string;   // UID модели фильтра
-  targetId: string;   // UID модели целевого блока данных
-  filterPaths?: string[];  // Пути к полям целевого блока
-  operator?: string;  // Оператор фильтрации
+  filterId: string;
+  targetId: string;
+  filterPaths?: string[];
+  operator?: string;
 };
 
 type ConnectFieldsConfig = {
@@ -30,23 +30,23 @@ type ConnectFieldsConfig = {
 };
 ```
 
-## Общие методы
+## Основные методы
 
 | Метод | Описание |
-|------|------|
-| `getFilterConfigs()` | Получает все текущие конфигурации соединений фильтров. |
-| `getConnectFieldsConfig(filterId)` | Получает конфигурацию полей соединения для конкретного фильтра. |
-| `saveConnectFieldsConfig(filterId, config)` | Сохраняет конфигурацию полей соединения для фильтра. |
-| `addFilterConfig(config)` | Добавляет конфигурацию фильтра (filterId + targetId + filterPaths). |
-| `removeFilterConfig({ filterId?, targetId?, persist? })` | Удаляет конфигурации фильтров по filterId, targetId или обоим параметрам. |
-| `bindToTarget(targetId)` | Привязывает конфигурацию фильтра к целевому блоку, заставляя его ресурс (resource) применить фильтр. |
-| `unbindFromTarget(targetId)` | Отвязывает фильтр от целевого блока. |
-| `refreshTargetsByFilter(filterId | filterId[])` | Обновляет данные связанных целевых блоков на основе фильтра(ов). |
+|-------|----------|
+| `getFilterConfigs()` | Получить все конфигурации связей фильтра |
+| `getConnectFieldsConfig(filterId)` | Получить конфигурацию связанных полей для фильтра |
+| `saveConnectFieldsConfig(filterId, config)` | Сохранить конфигурацию связанных полей для фильтра |
+| `addFilterConfig(config)` | Добавить конфигурацию фильтра (filterId + targetId + filterPaths) |
+| `removeFilterConfig({ filterId?, targetId?, persist? })` | Удалить конфигурацию по filterId и/или targetId |
+| `bindToTarget(targetId)` | Привязать фильтр к целевому блоку; фильтр применяется к ресурсу цели |
+| `unbindFromTarget(targetId)` | Отвязать фильтр от цели |
+| `refreshTargetsByFilter(filterId or filterId[])` | Обновить целевой блок(и) по фильтру |
 
-## Основные концепции
+## Понятия
 
-- **FilterModel**: Модель, предоставляющая условия фильтрации (например, FilterFormItemModel), которая должна реализовывать метод `getFilterValue()` для возврата текущего значения фильтра.
-- **TargetModel**: Блок данных, подвергающийся фильтрации; его `resource` должен поддерживать методы `addFilterGroup`, `removeFilterGroup` и `refresh`.
+- **FilterModel**: предоставляет значения фильтра (например, FilterFormItemModel); должен реализовывать `getFilterValue()`.
+- **TargetModel**: блок данных, к которому применяется фильтр; его `resource` должен поддерживать `addFilterGroup`, `removeFilterGroup`, `refresh`.
 
 ## Примеры
 
@@ -71,7 +71,7 @@ ctx.filterManager?.refreshTargetsByFilter(ctx.model.uid);
 ctx.filterManager?.refreshTargetsByFilter(['filter-1', 'filter-2']);
 ```
 
-### Конфигурация полей соединения
+### Конфигурация связанных полей
 
 ```ts
 // Получение конфигурации соединения
@@ -96,7 +96,7 @@ await ctx.filterManager?.removeFilterConfig({ filterId: 'filter-uid' });
 await ctx.filterManager?.removeFilterConfig({ targetId: 'table-uid' });
 ```
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.resource](./resource.md): Ресурс целевого блока должен поддерживать интерфейс фильтрации.
-- [ctx.model](./model.md): Используется для получения UID текущей модели для filterId / targetId.
+- [ctx.resource](./resource.md): ресурс целевого блока должен поддерживать API фильтра
+- [ctx.model](./model.md): uid текущей модели для filterId / targetId

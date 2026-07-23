@@ -4,7 +4,7 @@ keywords: "Authentication"
 displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  Allows users to use API key to access application's HTTP API
+  Позволяет обращаться к HTTP API приложения с помощью API-ключа.
 isFree: true
 builtIn: true
 defaultEnabled: false

@@ -130,8 +130,7 @@ export default class ScriptInstruction extends Instruction {
     const { content = '', continue: cont, timeout } = node.config as ScriptConfig;
     const args = processor.getParsedValue(node.config.arguments ?? [], node.id) as ScriptArgument[];
     const _args = args.reduce((pre, item) => ({ ...pre, [item.name]: item.value }), {} as Record<string, unknown>);
-    const { workflow } = processor.execution;
-    const sync = this.workflow.isWorkflowSync(workflow);
+    const sync = processor.isInstructionSync(node);
 
     processor.logger.info(`run script execution node id: ${node.id}, start in ${new Date().toLocaleString()}`);
 
@@ -214,8 +213,7 @@ export default class ScriptInstruction extends Instruction {
             return;
           }
           job.set(jobResult);
-          job.execution = execution;
-          this.workflow.resume(job);
+          await this.workflow.resume(job).catch(() => {});
         });
       });
   }

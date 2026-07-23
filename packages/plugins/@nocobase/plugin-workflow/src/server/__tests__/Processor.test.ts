@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockDatabase } from '@nocobase/database';
+import { MockDatabase, Transaction } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import Processor from '../Processor';
+import { Instruction } from '../instructions';
+import type { FlowNodeModel } from '../types';
+
+type FinishedTransaction = Transaction & {
+  finished?: string;
+};
 
 describe('workflow > Processor', () => {
   let app: MockServer;
@@ -39,7 +45,11 @@ describe('workflow > Processor', () => {
     });
   });
 
-  afterEach(() => app.destroy());
+  afterEach(async () => {
+    if (app) {
+      await app.destroy();
+    }
+  });
 
   describe('base', () => {
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('job id out of max safe integer', async () => {
@@ -159,6 +169,252 @@ describe('workflow > Processor', () => {
       expect(result.message).toBe('definite error');
     });
 
+    it('rolls back unclosed scope transactions on abnormal exit', async () => {
+      const commit = vi.fn();
+      const rollback = vi.fn();
+      const transaction = {
+        commit,
+        rollback,
+      } as unknown as Transaction;
+
+      class LeakingScopeTransactionInstruction extends Instruction {
+        run(node: FlowNodeModel, _input: unknown, processor: Processor) {
+          processor.setScopeTransaction(node.key, {
+            transaction,
+            dataSource: 'main',
+          });
+          return null;
+        }
+      }
+
+      plugin.registerInstruction('leakingScopeTransaction', LeakingScopeTransactionInstruction);
+      await workflow.createNode({
+        type: 'leakingScopeTransaction',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+      expect(rollback).toHaveBeenCalledTimes(1);
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('marks pending jobs as error when an open scope transaction exits without status', async () => {
+      const rollback = vi.fn();
+      const transaction = {
+        commit: vi.fn(),
+        rollback,
+      } as unknown as Transaction;
+
+      class PendingScopeExitInstruction extends Instruction {
+        run(node: FlowNodeModel, _input: unknown, processor: Processor) {
+          const downstream = processor.nodes.find((item) => item.upstreamId === node.id) as FlowNodeModel;
+          processor.setScopeTransaction(node.key, {
+            transaction,
+            dataSource: 'main',
+          });
+          processor.saveJob({
+            status: JOB_STATUS.PENDING,
+            result: null,
+            nodeId: node.id,
+            nodeKey: node.key,
+            upstreamId: null,
+          });
+          processor.saveJob({
+            status: JOB_STATUS.PENDING,
+            result: null,
+            nodeId: downstream.id,
+            nodeKey: downstream.key,
+            upstreamId: null,
+          });
+          return null;
+        }
+      }
+
+      plugin.registerInstruction('pendingScopeExit', PendingScopeExitInstruction);
+      const n1 = await workflow.createNode({
+        type: 'pendingScopeExit',
+      });
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+      expect(rollback).toHaveBeenCalledTimes(1);
+      expect(jobs.map((job) => job.status)).toEqual([JOB_STATUS.ERROR, JOB_STATUS.ERROR]);
+      expect(jobs.map((job) => job.result)).toEqual([
+        {
+          message: 'Pending jobs are not allowed inside an open transaction scope',
+        },
+        {
+          message: 'Pending jobs are not allowed inside an open transaction scope',
+        },
+      ]);
+    });
+
+    it('does not clean up scope transactions on exit(true)', async () => {
+      const commit = vi.fn();
+      const rollback = vi.fn();
+      const transaction = {
+        commit,
+        rollback,
+      } as unknown as Transaction;
+
+      class YieldingScopeTransactionInstruction extends Instruction {
+        run(node: FlowNodeModel, _input: unknown, processor: Processor) {
+          processor.setScopeTransaction(node.key, {
+            transaction,
+            dataSource: 'main',
+          });
+        }
+      }
+
+      plugin.registerInstruction('yieldingScopeTransaction', YieldingScopeTransactionInstruction);
+      await workflow.createNode({
+        type: 'yieldingScopeTransaction',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+      expect(rollback).not.toHaveBeenCalled();
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('rolls back commit-marked scope transactions on error exit', async () => {
+      const commit = vi.fn();
+      const rollback = vi.fn();
+      const transaction = {
+        commit,
+        rollback,
+      } as unknown as Transaction;
+
+      class CommitMarkedScopeTransactionInstruction extends Instruction {
+        run(node: FlowNodeModel, _input: unknown, processor: Processor) {
+          processor.setScopeTransaction(node.key, {
+            transaction,
+            dataSource: 'main',
+          });
+          processor.markScopeTransactionClosing(node.key, 'commit');
+          return {
+            status: JOB_STATUS.ERROR,
+            result: {
+              message: 'commit failed',
+            },
+          };
+        }
+      }
+
+      plugin.registerInstruction('commitMarkedScopeTransaction', CommitMarkedScopeTransactionInstruction);
+      await workflow.createNode({
+        type: 'commitMarkedScopeTransaction',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+      expect(rollback).toHaveBeenCalledTimes(1);
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['commit', 0],
+      ['rollback', 0],
+      [undefined, 1],
+    ] as const)(
+      'respects Sequelize finished flag when cleaning up scope transactions: %s',
+      async (finished, rollbacks) => {
+        const commit = vi.fn();
+        const rollback = vi.fn();
+        const transaction = {
+          commit,
+          rollback,
+          finished,
+        } as unknown as FinishedTransaction;
+
+        class FinishedScopeTransactionInstruction extends Instruction {
+          run(node: FlowNodeModel, _input: unknown, processor: Processor) {
+            processor.setScopeTransaction(node.key, {
+              transaction,
+              dataSource: 'main',
+            });
+            return null;
+          }
+        }
+
+        plugin.registerInstruction('finishedScopeTransaction', FinishedScopeTransactionInstruction);
+        await workflow.createNode({
+          type: 'finishedScopeTransaction',
+        });
+
+        await PostRepo.create({ values: { title: 't1' } });
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+        expect(rollback).toHaveBeenCalledTimes(rollbacks);
+        expect(commit).not.toHaveBeenCalled();
+      },
+    );
+
+    it('cleans up nested scope transactions from inner to outer', async () => {
+      const actions: string[] = [];
+      const outer = {
+        commit: vi.fn(),
+        rollback: vi.fn(async () => {
+          actions.push('outer');
+        }),
+      } as unknown as Transaction;
+      const inner = {
+        commit: vi.fn(),
+        rollback: vi.fn(async () => {
+          actions.push('inner');
+        }),
+      } as unknown as Transaction;
+
+      class NestedScopeTransactionInstruction extends Instruction {
+        run(_node: FlowNodeModel, _input: unknown, processor: Processor) {
+          processor.setScopeTransaction('outer', {
+            transaction: outer,
+            dataSource: 'main',
+          });
+          processor.setScopeTransaction('inner', {
+            transaction: inner,
+            dataSource: 'main',
+          });
+          return null;
+        }
+      }
+
+      plugin.registerInstruction('nestedScopeTransaction', NestedScopeTransactionInstruction);
+      await workflow.createNode({
+        type: 'nestedScopeTransaction',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+      expect(actions).toEqual(['inner', 'outer']);
+      expect(outer.commit).not.toHaveBeenCalled();
+      expect(inner.commit).not.toHaveBeenCalled();
+    });
+
     it('workflow with customized success node', async () => {
       await workflow.createNode({
         type: 'customizedSuccess',
@@ -228,6 +484,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
+      await execution.reload();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -264,6 +521,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
+      await execution.reload();
       expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
@@ -454,6 +712,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
+      await execution.reload();
       expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();

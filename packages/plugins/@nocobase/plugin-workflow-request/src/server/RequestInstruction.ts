@@ -272,8 +272,7 @@ export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor, options?: { signal?: AbortSignal }) {
     const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
-    const { workflow } = processor.execution;
-    const sync = this.workflow.isWorkflowSync(workflow);
+    const sync = processor.isInstructionSync(node);
 
     if (sync) {
       try {
@@ -339,8 +338,7 @@ export default class extends Instruction {
         }
         if (!aborted && execution.status === EXECUTION_STATUS.STARTED && job.status === JOB_STATUS.PENDING) {
           job.set(jobDone);
-          job.execution = execution;
-          this.workflow.resume(job);
+          await this.workflow.resume(job);
         } else {
           processor.logger.warn(`request (#${node.id}) result discarded because execution (${execution.id}) is ended`);
         }

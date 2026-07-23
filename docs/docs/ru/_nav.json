@@ -1,14 +1,14 @@
 [
   {
-    "text": "Начало",
+    "text": "Начало работы",
     "link": "/ai/how-nocobase-works"
   },
   {
-    "text": "AI",
+    "text": "ИИ",
     "link": "/ai/"
   },
   {
-    "text": "Учебники",
+    "text": "Обучение",
     "link": "/tutorials/"
   },
   {
@@ -29,6 +29,6 @@
   },
   {
     "text": "Главная",
-    "link": "https://www.nocobase.com/ru/"
+    "link": "https://nocobase.ru/"
   }
 ]

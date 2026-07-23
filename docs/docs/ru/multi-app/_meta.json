@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Мульти-приложения",
+    "label": "Мультиприложения",
     "items": [
       {
         "type": "custom-link",
@@ -15,7 +15,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Режим мультисреды",
+        "label": "Режим работы с несколькими средами",
         "link": "/multi-app/multi-app/remote"
       },
       {

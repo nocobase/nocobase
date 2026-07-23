@@ -25,6 +25,8 @@ type ResourceResponse<T> = {
   data?: T;
 };
 
+type ErrorMessage = string | { message?: string };
+
 export const RestoreFromLocal = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -75,15 +77,24 @@ export const RestoreFromLocal = () => {
         url: 'backups:upload',
         method: 'post',
         data: formData,
+        skipNotify: true,
       });
       restoreTaskId.current = response.data?.data?.task ?? null;
       showCheckBackupMessage();
-    } catch (error) {
-      console.error(error);
+      setIsModalVisible(false);
+      resetFields();
+    } catch (error: unknown) {
+      const errors = ctx.api.toErrMessages(error) as ErrorMessage[];
+      notification.error({
+        message: errors.map((item, index) => {
+          const message = typeof item === 'string' ? item : item.message;
+          return <div key={`${index}_${message}`}>{message || t('Restore failed')}</div>;
+        }),
+        role: 'alert',
+      });
+    } finally {
+      setProgressing(false);
     }
-    setProgressing(false);
-    setIsModalVisible(false);
-    resetFields();
   };
 
   const handleCancel = () => {
@@ -131,13 +142,13 @@ export const RestoreFromLocal = () => {
           </Form.Item>
           {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
-              label={<strong>{t('Confirm the application database schema')}</strong>}
+              label={t('Confirm the application database schema')}
               help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}
             >
               <Input autoComplete="new-password" value={dbSchema} onChange={(e) => setDbSchema(e.target.value)} />
             </Form.Item>
           )}
-          <Form.Item colon label={<strong>{t('Restore password')}</strong>}>
+          <Form.Item colon label={t('Restore password')}>
             <Input.Password
               autoComplete="new-password"
               value={password}

@@ -68,39 +68,129 @@ export default class MyPlugin extends Plugin {
 
 客户端的部分主要根据触发器类型所需的配置项提供配置界面。每种触发器类型同样需要向工作流插件注册相应的类型配置。
 
+触发器的配置界面通过 Loader（懒加载函数）来定义，Loader 指向一个纯 React 组件，使用 antd 的 `Form.Item` 构建表单。
+
+### 最简单的触发器
+
 例如对上面的定时执行的触发器，定义配置界面表单中需要的间隔时间配置项（`interval`）：
 
 ```ts
-import { Trigger } from '@nocobase/workflow/client';
+import { Trigger } from '@nocobase/plugin-workflow/client-v2';
 
 class MyTrigger extends Trigger {
   title = 'Interval timer trigger';
-  // fields of trigger config
-  fieldset = {
-    interval: {
-      type: 'number',
-      title: 'Interval',
-      name: 'config.interval',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      default: 60000,
-    },
-  };
+
+  // 触发器配置表单（懒加载组件）
+  FieldsetLoader = () => import('./IntervalConfig');
+
+  // 配置校验
+  validate(config) {
+    return Boolean(config?.interval);
+  }
 }
 ```
 
-然后在扩展的插件内向工作流插件实例注册这个触发器类型：
+其中 `FieldsetLoader` 是一个返回 `Promise<{ default: ComponentType }>` 的函数，通过动态 `import()` 实现懒加载。它指向的组件是一个标准的 React 函数组件：
+
+```tsx
+// IntervalConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function IntervalConfig() {
+  return (
+    <Form.Item
+      name={['config', 'interval']}
+      label="Interval"
+      initialValue={60000}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1000} />
+    </Form.Item>
+  );
+}
+```
+
+注意表单字段的 `name` 使用嵌套数组格式 `['config', '字段名']`，这是 antd Form 的标准写法。
+
+### 多个配置界面
+
+触发器可以提供多个配置界面，分别用于不同的场景：
+
+- `PresetFieldsetLoader` — 创建工作流时的预设表单（通常只包含必填项）
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701152711.png)
+
+- `FieldsetLoader` — 触发器完整配置表单（在配置抽屉中显示）
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152822.png)
+
+- `TriggerFieldsetLoader` — 手动执行时的输入表单
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152846.png)
+
+当 Loader 需要指向文件中的命名导出（而非默认导出）时，使用 `.then()` 重映射：
 
 ```ts
-import { Plugin } from '@nocobase/client';
-import WorkflowPlugin from '@nocobase/plugin-workflow/client';
+class MyTrigger extends Trigger {
+  title = 'My trigger';
 
+  PresetFieldsetLoader = () =>
+    import('./MyTriggerConfig').then((m) => ({ default: m.MyPresetConfig }));
+  FieldsetLoader = () => import('./MyTriggerConfig');
+  TriggerFieldsetLoader = () => import('./TriggerMyConfig');
+
+  validate(config) {
+    return Boolean(config?.collection && config?.mode);
+  }
+
+  createDefaultConfig() {
+    return { mode: 1 };
+  }
+}
+```
+
+```tsx
+// MyTriggerConfig.tsx
+import { Form, Select } from 'antd';
+import { CollectionCascader } from '@nocobase/plugin-workflow/client-v2';
+
+// 创建时的预设表单（命名导出）
+export function MyPresetConfig() {
+  return (
+    <Form.Item name={['config', 'collection']} label="Collection" rules={[{ required: true }]}>
+      <CollectionCascader />
+    </Form.Item>
+  );
+}
+
+// 完整配置表单（默认导出）
+export default function MyTriggerConfig() {
+  return (
+    <>
+      <Form.Item name={['config', 'collection']} label="Collection">
+        <CollectionCascader disabled />
+      </Form.Item>
+      <Form.Item name={['config', 'mode']} label="Mode">
+        <Select
+          options={[
+            { label: 'Created', value: 1 },
+            { label: 'Updated', value: 2 },
+          ]}
+        />
+      </Form.Item>
+    </>
+  );
+}
+```
+
+### 注册触发器
+
+在扩展的插件内向工作流插件实例注册触发器类型：
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
 import MyTrigger from './MyTrigger';
 
 export default class extends Plugin {
-  // You can get and modify the app instance here
   async load() {
-    const workflow = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const workflow = this.app.pm.get('workflow');
     workflow.registerTrigger('interval', MyTrigger);
   }
 }
@@ -112,4 +202,10 @@ export default class extends Plugin {
 客户端注册的触发器类型标识必须与服务端的保持一致，否则会导致错误。
 :::
 
-定义触发器类型的其他内容详见 [工作流 API 参考](./api#pluginregisterTrigger) 部分。
+实际项目中的完整示例可参考：[CollectionTrigger 源码](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/triggers/collection/index.tsx)
+
+定义触发器类型的其他内容详见 [工作流 API 参考](./api) 部分。
+
+:::info{title=提示}
+如果你之前使用的是旧版（v1）的客户端代码，想迁移到 v2 新版的话，可以参考 [v1 到 v2 迁移指南](./migration)。
+:::

@@ -16,13 +16,9 @@ import {
   FlowRuntimeContext,
   useFlowContext,
   useFlowEngine,
-  createSafeWindow,
-  createSafeDocument,
-  createSafeNavigator,
   observer,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
@@ -492,7 +488,7 @@ async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any)
 
   try {
     const { code, version } = normalizeRunJSValue(rawValue);
-    const ret = await runjsWithSafeGlobals(ctx, code, { version });
+    const ret = await ctx.runjs(code, undefined, { version });
     if (!ret?.success) {
       return SKIP_RUNJS_ASSIGN_VALUE;
     }
@@ -704,6 +700,41 @@ export const linkageSetMenuItemProps = defineAction({
   name: 'linkageSetMenuItemProps',
   title: tExpr('Set menu item state'),
   scene: ActionScene.MENU_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder={t('Please select state')}
+            style={{ width: '100%' }}
+            options={[
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+            ]}
+            allowClear
+          />
+        );
+      },
+    },
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
+  },
+});
+
+export const linkageSetTabProps = defineAction({
+  name: 'linkageSetTabProps',
+  title: tExpr('Set tab state'),
+  scene: ActionScene.TAB_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
     value: {
@@ -1343,6 +1374,7 @@ export const linkageRunjs = defineAction({
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
     ActionScene.MENU_LINKAGE_RULES,
+    ActionScene.TAB_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
@@ -1397,8 +1429,7 @@ export const linkageRunjs = defineAction({
     }
 
     try {
-      const navigator = createSafeNavigator();
-      await ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+      await ctx.runjs(script);
     } catch (error) {
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户
@@ -2174,7 +2205,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               }
             : props;
 
-        // 只记录联动实际控制的属性，避免恢复状态时覆盖标题等无关的最新配置。
+        // 只记录联动实际控制的属性，避免之后恢复状态时把标题、路由等无关的新配置回滚到旧快照。
         const originalProps = model.__originalProps || (model.__originalProps = {});
         const rememberOriginalProp = (key: string, value: unknown) => {
           if (!Object.prototype.hasOwnProperty.call(originalProps, key)) {
@@ -2466,6 +2497,32 @@ export const menuLinkageRules = defineAction({
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.MENU_LINKAGE_RULES),
           title: tExpr('Menu linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
+});
+
+export const tabLinkageRules = defineAction({
+  name: 'tabLinkageRules',
+  title: tExpr('Tab linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.TAB_LINKAGE_RULES),
+          title: tExpr('Tab linkage rules'),
         },
       },
     };

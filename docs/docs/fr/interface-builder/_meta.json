@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "Mise en page de l'interface",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Aperçu",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bureau",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mobile",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Blocs",
     "items": [
       {
@@ -62,6 +83,16 @@
             "type": "custom-link",
             "label": "Kanban",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gantt",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "Commentaires",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

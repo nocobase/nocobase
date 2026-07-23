@@ -37,8 +37,8 @@ export default class extends Instruction {
       otherwise: Joi.forbidden().allow(null),
     }),
     params: Joi.object({
-      field: Joi.string(),
-      filter: Joi.object(),
+      field: Joi.string().required(),
+      filter: Joi.object().allow(null).optional(),
     }),
     precision: Joi.number().integer().min(0).max(14).default(2),
   });
@@ -62,11 +62,14 @@ export default class extends Instruction {
     if (!options.dataType && aggregator === 'avg') {
       options.dataType = DataTypes.DOUBLE;
     }
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const result = await repo.aggregate({
       ...options,
       method: aggregators[aggregator],
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     return {

@@ -116,7 +116,7 @@ export const PluginCard: FC<PluginCardProps> = ({ data }) => {
   });
 
   const openSettings = useMemoizedFn(() => {
-    navigate(app.pluginSettingsManager.getRoutePath(name));
+    navigate(app.pluginSettingsManager.getPluginSettingsRoutePath(name));
   });
 
   const cardClassName = useMemo(
@@ -180,7 +180,7 @@ export const PluginCard: FC<PluginCardProps> = ({ data }) => {
           <ReadOutlined /> {t('Docs')}
         </a>
       )}
-      {enabled && app.pluginSettingsManager.has(name) && (
+      {enabled && app.pluginSettingsManager.hasPluginSettings(name) && (
         <a
           onClick={(e) => {
             e.stopPropagation();

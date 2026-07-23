@@ -2,13 +2,13 @@
 
 ## Обзор
 
-NocoBase по умолчанию поддерживает синхронизацию пользовательских данных в таблицы **Пользователи** и **Отделы**. Вы также можете расширять целевые ресурсы для синхронизации данных, чтобы записывать их в другие таблицы или выполнять пользовательскую обработку по мере необходимости.
+NocoBase из коробки поддерживает синхронизацию пользовательских данных в таблицы **Пользователи** и **Отделы**. Также поддерживается расширение целевых ресурсов синхронизации данных для записи данных в другие таблицы или выполнения пользовательской обработки по необходимости.
 
 :::warning{title=Экспериментально}
-Полная документация находится в разработке.
+Полная документация пока в разработке.
 :::
 
-## Интерфейс обработчика целевых ресурсов
+## Интерфейс обработчика целевого ресурса
 
 ```ts
 export abstract class UserDataResource {
@@ -54,7 +54,7 @@ class CustomUserResourcePluginServer extends Plugin {
   async load() {
     const userDataSyncPlugin = this.app.pm.get(PluginUserDataSyncServer);
     if (userDataSyncPlugin && userDataSyncPlugin.enabled) {
-      userDataSyncPlugin.resourceManager.registerResource(new CustomDataSyncResource(this.db, this.app.logger)
+      userDataSyncPlugin.resourceManager.registerResource(new CustomDataSyncResource(this.db, this.app.logger));
     }
   }
 }

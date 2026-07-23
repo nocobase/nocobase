@@ -12,11 +12,13 @@ import { Input, Select, Space } from 'antd';
 import React, { type FC, useMemo } from 'react';
 import { useT } from '../locale';
 
+type FilterValue = string | string[] | undefined;
+
 interface EnvVariableFilterItemProps {
   value: {
     path: string;
     operator: string;
-    value: any;
+    value: FilterValue;
   };
 }
 
@@ -25,13 +27,13 @@ type FieldDef = {
   title: string;
   operators: { value: string; label: string }[];
   /** Renders the right-hand value input. */
-  ValueComponent: FC<{ value: any; operator: string; onChange: (v: any) => void }>;
+  ValueComponent: FC<{ value: FilterValue; operator: string; onChange: (value: FilterValue) => void }>;
 };
 
 const TextValueInput: FieldDef['ValueComponent'] = ({ value, onChange }) => (
   <Input
     style={{ minWidth: 160 }}
-    value={value ?? ''}
+    value={typeof value === 'string' ? value : ''}
     onChange={(event) => onChange(event.target.value)}
     placeholder=""
   />
@@ -46,13 +48,17 @@ const TypeMultiSelect: FieldDef['ValueComponent'] = ({ value, onChange }) => {
     ],
     [t],
   );
+  const selectedValues = (Array.isArray(value) ? value : typeof value === 'string' && value ? [value] : []).filter(
+    (item) => item === 'default' || item === 'secret',
+  );
   return (
     <Select
-      mode="tags"
+      mode="multiple"
       style={{ minWidth: 200 }}
-      value={Array.isArray(value) ? value : value != null ? [value] : []}
+      value={selectedValues}
       onChange={(next: string[]) => onChange(next)}
       options={options}
+      allowClear
     />
   );
 };
@@ -76,8 +82,8 @@ const useFieldDefs = (): FieldDef[] => {
         name: 'type',
         title: t('Type'),
         operators: [
-          { value: '$match', label: t('is') },
-          { value: '$notMatch', label: t('is not') },
+          { value: '$eq', label: t('is') },
+          { value: '$ne', label: t('is not') },
         ],
         ValueComponent: TypeMultiSelect,
       },
@@ -126,7 +132,7 @@ export const EnvVariableFilterItem: FC<EnvVariableFilterItemProps> = observer(
             value.path = next;
             // Reset operator and value when field changes — operator sets differ per field.
             value.operator = nextField?.operators[0]?.value ?? '';
-            value.value = '';
+            value.value = undefined;
           }}
         />
         <Select

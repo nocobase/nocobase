@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-api-doc",
-  "version": "2.1.29",
+  "version": "2.2.0-beta.15",
   "displayName": "API documentation",
   "displayName.ru-RU": "Документация API",
   "displayName.zh-CN": "API 文档",
@@ -18,7 +18,9 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
     "@nocobase/server": "2.x"
   },
   "repository": {

@@ -504,10 +504,11 @@ export const normalizeKanbanGroupOptions = (
     const savedColor =
       preserveSavedColors && typeof saved?.color === 'string' && saved.color !== 'default' ? saved.color : undefined;
     const resolvedColor = sourceColor || savedColor || (useDefaultColors ? getDefaultKanbanColor(0) : undefined);
+    const resolvedLabel = getKanbanGroupOptionLabel(item) || (saved?.label ? String(saved.label) : value);
 
     return {
       value,
-      label: saved?.label ? String(saved.label) : getKanbanGroupOptionLabel(item),
+      label: resolvedLabel,
       color: resolvedColor,
       isUnknown: item.isUnknown ?? saved?.isUnknown,
     } satisfies KanbanGroupOption;

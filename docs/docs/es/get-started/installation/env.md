@@ -86,6 +86,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+URL base que el frontend utiliza para acceder a la API de NocoBase. Está vacía por defecto, lo que significa que se usa `${APP_PUBLIC_PATH}api/` en el mismo origen.
+
+```bash
+API_BASE_URL=
+```
+
+Solo configúrela con la dirección completa de la API cuando las páginas y el servicio de API estén en orígenes distintos (protocolo, dominio o puerto diferentes):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Despliegues entre orígenes"}
+NocoBase utiliza cookies para mantener el estado de inicio de sesión y autorizar el acceso a las [URL estables de archivos](../../file-manager/stable-url.md). Cuando `API_BASE_URL` apunta a un origen distinto del de las páginas:
+
+- Debe añadirse el origen de la página a [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). De lo contrario, el navegador ignorará `Set-Cookie` en las respuestas de la API, la cookie de inicio de sesión no se almacenará y las funciones que dependen de cookies, como la vista previa y la descarga de archivos, fallarán con `403`.
+- Las cookies se almacenan por `hostname`. Si las páginas y la API usan dominios completamente distintos, las solicitudes a URL estables bajo `/files/` desde el dominio de la página no enviarán la cookie de inicio de sesión guardada bajo el dominio de la API, por lo que el acceso al archivo seguirá fallando.
+
+Se recomienda servir las páginas y la API desde el mismo origen mediante un proxy inverso y dejar `API_BASE_URL` vacío.
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+Lista blanca de orígenes autorizados a acceder a la API entre orígenes con credenciales (cookies). Separe varios orígenes con comas. Está vacía por defecto.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Cuando no está configurada, solo las solicitudes del mismo origen se consideran de confianza; las solicitudes entre orígenes aún pueden llamar a la API de forma anónima, pero el navegador no puede leer ni escribir cookies para ellas.
+- Cuando está configurada, los orígenes incluidos reciben un `Access-Control-Allow-Origin` que refleja exactamente el origen y `Access-Control-Allow-Credentials: true`, lo que permite al navegador enviar y almacenar cookies de inicio de sesión en solicitudes entre orígenes.
+- La API de inicio de sesión valida el `Origin` y el `Referer` de la solicitud; las solicitudes de inicio de sesión entre orígenes procedentes de orígenes fuera de la lista blanca se rechazan con `403`.
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`

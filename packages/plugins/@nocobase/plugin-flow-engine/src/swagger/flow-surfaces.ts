@@ -526,7 +526,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `exportBlueprint` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `exportBlueprint` / `listNavigationTargets` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -648,11 +648,21 @@ const actionDocs: Record<string, any> = {
     requestBody: requestBody('FlowSurfaceExportBlueprintRequest', examples.exportBlueprint),
     responses: responses('FlowSurfaceExportBlueprintResponse'),
   },
+  listNavigationTargets: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'List available UI layouts and role-accessible Multi-portal workspaces',
+    description: valuesCompatibilityNote(
+      `Returns the default Admin target, enabled UI layouts, and enabled custom Multi-portal targets visible to the current roles. capabilities.multiPortal=false and an empty custom-portal set are normal when the commercial Multi-portal capability is not installed. Reserved default portal records are never returned as custom workspaces; Admin and Mobile use their ordinary layout uids. Call this action only when the user explicitly names a workspace or asks to discover navigation targets. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceListNavigationTargetsRequest', {}),
+    responses: responses('FlowSurfaceListNavigationTargetsResult'),
+  },
   applyBlueprint: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. AI employee actions use \`type: "aiEmployee"\` plus public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`; work context may target \`self\` or a same-blueprint block key and is persisted as real Flow Model \`uid\` values. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
+      `In create mode, \`navigation.portalUid\` targets one enabled, role-accessible Multi-portal workspace and is mutually exclusive with \`navigation.layoutUid\`. Portal-backed mobile layouts ignore \`navigation.group\`, while desktop-backed portals scope group reuse and duplicate-page identity to that portal. If Multi-portal is unavailable, ordinary requests without \`portalUid\` keep their existing Admin behavior. ` +
+        `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.layoutUid\` optionally scopes menu group reuse, duplicate page identity checks, and newly created routes to an enabled UI layout such as \`admin-layout-model\` or \`mobile-layout-model\`; when the target layout type is mobile, applyBlueprint ignores \`navigation.group\` and creates a root-level mobile tab page. When \`layoutUid\` is omitted, routes keep the existing admin/default inheritance behavior. In non-mobile \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group in the target layout when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. AI employee actions use \`type: "aiEmployee"\` plus public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`; work context may target \`self\` or a same-blueprint block key and is persisted as real Flow Model \`uid\` values. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
     ),
     requestBody: {
       required: true,
@@ -841,7 +851,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Create a group menu or a bindable V2 menu item',
     description: valuesCompatibilityNote(
-      'Creates a FlowSurfaces menu node. `type="group"` creates a menu group. `type="item"` creates a menu item that can be bound to a modern page (v2), and automatically fills in the flowPage route, the default hidden tab route, and the RootPageModel anchor.',
+      'Creates a FlowSurfaces menu node. `type="group"` creates a menu group. `type="item"` creates a menu item that can be bound to a modern page (v2), and automatically fills in the flowPage route, the default hidden tab route, and the RootPageModel anchor. Optional `layoutUid` scopes the route to an enabled UI layout. Optional `portalUid` scopes it to one enabled, role-accessible Multi-portal workspace and is mutually exclusive with `layoutUid`. Omitted values keep the existing parent/default admin inheritance.',
     ),
     requestBody: requestBody('FlowSurfaceCreateMenuRequest', examples.createMenu),
     responses: responses('FlowSurfaceCreateMenuResult'),
@@ -850,7 +860,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update menu title/icon/tooltip or move it under another group',
     description: valuesCompatibilityNote(
-      'Updates menu display information, or moves a group / item to the top level or under another group. Only `group` and `flowPage` menu nodes are supported.',
+      'Updates menu display information, or moves a group / item to the top level or under another group. Only `group` and `flowPage` menu nodes are supported. Pass `portalUid` when explicitly targeting a Multi-portal workspace; the route and new parent must already belong to that portal.',
     ),
     requestBody: requestBody('FlowSurfaceUpdateMenuRequest', examples.updateMenu),
     responses: responses('FlowSurfaceUpdateMenuResult'),
@@ -859,7 +869,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Initialize a modern page for an existing bindable menu item',
     description: valuesCompatibilityNote(
-      'Initializes a modern page (v2) for an existing bindable menu item through `menuRouteId` first, and fills in the default BlockGridModel. In compatibility mode, if `menuRouteId` is omitted, the old behavior still applies and a top-level menu plus page will be created automatically. Before initialization, do not call page/tab lifecycle actions such as `addTab`, `updateTab`, `moveTab`, `removeTab`, or `destroyPage`.',
+      'Initializes a modern page (v2) for an existing bindable menu item through `menuRouteId` first, and fills in the default BlockGridModel. Optional `layoutUid` asserts that the existing menu route belongs to the target UI layout. Optional `portalUid` asserts that it belongs to one enabled, role-accessible Multi-portal workspace and is mutually exclusive with `layoutUid`. Omitted values preserve the route scope and keep default admin compatibility. In compatibility mode, if `menuRouteId` is omitted, the old behavior still applies and a top-level menu plus page will be created automatically. Before initialization, do not call page/tab lifecycle actions such as `addTab`, `updateTab`, `moveTab`, `removeTab`, or `destroyPage`.',
     ),
     requestBody: requestBody('FlowSurfaceCreatePageRequest', examples.createPage),
     responses: responses('FlowSurfaceCreatePageResult'),
@@ -4241,18 +4251,74 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceListNavigationTargetsRequest: {
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  },
+  FlowSurfaceNavigationTargetCapabilities: {
+    type: 'object',
+    required: ['multiPortal'],
+    properties: {
+      multiPortal: {
+        type: 'boolean',
+        description: 'Whether the optional Multi-portal collections and desktop-route relation are available.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceNavigationTarget: {
+    type: 'object',
+    required: ['kind', 'uid', 'title', 'layoutUid'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['layout', 'portal'],
+      },
+      uid: {
+        type: 'string',
+        description: 'Stable target uid used for exact matching. Portal targets use their portal uid.',
+      },
+      title: { type: 'string' },
+      icon: { type: 'string', nullable: true },
+      layoutUid: { type: 'string' },
+      layoutType: { type: 'string' },
+      routeName: { type: 'string' },
+      routePath: { type: 'string' },
+      authCheck: { type: 'boolean' },
+      default: { type: 'boolean' },
+      portalUid: {
+        type: 'string',
+        description: 'Present only for a custom Multi-portal target.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceListNavigationTargetsResult: {
+    type: 'object',
+    required: ['version', 'capabilities', 'targets'],
+    properties: {
+      version: { type: 'string', enum: ['1'] },
+      capabilities: ref('FlowSurfaceNavigationTargetCapabilities'),
+      targets: {
+        type: 'array',
+        items: ref('FlowSurfaceNavigationTarget'),
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceApplyBlueprintNavigationGroup: {
     type: 'object',
     properties: {
       routeId: {
         ...STRING_OR_INTEGER_SCHEMA,
         description:
-          'Preferred existing menu-group route id. When present, routeId has the highest priority and title/icon/tooltip/hideInMenu are ignored. applyBlueprint create mode does not mutate existing group metadata; use low-level updateMenu separately when needed.',
+          'Preferred existing menu-group route id for non-mobile create mode. When present, routeId has the highest priority and title/icon/tooltip/hideInMenu are ignored. Ignored when navigation.layoutUid targets a mobile layout or navigation.portalUid resolves to a mobile-backed portal because mobile pages are created as root tabs. applyBlueprint create mode does not mutate existing group metadata; use low-level updateMenu separately when needed.',
       },
       title: {
         type: 'string',
         description:
-          'Group title for create mode. When `routeId` is omitted, applyBlueprint reuses a same-title group if the match is unique, creates one when no group exists, and rejects ambiguous multi-match cases. If an existing group is reused, group metadata is ignored; use low-level updateMenu to change existing group metadata.',
+          'Group title for non-mobile create mode. When `routeId` is omitted, applyBlueprint reuses a same-title group if the match is unique, creates one when no group exists, and rejects ambiguous multi-match cases. Ignored when navigation.layoutUid targets a mobile layout or navigation.portalUid resolves to a mobile-backed portal because mobile pages are created as root tabs. If an existing group is reused, group metadata is ignored; use low-level updateMenu to change existing group metadata.',
       },
       icon: {
         type: 'string',
@@ -4275,6 +4341,16 @@ const schemas = {
   FlowSurfaceApplyBlueprintNavigation: {
     type: 'object',
     properties: {
+      layoutUid: {
+        type: 'string',
+        description:
+          'Optional enabled UI layout uid that scopes create-mode route lookup and newly created routes. Use `mobile-layout-model` for mobile pages; mobile layouts ignore navigation.group and create a root-level tab page. When omitted, the server preserves the existing parent/default admin layout behavior.',
+      },
+      portalUid: {
+        type: 'string',
+        description:
+          'Optional enabled, role-accessible custom Multi-portal uid. Mutually exclusive with layoutUid. The portal backing layout decides desktop vs mobile behavior, and route lookup plus duplicate-page identity are scoped to the portal.',
+      },
       group: ref('FlowSurfaceApplyBlueprintNavigationGroup'),
       item: {
         type: 'object',
@@ -4498,7 +4574,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintRequest: {
     type: 'object',
     required: ['mode', 'tabs'],
-    description: `Simplified page-structure request object for applyBlueprint. \`version\` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`, and referenced script assets must provide non-empty \`code\`; put inline JS in \`settings.code\` and \`settings.version\`. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} \`defaults.collections\` may provide main data-source collection-level fieldGroups, popup metadata with required \`name\` and \`description\`, and formBehavior for generated default add/edit popup forms; use \`defaults.dataSources.<dataSourceKey>.collections\` for external data sources. v1 does not support \`defaults.blocks\`.`,
+    description: `Simplified page-structure request object for applyBlueprint. \`version\` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. In create mode, \`navigation.layoutUid\` scopes menu group reuse, duplicate page identity, and newly created routes to the target layout; use \`mobile-layout-model\` for mobile pages, where \`navigation.group\` is ignored and the page is created as a root tab, and omit it for default admin behavior. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`, and referenced script assets must provide non-empty \`code\`; put inline JS in \`settings.code\` and \`settings.version\`. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} \`defaults.collections\` may provide main data-source collection-level fieldGroups, popup metadata with required \`name\` and \`description\`, and formBehavior for generated default add/edit popup forms; use \`defaults.dataSources.<dataSourceKey>.collections\` for external data sources. v1 does not support \`defaults.blocks\`.`,
     properties: {
       version: {
         type: 'string',
@@ -4671,6 +4747,16 @@ const schemas = {
     type: 'object',
     required: ['title'],
     properties: {
+      layoutUid: {
+        type: 'string',
+        description:
+          'Optional enabled UI layout uid for the created menu route, for example `mobile-layout-model`. When omitted, the route inherits its parent layout or the default admin layout.',
+      },
+      portalUid: {
+        type: 'string',
+        description:
+          'Optional enabled, role-accessible custom Multi-portal uid. Mutually exclusive with layoutUid. When omitted, a portal parent is inherited and root creates keep default Admin behavior.',
+      },
       title: {
         type: 'string',
       },
@@ -4728,6 +4814,11 @@ const schemas = {
     required: ['menuRouteId'],
     properties: {
       menuRouteId: STRING_OR_INTEGER_SCHEMA,
+      portalUid: {
+        type: 'string',
+        description:
+          'Optional custom Multi-portal uid used to assert the route and any new parent are in the same accessible workspace.',
+      },
       title: {
         type: 'string',
       },
@@ -4767,6 +4858,16 @@ const schemas = {
   FlowSurfaceCreatePageRequest: {
     type: 'object',
     properties: {
+      layoutUid: {
+        type: 'string',
+        description:
+          'Optional enabled UI layout uid. With `menuRouteId`, the existing route must already belong to this layout. Without `menuRouteId`, the compatibility create-menu fallback creates the route in this layout.',
+      },
+      portalUid: {
+        type: 'string',
+        description:
+          'Optional enabled, role-accessible custom Multi-portal uid. Mutually exclusive with layoutUid. With menuRouteId, the route must already belong to this portal.',
+      },
       menuRouteId: STRING_OR_INTEGER_SCHEMA,
       pageSchemaUid: {
         type: 'string',

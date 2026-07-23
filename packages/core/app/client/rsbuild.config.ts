@@ -47,9 +47,16 @@ function toDefineLiteral(value: string | undefined) {
 }
 
 function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
+  const modernClientPrefix =
+    String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
+      .trim()
+      .replace(/^\/+|\/+$/g, '') || 'v';
+  const appClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
   if (!isBuild) {
     return [
       `window['__nocobase_public_path__'] = ${JSON.stringify(appPublicPath)};`,
+      `window['__nocobase_modern_client_prefix__'] = ${JSON.stringify(modernClientPrefix)};`,
+      `window['__nocobase_app_client_entry_mode__'] = ${JSON.stringify(appClientEntryMode)};`,
       `window['__nocobase_dev_public_path__'] = "/";`,
       `window['__nocobase_app_dev__'] = ${JSON.stringify(process.env.NOCOBASE_APP_DEV === 'true')};`,
       `window['__esm_cdn_base_url__'] = ${JSON.stringify(process.env.ESM_CDN_BASE_URL || '')};`,
@@ -60,6 +67,8 @@ function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
   return [
     `window['__webpack_public_path__'] = '{{env.CDN_BASE_URL}}';`,
     `window['__nocobase_public_path__'] = '${appPublicPath}';`,
+    `window['__nocobase_modern_client_prefix__'] = '{{env.APP_MODERN_CLIENT_PREFIX}}';`,
+    `window['__nocobase_app_client_entry_mode__'] = '{{env.APP_CLIENT_ENTRY_MODE}}';`,
     `window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';`,
     `window['__nocobase_api_client_storage_prefix__'] = '{{env.API_CLIENT_STORAGE_PREFIX}}';`,
     `window['__nocobase_api_client_storage_type__'] = '{{env.API_CLIENT_STORAGE_TYPE}}';`,
@@ -96,6 +105,7 @@ export default defineConfig(({ command }) => {
   const appPublicPath = isBuild ? APP_PUBLIC_PATH_TEMPLATE : resolvedAppPublicPath;
   const htmlPublicPath = isDev ? '/' : appPublicPath;
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH, '/api/');
+  const fileBasePath = ensurePublicPath(`${resolvedAppPublicPath}files/`, '/files/');
   const localStorageBasePath = ensurePublicPath(`${resolvedAppPublicPath}storage/uploads/`, '/storage/uploads/');
   const staticBasePath = ensurePublicPath(`${resolvedAppPublicPath}static/`, '/static/');
   const wsBasePath = ensurePublicPath(process.env.WS_PATH, '/ws/');
@@ -217,6 +227,10 @@ export default defineConfig(({ command }) => {
           },
         },
         [localStorageBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+        },
+        [fileBasePath]: {
           target: proxyTargetUrl,
           changeOrigin: true,
         },

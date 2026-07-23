@@ -1435,6 +1435,13 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'EditActionModel',
       'DeleteActionModel',
     ]);
+    readTableRecordActionNodes(persistedTable).forEach((action) => {
+      expect(action.stepParams?.buttonSettings?.general).toMatchObject({
+        type: 'link',
+        icon: null,
+        iconOnly: false,
+      });
+    });
   });
 
   it('should auto-complete default table actions when raw applyBlueprint passes empty action arrays', async () => {
@@ -4189,10 +4196,14 @@ function collectDescendantNodes(node: any, predicate: (input: any) => boolean, b
 }
 
 function readTableRecordActionUses(node: any) {
+  return readTableRecordActionNodes(node).map((item: any) => item?.use);
+}
+
+function readTableRecordActionNodes(node: any) {
   const actionsColumn = _.castArray(node?.subModels?.columns || []).find(
     (column: any) => column?.use === 'TableActionsColumnModel',
   );
-  return _.castArray(actionsColumn?.subModels?.actions || []).map((item: any) => item?.use);
+  return _.castArray(actionsColumn?.subModels?.actions || []);
 }
 
 function readTableColumnFieldPaths(node: any) {

@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "UI 布局",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "桌面端",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "移动端",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "区块",
     "items": [
       {
@@ -62,6 +83,16 @@
             "type": "custom-link",
             "label": "看板",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "甘特图",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "评论",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

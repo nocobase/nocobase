@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "2.1.29",
+  "version": "2.2.0-beta.15",
   "displayName": "File manager",
   "displayName.ru-RU": "Менеджер файлов",
   "displayName.zh-CN": "文件管理器",
@@ -15,6 +15,7 @@
   "devDependencies": {
     "@aws-sdk/client-s3": "3.750.0",
     "@aws-sdk/lib-storage": "3.750.0",
+    "@aws-sdk/s3-request-presigner": "3.750.0",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
@@ -41,7 +42,8 @@
     "url-join": "4.0.1"
   },
   "dependencies": {
-    "file-type": "^21.0.0"
+    "file-type": "^21.0.0",
+    "jsonwebtoken": "^9.0.2"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",

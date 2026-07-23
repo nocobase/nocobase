@@ -41,6 +41,7 @@
   "Required if application database schema is different with the backup": "Required if application database schema{{currentDbSchemaTips}} is different with the backup",
   "Restore": "Restore",
   "Restore backup from local": "Restore from local backup file",
+  "Restore failed": "Restore failed",
   "Restore password": "Restore password",
   "Run automatic backup on the cron schedule": "Run automatic backup on the cron schedule",
   "Settings": "Settings",

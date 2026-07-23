@@ -7138,6 +7138,27 @@
     "@nocobase/license-kit-win32-ia32-msvc" "0.3.8"
     "@nocobase/license-kit-win32-x64-msvc" "0.3.8"
 
+"@nocobase/utils@2.x":
+  version "2.1.24"
+  resolved "https://registry.npmjs.org/@nocobase/utils/-/utils-2.1.24.tgz#09c83a03f96c6c9bca87f27915957a98ce1054b7"
+  integrity sha512-QW2XBzf5ojAqHy9T+UiCDYqEOf/nhB0FvxA69nMmyA7PjUO1e9PMR5PdRWdYjWMQx5Ayczz+tnXF5FATjGVUTA==
+  dependencies:
+    "@budibase/handlebars-helpers" "0.14.0"
+    "@hapi/topo" "^6.0.0"
+    "@rc-component/mini-decimal" "^1.1.0"
+    axios "^1.7.0"
+    dayjs "^1.11.9"
+    deepmerge "^4.2.2"
+    flat-to-nested "^1.1.1"
+    fs-extra "^11.1.1"
+    graphlib "^2.1.8"
+    handlebars "^4.7.8"
+    ipaddr.js "^1.9.1"
+    liquidjs "^10.23.0"
+    multer "^2.1.1"
+    object-path "^0.11.8"
+    ses "^1.14.0"
+
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
   resolved "https://registry.npmjs.org/@node-saml/node-saml/-/node-saml-4.0.5.tgz#039e387095b54639b06df62b1b4a6d8941c6d907"
@@ -12680,11 +12701,6 @@ b4a@^1.6.4:
   resolved "https://registry.npmmirror.com/b4a/-/b4a-1.6.4.tgz#ef1c1422cae5ce6535ec191baeed7567443f36c9"
   integrity sha512-fpWrvyVHEKyeEvbKZTVOeZF3VSKKWtJxFIxX/jaVPf+cLbGUSitjb49pHLqPV2BUNNZ0LcoeEGfE/YCpyDYHIw==
 
-b4a@^1.8.1:
-  version "1.8.1"
-  resolved "https://registry.npmjs.org/b4a/-/b4a-1.8.1.tgz#7f16334ca80127aeb26064a28841acbf174840a4"
-  integrity sha512-aiqre1Nr0B/6DgE2N5vwTc+2/oQZ4Wh1t4NznYY4E00y8LCt6NqdRv81so00oo27D8MVKTpUa/MwUUtBLXCoDw==
-
 babel-jest@^29.4.3:
   version "29.7.0"
   resolved "https://registry.npmmirror.com/babel-jest/-/babel-jest-29.7.0.tgz#f4369919225b684c56085998ac63dbd05be020d5"
@@ -12877,11 +12893,10 @@ bare-path@^3.0.0:
     bare-os "^3.0.1"
 
 bare-stream@^2.6.4:
-  version "2.13.3"
-  resolved "https://registry.npmjs.org/bare-stream/-/bare-stream-2.13.3.tgz#f6186c7cbb4bbf53a4560f35e48b16373ba51ce6"
-  integrity sha512-Kc+brLqvEqGkjyfiwJmImAOqLZL7OsoLKuavx+hJjgVV3nLTOjloJyPMFxjUPerGGHrNH0fLU06jjykMLWrERQ==
+  version "2.13.2"
+  resolved "https://registry.npmjs.org/bare-stream/-/bare-stream-2.13.2.tgz#2ad4ef7ab27a1b18d3f2b6f6839ff5a32cf1ef4e"
+  integrity sha512-2V5j0dOfxv3iIngIWMnW1O6UPXpeoU70HJzUJGVth/+RURhDyq7SEWTD70Y2SkUB0MQonYYWpIX3f85P/I22+Q==
   dependencies:
-    b4a "^1.8.1"
     streamx "^2.25.0"
     teex "^1.0.1"
 
@@ -31442,6 +31457,28 @@ sequelize-pool@^7.1.0:
   resolved "https://registry.npmmirror.com/sequelize-pool/-/sequelize-pool-7.1.0.tgz#210b391af4002762f823188fd6ecfc7413020768"
   integrity sha512-G9c0qlIWQSK29pR/5U2JF5dDQeqqHRragoyahj/Nx4KOOQ3CPPfzxnfqFPCSB7x5UgjOgnZ61nSxz+fjDpRlJg==
 
+sequelize@6.x:
+  version "6.37.8"
+  resolved "https://registry.npmjs.org/sequelize/-/sequelize-6.37.8.tgz#70e62c9e682a2009005093104591e59ec2d0ed2c"
+  integrity sha512-HJ0IQFqcTsTiqbEgiuioYFMSD00TP6Cz7zoTti+zVVBwVe9fEhev9cH6WnM3XU31+ABS356durAb99ZuOthnKw==
+  dependencies:
+    "@types/debug" "^4.1.8"
+    "@types/validator" "^13.7.17"
+    debug "^4.3.4"
+    dottie "^2.0.6"
+    inflection "^1.13.4"
+    lodash "^4.17.21"
+    moment "^2.29.4"
+    moment-timezone "^0.5.43"
+    pg-connection-string "^2.6.1"
+    retry-as-promised "^7.0.4"
+    semver "^7.5.4"
+    sequelize-pool "^7.1.0"
+    toposort-class "^1.0.1"
+    uuid "^8.3.2"
+    validator "^13.9.0"
+    wkx "^0.5.0"
+
 sequelize@^6.26.0:
   version "6.35.2"
   resolved "https://registry.npmmirror.com/sequelize/-/sequelize-6.35.2.tgz#9276d24055a9a07bd6812c89ab402659f5853e70"
@@ -32400,9 +32437,9 @@ streamsearch@^1.1.0:
   integrity sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==
 
 streamx@^2.12.5, streamx@^2.25.0:
-  version "2.28.0"
-  resolved "https://registry.npmjs.org/streamx/-/streamx-2.28.0.tgz#035ab56057b7ed2211b51d532e6973f0f99fbf11"
-  integrity sha512-1Yowhzjf0ivGMrTIkY9hav5TxobO9qIVqUE41fiCGMGgc3CLlf4MY+9AHmZqBWgDTue0fY9zWjYFVyf6Diuobw==
+  version "2.27.0"
+  resolved "https://registry.npmjs.org/streamx/-/streamx-2.27.0.tgz#0f4811c500e7f17156e4917df0190d21db703442"
+  integrity sha512-WZ189TKnHoAokYHvwzaAQMpd55cgUmFIcJFzBSgGcb886jau5DL+XdDhTWV4ps3FLvk+OORp0dLRTPsLZ21CSA==
   dependencies:
     events-universal "^1.0.0"
     fast-fifo "^1.3.2"
@@ -34741,11 +34778,6 @@ urllib@2.41.0:
     statuses "^1.3.1"
     utility "^1.16.1"
 
-use-context-selector@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.npmjs.org/use-context-selector/-/use-context-selector-2.0.0.tgz#3b5dafec7aa947c152d4f0aa7f250e99a205df3d"
-  integrity sha512-owfuSmUNd3eNp3J9CdDl0kMgfidV+MkDvHPpvthN5ThqM+ibMccNE0k+Iq7TWC6JPFvGZqanqiGCuQx6DyV24g==
-
 use-debouncy@^4.3.0:
   version "4.6.0"
   resolved "https://registry.npmmirror.com/use-debouncy/-/use-debouncy-4.6.0.tgz#8faea8674cb36572969fe470cbab862fda747a00"
@@ -36058,11 +36090,6 @@ zustand@^4.4.1:
   integrity sha512-QFJWJMdlETcI69paJwhSMJz7PPWjVP8Sjhclxmxmxv/RYI7ZOvR5BHX+ktH0we9gTWQMxcne8q1OY8xxz604gw==
   dependencies:
     use-sync-external-store "1.2.0"
-
-zustand@^5.0.6:
-  version "5.0.6"
-  resolved "https://registry.npmjs.org/zustand/-/zustand-5.0.6.tgz#a2da43d8dc3d31e314279e5baec06297bea70a5c"
-  integrity sha512-ihAqNeUVhe0MAD+X8M5UzqyZ9k3FFZLBTtqo6JLPwV53cbRB/mJwBI0PxcIgqhBBHlEs8G45OTDTMq3gNcLq3A==
 
 zwitch@^2.0.0, zwitch@^2.0.4:
   version "2.0.4"

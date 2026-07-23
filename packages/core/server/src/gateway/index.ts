@@ -115,6 +115,17 @@ function normalizeBasePath(path = '') {
   return normalized || '/';
 }
 
+function getFilesPathPrefixes(appPublicPath = '/') {
+  const normalizedPublicPath = normalizeBasePath(appPublicPath);
+  const canonicalPrefix = `${normalizedPublicPath === '/' ? '' : normalizedPublicPath}/files/`;
+  return canonicalPrefix === '/files/' ? ['/files/'] : [canonicalPrefix, '/files/'];
+}
+
+function getFileAccessRestPath(pathname: string, appPublicPath = '/') {
+  const prefix = getFilesPathPrefixes(appPublicPath).find((prefix) => pathname.startsWith(prefix));
+  return prefix ? pathname.slice(prefix.length) : null;
+}
+
 /** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
 function getSocketPath() {
   const socketPath = process.env.SOCKET_PATH;
@@ -277,6 +288,21 @@ export class Gateway extends EventEmitter {
             }
 
             req.url = rewrittenUrl;
+          }
+        }
+
+        const fileAccessRestPath = parsedUrl.pathname
+          ? getFileAccessRestPath(parsedUrl.pathname, process.env.APP_PUBLIC_PATH || '/')
+          : null;
+        if (fileAccessRestPath) {
+          const restPath = fileAccessRestPath;
+          const [pathAppName] = restPath.split('/');
+          if (pathAppName) {
+            try {
+              ctx.resolvedAppName = decodeURIComponent(pathAppName);
+            } catch (error) {
+              // Ignore malformed percent-encoding and keep the previously resolved app.
+            }
           }
         }
 
@@ -629,13 +655,20 @@ export class Gateway extends EventEmitter {
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
-    const { pathname } = parse(req.url);
+    const { pathname, search } = parse(req.url);
     const { PLUGIN_STATICS_PATH } = process.env;
     const APP_PUBLIC_PATH = this.getAppPublicPath();
 
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
       res.end('ok');
+      return;
+    }
+
+    if (APP_PUBLIC_PATH !== '/' && pathname.startsWith('/files/')) {
+      res.statusCode = 302;
+      res.setHeader('Location', `${APP_PUBLIC_PATH.replace(/\/$/, '')}${pathname}${search || ''}`);
+      res.end();
       return;
     }
 
@@ -656,7 +689,7 @@ export class Gateway extends EventEmitter {
           return;
         }
       }
-      const headers = getStorageUploadSecurityHeaders(pathname);
+      const headers = getStorageUploadSecurityHeaders(`${pathname}${search || ''}`);
       req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);
       return handler(req, res, {
@@ -712,7 +745,9 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+    const isFilesRequest = Boolean(getFileAccessRestPath(pathname, APP_PUBLIC_PATH));
+
+    if (!pathname.startsWith(process.env.API_BASE_PATH) && !isFilesRequest) {
       const portalMatch = this.getPortalMatch(pathname);
       if (portalMatch) {
         if (handleApp !== 'main' && handleApp !== portalMatch.appName) {

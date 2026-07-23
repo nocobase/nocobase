@@ -16,6 +16,6 @@ export * from './timeout-errors';
 export { Trigger } from './triggers';
 export type { EventOptions } from './Dispatcher';
 export { default as Processor } from './Processor';
-export type { BackgroundAbortHandle, ProcessorOptions } from './Processor';
+export type { BackgroundAbortHandle, ProcessorOptions, ScopeTransaction } from './Processor';
 export { default } from './Plugin';
 export * from './types';

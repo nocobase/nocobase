@@ -346,7 +346,7 @@ export default class MailerInstruction extends Instruction {
 
     const { workflow } = processor.execution as ExecutionModel & { workflow: WorkflowModel };
     const currentWorkflow = workflow?.options || workflow?.get?.('options') ? workflow : await node.getWorkflow();
-    const sync = this.workflow.isWorkflowSync(currentWorkflow);
+    const sync = processor.isInstructionSync(node);
     const workflowOptions = currentWorkflow?.options ?? currentWorkflow?.get?.('options') ?? {};
     const workflowTimeout = Number(workflowOptions.timeout ?? 0);
 
@@ -412,8 +412,7 @@ export default class MailerInstruction extends Instruction {
       }
       if (!aborted && execution.status === EXECUTION_STATUS.STARTED && job.status === JOB_STATUS.PENDING) {
         job.set(jobDone);
-        job.execution = execution;
-        this.workflow.resume(job);
+        await this.workflow.resume(job);
       } else {
         processor.logger.warn(
           `smtp-mailer (#${node.id}) result discarded because execution (${execution.id}) is ended`,

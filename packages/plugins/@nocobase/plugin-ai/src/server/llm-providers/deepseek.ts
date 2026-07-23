@@ -9,7 +9,7 @@
 
 import { ChatDeepSeek } from '@langchain/deepseek';
 import { AIMessageChunk, BaseMessage } from '@langchain/core/messages';
-import { LLMProvider, ParsedAttachmentResult } from './provider';
+import { LLMProvider, ParsedAttachmentResult, ReasoningOptions, ResolvedReasoningOptions } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
@@ -25,6 +25,8 @@ import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import path from 'node:path';
 import { AttachmentModel } from '@nocobase/plugin-file-manager';
+
+const DEEPSEEK_REASONING_EFFORTS = new Set(['low', 'medium', 'high']);
 
 class ReasoningDeepSeek extends ChatDeepSeek {
   async _generate(messages: BaseMessage[], options: any, runManager?: any) {
@@ -81,6 +83,7 @@ export class DeepSeekProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat } = this.modelOptions || {};
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
 
     const modelKwargs: Record<string, any> = {};
 
@@ -94,7 +97,11 @@ export class DeepSeekProvider extends LLMProvider {
     return new ReasoningDeepSeek({
       apiKey,
       ...this.modelOptions,
-      modelKwargs,
+      ...(reasoningOptions.modelRequestParams || {}),
+      modelKwargs: {
+        ...modelKwargs,
+        ...(reasoningOptions.modelKwargs || {}),
+      },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
       },
@@ -130,6 +137,32 @@ export class DeepSeekProvider extends LLMProvider {
     return null;
   }
 
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (!reasoning || reasoning.mode === 'default') {
+      return {};
+    }
+    if (reasoning.mode === 'off') {
+      return {
+        modelKwargs: {
+          thinking: {
+            type: 'disabled',
+          },
+        },
+      };
+    }
+    if (!DEEPSEEK_REASONING_EFFORTS.has(reasoning.mode)) {
+      return {};
+    }
+    return {
+      modelKwargs: {
+        thinking: {
+          type: 'enabled',
+        },
+        reasoning_effort: reasoning.mode,
+      },
+    };
+  }
+
   protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
     return false;
   }
@@ -139,7 +172,7 @@ export const deepseekProviderOptions: LLMProviderMeta = {
   title: 'DeepSeek',
   supportedModel: [SupportedModel.LLM],
   models: {
-    [SupportedModel.LLM]: ['deepseek-chat', 'deepseek-reasoner'],
+    [SupportedModel.LLM]: ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-chat', 'deepseek-reasoner'],
   },
   provider: DeepSeekProvider,
 };

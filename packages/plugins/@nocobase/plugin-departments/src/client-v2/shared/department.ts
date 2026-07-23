@@ -56,7 +56,10 @@ export function buildDepartmentTree(records: DepartmentRecord[]): DepartmentReco
 
   nodes.forEach((node) => {
     if (node.parentId != null && nodes.has(node.parentId)) {
-      nodes.get(node.parentId)?.children?.push(node);
+      const parent = nodes.get(node.parentId);
+      if (parent?.isLeaf !== true) {
+        parent?.children?.push(node);
+      }
       return;
     }
     roots.push(node);

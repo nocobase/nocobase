@@ -94,6 +94,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` memungkinkan kontainer Caddy mengakses layanan `app` melalui jaringan Compose
 - `./storage` harus dimount ke `app` dan `caddy` agar konfigurasi proxy, aset statis, dan file unggahan bisa dipakai bersama
 - Kontainer `caddy` perlu menunggu sampai `nocobase.caddy` dibuat, lalu menautkannya ke `/etc/caddy/Caddyfile` dengan `ln -sf`
+- Konfigurasi yang dibuat otomatis meneruskan rute `/files/` di bawah `APP_PUBLIC_PATH` dan rute `/files/` di root ke NocoBase untuk pratinjau dan unduhan file yang memerlukan autentikasi
 - Ekspos hanya port kontainer Caddy ke host. Untuk pengujian, Anda bisa mulai dengan `13000:80`; di produksi, biasanya langsung ekspos port host `80` dan `443`, sementara layanan `app` tidak perlu membuka port ke host
 
 ## Jika menggunakan Caddy lokal di host
@@ -168,6 +169,8 @@ sudo systemctl reload caddy
 ```
 
 Jika Caddy lokal Anda tidak menggunakan `/etc/caddy/Caddyfile`, ganti target link dengan path konfigurasi Anda sendiri. Biasanya lebih aman membiarkan `nocobase.caddy` tetap sebagai file masuk utama daripada menyalin isinya secara manual.
+
+Jika Anda mengelola Caddy sendiri dan tidak menggunakan konfigurasi yang dibuat otomatis, pastikan `/files/*` serta rute terkait di bawah `APP_PUBLIC_PATH` diteruskan ke NocoBase sebelum rule fallback SPA. Lihat [Reverse proxy Caddy](../../nocobase-cli/production/reverse-proxy/caddy.md) untuk contoh lengkap.
 
 ## Tautan terkait
 

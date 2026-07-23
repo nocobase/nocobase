@@ -8,7 +8,7 @@
  */
 
 import { useFlowContext } from '@nocobase/flow-engine';
-import { Button, Form, Input, Modal } from 'antd';
+import { App, Button, Form, Input, Modal } from 'antd';
 import React from 'react';
 import { useBackupAppInfo } from '../hooks/useBackupAppInfo';
 import { useCheckBackupMessage } from '../hooks/useCheckBackupMessage';
@@ -24,9 +24,12 @@ type ResourceResponse<T> = {
   data?: T;
 };
 
+type ErrorMessage = string | { message?: string };
+
 export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
   const t = useT();
   const ctx = useFlowContext();
+  const { notification } = App.useApp();
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [password, setPassword] = React.useState('');
   const [progressing, setProgressing] = React.useState(false);
@@ -53,6 +56,7 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
       const response = await ctx.api.request<ResourceResponse<RestoreTaskBody>>({
         url: 'backups:restore',
         method: 'post',
+        skipNotify: true,
         data: {
           name: backup.name,
           password,
@@ -61,12 +65,20 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
       });
       restoreTaskId.current = response.data?.data?.task ?? null;
       showCheckBackupMessage();
-    } catch (error) {
-      console.error(error);
+      setIsModalVisible(false);
+      resetFields();
+    } catch (error: unknown) {
+      const errors = ctx.api.toErrMessages(error) as ErrorMessage[];
+      notification.error({
+        message: errors.map((item, index) => {
+          const message = typeof item === 'string' ? item : item.message;
+          return <div key={`${index}_${message}`}>{message || t('Restore failed')}</div>;
+        }),
+        role: 'alert',
+      });
+    } finally {
+      setProgressing(false);
     }
-    setProgressing(false);
-    setIsModalVisible(false);
-    resetFields();
   };
 
   const handleCancel = () => {
@@ -95,14 +107,14 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
         <Form layout="vertical" autoComplete="off">
           {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
-              label={<strong>{t('Confirm the application database schema')}</strong>}
+              label={t('Confirm the application database schema')}
               help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}
             >
               <Input autoComplete="new-password" value={dbSchema} onChange={(e) => setDbSchema(e.target.value)} />
             </Form.Item>
           )}
 
-          <Form.Item colon label={<strong>{t('Restore password')}</strong>}>
+          <Form.Item colon label={t('Restore password')}>
             <Input.Password
               value={password}
               autoComplete="new-password"

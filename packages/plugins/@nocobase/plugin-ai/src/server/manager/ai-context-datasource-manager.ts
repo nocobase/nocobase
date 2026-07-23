@@ -13,6 +13,7 @@ import PluginAIServer from '../plugin';
 import { WorkContext, WorkContextResolveStrategy } from '../types';
 import { Context } from '@nocobase/actions';
 import { checkFilterParams, parseJsonTemplate } from '@nocobase/acl';
+import type { FieldOptions, ICollection, IRelationField } from '@nocobase/data-source-manager';
 
 function serializeQueryFieldValue(value: unknown): unknown {
   if (value === null || value === undefined) {
@@ -49,6 +50,42 @@ function serializeQueryFieldValue(value: unknown): unknown {
   }
 
   return value;
+}
+
+function getRecordFieldValue(record: unknown, field: string): unknown {
+  return field.split('.').reduce((current, key) => {
+    if (current === null || current === undefined) {
+      return current;
+    }
+
+    if (typeof (current as { get?: unknown }).get === 'function') {
+      return (current as { get: (key: string) => unknown }).get(key);
+    }
+
+    return (current as Record<string, unknown>)[key];
+  }, record);
+}
+
+function getQueryFieldOptions(collection: ICollection, field: string): FieldOptions | undefined {
+  const parts = field.split('.');
+  let currentCollection: ICollection | undefined = collection;
+
+  for (const [index, part] of parts.entries()) {
+    const currentField = currentCollection?.getField(part);
+    if (!currentField) {
+      return;
+    }
+
+    if (index === parts.length - 1) {
+      return currentField.options;
+    }
+
+    if (!currentField.isRelationField()) {
+      return;
+    }
+
+    currentCollection = (currentField as IRelationField).targetCollection();
+  }
 }
 
 export class AIContextDatasourceManager {
@@ -150,17 +187,17 @@ export class AIContextDatasourceManager {
       });
     }
 
-    const { fields, filter, sort, offset, limit } = options;
-    const result = await collection.repository.find({ fields, filter, sort, offset: offset ?? 0, limit });
+    const { fields, appends, filter, sort, offset, limit } = options;
+    const result = await collection.repository.find({ fields, appends, filter, sort, offset: offset ?? 0, limit });
     const total = await collection.repository.count({ fields, filter });
 
     const records = result.map((x) =>
       fields.map((field) => {
-        const { name, type } = collection.getField(field)?.options || {};
-        const value = serializeQueryFieldValue(x[field]);
+        const { name, type } = getQueryFieldOptions(collection, field) || {};
+        const value = serializeQueryFieldValue(getRecordFieldValue(x, field));
         return {
-          name,
-          type,
+          name: field.includes('.') ? field : name || field,
+          type: type || 'unknown',
           value,
         };
       }),
