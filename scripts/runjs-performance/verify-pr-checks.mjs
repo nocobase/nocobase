@@ -19,8 +19,10 @@ function value(object, camel, snake = camel) {
 }
 
 function appMatches(actual, expected) {
-  return ['id', 'slug', 'name'].every((key) => expected[key] === undefined || actual?.[key] === expected[key])
-    && (expected.owner === undefined || actual?.owner?.login === expected.owner || actual?.owner === expected.owner);
+  return (
+    ['id', 'slug', 'name'].every((key) => expected[key] === undefined || actual?.[key] === expected[key]) &&
+    (expected.owner === undefined || actual?.owner?.login === expected.owner || actual?.owner === expected.owner)
+  );
 }
 
 function checkRunHead(checkRun) {
@@ -36,22 +38,28 @@ function parseActionsUrl(url) {
 
 function workflowMatches(run, expected, repository) {
   const actualRepository = value(run.repository, 'fullName', 'full_name');
-  return actualRepository === repository
-    && (expected.id === undefined || Number(value(run, 'workflowId', 'workflow_id')) === expected.id)
-    && (expected.name === undefined || run.name === expected.name)
-    && (expected.path === undefined || run.path === expected.path)
-    && (expected.event === undefined || run.event === expected.event);
+  return (
+    actualRepository === repository &&
+    (expected.id === undefined || Number(value(run, 'workflowId', 'workflow_id')) === expected.id) &&
+    (expected.name === undefined || run.name === expected.name) &&
+    (expected.path === undefined || run.path === expected.path) &&
+    (expected.event === undefined || run.event === expected.event)
+  );
 }
 
 function orderByAttemptAndId(left, right) {
-  return Number(value(left.run, 'runAttempt', 'run_attempt') || 0) - Number(value(right.run, 'runAttempt', 'run_attempt') || 0)
-    || Number(left.run.id || 0) - Number(right.run.id || 0)
-    || Number(left.checkRun?.id || 0) - Number(right.checkRun?.id || 0);
+  return (
+    Number(value(left.run, 'runAttempt', 'run_attempt') || 0) -
+      Number(value(right.run, 'runAttempt', 'run_attempt') || 0) ||
+    Number(left.run.id || 0) - Number(right.run.id || 0) ||
+    Number(left.checkRun?.id || 0) - Number(right.checkRun?.id || 0)
+  );
 }
 
 function successful(item) {
-  return String(item?.status || '').toLowerCase() === 'completed'
-    && String(item?.conclusion || '').toLowerCase() === SUCCESS;
+  return (
+    String(item?.status || '').toLowerCase() === 'completed' && String(item?.conclusion || '').toLowerCase() === SUCCESS
+  );
 }
 
 function verifyJobs(check, jobs, errors) {
@@ -63,7 +71,11 @@ function verifyJobs(check, jobs, errors) {
     const matches = jobs.filter(matcher);
     const expectedCount = requirement.count ?? 1;
     if (matches.length !== expectedCount) {
-      errors.push(`${check.id}: expected ${expectedCount} job(s) for ${requirement.name || requirement.pattern}, found ${matches.length}`);
+      errors.push(
+        `${check.id}: expected ${expectedCount} job(s) for ${requirement.name || requirement.pattern}, found ${
+          matches.length
+        }`,
+      );
       continue;
     }
     for (const job of matches) {
@@ -102,13 +114,19 @@ async function verifyActionsCheck(check, snapshot, source, expectedHead, errors,
   }
   const jobs = await source.getJobs(check.sourceRepository, selected.run.id);
   verifyJobs(check, jobs, errors);
-  report.checks.push({ id: check.id, runId: selected.run.id, runAttempt: value(selected.run, 'runAttempt', 'run_attempt'), jobs });
+  report.checks.push({
+    id: check.id,
+    runId: selected.run.id,
+    runAttempt: value(selected.run, 'runAttempt', 'run_attempt'),
+    jobs,
+  });
 }
 
 async function verifyExternalCheck(check, snapshot, source, expectedHead, errors, report) {
   const candidates = [];
   for (const checkRun of snapshot.checkRuns) {
-    if (checkRun.name !== check.name || !appMatches(checkRun.app, check.app) || checkRunHead(checkRun) !== expectedHead) continue;
+    if (checkRun.name !== check.name || !appMatches(checkRun.app, check.app) || checkRunHead(checkRun) !== expectedHead)
+      continue;
     const parsed = parseActionsUrl(value(checkRun, 'detailsUrl', 'details_url'));
     if (!parsed || parsed.repository !== check.sourceRepository) continue;
     const run = await source.getRun(parsed.repository, parsed.runId);
@@ -120,10 +138,16 @@ async function verifyExternalCheck(check, snapshot, source, expectedHead, errors
   }
   const selected = candidates.sort(orderByAttemptAndId).at(-1);
   if (!successful(selected.checkRun)) {
-    errors.push(`${check.id}: latest aggregate CheckRun is ${selected.checkRun.status}/${selected.checkRun.conclusion || 'pending'}`);
+    errors.push(
+      `${check.id}: latest aggregate CheckRun is ${selected.checkRun.status}/${
+        selected.checkRun.conclusion || 'pending'
+      }`,
+    );
   }
   if (!successful(selected.run)) {
-    errors.push(`${check.id}: latest external workflow run is ${selected.run.status}/${selected.run.conclusion || 'pending'}`);
+    errors.push(
+      `${check.id}: latest external workflow run is ${selected.run.status}/${selected.run.conclusion || 'pending'}`,
+    );
   }
   const jobs = await source.getJobs(check.sourceRepository, selected.run.id);
   verifyJobs(check, jobs, errors);
@@ -139,7 +163,11 @@ async function verifyExternalCheck(check, snapshot, source, expectedHead, errors
 function verifyStatusContext(check, snapshot, expectedHead, errors, report) {
   const candidates = snapshot.statuses
     .filter((status) => status.context === check.context && status.creator?.login === check.creator)
-    .filter((status) => !check.targetUrlPattern || new RegExp(check.targetUrlPattern, 'u').test(value(status, 'targetUrl', 'target_url') || ''))
+    .filter(
+      (status) =>
+        !check.targetUrlPattern ||
+        new RegExp(check.targetUrlPattern, 'u').test(value(status, 'targetUrl', 'target_url') || ''),
+    )
     .sort((left, right) => Number(left.id || 0) - Number(right.id || 0));
   const selected = candidates.at(-1);
   if (!selected) {
@@ -160,7 +188,8 @@ export async function verifySnapshot(manifest, snapshot, source, options = {}) {
   const prHead = value(snapshot.pr, 'headRefOid', 'head_sha') ?? snapshot.pr?.head?.sha;
   const prBase = value(snapshot.pr, 'baseRefOid', 'base_sha') ?? snapshot.pr?.base?.sha;
   if (prHead !== expectedHead) errors.push(`PR head ${prHead || 'missing'} does not match ${expectedHead}`);
-  if (options.baseHead && prBase !== options.baseHead) errors.push(`PR base ${prBase || 'missing'} does not match ${options.baseHead}`);
+  if (options.baseHead && prBase !== options.baseHead)
+    errors.push(`PR base ${prBase || 'missing'} does not match ${options.baseHead}`);
   if (options.requireMergeable) {
     const mergeable = snapshot.pr.mergeable;
     const state = value(snapshot.pr, 'mergeStateStatus', 'mergeable_state');
@@ -294,13 +323,16 @@ function parseArgs(argv) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!options.manifest || !options.head || (!options.fixture && !Number.isInteger(options.pr))) {
-    throw new Error('Usage: verify-pr-checks.mjs --manifest <file> --head <sha> (--pr <number> | --fixture <file>) [--base-head <sha>] [--require-mergeable] [--wait]');
+    throw new Error(
+      'Usage: verify-pr-checks.mjs --manifest <file> --head <sha> (--pr <number> | --fixture <file>) [--base-head <sha>] [--require-mergeable] [--wait]',
+    );
   }
   const manifest = JSON.parse(await readFile(options.manifest, 'utf8'));
   if (options.fixture) {
     const fixture = JSON.parse(await readFile(options.fixture, 'utf8'));
     const report = await verifyFixture(manifest, fixture, options);
-    if (options.evidenceOutput) await writeFile(options.evidenceOutput, `${JSON.stringify({ ...fixture, report }, null, 2)}\n`);
+    if (options.evidenceOutput)
+      await writeFile(options.evidenceOutput, `${JSON.stringify({ ...fixture, report }, null, 2)}\n`);
     console.log(JSON.stringify(report, null, 2));
     return;
   }
@@ -314,7 +346,10 @@ async function main() {
     try {
       const report = await verifySnapshot(manifest, live.snapshot, live.source, options);
       if (options.evidenceOutput) {
-        await writeFile(options.evidenceOutput, `${JSON.stringify({ ...live.snapshot, ...live.cache, report }, null, 2)}\n`);
+        await writeFile(
+          options.evidenceOutput,
+          `${JSON.stringify({ ...live.snapshot, ...live.cache, report }, null, 2)}\n`,
+        );
       }
       console.log(JSON.stringify(report, null, 2));
       return;

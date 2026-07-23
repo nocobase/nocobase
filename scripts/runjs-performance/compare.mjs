@@ -71,7 +71,9 @@ async function loadCollection(directory) {
   if (manifest.schemaVersion !== 1 || manifest.finalized !== true || !Array.isArray(manifest.reports)) {
     throw new Error(`${directory} is not a finalized RunJS performance collection`);
   }
-  for (const reference of [manifest.summary, manifest.rawSamples, ...manifest.reports, manifest.focusedTests].filter(Boolean)) {
+  for (const reference of [manifest.summary, manifest.rawSamples, ...manifest.reports, manifest.focusedTests].filter(
+    Boolean,
+  )) {
     const file = referencedFile(directory, reference);
     if ((await sha256(file)) !== reference.sha256) throw new Error(`${file} does not match its finalized SHA-256`);
   }

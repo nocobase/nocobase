@@ -63,7 +63,8 @@ function validateTopology(manifest) {
   const commits = manifest.cleanupCommits.map((value, index) => {
     const sha = requireSha(typeof value === 'string' ? value : value?.sha, `cleanupCommits[${index}].sha`);
     const tree = typeof value === 'object' && value ? value.tree : undefined;
-    if (tree !== undefined) verifyObject(sha, requireSha(tree, `cleanupCommits[${index}].tree`), `cleanupCommits[${index}]`);
+    if (tree !== undefined)
+      verifyObject(sha, requireSha(tree, `cleanupCommits[${index}].tree`), `cleanupCommits[${index}]`);
     return sha;
   });
   if (new Set(commits).size !== commits.length) fail('cleanupCommits contains duplicate commits');
@@ -101,7 +102,8 @@ function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 2) {
     const name = argv[index];
     const value = argv[index + 1];
-    if (!names.has(name) || !value || value.startsWith('--')) fail(`Invalid or missing value for ${name || 'argument'}`);
+    if (!names.has(name) || !value || value.startsWith('--'))
+      fail(`Invalid or missing value for ${name || 'argument'}`);
     options[name.slice(2)] = value;
   }
   for (const name of names) {

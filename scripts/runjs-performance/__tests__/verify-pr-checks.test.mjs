@@ -21,13 +21,10 @@ async function rejectsWith(input, pattern) {
 
 test('accepts native Actions, external aggregate checks, and a jobless status context', async () => {
   const report = await verifyFixture(manifest, fixture(), options);
-  assert.deepEqual(report.checks.map((check) => check.id), [
-    'frontend',
-    'windows',
-    'backend',
-    'build-pro-image',
-    'cla',
-  ]);
+  assert.deepEqual(
+    report.checks.map((check) => check.id),
+    ['frontend', 'windows', 'backend', 'build-pro-image', 'cla'],
+  );
 });
 
 test('does not compare an external workflow head SHA with the PR head SHA', async () => {
