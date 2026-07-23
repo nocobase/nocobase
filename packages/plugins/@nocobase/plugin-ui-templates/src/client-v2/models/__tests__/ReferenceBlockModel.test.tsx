@@ -9,6 +9,7 @@
 
 import { FlowEngine, FlowModel, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { CollectionBlockModel, FilterManager } from '@nocobase/client-v2';
 import { ReferenceBlockModel } from '../ReferenceBlockModel';
 
 class MockGridModel extends FlowModel {}
@@ -83,6 +84,28 @@ MockInteractiveBlockModel.registerEvents({
 
 class DetailsBlockModel extends FlowModel {}
 class EditFormModel extends FlowModel {}
+
+class ReferenceFilterTargetBlockModel extends CollectionBlockModel {
+  createResource(ctx: any) {
+    return ctx.createResource(MultiRecordResource);
+  }
+}
+
+class MockFilterFormItemModel extends FlowModel {
+  onInit(options: any) {
+    super.onInit(options);
+    this.context.defineProperty('blockModel', {
+      value: options.blockModel,
+    });
+    this.context.defineProperty('filterField', {
+      value: { name: 'nickname', type: 'string', interface: 'input' },
+    });
+  }
+
+  getFilterValue() {
+    return '111';
+  }
+}
 
 const TEST_TIMEOUT = 10_000;
 
@@ -203,6 +226,8 @@ describe('ReferenceBlockModel', () => {
       InteractiveBlockModel: MockInteractiveBlockModel,
       DetailsBlockModel,
       EditFormModel,
+      ReferenceFilterTargetBlockModel,
+      MockFilterFormItemModel,
       ReferenceBlockModel,
     });
     scopedEngine.registerModels({
@@ -213,6 +238,8 @@ describe('ReferenceBlockModel', () => {
       InteractiveBlockModel: MockInteractiveBlockModel,
       DetailsBlockModel,
       EditFormModel,
+      ReferenceFilterTargetBlockModel,
+      MockFilterFormItemModel,
       ReferenceBlockModel,
     });
 
@@ -447,6 +474,144 @@ describe('ReferenceBlockModel', () => {
         const foundBlock = await mockRepo.findOne({ uid: 'target-block-uid' });
         expect(foundBlock.parentId).toBe('grid-uid');
         expect(foundBlock.parentId).not.toBe('reference-block-uid');
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  describe('Filter linkage', () => {
+    it('marks shell-target initial refresh as handled before target resolution', () => {
+      const markInitialTargetRefreshHandled = vi.fn();
+      engine.createModel({
+        uid: 'filter-form-item-uid',
+        use: 'MockFilterFormItemModel',
+        blockModel: {
+          prepareInitialFilterValues: vi.fn().mockResolvedValue(true),
+          markInitialTargetRefreshHandled,
+        },
+      });
+
+      const filterManager = new FilterManager(gridModel as any, [
+        {
+          filterId: 'filter-form-item-uid',
+          targetId: 'reference-block-uid',
+          filterPaths: ['nickname'],
+        },
+      ]);
+      gridModel.context.defineProperty('filterManager', {
+        value: filterManager,
+      });
+
+      referenceBlockModel = engine.createModel({
+        uid: 'reference-block-uid',
+        use: 'ReferenceBlockModel',
+        parentId: 'grid-uid',
+        subKey: 'items',
+        subType: 'array',
+      }) as ReferenceBlockModel;
+      gridModel.addSubModel('items', referenceBlockModel);
+
+      expect(markInitialTargetRefreshHandled).toHaveBeenCalledWith('reference-block-uid');
+    });
+
+    it(
+      'binds shell-target filters to the resolved target before its initial manual refresh',
+      async () => {
+        const usersCollection = {
+          name: 'users',
+          filterTargetKey: 'id',
+          fields: [
+            { name: 'id', type: 'integer', interface: 'number' },
+            { name: 'nickname', type: 'string', interface: 'input' },
+          ],
+        };
+        engine.context.dataSourceManager.getDataSource('main').addCollection(usersCollection);
+        scopedEngine.context.dataSourceManager.getDataSource('main').addCollection(usersCollection);
+
+        const prepareInitialFilterValues = vi.fn().mockResolvedValue(true);
+        engine.createModel({
+          uid: 'filter-form-item-uid',
+          use: 'MockFilterFormItemModel',
+          blockModel: {
+            prepareInitialFilterValues,
+            markInitialTargetRefreshHandled: vi.fn(),
+          },
+        });
+
+        const filterManager = new FilterManager(gridModel as any, [
+          {
+            filterId: 'filter-form-item-uid',
+            targetId: 'reference-block-uid',
+            filterPaths: ['nickname'],
+          },
+        ]);
+        gridModel.context.defineProperty('filterManager', {
+          value: filterManager,
+        });
+
+        store['reference-filter-target-uid'] = {
+          uid: 'reference-filter-target-uid',
+          use: 'ReferenceFilterTargetBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+            },
+            dataLoadingModeSettings: {
+              dataLoadingMode: {
+                mode: 'manual',
+              },
+            },
+          },
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'reference-filter-target-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+        const target = (referenceBlockModel as any)._targetModel as ReferenceFilterTargetBlockModel;
+        expect(target).toBeDefined();
+        expect(prepareInitialFilterValues).toHaveBeenCalledTimes(1);
+        expect(target.hasActiveFilters()).toBe(true);
+        expect(target.resource.getRequestParameter('filter')).toContain('111');
+
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        target.context.filterManager.bindToTarget(target.uid);
+        const targetNotFoundCalls = consoleErrorSpy.mock.calls.filter(([message]) =>
+          String(message).includes(`Target model with uid "${target.uid}" not found`),
+        );
+        consoleErrorSpy.mockRestore();
+        expect(targetNotFoundCalls).toEqual([]);
+
+        const runActionSpy = vi.spyOn(target.resource, 'runAction').mockResolvedValue({
+          data: [{ id: 1, nickname: '111' }],
+          meta: { count: 1, hasNext: false, page: 1, pageSize: 20 },
+        });
+
+        await target.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+        expect(runActionSpy).toHaveBeenCalledTimes(1);
+        expect(target.resource.getData()).toEqual([{ id: 1, nickname: '111' }]);
       },
       TEST_TIMEOUT,
     );
