@@ -14,6 +14,7 @@ import type {
   VscRemoteProvider,
   VscRemoteSyncPlan,
 } from '../vsc-file/public-api';
+import { uid } from '@nocobase/utils';
 
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionRepoRecord, LightExtensionTreeEntryInput } from '../../shared/types';
@@ -65,6 +66,14 @@ export class LightExtensionCreateFromRemoteService {
     const revision = requireRemoteRevision(fetched.snapshot.revision);
     const initialFiles = toInitialFiles(fetched.snapshot.files);
     this.assertValidInitialFiles(initialFiles);
+    const repoId = `ler_${uid()}`;
+    const prepared = await this.runtimeCompileService.prepareInitialWorkspace(
+      { repoId, files: initialFiles },
+      {
+        ...ctx,
+        requestSource: ctx.requestSource || 'light-extension-create-from-git-prepare',
+      },
+    );
 
     return this.db.sequelize.transaction(async (transaction) => {
       const transactionContext: LightExtensionServiceContext = {
@@ -81,6 +90,7 @@ export class LightExtensionCreateFromRemoteService {
           message: 'Import light extension source from Git',
         },
         transactionContext,
+        { repoId },
       );
       if (!repo.headCommitId) {
         throw new LightExtensionError(
@@ -92,9 +102,9 @@ export class LightExtensionCreateFromRemoteService {
         );
       }
 
-      const compiled = await this.runtimeCompileService.compileCurrentRuntime(repo.id, repo.headCommitId, {
+      const compiled = await this.runtimeCompileService.publishPreparedInitialWorkspace(prepared, repo.headCommitId, {
         ...transactionContext,
-        requestSource: 'light-extension-create-from-git-compile',
+        requestSource: 'light-extension-create-from-git-publish',
       });
       const internalRepo = await this.repoService.getInternalRepo(repo.id, transactionContext);
       const established = await runtime.establishInitialBaseline(

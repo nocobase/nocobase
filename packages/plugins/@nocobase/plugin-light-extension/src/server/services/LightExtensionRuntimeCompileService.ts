@@ -23,6 +23,7 @@ import type {
   LightExtensionEntryRecord,
   LightExtensionSaveSourceInput,
   LightExtensionSaveSourceResult,
+  LightExtensionTreeEntryInput,
 } from '../../shared/types';
 import {
   entryFromModel,
@@ -33,6 +34,7 @@ import {
 import {
   LightExtensionFileService,
   type LightExtensionPreparedSourceCandidate,
+  type LightExtensionPreparedSourceSnapshot,
   type LightExtensionReplaceSourceSnapshotInput,
 } from './LightExtensionFileService';
 import { buildLightExtensionCompileKey, type LightExtensionCompileKeyResult } from './LightExtensionCompileKey';
@@ -41,6 +43,7 @@ import {
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   compileLightExtensionValidatedEntry,
   selectLightExtensionEntryCompileFiles,
+  validateLightExtensionWorkspace,
   type LightExtensionCompileExecutor,
   type LightExtensionCompileFailureResult,
   type LightExtensionCompileJob,
@@ -52,8 +55,9 @@ import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } fro
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
-import { sortDiagnostics } from './LightExtensionValidator';
+import { LightExtensionValidator, hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
+import { TreeService } from '../vsc-file/services/TreeService';
 
 type ReferenceRefreshService = {
   refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext, reason?: string) => Promise<unknown>;
@@ -88,10 +92,10 @@ export interface LightExtensionRuntimeCompileServiceOptions {
   compilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
   compileExecutor?: LightExtensionCompileExecutor;
   publishCompiledEntries?: PublishCompiledEntriesService;
+  validator?: LightExtensionValidator;
 }
 
-export interface LightExtensionPreparedSave {
-  readonly candidate: LightExtensionPreparedSourceCandidate;
+interface LightExtensionPreparedCompileState {
   readonly entryPlan: LightExtensionEntryReconcilePlan;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
   readonly compileEntries: ReadonlyArray<LightExtensionSaveSourceResult['compile']['entries'][number]>;
@@ -100,12 +104,23 @@ export interface LightExtensionPreparedSave {
   readonly compiledEntryIds: readonly string[];
 }
 
-export interface LightExtensionRemoteSnapshotCompileResult {
+export interface LightExtensionPreparedSave extends LightExtensionPreparedCompileState {
+  readonly candidate: LightExtensionPreparedSourceCandidate;
+}
+
+export interface LightExtensionPreparedInitialWorkspace extends LightExtensionPreparedCompileState {
+  readonly repoId: string;
+}
+
+export interface LightExtensionPreparedRemoteSnapshot {
+  readonly source: LightExtensionPreparedSourceSnapshot;
+  readonly preparedSave: LightExtensionPreparedSave | null;
+}
+
+export interface LightExtensionInitialWorkspacePublishResult {
   repo: LightExtensionSaveSourceResult['repo'];
-  commitId: string;
-  contentHash: string;
-  changed: boolean;
-  compile: LightExtensionSaveSourceResult['compile'];
+  status: LightExtensionSaveSourceResult['compile']['status'];
+  entries: LightExtensionSaveSourceResult['compile']['entries'];
   diagnostics: LightExtensionDiagnostic[];
 }
 
@@ -119,6 +134,10 @@ export class LightExtensionRuntimeCompileService {
   private readonly publishCompiledEntries: PublishCompiledEntriesService;
 
   private readonly preparedSaves = new WeakSet<object>();
+
+  private readonly preparedInitialWorkspaces = new WeakSet<object>();
+
+  private readonly validator: LightExtensionValidator;
 
   constructor(
     private readonly db: Database,
@@ -134,6 +153,7 @@ export class LightExtensionRuntimeCompileService {
         : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
     this.compileExecutor = options.compileExecutor;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
+    this.validator = options.validator || new LightExtensionValidator();
   }
 
   useReferenceService(referenceService: ReferenceRefreshService): void {
@@ -195,26 +215,86 @@ export class LightExtensionRuntimeCompileService {
       },
       ctx,
     );
+    return this.prepareSaveFromCandidate(candidate, ctx);
+  }
+
+  async prepareRemoteSnapshot(
+    input: LightExtensionReplaceSourceSnapshotInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPreparedRemoteSnapshot> {
+    if (ctx.transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Remote snapshot preparation must run outside a database transaction',
+      );
+    }
+    const source = await this.fileService.prepareSourceSnapshotCandidate(input, ctx);
+    return Object.freeze({
+      source,
+      preparedSave: source.candidate ? await this.prepareSaveFromCandidate(source.candidate, ctx) : null,
+    });
+  }
+
+  async prepareInitialWorkspace(
+    input: { repoId: string; files: readonly LightExtensionTreeEntryInput[] },
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPreparedInitialWorkspace> {
+    if (ctx.transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Initial workspace preparation must run outside a database transaction',
+      );
+    }
+    const files = await materializeInitialCompileFiles(this.db, input.files);
+    const validation = validateLightExtensionWorkspace(this.validator, files);
+    if (hasErrorDiagnostic(validation.diagnostics)) {
+      throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension initial source is invalid', {
+        status: 422,
+        details: { diagnostics: validation.diagnostics },
+      });
+    }
+    const entryPlan = await this.entryService.planReconcileEntries(input.repoId, validation.entries, null);
+    const compileState = await this.prepareCompileState(input.repoId, entryPlan, validation.diagnostics, files, ctx);
+    const prepared: LightExtensionPreparedInitialWorkspace = Object.freeze({
+      repoId: input.repoId,
+      ...compileState,
+    });
+    this.preparedInitialWorkspaces.add(prepared);
+    return prepared;
+  }
+
+  private async prepareSaveFromCandidate(
+    candidate: LightExtensionPreparedSourceCandidate,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionPreparedSave> {
     const entryPlan = await this.entryService.planReconcileEntries(
       candidate.repo.id,
       candidate.validation.entries,
       candidate.expectedHeadCommitId,
     );
-    const preparedEntries: LightExtensionPreparedEntries = {
-      repo: candidate.repo,
-      commitId: candidate.expectedHeadCommitId || '',
-      diagnostics: sortDiagnostics(candidate.validation.diagnostics),
-      entries: entryPlan.result.entries,
-      reconcile: entryPlan.result,
-    };
-    const readyInputs = prepareEntryCompileInputs(
-      preparedEntries.entries,
+    const compileState = await this.prepareCompileState(
+      candidate.repo.id,
+      entryPlan,
+      candidate.validation.diagnostics,
       candidate.vscPreparedPush.candidate.files,
-      this.compilerBuildIdentity,
+      ctx,
     );
-    const compilePreparation = await this.prepareCompileResults(candidate.repo.id, readyInputs, ctx);
+    const prepared: LightExtensionPreparedSave = Object.freeze({ candidate, ...compileState });
+    this.preparedSaves.add(prepared);
+    return prepared;
+  }
+
+  private async prepareCompileState(
+    repoId: string,
+    entryPlan: LightExtensionEntryReconcilePlan,
+    validationDiagnostics: readonly LightExtensionDiagnostic[],
+    files: readonly RuntimeCompileSourceFile[],
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionPreparedCompileState> {
+    const readyInputs = prepareEntryCompileInputs(entryPlan.result.entries, files, this.compilerBuildIdentity);
+    const compilePreparation = await this.prepareCompileResults(repoId, readyInputs, ctx);
     const diagnostics = sortDiagnostics([
-      ...preparedEntries.diagnostics,
+      ...validationDiagnostics,
       ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
@@ -222,7 +302,7 @@ export class LightExtensionRuntimeCompileService {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
-          repoId: candidate.repo.id,
+          repoId,
           diagnostics,
           entries: failures.map(toFailedCompileEntryResult),
         },
@@ -233,8 +313,7 @@ export class LightExtensionRuntimeCompileService {
     const compileEntries = successfulResults.map((result) =>
       toSuccessfulCompileEntryResult(result, compiledEntryIds.has(result.entryId)),
     );
-    const prepared: LightExtensionPreparedSave = Object.freeze({
-      candidate,
+    return Object.freeze({
       entryPlan,
       compileResults: Object.freeze(successfulResults.map((entry) => Object.freeze(entry))),
       compileEntries: Object.freeze(compileEntries),
@@ -242,8 +321,6 @@ export class LightExtensionRuntimeCompileService {
       compiledEntryCount: compilePreparation.compiledEntryCount,
       compiledEntryIds: Object.freeze([...compilePreparation.compiledEntryIds]),
     });
-    this.preparedSaves.add(prepared);
-    return prepared;
   }
 
   async publishPreparedSave(
@@ -296,6 +373,72 @@ export class LightExtensionRuntimeCompileService {
         status: prepared.compiledEntryCount === 0 ? 'skipped' : 'success',
         entries: [...prepared.compileEntries],
       },
+      diagnostics: [...prepared.diagnostics],
+    };
+  }
+
+  async publishPreparedInitialWorkspace(
+    prepared: LightExtensionPreparedInitialWorkspace,
+    commitId: string,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionInitialWorkspacePublishResult> {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'A transaction is required to publish an initial workspace',
+      );
+    }
+    if (!prepared || !this.preparedInitialWorkspaces.has(prepared)) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Prepared initial workspace must be created by this runtime compile service instance',
+      );
+    }
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filterByTk: prepared.repoId,
+      transaction,
+    });
+    if (!repo || repo.get('headCommitId') !== commitId) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_OUTDATED',
+        'Light extension initial source changed before compile publish',
+        { details: { repoId: prepared.repoId, expectedHeadCommitId: commitId } },
+      );
+    }
+    await this.entryService.publishReconcilePlan(prepared.entryPlan, transaction);
+    await this.publishCompiledEntries.publishCompiledEntries(
+      {
+        commitId,
+        results: prepared.compileResults,
+      },
+      transaction,
+    );
+    await this.db.getRepository('lightExtensionRepos').update({
+      filterByTk: prepared.repoId,
+      values: {
+        healthStatus: 'ready',
+        ...(prepared.compiledEntryCount > 0 ? { lastCompiledAt: new Date() } : {}),
+      },
+      transaction,
+    });
+    await this.referenceService?.refreshReferencesForRepo(prepared.repoId, ctx, 'source_published');
+    const compiledEntryIds = new Set(prepared.compiledEntryIds);
+    await this.recordPublishedCompileAudits(
+      prepared.compileResults.filter((result) => compiledEntryIds.has(result.entryId)),
+      ctx,
+    );
+    const [updatedRepo, entryModels] = await Promise.all([
+      this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: prepared.repoId, transaction }),
+      this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: prepared.repoId }, transaction }),
+    ]);
+    if (!updatedRepo) {
+      throw new LightExtensionError('LIGHT_EXTENSION_REPO_NOT_FOUND', 'Light extension repository was not found');
+    }
+    return {
+      repo: withEntrySummary(repoFromModelLike(updatedRepo), entryModels.map(entryFromModel)),
+      status: prepared.compiledEntryCount === 0 ? 'skipped' : 'success',
+      entries: [...prepared.compileEntries],
       diagnostics: [...prepared.diagnostics],
     };
   }
@@ -423,58 +566,6 @@ export class LightExtensionRuntimeCompileService {
       artifactHash,
       runtimeCodeHash,
       diagnostics: compiled.diagnostics,
-    };
-  }
-
-  async replaceSourceSnapshot(
-    input: LightExtensionReplaceSourceSnapshotInput,
-    ctx: LightExtensionServiceContext = {},
-  ): Promise<LightExtensionRemoteSnapshotCompileResult> {
-    if (ctx.transaction) {
-      return this.replaceSourceSnapshotInTransaction(input, ctx);
-    }
-
-    return this.db.sequelize.transaction((transaction) =>
-      this.replaceSourceSnapshotInTransaction(input, { ...ctx, transaction }),
-    );
-  }
-
-  private async replaceSourceSnapshotInTransaction(
-    input: LightExtensionReplaceSourceSnapshotInput,
-    ctx: LightExtensionServiceContext,
-  ): Promise<LightExtensionRemoteSnapshotCompileResult> {
-    const replacement = await this.fileService.replaceSourceSnapshot(input, ctx);
-    const commitId = replacement.commit?.id || replacement.repo.headCommitId;
-    if (!commitId) {
-      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source has no commit after pull');
-    }
-    if (!replacement.changed) {
-      return {
-        repo: replacement.repo,
-        commitId,
-        contentHash: replacement.contentHash,
-        changed: false,
-        compile: { status: 'skipped', entries: [] },
-        diagnostics: [],
-      };
-    }
-
-    const compile = await this.compileCurrentRuntime(input.repoId, commitId, {
-      ...ctx,
-      requestSource: ctx.requestSource || 'light-extension-remote-pull',
-    });
-    await this.referenceService?.refreshReferencesForRepo(input.repoId, ctx);
-
-    return {
-      repo: compile.repo,
-      commitId,
-      contentHash: replacement.contentHash,
-      changed: true,
-      compile: {
-        status: compile.status,
-        entries: compile.entries,
-      },
-      diagnostics: sortDiagnostics(compile.diagnostics),
     };
   }
 
@@ -821,6 +912,31 @@ function prepareEntryCompileInputs(
         ),
       };
     });
+}
+
+async function materializeInitialCompileFiles(
+  db: Database,
+  inputFiles: readonly LightExtensionTreeEntryInput[],
+): Promise<RuntimeCompileSourceFile[]> {
+  const preparedTree = await new TreeService(db).prepareTree(inputFiles);
+  const blobsByHash = new Map(preparedTree.canonicalBlobs.map((blob) => [blob.hash, blob]));
+
+  return preparedTree.entries.map((entry) => {
+    const blob = blobsByHash.get(entry.blobHash);
+    if (!blob) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        `Initial source file "${entry.path}" has no canonical content`,
+      );
+    }
+    return {
+      path: entry.path,
+      content: blob.content,
+      blobHash: entry.blobHash,
+      language: entry.language,
+      mode: entry.mode,
+    };
+  });
 }
 
 function isSupportedKind(kind: string): kind is LightExtensionKind {

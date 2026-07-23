@@ -82,12 +82,18 @@ export interface LightExtensionReplaceSourceSnapshotInput {
   remoteId?: string;
 }
 
-export interface LightExtensionReplaceSourceSnapshotResult {
+export interface LightExtensionPreparedSourceSnapshot {
+  candidate: LightExtensionPreparedSourceCandidate | null;
   repo: LightExtensionPushResult['repo'];
-  commit: LightExtensionPushResult['commit'] | null;
-  tree: LightExtensionPushResult['tree'] | null;
+  commitId: string | null;
   contentHash: string;
   changed: boolean;
+}
+
+interface PrepareSourceCandidateOptions {
+  allowCompleteSnapshot?: boolean;
+  commitMetadata?: Record<string, string>;
+  recordRejectedPush?: boolean;
 }
 
 const preparedSourceCandidateBrand = Symbol('light-extension-prepared-source-candidate');
@@ -200,6 +206,88 @@ export class LightExtensionFileService {
     input: LightExtensionPushInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionPreparedSourceCandidate> {
+    return this.prepareSourceCandidateInternal(input, ctx);
+  }
+
+  async prepareSourceSnapshotCandidate(
+    input: LightExtensionReplaceSourceSnapshotInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPreparedSourceSnapshot> {
+    if (ctx.transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Remote source snapshots must be prepared outside a database transaction',
+      );
+    }
+    const requestId = getRequestId(ctx);
+    try {
+      assertCompleteSnapshot(input.snapshot);
+      const validation = validateLightExtensionWorkspace(this.validator, input.snapshot.files);
+      if (hasErrorDiagnostic(validation.diagnostics)) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_VALIDATION_FAILED',
+          'Light extension source snapshot is invalid',
+          { details: { diagnostics: validation.diagnostics } },
+        );
+      }
+      const current = await this.withTransaction(undefined, async (transaction) => {
+        const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
+        assertRepoNotArchived(repo, 'replace source');
+        assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
+        return this.pullInternal(
+          repo,
+          { repoId: repo.id, includeContent: 'all' },
+          { ...ctx, requestId },
+          transaction,
+          'writeSource',
+        );
+      });
+      const changes = buildSnapshotReplacementChanges(current.files || [], input.snapshot.files);
+      if (changes.length === 0) {
+        return {
+          candidate: null,
+          repo: current.repo,
+          commitId: current.commit?.id || current.repo.headCommitId,
+          contentHash: input.snapshot.contentHash,
+          changed: false,
+        };
+      }
+      const candidate = await this.prepareSourceCandidateInternal(
+        {
+          repoId: input.repoId,
+          expectedHeadCommitId: input.expectedHeadCommitId,
+          message: input.message,
+          files: changes,
+          allowEmptyCommit: false,
+        },
+        { ...ctx, requestId },
+        {
+          allowCompleteSnapshot: true,
+          commitMetadata: {
+            remoteId: input.remoteId || '',
+            remoteRevision: input.snapshot.revision || '',
+          },
+          recordRejectedPush: false,
+        },
+      );
+      return {
+        candidate,
+        repo: stripInternalRepo(candidate.repo),
+        commitId: candidate.expectedHeadCommitId,
+        contentHash: input.snapshot.contentHash,
+        changed: true,
+      };
+    } catch (error) {
+      await this.recordRejectedSnapshotReplace(input, ctx, requestId, error);
+      throw normalizeVscBridgeError(error, input.repoId);
+    }
+  }
+
+  private async prepareSourceCandidateInternal(
+    input: LightExtensionPushInput,
+    ctx: LightExtensionServiceContext,
+    options: PrepareSourceCandidateOptions = {},
+  ): Promise<LightExtensionPreparedSourceCandidate> {
     if (ctx.transaction) {
       throw new LightExtensionError(
         'LIGHT_EXTENSION_SOURCE_ERROR',
@@ -220,7 +308,10 @@ export class LightExtensionFileService {
             files: input.files.map(toVscFileChange),
             allowEmptyCommit: input.allowEmptyCommit,
             authorId: ctx.actorUserId || null,
-            metadata: buildSourceCommitMetadata(repo.id, requestId, ctx),
+            metadata: {
+              ...buildSourceCommitMetadata(repo.id, requestId, ctx),
+              ...options.commitMetadata,
+            },
           },
           this.createVscContext({
             ctx,
@@ -231,11 +322,13 @@ export class LightExtensionFileService {
             allowedActions: ['push'],
           }),
           {
-            validateBaseEntries: (entries) =>
-              this.assertValidSyncBatch(
-                input.files,
-                entries.map((entry) => entry.path),
-              ),
+            validateBaseEntries: options.allowCompleteSnapshot
+              ? undefined
+              : (entries) =>
+                  this.assertValidSyncBatch(
+                    input.files,
+                    entries.map((entry) => entry.path),
+                  ),
           },
         ),
       );
@@ -268,11 +361,13 @@ export class LightExtensionFileService {
       this.preparedSourceCandidates.add(prepared);
       return prepared;
     } catch (error) {
-      const recordRejectedPush = () => this.recordRejectedPush(input, ctx, requestId, error);
-      if (ctx.deferredRejectedPushAudits) {
-        ctx.deferredRejectedPushAudits.push(recordRejectedPush);
-      } else {
-        await recordRejectedPush();
+      if (options.recordRejectedPush !== false) {
+        const recordRejectedPush = () => this.recordRejectedPush(input, ctx, requestId, error);
+        if (ctx.deferredRejectedPushAudits) {
+          ctx.deferredRejectedPushAudits.push(recordRejectedPush);
+        } else {
+          await recordRejectedPush();
+        }
       }
       throw normalizeVscBridgeError(error, input.repoId);
     }
@@ -470,114 +565,6 @@ export class LightExtensionFileService {
       } else {
         await recordRejectedPush();
       }
-      throw normalizeVscBridgeError(error, input.repoId);
-    }
-  }
-
-  async replaceSourceSnapshot(
-    input: LightExtensionReplaceSourceSnapshotInput,
-    ctx: LightExtensionServiceContext = {},
-  ): Promise<LightExtensionReplaceSourceSnapshotResult> {
-    const requestId = getRequestId(ctx);
-
-    try {
-      return await this.withTransaction(ctx.transaction, async (transaction) => {
-        const repo = await this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
-        assertRepoNotArchived(repo, 'replace source');
-        assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
-        assertCompleteSnapshot(input.snapshot);
-        const validation = this.validator.validateWorkspace({ files: input.snapshot.files });
-        if (hasErrorDiagnostic(validation.diagnostics)) {
-          throw new LightExtensionError(
-            'LIGHT_EXTENSION_VALIDATION_FAILED',
-            'Light extension source snapshot is invalid',
-            {
-              details: {
-                diagnostics: validation.diagnostics,
-              },
-            },
-          );
-        }
-
-        const current = await this.pullInternal(
-          repo,
-          { repoId: repo.id, includeContent: 'all' },
-          { ...ctx, requestId },
-          transaction,
-          'writeSource',
-        );
-        const changes = buildSnapshotReplacementChanges(current.files || [], input.snapshot.files);
-        if (changes.length === 0) {
-          return {
-            repo: stripInternalRepo(repo),
-            commit: null,
-            tree: current.tree,
-            contentHash: input.snapshot.contentHash,
-            changed: false,
-          };
-        }
-
-        const result = await this.runVsc(repo.id, () =>
-          this.vscFileService.push(
-            {
-              repoId: repo.vscRepoId,
-              baseCommitId: repo.headCommitId,
-              message: input.message,
-              files: changes.map(toVscFileChange),
-              allowEmptyCommit: false,
-              authorId: ctx.actorUserId || null,
-              metadata: {
-                ...buildSourceCommitMetadata(repo.id, requestId, ctx),
-                remoteId: input.remoteId || '',
-                remoteRevision: input.snapshot.revision || '',
-              },
-            },
-            this.createVscContext({
-              ctx,
-              transaction,
-              requestId,
-              repoId: repo.id,
-              aclAction: 'writeSource',
-              reason: 'replace light-extension source from a remote snapshot',
-              allowedActions: ['push'],
-            }),
-          ),
-        );
-        await this.db.getRepository('lightExtensionRepos').update({
-          filterByTk: repo.id,
-          values: { headCommitId: result.repository.headCommitId || null },
-          transaction,
-        });
-        const updatedRepo = await this.repoService.getInternalRepo(repo.id, { ...ctx, transaction });
-        await this.auditService.recordFileWrite({
-          repoId: repo.id,
-          action: 'sourcePush',
-          result: 'success',
-          requestId,
-          actorUserId: ctx.actorUserId,
-          baseCommitId: repo.headCommitId,
-          commitId: result.commit.id,
-          message: 'Light extension source snapshot replaced from remote',
-          files: changes.map(summarizeFileChange),
-          details: {
-            treeHash: result.tree.hash,
-            remoteId: input.remoteId,
-            remoteRevision: input.snapshot.revision,
-            source: 'remote-pull',
-          },
-          transaction,
-        });
-
-        return {
-          repo: stripInternalRepo(updatedRepo),
-          commit: toPublicCommit(result.commit, repo.id),
-          tree: result.tree,
-          contentHash: input.snapshot.contentHash,
-          changed: true,
-        };
-      });
-    } catch (error) {
-      await this.recordRejectedSnapshotReplace(input, ctx, requestId, error);
       throw normalizeVscBridgeError(error, input.repoId);
     }
   }

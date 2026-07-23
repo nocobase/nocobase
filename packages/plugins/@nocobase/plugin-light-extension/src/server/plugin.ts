@@ -281,6 +281,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       {
         compileExecutor: this.compileWorkerPool,
+        validator: this.validator,
       },
     );
     this.repoService.useReferenceService(this.referenceService);

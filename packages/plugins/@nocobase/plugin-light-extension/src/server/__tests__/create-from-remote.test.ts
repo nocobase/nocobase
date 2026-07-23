@@ -44,6 +44,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
   let runtime: RemoteSyncRuntimeService;
   let auditService: LightExtensionAuditService;
   let repoService: LightExtensionRepoService;
+  let runtimeCompileService: LightExtensionRuntimeCompileService;
   let service: LightExtensionCreateFromRemoteService;
   let validateCredential: ReturnType<typeof vi.fn>;
 
@@ -65,12 +66,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     );
     const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     const compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-    const runtimeCompileService = new LightExtensionRuntimeCompileService(
-      app.db,
-      fileService,
-      entryService,
-      compilerBridge,
-    );
+    runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
     const referenceService = new ReferenceService(app.db, auditService, permissionService);
     runtimeCompileService.useReferenceService(referenceService);
     adapter = new DeterministicRemoteAdapter({
@@ -102,6 +98,8 @@ describe('LightExtensionCreateFromRemoteService', () => {
   });
 
   it('atomically creates compiled source, a fixed remote target, mapping, succeeded job, and in-sync baseline', async () => {
+    const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
+    const publishPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'publishPreparedInitialWorkspace');
     const result = await service.create({
       name: 'Remote Sales KPI',
       title: 'Remote Sales KPI',
@@ -119,6 +117,8 @@ describe('LightExtensionCreateFromRemoteService', () => {
     const job = await app.db.getRepository('vscFileSyncJobs').findOne({ filter: { remoteId: remote?.id } });
 
     expect(validateCredential).toHaveBeenCalledWith('{{ $env.GITHUB_SYNC }}');
+    expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
+    expect(publishPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(result).toMatchObject({
       repo: { healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
       remote: { config: { branch: 'main' }, authRef: '{{ $env.GITHUB_SYNC }}' },

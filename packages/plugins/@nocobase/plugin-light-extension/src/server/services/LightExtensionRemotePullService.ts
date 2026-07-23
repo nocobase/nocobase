@@ -22,10 +22,7 @@ import type { LightExtensionRepoRecord, LightExtensionSaveSourceResult } from '.
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionRepoInternalRecord, LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService } from './LightExtensionRepoService';
-import {
-  LightExtensionRuntimeCompileService,
-  type LightExtensionRemoteSnapshotCompileResult,
-} from './LightExtensionRuntimeCompileService';
+import { LightExtensionRuntimeCompileService } from './LightExtensionRuntimeCompileService';
 
 export interface LightExtensionRemotePullInput {
   repoId: string;
@@ -149,49 +146,80 @@ export class LightExtensionRemotePullService {
 
     const handle = discovery.handle;
     try {
-      const applied = await this.pullDiscovery.apply<
-        LightExtensionRepoInternalRecord,
-        LightExtensionRemoteSnapshotCompileResult
-      >(handle, {
-        lockOwner: (transaction) => this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction }),
-        applyOwnerSnapshot: async (transaction, remote, repo) => {
-          assertRepoWritable(repo);
-          assertRemoteOwnsRepository(remote, repo.vscRepoId);
-          assertExpectedHead(input.expectedLocalCommitId, repo.headCommitId);
-          const result = await this.runtimeCompileService.replaceSourceSnapshot(
-            {
-              repoId: repo.id,
-              expectedHeadCommitId: input.expectedLocalCommitId,
-              snapshot: handle.snapshot,
-              message: input.message || `Pull source from ${remote.provider}`,
-              remoteId: remote.id,
-            },
-            {
+      const prepared = await this.runtimeCompileService.prepareRemoteSnapshot(
+        {
+          repoId: input.repoId,
+          expectedHeadCommitId: input.expectedLocalCommitId,
+          snapshot: handle.snapshot,
+          message: input.message || `Pull source from ${handle.remote.provider}`,
+          remoteId: handle.remote.id,
+        },
+        {
+          ...ctx,
+          requestId,
+          requestSource: ctx.requestSource || 'light-extension-remote-pull-prepare',
+        },
+      );
+      const applied = await this.pullDiscovery.apply<LightExtensionRepoInternalRecord, RemotePullOwnerApplyResult>(
+        handle,
+        {
+          lockOwner: (transaction) => this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction }),
+          applyOwnerSnapshot: async (transaction, remote, repo) => {
+            assertRepoWritable(repo);
+            assertRemoteOwnsRepository(remote, repo.vscRepoId);
+            assertExpectedHead(input.expectedLocalCommitId, repo.headCommitId);
+            if (!prepared.source.changed) {
+              const currentRepo = await this.repoService.getRepo(repo.id, { ...ctx, transaction });
+              if (!repo.headCommitId) {
+                throw new LightExtensionError(
+                  'LIGHT_EXTENSION_SOURCE_ERROR',
+                  'Light extension source has no commit after pull',
+                );
+              }
+              return {
+                repo: currentRepo,
+                commitId: repo.headCommitId,
+                contentHash: prepared.source.contentHash,
+                changed: false,
+                compile: { status: 'skipped', entries: [] },
+                localCommitId: repo.headCommitId,
+              };
+            }
+            if (!prepared.preparedSave) {
+              throw new LightExtensionError(
+                'LIGHT_EXTENSION_SOURCE_ERROR',
+                'Prepared remote source is missing its compile state',
+              );
+            }
+            const result = await this.runtimeCompileService.publishPreparedSave(prepared.preparedSave, {
               ...ctx,
               transaction,
               requestId,
               requestSource: ctx.requestSource || 'light-extension-remote-pull',
-            },
-          );
-          if (result.repo.headCommitId !== result.commitId) {
-            throw new LightExtensionError(
-              'LIGHT_EXTENSION_SOURCE_OUTDATED',
-              'Light extension source Head does not match the applied pull commit',
-              {
-                details: {
-                  expectedHeadCommitId: result.commitId,
-                  currentHeadCommitId: result.repo.headCommitId,
+            });
+            if (result.repo.headCommitId !== result.commit.id) {
+              throw new LightExtensionError(
+                'LIGHT_EXTENSION_SOURCE_OUTDATED',
+                'Light extension source Head does not match the applied pull commit',
+                {
+                  details: {
+                    expectedHeadCommitId: result.commit.id,
+                    currentHeadCommitId: result.repo.headCommitId,
+                  },
                 },
-              },
-            );
-          }
-          return {
-            ...result,
-            localCommitId: result.commitId,
-            contentHash: result.contentHash,
-          };
+              );
+            }
+            return {
+              repo: result.repo,
+              commitId: result.commit.id,
+              contentHash: prepared.source.contentHash,
+              changed: true,
+              compile: result.compile,
+              localCommitId: result.commit.id,
+            };
+          },
         },
-      });
+      );
       return {
         plan: discovery.plan,
         repo: applied.result.repo,
@@ -212,6 +240,13 @@ export class LightExtensionRemotePullService {
       // A lost or expired claim remains recoverable and must not mask the owner-domain failure.
     }
   }
+}
+
+interface RemotePullOwnerApplyResult {
+  repo: LightExtensionRepoRecord;
+  commitId: string;
+  changed: boolean;
+  compile: LightExtensionSaveSourceResult['compile'];
 }
 
 function assertRepoWritable(repo: { id: string; lifecycleStatus: string }): void {

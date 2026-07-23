@@ -63,6 +63,10 @@ export interface LightExtensionCreateMetadata {
   description: string | null | undefined;
 }
 
+export interface LightExtensionCreateRepoOptions {
+  repoId?: string;
+}
+
 export class LightExtensionRepoService {
   private vscFileService: VscFileService;
 
@@ -102,10 +106,11 @@ export class LightExtensionRepoService {
   async createRepo(
     input: LightExtensionCreateRepoInput,
     ctx: LightExtensionServiceContext = {},
+    options: LightExtensionCreateRepoOptions = {},
   ): Promise<LightExtensionRepoRecord> {
     const requestId = getRequestId(ctx);
     const metadata = this.normalizeCreateMetadata(input);
-    const repoId = `ler_${uid()}`;
+    const repoId = options.repoId || `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
     this.assertValidInitialFiles(initialFiles);
 
