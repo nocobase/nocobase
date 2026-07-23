@@ -20,7 +20,22 @@ import {
   compactPatchForDisplay,
   shouldSkipCodeToolCardRender,
 } from '../../../client-v2/ai-employees/tools/CodeToolCard';
-import { useChatMessagesStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
+import {
+  getChatApplicationKey,
+  useChatMessagesStore,
+} from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
+import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-conversations';
+import type { ChatEditorRef } from '../../../client-v2/ai-employees/types';
+
+const bindSingleFileEditor = (uid: string, editorRef: ChatEditorRef) => {
+  useChatConversationsStore.setState({ currentConversation: undefined });
+  const app = { name: 'app-a' };
+  const applicationKey = getChatApplicationKey(app);
+  const store = useChatMessagesStore.getState();
+  store.registerEditorRef(applicationKey, uid, editorRef);
+  store.bindSessionCodingTarget(undefined, { type: 'single-file', applicationKey, editorUid: uid });
+  return app;
+};
 
 describe('ai coding context tools', () => {
   it('applies a model-generated hunk by searching old lines instead of trusting the hunk line number', () => {
@@ -71,20 +86,14 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('runs the current editor after lint succeeds', async () => {
     const runCalls: string[] = [];
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-1',
-      editorRef: {
-        'editor-1': {
-          read: () => 'ctx.render("ok");',
-          write: () => undefined,
-          run: async () => {
-            runCalls.push('run');
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const app = bindSingleFileEditor('editor-1', {
+      read: () => 'ctx.render("ok");',
+      write: () => undefined,
+      run: async () => {
+        runCalls.push('run');
       },
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
@@ -97,7 +106,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
             }),
           },
         },
-        {} as any,
+        app,
         {},
       );
 
@@ -112,18 +121,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('validates explicitly provided empty code instead of falling back to the editor', async () => {
     const previewedCode: string[] = [];
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-empty-lint',
-      editorRef: {
-        'editor-empty-lint': {
-          read: () => 'ctx.render("editor");',
-          write: () => undefined,
-          run: async () => undefined,
-          snippetEntries: [],
-          logs: [],
-        } as any,
-      },
+    const app = bindSingleFileEditor('editor-empty-lint', {
+      read: () => 'ctx.render("editor");',
+      write: () => undefined,
+      run: async () => undefined,
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
@@ -139,7 +142,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
             },
           },
         },
-        {} as any,
+        app,
         { code: '' },
       );
 
@@ -154,23 +157,17 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('patches the current editor code without requiring model-managed hashes', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-patch',
-      editorRef: {
-        'editor-patch': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const app = bindSingleFileEditor('editor-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {
+      const result = await patchJSCodeTool[1].invoke.call({}, app, {
         patch: `@@ -1,2 +1,2 @@
 -const label = "old";
 +const label = "new";
@@ -189,23 +186,17 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('returns a structured error when writeJSCode receives invalid params', async () => {
     let code = 'const value = 1;';
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-invalid-write',
-      editorRef: {
-        'editor-invalid-write': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const app = bindSingleFileEditor('editor-invalid-write', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
-      const result = await writeJSCodeTool[1].invoke.call({}, {} as any, {});
+      const result = await writeJSCodeTool[1].invoke.call({}, app, {});
 
       expect(result.status).toBe('error');
       expect(result.content.message).toContain('`code` must be a string');
@@ -218,23 +209,17 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('returns a structured error when patchJSCode receives invalid params', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-invalid-patch',
-      editorRef: {
-        'editor-invalid-patch': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const app = bindSingleFileEditor('editor-invalid-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {});
+      const result = await patchJSCodeTool[1].invoke.call({}, app, {});
 
       expect(result.status).toBe('error');
       expect(result.content.message).toContain('`patch` must be a non-empty string');
@@ -247,21 +232,15 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('reads the current editor code for patch planning and recovery', async () => {
     const code = 'const value = 1;\nctx.render(value);\n';
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-read',
-      editorRef: {
-        'editor-read': {
-          read: () => code,
-          write: () => undefined,
-          snippetEntries: [],
-          logs: [],
-        } as any,
-      },
+    const app = bindSingleFileEditor('editor-read', {
+      read: () => code,
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
-      const result = await readJSCodeTool[1].invoke.call({}, {} as any, {});
+      const result = await readJSCodeTool[1].invoke.call({}, app, {});
 
       expect(result.status).toBe('success');
       expect(result.content.success).toBe(true);
@@ -275,23 +254,17 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
   it('does not mutate editor code when a patch fails', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
     const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-failed-patch',
-      editorRef: {
-        'editor-failed-patch': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const app = bindSingleFileEditor('editor-failed-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
+      snippetEntries: [],
+      logs: [],
     });
 
     try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {
+      const result = await patchJSCodeTool[1].invoke.call({}, app, {
         patch: `@@ -1,2 +1,2 @@
 -const missing = "old";
 +const missing = "new";
@@ -302,6 +275,179 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
       expect(result.status).toBe('error');
       expect(result.content.message).toContain('Call readJSCode before retrying');
       expect(code).toBe('const label = "old";\nctx.render(label);\n');
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
+  it('resolves the bound editor by session and owning application', async () => {
+    const previousState = useChatMessagesStore.getState();
+    const firstEditor: ChatEditorRef = {
+      read: () => 'app-a code',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    };
+    const secondEditor: ChatEditorRef = {
+      read: () => 'app-b code',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    };
+    const firstApp = { name: 'shared-name' };
+    const secondApp = { name: 'shared-name' };
+    const firstApplicationKey = getChatApplicationKey(firstApp);
+    const secondApplicationKey = getChatApplicationKey(secondApp);
+    const store = useChatMessagesStore.getState();
+    store.registerEditorRef(firstApplicationKey, 'shared-editor', firstEditor);
+    store.registerEditorRef(secondApplicationKey, 'shared-editor', secondEditor);
+    store.bindSessionCodingTarget('session-a', {
+      type: 'single-file',
+      applicationKey: firstApplicationKey,
+      editorUid: 'shared-editor',
+    });
+    store.bindSessionCodingTarget('session-b', {
+      type: 'single-file',
+      applicationKey: secondApplicationKey,
+      editorUid: 'shared-editor',
+    });
+
+    try {
+      useChatConversationsStore.setState({ currentConversation: 'session-a' });
+      const firstResult = await readJSCodeTool[1].invoke.call({}, firstApp, {});
+      expect(firstResult.content.code).toBe('app-a code');
+
+      const crossApplicationResult = await readJSCodeTool[1].invoke.call({}, secondApp, {});
+      expect(crossApplicationResult.status).toBe('error');
+      expect(crossApplicationResult.content.message).toContain('different application');
+
+      useChatConversationsStore.setState({ currentConversation: 'session-b' });
+      const secondResult = await readJSCodeTool[1].invoke.call({}, secondApp, {});
+      expect(secondResult.content.code).toBe('app-b code');
+    } finally {
+      useChatConversationsStore.setState({ currentConversation: undefined });
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
+  it('rejects legacy single-file tools for workspace targets without reading, writing, or running code', async () => {
+    const previousState = useChatMessagesStore.getState();
+    const reads: string[] = [];
+    const writes: string[] = [];
+    const runs: string[] = [];
+    const previews: string[] = [];
+    const app = { name: 'app-a' };
+    const applicationKey = getChatApplicationKey(app);
+    const store = useChatMessagesStore.getState();
+    store.registerEditorRef(applicationKey, 'editor-a', {
+      read: () => {
+        reads.push('read');
+        return 'source';
+      },
+      write: (code) => {
+        writes.push(code);
+      },
+      run: async () => {
+        runs.push('run');
+      },
+      snippetEntries: [],
+      logs: [],
+    });
+    store.bindSessionCodingTarget(undefined, {
+      type: 'workspace',
+      applicationKey,
+      surfaceId: 'workspace-a',
+      kind: 'light-extension',
+      title: 'Workspace A',
+    });
+    const flowContext = {
+      previewRunJS: async (code: string) => {
+        previews.push(code);
+        return { success: true };
+      },
+    };
+
+    try {
+      const results = await Promise.all([
+        readJSCodeTool[1].invoke.call({}, app, {}),
+        writeJSCodeTool[1].invoke.call({}, app, { code: 'next' }),
+        patchJSCodeTool[1].invoke.call({}, app, { patch: '@@ -1 +1 @@\n-old\n+new\n' }),
+        lintAndTestJSTool[1].invoke.call({ flowContext }, app, { code: 'explicit code' }),
+      ]);
+
+      for (const result of results) {
+        expect(result.status).toBe('error');
+        expect(result.content.message).toContain('Workspace tools');
+      }
+      expect(reads).toEqual([]);
+      expect(writes).toEqual([]);
+      expect(runs).toEqual([]);
+      expect(previews).toEqual([]);
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
+  it('preserves explicit linting without a mounted single-file editor', async () => {
+    const previousState = useChatMessagesStore.getState();
+    useChatMessagesStore.getState().resetSessionState(undefined);
+    const previewedCode: string[] = [];
+
+    try {
+      const result = await lintAndTestJSTool[1].invoke.call(
+        {
+          flowContext: {
+            previewRunJS: async (code: string) => {
+              previewedCode.push(code);
+              return { success: true };
+            },
+          },
+        },
+        { name: 'app-a' },
+        { code: 'const explicit = true;' },
+      );
+
+      expect(result.status).toBe('success');
+      expect(previewedCode).toEqual(['const explicit = true;']);
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
+  it('returns unavailable after unmount and resolves the same bound editor after remount', async () => {
+    const previousState = useChatMessagesStore.getState();
+    const firstEditor: ChatEditorRef = {
+      read: () => 'first mount',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    };
+    const secondEditor: ChatEditorRef = {
+      read: () => 'second mount',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    };
+    const app = { name: 'app-a' };
+    const applicationKey = getChatApplicationKey(app);
+    const store = useChatMessagesStore.getState();
+    const unregister = store.registerEditorRef(applicationKey, 'editor-a', firstEditor);
+    store.bindSessionCodingTarget(undefined, {
+      type: 'single-file',
+      applicationKey,
+      editorUid: 'editor-a',
+    });
+
+    try {
+      unregister();
+      const unavailable = await readJSCodeTool[1].invoke.call({}, app, {});
+      expect(unavailable.status).toBe('error');
+      expect(unavailable.content.message).toContain('not available');
+
+      store.registerEditorRef(applicationKey, 'editor-a', secondEditor);
+      const remounted = await readJSCodeTool[1].invoke.call({}, app, {});
+      expect(remounted.status).toBe('success');
+      expect(remounted.content.code).toBe('second mount');
     } finally {
       useChatMessagesStore.setState(previousState, true);
     }

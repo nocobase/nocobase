@@ -8,11 +8,34 @@
  */
 
 import { randomId } from '@nocobase/flow-engine';
-import type { Attachment, ChatEditorRef, ContextItem, Message, SkillSettings, WebSearching } from '../../types';
+import type {
+  Attachment,
+  ChatCodingTarget,
+  ChatCodingTargetBindingResult,
+  ChatEditorRef,
+  ContextItem,
+  Message,
+  SkillSettings,
+  WebSearching,
+} from '../../types';
 import { getOrCreateGlobalStore } from '../../stores/global-store';
 import { createObservableStore } from './create-selectors';
 
 export const CHAT_DEFAULT_SESSION_KEY = '__draft__';
+
+const chatApplicationKeys = new WeakMap<object, string>();
+let chatApplicationKeySequence = 0;
+
+export const getChatApplicationKey = (application: { name?: string }): string => {
+  const existingKey = chatApplicationKeys.get(application);
+  if (existingKey) {
+    return existingKey;
+  }
+  chatApplicationKeySequence += 1;
+  const key = `${application.name || 'application'}:${chatApplicationKeySequence.toString(36)}`;
+  chatApplicationKeys.set(application, key);
+  return key;
+};
 
 export const getChatSessionKey = (sessionId?: string) => sessionId || CHAT_DEFAULT_SESSION_KEY;
 
@@ -33,6 +56,10 @@ export type ChatSessionState = {
   webSearching?: WebSearching;
   backgroundWorking: boolean;
   resumeStreamFailed: boolean;
+  codingTarget?: ChatCodingTarget;
+  codingTargetMismatch?: ChatCodingTarget;
+  currentEditorRefUid?: string;
+  flowContext?: unknown;
 };
 
 export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
@@ -49,13 +76,15 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   webSearching: null,
   backgroundWorking: false,
   resumeStreamFailed: false,
+  codingTarget: undefined,
+  codingTargetMismatch: undefined,
+  currentEditorRefUid: undefined,
+  flowContext: undefined,
 };
 
 type ChatMessagesState = {
   sessions: Record<string, ChatSessionState>;
-  editorRef?: Record<string, ChatEditorRef | null>;
-  currentEditorRefUid?: string;
-  flowContext?: unknown;
+  editorRef: Record<string, Record<string, ChatEditorRef>>;
 };
 
 type SessionStateUpdater<T> = T | ((prev: T) => T);
@@ -71,6 +100,16 @@ const cloneSessionState = (session: ChatSessionState): ChatSessionState => ({
   attachments: [...session.attachments],
   contextItems: [...session.contextItems],
 });
+
+const isSameCodingTarget = (left: ChatCodingTarget, right: ChatCodingTarget) => {
+  if (left.type !== right.type || left.applicationKey !== right.applicationKey) {
+    return false;
+  }
+  if (left.type === 'workspace' && right.type === 'workspace') {
+    return left.surfaceId === right.surfaceId;
+  }
+  return left.type === 'single-file' && right.type === 'single-file' && left.editorUid === right.editorUid;
+};
 
 const resolveSessionState = (state: { sessions: Record<string, ChatSessionState> }, sessionId?: string) =>
   state.sessions[getChatSessionKey(sessionId)] ?? createInitialSessionState();
@@ -91,9 +130,13 @@ const updateSessionState = (
 };
 
 export interface ChatMessagesActions {
-  setEditorRef: (uid: string, editorRef: ChatEditorRef | null) => void;
-  setCurrentEditorRefUid: (uid: string) => void;
-  setFlowContext: (ctx: unknown) => void;
+  registerEditorRef: (applicationKey: string, uid: string, editorRef: ChatEditorRef) => () => void;
+  bindSessionCodingTarget: (
+    sessionId: string | undefined,
+    target: ChatCodingTarget,
+    flowContext?: unknown,
+  ) => ChatCodingTargetBindingResult;
+  setSessionFlowContext: (sessionId: string | undefined, flowContext: unknown) => void;
 
   getSessionState: (sessionId?: string) => ChatSessionState;
   resetSessionState: (sessionId?: string, patch?: Partial<ChatSessionState>) => void;
@@ -149,8 +192,6 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
         [CHAT_DEFAULT_SESSION_KEY]: defaultSession,
       },
       editorRef: {},
-      currentEditorRefUid: null,
-      flowContext: null,
 
       getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
 
@@ -368,9 +409,64 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
           })),
         ),
 
-      setEditorRef: (uid, editorRef) => set((state) => ({ editorRef: { ...state.editorRef, [uid]: editorRef } })),
+      registerEditorRef: (applicationKey, uid, editorRef) => {
+        set((state) => ({
+          editorRef: {
+            ...state.editorRef,
+            [applicationKey]: {
+              ...state.editorRef[applicationKey],
+              [uid]: editorRef,
+            },
+          },
+        }));
+        let registered = true;
+        return () => {
+          if (!registered) {
+            return;
+          }
+          registered = false;
+          set((state) => {
+            const applicationEditors = state.editorRef[applicationKey];
+            if (applicationEditors?.[uid] !== editorRef) {
+              return state;
+            }
+            const nextApplicationEditors = { ...applicationEditors };
+            delete nextApplicationEditors[uid];
+            const nextEditorRef = { ...state.editorRef };
+            if (Object.keys(nextApplicationEditors).length) {
+              nextEditorRef[applicationKey] = nextApplicationEditors;
+            } else {
+              delete nextEditorRef[applicationKey];
+            }
+            return { editorRef: nextEditorRef };
+          });
+        };
+      },
 
-      setCurrentEditorRefUid: (uid) => set({ currentEditorRefUid: uid }),
+      bindSessionCodingTarget: (sessionId, target, flowContext) => {
+        const session = resolveSessionState(get(), sessionId);
+        const currentTarget = session.codingTarget;
+        if (currentTarget && !isSameCodingTarget(currentTarget, target)) {
+          set((state) =>
+            updateSessionState(state, sessionId, (currentSession) => ({
+              ...currentSession,
+              codingTargetMismatch: target,
+            })),
+          );
+          return { status: 'mismatch', target: currentTarget, requestedTarget: target };
+        }
+
+        set((state) =>
+          updateSessionState(state, sessionId, (currentSession) => ({
+            ...currentSession,
+            codingTarget: target,
+            codingTargetMismatch: undefined,
+            currentEditorRefUid: target.type === 'single-file' ? target.editorUid : undefined,
+            flowContext,
+          })),
+        );
+        return { status: currentTarget ? 'already-bound' : 'bound', target };
+      },
 
       setSessionWebSearching: (sessionId, webSearching) =>
         set((state) =>
@@ -380,7 +476,13 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
           })),
         ),
 
-      setFlowContext: (flowContext) => set({ flowContext }),
+      setSessionFlowContext: (sessionId, flowContext) =>
+        set((state) =>
+          updateSessionState(state, sessionId, (session) => ({
+            ...session,
+            flowContext,
+          })),
+        ),
 
       addSessionSubAgentMessage: (sessionId, subSessionId, msg) => {
         get().addSessionSubAgentMessages(sessionId, subSessionId, [msg]);

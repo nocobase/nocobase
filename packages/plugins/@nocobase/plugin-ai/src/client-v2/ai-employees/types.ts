@@ -83,6 +83,26 @@ export type ContextItem = {
   frontendTools?: FrontendToolManifest[];
 };
 
+export type SingleFileChatCodingTarget = {
+  type: 'single-file';
+  applicationKey: string;
+  editorUid: string;
+};
+
+export type WorkspaceChatCodingTarget = {
+  type: 'workspace';
+  applicationKey: string;
+  surfaceId: string;
+  kind: string;
+  title: string;
+};
+
+export type ChatCodingTarget = SingleFileChatCodingTarget | WorkspaceChatCodingTarget;
+
+export type ChatCodingTargetBindingResult =
+  | { status: 'bound' | 'already-bound'; target: ChatCodingTarget }
+  | { status: 'mismatch'; target: ChatCodingTarget; requestedTarget: ChatCodingTarget };
+
 type ActionParams = {
   item: ContextItem;
   message: Message;

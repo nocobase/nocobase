@@ -834,6 +834,7 @@ export function FilesPanel(props: {
 export function CodeTab(props: {
   activeFile?: RunJSWorkspaceFile;
   activePath?: string;
+  authoringSurfaceId?: string;
   diffRows: RunJSLineDiffRow[];
   emptyDiffDescription?: string;
   filesCollapsed: boolean;
@@ -843,6 +844,7 @@ export function CodeTab(props: {
   onDiffToggle: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
+  onAuthoringSurfaceActivate?: (surfaceId: string) => void;
   onRunPreview?: () => void;
   openPaths: string[];
   previewing?: boolean;
@@ -863,6 +865,7 @@ export function CodeTab(props: {
   const {
     activeFile,
     activePath,
+    authoringSurfaceId,
     diffRows,
     emptyDiffDescription,
     filesCollapsed,
@@ -872,6 +875,7 @@ export function CodeTab(props: {
     onDiffToggle,
     onFilesCollapsedChange,
     onOpenFile,
+    onAuthoringSurfaceActivate,
     onRunPreview,
     openPaths,
     previewing,
@@ -889,6 +893,11 @@ export function CodeTab(props: {
     fullscreenControl,
     jsonSchemaResolver,
   } = props;
+  const handleAuthoringSurfaceFocus = React.useCallback(() => {
+    if (authoringSurfaceId) {
+      onAuthoringSurfaceActivate?.(authoringSurfaceId);
+    }
+  }, [authoringSurfaceId, onAuthoringSurfaceActivate]);
   const openFiles = openPaths
     .map((path) => workspaceFiles.find((file) => file.path === path))
     .filter((file): file is RunJSWorkspaceFile => Boolean(file));
@@ -972,6 +981,7 @@ export function CodeTab(props: {
     return (
       <section
         aria-label={t('Code')}
+        onFocusCapture={handleAuthoringSurfaceFocus}
         style={{
           border: '1px solid #d9d9d9',
           borderRadius: 6,
@@ -1006,6 +1016,7 @@ export function CodeTab(props: {
     <section
       aria-label={t('Code')}
       data-runjs-code-editor="true"
+      onFocusCapture={handleAuthoringSurfaceFocus}
       style={{
         display: 'flex',
         flex: 1,
@@ -1017,6 +1028,7 @@ export function CodeTab(props: {
       }}
     >
       <CodeEditor
+        authoringSurfaceId={authoringSurfaceId}
         enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
         height="100%"
         language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}

@@ -37,6 +37,7 @@ const AICodingExtra: CodeEditorExtra = (props) => {
       name={name}
       language={props.language ?? 'javascript'}
       scene={normalizedScene ?? 'unknown'}
+      authoringSurfaceId={props.authoringSurfaceId}
     />
   );
 };

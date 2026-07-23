@@ -9,7 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar, Popover, Tooltip, theme } from 'antd';
-import type { EditorRef } from '@nocobase/client-v2';
+import { useApp, type EditorRef } from '@nocobase/client-v2';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 
 import { useT } from '../../locale';
@@ -19,8 +19,9 @@ import { useChat } from '../chatbox/hooks/useChat';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { getChatApplicationKey } from '../chatbox/stores/chat-messages';
 import { AIEmployeeProfileCard } from '../ProfileCard';
-import type { AIEmployee, Task } from '../types';
+import type { AIEmployee, ChatCodingTarget, ContextItem, Task, WorkspaceChatCodingTarget } from '../types';
 import prompts from './prompts';
 
 export interface AICodingButtonProps {
@@ -28,6 +29,7 @@ export interface AICodingButtonProps {
   name?: string;
   scene: string;
   language: string;
+  authoringSurfaceId?: string;
   editorRef: EditorRef;
   setActive: (key: string, active: boolean) => void;
 }
@@ -41,8 +43,9 @@ const isEngineer = (aiEmployee: AIEmployee) => {
 };
 
 export const AICodingButton: React.FC<AICodingButtonProps> = observer(
-  ({ uid, scene, language, editorRef, setActive }) => {
+  ({ uid, scene, language, authoringSurfaceId, editorRef, setActive }) => {
     const t = useT();
+    const app = useApp();
     const { token } = theme.useToken();
     const aiConfigRepository = useAIConfigRepository();
     const aiEmployees = aiConfigRepository.aiEmployees;
@@ -51,10 +54,8 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const currentConversation = useChatConversationsStore.use.currentConversation();
     const chat = useChat(currentConversation);
     const { triggerTask } = useChatBoxActions();
-    const addContextItems = chat.addContextItems;
-    const setEditorRef = chat.setEditorRef;
-    const setCurrentEditorRefUid = chat.setCurrentEditorRefUid;
     const ctx = useFlowContext();
+    const applicationKey = useMemo(() => getChatApplicationKey(app), [app]);
 
     const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
@@ -63,26 +64,22 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     }, [aiConfigRepository]);
 
     useEffect(() => {
-      setEditorRef(uid, editorRef);
-      setCurrentEditorRefUid(uid);
-      return () => {
-        setEditorRef(uid, null);
-      };
-    }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid]);
+      if (authoringSurfaceId) {
+        return;
+      }
+      return chat.registerEditorRef(applicationKey, uid, editorRef);
+    }, [applicationKey, authoringSurfaceId, chat, editorRef, uid]);
 
     useEffect(() => {
       setActive('AICodingButton', !!aiEmployee);
     }, [aiEmployee, setActive]);
 
-    useEffect(() => {
-      chat.setFlowContext(ctx);
-    }, [chat, ctx]);
-
     const [showTooltip, setShowTooltip] = useState(false);
     const [errorOccurred, setErrorOccurred] = useState(false);
+    const [targetMismatch, setTargetMismatch] = useState(false);
 
     useEffect(() => {
-      const isError = editorRef.logs.some((log) => log.level === 'error');
+      const isError = !authoringSurfaceId && editorRef.logs.some((log) => log.level === 'error');
       setErrorOccurred(isError);
       setShowTooltip(isError);
       if (!isError) {
@@ -94,27 +91,13 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       return () => {
         window.clearTimeout(timer);
       };
-    }, [editorRef.logs]);
+    }, [authoringSurfaceId, editorRef.logs]);
 
     const taskMap = useMemo<Record<string, Task>>(() => {
       const createTask = (prototype: Partial<Task>): Task => {
         const { message, ...rest } = prototype;
         return {
-          message: {
-            workContext: [
-              {
-                type: 'code-editor',
-                uid,
-                title: `${scene}(${language})`,
-                content: {
-                  scene,
-                  language,
-                  code: editorRef.read(),
-                },
-              },
-            ],
-            ...(message ?? {}),
-          },
+          message,
           autoSend: false,
           ...rest,
         };
@@ -137,7 +120,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
           autoSend: errorOccurred,
         }),
       };
-    }, [editorRef, errorOccurred, language, scene, t, uid]);
+    }, [editorRef.logs, errorOccurred, t]);
 
     const tasks = useMemo(() => Object.values(taskMap), [taskMap]);
 
@@ -145,31 +128,98 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       return null;
     }
 
-    const addCodeEditorContext = () => {
-      setCurrentEditorRefUid(uid);
-      addContextItems({
-        type: 'code-editor',
-        uid,
-        title: `${scene}(${language})`,
-        content: {
-          scene,
-          language,
-          code: editorRef.read(),
+    const resolveCodingContext = async (): Promise<{ target: ChatCodingTarget; item: ContextItem } | null> => {
+      if (authoringSurfaceId) {
+        const surface = app.aiManager.authoringSurfaces.get(authoringSurfaceId);
+        if (!surface) {
+          setShowTooltip(true);
+          return null;
+        }
+        const snapshot = await surface.describe();
+        const target: WorkspaceChatCodingTarget = {
+          type: 'workspace',
+          applicationKey,
+          surfaceId: authoringSurfaceId,
+          kind: snapshot.kind,
+          title: snapshot.title,
+        };
+        return {
+          target,
+          item: {
+            type: 'code-workspace',
+            uid: authoringSurfaceId,
+            title: snapshot.title,
+            content: {
+              surfaceId: authoringSurfaceId,
+              kind: snapshot.kind,
+              title: snapshot.title,
+            },
+          },
+        };
+      }
+
+      return {
+        target: {
+          type: 'single-file',
+          applicationKey,
+          editorUid: uid,
         },
-      });
+        item: {
+          type: 'code-editor',
+          uid,
+          title: `${scene}(${language})`,
+          content: {
+            scene,
+            language,
+            code: editorRef.read(),
+          },
+        },
+      };
+    };
+
+    const bindCodingContext = async (willTriggerTask: boolean, taskList?: Task[]) => {
+      const resolved = await resolveCodingContext();
+      if (!resolved) {
+        return;
+      }
+      const currentBinding = chat.bindCodingTarget(resolved.target, ctx);
+      if (currentBinding.status === 'mismatch') {
+        setTargetMismatch(true);
+        setShowTooltip(true);
+        return;
+      }
+
+      const targetChat = willTriggerTask && currentConversation ? chat.for(undefined) : chat;
+      if (targetChat.sessionKey !== chat.sessionKey) {
+        const draftBinding = targetChat.bindCodingTarget(resolved.target, ctx);
+        if (draftBinding.status === 'mismatch') {
+          setTargetMismatch(true);
+          setShowTooltip(true);
+          return;
+        }
+      }
+      setTargetMismatch(false);
+      const resolvedTasks = taskList?.map((task) => ({
+        ...task,
+        message: {
+          ...(task.message ?? {}),
+          workContext: [resolved.item],
+        },
+      }));
+      if (willTriggerTask) {
+        await triggerTask({ aiEmployee, tasks: resolvedTasks });
+      }
+      targetChat.addContextItems(resolved.item);
     };
 
     const handleAvatarClick = () => {
-      if (!open || currentEmployee?.username !== aiEmployee.username) {
-        const hasError = editorRef.logs.some((log) => log.level === 'error');
-        triggerTask({ aiEmployee, tasks: hasError ? [taskMap.logsDiagnosis] : tasks }).catch(console.error);
-      }
-      addCodeEditorContext();
+      const shouldTriggerTask = !open || currentEmployee?.username !== aiEmployee.username;
+      const hasError = !authoringSurfaceId && editorRef.logs.some((log) => log.level === 'error');
+      bindCodingContext(shouldTriggerTask, hasError ? [taskMap.logsDiagnosis] : tasks).catch(console.error);
     };
 
     const handleTaskClick = (task: Task) => {
-      triggerTask({ aiEmployee, tasks: [task] }).catch(console.error);
-      addCodeEditorContext();
+      bindCodingContext(true, [task]).catch(console.error);
     };
 
     const handleAvatarKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
@@ -182,7 +232,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     return (
       <Tooltip
         placement="topRight"
-        title={t('Oops! Something went wrong. Let me diagnose and fix it.')}
+        title={targetMismatch ? t('New conversation') : t('Oops! Something went wrong. Let me diagnose and fix it.')}
         open={showTooltip}
         styles={{ root: { maxWidth: token.screenXS } }}
       >
