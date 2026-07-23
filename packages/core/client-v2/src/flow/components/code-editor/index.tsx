@@ -48,7 +48,8 @@ export interface CodeEditorProps {
   language?: string;
   jsonSchema?: CodeEditorJsonSchema;
   scene?: string | string[];
-  RightExtra?: React.FC<any>;
+  authoringSurfaceId?: string;
+  RightExtra?: React.FC<{ viewRef: React.MutableRefObject<EditorView | null> }>;
   toolbarLeftExtra?: React.ReactNode;
   runButton?: React.ReactNode;
   showLogs?: boolean;
@@ -86,6 +87,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   language,
   jsonSchema,
   scene,
+  authoringSurfaceId,
   RightExtra,
   toolbarLeftExtra,
   runButton,
@@ -245,6 +247,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         name={name}
         language={language}
         scene={resolvedScene}
+        authoringSurfaceId={authoringSurfaceId}
         extraEditorRef={extraEditorRef.current}
         leftContent={toolbarLeftExtra}
         extraContent={

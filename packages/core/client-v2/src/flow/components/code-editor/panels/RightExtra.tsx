@@ -16,6 +16,7 @@ export const RightExtra: React.FC<{
   name?: string;
   language?: string;
   scene?: string | string[];
+  authoringSurfaceId?: string;
   extraEditorRef: EditorRef;
   onActionCountChange?: (count: number) => void;
   leftContent?: React.ReactNode;
@@ -24,6 +25,7 @@ export const RightExtra: React.FC<{
   name = 'code',
   language = 'javascript',
   scene,
+  authoringSurfaceId,
   extraEditorRef,
   onActionCountChange,
   leftContent,
@@ -69,6 +71,7 @@ export const RightExtra: React.FC<{
               name={name}
               language={language}
               scene={scene}
+              authoringSurfaceId={authoringSurfaceId}
               editorRef={extraEditorRef}
               setActive={setActive}
               key={extra.name}

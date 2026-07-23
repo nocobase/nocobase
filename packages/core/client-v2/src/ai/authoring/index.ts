@@ -7,8 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ai-manager';
-export * from './authoring';
-export * from './tools-manager';
-export * from './skills-manager';
-export * from './utils';
+export * from './authoring-surface-registry';
+export * from './types';
