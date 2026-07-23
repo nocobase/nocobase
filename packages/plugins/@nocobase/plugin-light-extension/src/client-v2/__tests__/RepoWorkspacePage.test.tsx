@@ -10,6 +10,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Modal, message } from 'antd';
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI } from '@nocobase/light-extension-sdk/schema';
+import type { CodeAuthoringSurface } from '@nocobase/client-v2';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -38,6 +39,11 @@ const mocks = vi.hoisted(() => ({
     downloadLightExtensionWorkspaceArchive: vi.fn(() => true),
     readLightExtensionWorkspaceArchive: vi.fn(),
   },
+  authoring: {
+    surface: undefined as CodeAuthoringSurface | undefined,
+    register: vi.fn(),
+    activate: vi.fn(),
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -46,21 +52,32 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@nocobase/client-v2', () => ({
-  useFullscreenOverlay: () => {
-    const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
+vi.mock('@nocobase/client-v2', async () => {
+  const ReactModule = await vi.importActual<typeof import('react')>('react');
+  return {
+    ApplicationContext: ReactModule.createContext({
+      aiManager: {
+        authoringSurfaces: {
+          register: mocks.authoring.register,
+          activate: mocks.authoring.activate,
+        },
+      },
+    }),
+    useFullscreenOverlay: () => {
+      const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
 
-    return {
-      isFullscreen: false,
-      toggleFullscreen: () => {},
-      enterFullscreen: () => {},
-      exitFullscreen: () => {},
-      placeholderRef: setPlaceholderEl,
-      placeholderStyle: {},
-      container: placeholderEl,
-    };
-  },
-}));
+      return {
+        isFullscreen: false,
+        toggleFullscreen: () => {},
+        enterFullscreen: () => {},
+        exitFullscreen: () => {},
+        placeholderRef: setPlaceholderEl,
+        placeholderStyle: {},
+        container: placeholderEl,
+      };
+    },
+  };
+});
 
 vi.mock('../workspace/lightExtensionWorkspaceArchive', () => ({
   buildLightExtensionWorkspaceArchiveFileName: mocks.archive.buildLightExtensionWorkspaceArchiveFileName,
@@ -201,6 +218,8 @@ vi.mock('../vsc-file/public-api', () => {
       onFilesCollapsedChange,
       filesCollapsed,
       jsonSchemaResolver,
+      authoringSurfaceId,
+      onAuthoringSurfaceActivate,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
@@ -218,8 +237,11 @@ vi.mock('../vsc-file/public-api', () => {
         path: string,
         files: Array<{ content: string; path: string }>,
       ) => { uri: string } | undefined;
+      authoringSurfaceId?: string;
+      onAuthoringSurfaceActivate?: (surfaceId: string) => void;
     }) => (
       <div
+        data-authoring-surface-id={authoringSurfaceId || ''}
         data-has-run-preview={String(Boolean(onRunPreview))}
         data-scene={scene || ''}
         data-show-run-button={String(showRunButton)}
@@ -242,6 +264,11 @@ vi.mock('../vsc-file/public-api', () => {
         <textarea
           aria-label="Edit file content"
           onChange={(event) => onChange(event.target.value)}
+          onFocus={() => {
+            if (authoringSurfaceId) {
+              onAuthoringSurfaceActivate?.(authoringSurfaceId);
+            }
+          }}
           readOnly={readOnly}
           value={activeFile?.content || ''}
         />
@@ -360,6 +387,11 @@ async function confirmSaveVersion(message: string) {
 describe('LightExtensionWorkspacePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.authoring.surface = undefined;
+    mocks.authoring.register.mockImplementation((surface: CodeAuthoringSurface) => {
+      mocks.authoring.surface = surface;
+      return vi.fn();
+    });
     mocks.api.getRepo.mockResolvedValue({
       id: 'ler_sales',
       name: 'sales-widgets',
@@ -475,6 +507,33 @@ describe('LightExtensionWorkspacePage', () => {
 
     fireEvent.click(within(workspace).getByRole('button', { name: 'Expand files' }));
     expect(await screen.findByTestId('runjs-files-panel')).toHaveAttribute('data-collapsed', 'false');
+  });
+
+  it('registers repository workspaces as explicitly gated authoring surfaces and activates only on editor focus', async () => {
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage embedded repoId="ler_sales" />
+      </MemoryRouter>,
+    );
+
+    const codeTab = await screen.findByTestId('runjs-code-tab');
+    await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
+    const surface = mocks.authoring.surface;
+    if (!surface) {
+      throw new Error('Expected repository authoring surface');
+    }
+    expect(surface.id).toBe('light-extension:ler_sales:repository');
+    await expect(surface.describe()).resolves.toMatchObject({
+      files: [],
+      capabilities: {
+        prepareChanges: false,
+        applyPreparedChanges: false,
+      },
+    });
+    expect(mocks.authoring.activate).not.toHaveBeenCalled();
+
+    fireEvent.focus(within(codeTab).getByLabelText('Edit file content'));
+    expect(mocks.authoring.activate).toHaveBeenCalledWith('light-extension:ler_sales:repository');
   });
 
   it('saves only dirty source changes without compiling a workspace preview first', async () => {

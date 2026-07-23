@@ -11,8 +11,10 @@ import { describe, expect, it } from 'vitest';
 
 import type { LightExtensionKind } from '../../constants';
 import {
+  canReadLightExtensionWorkspacePathForAI,
   getLightExtensionEntryRoot,
   getManagedLightExtensionEntryRoot,
+  getLightExtensionWorkspaceAuthoringPathAccess,
   getLightExtensionWorkspacePathAccess,
   type LightExtensionWorkspaceScope,
 } from '../workspace/lightExtensionWorkspaceAccess';
@@ -92,6 +94,92 @@ describe('light extension entry workspace access', () => {
       canMove: true,
       canRename: true,
       canWrite: true,
+    });
+  });
+
+  it('limits entry authoring to source files in the current entry while exposing explicit read-only dependencies', () => {
+    const scope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/current/index.tsx',
+      kind: 'js-block',
+    };
+
+    expect(getLightExtensionWorkspaceAuthoringPathAccess(scope, scope.entryPath)).toMatchObject({
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canPatch: true,
+      canDelete: true,
+    });
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/helper.ts'),
+    ).toMatchObject({
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canPatch: true,
+      canDelete: true,
+    });
+    expect(getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/entry.json')).toEqual({
+      canRead: true,
+      canCreate: false,
+      canUpdate: false,
+      canPatch: false,
+      canDelete: false,
+      reason: 'entry_descriptor',
+    });
+    expect(getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/shared/helpers.ts')).toMatchObject({
+      canRead: true,
+      canCreate: false,
+      canUpdate: false,
+      canPatch: false,
+      canDelete: false,
+    });
+    expect(canReadLightExtensionWorkspacePathForAI(scope, 'tsconfig.json')).toBe(true);
+    expect(canReadLightExtensionWorkspacePathForAI(scope, 'README.md')).toBe(false);
+    expect(canReadLightExtensionWorkspacePathForAI(scope, 'src/client/js-actions/other/index.ts')).toBe(false);
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/../other/index.tsx'),
+    ).toMatchObject({ canRead: false, canUpdate: false, reason: 'outside_entry_scope' });
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, '/src/client/js-blocks/current/index.tsx'),
+    ).toMatchObject({
+      canRead: false,
+      canUpdate: false,
+      reason: 'outside_entry_scope',
+    });
+  });
+
+  it('marks generated, blocked, read-only, and repository-gated authoring paths explicitly', () => {
+    const scope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/current/index.tsx',
+      kind: 'js-block',
+    };
+
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, '.light-extension/types/sdk.d.ts', { virtual: true }),
+    ).toEqual({
+      canRead: true,
+      canCreate: false,
+      canUpdate: false,
+      canPatch: false,
+      canDelete: false,
+      reason: 'generated_file',
+    });
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, scope.entryPath, { blockedDirtyChange: true }),
+    ).toMatchObject({ canRead: true, canUpdate: false, reason: 'blocked_dirty_change' });
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, scope.entryPath, { workspaceWritable: false }),
+    ).toMatchObject({ canRead: true, canUpdate: false, reason: 'workspace_read_only' });
+    expect(getLightExtensionWorkspaceAuthoringPathAccess({ mode: 'repository' }, scope.entryPath)).toEqual({
+      canRead: false,
+      canCreate: false,
+      canUpdate: false,
+      canPatch: false,
+      canDelete: false,
+      reason: 'repository_authoring_gate',
     });
   });
 

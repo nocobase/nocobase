@@ -10,7 +10,10 @@
 import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   diagnoseRunJS,
+  useApp,
   useFullscreenOverlay,
+  type CodeAuthoringDiagnostic,
+  type CodeAuthoringRange,
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
@@ -20,6 +23,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 
 import { commitHistoryDefaultLimit } from '../../../shared/vsc-file/constants';
+import { createWorkspaceAuthoringSurface } from '../../workspace/authoring/createWorkspaceAuthoringSurface';
+import { hashWorkspaceAuthoringValue, type WorkspaceAuthoringFile } from '../../workspace/authoring/workspaceSnapshot';
 import type { RunJSCompileDiagnostic } from './types';
 import { useT } from '../locale';
 import {
@@ -138,6 +143,68 @@ type RunJSStudioControllerProps = Omit<RunJSEditorProviderRenderProps, 'locator'
   locator?: RunJSSourceLocator;
 };
 
+function toAuthoringDiagnostic(diagnostic: RunJSCompileDiagnostic): CodeAuthoringDiagnostic {
+  const line = typeof diagnostic.line === 'number' ? Math.max(1, diagnostic.line) : undefined;
+  const column = typeof diagnostic.column === 'number' ? Math.max(1, diagnostic.column) : undefined;
+  return {
+    message: diagnostic.message,
+    severity: diagnostic.severity || 'info',
+    ...(diagnostic.path ? { path: diagnostic.path } : {}),
+    ...(line ? { range: { start: { line, column: column || 1 } } } : {}),
+    ...(diagnostic.code || diagnostic.ruleId ? { code: diagnostic.code || diagnostic.ruleId } : {}),
+    source: 'runjs-compiler',
+  };
+}
+
+function toAuthoringSourceFiles(files: RunJSWorkspaceFile[]): WorkspaceAuthoringFile[] {
+  return files.map((file) => ({
+    path: file.path,
+    content: file.content,
+    language: file.language,
+    persisted: true,
+    ...(file.mode ? { metadata: { mode: file.mode } } : {}),
+  }));
+}
+
+function toRunJSWorkspaceFiles(files: WorkspaceAuthoringFile[]): RunJSWorkspaceFile[] {
+  return normalizeWorkspaceFiles(
+    files.map((file) => ({
+      path: file.path,
+      content: file.content,
+      language: file.language,
+      ...(typeof file.metadata?.mode === 'string' ? { mode: file.metadata.mode } : {}),
+    })),
+  );
+}
+
+function collectAuthoringVirtualFiles(
+  files: RunJSWorkspaceFile[],
+  resolver: RunJSEditorProviderRenderProps['workspaceTypeScriptContextResolver'],
+): WorkspaceAuthoringFile[] {
+  if (!resolver) {
+    return [];
+  }
+  const sourcePaths = new Set(files.map((file) => file.path));
+  const declarations = new Map<string, WorkspaceAuthoringFile>();
+  for (const file of files) {
+    for (const declaration of resolver(file.path, files)?.declarationFiles || []) {
+      if (!declaration.path || sourcePaths.has(declaration.path)) {
+        continue;
+      }
+      declarations.set(declaration.path, {
+        path: declaration.path,
+        content: declaration.content,
+        language: declaration.language,
+        readOnly: true,
+        writable: false,
+        persisted: false,
+        description: 'Generated TypeScript declaration',
+      });
+    }
+  }
+  return Array.from(declarations.values());
+}
+
 export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const {
     t: hostT,
@@ -153,6 +220,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   } = props;
   const pluginT = useT();
   const t = hostT || pluginT;
+  const app = useApp();
   const resource = useRunJSSourceResource();
   const flowCtx = useFlowContext<FlowEngineContext | null>();
   const runJSSourceRequest = resource.request;
@@ -207,6 +275,27 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [pendingDirtyAction, setPendingDirtyAction] = useState<PendingDirtyAction>('close');
   const [consoleHeight, setConsoleHeight] = useState(defaultConsolePanelHeight);
   const [exportDownload, setExportDownload] = useState<ExportDownloadState | null>(null);
+  const workspaceRef = useRef(workspace);
+  const filesRef = useRef(files);
+  const entryPathRef = useRef(entryPath);
+  const activePathRef = useRef(activePath);
+  const openPathsRef = useRef(openPaths);
+  const previewDiagnosticsRef = useRef(previewDiagnostics);
+  const locatorRef = useRef(props.locator);
+  const valueVersionRef = useRef(value.version);
+  const workspaceTypeScriptContextResolverRef = useRef(props.workspaceTypeScriptContextResolver);
+  const runJSSourceRequestRef = useRef(runJSSourceRequest);
+  const authoringRevealRef = useRef<{ path: string; range?: CodeAuthoringRange } | null>(null);
+  workspaceRef.current = workspace;
+  filesRef.current = files;
+  entryPathRef.current = entryPath;
+  activePathRef.current = activePath;
+  openPathsRef.current = openPaths;
+  previewDiagnosticsRef.current = previewDiagnostics;
+  locatorRef.current = props.locator;
+  valueVersionRef.current = value.version;
+  workspaceTypeScriptContextResolverRef.current = props.workspaceTypeScriptContextResolver;
+  runJSSourceRequestRef.current = runJSSourceRequest;
   const workspaceFullscreen = useFullscreenOverlay();
   const studioView = flowCtx?.view as ClosableView | undefined;
   const embedded = editorChrome === 'embedded';
@@ -222,6 +311,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     typeof workspace?.source.metadata?.modelUse === 'string' ? workspace.source.metadata.modelUse : undefined;
   const historyItems = workspace?.history?.items || [];
   const baseVersion = formatVersion(workspace?.repository?.headSeq);
+  const authoringSurfaceId =
+    workspace && props.locator
+      ? `runjs-studio:${hashWorkspaceAuthoringValue({
+          locator: props.locator,
+          repositoryId: workspace.repository.repoId,
+          repositoryIdentity: workspace.repositoryIdentity,
+        })}`
+      : undefined;
   const lineDiffRows = useMemo(
     () => buildLineDiff(baseFiles, files, selectedDiffPath, false),
     [baseFiles, files, selectedDiffPath],
@@ -1682,6 +1779,142 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     : null;
 
   useEffect(() => {
+    if (!authoringSurfaceId || !workspaceRef.current || !locatorRef.current) {
+      return;
+    }
+
+    const surface = createWorkspaceAuthoringSurface({
+      id: authoringSurfaceId,
+      kind: 'runjs-studio',
+      title: workspaceRef.current.source.label,
+      scope: {
+        type: workspaceRef.current.source.kind,
+        id: workspaceRef.current.repository.repoId,
+        label: workspaceRef.current.source.label,
+      },
+      getSourceFiles: () => {
+        const canWrite = Boolean(workspaceRef.current?.permissions.canWrite && !readOnly && !disabled);
+        return toAuthoringSourceFiles(filesRef.current).map((file) => ({
+          ...file,
+          readOnly: !canWrite,
+          writable: canWrite,
+        }));
+      },
+      getVirtualFiles: () =>
+        collectAuthoringVirtualFiles(filesRef.current, workspaceTypeScriptContextResolverRef.current),
+      commitSourceFiles: (nextSourceFiles) => {
+        const nextFiles = toRunJSWorkspaceFiles(nextSourceFiles);
+        const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPathRef.current);
+        const nextPaths = new Set(nextFiles.map((file) => file.path));
+        const nextActivePath =
+          (activePathRef.current && nextPaths.has(activePathRef.current) ? activePathRef.current : undefined) ||
+          (nextPaths.has(nextEntryPath) ? nextEntryPath : nextFiles[0]?.path);
+        const nextOpenPaths = openPathsRef.current.filter((path) => nextPaths.has(path));
+        if (nextActivePath && !nextOpenPaths.includes(nextActivePath)) {
+          nextOpenPaths.push(nextActivePath);
+        }
+
+        filesRef.current = nextFiles;
+        entryPathRef.current = nextEntryPath;
+        activePathRef.current = nextActivePath;
+        openPathsRef.current = nextOpenPaths;
+        latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(
+          nextFiles,
+          nextEntryPath,
+          valueVersionRef.current,
+        );
+        invalidatePreview();
+        setFiles(nextFiles);
+        setEntryPath(nextEntryPath);
+        setActivePath(nextActivePath);
+        setOpenPaths(nextOpenPaths);
+        setActiveTab('code');
+      },
+      getActivePath: () => activePathRef.current,
+      getPathAccess: (path, changeType) => {
+        const currentWorkspace = workspaceRef.current;
+        const validPath = validateRunJSWorkspacePath(path, (key) => key).valid;
+        const canWrite = Boolean(currentWorkspace?.permissions.canWrite && !readOnly && !disabled);
+        const deletesEntry = changeType === 'delete' && path === entryPathRef.current;
+        return {
+          canCreate: validPath && canWrite,
+          canUpdate: validPath && canWrite,
+          canPatch: validPath && canWrite,
+          canDelete: validPath && canWrite && !deletesEntry,
+          canWrite: validPath && canWrite,
+          reason: !currentWorkspace?.permissions.canWrite
+            ? 'Workspace write permission is required'
+            : readOnly || disabled
+              ? 'RunJS Studio is read-only'
+              : !validPath
+                ? 'Path is outside the RunJS workspace'
+                : deletesEntry
+                  ? 'RunJS entry file cannot be deleted'
+                  : undefined,
+        };
+      },
+      canReadForAI: () => workspaceRef.current?.permissions.canRead === true,
+      getDiagnostics: () => previewDiagnosticsRef.current.map(toAuthoringDiagnostic),
+      sanitizeDiagnostic: (diagnostic) => diagnostic,
+      validateDraft: async () => {
+        const currentWorkspace = workspaceRef.current;
+        const locator = locatorRef.current;
+        if (!currentWorkspace || !locator) {
+          return [];
+        }
+        const requestFiles = normalizeWorkspaceFiles(filesRef.current);
+        const requestEntryPath = entryPathRef.current;
+        const localDiagnostics = validateRunJSWorkspaceForSave(requestFiles, requestEntryPath, (key) => key);
+        if (hasCompileErrorDiagnostics(localDiagnostics)) {
+          return localDiagnostics.map(toAuthoringDiagnostic);
+        }
+        const result = await runJSSourceRequestRef.current('compilePreview', {
+          locator,
+          repoId: currentWorkspace.repository.repoId,
+          baseCommitId: currentWorkspace.repository.headCommitId,
+          files: buildWorkspaceChanges([], requestFiles),
+          entryPath: requestEntryPath,
+          version: valueVersionRef.current,
+        });
+        return result.artifact.diagnostics.map(toAuthoringDiagnostic);
+      },
+      reveal: (path, range) => {
+        authoringRevealRef.current = { path, range };
+        if (filesRef.current.some((file) => file.path === path)) {
+          setActivePath(path);
+          setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
+          setActiveTab('code');
+        }
+      },
+      supportedLanguages: [
+        'css',
+        'html',
+        'javascript',
+        'javascriptreact',
+        'json',
+        'markdown',
+        'plaintext',
+        'typescript',
+        'typescriptreact',
+        'yaml',
+      ],
+      changeCapabilities: {
+        prepareChanges: workspaceRef.current.permissions.canWrite && !readOnly && !disabled,
+        applyPreparedChanges: workspaceRef.current.permissions.canWrite && !readOnly && !disabled,
+      },
+    });
+
+    return app.aiManager.authoringSurfaces.register(surface);
+  }, [app, authoringSurfaceId, disabled, invalidatePreview, readOnly]);
+
+  const activateAuthoringSurface = useCallback(
+    (surfaceId: string) => {
+      app.aiManager.authoringSurfaces.activate(surfaceId);
+    },
+    [app],
+  );
+
+  useEffect(() => {
     if (!embedded || !onEmbeddedEditorControllerChange) {
       return;
     }
@@ -1943,6 +2176,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                       <CodeTab
                         activeFile={activeFile}
                         activePath={activePath}
+                        authoringSurfaceId={authoringSurfaceId}
                         diffRows={lineDiffRows}
                         isDiff={showDiff}
                         jsonSchemaResolver={props.workspaceJsonSchemaResolver}
@@ -1956,6 +2190,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onDiffToggle={toggleDiff}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
+                        onAuthoringSurfaceActivate={activateAuthoringSurface}
                         onRunPreview={runPreview}
                         openPaths={openPaths}
                         previewing={previewing}

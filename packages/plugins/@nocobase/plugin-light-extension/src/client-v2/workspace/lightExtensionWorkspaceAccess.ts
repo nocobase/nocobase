@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { LightExtensionKind } from '../../constants';
+import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE, type LightExtensionKind } from '../../constants';
 
 export type LightExtensionWorkspaceScope =
   | { mode: 'repository' }
@@ -27,6 +27,27 @@ export interface LightExtensionWorkspacePathAccess {
   canWrite: boolean;
 }
 
+export interface LightExtensionWorkspaceAuthoringPathAccess {
+  canRead: boolean;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canPatch: boolean;
+  canDelete: boolean;
+  reason?:
+    | 'repository_authoring_gate'
+    | 'outside_entry_scope'
+    | 'entry_descriptor'
+    | 'generated_file'
+    | 'blocked_dirty_change'
+    | 'workspace_read_only';
+}
+
+export interface LightExtensionWorkspaceAuthoringPathOptions {
+  blockedDirtyChange?: boolean;
+  virtual?: boolean;
+  workspaceWritable?: boolean;
+}
+
 const KIND_ROOTS: Record<LightExtensionKind, string> = {
   'js-action': 'src/client/js-actions',
   'js-block': 'src/client/js-blocks',
@@ -36,6 +57,9 @@ const KIND_ROOTS: Record<LightExtensionKind, string> = {
 };
 
 const MANAGED_ENTRY_ROOTS = Object.values(KIND_ROOTS);
+const AI_READABLE_SHARED_ROOTS = ['src/shared'] as const;
+const AI_READABLE_ROOT_FILES = new Set(['tsconfig.json']);
+const GENERATED_TYPES_ROOT = '.light-extension/types';
 
 export function getManagedLightExtensionEntryRoot(path: string): { kind: LightExtensionKind; path: string } | null {
   const normalizedPath = normalizeWorkspacePath(path);
@@ -118,6 +142,86 @@ export function canChangeLightExtensionWorkspacePath(scope: LightExtensionWorksp
   return getLightExtensionWorkspacePathAccess(scope, path, 'file').canWrite;
 }
 
+export function getLightExtensionWorkspaceAuthoringPathAccess(
+  scope: LightExtensionWorkspaceScope,
+  path: string,
+  options: LightExtensionWorkspaceAuthoringPathOptions = {},
+): LightExtensionWorkspaceAuthoringPathAccess {
+  if (scope.mode === 'repository') {
+    return denyAuthoringAccess('repository_authoring_gate');
+  }
+
+  if (!isSafeAuthoringWorkspacePath(path) || !isSafeAuthoringWorkspacePath(scope.entryPath)) {
+    return denyAuthoringAccess('outside_entry_scope');
+  }
+
+  const normalizedPath = normalizeWorkspacePath(path);
+  const entryRoot = getLightExtensionEntryRoot(scope);
+  if (!normalizedPath || !entryRoot) {
+    return denyAuthoringAccess('outside_entry_scope');
+  }
+
+  const generated = options.virtual === true || isPathInside(normalizedPath, GENERATED_TYPES_ROOT);
+  if (generated) {
+    return {
+      ...denyAuthoringAccess('generated_file'),
+      canRead: isPathInside(normalizedPath, GENERATED_TYPES_ROOT),
+    };
+  }
+
+  const insideEntry = isPathInside(normalizedPath, entryRoot);
+  const readableShared =
+    AI_READABLE_SHARED_ROOTS.some((root) => isPathInside(normalizedPath, root)) ||
+    AI_READABLE_ROOT_FILES.has(normalizedPath);
+  if (!insideEntry && !readableShared) {
+    return denyAuthoringAccess('outside_entry_scope');
+  }
+
+  if (!insideEntry) {
+    return {
+      ...denyAuthoringAccess('outside_entry_scope'),
+      canRead: true,
+    };
+  }
+
+  if (normalizedPath === `${entryRoot}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`) {
+    return {
+      ...denyAuthoringAccess('entry_descriptor'),
+      canRead: true,
+    };
+  }
+
+  if (options.blockedDirtyChange) {
+    return {
+      ...denyAuthoringAccess('blocked_dirty_change'),
+      canRead: true,
+    };
+  }
+
+  if (options.workspaceWritable === false) {
+    return {
+      ...denyAuthoringAccess('workspace_read_only'),
+      canRead: true,
+    };
+  }
+
+  return {
+    canRead: true,
+    canCreate: true,
+    canUpdate: true,
+    canPatch: true,
+    canDelete: true,
+  };
+}
+
+export function canReadLightExtensionWorkspacePathForAI(
+  scope: LightExtensionWorkspaceScope,
+  path: string,
+  options?: LightExtensionWorkspaceAuthoringPathOptions,
+): boolean {
+  return getLightExtensionWorkspaceAuthoringPathAccess(scope, path, options).canRead;
+}
+
 export function normalizeWorkspacePath(path: string): string {
   return path
     .trim()
@@ -148,4 +252,29 @@ function denyAllPathOperations(): LightExtensionWorkspacePathAccess {
     canRename: false,
     canWrite: false,
   };
+}
+
+function denyAuthoringAccess(
+  reason: NonNullable<LightExtensionWorkspaceAuthoringPathAccess['reason']>,
+): LightExtensionWorkspaceAuthoringPathAccess {
+  return {
+    canRead: false,
+    canCreate: false,
+    canUpdate: false,
+    canPatch: false,
+    canDelete: false,
+    reason,
+  };
+}
+
+function isSafeAuthoringWorkspacePath(path: string): boolean {
+  const trimmedPath = path.trim();
+  if (!trimmedPath || trimmedPath.includes('\0') || /^(?:[a-zA-Z]:[\\/]|[\\/])/.test(trimmedPath)) {
+    return false;
+  }
+
+  return !trimmedPath
+    .replace(/\\/g, '/')
+    .split('/')
+    .some((segment) => segment === '.' || segment === '..');
 }
