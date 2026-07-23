@@ -285,11 +285,7 @@ describe('nb light pull/check/save', () => {
     await runPull(workspace, 'commit_base');
     await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default 2;\n', 'utf8');
     await runAcceptedCheck(workspace);
-    const baselinePath = join(
-      workspace,
-      ...LIGHT_EXTENSION_BASELINE_PATH.split('/'),
-      'src/client/demo/index.tsx',
-    );
+    const baselinePath = join(workspace, ...LIGHT_EXTENSION_BASELINE_PATH.split('/'), 'src/client/demo/index.tsx');
     const baselineBefore = await readFile(baselinePath, 'utf8');
     fakeHandlers['/api/lightExtensionFiles:saveSource'] = () => ({
       status: 409,
@@ -350,32 +346,29 @@ describe('nb light pull/check/save', () => {
     expect(requests.some((request) => request.path.endsWith('saveSource'))).toBe(false);
   });
 
-  test.each(['src/client/js-portals/demo/index.ts', 'src/client/demo/index.tsx'])(
-    'rejects unsupported pulled source %s before writing the workspace',
-    async (path) => {
-      const workspace = await createTempWorkspace();
-      fakeHandlers['/api/lightExtensionEntries:get'] = () => ({ body: entryEnvelope() });
-      fakeHandlers['/api/lightExtensionFiles:pull'] = () => ({
-        body: pullEnvelope(null, [
-          {
-            path,
-            content: 'export default 1;\n',
-            encoding: 'utf8',
-            language: 'typescript',
-            mode: '100644',
-            blobHash: 'source',
-            size: 18,
-          },
-        ]),
-      });
-      const command = createCommandHarness({
-        ...commandFlags(workspace),
-        repo: 'ler_demo',
-        entry: 'lee_demo',
-      });
-      await expect(LightPull.prototype.run.call(command as never)).rejects.toMatchObject({ exitCode: 1 });
-    },
-  );
+  test('rejects an unexpected base64 pull response before writing the workspace', async () => {
+    const workspace = await createTempWorkspace();
+    fakeHandlers['/api/lightExtensionEntries:get'] = () => ({ body: entryEnvelope() });
+    fakeHandlers['/api/lightExtensionFiles:pull'] = () => ({
+      body: pullEnvelope(null, [
+        {
+          path: 'src/client/demo/index.tsx',
+          content: Buffer.from('export default 1;\n').toString('base64'),
+          encoding: 'base64',
+          language: 'typescript',
+          mode: '100644',
+          blobHash: 'source',
+          size: 18,
+        },
+      ]),
+    });
+    const command = createCommandHarness({
+      ...commandFlags(workspace),
+      repo: 'ler_demo',
+      entry: 'lee_demo',
+    });
+    await expect(LightPull.prototype.run.call(command as never)).rejects.toMatchObject({ exitCode: 1 });
+  });
 
   test('rejects local NUL content before calling the check endpoint', async () => {
     const workspace = await createTempWorkspace();

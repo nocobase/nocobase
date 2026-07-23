@@ -9,12 +9,9 @@
 
 import JSZip from 'jszip';
 
-import type { LightExtensionFileEncoding } from '../../shared/types';
-
 export interface LightExtensionWorkspaceArchiveFile {
   path: string;
   content: string;
-  encoding?: LightExtensionFileEncoding;
 }
 
 export async function createLightExtensionWorkspaceArchive(
@@ -23,9 +20,7 @@ export async function createLightExtensionWorkspaceArchive(
   const zip = new JSZip();
   [...files]
     .sort((left, right) => left.path.localeCompare(right.path))
-    .forEach((file) =>
-      zip.file(file.path, file.content, file.encoding === 'base64' ? { base64: true, binary: true } : undefined),
-    );
+    .forEach((file) => zip.file(file.path, file.content));
 
   return zip.generateAsync({
     type: 'blob',

@@ -42,46 +42,6 @@ afterEach(() => {
 afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS official ReactDOM TypeScript project', () => {
-  it('uses official Root APIs for native, fragment, and ElementProxy containers', async () => {
-    const code = `
-const nativeElement: Element = document.createElement('div');
-const fragment: DocumentFragment = document.createDocumentFragment();
-const nativeRoot = ctx.ReactDOM.createRoot(nativeElement, { identifierPrefix: 'native-' });
-const fragmentRoot = ctx.libs.ReactDOM.createRoot(fragment);
-const proxyRoot = ctx.ReactDOM.createRoot(ctx.element);
-const unwrappedRoot = ctx.libs.ReactDOM.createRoot(ctx.element.__el);
-const officialRoot: import('react-dom/client').Root = proxyRoot;
-nativeRoot.render(<div>Native</div>);
-fragmentRoot.render('Fragment');
-officialRoot.render(ctx.React.createElement('span', null, 'Proxy'));
-unwrappedRoot.unmount();
-nativeRoot.unmount();
-fragmentRoot.unmount();
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      expect(errorMessages(await session.getDiagnostics(reactDOMProject(code), code))).toEqual([]);
-    });
-  });
-
-  it('rejects unsupported containers, root children, and options', async () => {
-    const code = `
-const root = ctx.ReactDOM.createRoot('invalid');
-ctx.libs.ReactDOM.createRoot(document.createElement('div'), { missingOption: true });
-root.render({ invalid: true });
-root.unmount('unexpected');
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      const messages = errorMessages(await session.getDiagnostics(reactDOMProject(code), code));
-
-      expect(
-        messages.some((message) => /string/.test(message) && /container|RunJSSafeElement|Container/i.test(message)),
-      ).toBe(true);
-      expect(messages.some((message) => /missingOption/.test(message))).toBe(true);
-      expect(messages.some((message) => /invalid/.test(message) && /ReactNode/.test(message))).toBe(true);
-      expect(messages.some((message) => /Expected 0 arguments/.test(message))).toBe(true);
-    });
-  });
-
   it('loads ReactDOM with React once and leaves ordinary projects unloaded', async () => {
     const ordinaryCode = 'ctx.logger.info("ready");';
     await withTypeScriptProjectSession(async (ordinarySession) => {

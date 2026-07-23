@@ -23,8 +23,6 @@ export type AppPortalAppItem = {
   status?: AppPortalAppStatus;
 };
 
-export type AppPortalFrontend = { type: 'layout'; layoutUid: string } | { type: 'client-app'; entryId: string };
-
 export type AppPortalItem = {
   uid?: string | null;
   appName: string;
@@ -32,7 +30,6 @@ export type AppPortalItem = {
   icon?: string | null;
   routePath: string;
   layout?: string | null;
-  frontend?: AppPortalFrontend;
   defaultPortal?: boolean;
 };
 
@@ -47,7 +44,6 @@ const DEFAULT_PORTALS: Array<Omit<AppPortalItem, 'appName'>> = [
     icon: 'DesktopOutlined',
     routePath: '/admin',
     layout: 'desktop',
-    frontend: { type: 'layout', layoutUid: 'desktop' },
     defaultPortal: true,
   },
   {
@@ -56,38 +52,9 @@ const DEFAULT_PORTALS: Array<Omit<AppPortalItem, 'appName'>> = [
     icon: 'MobileOutlined',
     routePath: '/mobile',
     layout: 'mobile',
-    frontend: { type: 'layout', layoutUid: 'mobile' },
     defaultPortal: true,
   },
 ];
-
-function normalizeManifestIdentifier(value: unknown) {
-  if (typeof value !== 'string') {
-    return;
-  }
-  const normalized = value.trim();
-  return normalized || undefined;
-}
-
-export function normalizeAppPortalFrontend(
-  portal: Pick<AppPortalItem, 'frontend' | 'layout'>,
-): AppPortalFrontend | undefined {
-  const frontend = portal.frontend;
-  if (frontend?.type === 'layout') {
-    const layoutUid = normalizeManifestIdentifier(frontend.layoutUid);
-    return layoutUid ? { type: 'layout', layoutUid } : undefined;
-  }
-  if (frontend?.type === 'client-app') {
-    const entryId = normalizeManifestIdentifier(frontend.entryId);
-    return entryId ? { type: 'client-app', entryId } : undefined;
-  }
-  if (frontend !== undefined) {
-    return;
-  }
-
-  const layoutUid = normalizeManifestIdentifier(portal.layout);
-  return layoutUid ? { type: 'layout', layoutUid } : undefined;
-}
 
 function getCname(cname?: string | null) {
   const trimmed = cname?.trim();
@@ -166,19 +133,14 @@ function addStoredPortals(
     if (!portal || typeof portal.routePath !== 'string' || !portal.routePath) {
       continue;
     }
-    const frontend = normalizeAppPortalFrontend(portal);
-    const item: AppPortalItem = {
+    addPortal(portals, {
       uid: typeof portal.uid === 'string' ? portal.uid : null,
       appName,
       title: typeof portal.title === 'string' ? portal.title : null,
       icon: typeof portal.icon === 'string' ? portal.icon : null,
       routePath: portal.routePath,
-      layout: frontend?.type === 'layout' ? frontend.layoutUid : null,
-    };
-    if (frontend) {
-      item.frontend = frontend;
-    }
-    addPortal(portals, item);
+      layout: typeof portal.layout === 'string' ? portal.layout : null,
+    });
   }
 }
 

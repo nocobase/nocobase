@@ -43,31 +43,86 @@ export const runJSTypeScriptFinalDiagnosticMatrix: readonly RunJSTypeScriptFinal
     id: 'react-valid-hooks-and-jsx',
     path: 'src/main.tsx',
     source: `
+type Props = { label: string; children?: React.ReactNode };
+const Component: React.FC<Props> = ({ label, children }) => <section>{label}{children}</section>;
 const [count, setCount] = ctx.React.useState(0);
 ctx.React.useEffect(() => () => ctx.logger.info('cleanup'), []);
-ctx.render(<button onClick={() => setCount((value) => value + 1)}>{count}</button>);
+const memo = ctx.libs.React.useMemo(() => count + 1, [count]);
+const callback = ctx.libs.React.useCallback((value: number) => value + count, [count]);
+const ref = ctx.libs.React.useRef<HTMLButtonElement>(null);
+const props: React.ComponentProps<typeof Component> = { label: 'Ready' };
+const style: React.CSSProperties = { color: 'red', paddingBlock: 4 };
+ctx.render(
+  <Component {...props}>
+    <button
+      ref={ref}
+      style={style}
+      onClick={(event) => {
+        event.preventDefault();
+        setCount(callback(event.detail));
+      }}
+    >
+      {memo}
+    </button>
+  </Component>,
+);
 `,
     expectedDiagnostics: [],
   },
   {
-    id: 'react-invalid-hook-argument',
+    id: 'react-invalid-hooks-generics-and-jsx',
     path: 'src/main.tsx',
-    source: `ctx.React.useState<number>('wrong');`,
-    expectedDiagnostics: [{ tsCode: 2345, messageIncludes: ['string', 'number'] }],
+    source: `
+const Component: React.FC<{ required: string }> = ({ required }) => <div>{required}</div>;
+ctx.React.useState<number>('wrong');
+ctx.React.useEffect(() => 42, []);
+ctx.libs.React.useMemo<number>(() => 'wrong', []);
+ctx.render(<Component unexpected={1} />);
+`,
+    expectedDiagnostics: [
+      { tsCode: 2345, messageIncludes: ['string', 'number'] },
+      { tsCode: 2322, messageIncludes: ['number', 'void', 'Destructor'] },
+      { tsCode: 2322, messageIncludes: ['string', 'number'] },
+      { tsCode: 2322, messageIncludes: ['unexpected'] },
+    ],
   },
   {
-    id: 'react-dom-valid-overlay',
+    id: 'react-dom-valid-root-apis-and-overlay',
     modelUse: 'JSBlockModel',
     path: 'src/main.tsx',
-    source: `const root = ctx.ReactDOM.createRoot(ctx.element); root.render(<div>Ready</div>); root.unmount();`,
+    source: `
+const nativeElement: Element = document.createElement('div');
+const fragment: DocumentFragment = document.createDocumentFragment();
+const nativeRoot = ctx.ReactDOM.createRoot(nativeElement, { identifierPrefix: 'native-' });
+const fragmentRoot = ctx.libs.ReactDOM.createRoot(fragment);
+const proxyRoot = ctx.ReactDOM.createRoot(ctx.element);
+const unwrappedRoot = ctx.libs.ReactDOM.createRoot(ctx.element.__el);
+const officialRoot: import('react-dom/client').Root = proxyRoot;
+nativeRoot.render(<div>Native</div>);
+fragmentRoot.render('Fragment');
+officialRoot.render(ctx.React.createElement('span', null, 'Proxy'));
+unwrappedRoot.unmount();
+nativeRoot.unmount();
+fragmentRoot.unmount();
+`,
     expectedDiagnostics: [],
   },
   {
-    id: 'react-dom-invalid-container',
+    id: 'react-dom-invalid-containers-children-options-and-root-api',
     modelUse: 'JSBlockModel',
     path: 'src/main.tsx',
-    source: `ctx.ReactDOM.createRoot('invalid');`,
-    expectedDiagnostics: [{ tsCode: 2345, messageIncludes: ['string', 'Container'] }],
+    source: `
+const root = ctx.ReactDOM.createRoot('invalid');
+ctx.libs.ReactDOM.createRoot(document.createElement('div'), { missingOption: true });
+root.render({ invalid: true });
+root.unmount('unexpected');
+`,
+    expectedDiagnostics: [
+      { tsCode: 2345, messageIncludes: ['string', 'Container'] },
+      { tsCode: 2345, messageIncludes: ['missingOption', 'RootOptions'] },
+      { tsCode: 2345, messageIncludes: ['invalid', 'ReactNode'] },
+      { tsCode: 2554, messageIncludes: ['Expected 0 arguments'] },
+    ],
   },
   {
     id: 'dayjs-valid',

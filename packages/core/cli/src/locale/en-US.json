@@ -158,7 +158,6 @@
         "unsupportedEntryKind": "The local Light Extension workflow only supports JS Block and JS Page entries; received \"{{kind}}\". Use the raw API command for other kinds.",
         "pullFilesMissing": "Pull response must include the complete files array.",
         "invalidWorkspacePath": "Invalid workspace path: {{path}}",
-        "portalUnsupported": "JS Portal source is not supported by this local workflow: {{path}}.",
         "nonUtf8Unsupported": "Binary or non-UTF-8 files are not supported by the first local Agent workflow: {{path}}.",
         "controlBytesUnsupported": "Binary files and source containing NUL/control bytes are not supported by the first local Agent workflow: {{path}}.",
         "symlinkUnsupported": "Symbolic links are not supported in a Light Extension workspace: {{path}}",

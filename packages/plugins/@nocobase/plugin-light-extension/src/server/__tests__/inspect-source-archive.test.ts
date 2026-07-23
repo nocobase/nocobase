@@ -38,9 +38,6 @@ describe('lightExtensionRepos:inspectSourceArchive', () => {
     zip.file('workspace/src/shared/value.ts', 'export const value = 1;\n');
     zip.file('workspace/src/client/js-pages/orders/entry.json', '{"schemaVersion":1,"key":"orders"}\n');
     zip.file('workspace/src/client/js-pages/orders/index.tsx', 'ctx.render(ctx.page.uid);\n');
-    zip.file('workspace/src/client/js-portals/customer/entry.json', '{"schemaVersion":1,"key":"customer"}\n');
-    zip.file('workspace/src/client/js-portals/customer/index.html', '<div>Customer</div>\n');
-    zip.file('workspace/src/client/js-portals/customer/logo.bin', Buffer.from([0, 255, 1]));
     const ctx = createActionContext({
       repoId: 'ler_inspect',
       zipBase64: await zip.generateAsync({ type: 'base64' }),
@@ -70,12 +67,6 @@ describe('lightExtensionRepos:inspectSourceArchive', () => {
           content: 'ctx.render(ctx.page.uid);\n',
           language: 'typescript',
         }),
-        expect.objectContaining({
-          path: 'src/client/js-portals/customer/logo.bin',
-          content: 'AP8B',
-          encoding: 'base64',
-          size: 3,
-        }),
       ]),
     });
     expect(getRepo).toHaveBeenCalledWith('ler_inspect', expect.objectContaining({ actorUserId: null }));
@@ -84,7 +75,7 @@ describe('lightExtensionRepos:inspectSourceArchive', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects NUL bytes outside the JS Portal subtree', async () => {
+  it('rejects NUL bytes in source files', async () => {
     const repoService = {
       getRepo: vi.fn(async () => ({ id: 'ler_inspect', lifecycleStatus: 'enabled' })),
       getValidator: vi.fn(() => new LightExtensionValidator()),

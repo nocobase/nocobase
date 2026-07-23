@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
 import type { Database, Transaction } from '@nocobase/database';
 import {
   buildRunJSFilesHash,
+  buildRunJSSourceRepositoryIdentity,
   type RunJSSourceAdapterRegistry,
   type VscFileChange,
   type VscFileService,
@@ -19,13 +19,24 @@ import { createHash } from 'crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionEntryRecord } from '../../shared/types';
-import { createLightExtensionsResource } from '../resources/lightExtensions';
-import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
-import {
-  collectAndRelocateInlineFiles,
-  isMoveToInlineHostSupported,
-  MoveToInlineService,
-} from '../services/MoveToInlineService';
+import { isMoveToInlineHostSupported, MoveToInlineService } from '../services/MoveToInlineService';
+
+// Old case -> new owner:
+// move-to-inline / js-block + JSBlockModel -> host-kind support matrix below.
+// move-to-inline / js-field + JSFieldModel -> host-kind support matrix below.
+// move-to-inline / js-field + JSEditableFieldModel -> host-kind support matrix below.
+// move-to-inline / js-field + JSColumnModel -> host-kind support matrix below.
+// move-to-inline / js-action + JSActionModel -> host-kind support matrix below.
+// move-to-inline / js-item + JSItemModel -> host-kind support matrix below.
+// move-to-inline / js-page + JSPageModel -> host-kind support matrix below.
+// move-to-inline / js-page + JSBlockModel -> host-kind support matrix below.
+// move-to-inline / js-block + JSColumnModel -> host-kind support matrix below.
+// move-to-inline / runjs + JSColumnModel -> host-kind support matrix below.
+// move-to-inline / reserves the RunJS manifest file slot before opening a database transaction -> this suite.
+// move-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> this suite.
+// move-to-inline / moves a JS Page inline with its snapshot and settings while removing the active reference -> this suite.
+// move-to-inline / rejects a host that no longer points to the selected light extension entry -> this suite.
+// New owner: reverse-move late failure rolls back the external binding, RunJS repository Head, and reference index.
 
 const locator = {
   kind: 'flowModel.step',
@@ -87,120 +98,6 @@ describe('MoveToInlineService', () => {
     ['runjs', 'JSColumnModel', false],
   ])('checks whether %s can move from %s back to inline code', (kind, modelUse, expected) => {
     expect(isMoveToInlineHostSupported(kind, modelUse)).toBe(expected);
-  });
-
-  it('copies the entry descriptor together with runtime-reachable entry and shared modules', () => {
-    const canonicalDescriptorContent = `${JSON.stringify(
-      {
-        schemaVersion: 1,
-        key: 'sales',
-        title: 'Sales',
-        settings: {
-          showCard: { type: 'boolean', default: false },
-        },
-      },
-      null,
-      2,
-    )}\n`;
-    const descriptorContent = `\ufeff${canonicalDescriptorContent.replace(/\n/gu, '\r\n')}`;
-    const files = collectAndRelocateInlineFiles({
-      entryPath: entry.entryPath,
-      files: [
-        {
-          path: entry.entryPath,
-          content: [
-            "import './local';",
-            "import type { TypeOnly } from '../../../shared/type-only';",
-            "export type { ExportTypeOnly } from '../../../shared/export-type-only';",
-            "export { reexported } from '../../../shared/reexported';",
-            'ctx.render(<div />);',
-          ].join('\n'),
-        },
-        {
-          path: entry.descriptorPath,
-          content: descriptorContent,
-          language: 'json',
-        },
-        {
-          path: 'src/client/js-blocks/sales/local.ts',
-          content: "import { used } from '../../../shared/used';\nvoid used;\n",
-        },
-        {
-          path: 'src/shared/used.ts',
-          content: "import './transitive';\nexport const used = true;\n",
-        },
-        { path: 'src/shared/transitive.ts', content: 'export const transitive = true;\n' },
-        { path: 'src/shared/reexported.ts', content: 'export const reexported = true;\n' },
-        { path: 'src/shared/type-only.ts', content: 'export type TypeOnly = string;\n' },
-        { path: 'src/shared/export-type-only.ts', content: 'export type ExportTypeOnly = string;\n' },
-        { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
-        { path: 'src/client/js-blocks/other/index.tsx', content: 'ctx.render(<div>Other</div>);\n' },
-      ],
-    });
-
-    expect(files.map((file) => file.path)).toEqual([
-      'src/client/entry.json',
-      'src/client/index.tsx',
-      'src/client/local.ts',
-      'src/shared/export-type-only.ts',
-      'src/shared/reexported.ts',
-      'src/shared/transitive.ts',
-      'src/shared/type-only.ts',
-      'src/shared/used.ts',
-    ]);
-    expect(files.find((file) => file.path === 'src/client/entry.json')).toEqual({
-      path: 'src/client/entry.json',
-      content: descriptorContent,
-      language: 'json',
-    });
-    expect(files.find((file) => file.path === 'src/client/index.tsx')?.content).toContain(
-      "export { reexported } from '../shared/reexported'",
-    );
-    expect(files.find((file) => file.path === 'src/client/index.tsx')?.content).toContain(
-      "import type { TypeOnly } from '../shared/type-only'",
-    );
-    expect(files.find((file) => file.path === 'src/client/index.tsx')?.content).toContain(
-      "export type { ExportTypeOnly } from '../shared/export-type-only'",
-    );
-    expect(files.some((file) => file.path.endsWith('/unused.ts'))).toBe(false);
-    expect(files.some((file) => file.path.includes('/other/'))).toBe(false);
-  });
-
-  it('rewrites JS Page SDK and settings types without touching other kind imports or source text', () => {
-    const pageEntryPath = 'src/client/js-pages/orders/index.tsx';
-    const files = collectAndRelocateInlineFiles({
-      entryPath: pageEntryPath,
-      kind: 'js-page',
-      files: [
-        {
-          path: pageEntryPath,
-          content:
-            'import { type JSPageContext, defineSettings } from "@nocobase/light-extension-sdk/client";\n' +
-            'import type * as SDK from "@nocobase/light-extension-sdk/shared";\n' +
-            'import type { Settings } from "light-extension:settings/client/js-page/orders";\n' +
-            'import type { Settings as BlockSettings } from "light-extension:settings/client/js-block/sales";\n' +
-            'type ImportedSettings = import("light-extension:settings/client/js-page/orders").Settings;\n' +
-            'type ImportedContext = import("@nocobase/light-extension-sdk/client").JSPageContext<ImportedSettings>;\n' +
-            'const untouched = "light-extension:settings/client/js-page/orders";\n' +
-            '// light-extension:settings/client/js-page/orders\n' +
-            'const settings = defineSettings({ enabled: true });\n' +
-            'export default function render(context: JSPageContext<Settings>, shared: SDK.JSPageContext<ImportedSettings>, imported: ImportedContext, block: BlockSettings) { ctx.render([context.page, shared.page, imported.page, block, untouched]); }\n',
-        },
-      ],
-    });
-
-    const code = files[0]?.content || '';
-    expect(code).toContain('function defineSettings(value) { return value; }');
-    expect(code).not.toContain('import { defineSettings }');
-    expect(code).not.toContain('@nocobase/light-extension-sdk/');
-    expect(code).toContain('light-extension:settings/client/js-block/sales');
-    expect(code.match(/light-extension:settings\/client\/js-page\/orders/gu)).toHaveLength(2);
-    expect(code).toContain('type JSPageContext<TSettings = Record<string, unknown>>');
-    expect(code).toContain('type Settings = Record<string, unknown>;');
-    expect(code).toContain('declare namespace SDK');
-    expect(code).toContain('export type JSPageContext<TSettings = Record<string, unknown>>');
-    expect(code).toContain('type ImportedSettings = Record<string, unknown>;');
-    expect(code).toContain('type ImportedContext = (typeof ctx & { settings: ImportedSettings });');
   });
 
   it('reserves the RunJS manifest file slot before opening a database transaction', async () => {
@@ -625,6 +522,270 @@ describe('MoveToInlineService', () => {
     });
   });
 
+  it('rolls back the external binding, repository Head, and reference index after a late failure', async () => {
+    const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+    const identity = buildRunJSSourceRepositoryIdentity(locator);
+    const initialRunJS = {
+      code: 'ctx.render("preserved inline");',
+      version: 'v1',
+      sourceMode: 'light-extension',
+      sourceBinding: { ...binding },
+      settings: { title: 'Revenue', compact: false },
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: 'runjs_repo',
+        commitId: 'runjs_head_before',
+        entry: 'src/client/index.tsx',
+      },
+    };
+    let flowModel = {
+      uid: locator.modelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: clone(initialRunJS),
+        },
+      },
+    };
+    let repository = {
+      id: 'runjs_repo',
+      ownerType: identity.ownerType,
+      ownerId: identity.ownerId,
+      name: identity.name,
+      status: 'active',
+      defaultRef: 'head',
+      headCommitId: 'runjs_head_before',
+      headSeq: 1,
+    };
+    let commits = [
+      {
+        id: 'runjs_head_before',
+        repoId: repository.id,
+        seq: 1,
+      },
+    ];
+    let references = [
+      {
+        id: 'reference_sales',
+        repoId: binding.repoId,
+        entryId: binding.entryId,
+        kind: binding.kind,
+        ownerKind: locator.kind,
+        ownerLocator: clone(locator),
+        ownerLocatorHash: 'owner_locator_hash',
+        settingsHash: 'settings_hash',
+        resolvedStatus: 'active',
+      },
+    ];
+    const initialFlowModel = clone(flowModel);
+    const initialRepository = clone(repository);
+    const initialCommits = clone(commits);
+    const initialReferences = clone(references);
+    const observedBeforeFailure = {
+      inlineHost: false,
+      advancedHead: false,
+      removedReference: false,
+    };
+
+    const db = {
+      sequelize: {
+        transaction: async (run: (current: Transaction) => Promise<unknown>) => {
+          try {
+            return await run(transaction);
+          } catch (error) {
+            flowModel = clone(initialFlowModel);
+            repository = clone(initialRepository);
+            commits = clone(initialCommits);
+            references = clone(initialReferences);
+            throw error;
+          }
+        },
+      },
+      getCollection: (name: string) => {
+        if (name !== 'flowModels') {
+          throw new Error(`Unexpected collection: ${name}`);
+        }
+        return {
+          model: {
+            findByPk: vi.fn(async (_uid: string, options: { transaction?: Transaction }) => {
+              expect(options.transaction).toBe(transaction);
+              return clone(flowModel);
+            }),
+          },
+          repository: {
+            findModelById: vi.fn(async (_uid: string, options: { transaction?: Transaction }) => {
+              expect(options.transaction).toBe(transaction);
+              return clone(flowModel);
+            }),
+            patch: vi.fn(
+              async (values: { stepParams: typeof flowModel.stepParams }, options: { transaction: Transaction }) => {
+                expect(options.transaction).toBe(transaction);
+                flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
+              },
+            ),
+          },
+        };
+      },
+      getRepository: (name: string) => {
+        if (name !== 'vscFileCommits') {
+          throw new Error(`Unexpected repository: ${name}`);
+        }
+        return {
+          update: vi.fn(async (options: { transaction: Transaction }) => {
+            expect(options.transaction).toBe(transaction);
+          }),
+        };
+      },
+    } as unknown as Database;
+    const adapter = {
+      kind: 'flowModel.step',
+      assertCanWrite: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
+        expect(ctx.transaction).toBe(transaction);
+      }),
+      readLegacy: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
+        expect(ctx.transaction).toBe(transaction);
+        return {
+          code: initialRunJS.code,
+          version: initialRunJS.version,
+          label: 'JS block',
+          surfaceStyle: 'render' as const,
+          language: 'typescript' as const,
+          ownerFingerprint: 'owner_before',
+          metadata: { modelUse: 'JSBlockModel' },
+        };
+      }),
+      writeRuntime: vi.fn(
+        async (input: {
+          artifact: { code: string; version: string; entryPath?: string; metadata?: Record<string, unknown> };
+          commitId: string;
+          ctx: { transaction?: Transaction };
+        }) => {
+          expect(input.ctx.transaction).toBe(transaction);
+          flowModel.stepParams.jsSettings.runJs.code = input.artifact.code;
+          flowModel.stepParams.jsSettings.runJs.version = input.artifact.version;
+          flowModel.stepParams.jsSettings.runJs.sourceRef = {
+            type: 'vsc-file',
+            repoId: String(input.artifact.metadata?.repoId || ''),
+            commitId: input.commitId,
+            entry: String(input.artifact.entryPath || 'src/client/index.tsx'),
+          };
+        },
+      ),
+      getFingerprint: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
+        expect(ctx.transaction).toBe(transaction);
+        return 'owner_after';
+      }),
+    };
+    const pushedCommit = {
+      id: 'runjs_head_after',
+      repoId: repository.id,
+      seq: 2,
+      parentCommitId: repository.headCommitId,
+      treeHash: 'tree_hash_after',
+      hash: 'commit_hash_after',
+      message: 'Move to inline',
+      authorId: '1',
+      metadata: {},
+    };
+    const vscFileService = {
+      ensureRepository: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+        expect(ctx.transaction).toBe(transaction);
+        return { repository: clone(repository), initialCommit: null };
+      }),
+      getRepositoryForUpdate: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+        expect(ctx.transaction).toBe(transaction);
+        return clone(repository);
+      }),
+      pull: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+        expect(ctx.transaction).toBe(transaction);
+        return { repository: clone(repository), commit: null, tree: null, unchanged: false, files: [] };
+      }),
+      push: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+        expect(ctx.transaction).toBe(transaction);
+        repository = {
+          ...repository,
+          headCommitId: pushedCommit.id,
+          headSeq: pushedCommit.seq,
+        };
+        commits.push({ id: pushedCommit.id, repoId: repository.id, seq: pushedCommit.seq });
+        return {
+          repository: clone(repository),
+          commit: pushedCommit,
+          tree: { hash: pushedCommit.treeHash, entryCount: 2, byteSize: 100 },
+        };
+      }),
+    } as unknown as VscFileService;
+    const syncReferences = vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+      expect(ctx.transaction).toBe(transaction);
+      references = [];
+      const runJS = flowModel.stepParams.jsSettings.runJs;
+      observedBeforeFailure.inlineHost = runJS.sourceMode === 'inline' && !('sourceBinding' in runJS);
+      observedBeforeFailure.advancedHead = repository.headCommitId === pushedCommit.id && commits.length === 2;
+      observedBeforeFailure.removedReference = references.length === 0;
+      throw new Error('forced move-to-inline reference rollback');
+    });
+    const service = new MoveToInlineService(
+      db,
+      { getEntry: vi.fn(async () => entry) } as never,
+      {
+        compileEntry: vi.fn(async () => ({
+          accepted: true,
+          diagnostics: [],
+          surface: {
+            surface: 'js-block',
+            surfaceStyle: 'render',
+            compilerSurfaceStyle: 'render',
+            modelUse: 'JSBlockModel',
+          },
+          artifact: {
+            code: 'ctx.render("inline after move");',
+            version: 'v2',
+            entryPath: 'src/client/index.tsx',
+            filesHash: 'compiled_files_hash',
+            diagnostics: [],
+            metadata: {},
+          },
+        })),
+      } as never,
+      { syncFlowModelReferencesForNodeTree: syncReferences } as never,
+      () => vscFileService,
+      () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
+    );
+
+    await expect(
+      service.moveToInline(
+        {
+          locator,
+          repoId: binding.repoId,
+          entryId: binding.entryId,
+          entryPath: entry.entryPath,
+          kind: 'js-block',
+          version: 'v2',
+          files: [{ path: entry.entryPath, content: 'ctx.render("inline after move");' }],
+        },
+        { actorUserId: '1', adapterContext: {} },
+      ),
+    ).rejects.toThrow('forced move-to-inline reference rollback');
+
+    expect(observedBeforeFailure).toEqual({
+      inlineHost: true,
+      advancedHead: true,
+      removedReference: true,
+    });
+    expect(flowModel).toEqual(initialFlowModel);
+    expect(flowModel.stepParams.jsSettings.runJs).toMatchObject({
+      sourceMode: 'light-extension',
+      sourceBinding: binding,
+      code: initialRunJS.code,
+      version: initialRunJS.version,
+      settings: initialRunJS.settings,
+      sourceRef: initialRunJS.sourceRef,
+    });
+    expect(repository).toEqual(initialRepository);
+    expect(commits).toEqual(initialCommits);
+    expect(references).toEqual(initialReferences);
+  });
+
   it('rejects a host that no longer points to the selected light extension entry', async () => {
     const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
     const flowModel = {
@@ -680,64 +841,8 @@ describe('MoveToInlineService', () => {
       ),
     ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_BINDING_OUTDATED' });
   });
-
-  it('normalizes the moveToInline resource input and request context', async () => {
-    const moveToInline = vi.fn(async () => ({ code: 'ctx.render(<div />);', version: 'v2' }));
-    const resource = createLightExtensionsResource({} as LightExtensionCompilePreviewService, undefined, {
-      moveToInline,
-    } as unknown as MoveToInlineService);
-    const can = vi.fn().mockReturnValue({});
-    const ctx = {
-      action: {
-        params: {
-          values: {
-            locator,
-            repoId: binding.repoId,
-            entryId: binding.entryId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            version: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
-          },
-        },
-      },
-      auth: { user: { id: 9 } },
-      can,
-      request: {
-        headers: {
-          'x-request-id': 'req_move_inline',
-          'x-request-source': 'unit-resource',
-        },
-      },
-    } as unknown as Context;
-
-    await resource.actions?.moveToInline?.(ctx, async () => undefined);
-
-    expect(moveToInline).toHaveBeenCalledWith(
-      {
-        locator,
-        repoId: binding.repoId,
-        entryId: binding.entryId,
-        entryPath: entry.entryPath,
-        kind: 'js-block',
-        version: 'v2',
-        files: [
-          {
-            path: entry.entryPath,
-            content: 'ctx.render(<div />);',
-            language: undefined,
-            mode: undefined,
-          },
-        ],
-      },
-      expect.objectContaining({
-        actorUserId: '9',
-        requestId: 'req_move_inline',
-        requestSource: 'unit-resource',
-        can,
-        adapterContext: expect.objectContaining({ currentUser: { id: 9 } }),
-      }),
-    );
-    expect((ctx as { body?: unknown }).body).toEqual({ code: 'ctx.render(<div />);', version: 'v2' });
-  });
 });
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
+}

@@ -20,11 +20,6 @@ describe('lightExtensionWorkspaceArchive', () => {
       { path: 'src/shared/value.ts', content: 'export const value = 2;\n' },
       { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div>Draft</div>);\n' },
       { path: 'src/client/js-pages/orders/index.tsx', content: 'ctx.render(<div>{ctx.page.uid}</div>);\n' },
-      {
-        path: 'src/client/js-portals/customer/logo.png',
-        content: 'AAECA/8=',
-        encoding: 'base64',
-      },
     ]);
     const zip = await JSZip.loadAsync(await readBlobAsArrayBuffer(blob));
 
@@ -34,9 +29,6 @@ describe('lightExtensionWorkspaceArchive', () => {
     );
     await expect(zip.file('src/client/js-pages/orders/index.tsx')?.async('string')).resolves.toBe(
       'ctx.render(<div>{ctx.page.uid}</div>);\n',
-    );
-    await expect(zip.file('src/client/js-portals/customer/logo.png')?.async('uint8array')).resolves.toEqual(
-      new Uint8Array([0, 1, 2, 3, 255]),
     );
   });
 

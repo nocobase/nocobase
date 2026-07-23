@@ -9,8 +9,6 @@
 
 import { normalizeLightExtensionSettings, setLightExtensionTopLevelSetting } from '@nocobase/runjs/settings';
 import type { Context } from 'koa';
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
@@ -28,7 +26,6 @@ import {
   FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
   FLOW_SURFACES_TEST_PLUGINS,
 } from '../../../../plugin-flow-engine/src/server/__tests__/flow-surfaces.test-plugins';
-import { improveJSSkillAcceptanceMatrix } from './fixtures/improve-js-skill-acceptance-matrix';
 
 interface OpenedRunJSFile {
   path: string;
@@ -36,12 +33,21 @@ interface OpenedRunJSFile {
   language?: string;
 }
 
-const repositoryRoot = process.cwd();
-
-function resolveEvidenceFile(repository: 'nocobase' | 'skills', file: string) {
-  const root = repository === 'nocobase' ? repositoryRoot : path.resolve(repositoryRoot, '../skills');
-  return path.resolve(root, file);
-}
+// Deleted distributed matrix row -> executable owner:
+// authoritative row list -> deleted because enumerating scenario IDs does not execute behavior.
+// 01 -> the public Host/runJSSources integration below.
+// 02 -> the public Host/runJSSources integration below, plus existing flow-surfaces contract coverage.
+// 03 -> the public Host/runJSSources integration below, plus existing flow-surfaces idempotency coverage.
+// 04 -> save-source-runtime and move-source compile rollback coverage.
+// 05 -> RunJSStudioProvider stale-Head recovery coverage.
+// 06 -> JSPageSource and SettingsResolverService settings coverage.
+// 07 -> the public moveSource resource contract below, plus move-source and JSPageSource coverage.
+// 08 -> file-service, raw-resource-bypass, and move-source authorization/validation coverage.
+// 09 -> save-source-runtime entry identity and move-to-inline-service reverse migration coverage.
+// 10 -> flow-surfaces JS Page capability coverage.
+// 11 -> flow-surfaces bootstrap rollback and move-source transaction coverage.
+// 12 -> the external skills docs-consistency suite; it is no longer a Vitest repository-sibling precondition.
+// Per-row command/test-name string checks -> deleted because they do not execute the mapped behavior.
 
 describe('Improve JS skill acceptance contract', () => {
   it('keeps a complete JS Page workspace inline until explicit relocation', () => {
@@ -335,58 +341,4 @@ describe('Improve JS skill public Host and Workspace acceptance', () => {
     });
     expect(await app.db.getRepository('lightExtensionRepos').count()).toBe(0);
   }, 120000);
-});
-
-describe('Improve JS skill distributed acceptance matrix', () => {
-  it('defines exactly one authoritative row for each planned scenario', () => {
-    expect(improveJSSkillAcceptanceMatrix.map((scenario) => scenario.id)).toEqual([
-      '01',
-      '02',
-      '03',
-      '04',
-      '05',
-      '06',
-      '07',
-      '08',
-      '09',
-      '10',
-      '11',
-      '12',
-    ]);
-  });
-
-  it.each(improveJSSkillAcceptanceMatrix)(
-    'scenario $id has repeatable evidence with stage, problem code, and recovery action',
-    (scenario) => {
-      expect(scenario.title).toBeTruthy();
-      expect(scenario.stage).toMatch(/^[a-z0-9-]+$/u);
-      expect(scenario.problemCode).toMatch(/^[A-Z0-9_]+$/u);
-      expect(scenario.recoveryAction).toBeTruthy();
-      expect(scenario.expectedResult).toBe('pass');
-      expect(scenario.evidence.length).toBeGreaterThan(0);
-
-      for (const evidence of scenario.evidence) {
-        const evidenceLane = evidence.lane || scenario.lane;
-        const evidenceFile = resolveEvidenceFile(evidence.repository, evidence.file);
-        expect(existsSync(evidenceFile), evidenceFile).toBe(true);
-        expect(readFileSync(evidenceFile, 'utf8')).toContain(evidence.testName);
-        if (evidence.repository === 'nocobase') {
-          expect(evidence.command).toContain(evidence.file);
-        } else {
-          expect(evidence.command).toContain('skills/nocobase-ui-builder');
-        }
-        if (evidenceLane === 'nocobase-server') {
-          expect(evidence.command).toContain('DB_DIALECT=postgres');
-        }
-        if (evidenceLane === 'client-v2') {
-          expect(evidence.command).toContain('yarn test');
-          expect(evidence.command).not.toContain('DB_DIALECT=postgres');
-        }
-        if (evidenceLane === 'nocobase-skills') {
-          expect(evidence.repository).toBe('skills');
-          expect(evidence.command).toContain('node --test');
-        }
-      }
-    },
-  );
 });

@@ -50,7 +50,6 @@ const compress = promisify(compression());
 
 export interface IncomingRequest {
   url: string;
-  method?: string;
   headers: any;
 }
 
@@ -63,11 +62,6 @@ type GatewayMiddleware = (ctx: GatewayRequestContext, next: () => Promise<void>)
 
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 export type AppSelectorMiddleware = (ctx: AppSelectorMiddlewareContext, next: () => Promise<void>) => void;
-export type GatewayRequestHandler = (
-  req: IncomingRequest,
-  res: ServerResponse,
-  app: Application,
-) => boolean | void | Promise<boolean | void>;
 
 interface StartHttpServerOptions {
   port: number;
@@ -879,13 +873,18 @@ export class Gateway extends EventEmitter {
     this.wsServer?.close();
   }
 
-  private static requestHandlers: GatewayRequestHandler[] = [];
+  private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
+    [];
 
-  static registerRequestHandler(handler: GatewayRequestHandler) {
+  static registerRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
     Gateway.requestHandlers.push(handler);
   }
 
-  static unregisterRequestHandler(handler: GatewayRequestHandler) {
+  static unregisterRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
     Gateway.requestHandlers = Gateway.requestHandlers.filter((h) => h !== handler);
   }
 

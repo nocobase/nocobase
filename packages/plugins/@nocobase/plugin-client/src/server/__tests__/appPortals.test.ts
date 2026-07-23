@@ -9,7 +9,7 @@
 
 import { AppSupervisor } from '@nocobase/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { listAppPortals, normalizeAppPortalFrontend } from '../appPortals';
+import { listAppPortals } from '../appPortals';
 
 describe('listAppPortals', () => {
   afterEach(() => {
@@ -54,70 +54,5 @@ describe('listAppPortals', () => {
         status: 'running',
       },
     ]);
-  });
-
-  it('normalizes legacy layout and the frozen frontend manifest union', async () => {
-    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
-      getAppSsoIssuer: () => undefined,
-      getAppsStatuses: vi.fn(async () => ({ main: 'running' })),
-      getAppManifests: vi.fn(async () => ({
-        main: [
-          {
-            uid: 'legacy-layout',
-            routePath: '/legacy-layout',
-            layout: 'desktop',
-          },
-          {
-            uid: 'modern-layout',
-            routePath: '/modern-layout',
-            layout: 'legacy-value',
-            frontend: { type: 'layout', layoutUid: 'mobile' },
-          },
-          {
-            uid: 'customer-app',
-            routePath: '/customer',
-            layout: 'legacy-value',
-            frontend: { type: 'client-app', entryId: 'customer-entry' },
-          },
-        ],
-      })),
-      listAppModels: vi.fn(async () => []),
-    } as unknown as AppSupervisor);
-
-    const result = await listAppPortals('main');
-
-    expect(result.portals).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          uid: '__default_admin__',
-          layout: 'desktop',
-          frontend: { type: 'layout', layoutUid: 'desktop' },
-        }),
-        expect.objectContaining({
-          uid: 'legacy-layout',
-          layout: 'desktop',
-          frontend: { type: 'layout', layoutUid: 'desktop' },
-        }),
-        expect.objectContaining({
-          uid: 'modern-layout',
-          layout: 'mobile',
-          frontend: { type: 'layout', layoutUid: 'mobile' },
-        }),
-        expect.objectContaining({
-          uid: 'customer-app',
-          layout: null,
-          frontend: { type: 'client-app', entryId: 'customer-entry' },
-        }),
-      ]),
-    );
-  });
-
-  it('does not reinterpret an invalid explicit frontend binding as a legacy layout', () => {
-    expect(
-      normalizeAppPortalFrontend({
-        layout: 'desktop',
-        frontend: { type: 'client-app', entryId: ' ' },
-      }),
-    ).toBeUndefined();
   });
 });

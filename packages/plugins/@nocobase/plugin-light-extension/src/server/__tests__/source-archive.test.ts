@@ -62,26 +62,17 @@ describe('plugin-light-extension source ZIP archive', () => {
     ]);
   });
 
-  it('allows JS Portal assets to exceed source file and repository budgets', async () => {
+  it('rejects non-UTF-8 source files', async () => {
     const zipBase64 = await createZipBase64({
-      'portal-source/src/client/js-portals/docs/entry.json': '{"schemaVersion":1,"key":"docs"}',
-      'portal-source/src/client/js-portals/docs/index.html': '<main>Docs</main>',
-      'portal-source/src/client/js-portals/docs/assets/app.js': 'x'.repeat(1024),
+      'src/shared/binary.bin': Buffer.from([0, 255, 1]),
     });
 
-    const files = await parseLightExtensionSourceArchive(
-      zipBase64,
-      new LightExtensionValidator({
-        limits: { maxFileBytes: 16, maxRepoBytes: 32, maxZipCompressionRatio: 100 },
-      }),
-    );
-
-    expect(files).toContainEqual(
-      expect.objectContaining({
-        path: 'src/client/js-portals/docs/assets/app.js',
-        size: 1024,
-      }),
-    );
+    await expect(parseLightExtensionSourceArchive(zipBase64, new LightExtensionValidator())).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_file_not_utf8' })]),
+      },
+    });
   });
 
   it('rejects path traversal and case-insensitive duplicate paths', async () => {
@@ -144,7 +135,7 @@ describe('plugin-light-extension source ZIP archive', () => {
   });
 });
 
-async function createZipBase64(files: Record<string, string>): Promise<string> {
+async function createZipBase64(files: Record<string, string | Buffer>): Promise<string> {
   const zip = new JSZip();
   for (const [path, content] of Object.entries(files)) {
     zip.file(path, content);

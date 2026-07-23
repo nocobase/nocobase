@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownloadOutlined, ImportOutlined, SaveOutlined } from '@ant-design/icons';
+import { ImportOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   createActiveEntryContextType,
   generateClientSettingsTypes,
@@ -47,7 +47,6 @@ import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-tem
 import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRuntimeArtifact,
-  LightExtensionFileEncoding,
   LightExtensionFileChange,
   LightExtensionRepoRecord,
   LightExtensionCommitRecord,
@@ -80,10 +79,7 @@ import {
 } from '../workspace/lightExtensionWorkspaceArchive';
 import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 
-interface WorkspaceFile extends RunJSWorkspaceFile {
-  encoding?: LightExtensionFileEncoding;
-  size?: number;
-}
+type WorkspaceFile = RunJSWorkspaceFile;
 
 interface LightExtensionWorkspacePageProps {
   browserProvisionalPreview?: boolean;
@@ -116,7 +112,6 @@ export interface LightExtensionWorkspaceFooterActions {
 }
 
 const LIGHT_EXTENSION_SOURCE_ROOT = 'src/client/js-blocks';
-const LIGHT_EXTENSION_PORTAL_ROOT = 'src/client/js-portals';
 const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
 const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'tsconfig.json'] as const;
 const LIGHT_EXTENSION_REPO_ROOT_FILES = new Set<string>(LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS);
@@ -283,24 +278,21 @@ function LightExtensionWorkspacePage({
   }, [loadWorkspace]);
 
   const activeFile = files.find((file) => file.path === activePath);
-  const textFiles = useMemo(() => files.filter((file) => !isBinaryWorkspaceFile(file)), [files]);
-  const sourceFiles = useMemo(() => textFiles.filter((file) => !isPortalWorkspacePath(file.path)), [textFiles]);
-  const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files: sourceFiles }), [sourceFiles]);
+  const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files }), [files]);
   const activeEntryContext = useMemo(
     () => createActiveEntryContextType({ activePath, entries: settingsTypegen.entries }),
     [activePath, settingsTypegen.entries],
   );
   const authoringFiles = useMemo(
-    () => addSettingsTypeFiles(textFiles, settingsTypegen.files, activeEntryContext.file),
-    [activeEntryContext.file, settingsTypegen.files, textFiles],
+    () => addSettingsTypeFiles(files, settingsTypegen.files, activeEntryContext.file),
+    [activeEntryContext.file, files, settingsTypegen.files],
   );
   const filesForSave = files;
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const diffRows = useMemo(
-    () =>
-      activeFile && isBinaryWorkspaceFile(activeFile) ? [] : buildLineDiff(baseFiles, filesForSave, activePath, false),
-    [activeFile, activePath, baseFiles, filesForSave],
+    () => buildLineDiff(baseFiles, filesForSave, activePath, false),
+    [activePath, baseFiles, filesForSave],
   );
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
   const canWrite = Boolean(repo && repo.lifecycleStatus !== 'archived');
@@ -308,13 +300,10 @@ function LightExtensionWorkspacePage({
     (change) => !canChangeLightExtensionWorkspacePath(workspaceScope, change.path),
   );
   const activeFileReadOnly =
-    !canWrite ||
-    !activePath ||
-    Boolean(activeFile && isBinaryWorkspaceFile(activeFile)) ||
-    !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
+    !canWrite || !activePath || !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
   const previewSnapshotKey = useMemo(
-    () => buildWorkspacePreviewSnapshot(sourceFiles, workspaceScope),
-    [sourceFiles, workspaceScope],
+    () => buildWorkspacePreviewSnapshot(files, workspaceScope),
+    [files, workspaceScope],
   );
   latestPreviewSnapshotRef.current = previewSnapshotKey;
   const canPreview = entryScoped && Boolean(onPreview);
@@ -334,7 +323,7 @@ function LightExtensionWorkspacePage({
   const browserPreviewEnabled = entryScoped && (browserProvisionalPreview ?? isBrowserProvisionalPreviewEnabled());
   const provisionalPreview = useBrowserProvisionalPreview({
     enabled: browserPreviewEnabled,
-    files: sourceFiles,
+    files,
     entry: browserPreviewEntry,
   });
   const visibleDiagnostics = useMemo(
@@ -830,7 +819,7 @@ function LightExtensionWorkspacePage({
         kind: workspaceScope.kind,
         entryPath: workspaceScope.entryPath,
         runtimeVersion: 'v2',
-        files: sourceFiles.map((file) => ({
+        files: files.map((file) => ({
           path: file.path,
           content: file.content,
           language: file.language,
@@ -855,17 +844,7 @@ function LightExtensionWorkspacePage({
     } finally {
       setPreviewing(false);
     }
-  }, [
-    canPreview,
-    compileWorkspacePreview,
-    entryId,
-    onPreview,
-    previewSnapshotKey,
-    repoId,
-    sourceFiles,
-    t,
-    workspaceScope,
-  ]);
+  }, [canPreview, compileWorkspacePreview, entryId, files, onPreview, previewSnapshotKey, repoId, t, workspaceScope]);
 
   const moveToInline = useCallback(async () => {
     if (!canMoveToInline || workspaceScope.mode !== 'entry' || !onMoveToInline) {
@@ -877,7 +856,7 @@ function LightExtensionWorkspacePage({
     try {
       await onMoveToInline({
         entryPath: workspaceScope.entryPath,
-        files: sourceFiles.map((file) => ({ ...file })),
+        files: files.map((file) => ({ ...file })),
         version: 'v2',
       });
     } catch (error) {
@@ -889,24 +868,7 @@ function LightExtensionWorkspacePage({
     } finally {
       setMovingToInline(false);
     }
-  }, [canMoveToInline, onMoveToInline, sourceFiles, t, workspaceScope]);
-
-  const downloadBinaryFile = useCallback(
-    (file: WorkspaceFile) => {
-      try {
-        const downloaded = downloadLightExtensionWorkspaceArchive(
-          new Blob([decodeBase64(file.content)], { type: 'application/octet-stream' }),
-          getBaseName(file.path),
-        );
-        if (!downloaded) {
-          throw new Error(t('Failed to download file'));
-        }
-      } catch (error) {
-        setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to download file') });
-      }
-    },
-    [t],
-  );
+  }, [canMoveToInline, files, onMoveToInline, t, workspaceScope]);
 
   const confirmMoveToInline = useCallback(() => {
     Modal.confirm({
@@ -1194,7 +1156,7 @@ function LightExtensionWorkspacePage({
                   ) : null}
                   {files.length > 0 ? (
                     <>
-                      {activeFileReadOnly && entryScoped && !isBinaryWorkspaceFile(activeFile) ? (
+                      {activeFileReadOnly && entryScoped ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
                       ) : null}
                       {provisionalPreview.enabled ? (
@@ -1214,53 +1176,49 @@ function LightExtensionWorkspacePage({
                           }
                         />
                       ) : null}
-                      {activeFile && isBinaryWorkspaceFile(activeFile) ? (
-                        <BinaryFileView file={activeFile} onDownload={downloadBinaryFile} t={t} />
-                      ) : (
-                        <CodeTab
-                          activeFile={activeFile}
-                          activePath={activePath}
-                          diffRows={diffRows}
-                          emptyDiffDescription={t('No changes between current editor and saved source')}
-                          filesCollapsed={filesCollapsed}
-                          fullscreenControl={{
-                            isFullscreen: workspaceFullscreen.isFullscreen,
-                            toggleFullscreen: workspaceFullscreen.toggleFullscreen,
-                          }}
-                          isDiff={isDiff}
-                          jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
-                          onChange={updateActiveFile}
-                          onCloseFile={closeOpenFile}
-                          onDiffToggle={() => setIsDiff((current) => !current)}
-                          onFilesCollapsedChange={setFilesCollapsed}
-                          onOpenFile={openFilePath}
-                          onRunPreview={canPreview ? runPreview : undefined}
-                          openPaths={openPaths}
-                          previewing={previewing}
-                          projectRevision={projectRevision}
-                          readOnly={activeFileReadOnly}
-                          runJSGlobalContextType={activeEntryContext.globalContextType}
-                          savedFiles={baseFiles}
-                          showRunButton={canPreview}
-                          t={studioT}
-                          toolbarActions={
-                            canMoveToInline ? (
-                              <Tooltip title={t('Move to inline code')}>
-                                <Button
-                                  aria-label={t('Move to inline code')}
-                                  disabled={isDiff}
-                                  icon={<ImportOutlined />}
-                                  loading={movingToInline}
-                                  onClick={confirmMoveToInline}
-                                  size="small"
-                                />
-                              </Tooltip>
-                            ) : null
-                          }
-                          version="v2"
-                          workspaceFiles={authoringFiles}
-                        />
-                      )}
+                      <CodeTab
+                        activeFile={activeFile}
+                        activePath={activePath}
+                        diffRows={diffRows}
+                        emptyDiffDescription={t('No changes between current editor and saved source')}
+                        filesCollapsed={filesCollapsed}
+                        fullscreenControl={{
+                          isFullscreen: workspaceFullscreen.isFullscreen,
+                          toggleFullscreen: workspaceFullscreen.toggleFullscreen,
+                        }}
+                        isDiff={isDiff}
+                        jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
+                        onChange={updateActiveFile}
+                        onCloseFile={closeOpenFile}
+                        onDiffToggle={() => setIsDiff((current) => !current)}
+                        onFilesCollapsedChange={setFilesCollapsed}
+                        onOpenFile={openFilePath}
+                        onRunPreview={canPreview ? runPreview : undefined}
+                        openPaths={openPaths}
+                        previewing={previewing}
+                        projectRevision={projectRevision}
+                        readOnly={activeFileReadOnly}
+                        runJSGlobalContextType={activeEntryContext.globalContextType}
+                        savedFiles={baseFiles}
+                        showRunButton={canPreview}
+                        t={studioT}
+                        toolbarActions={
+                          canMoveToInline ? (
+                            <Tooltip title={t('Move to inline code')}>
+                              <Button
+                                aria-label={t('Move to inline code')}
+                                disabled={isDiff}
+                                icon={<ImportOutlined />}
+                                loading={movingToInline}
+                                onClick={confirmMoveToInline}
+                                size="small"
+                              />
+                            </Tooltip>
+                          ) : null
+                        }
+                        version="v2"
+                        workspaceFiles={authoringFiles}
+                      />
                     </>
                   ) : null}
                 </main>
@@ -1372,7 +1330,6 @@ function getProvisionalPreviewStatusMessage(
 function normalizeWorkspaceFiles(files: LightExtensionTreeEntryInput[]): WorkspaceFile[] {
   return files
     .map((file) => ({
-      ...file,
       path: normalizeWorkspacePath(file.path),
       content: file.content || '',
       language: file.language || inferLightExtensionLanguageFromPath(file.path),
@@ -1585,18 +1542,12 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
 
   for (const file of files) {
     const baseFile = baseByPath.get(file.path);
-    if (!baseFile || baseFile.content !== file.content || baseFile.encoding !== file.encoding) {
+    if (!baseFile || baseFile.content !== file.content) {
       changes.push({
         path: file.path,
         content: file.content,
         language: file.language || inferLightExtensionLanguageFromPath(file.path),
         operation: 'upsert',
-        ...(isPortalWorkspacePath(file.path)
-          ? {
-              encoding: file.encoding || 'utf8',
-              ...(file.encoding === 'base64' && typeof file.size === 'number' ? { size: file.size } : {}),
-            }
-          : {}),
       });
     }
   }
@@ -1638,81 +1589,6 @@ function buildWorkspacePreviewSnapshot(files: WorkspaceFile[], workspaceScope: L
     workspaceScope,
     files: files.map((file) => [file.path, file.content, file.language || '', file.mode || '']),
   });
-}
-
-function BinaryFileView({
-  file,
-  onDownload,
-  t,
-}: {
-  file: WorkspaceFile;
-  onDownload: (file: WorkspaceFile) => void;
-  t: (key: string) => string;
-}) {
-  return (
-    <Flex
-      align="center"
-      data-testid="light-extension-binary-file"
-      gap={16}
-      justify="center"
-      style={{ flex: 1 }}
-      vertical
-    >
-      <Space direction="vertical" size={4} style={{ textAlign: 'center' }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          {getBaseName(file.path)}
-        </Typography.Title>
-        <Typography.Text code>{file.path}</Typography.Text>
-        <Typography.Text type="secondary">
-          {t('Binary file')} · {formatByteSize(file.size ?? getBase64ByteSize(file.content))}
-        </Typography.Text>
-      </Space>
-      <Alert message={t('Binary files are read-only in the code editor.')} showIcon type="info" />
-      <Button
-        aria-label={t('Download file')}
-        icon={<DownloadOutlined />}
-        onClick={() => onDownload(file)}
-        type="primary"
-      >
-        {t('Download file')}
-      </Button>
-    </Flex>
-  );
-}
-
-function isBinaryWorkspaceFile(file?: WorkspaceFile): boolean {
-  return file?.encoding === 'base64';
-}
-
-function isPortalWorkspacePath(path: string): boolean {
-  return path === LIGHT_EXTENSION_PORTAL_ROOT || path.startsWith(`${LIGHT_EXTENSION_PORTAL_ROOT}/`);
-}
-
-function decodeBase64(value: string): ArrayBuffer {
-  const decoded = window.atob(value);
-  return Uint8Array.from(decoded, (character) => character.charCodeAt(0)).buffer as ArrayBuffer;
-}
-
-function getBase64ByteSize(value: string): number {
-  const normalized = value.replace(/\s/g, '');
-  if (!normalized) {
-    return 0;
-  }
-  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
-  return Math.max(0, (normalized.length * 3) / 4 - padding);
-}
-
-function formatByteSize(value: number): string {
-  if (!Number.isFinite(value) || value < 0) {
-    return '-';
-  }
-  if (value < 1024) {
-    return `${value} B`;
-  }
-  if (value < 1024 * 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

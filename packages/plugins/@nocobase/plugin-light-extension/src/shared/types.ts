@@ -39,8 +39,6 @@ export type LightExtensionFileOperation = 'upsert' | 'delete';
 
 export type LightExtensionIncludeContentMode = 'none' | 'selected' | 'all';
 
-export type LightExtensionFileEncoding = 'utf8' | 'base64';
-
 export interface LightExtensionRepoRecord {
   id: string;
   name: string;
@@ -93,7 +91,6 @@ export interface LightExtensionDeleteRepoInput {
 export interface LightExtensionTreeEntryInput {
   path: string;
   content?: string;
-  encoding?: LightExtensionFileEncoding;
   blobHash?: string;
   size?: number;
   language?: string;
@@ -126,7 +123,6 @@ export interface LightExtensionPulledFile {
   language: string;
   mode: string;
   content?: string;
-  encoding?: LightExtensionFileEncoding;
 }
 
 export interface LightExtensionStoredTree {
