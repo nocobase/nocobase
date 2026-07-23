@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "task08",
+  "gateType": "conditional",
+  "decision": "No-Go",
+  "probe": "compile-worker-idle",
+  "measuredSha": "cccccccccccccccccccccccccccccccccccccccc",
+  "measuredTree": "dddddddddddddddddddddddddddddddddddddddd",
+  "measurementRefs": [
+    {
+      "summary": "measurements/compile-worker-idle/summary.json",
+      "rawSamples": "measurements/compile-worker-idle/raw-samples.json"
+    }
+  ],
+  "thresholds": { "retainedRssBytes": 67108864 },
+  "observed": { "retainedRssBytes": 1024 },
+  "generatedAt": "2026-07-21T00:00:00.000Z"
+}

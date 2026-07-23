@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "task09",
+  "gateType": "conditional",
+  "decision": "No-Go",
+  "probe": "source-refresh",
+  "measuredSha": "cccccccccccccccccccccccccccccccccccccccc",
+  "measuredTree": "dddddddddddddddddddddddddddddddddddddddd",
+  "measurementRefs": [
+    {
+      "summary": "measurements/source-refresh/summary.json",
+      "rawSamples": "measurements/source-refresh/raw-samples.json"
+    }
+  ],
+  "thresholds": { "p95Ms": 100 },
+  "observed": { "p95Ms": 10 },
+  "generatedAt": "2026-07-21T00:00:00.000Z"
+}

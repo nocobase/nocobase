@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "task12",
+  "gateType": "mandatory",
+  "decision": "Pass",
+  "probe": "adapter-tests",
+  "measuredSha": "cccccccccccccccccccccccccccccccccccccccc",
+  "measuredTree": "dddddddddddddddddddddddddddddddddddddddd",
+  "measurementRefs": [
+    {
+      "summary": "measurements/adapter-tests/summary.json",
+      "rawSamples": "measurements/adapter-tests/raw-samples.json"
+    }
+  ],
+  "thresholds": { "flowBootstraps": 6, "workflowBootstraps": 2 },
+  "observed": { "flowBootstraps": 6, "workflowBootstraps": 2 },
+  "generatedAt": "2026-07-21T00:00:00.000Z"
+}
