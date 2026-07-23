@@ -30,7 +30,6 @@ import { JSFormActionModel } from '../blocks/form/JSFormActionModel';
 import { JSBlockModel } from '../blocks/js-block/JSBlock';
 import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from '../blocks/js-block/JSBlockSourceModeField';
 import { JSColumnModel } from '../blocks/table/JSColumnModel';
-import { JSPageModel } from '../base/PageModel/JSPageModel';
 import { JSEditableFieldModel } from '../fields/JSEditableFieldModel';
 import {
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
@@ -386,7 +385,7 @@ describe('RunJS FlowModel surfaces', () => {
     expect(runJs).toMatchObject({
       sourceMode: 'light-extension',
       sourceBinding,
-      settings: { label: 'Default label' },
+      settings: {},
     });
     const defaultParams = sourceModeStep?.defaultParams;
     expect(defaultParams).toBeTypeOf('function');
@@ -395,7 +394,7 @@ describe('RunJS FlowModel surfaces', () => {
     expect(resolvedDefaultParams).toMatchObject({
       sourceMode: 'light-extension',
       sourceBinding,
-      settings: { label: 'Default label' },
+      settings: {},
     });
     const otherFlowKey = spec.flowKey === 'jsSettings' ? 'clickSettings' : 'jsSettings';
     expect(model.getStepParams(otherFlowKey, 'runJs')).toBeUndefined();
@@ -409,6 +408,11 @@ describe('RunJS FlowModel surfaces', () => {
     const labelStep = getStepByTitle(runtimeSteps, 'Label');
     expect(labelStep?.uiSchema?.value?.['x-component']).toBe(spec.settingsComponent);
     expect(labelStep?.persistParams).toBe(false);
+    expect(
+      typeof labelStep?.defaultParams === 'function'
+        ? labelStep.defaultParams(settingsContext)
+        : labelStep?.defaultParams,
+    ).toEqual({ value: 'Default label' });
     labelStep?.beforeParamsSave?.(settingsContext, { value: 'Saved label' });
     expect(model.getStepParams(spec.flowKey, 'runJs')).toMatchObject({
       settings: { label: 'Saved label' },

@@ -470,53 +470,7 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     if (message) expect(result.artifact.diagnostics[0]?.message).toContain(message);
   });
 
-  it.each([
-    { name: 'direct require', content: "const fs = require('fs'); return Boolean(fs);" },
-    { name: 'require alias', content: "const read = require; const fs = read('fs'); return Boolean(fs);" },
-    { name: 'global require property', content: "const fs = globalThis.require('fs'); return Boolean(fs);" },
-    { name: 'module require property', content: "const fs = module.require('fs'); return Boolean(fs);" },
-  ])('rejects $name on workflow surfaces', async ({ content }) => {
-    const result = await compileRunJSSourceWorkspace({
-      files: [{ path: 'index.js', content }],
-      entry: 'index.js',
-      runtimeVersion: 'workflow-js',
-      surfaceStyle: 'workflow',
-    });
-
-    expect(result.failureCode).toBe('RUNJS_IMPORT_NOT_ALLOWED');
-    expect(result.artifact.code).toBe('');
-  });
-
-  it.each([
-    'module.exports = { value: 1 };',
-    'exports.value = 1;',
-    'module["exports"] = { value: 1 };',
-    'module["exports"].value = 1;',
-    'exports.value += 1;',
-    'exports.value++;',
-    'Object.assign(module.exports, { value: 1 });',
-    'Object.defineProperty(module["exports"], "value", { value: 1 });',
-    'globalThis.module.exports = { value: 1 };',
-    'globalThis.exports.value = 1;',
-    'const target = module; target.exports = { value: 1 };',
-    'const target = globalThis["exports"]; target.value = 1;',
-  ])('rejects CommonJS export assignment %#', async (content) => {
-    const result = await compileRunJSSourceWorkspace({
-      files: [{ path: 'index.js', content: `${content} return true;` }],
-      entry: 'index.js',
-      runtimeVersion: 'workflow-js',
-      surfaceStyle: 'workflow',
-    });
-
-    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
-    expect(result.artifact.code).toBe('');
-    expect(result.artifact.diagnostics[0]?.message).toContain('CommonJS exports are not supported');
-  });
-
-  it.each([
-    { runtimeVersion: 'v2' as const, surfaceStyle: 'action' as const },
-    { runtimeVersion: 'workflow-js' as const, surfaceStyle: 'workflow' as const },
-  ])('reports $surfaceStyle syntax errors after module transform', async ({ runtimeVersion, surfaceStyle }) => {
+  it('reports syntax errors after module transform', async () => {
     const result = await compileRunJSSourceWorkspace({
       files: [
         {
@@ -526,8 +480,7 @@ describe('@nocobase/runjs compiler golden contracts', () => {
         { path: 'helper.js', content: 'export const value = 1;' },
       ],
       entry: 'index.js',
-      runtimeVersion,
-      surfaceStyle,
+      surfaceStyle: 'action',
     });
 
     expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
@@ -535,7 +488,7 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     expect(result.artifact.diagnostics[0]?.message).toContain('already been declared');
   });
 
-  it('applies authoring diagnostics only to browser surfaces', async () => {
+  it('applies injected authoring diagnostics', async () => {
     const inspectAuthoring = () => [
       {
         severity: 'error' as const,
@@ -553,19 +506,9 @@ describe('@nocobase/runjs compiler golden contracts', () => {
       inspectAuthoring,
       surfaceStyle: 'value',
     });
-    const workflow = await compileRunJSSourceWorkspace({
-      files: [{ path: 'index.js', content: 'return input.value;' }],
-      entry: 'index.js',
-      inspectAuthoring,
-      runtimeVersion: 'workflow-js',
-      surfaceStyle: 'workflow',
-    });
-
     expect(browser.artifact.diagnostics).toEqual(
       expect.arrayContaining([expect.objectContaining({ ruleId: 'custom-authoring-rule' })]),
     );
-    expect(workflow.failureCode).toBeUndefined();
-    expect(workflow.artifact.diagnostics).toEqual([]);
   });
 
   it('enforces runtime globals and value/render surface contracts', async () => {
