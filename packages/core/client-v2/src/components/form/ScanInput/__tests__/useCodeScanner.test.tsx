@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { useCallback } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_CODE_FORMATS, getCodeScanBoxSize, useCodeScanner } from '../useCodeScanner';
+import { DEFAULT_CODE_FORMATS, getCodeScanBoxSize, scanQrVideoFrame, useCodeScanner } from '../useCodeScanner';
 
 type MockScannerInstance = {
+  applyVideoConstraints: ReturnType<typeof vi.fn>;
   clear: ReturnType<typeof vi.fn>;
+  getRunningTrackCapabilities: ReturnType<typeof vi.fn>;
   getState: ReturnType<typeof vi.fn>;
   scanFileV2: ReturnType<typeof vi.fn>;
   start: ReturnType<typeof vi.fn>;
@@ -24,18 +26,24 @@ const mocks = vi.hoisted(() => {
   const start = vi.fn().mockResolvedValue(null);
   const stop = vi.fn().mockResolvedValue(null);
   const clear = vi.fn();
+  const applyVideoConstraints = vi.fn().mockResolvedValue(undefined);
+  const getRunningTrackCapabilities = vi.fn(() => ({}));
   const getState = vi.fn(() => 1);
   const scanFileV2 = vi.fn();
   const Html5Qrcode = vi.fn(function MockHtml5Qrcode(this: MockScannerInstance) {
     this.start = start;
     this.stop = stop;
     this.clear = clear;
+    this.applyVideoConstraints = applyVideoConstraints;
+    this.getRunningTrackCapabilities = getRunningTrackCapabilities;
     this.getState = getState;
     this.scanFileV2 = scanFileV2;
   });
 
   return {
+    applyVideoConstraints,
     clear,
+    getRunningTrackCapabilities,
     getState,
     Html5Qrcode,
     scanFileV2,
@@ -77,18 +85,15 @@ vi.mock('jsqr', () => jsQrMocks);
 function ScannerHost({
   onCameraStartFailure,
   onScanFailure,
-  scanBoxSize,
 }: {
   onCameraStartFailure?: (error: unknown) => void;
   onScanFailure?: () => void;
-  scanBoxSize?: { width: number; height: number };
 } = {}) {
   const handleScanSuccess = useCallback(() => undefined, []);
 
   useCodeScanner({
     elementId: 'scanner',
     enabled: true,
-    scanBoxSize,
     onCameraStartFailure,
     onScanFailure,
     onScanSuccess: handleScanSuccess,
@@ -159,6 +164,11 @@ function stubCanvas() {
 describe('useCodeScanner', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.applyVideoConstraints.mockResolvedValue(undefined);
+    mocks.getRunningTrackCapabilities.mockReturnValue({});
+    mocks.start.mockResolvedValue(null);
+    mocks.stop.mockResolvedValue(null);
+    mocks.getState.mockReturnValue(1);
     jsQrMocks.default.mockReturnValue(undefined);
   });
 
@@ -188,32 +198,73 @@ describe('useCodeScanner', () => {
       | { qrbox?: (width: number, height: number) => { width: number; height: number } }
       | undefined;
 
-    expect(config?.qrbox?.(390, 844)).toEqual({ width: 319, height: 240 });
-    expect(getCodeScanBoxSize(390, 844)).toEqual({ width: 319, height: 240 });
+    expect(config?.qrbox?.(1280, 720)).toEqual({ width: 1152, height: 504 });
+    expect(getCodeScanBoxSize(1280, 720)).toEqual({ width: 1152, height: 504 });
   });
 
-  it('can use the visible viewport scan box when the camera video is wider than the viewport', async () => {
-    render(<ScannerHost scanBoxSize={{ width: 319, height: 240 }} />);
+  it('uses optimized camera constraints without requiring a user-selected scan mode', async () => {
+    render(<ScannerHost />);
 
     await waitFor(() => expect(mocks.start).toHaveBeenCalled());
 
     const config = mocks.start.mock.calls[0]?.[1] as
-      | { qrbox?: (width: number, height: number) => { width: number; height: number } }
+      | {
+          disableFlip?: boolean;
+          fps?: number;
+          qrbox?: (width: number, height: number) => { width: number; height: number };
+          videoConstraints?: MediaTrackConstraints;
+        }
       | undefined;
 
-    expect(config?.qrbox?.(1200, 844)).toEqual({ width: 319, height: 240 });
+    expect(config?.qrbox?.(1280, 720)).toEqual({ width: 1152, height: 504 });
+    expect(config).toMatchObject({
+      disableFlip: false,
+      fps: 8,
+      videoConstraints: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 30 },
+      },
+    });
+    expect(mocks.Html5Qrcode).toHaveBeenCalledWith('scanner', {
+      formatsToSupport: DEFAULT_CODE_FORMATS,
+      verbose: false,
+    });
   });
 
-  it('clamps the scan box to the camera viewfinder size', async () => {
-    render(<ScannerHost scanBoxSize={{ width: 319, height: 240 }} />);
+  it('decodes a centered QR code from the raw camera frame fast path', () => {
+    jsQrMocks.default.mockReturnValueOnce({ data: 'FAST-QR' });
+    stubCanvas();
+    const video = document.createElement('video');
+    Object.defineProperties(video, {
+      clientHeight: { value: 720 },
+      clientWidth: { value: 1280 },
+      readyState: { value: HTMLMediaElement.HAVE_CURRENT_DATA },
+      videoHeight: { value: 1080 },
+      videoWidth: { value: 1920 },
+    });
+    const canvas = document.createElement('canvas');
 
-    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+    expect(scanQrVideoFrame(video, canvas)).toBe('FAST-QR');
 
-    const config = mocks.start.mock.calls[0]?.[1] as
-      | { qrbox?: (width: number, height: number) => { width: number; height: number } }
-      | undefined;
+    const context = canvas.getContext('2d');
+    expect(context?.drawImage).toHaveBeenCalledWith(video, 96, 162, 1728, 756, 0, 0, 960, 420);
+    expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 960, 420, {
+      inversionAttempts: 'dontInvert',
+    });
+  });
 
-    expect(config?.qrbox?.(200, 160)).toEqual({ width: 200, height: 160 });
+  it('enables continuous camera focus when the device supports it', async () => {
+    mocks.getRunningTrackCapabilities.mockReturnValue({ focusMode: ['manual', 'continuous'] });
+
+    render(<ScannerHost />);
+
+    await waitFor(() =>
+      expect(mocks.applyVideoConstraints).toHaveBeenCalledWith({
+        advanced: [{ focusMode: 'continuous' }],
+      }),
+    );
   });
 
   it('reports camera start failures through the dedicated handler', async () => {
@@ -225,6 +276,51 @@ describe('useCodeScanner', () => {
     render(<ScannerHost onCameraStartFailure={handleCameraStartFailure} onScanFailure={handleScanFailure} />);
 
     await waitFor(() => expect(handleCameraStartFailure).toHaveBeenCalledWith(cameraStartError));
+    expect(handleScanFailure).not.toHaveBeenCalled();
+  });
+
+  it('stops a camera that finishes starting after the scanner unmounts', async () => {
+    let resolveStart: ((value: null) => void) | undefined;
+    mocks.start.mockReturnValueOnce(
+      new Promise<null>((resolve) => {
+        resolveStart = resolve;
+      }),
+    );
+    mocks.getState.mockReturnValueOnce(1).mockReturnValue(2);
+
+    const { unmount } = render(<ScannerHost />);
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    unmount();
+    await act(async () => {
+      resolveStart?.(null);
+    });
+
+    await waitFor(() => expect(mocks.stop).toHaveBeenCalledTimes(1));
+    expect(mocks.clear).toHaveBeenCalled();
+  });
+
+  it('ignores a camera start failure after the scanner unmounts', async () => {
+    let rejectStart: ((error: Error) => void) | undefined;
+    mocks.start.mockReturnValueOnce(
+      new Promise<null>((_resolve, reject) => {
+        rejectStart = reject;
+      }),
+    );
+    const handleCameraStartFailure = vi.fn();
+    const handleScanFailure = vi.fn();
+
+    const { unmount } = render(
+      <ScannerHost onCameraStartFailure={handleCameraStartFailure} onScanFailure={handleScanFailure} />,
+    );
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    unmount();
+    await act(async () => {
+      rejectStart?.(new Error('Camera start canceled'));
+    });
+
+    expect(handleCameraStartFailure).not.toHaveBeenCalled();
     expect(handleScanFailure).not.toHaveBeenCalled();
   });
 
