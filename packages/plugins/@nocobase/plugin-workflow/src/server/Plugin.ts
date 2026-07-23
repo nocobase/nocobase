@@ -820,6 +820,17 @@ export default class PluginWorkflowServer extends Plugin {
       const providers = Array.from(this.taskStatsProviders.entries()).filter(([type]) => {
         return !options.types?.length || options.types.includes(type);
       });
+      const legacyRows =
+        !options.workflowKeys?.length && providers.length
+          ? await this.db.getRepository('userWorkflowTasks').find({
+              filter: {
+                ...(options.userIds?.length ? { userId: options.userIds } : {}),
+                type: providers.map(([type]) => type),
+              },
+              fields: ['userId', 'type'],
+              transaction,
+            })
+          : [];
       const collectedRows = (
         await Promise.all(
           providers.map(([, provider]) => provider.collectTaskStats({ ...options, transaction }, { plugin: this })),
@@ -849,6 +860,9 @@ export default class PluginWorkflowServer extends Plugin {
 
       const typePairs = new Set<string>();
       const workflowPairs = new Set<string>();
+      for (const row of legacyRows) {
+        typePairs.add(`${row.userId}\0${row.type}`);
+      }
       for (const row of [...existedRows, ...rows]) {
         typePairs.add(`${row.userId}\0${row.type}`);
         workflowPairs.add(`${row.userId}\0${row.workflowKey}`);

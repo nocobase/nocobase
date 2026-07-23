@@ -671,9 +671,13 @@ const StatusFilterMap = {
   },
 };
 
-function useTodoActionParams(status) {
-  const { data: user } = useCurrentUserContext();
-  const filter = StatusFilterMap[status] ?? {};
+function useTodoActionParams(status, workflowKey?: string) {
+  const statusFilter = StatusFilterMap[status] ?? {};
+  const filter = workflowKey
+    ? {
+        $and: [statusFilter, { 'workflow.key': workflowKey }],
+      }
+    : statusFilter;
   return {
     filter,
     appends: [
@@ -718,9 +722,10 @@ function TodoExtraActions(props) {
             'x-component-props': {
               icon: 'FilterOutlined',
               ...props,
+              nonfilterable: ['workflow.title'],
             },
             default: {
-              $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+              $and: [{ title: { $includes: '' } }],
             },
           },
         },

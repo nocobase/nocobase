@@ -1269,10 +1269,32 @@ export default {
         tags: ['userWorkflowTaskStats'],
         summary: 'List my workflow task stats by workflow',
         description: [
-          'Get current-user task statistics grouped by `workflowKey`.',
+          'Get current-user task statistics grouped by `workflowKey`, with the title of the current workflow version.',
           '',
-          'The response sums all task types under the same workflow key.',
+          'Pass `type` to limit the result to one task type. Without it, the response sums all task types.',
         ].join('\n'),
+        parameters: [
+          {
+            name: 'type',
+            in: 'query',
+            schema: { type: 'string' },
+          },
+          {
+            name: 'search',
+            in: 'query',
+            schema: { type: 'string' },
+          },
+          {
+            name: 'page',
+            in: 'query',
+            schema: { type: 'integer', default: 1 },
+          },
+          {
+            name: 'pageSize',
+            in: 'query',
+            schema: { type: 'integer', default: 200, maximum: 200 },
+          },
+        ],
         responses: {
           200: {
             description: 'OK',
@@ -1284,6 +1306,7 @@ export default {
                     type: 'object',
                     properties: {
                       workflowKey: { type: 'string' },
+                      title: { type: 'string' },
                       stats: {
                         type: 'object',
                         properties: {

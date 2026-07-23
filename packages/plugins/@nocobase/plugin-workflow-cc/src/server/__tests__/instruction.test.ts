@@ -453,6 +453,37 @@ describe('workflow > instructions > cc', () => {
       expect(a2.status).toBe(TASK_STATUS.UNREAD);
     });
 
+    it('should read all tasks in the selected workflow', async () => {
+      const anotherWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'syncTrigger',
+      });
+      await anotherWorkflow.createNode({
+        type: 'cc',
+        config: {
+          users: [users[0].id],
+        },
+      });
+      await workflowPlugin.trigger(anotherWorkflow, {});
+
+      const res = await userAgents[0].resource('workflowCcTasks').read({
+        filter: {
+          'workflow.key': workflow.key,
+        },
+      });
+      expect(res.status).toBe(200);
+
+      const assignments = await AssignmentModel.findAll({
+        where: {
+          userId: users[0].id,
+        },
+        order: [['workflowId', 'ASC']],
+      });
+      expect(assignments).toHaveLength(2);
+      expect(assignments.find((item) => item.workflowId === workflow.id)?.status).toBe(TASK_STATUS.READ);
+      expect(assignments.find((item) => item.workflowId === anotherWorkflow.id)?.status).toBe(TASK_STATUS.UNREAD);
+    });
+
     it('should not access others task', async () => {
       const [assignment] = await AssignmentModel.findAll({ order: [['userId', 'ASC']] });
 

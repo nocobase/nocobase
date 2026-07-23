@@ -105,12 +105,14 @@ describe('workflow > tasks', () => {
     it('upserts fine-grained stats and keeps legacy type stats in sync', async () => {
       const workflow1 = await WorkflowModel.create({
         key: 'workflow-1',
+        title: 'Workflow B',
         sync: true,
         enabled: true,
         type: 'syncTrigger',
       });
       const workflow2 = await WorkflowModel.create({
         key: 'workflow-2',
+        title: 'Workflow A',
         sync: true,
         enabled: true,
         type: 'syncTrigger',
@@ -199,12 +201,39 @@ describe('workflow > tasks', () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject([
         {
-          workflowKey: workflow1.key,
-          stats: { pending: 3, all: 5 },
+          workflowKey: workflow2.key,
+          title: 'Workflow A',
+          stats: { pending: 4, all: 5 },
         },
         {
+          workflowKey: workflow1.key,
+          title: 'Workflow B',
+          stats: { pending: 3, all: 5 },
+        },
+      ]);
+
+      const typeRes = await userAgents[0].resource('userWorkflowTaskStats').listMine({
+        type: 'test1',
+        pageSize: 1,
+      });
+      expect(typeRes.body.data).toMatchObject([
+        {
           workflowKey: workflow2.key,
+          title: 'Workflow A',
           stats: { pending: 4, all: 5 },
+        },
+      ]);
+      expect(typeRes.body.meta.hasNext).toBe(true);
+
+      const searchRes = await userAgents[0].resource('userWorkflowTaskStats').listMine({
+        type: 'test1',
+        search: 'Workflow B',
+      });
+      expect(searchRes.body.data).toMatchObject([
+        {
+          workflowKey: workflow1.key,
+          title: 'Workflow B',
+          stats: { pending: 1, all: 2 },
         },
       ]);
 
@@ -266,6 +295,42 @@ describe('workflow > tasks', () => {
       expect(legacyRow.get('stats')).toMatchObject({
         pending: 2,
         all: 4,
+      });
+    });
+
+    it('clears stale legacy stats when the provider finds no business records', async () => {
+      plugin.registerTaskStatsProvider('repair-empty', {
+        async collectTaskStats() {
+          return [];
+        },
+      });
+      await TaskRepo.create({
+        values: {
+          userId: users[0].id,
+          type: 'repair-empty',
+          stats: { pending: 4, all: 6 },
+        },
+      });
+
+      await plugin.repairTaskStats({ types: ['repair-empty'], userIds: [users[0].id] });
+
+      const fineRows = await TaskStatsRepo.find({
+        filter: {
+          userId: users[0].id,
+          type: 'repair-empty',
+        },
+      });
+      expect(fineRows).toHaveLength(0);
+
+      const legacyRow = await TaskRepo.findOne({
+        filter: {
+          userId: users[0].id,
+          type: 'repair-empty',
+        },
+      });
+      expect(legacyRow.get('stats')).toMatchObject({
+        pending: 0,
+        all: 0,
       });
     });
   });
