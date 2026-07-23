@@ -726,6 +726,71 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByRole('button', { name: 'Run' })).not.toBeDisabled();
   });
 
+  it('ignores a preview response after switching to another locator', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) throw new Error('Default request mock is unavailable');
+    const preview = deferred<unknown>();
+    const onPreview = vi.fn();
+    const nextLocator = { ...locator, modelUid: 'fm_2' };
+    const nextOpenResult = {
+      ...openResult,
+      locator: nextLocator,
+      files: [{ ...openResult.files[0], content: 'return next;' }],
+      legacy: { ...openResult.legacy, code: 'return next;' },
+    };
+    mocks.request.mockImplementation((request: { data?: { locator?: { modelUid?: string } }; url: string }) => {
+      if (request.url === 'runJSSources:compilePreview') return preview.promise;
+      if (request.url === 'runJSSources:open' && request.data?.locator?.modelUid === nextLocator.modelUid) {
+        return Promise.resolve({ data: { data: nextOpenResult } });
+      }
+      return defaultRequest(request);
+    });
+    const rendered = renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:compilePreview' })),
+    );
+
+    rendered.rerender(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return next;', version: 'v2' },
+          onChange: vi.fn(),
+          locator: nextLocator,
+          onPreview,
+          scene: 'block',
+        })}
+      </>,
+    );
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;'));
+
+    preview.resolve({
+      data: {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          artifact: {
+            code: 'return 1;',
+            version: 'v2',
+            sourceMap: previewSourceMap,
+            diagnostics: [],
+            filesHash: 'files-hash-stale-locator',
+            entryPath: 'src/client/index.tsx',
+          },
+        },
+      },
+    });
+    await act(async () => {
+      await preview.promise;
+      await Promise.resolve();
+    });
+
+    expect(onPreview).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;');
+  });
+
   it('keeps an embedded save pending when newer local edits exist', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');

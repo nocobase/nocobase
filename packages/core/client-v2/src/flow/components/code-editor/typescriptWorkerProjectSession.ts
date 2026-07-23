@@ -78,14 +78,17 @@ type ProjectInputToken = {
   compilerOptions: CodeEditorTypeScriptProject['compilerOptions'];
   currentFileContent?: string;
   currentFilePath: string;
-  declarationFiles: CodeEditorTypeScriptProject['declarationFiles'];
+  declarationFiles: NonNullable<CodeEditorTypeScriptProject['declarationFiles']>;
   documentRevision?: number;
   files: CodeEditorTypeScriptProject['files'];
+  metadataKey: string;
   projectRevision?: number;
+  registry: RunJSTypeLibraryRegistry;
   registryKey: string;
   rewriteBuiltInAutoImports?: boolean;
   runJSContext: CodeEditorTypeScriptProject['runJSContext'];
   typeLibraryIds: CodeEditorTypeScriptProject['typeLibraryIds'];
+  typeLibraryUsageDefinitions: ReturnType<RunJSTypeLibraryRegistry['getUsageDefinitions']>;
 };
 
 type SyncedFile = {
@@ -124,18 +127,37 @@ function defaultWorkerFactory(): WorkerLike {
 function projectInputToken(project: CodeEditorTypeScriptProject, currentFileContent?: string): ProjectInputToken {
   ensureGeneratedRunJSTypeLibraryPackLoadersRegistered();
   const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
+  const compilerOptions = project.compilerOptions ? { ...project.compilerOptions } : undefined;
+  const currentFilePath = normalizePath(project.currentFilePath);
+  const declarationFiles = (project.declarationFiles || []).map((file) => ({ ...file }));
+  const files = (project.files || []).map((file) => ({ ...file }));
+  const registryKey = registry.getCacheKey();
+  const runJSContext = project.runJSContext ? { ...project.runJSContext } : undefined;
+  const typeLibraryIds = project.typeLibraryIds ? [...project.typeLibraryIds] : undefined;
+  const typeLibraryUsageDefinitions = registry.getUsageDefinitions();
   return {
-    compilerOptions: project.compilerOptions,
+    compilerOptions,
     currentFileContent,
-    currentFilePath: project.currentFilePath,
-    declarationFiles: project.declarationFiles,
+    currentFilePath,
+    declarationFiles,
     documentRevision: project.documentRevision,
-    files: project.files,
+    files,
+    metadataKey: JSON.stringify({
+      compilerOptions,
+      currentFilePath,
+      registryKey,
+      rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
+      runJSContext,
+      typeLibraryIds,
+      typeLibraryUsageDefinitions,
+    }),
     projectRevision: project.projectRevision,
-    registryKey: registry.getCacheKey(),
+    registry,
+    registryKey,
     rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
-    runJSContext: project.runJSContext,
-    typeLibraryIds: project.typeLibraryIds,
+    runJSContext,
+    typeLibraryIds,
+    typeLibraryUsageDefinitions,
   };
 }
 
@@ -151,19 +173,28 @@ function normalizePath(path: string): string {
 function isSameProjectInput(left: ProjectInputToken | null, right: ProjectInputToken): boolean {
   return Boolean(
     left &&
-      left.compilerOptions === right.compilerOptions &&
-      (left.documentRevision !== undefined && right.documentRevision !== undefined
-        ? true
-        : left.currentFileContent === right.currentFileContent) &&
-      left.currentFilePath === right.currentFilePath &&
-      left.declarationFiles === right.declarationFiles &&
+      left.currentFileContent === right.currentFileContent &&
       left.documentRevision === right.documentRevision &&
-      left.files === right.files &&
+      sameProjectFiles(left.declarationFiles, right.declarationFiles) &&
+      sameProjectFiles(left.files, right.files) &&
+      left.metadataKey === right.metadataKey &&
       left.projectRevision === right.projectRevision &&
-      left.registryKey === right.registryKey &&
-      left.rewriteBuiltInAutoImports === right.rewriteBuiltInAutoImports &&
-      left.runJSContext === right.runJSContext &&
-      left.typeLibraryIds === right.typeLibraryIds,
+      left.registry === right.registry,
+  );
+}
+
+function sameProjectFiles(
+  left: CodeEditorTypeScriptProject['files'],
+  right: CodeEditorTypeScriptProject['files'],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (file, index) =>
+        file.path === right[index].path &&
+        file.content === right[index].content &&
+        file.revision === right[index].revision,
+    )
   );
 }
 
@@ -180,9 +211,7 @@ function buildSyncedFiles(
     const retained = previous?.get(path);
     next.set(
       path,
-      retained &&
-        ((revision !== undefined && retained.revision === revision) ||
-          (revision === undefined && retained.wire.content === content))
+      retained && retained.revision === revision && retained.wire.content === content
         ? retained
         : { revision, wire: { content, path } },
     );
@@ -191,9 +220,7 @@ function buildSyncedFiles(
     const retained = previous?.get(currentFile.path);
     next.set(
       currentFile.path,
-      retained &&
-        ((currentFile.revision !== undefined && retained.revision === currentFile.revision) ||
-          (currentFile.revision === undefined && retained.wire.content === currentFile.content))
+      retained && retained.revision === currentFile.revision && retained.wire.content === currentFile.content
         ? retained
         : { revision: currentFile.revision, wire: { content: currentFile.content, path: currentFile.path } },
     );
@@ -202,36 +229,32 @@ function buildSyncedFiles(
 }
 
 function buildProjectSyncState(
-  project: CodeEditorTypeScriptProject,
-  currentFileContent: string | undefined,
   token: ProjectInputToken,
   revision: number,
   previous?: ProjectSyncState,
 ): ProjectSyncState {
-  ensureGeneratedRunJSTypeLibraryPackLoadersRegistered();
-  const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
-  const currentFilePath = normalizePath(project.currentFilePath);
+  const currentFilePath = token.currentFilePath;
   const files = buildSyncedFiles(
-    project.files || [],
+    token.files,
     previous?.files,
-    typeof currentFileContent === 'string'
-      ? { content: currentFileContent, path: currentFilePath, revision: project.documentRevision }
+    typeof token.currentFileContent === 'string'
+      ? { content: token.currentFileContent, path: currentFilePath, revision: token.documentRevision }
       : undefined,
   );
-  const declarationFiles = buildSyncedFiles(project.declarationFiles || [], previous?.declarationFiles);
+  const declarationFiles = buildSyncedFiles(token.declarationFiles, previous?.declarationFiles);
   const metadata = {
-    compilerOptions: project.compilerOptions as Record<string, unknown> | undefined,
+    compilerOptions: token.compilerOptions as Record<string, unknown> | undefined,
     currentFilePath,
     registryKey: token.registryKey,
-    rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
-    runJSContext: project.runJSContext,
-    typeLibraryIds: [...(project.typeLibraryIds || [])],
-    typeLibraryUsageDefinitions: registry.getUsageDefinitions(),
+    rewriteBuiltInAutoImports: token.rewriteBuiltInAutoImports,
+    runJSContext: token.runJSContext,
+    typeLibraryIds: token.typeLibraryIds || [],
+    typeLibraryUsageDefinitions: token.typeLibraryUsageDefinitions,
   };
   return {
     declarationFiles,
     files,
-    metadataKey: JSON.stringify(metadata),
+    metadataKey: token.metadataKey,
     revision,
     snapshot: {
       ...metadata,
@@ -748,8 +771,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
 
   private sync(project: CodeEditorTypeScriptProject, currentFileContent?: string, force = false): Promise<number> {
     const token = projectInputToken(project, currentFileContent);
-    const capturedProject = { ...project };
-    const pending = this.syncChain.then(() => this.performSync(capturedProject, currentFileContent, token, force));
+    const pending = this.syncChain.then(() => this.performSync(token, force));
     this.syncChain = pending.then(
       () => undefined,
       () => undefined,
@@ -757,29 +779,18 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     return pending;
   }
 
-  private async performSync(
-    project: CodeEditorTypeScriptProject,
-    currentFileContent: string | undefined,
-    token: ProjectInputToken,
-    force: boolean,
-  ): Promise<number> {
+  private async performSync(token: ProjectInputToken, force: boolean): Promise<number> {
     if (this.disposed) throw new Error('TypeScript project session has been disposed.');
     const previous = this.acknowledgedState;
     if (!force && !this.workerNeedsFullSync && isSameProjectInput(previous?.token || null, token)) {
       return previous?.revision || 0;
     }
 
-    const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
+    const registry = token.registry;
     const next =
       previous && isSameProjectInput(previous.token, token)
         ? previous
-        : buildProjectSyncState(
-            project,
-            currentFileContent,
-            token,
-            (previous?.revision || 0) + 1,
-            previous || undefined,
-          );
+        : buildProjectSyncState(token, (previous?.revision || 0) + 1, previous || undefined);
     const update = previous && next !== previous ? projectUpdate(previous, next) : null;
     if (previous && update && !hasProjectUpdate(update, previous, next)) {
       previous.token = token;

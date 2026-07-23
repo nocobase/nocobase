@@ -190,51 +190,63 @@ function addPackFiles(files: Map<string, TypeScriptVirtualFileInput>, packs: rea
 }
 
 type RequestStateToken = {
-  compilerOptions: CodeEditorTypeScriptProject['compilerOptions'];
   currentFileContent?: string;
-  currentFilePath: string;
-  declarationFiles: CodeEditorTypeScriptProject['declarationFiles'];
   documentRevision?: number;
-  files: CodeEditorTypeScriptProject['files'];
+  metadataKey: string;
+  project: CodeEditorTypeScriptProject;
   projectRevision?: number;
-  rewriteBuiltInAutoImports?: boolean;
-  runJSContext: CodeEditorTypeScriptProject['runJSContext'];
-  typeLibraryIds: CodeEditorTypeScriptProject['typeLibraryIds'];
-  typeLibraryRegistry?: string;
 };
 
 function createRequestStateToken(project: CodeEditorTypeScriptProject, currentFileContent?: string): RequestStateToken {
+  const capturedProject: CodeEditorTypeScriptProject = {
+    ...project,
+    compilerOptions: project.compilerOptions ? { ...project.compilerOptions } : undefined,
+    declarationFiles: project.declarationFiles?.map((file) => ({ ...file })),
+    files: project.files.map((file) => ({ ...file })),
+    runJSContext: project.runJSContext ? { ...project.runJSContext } : undefined,
+    typeLibraryIds: project.typeLibraryIds ? [...project.typeLibraryIds] : undefined,
+  };
   return {
-    compilerOptions: project.compilerOptions,
     currentFileContent,
-    currentFilePath: normalizeProjectPath(project.currentFilePath),
-    declarationFiles: project.declarationFiles,
     documentRevision: project.documentRevision,
-    files: project.files,
+    metadataKey: JSON.stringify({
+      compilerOptions: capturedProject.compilerOptions,
+      currentFilePath: normalizeProjectPath(project.currentFilePath),
+      rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
+      runJSContext: capturedProject.runJSContext,
+      typeLibraryIds: capturedProject.typeLibraryIds,
+      typeLibraryRegistry: project.typeLibraryRegistry?.getCacheKey(),
+    }),
+    project: capturedProject,
     projectRevision: project.projectRevision,
-    rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
-    runJSContext: project.runJSContext,
-    typeLibraryIds: project.typeLibraryIds,
-    typeLibraryRegistry: project.typeLibraryRegistry?.getCacheKey(),
   };
 }
 
 function isSameRequestState(left: RequestStateToken | null, right: RequestStateToken): boolean {
   return Boolean(
     left &&
-      left.compilerOptions === right.compilerOptions &&
-      (left.documentRevision !== undefined && right.documentRevision !== undefined
-        ? true
-        : left.currentFileContent === right.currentFileContent) &&
-      left.currentFilePath === right.currentFilePath &&
-      left.declarationFiles === right.declarationFiles &&
+      left.currentFileContent === right.currentFileContent &&
       left.documentRevision === right.documentRevision &&
-      left.files === right.files &&
+      sameRequestFiles(left.project.declarationFiles || [], right.project.declarationFiles || []) &&
+      sameRequestFiles(left.project.files, right.project.files) &&
+      left.metadataKey === right.metadataKey &&
       left.projectRevision === right.projectRevision &&
-      left.rewriteBuiltInAutoImports === right.rewriteBuiltInAutoImports &&
-      left.runJSContext === right.runJSContext &&
-      left.typeLibraryIds === right.typeLibraryIds &&
-      left.typeLibraryRegistry === right.typeLibraryRegistry,
+      left.project.typeLibraryRegistry === right.project.typeLibraryRegistry,
+  );
+}
+
+function sameRequestFiles(
+  left: CodeEditorTypeScriptProject['files'],
+  right: CodeEditorTypeScriptProject['files'],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (file, index) =>
+        file.path === right[index].path &&
+        file.content === right[index].content &&
+        file.revision === right[index].revision,
+    )
   );
 }
 
@@ -748,8 +760,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     const request = this.beginRequest('completion', project, currentFileContent);
     try {
       const service = await this.prepareService(
-        project,
-        currentFileContent,
+        request.project,
+        request.currentFileContent,
         request.stateGeneration,
         request.stateChanged,
       );
@@ -774,8 +786,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     const request = this.beginRequest('diagnostics', project, currentFileContent);
     try {
       const service = await this.prepareService(
-        project,
-        currentFileContent,
+        request.project,
+        request.currentFileContent,
         request.stateGeneration,
         request.stateChanged,
       );
@@ -805,8 +817,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     const request = this.beginRequest('hover', project, currentFileContent);
     try {
       const service = await this.prepareService(
-        project,
-        currentFileContent,
+        request.project,
+        request.currentFileContent,
         request.stateGeneration,
         request.stateChanged,
       );
@@ -877,7 +889,13 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     kind: 'completion' | 'diagnostics' | 'hover',
     project: CodeEditorTypeScriptProject,
     currentFileContent?: string,
-  ): { requestId: number; stateChanged: boolean; stateGeneration: number } {
+  ): {
+    currentFileContent?: string;
+    project: CodeEditorTypeScriptProject;
+    requestId: number;
+    stateChanged: boolean;
+    stateGeneration: number;
+  } {
     const stateToken = createRequestStateToken(project, currentFileContent);
     const stateChanged = !isSameRequestState(this.latestStateToken, stateToken);
     if (stateChanged) {
@@ -886,7 +904,13 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     }
     const requestId = (this.requestIds.get(kind) || 0) + 1;
     this.requestIds.set(kind, requestId);
-    return { requestId, stateChanged, stateGeneration: this.latestStateGeneration };
+    return {
+      currentFileContent: stateToken.currentFileContent,
+      project: stateToken.project,
+      requestId,
+      stateChanged,
+      stateGeneration: this.latestStateGeneration,
+    };
   }
 
   private isCurrentRequest(

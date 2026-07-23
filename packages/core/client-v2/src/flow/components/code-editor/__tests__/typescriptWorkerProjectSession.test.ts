@@ -616,6 +616,56 @@ void element; void button;
     );
   });
 
+  it('does not trust reused caller revisions after an in-place file mutation', async () => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      documentRevision: 1,
+      files: [{ content: 'export const value = 1;', path: 'src/main.ts', revision: 1 }],
+      projectRevision: 1,
+    };
+
+    await session.getDiagnostics(currentProject, currentProject.files[0].content);
+    currentProject.files[0].content = 'export const value = 2;';
+    await session.getDiagnostics(currentProject, currentProject.files[0].content);
+
+    const syncRequests = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(syncRequests).toHaveLength(2);
+    expect(syncRequests[1]).toMatchObject({
+      baseRevision: 1,
+      targetRevision: 2,
+      update: {
+        fileRemovals: [],
+        fileUpserts: [{ content: 'export const value = 2;', path: 'src/main.ts' }],
+      },
+    });
+  });
+
+  it('keeps main-thread fallback current when callers reuse revisions', async () => {
+    const session = createTypeScriptProjectSession({
+      workerFactory: () => {
+        throw new Error('module workers unavailable');
+      },
+    });
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      documentRevision: 1,
+      files: [{ content: 'const value: string = 1;', path: 'src/main.ts', revision: 1 }],
+      ignoredDiagnosticCodes: [6133],
+      projectRevision: 1,
+    };
+
+    expect(await session.getDiagnostics(currentProject, currentProject.files[0].content)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 2322 })]),
+    );
+    currentProject.files[0].content = 'const value: string = "ready";';
+    expect(await session.getDiagnostics(currentProject, currentProject.files[0].content)).toEqual([]);
+  });
+
   const metadataChanges: Array<[string, (project: CodeEditorTypeScriptProject) => CodeEditorTypeScriptProject]> = [
     ['current file', (current) => ({ ...current, currentFilePath: 'src/second.ts' })],
     ['compiler options', (current) => ({ ...current, compilerOptions: { strict: false } })],
