@@ -11,7 +11,6 @@ import { buildRunJSTypeScriptContextDeclaration } from '@nocobase/runjs/client-v
 import type { Diagnostic } from '@codemirror/lint';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generatedRunJSTypeLibraryPackLoaders } from '../type-packs/generated/loaders';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
@@ -40,54 +39,6 @@ afterEach(() => {
 });
 
 describe('RunJS official React TypeScript project', () => {
-  it('uses official React hooks, JSX, component, and utility types', async () => {
-    const code = `
-type Props = { label: string; children?: React.ReactNode };
-const Component: React.FC<Props> = ({ label, children }) => <section>{label}{children}</section>;
-const [count, setCount] = ctx.React.useState(0);
-ctx.React.useEffect(() => () => ctx.logger.info('cleanup'), []);
-const memo = ctx.libs.React.useMemo(() => count + 1, [count]);
-const callback = ctx.libs.React.useCallback((value: number) => value + count, [count]);
-const ref = ctx.libs.React.useRef<HTMLButtonElement>(null);
-const props: React.ComponentProps<typeof Component> = { label: 'Ready' };
-const style: React.CSSProperties = { color: 'red', paddingBlock: 4 };
-ctx.render(
-  <Component {...props}>
-    <button
-      ref={ref}
-      style={style}
-      onClick={(event) => {
-        event.preventDefault();
-        setCount(callback(event.detail));
-      }}
-    >
-      {memo}
-    </button>
-  </Component>,
-);
-`;
-    const session = createTypeScriptProjectSession();
-
-    expect(errorMessages(await session.getDiagnostics(reactProject(code), code))).toEqual([]);
-  });
-
-  it('reports invalid hook arguments, effect cleanup values, generics, and JSX props', async () => {
-    const code = `
-const Component: React.FC<{ required: string }> = ({ required }) => <div>{required}</div>;
-ctx.React.useState<number>('wrong');
-ctx.React.useEffect(() => 42, []);
-ctx.libs.React.useMemo<number>(() => 'wrong', []);
-ctx.render(<Component unexpected={1} />);
-`;
-    const session = createTypeScriptProjectSession();
-    const messages = errorMessages(await session.getDiagnostics(reactProject(code), code));
-
-    expect(messages.some((message) => /number/.test(message) && /string/.test(message))).toBe(true);
-    expect(messages.some((message) => /EffectCallback|Destructor|void/.test(message))).toBe(true);
-    expect(messages.filter((message) => /number/.test(message) && /string/.test(message)).length).toBeGreaterThan(1);
-    expect(messages.some((message) => /unexpected|required/.test(message))).toBe(true);
-  });
-
   it('loads the React pack once for concurrent requests and never for ordinary code', async () => {
     const ordinaryCode = 'ctx.logger.info("ready");';
     const ordinarySession = createTypeScriptProjectSession();

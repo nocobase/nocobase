@@ -158,7 +158,6 @@
         "unsupportedEntryKind": "本地 Light Extension 工作流仅支持 JS Block 和 JS Page 入口；收到“{{kind}}”。其他类型请使用原始 API 命令。",
         "pullFilesMissing": "拉取响应必须包含完整的 files 数组。",
         "invalidWorkspacePath": "Workspace 路径无效：{{path}}",
-        "portalUnsupported": "此本地工作流不支持 JS Portal 源码：{{path}}。",
         "nonUtf8Unsupported": "首版本地 Agent 工作流不支持二进制或非 UTF-8 文件：{{path}}。",
         "controlBytesUnsupported": "首版本地 Agent 工作流不支持二进制文件或包含 NUL/控制字节的源码：{{path}}。",
         "symlinkUnsupported": "Light Extension Workspace 不支持符号链接：{{path}}",

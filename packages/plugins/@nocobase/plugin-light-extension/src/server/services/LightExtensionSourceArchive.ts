@@ -14,7 +14,6 @@ import { TextDecoder } from 'util';
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic, LightExtensionTreeEntryInput } from '../../shared/types';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
-import { JS_PORTAL_WORKSPACE_ROOT } from './JsPortalStorage';
 
 type ZipEntrySizeData = {
   compressedSize?: unknown;
@@ -64,32 +63,21 @@ export async function parseLightExtensionSourceArchive(
     }
 
     extractedBytes += contentBuffer.byteLength;
-    let content: string;
-    let encoding: 'utf8' | 'base64' | undefined;
     try {
-      content = decodeUtf8(contentBuffer);
+      files.push({
+        path: paths[index],
+        content: decodeUtf8(contentBuffer),
+        size: contentBuffer.byteLength,
+        language: languageFromPath(paths[index]),
+        mode: ZIP_FILE_MODE,
+      });
     } catch {
-      if (!isJsPortalWorkspacePath(paths[index])) {
-        throwArchiveValidation('zip_file_not_utf8', 'ZIP source files must be UTF-8 text', paths[index]);
-      }
-      content = contentBuffer.toString('base64');
-      encoding = 'base64';
+      throwArchiveValidation('zip_file_not_utf8', 'ZIP source files must be UTF-8 text', paths[index]);
     }
-
-    files.push({
-      path: paths[index],
-      content,
-      ...(isJsPortalWorkspacePath(paths[index]) ? { encoding: encoding || 'utf8' } : {}),
-      size: contentBuffer.byteLength,
-      language: languageFromPath(paths[index]),
-      mode: ZIP_FILE_MODE,
-    });
   }
 
   assertZipBudget(archive.byteLength, extractedBytes, validator);
-  const diagnostics = validator.validateInitialFiles({
-    files: files.filter((file) => !isJsPortalWorkspacePath(file.path)),
-  });
+  const diagnostics = validator.validateInitialFiles({ files });
   if (hasErrorDiagnostic(diagnostics)) {
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension ZIP source is invalid', {
       status: 422,
@@ -106,10 +94,6 @@ function decodeUtf8(content: Buffer): string {
     throw new TypeError('NUL is not valid source text');
   }
   return decoded;
-}
-
-export function isJsPortalWorkspacePath(path: string): boolean {
-  return path.startsWith(`${JS_PORTAL_WORKSPACE_ROOT}/`);
 }
 
 export function isStrictUtf8Text(content: string): boolean {
@@ -175,14 +159,11 @@ function validateArchiveEntriesBeforeExtraction(
     const path = paths[index];
     const compressedSize = getZipEntrySize(entry, 'compressedSize');
     const uncompressedSize = getZipEntrySize(entry, 'uncompressedSize');
-    if (
-      compressedSize > compressedBytes ||
-      (!isJsPortalWorkspacePath(path) && uncompressedSize > limits.maxFileBytes)
-    ) {
+    if (compressedSize > compressedBytes || uncompressedSize > limits.maxFileBytes) {
       throwArchiveValidation('file_size_limit_exceeded', 'ZIP source file is too large', path);
     }
     uncompressedBytes += uncompressedSize;
-    sourceBytes += isJsPortalWorkspacePath(path) ? 0 : uncompressedSize;
+    sourceBytes += uncompressedSize;
     if (sourceBytes > limits.maxRepoBytes) {
       throwArchiveValidation('repo_budget_limit_exceeded', 'ZIP source budget is exceeded');
     }

@@ -53,15 +53,6 @@ import { createLightExtensionsResource, lightExtensionActionNames } from './reso
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
-import type {
-  ClientAppDescriptor,
-  ClientAppReferenceResolver,
-  ClientAppStaticRequest,
-  ClientAppStaticResponse,
-  ClientAppSummary,
-} from './services/ClientAppService';
-import { ClientAppService } from './services/ClientAppService';
-import { JsPortalStorage } from './services/JsPortalStorage';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -163,8 +154,6 @@ export class PluginLightExtensionServer extends Plugin {
 
   private moveToInlineService?: MoveToInlineService;
 
-  private clientAppService?: ClientAppService;
-
   private unregisterVscPermissionHook?: () => void;
 
   private unregisterRunJSWorkspaceBootstrapPort?: () => void;
@@ -174,22 +163,6 @@ export class PluginLightExtensionServer extends Plugin {
   private remotePullRecoveryPromise?: Promise<void>;
 
   private compileShutdownListener?: () => Promise<void>;
-
-  async resolveClientApp(entryId: string): Promise<ClientAppDescriptor> {
-    return this.requireClientAppService().resolveClientApp(entryId);
-  }
-
-  async serveClientAppAsset(input: ClientAppStaticRequest): Promise<ClientAppStaticResponse> {
-    return this.requireClientAppService().serveClientAppAsset(input);
-  }
-
-  async listSelectableClientApps(): Promise<ClientAppSummary[]> {
-    return this.requireClientAppService().listSelectableClientApps();
-  }
-
-  registerClientAppReferenceResolver(resolver: ClientAppReferenceResolver): () => void {
-    return this.requireClientAppService().useReferenceResolver(resolver);
-  }
 
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.requireVscFileServerModule().registerPermissionHook(hook);
@@ -289,8 +262,6 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
     );
     this.entryService = new LightExtensionEntryService(db, this.fileService, this.repoService, this.validator);
-    this.clientAppService = new ClientAppService(db, new JsPortalStorage());
-    this.repoService.useClientAppService(this.clientAppService);
     this.compilePreviewService = new LightExtensionCompilePreviewService(
       db,
       this.auditService,
@@ -411,13 +382,6 @@ export class PluginLightExtensionServer extends Plugin {
   private unregisterRunJSWorkspaceBootstrapPortWhenNeeded() {
     this.unregisterRunJSWorkspaceBootstrapPort?.();
     this.unregisterRunJSWorkspaceBootstrapPort = undefined;
-  }
-
-  private requireClientAppService(): ClientAppService {
-    if (!this.clientAppService) {
-      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Client app service is unavailable');
-    }
-    return this.clientAppService;
   }
 
   private registerCompileShutdownListener() {

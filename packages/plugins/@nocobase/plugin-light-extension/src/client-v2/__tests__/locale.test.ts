@@ -32,13 +32,6 @@ const gitSyncKeys = [
   'You do not have permission to perform this sync operation',
 ] as const;
 
-const portalWorkspaceKeys = [
-  'Binary file',
-  'Binary files are read-only in the code editor.',
-  'Download file',
-  'Failed to download file',
-] as const;
-
 const vscLocaleCollisionKeys = [
   'Actions',
   'Cancel',
@@ -62,11 +55,6 @@ describe('plugin-light-extension client-v2 locale entries', () => {
     expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
 
     for (const key of gitSyncKeys) {
-      expect(enUS[key]).toBeTruthy();
-      expect(zhCN[key]).toBeTruthy();
-    }
-
-    for (const key of portalWorkspaceKeys) {
       expect(enUS[key]).toBeTruthy();
       expect(zhCN[key]).toBeTruthy();
     }

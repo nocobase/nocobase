@@ -30,7 +30,6 @@ import type {
   LightExtensionUpdateRepoInput,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
-import type { ClientAppReference, ClientAppService } from './ClientAppService';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { ReferenceService } from './ReferenceService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
@@ -69,8 +68,6 @@ export class LightExtensionRepoService {
 
   private referenceService?: ReferenceService;
 
-  private clientAppService?: Pick<ClientAppService, 'listReferencesForRepo' | 'retireClientAppsForRepo'>;
-
   private remoteSyncLifecycleGate?: LightExtensionRemoteSyncLifecycleGate;
 
   constructor(
@@ -92,12 +89,6 @@ export class LightExtensionRepoService {
 
   useReferenceService(referenceService: ReferenceService): void {
     this.referenceService = referenceService;
-  }
-
-  useClientAppService(
-    clientAppService: Pick<ClientAppService, 'listReferencesForRepo' | 'retireClientAppsForRepo'>,
-  ): void {
-    this.clientAppService = clientAppService;
   }
 
   useRemoteSyncLifecycleGate(gate: LightExtensionRemoteSyncLifecycleGate): void {
@@ -586,9 +577,7 @@ export class LightExtensionRepoService {
       return await this.withTransaction(ctx.transaction, async (transaction) => {
         const repo = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         await this.assertRemoteSyncIdle(repo.vscRepoId, transaction);
-        const clientAppService = this.requireClientAppService();
-        const clientAppReferences = await clientAppService.listReferencesForRepo(input.repoId, transaction);
-        const referenceCount = (await this.countRepoReferences(input.repoId, transaction)) + clientAppReferences.length;
+        const referenceCount = await this.countRepoReferences(input.repoId, transaction);
 
         if (referenceCount > 0) {
           await this.recordDeleteBlockedByReferences(
@@ -598,7 +587,7 @@ export class LightExtensionRepoService {
             repo.lifecycleStatus,
             referenceCount,
           );
-          throw referenceExistsError(input.repoId, referenceCount, clientAppReferences);
+          throw referenceExistsError(input.repoId, referenceCount);
         }
 
         await this.runVsc(repo.id, () =>
@@ -617,7 +606,6 @@ export class LightExtensionRepoService {
             }),
           ),
         );
-        await clientAppService.retireClientAppsForRepo(input.repoId, transaction);
         await this.db.getRepository('lightExtensionEntries').destroy({
           filter: {
             repoId: input.repoId,
@@ -663,13 +651,6 @@ export class LightExtensionRepoService {
 
       throw error;
     }
-  }
-
-  private requireClientAppService(): Pick<ClientAppService, 'listReferencesForRepo' | 'retireClientAppsForRepo'> {
-    if (!this.clientAppService) {
-      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Client app service is unavailable');
-    }
-    return this.clientAppService;
   }
 
   private async assertRepoNameAvailable(name: string, normalizedName: string, transaction: Transaction): Promise<void> {
@@ -982,11 +963,7 @@ function repoConflictError(name: string, normalizedName: string): LightExtension
   });
 }
 
-function referenceExistsError(
-  repoId: string,
-  referenceCount: number,
-  references: readonly ClientAppReference[] = [],
-): LightExtensionError {
+function referenceExistsError(repoId: string, referenceCount: number): LightExtensionError {
   return new LightExtensionError(
     'LIGHT_EXTENSION_REFERENCE_EXISTS',
     'Light extension repository is referenced and cannot be deleted',
@@ -994,7 +971,6 @@ function referenceExistsError(
       details: {
         repoId,
         referenceCount,
-        ...(references.length ? { references } : {}),
       },
     },
   );

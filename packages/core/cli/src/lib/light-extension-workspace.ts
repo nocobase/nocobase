@@ -25,7 +25,6 @@ export const LIGHT_EXTENSION_EXIT_CODES = {
 } as const;
 
 const SUPPORTED_KINDS = new Set(['js-block', 'js-page']);
-const PORTAL_ROOT = 'src/client/js-portals';
 const TOP_LEVEL_GENERATED_DIRECTORIES = new Set([
   '.cache',
   '.next',
@@ -469,16 +468,6 @@ export function normalizeWorkspacePath(value: string): string {
   return normalized;
 }
 
-function assertAgentSourcePath(path: string): void {
-  if (path === PORTAL_ROOT || path.startsWith(`${PORTAL_ROOT}/`)) {
-    throw new LightExtensionCliError(
-      translateCli('commands.light.errors.portalUnsupported', { path }, {
-        fallback: 'JS Portal source is not supported by this local workflow: {{path}}.',
-      }),
-    );
-  }
-}
-
 function sha256(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -604,7 +593,6 @@ export async function readWorkspaceFiles(
   const paths = await walkWorkspaceFiles(root);
   const files: LightExtensionWorkspaceFile[] = [];
   for (const path of paths) {
-    assertAgentSourcePath(path);
     await assertWorkspacePathHasNoSymlinks(root, path);
     const content = decodeUtf8Source(await fs.readFile(join(root, ...path.split('/'))), path);
     const baseline = state?.files[path];
