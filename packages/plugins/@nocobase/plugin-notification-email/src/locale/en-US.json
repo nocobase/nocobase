@@ -21,6 +21,7 @@
   "The email address that will be used as the sender": "The email address that will be used as the sender",
   "The field value is required": "The field value is required",
   "To": "To",
+  "ReplyTo": "Reply To",
   "Transport": "Transport",
   "Yes": "Yes"
 }
