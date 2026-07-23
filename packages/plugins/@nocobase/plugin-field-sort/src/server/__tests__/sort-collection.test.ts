@@ -327,5 +327,62 @@ describe('sort collections', () => {
         { title: 's2:t5', sort: 6 },
       ]);
     });
+
+    test('move in null scope without affecting other scopes', async () => {
+      for (let i = 0; i < 3; i++) {
+        await Post.repository.create({
+          values: {
+            title: `null:t${i + 1}`,
+            status: null,
+          },
+        });
+      }
+
+      const nullT1 = await Post.repository.findOne({
+        filter: {
+          title: 'null:t1',
+        },
+      });
+      const nullT3 = await Post.repository.findOne({
+        filter: {
+          title: 'null:t3',
+        },
+      });
+
+      const sortCollection = new SortableCollection(Post);
+      await sortCollection.move(nullT1.get('id'), nullT3.get('id'));
+
+      const nullResults = (
+        await Post.repository.find({
+          sort: ['sort'],
+          filter: {
+            status: null,
+          },
+        })
+      ).map((r) => lodash.pick(r.toJSON(), ['title', 'sort']));
+
+      expect(nullResults).toEqual([
+        { title: 'null:t2', sort: 1 },
+        { title: 'null:t3', sort: 2 },
+        { title: 'null:t1', sort: 3 },
+      ]);
+
+      const status1Results = (
+        await Post.repository.find({
+          sort: ['sort'],
+          filter: {
+            status: 'status1',
+          },
+        })
+      ).map((r) => lodash.pick(r.toJSON(), ['title', 'sort']));
+
+      expect(status1Results).toEqual([
+        { title: 's1:t1', sort: 1 },
+        { title: 's1:t2', sort: 2 },
+        { title: 's1:t3', sort: 3 },
+        { title: 's1:t4', sort: 4 },
+        { title: 's1:t5', sort: 5 },
+      ]);
+    });
   });
 });

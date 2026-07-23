@@ -161,9 +161,9 @@ export class SortableCollection {
       [fieldName]: updateCondition,
     };
 
-    if (scopeValue) {
+    if (this.scopeKey) {
       where[this.scopeKey] = {
-        [Op.eq]: scopeValue,
+        [scopeValue == null ? Op.is : Op.eq]: scopeValue,
       };
     }
 
