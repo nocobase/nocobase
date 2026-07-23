@@ -42,7 +42,9 @@ async function writeJson(file, value) {
 }
 
 function hash(value) {
-  return createHash('sha256').update(`${JSON.stringify(value, null, 2)}\n`).digest('hex');
+  return createHash('sha256')
+    .update(`${JSON.stringify(value, null, 2)}\n`)
+    .digest('hex');
 }
 
 function gateContract(taskId) {
@@ -217,6 +219,29 @@ async function prepareGateDirectory(directory) {
   }
 }
 
+async function removeTask12Lane(file, lane) {
+  const gate = await readJson(file);
+  delete gate.observed[lane];
+  delete gate.thresholds[`${lane}BootstrapCount`];
+  const rawFile = path.join(gate.measurementRoot, 'raw-samples.json');
+  const raw = await readJson(rawFile);
+  for (const sample of raw) delete sample.metrics[lane];
+  await writeJson(rawFile, raw);
+  const summaryFile = path.join(gate.measurementRoot, 'summary.json');
+  const summary = await readJson(summaryFile);
+  for (const sample of summary.probes[gate.probe].samples) delete sample.metrics[lane];
+  await writeJson(summaryFile, summary);
+  for (const sample of raw) {
+    const measurementFile = path.join(gate.measurementRoot, sample.measurement);
+    const measurement = await readJson(measurementFile);
+    delete measurement.metrics[lane];
+    await writeJson(measurementFile, measurement);
+  }
+  gate.measurementRefs[0].rawSamplesSha256 = hash(raw);
+  gate.measurementRefs[0].summarySha256 = hash(summary);
+  await writeJson(file, gate);
+}
+
 function integrationManifest() {
   return {
     schemaVersion: 1,
@@ -244,11 +269,7 @@ test('rejects invalid schema, decision type, and measurement references', async 
       ['schema.json', (value) => (value.schemaVersion = 2), 'schemaVersion'],
       ['decision.json', (value) => (value.decision = 'Pass'), 'decision'],
       ['refs.json', (value) => (value.measurementRefs = []), 'measurementRefs'],
-      [
-        'traversal.json',
-        (value) => (value.measurementRefs[0].summary = '../summary.json'),
-        'relative JSON path',
-      ],
+      ['traversal.json', (value) => (value.measurementRefs[0].summary = '../summary.json'), 'relative JSON path'],
     ]) {
       const value = structuredClone(gate);
       mutate(value);
@@ -291,6 +312,25 @@ test('rejects a mandatory Fail decision', async () => {
     const result = runNode(validator, [file]);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /mandatory gate failed/u);
+  });
+});
+
+test('allows an absent optional Workflow lane but still requires the Flow lane', async () => {
+  await withTempDirectory(async (directory) => {
+    const withoutWorkflow = path.join(directory, 'without-workflow');
+    await prepareGateDirectory(withoutWorkflow);
+    const optionalFile = path.join(withoutWorkflow, 'task12-adapter-tests.json');
+    await removeTask12Lane(optionalFile, 'workflow');
+    const optionalResult = runNode(validator, [optionalFile]);
+    assert.equal(optionalResult.status, 0, optionalResult.stderr);
+
+    const withoutFlow = path.join(directory, 'without-flow');
+    await prepareGateDirectory(withoutFlow);
+    const requiredFile = path.join(withoutFlow, 'task12-adapter-tests.json');
+    await removeTask12Lane(requiredFile, 'flow');
+    const requiredResult = runNode(validator, [requiredFile]);
+    assert.notEqual(requiredResult.status, 0);
+    assert.match(requiredResult.stderr, /thresholds\.flowBootstrapCount/u);
   });
 });
 

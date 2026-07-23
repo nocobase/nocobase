@@ -88,9 +88,11 @@ function stats(samples) {
 }
 
 function adapterMetrics(samples, label) {
-  const lane = (name) => {
+  const lane = (name, optional = false) => {
+    const available = samples.map((sample) => isObject(sample.metrics[name]));
+    if (optional && available.every((value) => !value)) return;
     for (const [index, sample] of samples.entries()) {
-      if (!isObject(sample.metrics[name]) || !Array.isArray(sample.metrics[name].bootstrapMs)) {
+      if (!available[index] || !Array.isArray(sample.metrics[name].bootstrapMs)) {
         fail(`${label} sample ${index + 1} is missing ${name} adapter metrics`);
       }
     }
@@ -106,11 +108,12 @@ function adapterMetrics(samples, label) {
     requireNumber(sample.process?.peakRssBytes, `${label} sample ${index + 1} process.peakRssBytes`);
     requireNumber(sample.process?.wallTimeMs, `${label} sample ${index + 1} process.wallTimeMs`);
   }
+  const workflow = lane('workflow', true);
   return {
     flow: lane('flow'),
     peakRssBytes: stats(samples.map((sample) => sample.process.peakRssBytes)).median,
     wallTimeMs: stats(samples.map((sample) => sample.process.wallTimeMs)).median,
-    workflow: lane('workflow'),
+    ...(workflow ? { workflow } : {}),
   };
 }
 
@@ -280,9 +283,12 @@ function derivedDecision(gate, label) {
     case 'task12':
       if (gate.sampleCount !== 3) fail(`${label}.sampleCount must be 3`);
       requireExactNumber(thresholds.flowBootstrapCount, 6, `${label}.thresholds.flowBootstrapCount`);
-      requireExactNumber(thresholds.workflowBootstrapCount, 2, `${label}.thresholds.workflowBootstrapCount`);
+      if (observed.workflow) {
+        requireExactNumber(thresholds.workflowBootstrapCount, 2, `${label}.thresholds.workflowBootstrapCount`);
+      }
       return requireInteger(observed.flow?.bootstrapCount, `${label}.observed.flow.bootstrapCount`) <= 6 &&
-        requireInteger(observed.workflow?.bootstrapCount, `${label}.observed.workflow.bootstrapCount`) <= 2
+        (!observed.workflow ||
+          requireInteger(observed.workflow.bootstrapCount, `${label}.observed.workflow.bootstrapCount`) <= 2)
         ? 'Pass'
         : 'Fail';
     default:

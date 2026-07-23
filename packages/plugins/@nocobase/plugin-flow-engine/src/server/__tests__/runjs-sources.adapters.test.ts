@@ -21,11 +21,11 @@ describe('flow-engine RunJS source adapters', () => {
   let agent: ReturnType<MockServer['agent']>;
   let repository: FlowModelRepository;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     await resetApp([PluginLightExtensionServer, 'flow-engine']);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app?.destroy();
   });
 
@@ -606,8 +606,9 @@ describe('flow-engine RunJS source adapters', () => {
       expectedPath: 'stepParams.jsSettings.runJs.missingCode',
     },
   ])('rejects FlowModel step locators with a missing $label path', async (input) => {
+    const modelUid = `js-step-missing-${input.label}-path-model`;
     await repository.insertModel({
-      uid: 'js-step-missing-path-model',
+      uid: modelUid,
       title: 'JS block',
       use: 'JSBlockModel',
       stepParams: {
@@ -622,7 +623,7 @@ describe('flow-engine RunJS source adapters', () => {
 
     const response = await openSource({
       kind: 'flowModel.step',
-      modelUid: 'js-step-missing-path-model',
+      modelUid,
       flowKey: input.flowKey,
       stepKey: input.stepKey,
       paramPath: input.paramPath,
@@ -1737,46 +1738,58 @@ describe('flow-engine RunJS source adapters', () => {
   });
 
   it('registers adapters while compiler validation remains available when Flow Engine loads first', async () => {
-    await app.destroy();
-    await resetApp(['flow-engine', PluginLightExtensionServer]);
+    const reversedApp = await createMockServer({
+      skipSupervisor: true,
+      registerActions: true,
+      acl: true,
+      plugins: [...basePlugins, 'flow-engine', PluginLightExtensionServer],
+    });
 
-    await repository.insertModel({
-      uid: 'chart-runjs-reversed-order-model',
-      use: 'ChartBlockModel',
-      stepParams: {
-        chartSettings: {
-          configure: {
-            chart: {
-              option: {
-                mode: 'raw',
-                raw: 'return { xAxis: {} };',
+    try {
+      const user = await reversedApp.db.getRepository('users').findOne();
+      const reversedAgent = await reversedApp.agent().login(user);
+      const reversedRepository = reversedApp.db.getCollection('flowModels').repository as FlowModelRepository;
+
+      await reversedRepository.insertModel({
+        uid: 'chart-runjs-reversed-order-model',
+        use: 'ChartBlockModel',
+        stepParams: {
+          chartSettings: {
+            configure: {
+              chart: {
+                option: {
+                  mode: 'raw',
+                  raw: 'return { xAxis: {} };',
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    const locator: RunJSSourceLocator = {
-      kind: 'chart.option',
-      modelUid: 'chart-runjs-reversed-order-model',
-    };
-    const open = await openSource(locator);
-    expect(open.status).toBe(200);
+      const locator: RunJSSourceLocator = {
+        kind: 'chart.option',
+        modelUid: 'chart-runjs-reversed-order-model',
+      };
+      const open = await openSource(locator, reversedAgent);
+      expect(open.status).toBe(200);
 
-    const save = await saveSource(locator, open.body.data, 'ctx.render(null);');
+      const save = await saveSource(locator, open.body.data, 'ctx.render(null);', reversedAgent);
 
-    expect(save.status).toBe(400);
-    expect(save.body.errors[0]).toMatchObject({
-      code: 'RUNJS_COMPILE_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([
-          expect.objectContaining({
-            ruleId: 'runjs-value-render-forbidden',
-          }),
-        ]),
-      },
-    });
+      expect(save.status).toBe(400);
+      expect(save.body.errors[0]).toMatchObject({
+        code: 'RUNJS_COMPILE_FAILED',
+        details: {
+          diagnostics: expect.arrayContaining([
+            expect.objectContaining({
+              ruleId: 'runjs-value-render-forbidden',
+            }),
+          ]),
+        },
+      });
+    } finally {
+      await reversedApp.destroy();
+    }
   });
 
   async function resetApp(runJSPlugins: Array<string | typeof PluginLightExtensionServer>) {

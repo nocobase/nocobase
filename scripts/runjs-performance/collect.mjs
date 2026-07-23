@@ -480,13 +480,17 @@ function median(values) {
 }
 
 function adapterMetrics(samples) {
-  const lane = (name) => ({
-    bootstrapCount: median(samples.map((sample) => sample.metrics[name].bootstrapCount)),
-    bootstrapWallTimeMs: median(
-      samples.map((sample) => sample.metrics[name].bootstrapMs.reduce((sum, value) => sum + value, 0)),
-    ),
-    sessionCount: median(samples.map((sample) => sample.metrics[name].sessionCount)),
-  });
+  const lane = (name) => {
+    const available = samples.filter((sample) => sample.metrics[name]);
+    if (!available.length) return;
+    return {
+      bootstrapCount: median(available.map((sample) => sample.metrics[name].bootstrapCount)),
+      bootstrapWallTimeMs: median(
+        available.map((sample) => sample.metrics[name].bootstrapMs.reduce((sum, value) => sum + value, 0)),
+      ),
+      sessionCount: median(available.map((sample) => sample.metrics[name].sessionCount)),
+    };
+  };
   return {
     flow: lane('flow'),
     peakRssBytes: median(samples.map((sample) => sample.process.peakRssBytes)),
@@ -594,7 +598,7 @@ async function gateFor(probe, summary, output) {
   }
   if (probe === 'adapter-tests') {
     const metrics = adapterMetrics(recorded);
-    const pass = metrics.flow.bootstrapCount <= 6 && metrics.workflow.bootstrapCount <= 2;
+    const pass = metrics.flow?.bootstrapCount <= 6 && (!metrics.workflow || metrics.workflow.bootstrapCount <= 2);
     return {
       ...common,
       taskId: 'task12',
@@ -602,7 +606,10 @@ async function gateFor(probe, summary, output) {
       decision: pass ? 'Pass' : 'Fail',
       observed: metrics,
       sampleCount: recorded.length,
-      thresholds: { flowBootstrapCount: 6, workflowBootstrapCount: 2 },
+      thresholds: {
+        flowBootstrapCount: 6,
+        ...(metrics.workflow ? { workflowBootstrapCount: 2 } : {}),
+      },
     };
   }
   throw new Error(`Probe ${probe} does not produce a gate`);

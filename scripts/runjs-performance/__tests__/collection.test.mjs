@@ -321,6 +321,7 @@ test('supports probe exclusions and skips adapter lanes absent from the measured
   try {
     const checkout = path.join(directory, 'checkout');
     const output = path.join(directory, 'output');
+    const gate = path.join(directory, 'task12-adapter-tests.json');
     const bin = path.join(directory, 'bin');
     const flowTest = path.join(
       checkout,
@@ -363,20 +364,30 @@ writeFileSync(measurement, JSON.stringify({
     );
     await chmod(yarn, 0o755);
 
-    const result = run(collector, ['--cwd', checkout, '--suite', 'feature', '--runs', '1', '--output', output], {
-      env: {
-        DB_DIALECT: 'postgres',
-        PATH: `${bin}:${process.env.PATH}`,
-        RUNJS_PERF_EXCLUDE_PROBES:
-          'code-editor,runtime-resolve,runtime-cache-retention,light-extension-server,compile-worker-idle,source-refresh',
-        RUNJS_PERF_SKIP_INSTALL: '1',
+    const result = run(
+      collector,
+      ['--cwd', checkout, '--suite', 'feature', '--runs', '1', '--output', output, '--gate-output', gate],
+      {
+        env: {
+          DB_DIALECT: 'postgres',
+          PATH: `${bin}:${process.env.PATH}`,
+          RUNJS_PERF_EXCLUDE_PROBES:
+            'code-editor,runtime-resolve,runtime-cache-retention,light-extension-server,compile-worker-idle,source-refresh',
+          RUNJS_PERF_SKIP_INSTALL: '1',
+        },
       },
-    });
+    );
     assert.equal(result.status, 0, result.stderr);
     const summary = JSON.parse(await readFile(path.join(output, 'summary.json'), 'utf8'));
     assert.deepEqual(Object.keys(summary.probes), ['adapter-tests']);
     assert.equal(summary.install.action, 'skipped');
     assert.deepEqual(Object.keys(summary.probes['adapter-tests'].samples[0].metrics), ['flow']);
+    const generatedGate = JSON.parse(await readFile(gate, 'utf8'));
+    assert.equal(generatedGate.decision, 'Pass');
+    assert.equal(generatedGate.sampleCount, 1);
+    assert.equal(generatedGate.observed.flow.bootstrapCount, 1);
+    assert.equal(generatedGate.observed.workflow, undefined);
+    assert.equal(generatedGate.thresholds.workflowBootstrapCount, undefined);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
