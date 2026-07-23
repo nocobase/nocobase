@@ -387,7 +387,7 @@ describe('nocobase buildin plugin auth redirect', () => {
   });
 
   it.each(['/v2/admin/legacy-page/tab/tab-1', '/v2/admin/legacy-page/view/detail'])(
-    'should show 404 for authenticated direct v1-style v2 page access: %s',
+    'should explain authenticated direct v1-style v2 page access: %s',
     async (pathname) => {
       const app = createMockClient({
         publicPath: '/v2/',
@@ -413,7 +413,12 @@ describe('nocobase buildin plugin auth redirect', () => {
       const Root = app.getRootComponent();
       render(<Root />);
 
-      expect(await screen.findByText('404')).toBeInTheDocument();
+      expect(await screen.findByText('This page is not supported in the /v2/ branch')).toBeInTheDocument();
+      expect(screen.queryByText('404')).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Open from the original entry' })).toHaveAttribute(
+        'href',
+        pathname.replace(/^\/v2/, ''),
+      );
       expect(app.router.router.state.location.pathname).toBe(pathname);
     },
   );
