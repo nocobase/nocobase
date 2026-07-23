@@ -70,8 +70,8 @@ test('records the production save-refresh path for 500 loaded models and 10 matc
   );
   const model = models[0];
   const originalForEachModel = engine.forEachModel.bind(engine);
-  const originalInvalidateFlowCache = model.invalidateFlowCache.bind(model);
-  let modelInvalidationCount = 0;
+  let observerDrivenRefreshCount = 0;
+  let explicitRefreshCount = 0;
   let measureScan = false;
   let scanStartedAt = 0;
   let scanMs = 0;
@@ -79,17 +79,22 @@ test('records the production save-refresh path for 500 loaded models and 10 matc
     if (measureScan) scanStartedAt = performance.now();
     originalForEachModel(callback);
   });
-  vi.spyOn(model, 'invalidateFlowCache').mockImplementation((eventName, deep) => {
-    modelInvalidationCount += 1;
-    if (measureScan) {
-      scanMs = performance.now() - scanStartedAt;
-      measureScan = false;
-    }
-    originalInvalidateFlowCache(eventName, deep);
-  });
   let rerenderMs = 0;
   let rerenderCount = 0;
   for (const loadedModel of models) {
+    const originalInvalidateFlowCache = loadedModel.invalidateFlowCache.bind(loadedModel);
+    vi.spyOn(loadedModel, 'invalidateFlowCache').mockImplementation((eventName, deep) => {
+      if (loadedModel === model) {
+        observerDrivenRefreshCount += 1;
+      } else {
+        explicitRefreshCount += 1;
+        if (measureScan) {
+          scanMs = performance.now() - scanStartedAt;
+          measureScan = false;
+        }
+      }
+      originalInvalidateFlowCache(eventName, deep);
+    });
     vi.spyOn(loadedModel, 'rerender').mockImplementation(async () => {
       const started = performance.now();
       await Promise.resolve();
@@ -101,6 +106,7 @@ test('records the production save-refresh path for 500 loaded models and 10 matc
   const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
   flowContext.defineMethod('getStepFormValues', () => persistedValue);
   let pendingRefresh: Promise<unknown> | undefined;
+  let nextPersistedValue = persistedValue;
   RunJSEditorRegistry.registerProvider({
     key: 'source-refresh-performance-probe',
     canHandle: (props) => props.locator?.kind === 'flowModel.step',
@@ -108,7 +114,7 @@ test('records the production save-refresh path for 500 loaded models and 10 matc
       <button
         type="button"
         onClick={() => {
-          pendingRefresh = Promise.resolve(props.onPersistedChange?.(props.value));
+          pendingRefresh = Promise.resolve(props.onPersistedChange?.(nextPersistedValue));
         }}
       >
         refresh source
@@ -125,26 +131,33 @@ test('records the production save-refresh path for 500 loaded models and 10 matc
 
   const scanSamplesMs: number[] = [];
   const postSaveRefreshSamplesMs: number[] = [];
+  const observerDrivenRefreshCountSamples: number[] = [];
+  const explicitRefreshCountSamples: number[] = [];
   const rerenderSamplesMs: number[] = [];
   const saveSamplesMs: number[] = [];
   for (let run = 0; run < 30; run += 1) {
-    modelInvalidationCount = 0;
+    observerDrivenRefreshCount = 0;
+    explicitRefreshCount = 0;
     rerenderMs = 0;
     rerenderCount = 0;
     scanMs = 0;
     measureScan = true;
+    nextPersistedValue = { ...persistedValue, code: `ctx.render("remote-${run}");` };
     const started = performance.now();
     fireEvent.click(screen.getByRole('button', { name: 'refresh source' }));
     await pendingRefresh;
     const saveMs = performance.now() - started;
     const postSaveRefreshMs = performance.now() - scanStartedAt;
     expect(rerenderCount).toBe(10);
-    expect(modelInvalidationCount).toBe(1);
+    expect(observerDrivenRefreshCount).toBe(1);
+    expect(explicitRefreshCount).toBe(9);
     expect(scanMs).toBeGreaterThan(0);
     expect(postSaveRefreshMs).toBeGreaterThanOrEqual(scanMs);
     saveSamplesMs.push(saveMs);
     scanSamplesMs.push(scanMs);
     postSaveRefreshSamplesMs.push(postSaveRefreshMs);
+    observerDrivenRefreshCountSamples.push(observerDrivenRefreshCount);
+    explicitRefreshCountSamples.push(explicitRefreshCount);
     rerenderSamplesMs.push(rerenderMs);
   }
   const scanTotal = scanSamplesMs.reduce((sum, sample) => sum + sample, 0);
@@ -152,6 +165,8 @@ test('records the production save-refresh path for 500 loaded models and 10 matc
   writeMeasurement({
     loadedModels: models.length,
     matchingModels: 10,
+    observerDrivenRefreshCountSamples,
+    explicitRefreshCountSamples,
     postSaveRefreshSamplesMs,
     rerenderSamplesMs,
     saveSamplesMs,
