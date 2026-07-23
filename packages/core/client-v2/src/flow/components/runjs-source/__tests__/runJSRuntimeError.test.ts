@@ -38,6 +38,7 @@ describe('readRunJSRuntimeError', () => {
       status: 409,
       reasonCode: 'binding_changed',
       message: 'Refresh required',
+      details: { reasonCode: 'binding_changed' },
     });
   });
 
@@ -56,6 +57,43 @@ describe('readRunJSRuntimeError', () => {
       code: 'REQUEST_FAILED',
       status: 422,
       reasonCode: 'settings_invalid',
+      details: { reasonCode: 'settings_invalid' },
+    });
+  });
+
+  it('keeps local and server settings paths for actionable runtime errors', () => {
+    expect(
+      readRunJSRuntimeError({
+        code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+        message: 'Settings invalid',
+        paths: ['count'],
+      }),
+    ).toEqual({
+      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      message: 'Settings invalid',
+      paths: ['count'],
+    });
+
+    expect(
+      readRunJSRuntimeError({
+        response: {
+          status: 422,
+          data: {
+            errors: [
+              {
+                code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+                details: {
+                  reasonCode: 'settings_invalid',
+                  issues: [{ path: '$.count', code: 'settings_type_mismatch' }],
+                },
+              },
+            ],
+          },
+        },
+      }),
+    ).toMatchObject({
+      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      paths: ['$.count'],
     });
   });
 });

@@ -100,6 +100,57 @@ export function hasWorkspaceChanges(baseFiles: RunJSWorkspaceFile[], nextFiles: 
   return false;
 }
 
+export interface RunJSWorkspaceMergeResult {
+  files: RunJSWorkspaceFile[];
+  conflictPaths: string[];
+}
+
+export function mergeRunJSWorkspaceFiles(
+  baseFiles: RunJSWorkspaceFile[],
+  localFiles: RunJSWorkspaceFile[],
+  latestFiles: RunJSWorkspaceFile[],
+): RunJSWorkspaceMergeResult {
+  const baseByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
+  const localByPath = new Map(normalizeWorkspaceFiles(localFiles).map((file) => [file.path, file]));
+  const latestByPath = new Map(normalizeWorkspaceFiles(latestFiles).map((file) => [file.path, file]));
+  const paths = Array.from(new Set([...baseByPath.keys(), ...localByPath.keys(), ...latestByPath.keys()])).sort(
+    compareRunJSPaths,
+  );
+  const mergedFiles: RunJSWorkspaceFile[] = [];
+  const conflictPaths: string[] = [];
+
+  for (const path of paths) {
+    const base = baseByPath.get(path);
+    const local = localByPath.get(path);
+    const latest = latestByPath.get(path);
+    const localChanged = !sameWorkspaceFile(base, local);
+    const latestChanged = !sameWorkspaceFile(base, latest);
+
+    if (localChanged && latestChanged && !sameWorkspaceFile(local, latest)) {
+      conflictPaths.push(path);
+      continue;
+    }
+
+    const selected = localChanged ? local : latest;
+    if (selected) {
+      mergedFiles.push(selected);
+    }
+  }
+
+  return {
+    files: normalizeWorkspaceFiles(mergedFiles),
+    conflictPaths,
+  };
+}
+
+function sameWorkspaceFile(left: RunJSWorkspaceFile | undefined, right: RunJSWorkspaceFile | undefined): boolean {
+  if (!left || !right) {
+    return left === right;
+  }
+
+  return left.content === right.content && left.language === right.language && left.mode === right.mode;
+}
+
 export function summarizeWorkspaceChanges(
   baseFiles: RunJSWorkspaceFile[],
   nextFiles: RunJSWorkspaceFile[],

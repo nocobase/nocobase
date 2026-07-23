@@ -16,6 +16,7 @@ import type { RunJSSourceActionInput, RunJSSourceActionName, RunJSSourceActionRe
 
 export const runJSSourceActionNames = [
   'open',
+  'openLatest',
   'restoreFromCode',
   'compilePreview',
   'save',

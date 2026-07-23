@@ -2172,6 +2172,9 @@ describe('flowSurfaces swagger', () => {
     const createPageRequest =
       swaggerDocument.paths['/flowSurfaces:createPage'].post.requestBody.content['application/json'];
     expect(createPageRequest.example.menuRouteId).toBe(1002);
+    expect(swaggerDocument.paths['/flowSurfaces:createPage'].post.summary).toBe('Create JS page');
+    expect(createPageRequest.example.pageType).toBe('js-page');
+    expect(createPageRequest.example.idempotencyKey).toBe('employees-js-page-v1');
 
     const listNavigationTargets = swaggerDocument.paths['/flowSurfaces:listNavigationTargets'].post;
     expect(listNavigationTargets.description).toContain('capabilities.multiPortal=false');
@@ -2339,5 +2342,26 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCreatePageRequest.properties.layoutUid.description).toContain('existing route');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.portalUid.description).toContain('Mutually exclusive');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
+    expect(schemas.FlowSurfaceCreatePageRequest.properties.pageType.enum).toEqual(['root-page', 'js-page']);
+    expect(schemas.FlowSurfaceCreatePageRequest.properties.idempotencyKey.minLength).toBe(1);
+    expect(schemas.FlowSurfaceCreatePageResult.properties.runJSLocator.$ref).toBe(
+      '#/components/schemas/FlowSurfaceRunJSLocator',
+    );
+    expect(schemas.FlowSurfaceCreatePageResult.properties.capabilities.$ref).toBe(
+      '#/components/schemas/FlowSurfaceJSPageCapabilities',
+    );
+    expect(schemas.FlowSurfaceCreatePageResult.properties.workspaceStatus.enum).toEqual(['ready', 'pending', 'error']);
+    expect(schemas.FlowSurfaceCreatePageResult.properties.idempotentReplay.type).toBe('boolean');
+    expect(schemas.FlowSurfaceRunJSLocator.required).toEqual([
+      'kind',
+      'modelUid',
+      'flowKey',
+      'stepKey',
+      'paramPath',
+      'versionPath',
+    ]);
+    expect(schemas.FlowSurfaceAddBlockResult.properties.runJSLocator.$ref).toBe(
+      '#/components/schemas/FlowSurfaceRunJSLocator',
+    );
   });
 });

@@ -11,6 +11,10 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { registerFlowSurfacesResource } from './flow-surfaces';
+import {
+  registerFlowSurfaceRunJSWorkspaceBootstrapPort,
+  type FlowSurfaceRunJSWorkspaceBootstrapPort,
+} from './flow-surfaces/page-surface-contract';
 import { registerFlowModelRunJSSourceAdapters } from './runjs-sources';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
@@ -18,6 +22,13 @@ import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/res
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private unregisterRunJSSourceAdapters?: () => void;
+  private unregisterRunJSWorkspaceBootstrapPort?: () => void;
+
+  registerRunJSWorkspaceBootstrapPort(port: FlowSurfaceRunJSWorkspaceBootstrapPort) {
+    this.unregisterRunJSWorkspaceBootstrapPort?.();
+    this.unregisterRunJSWorkspaceBootstrapPort = registerFlowSurfaceRunJSWorkspaceBootstrapPort(this.app, port);
+    return this.unregisterRunJSWorkspaceBootstrapPort;
+  }
 
   async afterAdd() {}
 
@@ -159,11 +170,15 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   }
 
   async afterDisable() {
+    this.unregisterRunJSWorkspaceBootstrapPort?.();
+    this.unregisterRunJSWorkspaceBootstrapPort = undefined;
     this.unregisterRunJSSourceAdapters?.();
     this.unregisterRunJSSourceAdapters = undefined;
   }
 
   async remove() {
+    this.unregisterRunJSWorkspaceBootstrapPort?.();
+    this.unregisterRunJSWorkspaceBootstrapPort = undefined;
     this.unregisterRunJSSourceAdapters?.();
     this.unregisterRunJSSourceAdapters = undefined;
   }

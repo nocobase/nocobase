@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Transaction } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import type {
   RunJSLegacySource,
   RunJSSourceAdapter,
@@ -15,10 +15,12 @@ import type {
   RunJSSourceAdapterRegistry,
   RunJSSourceLocator,
 } from '../vsc-file/public-api';
-import { isVscError } from '../vsc-file/public-api';
+import { buildRunJSSourceRepositoryIdentity, isVscError } from '../vsc-file/public-api';
 import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
 import ts from 'typescript';
 import { posix as pathPosix } from 'path';
+import { createHash, randomUUID } from 'crypto';
+import { uid } from '@nocobase/utils';
 
 import {
   LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
@@ -51,6 +53,7 @@ const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const INLINE_ENTRY_DESCRIPTOR_PATH = 'src/client/entry.json';
 const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'] as const;
 const RESOLVABLE_EXTENSIONS = [...CODE_EXTENSIONS, '.json'] as const;
+const MOVE_OPERATION_STALE_AFTER_MS = 15 * 60 * 1000;
 
 const ENTRY_ROOTS: Record<LightExtensionKind, string> = {
   'js-block': 'src/client/js-blocks',
@@ -65,6 +68,82 @@ export interface MoveSourceServiceContext extends LightExtensionServiceContext {
 }
 
 type AdapterRegistryProvider = () => RunJSSourceAdapterRegistry | null;
+
+interface MoveSourceOperationReservation {
+  identityHash: string;
+  attemptId: string;
+}
+
+interface MoveSourceOperationResolution {
+  reservation?: MoveSourceOperationReservation;
+  replayResult?: LightExtensionMoveSourceResult;
+}
+
+interface MoveSourceSourceSnapshotInput {
+  locator: RunJSSourceLocator;
+  sourceRepoId: string;
+  sourceHeadCommitId: string | null;
+  expectedOwnerFingerprint: string;
+}
+
+export interface MoveSourceSourceSnapshotValidator {
+  assertCurrent(input: MoveSourceSourceSnapshotInput, transaction?: Transaction): Promise<void>;
+}
+
+export class PersistentMoveSourceSnapshotValidator implements MoveSourceSourceSnapshotValidator {
+  constructor(private readonly db: Database) {}
+
+  async assertCurrent(input: MoveSourceSourceSnapshotInput, transaction?: Transaction): Promise<void> {
+    const repository = await this.db.getRepository('vscFileRepositories').findOne({
+      filterByTk: input.sourceRepoId,
+      transaction,
+    });
+    if (!repository) {
+      throw sourceSnapshotOutdated(input, null);
+    }
+
+    const identity = buildRunJSSourceRepositoryIdentity(input.locator);
+    if (
+      repository.get('ownerType') !== identity.ownerType ||
+      repository.get('ownerId') !== identity.ownerId ||
+      repository.get('name') !== identity.name
+    ) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_PERMISSION_DENIED',
+        'RunJS source repository belongs to another host',
+        { details: { sourceRepoId: input.sourceRepoId } },
+      );
+    }
+
+    const currentHeadCommitId = readNullableModelString(repository, 'headCommitId');
+    if (currentHeadCommitId !== input.sourceHeadCommitId || repository.get('status') === 'archived') {
+      throw sourceSnapshotOutdated(input, currentHeadCommitId);
+    }
+    if (!input.sourceHeadCommitId) {
+      return;
+    }
+
+    const commit = await this.db.getRepository('vscFileCommits').findOne({
+      filter: {
+        id: input.sourceHeadCommitId,
+        repoId: input.sourceRepoId,
+      },
+      transaction,
+    });
+    if (!commit) {
+      throw sourceSnapshotOutdated(input, currentHeadCommitId);
+    }
+    const metadata = commit.get('metadata');
+    const headOwnerFingerprint = isRecord(metadata) ? metadata.ownerFingerprint : undefined;
+    if (
+      typeof headOwnerFingerprint === 'string' &&
+      headOwnerFingerprint &&
+      headOwnerFingerprint !== input.expectedOwnerFingerprint
+    ) {
+      throw sourceSnapshotOutdated(input, currentHeadCommitId);
+    }
+  }
+}
 
 type ExternalBindingAdapter = RunJSSourceAdapter & {
   writeExternalBinding: (input: {
@@ -84,28 +163,93 @@ export class MoveSourceService {
     private readonly runtimeCompileService: LightExtensionRuntimeCompileService,
     private readonly referenceService: ReferenceService,
     private readonly getAdapterRegistry: AdapterRegistryProvider,
+    private readonly applicationName = 'main',
+    private readonly sourceSnapshotValidator: MoveSourceSourceSnapshotValidator = new PersistentMoveSourceSnapshotValidator(
+      db,
+    ),
   ) {}
 
   async moveSource(
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
   ): Promise<LightExtensionMoveSourceResult> {
+    let operation: MoveSourceOperationReservation | undefined;
     try {
       assertMoveSourceInputSupported(input);
-      if (input.destination.type === 'existing') {
-        return await this.moveSourceToExistingRepo(input, ctx);
+      const completedResult = await this.findCompletedMoveOperation(input);
+      if (completedResult) {
+        await this.assertCanReplayMoveSource(input, ctx);
+        return completedResult;
       }
-      return await this.db.sequelize.transaction((transaction) =>
-        this.moveSourceInTransaction(input, ctx, transaction),
-      );
+      await this.assertCanStartMoveSource(input, ctx);
+      const operationResolution = await this.reserveMoveOperation(input);
+      if (operationResolution.replayResult) {
+        return operationResolution.replayResult;
+      }
+      operation = operationResolution.reservation;
+      if (input.destination.type === 'default') {
+        const defaultRepo = await this.repoService.getOrCreateApplicationDefaultRepo(this.applicationName, ctx);
+        return await this.moveSourceToExistingRepo(
+          {
+            ...input,
+            destination: { type: 'existing', repoId: defaultRepo.id },
+          },
+          ctx,
+          operation,
+        );
+      }
+      if (input.destination.type === 'existing') {
+        return await this.moveSourceToExistingRepo(input, ctx, operation);
+      }
+      return await this.db.sequelize.transaction(async (transaction) => {
+        const result = await this.moveSourceInTransaction(input, ctx, transaction);
+        await this.completeMoveOperation(operation, result, transaction);
+        return result;
+      });
     } catch (error) {
+      await this.failMoveOperation(operation, error);
       throw normalizeMoveSourceError(error);
     }
+  }
+
+  private async assertCanStartMoveSource(
+    input: LightExtensionMoveSourceInput,
+    ctx: MoveSourceServiceContext,
+  ): Promise<void> {
+    const registry = this.getAdapterRegistry();
+    if (!registry) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+    }
+    const adapter = registry.require(input.locator.kind);
+    if (!supportsExternalBinding(adapter)) {
+      throw unsupportedLocator(input.locator);
+    }
+    const adapterContext: RunJSSourceAdapterContext = { ...ctx.adapterContext };
+    await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
+    const legacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
+    assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
+    await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input));
+  }
+
+  private async assertCanReplayMoveSource(
+    input: LightExtensionMoveSourceInput,
+    ctx: MoveSourceServiceContext,
+  ): Promise<void> {
+    const registry = this.getAdapterRegistry();
+    if (!registry) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+    }
+    const adapter = registry.require(input.locator.kind);
+    if (!supportsExternalBinding(adapter)) {
+      throw unsupportedLocator(input.locator);
+    }
+    await adapter.assertCanWrite({ locator: input.locator, ctx: { ...ctx.adapterContext } });
   }
 
   private async moveSourceToExistingRepo(
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
+    operation?: MoveSourceOperationReservation,
   ): Promise<LightExtensionMoveSourceResult> {
     if (input.destination.type !== 'existing') {
       throw new LightExtensionError(
@@ -136,6 +280,8 @@ export class MoveSourceService {
       category: resolveMovedEntryCategory(kind, legacy),
       settingsSchema: originSettingsSchema,
     });
+    const entryKey = getRelocatedEntryKey(entryFiles, kind, input.entryName);
+    await this.repoService.assertApplicationOwnership(input.destination.repoId, this.applicationName, ctx);
     const current = await this.fileService.pull({
       repoId: input.destination.repoId,
       includeContent: 'none',
@@ -145,6 +291,7 @@ export class MoveSourceService {
       input.destination.repoId,
       kind,
       input.entryName,
+      entryKey,
       entryFiles,
       current.files || [],
       await this.entryService.listEntries(input.destination.repoId),
@@ -161,9 +308,168 @@ export class MoveSourceService {
         requestSource: ctx.requestSource || 'light-extension-move-source',
       },
     );
-    return this.db.sequelize.transaction((transaction) =>
-      this.publishExistingMove(input, ctx, adapter, kind, prepared, transaction),
+    return this.db.sequelize.transaction(async (transaction) => {
+      const result = await this.publishExistingMove(input, ctx, adapter, kind, entryKey, prepared, transaction);
+      await this.completeMoveOperation(operation, result, transaction);
+      return result;
+    });
+  }
+
+  private async findCompletedMoveOperation(
+    input: LightExtensionMoveSourceInput,
+  ): Promise<LightExtensionMoveSourceResult | undefined> {
+    if (!input.idempotencyKey) {
+      return undefined;
+    }
+    const applicationName = this.applicationName.trim();
+    if (!applicationName) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
+    }
+    const identityHash = hashMoveOperation({
+      action: 'move-source',
+      applicationName,
+      idempotencyKey: input.idempotencyKey,
+    });
+    const record = await this.db.getRepository('lightExtensionMoveOperations').model.findOne({
+      where: { identityHash },
+    });
+    if (!record) {
+      return undefined;
+    }
+    const requestHash = hashMoveOperation({ ...input, idempotencyKey: undefined });
+    if (readModelString(record, 'requestHash') !== requestHash) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT',
+        'Move source idempotency key was already used with a different request',
+      );
+    }
+    return readModelString(record, 'status') === 'completed'
+      ? readMoveSourceOperationResult(record.get('result'))
+      : undefined;
+  }
+
+  private async reserveMoveOperation(input: LightExtensionMoveSourceInput): Promise<MoveSourceOperationResolution> {
+    if (!input.idempotencyKey) {
+      return {};
+    }
+    const applicationName = this.applicationName.trim();
+    if (!applicationName) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
+    }
+    const identityHash = hashMoveOperation({
+      action: 'move-source',
+      applicationName,
+      idempotencyKey: input.idempotencyKey,
+    });
+    const requestHash = hashMoveOperation({ ...input, idempotencyKey: undefined });
+    const attemptId = randomUUID();
+    const operationRepository = this.db.getRepository('lightExtensionMoveOperations');
+    const [record, created] = await operationRepository.model.findOrCreate({
+      where: { identityHash },
+      defaults: {
+        id: `lemo_${uid()}`,
+        identityHash,
+        applicationName,
+        idempotencyKey: input.idempotencyKey,
+        requestHash,
+        attemptId,
+        status: 'pending',
+      },
+    });
+    if (created) {
+      return { reservation: { identityHash, attemptId } };
+    }
+    if (readModelString(record, 'requestHash') !== requestHash) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT',
+        'Move source idempotency key was already used with a different request',
+      );
+    }
+    if (readModelString(record, 'status') === 'completed') {
+      return { replayResult: readMoveSourceOperationResult(record.get('result')) };
+    }
+
+    const storedAttemptId = readModelString(record, 'attemptId');
+    const status = readModelString(record, 'status');
+    if (status !== 'failed' && !isMoveOperationStale(record.get('updatedAt'))) {
+      throw moveOperationInProgress();
+    }
+    const [claimed] = await operationRepository.model.update(
+      {
+        attemptId,
+        status: 'pending',
+        result: null,
+        errorCode: null,
+      },
+      {
+        where: {
+          identityHash,
+          attemptId: storedAttemptId,
+          status,
+        },
+      },
     );
+    if (claimed !== 1) {
+      throw moveOperationInProgress();
+    }
+    return { reservation: { identityHash, attemptId } };
+  }
+
+  private async completeMoveOperation(
+    operation: MoveSourceOperationReservation | undefined,
+    result: LightExtensionMoveSourceResult,
+    transaction: Transaction,
+  ): Promise<void> {
+    if (!operation) {
+      return;
+    }
+    const [completed] = await this.db.getRepository('lightExtensionMoveOperations').model.update(
+      {
+        status: 'completed',
+        result,
+        errorCode: null,
+      },
+      {
+        where: {
+          identityHash: operation.identityHash,
+          attemptId: operation.attemptId,
+          status: 'pending',
+        },
+        transaction,
+      },
+    );
+    if (completed !== 1) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Move source operation could not persist its completed result',
+      );
+    }
+  }
+
+  private async failMoveOperation(
+    operation: MoveSourceOperationReservation | undefined,
+    error: unknown,
+  ): Promise<void> {
+    if (!operation) {
+      return;
+    }
+    try {
+      await this.db.getRepository('lightExtensionMoveOperations').model.update(
+        {
+          status: 'failed',
+          errorCode: getMoveOperationErrorCode(error),
+        },
+        {
+          where: {
+            identityHash: operation.identityHash,
+            attemptId: operation.attemptId,
+            status: 'pending',
+          },
+        },
+      );
+    } catch {
+      // Preserve the original move failure if the best-effort operation status update also fails.
+    }
   }
 
   private async publishExistingMove(
@@ -171,6 +477,7 @@ export class MoveSourceService {
     ctx: MoveSourceServiceContext,
     adapter: ExternalBindingAdapter,
     kind: LightExtensionKind,
+    entryKey: string,
     prepared: LightExtensionPreparedSave,
     transaction: Transaction,
   ): Promise<LightExtensionMoveSourceResult> {
@@ -179,8 +486,9 @@ export class MoveSourceService {
     await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
     const currentLegacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
+    await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
     const saved = await this.runtimeCompileService.publishPreparedSave(prepared, serviceContext);
-    const entry = await this.requireEntry(saved.repo.id, kind, input.entryName, serviceContext);
+    const entry = await this.requireEntry(saved.repo.id, kind, entryKey, serviceContext);
     const binding = buildSourceBinding(saved.repo, entry, kind);
     const writeResult = await adapter.writeExternalBinding({
       locator: input.locator,
@@ -200,17 +508,18 @@ export class MoveSourceService {
   private assertDestinationEntryAvailable(
     repoId: string,
     kind: LightExtensionKind,
-    entryName: string,
+    entryDirectory: string,
+    entryKey: string,
     entryFiles: LightExtensionFileChange[],
     currentFiles: Array<{ path: string }>,
     entries: LightExtensionEntryRecord[],
   ): void {
-    const entryRoot = getEntryRoot(kind, entryName);
+    const entryRoot = getEntryRoot(kind, entryDirectory);
     if (currentFiles.some((file) => file.path === entryRoot || file.path.startsWith(`${entryRoot}/`))) {
-      throw entryConflict(repoId, kind, entryName);
+      throw entryConflict(repoId, kind, entryDirectory);
     }
-    if (entries.some((entry) => entry.kind === kind && entry.entryName === entryName)) {
-      throw entryConflict(repoId, kind, entryName);
+    if (entries.some((entry) => entry.kind === kind && entry.entryName === entryKey)) {
+      throw entryConflict(repoId, kind, entryKey);
     }
     if (!entryFiles.some((file) => file.path.startsWith(`${entryRoot}/`))) {
       throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Moved entry workspace is incomplete');
@@ -247,6 +556,7 @@ export class MoveSourceService {
     await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
     const legacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
+    await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
 
     const kind = resolveLightExtensionKind(input.locator, legacy);
     const category = resolveMovedEntryCategory(kind, legacy);
@@ -260,11 +570,12 @@ export class MoveSourceService {
       category,
       settingsSchema: originSettingsSchema,
     });
+    const entryKey = getRelocatedEntryKey(entryFiles, kind, input.entryName);
     const commitMessage = buildMoveCommitMessage(input);
 
     const repo = await this.createDestinationRepo(input, entryFiles, commitMessage, serviceContext);
 
-    const entry = await this.requireEntry(repo.id, kind, input.entryName, serviceContext);
+    const entry = await this.requireEntry(repo.id, kind, entryKey, serviceContext);
     const binding = buildSourceBinding(repo, entry, kind);
     const writeResult = await adapter.writeExternalBinding({
       locator: input.locator,
@@ -615,6 +926,20 @@ function getFlowModelUid(locator: RunJSSourceLocator): string {
 }
 
 function assertMoveSourceInputSupported(input: LightExtensionMoveSourceInput): void {
+  if (typeof input.idempotencyKey !== 'undefined') {
+    if (!input.idempotencyKey.trim()) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        'Move source idempotency key must be a non-empty string',
+      );
+    }
+    if (input.idempotencyKey.length > 255) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        'Move source idempotency key must be at most 255 characters',
+      );
+    }
+  }
   if (input.locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(input.locator);
   }
@@ -687,9 +1012,13 @@ function upsertEntryDescriptor(
   const descriptorPath = `${entryRoot}/entry.json`;
   const existing = files.find((file) => file.path === descriptorPath);
   const sourceDescriptor = existing ? parseEntryDescriptor(existing.content, descriptorPath) : {};
+  const sourceKey =
+    typeof sourceDescriptor.key === 'string' && LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(sourceDescriptor.key)
+      ? sourceDescriptor.key
+      : key;
   const descriptor: Record<string, unknown> = {
     schemaVersion: 1,
-    key,
+    key: sourceKey,
   };
   if (title) {
     descriptor.title = title;
@@ -730,6 +1059,27 @@ function upsertEntryDescriptor(
   existing.operation = 'upsert';
 }
 
+function getRelocatedEntryKey(
+  files: LightExtensionFileChange[],
+  kind: LightExtensionKind,
+  entryDirectory: string,
+): string {
+  const descriptorPath = `${getEntryRoot(kind, entryDirectory)}/entry.json`;
+  const descriptorFile = files.find((file) => file.path === descriptorPath);
+  if (!descriptorFile) {
+    throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Moved entry descriptor is missing', {
+      details: { descriptorPath },
+    });
+  }
+  const descriptor = parseEntryDescriptor(descriptorFile.content, descriptorPath);
+  if (typeof descriptor.key !== 'string' || !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(descriptor.key)) {
+    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'RunJS entry descriptor key is invalid', {
+      details: { descriptorPath },
+    });
+  }
+  return descriptor.key;
+}
+
 function parseEntryDescriptor(content: string, path: string): Record<string, unknown> {
   let descriptor: unknown;
   try {
@@ -749,6 +1099,105 @@ function parseEntryDescriptor(content: string, path: string): Record<string, unk
 
 function supportsExternalBinding(adapter: RunJSSourceAdapter): adapter is ExternalBindingAdapter {
   return typeof (adapter as { writeExternalBinding?: unknown }).writeExternalBinding === 'function';
+}
+
+function hashMoveOperation(value: unknown): string {
+  return createHash('sha256')
+    .update(JSON.stringify(sortObjectKeys(value)))
+    .digest('hex');
+}
+
+function sortObjectKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortObjectKeys);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => typeof entryValue !== 'undefined')
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entryValue]) => [key, sortObjectKeys(entryValue)]),
+  );
+}
+
+function readModelString(record: Model, key: string): string {
+  const value = record.get(key);
+  return typeof value === 'string' ? value : '';
+}
+
+function readNullableModelString(record: Model, key: string): string | null {
+  const value = record.get(key);
+  return typeof value === 'string' && value ? value : null;
+}
+
+function toSourceSnapshotInput(input: LightExtensionMoveSourceInput): MoveSourceSourceSnapshotInput {
+  return {
+    locator: input.locator,
+    sourceRepoId: input.sourceRepoId,
+    sourceHeadCommitId: input.sourceHeadCommitId,
+    expectedOwnerFingerprint: input.expectedOwnerFingerprint,
+  };
+}
+
+function sourceSnapshotOutdated(
+  input: MoveSourceSourceSnapshotInput,
+  currentHeadCommitId: string | null,
+): LightExtensionError {
+  return new LightExtensionError(
+    'LIGHT_EXTENSION_SOURCE_OUTDATED',
+    'RunJS workspace Head changed before it could be moved to a light extension',
+    {
+      details: {
+        sourceRepoId: input.sourceRepoId,
+        expectedHeadCommitId: input.sourceHeadCommitId,
+        currentHeadCommitId,
+      },
+    },
+  );
+}
+
+function readMoveSourceOperationResult(value: unknown): LightExtensionMoveSourceResult {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.repo) ||
+    !isRecord(value.entry) ||
+    !isRecord(value.binding) ||
+    typeof value.ownerFingerprint !== 'string'
+  ) {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_SOURCE_ERROR',
+      'Move source operation has an invalid completed result',
+    );
+  }
+  return value as unknown as LightExtensionMoveSourceResult;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isMoveOperationStale(updatedAt: unknown): boolean {
+  const timestamp = updatedAt instanceof Date ? updatedAt.getTime() : Date.parse(String(updatedAt || ''));
+  return Number.isFinite(timestamp) && Date.now() - timestamp >= MOVE_OPERATION_STALE_AFTER_MS;
+}
+
+function moveOperationInProgress(): LightExtensionError {
+  return new LightExtensionError(
+    'LIGHT_EXTENSION_IDEMPOTENCY_IN_PROGRESS',
+    'Move source with this idempotency key is still in progress; retry the same request',
+  );
+}
+
+function getMoveOperationErrorCode(error: unknown): string {
+  if (isLightExtensionError(error) || isVscError(error)) {
+    return error.code;
+  }
+  if (error instanceof Error) {
+    return error.name;
+  }
+  return 'UNKNOWN_ERROR';
 }
 
 function normalizeMoveSourceError(error: unknown): unknown {

@@ -32,7 +32,9 @@ import {
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionSourceMode,
   normalizeLightExtensionSourceSettingsForBinding,
+  normalizeLightExtensionRuntimeError,
   rememberLightExtensionBindingSettings,
+  resolveEffectiveRunJSSettings,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
   showPendingLightExtensionRequiredSettings,
@@ -184,7 +186,15 @@ export class JSPageModel extends RootPageModel {
 
   renderPageContent() {
     const loadingLabel = this.context.t('Loading JavaScript page');
-    const errorLabel = this.context.t('JavaScript page failed to run');
+    const runtimeError = this.runtimeState.error
+      ? normalizeLightExtensionRuntimeError(this.runtimeState.error, {
+          defaultTitle: 'JavaScript page failed to run',
+          defaultHint: 'Check the JavaScript page configuration and retry.',
+          defaultMessage: 'Failed to run JavaScript page',
+          outdatedHint: 'Refresh the page settings and choose the current entry.',
+          invalidSettingsHint: 'Open the page settings and fix the light extension settings.',
+        })
+      : null;
 
     return (
       <div className="nb-js-page-runtime">
@@ -199,10 +209,16 @@ export class JSPageModel extends RootPageModel {
             {loadingLabel}
           </div>
         ) : null}
-        {this.runtimeState.error ? (
+        {runtimeError ? (
           <div role="alert" className="nb-js-page-runtime-error">
-            <strong>{errorLabel}</strong>
-            <div>{this.runtimeState.error.message}</div>
+            <strong>{this.context.t(runtimeError.title)}</strong>
+            <div>{this.context.t(runtimeError.hint)}</div>
+            <div>{this.context.t(runtimeError.message)}</div>
+            {runtimeError.paths?.length ? (
+              <div>
+                {this.context.t('Fields')}: {runtimeError.paths.join(', ')}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -225,14 +241,18 @@ export class JSPageModel extends RootPageModel {
 
   private async resolveRuntimeSource(): Promise<ResolvedJSPageRun> {
     const params = readRunParams(this);
+    const sourceMode = normalizeLightExtensionSourceMode(params.sourceMode);
+    const storedSettings = isRecord(params.settings) ? params.settings : {};
+    const descriptor = sourceMode === 'inline' ? await getJSPageLightExtensionSettingsDescriptor(this, params) : null;
+    const runtimeSettings = descriptor ? resolveEffectiveRunJSSettings(descriptor, storedSettings) : storedSettings;
     const runtime = await resolveRuntimeRunJS({
       runJs: {
         code: typeof params.code === 'string' ? params.code : '',
         version: typeof params.version === 'string' ? params.version : 'v2',
       },
-      sourceMode: typeof params.sourceMode === 'string' ? params.sourceMode : undefined,
+      sourceMode,
       sourceBinding: isRecord(params.sourceBinding) ? params.sourceBinding : undefined,
-      settings: isRecord(params.settings) ? params.settings : undefined,
+      settings: runtimeSettings,
       context: {
         modelUid: this.uid,
       },

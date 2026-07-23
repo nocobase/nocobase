@@ -8,7 +8,11 @@
  */
 
 import { uid } from '@nocobase/utils';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  registerFlowSurfaceRunJSWorkspaceBootstrapPort,
+  type FlowSurfaceRunJSWorkspaceBootstrapResult,
+} from '../flow-surfaces/page-surface-contract';
 import {
   createFlowSurfacesContractContext,
   createPage,
@@ -99,6 +103,377 @@ describe('flowSurfaces JS page contract', () => {
 
   afterAll(async () => {
     await destroyFlowSurfacesContractContext(context);
+  });
+
+  it.each<{
+    label: string;
+    bootstrapResult: FlowSurfaceRunJSWorkspaceBootstrapResult;
+  }>([
+    {
+      label: 'ready',
+      bootstrapResult: { status: 'ready', retryable: false },
+    },
+    {
+      label: 'pending',
+      bootstrapResult: { status: 'pending', retryable: true },
+    },
+    {
+      label: 'error',
+      bootstrapResult: {
+        status: 'error',
+        retryable: true,
+        error: { code: 'WORKSPACE_BOOTSTRAP_FAILED', message: 'Workspace bootstrap failed' },
+      },
+    },
+  ])('creates a JS Page host with one $label workspace bootstrap call', async ({ label, bootstrapResult }) => {
+    const bootstrap = vi.fn(async () => bootstrapResult);
+    const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, bootstrap);
+    const title = `Created JS page ${label} ${Date.now()}`;
+
+    try {
+      const response = await context.rootAgent.resource('flowSurfaces').createPage({
+        values: {
+          pageType: 'js-page',
+          idempotencyKey: `create-js-page-${label}-${Date.now()}`,
+          title,
+          icon: 'CodeOutlined',
+          documentTitle: `${title} document`,
+        },
+      });
+      expect(response.status, readErrorMessage(response)).toBe(200);
+      const created = getData(response);
+      expect(created).toMatchObject({
+        pageType: 'js-page',
+        modelUse: 'JSPageModel',
+        runJSLocator: {
+          kind: 'flowModel.step',
+          modelUid: created.pageUid,
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+          versionPath: ['version'],
+        },
+        capabilities: {
+          tabs: false,
+          blocks: false,
+          compose: false,
+          blueprint: false,
+          export: false,
+          runJSWorkspace: true,
+        },
+        workspaceStatus: bootstrapResult.status,
+        workspaceRetryable: bootstrapResult.retryable,
+        idempotentReplay: false,
+      });
+      if (bootstrapResult.error) {
+        expect(created.workspaceError).toEqual(bootstrapResult.error);
+      } else {
+        expect(created.workspaceError).toBeUndefined();
+      }
+
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+      expect(bootstrap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hostKind: 'js-page',
+          locator: created.runJSLocator,
+          transaction: expect.anything(),
+          authoringContext: expect.objectContaining({
+            userId: expect.any(String),
+            request: expect.anything(),
+            state: expect.anything(),
+            currentUser: expect.anything(),
+            can: expect.any(Function),
+          }),
+        }),
+      );
+
+      const route = await context.routesRepo.findOne({
+        filterByTk: String(created.routeId),
+        appends: ['children'],
+      });
+      expect(route.get('options')).toMatchObject({ pageType: 'js-page' });
+      expect(route.get('enableTabs')).toBe(false);
+      expect(route.get('children') || []).toHaveLength(0);
+      const pageModel = await context.flowRepo.findModelByParentId(created.pageSchemaUid, {
+        subKey: 'page',
+        includeAsyncNode: true,
+      });
+      expect(pageModel).toMatchObject({ uid: created.pageUid, use: 'JSPageModel' });
+      expect(pageModel.subModels?.tabs).toBeUndefined();
+      expect(pageModel.subModels?.grid).toBeUndefined();
+    } finally {
+      unregister();
+    }
+  });
+
+  it('replays a scoped idempotent JS Page create and rejects an inconsistent request', async () => {
+    const bootstrap = vi.fn(async () => ({ status: 'ready' as const, retryable: false }));
+    const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, bootstrap);
+    const idempotencyKey = `js-page-replay-${Date.now()}`;
+    const values = {
+      pageType: 'js-page',
+      idempotencyKey,
+      title: `Idempotent JS page ${Date.now()}`,
+      icon: 'CodeOutlined',
+    };
+
+    try {
+      const first = getData(await context.rootAgent.resource('flowSurfaces').createPage({ values }));
+      const replay = getData(await context.rootAgent.resource('flowSurfaces').createPage({ values }));
+      expect(replay).toMatchObject({
+        routeId: first.routeId,
+        pageSchemaUid: first.pageSchemaUid,
+        pageUid: first.pageUid,
+        idempotentReplay: true,
+        workspaceStatus: 'ready',
+      });
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+
+      const conflict = await context.rootAgent.resource('flowSurfaces').createPage({
+        values: {
+          ...values,
+          title: `${values.title} changed`,
+        },
+      });
+      expect(conflict.status).toBe(409);
+      expect(readErrorItem(conflict)).toMatchObject({
+        code: 'FLOW_SURFACE_IDEMPOTENCY_CONFLICT',
+        status: 409,
+      });
+
+      const parentA = getData(
+        await context.rootAgent.resource('flowSurfaces').createMenu({
+          values: { type: 'group', title: `JS scope A ${Date.now()}`, icon: 'FolderOutlined' },
+        }),
+      );
+      const parentB = getData(
+        await context.rootAgent.resource('flowSurfaces').createMenu({
+          values: { type: 'group', title: `JS scope B ${Date.now()}`, icon: 'FolderOutlined' },
+        }),
+      );
+      const scopedKey = `shared-js-page-key-${Date.now()}`;
+      const scopedA = getData(
+        await context.rootAgent.resource('flowSurfaces').createPage({
+          values: {
+            pageType: 'js-page',
+            idempotencyKey: scopedKey,
+            parentMenuRouteId: parentA.routeId,
+            title: 'Scoped JS page A',
+            icon: 'CodeOutlined',
+          },
+        }),
+      );
+      const scopedB = getData(
+        await context.rootAgent.resource('flowSurfaces').createPage({
+          values: {
+            pageType: 'js-page',
+            idempotencyKey: scopedKey,
+            parentMenuRouteId: parentB.routeId,
+            title: 'Scoped JS page B',
+            icon: 'CodeOutlined',
+          },
+        }),
+      );
+      expect(scopedB.pageUid).not.toBe(scopedA.pageUid);
+    } finally {
+      unregister();
+    }
+  });
+
+  it('serializes concurrent JS Page creates with the same scoped idempotency key', async () => {
+    const bootstrap = vi.fn(async () => ({ status: 'ready' as const, retryable: false }));
+    const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, bootstrap);
+    const values = {
+      pageType: 'js-page',
+      idempotencyKey: `js-page-concurrent-${Date.now()}`,
+      title: `Concurrent JS page ${Date.now()}`,
+      icon: 'CodeOutlined',
+    };
+
+    try {
+      const responses = await Promise.all([
+        context.rootAgent.resource('flowSurfaces').createPage({ values }),
+        context.rootAgent.resource('flowSurfaces').createPage({ values }),
+      ]);
+      responses.forEach((response) => expect(response.status, readErrorMessage(response)).toBe(200));
+      const [first, second] = responses.map(getData);
+      expect(second).toMatchObject({
+        routeId: first.routeId,
+        pageSchemaUid: first.pageSchemaUid,
+        pageUid: first.pageUid,
+      });
+      expect([first.idempotentReplay, second.idempotentReplay].sort()).toEqual([false, true]);
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+    } finally {
+      unregister();
+    }
+  });
+
+  it('clears an old workspace error after an idempotent retry becomes ready', async () => {
+    const bootstrap = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 'error' as const,
+        retryable: true,
+        error: { code: 'WORKSPACE_BOOTSTRAP_FAILED', message: 'First attempt failed' },
+      })
+      .mockResolvedValueOnce({ status: 'ready' as const, retryable: false });
+    const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, bootstrap);
+    const values = {
+      pageType: 'js-page',
+      idempotencyKey: `js-page-error-retry-${Date.now()}`,
+      title: `Retried JS page ${Date.now()}`,
+      icon: 'CodeOutlined',
+    };
+
+    try {
+      const first = getData(await context.rootAgent.resource('flowSurfaces').createPage({ values }));
+      expect(first).toMatchObject({
+        workspaceStatus: 'error',
+        workspaceError: { code: 'WORKSPACE_BOOTSTRAP_FAILED' },
+      });
+
+      const replay = getData(await context.rootAgent.resource('flowSurfaces').createPage({ values }));
+      expect(replay).toMatchObject({ workspaceStatus: 'ready', workspaceRetryable: false, idempotentReplay: true });
+      expect(replay.workspaceError).toBeUndefined();
+      expect(bootstrap).toHaveBeenCalledTimes(2);
+    } finally {
+      unregister();
+    }
+  });
+
+  it('rolls back a JS Page host and idempotency reservation when bootstrap throws', async () => {
+    const idempotencyKey = `js-page-rollback-${Date.now()}`;
+    const title = `Rolled back JS page ${Date.now()}`;
+    const values = {
+      pageType: 'js-page',
+      idempotencyKey,
+      title,
+      icon: 'CodeOutlined',
+    };
+    const unregisterFailing = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, async () => {
+      throw new Error('bootstrap exploded');
+    });
+    const failed = await context.rootAgent.resource('flowSurfaces').createPage({ values });
+    unregisterFailing();
+
+    expect(failed.status).toBe(500);
+    expect(
+      await context.db.getRepository('flowSurfaceIdempotencyKeys').findOne({ filter: { idempotencyKey } }),
+    ).toBeNull();
+    expect(await context.routesRepo.findOne({ filter: { title } })).toBeNull();
+
+    const unregisterReady = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, async () => ({
+      status: 'ready',
+      retryable: false,
+    }));
+    try {
+      const retried = getData(await context.rootAgent.resource('flowSurfaces').createPage({ values }));
+      expect(retried).toMatchObject({ workspaceStatus: 'ready', idempotentReplay: false });
+    } finally {
+      unregisterReady();
+    }
+  });
+
+  it('bootstraps only a newly created JS Block and maps its workspace result', async () => {
+    const bootstrap = vi.fn(async () => ({ status: 'pending' as const, retryable: true }));
+    const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, bootstrap);
+    try {
+      const page = await createPage(context.rootAgent, {
+        title: `JS Block bootstrap page ${Date.now()}`,
+        tabTitle: 'Main',
+      });
+      const block = getData(
+        await context.rootAgent.resource('flowSurfaces').addBlock({
+          values: {
+            target: { uid: page.tabSchemaUid },
+            type: 'jsBlock',
+            settings: {
+              title: 'Bootstrapped JS Block',
+              code: 'ctx.render(null);',
+            },
+          },
+        }),
+      );
+      expect(block).toMatchObject({
+        runJSLocator: {
+          kind: 'flowModel.step',
+          modelUid: block.uid,
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+          versionPath: ['version'],
+        },
+        workspaceStatus: 'pending',
+        workspaceRetryable: true,
+      });
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+      expect(bootstrap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hostKind: 'js-block',
+          locator: block.runJSLocator,
+          transaction: expect.anything(),
+        }),
+      );
+
+      await context.rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.tabSchemaUid },
+          type: 'markdown',
+          settings: { content: 'No workspace bootstrap' },
+        },
+      });
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+    } finally {
+      unregister();
+    }
+  });
+
+  it('bootstraps a JS Block copied from a block template exactly once', async () => {
+    const bootstrap = vi.fn(async () => ({ status: 'ready' as const, retryable: false }));
+    const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, bootstrap);
+    try {
+      const page = await createPage(context.rootAgent, {
+        title: `JS Block template page ${Date.now()}`,
+        tabTitle: 'Main',
+      });
+      const source = getData(
+        await context.rootAgent.resource('flowSurfaces').addBlock({
+          values: {
+            target: { uid: page.tabSchemaUid },
+            type: 'jsBlock',
+            settings: { title: 'Template source JS Block', code: 'ctx.render(null);' },
+          },
+        }),
+      );
+      const template = getData(
+        await context.rootAgent.resource('flowSurfaces').saveTemplate({
+          values: {
+            target: { uid: source.uid },
+            name: `Reusable JS Block ${Date.now()}`,
+            description: 'Reusable JavaScript block for workspace bootstrap coverage',
+            saveMode: 'duplicate',
+          },
+        }),
+      );
+      bootstrap.mockClear();
+
+      const copied = getData(
+        await context.rootAgent.resource('flowSurfaces').addBlock({
+          values: {
+            target: { uid: page.tabSchemaUid },
+            template: { uid: template.uid, mode: 'copy' },
+          },
+        }),
+      );
+      expect(copied).toMatchObject({
+        runJSLocator: { kind: 'flowModel.step', modelUid: copied.uid },
+        workspaceStatus: 'ready',
+      });
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+    } finally {
+      unregister();
+    }
   });
 
   it('locates JS pages without inventing tabs and exposes only page-level configuration', async () => {

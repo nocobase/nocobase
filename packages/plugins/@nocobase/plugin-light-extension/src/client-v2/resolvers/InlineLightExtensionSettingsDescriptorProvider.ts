@@ -7,39 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type {
-  RunJSSettingsDescriptorProvider,
-  RunJSSettingsDescriptorProviderInput,
-  RunJSSourceSettingsDescriptor,
-} from '@nocobase/client-v2';
-import { buildLightExtensionSettingsSchema } from '@nocobase/light-extension-sdk/schema';
-import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
+import type { RunJSSettingsDescriptorProvider, RunJSSettingsDescriptorProviderInput } from '@nocobase/client-v2';
 
-import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN } from '../../constants';
+import type { LightExtensionDiagnostic } from '../../shared/types';
+import type { RunJSSourceOpenResult } from '../../shared/vsc-file/runjs-source-contracts';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
 
 const INLINE_SOURCE_MODE = 'inline';
-const INLINE_ENTRY_DESCRIPTOR_PATH = 'src/client/entry.json';
 
 type InlineRunJSSourceRef = {
   type: 'vsc-file';
   repoId: string;
   commitId?: string;
-};
-
-type InlineRunJSWorkspaceFile = {
-  path: string;
-  content: string;
-};
-
-type InlineRunJSWorkspaceResult = {
-  repository: {
-    id: string;
-    repoId?: string;
-    headCommitId?: string | null;
-  };
-  files: InlineRunJSWorkspaceFile[];
 };
 
 type ResourceResponse<T> = {
@@ -61,7 +41,7 @@ export function createInlineLightExtensionSettingsDescriptorProvider(
         return undefined;
       }
 
-      const response = await api.request<ResourceResponse<InlineRunJSWorkspaceResult>>({
+      const response = await api.request<ResourceResponse<RunJSSourceOpenResult>>({
         url: 'runJSSources:open',
         method: 'post',
         data: {
@@ -81,60 +61,48 @@ export function createInlineLightExtensionSettingsDescriptorProvider(
       if (workspaceRepoId !== sourceRef.repoId) {
         return undefined;
       }
-      const descriptorFile = workspace.files.find((file) => normalizePath(file.path) === INLINE_ENTRY_DESCRIPTOR_PATH);
-      if (!descriptorFile) {
-        return undefined;
+      const descriptor = workspace.settingsDescriptor;
+      const errorDiagnostics = descriptor.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
+      if (errorDiagnostics.length > 0 || !descriptor.entryId) {
+        throw new InlineRunJSSettingsDescriptorError(descriptor.descriptorPath, errorDiagnostics);
       }
 
-      return parseInlineSettingsDescriptor(
-        descriptorFile.content,
-        workspaceRepoId,
-        workspace.repository.headCommitId || sourceRef.commitId || '',
-      );
+      return {
+        entryId: descriptor.entryId,
+        settingsSchemaHash: descriptor.settingsSchemaHash,
+        schema: descriptor.schema,
+        defaults: descriptor.defaults,
+      };
     },
   };
 }
 
-function parseInlineSettingsDescriptor(
-  content: string,
-  repoId: string,
-  version: string,
-): RunJSSourceSettingsDescriptor | undefined {
-  let descriptor: unknown;
-  try {
-    descriptor = JSON.parse(content);
-  } catch {
-    return undefined;
-  }
-  if (!isRecord(descriptor) || descriptor.schemaVersion !== 1) {
-    return undefined;
-  }
-  const key = toNonEmptyString(descriptor.key);
-  if (!key || !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(key)) {
-    return undefined;
-  }
-  if (Object.prototype.hasOwnProperty.call(descriptor, 'settingsSchema')) {
-    return undefined;
-  }
-  const hasSettings = Object.prototype.hasOwnProperty.call(descriptor, 'settings');
-  if (hasSettings && !isRecord(descriptor.settings)) {
-    return undefined;
-  }
-  const schema = hasSettings ? buildLightExtensionSettingsSchema(descriptor.settings as Record<string, unknown>) : null;
-  if (!schema || !isRecord(schema.properties) || Object.keys(schema.properties).length === 0) {
-    return {
-      entryId: `inline:${repoId}:${key}`,
-      settingsSchemaHash: null,
-      schema: null,
-      defaults: {},
+class InlineRunJSSettingsDescriptorError extends Error {
+  readonly code = 'LIGHT_EXTENSION_SETTINGS_INVALID';
+  readonly status = 422;
+  readonly paths: string[];
+  readonly details: {
+    reasonCode: 'settings_invalid';
+    descriptorPath: string;
+    diagnostics: LightExtensionDiagnostic[];
+    issues: Array<{ path: string; code: string; message: string }>;
+  };
+
+  constructor(descriptorPath: string, diagnostics: LightExtensionDiagnostic[]) {
+    super(diagnostics[0]?.message || 'Inline RunJS settings descriptor is invalid');
+    this.name = 'InlineRunJSSettingsDescriptorError';
+    this.paths = Array.from(new Set(diagnostics.map((diagnostic) => diagnostic.path).filter(isNonEmptyString)));
+    this.details = {
+      reasonCode: 'settings_invalid',
+      descriptorPath,
+      diagnostics,
+      issues: diagnostics.map((diagnostic) => ({
+        path: diagnostic.path || descriptorPath,
+        code: diagnostic.code,
+        message: diagnostic.message,
+      })),
     };
   }
-  return {
-    entryId: `inline:${repoId}:${key}`,
-    settingsSchemaHash: `${version || 'working'}:${shortHash(stableSerialize(schema))}`,
-    schema,
-    defaults: extractRunJSSettingsDefaults(schema),
-  };
 }
 
 function isInlineLightExtensionSettingsDescriptorInput(input: RunJSSettingsDescriptorProviderInput): boolean {
@@ -160,35 +128,12 @@ function toInlineRunJSSourceRef(value: unknown): InlineRunJSSourceRef | undefine
   };
 }
 
-function normalizePath(path: string): string {
-  return path.replace(/\\/gu, '/').replace(/^\/+|\/+$/gu, '');
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-function shortHash(input: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 8);
-}
-
 function toNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function isNonEmptyString(value: string | undefined): value is string {
+  return Boolean(value?.trim());
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

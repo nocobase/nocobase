@@ -403,6 +403,9 @@ export interface LightExtensionMoveSourceWorkspaceFile {
 
 export type LightExtensionMoveSourceDestination =
   | {
+      type: 'default';
+    }
+  | {
       type: 'existing';
       repoId: string;
     }
@@ -419,6 +422,7 @@ export type LightExtensionMoveSourceOriginBinding = Pick<
 >;
 
 export interface LightExtensionMoveSourceInput {
+  idempotencyKey?: string;
   locator: RunJSSourceLocator;
   expectedOwnerFingerprint: string;
   sourceRepoId: string;

@@ -22,6 +22,7 @@ import {
   throwBadRequest,
 } from './errors';
 import { FlowSurfacesService } from './service';
+import type { FlowSurfaceRunJSAuthoringContext } from './page-surface-contract';
 
 const FLOW_ENGINE_LOCALE_NAMESPACE = 'flow-engine';
 const FLOW_SURFACE_LOCALE_FALLBACK_NAMESPACES = [
@@ -230,6 +231,7 @@ function invokeFlowSurfaceServiceAction(
     transaction?: any;
     currentRoles?: readonly string[] | string;
     t?: (key: string, options?: Record<string, any>) => string;
+    authoringContext?: FlowSurfaceRunJSAuthoringContext;
   } = {},
 ) {
   const handler = service[actionName] as unknown as (
@@ -238,9 +240,22 @@ function invokeFlowSurfaceServiceAction(
       transaction?: any;
       currentRoles?: readonly string[] | string;
       t?: (key: string, options?: Record<string, any>) => string;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
     },
   ) => Promise<any>;
   return handler.call(service, values, options);
+}
+
+function getFlowSurfaceRunJSAuthoringContext(ctx: any): FlowSurfaceRunJSAuthoringContext {
+  const rawUserId = ctx.auth?.user?.id ?? ctx.state?.currentUser?.id;
+  return {
+    userId: rawUserId === null || typeof rawUserId === 'undefined' ? null : String(rawUserId),
+    request: ctx.request,
+    state: ctx.state,
+    currentUser: ctx.state?.currentUser ?? ctx.auth?.user,
+    timezone: ctx.timezone || ctx.get?.('x-timezone'),
+    can: typeof ctx.can === 'function' ? ctx.can.bind(ctx) : undefined,
+  };
 }
 
 function interpolateTranslation(value: string, options?: Record<string, any>) {
@@ -305,14 +320,20 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
           const values = definition.valueSource === 'read' ? getReadValues(ctx) : getValues(ctx);
           const t = getFlowSurfaceTranslate(ctx);
           const currentRoles = ctx.state?.currentRoles;
+          const authoringContext = getFlowSurfaceRunJSAuthoringContext(ctx);
 
           if (definition.transaction) {
             return service.transaction((transaction) =>
-              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction, currentRoles, t }),
+              invokeFlowSurfaceServiceAction(service, actionName, values, {
+                transaction,
+                currentRoles,
+                t,
+                authoringContext,
+              }),
             );
           }
 
-          return invokeFlowSurfaceServiceAction(service, actionName, values, { currentRoles, t });
+          return invokeFlowSurfaceServiceAction(service, actionName, values, { currentRoles, t, authoringContext });
         });
       },
     ]),

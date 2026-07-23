@@ -8,6 +8,7 @@
  */
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH } from '@nocobase/light-extension-sdk/schema';
+import { registerFlowSurfaceRunJSWorkspaceBootstrapPort } from '@nocobase/plugin-flow-engine';
 import type {
   RemoteSyncRuntime,
   RunJSSourceAdapter,
@@ -15,7 +16,11 @@ import type {
   RunJSSourceAuthoringInspector,
   VscPermissionHook,
 } from './vsc-file/public-api';
-import { VscFileService, VscPermissionHookRegistry } from './vsc-file/public-api';
+import {
+  createFlowSurfaceRunJSWorkspaceBootstrapPort,
+  VscFileService,
+  VscPermissionHookRegistry,
+} from './vsc-file/public-api';
 import { VscFileServerModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
@@ -162,6 +167,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private unregisterVscPermissionHook?: () => void;
 
+  private unregisterRunJSWorkspaceBootstrapPort?: () => void;
+
   private remotePullRecoveryListener?: () => Promise<void>;
 
   private remotePullRecoveryPromise?: Promise<void>;
@@ -249,6 +256,16 @@ export class PluginLightExtensionServer extends Plugin {
     this.unregisterVscPermissionHookWhenNeeded();
     const vscFileServerModule = this.requireVscFileServerModule();
     await vscFileServerModule.load();
+    this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
+    this.unregisterRunJSWorkspaceBootstrapPort = registerFlowSurfaceRunJSWorkspaceBootstrapPort(
+      this.app,
+      createFlowSurfaceRunJSWorkspaceBootstrapPort(
+        db,
+        vscFileServerModule.getRunJSSourceAdapterRegistry(),
+        vscFileServerModule.getPermissionHookRegistry(),
+        vscFileServerModule.getRunJSSourceAuthoringInspectorRegistry(),
+      ),
+    );
 
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
@@ -262,6 +279,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
       sharedVscPermissionHooks,
       this.validator,
+      this.app.name,
     );
     this.fileService = new LightExtensionFileService(
       db,
@@ -309,6 +327,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.runtimeCompileService,
       this.referenceService,
       () => vscFileServerModule.getRunJSSourceAdapterRegistry(),
+      this.app.name,
     );
     this.moveToInlineService = new MoveToInlineService(
       db,
@@ -362,6 +381,7 @@ export class PluginLightExtensionServer extends Plugin {
 
   async afterDisable() {
     await this.shutdownCompileInfrastructure();
+    this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     await this.vscFileServerModule?.afterDisable();
@@ -372,6 +392,7 @@ export class PluginLightExtensionServer extends Plugin {
   }
 
   async remove() {
+    this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     await this.vscFileServerModule?.remove();
@@ -387,6 +408,11 @@ export class PluginLightExtensionServer extends Plugin {
       this.vscFileServerModule = new VscFileServerModule(this.app, db);
     }
     return this.vscFileServerModule;
+  }
+
+  private unregisterRunJSWorkspaceBootstrapPortWhenNeeded() {
+    this.unregisterRunJSWorkspaceBootstrapPort?.();
+    this.unregisterRunJSWorkspaceBootstrapPort = undefined;
   }
 
   private requireClientAppService(): ClientAppService {

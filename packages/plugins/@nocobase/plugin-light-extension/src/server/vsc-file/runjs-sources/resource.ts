@@ -8,11 +8,17 @@
  */
 
 import type { Context } from '@nocobase/actions';
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
+import type {
+  FlowSurfaceRunJSWorkspaceBootstrapInput,
+  FlowSurfaceRunJSWorkspaceBootstrapPort,
+} from '@nocobase/plugin-flow-engine';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
+import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
 import JSZip, { type JSZipObject } from 'jszip';
 import type { Readable } from 'stream';
 
+import type { LightExtensionDiagnostic } from '../../../shared/types';
 import { VscError, isVscError } from '../../../shared/vsc-file/errors';
 import { sha256Hex } from '../../../shared/vsc-file/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../../shared/vsc-file/path';
@@ -37,6 +43,7 @@ import {
   type RunJSRuntimeArtifact,
   type RunJSSourcePermissionCheck,
   type RunJSSourceOpenResult,
+  type RunJSSourceOpenSettingsDescriptor,
   type RunJSSourceSaveInput,
   type RunJSSourceSaveResult,
 } from '../../../shared/vsc-file/runjs-source-types';
@@ -50,11 +57,25 @@ import type {
 import { normalizeText } from '../../../shared/vsc-file/text';
 import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
 import { VscFileService, type PulledFile, type VscServiceContext } from '../services/VscFileService';
+import { buildLightExtensionSettingsHashes } from '../../services/LightExtensionEntryService';
+import {
+  LIGHT_EXTENSION_VALIDATION_LIMITS,
+  buildCapabilities,
+  hasErrorDiagnostic,
+  sortDiagnostics,
+} from '../../services/LightExtensionValidator';
+import { LightExtensionSchemaValidator } from '../../services/light-extension-validator/schemaPolicy';
 import type { RunJSSourceAuthoringInspectorRegistry } from './RunJSSourceAuthoringInspectorRegistry';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
 import { canonicalizeRunJSCompileFile } from './canonicalCompileFiles';
 import { compileRunJSSourceWorkspace } from './lazyCompiler';
 import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
+
+const inlineRunJSEntryDescriptorPath = 'src/client/entry.json';
+const emptyRunJSRenderSource = 'ctx.render(null);';
+const inlineRunJSSettingsSchemaValidator = new LightExtensionSchemaValidator(
+  buildCapabilities(LIGHT_EXTENSION_VALIDATION_LIMITS),
+);
 
 export const runJSSourceActionNames = [
   'open',
@@ -357,7 +378,6 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         legacy.ownerFingerprint,
         saveInput.locator.kind,
       );
-      assertHeadOwnerFingerprintMatches(headOwnerFingerprint, legacy.ownerFingerprint);
       await assertCurrentOwnerFingerprint(adapter, saveInput.locator, adapterCtx, legacy.ownerFingerprint);
       const validatedOwnerFingerprint = legacy.ownerFingerprint;
       const initialCompileFiles = await buildOverwriteRunJSFileChanges(
@@ -532,6 +552,8 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
       {
         locator: importInput.locator,
         repoId: importInput.repoId,
+        baseCommitId: importInput.baseCommitId,
+        baseOwnerFingerprint: importInput.baseOwnerFingerprint,
         message: importInput.message,
         files: importedFiles,
         entryPath: importInput.entryPath || manifest.entryPath,
@@ -619,6 +641,276 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
   },
 };
 
+export function createFlowSurfaceRunJSWorkspaceBootstrapPort(
+  db: Database,
+  registry: RunJSSourceAdapterRegistry,
+  permissionHooks?: VscPermissionHookRegistry,
+  authoringInspectors?: RunJSSourceAuthoringInspectorRegistry,
+): FlowSurfaceRunJSWorkspaceBootstrapPort {
+  return async (input) => {
+    try {
+      await db.sequelize.transaction({ transaction: input.transaction }, async (transaction) => {
+        await bootstrapFlowSurfaceRunJSWorkspace(db, registry, permissionHooks, authoringInspectors, {
+          ...input,
+          transaction,
+        });
+      });
+    } catch (error) {
+      return buildFlowSurfaceRunJSWorkspaceBootstrapFailure(error);
+    }
+
+    return {
+      status: 'ready',
+      retryable: false,
+    };
+  };
+}
+
+function buildFlowSurfaceRunJSWorkspaceBootstrapFailure(
+  error: unknown,
+): Awaited<ReturnType<FlowSurfaceRunJSWorkspaceBootstrapPort>> {
+  if (isVscError(error)) {
+    const retryable = error.status === 409 || error.status >= 500;
+    return {
+      status: retryable ? 'pending' : 'error',
+      retryable,
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    };
+  }
+
+  return {
+    status: 'pending',
+    retryable: true,
+    error: {
+      code: 'FLOW_SURFACE_RUNJS_BOOTSTRAP_FAILED',
+      message: error instanceof Error && error.message ? error.message : 'RunJS workspace bootstrap failed',
+    },
+  };
+}
+
+async function bootstrapFlowSurfaceRunJSWorkspace(
+  db: Database,
+  registry: RunJSSourceAdapterRegistry,
+  permissionHooks: VscPermissionHookRegistry | undefined,
+  authoringInspectors: RunJSSourceAuthoringInspectorRegistry | undefined,
+  input: FlowSurfaceRunJSWorkspaceBootstrapInput,
+): Promise<void> {
+  const locator = normalizeRunJSSourceLocator(input.locator);
+  const adapter = registry.require(locator.kind);
+  const service = new VscFileService(db, permissionHooks);
+  const adapterCtx = createBootstrapAdapterContext(input);
+  const serviceCtx = createServiceContext(adapterCtx, input.transaction);
+
+  await adapter.assertCanWrite({ locator, ctx: adapterCtx });
+  const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
+  assertBootstrapHostMatches(input.hostKind, legacy);
+  await assertCurrentOwnerFingerprint(adapter, locator, adapterCtx, legacy.ownerFingerprint);
+
+  const repositoryIdentity = buildRunJSSourceRepositoryIdentity(locator);
+  let repository = await findRunJSRepositoryByIdentity(db, service, repositoryIdentity, serviceCtx);
+  let initialFiles: VscTreeEntryInput[] | undefined;
+  let missingFiles: VscFileChange[];
+  let compileFiles: VscFileChange[];
+  if (!repository) {
+    initialFiles = buildRunJSBootstrapInitialFiles(input.hostKind, locator, legacy);
+    missingFiles = [];
+    compileFiles = initialFiles.map((file) => ({
+      ...file,
+      operation: 'upsert',
+    }));
+  } else {
+    repository = await service.getRepositoryForUpdate({ repoId: repository.id }, serviceCtx);
+    assertRepositoryMatchesIdentity(repository, repositoryIdentity, locator.kind);
+    const head = await service.pull({ repoId: repository.id, ref: 'head', includeContent: 'all' }, serviceCtx);
+    missingFiles = buildMissingRunJSBootstrapFiles(input.hostKind, locator, legacy, head.files || []);
+    compileFiles = await materializeRunJSCompileFiles(
+      db,
+      repository.id,
+      repository.headCommitId,
+      { files: missingFiles },
+      serviceCtx,
+    );
+  }
+
+  const entryPath = selectEntryPath(compileFiles, defaultRunJSEntryPath);
+  assertRunJSCompileInputLimits(compileFiles);
+  const compiled = await compileRunJSSourceWorkspace({
+    files: compileFiles,
+    entry: entryPath,
+    runtimeVersion: legacy.version,
+    surfaceStyle: legacy.surfaceStyle,
+    locator,
+    legacy: legacyAuthoringInfo(legacy),
+    inspectAuthoring: createRunJSSourceAuthoringInspector(authoringInspectors),
+  });
+  assertRunJSCompileSucceeded(compiled);
+
+  if (!repository) {
+    const ensured = await service.ensureRepository(
+      {
+        ...repositoryIdentity,
+        initialFiles,
+        message: 'Initialize RunJS workspace',
+        authorId: serviceCtx.authorId,
+        metadata: buildRunJSBootstrapCommitMetadata(locator.kind, legacy, initialFiles),
+      },
+      serviceCtx,
+    );
+    repository = ensured.repository;
+  }
+
+  const artifact = compiled.artifact;
+  const runtimeCodeHash = buildRunJSRuntimeCodeHash(artifact.code);
+  artifact.metadata = {
+    ...artifact.metadata,
+    repoId: repository.id,
+    runtimeCodeHash,
+  };
+  const saveMetadata = {
+    sourceKind: locator.kind,
+    ownerFingerprint: legacy.ownerFingerprint,
+    filesHash: artifact.filesHash,
+    entry: artifact.entryPath || entryPath,
+    runtimeVersion: artifact.version,
+    surfaceStyle: legacy.surfaceStyle,
+    runtimeCodeHash,
+  };
+  let commit: VscCommitRecord;
+  if (missingFiles.length) {
+    const pushResult = await pushRunJSSourceCommit(
+      service,
+      {
+        repoId: repository.id,
+        baseCommitId: repository.headCommitId,
+        message: 'Complete RunJS workspace initialization',
+        files: missingFiles,
+        authorId: serviceCtx.authorId,
+        metadata: saveMetadata,
+      },
+      serviceCtx,
+    );
+    repository = pushResult.repository;
+    commit = pushResult.commit;
+  } else {
+    if (!repository.headCommitId) {
+      throw new VscError('INTERNAL_ERROR', 'RunJS workspace bootstrap did not persist a repository Head');
+    }
+    commit = await service.getCommit({ repoId: repository.id, commitId: repository.headCommitId }, serviceCtx);
+  }
+
+  await assertCurrentOwnerFingerprint(adapter, locator, adapterCtx, legacy.ownerFingerprint);
+  await adapter.writeRuntime({
+    locator,
+    artifact,
+    commitId: commit.id,
+    baseOwnerFingerprint: legacy.ownerFingerprint,
+    ctx: adapterCtx,
+  });
+  const nextOwnerFingerprint = await adapter.getFingerprint({ locator, ctx: adapterCtx });
+  await updateRunJSCommitMetadata(
+    db,
+    commit,
+    {
+      ...saveMetadata,
+      ownerFingerprint: nextOwnerFingerprint,
+    },
+    input.transaction,
+  );
+}
+
+function createBootstrapAdapterContext(input: FlowSurfaceRunJSWorkspaceBootstrapInput): RunJSSourceAdapterContext {
+  const authoringContext = input.authoringContext;
+  return {
+    ...authoringContext,
+    request: {
+      ...(authoringContext.request || {}),
+      resourceName: 'runJSSources',
+      actionName: 'bootstrap',
+    },
+    transaction: input.transaction,
+  };
+}
+
+function assertBootstrapHostMatches(
+  hostKind: FlowSurfaceRunJSWorkspaceBootstrapInput['hostKind'],
+  legacy: RunJSLegacySource,
+): void {
+  const expectedModelUse = hostKind === 'js-page' ? 'JSPageModel' : 'JSBlockModel';
+  if (legacy.metadata?.modelUse === expectedModelUse) {
+    return;
+  }
+
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS workspace bootstrap expected ${expectedModelUse}`, {
+    details: {
+      hostKind,
+      modelUse: legacy.metadata?.modelUse,
+    },
+  });
+}
+
+function buildRunJSBootstrapInitialFiles(
+  hostKind: FlowSurfaceRunJSWorkspaceBootstrapInput['hostKind'],
+  locator: RunJSSourceSaveInput['locator'],
+  legacy: RunJSLegacySource,
+): VscTreeEntryInput[] {
+  const source = legacy.code.trim() ? legacy.code : emptyRunJSRenderSource;
+  return [
+    {
+      path: defaultRunJSEntryPath,
+      content: source,
+      language: legacy.language,
+    },
+    runJSManifestFile(defaultRunJSEntryPath, legacy.version, legacy.surfaceStyle),
+    buildRunJSEntryDescriptorFile(hostKind, locator),
+  ];
+}
+
+function buildMissingRunJSBootstrapFiles(
+  hostKind: FlowSurfaceRunJSWorkspaceBootstrapInput['hostKind'],
+  locator: RunJSSourceSaveInput['locator'],
+  legacy: RunJSLegacySource,
+  existingFiles: PulledFile[],
+): VscFileChange[] {
+  const existingPaths = new Set(existingFiles.map((file) => normalizePath(file.path)));
+  return buildRunJSBootstrapInitialFiles(hostKind, locator, legacy)
+    .filter((file) => !existingPaths.has(normalizePath(file.path)))
+    .map((file) => ({
+      ...file,
+      operation: 'upsert' as const,
+    }));
+}
+
+function buildRunJSEntryDescriptorFile(
+  hostKind: FlowSurfaceRunJSWorkspaceBootstrapInput['hostKind'],
+  locator: RunJSSourceSaveInput['locator'],
+): VscTreeEntryInput {
+  const ownerId = buildRunJSSourceRepositoryIdentity(locator).ownerId;
+  const descriptorKey = `inline-${hostKind}-${sha256Hex(ownerId).slice(0, 16)}`;
+  return {
+    path: inlineRunJSEntryDescriptorPath,
+    content: `${JSON.stringify({ schemaVersion: 1, key: descriptorKey }, null, 2)}\n`,
+    language: 'json',
+  };
+}
+
+function buildRunJSBootstrapCommitMetadata(
+  sourceKind: RunJSSourceKind,
+  legacy: RunJSLegacySource,
+  files: VscTreeEntryInput[],
+): Record<string, unknown> {
+  return {
+    sourceKind,
+    ownerFingerprint: legacy.ownerFingerprint,
+    entry: defaultRunJSEntryPath,
+    runtimeVersion: legacy.version,
+    surfaceStyle: legacy.surfaceStyle,
+    runtimeCodeHash: buildRunJSRuntimeCodeHash(String(files[0]?.content || '')),
+  };
+}
+
 async function pushRunJSSourceCommit(
   service: VscFileService,
   input: Parameters<VscFileService['push']>[0],
@@ -663,6 +955,8 @@ interface RunJSSourceExportZipInput {
 interface RunJSSourceImportZipInput {
   locator: RunJSSourceLocatorInput;
   repoId?: string;
+  baseCommitId: string | null;
+  baseOwnerFingerprint: string;
   message: string;
   zipBase64: string;
   entryPath?: string;
@@ -1414,7 +1708,42 @@ function ensureRunJSManifestFiles(legacy: RunJSLegacySource, files: PulledFile[]
   ].sort((left, right) => left.path.localeCompare(right.path));
 }
 
+function buildOpenSettingsDescriptor(repoId: string, files: PulledFile[]): RunJSSourceOpenSettingsDescriptor {
+  const descriptorFile = files.find((file) => normalizePath(file.path) === inlineRunJSEntryDescriptorPath);
+  const diagnostics: LightExtensionDiagnostic[] = [];
+  const descriptor = inlineRunJSSettingsSchemaValidator.validateEntryDescriptor(
+    descriptorFile
+      ? {
+          path: inlineRunJSEntryDescriptorPath,
+          content: typeof descriptorFile.content === 'string' ? descriptorFile.content : '',
+          size: Buffer.byteLength(typeof descriptorFile.content === 'string' ? descriptorFile.content : '', 'utf8'),
+          language: descriptorFile.language,
+        }
+      : undefined,
+    diagnostics,
+    {},
+  );
+  const normalizedDiagnostics = sortDiagnostics(diagnostics);
+  const accepted = Boolean(descriptor) && !hasErrorDiagnostic(normalizedDiagnostics);
+  const schema = accepted ? descriptor?.settingsSchema || null : null;
+  const defaults = schema ? extractRunJSSettingsDefaults(schema) : {};
+  const hashes = buildLightExtensionSettingsHashes(schema);
+  const key = descriptor?.key || null;
+
+  return {
+    descriptorPath: inlineRunJSEntryDescriptorPath,
+    entryId: key && repoId ? `inline:${repoId}:${key}` : null,
+    key,
+    schema,
+    defaults,
+    settingsSchemaHash: hashes.settingsSchemaHash,
+    settingsDefaultsHash: hashes.settingsDefaultsHash,
+    diagnostics: normalizedDiagnostics,
+  };
+}
+
 function buildOpenResult(input: BuildOpenResultInput): RunJSSourceOpenResult & Record<string, unknown> {
+  const repository = serializeRepository(input.repository);
   return {
     locator: input.locator,
     locatorKind: input.locator.kind,
@@ -1430,7 +1759,7 @@ function buildOpenResult(input: BuildOpenResultInput): RunJSSourceOpenResult & R
       ownerFingerprint: input.legacy.ownerFingerprint,
       metadata: input.legacy.metadata,
     },
-    repository: serializeRepository(input.repository),
+    repository,
     files: input.files,
     permissions: {
       canRead: true,
@@ -1440,6 +1769,7 @@ function buildOpenResult(input: BuildOpenResultInput): RunJSSourceOpenResult & R
     history: {
       items: input.history,
     },
+    settingsDescriptor: buildOpenSettingsDescriptor(repository.repoId, input.files),
   };
 }
 
@@ -1905,6 +2235,8 @@ function normalizeImportZipInput(input: ResourceActionInput): RunJSSourceImportZ
   return {
     locator: normalizeRunJSSourceLocator(input.locator),
     repoId: optionalString(input, 'repoId'),
+    baseCommitId: requireNullableString(input, 'baseCommitId'),
+    baseOwnerFingerprint: requireString(input, 'baseOwnerFingerprint'),
     message: requireCommitMessage(input.message || 'Import RunJS workspace'),
     zipBase64: requireString(input, 'zipBase64'),
     entryPath: optionalRunJSWorkspacePath(input, 'entryPath'),
@@ -1932,8 +2264,8 @@ function normalizeSaveInput(input: ResourceActionInput): RunJSSourceSaveInput {
   return {
     locator: normalizeRunJSSourceLocator(input.locator),
     repoId: optionalString(input, 'repoId'),
-    baseCommitId: optionalNullableString(input, 'baseCommitId'),
-    baseOwnerFingerprint: optionalString(input, 'baseOwnerFingerprint'),
+    baseCommitId: requireNullableString(input, 'baseCommitId'),
+    baseOwnerFingerprint: requireString(input, 'baseOwnerFingerprint'),
     message: requireCommitMessage(input.message),
     files: requireArray(input, 'files', normalizeRunJSFileChange),
     entryPath: optionalRunJSWorkspacePath(input, 'entryPath'),
@@ -1941,8 +2273,8 @@ function normalizeSaveInput(input: ResourceActionInput): RunJSSourceSaveInput {
   };
 }
 
-function assertBaseCommitMatches(baseCommitId: string | null | undefined, currentHeadCommitId: string | null): void {
-  if (baseCommitId === undefined || baseCommitId === currentHeadCommitId) {
+function assertBaseCommitMatches(baseCommitId: string | null, currentHeadCommitId: string | null): void {
+  if (baseCommitId === currentHeadCommitId) {
     return;
   }
 
@@ -1955,23 +2287,17 @@ function assertBaseCommitMatches(baseCommitId: string | null | undefined, curren
 }
 
 function assertBaseOwnerFingerprintMatches(
-  baseOwnerFingerprint: string | undefined,
+  baseOwnerFingerprint: string,
   headOwnerFingerprint: string | null,
   currentOwnerFingerprint: string,
   kind: RunJSSourceKind,
 ): void {
-  if (baseOwnerFingerprint === undefined) {
+  if (baseOwnerFingerprint === currentOwnerFingerprint) {
     return;
   }
 
-  const expectedOwnerFingerprint = headOwnerFingerprint || currentOwnerFingerprint;
-  if (baseOwnerFingerprint === expectedOwnerFingerprint && baseOwnerFingerprint === currentOwnerFingerprint) {
-    return;
-  }
-
-  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS owner changed after the workspace was opened', {
+  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
     details: {
-      expected: currentOwnerFingerprint,
       received: baseOwnerFingerprint,
       headOwnerFingerprint,
       kind,
@@ -2178,6 +2504,14 @@ function optionalNullableString(input: ResourceActionInput, key: string): string
   }
 
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${key}" must be a string or null`);
+}
+
+function requireNullableString(input: ResourceActionInput, key: string): string | null {
+  if (input[key] === null) {
+    return null;
+  }
+
+  return requireString(input, key);
 }
 
 function requireCommitMessage(value: unknown): string {

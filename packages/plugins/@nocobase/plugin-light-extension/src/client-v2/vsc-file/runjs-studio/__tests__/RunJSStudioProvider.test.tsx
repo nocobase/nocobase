@@ -1466,12 +1466,10 @@ describe('runJSStudioProvider', () => {
     const saveRequest = mocks.request.mock.calls
       .map(([request]) => request as { url: string; data?: Record<string, unknown> })
       .find((request) => request.url === 'runJSSources:save');
-    expect(saveRequest?.data).toEqual(
-      expect.objectContaining({
-        baseCommitId: 'commit-1',
-        baseOwnerFingerprint: 'owner-fingerprint-1',
-      }),
-    );
+    expect(saveRequest?.data).toMatchObject({
+      baseCommitId: 'commit-1',
+      baseOwnerFingerprint: 'owner-fingerprint-1',
+    });
     expect(onPersistedChange).toHaveBeenCalledWith(
       expect.objectContaining({
         code: 'return 2;',
@@ -1486,6 +1484,91 @@ describe('runJSStudioProvider', () => {
     );
     expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();
+  });
+
+  it('opens latest, three-way merges, recompiles, and saves with fresh CAS after a stale Head', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) {
+      throw new Error('Expected the default request mock implementation');
+    }
+    let saveCount = 0;
+    mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
+      if (options.url === 'runJSSources:save' && saveCount++ === 0) {
+        return Promise.reject({
+          response: {
+            status: 409,
+            data: {
+              errors: [
+                {
+                  code: 'BASE_COMMIT_OUTDATED',
+                  message: 'RunJS workspace Head changed after it was opened',
+                  status: 409,
+                },
+              ],
+            },
+          },
+        });
+      }
+      if (options.url === 'runJSSources:openLatest') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              repository: {
+                ...repository,
+                headCommitId: 'commit-remote',
+                headSeq: 2,
+              },
+              files: [
+                ...openResult.files,
+                {
+                  path: 'src/client/remote-helper.ts',
+                  content: 'export const remote = true;',
+                  language: 'typescript',
+                  mode: '100644',
+                },
+              ],
+            },
+          },
+        });
+      }
+      return defaultRequest(options);
+    });
+
+    renderEditor();
+    fireEvent.change(await screen.findByLabelText('Edit file content'), { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Merge remote workspace' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:save')).toHaveLength(2);
+    });
+    const requests = mocks.request.mock.calls.map(
+      ([request]) => request as { url: string; data?: Record<string, unknown> },
+    );
+    const openLatestIndex = requests.findIndex((request) => request.url === 'runJSSources:openLatest');
+    const recoveryPreviewIndex = requests.findIndex(
+      (request, index) => index > openLatestIndex && request.url === 'runJSSources:compilePreview',
+    );
+    const saveRequests = requests.filter((request) => request.url === 'runJSSources:save');
+    expect(openLatestIndex).toBeGreaterThan(-1);
+    expect(recoveryPreviewIndex).toBeGreaterThan(openLatestIndex);
+    expect(saveRequests[0].data).toMatchObject({
+      baseCommitId: 'commit-1',
+      baseOwnerFingerprint: 'owner-fingerprint-1',
+    });
+    expect(saveRequests[1].data).toMatchObject({
+      baseCommitId: 'commit-remote',
+      baseOwnerFingerprint: 'owner-fingerprint-1',
+      files: expect.arrayContaining([
+        expect.objectContaining({ path: 'src/client/index.tsx', content: 'return 2;' }),
+        expect.objectContaining({ path: 'src/client/remote-helper.ts', content: 'export const remote = true;' }),
+      ]),
+    });
   });
 
   it('confirms and restores a history version even when the editor is dirty', async () => {
@@ -1568,7 +1651,7 @@ describe('runJSStudioProvider', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull());
   });
 
-  it('refreshes history without adding an editor version baseline to save requests', async () => {
+  it('keeps the original open baseline when history refreshes before save', async () => {
     const baseRequest = mocks.request.getMockImplementation();
     if (!baseRequest) {
       throw new Error('Expected the default request mock implementation');
@@ -1613,12 +1696,10 @@ describe('runJSStudioProvider', () => {
       const saveRequest = mocks.request.mock.calls
         .map(([request]) => request as { url: string; data?: Record<string, unknown> })
         .find((request) => request.url === 'runJSSources:save');
-      expect(saveRequest?.data).toEqual(
-        expect.objectContaining({
-          baseCommitId: 'commit-1',
-          baseOwnerFingerprint: 'owner-fingerprint-1',
-        }),
-      );
+      expect(saveRequest?.data).toMatchObject({
+        baseCommitId: 'commit-1',
+        baseOwnerFingerprint: 'owner-fingerprint-1',
+      });
     });
   });
 
@@ -1729,8 +1810,10 @@ describe('runJSStudioProvider', () => {
     const importRequest = mocks.request.mock.calls
       .map(([request]) => request as { url: string; data?: Record<string, unknown> })
       .find((request) => request.url === 'runJSSources:importZip');
-    expect(importRequest?.data).not.toHaveProperty('baseCommitId');
-    expect(importRequest?.data).not.toHaveProperty('baseOwnerFingerprint');
+    expect(importRequest?.data).toMatchObject({
+      baseCommitId: 'commit-1',
+      baseOwnerFingerprint: 'owner-fingerprint-1',
+    });
     expect(onPersistedChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 1;', version: 'v2' }));
     expect(onChange).not.toHaveBeenCalled();
     expect(await screen.findByText(/\[info\] Workspace imported/)).toBeTruthy();

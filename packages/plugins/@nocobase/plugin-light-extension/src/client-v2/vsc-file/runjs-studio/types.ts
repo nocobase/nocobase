@@ -18,7 +18,7 @@ import type {
   RunJSSourceSaveResult,
   RunJSSurfaceStyle,
 } from '../../../shared/vsc-file/runjs-source-contracts';
-export type { RunJSCompileDiagnostic } from '../../../shared/vsc-file/runjs-source-contracts';
+export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../../shared/vsc-file/runjs-source-contracts';
 export type { RunJSSourceLocator } from '../../../shared/vsc-file/runjs-source-contracts';
 import type {
   VscCommitRecord,
@@ -125,6 +125,8 @@ export interface RunJSSourceExportZipInput {
 export interface RunJSSourceImportZipInput {
   locator: RunJSSourceLocator;
   repoId?: string;
+  baseCommitId: string | null;
+  baseOwnerFingerprint: string;
   message: string;
   zipBase64: string;
   entryPath?: string;
@@ -141,6 +143,10 @@ export interface RunJSSourceImportZipResult extends RunJSSourceSaveResult {
 export interface RunJSSourceRequestMap {
   open: {
     input: { locator: RunJSSourceLocator; initialSource?: RunJSSourceInitialSource };
+    result: RunJSSourceOpenWorkspaceResult;
+  };
+  openLatest: {
+    input: { locator: RunJSSourceLocator };
     result: RunJSSourceOpenWorkspaceResult;
   };
   restoreFromCode: {

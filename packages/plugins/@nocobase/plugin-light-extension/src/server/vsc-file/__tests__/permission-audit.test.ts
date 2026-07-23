@@ -155,7 +155,7 @@ describe('vsc-file permission hooks and audit registration', () => {
       status: 403,
       details: {
         ownerType: 'light-extension',
-        denyReason: 'protected_owner_requires_permission_hook',
+        denyReason: 'raw_resource_forbidden',
       },
     });
   });

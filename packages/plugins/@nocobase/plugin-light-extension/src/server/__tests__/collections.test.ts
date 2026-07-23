@@ -47,6 +47,7 @@ describe('plugin-light-extension collections', () => {
     expectCollectionFields('lightExtensionRepos', [
       'id',
       'vscRepoId',
+      'applicationName',
       'name',
       'normalizedName',
       'lifecycleStatus',

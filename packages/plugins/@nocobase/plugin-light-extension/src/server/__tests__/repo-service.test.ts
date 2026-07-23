@@ -68,6 +68,7 @@ describe('plugin-light-extension repo service', () => {
     const repoRecord = await app.db.getRepository('lightExtensionRepos').findOne({
       filterByTk: repo.id,
     });
+    expect(repoRecord?.get('applicationName')).toBe('main');
     const vscRepoId = repoRecord?.get('vscRepoId') as string;
     const vscRepo = await app.db.getRepository('vscFileRepositories').findOne({
       filterByTk: vscRepoId,
@@ -101,6 +102,42 @@ describe('plugin-light-extension repo service', () => {
         normalizedName: 'duplicate-repo',
       },
     });
+  });
+
+  it('isolates repositories by their persisted application owner', async () => {
+    const mainRepo = await service.createRepo({ name: 'Main application tools' });
+    const auditService = new LightExtensionAuditService(app.db);
+    const permissionService = new LightExtensionPermissionService(auditService);
+    const supportService = new LightExtensionRepoService(
+      app.db,
+      auditService,
+      permissionService,
+      undefined,
+      undefined,
+      'support-app',
+    );
+    const supportRepo = await supportService.createRepo({ name: 'Support application tools' });
+
+    await expect(service.getRepo(supportRepo.id)).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_PERMISSION_DENIED',
+    });
+    await expect(supportService.getRepo(mainRepo.id)).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_PERMISSION_DENIED',
+    });
+    await expect(service.listRepos()).resolves.toEqual([expect.objectContaining({ id: mainRepo.id })]);
+    await expect(supportService.listRepos()).resolves.toEqual([expect.objectContaining({ id: supportRepo.id })]);
+  });
+
+  it('creates one application default repository under concurrent requests', async () => {
+    const [first, second] = await Promise.all([
+      service.getOrCreateApplicationDefaultRepo('main'),
+      service.getOrCreateApplicationDefaultRepo('main'),
+    ]);
+
+    expect(second.id).toBe(first.id);
+    await expect(
+      app.db.getRepository('lightExtensionRepos').count({ filter: { id: first.id, applicationName: 'main' } }),
+    ).resolves.toBe(1);
   });
 
   it('updates repository display metadata without changing its technical identity', async () => {
@@ -157,6 +194,7 @@ describe('plugin-light-extension repo service', () => {
   });
 
   it('reads only entry fields required for repository statistics', async () => {
+    await service.createRepo({ name: 'Repository statistics' }, { requestId: 'req_repo_statistics' });
     const entriesRepository = app.db.getRepository('lightExtensionEntries');
     const findEntries = vi.spyOn(entriesRepository, 'find');
 

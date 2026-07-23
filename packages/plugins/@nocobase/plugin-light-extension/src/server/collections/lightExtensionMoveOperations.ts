@@ -10,93 +10,66 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  name: 'lightExtensionRepos',
+  name: 'lightExtensionMoveOperations',
   dataCategory: 'system',
   autoGenId: false,
   timestamps: true,
+  migrationRules: ['overwrite', 'schema-only'],
   indexes: [
     {
-      name: 'le_repo_name_uq',
+      name: 'le_move_operation_identity_uq',
       unique: true,
-      fields: ['name'],
-    },
-    {
-      name: 'le_repo_normalized_uq',
-      unique: true,
-      fields: ['normalizedName'],
-    },
-    {
-      name: 'le_repo_vsc_uq',
-      unique: true,
-      fields: ['vscRepoId'],
-    },
-    {
-      name: 'le_repo_health_idx',
-      fields: ['lifecycleStatus', 'healthStatus'],
-    },
-    {
-      name: 'le_repo_application_idx',
-      fields: ['applicationName'],
-    },
-    {
-      name: 'le_repo_head_idx',
-      fields: ['headCommitId'],
+      fields: ['identityHash'],
     },
   ],
   fields: [
     {
       type: 'uid',
       name: 'id',
-      prefix: 'ler_',
+      prefix: 'lemo_',
       primaryKey: true,
     },
     {
       type: 'string',
-      name: 'vscRepoId',
+      name: 'identityHash',
       length: 64,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'applicationName',
-    },
-    {
-      type: 'string',
-      name: 'name',
       allowNull: false,
     },
     {
       type: 'string',
-      name: 'normalizedName',
+      name: 'idempotencyKey',
+      length: 255,
       allowNull: false,
     },
     {
       type: 'string',
-      name: 'title',
-    },
-    {
-      type: 'text',
-      name: 'description',
-    },
-    {
-      type: 'string',
-      name: 'lifecycleStatus',
+      name: 'requestHash',
+      length: 64,
       allowNull: false,
-      defaultValue: 'enabled',
     },
     {
       type: 'string',
-      name: 'healthStatus',
+      name: 'attemptId',
+      length: 36,
       allowNull: false,
-      defaultValue: 'pending',
     },
     {
       type: 'string',
-      name: 'headCommitId',
+      name: 'status',
+      allowNull: false,
     },
     {
-      type: 'date',
-      name: 'lastCompiledAt',
+      type: 'json',
+      name: 'result',
+    },
+    {
+      type: 'string',
+      name: 'errorCode',
     },
   ],
 });

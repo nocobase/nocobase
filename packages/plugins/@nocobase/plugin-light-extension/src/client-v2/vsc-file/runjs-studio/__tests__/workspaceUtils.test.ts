@@ -10,7 +10,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RunJSSourceHistoryItem } from '../types';
-import { buildLineDiff, buildWorkspaceSnapshotKey, inferLanguageFromPath, mergeHistoryItems } from '../workspaceUtils';
+import {
+  buildLineDiff,
+  buildWorkspaceSnapshotKey,
+  inferLanguageFromPath,
+  mergeHistoryItems,
+  mergeRunJSWorkspaceFiles,
+} from '../workspaceUtils';
 
 function createHistoryItem(id: string, seq: number, message: string): RunJSSourceHistoryItem {
   return {
@@ -65,5 +71,53 @@ describe('workspaceUtils', () => {
     expect(inferLanguageFromPath('src/index.tsx', { jsxLanguage: 'language-family' })).toBe('typescript');
     expect(inferLanguageFromPath('src/index.jsx', { jsxLanguage: 'language-family' })).toBe('javascript');
     expect(inferLanguageFromPath('src/style.css', { cssLanguage: 'text' })).toBe('text');
+  });
+
+  it('three-way merges independent path changes and preserves the complete snapshot', () => {
+    const base = [
+      { path: 'src/client/index.tsx', content: 'ctx.render(title);' },
+      { path: 'src/client/title.ts', content: 'export const title = "base";' },
+    ];
+    const local = [{ path: 'src/client/index.tsx', content: 'ctx.render(title.toUpperCase());' }, base[1]];
+    const latest = [
+      base[0],
+      { path: 'src/client/title.ts', content: 'export const title = "latest";' },
+      { path: 'src/client/helper.ts', content: 'export const helper = true;' },
+    ];
+
+    expect(mergeRunJSWorkspaceFiles(base, local, latest)).toEqual({
+      conflictPaths: [],
+      files: [
+        {
+          path: 'src/client/helper.ts',
+          content: 'export const helper = true;',
+          language: 'typescript',
+          mode: undefined,
+        },
+        {
+          path: 'src/client/index.tsx',
+          content: 'ctx.render(title.toUpperCase());',
+          language: 'tsx',
+          mode: undefined,
+        },
+        {
+          path: 'src/client/title.ts',
+          content: 'export const title = "latest";',
+          language: 'typescript',
+          mode: undefined,
+        },
+      ],
+    });
+  });
+
+  it('reports same-path three-way conflicts without choosing either side', () => {
+    const base = [{ path: 'src/client/index.tsx', content: 'ctx.render("base");' }];
+    const local = [{ path: 'src/client/index.tsx', content: 'ctx.render("local");' }];
+    const latest = [{ path: 'src/client/index.tsx', content: 'ctx.render("latest");' }];
+
+    expect(mergeRunJSWorkspaceFiles(base, local, latest)).toEqual({
+      files: [],
+      conflictPaths: ['src/client/index.tsx'],
+    });
   });
 });

@@ -11,6 +11,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { DATA_SOURCE_DIRTY_EVENT, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { RunJSSettingsDescriptorProviderRegistry } from '../../../../components/runjs-source';
 import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
 
 function createEngine() {
@@ -57,6 +58,7 @@ function renderModel(engine: FlowEngine, model: FlowModel) {
 
 describe('JSPageModel', () => {
   afterEach(() => {
+    RunJSSettingsDescriptorProviderRegistry.clear();
     vi.restoreAllMocks();
   });
 
@@ -157,6 +159,82 @@ describe('JSPageModel', () => {
     });
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.queryByText('Add tab')).not.toBeInTheDocument();
+  });
+
+  it('merges inline descriptor defaults into ctx.settings without replacing falsy overrides', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-page-settings-test',
+      canHandle: () => true,
+      getSettingsDescriptor: async () => ({
+        entryId: 'inline:repo-page:settings',
+        settingsSchemaHash: 'schema-1',
+        defaults: { enabled: true, count: 5, label: 'Default', tone: 'blue' },
+        schema: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean' },
+            count: { type: 'integer' },
+            label: { type: 'string' },
+            tone: { type: 'string' },
+          },
+        },
+      }),
+    });
+    const engine = createEngine();
+    const model = createModel(engine, {
+      jsSettings: {
+        runJs: {
+          code: 'ctx.render(JSON.stringify(ctx.settings));',
+          version: 'v2',
+          sourceMode: 'inline',
+          sourceRef: { type: 'vsc-file', repoId: 'repo-page', commitId: 'commit-1' },
+          settings: { enabled: false, count: 0, label: '' },
+        },
+      },
+    });
+
+    renderModel(engine, model);
+
+    const host = screen.getByLabelText('JavaScript page content');
+    await waitFor(() => expect(host.textContent).toContain('tone'));
+    expect(JSON.parse(host.textContent || '{}')).toEqual({ enabled: false, count: 0, label: '', tone: 'blue' });
+  });
+
+  it('renders actionable inline settings diagnostics with invalid field paths', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-page-invalid-settings-test',
+      canHandle: () => true,
+      getSettingsDescriptor: async () => ({
+        entryId: 'inline:repo-page:invalid-settings',
+        settingsSchemaHash: 'schema-invalid',
+        defaults: { count: 5 },
+        schema: {
+          type: 'object',
+          properties: {
+            count: { type: 'integer' },
+          },
+        },
+      }),
+    });
+    const engine = createEngine();
+    const model = createModel(engine, {
+      jsSettings: {
+        runJs: {
+          code: 'ctx.render(String(ctx.settings.count));',
+          version: 'v2',
+          sourceMode: 'inline',
+          sourceRef: { type: 'vsc-file', repoId: 'repo-page', commitId: 'commit-1' },
+          settings: { count: 'invalid' },
+        },
+      },
+    });
+
+    renderModel(engine, model);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Light extension settings are invalid');
+    expect(alert).toHaveTextContent('Open the page settings and fix the light extension settings.');
+    expect(alert).toHaveTextContent('Fields: count');
   });
 
   it('clears stale content on failure and disposes the runtime root on unmount', async () => {

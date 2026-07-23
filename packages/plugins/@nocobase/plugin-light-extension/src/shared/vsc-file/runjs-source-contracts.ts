@@ -8,12 +8,14 @@
  */
 
 import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from './types';
+import type { LightExtensionDiagnostic } from '../types';
 import type {
   RunJSCompileDiagnostic,
   RunJSLegacySource,
   RunJSRuntimeWriteResult,
   RunJSSourceKind,
   RunJSSourceLocator,
+  RunJSSurfaceStyle,
 } from '@nocobase/server';
 
 export type {
@@ -40,6 +42,54 @@ export interface RunJSSourceOpenResult {
   repositoryIdentity: VscRepositoryIdentity;
   legacy: RunJSLegacySource;
   ownerFingerprint: string;
+  source: RunJSSourceInfo;
+  repository: RunJSSourceRepositoryRecord;
+  files: RunJSSourceWorkspaceFile[];
+  permissions: RunJSSourcePermissions;
+  history: RunJSSourceHistoryState;
+  settingsDescriptor: RunJSSourceOpenSettingsDescriptor;
+}
+
+export interface RunJSSourceOpenSettingsDescriptor {
+  descriptorPath: string;
+  entryId: string | null;
+  key: string | null;
+  schema: Record<string, unknown> | null;
+  defaults: Record<string, unknown>;
+  settingsSchemaHash: string | null;
+  settingsDefaultsHash: string | null;
+  diagnostics: LightExtensionDiagnostic[];
+}
+
+export interface RunJSSourceInfo {
+  label: string;
+  kind: RunJSSourceKind;
+  surfaceStyle: RunJSSurfaceStyle;
+  runtimeVersion: string;
+  language: RunJSLegacySource['language'];
+  ownerFingerprint: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RunJSSourceRepositoryRecord extends VscRepositoryRecord {
+  repoId: string;
+}
+
+export interface RunJSSourceWorkspaceFile {
+  path: string;
+  content?: string;
+  language?: string;
+  mode?: string;
+}
+
+export interface RunJSSourcePermissions {
+  canRead: boolean;
+  canWrite: boolean;
+  canSave: boolean;
+}
+
+export interface RunJSSourceHistoryState {
+  items: VscCommitRecord[];
 }
 
 export interface RunJSSourceInitialSource {
@@ -65,8 +115,8 @@ export interface RunJSSourceSaveResult {
 export interface RunJSSourceSaveInput {
   locator: RunJSSourceLocator;
   repoId?: string;
-  baseCommitId?: string | null;
-  baseOwnerFingerprint?: string;
+  baseCommitId: string | null;
+  baseOwnerFingerprint: string;
   message: string;
   files: VscFileChange[];
   entryPath?: string;

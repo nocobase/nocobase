@@ -66,6 +66,10 @@ export class VscFileServerModule {
     return this.runJSSourceAdapters;
   }
 
+  getRunJSSourceAuthoringInspectorRegistry(): RunJSSourceAuthoringInspectorRegistry {
+    return this.runJSSourceAuthoringInspectors;
+  }
+
   getRemoteSyncRuntime(): RemoteSyncRuntime {
     if (!this.remoteSyncRuntime) {
       throw new Error('Remote sync runtime is not loaded');

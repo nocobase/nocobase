@@ -408,11 +408,7 @@ describe('JSBlockModel light extension source', () => {
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
-      settings: {
-        message: 'Hello',
-        pageSize: 5,
-        enabled: true,
-      },
+      settings: {},
       code: 'ctx.render("inline");',
       version: 'v2',
     });
@@ -838,5 +834,36 @@ describe('JSBlockModel light extension source', () => {
     await waitFor(() => {
       expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent('Entry missing');
     });
+  });
+
+  it('renders actionable inline settings diagnostics with invalid field paths', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-block-invalid-settings-test',
+      canHandle: () => true,
+      getSettingsDescriptor: async () => ({
+        entryId: 'inline:repo-block:invalid-settings',
+        settingsSchemaHash: 'schema-invalid',
+        defaults: { pageSize: 5 },
+        schema: {
+          type: 'object',
+          properties: {
+            pageSize: { type: 'integer' },
+          },
+        },
+      }),
+    });
+
+    renderJSBlock({
+      code: 'ctx.render(String(ctx.settings.pageSize));',
+      sourceMode: 'inline',
+      sourceRef: { type: 'vsc-file', repoId: 'repo-block', commitId: 'commit-1' },
+      settings: { pageSize: 'invalid' },
+      version: 'v2',
+    });
+
+    const alert = await screen.findByTestId('js-block-runtime-error');
+    expect(alert).toHaveTextContent('Light extension settings are invalid');
+    expect(alert).toHaveTextContent('Open the block settings and fix the light extension settings.');
+    expect(alert).toHaveTextContent('Fields: pageSize');
   });
 });
