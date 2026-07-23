@@ -8,7 +8,6 @@
  */
 
 import { randomUUID } from 'crypto';
-import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -68,16 +67,16 @@ export interface EventQueueOptions {
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   private connected = false;
 
-  private emitter: EventEmitter = new EventEmitter();
-
   private reading: Map<string, Promise<void>[]> = new Map();
+
+  private scheduledChannels = new Set<string>();
 
   protected events: Map<string, QueueEventOptions> = new Map();
 
   protected queues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]> = new Map();
 
   get processing() {
-    const processing = Array.from(this.reading.values());
+    const processing = Array.from(this.reading.values()).flat();
 
     if (processing.length > 0) {
       return Promise.all(processing);
@@ -97,7 +96,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     const { logger } = this.options;
     const event = this.events.get(channel);
     if (!event) {
-      logger.warn(`memory queue (${channel}) not found, skipping...`);
       return;
     }
     if (!event.idle()) {
@@ -121,14 +119,28 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         if (index > -1) {
           reading.splice(index, 1);
         }
+        this.scheduleListen(channel);
       });
     });
     this.reading.set(channel, reading);
   };
 
-  constructor(private options: { appName: string; logger: SystemLogger }) {
-    this.emitter.setMaxListeners(0);
+  private scheduleListen(channel: string) {
+    if (this.scheduledChannels.has(channel)) {
+      return;
+    }
+
+    this.scheduledChannels.add(channel);
+    setImmediate(() => {
+      this.scheduledChannels.delete(channel);
+      if (!this.events.has(channel)) {
+        return;
+      }
+      this.listen(channel);
+    });
   }
+
+  constructor(private options: { appName: string; logger: SystemLogger }) {}
 
   isConnected(): boolean {
     return this.connected;
@@ -192,13 +204,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       for (const channel of this.events.keys()) {
         this.consume(channel);
       }
-      // for (const channel of this.queues.keys()) {
-      //   const queue = this.queues.get(channel);
-      //   if (!queue?.length) {
-      //     continue;
-      //   }
-      //   this.emitter.emit(channel, channel);
-      // }
     });
   }
 
@@ -227,8 +232,6 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.queues.set(channel, []);
     }
 
-    this.emitter.on(channel, this.listen);
-
     if (this.connected) {
       this.consume(channel);
     }
@@ -239,13 +242,13 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       return;
     }
     this.events.delete(channel);
-    this.emitter.off(channel, this.listen);
   }
 
   publish(channel: string, content: any, options: QueueMessageOptions = { timestamp: Date.now() }) {
+    const { logger } = this.options;
     const event = this.events.get(channel);
     if (!event) {
-      console.debug(`memory queue (${channel}) not subscribed, skip`);
+      logger.debug(`memory queue (${channel}) not subscribed, skip`);
       return;
     }
     if (!this.queues.get(channel)) {
@@ -254,12 +257,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     const queue = this.queues.get(channel);
     const message = { id: randomUUID(), content, options };
     queue.push(message);
-    const { logger } = this.options;
     logger.debug(`memory queue (${channel}) published message`, content);
 
-    setImmediate(() => {
-      this.emitter.emit(channel, channel);
-    });
+    this.scheduleListen(channel);
   }
 
   async consume(channel: string, once = false) {
@@ -275,6 +275,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       if (once) {
         break;
       }
+      // Polling is the fallback that observes an external non-idle -> idle transition.
       await sleep(interval);
     }
   }

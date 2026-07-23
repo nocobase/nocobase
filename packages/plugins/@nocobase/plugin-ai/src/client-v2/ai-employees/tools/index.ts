@@ -31,6 +31,7 @@ import { registerDataModelingRefreshHandler, useDataModelingOnOk } from './data-
 import { SubAgentDispatchCard } from './SubAgentDispatchCard';
 import { SuggestionsOptionsCard } from './SuggestionsOptionsCard';
 import { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
+import { executeFrontendTool, loadFrontendTool } from '../frontend-tools';
 
 export { ChartGeneratorCard } from './ChartGeneratorCard';
 export { SubAgentDispatchCard } from './SubAgentDispatchCard';
@@ -191,6 +192,8 @@ export const pluginAIClientV2BuiltinTools: Array<[string, ToolsOptions]> = [
   writeJSCodeTool,
   patchJSCodeTool,
   lintAndTestJSTool,
+  loadFrontendTool,
+  executeFrontendTool,
 ];
 
 export const pluginAIClientV2BuiltinToolNames = pluginAIClientV2BuiltinTools.map(([name]) => name);

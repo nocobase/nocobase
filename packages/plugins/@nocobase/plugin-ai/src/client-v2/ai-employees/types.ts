@@ -11,6 +11,7 @@ import type { BubbleProps } from '@ant-design/x';
 import type { ComponentType } from 'react';
 import type { Application } from '@nocobase/client-v2';
 import type { FlowEngineContext } from '@nocobase/flow-engine';
+import type { FrontendToolManifest } from '../../common/frontend-tools';
 
 export type Selector = {
   onSelect: (options: { uid: string }) => void;
@@ -79,6 +80,7 @@ export type ContextItem = {
   uid: string;
   title?: string;
   content?: unknown;
+  frontendTools?: FrontendToolManifest[];
 };
 
 type ActionParams = {
@@ -121,6 +123,7 @@ export type WorkContextOptions = {
   actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
   getContent?: (app: Application, item: ContextItem) => Promise<unknown>;
+  getFrontendTools?: (app: Application, item: ContextItem) => Promise<FrontendToolManifest[]>;
 };
 
 export type ToolCall<T = unknown> = {

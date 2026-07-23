@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { Dropdown, DropdownProps, Empty, Input, InputProps, Spin } from 'antd';
+import { ConfigProvider, Dropdown, DropdownProps, Empty, Input, InputProps, Spin } from 'antd';
 import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFlowEngine } from '../../provider';
 
@@ -564,6 +564,8 @@ const dropdownPersistRegistry: Map<string, number> = new Map();
 
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
   const engine = useFlowEngine();
+  const { getPrefixCls } = React.useContext(ConfigProvider.ConfigContext);
+  const triggerId = React.useId();
   const [menuVisible, setMenuVisible] = useState(false);
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const [rootItems, setRootItems] = useState<Item[]>([]);
@@ -571,6 +573,11 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const activeSearchKeyRef = useRef<string | null>(null);
   const closeByOutsideClickRef = useRef(false);
   const skipPreserveActiveSearchRef = useRef(false);
+  const triggerOpenClassName = `nb-lazy-dropdown-trigger-${triggerId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const defaultOpenClassName = `${getPrefixCls('dropdown', props.prefixCls)}-open`;
+  const mergedOpenClassName = [props.openClassName ?? defaultOpenClassName, triggerOpenClassName]
+    .filter(Boolean)
+    .join(' ');
   const dropdownMaxHeight = useNiceDropdownMaxHeight();
   const t = engine.translate.bind(engine);
 
@@ -673,7 +680,9 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
     const markOutsideClick = (event: MouseEvent | PointerEvent) => {
       const target = event.target as HTMLElement | null;
-      const isOutside = !target?.closest('.ant-dropdown, .ant-dropdown-menu, .ant-dropdown-menu-submenu-popup');
+      const isInsidePopup = target?.closest('.ant-dropdown, .ant-dropdown-menu, .ant-dropdown-menu-submenu-popup');
+      const isInsideCurrentTrigger = target?.closest(`.${triggerOpenClassName}`);
+      const isOutside = !isInsidePopup && !isInsideCurrentTrigger;
       closeByOutsideClickRef.current = isOutside;
       if (isOutside) {
         closeMenu();
@@ -686,7 +695,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       document.removeEventListener('pointerdown', markOutsideClick, true);
       document.removeEventListener('mousedown', markOutsideClick, true);
     };
-  }, [closeMenu, menuVisible]);
+  }, [closeMenu, menuVisible, triggerOpenClassName]);
 
   // 在挂载时，若存在 persistKey 且仍在持久期内，则尝试恢复打开状态
   useEffect(() => {
@@ -966,6 +975,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       open={menuVisible}
       destroyPopupOnHide
       mouseLeaveDelay={props.mouseLeaveDelay ?? MENU_CLOSE_DELAY}
+      openClassName={mergedOpenClassName}
       overlayClassName={overlayClassName}
       placement="bottomLeft"
       menu={{

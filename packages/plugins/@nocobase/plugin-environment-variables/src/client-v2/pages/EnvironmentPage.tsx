@@ -28,6 +28,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { VAR_NAME_RE } from '../../re';
 import { EnvVariableFilterItem } from '../components/EnvVariableFilterItem';
 import { useT } from '../locale';
+import type { BulkImportError } from './bulkImport';
+import { parseBulkImportText } from './bulkImport';
 
 type EnvVariable = {
   name: string;
@@ -51,17 +53,9 @@ function createEmptyFilter(): FilterGroupValue {
   return observable({ logic: '$and', items: [] }) as FilterGroupValue;
 }
 
-function parseKeyValuePairs(input: string, type: 'default' | 'secret'): EnvVariable[] {
-  return input
-    .trim()
-    .split('\n')
-    .map((line): EnvVariable | null => {
-      const [name, ...valueParts] = line.split('=');
-      if (!name?.trim()) return null;
-      return { name: name.trim(), value: valueParts.join('=').trim(), type };
-    })
-    .filter((item): item is EnvVariable => item != null);
-}
+const EnvVariableFilterContentItem: NonNullable<React.ComponentProps<typeof FilterContent>['FilterItem']> = (props) => (
+  <EnvVariableFilterItem {...props} />
+);
 
 function FilterPopover({
   value,
@@ -101,7 +95,7 @@ function FilterPopover({
       placement="bottomLeft"
       content={
         <div style={{ minWidth: 480 }}>
-          <FilterContent value={value} ctx={fakeCtx} FilterItem={EnvVariableFilterItem} />
+          <FilterContent value={value} ctx={fakeCtx} FilterItem={EnvVariableFilterContentItem} />
         </div>
       }
     >
@@ -117,7 +111,7 @@ const EnvironmentPage: React.FC = observer(() => {
   const ctx = useFlowContext();
   const view = useFlowView();
   const { token } = theme.useToken();
-  const { modal } = App.useApp();
+  const { modal, notification } = App.useApp();
   const resource = useMemo(() => ctx.api.resource('environmentVariables'), [ctx.api]);
 
   // The filter object is observable so that FilterGroup mutations re-render the popover.
@@ -141,6 +135,25 @@ const EnvironmentPage: React.FC = observer(() => {
     },
     {
       refreshDeps: [filterPayload],
+      onError(error) {
+        if (!filterPayload) {
+          return;
+        }
+        const responseError = ctx.api.toErrMessages(error)?.[0];
+        let responseMessage: string | undefined;
+        if (typeof responseError === 'string') {
+          responseMessage = responseError;
+        } else if (typeof responseError?.message === 'string') {
+          responseMessage = responseError.message;
+        } else if (error instanceof Error) {
+          responseMessage = error.message;
+        }
+        notification.error({
+          message: t('Filter failed'),
+          description: responseMessage,
+          role: 'alert',
+        });
+      },
     },
   );
 
@@ -410,20 +423,48 @@ function VariableForm(props: {
   );
 }
 
-function BulkImportForm(props: { onSubmitted: () => void }) {
+export function BulkImportForm(props: { onSubmitted: () => void }) {
   const { onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
   const view = useFlowView();
+  const { notification } = App.useApp();
   const [form] = Form.useForm<{ variables?: string; secret?: string }>();
   const [submitting, setSubmitting] = useState(false);
 
+  const formatValidationError = useCallback(
+    (error: BulkImportError) => {
+      const options = { line: error.line };
+      switch (error.code) {
+        case 'missingSeparator':
+          return t('Line {{line}}: an equals sign is required.', options);
+        case 'emptyName':
+          return t('Line {{line}}: variable name cannot be empty.', options);
+        case 'invalidName':
+          return t(
+            'Line {{line}}: only letters, numbers and underscores are allowed, and it must start with a letter.',
+            options,
+          );
+        case 'emptyValue':
+          return t('Line {{line}}: variable value cannot be empty.', options);
+      }
+    },
+    [t],
+  );
+
   const handleSubmit = useCallback(async () => {
     const values = await form.validateFields();
-    const items = [
-      ...parseKeyValuePairs(values.variables || '', 'default'),
-      ...parseKeyValuePairs(values.secret || '', 'secret'),
-    ];
+    const variablesResult = parseBulkImportText(values.variables || '', 'default');
+    const secretResult = parseBulkImportText(values.secret || '', 'secret');
+    form.setFields([
+      { name: 'variables', errors: variablesResult.errors.map(formatValidationError) },
+      { name: 'secret', errors: secretResult.errors.map(formatValidationError) },
+    ]);
+    if (variablesResult.errors.length || secretResult.errors.length) {
+      return;
+    }
+
+    const items = [...variablesResult.items, ...secretResult.items];
     if (!items.length) {
       await view.close();
       return;
@@ -433,10 +474,25 @@ function BulkImportForm(props: { onSubmitted: () => void }) {
       await ctx.api.request({ url: 'environmentVariables:create', method: 'post', data: items });
       onSubmitted();
       await view.close();
+    } catch (error: unknown) {
+      const responseError = ctx.api.toErrMessages(error)?.[0];
+      let responseMessage: string | undefined;
+      if (typeof responseError === 'string') {
+        responseMessage = responseError;
+      } else if (typeof responseError?.message === 'string') {
+        responseMessage = responseError.message;
+      } else if (error instanceof Error) {
+        responseMessage = error.message;
+      }
+      notification.error({
+        message: t('Bulk import failed'),
+        description: responseMessage,
+        role: 'alert',
+      });
     } finally {
       setSubmitting(false);
     }
-  }, [ctx.api, form, onSubmitted, view]);
+  }, [ctx.api, form, formatValidationError, notification, onSubmitted, t, view]);
 
   return (
     <div>

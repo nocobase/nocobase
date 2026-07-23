@@ -439,7 +439,7 @@ export class JSBlockModel extends BlockModel {
     const cardProps = {
       ...rest,
       height,
-      style,
+      ...(style === undefined ? {} : { style }),
       ...(beforeContent === undefined ? {} : { beforeContent }),
       ...(afterContent === undefined ? {} : { afterContent }),
     };
