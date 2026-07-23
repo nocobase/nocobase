@@ -34,8 +34,8 @@ export default {
           'x-display': 'hidden',
           default: 'storage/uploads',
         },
-        public: common.public,
         useOriginalUrl: common.useOriginalUrl,
+        public: common.public,
       },
     },
     path: {

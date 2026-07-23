@@ -18,7 +18,6 @@ import {
   NameField,
   ParanoidField,
   PathField,
-  PublicAccessField,
   RenameModeField,
   TitleField,
   UseOriginalUrlField,
@@ -53,7 +52,6 @@ export default function TxCosStorageForm() {
       <FileSizeField />
       <MimetypeField />
       <UseOriginalUrlField />
-      <PublicAccessField />
       <DefaultField />
       <ParanoidField />
     </>

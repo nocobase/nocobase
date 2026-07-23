@@ -18,7 +18,6 @@ import {
   NameField,
   ParanoidField,
   PathField,
-  PublicAccessField,
   RenameModeField,
   TitleField,
   UseOriginalUrlField,
@@ -65,7 +64,6 @@ export default function AliOssStorageForm() {
       <FileSizeField />
       <MimetypeField />
       <UseOriginalUrlField />
-      <PublicAccessField />
       <DefaultField />
       <ParanoidField />
       <Form.Item
