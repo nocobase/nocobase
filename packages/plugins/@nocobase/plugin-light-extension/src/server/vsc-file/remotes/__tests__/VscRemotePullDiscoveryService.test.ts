@@ -557,3 +557,38 @@ function requireHandle<T>(handle: T | null): T {
   }
   return handle;
 }
+
+describe('VscRemotePullDiscoveryService claim lease heartbeat', () => {
+  it('renews the discovery claim while owner preparation is still running', async () => {
+    vi.useFakeTimers();
+    try {
+      const renewLease = vi.fn(async () => ({}));
+      const service = new VscRemotePullDiscoveryService({} as Database, {
+        adapterRegistry: {} as RemoteSyncAdapterRegistry,
+        jobStore: { renewLease } as unknown as SyncJobStore,
+      });
+      const action = service.runWithClaimLease(
+        {
+          remote: {} as VscFileRemoteRecord,
+          jobId: 'job-slow-prepare',
+          claimToken: 'claim-slow-prepare',
+          leaseDurationMs: 30,
+          expectedLocalCommitId: 'commit-1',
+          expectedRemoteRevision: 'revision-2',
+          expectedRemoteTargetVersion: 1,
+          planFingerprint: 'sha256:plan',
+          snapshot: {} as VscRemoteSnapshot,
+        },
+        () => new Promise<string>((resolve) => setTimeout(() => resolve('prepared'), 80)),
+      );
+
+      await vi.advanceTimersByTimeAsync(80);
+
+      await expect(action).resolves.toBe('prepared');
+      expect(renewLease).toHaveBeenCalledWith('job-slow-prepare', 'claim-slow-prepare', 30);
+      expect(renewLease.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

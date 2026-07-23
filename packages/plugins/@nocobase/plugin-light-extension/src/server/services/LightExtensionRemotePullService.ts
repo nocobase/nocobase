@@ -40,6 +40,7 @@ interface RemotePullHandle {
   remote: VscFileRemoteRecord;
   jobId: string;
   claimToken: string;
+  leaseDurationMs: number;
   expectedLocalCommitId: string | null;
   expectedRemoteRevision: string;
   expectedRemoteTargetVersion: number;
@@ -75,6 +76,7 @@ interface RemotePullDiscoveryCoordinator {
       ): Promise<{ localCommitId: string; contentHash: string } & TResult>;
     },
   ): Promise<{ job: VscFileSyncJobRecord; result: { localCommitId: string; contentHash: string } & TResult }>;
+  runWithClaimLease<TResult>(handle: RemotePullHandle, action: () => Promise<TResult>): Promise<TResult>;
   failApply(handle: RemotePullHandle, code: RemoteSyncErrorCode): Promise<void>;
 }
 
@@ -146,19 +148,21 @@ export class LightExtensionRemotePullService {
 
     const handle = discovery.handle;
     try {
-      const prepared = await this.runtimeCompileService.prepareRemoteSnapshot(
-        {
-          repoId: input.repoId,
-          expectedHeadCommitId: input.expectedLocalCommitId,
-          snapshot: handle.snapshot,
-          message: input.message || `Pull source from ${handle.remote.provider}`,
-          remoteId: handle.remote.id,
-        },
-        {
-          ...ctx,
-          requestId,
-          requestSource: ctx.requestSource || 'light-extension-remote-pull-prepare',
-        },
+      const prepared = await this.pullDiscovery.runWithClaimLease(handle, () =>
+        this.runtimeCompileService.prepareRemoteSnapshot(
+          {
+            repoId: input.repoId,
+            expectedHeadCommitId: input.expectedLocalCommitId,
+            snapshot: handle.snapshot,
+            message: input.message || `Pull source from ${handle.remote.provider}`,
+            remoteId: handle.remote.id,
+          },
+          {
+            ...ctx,
+            requestId,
+            requestSource: ctx.requestSource || 'light-extension-remote-pull-prepare',
+          },
+        ),
       );
       const applied = await this.pullDiscovery.apply<LightExtensionRepoInternalRecord, RemotePullOwnerApplyResult>(
         handle,

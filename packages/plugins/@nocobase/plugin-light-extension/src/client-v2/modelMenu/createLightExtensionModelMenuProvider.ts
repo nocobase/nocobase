@@ -129,7 +129,7 @@ async function buildRepoItems(
   const kind = targetKinds[options.target];
   const [entries, repos] = await Promise.all([
     listSelectableLightExtensionEntries(api, { kind }),
-    listLightExtensionRepos(api),
+    listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
   ]);
   const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
   const entriesByRepo = entries

@@ -58,6 +58,7 @@ export interface VscRemotePullHandle {
   remote: VscFileRemoteRecord;
   jobId: string;
   claimToken: string;
+  leaseDurationMs: number;
   expectedLocalCommitId: string | null;
   expectedRemoteRevision: string;
   expectedRemoteTargetVersion: number;
@@ -281,6 +282,7 @@ export class VscRemotePullDiscoveryService {
           remote: prepared.remote,
           jobId: job.id,
           claimToken,
+          leaseDurationMs,
           expectedLocalCommitId: input.expectedLocalCommitId,
           expectedRemoteRevision: remoteSnapshot.revision as string,
           expectedRemoteTargetVersion: input.expectedRemoteTargetVersion,
@@ -368,6 +370,10 @@ export class VscRemotePullDiscoveryService {
     });
   }
 
+  async runWithClaimLease<TResult>(handle: VscRemotePullHandle, action: () => Promise<TResult>): Promise<TResult> {
+    return this.runWithLeaseHeartbeat(handle.jobId, handle.claimToken, handle.leaseDurationMs, action);
+  }
+
   async failApply(handle: VscRemotePullHandle, code: RemoteSyncErrorCode): Promise<void> {
     await this.db.sequelize.transaction(async (transaction) => {
       await this.lockRemote(handle.remote.id, transaction);
@@ -383,7 +389,7 @@ export class VscRemotePullDiscoveryService {
       }
       await jobRecord.update(
         {
-          leaseExpiresAt: new Date(Date.now() + this.leaseDurationMs),
+          leaseExpiresAt: new Date(Date.now() + handle.leaseDurationMs),
           heartbeatAt: new Date(),
         },
         { transaction },

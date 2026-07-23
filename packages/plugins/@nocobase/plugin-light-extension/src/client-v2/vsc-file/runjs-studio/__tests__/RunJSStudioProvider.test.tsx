@@ -1244,12 +1244,43 @@ describe('runJSStudioProvider', () => {
   });
 
   it('requires a version message before saving a version', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) {
+      throw new Error('Expected the default request mock implementation');
+    }
+    let saved = false;
+    mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
+      if (options.url === 'runJSSources:save') {
+        saved = true;
+        return defaultRequest(options);
+      }
+      if (options.url === 'runJSSources:open' && saved) {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              legacy: {
+                ...openResult.legacy,
+                code: 'return canonicalSavedRuntime;',
+                version: 'v3',
+              },
+              files: openResult.files.map((file) =>
+                file.path === 'src/client/index.tsx' ? { ...file, content: 'return 2;' } : file,
+              ),
+            },
+          },
+        });
+      }
+      return defaultRequest(options);
+    });
     const onChange = vi.fn();
     const onPersistedChange = vi.fn();
     renderEditor(onChange, { onPersistedChange });
     const editor = await screen.findByLabelText('Edit file content');
 
     fireEvent.change(editor, { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    expect(await screen.findByText(/\[info\] Source check passed/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     const dialog = await screen.findByRole('dialog');
@@ -1288,8 +1319,8 @@ describe('runJSStudioProvider', () => {
     });
     expect(onPersistedChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: 'return 2;',
-        version: 'v2',
+        code: 'return canonicalSavedRuntime;',
+        version: 'v3',
         sourceRef: {
           type: 'vsc-file',
           repoId: 'repo-1',
@@ -1298,8 +1329,44 @@ describe('runJSStudioProvider', () => {
         },
       }),
     );
+    expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
+      2,
+    );
     expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();
+  });
+
+  it('does not persist a new source reference when canonical post-Save readback fails', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) {
+      throw new Error('Expected the default request mock implementation');
+    }
+    let saved = false;
+    mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
+      if (options.url === 'runJSSources:save') {
+        saved = true;
+        return defaultRequest(options);
+      }
+      if (options.url === 'runJSSources:open' && saved) {
+        return Promise.reject(new Error('canonical readback unavailable'));
+      }
+      return defaultRequest(options);
+    });
+    const onPersistedChange = vi.fn();
+    renderEditor(vi.fn(), { onPersistedChange });
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Save version' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Update code' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Save failed')).toBeTruthy();
+    expect(onPersistedChange).not.toHaveBeenCalled();
+    expect(mocks.closeView).not.toHaveBeenCalled();
   });
 
   it('opens latest, three-way merges, recompiles, and saves with fresh CAS after a stale Head', async () => {

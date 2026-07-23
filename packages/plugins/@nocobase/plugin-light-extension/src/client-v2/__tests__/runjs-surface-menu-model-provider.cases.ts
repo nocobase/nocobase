@@ -215,10 +215,23 @@ describe('createLightExtensionModelMenuProvider', () => {
     expect(await getLeafIds(columnRepos)).toEqual(['column']);
   });
 
-  it('falls back to repoId and returns a disabled item when loading fails', async () => {
+  it('falls back to repoId when repository listing is denied and returns a disabled item when entries fail', async () => {
     const fallbackApi = createApi({ repos: [] });
     const root = await getRootItem(fallbackApi, { target: 'block' });
     expect((await resolveChildren(root))[0].label).toBe('repo-a');
+
+    const repoDeniedApi: ApiClientLike = {
+      request: vi.fn(async <TResponse>(options) => {
+        if (options.url === 'lightExtensionRepos:list') {
+          throw new Error('forbidden');
+        }
+        return { data: { data: entries.filter((entry) => entry.kind === 'js-block') } } as TResponse;
+      }),
+    };
+    const repoDeniedRoot = await getRootItem(repoDeniedApi, { target: 'block' });
+    const repoDeniedItem = (await resolveChildren(repoDeniedRoot))[0];
+    expect(repoDeniedItem.label).toBe('repo-a');
+    expect(repoDeniedItem.disabled).not.toBe(true);
 
     const failingApi: ApiClientLike = { request: vi.fn().mockRejectedValue(new Error('network')) };
     const failingRoot = await getRootItem(failingApi, { target: 'block' });

@@ -649,11 +649,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return;
       }
       setPreviewDiagnostics(result.artifact.diagnostics);
-      setPreviewArtifact({
-        code: result.artifact.code,
-        version: result.artifact.version,
-        snapshotKey: requestSnapshotKey,
-      });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
       appendConsole({
@@ -757,7 +752,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return;
       }
 
-      let savedArtifact = compiled;
       let result: RunJSSourceSaveResult;
       try {
         result = await runJSSourceRequest('save', {
@@ -805,11 +799,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           finishEmbeddedSaveRequest('cancelled');
           return;
         }
-        savedArtifact = {
-          code: preview.artifact.code,
-          version: preview.artifact.version,
-          snapshotKey: buildWorkspaceSnapshotKey(recoveredFiles, recoveredEntryPath, preview.artifact.version),
-        };
         result = await runJSSourceRequest('save', {
           locator: props.locator,
           repoId: latest.repository.repoId,
@@ -834,18 +823,21 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         level: 'info',
         message: t('Saved successfully'),
       });
+      const loaded = await loadWorkspace();
+      if (!loaded) {
+        throw new Error(t('Failed to load source'));
+      }
       (onPersistedChange || onChange)?.(
         withSavedSourceRef(
           {
             ...value,
-            code: savedArtifact.code,
-            version: savedArtifact.version,
+            code: loaded.opened.legacy.code,
+            version: loaded.opened.legacy.version,
           },
           result,
           props.locator,
         ),
       );
-      await loadWorkspace();
       setPreviewDiagnostics(result.artifact.diagnostics);
       finishEmbeddedSaveRequest('saved');
       if (!embedded) {

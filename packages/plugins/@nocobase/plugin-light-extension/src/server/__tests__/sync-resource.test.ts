@@ -495,6 +495,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
             remote: configuredRemote,
             jobId: 'job_internal',
             claimToken: 'claim_secret',
+            leaseDurationMs: 30_000,
             expectedLocalCommitId: repo.headCommitId,
             expectedRemoteRevision: 'rev_remote',
             expectedRemoteTargetVersion: 1,
@@ -508,6 +509,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
         details: { reasonCode: 'compile-failed' },
       });
     }),
+    runWithClaimLease: vi.fn(async (_handle, action: () => Promise<unknown>) => action()),
     failApply: vi.fn(async () => undefined),
     listRecoverablePullJobs: vi.fn(async () => []),
   };
@@ -588,6 +590,15 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     permissionService,
     repoService,
     runtimeCompileService: {
+      prepareInitialWorkspace: vi.fn(async ({ repoId }: { repoId: string }) => ({ repoId })),
+      publishPreparedInitialWorkspace: vi.fn(async () => {
+        const { vscRepoId: _vscRepoId, ...publicRepo } = repo;
+        return { repo: publicRepo, status: 'success', entries: [], diagnostics: [] };
+      }),
+      prepareRemoteSnapshot: vi.fn(async () => ({
+        source: { changed: true, contentHash: snapshot.contentHash },
+        preparedSave: {},
+      })),
       compileCurrentRuntime: vi.fn(async () => {
         const { vscRepoId: _vscRepoId, ...publicRepo } = repo;
         return { repo: publicRepo, status: 'success', entries: [], diagnostics: [] };
