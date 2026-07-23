@@ -1090,8 +1090,6 @@ Prompt modes:
         sectionDescription: initText('webUi.developmentMode.description'),
         catalog: {
           developmentMode: c.developmentMode,
-          portalName: c.portalName,
-          portalTemplate: c.portalTemplate,
         } satisfies PromptsCatalog,
       },
       {

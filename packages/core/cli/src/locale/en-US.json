@@ -342,18 +342,18 @@
           "placeholder": "/ or /nocobase/"
         },
         "developmentMode": {
-          "message": "Development mode",
-          "noCodeLabel": "No-code",
-          "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
-          "vibeCodingLabel": "Vibe coding",
-          "vibeCodingHint": "Initialize an independent portal SPA from a Git or local template."
+          "message": "Who will lead development?",
+          "noCodeLabel": "Human-led development",
+          "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
+          "vibeCodingLabel": "AI-led development",
+          "vibeCodingHint": "You describe what you need, and AI writes the code and builds the application for you."
         },
         "portalName": {
           "message": "Initial portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
-          "message": "Initial portal template (Git URL or local path)",
+          "message": "Starter template (copied to ./storage/portals/)",
           "placeholder": "git@github.com:nocobase/admin-starter.git"
         },
         "storagePath": {
@@ -457,18 +457,18 @@
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         },
         "developmentMode": {
-          "message": "Development mode",
-          "noCodeLabel": "No-code",
-          "noCodeHint": "Use visual configuration for pages, fields, blocks, and workflows.",
-          "vibeCodingLabel": "Vibe coding",
-          "vibeCodingHint": "Initialize an independent portal SPA from a Git or local template."
+          "message": "Who will lead development?",
+          "noCodeLabel": "Human-led development",
+          "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
+          "vibeCodingLabel": "AI-led development",
+          "vibeCodingHint": "You describe what you need, and AI writes the code and builds the application for you."
         },
         "portalName": {
           "message": "Initial portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
-          "message": "Initial portal template (Git URL or local path)",
+          "message": "Starter template (copied to ./storage/portals/)",
           "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
@@ -493,8 +493,8 @@
           "description": "Choose how to get the app and which source and version to use."
         },
         "developmentMode": {
-          "title": "Development mode",
-          "description": "Choose whether to use visual configuration or initialize a portal template."
+          "title": "Development approach",
+          "description": "Choose the development approach for your application."
         },
         "configureDatabase": {
           "title": "Configure the database",

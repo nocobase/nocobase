@@ -216,9 +216,9 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   });
   expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
     developmentMode: expect.objectContaining({ variant: 'radio' }),
-    portalName: expect.any(Object),
-    portalTemplate: expect.any(Object),
   });
+  expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalName');
+  expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalTemplate');
   expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.developmentMode.title',
   });
