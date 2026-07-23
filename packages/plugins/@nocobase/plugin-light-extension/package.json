@@ -39,7 +39,6 @@
   ],
   "dependencies": {
     "@nocobase/light-extension-sdk": "2.2.0-beta.15",
-    "esbuild-wasm": "~0.27.0",
     "jszip": "^3.10.1",
     "typescript": "5.1.3"
   },

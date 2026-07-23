@@ -27,6 +27,8 @@ Light Extension exposes exactly five entry kinds:
 
 JS Column deliberately reuses `js-field`; its entry descriptor uses `category: "js-column"` when it needs a column-specific presentation. Generic JavaScript values in defaults, assignment rules, linkage rules, custom variables, and similar nested settings are inline-only. They continue to use the shared RunJS compiler/runtime/editor, but they cannot be selected, moved, versioned, or edited as independent Light Extension entries.
 
+Direct creation reuses the standard client-v2 JS model menus and the shared RunJS surface/source-binding contract. Selecting a light-extension entry creates the ordinary `JSBlockModel`, JS Action model, JS Field wrapper, or `JSColumnModel` shape with its RunJS settings initialized to the entry binding. The plugin does not register parallel Light Extension model types. Direct creation currently covers blocks, supported action menus, form/details fields, and table columns; JS Page, JS Item, and filter-form direct creation are not included.
+
 ## SDK Shape
 
 The standalone `@nocobase/light-extension-sdk` boundary is limited to TypeScript types, type generation, and zero-runtime helpers such as `defineSettings()`. It does not export extension registration APIs such as `defineClientExtension`, `registerBlock`, `registerAction`, or `registerResource`.
@@ -79,7 +81,7 @@ This workflow validates and saves source only. It does not launch a browser, per
 Repository source operations use a different request shape from RunJS Studio workspaces:
 
 1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.
-2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A whole-workspace preview may return HTTP 207 when only part of the Entry set compiles; HTTP 207 or 422 must not proceed to save.
+2. Send the complete target workspace to `lightExtensions:compileWorkspacePreview`. This is a server-side dry-run that returns diagnostics and compile metadata without persisting source or runtime state. The client **Check** action displays those results; it does not execute or apply the returned artifact. A whole-workspace check may return HTTP 207 when only part of the Entry set compiles; HTTP 207 or 422 must not proceed to save.
 3. Call `lightExtensionFiles:saveSource` with only the changed file delta plus the unchanged `expectedHeadCommitId`. Do not send the complete workspace as a replacement snapshot.
 4. On HTTP 409, pull again and rebuild the candidate. Never resolve a conflict by replacing only the expected Head while reusing stale source.
 5. Verify the new Head, all affected Entry artifacts, reference rows, and the bound Flow Surface. Updating a retained inline fallback `code` field does not change the active runtime while `sourceMode` remains `light-extension`.
@@ -92,12 +94,6 @@ Raw `vscFile`, `runJSSources`, direct artifact writes, and ZIP round-trips are n
 | Validation or compilation error | Returns `LIGHT_EXTENSION_VALIDATION_FAILED` with HTTP 422 diagnostics | The transaction rolls back; Head, source, entries, runtime artifacts, and references remain unchanged |
 | Empty/no-change save | Returns the VSC `NO_CHANGES` source error | Nothing changes |
 | Archived repository | Returns `LIGHT_EXTENSION_REPO_ARCHIVED` | Nothing changes |
-
-The primary assertion coverage lives in `src/server/__tests__/save-source-runtime.test.ts`. Run it with:
-
-```bash
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/save-source-runtime.test.ts --run
-```
 
 ## Workspace ZIP Contract
 
@@ -120,7 +116,7 @@ interface LightExtensionInspectSourceArchiveResult {
 
 After validation, repository workspaces replace the complete local working copy. Entry-bound workspaces replace only editable paths and preserve other read-only entries. An entry-bound import is rejected when the ZIP contains another managed entry or omits the currently bound `entryPath`. Import never saves automatically; the user must use the drawer footer **Save** action to create and compile a new version.
 
-ZIP is an interactive import/export boundary, not the Agent local-edit workflow for an existing repository. Agent edits must use pull, full-workspace preview, and delta save so concurrency and Entry reconciliation remain explicit.
+ZIP is an interactive import/export boundary, not the Agent local-edit workflow for an existing repository. Agent edits must use pull, a full-workspace server check, and delta save so concurrency and Entry reconciliation remain explicit.
 
 | Condition | Result |
 | --- | --- |
@@ -137,15 +133,6 @@ Required cases:
 - Good: export an unsaved entry working copy, then import it locally without creating a source version.
 - Base: import shared and current-entry files while preserving other managed entries as read-only.
 - Bad: reject missing-entry, cross-entry, archived-repository, traversal, symlink, duplicate-path, non-UTF-8, and over-budget archives without changing editor state or repository Head.
-
-Primary assertion coverage:
-
-```bash
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/RepoWorkspacePage.test.tsx --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/lightExtensionWorkspaceArchive.test.ts --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/inspect-source-archive.test.ts --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/source-archive.test.ts --run --reporter=verbose
-```
 
 ## Entry Identity Contract
 
@@ -173,17 +160,9 @@ Compatibility cases:
 
 Entries that were already split into stale and replacement database records before this contract was introduced are not automatically repaired or merged. The stable-key guarantee applies to moves and renames performed after this behavior is available.
 
-Primary assertion coverage:
-
-```bash
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/meta-validator.test.ts --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/entry-service-identity.test.ts --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/RepoWorkspacePage.test.tsx --run --reporter=verbose
-```
-
 ## UI Integration Contract
 
-Light extensions are selected from the code-source settings of existing JS Block, JS Page, JS Item, JS Field, JS Column, and JS Action surfaces. JS Column reuses the `js-field` kind because both surfaces share the same render contract. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
+Light extensions can be selected from the code-source settings of existing JS Block, JS Page, JS Item, JS Field, JS Column, and JS Action surfaces. They also appear as a **Light extension** submenu in the standard direct-create menus listed above. Those menu items initialize the standard JS model shape with a source binding; they do not create a plugin-specific model. JS Column reuses the `js-field` kind because both surfaces share the same render contract. When a bound surface opens **Write JavaScript**, the editor opens that repository workspace at the bound `entryPath`.
 
 An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-pages`, `js-actions`, `js-items`, and `js-fields` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
 
@@ -254,14 +233,6 @@ If any step fails, destination source, compiled artifacts, host binding, and ref
 - Base: move into an existing repository with an unused entry slug; preserve unrelated repository files and entries.
 - Bad: reject stale fingerprints, missing permission, unsupported hosts, invalid workspaces, and entry conflicts without changing destination or host state.
 
-Primary assertion coverage:
-
-```bash
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.test.ts --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/move-source.test.tsx --run --reporter=verbose
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/vsc-file/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
-```
-
 ## Remote Sync Facade
 
 Light-extension remote synchronization is exposed through the `lightExtensionSync` Resource. It is the public domain facade over the internal VSC `RemoteSyncRuntime`; raw VSC remote collections and internal Resources are deliberately denied to clients.
@@ -284,17 +255,6 @@ The synchronization ACL actions are scoped independently:
 Repository configuration, disconnect, archive, and delete are rejected with `LIGHT_EXTENSION_SYNC_BUSY` while a remote job is `pending`, `running`, or `finalize-pending`. Push and Pull also require the exact Head, remote revision, remote-target version, and plan fingerprint returned by the latest Plan.
 
 GitHub credentials are optional for public Pull discovery. Private Pull and all Push operations require a complete `{{ $env.NAME }}` reference to an existing Variables and secrets record with `type=secret`. Raw credential values are never stored in light-extension configuration or returned to clients.
-
-Primary assertion coverage:
-
-```bash
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/sync-contract.test.ts --run
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/sync-resource.test.ts --run
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/create-from-remote.test.ts --run
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/remote-pull-service.test.ts --run
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/LightExtensionSyncDrawer.test.tsx --run
-yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/LightExtensionGitSourceFields.test.tsx --run
-```
 
 ## Compatibility and Rollout
 
