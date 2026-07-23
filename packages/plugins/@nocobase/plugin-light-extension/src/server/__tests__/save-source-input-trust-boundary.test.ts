@@ -14,7 +14,7 @@ import { createLightExtensionFilesResource } from '../resources/lightExtensionFi
 import type { LightExtensionFileService } from '../services/LightExtensionFileService';
 import type { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
 
-describe('browser provisional preview Save trust boundary', () => {
+describe('Save source input trust boundary', () => {
   it('drops client compile keys, affected hints, bundles, metafiles, and source maps before canonical Save', async () => {
     const saveResult = { commit: { id: 'canonical-commit' } };
     const saveSource = vi.fn(async () => saveResult);

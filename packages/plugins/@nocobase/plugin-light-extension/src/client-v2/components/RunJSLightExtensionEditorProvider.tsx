@@ -14,22 +14,12 @@ import {
   type RunJSEditorProviderRenderProps,
   type RunJSSourceLocator,
 } from '@nocobase/client-v2';
-import {
-  useFlowContext,
-  type FlowEngineContext,
-  type FlowModel,
-  type ParamObject,
-  type RunJSValue,
-} from '@nocobase/flow-engine';
+import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
-import type {
-  LightExtensionEntryRuntimeArtifact,
-  LightExtensionKind,
-  LightExtensionRuntimeSourceBinding,
-} from '../../shared/types';
+import type { LightExtensionKind, LightExtensionRuntimeSourceBinding } from '../../shared/types';
 import {
   getLightExtensionEntry,
   moveLightExtensionToInline,
@@ -60,24 +50,16 @@ type LightExtensionEditorView = {
 
 type LightExtensionEditorFlowContext = FlowEngineContext & {
   api?: ApiClientLike;
-  model?: FlowModel;
 };
 
 type ApplicationWithApi = {
   apiClient?: ApiClientLike;
 };
 
-type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 type LightExtensionEntryWorkspaceScope = Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>;
-
-const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function cloneJsonRecord<T extends Record<string, unknown>>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 export function waitForHostRefreshCommit(): Promise<void> {
@@ -91,7 +73,7 @@ export function waitForHostRefreshCommit(): Promise<void> {
 }
 
 const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
-  const { locator, onPreview, sourceLocator, surfaceStyle, value } = props;
+  const { locator, sourceLocator, value } = props;
   const effectiveLocator = sourceLocator ?? locator;
   const translate = props.t;
   const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
@@ -104,9 +86,6 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
   const readonly = Boolean(props.readOnly || props.disabled);
-  const previewAppliedRef = React.useRef(false);
-  const persistedPreviewValueRef = React.useRef(value);
-  const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
 
   React.useEffect(() => {
     setCurrentBinding(binding);
@@ -136,64 +115,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     };
   }, [api, binding]);
 
-  React.useEffect(() => {
-    if (!previewAppliedRef.current) {
-      persistedPreviewValueRef.current = value;
-    }
-  }, [value]);
-
-  const applyPreviewValue = React.useCallback(
-    async (value: RunJSValue): Promise<boolean> => {
-      if (onPreview) {
-        await onPreview(value);
-        return true;
-      }
-
-      return applyFlowModelStepPreview(flowContext, sourceLocator ?? locator, surfaceStyle, value);
-    },
-    [flowContext, locator, onPreview, sourceLocator, surfaceStyle],
-  );
-  previewValueApplierRef.current = applyPreviewValue;
-
-  const canPreview =
-    Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, sourceLocator ?? locator, surfaceStyle);
-
-  const restoreWorkspacePreview = React.useCallback(async () => {
-    if (!previewAppliedRef.current) {
-      return;
-    }
-    await previewValueApplierRef.current(persistedPreviewValueRef.current);
-    previewAppliedRef.current = false;
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      if (!previewAppliedRef.current) {
-        return;
-      }
-      previewValueApplierRef
-        .current(persistedPreviewValueRef.current)
-        .then(() => {
-          previewAppliedRef.current = false;
-        })
-        .catch((error) => console.error('Failed to restore light extension workspace preview', error));
-    };
-  }, []);
-
-  const handleWorkspacePreview = React.useCallback(
-    async (artifact: LightExtensionEntryRuntimeArtifact) => {
-      const applied = await applyPreviewValue({
-        ...value,
-        code: artifact.code,
-        version: artifact.version,
-        sourceMode: INLINE_SOURCE_MODE,
-      });
-      previewAppliedRef.current = applied;
-    },
-    [applyPreviewValue, value],
-  );
-
-  const closeEditorViewWithoutRestore = React.useCallback(async () => {
+  const closeEditorView = React.useCallback(async () => {
     if (typeof editorView?.close === 'function') {
       await editorView.close();
       return;
@@ -201,10 +123,6 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
 
     editorView?.destroy?.();
   }, [editorView]);
-  const closeEditorView = React.useCallback(async () => {
-    await restoreWorkspacePreview();
-    await closeEditorViewWithoutRestore();
-  }, [closeEditorViewWithoutRestore, restoreWorkspacePreview]);
 
   const handleMoveToInline = React.useCallback(
     async (request: LightExtensionMoveToInlineRequest) => {
@@ -233,13 +151,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         sourceBinding: undefined,
         sourceRef: result.sourceRef,
       };
-      previewAppliedRef.current = false;
-      persistedPreviewValueRef.current = nextValue;
       await (props.onPersistedChange || props.onChange)?.(nextValue);
-      await closeEditorViewWithoutRestore();
+      await closeEditorView();
     },
     [
-      closeEditorViewWithoutRestore,
+      closeEditorView,
       currentBinding,
       api,
       effectiveLocator,
@@ -306,8 +222,6 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       ...(refreshedBinding ? { sourceBinding: refreshedBinding } : {}),
     };
     await (props.onPersistedChange || props.onChange)?.(persistedValue);
-    persistedPreviewValueRef.current = persistedValue;
-    previewAppliedRef.current = false;
     await waitForHostRefreshCommit();
   }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value, resolverApi]);
 
@@ -361,7 +275,6 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         onMoveToInline={
           effectiveLocator?.kind === 'flowModel.step' && api && !readonly ? handleMoveToInline : undefined
         }
-        onPreview={canPreview ? handleWorkspacePreview : undefined}
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
         repoId={currentBinding.repoId}
@@ -372,63 +285,15 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
 };
 
 const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
-  const { onChange, onPersistedChange, onPreview, surfaceStyle } = props;
-  const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
-  const persistedValueRef = React.useRef(props.value);
-  const previewAppliedRef = React.useRef(false);
-  const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
-  const locator = props.sourceLocator ?? props.locator;
-  const applyPreviewValue = React.useCallback(
-    async (value: RunJSValue): Promise<boolean> => {
-      if (onPreview) {
-        await onPreview(value);
-        return true;
-      }
-      return applyFlowModelStepPreview(flowContext, locator, surfaceStyle, value);
-    },
-    [flowContext, locator, onPreview, surfaceStyle],
-  );
-  previewValueApplierRef.current = applyPreviewValue;
-  const canPreview = Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, locator, surfaceStyle);
-
-  React.useEffect(() => {
-    if (!previewAppliedRef.current) {
-      persistedValueRef.current = props.value;
-    }
-  }, [props.value]);
-
-  React.useEffect(() => {
-    return () => {
-      if (!previewAppliedRef.current) {
-        return;
-      }
-      previewValueApplierRef
-        .current(persistedValueRef.current)
-        .then(() => {
-          previewAppliedRef.current = false;
-        })
-        .catch((error) => console.error('Failed to restore inline RunJS preview', error));
-    };
-  }, []);
-
-  const handlePreview = React.useCallback(
-    async (value: RunJSValue) => {
-      previewAppliedRef.current = await applyPreviewValue(value);
-    },
-    [applyPreviewValue],
-  );
+  const { onChange, onPersistedChange } = props;
   const handleChange = React.useCallback(
     (value: RunJSValue | string) => {
-      persistedValueRef.current = typeof value === 'string' ? { ...persistedValueRef.current, code: value } : value;
-      previewAppliedRef.current = false;
       onChange?.(value);
     },
     [onChange],
   );
   const handlePersistedChange = React.useCallback(
     async (value: RunJSValue) => {
-      persistedValueRef.current = value;
-      previewAppliedRef.current = false;
       await (onPersistedChange || onChange)?.(value);
     },
     [onChange, onPersistedChange],
@@ -443,7 +308,6 @@ const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
             createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
         }
       : {}),
-    onPreview: canPreview ? handlePreview : undefined,
     onChange: handleChange,
     onPersistedChange: handlePersistedChange,
   });
@@ -504,69 +368,4 @@ function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): Li
     entryPath: binding.entryPath,
     kind: binding.kind as LightExtensionKind,
   };
-}
-
-function canApplyFlowModelStepPreview(
-  flowContext: LightExtensionEditorFlowContext | null,
-  locator: RunJSSourceLocator | undefined,
-  surfaceStyle: RunJSEditorProviderRenderProps['surfaceStyle'],
-): locator is FlowModelStepLocator {
-  return Boolean(flowContext?.model && locator?.kind === 'flowModel.step' && surfaceStyle === 'render');
-}
-
-async function applyFlowModelStepPreview(
-  flowContext: LightExtensionEditorFlowContext | null,
-  locator: RunJSSourceLocator | undefined,
-  surfaceStyle: RunJSEditorProviderRenderProps['surfaceStyle'],
-  value: RunJSValue,
-): Promise<boolean> {
-  if (!canApplyFlowModelStepPreview(flowContext, locator, surfaceStyle)) {
-    return false;
-  }
-
-  const model = flowContext.model;
-  if (!model) {
-    return false;
-  }
-  const currentParams = cloneJsonRecordValue(model.getStepParams(locator.flowKey, locator.stepKey));
-  setPreviewValueAtPath(currentParams, locator.paramPath, value.code);
-  setPreviewValueAtPath(
-    currentParams,
-    locator.versionPath?.length ? locator.versionPath : resolvePreviewVersionPath(locator.paramPath),
-    value.version,
-  );
-  const sourceConfigPath = locator.paramPath.slice(0, -1);
-  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceMode'], value.sourceMode);
-  if (Object.prototype.hasOwnProperty.call(value, 'sourceBinding')) {
-    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
-  }
-  if (Object.prototype.hasOwnProperty.call(value, 'settings')) {
-    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'settings'], value.settings);
-  }
-  model.setStepParams(locator.flowKey, locator.stepKey, currentParams);
-  model.invalidateFlowCache('beforeRender', true);
-  await model.rerender();
-  return true;
-}
-
-function cloneJsonRecordValue(value: unknown): ParamObject {
-  return isRecord(value) ? (cloneJsonRecord(value) as ParamObject) : {};
-}
-
-function resolvePreviewVersionPath(paramPath: readonly string[]): string[] {
-  return paramPath.length > 1 ? [...paramPath.slice(0, -1), 'version'] : ['version'];
-}
-
-function setPreviewValueAtPath(root: Record<string, unknown>, path: readonly string[], value: unknown): void {
-  if (!path.length || path.some((segment) => UNSAFE_RUNJS_PATH_SEGMENTS.has(segment))) {
-    return;
-  }
-
-  let target = root;
-  for (const segment of path.slice(0, -1)) {
-    const next = cloneJsonRecordValue(target[segment]);
-    target[segment] = next;
-    target = next;
-  }
-  target[path[path.length - 1]] = value;
 }

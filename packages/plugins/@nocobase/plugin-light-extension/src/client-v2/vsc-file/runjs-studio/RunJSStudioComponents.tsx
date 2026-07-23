@@ -843,16 +843,16 @@ export function CodeTab(props: {
   onDiffToggle: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
-  onRunPreview?: () => void;
+  onCheck?: () => void;
   openPaths: string[];
-  previewing?: boolean;
+  checking?: boolean;
   readOnly: boolean;
   runJSModelUse?: string;
   runJSGlobalContextType?: string;
   workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
-  showRunButton?: boolean;
+  showCheckButton?: boolean;
   t: (key: string) => string;
   toolbarActions?: React.ReactNode;
   version: string;
@@ -872,16 +872,16 @@ export function CodeTab(props: {
     onDiffToggle,
     onFilesCollapsedChange,
     onOpenFile,
-    onRunPreview,
+    onCheck,
     openPaths,
-    previewing,
+    checking,
     readOnly,
     runJSModelUse,
     runJSGlobalContextType,
     workspaceTypeScriptContextResolver,
     savedFiles,
     scene,
-    showRunButton = true,
+    showCheckButton = true,
     t,
     toolbarActions,
     version,
@@ -950,9 +950,9 @@ export function CodeTab(props: {
     <Space size={8}>
       {toolbarActions}
       <Space.Compact>
-        {showRunButton ? (
-          <Button disabled={isDiff || !onRunPreview} loading={previewing} onClick={onRunPreview} size="small">
-            {t('Run')}
+        {showCheckButton ? (
+          <Button disabled={isDiff || !onCheck} loading={checking} onClick={onCheck} size="small">
+            {t('Check')}
           </Button>
         ) : null}
         <Tooltip title={t('Diff')}>
@@ -1685,7 +1685,7 @@ export function ConsolePanel(props: {
               minHeight: 48,
             }}
           >
-            {t('No logs yet. Click Run to execute.')}
+            {t('No messages yet. Click Check to validate.')}
           </div>
         ) : null}
         {entries.map((entry) => (

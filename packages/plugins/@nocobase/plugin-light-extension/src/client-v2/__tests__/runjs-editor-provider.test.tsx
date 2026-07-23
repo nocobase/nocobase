@@ -14,7 +14,7 @@ import {
   RunJSSourceResolverRegistry,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
-import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowContext, FlowContextProvider } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -35,7 +35,6 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     defaultFilesCollapsed,
     entryId,
     onMoveToInline,
-    onPreview,
     onFooterActionsChange,
     onRequestClose,
     onSaved,
@@ -50,7 +49,6 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
       files: Array<{ path: string; content: string }>;
       version: string;
     }) => void | Promise<void>;
-    onPreview?: (artifact: { code: string; version: string; entryPath: string }) => void | Promise<void>;
     onFooterActionsChange?: (
       actions: {
         dirty: boolean;
@@ -105,20 +103,6 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
         data-workspace-scope={JSON.stringify(workspaceScope)}
       >
         workspace:{repoId}:{initialPath}
-        {onPreview ? (
-          <button
-            type="button"
-            onClick={() =>
-              onPreview({
-                code: 'ctx.render(<div>workspace preview</div>);',
-                version: 'v2',
-                entryPath: initialPath || '',
-              })
-            }
-          >
-            preview workspace
-          </button>
-        ) : null}
         {onMoveToInline ? (
           <button type="button" onClick={moveWorkspaceToInline}>
             move workspace to inline
@@ -143,10 +127,9 @@ function EditorViewHarness(props: {
   api?: ApiClientLike;
   appApi?: ApiClientLike;
   children: React.ReactNode;
-  model?: FlowModel;
   onClose: () => void;
 }) {
-  const { api, appApi, children, model, onClose } = props;
+  const { api, appApi, children, onClose } = props;
   const [footer, setFooter] = React.useState<React.ReactNode>(null);
   const context = React.useMemo(() => {
     const nextContext = new FlowContext();
@@ -159,11 +142,8 @@ function EditorViewHarness(props: {
     if (api) {
       nextContext.defineProperty('api', { value: api });
     }
-    if (model) {
-      nextContext.defineProperty('model', { value: model });
-    }
     return nextContext;
-  }, [api, model, onClose]);
+  }, [api, onClose]);
 
   const content = (
     <FlowContextProvider context={context}>
@@ -266,11 +246,10 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(renderNext).toHaveBeenCalledWith();
   });
 
-  it('keeps the saved value after previewing and closing a JS block workspace', async () => {
+  it('keeps the saved value after saving and closing a JS block workspace', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onChange = vi.fn();
     const onPersistedChange = vi.fn();
-    const onPreview = vi.fn();
     const props = {
       value: {
         code: 'ctx.render(<div />);',
@@ -296,7 +275,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
       minHeight: '320px',
       onChange,
       onPersistedChange,
-      onPreview,
     };
 
     expect(provider.canHandle?.(props)).toBe(true);
@@ -324,78 +302,10 @@ describe('RunJSLightExtensionEditorProvider', () => {
       'data-entry-id',
       'lee_example',
     );
-    fireEvent.click(screen.getByRole('button', { name: 'preview workspace' }));
-    await waitFor(() =>
-      expect(onPreview).toHaveBeenCalledWith({
-        ...props.value,
-        code: 'ctx.render(<div>workspace preview</div>);',
-        version: 'v2',
-        sourceMode: 'inline',
-      }),
-    );
+    expect(screen.queryByRole('button', { name: 'preview workspace' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     await waitFor(() => expect(onPersistedChange).toHaveBeenCalledWith(props.value));
-    expect(onPreview).toHaveBeenCalledTimes(1);
     expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it('temporarily previews JS block workspace code and restores the persisted binding on cancel', async () => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const engine = new FlowEngine();
-    const value = {
-      code: 'ctx.render(<div>persisted</div>);',
-      version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry' as const,
-        repoId: 'ler_example',
-        entryId: 'lee_example',
-        entryPath: 'src/client/js-blocks/example/index.tsx',
-        kind: 'js-block' as const,
-      },
-    };
-    const model = new FlowModel({
-      uid: 'model_1',
-      flowEngine: engine,
-      stepParams: {
-        jsSettings: {
-          runJs: value,
-        },
-      },
-    });
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
-    const onClose = vi.fn();
-
-    render(
-      <EditorViewHarness model={model} onClose={onClose}>
-        {provider.renderEditor({
-          value,
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: 'model_1',
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
-          },
-          surfaceStyle: 'render',
-        })}
-      </EditorViewHarness>,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'preview workspace' }));
-    await waitFor(() =>
-      expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
-        code: 'ctx.render(<div>workspace preview</div>);',
-        sourceMode: 'inline',
-        sourceBinding: value.sourceBinding,
-      }),
-    );
-
-    const footer = await screen.findByTestId('editor-view-footer');
-    fireEvent.click(within(footer).getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value);
-    expect(rerender).toHaveBeenCalledTimes(2);
   });
 
   it('moves a JS Page workspace back to inline once while preserving settings and the new source snapshot', async () => {
@@ -635,119 +545,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(
       typeScriptContext?.declarationFiles?.find((file) => file.path.endsWith('/collection-table.d.ts'))?.content,
     ).toContain('columns?: Array<{}>;');
-  });
-
-  it.each([
-    ['JS block', 'js-block'],
-    ['JS page', 'js-page'],
-  ] as const)('previews inline %s code through its rendered FlowModel surface', async (_label, lightExtensionKind) => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const value = {
-      code: 'ctx.render(<div>persisted</div>);',
-      version: 'v2',
-      sourceMode: 'inline',
-    };
-    const engine = new FlowEngine();
-    const model = new FlowModel({
-      uid: `model_${lightExtensionKind}`,
-      flowEngine: engine,
-      stepParams: {
-        jsSettings: {
-          runJs: value,
-        },
-      },
-    });
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
-    const renderNext = vi.fn(() => <div>inline studio</div>);
-    const rendered = render(
-      <EditorViewHarness model={model} onClose={vi.fn()}>
-        {provider.renderEditor({
-          value,
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: model.uid,
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
-            versionPath: ['version'],
-          },
-          sourceMetadata: { lightExtensionKind },
-          surfaceStyle: 'render',
-          renderNext,
-        })}
-      </EditorViewHarness>,
-    );
-    const overrides = renderNext.mock.calls[0]?.[0] as Partial<RunJSEditorProviderRenderProps>;
-
-    await act(async () => {
-      await overrides.onPreview?.({
-        ...value,
-        code: 'ctx.render(<div>preview</div>);',
-      });
-    });
-
-    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
-      code: 'ctx.render(<div>preview</div>);',
-      version: 'v2',
-      sourceMode: 'inline',
-    });
-    expect(rerender).toHaveBeenCalledTimes(1);
-
-    rendered.unmount();
-    await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
-    expect(rerender).toHaveBeenCalledTimes(2);
-  });
-
-  it('commits an inline preview before an async onChange fallback closes the editor', async () => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const value = {
-      code: 'ctx.render(<div>persisted</div>);',
-      version: 'v2',
-      sourceMode: 'inline',
-    };
-    let resolveChange: (() => void) | undefined;
-    const onChange = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveChange = resolve;
-        }),
-    );
-    const onPreview = vi.fn(async () => undefined);
-    const renderNext = vi.fn(() => <div>inline studio</div>);
-    const rendered = render(
-      <>
-        {provider.renderEditor({
-          value,
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: 'model_inline_saved',
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
-          },
-          sourceMetadata: { lightExtensionKind: 'js-block' },
-          surfaceStyle: 'render',
-          onChange,
-          onPreview,
-          renderNext,
-        })}
-      </>,
-    );
-    const overrides = renderNext.mock.calls[0]?.[0] as Partial<RunJSEditorProviderRenderProps>;
-    const committedValue = { ...value, code: 'ctx.render(<div>saved</div>);' };
-
-    await act(async () => {
-      await overrides.onPreview?.({ ...value, code: 'ctx.render(<div>preview</div>);' });
-    });
-    const persistedChange = overrides.onPersistedChange?.(committedValue);
-    rendered.unmount();
-
-    expect(onChange).toHaveBeenCalledWith(committedValue);
-    expect(onPreview).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      resolveChange?.();
-      await persistedChange;
-    });
   });
 
   it('offers move to inline for JS column light extension entries', async () => {
