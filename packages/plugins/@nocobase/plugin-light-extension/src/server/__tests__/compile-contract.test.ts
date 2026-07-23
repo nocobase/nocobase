@@ -9,13 +9,16 @@
 
 import { sha256Hex } from '@nocobase/runjs';
 import { RUNJS_COMPILER_BUILD_IDENTITY } from '@nocobase/runjs/compiler';
+import { vi } from 'vitest';
 
 import {
   aggregateLightExtensionCompileResults,
   assertStructuredClonePlainData,
+  compileLightExtensionValidatedEntry,
   createLightExtensionCompileInfrastructureFailure,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  validateLightExtensionWorkspace,
   type LightExtensionCompileJob,
 } from '../services/LightExtensionCompileContract';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
@@ -88,6 +91,65 @@ describe('LightExtensionCompileContract', () => {
     expect(() => assertStructuredClonePlainData({ transaction: new Map() })).toThrow(
       'Value.transaction must not contain class instances or process-local objects',
     );
+  });
+
+  it('validates a cloned workspace input without exposing a publish-capable object', () => {
+    const files = [{ path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' }];
+    const validation = {
+      accepted: true,
+      diagnostics: [],
+      entries: [],
+      capabilities: {} as never,
+    };
+    const validateWorkspace = vi.fn().mockReturnValue(validation);
+
+    const result = validateLightExtensionWorkspace({ validateWorkspace }, files);
+
+    expect(result).toBe(validation);
+    expect(validateWorkspace).toHaveBeenCalledWith({ files: [{ ...files[0] }] });
+    expect(validateWorkspace.mock.calls[0][0].files).not.toBe(files);
+    expect(validateWorkspace.mock.calls[0][0].files[0]).not.toBe(files[0]);
+    expect(result).not.toHaveProperty('candidate');
+    expect(result).not.toHaveProperty('workspace');
+  });
+
+  it('compiles only validated entry and shared files through the pure compile helper', async () => {
+    const compileEntry = vi.fn().mockResolvedValue({ accepted: true, diagnostics: [] });
+    const files = [
+      { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' },
+      { path: 'src/client/js-blocks/example/entry.json', content: '{"schemaVersion":1,"key":"example"}' },
+      { path: 'src/shared/format.ts', content: 'export const format = String;' },
+      { path: 'README.md', content: '# ignored' },
+    ];
+
+    await compileLightExtensionValidatedEntry(
+      { compileEntry },
+      {
+        repoId: 'repo_example',
+        entryId: 'entry_example',
+        operation: 'compilePreview',
+        entry: {
+          kind: 'js-block',
+          entryName: 'example',
+          entryPath: 'src/client/js-blocks/example/index.tsx',
+          descriptorPath: 'src/client/js-blocks/example/entry.json',
+        },
+        runtimeVersion: 'v2',
+        files,
+      },
+      { requestId: 'request_example' },
+    );
+
+    expect(compileEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoId: 'repo_example',
+        entryId: 'entry_example',
+        operation: 'compilePreview',
+        files: [files[0], files[2]],
+      }),
+      { requestId: 'request_example' },
+    );
+    expect(compileEntry.mock.calls[0][0].files[0]).not.toBe(files[0]);
   });
 });
 

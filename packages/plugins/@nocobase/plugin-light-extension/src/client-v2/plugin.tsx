@@ -91,19 +91,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
         }
       }
     });
-    this.disposers.push(
-      RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
-    );
-    this.disposers.push(
-      RunJSSettingsDescriptorProviderRegistry.registerProvider(
-        createInlineLightExtensionSettingsDescriptorProvider(this.app.apiClient),
-      ),
-    );
-    this.disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
-    this.disposers.push(
-      runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(this.app.apiClient)),
-    );
-    this.disposers.push(registerLightExtensionModelMenus(this.app.apiClient));
+    this.disposers.push(installLightExtensionRunJSIntegrations(this.app.apiClient));
     activeLightExtensionClientV2Instance = this;
 
     const title = this.t('Light extensions');
@@ -132,6 +120,32 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     if (activeLightExtensionClientV2Instance === this) {
       activeLightExtensionClientV2Instance = null;
     }
+  }
+}
+
+function installLightExtensionRunJSIntegrations(api: Application['apiClient']): () => void {
+  const disposers: Array<() => void> = [];
+  try {
+    disposers.push(RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(api)));
+    disposers.push(
+      RunJSSettingsDescriptorProviderRegistry.registerProvider(
+        createInlineLightExtensionSettingsDescriptorProvider(api),
+      ),
+    );
+    disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
+    disposers.push(runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(api)));
+    disposers.push(registerLightExtensionModelMenus(api));
+  } catch (error) {
+    disposeLightExtensionRunJSIntegrations(disposers);
+    throw error;
+  }
+
+  return () => disposeLightExtensionRunJSIntegrations(disposers);
+}
+
+function disposeLightExtensionRunJSIntegrations(disposers: Array<() => void>): void {
+  while (disposers.length) {
+    disposers.pop()?.();
   }
 }
 

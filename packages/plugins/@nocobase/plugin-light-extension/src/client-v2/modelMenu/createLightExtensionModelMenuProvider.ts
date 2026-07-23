@@ -14,6 +14,7 @@ import {
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
+import type { RunJSSurfaceMenuItemProvider, RunJSSurfaceMenuItemProviderContext } from '@nocobase/client-v2';
 import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
 
 import { NAMESPACE } from '../../constants';
@@ -53,6 +54,44 @@ const defaultModelUses: Partial<Record<LightExtensionModelMenuTarget, string>> =
   block: 'JSBlockModel',
   column: 'JSColumnModel',
 };
+
+const ACTION_MODEL_USES = [
+  'JSActionModel',
+  'JSCollectionActionModel',
+  'JSRecordActionModel',
+  'JSFormActionModel',
+  'FilterFormJSActionModel',
+] as const;
+
+const FIELD_SURFACE_OPTIONS: Partial<
+  Record<Exclude<RunJSSurfaceMenuItemProviderContext['surface'], 'block' | 'action'>, LightExtensionModelMenuOptions>
+> = {
+  'form-field': {
+    target: 'field',
+    itemModelUse: 'FormItemModel',
+    fieldModelUse: 'JSEditableFieldModel',
+    refreshTargets: ['FormItemModel', 'FormJSFieldItemModel'],
+  },
+  'details-field': {
+    target: 'field',
+    itemModelUse: 'DetailsItemModel',
+    fieldModelUse: 'JSFieldModel',
+    refreshTargets: ['DetailsItemModel', 'DetailsJSFieldItemModel'],
+  },
+  'table-column': { target: 'column', modelUse: 'JSColumnModel' },
+};
+
+export function createLightExtensionSurfaceMenuProvider(api: ApiClientLike): RunJSSurfaceMenuItemProvider {
+  return async (context) => {
+    const options = resolveSurfaceMenuOptions(context);
+    if (!options) {
+      return null;
+    }
+    const source = createLightExtensionModelMenuProvider(api, options);
+    const items = Array.isArray(source) ? source : await source(context.ctx);
+    return items[0] || null;
+  };
+}
 
 export function createLightExtensionModelMenuProvider(
   api: ApiClientLike,
@@ -289,6 +328,28 @@ function getRepoLabel(repo: LightExtensionRepoRecord): string {
 
 function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
   return entry.title?.trim() || entry.entryName || entry.id;
+}
+
+function resolveSurfaceMenuOptions(
+  context: RunJSSurfaceMenuItemProviderContext,
+): LightExtensionModelMenuOptions | null {
+  if (context.surface === 'block') {
+    return { target: 'block' };
+  }
+  if (context.surface === 'action') {
+    const modelUse = ACTION_MODEL_USES.find((candidate) => containsModelUse(context.items, candidate));
+    return modelUse ? { target: 'action', modelUse } : null;
+  }
+  return FIELD_SURFACE_OPTIONS[context.surface] || null;
+}
+
+function containsModelUse(items: SubModelItem[], expected: string): boolean {
+  return items.some((item) => {
+    if (item.useModel === expected) {
+      return true;
+    }
+    return Array.isArray(item.children) ? containsModelUse(item.children, expected) : false;
+  });
 }
 
 function translate(ctx: FlowModelContext, key: string): string {

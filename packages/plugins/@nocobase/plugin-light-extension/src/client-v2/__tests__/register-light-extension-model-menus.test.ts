@@ -14,6 +14,7 @@ import {
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
+  registerRunJSSurfaceMenuItemProvider,
   resolveFieldMenuItems,
 } from '@nocobase/client-v2';
 import { FlowEngine, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
@@ -51,6 +52,16 @@ describe('registerLightExtensionModelMenus', () => {
       model: {} as never,
       ctx: createContext(),
     });
+    const detailsItems = await resolveFieldMenuItems({
+      surface: 'details-field',
+      model: {} as never,
+      ctx: createContext(),
+    });
+    const filterFormItems = await resolveFieldMenuItems({
+      surface: 'filter-form-field',
+      model: {} as never,
+      ctx: createContext(),
+    });
 
     expect(getOtherBlockChildren(blockItems)).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
     expect(actionItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
@@ -62,6 +73,8 @@ describe('registerLightExtensionModelMenus', () => {
       'association-fields',
     ]);
     expect(columnItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(detailsItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(filterFormItems).not.toContainEqual(expect.objectContaining({ key: 'light-extension' }));
 
     dispose();
     expect(getOtherBlockChildren(await resolveBlockItems())).not.toContainEqual(
@@ -92,6 +105,30 @@ describe('registerLightExtensionModelMenus', () => {
     expect(getOtherBlockChildren(await resolveBlockItems())).not.toContainEqual(
       expect.objectContaining({ key: 'light-extension' }),
     );
+  });
+
+  it('does not remove a later provider registered under the same catalog key', async () => {
+    const disposeLightExtension = registerLightExtensionModelMenus(createApi());
+    const disposeLater = registerRunJSSurfaceMenuItemProvider(
+      '@nocobase/plugin-light-extension/model-menus',
+      ({ surface }) => ({
+        key: `later-${surface}`,
+      }),
+    );
+
+    disposeLightExtension();
+
+    expect(getOtherBlockChildren(await resolveBlockItems())).toContainEqual(
+      expect.objectContaining({ key: 'later-block' }),
+    );
+    expect(await TestActionGroupModel.defineChildren(createContext())).toContainEqual(
+      expect.objectContaining({ key: 'later-action' }),
+    );
+    expect(
+      await resolveFieldMenuItems({ surface: 'form-field', model: {} as never, ctx: createContext() }),
+    ).toContainEqual(expect.objectContaining({ key: 'later-form-field' }));
+
+    disposeLater();
   });
 });
 

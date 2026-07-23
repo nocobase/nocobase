@@ -11,7 +11,6 @@ import type { Database } from '@nocobase/database';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs';
 import { randomUUID } from 'crypto';
 import { serialize } from 'node:v8';
-import { posix as pathPosix } from 'path';
 
 import {
   LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
@@ -40,6 +39,8 @@ import { buildLightExtensionCompileKey, type LightExtensionCompileKeyResult } fr
 import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  compileLightExtensionValidatedEntry,
+  selectLightExtensionEntryCompileFiles,
   type LightExtensionCompileExecutor,
   type LightExtensionCompileFailureResult,
   type LightExtensionCompileJob,
@@ -379,14 +380,18 @@ export class LightExtensionRuntimeCompileService {
     input: PreparedEntryCompileInput,
     ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionCompileResult> {
-    const compiled = await this.compilerBridge.compileEntry(
+    const compiled = await compileLightExtensionValidatedEntry(
+      this.compilerBridge,
       {
         repoId: job.repoId,
         entryId: job.entryId,
         operation: 'runtimeCompile',
-        kind: job.kind,
-        entryName: job.entryName,
-        entryPath: job.entryPath,
+        entry: {
+          kind: job.kind,
+          entryName: job.entryName,
+          entryPath: job.entryPath,
+          descriptorPath: input.entry.descriptorPath,
+        },
         runtimeVersion: job.runtimeVersion,
         files: input.compileFiles,
       },
@@ -811,33 +816,11 @@ function prepareEntryCompileInputs(
       return {
         ...compileKey,
         entry,
-        compileFiles: getEntryCompileFiles(files, entry),
+        compileFiles: selectLightExtensionEntryCompileFiles(files, entry).sort((left, right) =>
+          left.path.localeCompare(right.path),
+        ),
       };
     });
-}
-
-function getEntryCompileFiles(files: readonly RuntimeCompileSourceFile[], entry: LightExtensionEntryRecord) {
-  const rootPath = getEntryRootPath(entry.entryPath);
-
-  return files
-    .filter(
-      (file) =>
-        file.path !== entry.descriptorPath &&
-        (file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/')),
-    )
-    .map((file) => ({
-      path: file.path,
-      content: file.content,
-      blobHash: file.blobHash,
-      language: file.language,
-      mode: file.mode,
-    }))
-    .sort((left, right) => left.path.localeCompare(right.path));
-}
-
-function getEntryRootPath(entryPath: string): string {
-  const normalized = pathPosix.normalize(entryPath.trim()).replace(/^\.\/+/, '');
-  return pathPosix.extname(normalized) ? pathPosix.dirname(normalized) : normalized;
 }
 
 function isSupportedKind(kind: string): kind is LightExtensionKind {

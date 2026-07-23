@@ -34,6 +34,7 @@ import type {
   LightExtensionPushResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
+import { validateLightExtensionWorkspace } from './LightExtensionCompileContract';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import { createPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionRepoInternalRecord, LightExtensionServiceContext } from './LightExtensionRepoService';
@@ -238,15 +239,16 @@ export class LightExtensionFileService {
           },
         ),
       );
-      const validation = this.validator.validateWorkspace({
-        files: vscPreparedPush.candidate.files.map((file) => ({
+      const validation = validateLightExtensionWorkspace(
+        this.validator,
+        vscPreparedPush.candidate.files.map((file) => ({
           path: file.path,
           content: file.content,
           blobHash: file.blobHash,
           size: file.size,
           language: file.language,
         })),
-      });
+      );
       if (hasErrorDiagnostic(validation.diagnostics)) {
         throw new LightExtensionError(
           'LIGHT_EXTENSION_VALIDATION_FAILED',

@@ -35,13 +35,15 @@ describe('plugin-light-extension saveSource runtime compile', () => {
   let fileService: LightExtensionFileService;
   let entryService: LightExtensionEntryService;
   let validator: LightExtensionValidator;
+  let auditService: LightExtensionAuditService;
+  let permissionService: LightExtensionPermissionService;
 
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [PluginLightExtensionServer],
     });
-    const auditService = new LightExtensionAuditService(app.db);
-    const permissionService = new LightExtensionPermissionService(auditService);
+    auditService = new LightExtensionAuditService(app.db);
+    permissionService = new LightExtensionPermissionService(auditService);
     validator = new LightExtensionValidator();
     repoService = new LightExtensionRepoService(app.db, auditService, permissionService, undefined, validator);
     fileService = new LightExtensionFileService(
@@ -325,6 +327,78 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       includeContent: 'all',
     });
     expect(persisted.files?.find((file) => file.path.endsWith('/index.tsx'))?.content).toBe(canonicalContent);
+  });
+
+  it('rejects prepared source candidates from another file service or a shape-compatible clone', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Prepared Source Candidate Identity',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const prepared = await fileService.prepareSourceCandidate({
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'prepare source candidate identity',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Prepared source identity</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const otherFileService = new LightExtensionFileService(
+      app.db,
+      auditService,
+      permissionService,
+      repoService,
+      undefined,
+      validator,
+    );
+    const forged = { ...prepared };
+
+    await expect(
+      app.db.sequelize.transaction((transaction) => otherFileService.publishSourceCandidate(prepared, { transaction })),
+    ).rejects.toThrow('must be created by this file service instance');
+    await expect(
+      app.db.sequelize.transaction((transaction) => fileService.publishSourceCandidate(forged, { transaction })),
+    ).rejects.toThrow('must be created by this file service instance');
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
+  });
+
+  it('rejects prepared saves from another runtime service or a shape-compatible clone', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Prepared Save Identity',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const prepared = await runtimeCompileService.prepareSaveSource({
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'prepare save identity',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Prepared save identity</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const otherRuntimeCompileService = new LightExtensionRuntimeCompileService(
+      app.db,
+      fileService,
+      entryService,
+      compilerBridge,
+    );
+    const forged = { ...prepared };
+
+    await expect(
+      app.db.sequelize.transaction((transaction) =>
+        otherRuntimeCompileService.publishPreparedSave(prepared, { transaction }),
+      ),
+    ).rejects.toThrow('must be created by this runtime compile service instance');
+    await expect(
+      app.db.sequelize.transaction((transaction) => runtimeCompileService.publishPreparedSave(forged, { transaction })),
+    ).rejects.toThrow('must be created by this runtime compile service instance');
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
   });
 
   it('persists and resolves an immutable JS Page render artifact', async () => {
