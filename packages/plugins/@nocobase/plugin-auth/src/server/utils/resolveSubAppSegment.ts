@@ -10,12 +10,36 @@
 import { AppSupervisor, getHostname } from '@nocobase/server';
 import type { IncomingMessage } from 'http';
 
+function normalizeHostname(value?: string): string {
+  const host = value?.split(',', 1)[0].trim();
+  if (!host) {
+    return '';
+  }
+
+  try {
+    return new URL(`http://${host}`).hostname;
+  } catch {
+    return '';
+  }
+}
+
 function getRequestHostname(req: IncomingMessage): string {
   const hostnameHeader = req.headers['x-hostname'];
   if (Array.isArray(hostnameHeader)) {
-    return hostnameHeader[0] || '';
+    for (const value of hostnameHeader) {
+      const hostname = normalizeHostname(value);
+      if (hostname) {
+        return hostname;
+      }
+    }
+  } else {
+    const hostname = normalizeHostname(hostnameHeader);
+    if (hostname) {
+      return hostname;
+    }
   }
-  return hostnameHeader || getHostname(req);
+
+  return getHostname(req);
 }
 
 /**

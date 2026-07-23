@@ -54,6 +54,42 @@ describe('resolveSubAppSegment', () => {
     expect(getAppNameByCName).toHaveBeenCalledWith('sub.example.com');
   });
 
+  it('normalizes ports and comma-separated values from x-hostname', async () => {
+    const getAppNameByCName = vi.fn().mockResolvedValue('sub');
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+      getAppNameByCName,
+    } as unknown as AppSupervisor);
+
+    const req = createRequest({ 'x-hostname': 'sub.example.com:443, internal.example.com' });
+    expect(await resolveSubAppSegment(req, 'sub')).toBe('');
+    expect(getAppNameByCName).toHaveBeenCalledWith('sub.example.com');
+  });
+
+  it('uses the first valid x-hostname array value', async () => {
+    const getAppNameByCName = vi.fn().mockResolvedValue('sub');
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+      getAppNameByCName,
+    } as unknown as AppSupervisor);
+
+    const req = createRequest({ 'x-hostname': ['', 'sub.example.com:443'] });
+    expect(await resolveSubAppSegment(req, 'sub')).toBe('');
+    expect(getAppNameByCName).toHaveBeenCalledWith('sub.example.com');
+  });
+
+  it('falls back to the request host when x-hostname has no valid values', async () => {
+    const getAppNameByCName = vi.fn().mockResolvedValue('sub');
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+      getAppNameByCName,
+    } as unknown as AppSupervisor);
+
+    const req = createRequest({ host: 'sub.example.com:13000', 'x-hostname': ['', ' '] });
+    expect(await resolveSubAppSegment(req, 'sub')).toBe('');
+    expect(getAppNameByCName).toHaveBeenCalledWith('sub.example.com');
+  });
+
   it('returns the path segment when the request host is not the sub-app custom domain', async () => {
     vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
       runningMode: 'multiple',
