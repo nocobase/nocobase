@@ -170,6 +170,19 @@ describe('workflow > instructions > request', () => {
     await app.destroy();
   });
 
+  async function waitForExecutionStatus(status: number | null, timeout = 1000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const [execution] = await workflow.getExecutions();
+      if (execution?.status === status) {
+        return execution;
+      }
+      await sleep(20);
+    }
+    const [execution] = await workflow.getExecutions();
+    return execution;
+  }
+
   describe('params processing', () => {
     it('trim should not crash', async () => {
       await workflow.createNode({
@@ -270,7 +283,7 @@ describe('workflow > instructions > request', () => {
         enabled: true,
         type: 'collection',
         options: {
-          timeout: 300,
+          timeout: 1000,
         },
         config: {
           mode: 1,
@@ -289,10 +302,7 @@ describe('workflow > instructions > request', () => {
 
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(100);
-
-      const plugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
-      let [execution] = await workflow.getExecutions();
+      let execution = await waitForExecutionStatus(EXECUTION_STATUS.STARTED);
       expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
       expect(execution.startedAt).toBeTruthy();
       expect(execution.expiresAt).toBeTruthy();
@@ -300,7 +310,7 @@ describe('workflow > instructions > request', () => {
       let [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.PENDING);
 
-      await sleep(350);
+      await sleep(1050);
 
       [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
