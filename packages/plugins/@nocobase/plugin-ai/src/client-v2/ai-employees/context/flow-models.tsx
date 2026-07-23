@@ -142,6 +142,7 @@ const toSimplifyForm = (model: FormBlockLike) => {
       if (!duplicateFields.has(collectionField.name)) {
         result.fields.push({
           name: collectionField.name,
+          title: getFieldDisplayTitle(subModel, collectionField),
           type: collectionField.type,
           enum: collectionField.enum,
           readonly: collectionField.readonly,
@@ -184,6 +185,18 @@ const getCollectionField = (model: FlowModel): CollectionFieldLike | undefined =
   return collectionField as CollectionFieldLike;
 };
 
+const getFormItemLabel = (model: FlowModel): string | undefined => {
+  if (!(model instanceof FormItemModel)) {
+    return undefined;
+  }
+  const label = (model.props as { label?: unknown })?.label;
+  return typeof label === 'string' ? label : undefined;
+};
+
+const getFieldDisplayTitle = (model: FlowModel, collectionField: CollectionFieldLike): string | undefined => {
+  return getFormItemLabel(model) ?? collectionField.title;
+};
+
 const toCollection = async (model: CollectionBlockLike) => {
   const resource = Reflect.get(model, 'resource');
   const collection = readCollection(model) ?? getFallbackCollection(model, resource);
@@ -216,7 +229,7 @@ const toSimplifyComponentTree = async (model: FlowModel): Promise<SimplifyCompon
       name: collectionField.name,
       type: collectionField.type,
       dataType: collectionField.dataType,
-      title: collectionField.title,
+      title: getFieldDisplayTitle(model, collectionField),
       enum: collectionField.enum,
       defaultValue: collectionField.defaultValue,
     };

@@ -9,6 +9,7 @@
 
 import type { FlowModel } from '@nocobase/flow-engine';
 import { FlowEngine, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import { FormItemModel } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowModelsContext } from '../ai-employees/context/flow-models';
 
@@ -123,5 +124,64 @@ describe('FlowModelsContext', () => {
       },
     });
     expect(filterableContent).not.toHaveProperty('data');
+  });
+});
+
+const createFormItemModel = (collectionField: Record<string, unknown>, label?: string): FormItemModel => {
+  const item = Object.create(FormItemModel.prototype) as FormItemModel;
+  const define = (key: string, value: unknown) => Object.defineProperty(item, key, { value, configurable: true });
+  define('collectionField', collectionField);
+  define('props', label === undefined ? {} : { label });
+  define('_options', { uid: 'form-item', use: 'FormItemModel' });
+  define('uid', 'form-item');
+  define('title', collectionField.title);
+  define('use', 'FormItemModel');
+  return item;
+};
+
+const createFormModel = (items: FormItemModel[], value: Record<string, unknown> = {}): FlowModel =>
+  ({
+    uid: 'form-block',
+    form: { getFieldsValue: vi.fn().mockReturnValue(value) },
+    subModels: { items },
+  }) as unknown as FlowModel;
+
+describe('FlowModelsContext form field titles', () => {
+  it('prefers the custom form item label over the collection field title', async () => {
+    const address = createFormItemModel({ name: 'address', type: 'text', title: '地址' }, '改善措施');
+    const content = await parseContextContent(createFormModel([address]));
+
+    expect(content.fields).toEqual([expect.objectContaining({ name: 'address', title: '改善措施' })]);
+  });
+
+  it('falls back to the collection field title when no custom label is set', async () => {
+    const address = createFormItemModel({ name: 'address', type: 'text', title: '地址' });
+    const content = await parseContextContent(createFormModel([address]));
+
+    expect(content.fields).toEqual([expect.objectContaining({ name: 'address', title: '地址' })]);
+  });
+
+  it('keeps the internal field name as the data key regardless of the custom label', async () => {
+    const address = createFormItemModel({ name: 'address', type: 'text', title: '地址' }, '改善措施');
+    const content = await parseContextContent(createFormModel([address], { address: '测试测试' }));
+
+    const field = (content.fields as Array<Record<string, unknown>>)[0];
+    expect(field.name).toBe('address');
+    expect(field.name).not.toBe('改善措施');
+    expect(content.value).toEqual({ address: '测试测试' });
+  });
+
+  it('outputs the custom label for form items in the generic component tree', async () => {
+    const address = createFormItemModel({ name: 'address', type: 'text', title: '地址' }, '改善措施');
+    const root = {
+      uid: 'root',
+      title: 'Root',
+      use: 'SomeContainerModel',
+      subModels: { items: [address] },
+    } as unknown as FlowModel;
+    const content = await parseContextContent(root);
+
+    const children = content.children as { items: Array<{ props: Record<string, unknown> }> };
+    expect(children.items[0].props).toMatchObject({ name: 'address', title: '改善措施' });
   });
 });
