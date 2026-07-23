@@ -51,9 +51,9 @@ import { formatDate } from './utils';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import zhCN from 'date-fns/locale/zh-CN';
-import ru from 'date-fns/locale/ru';
+import { enUS } from 'date-fns/locale/en-US';
+import { zhCN } from 'date-fns/locale/zh-CN';
+import { ru } from 'date-fns/locale/ru';
 
 interface Event {
   id: string;

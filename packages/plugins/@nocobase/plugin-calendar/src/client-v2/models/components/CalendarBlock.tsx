@@ -15,9 +15,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-big-calendar';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, getDay, parse, startOfWeek } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import ru from 'date-fns/locale/ru';
-import zhCN from 'date-fns/locale/zh-CN';
+import { enUS } from 'date-fns/locale/en-US';
+import { ru } from 'date-fns/locale/ru';
+import { zhCN } from 'date-fns/locale/zh-CN';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import GlobalStyle from './global.style';
