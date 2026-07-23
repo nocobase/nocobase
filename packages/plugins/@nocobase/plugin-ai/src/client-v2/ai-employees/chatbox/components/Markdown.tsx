@@ -164,6 +164,7 @@ export const Code: React.FC<CodeProps> = ({ children, className, node, message: 
   const chat = useChat(currentConversation);
   const editorRefMap = chat.use.editorRef();
   const currentEditorRefUid = chat.use.currentEditorRefUid();
+  const codingTarget = chat.use.codingTarget();
   const editorRef = currentEditorRefUid ? editorRefMap?.[currentEditorRefUid] : null;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -184,7 +185,7 @@ export const Code: React.FC<CodeProps> = ({ children, className, node, message: 
     navigator.clipboard.writeText(value);
     message.success(t('Copied'));
   };
-  const canApply = !!editorRef && isSupportLanguage(language);
+  const canApply = codingTarget?.type !== 'workspace' && !!editorRef && isSupportLanguage(language);
   let isFullText = true;
   if (chatMessage?.type === 'text' && typeof chatMessage.content === 'string') {
     const pattern = new RegExp('```' + language + '[\\s\\S]*?```', 's');

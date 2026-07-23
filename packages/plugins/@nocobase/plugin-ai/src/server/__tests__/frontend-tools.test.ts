@@ -34,6 +34,21 @@ const frontendTool = {
   },
 };
 
+const workspaceApplyTool = {
+  id: 'workspace-1:workspaceApplyPreparedChanges',
+  blockUid: 'workspace-1',
+  name: 'workspaceApplyPreparedChanges',
+  title: 'Apply prepared workspace changes',
+  description: 'Apply a prepared plan without saving.',
+  permission: 'ASK' as const,
+  inputSchema: {
+    type: 'object',
+    required: ['planId'],
+    properties: { planId: { type: 'string' } },
+    additionalProperties: false,
+  },
+};
+
 describe('frontend tools', () => {
   it('keeps the generic executor allowed while concrete tools control automatic execution', () => {
     expect(loadFrontendTool.execution).toBe('frontend');
@@ -45,6 +60,69 @@ describe('frontend tools', () => {
     );
     expect(shouldAutoExecuteFrontendTool([frontendTool], { toolId: 'block-1:unknown' })).toBe(false);
     expect(shouldAutoExecuteFrontendTool([frontendTool], null)).toBe(false);
+    expect(shouldAutoExecuteFrontendTool([workspaceApplyTool], { toolId: workspaceApplyTool.id })).toBe(false);
+  });
+
+  it('keeps workspace apply bound to the first conversation catalog and accepts only planId', async () => {
+    const conversation: { options: Record<string, unknown> } = { options: {} };
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            sessionId: 'workspace-session',
+            messages: [
+              {
+                role: 'user',
+                workContext: [
+                  {
+                    type: 'code-workspace',
+                    uid: 'workspace-1',
+                    frontendTools: [workspaceApplyTool],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      db: {
+        getRepository: (name: string) => {
+          if (name !== 'aiConversations') {
+            throw new Error(`Unexpected repository: ${name}`);
+          }
+          return {
+            findOne: vi.fn().mockImplementation(async () => conversation),
+            update: vi.fn().mockImplementation(async ({ values }) => {
+              conversation.options = values.options;
+              return [1];
+            }),
+          };
+        },
+      },
+    } as unknown as Context;
+
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toEqual(workspaceApplyTool);
+    expect(workspaceApplyTool.inputSchema).toEqual({
+      type: 'object',
+      required: ['planId'],
+      properties: { planId: { type: 'string' } },
+      additionalProperties: false,
+    });
+
+    ctx.action.params.values.messages = [
+      {
+        role: 'user',
+        workContext: [
+          {
+            type: 'code-workspace',
+            uid: 'workspace-2',
+            frontendTools: [{ ...workspaceApplyTool, id: 'workspace-2:workspaceApplyPreparedChanges' }],
+          },
+        ],
+      },
+    ];
+    await expect(findCurrentFrontendTool(ctx, 'workspace-2:workspaceApplyPreparedChanges')).resolves.toBeUndefined();
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toEqual(workspaceApplyTool);
   });
 
   it('exposes frontend tools only for bound conversations and keeps the catalog on the loader', () => {

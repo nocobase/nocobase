@@ -15,6 +15,7 @@ import {
   pluginAIClientV2BuiltinTools,
   registerPluginAIClientV2BuiltinTools,
 } from '../ai-employees/tools';
+import { registerWorkspaceAuthoringSurfaceCleanup } from '../plugin';
 
 const V1_REGISTERED_TOOL_NAMES = [
   'switchModes',
@@ -86,6 +87,30 @@ describe('plugin-ai client-v2 tools registration', () => {
     expect(tools.get('aiEmployeeWorkflowTaskOutput')?.ui?.card).toBeTruthy();
     expect(tools.get('writeJSCode')?.ui?.card).toBeTruthy();
     expect(tools.get('patchJSCode')?.ui?.card).toBeTruthy();
+    expect(tools.get('executeFrontendTool')?.ui?.card).toBeTruthy();
+  });
+
+  it('clears only the unregistered workspace frontend tool closures', () => {
+    let listener: ((event: { type: string; surfaceId: string }) => void) | undefined;
+    const unsubscribe = vi.fn();
+    const clear = vi.fn();
+    const dispose = registerWorkspaceAuthoringSurfaceCleanup(
+      {
+        subscribe(nextListener) {
+          listener = nextListener;
+          return unsubscribe;
+        },
+      },
+      { clear },
+    );
+
+    listener?.({ type: 'activate', surfaceId: 'workspace-a' });
+    listener?.({ type: 'unregister', surfaceId: 'workspace-a' });
+
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(clear).toHaveBeenCalledWith('workspace-a');
+    dispose();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it('does not statically import heavy modal UI from the tools registry', () => {

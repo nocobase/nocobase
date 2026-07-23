@@ -41,6 +41,8 @@ export { CodeToolCard } from './CodeToolCard';
 export { DataModelingCard } from './DataModelingCard';
 export { registerDataModelingRefreshHandler, useDataModelingOnOk } from './data-modeling/runtime';
 export { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
+export { WorkspaceChangeCard } from './WorkspaceChangeCard';
+export { registerWorkspaceAuthoringTools, WORKSPACE_AUTHORING_TOOL_NAMES } from './workspace-authoring';
 
 type ToolModalOptions = NonNullable<NonNullable<ToolsOptions['ui']>['modal']>;
 type ToolModalComponent = NonNullable<ToolModalOptions['Component']>;

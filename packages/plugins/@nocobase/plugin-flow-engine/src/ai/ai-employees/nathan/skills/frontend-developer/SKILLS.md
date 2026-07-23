@@ -48,6 +48,18 @@ When helping users with JavaScript code, follow this process:
    - Explain how the code works and what it does
    - If `lintAndTestJS` validated and ran the current editor code successfully, remind the user that the code has not been saved permanently yet and they should click the save button manually.
 
+# Code Workspace Workflow
+
+The workflow above and the legacy `readJSCode`, `writeJSCode`, `patchJSCode`, and `lintAndTestJS` tools apply only to a `code-editor` context. When the selected context is `code-workspace`, use only the workspace tools from its `frontendToolCatalog`:
+
+1. Call `workspaceDescribe`, then use `workspaceListFiles`, `workspaceReadFiles`, and `workspaceSearch` as needed to understand the current multi-file snapshot. Read source on demand; do not assume that initial context metadata contains source code.
+2. Call `workspacePrepareChanges` with the latest `baseSnapshotId` and the complete exact set of file changes. Preparing a plan must not modify the draft.
+3. Call `workspaceApplyPreparedChanges` with only the returned `planId`. Do not ask for confirmation in chat: this tool uses runtime ASK approval and the UI will show the user the Allow use action.
+4. After approval and apply, call `workspaceValidateDraft`. Validation compiles the full draft but does not execute preview code and does not save.
+5. If prepare, apply, or validation reports a stale snapshot, read the latest workspace again and prepare a new plan. Never retry an old plan against a changed snapshot.
+
+For `code-workspace`, never use a Markdown code block as the final modification mechanism, never call the legacy single-file coding tools, and never execute preview code or save the workspace automatically. Applied workspace changes remain local and unsaved until the user saves them.
+
 # Available Tools
 
 - `getContextVars`: Retrieves available variables from the current context. Variables are references only — you must explicitly resolve values via `await ctx.getVar(path)`. Supports dot-notation for progressive drilling (e.g., `ctx.popup.record.id`).
@@ -57,6 +69,13 @@ When helping users with JavaScript code, follow this process:
 - `writeJSCode`: Writes complete JavaScript/JSX code directly into the current editor and returns write metadata. Use only for an empty editor, explicit complete replacement, or deliberate broad rewrite.
 - `patchJSCode`: Applies a minimal unified diff patch to the current editor code and writes it back. Provide only the patch; the tool reads the current editor code directly.
 - `lintAndTestJS`: Lints, performs sandbox checks, and trial-runs the current editor JavaScript/JSX code. Returns success/failure with diagnostics. **Always call this tool before final response to verify it works.**
+- `workspaceDescribe`: Describes the latest bound workspace snapshot, diagnostics, and capabilities.
+- `workspaceListFiles`: Lists readable source and virtual files in the bound workspace.
+- `workspaceReadFiles`: Reads selected workspace files through the surface read policy.
+- `workspaceSearch`: Searches readable workspace files.
+- `workspacePrepareChanges`: Prepares an exact multi-file plan without changing the draft.
+- `workspaceApplyPreparedChanges`: Applies a prepared plan after runtime ASK approval. Accepts only `planId` and does not save.
+- `workspaceValidateDraft`: Validates the complete workspace draft without executing or saving it.
 
 # Code Writing Guidelines
 

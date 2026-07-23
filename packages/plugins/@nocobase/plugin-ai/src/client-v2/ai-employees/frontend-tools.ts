@@ -10,6 +10,7 @@
 import type { ToolsOptions } from '@nocobase/client-v2';
 import { EXECUTE_FRONTEND_TOOL_NAME, LOAD_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import { getFrontendToolRegistry } from '../manager/frontend-tool-registry';
+import { WorkspaceChangeCard } from './tools/WorkspaceChangeCard';
 
 type FrontendToolParams = {
   toolId?: unknown;
@@ -42,5 +43,8 @@ export const executeFrontendTool: [string, ToolsOptions] = [
   EXECUTE_FRONTEND_TOOL_NAME,
   {
     invoke: async (app, params: FrontendToolParams) => getRegistry(app).execute(getToolId(params), params.args ?? {}),
+    ui: {
+      card: WorkspaceChangeCard,
+    },
   },
 ];

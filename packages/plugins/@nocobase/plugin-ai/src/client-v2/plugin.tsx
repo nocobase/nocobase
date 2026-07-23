@@ -14,6 +14,7 @@ import { registerPluginAIClientV2BuiltinTools } from './ai-employees/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { chartConfigWorkContext } from './ai-employees/context/chart-config';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
+import { CodeWorkspaceContext } from './ai-employees/context/code-workspace';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
@@ -41,6 +42,20 @@ type ACLPluginLike = {
 type PluginManagerLike = {
   get: (plugin: typeof PluginACLClientV2) => ACLPluginLike | undefined;
 };
+
+type AuthoringSurfaceRegistryLike = {
+  subscribe: (listener: (event: { type: string; surfaceId: string }) => void) => () => void;
+};
+
+export const registerWorkspaceAuthoringSurfaceCleanup = (
+  authoringSurfaces: AuthoringSurfaceRegistryLike,
+  frontendTools: { clear: (surfaceId: string) => void },
+) =>
+  authoringSurfaces.subscribe((event) => {
+    if (event.type === 'unregister') {
+      frontendTools.clear(event.surfaceId);
+    }
+  });
 
 export const registerPluginAIPermissionsTab = (pluginManager: PluginManagerLike, t: (key: string) => string) => {
   const aclPlugin = pluginManager.get(PluginACLClientV2);
@@ -106,6 +121,11 @@ export const registerPluginAISettingsPages = (
 export class PluginAIClientV2 extends Plugin<object, Application> {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this.app);
+  private workspaceAuthoringSurfaceCleanup?: () => void;
+
+  async beforeLoad() {
+    this.dispose();
+  }
 
   async load() {
     const context = this.app.flowEngine.context as AIFlowContext;
@@ -126,7 +146,12 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
+    this.aiManager.registerWorkContext('code-workspace', CodeWorkspaceContext);
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
+    this.workspaceAuthoringSurfaceCleanup = registerWorkspaceAuthoringSurfaceCleanup(
+      this.app.aiManager.authoringSurfaces,
+      this.aiManager.frontendTools,
+    );
     setupAICoding();
     this.flowEngine.registerModelLoaders({
       AIEmployeeShortcutModel: {
@@ -144,6 +169,11 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
       },
     });
     this.app.use(ChatBoxLayout);
+  }
+
+  dispose() {
+    this.workspaceAuthoringSurfaceCleanup?.();
+    this.workspaceAuthoringSurfaceCleanup = undefined;
   }
 }
 

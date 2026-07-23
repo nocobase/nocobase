@@ -166,7 +166,7 @@ export const parseWorkContext = async (app: WorkContextApplication, workContext:
   for (const context of workContext) {
     const contextOptions = plugin.aiManager?.getWorkContext?.(context.type);
     let parsedContext = { ...context };
-    if (!context.content && contextOptions?.getContent) {
+    if (contextOptions?.getContent && (!context.content || context.type === 'code-workspace')) {
       const content = await contextOptions.getContent(app, context);
       parsedContext = {
         ...parsedContext,
