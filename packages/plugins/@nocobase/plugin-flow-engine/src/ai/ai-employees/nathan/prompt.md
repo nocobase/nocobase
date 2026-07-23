@@ -98,6 +98,7 @@ Follow this exact order. Do NOT skip ahead to coding.
    - If you need to inspect the current editor code, call `readJSCode`. Never use `searchDocs` for current editor code, and never say the current code cannot be read.
    - Call `readJSCode` before complex edits, after any failed patch, or whenever the current editor structure is uncertain.
    - If the current work context already contains code and the user asks to add, modify, remove, fix, or extend behavior, call `patchJSCode` with a minimal patch instead of rewriting the whole editor.
+   - Every `patchJSCode` hunk must use a valid unified diff header such as `@@ -10,3 +10,4 @@`. Never use a bare `@@` header.
    - Call `writeJSCode` only when the editor is empty, the user asks for a complete replacement, or the change is truly a broad rewrite.
    - For multiple independent localized edits, prefer sequential focused `patchJSCode` calls over one large patch.
    - If a patch would change more than roughly 30 lines, replace a large function/component, or include large unchanged blocks, do not send a huge patch. Either split it into focused patches or use `writeJSCode` as a deliberate broad rewrite when the replacement is clearer than the diff.
@@ -118,6 +119,7 @@ Follow this exact order. Do NOT skip ahead to coding.
    - When calling `searchDocs` after validation failure, use a compact Bash script that searches the exact error text and nearby concepts, then reads focused snippets from likely matches.
    - If the tools and docs still do not confirm the fix, stop and ask the user instead of trying another unverified implementation.
    - When calling `patchJSCode`, provide only the unified diff patch. The tool reads the current editor code directly.
+   - Every hunk header must include old and new line ranges, for example `@@ -10,3 +10,4 @@`; a bare `@@` header is invalid.
    - Keep `patchJSCode` patches surgical: include only the changed lines plus the smallest necessary surrounding context.
    - Do NOT rewrite the entire file, replace a whole component/function, or include unchanged large blocks in a patch unless the whole block genuinely changed.
    - If more than roughly 30 lines would need to change, prefer `writeJSCode` only when this is a deliberate broad rewrite. For incremental requests, split into focused `patchJSCode` patches.

@@ -21,12 +21,12 @@ export default defineTools({
   definition: {
     name: 'patchJSCode',
     description:
-      'Apply a minimal unified diff patch to the code currently in the editor, then write the patched code back to the editor. Use this for adding, modifying, removing, fixing, or extending existing code. The tool reads the current editor code directly; only provide the patch. Keep patches surgical: include only changed lines plus the smallest necessary context, and do not include unchanged large blocks.',
+      'Apply a minimal unified diff patch to the code currently in the editor, then write the patched code back to the editor. Use this for adding, modifying, removing, fixing, or extending existing code. The tool reads the current editor code directly; only provide the patch. Every hunk must use a valid header such as `@@ -10,3 +10,4 @@`; bare `@@` headers are invalid. Keep patches surgical: include only changed lines plus the smallest necessary context, and do not include unchanged large blocks.',
     schema: z.object({
       patch: z
         .string()
         .describe(
-          'Minimal unified diff patch to apply to the current editor code. Include only changed lines plus the smallest necessary context.',
+          'Minimal unified diff patch to apply to the current editor code. Every hunk header must include old and new line ranges, for example `@@ -10,3 +10,4 @@`; do not use a bare `@@` header. Include only changed lines plus the smallest necessary context.',
         ),
     }),
   },
