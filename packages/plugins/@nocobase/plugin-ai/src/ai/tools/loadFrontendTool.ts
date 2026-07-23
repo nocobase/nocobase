@@ -10,7 +10,6 @@
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
 import {
-  FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION,
   LOAD_FRONTEND_TOOL_NAME,
   isFrontendToolManifest,
   isFrontendToolInvokeResult,
@@ -30,7 +29,7 @@ export default defineTools({
   definition: {
     name: LOAD_FRONTEND_TOOL_NAME,
     description:
-      'Load the complete input schema for one frontend tool. This is not a tool discovery API: only call it with an exact tool id copied from the current frontendToolCatalog, and never invent an id such as "current-workspace". After loading a suitable tool, call executeFrontendTool directly. Do not ask for a separate confirmation in chat because the runtime handles approval.',
+      'Load the complete input schema for one frontend tool. This is not a tool discovery API: only call it with an exact tool id copied from the current frontendToolCatalog, and never invent an id such as "current-workspace". After loading a suitable tool, call executeFrontendTool with arguments that match the returned schema.',
     schema: z.object({
       toolId: z.string().describe('The exact tool id from the current frontendToolCatalog.'),
     }),
@@ -69,7 +68,6 @@ export default defineTools({
         title: result.value.title,
         description: result.value.description,
         inputSchema: result.value.inputSchema,
-        instructions: FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION,
       },
     };
   },

@@ -25,7 +25,7 @@ export default defineTools({
   definition: {
     name: EXECUTE_FRONTEND_TOOL_NAME,
     description:
-      'Execute a frontend tool from the current frontendToolCatalog. Use loadFrontendTool first when you need its input schema. Never use a tool id that is not present in the current catalog. Call this tool directly when the user requests the operation; do not ask for a separate confirmation in chat because the runtime pauses and shows the approval UI when required.',
+      'Execute a frontend tool from the current frontendToolCatalog. Use loadFrontendTool first when you need its input schema. Never use a tool id that is not present in the current catalog.',
     schema: z.object({
       toolId: z.string().describe('The exact tool id from the current frontendToolCatalog.'),
       args: z

@@ -11,7 +11,6 @@ import type { Context } from '@nocobase/actions';
 import { z } from 'zod';
 import {
   EXECUTE_FRONTEND_TOOL_NAME,
-  FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION,
   LOAD_FRONTEND_TOOL_NAME,
   type FrontendToolManifest,
   isFrontendToolManifest,
@@ -158,9 +157,7 @@ export const prepareToolsForFrontendConversation = <T extends { definition: { na
       ...tool,
       definition: {
         ...tool.definition,
-        description: `${tool.definition.description}\n\nfrontendToolCatalog: ${JSON.stringify(
-          catalog,
-        )}\n${FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION}`,
+        description: `${tool.definition.description}\n\nfrontendToolCatalog: ${JSON.stringify(catalog)}`,
         schema: isLoader
           ? z.object({ toolId: toolIdSchema })
           : z.object({
@@ -170,11 +167,6 @@ export const prepareToolsForFrontendConversation = <T extends { definition: { na
       },
     };
   });
-};
-
-export const resolveFlowModelWorkContext = async (_ctx: Context, contextItem: WorkContext): Promise<string> => {
-  const { frontendTools: _definitions, ...context } = contextItem;
-  return JSON.stringify(context);
 };
 
 export const readFrontendToolResult = (
