@@ -72,7 +72,6 @@ const Shortcut: React.FC<ShortcutProps> = ({
   const chat = useChat(currentConversation);
 
   const { triggerTask } = useChatBoxActions();
-  const addContextItems = chat.addContextItems;
   const { syncContextAttachments } = useChatMessageActions();
 
   const currentAvatar = useMemo(() => {
@@ -120,9 +119,10 @@ const Shortcut: React.FC<ShortcutProps> = ({
     if (!shortcutContext.length) {
       return;
     }
-    addContextItems(shortcutContext);
+    const activeConversation = useChatConversationsStore.getState().currentConversation;
+    chat.for(activeConversation).addContextItems(shortcutContext);
     syncContextAttachments(shortcutContext);
-  }, [addContextItems, getShortcutContext, syncContextAttachments]);
+  }, [chat, getShortcutContext, syncContextAttachments]);
 
   if (!aiEmployee) {
     return null;
