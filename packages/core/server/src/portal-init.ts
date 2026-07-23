@@ -23,6 +23,7 @@ import {
 } from './gateway/utils';
 
 const execFileAsync = promisify(execFile);
+const DEFAULT_PORTAL_TEMPLATE_PACKAGE = '@nocobase/portal-template-default';
 
 export type InitDevelopmentMode = 'no-code' | 'vibe-coding';
 
@@ -127,11 +128,26 @@ async function getLocalTemplateDir(templateSource: string): Promise<string | und
 }
 
 async function copyTemplate(sourceDir: string, targetDir: string): Promise<void> {
+  const ignoredSegments = new Set(['.git', 'node_modules']);
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,
-    filter: (source) => !source.split(path.sep).includes('.git'),
+    filter: (source) =>
+      !path
+        .relative(sourceDir, source)
+        .split(path.sep)
+        .some((segment) => ignoredSegments.has(segment)),
   });
+}
+
+function resolveDefaultPortalTemplateDir(): string {
+  try {
+    return path.dirname(require.resolve(`${DEFAULT_PORTAL_TEMPLATE_PACKAGE}/package.json`));
+  } catch {
+    throw new Error(
+      `Default Portal template package "${DEFAULT_PORTAL_TEMPLATE_PACKAGE}" is not installed. Set INIT_PORTAL_TEMPLATE or install the package.`,
+    );
+  }
 }
 
 async function readGitCommit(cwd: string): Promise<string | undefined> {
@@ -228,10 +244,8 @@ export async function initializePortalFromEnv(options: InitPortalOptions = {}): 
 
   const appName = validatePortalAppName(options.appName ?? process.env.INIT_PORTAL_APP);
   const portalName = validatePortalName(options.portalName ?? process.env.INIT_PORTAL_NAME);
-  const templateUrl = trimValue(options.portalTemplate ?? process.env.INIT_PORTAL_TEMPLATE);
-  if (!templateUrl) {
-    throw new Error('INIT_PORTAL_TEMPLATE is required when INIT_DEVELOPMENT_MODE is "vibe-coding".');
-  }
+  const templateUrl =
+    trimValue(options.portalTemplate ?? process.env.INIT_PORTAL_TEMPLATE) || resolveDefaultPortalTemplateDir();
 
   const portalDir = storagePathJoin('portals', appName, portalName);
   if (await pathExists(portalDir)) {
