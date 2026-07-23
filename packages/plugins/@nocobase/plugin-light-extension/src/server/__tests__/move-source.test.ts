@@ -394,24 +394,32 @@ describe('MoveSourceService', () => {
   );
 
   it('creates a new repository with a compiled JS Page entry before binding it', async () => {
-    const createdRepo = { ...repo, id: 'ler_new', name: 'sales-tools', normalizedName: 'sales-tools' };
+    let reservedRepoId = '';
+    const createdRepo = { ...repo, name: 'sales-tools', normalizedName: 'sales-tools' };
     const createdEntry = {
       ...entry,
-      repoId: createdRepo.id,
       kind: 'js-page' as const,
       entryPath: 'src/client/js-pages/sales-kpi/index.tsx',
       descriptorPath: 'src/client/js-pages/sales-kpi/entry.json',
     };
-    const createRepo = vi.fn(async () => createdRepo);
+    const createRepo = vi.fn(async (_input: unknown, _ctx: unknown, options: { repoId: string }) => ({
+      ...createdRepo,
+      id: options.repoId,
+    }));
     const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
     const syncReferences = vi.fn(async () => undefined);
     let compiled = false;
-    const compileCurrentRuntime = vi.fn(async () => {
+    const prepared = {};
+    const prepareInitialWorkspace = vi.fn(async (input: { repoId: string }) => {
+      reservedRepoId = input.repoId;
+      return prepared;
+    });
+    const publishPreparedInitialWorkspace = vi.fn(async () => {
       compiled = true;
       return {
-        repo: createdRepo,
+        repo: { ...createdRepo, id: reservedRepoId },
         status: 'success',
-        entries: [createdEntry],
+        entries: [{ ...createdEntry, repoId: reservedRepoId }],
         diagnostics: [],
       };
     });
@@ -427,10 +435,10 @@ describe('MoveSourceService', () => {
       {
         listEntries: vi.fn(async () => {
           expect(compiled).toBe(true);
-          return [createdEntry];
+          return [{ ...createdEntry, repoId: reservedRepoId }];
         }),
       } as never,
-      { compileCurrentRuntime } as never,
+      { prepareInitialWorkspace, publishPreparedInitialWorkspace } as never,
       { syncFlowModelReferencesForNodeTree: syncReferences } as never,
       () =>
         ({
@@ -479,19 +487,23 @@ describe('MoveSourceService', () => {
         'tsconfig.json',
       ].sort(),
     );
-    expect(compileCurrentRuntime).toHaveBeenCalledWith(
-      createdRepo.id,
+    expect(prepareInitialWorkspace).toHaveBeenCalledWith(
+      expect.objectContaining({ repoId: reservedRepoId, files: expect.any(Array) }),
+      expect.not.objectContaining({ transaction: expect.anything() }),
+    );
+    expect(publishPreparedInitialWorkspace).toHaveBeenCalledWith(
+      prepared,
       createdRepo.headCommitId,
       expect.objectContaining({ transaction: expect.anything() }),
     );
     expect(writeExternalBinding.mock.invocationCallOrder[0]).toBeGreaterThan(
-      compileCurrentRuntime.mock.invocationCallOrder[0],
+      publishPreparedInitialWorkspace.mock.invocationCallOrder[0],
     );
     expect(syncReferences.mock.invocationCallOrder[0]).toBeGreaterThan(
       writeExternalBinding.mock.invocationCallOrder[0],
     );
     expect(result.binding).toMatchObject({
-      repoId: createdRepo.id,
+      repoId: reservedRepoId,
       entryId: createdEntry.id,
       entryPath: createdEntry.entryPath,
       kind: 'js-page',

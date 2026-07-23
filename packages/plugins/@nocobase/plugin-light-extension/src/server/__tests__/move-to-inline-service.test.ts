@@ -143,10 +143,7 @@ describe('MoveToInlineService', () => {
   });
 
   it('allows a 200-file workspace when the relocated dependency closure fits with the manifest', async () => {
-    const enteredTransaction = new Error('entered transaction');
-    const transaction = vi.fn(async () => {
-      throw enteredTransaction;
-    });
+    const transaction = vi.fn();
     const service = new MoveToInlineService(
       { sequelize: { transaction } } as unknown as Database,
       {} as never,
@@ -175,8 +172,8 @@ describe('MoveToInlineService', () => {
         },
         { adapterContext: {} },
       ),
-    ).rejects.toBe(enteredTransaction);
-    expect(transaction).toHaveBeenCalledTimes(1);
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE' });
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it('moves a JS Page inline with its snapshot and settings while removing the active reference', async () => {
@@ -348,8 +345,9 @@ describe('MoveToInlineService', () => {
         initialCommit: null,
       };
     });
-    const getRepositoryForUpdate = vi.fn(async () => ensuredRepository);
-    const push = vi.fn(async () => ({
+    const preparedPush = {};
+    const preparePush = vi.fn(async () => preparedPush);
+    const publishPreparedPush = vi.fn(async () => ({
       repository: runJSRepo,
       commit: {
         id: 'runjs_new_commit',
@@ -366,7 +364,6 @@ describe('MoveToInlineService', () => {
     }));
     const vscFileService = {
       ensureRepository,
-      getRepositoryForUpdate,
       pull: vi.fn(async () => ({
         repository: runJSRepo,
         commit: null,
@@ -378,7 +375,8 @@ describe('MoveToInlineService', () => {
           { path: 'src/client/old.ts', language: 'typescript', mode: '100644' },
         ],
       })),
-      push,
+      preparePush,
+      publishPreparedPush,
     } as unknown as VscFileService;
     const service = new MoveToInlineService(
       db,
@@ -422,10 +420,10 @@ describe('MoveToInlineService', () => {
           expect.objectContaining({ path: 'src/shared/used.ts' }),
         ]),
       }),
-      expect.objectContaining({ transaction }),
+      expect.any(Object),
     );
     expect(JSON.stringify(compileEntry.mock.calls)).not.toContain('src/shared/unused.ts');
-    expect(push).toHaveBeenCalledWith(
+    expect(preparePush).toHaveBeenCalledWith(
       expect.objectContaining({
         allowEmptyCommit: true,
         files: expect.arrayContaining([
@@ -446,9 +444,9 @@ describe('MoveToInlineService', () => {
           expect.objectContaining({ path: 'src/client/old.ts', operation: 'delete' }),
         ]),
       }),
-      expect.objectContaining({ transaction }),
+      expect.any(Object),
     );
-    const pushedFiles = push.mock.calls[0][0].files as VscFileChange[];
+    const pushedFiles = preparePush.mock.calls[0][0].files as VscFileChange[];
     const canonicalFiles = pushedFiles.filter((file) => file.operation === 'upsert');
     expect(result.filesHash).toBe(buildRunJSFilesHash(canonicalFiles));
     const sourceId = createHash('sha256').update(result.filesHash).digest('hex').slice(0, 16);
@@ -460,12 +458,16 @@ describe('MoveToInlineService', () => {
           resourceName: 'runJSSources',
           actionName: 'save',
         }),
-        transaction,
       }),
     );
-    expect(getRepositoryForUpdate.mock.invocationCallOrder[0]).toBeLessThan(
-      lockFlowModelRecord.mock.invocationCallOrder[0],
-    );
+    expect(preparePush.mock.invocationCallOrder[0]).toBeLessThan(lockFlowModelRecord.mock.invocationCallOrder[0]);
+    expect(publishPreparedPush).toHaveBeenCalledWith(preparedPush, expect.objectContaining({ transaction }));
+    expect(compileEntry.mock.calls[0][1]?.transaction).toBeUndefined();
+    expect(preparePush.mock.calls[0][1]?.transaction).toBeUndefined();
+    expect(assertCanWrite).toHaveBeenCalledTimes(2);
+    expect(assertCanWrite.mock.calls[0][0].ctx.transaction).toBeUndefined();
+    expect(readLegacy).toHaveBeenCalledTimes(2);
+    expect(readLegacy.mock.calls[0][0].ctx.transaction).toBeUndefined();
     expect(assertCanWrite).toHaveBeenCalledWith({
       locator: pageLocator,
       ctx: expect.objectContaining({
@@ -614,7 +616,7 @@ describe('MoveToInlineService', () => {
           },
           repository: {
             findModelById: vi.fn(async (_uid: string, options: { transaction?: Transaction }) => {
-              expect(options.transaction).toBe(transaction);
+              expect([undefined, transaction]).toContain(options.transaction);
               return clone(flowModel);
             }),
             patch: vi.fn(
@@ -640,10 +642,10 @@ describe('MoveToInlineService', () => {
     const adapter = {
       kind: 'flowModel.step',
       assertCanWrite: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
-        expect(ctx.transaction).toBe(transaction);
+        expect([undefined, transaction]).toContain(ctx.transaction);
       }),
       readLegacy: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
-        expect(ctx.transaction).toBe(transaction);
+        expect([undefined, transaction]).toContain(ctx.transaction);
         return {
           code: initialRunJS.code,
           version: initialRunJS.version,
@@ -687,20 +689,22 @@ describe('MoveToInlineService', () => {
       authorId: '1',
       metadata: {},
     };
+    const preparedPush = {};
     const vscFileService = {
       ensureRepository: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-        expect(ctx.transaction).toBe(transaction);
+        expect(ctx.transaction).toBeUndefined();
         return { repository: clone(repository), initialCommit: null };
       }),
-      getRepositoryForUpdate: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-        expect(ctx.transaction).toBe(transaction);
-        return clone(repository);
-      }),
       pull: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-        expect(ctx.transaction).toBe(transaction);
+        expect(ctx.transaction).toBeUndefined();
         return { repository: clone(repository), commit: null, tree: null, unchanged: false, files: [] };
       }),
-      push: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+      preparePush: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+        expect(ctx.transaction).toBeUndefined();
+        return preparedPush;
+      }),
+      publishPreparedPush: vi.fn(async (candidate: unknown, ctx: { transaction?: Transaction }) => {
+        expect(candidate).toBe(preparedPush);
         expect(ctx.transaction).toBe(transaction);
         repository = {
           ...repository,

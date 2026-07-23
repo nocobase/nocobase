@@ -19,6 +19,56 @@ const entryPath = 'src/client/js-blocks/sales/index.tsx';
 const descriptorPath = 'src/client/js-blocks/sales/entry.json';
 
 describe('move-to-inline relocation', () => {
+  it.each([
+    {
+      label: 'extensionless local import',
+      statement: "import { helper } from './helper';",
+      dependencyPath: 'src/client/js-blocks/sales/helper.ts',
+      expected: "from './helper'",
+    },
+    {
+      label: 'shared index re-export',
+      statement: "export { format } from '../../../shared/format';",
+      dependencyPath: 'src/shared/format/index.ts',
+      expected: "from '../shared/format/index'",
+    },
+  ])('relocates a $label through the shared relative-import resolver', ({ statement, dependencyPath, expected }) => {
+    const files = collectAndRelocateInlineFiles({
+      entryPath,
+      files: [
+        { path: entryPath, content: `${statement}\nctx.render(<div />);\n` },
+        { path: dependencyPath, content: 'export const helper = true; export const format = true;\n' },
+      ],
+    });
+
+    expect(files.find((file) => file.path === 'src/client/index.tsx')?.content).toContain(expected);
+  });
+
+  it.each([
+    {
+      label: 'duplicate normalized paths',
+      files: [
+        { path: entryPath, content: 'ctx.render(<div />);' },
+        { path: `./${entryPath}`, content: 'ctx.render(<div />);' },
+      ],
+    },
+    {
+      label: 'an entry dependency outside its directory and shared root',
+      files: [
+        { path: entryPath, content: "import '../../../other';\nctx.render(<div />);" },
+        { path: 'src/other.ts', content: 'export const other = true;\n' },
+      ],
+    },
+    {
+      label: 'an absolute workspace path',
+      files: [{ path: `/${entryPath}`, content: 'ctx.render(<div />);' }],
+    },
+  ])('rejects $label', ({ files }) => {
+    expect(() => collectAndRelocateInlineFiles({ entryPath, files })).toThrowError(
+      expect.objectContaining({ code: 'LIGHT_EXTENSION_INVALID_INPUT' }),
+    );
+  });
+
   it('copies the entry descriptor together with runtime-reachable entry and shared modules', () => {
     const canonicalDescriptorContent = `${JSON.stringify(
       {
