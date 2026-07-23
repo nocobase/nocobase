@@ -640,7 +640,7 @@ function TaskItem() {
       }
       e.stopPropagation();
     },
-    [navigate, record.id],
+    [navigate, record, setRecord],
   );
 
   return (
