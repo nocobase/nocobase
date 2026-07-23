@@ -225,6 +225,108 @@ describe('ensureFormValueDrivenDataScopeClear', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
+  it('does not clear a popup form field when data scope depends on the external parent item', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: { staff_m2o: null },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 10 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'orgId', operator: '$eq', value: '{{ ctx.item.parentItem.value.org_m2o.id }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['staff_m2o']],
+      allValues: { staff_m2o: { id: 10 } },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('maps popup current item dependencies to the popup form root', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_m2o: { id: 1 },
+          staff_m2o: { id: 10 },
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 10 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'orgId', operator: '$eq', value: '{{ ctx.item.value.org_m2o.id }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['staff_m2o']],
+      allValues: {
+        org_m2o: { id: 1 },
+        staff_m2o: { id: 10 },
+      },
+    });
+    expect(onChange).not.toHaveBeenCalled();
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_m2o']],
+      allValues: {
+        org_m2o: { id: 2 },
+        staff_m2o: { id: 10 },
+      },
+    });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
   it('does not clear a row field when a sibling field changes but the item dependency value is unchanged', () => {
     const emitter = new EventEmitter();
     const formBlock = {
