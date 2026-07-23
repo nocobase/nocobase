@@ -29,7 +29,15 @@ type WorkerResponse = {
 
 const loadPdf = async (filePath: string): Promise<Document[]> => {
   const loader = new PDFLoader(filePath);
-  return loader.load();
+  try {
+    return await loader.load();
+  } catch (error) {
+    const err = error as Error;
+    if (err?.name === 'PasswordException' || /password/i.test(err?.message)) {
+      throw new Error('The PDF file is password-protected and cannot be parsed. Please upload an unlocked version.');
+    }
+    throw error;
+  }
 };
 
 const loadDoc = async (filePath: string, type: 'docx' | 'doc'): Promise<Document[]> => {
@@ -89,8 +97,9 @@ parentPort?.on('message', async (payload: ParsePayload) => {
     };
     parentPort?.postMessage(response);
   } catch (error) {
+    const err = error as Error;
     const response: WorkerResponse = {
-      error: String(error?.stack || error),
+      error: err?.message || String(error),
     };
     parentPort?.postMessage(response);
   }
