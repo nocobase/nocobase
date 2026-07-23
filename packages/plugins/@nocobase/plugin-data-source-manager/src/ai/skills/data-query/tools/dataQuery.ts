@@ -248,7 +248,7 @@ export default defineTools({
     try {
       const db = ds.collectionManager.db || ctx.db;
       const acl = ds.acl || ctx.app.acl;
-      const query = {
+      const query: DataQueryPermissionQuery = {
         measures: args.measures,
         dimensions: args.dimensions,
         orders: args.orders,
@@ -258,7 +258,7 @@ export default defineTools({
         offset,
       };
       const skip = await acl.allowManager.isAllowed(args.collectionName, 'query', ctx);
-      let permittedQuery = query;
+      let permittedQuery: DataQueryPermissionQuery = query;
       if (!skip) {
         permittedQuery = (
           await applyQueryPermission({
