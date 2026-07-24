@@ -17,7 +17,7 @@ keywords: "知识库文档,文档上传,向量化,ZIP 导入,NocoBase"
 
 点击右上角「Upload」上传文件。上传完成后，文档会自动进入分段生成和向量化流程。列表中的「Status」会先显示「Pending」，处理完成后变为「Success」。如果处理失败，会显示「Error」，文件名旁边也会显示错误提示图标。
 
-目前支持的文档类型包括：`txt`、`md`、`json`、`csv`、`xls`、`xlsx`、`pdf`、`doc`、`docx`、`ppt`、`pptx`。
+目前支持的文档类型包括：`txt`、`md`、`json`、`csv`、`xls`、`xlsx`、`pdf`、`doc`、`docx`、`pptx`。
 
 :::tip PDF 文档
 

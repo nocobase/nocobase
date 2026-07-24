@@ -35,6 +35,7 @@ import { EnvVariableInput, Table, useApp } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
+import { getCustomModelIdIssues, type ModelIdIssue } from '../../common/llm-service-models';
 import { getRecommendedModels, isRecommendedModel } from '../../common/recommended-models';
 import type { LLMProviderOptions } from '../manager/ai-manager';
 import { formatModelLabel } from '../llm-services/model-label';
@@ -90,6 +91,9 @@ type AIPluginLike = {
 const LLM_SERVICE_SORT_FIELD = 'sort';
 const PROVIDER_SELECT_LIST_HEIGHT = 400;
 
+const getModelIdIssueMessage = (issue: ModelIdIssue, t: ReturnType<typeof useT>) =>
+  issue.type === 'required' ? t('Model ID is required') : t('Model ID already exists');
+
 const fillHeightTableClassName = css`
   flex: 1;
   min-height: 0;
@@ -122,6 +126,19 @@ const fillHeightTableClassName = css`
 
   .ant-pagination {
     flex: 0 0 auto;
+  }
+`;
+
+const providerSelectPopupClassName = css`
+  .ant-select-item,
+  .ant-select-item-option,
+  .ant-select-item-option-content {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-select-item-option-content {
+    overflow: hidden;
   }
 `;
 
@@ -365,6 +382,7 @@ const ProviderSelect: React.FC<{
       [...providers]
         .sort((a, b) => getProviderSortIndex(a.value) - getProviderSortIndex(b.value))
         .map((provider) => {
+          const description = getProviderDescription(provider.value, t);
           const capabilities = [
             provider.supportedModel.includes('LLM') ? 'LLM' : null,
             provider.supportedModel.includes('EMBEDDING') ? 'EMBEDDING' : null,
@@ -373,11 +391,17 @@ const ProviderSelect: React.FC<{
             value: provider.value,
             selectedLabel: provider.label,
             label: (
-              <Flex vertical gap="small">
+              <Flex vertical gap="small" style={{ width: '100%', minWidth: 0 }}>
                 <Typography.Text strong>{provider.label}</Typography.Text>
-                <Flex align="center" justify="space-between" gap="small">
-                  <Typography.Text type="secondary">{getProviderDescription(provider.value, t)}</Typography.Text>
-                  <Space size="small" wrap>
+                <Flex align="center" justify="space-between" gap="small" style={{ minWidth: 0 }}>
+                  <Typography.Text
+                    type="secondary"
+                    ellipsis={description ? { tooltip: description } : undefined}
+                    style={{ flex: 1, minWidth: 0 }}
+                  >
+                    {description}
+                  </Typography.Text>
+                  <Space size="small" wrap style={{ flexShrink: 0 }}>
                     {capabilities.map((capability) => (
                       <Tag key={capability} bordered={false} color="default">
                         {capability}
@@ -399,6 +423,8 @@ const ProviderSelect: React.FC<{
       optionLabelProp="selectedLabel"
       style={{ width: '100%' }}
       listHeight={PROVIDER_SELECT_LIST_HEIGHT}
+      popupMatchSelectWidth
+      popupClassName={providerSelectPopupClassName}
     />
   );
 };
@@ -483,6 +509,13 @@ const EnabledModelsInput: React.FC<{
   const changeModels = (models: ModelOption[]) => {
     onChange?.({ mode: config.mode, models });
   };
+  const revalidateModelIds = () => {
+    const modelIdFields = config.models.map((_, index) => ['enabledModels', 'models', index, 'value']);
+    if (!modelIdFields.some((field) => form.getFieldError(field).length)) {
+      return;
+    }
+    form.validateFields(modelIdFields).catch(() => undefined);
+  };
 
   return (
     <Radio.Group value={config.mode} onChange={(event) => changeMode(event.target.value)} style={{ width: '100%' }}>
@@ -531,46 +564,52 @@ const EnabledModelsInput: React.FC<{
         ) : null}
         <Radio value="custom">{t('Manual input')}</Radio>
         {config.mode === 'custom' ? (
-          <Flex vertical gap="small" style={{ paddingInlineStart: enabledModelsIndent }}>
-            {config.models.map((model, index) => (
-              <Flex key={`${model.value}:${index}`} gap="small" align="baseline">
-                <Input
-                  placeholder={t('Model id')}
-                  style={{ width: customModelInputWidth }}
-                  value={model.value}
-                  onChange={(event) => {
-                    const nextModels = [...config.models];
-                    nextModels[index] = { ...nextModels[index], value: event.target.value };
-                    changeModels(nextModels);
-                  }}
-                />
-                <Input
-                  placeholder={t('Display name')}
-                  style={{ width: customModelInputWidth }}
-                  value={model.label}
-                  onChange={(event) => {
-                    const nextModels = [...config.models];
-                    nextModels[index] = { ...nextModels[index], label: event.target.value };
-                    changeModels(nextModels);
-                  }}
-                />
+          <Form.List name={['enabledModels', 'models']}>
+            {(fields, { add, remove }) => (
+              <Flex vertical gap="small" style={{ paddingInlineStart: enabledModelsIndent }}>
+                {fields.map((field) => (
+                  <Flex key={field.key} gap="small" align="baseline">
+                    <Form.Item
+                      name={[field.name, 'value']}
+                      style={{ marginBottom: 0, width: customModelInputWidth }}
+                      validateTrigger="onSubmit"
+                      rules={[
+                        {
+                          validator: async () => {
+                            const issue = getCustomModelIdIssues(form.getFieldValue('enabledModels')).find(
+                              (currentIssue) => currentIssue.index === field.name,
+                            );
+                            if (issue) {
+                              throw new Error(getModelIdIssueMessage(issue, t));
+                            }
+                          },
+                        },
+                      ]}
+                    >
+                      <Input placeholder={t('Model id')} onChange={revalidateModelIds} />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'label']} noStyle>
+                      <Input placeholder={t('Display name')} style={{ width: customModelInputWidth }} />
+                    </Form.Item>
+                    <Button
+                      type="text"
+                      icon={<DeleteOutlined />}
+                      aria-label={t('Delete')}
+                      onClick={() => remove(field.name)}
+                    />
+                  </Flex>
+                ))}
                 <Button
-                  type="text"
-                  icon={<DeleteOutlined />}
-                  aria-label={t('Delete')}
-                  onClick={() => changeModels(config.models.filter((_, currentIndex) => currentIndex !== index))}
-                />
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  style={{ width: '100%' }}
+                  onClick={() => add({ label: '', value: '' })}
+                >
+                  {t('Add model')}
+                </Button>
               </Flex>
-            ))}
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              style={{ width: '100%' }}
-              onClick={() => changeModels([...config.models, { label: '', value: '' }])}
-            >
-              {t('Add model')}
-            </Button>
-          </Flex>
+            )}
+          </Form.List>
         ) : null}
       </Flex>
     </Radio.Group>

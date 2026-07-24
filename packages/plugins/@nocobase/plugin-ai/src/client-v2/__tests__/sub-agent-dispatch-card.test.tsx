@@ -11,6 +11,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SubAgentDispatchCard } from '../ai-employees/tools/SubAgentDispatchCard';
+import { ChatBoxRuntimeProvider, createChatBoxRuntime } from '../ai-employees/chatbox/stores/runtime';
 
 type ChatMessage = {
   content?: {
@@ -49,13 +50,10 @@ vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
   }),
 }));
 
-vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
-  useChatConversationsStore: {
-    use: {
-      currentConversation: () => undefined,
-    },
-  },
-}));
+const renderWithRuntime = (ui: React.ReactElement) => {
+  const runtime = createChatBoxRuntime();
+  return render(<ChatBoxRuntimeProvider runtime={runtime}>{ui}</ChatBoxRuntimeProvider>);
+};
 
 describe('SubAgentDispatchCard', () => {
   beforeEach(() => {
@@ -65,7 +63,7 @@ describe('SubAgentDispatchCard', () => {
   });
 
   it('shows loading for the current live message when message ids are still empty', () => {
-    const { container } = render(
+    const { container } = renderWithRuntime(
       <SubAgentDispatchCard
         messageId=""
         tools={{
@@ -101,7 +99,7 @@ describe('SubAgentDispatchCard', () => {
   it('does not show loading for historical messages', () => {
     chatState.responseLoading = false;
 
-    const { container } = render(
+    const { container } = renderWithRuntime(
       <SubAgentDispatchCard
         messageId=""
         tools={{

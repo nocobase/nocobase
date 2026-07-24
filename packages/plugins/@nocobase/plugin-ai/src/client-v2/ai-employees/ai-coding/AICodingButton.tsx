@@ -17,8 +17,7 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 import { avatars } from '../avatars';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
-import { useChatBoxStore } from '../chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { getGlobalChatBoxRuntime } from '../chatbox/stores/runtime';
 import { AIEmployeeProfileCard } from '../ProfileCard';
 import type { AIEmployee, Task } from '../types';
 import prompts from './prompts';
@@ -46,13 +45,16 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const { token } = theme.useToken();
     const aiConfigRepository = useAIConfigRepository();
     const aiEmployees = aiConfigRepository.aiEmployees;
-    const open = useChatBoxStore.use.open();
-    const currentEmployee = useChatBoxStore.use.currentEmployee();
-    const currentConversation = useChatConversationsStore.use.currentConversation();
-    const chat = useChat(currentConversation);
-    const { triggerTask } = useChatBoxActions();
+    const runtime = getGlobalChatBoxRuntime();
+    const { chatBoxModel, chatConversationModel } = runtime;
+    const open = chatBoxModel.open;
+    const currentEmployee = chatBoxModel.currentEmployee;
+    const currentConversation = chatConversationModel.currentConversation;
+    const chat = useChat(currentConversation, runtime);
+    const { triggerTask } = useChatBoxActions(runtime);
     const addContextItems = chat.addContextItems;
     const setEditorRef = chat.setEditorRef;
+    const unregisterEditorRef = chat.unregisterEditorRef;
     const setCurrentEditorRefUid = chat.setCurrentEditorRefUid;
     const ctx = useFlowContext();
 
@@ -66,9 +68,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       setEditorRef(uid, editorRef);
       setCurrentEditorRefUid(uid);
       return () => {
-        setEditorRef(uid, null);
+        unregisterEditorRef(uid, editorRef);
       };
-    }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid]);
+    }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid, unregisterEditorRef]);
 
     useEffect(() => {
       setActive('AICodingButton', !!aiEmployee);

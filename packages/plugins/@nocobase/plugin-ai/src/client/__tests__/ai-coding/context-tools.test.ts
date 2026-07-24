@@ -20,7 +20,15 @@ import {
   compactPatchForDisplay,
   shouldSkipCodeToolCardRender,
 } from '../../../client-v2/ai-employees/tools/CodeToolCard';
-import { useChatMessagesStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
+import { createChatBoxRuntime } from '../../../client-v2/ai-employees/chatbox/stores/runtime';
+import type { ChatEditorRef } from '../../../client-v2/ai-employees/types';
+
+const createEditorToolState = (uid: string, editorRef: ChatEditorRef) => {
+  const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
+  chatBoxRuntime.chatMessageModel.setEditorRef(uid, editorRef);
+  chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid(uid);
+  return { chatBoxRuntime };
+};
 
 describe('ai coding context tools', () => {
   it('applies a model-generated hunk by searching old lines instead of trusting the hunk line number', () => {
@@ -70,120 +78,152 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 
   it('runs the current editor after lint succeeds', async () => {
     const runCalls: string[] = [];
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-1',
-      editorRef: {
-        'editor-1': {
-          read: () => 'ctx.render("ok");',
-          write: () => undefined,
-          run: async () => {
-            runCalls.push('run');
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const editorState = createEditorToolState('editor-1', {
+      read: () => 'ctx.render("ok");',
+      write: () => undefined,
+      run: async () => {
+        runCalls.push('run');
       },
-    });
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
 
-    try {
-      const result = await lintAndTestJSTool[1].invoke.call(
-        {
-          flowContext: {
-            previewRunJS: async () => ({
-              success: true,
-              message: 'RunJS preview succeeded: no issues found. Logs: 0.',
-            }),
-          },
+    const result = await lintAndTestJSTool[1].invoke.call(
+      {
+        ...editorState,
+        flowContext: {
+          previewRunJS: async () => ({
+            success: true,
+            message: 'RunJS preview succeeded: no issues found. Logs: 0.',
+          }),
         },
-        {} as any,
-        {},
-      );
+      },
+      {} as any,
+      {},
+    );
 
-      expect(result.status).toBe('success');
-      expect(runCalls).toEqual(['run']);
-      expect(result.content.userReminder).toContain('click the save button manually');
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('success');
+    expect(runCalls).toEqual(['run']);
+    expect(result.content.userReminder).toContain('click the save button manually');
   });
 
   it('validates explicitly provided empty code instead of falling back to the editor', async () => {
     const previewedCode: string[] = [];
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-empty-lint',
-      editorRef: {
-        'editor-empty-lint': {
-          read: () => 'ctx.render("editor");',
-          write: () => undefined,
-          run: async () => undefined,
-          snippetEntries: [],
-          logs: [],
-        } as any,
-      },
-    });
+    const editorState = createEditorToolState('editor-empty-lint', {
+      read: () => 'ctx.render("editor");',
+      write: () => undefined,
+      run: async () => undefined,
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
 
-    try {
-      const result = await lintAndTestJSTool[1].invoke.call(
-        {
-          flowContext: {
-            previewRunJS: async (code: string) => {
-              previewedCode.push(code);
-              return {
-                success: true,
-                message: 'RunJS preview succeeded: no issues found. Logs: 0.',
-              };
-            },
+    const result = await lintAndTestJSTool[1].invoke.call(
+      {
+        ...editorState,
+        flowContext: {
+          previewRunJS: async (code: string) => {
+            previewedCode.push(code);
+            return {
+              success: true,
+              message: 'RunJS preview succeeded: no issues found. Logs: 0.',
+            };
           },
         },
-        {} as any,
-        { code: '' },
-      );
+      },
+      {} as any,
+      { code: '' },
+    );
 
-      expect(result.status).toBe('success');
-      expect(previewedCode).toEqual(['']);
-      expect(result.content.userReminder).toBeUndefined();
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('success');
+    expect(previewedCode).toEqual(['']);
+    expect(result.content.userReminder).toBeUndefined();
   });
 
   it('patches the current editor code without requiring model-managed hashes', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-patch',
-      editorRef: {
-        'editor-patch': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const editorState = createEditorToolState('editor-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
-    });
-
-    try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {
-        patch: `@@ -1,2 +1,2 @@
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    const result = await patchJSCodeTool[1].invoke.call(editorState, {} as any, {
+      patch: `@@ -1,2 +1,2 @@
 -const label = "old";
 +const label = "new";
  ctx.render(label);
 `,
-        baseHash: 'stale-hash-from-an-older-tool-contract',
-      });
+      baseHash: 'stale-hash-from-an-older-tool-contract',
+    });
 
-      expect(result.status).toBe('success');
-      expect(code).toBe('const label = "new";\nctx.render(label);\n');
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('success');
+    expect(code).toBe('const label = "new";\nctx.render(label);\n');
+  });
+
+  it('resolves the latest editor when invoking a patch after the editor reopens', async () => {
+    let oldCode = 'const label = "old editor";\nctx.render(label);\n';
+    let newCode = 'const label = "new editor";\nctx.render(label);\n';
+    const oldEditorRef = {
+      read: () => oldCode,
+      write: (nextCode: string) => {
+        oldCode = nextCode;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const newEditorRef = {
+      read: () => newCode,
+      write: (nextCode: string) => {
+        newCode = nextCode;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const editorState = createEditorToolState('editor-reopen', oldEditorRef);
+    editorState.chatBoxRuntime.chatMessageModel.setEditorRef('editor-reopen', newEditorRef);
+    const app = {} as Parameters<NonNullable<(typeof patchJSCodeTool)[1]['invoke']>>[0];
+
+    const result = await patchJSCodeTool[1].invoke.call(editorState, app, {
+      patch: `@@ -1,2 +1,2 @@
+-const label = "new editor";
++const label = "patched editor";
+ ctx.render(label);
+`,
+    });
+
+    expect(result.status).toBe('success');
+    expect(oldCode).toBe('const label = "old editor";\nctx.render(label);\n');
+    expect(newCode).toBe('const label = "patched editor";\nctx.render(label);\n');
+  });
+
+  it('does not let an old editor cleanup unregister its replacement', () => {
+    const oldEditorRef = {
+      read: () => '',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const newEditorRef = {
+      read: () => '',
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef;
+    const editorState = createEditorToolState('editor-cleanup', oldEditorRef);
+    const chatMessageModel = editorState.chatBoxRuntime.chatMessageModel;
+    chatMessageModel.setEditorRef('editor-cleanup', newEditorRef);
+
+    chatMessageModel.unregisterEditorRef('editor-cleanup', oldEditorRef);
+
+    expect(chatMessageModel.editorRef['editor-cleanup']).toBe(newEditorRef);
+    expect(chatMessageModel.currentEditorRefUid).toBe('editor-cleanup');
+
+    chatMessageModel.unregisterEditorRef('editor-cleanup', newEditorRef);
+
+    expect(chatMessageModel.editorRef['editor-cleanup']).toBeNull();
+    expect(chatMessageModel.currentEditorRefUid).toBeNull();
   });
 
   it('rejects a patch with a bare hunk header without mutating the editor', async () => {
@@ -234,123 +274,78 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 
   it('returns a structured error when writeJSCode receives invalid params', async () => {
     let code = 'const value = 1;';
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-invalid-write',
-      editorRef: {
-        'editor-invalid-write': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const editorState = createEditorToolState('editor-invalid-write', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
-    });
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
 
-    try {
-      const result = await writeJSCodeTool[1].invoke.call({}, {} as any, {});
+    const result = await writeJSCodeTool[1].invoke.call(editorState, {} as any, {});
 
-      expect(result.status).toBe('error');
-      expect(result.content.message).toContain('`code` must be a string');
-      expect(code).toBe('const value = 1;');
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('error');
+    expect(result.content.message).toContain('`code` must be a string');
+    expect(code).toBe('const value = 1;');
   });
 
   it('returns a structured error when patchJSCode receives invalid params', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-invalid-patch',
-      editorRef: {
-        'editor-invalid-patch': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const editorState = createEditorToolState('editor-invalid-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
-    });
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
 
-    try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {});
+    const result = await patchJSCodeTool[1].invoke.call(editorState, {} as any, {});
 
-      expect(result.status).toBe('error');
-      expect(result.content.message).toContain('`patch` must be a non-empty string');
-      expect(code).toBe('const label = "old";\nctx.render(label);\n');
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('error');
+    expect(result.content.message).toContain('`patch` must be a non-empty string');
+    expect(code).toBe('const label = "old";\nctx.render(label);\n');
   });
 
   it('reads the current editor code for patch planning and recovery', async () => {
     const code = 'const value = 1;\nctx.render(value);\n';
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-read',
-      editorRef: {
-        'editor-read': {
-          read: () => code,
-          write: () => undefined,
-          snippetEntries: [],
-          logs: [],
-        } as any,
-      },
-    });
+    const editorState = createEditorToolState('editor-read', {
+      read: () => code,
+      write: () => undefined,
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
 
-    try {
-      const result = await readJSCodeTool[1].invoke.call({}, {} as any, {});
+    const result = await readJSCodeTool[1].invoke.call(editorState, {} as any, {});
 
-      expect(result.status).toBe('success');
-      expect(result.content.success).toBe(true);
-      expect(result.content.code).toBe(code);
-      expect(result.content.lineCount).toBe(3);
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('success');
+    expect(result.content.success).toBe(true);
+    expect(result.content.code).toBe(code);
+    expect(result.content.lineCount).toBe(3);
   });
 
   it('does not mutate editor code when a patch fails', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
-    const previousState = useChatMessagesStore.getState();
-    useChatMessagesStore.setState({
-      ...previousState,
-      currentEditorRefUid: 'editor-failed-patch',
-      editorRef: {
-        'editor-failed-patch': {
-          read: () => code,
-          write: (nextCode: string) => {
-            code = nextCode;
-          },
-          snippetEntries: [],
-          logs: [],
-        } as any,
+    const editorState = createEditorToolState('editor-failed-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
       },
-    });
-
-    try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {
-        patch: `@@ -1,2 +1,2 @@
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    const result = await patchJSCodeTool[1].invoke.call(editorState, {} as any, {
+      patch: `@@ -1,2 +1,2 @@
 -const missing = "old";
 +const missing = "new";
  ctx.render(missing);
 `,
-      });
+    });
 
-      expect(result.status).toBe('error');
-      expect(result.content.message).toContain('Call readJSCode before retrying');
-      expect(code).toBe('const label = "old";\nctx.render(label);\n');
-    } finally {
-      useChatMessagesStore.setState(previousState, true);
-    }
+    expect(result.status).toBe('error');
+    expect(result.content.message).toContain('Call readJSCode before retrying');
+    expect(code).toBe('const label = "old";\nctx.render(label);\n');
   });
 });
 

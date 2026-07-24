@@ -9,12 +9,103 @@
 
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
+import type { APIClient } from '@nocobase/client-v2';
+import type { AIConfigRepository } from '../../repositories/AIConfigRepository';
+import {
+  ContextItem,
+  SkillSettings,
+  TaskMessage,
+  Message,
+  type AIEmployee,
+  type Task,
+  type TriggerTaskOptions,
+} from '../types';
 
 dayjs.extend(duration);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export type RunJSAIEmployeeTriggerTaskOptions = Omit<TriggerTaskOptions, 'aiEmployee'> & {
+  aiEmployee?: string | AIEmployee;
+};
+
+export type NormalizeTriggerTaskOptionsContext = {
+  aiConfigRepository?: Pick<AIConfigRepository, 'getAIEmployees'> | null;
+  apiClient?: Pick<APIClient, 'resource'> | null;
+};
+
+type APIListResponse = {
+  data?: {
+    data?: unknown;
+  };
+};
+
+type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
+
+export const getTargetChatBoxUid = (tasks?: Task[]) => {
+  if (tasks?.length !== 1) {
+    return undefined;
+  }
+  return tasks[0]?.chatBoxUid;
+};
+
+export async function normalizeTriggerTaskOptions(
+  options: RunJSAIEmployeeTriggerTaskOptions,
+  context?: NormalizeTriggerTaskOptionsContext,
+): Promise<TriggerTaskOptions | null> {
+  const { aiEmployee } = options;
+  if (aiEmployee === undefined || isAIEmployee(aiEmployee)) {
+    return options as TriggerTaskOptions;
+  }
+
+  const employees = context?.aiConfigRepository ? await context.aiConfigRepository.getAIEmployees() : [];
+  let matched = employees.find((employee) => employee.username === aiEmployee);
+  if (!matched) {
+    matched = (await getAIEmployeesFromAPIClient(context?.apiClient)).find(
+      (employee) => employee.username === aiEmployee,
+    );
+  }
+  if (!matched) {
+    console.warn(`[plugin-ai] AI employee "${aiEmployee}" was not found or is not accessible to the current user.`);
+    return null;
+  }
+
+  return {
+    ...options,
+    aiEmployee: matched,
+  };
+}
+
+function isAPIListResponse(value: unknown): value is APIListResponse {
+  return isRecord(value) && (value.data === undefined || isRecord(value.data));
+}
+
+function readArrayData(response: unknown): unknown[] {
+  if (!isAPIListResponse(response)) {
+    return [];
+  }
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+}
+
+function isAIEmployee(value: unknown): value is AIEmployee {
+  return isRecord(value) && typeof value.username === 'string';
+}
+
+function isResourceAction(value: unknown): value is ResourceAction {
+  return typeof value === 'function';
+}
+
+async function getAIEmployeesFromAPIClient(apiClient?: Pick<APIClient, 'resource'> | null): Promise<AIEmployee[]> {
+  const resource = apiClient?.resource('aiEmployees') as Record<string, unknown> | undefined;
+  const listByUser = resource?.listByUser;
+  if (!isResourceAction(listByUser)) {
+    return [];
+  }
+
+  const response = await listByUser();
+  return readArrayData(response).filter(isAIEmployee);
 }
 
 export function normalizeAIFileUploadAttachment<T extends Record<string, unknown>>(

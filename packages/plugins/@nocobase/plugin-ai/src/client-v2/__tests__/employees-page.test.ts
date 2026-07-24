@@ -13,6 +13,7 @@ import {
   buildEmployeeSubmitValues,
   createAIEmployee,
   deleteAIEmployee,
+  isAIEmployeeUsernameConflictError,
   isKnowledgeBaseEnabled,
   listAIEmployees,
   listKnowledgeBases,
@@ -21,6 +22,7 @@ import {
   updateAIEmployee,
   updateAIEmployeeEnabled,
 } from '../pages/EmployeesPage';
+import { isValidAIEmployeeNickname, isValidAIEmployeeUsername } from '../../common/ai-employee-validation';
 
 describe('EmployeesPage request helpers', () => {
   it('keeps the role prompt editor wired to v2 variable namespaces', () => {
@@ -68,15 +70,15 @@ describe('EmployeesPage request helpers', () => {
     });
   });
 
-  it('creates an employee through aiEmployees.create', async () => {
+  it('creates an employee through aiEmployees.create with trimmed profile names', async () => {
     const create = vi.fn().mockResolvedValue({});
     const apiClient = {
       resource: () => ({ create }),
     };
 
     await createAIEmployee(apiClient, {
-      username: 'atlas',
-      nickname: 'Atlas',
+      username: '  atlas  ',
+      nickname: '  Atlas  ',
       enabled: true,
       builtIn: false,
     });
@@ -89,6 +91,40 @@ describe('EmployeesPage request helpers', () => {
         builtIn: false,
       },
     });
+  });
+
+  it('validates username and multilingual nickname formats', () => {
+    expect(isValidAIEmployeeUsername('sales-assistant_2')).toBe(true);
+    expect(isValidAIEmployeeUsername('sales assistant')).toBe(false);
+    expect(isValidAIEmployeeUsername('sales!')).toBe(false);
+    expect(isValidAIEmployeeUsername('a'.repeat(65))).toBe(false);
+
+    expect(isValidAIEmployeeNickname('销售助理 2')).toBe(true);
+    expect(isValidAIEmployeeNickname("D'Arcy (R&D) · 2")).toBe(true);
+    expect(isValidAIEmployeeNickname('!!!///[]')).toBe(false);
+    expect(isValidAIEmployeeNickname('a'.repeat(65))).toBe(false);
+  });
+
+  it('recognizes the stable duplicate username business error', () => {
+    expect(
+      isAIEmployeeUsernameConflictError({
+        response: {
+          data: {
+            errors: [{ code: 'AI_EMPLOYEE_USERNAME_CONFLICT', message: 'Username already exists' }],
+          },
+        },
+      }),
+    ).toBe(true);
+    expect(
+      isAIEmployeeUsernameConflictError({
+        response: {
+          data: {
+            errors: [{ code: 'OTHER_ERROR' }],
+          },
+        },
+      }),
+    ).toBe(false);
+    expect(isAIEmployeeUsernameConflictError(new Error('network failure'))).toBe(false);
   });
 
   it('updates an employee by username and strips edit-only fields', async () => {

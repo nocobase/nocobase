@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   App as AntdApp,
   Badge,
@@ -27,28 +27,48 @@ import {
   theme,
 } from 'antd';
 import { DeleteOutlined, EditOutlined, FilterOutlined } from '@ant-design/icons';
-import { Conversations as AntConversations, type ConversationsProps } from '@ant-design/x';
+import { Conversations as AntConversations, type ConversationsProps as AntConversationsProps } from '@ant-design/x';
 import { useApp } from '@nocobase/client-v2';
 import { dayjs } from '@nocobase/utils/client';
 import { useT } from '../../../locale';
-import type { Conversation } from '../../types';
+import type { AIEmployee, Conversation } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatBoxStore, type ModelRef } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useWorkflowTasksStore } from '../stores/workflow-tasks';
+import { type ModelRef } from '../stores/chat-box';
 import type { WorkflowTask } from '../stores/workflow-tasks';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 type RenameTarget = {
   key: string;
   title: string;
 } | null;
 
-export const Conversations: React.FC = memo(() => {
+export const getConversationItems = (
+  conversations: Conversation[],
+  t: (key: string) => string,
+): AntConversationsProps['items'] => {
+  return conversations.map((item) => {
+    const title = item.title || t('New conversation');
+    return {
+      key: item.sessionId,
+      title,
+      label: title,
+      icon: !item.read ? <Badge dot offset={[-3, 0]} /> : undefined,
+      timestamp: item.updatedAt ? new Date(item.updatedAt).getTime() : undefined,
+    };
+  });
+};
+
+export type ConversationsProps = {
+  onOpen?: () => void;
+};
+
+export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen }) => {
   const t = useT();
   const app = useApp();
   const { modal, message } = AntdApp.useApp();
@@ -58,26 +78,22 @@ export const Conversations: React.FC = memo(() => {
   const [pendingWorkflowTask, setPendingWorkflowTask] = useState<string>();
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
-  const conversations = useChatConversationsStore.use.conversations();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const conversationSegmented = useChatConversationsStore.use.conversationSegmented();
-  const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
-  const keyword = useChatConversationsStore.use.keyword();
-  const setKeyword = useChatConversationsStore.use.setKeyword();
-  const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
-  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-  const setReadonly = useChatBoxStore.use.setReadonly();
-  const setShowConversations = useChatBoxStore.use.setShowConversations();
-  const setModel = useChatBoxStore.use.setModel();
-  const expanded = useChatBoxStore.use.expanded();
-  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, workflowTaskModel } = runtime;
+  const showWorkflowTasks = runtime.mode !== 'block';
+  const conversations = chatConversationModel.conversations;
+  const currentConversation = chatConversationModel.currentConversation;
+  const conversationSegmented = chatConversationModel.conversationSegmented;
+  const activeSegmented = showWorkflowTasks ? conversationSegmented : 'conversations';
+  const keyword = chatConversationModel.keyword;
+  const expanded = chatBoxModel.expanded;
   const {
     refresh,
     runSearch: runSearchConversations,
     conversationsService,
     lastConversationRef,
     unreadCount: unreadConversationCount,
-  } = useChatConversationActions();
+  } = useChatConversationActions(runtime);
   const {
     refresh: refreshWorkflowTasks,
     runSearch: runSearchWorkflowTasks,
@@ -91,10 +107,10 @@ export const Conversations: React.FC = memo(() => {
     unreadCount: unreadWorkflowTaskCount,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
-  } = useWorkflowTasks();
-  const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
-  const { startNewConversation, clear } = useChatBoxActions();
-  const chat = useChat(currentConversation);
+  } = useWorkflowTasks(runtime);
+  const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions(runtime);
+  const { startNewConversation, clear } = useChatBoxActions(runtime);
+  const chat = useChat(currentConversation, runtime);
   const latestOpenVersionRef = useRef(0);
 
   const hasActiveStream = useCallback(
@@ -116,7 +132,7 @@ export const Conversations: React.FC = memo(() => {
         !aiEmployee ||
         hasActiveStream(sessionId) ||
         latestOpenVersionRef.current !== openVersion ||
-        useChatConversationsStore.getState().currentConversation !== sessionId
+        chatConversationModel.currentConversation !== sessionId
       ) {
         return;
       }
@@ -125,7 +141,7 @@ export const Conversations: React.FC = memo(() => {
       if (
         hasActiveStream(sessionId) ||
         latestOpenVersionRef.current !== openVersion ||
-        useChatConversationsStore.getState().currentConversation !== sessionId ||
+        chatConversationModel.currentConversation !== sessionId ||
         llmActiveState !== 'streaming'
       ) {
         return;
@@ -136,7 +152,7 @@ export const Conversations: React.FC = memo(() => {
         aiEmployee,
       });
     },
-    [aiEmployeesMap, getConversationLLMActiveState, hasActiveStream, loadMessages, resumeStream],
+    [aiEmployeesMap, chatConversationModel, getConversationLLMActiveState, hasActiveStream, loadMessages, resumeStream],
   );
 
   useEffect(() => {
@@ -144,12 +160,12 @@ export const Conversations: React.FC = memo(() => {
   }, [aiConfigRepository]);
 
   useEffect(() => {
-    if (conversationSegmented === 'conversations') {
+    if (activeSegmented === 'conversations') {
       refresh();
     } else {
       refreshWorkflowTasks();
     }
-  }, [conversationSegmented, refresh, refreshWorkflowTasks]);
+  }, [activeSegmented, refresh, refreshWorkflowTasks]);
 
   useEffect(() => {
     const lastItem = listRef.current?.querySelector('.ant-conversations-item:last-child');
@@ -173,19 +189,20 @@ export const Conversations: React.FC = memo(() => {
   }, [currentConversation, pendingWorkflowTask]);
 
   const openConversation = useCallback(
-    (sessionId: string, username?: string, model?: ModelRef) => {
+    (sessionId: string, username?: string, model?: ModelRef | null, fallbackAIEmployee?: AIEmployee | null) => {
       if (sessionId === currentConversation) {
-        setShowConversations(false);
+        chatBoxModel.setShowConversations(false);
+        onOpen?.();
         return;
       }
 
       const conversation = conversations.find((item) => item.sessionId === sessionId);
-      setCurrentConversation(sessionId);
-      const aiEmployee = username ? aiEmployeesMap[username] : conversation?.aiEmployee;
+      chatConversationModel.setCurrentConversation(sessionId);
+      const aiEmployee = username ? aiEmployeesMap[username] ?? fallbackAIEmployee : conversation?.aiEmployee;
       if (username) {
-        setCurrentEmployee(aiEmployee);
+        chatBoxModel.setCurrentEmployee(aiEmployee);
       } else {
-        setCurrentEmployee(conversation?.aiEmployee);
+        chatBoxModel.setCurrentEmployee(conversation?.aiEmployee);
       }
       const sessionChat = chat.for(sessionId);
       const sessionState = sessionChat.getState();
@@ -204,27 +221,27 @@ export const Conversations: React.FC = memo(() => {
         sessionChat.setMessages([]);
         clear(undefined, sessionId);
       }
-      setModel(model ?? (conversation ? getConversationModel(conversation) : null));
+      chatBoxModel.setModel(model ?? (conversation ? getConversationModel(conversation) : null));
       if (!shouldReuseLocalSession) {
         resumeAfterLoad(sessionId, aiEmployee?.username).catch(console.error);
       }
       if (!expanded) {
-        setShowConversations(false);
+        chatBoxModel.setShowConversations(false);
       }
+      onOpen?.();
     },
     [
       aiEmployeesMap,
+      chatBoxModel,
       chat,
       clear,
       conversations,
       currentConversation,
       expanded,
       hasActiveStream,
+      onOpen,
       resumeAfterLoad,
-      setCurrentConversation,
-      setCurrentEmployee,
-      setModel,
-      setShowConversations,
+      chatConversationModel,
     ],
   );
 
@@ -234,16 +251,16 @@ export const Conversations: React.FC = memo(() => {
       try {
         await acceptWorkflowTask(sessionId);
         const task = await getWorkflowTaskBySession(sessionId);
-        setReadonly(task?.readonly === true);
+        chatBoxModel.setReadonly(task?.readonly === true);
         chat.for(sessionId).setResponseLoading(task?.status === 'processing');
-        setShowConversations(false);
-        openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined);
+        chatBoxModel.setShowConversations(false);
+        openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined, task?.aiEmployee);
       } catch (error) {
         setPendingWorkflowTask(undefined);
         throw error;
       }
     },
-    [acceptWorkflowTask, chat, getWorkflowTaskBySession, openConversation, setReadonly, setShowConversations],
+    [acceptWorkflowTask, chat, chatBoxModel, getWorkflowTaskBySession, openConversation],
   );
 
   const deleteConversation = useCallback(
@@ -269,18 +286,8 @@ export const Conversations: React.FC = memo(() => {
     [deleteConversation, modal, t],
   );
 
-  const items = useMemo<ConversationsProps['items']>(
-    () =>
-      conversations.map((item) => {
-        const title = item.title || t('New conversation');
-        return {
-          key: item.sessionId,
-          title,
-          label: title,
-          icon: !item.read ? <Badge dot offset={[-3, 0]} /> : undefined,
-          timestamp: item.updatedAt ? new Date(item.updatedAt).getTime() : undefined,
-        };
-      }),
+  const items = useMemo<AntConversationsProps['items']>(
+    () => getConversationItems(conversations, t),
     [conversations, t],
   );
 
@@ -332,18 +339,18 @@ export const Conversations: React.FC = memo(() => {
         <Input.Search
           value={keyword}
           onChange={(event) => {
-            setKeyword(event.target.value);
+            chatConversationModel.setKeyword(event.target.value);
           }}
           placeholder={t('Search')}
           onSearch={(value) => {
-            if (conversationSegmented === 'conversations') {
+            if (activeSegmented === 'conversations') {
               runSearchConversations(value);
             } else {
               runSearchWorkflowTasks(value);
             }
           }}
           onClear={() => {
-            if (conversationSegmented === 'conversations') {
+            if (activeSegmented === 'conversations') {
               runSearchConversations('');
             } else {
               runSearchWorkflowTasks('');
@@ -351,34 +358,36 @@ export const Conversations: React.FC = memo(() => {
           }}
           allowClear
         />
-        <Segmented
-          style={{ width: '100%', marginTop: 8 }}
-          className="ai-chatbox-conversations-segmented"
-          options={[
-            {
-              label: (
-                <Space>
-                  {t('Conversations')}
-                  <Badge count={unreadConversationCount} size="small" />
-                </Space>
-              ),
-              value: 'conversations',
-            },
-            {
-              label: (
-                <Space>
-                  {t('Workflow tasks')}
-                  <Badge count={unreadWorkflowTaskCount} size="small" />
-                </Space>
-              ),
-              value: 'workflowTasks',
-            },
-          ]}
-          value={conversationSegmented}
-          onChange={(value) => {
-            setConversationSegmented(String(value));
-          }}
-        />
+        {showWorkflowTasks ? (
+          <Segmented
+            style={{ width: '100%', marginTop: 8 }}
+            className="ai-chatbox-conversations-segmented"
+            options={[
+              {
+                label: (
+                  <Space>
+                    {t('Conversations')}
+                    <Badge count={unreadConversationCount} size="small" />
+                  </Space>
+                ),
+                value: 'conversations',
+              },
+              {
+                label: (
+                  <Space>
+                    {t('Workflow tasks')}
+                    <Badge count={unreadWorkflowTaskCount} size="small" />
+                  </Space>
+                ),
+                value: 'workflowTasks',
+              },
+            ]}
+            value={conversationSegmented}
+            onChange={(value) => {
+              chatConversationModel.setConversationSegmented(String(value));
+            }}
+          />
+        ) : null}
       </div>
       <div
         ref={listRef}
@@ -389,15 +398,15 @@ export const Conversations: React.FC = memo(() => {
           overflowX: 'hidden',
         }}
       >
-        {conversationSegmented === 'conversations' && conversationsService.loading ? <Spin /> : null}
-        {conversationSegmented === 'conversations' && items.length ? (
+        {activeSegmented === 'conversations' && conversationsService.loading ? <Spin /> : null}
+        {activeSegmented === 'conversations' && items.length ? (
           <AntConversations
             className="ai-chatbox-conversations-list"
             activeKey={currentConversation}
             items={items}
             onActiveChange={(sessionId) => {
-              setReadonly(false);
-              setCurrentWorkflowTask(undefined);
+              chatBoxModel.setReadonly(false);
+              workflowTaskModel.setCurrentWorkflowTask(undefined);
               const conversation = conversations.find((item) => item.sessionId === sessionId);
               openConversation(sessionId, conversation?.aiEmployee?.username, getConversationModel(conversation));
             }}
@@ -429,7 +438,7 @@ export const Conversations: React.FC = memo(() => {
             })}
           />
         ) : null}
-        {conversationSegmented === 'workflowTasks' ? (
+        {showWorkflowTasks && activeSegmented === 'workflowTasks' ? (
           <WorkflowTasksList
             currentConversation={currentConversation}
             pendingConversation={pendingWorkflowTask}
@@ -443,9 +452,7 @@ export const Conversations: React.FC = memo(() => {
             onOpen={openWorkflowTask}
           />
         ) : null}
-        {conversationSegmented === 'conversations' && !items.length ? (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : null}
+        {activeSegmented === 'conversations' && !items.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> : null}
       </div>
       <Modal
         title={t('Rename conversation')}
@@ -467,8 +474,8 @@ export const Conversations: React.FC = memo(() => {
   );
 });
 
-function getConversationModel(conversation: Conversation): ModelRef | null {
-  const modelSettings = conversation.options?.modelSettings;
+export function getConversationModel(conversation?: Conversation): ModelRef | null {
+  const modelSettings = conversation?.options?.modelSettings;
   if (!modelSettings?.llmService || !modelSettings.model) {
     return null;
   }

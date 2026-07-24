@@ -125,6 +125,11 @@
           },
           {
             "type": "custom-link",
+            "label": "AI Chat box",
+            "link": "/ai-employees/block/ai-chat-box"
+          },
+          {
+            "type": "custom-link",
             "label": "Блок Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
           },

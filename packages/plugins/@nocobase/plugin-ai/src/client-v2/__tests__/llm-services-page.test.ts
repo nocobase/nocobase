@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Form } from 'antd';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createLLMService,
   deleteLLMService,
   deleteLLMServices,
+  LLMServiceForm,
   listLLMProviders,
   listLLMServices,
   listProviderModels,
@@ -23,7 +27,137 @@ import {
   updateLLMServiceEnabled,
 } from '../pages/LLMServicesPage';
 
+type CapturedSelectProps = {
+  popupClassName?: string;
+  popupMatchSelectWidth?: boolean;
+};
+
+const capturedSelectProps = vi.hoisted(() => ({ current: undefined as CapturedSelectProps | undefined }));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  const ReactModule = await import('react');
+
+  return {
+    ...actual,
+    Select: (props: CapturedSelectProps) => {
+      capturedSelectProps.current = props;
+      return ReactModule.createElement('div', { 'data-testid': 'provider-select' });
+    },
+  };
+});
+
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
+  EnvVariableInput: () => null,
+  useApp: () => ({ pm: { get: () => undefined } }),
+}));
+
+vi.mock('../locale', () => ({
+  useT: () => (key: string) => key,
+}));
+
 describe('LLMServicesPage request helpers', () => {
+  it('constrains the provider popup to the select width', () => {
+    render(
+      React.createElement(
+        Form,
+        null,
+        React.createElement(LLMServiceForm, {
+          editing: false,
+          providers: [
+            {
+              key: 'openai-completions',
+              value: 'openai-completions',
+              label: 'OpenAI (completions)',
+              supportedModel: ['LLM', 'EMBEDDING'],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(capturedSelectProps.current?.popupMatchSelectWidth).toBe(true);
+    expect(capturedSelectProps.current?.popupClassName).toBeTruthy();
+  });
+
+  it('validates each model ID on submit and keeps the edited input mounted', async () => {
+    const onFinish = vi.fn();
+    render(
+      React.createElement(
+        Form,
+        {
+          initialValues: {
+            provider: 'openai-completions',
+            enabledModels: {
+              mode: 'custom',
+              models: [
+                { label: 'Model 1', value: '1' },
+                { label: 'Model 2', value: '1' },
+              ],
+            },
+          },
+          onFinish,
+        },
+        React.createElement(LLMServiceForm, {
+          editing: false,
+          providers: [
+            {
+              key: 'openai-completions',
+              value: 'openai-completions',
+              label: 'OpenAI (completions)',
+              supportedModel: ['LLM'],
+            },
+          ],
+        }),
+        React.createElement('button', { type: 'submit' }, 'Submit'),
+      ),
+    );
+    const modelIdInputs = screen.getAllByPlaceholderText('Model id');
+
+    expect(modelIdInputs[0]).not.toHaveAttribute('aria-invalid', 'true');
+    expect(modelIdInputs[1]).not.toHaveAttribute('aria-invalid', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(modelIdInputs[1]).toHaveAttribute('aria-invalid', 'true');
+    });
+    expect(modelIdInputs[0]).not.toHaveAttribute('aria-invalid', 'true');
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(await screen.findByText('Model ID already exists')).toBeInTheDocument();
+    screen.getAllByPlaceholderText('Display name').forEach((input) => {
+      expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
+    const secondModelIdInput = modelIdInputs[1];
+    fireEvent.change(secondModelIdInput, { target: { value: '12' } });
+
+    expect(screen.getAllByPlaceholderText('Model id')[1]).toBe(secondModelIdInput);
+    expect(secondModelIdInput).toHaveValue('12');
+    await waitFor(() => {
+      expect(secondModelIdInput).not.toHaveAttribute('aria-invalid', 'true');
+      expect(screen.queryByText('Model ID already exists')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledTimes(1);
+    });
+    expect(onFinish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabledModels: {
+          mode: 'custom',
+          models: [
+            { label: 'Model 1', value: '1' },
+            { label: 'Model 2', value: '12' },
+          ],
+        },
+      }),
+    );
+  });
+
   it('detects the v1-compatible auto-open add-new route state', () => {
     expect(shouldAutoOpenAddNew({ autoOpenAddNew: true })).toBe(true);
     expect(shouldAutoOpenAddNew({ autoOpenAddNew: false })).toBe(false);
@@ -97,6 +231,10 @@ describe('LLMServicesPage request helpers', () => {
         apiKey: 'secret',
         baseURL: '',
       },
+      enabledModels: {
+        mode: 'custom',
+        models: [{ value: ' gpt-4o ', label: ' GPT 4o ' }],
+      },
     });
 
     expect(create).toHaveBeenCalledWith(
@@ -107,6 +245,10 @@ describe('LLMServicesPage request helpers', () => {
           provider: 'openai',
           options: {
             apiKey: 'secret',
+          },
+          enabledModels: {
+            mode: 'custom',
+            models: [{ value: 'gpt-4o', label: 'GPT 4o' }],
           },
         },
       },

@@ -8,19 +8,23 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
-import type { ToolsOptions, ToolModalProps } from '@nocobase/client-v2';
+import type { APIClient, ToolsOptions, ToolModalProps } from '@nocobase/client-v2';
 import type { ComponentType } from 'react';
-import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils/normalizeTriggerTaskOptions';
-import type { Task } from '../ai-employees/types';
+import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils';
+import { uploadAIFile } from '../ai-employees/chatbox/upload';
+import type { Attachment, Task, UploadAIFileOptions } from '../ai-employees/types';
 import type { WorkContextOptions } from '../ai-employees/types';
 import type { AIEmployeeShortcutModel } from '../models/ai-employees/AIEmployeeShortcutModel';
 import { FrontendToolRegistry } from './frontend-tool-registry';
 
 export const AI_EMPLOYEE_TRIGGER_TASK_EVENT = 'ai:employee:trigger-task';
 
-export type TriggerModelTaskOptions = Omit<RunJSAIEmployeeTriggerTaskOptions, 'aiEmployee' | 'tasks'>;
+export type TriggerModelTaskOptions = Omit<RunJSAIEmployeeTriggerTaskOptions, 'aiEmployee' | 'tasks' | 'chatBoxUid'> & {
+  attachments?: Attachment[];
+};
 
 type AIManagerApp = {
+  apiClient: Pick<APIClient, 'request'>;
   eventBus: {
     dispatchEvent: (event: Event) => boolean;
   };
@@ -110,6 +114,13 @@ export class AIManager {
     this.dispatchAIEmployeeTask(options);
   }
 
+  uploadFile(file: File, options?: UploadAIFileOptions): Promise<Attachment> {
+    if (!this.app?.apiClient) {
+      return Promise.reject(new Error('AI file upload API is unavailable.'));
+    }
+    return uploadAIFile(this.app.apiClient, file, options);
+  }
+
   triggerModelTask(uid: string, taskIndex: number, options?: TriggerModelTaskOptions): void {
     const model = this.app?.flowEngine.getModel(uid, true) as AIEmployeeShortcutModel | undefined;
     if (!model) {
@@ -132,10 +143,25 @@ export class AIManager {
       return;
     }
 
+    const { attachments, ...triggerOptions } = options ?? {};
+    const configuredAttachments = (task.message?.attachments ?? []).flatMap((attachment) =>
+      Array.isArray(attachment) ? attachment : [attachment],
+    );
+    const resolvedTask = attachments?.length
+      ? {
+          ...task,
+          message: {
+            ...task.message,
+            attachments: [...configuredAttachments, ...attachments],
+          },
+        }
+      : task;
+
     this.triggerTask({
-      ...options,
+      ...triggerOptions,
       aiEmployee: username,
-      tasks: [task],
+      tasks: [resolvedTask],
+      ...(task.chatBoxUid ? { chatBoxUid: task.chatBoxUid } : {}),
     });
   }
 

@@ -16,6 +16,7 @@ import { useRequest } from 'ahooks';
 import { AIEmployeeShortcut } from '../../ai-employees/AIEmployeeShortcut';
 import { AddContextButton } from '../../ai-employees/AddContextButton';
 import { ContextItem as WorkContextItem } from '../../ai-employees/chatbox/components/ContextItem';
+import { getGlobalChatBoxRuntime } from '../../ai-employees/chatbox/stores/runtime';
 import { avatars } from '../../ai-employees/avatars';
 import { getAIEmployeeModels, getAllModels } from '../../ai-employees/chatbox/model';
 import { dialogController } from '../../ai-employees/stores/dialog-controller';
@@ -27,6 +28,8 @@ import { RemoteSelect } from '../../components/RemoteSelect';
 
 const { Meta } = Card;
 
+const AI_CHAT_BOX_BLOCK_MODEL = 'AIChatBoxBlockModel';
+
 type ShortcutStyle = {
   size?: number;
   mask?: boolean;
@@ -35,6 +38,7 @@ type ShortcutStyle = {
 export type AIEmployeeShortcutModelProps = {
   aiEmployee: Pick<AIEmployee, 'username'> & Partial<AIEmployee>;
   tasks?: Task[];
+  defaultTaskChatBoxUid?: string;
   showNotice?: boolean;
   builtIn?: boolean;
   style?: ShortcutStyle;
@@ -48,15 +52,30 @@ export class AIEmployeeShortcutModel extends FlowModel {
   declare props: AIEmployeeShortcutModelProps;
 
   render() {
-    const { style, ...props } = this.props;
-    return <AIEmployeeShortcut {...props} size={style?.size} mask={style?.mask} />;
+    const { defaultTaskChatBoxUid, style, ...props } = this.props;
+    return <AIEmployeeShortcut {...props} runtime={getGlobalChatBoxRuntime()} size={style?.size} mask={style?.mask} />;
   }
 }
 
+const isAIChatBoxBlockModel = (model: FlowModel | null | undefined) =>
+  model?.use === AI_CHAT_BOX_BLOCK_MODEL || model?.constructor.name === AI_CHAT_BOX_BLOCK_MODEL;
+
+const isWithinAIChatBoxBlock = (model: FlowModel | null | undefined) => {
+  let current = model?.parent;
+  while (current) {
+    if (isAIChatBoxBlockModel(current)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+};
+
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   render() {
-    const { style, ...props } = this.props;
-    return <AIEmployeeShortcut {...props} size={style?.size ?? 40} mask={style?.mask ?? false} />;
+    const { defaultTaskChatBoxUid, style, ...props } = this.props;
+    const runtime = isWithinAIChatBoxBlock(this) ? undefined : getGlobalChatBoxRuntime();
+    return <AIEmployeeShortcut {...props} runtime={runtime} size={style?.size ?? 40} mask={style?.mask ?? false} />;
   }
 }
 
@@ -196,7 +215,7 @@ const Information: React.FC = observer(() => {
   );
 });
 
-const WorkContext: React.FC<{
+export const WorkContext: React.FC<{
   value?: ContextItem[];
   onChange?: (value: ContextItem[]) => void;
 }> = ({ value, onChange }) => {
@@ -223,7 +242,7 @@ const WorkContext: React.FC<{
           />
         ))}
       </Space>
-      <AddContextButton contextItems={items} onAdd={onAdd} onRemove={onRemove} />
+      <AddContextButton contextItems={items} onAdd={onAdd} onRemove={onRemove} runtime={getGlobalChatBoxRuntime()} />
     </Space>
   );
 };
@@ -481,6 +500,7 @@ AIEmployeeShortcutModel.registerFlow({
       uiSchema: async (ctx: AIShortcutFlowContext) => {
         await ctx.aiConfigRepository?.getAIEmployees();
         const token = ctx.model?.context?.themeToken;
+        const defaultTaskChatBoxUid = ctx.model?.props?.defaultTaskChatBoxUid;
         const labelStyle = {
           fontWeight: token?.fontWeightStrong,
         };
@@ -508,6 +528,22 @@ AIEmployeeShortcutModel.registerFlow({
                   'x-decorator-props': {
                     labelStyle,
                     tooltip: tExpr('Label for task selection buttons when multiple tasks exist'),
+                  },
+                },
+                chatBoxUid: {
+                  type: 'string',
+                  title: tExpr('Chat box uid'),
+                  default: defaultTaskChatBoxUid,
+                  'x-decorator': 'FormItem',
+                  'x-decorator-props': {
+                    labelStyle,
+                    tooltip: tExpr(
+                      'Leave empty to open the global chat box. Enter an AI chat box block uid to run this task in that block.',
+                    ),
+                  },
+                  'x-component': 'Input',
+                  'x-component-props': {
+                    allowClear: true,
                   },
                 },
                 message: {

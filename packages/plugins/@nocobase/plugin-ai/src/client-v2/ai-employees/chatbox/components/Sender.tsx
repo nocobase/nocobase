@@ -9,24 +9,23 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Attachments, Sender as AntSender } from '@ant-design/x';
-import { Alert, Button, Flex, Space, Spin, theme, Tooltip, type GetRef, type UploadFile } from 'antd';
+import { Alert, Button, Flex, Space, Spin, theme, Tooltip, Typography, type GetRef, type UploadFile } from 'antd';
 import { EditOutlined, InfoCircleOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
-import type { Attachment } from '../../types';
+import type { AIEmployee, Attachment, ContextItem as AIContextItem, SendOptions, SkillSettings } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useUploadFiles } from '../hooks/useUploadFiles';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { AIEmployeeSwitcher } from './AIEmployeeSwitcher';
 import { AddContextButton } from '../../AddContextButton';
 import { ContextItem } from './ContextItem';
 import { FileCardList, useAttachmentFileCards } from './Attachments';
 import { ModelSwitcher } from './ModelSwitcher';
 import { SearchSwitch } from './SearchSwitch';
-import { normalizeAIFileUploadAttachment } from '../utils';
 
 type SenderRef = GetRef<typeof AntSender> & {
   nativeElement?: HTMLElement;
@@ -44,69 +43,180 @@ type UploadRequestOptions = {
 };
 
 const senderClassName = css`
+  width: 100%;
+  min-width: 0;
+
   .ant-sender-content {
     padding: 16px;
+    min-width: 0;
+  }
+
+  .ant-sender-footer {
+    min-width: 0;
   }
 `;
 
-export const Sender: React.FC = () => {
+export type SenderOptions = {
+  placeholder?: string;
+  showContextSelector?: boolean;
+  showUpload?: boolean;
+  showWebSearch?: boolean;
+  showEmployeeSelect?: boolean;
+  showModelSelect?: boolean;
+  showDisclaimer?: boolean;
+  defaultSystemMessage?: string;
+  defaultUserMessage?: string;
+  allowedAIEmployees?: string[];
+  allowedModels?: string[];
+};
+
+export type BuildSenderSendOptionsInput = {
+  content: string;
+  currentConversation?: string;
+  currentEmployee?: AIEmployee;
+  systemMessage?: string;
+  attachments?: Attachment[];
+  contextItems?: AIContextItem[];
+  defaultSystemMessage?: string;
+  defaultUserMessage?: string;
+  isEditingMessage?: boolean;
+  editingMessageId?: string | null;
+  skillSettings?: SkillSettings | null;
+  webSearch?: boolean;
+  uploadEnabled?: boolean;
+  webSearchEnabled?: boolean;
+};
+
+export const mergeSenderContextItems = (contextItems?: AIContextItem[]) => {
+  const seen = new Set<string>();
+  return [...(contextItems || [])].filter((item) => {
+    const key = `${item.type}:${item.uid}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
+export const buildSenderSendOptions = ({
+  content,
+  currentConversation,
+  currentEmployee,
+  systemMessage,
+  attachments,
+  contextItems,
+  defaultSystemMessage,
+  defaultUserMessage,
+  isEditingMessage,
+  editingMessageId,
+  skillSettings,
+  webSearch,
+  uploadEnabled = true,
+  webSearchEnabled = true,
+}: BuildSenderSendOptionsInput): SendOptions | null => {
+  if (!currentEmployee) {
+    return null;
+  }
+  const resolvedContent = content || defaultUserMessage || '';
+  const resolvedContextItems = mergeSenderContextItems(contextItems);
+
+  if (!resolvedContent && !resolvedContextItems.length) {
+    return null;
+  }
+
+  return {
+    sessionId: currentConversation,
+    aiEmployee: currentEmployee,
+    systemMessage: systemMessage || defaultSystemMessage,
+    messages: [
+      {
+        type: 'text',
+        content: resolvedContent,
+      },
+    ],
+    attachments: uploadEnabled ? attachments?.filter((attachment) => attachment.status === 'done') : undefined,
+    workContext: resolvedContextItems,
+    editingMessageId: isEditingMessage && editingMessageId ? editingMessageId : undefined,
+    skillSettings: skillSettings || undefined,
+    webSearch: webSearchEnabled ? webSearch : false,
+  };
+};
+
+export const Sender: React.FC<SenderOptions> = observer((options) => {
   const t = useT();
+  const { token } = theme.useToken();
   const senderRef = useRef<SenderRef | null>(null);
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
-  const senderValue = useChatBoxStore.use.senderValue();
-  const setSenderValue = useChatBoxStore.use.setSenderValue();
-  const setSenderRef = useChatBoxStore.use.setSenderRef();
-  const readonly = useChatBoxStore.use.readonly();
-  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
-  const editingMessageId = useChatBoxStore.use.editingMessageId();
-  const webSearch = useChatConversationsStore.use.webSearch();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, chatSenderModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const senderValue = chatSenderModel.senderValue;
+  const readonly = chatBoxModel.readonly;
+  const isEditingMessage = chatSenderModel.isEditingMessage;
+  const editingMessageId = chatSenderModel.editingMessageId;
+  const webSearch = chatConversationModel.webSearch;
+  const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
   const contextItems = chat.use.contextItems();
   const systemMessage = chat.use.systemMessage();
   const responseLoading = chat.use.responseLoading();
   const skillSettings = chat.use.skillSettings();
-  const uploadProps = useUploadFiles();
-  const { send } = useChatBoxActions();
-  const { cancelRequest, finishEditingMessage } = useChatMessageActions();
+  const uploadProps = useUploadFiles(runtime);
+  const { send } = useChatBoxActions(runtime);
+  const { cancelRequest, finishEditingMessage } = useChatMessageActions(runtime);
   const [value, setValue] = useState(senderValue);
+  const showContextSelector = options.showContextSelector !== false;
+  const showUpload = options.showUpload !== false;
+  const showWebSearch = options.showWebSearch !== false;
+  const placeholder = options.placeholder || 'Enter your question';
+  const containerMargin = runtime.mode === 'block' ? '8px 0 0' : '8px 16px';
+  const disclaimerMargin = runtime.mode === 'block' ? '10px 0 0' : '10px 0';
 
   useEffect(() => {
-    setSenderRef(senderRef);
+    chatSenderModel.setSenderRef(senderRef);
     return () => {
-      setSenderRef(null);
+      chatSenderModel.setSenderRef(null);
     };
-  }, [setSenderRef]);
+  }, [chatSenderModel]);
 
   useEffect(() => {
     setValue(senderValue);
   }, [senderValue]);
 
+  useEffect(() => {
+    if (!showWebSearch && webSearch) {
+      chatConversationModel.setWebSearch(false);
+    }
+  }, [chatConversationModel, showWebSearch, webSearch]);
+
   const submit = (content: string) => {
-    if ((!content && !contextItems.length) || !currentEmployee || responseLoading || readonly) {
+    if (responseLoading || readonly) {
       return;
     }
-    setShowSenderHint(false);
-    setValue('');
-    setSenderValue('');
-    send({
-      sessionId: currentConversation,
-      aiEmployee: currentEmployee,
+    const sendOptions = buildSenderSendOptions({
+      content,
+      currentConversation,
+      currentEmployee,
       systemMessage,
-      messages: [
-        {
-          type: 'text',
-          content,
-        },
-      ],
-      attachments: attachments.filter((attachment) => attachment.status === 'done'),
-      workContext: contextItems,
-      editingMessageId: isEditingMessage ? editingMessageId : undefined,
+      attachments,
+      contextItems,
+      defaultSystemMessage: options.defaultSystemMessage,
+      defaultUserMessage: options.defaultUserMessage,
+      isEditingMessage,
+      editingMessageId,
       skillSettings,
       webSearch,
+      uploadEnabled: showUpload,
+      webSearchEnabled: showWebSearch,
     });
+    if (!sendOptions) {
+      return;
+    }
+    chatSenderModel.setShowSenderHint(false);
+    setValue('');
+    chatSenderModel.setSenderValue('');
+    send(sendOptions);
 
     if (isEditingMessage) {
       finishEditingMessage();
@@ -114,6 +224,9 @@ export const Sender: React.FC = () => {
   };
 
   const handlePaste = (event: React.ClipboardEvent) => {
+    if (!showUpload) {
+      return;
+    }
     const pastedFile = Array.from(event.clipboardData.items)
       .find((item) => item.kind === 'file')
       ?.getAsFile();
@@ -158,9 +271,7 @@ export const Sender: React.FC = () => {
       },
       onSuccess: (response) => {
         const fileData = readUploadedFileData(response);
-        chat.setAttachments((previous) =>
-          previous.map((item) => (item.uid === uid ? normalizeAIFileUploadAttachment(fileData || item, 'done') : item)),
-        );
+        chat.setAttachments((previous) => previous.map((item) => (item.uid === uid ? fileData || item : item)));
       },
       onError: (error) => {
         chat.setAttachments((previous) =>
@@ -173,7 +284,8 @@ export const Sender: React.FC = () => {
   return (
     <div
       style={{
-        margin: '8px 16px',
+        margin: containerMargin,
+        minWidth: 0,
       }}
     >
       <AntSender
@@ -182,38 +294,59 @@ export const Sender: React.FC = () => {
         ref={senderRef}
         onChange={(nextValue) => {
           setValue(nextValue);
-          setSenderValue(nextValue);
         }}
         onPaste={handlePaste}
         onSubmit={submit}
         onCancel={cancelRequest}
         onBlur={() => {
-          setShowSenderHint(false);
+          chatSenderModel.setSenderValue(value);
+          chatSenderModel.setShowSenderHint(false);
         }}
-        header={<SenderHeader />}
+        header={<SenderHeader options={options} />}
         loading={responseLoading}
-        footer={({ components }) => <SenderFooter components={components} handleSubmit={submit} />}
+        footer={({ components }) => (
+          <SenderFooter components={components} handleSubmit={submit} options={options} value={value} />
+        )}
         disabled={!currentEmployee || readonly}
-        placeholder={t('Enter your question')}
+        placeholder={t(placeholder)}
         actions={false}
         autoSize={{ minRows: 2, maxRows: 8 }}
       />
+      {options.showDisclaimer !== false ? (
+        <Typography.Text
+          type="secondary"
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            margin: disclaimerMargin,
+            fontSize: token.fontSizeSM,
+            color: token.colorTextTertiary,
+          }}
+        >
+          {t('AI disclaimer')}
+        </Typography.Text>
+      ) : null}
     </div>
   );
-};
+});
 
-const SenderHeader: React.FC = () => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
-  const isShowSenderHint = useChatBoxStore.use.isShowSenderHint();
-  const readonly = useChatBoxStore.use.readonly();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+const SenderHeader: React.FC<{
+  options: SenderOptions;
+}> = observer(({ options }) => {
+  const { chatBoxModel, chatSenderModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const isEditingMessage = chatSenderModel.isEditingMessage;
+  const isShowSenderHint = chatSenderModel.isShowSenderHint;
+  const readonly = chatBoxModel.readonly;
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const contextItems = chat.use.contextItems();
   const attachments = chat.use.attachments();
 
+  const showAttachments = options.showUpload !== false;
   const hasContextItems = !!contextItems?.length;
-  const hasAttachments = !!attachments?.length;
+  const hasAttachments = showAttachments && !!attachments?.length;
 
   if (!isShowSenderHint && !isEditingMessage && (!currentEmployee || (!hasContextItems && !hasAttachments))) {
     return null;
@@ -231,11 +364,11 @@ const SenderHeader: React.FC = () => {
           <EditMessageHeader />
         </div>
       ) : null}
-      {currentEmployee ? <ContextItemsHeader /> : null}
-      {currentEmployee ? <AttachmentsHeader readonly={readonly} /> : null}
+      {currentEmployee && hasContextItems ? <ContextItemsHeader /> : null}
+      {currentEmployee && showAttachments ? <AttachmentsHeader readonly={readonly} /> : null}
     </div>
   );
-};
+});
 
 const SenderFooter: React.FC<{
   components: {
@@ -243,22 +376,26 @@ const SenderFooter: React.FC<{
     LoadingButton: React.ComponentType<React.ComponentProps<typeof Button>>;
   };
   handleSubmit: (content: string) => void;
-}> = ({ components, handleSubmit }) => {
+  options: SenderOptions;
+  value: string;
+}> = observer(({ components, handleSubmit, options, value }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
-  const readonly = useChatBoxStore.use.readonly();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatSenderModel } = runtime;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
+  const readonly = chatBoxModel.readonly;
   const loading = chat.use.responseLoading();
   const addContextItems = chat.addContextItems;
   const removeContextItem = chat.removeContextItem;
-  const senderValue = useChatBoxStore.use.senderValue();
   const contextItems = chat.use.contextItems();
-  const senderRef = useChatBoxStore.use.senderRef() as React.MutableRefObject<SenderRef | null> | null;
+  const senderRef = chatSenderModel.senderRef as React.MutableRefObject<SenderRef | null> | null;
   const disabled = !currentEmployee || readonly;
+  const showContextSelector = options.showContextSelector !== false;
   const handleEmptySubmit = () => {
-    if (!senderValue && contextItems.length) {
+    if (!value && (contextItems.length || options.defaultUserMessage)) {
       handleSubmit('');
     }
   };
@@ -272,7 +409,7 @@ const SenderFooter: React.FC<{
     nativeElement.onkeydown = (event) => {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        if (!senderValue && contextItems.length) {
+        if (!value && contextItems.length) {
           senderButtonRef.current?.click();
         }
       }
@@ -283,21 +420,27 @@ const SenderFooter: React.FC<{
         nativeElement.onkeydown = null;
       }
     };
-  }, [contextItems, senderRef, senderValue]);
+  }, [contextItems, senderRef, value]);
 
   return (
-    <Flex justify="space-between" align="center">
-      <Flex gap="middle" align="center">
-        <AddContextButton
-          onAdd={addContextItems}
-          onRemove={removeContextItem}
-          disabled={disabled}
-          ignore={(key) => key === 'flow-model.variable'}
-        />
-        <UploadFiles disabled={disabled} />
-        <SearchSwitch disabled={disabled} />
-        <AIEmployeeSwitcher disabled={readonly} />
-        <ModelSwitcher disabled={disabled} />
+    <Flex justify="space-between" align="center" gap={8} style={{ minWidth: 0 }}>
+      <Flex gap="middle" align="center" wrap style={{ minWidth: 0 }}>
+        {showContextSelector ? (
+          <AddContextButton
+            onAdd={addContextItems}
+            onRemove={removeContextItem}
+            disabled={disabled}
+            ignore={(key) => key === 'flow-model.variable'}
+          />
+        ) : null}
+        {options.showUpload !== false ? <UploadFiles disabled={disabled} /> : null}
+        {options.showWebSearch !== false ? <SearchSwitch disabled={disabled} /> : null}
+        {options.showEmployeeSelect !== false ? (
+          <AIEmployeeSwitcher disabled={readonly} allowedUsernames={options.allowedAIEmployees} />
+        ) : null}
+        {options.showModelSelect !== false ? (
+          <ModelSwitcher disabled={disabled} allowedModelKeys={options.allowedModels} />
+        ) : null}
       </Flex>
       <Flex align="center" gap="middle">
         {loading ? (
@@ -308,14 +451,16 @@ const SenderFooter: React.FC<{
       </Flex>
     </Flex>
   );
-};
+});
 
-const UploadFiles: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
+const UploadFiles: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
-  const uploadProps = useUploadFiles();
-  const chatBoxRef = useChatBoxStore.use.chatBoxRef();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const uploadProps = useUploadFiles(runtime);
+  const { chatBoxModel } = runtime;
+  const chatBoxRef = chatBoxModel.chatBoxRef;
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
   const items = useAttachmentFileCards(attachments);
 
@@ -349,11 +494,12 @@ const UploadFiles: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
       </Tooltip>
     </Attachments>
   );
-};
+});
 
-const ContextItemsHeader: React.FC = () => {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+const ContextItemsHeader: React.FC = observer(() => {
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const contextItems = chat.use.contextItems();
   const removeContextItem = chat.removeContextItem;
 
@@ -382,11 +528,12 @@ const ContextItemsHeader: React.FC = () => {
       ))}
     </div>
   );
-};
+});
 
-const AttachmentsHeader: React.FC<{ readonly: boolean }> = ({ readonly }) => {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+const AttachmentsHeader: React.FC<{ readonly: boolean }> = observer(({ readonly }) => {
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
 
   return (
@@ -401,7 +548,7 @@ const AttachmentsHeader: React.FC<{ readonly: boolean }> = ({ readonly }) => {
       }
     />
   );
-};
+});
 
 const HintMessageHeader: React.FC = () => {
   const t = useT();
@@ -422,13 +569,14 @@ const HintMessageHeader: React.FC = () => {
   );
 };
 
-const EditMessageHeader: React.FC = () => {
+const EditMessageHeader: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
-  const setSenderValue = useChatBoxStore.use.setSenderValue();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
-  const { loadMessages, finishEditingMessage } = useChatMessageActions();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatSenderModel } = runtime;
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
+  const { loadMessages, finishEditingMessage } = useChatMessageActions(runtime);
 
   return (
     <Alert
@@ -444,13 +592,13 @@ const EditMessageHeader: React.FC = () => {
       closable
       onClose={() => {
         finishEditingMessage();
-        setSenderValue('');
+        chatSenderModel.setSenderValue('');
         chat.setMessages([]);
         loadMessages(currentConversation).catch(console.error);
       }}
     />
   );
-};
+});
 
 function readUploadedFileData(response: unknown): Attachment | undefined {
   if (!response || typeof response !== 'object' || !('data' in response)) {

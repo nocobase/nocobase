@@ -21,6 +21,12 @@ import { builtinLLMProviderOptions } from './llm-providers';
 import { registerPluginAIWorkflow } from './workflow/register';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { registerPluginAIRunJSFacade } from './runjs/registerAIEmployeeRunJSFacade';
+import {
+  AIChatBoxActionGroupModel,
+  AIChatBoxBlockModel,
+  AIChatBoxCoreModel,
+  AIChatBoxItemGroupModel,
+} from './block/ai-chat-box';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -128,6 +134,12 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
     setupAICoding();
+    this.flowEngine.registerModels({
+      AIChatBoxActionGroupModel,
+      AIChatBoxBlockModel,
+      AIChatBoxCoreModel,
+      AIChatBoxItemGroupModel,
+    });
     this.flowEngine.registerModelLoaders({
       AIEmployeeShortcutModel: {
         loader: () => import('./models/ai-employees'),

@@ -33,20 +33,15 @@ vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
   }),
 }));
 
-vi.mock('../ai-employees/chatbox/stores/chat-box', () => ({
-  useChatBoxStore: {
-    use: {
-      readonly: () => false,
+vi.mock('../ai-employees/chatbox/stores/runtime', () => ({
+  useChatBoxRuntime: () => ({
+    chatBoxModel: {
+      readonly: false,
     },
-  },
-}));
-
-vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
-  useChatConversationsStore: {
-    use: {
-      currentConversation: () => undefined,
+    chatConversationModel: {
+      currentConversation: undefined,
     },
-  },
+  }),
 }));
 
 const createProps = () => ({

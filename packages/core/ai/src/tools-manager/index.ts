@@ -106,6 +106,7 @@ export function defineTools(options: ToolsOptions) {
 }
 
 export const SYSTEM_TOOLS = {
+  GET_SKILL: 'getSkill',
   WEB_SEARCH: 'subAgentWebSearch',
   KNOWLEDGE_BASE: 'knowledge-base-retrieve',
   WORK_FLOW_TASK_OUTPUT: 'aiEmployeeWorkflowTaskOutput',

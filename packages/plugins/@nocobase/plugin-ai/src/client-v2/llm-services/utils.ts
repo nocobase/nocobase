@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { normalizeCustomModelIds } from '../../common/llm-service-models';
+
 export type LLMServiceOptions = Record<string, unknown>;
 
 export const normalizeLLMServiceOptions = <T extends LLMServiceOptions | null | undefined>(options: T): T => {
@@ -27,13 +29,17 @@ export const normalizeLLMServiceOptions = <T extends LLMServiceOptions | null | 
   return nextOptions as T;
 };
 
-export const normalizeLLMServiceFormValues = <T extends { options?: LLMServiceOptions | null }>(values: T): T => {
-  if (!values.options || Array.isArray(values.options)) {
-    return values;
+export const normalizeLLMServiceFormValues = <
+  T extends { options?: LLMServiceOptions | null; enabledModels?: unknown },
+>(
+  values: T,
+): T => {
+  const normalizedValues = { ...values };
+  if ('enabledModels' in values) {
+    Object.assign(normalizedValues, { enabledModels: normalizeCustomModelIds(values.enabledModels) });
   }
-
-  return {
-    ...values,
-    options: normalizeLLMServiceOptions(values.options),
-  };
+  if (values.options && !Array.isArray(values.options)) {
+    Object.assign(normalizedValues, { options: normalizeLLMServiceOptions(values.options) });
+  }
+  return normalizedValues;
 };

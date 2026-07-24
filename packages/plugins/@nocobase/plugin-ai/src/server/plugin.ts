@@ -24,6 +24,7 @@ import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
+import * as llmServiceActions from './resource/llmServices';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
@@ -236,6 +237,9 @@ export class PluginAIServer extends Plugin {
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
+    });
+    Object.entries(llmServiceActions).forEach(([name, action]) => {
+      this.app.resourceManager.registerActionHandler(`llmServices:${name}`, action);
     });
   }
 

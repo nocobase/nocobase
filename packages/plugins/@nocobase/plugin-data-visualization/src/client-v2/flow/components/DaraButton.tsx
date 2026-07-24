@@ -11,30 +11,32 @@ import React from 'react';
 import { useT } from '../../locale';
 import { Avatar, Popover, theme } from 'antd';
 import {
-  useChatMessagesStore,
   useAIConfigRepository,
-  useChatBoxStore,
   useChatBoxActions,
   AIEmployeeProfileCard,
   avatars,
+  getGlobalChatBoxRuntime,
   type ChatEditorRef,
   type Task,
 } from '@nocobase/plugin-ai/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 
-export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(({ ctx }) => {
+type DaraButtonProps = {
+  ctx: FlowSettingsContext<any>;
+};
+
+const DaraButtonInner: React.FC<DaraButtonProps> = observer(({ ctx }) => {
   const t = useT();
   const { token } = theme.useToken();
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
   const aiEmployee = aiEmployees?.find((e) => e.username === 'dara');
-  const setEditorRef = useChatMessagesStore.use.setEditorRef();
-  const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
-  const addContextItems = useChatMessagesStore.use.addContextItems();
-  const open = useChatBoxStore.use.open();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const { triggerTask } = useChatBoxActions();
+  const runtime = getGlobalChatBoxRuntime();
+  const { chatBoxModel, chatMessageModel } = runtime;
+  const open = chatBoxModel.open;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const { triggerTask } = useChatBoxActions(runtime);
 
   const uid = ctx.model.uid;
 
@@ -96,10 +98,10 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
   }, [aiConfigRepository]);
 
   React.useEffect(() => {
-    setEditorRef(uid, panelRef);
-    setCurrentEditorRefUid(uid);
-    return () => setEditorRef(uid, null);
-  }, [uid, panelRef, setEditorRef, setCurrentEditorRefUid]);
+    chatMessageModel.setEditorRef(uid, panelRef);
+    chatMessageModel.setCurrentEditorRefUid(uid);
+    return () => chatMessageModel.setEditorRef(uid, null);
+  }, [uid, panelRef, chatMessageModel]);
 
   const systemPrompt =
     'If you are not in SQL/Custom mode, first call the tool switchModes; after editing SQL, if you need field samples, call the tool runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
@@ -148,8 +150,8 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
     if (aiEmployee && (!open || currentEmployee?.username !== aiEmployee.username)) {
       await triggerTask({ aiEmployee, tasks });
     }
-    setCurrentEditorRefUid(uid);
-    addContextItems({
+    chatMessageModel.setCurrentEditorRefUid(uid);
+    chatMessageModel.addContextItems({
       type: 'chart-config',
       uid,
       title: t('Chart config'),
@@ -187,5 +189,7 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
     </Popover>
   );
 });
+
+export const DaraButton: React.FC<DaraButtonProps> = (props) => <DaraButtonInner {...props} />;
 
 export default DaraButton;

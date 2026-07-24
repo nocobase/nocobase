@@ -10,6 +10,7 @@
 import { createMockClient } from '@nocobase/client-v2';
 import { createJSRunnerWithVersion, FlowContext, getRunJSDocFor, setupRunJSContexts } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
+import { AIChatBoxBlockModel, AIChatBoxCoreModel } from '../block/ai-chat-box';
 import PluginAIClientV2, {
   registerPluginAIPermissionsTab,
   registerPluginAIRunJSContextContribution,
@@ -87,7 +88,7 @@ describe('plugin-ai v2 settings registration', () => {
     ).not.toThrow();
   });
 
-  it('does not register the deprecated datasource work context in v2', async () => {
+  it('registers v2 work contexts and AI chat box models', async () => {
     const app = createMockClient({ publicPath: '/v/' });
 
     await app.pm.add(PluginAIClientV2);
@@ -99,18 +100,22 @@ describe('plugin-ai v2 settings registration', () => {
     expect(plugin.aiManager.getWorkContext('datasource')).toBeUndefined();
     const context = app.flowEngine.context as unknown as {
       ai?: {
+        uploadFile?: unknown;
         triggerTask?: unknown;
         triggerModelTask?: unknown;
         onChatBoxMounted?: unknown;
       };
     };
 
+    expect(context.ai?.uploadFile).toEqual(expect.any(Function));
     expect(context.ai?.triggerTask).toEqual(expect.any(Function));
     expect(context.ai?.triggerModelTask).toEqual(expect.any(Function));
     expect(context.ai?.onChatBoxMounted).toBeUndefined();
+    expect(app.flowEngine.getModelClass('AIChatBoxBlockModel')).toBe(AIChatBoxBlockModel);
+    expect(app.flowEngine.getModelClass('AIChatBoxCoreModel')).toBe(AIChatBoxCoreModel);
   });
 
-  it('registers RunJS docs for ctx.ai.triggerTask and ctx.ai.triggerModelTask', async () => {
+  it('registers RunJS docs for ctx.ai upload and task methods', async () => {
     registerPluginAIRunJSContextContribution();
     await setupRunJSContexts();
 
@@ -120,6 +125,7 @@ describe('plugin-ai v2 settings registration', () => {
     ];
 
     for (const doc of docs) {
+      expect(doc?.properties?.ai?.properties?.uploadFile).toBeDefined();
       expect(doc?.properties?.ai?.properties?.triggerTask).toBeDefined();
       expect(doc?.properties?.ai?.properties?.triggerModelTask).toBeDefined();
       const registerTool = doc?.properties?.ai?.properties?.tools?.properties?.register;
@@ -134,6 +140,7 @@ describe('plugin-ai v2 settings registration', () => {
     await setupRunJSContexts();
 
     for (const version of ['v1', 'v2'] as const) {
+      const uploadFile = vi.fn().mockResolvedValue({ id: 1, filename: 'report.txt' });
       const triggerTask = vi.fn();
       const triggerModelTask = vi.fn();
       const clear = vi.fn();
@@ -148,6 +155,7 @@ describe('plugin-ai v2 settings registration', () => {
       });
       engineContext.defineProperty('ai', {
         value: {
+          uploadFile,
           triggerTask,
           triggerModelTask,
         },
@@ -159,10 +167,11 @@ describe('plugin-ai v2 settings registration', () => {
       for (let run = 0; run < 2; run++) {
         const runner = createJSRunnerWithVersion.call(ctx, { version });
         const result = await runner.run(`
+          const attachment = await ctx.ai.uploadFile({ name: 'report.txt' });
           ctx.ai.tools.register({ name: 'read_dashboard', description: 'Read dashboard', execute() {} });
-          ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true });
-          ctx.ai.triggerModelTask('flow-model-uid', 0);
-          return typeof ctx.ai.tools.register === 'function';
+          ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], chatBoxUid: 'chat-box-1', open: true });
+          ctx.ai.triggerModelTask('flow-model-uid', 0, { attachments: [attachment] });
+          return typeof ctx.ai.uploadFile === 'function' && typeof ctx.ai.tools.register === 'function' && typeof ctx.ai.triggerTask === 'function' && typeof ctx.ai.triggerModelTask === 'function';
         `);
 
         expect(result?.success).toBe(true);
@@ -176,8 +185,16 @@ describe('plugin-ai v2 settings registration', () => {
         'block-1',
         expect.objectContaining({ name: 'read_dashboard', description: 'Read dashboard' }),
       );
-      expect(triggerTask).toHaveBeenCalledWith({ aiEmployee: 'nathan', tasks: [], open: true });
-      expect(triggerModelTask).toHaveBeenCalledWith('flow-model-uid', 0);
+      expect(uploadFile).toHaveBeenCalledWith({ name: 'report.txt' });
+      expect(triggerTask).toHaveBeenCalledWith({
+        aiEmployee: 'nathan',
+        tasks: [],
+        chatBoxUid: 'chat-box-1',
+        open: true,
+      });
+      expect(triggerModelTask).toHaveBeenCalledWith('flow-model-uid', 0, {
+        attachments: [{ id: 1, filename: 'report.txt' }],
+      });
     }
   });
 });

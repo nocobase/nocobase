@@ -127,12 +127,14 @@ export default {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       const filter = ctx.action.params.filter || {};
+      const scope = ctx.action.params.scope;
       ctx.action.mergeParams({
         filter: {
           ...filter,
           userId,
           from: filter.from ?? 'main-agent',
           category: 'chat',
+          ...(typeof scope === 'string' && scope ? { scope } : {}),
         },
       });
       return actions.list(ctx, next);
@@ -188,8 +190,9 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings, scope } =
         ctx.action.params.values || {};
+      const normalizedScope = typeof scope === 'string' ? scope : undefined;
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -202,6 +205,7 @@ export default {
         ctx.body = await plugin.aiConversationsManager.create({
           userId,
           aiEmployee,
+          scope: normalizedScope,
           options: {
             systemMessage,
             skillSettings,

@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Block Halaman",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Karyawan AI Bawaan",
     "items": [
       {

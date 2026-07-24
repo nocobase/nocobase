@@ -17,7 +17,7 @@ After opening the knowledge base detail page, click Documents in the left sideba
 
 Click Upload in the upper-right corner to upload files. After upload, documents automatically enter segment generation and vectorization. Status first shows Pending, then changes to Success after processing. If processing fails, it shows Error, and an error icon appears next to the filename.
 
-Supported document types include: `txt`, `md`, `json`, `csv`, `xls`, `xlsx`, `pdf`, `doc`, `docx`, `ppt`, and `pptx`.
+Supported document types include: `txt`, `md`, `json`, `csv`, `xls`, `xlsx`, `pdf`, `doc`, `docx`, and `pptx`.
 
 :::tip PDF documents
 

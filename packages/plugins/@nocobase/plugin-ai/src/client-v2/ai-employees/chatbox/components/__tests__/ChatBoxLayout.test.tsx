@@ -11,7 +11,9 @@ import React from 'react';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../../manager/ai-manager';
-import type { RunJSAIEmployeeTriggerTaskOptions } from '../../utils/normalizeTriggerTaskOptions';
+import { clearMountedChatBoxes, registerMountedChatBox } from '../../stores/mounted-chat-boxes';
+import { getGlobalChatBoxRuntime } from '../../stores/runtime';
+import type { RunJSAIEmployeeTriggerTaskOptions } from '../../utils';
 import { ChatBoxLayout } from '../ChatBoxLayout';
 
 const runtime = vi.hoisted(() => {
@@ -125,6 +127,7 @@ describe('ChatBoxLayout AI employee task bridge', () => {
     runtime.getAIEmployees.mockClear();
     runtime.app.pm.get.mockClear();
     runtime.app.apiClient.resource.mockClear();
+    clearMountedChatBoxes();
   });
 
   it('calls hook triggerTask after receiving an AI employee task event', async () => {
@@ -148,6 +151,74 @@ describe('ChatBoxLayout AI employee task bridge', () => {
         open: true,
       });
     });
+  });
+
+  it('routes event tasks to the mounted AI chat box selected by chatBoxUid', async () => {
+    const targetTriggerTask = vi.fn().mockResolvedValue(undefined);
+    registerMountedChatBox({
+      uid: 'chat-box-1',
+      runtime: getGlobalChatBoxRuntime(),
+      triggerTask: targetTriggerTask,
+      clear: vi.fn(),
+      syncContextItems: vi.fn(),
+    });
+
+    render(<ChatBoxLayout />);
+
+    await waitFor(() => {
+      expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
+    });
+
+    const options: RunJSAIEmployeeTriggerTaskOptions = {
+      aiEmployee: 'nathan',
+      tasks: [{ title: 'Write in block' }],
+      chatBoxUid: 'chat-box-1',
+      open: true,
+    };
+    runtime.eventBus.dispatchEvent(new CustomEvent(AI_EMPLOYEE_TRIGGER_TASK_EVENT, { detail: options }));
+
+    await waitFor(() => {
+      expect(targetTriggerTask).toHaveBeenCalledWith({
+        aiEmployee: { username: 'nathan', nickname: 'Nathan' },
+        tasks: [{ title: 'Write in block' }],
+        chatBoxUid: 'chat-box-1',
+        open: true,
+      });
+    });
+    expect(runtime.triggerTask).not.toHaveBeenCalled();
+  });
+
+  it('does not route ctx.ai event tasks by tasks[].chatBoxUid', async () => {
+    const targetTriggerTask = vi.fn().mockResolvedValue(undefined);
+    registerMountedChatBox({
+      uid: 'chat-box-1',
+      runtime: getGlobalChatBoxRuntime(),
+      triggerTask: targetTriggerTask,
+      clear: vi.fn(),
+      syncContextItems: vi.fn(),
+    });
+
+    render(<ChatBoxLayout />);
+
+    await waitFor(() => {
+      expect(runtime.onChatBoxMounted).toHaveBeenCalledTimes(1);
+    });
+
+    const options: RunJSAIEmployeeTriggerTaskOptions = {
+      aiEmployee: 'nathan',
+      tasks: [{ title: 'Write globally', chatBoxUid: 'chat-box-1' }],
+      open: true,
+    };
+    runtime.eventBus.dispatchEvent(new CustomEvent(AI_EMPLOYEE_TRIGGER_TASK_EVENT, { detail: options }));
+
+    await waitFor(() => {
+      expect(runtime.triggerTask).toHaveBeenCalledWith({
+        aiEmployee: { username: 'nathan', nickname: 'Nathan' },
+        tasks: [{ title: 'Write globally', chatBoxUid: 'chat-box-1' }],
+        open: true,
+      });
+    });
+    expect(targetTriggerTask).not.toHaveBeenCalled();
   });
 
   it('marks the ChatBox unmounted before removing the bridge listener', async () => {

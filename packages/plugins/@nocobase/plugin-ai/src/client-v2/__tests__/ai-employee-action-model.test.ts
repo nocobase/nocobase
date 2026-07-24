@@ -53,6 +53,47 @@ describe('AI employee v2 action models', () => {
     expect(flow?.getStep('editTasks')).toBeDefined();
   });
 
+  it('adds chat box uid to shortcut task settings', async () => {
+    const step = AIEmployeeShortcutModel.globalFlowRegistry.getFlow('shortcutSettings')?.getStep('editTasks');
+    const uiSchema = step?.serialize().uiSchema as (ctx: FlowModelContext) => Promise<{
+      tasks?: {
+        items?: {
+          properties?: Record<
+            string,
+            {
+              default?: unknown;
+              title?: unknown;
+              ['x-component']?: string;
+              ['x-decorator-props']?: { tooltip?: unknown };
+            }
+          >;
+        };
+      };
+    }>;
+    const ctx = {
+      model: {
+        context: {},
+        props: {
+          defaultTaskChatBoxUid: 'chat-box-1',
+        },
+      },
+      aiConfigRepository: {
+        getAIEmployees: vi.fn().mockResolvedValue([]),
+      },
+    } as unknown as FlowModelContext;
+
+    const schema = await uiSchema(ctx);
+
+    expect(schema.tasks?.items?.properties?.chatBoxUid).toMatchObject({
+      title: expect.anything(),
+      'x-component': 'Input',
+      'x-decorator-props': {
+        tooltip: expect.anything(),
+      },
+      default: 'chat-box-1',
+    });
+  });
+
   it('hides the task settings dialog while selecting work context', () => {
     const step = AIEmployeeShortcutModel.globalFlowRegistry.getFlow('shortcutSettings')?.getStep('editTasks');
     const uiMode = step?.serialize().uiMode as () => {
@@ -151,6 +192,44 @@ describe('AI employee v2 action models', () => {
           context: {
             workContext: [{ type: 'flow-model', uid: 'block-1' }],
           },
+          auto: false,
+        },
+      },
+    });
+  });
+
+  it('defaults AI chat box shortcut tasks to the owning chat box uid', async () => {
+    const engine = new FlowEngine();
+    const ctx = {
+      engine,
+      model: {
+        uid: 'actions-1',
+        parent: {
+          uid: 'chat-box-1',
+          use: 'AIChatBoxBlockModel',
+        },
+      },
+      aiConfigRepository: {
+        getAIEmployees: vi.fn().mockResolvedValue([{ username: 'business', nickname: 'Business' }]),
+      },
+    } as unknown as FlowModelContext & {
+      aiConfigRepository: {
+        getAIEmployees: ReturnType<typeof vi.fn>;
+      };
+    };
+
+    const children = await AIEmployeeActionModel.defineChildren(ctx);
+
+    expect(children).toHaveLength(1);
+    expect(children[0]).toMatchObject({
+      createModelOptions: {
+        props: {
+          aiEmployee: { username: 'business' },
+          context: {
+            workContext: [{ type: 'flow-model', uid: 'actions-1' }],
+          },
+          defaultTaskChatBoxUid: 'chat-box-1',
+          tasks: [{ chatBoxUid: 'chat-box-1' }],
           auto: false,
         },
       },
