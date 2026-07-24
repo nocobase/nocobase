@@ -333,5 +333,68 @@ describe('workflow > tasks', () => {
         all: 0,
       });
     });
+
+    it('clears stale legacy stats for workflow-scoped repair with explicit users', async () => {
+      plugin.registerTaskStatsProvider('repair-workflow-empty', {
+        async collectTaskStats() {
+          return [];
+        },
+      });
+      await TaskRepo.create({
+        values: {
+          userId: users[0].id,
+          type: 'repair-workflow-empty',
+          stats: { pending: 4, all: 6 },
+        },
+      });
+
+      await plugin.repairTaskStats({
+        types: ['repair-workflow-empty'],
+        userIds: [users[0].id],
+        workflowKeys: ['missing-workflow'],
+      });
+
+      const legacyRow = await TaskRepo.findOne({
+        filter: {
+          userId: users[0].id,
+          type: 'repair-workflow-empty',
+        },
+      });
+      expect(legacyRow.get('stats')).toMatchObject({
+        pending: 0,
+        all: 0,
+      });
+    });
+
+    it('clears legacy-only stale stats for workflow-scoped repair', async () => {
+      plugin.registerTaskStatsProvider('repair-workflow-legacy-only', {
+        async collectTaskStats() {
+          return [];
+        },
+      });
+      await TaskRepo.create({
+        values: {
+          userId: users[0].id,
+          type: 'repair-workflow-legacy-only',
+          stats: { pending: 3, all: 5 },
+        },
+      });
+
+      await plugin.repairTaskStats({
+        types: ['repair-workflow-legacy-only'],
+        workflowKeys: ['missing-workflow'],
+      });
+
+      const legacyRow = await TaskRepo.findOne({
+        filter: {
+          userId: users[0].id,
+          type: 'repair-workflow-legacy-only',
+        },
+      });
+      expect(legacyRow.get('stats')).toMatchObject({
+        pending: 0,
+        all: 0,
+      });
+    });
   });
 });

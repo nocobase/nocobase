@@ -25,6 +25,7 @@ describe('workflow > actions > workflows', () => {
   let WorkflowStatsRepo;
   let WorkflowVersionStatsRepo;
   let FlowNodeRepo;
+  let plugin: Plugin;
 
   beforeEach(async () => {
     app = await getApp();
@@ -38,6 +39,7 @@ describe('workflow > actions > workflows', () => {
     FlowNodeRepo = db.getCollection('flow_nodes').repository;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
+    plugin = app.pm.get(Plugin) as Plugin;
   });
 
   afterEach(() => app.destroy());
@@ -391,6 +393,74 @@ describe('workflow > actions > workflows', () => {
 
       const statsCount = await WorkflowStatsRepo.count();
       expect(statsCount).toBe(1);
+    });
+
+    it('repairs task stats after destroying a non-current version', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const revision = await WorkflowRepo.revision({
+        filterByTk: workflow.id,
+        filter: {
+          key: workflow.key,
+        },
+        context: {
+          app,
+        },
+      });
+      const user = await db.getRepository('users').findOne();
+      const type = 'workflow-destroy-repair';
+      plugin.registerTaskStatsProvider(type, {
+        async collectTaskStats(options) {
+          const versions = await WorkflowRepo.find({
+            filter: {
+              key: workflow.key,
+            },
+            transaction: options.transaction,
+          });
+          return [
+            {
+              userId: user.id,
+              workflowKey: workflow.key,
+              type,
+              pending: versions.length,
+              all: versions.length,
+            },
+          ];
+        },
+      });
+
+      await plugin.repairTaskStats({
+        userIds: [user.id],
+        workflowKeys: [workflow.key],
+        types: [type],
+      });
+
+      await agent.resource('workflows').destroy({
+        filterByTk: revision.id,
+      });
+
+      const detailed = await db.getRepository('userWorkflowTaskStats').findOne({
+        filter: {
+          userId: user.id,
+          workflowKey: workflow.key,
+          type,
+        },
+      });
+      expect(detailed.get()).toMatchObject({ pending: 1, all: 1 });
+
+      const categorized = await db.getRepository('userWorkflowTasks').findOne({
+        filter: {
+          userId: user.id,
+          type,
+        },
+      });
+      expect(categorized.get('stats')).toMatchObject({ pending: 1, all: 1 });
     });
   });
 

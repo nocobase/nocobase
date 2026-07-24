@@ -820,17 +820,16 @@ export default class PluginWorkflowServer extends Plugin {
       const providers = Array.from(this.taskStatsProviders.entries()).filter(([type]) => {
         return !options.types?.length || options.types.includes(type);
       });
-      const legacyRows =
-        !options.workflowKeys?.length && providers.length
-          ? await this.db.getRepository('userWorkflowTasks').find({
-              filter: {
-                ...(options.userIds?.length ? { userId: options.userIds } : {}),
-                type: providers.map(([type]) => type),
-              },
-              fields: ['userId', 'type'],
-              transaction,
-            })
-          : [];
+      const legacyRows = providers.length
+        ? await this.db.getRepository('userWorkflowTasks').find({
+            filter: {
+              ...(options.userIds?.length ? { userId: options.userIds } : {}),
+              type: providers.map(([type]) => type),
+            },
+            fields: ['userId', 'type'],
+            transaction,
+          })
+        : [];
       const collectedRows = (
         await Promise.all(
           providers.map(([, provider]) => provider.collectTaskStats({ ...options, transaction }, { plugin: this })),
@@ -860,6 +859,16 @@ export default class PluginWorkflowServer extends Plugin {
 
       const typePairs = new Set<string>();
       const workflowPairs = new Set<string>();
+      if (options.userIds?.length) {
+        for (const userId of options.userIds) {
+          for (const [type] of providers) {
+            typePairs.add(`${userId}\0${type}`);
+          }
+          for (const workflowKey of options.workflowKeys ?? []) {
+            workflowPairs.add(`${userId}\0${workflowKey}`);
+          }
+        }
+      }
       for (const row of legacyRows) {
         typePairs.add(`${row.userId}\0${row.type}`);
       }

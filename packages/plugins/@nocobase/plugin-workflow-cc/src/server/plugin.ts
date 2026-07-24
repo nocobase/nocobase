@@ -139,6 +139,7 @@ export class PluginWorkflowCCServer extends Plugin {
 
     this.app.db.on('workflowCcTasks.afterCreateWithAssociations', this.onRecordSave);
     this.app.db.on('workflowCcTasks.afterUpdate', this.onRecordSave);
+    this.app.db.on('workflowCcTasks.afterDestroy', this.onRecordSave);
   }
 }
 
