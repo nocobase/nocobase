@@ -21,6 +21,7 @@
     "@nocobase/lock-manager": "2.2.0-beta.15",
     "@nocobase/logger": "2.2.0-beta.15",
     "@nocobase/resourcer": "2.2.0-beta.15",
+    "@nocobase/runjs": "2.2.0-beta.15",
     "@nocobase/sdk": "2.2.0-beta.15",
     "@nocobase/snowflake-id": "2.2.0-beta.15",
     "@nocobase/telemetry": "2.2.0-beta.15",

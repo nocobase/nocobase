@@ -8,8 +8,12 @@
  */
 
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { BlockGridModel } from '../BlockGridModel';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  BlockGridModel,
+  clearBlockGridSelectSceneAddBlockProviders,
+  registerBlockGridSelectSceneAddBlockProvider,
+} from '../BlockGridModel';
 
 class BlockModel extends FlowModel {}
 BlockModel.define({ label: 'Other blocks' });
@@ -45,6 +49,7 @@ describe('BlockGridModel - select scene add block menu', () => {
   let engine: FlowEngine;
 
   beforeEach(() => {
+    clearBlockGridSelectSceneAddBlockProviders();
     engine = new FlowEngine();
     engine.registerModels({
       BlockModel,
@@ -61,23 +66,144 @@ describe('BlockGridModel - select scene add block menu', () => {
     });
   });
 
+  afterEach(() => {
+    clearBlockGridSelectSceneAddBlockProviders();
+  });
+
   it('keeps only JS, iframe and markdown under other blocks in select scene', async () => {
     engine.context.defineProperty('view', { value: { inputArgs: { scene: 'select' } } });
     const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
 
     const itemsSource = model.addBlockItems;
     expect(typeof itemsSource).toBe('function');
+    if (typeof itemsSource !== 'function') {
+      throw new Error('Expected select scene add-block items source');
+    }
 
-    const items = await itemsSource!(model.context);
+    const items = await itemsSource(model.context);
     const otherBlocks = items.find((item) => item.key === 'select-scene-other-blocks');
 
     expect(otherBlocks).toBeTruthy();
     expect(otherBlocks?.type).toBe('group');
     expect(Array.isArray(otherBlocks?.children)).toBe(true);
 
-    const childKeys = (otherBlocks?.children as any[]).map((item) => item.key);
+    const otherBlockChildren = Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
+    const childKeys = otherBlockChildren.map((item) => item.key);
     expect(childKeys).toEqual(['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel']);
     expect(childKeys).not.toContain('ActionPanelBlockModel');
     expect(childKeys).not.toContain('ReferenceBlockModel');
+  });
+
+  it('includes registered select-scene add-block provider items under other blocks', async () => {
+    registerBlockGridSelectSceneAddBlockProvider('test-light-extension', () => [
+      {
+        key: 'select-scene-light-extension-js-blocks',
+        label: 'From light extension',
+        sort: 900,
+        children: [
+          {
+            key: 'light-extension-js-block:entry_sales',
+            label: 'Sales KPI',
+            createModelOptions: {
+              use: 'JSBlockModel',
+              stepParams: {
+                jsSettings: {
+                  runJs: {
+                    sourceMode: 'light-extension',
+                    sourceBinding: {
+                      type: 'light-extension-entry',
+                      repoId: 'repo_sales',
+                      entryId: 'entry_sales',
+                      kind: 'js-block',
+                    },
+                    settings: {
+                      title: 'Sales',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    ]);
+    engine.context.defineProperty('view', { value: { inputArgs: { scene: 'select' } } });
+    const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
+
+    const itemsSource = model.addBlockItems;
+    expect(typeof itemsSource).toBe('function');
+    if (typeof itemsSource !== 'function') {
+      throw new Error('Expected select scene add-block items source');
+    }
+    const items = await itemsSource(model.context);
+    const otherBlocks = items.find((item) => item.key === 'select-scene-other-blocks');
+    const otherBlockChildren = Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
+    const providerGroup = otherBlockChildren.find((item) => item.key === 'select-scene-light-extension-js-blocks');
+    const leaf = Array.isArray(providerGroup?.children) ? providerGroup.children[0] : null;
+
+    expect(providerGroup).toMatchObject({
+      label: 'From light extension',
+    });
+    expect(items).not.toContainEqual(expect.objectContaining({ key: 'select-scene-light-extension-js-blocks' }));
+    expect(leaf?.createModelOptions).toMatchObject({
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'repo_sales',
+              entryId: 'entry_sales',
+              kind: 'js-block',
+            },
+            settings: {
+              title: 'Sales',
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('includes registered light extension items under other blocks in regular block grids', async () => {
+    registerBlockGridSelectSceneAddBlockProvider('test-light-extension', () => [
+      {
+        key: 'select-scene-light-extension-js-blocks',
+        label: 'From light extension',
+        sort: 900,
+        children: [
+          {
+            key: 'light-extension-js-block:entry_sales',
+            label: 'Sales KPI',
+            createModelOptions: {
+              use: 'JSBlockModel',
+            },
+          },
+        ],
+      },
+    ]);
+    engine.context.defineProperty('view', { value: { inputArgs: {} } });
+    const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
+
+    const itemsSource = model.addBlockItems;
+    expect(typeof itemsSource).toBe('function');
+    if (typeof itemsSource !== 'function') {
+      throw new Error('Expected regular add-block items source');
+    }
+    const items = await itemsSource(model.context);
+    const otherBlocks = items.find((item) => item.key === 'BlockModel');
+    const otherBlockChildren = Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
+    const providerGroup = otherBlockChildren.find((item) => item.key === 'select-scene-light-extension-js-blocks');
+    const dataBlocks = items.find((item) => item.key === 'DataBlockModel');
+    const filterBlocks = items.find((item) => item.key === 'FilterBlockModel');
+
+    expect(dataBlocks).toBeTruthy();
+    expect(filterBlocks).toBeTruthy();
+    expect(providerGroup).toMatchObject({
+      label: 'From light extension',
+    });
+    expect(Array.isArray(providerGroup?.children)).toBe(true);
+    expect(items).not.toContainEqual(expect.objectContaining({ key: 'select-scene-light-extension-js-blocks' }));
   });
 });

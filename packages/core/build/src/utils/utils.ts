@@ -12,8 +12,8 @@ import execa from 'execa';
 import path from 'path';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
-import { Options as TsupConfig } from 'tsup'
-import type { RsbuildConfig } from '@rsbuild/core'
+import { Options as TsupConfig } from 'tsup';
+import type { RsbuildConfig } from '@rsbuild/core';
 import { register } from 'esbuild-register/dist/node';
 import { NODE_MODULES } from '../constant';
 
@@ -90,6 +90,9 @@ export function getPackageJson(cwd: string) {
 }
 
 export interface UserConfig {
+  client?: {
+    moduleWorker?: boolean;
+  };
   modifyTsupConfig?: (config: TsupConfig) => TsupConfig;
   modifyRsbuildConfig?: (config: RsbuildConfig) => RsbuildConfig;
   beforeBuild?: (log: PkgLog) => void | Promise<void>;
@@ -111,9 +114,9 @@ export function getUserConfig(cwd: string) {
     throw new Error(`Multiple build configs found: ${buildConfigs.join(', ')}`);
   }
   if (buildConfigs.length === 1) {
-    const { unregister } = register({})
+    const { unregister } = register({});
     const userConfig = require(path.join(cwd, buildConfigs[0]));
-    unregister()
+    unregister();
     Object.assign(config, userConfig.default || userConfig);
   }
   return config;
@@ -134,14 +137,13 @@ export function readFromCache(key: string) {
   return {};
 }
 
-
 export function getEnvDefine() {
   return {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
     'process.env.__TEST__': false,
     'process.env.__E2E__': process.env.__E2E__ ? true : false,
     'process.env.APP_ENV': process.env.APP_ENV,
-  }
+  };
 }
 
 export function createBuildProfileCollector(): BuildProfileCollector {
@@ -167,11 +169,7 @@ export async function runProfiledStage(
   }
 }
 
-export async function runWithConcurrency<T>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T) => Promise<void>,
-) {
+export async function runWithConcurrency<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
   const queue = [...items];
   const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
     while (queue.length > 0) {
@@ -208,7 +206,9 @@ export function printBuildProfile(profile: BuildProfileCollector, totalDurationM
     for (const layer of [...profile.layers].sort((a, b) => b.durationMs - a.durationMs).slice(0, 12)) {
       console.log(
         chalk.gray(
-          `  ${layer.stageName} layer ${layer.layerIndex}/${layer.layerCount} (${layer.packageCount} packages): ${formatDuration(layer.durationMs)}`,
+          `  ${layer.stageName} layer ${layer.layerIndex}/${layer.layerCount} (${
+            layer.packageCount
+          } packages): ${formatDuration(layer.durationMs)}`,
         ),
       );
     }
@@ -233,9 +233,7 @@ export function printBuildProfile(profile: BuildProfileCollector, totalDurationM
         .map(([name, duration]) => `${name}=${formatDuration(duration)}`)
         .join(', ');
       console.log(
-        chalk.gray(
-          `  ${pkg.name} [${pkg.status}] ${formatDuration(pkg.durationMs)}${summary ? ` (${summary})` : ''}`,
-        ),
+        chalk.gray(`  ${pkg.name} [${pkg.status}] ${formatDuration(pkg.durationMs)}${summary ? ` (${summary})` : ''}`),
       );
     }
 
@@ -247,9 +245,7 @@ export function printBuildProfile(profile: BuildProfileCollector, totalDurationM
         .map(([name, duration]) => `${name}=${formatDuration(duration)}`)
         .join(', ');
       console.log(
-        chalk.gray(
-          `  ${pkg.name} [${pkg.status}] ${formatDuration(pkg.durationMs)}${summary ? ` (${summary})` : ''}`,
-        ),
+        chalk.gray(`  ${pkg.name} [${pkg.status}] ${formatDuration(pkg.durationMs)}${summary ? ` (${summary})` : ''}`),
       );
     }
   }

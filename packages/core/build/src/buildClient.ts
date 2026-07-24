@@ -20,7 +20,7 @@ import { build as tsupBuild } from 'tsup';
 import { globExcludeFiles } from './constant';
 import { PkgLog, UserConfig, getEnvDefine } from './utils';
 
-export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
+export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap = false, log: PkgLog) {
   log('build client');
   const cwdWin = cwd.replaceAll(/\\/g, '/');
   const cwdUnix = cwd.replaceAll(/\//g, '\\');
@@ -38,7 +38,13 @@ export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap
 type External = (id: string) => boolean;
 type ClientFormat = 'esm' | 'cjs';
 
-async function buildClientEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean, external: External, log: PkgLog) {
+async function buildClientEsm(
+  cwd: string,
+  userConfig: UserConfig,
+  sourcemap: boolean,
+  external: External,
+  log: PkgLog,
+) {
   log('build client esm');
   const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
   const outDir = path.resolve(cwd, 'es');
@@ -55,16 +61,19 @@ async function buildClientLib(
 ) {
   log('build client lib');
   const outDir = path.resolve(cwd, 'lib');
-  const esDir = path.resolve(cwd, 'es');
-  const entry = path.join(esDir, 'index.ts');
+  const esEntry = path.resolve(cwd, 'es/index.mjs');
+  const linkedEntry = path.resolve(cwd, 'es/index.ts');
+  const entry = userConfig.client?.moduleWorker ? path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/') : linkedEntry;
 
-  fs.removeSync(entry);
-  fs.linkSync(path.join(cwd, 'es/index.mjs'), entry);
+  if (!userConfig.client?.moduleWorker) {
+    fs.removeSync(linkedEntry);
+    fs.linkSync(esEntry, linkedEntry);
+  }
 
   try {
     await buildClientWithRsbuild(cwd, userConfig, sourcemap, external, entry, outDir, 'cjs');
   } finally {
-    fs.removeSync(entry);
+    if (!userConfig.client?.moduleWorker) fs.removeSync(linkedEntry);
   }
 
   await injectEntryStyleReference(path.join(outDir, 'index.js'), 'require("./index.css");');
@@ -79,7 +88,15 @@ async function buildClientWithRsbuild(
   outDir: string,
   format: ClientFormat,
 ) {
-  const config = createClientRsbuildConfig(cwd, entry, outDir, sourcemap, external, format);
+  const config = createClientRsbuildConfig(
+    cwd,
+    entry,
+    outDir,
+    sourcemap,
+    external,
+    format,
+    userConfig.client?.moduleWorker === true,
+  );
   const rsbuild = await createRsbuild({
     cwd,
     config: userConfig.modifyRsbuildConfig?.(config) ?? config,
@@ -96,7 +113,9 @@ function createClientRsbuildConfig(
   sourcemap: boolean,
   external: External,
   format: ClientFormat,
+  moduleWorker: boolean,
 ): RsbuildConfig {
+  const moduleWorkerOutput = moduleWorker && format === 'esm';
   return {
     plugins: [pluginReact(), pluginLess(), pluginSvgr()],
     source: {
@@ -107,13 +126,17 @@ function createClientRsbuildConfig(
         },
       },
       tsconfigPath: path.join(cwd, 'tsconfig.json'),
-      define: getEnvDefine(),
+      define: {
+        ...getEnvDefine(),
+        'process.env.NOCOBASE_CLIENT_MODULE_WORKER': JSON.stringify(moduleWorkerOutput ? 'true' : 'false'),
+      },
       decorators: {
         version: 'legacy',
       },
     },
     output: {
       target: 'web',
+      assetPrefix: moduleWorker ? 'auto' : undefined,
       distPath: {
         root: outDir,
         js: '.',
@@ -156,7 +179,8 @@ function createClientRsbuildConfig(
     tools: {
       rspack(config) {
         config.output = config.output || {};
-        config.output.asyncChunks = false;
+        config.output.asyncChunks = moduleWorkerOutput;
+        if (moduleWorkerOutput) config.output.publicPath = 'auto';
 
         if (format === 'esm') {
           config.output.library = { type: 'module' };
@@ -171,6 +195,19 @@ function createClientRsbuildConfig(
           config.externalsType = 'module-import';
         } else {
           config.output.library = { type: 'commonjs-static' };
+          if (moduleWorker) {
+            config.module ||= {};
+            config.module.parser = {
+              ...config.module.parser,
+              javascript: {
+                ...config.module.parser?.javascript,
+                url: false,
+                worker: false,
+              },
+            };
+            config.optimization ||= {};
+            config.optimization.minimize = true;
+          }
         }
 
         config.performance = false;

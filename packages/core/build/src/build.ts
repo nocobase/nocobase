@@ -53,6 +53,13 @@ const BUILD_ERROR = 'build-error';
 const DEFAULT_LAYER_CONCURRENCY = 2;
 const DEFAULT_PLUGIN_LAYER_CONCURRENCY = 1;
 const ENABLE_BUILD_PROFILE = process.env.BUILD_PROFILE === 'true';
+const RUNJS_GENERATED_ARTIFACT_CONSUMERS = new Set(['@nocobase/runjs', '@nocobase/client-v2', '@nocobase/app']);
+let runJSGeneratedArtifacts: Promise<void> | undefined;
+
+export function ensureRunJSGeneratedArtifacts(): Promise<void> {
+  runJSGeneratedArtifacts ||= runScript(['workspace', '@nocobase/runjs', 'generate'], ROOT_PATH);
+  return runJSGeneratedArtifacts;
+}
 
 export async function build(pkgs: string[]) {
   const profile = ENABLE_BUILD_PROFILE ? createBuildProfileCollector() : null;
@@ -89,6 +96,10 @@ export async function build(pkgs: string[]) {
     const pluginPackages = getPluginPackages(packages);
     const cjsPackages = getCjsPackages(packages);
     const presetsPackages = getPresetsPackages(packages);
+
+    if (packages.some((pkg) => RUNJS_GENERATED_ARTIFACT_CONSUMERS.has(pkg.name))) {
+      await ensureRunJSGeneratedArtifacts();
+    }
 
     // core/*
     await buildPackages(cjsPackages, 'lib', buildCjs, {
@@ -311,7 +322,6 @@ async function buildPackageSourceLifecycle(
     log('prebuild');
     await runPhase('prebuild', async () => {
       await runScript(['prebuild'], pkg.location);
-      await packageJson.prebuild(pkg.location);
     });
   }
   if (userConfig.beforeBuild) {

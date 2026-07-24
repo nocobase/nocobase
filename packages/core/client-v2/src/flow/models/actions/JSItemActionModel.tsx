@@ -7,11 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr } from '@nocobase/flow-engine';
+import { tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import React from 'react';
-import { CodeEditor } from '../../components/code-editor';
 import { ActionModel, ActionSceneEnum, CollectionActionGroupModel, RecordActionGroupModel } from '../base';
 import { FormActionGroupModel } from '../blocks/form/FormActionGroupModel';
+import {
+  createJSItemRunJsUISchema,
+  createJSItemEmbeddedEditorUIMode,
+  createJSItemSourceBindingStep,
+  createJSItemSourceModeStep,
+  getJSItemRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  resetJSItemRuntimeElement,
+  runJSItemRuntime,
+} from '../fields/jsItemLightExtensionRuntime';
 import { PopupSubTableFormActionGroupModel } from '../fields/AssociationFieldModel/PopupSubTableFieldModel/actions/PopupSubTableFormSubmitActionModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
@@ -35,6 +44,14 @@ export class JSItemActionModel extends ActionModel {
   private _offResourceRefresh?: () => void;
   private _mountedOnce = false;
   static scene = ActionSceneEnum.all;
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSItemRuntimeFlowSettingSteps(this);
+  }
 
   render() {
     return <div ref={this.context.ref} style={{ display: 'inline-flex', minHeight: 22, alignItems: 'center' }} />;
@@ -62,12 +79,15 @@ export class JSItemActionModel extends ActionModel {
     }
 
     if (this._mountedOnce && this.context.ref?.current) {
-      void this.applyFlow('jsSettings');
+      this.applyFlow('jsSettings');
     }
     this._mountedOnce = true;
   }
 
   protected onUnmount(): void {
+    if (this.context.ref?.current) {
+      resetJSItemRuntimeElement(this.context.ref.current);
+    }
     this._offResourceRefresh?.();
     this._offResourceRefresh = undefined;
   }
@@ -96,48 +116,32 @@ JSItemActionModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
   steps: {
+    sourceMode: createJSItemSourceModeStep(),
+    sourceBinding: createJSItemSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
-          'x-component-props': {
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSItemRunJsUISchema({ scene: 'block' }),
+      uiMode: createJSItemEmbeddedEditorUIMode,
       defaultParams() {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: defaultJSActionItemCode.trim(),
         };
       },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+          await runJSItemRuntime({
+            ctx,
+            params: params || {},
+            runJs: {
+              code,
+              version,
+            },
+            element,
           });
-          await ctx.runjs(code, undefined, { version });
         });
       },
     },

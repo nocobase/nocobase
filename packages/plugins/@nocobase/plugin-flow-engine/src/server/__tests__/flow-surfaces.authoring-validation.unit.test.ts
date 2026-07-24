@@ -309,6 +309,50 @@ describe('flowSurfaces authoring validation unit', () => {
     expect(addBlocksErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
   });
 
+  it('should exclude fields without an interface from visible-field minimum candidates', async () => {
+    const fields = [
+      { name: 'title', interface: 'input', type: 'string' },
+      { name: 'name', interface: 'input', type: 'string' },
+      ...['description', 'strategy', 'system', 'snippets', 'resources', 'users'].map((name) => ({
+        name,
+        type: 'string',
+      })),
+    ];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const context = {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'roles'
+          ? {
+              name: 'roles',
+              getField: (fieldName: string) => fieldsByName.get(fieldName),
+              getFields: () => fields,
+              fields: fieldsByName,
+            }
+          : null,
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            blocks: [
+              {
+                type: 'details',
+                collection: 'roles',
+                fields: ['title', 'name'],
+              },
+            ],
+          },
+        ],
+      },
+      context,
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
+  });
+
   it('should mention showBlockCard in JS block authoring repair hints', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',
@@ -332,6 +376,66 @@ describe('flowSurfaces authoring validation unit', () => {
     expect(unsupportedSettingError?.details?.repairHint).toContain('settings.showBlockCard');
     expect(unsupportedSettingError?.details?.repairExample?.inlineBlock?.settings?.showBlockCard).toBe(true);
     expect(unsupportedSettingError?.details?.allowedKeys).toContain('showBlockCard');
+  });
+
+  it('should accept light-extension JS block source binding and reject script mixing', async () => {
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'repo_sales',
+      entryId: 'entry_sales_kpi',
+      kind: 'js-block',
+    };
+
+    const repositorySourceErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              type: 'jsBlock',
+              settings: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  region: 'APAC',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(repositorySourceErrors.map((error) => error.ruleId)).not.toContain('jsBlock-source-required');
+    expect(repositorySourceErrors.map((error) => error.ruleId)).not.toContain('jsBlock-sourceBinding-required-key');
+
+    const mixedScriptErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      assets: {
+        scripts: {
+          kpiScript: {
+            code: 'ctx.render("KPI");',
+            version: 'v2',
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              type: 'jsBlock',
+              script: 'kpiScript',
+              settings: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(mixedScriptErrors.map((error) => error.ruleId)).toContain('jsBlock-mixed-script-and-light-extension');
   });
 
   it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {

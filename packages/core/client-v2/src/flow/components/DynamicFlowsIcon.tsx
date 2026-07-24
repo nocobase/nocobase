@@ -55,6 +55,84 @@ type DynamicFlowsEditorApi = {
   save: () => Promise<boolean>;
 };
 
+function isStepParamsRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getStepSettingsParams(step: FlowStep): Record<string, unknown> {
+  const serialized = step.serialize();
+  return {
+    ...(isStepParamsRecord(serialized.defaultParams) ? serialized.defaultParams : {}),
+    ...(isStepParamsRecord(serialized.params) ? serialized.params : {}),
+  };
+}
+
+function setStepSettingsParams(step: FlowStep, value: Record<string, unknown>) {
+  const serialized = step.serialize();
+  if (isStepParamsRecord(serialized.params)) {
+    step.setOptions({ params: value });
+    return;
+  }
+  step.defaultParams = value;
+}
+
+function withDynamicStepRunJSSource(
+  uiSchema: StepDefinition['uiSchema'],
+  model: FlowModel,
+  flow: FlowDefinition,
+  step: FlowStep,
+  label?: string,
+) {
+  const persistedStep = model.flowRegistry.getFlow(flow.key)?.getStep(step.key);
+  if (!uiSchema || typeof uiSchema === 'function' || !model.uid || !persistedStep) return uiSchema;
+  const next = _.cloneDeep(uiSchema);
+  const persistedVariables = untracked(() => {
+    const variables = getStepSettingsParams(persistedStep).variables;
+    return Array.isArray(variables) ? variables.map((variable) => ({ key: variable?.key })) : [];
+  });
+  const sourceProps = {
+    runJSSource: {
+      modelUid: model.uid,
+      flowKey: flow.key,
+      stepKey: step.key,
+      persistedVariables,
+    },
+  };
+
+  if (next.code) {
+    mergeSchemaComponentProps(next.code, {
+      sourceLocator: {
+        kind: 'flowModel.flowRegistry.runjs',
+        modelUid: model.uid,
+        flowKey: flow.key,
+        stepKey: step.key,
+        sourcePath: ['defaultParams', 'code'],
+      },
+      sourceLabel: label,
+    });
+  }
+
+  if (next.variables) {
+    mergeSchemaComponentProps(next.variables, {
+      ...sourceProps,
+    });
+  }
+
+  return next;
+}
+
+function mergeSchemaComponentProps(schema: unknown, props: Record<string, unknown>): void {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    return;
+  }
+  const record = schema as Record<string, unknown>;
+  const currentProps = record['x-component-props'];
+  record['x-component-props'] = {
+    ...(currentProps && typeof currentProps === 'object' && !Array.isArray(currentProps) ? currentProps : {}),
+    ...props,
+  };
+}
+
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
   return !!on && typeof on === 'object';
 }
@@ -836,7 +914,7 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
 
   // 更新步骤的值
   const handleActionValueChange = (step: FlowStep, value: any) => {
-    step.defaultParams = value;
+    setStepSettingsParams(step, value);
   };
 
   // 生成折叠面板的自定义标题
@@ -920,13 +998,19 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
                           FlowStepContext.Provider,
                           {
                             value: {
-                              params: untracked(() => step.defaultParams),
+                              params: untracked(() => getStepSettingsParams(step)),
                               path: `${model.uid}_${step.flowKey}_${step.key}`,
                             },
                           },
                           flowEngine.flowSettings.renderStepForm({
-                            uiSchema: actionDef.uiSchema,
-                            initialValues: untracked(() => step.defaultParams), // 防止代码编辑器失焦
+                            uiSchema: withDynamicStepRunJSSource(
+                              actionDef.uiSchema,
+                              model,
+                              flow,
+                              step,
+                              t(actionDef.title || actionDef.name),
+                            ),
+                            initialValues: untracked(() => getStepSettingsParams(step)), // 防止代码编辑器失焦
                             flowEngine,
                             onFormValuesChange: (form: any) => handleActionValueChange(step, form.values),
                           }),
@@ -1016,8 +1100,8 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
           setupRuntimeContextSteps(runtimeCtx, flow.steps, model, flow.key);
           runtimeCtx.defineProperty('currentStep', { value: serialized });
 
-          const currentValues = { ...(step.defaultParams || {}) };
-          const previousParams = { ...(step.defaultParams || {}) };
+          const currentValues = { ...getStepSettingsParams(step) };
+          const previousParams = { ...getStepSettingsParams(step) };
 
           if (typeof beforeParamsSave === 'function') {
             await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
@@ -1029,7 +1113,7 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
             });
           }
 
-          step.defaultParams = currentValues;
+          setStepSettingsParams(step, currentValues);
         }
       }
 

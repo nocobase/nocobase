@@ -7,12 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr } from '@nocobase/flow-engine';
-import { CodeEditor } from '../../../components/code-editor';
+import { tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
+import {
+  createJSActionEmbeddedEditorUIMode,
+  createJSActionRunJsUISchema,
+  createJSActionSourceBindingStep,
+  createJSActionSourceModeStep,
+  getJSActionRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  runJSActionRuntime,
+} from '../../actions/jsActionLightExtensionRuntime';
 
-export class FilterFormJSActionModel extends FilterFormActionModel {}
+export class FilterFormJSActionModel extends FilterFormActionModel {
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'clickSettings') {
+      return undefined;
+    }
+
+    return getJSActionRuntimeFlowSettingSteps(this);
+  }
+}
 
 FilterFormJSActionModel.define({
   label: tExpr('JS action'),
@@ -24,43 +40,26 @@ FilterFormJSActionModel.registerFlow({
   on: 'click',
   title: tExpr('Click settings'),
   steps: {
+    sourceMode: createJSActionSourceModeStep(),
+    sourceBinding: createJSActionSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-component': CodeEditor,
-          'x-component-props': {
-            minHeight: '400px',
-            theme: 'light',
-            enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSActionRunJsUISchema({ minHeight: '400px' }),
+      uiMode: createJSActionEmbeddedEditorUIMode,
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: '',
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
-        await ctx.runjs(code, undefined, { version });
+        await runJSActionRuntime({
+          ctx,
+          params: params || {},
+          runJs: resolveRunJsParams(ctx, params),
+        });
       },
     },
   },

@@ -24,9 +24,13 @@ import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../flow-compat';
-import { createRunJSCompletionSource } from './runjsCompletionSource';
+import { createRunJSCompletionSource, type RunJSImportModuleCompletion } from './runjsCompletionSource';
+import { filterRunJSCompletionsForTypeScriptAutoImports } from './runjsCompletions';
 import { inferRunJSScenesFromContext, mergeRunJSScenes } from './resolveScenes';
-interface CodeEditorProps {
+import type { CodeEditorTypeScriptProject } from './typescriptProject';
+import type { CodeEditorJsonSchema } from './jsonLanguageService';
+
+export interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
   placeholder?: string;
@@ -37,17 +41,32 @@ interface CodeEditorProps {
   enableLinter?: boolean;
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
+  moduleImportCompletions?: RunJSImportModuleCompletion[];
+  typescriptProject?: CodeEditorTypeScriptProject;
   version?: string; // runjs 版本（默认 v1）
   name?: string;
   language?: string;
+  jsonSchema?: CodeEditorJsonSchema;
   scene?: string | string[];
   RightExtra?: React.FC<any>;
+  toolbarLeftExtra?: React.ReactNode;
+  runButton?: React.ReactNode;
   showLogs?: boolean;
+  fullscreenControl?: CodeEditorFullscreenControl;
+}
+
+export interface CodeEditorFullscreenControl {
+  isFullscreen: boolean;
+  toggleFullscreen: () => void;
 }
 
 export * from './types';
 export * from './extension';
 export * from './runjsDiagnostics';
+export * from './typescriptProject';
+export * from './typescriptLibraryRegistry';
+export type { CodeEditorJsonSchema } from './jsonLanguageService';
+export type { RunJSImportModuleCompletion } from './runjsCompletionSource';
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
@@ -60,16 +79,25 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   enableLinter = false,
   wrapperStyle,
   extraCompletions,
+  moduleImportCompletions,
+  typescriptProject,
   version = 'v1',
   name,
   language,
+  jsonSchema,
   scene,
   RightExtra,
+  toolbarLeftExtra,
+  runButton,
   showLogs = true,
+  fullscreenControl,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const { isFullscreen, toggleFullscreen, placeholderRef, placeholderStyle, container } = useFullscreenOverlay();
+  const typescriptProjectRef = useRef<CodeEditorTypeScriptProject | undefined>();
+  typescriptProjectRef.current = typescriptProject;
+  const internalFullscreen = useFullscreenOverlay();
+  const isFullscreen = fullscreenControl?.isFullscreen ?? internalFullscreen.isFullscreen;
+  const toggleFullscreen = fullscreenControl?.toggleFullscreen ?? internalFullscreen.toggleFullscreen;
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
@@ -97,16 +125,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   );
   const { run, logs, running } = useCodeRunner(hostCtx, version);
   const [snippetOpen, setSnippetOpen] = useState(false);
-  const getSnippetsContainer = useCallback(() => {
-    const el = wrapperRef.current;
-    if (!el) return document.body;
-    // 优先就近挂载到外层的设置抽屉/对话框容器，确保宽度与右侧面板一致、并覆盖整个右侧区域高度
-    const drawer = (el.closest('.ant-drawer-content-wrapper') ||
-      el.closest('.ant-drawer-content') ||
-      el.closest('.ant-modal-content') ||
-      el.parentElement) as HTMLElement | null;
-    return drawer || document.body;
-  }, []);
   // track active actions for compatibility with upstream layout logic
   // legacy: upstream layout may read this ref in the future; removed internal tracking
   const tr = useCallback(
@@ -126,14 +144,25 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // 合并外部注入与动态构建的 completions
   const finalExtra = useMemo(() => {
     const arr: Completion[] = [];
-    if (Array.isArray(dynamicCompletions)) arr.push(...dynamicCompletions);
+    if (Array.isArray(dynamicCompletions)) {
+      arr.push(
+        ...filterRunJSCompletionsForTypeScriptAutoImports(
+          dynamicCompletions,
+          typescriptProject?.rewriteBuiltInAutoImports === true,
+        ),
+      );
+    }
     if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
-  }, [extraCompletions, dynamicCompletions]);
+  }, [extraCompletions, dynamicCompletions, typescriptProject?.rewriteBuiltInAutoImports]);
 
   const completionSource = useMemo(() => {
-    return createRunJSCompletionSource({ hostCtx, staticOptions: finalExtra });
-  }, [hostCtx, finalExtra]);
+    return createRunJSCompletionSource({
+      hostCtx,
+      staticOptions: finalExtra,
+      moduleImportOptions: moduleImportCompletions,
+    });
+  }, [hostCtx, finalExtra, moduleImportCompletions]);
 
   const runCurrentCode = useCallback(async () => {
     const code = viewRef.current?.state.doc.toString() || '';
@@ -151,8 +180,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // JSX 转换支持暂时移除：直接按原样运行代码
 
   // 错误标注相关工具已提取至 errorHelpers.ts
-
-  // Drawer width is bound to container via getContainer; no explicit observer here
 
   // CodeMirror core moved to EditorCore
 
@@ -196,6 +223,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       />
     </Tooltip>
   );
+  const jsonLanguage = language?.trim().toLowerCase() === 'json';
 
   const node = (
     <div
@@ -212,27 +240,30 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         minHeight: isFullscreen ? 0 : undefined,
         ...wrapperStyle,
       }}
-      ref={wrapperRef}
     >
       <RightExtraPanel
         name={name}
         language={language}
         scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
+        leftContent={toolbarLeftExtra}
         extraContent={
           <>
             {RightExtra ? (
               <RightExtra viewRef={viewRef} />
             ) : (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Button size="small" onClick={() => setSnippetOpen(true)}>
-                  {tr('Snippets')}
-                </Button>
-                <>
-                  <Button size="small" loading={running} onClick={runCurrentCode}>
-                    {tr('Run')}
+                {!jsonLanguage ? (
+                  <Button size="small" onClick={() => setSnippetOpen(true)}>
+                    {tr('Snippets')}
                   </Button>
-                </>
+                ) : null}
+                {runButton ??
+                  (!jsonLanguage ? (
+                    <Button size="small" loading={running} onClick={runCurrentCode}>
+                      {tr('Run')}
+                    </Button>
+                  ) : null)}
               </div>
             )}
             {fullscreenButton}
@@ -249,6 +280,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         readonly={readonly}
         enableLinter={enableLinter}
         completionSource={completionSource}
+        typescriptProjectRef={typescriptProject ? typescriptProjectRef : undefined}
+        language={language}
+        jsonSchema={jsonSchema}
         viewRef={viewRef}
       />
       {showLogs ? (
@@ -261,29 +295,41 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           tr={tr}
         />
       ) : null}
-      <SnippetsDrawer
-        open={snippetOpen}
-        onClose={() => setSnippetOpen(false)}
-        getContainer={getSnippetsContainer}
-        entries={snippetEntries}
-        tr={tr}
-        onInsert={(text) => {
-          const view = viewRef.current;
-          if (!view) return;
-          const { from, to } = view.state.selection.main;
-          const newPos = from + text.length;
-          view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: newPos }, scrollIntoView: true });
-          view.focus();
-          setSnippetOpen(false);
-        }}
-      />
+      {!jsonLanguage ? (
+        <SnippetsDrawer
+          open={snippetOpen}
+          onClose={() => setSnippetOpen(false)}
+          entries={snippetEntries}
+          tr={tr}
+          onInsert={(text) => {
+            const view = viewRef.current;
+            if (!view) return;
+            const { from, to } = view.state.selection.main;
+            const newPos = from + text.length;
+            view.dispatch({
+              changes: { from, to, insert: text },
+              selection: { anchor: newPos },
+              scrollIntoView: true,
+            });
+            view.focus();
+            setSnippetOpen(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 
+  if (fullscreenControl) {
+    return node;
+  }
+
   return (
     <>
-      <div ref={placeholderRef} style={isFullscreen ? placeholderStyle : { display: 'contents' }} />
-      {container ? createPortal(node, container) : null}
+      <div
+        ref={internalFullscreen.placeholderRef}
+        style={isFullscreen ? internalFullscreen.placeholderStyle : { display: 'contents' }}
+      />
+      {internalFullscreen.container ? createPortal(node, internalFullscreen.container) : null}
     </>
   );
 };

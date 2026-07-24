@@ -31,6 +31,8 @@ import {
   compileUiSchema,
   FlowCancelSaveException,
   FlowExitException,
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
@@ -119,6 +121,10 @@ export interface FlowSettingsOpenOptions {
   onCancel?: () => void | Promise<void>;
   /** 配置保存成功后触发的回调 */
   onSaved?: () => void | Promise<void>;
+}
+
+export interface FlowSettingsRegisterComponentsOptions {
+  warnOnOverwrite?: boolean;
 }
 
 export type FlowSettingsComponent = React.ComponentType<any>;
@@ -297,9 +303,13 @@ export class FlowSettings {
    * @example
    * flowSettings.registerComponents({ MyComponent, AnotherComponent });
    */
-  public registerComponents(components: Record<string, any>): void {
+  public registerComponents(
+    components: Record<string, any>,
+    options: FlowSettingsRegisterComponentsOptions = {},
+  ): void {
+    const { warnOnOverwrite = true } = options;
     Object.keys(components).forEach((name) => {
-      if (this.components[name]) {
+      if (warnOnOverwrite && this.components[name]) {
         console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
       }
       this.components[name] = components[name];
@@ -690,6 +700,7 @@ export class FlowSettings {
       previousParams: any;
       beforeParamsSave?: Function;
       afterParamsSave?: Function;
+      persistParams: boolean;
       ctx: any; // FlowRuntimeContext
       uiMode: any; // UI 模式
     };
@@ -707,17 +718,20 @@ export class FlowSettings {
         continue;
       }
 
+      const flowSteps = await getFlowSettingSteps(model, flow, fk);
+      const flowForSettings = createFlowWithSettingSteps(flow as any, flowSteps, fk);
+
       // 遍历步骤，筛选有可配置 UI 的步骤
-      for (const sk of Object.keys(flow.steps || {})) {
+      for (const sk of Object.keys(flowSteps || {})) {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
-        const step = (flow.steps as any)[sk];
-        if (!preset && (!step || (await shouldHideStepInSettings(model, flow, step)))) continue;
+        const step = flowSteps[sk];
+        if (!preset && (!step || (await shouldHideStepInSettings(model, flowForSettings, step)))) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
 
         // 解析合并后的 uiSchema（包含 action 的 schema）
-        const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
+        const mergedUiSchema = await resolveStepUiSchema(model, flowForSettings, step);
         // 计算标题与 hooks
         let stepTitle: string = step.title;
         let beforeParamsSave = step.beforeParamsSave;
@@ -737,7 +751,7 @@ export class FlowSettings {
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, fk);
+        setupRuntimeContextSteps(flowRuntimeContext, flowSteps, model, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
         flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
@@ -752,15 +766,18 @@ export class FlowSettings {
           ...(resolvedDefaultParams || {}),
           ...modelStepParams,
         };
+        const resolvedStepUiMode = await resolveUiMode(uiMode, flowRuntimeContext);
+        const resolvedStepUiModeType =
+          typeof resolvedStepUiMode === 'string' ? resolvedStepUiMode : resolvedStepUiMode.type;
         if (
           (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
-          !['select', 'switch'].includes(uiMode?.type || uiMode)
+          !['select', 'switch', 'cascadeMenu'].includes(resolvedStepUiModeType)
         ) {
           continue;
         }
         entries.push({
           flowKey: fk,
-          flowTitle: t(flow.title) || fk,
+          flowTitle: t(flowForSettings.title) || fk,
           stepKey: sk,
           stepTitle: t(stepTitle) || sk,
           initialValues,
@@ -768,6 +785,7 @@ export class FlowSettings {
           mergedUiSchema, // 存储合并后的 UI Schema，在 renderStepForm 中进行包装
           beforeParamsSave,
           afterParamsSave,
+          persistParams: step.persistParams !== false,
           ctx: flowRuntimeContext,
           uiMode: step.uiMode || uiMode,
         });
@@ -900,7 +918,7 @@ export class FlowSettings {
 
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
-      title: modeProps.title || getTitle(),
+      title: Object.prototype.hasOwnProperty.call(modeProps, 'title') ? modeProps.title : getTitle(),
       width: modeProps.width ?? 600,
       destroyOnClose: true,
       onClose: () => dispose.value(),
@@ -991,7 +1009,9 @@ export class FlowSettings {
               if (!form) continue;
               await form.submit();
               const currentValues = form.values;
-              model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              if (e.persistParams) {
+                model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              }
 
               if (typeof e.beforeParamsSave === 'function') {
                 await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);

@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
-import { Drawer, Input, List, Button, Tag } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Input, List, Button, Tag, Typography } from 'antd';
 import type { SnippetEntry } from '../runjsCompletions';
 
 export const SnippetsDrawer: React.FC<{
   open: boolean;
   onClose: () => void;
-  getContainer: () => HTMLElement;
   entries: SnippetEntry[];
   onInsert: (text: string) => void;
-  tr: (s: string, o?: any) => string;
-}> = ({ open, onClose, getContainer, entries, onInsert, tr }) => {
+  tr: (s: string, o?: Record<string, unknown>) => string;
+}> = ({ open, onClose, entries, onInsert, tr }) => {
   const [query, setQuery] = useState('');
   const filtered = useMemo(() => {
     if (!query) return entries;
@@ -45,24 +45,60 @@ export const SnippetsDrawer: React.FC<{
     return (group?: string) => (group ? map[group] || group : '');
   }, [tr]);
 
+  useEffect(() => {
+    if (!open) {
+      setQuery('');
+    }
+  }, [open]);
+
+  if (!open) {
+    return null;
+  }
+
   return (
-    <Drawer
-      title={tr('Snippets')}
-      open={open}
-      onClose={onClose}
-      getContainer={getContainer}
-      width={'100%'}
-      destroyOnClose
+    <div
+      aria-label={tr('Snippets')}
+      role="dialog"
+      style={{
+        background: '#fff',
+        borderRadius: 6,
+        bottom: 0,
+        boxShadow: '0 6px 16px 0 rgba(0, 0, 0, 0.08)',
+        display: 'flex',
+        flexDirection: 'column',
+        left: 0,
+        minHeight: 0,
+        overflow: 'hidden',
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        zIndex: 10,
+      }}
     >
-      <Input
-        placeholder={tr('Search snippets (name / prefix / body / group)')}
-        allowClear
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{ marginBottom: 12 }}
-      />
+      <div
+        style={{
+          alignItems: 'center',
+          borderBottom: '1px solid #f0f0f0',
+          display: 'flex',
+          gap: 8,
+          minHeight: 40,
+          padding: '0 12px',
+        }}
+      >
+        <Button aria-label={tr('Close')} icon={<CloseOutlined />} onClick={onClose} size="small" type="text" />
+        <Typography.Text strong>{tr('Snippets')}</Typography.Text>
+      </div>
+      <div style={{ borderBottom: '1px solid #f0f0f0', padding: 12 }}>
+        <Input
+          placeholder={tr('Search snippets (name / prefix / body / group)')}
+          allowClear
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
       <List
         dataSource={filtered}
+        style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px' }}
         renderItem={(item) => {
           const groups = item.groups?.length ? item.groups : item.group ? [item.group] : [];
           return (
@@ -99,6 +135,6 @@ export const SnippetsDrawer: React.FC<{
           );
         }}
       />
-    </Drawer>
+    </div>
   );
 };

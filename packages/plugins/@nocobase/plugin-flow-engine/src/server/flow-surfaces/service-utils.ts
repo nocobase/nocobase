@@ -713,6 +713,7 @@ export function toFlowSurfaceBatchItemError(error: any) {
     message: normalized.message,
     status: normalized.status,
     type: normalized.type,
+    ...normalized.options,
   };
 }
 
@@ -764,11 +765,33 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'options',
     'code',
     'version',
+    'sourceMode',
+    'sourceBinding',
+    'settings',
   ]);
   return {
     wrapperChanges: _.pickBy(wrapperChanges, (value) => !_.isUndefined(value)),
     fieldChanges: _.pickBy(fieldChanges, (value) => !_.isUndefined(value)),
   };
+}
+
+const RUN_JS_SOURCE_CHANGE_KEYS = ['code', 'version', 'sourceMode', 'sourceBinding', 'settings'] as const;
+
+export function buildRunJsSourceChanges(changes: Record<string, any>) {
+  if (!hasDefinedValue(changes, [...RUN_JS_SOURCE_CHANGE_KEYS])) {
+    return undefined;
+  }
+
+  return buildDefinedPayload({
+    code: changes.code,
+    version: changes.version,
+    sourceMode:
+      hasOwnDefined(changes, 'sourceMode') || !hasOwnDefined(changes, 'sourceBinding')
+        ? changes.sourceMode
+        : 'light-extension',
+    sourceBinding: changes.sourceBinding,
+    settings: changes.settings,
+  });
 }
 
 export function getCatalogRecordActionContainerUse(use?: string) {

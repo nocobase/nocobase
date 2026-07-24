@@ -8,9 +8,11 @@
  */
 
 import type { FlowSurfaceErrorItemInput } from '../errors';
+import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
 import type { RunJsAuthoringInspectionInput } from './types';
 import type { RunJsAuthoringContext, RunJsSourceBudget } from './internal-types';
 import {
+  ALLOWED_CTX_ROOTS,
   KNOWN_MODEL_USES,
   MAX_RUNJS_ERRORS_PER_SOURCE,
   SURFACE_ALLOWED_MODEL_USES,
@@ -133,6 +135,8 @@ export function inspectRunJsAuthoringCode(
     ];
   }
 
+  errors.push(...collectCompilerUnknownGlobalErrors(input, source, modelUse, surface, surfaceStyle));
+
   const scan = scanJavaScriptSource(source, parseResult.ast, context, modelUse);
   errors.push(
     ...collectRunJsInspectionErrors({
@@ -146,4 +150,55 @@ export function inspectRunJsAuthoringCode(
     }),
   );
   return dedupeErrors(errors).slice(0, MAX_RUNJS_ERRORS_PER_SOURCE);
+}
+
+function collectCompilerUnknownGlobalErrors(
+  input: RunJsAuthoringInspectionInput,
+  source: string,
+  modelUse: string,
+  surface: string,
+  surfaceStyle: 'render' | 'value' | 'action',
+): FlowSurfaceErrorItemInput[] {
+  const additionalAllowedGlobals = modelUse === 'ChartEventsModel' ? ['chart', 'params'] : undefined;
+  return runJSSourceCodeInspectorRegistry
+    .inspect({
+      code: source,
+      path: input.path,
+      surfaceStyle,
+      additionalAllowedGlobals,
+    })
+    .filter((diagnostic) => diagnostic.ruleId === 'runjs-global-unknown')
+    .map((diagnostic) => {
+      const globalName = typeof diagnostic.details?.global === 'string' ? diagnostic.details.global : '';
+      const suggestedCapability = ALLOWED_CTX_ROOTS.has(globalName) ? `ctx.${globalName}` : undefined;
+      const suggestion = suggestedCapability
+        ? `; use ${suggestedCapability} or assign it to a local variable first`
+        : '; declare or import it before using it';
+      return buildRunJsAuthoringError({
+        path: input.path,
+        repairClass: 'unknown-global-stop',
+        ruleId: 'runjs-global-unknown',
+        message: `flowSurfaces authoring ${input.path} cannot access unknown RunJS global ${globalName}${suggestion}`,
+        modelUse,
+        surface,
+        index: sourceIndexFromLocation(source, diagnostic.line, diagnostic.column),
+        source,
+        details: {
+          global: globalName,
+          suggestedCapability,
+        },
+      });
+    });
+}
+
+function sourceIndexFromLocation(source: string, line?: number, column?: number): number {
+  if (!line || line < 1 || !column || column < 1) {
+    return 0;
+  }
+  const lines = source.split(/\r\n|\r|\n/);
+  let index = 0;
+  for (let currentLine = 1; currentLine < line && currentLine <= lines.length; currentLine += 1) {
+    index += lines[currentLine - 1].length + 1;
+  }
+  return Math.min(source.length, index + column - 1);
 }

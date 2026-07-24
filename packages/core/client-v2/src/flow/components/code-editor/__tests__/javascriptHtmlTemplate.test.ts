@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { syntaxTree } from '@codemirror/language';
+import { ensureSyntaxTree } from '@codemirror/language';
 import { CompletionContext } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
 import { describe, expect, it, beforeAll } from 'vitest';
@@ -27,9 +27,9 @@ describe('javascriptWithHtmlTemplates', () => {
     });
 
     const htmlPos = state.doc.toString().indexOf('div class');
-    const node = syntaxTree(state).resolveInner(htmlPos, 1);
+    const node = ensureSyntaxTree(state, state.doc.length, 1_000)?.resolveInner(htmlPos, 1);
 
-    expect(node.name).toBe('TagName');
+    expect(node?.name).toBe('TagName');
   });
 
   it('preserves interpolation nodes from javascript parser', () => {
@@ -40,9 +40,9 @@ describe('javascriptWithHtmlTemplates', () => {
     });
 
     const variablePos = state.doc.toString().indexOf('value');
-    const node = syntaxTree(state).resolveInner(variablePos, 1);
+    const node = ensureSyntaxTree(state, state.doc.length, 1_000)?.resolveInner(variablePos, 1);
 
-    expect(node.name).toBe('VariableName');
+    expect(node?.name).toBe('VariableName');
   });
 
   it('defers to html completions inside template literals', async () => {

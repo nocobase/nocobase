@@ -196,6 +196,7 @@ const JS_ACTION_USES = new Set([
   'JSActionModel',
 ]);
 const JS_ITEM_ACTION_USES = new Set(['JSItemActionModel']);
+const JS_BOUND_FIELD_USES = new Set(['JSFieldModel', 'JSEditableFieldModel']);
 const BASIC_FIELD_STEP_PARAM_GROUPS = new Set([
   'fieldSettings',
   'tableColumnSettings',
@@ -370,7 +371,18 @@ const EXPORTED_BLOCK_CARD_SETTING_PATHS = [
 ];
 const EXPORTED_SIMPLE_BLOCK_SETTING_PATHS_BY_TYPE: Record<string, readonly string[]> = {
   markdown: ['editMarkdown.content'],
-  jsBlock: ['runJs.code', 'runJs.version', 'showBlockCard.showBlockCard'],
+  jsBlock: [
+    'runJs.code',
+    'runJs.version',
+    'runJs.sourceRef.*',
+    'runJs.sourceMode',
+    'runJs.sourceBinding.*',
+    'runJs.settings.*',
+    'sourceMode',
+    'sourceBinding.*',
+    'settings.*',
+    'showBlockCard.showBlockCard',
+  ],
   iframe: ['editIframe'],
 };
 const EXPORTED_BLOCK_STEP_PARAM_PATHS_BY_GROUP: Record<string, readonly string[]> = {
@@ -428,7 +440,13 @@ const EXPORTED_FILTER_FORM_ITEM_SETTING_PATHS = [
   'description.description',
   'initialValue.defaultValue',
 ];
-const EXPORTED_JS_FIELD_SETTING_PATHS = ['runJs.code', 'runJs.version'];
+const EXPORTED_JS_FIELD_SETTING_PATHS = [
+  'runJs.code',
+  'runJs.version',
+  'runJs.sourceMode',
+  'runJs.sourceBinding.*',
+  'runJs.settings.*',
+];
 const EXPORTED_FIELD_DECORATOR_PROP_KEYS = new Set(['labelWidth', 'labelWrap']);
 const TABLE_FIELD_PUBLIC_PROP_KEYS = new Set([
   'title',
@@ -478,6 +496,7 @@ const FILTER_FIELD_PUBLIC_PROP_KEYS = new Set([
 ]);
 const FIELD_PUBLIC_PROP_KEYS_BY_USE: Record<string, ReadonlySet<string>> = {
   TableColumnModel: TABLE_FIELD_PUBLIC_PROP_KEYS,
+  JSColumnModel: TABLE_FIELD_PUBLIC_PROP_KEYS,
   FormItemModel: FORM_FIELD_PUBLIC_PROP_KEYS,
   PatternFormItemModel: FORM_FIELD_PUBLIC_PROP_KEYS,
   DetailsItemModel: DETAIL_FIELD_PUBLIC_PROP_KEYS,
@@ -1276,10 +1295,17 @@ function exportSimpleBlockSettings(block: FlowSurfaceExportNode, type: string) {
   }
 
   if (type === 'jsBlock') {
-    const runJs = clonePlainObject(getByPath(block, ['stepParams', 'jsSettings', 'runJs']));
+    const jsSettings = getByPath<Record<string, unknown>>(block, ['stepParams', 'jsSettings']) || {};
+    const runJs = clonePlainObject(jsSettings.runJs);
     const showBlockCard = getByPath(block, ['stepParams', 'jsSettings', 'showBlockCard', 'showBlockCard']);
+    const sourceMode = readString(runJs?.sourceMode) || readString(jsSettings.sourceMode);
+    const sourceBinding = clonePlainObject(runJs?.sourceBinding) || clonePlainObject(jsSettings.sourceBinding);
+    const instanceSettings = clonePlainObject(runJs?.settings) || clonePlainObject(jsSettings.settings);
     const settings = buildDefinedPayload({
       ...(runJs || {}),
+      sourceMode,
+      sourceBinding,
+      settings: instanceSettings,
       showBlockCard: showBlockCard === false ? false : undefined,
     });
     return buildDefinedPayload({
@@ -1626,6 +1652,24 @@ function hasUnsupportedInnerFieldProps(
   });
 }
 
+function hasUnsupportedInnerFieldRunJsSettings(innerField: FlowSurfaceExportNode) {
+  const jsSettings = getByPath<Record<string, unknown>>(innerField, ['stepParams', 'jsSettings']);
+  if (!jsSettings || isEmptyPlainContainer(jsSettings)) {
+    return false;
+  }
+  if (!isBoundJsFieldNode(innerField)) {
+    return true;
+  }
+  return hasUnsupportedLeafPath(jsSettings, EXPORTED_JS_FIELD_SETTING_PATHS);
+}
+
+function isBoundJsFieldNode(innerField: FlowSurfaceExportNode | undefined) {
+  return (
+    JS_BOUND_FIELD_USES.has(String(innerField?.use || '')) ||
+    JS_BOUND_FIELD_USES.has(readString(getByPath(innerField, ['stepParams', 'fieldBinding', 'use'])))
+  );
+}
+
 function hasUnsupportedFieldStepParams(fieldHost: FlowSurfaceExportNode) {
   const stepParams = fieldHost.stepParams || {};
   return Object.entries(stepParams).some(([groupKey, groupValue]) => {
@@ -1692,6 +1736,9 @@ function hasUnsupportedFieldPublicState(fieldHost: FlowSurfaceExportNode) {
         allowDefaultClickToOpen: isDefaultRelationDisplayClickToOpenState(innerField),
       })
     ) {
+      return true;
+    }
+    if (hasUnsupportedInnerFieldRunJsSettings(innerField)) {
       return true;
     }
   }
@@ -1863,6 +1910,7 @@ function exportFilterFieldPublicSettings(fieldHost: FlowSurfaceExportNode) {
 function exportFieldPublicSettings(fieldHost: FlowSurfaceExportNode) {
   switch (fieldHost.use) {
     case 'TableColumnModel':
+    case 'JSColumnModel':
       return exportTableFieldPublicSettings(fieldHost);
     case 'FormItemModel':
     case 'PatternFormItemModel':
@@ -1888,9 +1936,14 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
   if (fieldHost.use === 'JSColumnModel' || fieldHost.use === 'JSItemModel') {
     const runJs = clonePlainObject(getByPath(fieldHost, ['stepParams', 'jsSettings', 'runJs']));
     const type = fieldHost.use === 'JSColumnModel' ? 'jsColumn' : 'jsItem';
+    const publicSettings = exportFieldPublicSettings(fieldHost);
+    const settings = buildDefinedPayload({
+      ...((publicSettings as { settings?: Record<string, unknown> }).settings || {}),
+      ...(runJs || {}),
+    });
     return buildDefinedPayload({
       type,
-      settings: runJs,
+      settings: Object.keys(settings).length ? settings : undefined,
     });
   }
 
@@ -1902,6 +1955,8 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
 
   const publicSettings = exportFieldPublicSettings(fieldHost);
   const innerField = getSubNode(fieldHost, 'field');
+  const isJsField = isBoundJsFieldNode(innerField);
+  const runJs = isJsField ? clonePlainObject(getByPath(innerField, ['stepParams', 'jsSettings', 'runJs'])) : undefined;
   const fieldType = inferExportFieldType(innerField);
   const titleField =
     readString(getByPath(fieldHost, ['stepParams', 'tableColumnSettings', 'fieldNames', 'label'])) ||
@@ -1910,16 +1965,21 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
     readString(fieldHost.props?.titleField) ||
     readString(innerField?.props?.titleField);
   const popup = exportPopupSummary(fieldHost.popup);
+  const settings = buildDefinedPayload({
+    ...((publicSettings as { settings?: Record<string, unknown> }).settings || {}),
+    ...(runJs || {}),
+  });
 
   return buildDefinedPayload({
     field: fieldPath,
     associationPathName: readString(init?.associationPathName),
+    renderer: isJsField ? 'js' : undefined,
     fieldType,
     fields:
       fieldType && FIELD_TYPES_WITH_NESTED_FIELDS.has(fieldType) && nestedFields?.length ? nestedFields : undefined,
     label: (publicSettings as { label?: string }).label,
     titleField,
-    settings: (publicSettings as { settings?: Record<string, unknown> }).settings,
+    settings: Object.keys(settings).length ? settings : undefined,
     popup,
   });
 }
@@ -2168,7 +2228,7 @@ function hasUnsupportedActionRunJsSettings(action: FlowSurfaceExportNode, type: 
     return true;
   }
   const runJs = readActionRunJsSettings(action);
-  return !!runJs && Object.keys(runJs).some((key) => key !== 'code' && key !== 'version');
+  return !!runJs && hasUnsupportedLeafPath({ runJs }, EXPORTED_JS_FIELD_SETTING_PATHS);
 }
 
 function isActionPropExportable(action: FlowSurfaceExportNode, type: string, key: string) {

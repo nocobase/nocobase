@@ -52,6 +52,26 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     });
   });
 
+  it('should resolve JavaScript page flowPage to the same v2 runtime target', () => {
+    expect(
+      resolveAdminRouteRuntimeTarget({
+        app,
+        route: {
+          type: NocoBaseDesktopRouteType.flowPage,
+          schemaUid: 'js-page-1',
+          options: {
+            pageType: 'js-page',
+          },
+        },
+      }),
+    ).toEqual({
+      runtimePath: '/nocobase/v2/admin/js-page-1',
+      navigationMode: 'spa',
+      isLegacy: false,
+      reason: 'ok',
+    });
+  });
+
   it('should resolve flowPage under a custom admin layout route path', () => {
     expect(
       resolveAdminRouteRuntimeTarget({

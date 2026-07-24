@@ -18,6 +18,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import './runjs-source-inspector.setup';
 import { uid } from '@nocobase/utils';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';

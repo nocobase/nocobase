@@ -8,6 +8,28 @@
  */
 
 import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
+import {
+  resolveRoutePageModelClass,
+  type RoutePageModelLayout,
+  type RoutePageModelRoute,
+  type UnsupportedV2PageTypeDiagnostic,
+} from './resolveRoutePageModelClass';
+
+const warnedUnsupportedPageTypes = new Set<string>();
+
+function warnUnsupportedPageTypeOnce(diagnostic: UnsupportedV2PageTypeDiagnostic) {
+  const key = `${diagnostic.routeIdentity}:${String(diagnostic.pageType)}`;
+  if (warnedUnsupportedPageTypes.has(key)) {
+    return;
+  }
+  warnedUnsupportedPageTypes.add(key);
+  console.warn('[NocoBase] Unsupported v2 page type; using the layout root page model.', diagnostic);
+}
+
+interface RouteModelRuntimeContext {
+  currentRoute?: RoutePageModelRoute;
+  layout?: RoutePageModelLayout;
+}
 
 export class RouteModel<T = DefaultStructure> extends FlowModel<T> {}
 
@@ -18,10 +40,15 @@ RouteModel.registerFlow({
     openView: {
       use: 'openView',
       defaultParams(ctx) {
+        const runtimeContext = ctx as typeof ctx & RouteModelRuntimeContext;
         return {
           mode: 'embed',
           preventClose: true,
-          pageModelClass: ctx.layout?.rootPageModelClass || 'RootPageModel',
+          pageModelClass: resolveRoutePageModelClass(
+            runtimeContext.currentRoute,
+            runtimeContext.layout,
+            warnUnsupportedPageTypeOnce,
+          ),
         };
       },
     },

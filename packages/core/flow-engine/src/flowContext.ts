@@ -4581,11 +4581,31 @@ function __mergeRunJSDocMeta(base: any, patch: any): RunJSDocMeta {
 
   return out as RunJSDocMeta;
 }
+
+type RunJSReactWrapper = (react: typeof React) => typeof React;
+
+function getRunJSReactWrapper(delegate: FlowContext): RunJSReactWrapper | null {
+  const wrapper = (delegate as { wrapRunJSReact?: unknown }).wrapRunJSReact;
+  return typeof wrapper === 'function' ? (wrapper as RunJSReactWrapper) : null;
+}
+
+function resolveRunJSReact(delegate: FlowContext): typeof React {
+  const wrapper = getRunJSReactWrapper(delegate);
+  if (!wrapper) {
+    return React;
+  }
+
+  const wrappedReact = wrapper(React);
+  return wrappedReact && typeof (wrappedReact as { createElement?: unknown }).createElement === 'function'
+    ? wrappedReact
+    : React;
+}
+
 export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
-    this.defineProperty('React', { value: React });
+    this.defineProperty('React', { value: resolveRunJSReact(delegate) });
     this.defineProperty('antd', { value: antd });
     this.defineProperty('dayjs', {
       value: dayjs,
@@ -4641,6 +4661,8 @@ export class FlowRunJSContext extends FlowContext {
         const el = (container as any) || (this.element as any);
         if (!el) throw new Error('ctx.render: container not provided and ctx.element is not available');
         const containerEl: any = (el as any)?.__el || el; // unwrap ElementProxy
+        const wrapRunJSVNode = typeof this.wrapRunJSVNode === 'function' ? this.wrapRunJSVNode : null;
+        const runtimeVNode = wrapRunJSVNode ? wrapRunJSVNode(vnode) : vnode;
         const globalRef: any = globalThis as any;
         globalRef.__nbRunjsRoots = globalRef.__nbRunjsRoots || new WeakMap<any, any>();
         const rootMap: WeakMap<any, any> = globalRef.__nbRunjsRoots;
@@ -4674,22 +4696,24 @@ export class FlowRunJSContext extends FlowContext {
         };
 
         // If vnode is string (HTML), unmount react root and set sanitized HTML
-        if (typeof vnode === 'string') {
+        if (typeof runtimeVNode === 'string') {
           unmountContainerRoot();
           const proxy: any = new ElementProxy(containerEl);
-          proxy.innerHTML = String(vnode ?? '');
+          proxy.innerHTML = String(runtimeVNode ?? '');
           return null;
         }
 
         // If vnode is a DOM Node or DocumentFragment, unmount and replace content
         if (
-          vnode &&
-          (vnode as any).nodeType &&
-          ((vnode as any).nodeType === 1 || (vnode as any).nodeType === 3 || (vnode as any).nodeType === 11)
+          runtimeVNode &&
+          (runtimeVNode as any).nodeType &&
+          ((runtimeVNode as any).nodeType === 1 ||
+            (runtimeVNode as any).nodeType === 3 ||
+            (runtimeVNode as any).nodeType === 11)
         ) {
           unmountContainerRoot();
           while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
-          containerEl.appendChild(vnode as any);
+          containerEl.appendChild(runtimeVNode as any);
           return null;
         }
 
@@ -4716,7 +4740,7 @@ export class FlowRunJSContext extends FlowContext {
         return externalReactRender({
           ctx: this,
           entry,
-          vnode,
+          vnode: runtimeVNode,
           containerEl,
           rootMap,
           unmountContainerRoot,

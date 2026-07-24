@@ -20,6 +20,7 @@ import type {
   FlowSurfaceFieldCatalogProjectableItem,
   FlowSurfaceFieldCatalogLightCandidate,
 } from './catalog-smart.types';
+import type { FlowSurfaceNodeContract } from './types';
 
 const LIGHT_CATALOG_ITEM_KEYS = [
   'key',
@@ -49,19 +50,59 @@ function pickLightCatalogItem(item: FlowSurfaceCatalogProjectableItem): FlowSurf
   return _.pickBy(projected, (value) => !_.isUndefined(value)) as FlowSurfaceCatalogProjectedItem;
 }
 
-function createNodeContractResolver(
-  item: Pick<FlowSurfaceCatalogProjectableItem, 'use'>,
-  options: Pick<FlowSurfaceCatalogProjectItemOptions, 'getNodeContract'>,
-) {
-  let loaded = false;
-  let cached: ReturnType<FlowSurfaceCatalogProjectItemOptions['getNodeContract']> | undefined;
-
-  return () => {
-    if (!loaded) {
-      cached = options.getNodeContract(item.use);
-      loaded = true;
+function mergeCatalogNodeContracts(...contracts: FlowSurfaceNodeContract[]): FlowSurfaceNodeContract {
+  return _.mergeWith({}, ...contracts, (currentValue, nextValue) => {
+    if (Array.isArray(currentValue) && Array.isArray(nextValue)) {
+      return _.uniq([...currentValue, ...nextValue]);
     }
-    return cached;
+    return undefined;
+  }) as FlowSurfaceNodeContract;
+}
+
+function buildSettingsSchema(contract: FlowSurfaceNodeContract) {
+  return Object.fromEntries(
+    Object.entries(contract.domains).map(([domain, definition]) => [
+      domain,
+      {
+        ...definition?.schema,
+        'x-allowedKeys': definition?.allowedKeys || [],
+        'x-wildcard': !!definition?.wildcard,
+        'x-mergeStrategy': definition?.mergeStrategy || 'deep',
+        'x-pathSchemas': definition?.pathSchemas,
+        'x-groups': definition?.groups
+          ? Object.fromEntries(
+              Object.entries(definition.groups).map(([groupKey, group]) => [
+                groupKey,
+                {
+                  allowedPaths: group.allowedPaths,
+                  clearable: !!group.clearable,
+                  mergeStrategy: group.mergeStrategy,
+                  eventBindingSteps: group.eventBindingSteps,
+                  pathSchemas: group.pathSchemas,
+                },
+              ]),
+            )
+          : undefined,
+      },
+    ]),
+  );
+}
+
+function resolveCatalogItemContract(
+  item: FlowSurfaceCatalogProjectableItem,
+  options: FlowSurfaceCatalogProjectItemOptions,
+) {
+  const wrapperContract = options.getNodeContract(item.use);
+  const isBoundJsField = item.kind === 'field' && item.renderer === 'js' && item.fieldUse && item.fieldUse !== item.use;
+  if (!isBoundJsField) {
+    return {
+      contract: wrapperContract,
+      composite: false,
+    };
+  }
+  return {
+    contract: mergeCatalogNodeContracts(wrapperContract, options.getNodeContract(item.fieldUse)),
+    composite: true,
   };
 }
 
@@ -115,22 +156,33 @@ export function projectCatalogItem(
   }
 
   if (expand.includeItemContracts) {
-    const resolveContract = createNodeContractResolver(item, options);
-    projected.editableDomains = !_.isUndefined(item.editableDomains)
-      ? item.editableDomains
-      : options.getEditableDomains(item.use);
-    projected.settingsSchema = !_.isUndefined(item.settingsSchema)
-      ? item.settingsSchema
-      : options.getSettingsSchema(item.use);
-    projected.settingsContract = !_.isUndefined(item.settingsContract)
-      ? item.settingsContract
-      : resolveContract()?.domains;
-    projected.eventCapabilities = !_.isUndefined(item.eventCapabilities)
-      ? item.eventCapabilities
-      : resolveContract()?.eventCapabilities;
-    projected.layoutCapabilities = !_.isUndefined(item.layoutCapabilities)
-      ? item.layoutCapabilities
-      : resolveContract()?.layoutCapabilities;
+    const resolvedContract = resolveCatalogItemContract(item, options);
+    const contract = resolvedContract.contract;
+    projected.editableDomains = resolvedContract.composite
+      ? contract.editableDomains
+      : !_.isUndefined(item.editableDomains)
+        ? item.editableDomains
+        : options.getEditableDomains(item.use);
+    projected.settingsSchema = resolvedContract.composite
+      ? buildSettingsSchema(contract)
+      : !_.isUndefined(item.settingsSchema)
+        ? item.settingsSchema
+        : options.getSettingsSchema(item.use);
+    projected.settingsContract = resolvedContract.composite
+      ? contract.domains
+      : !_.isUndefined(item.settingsContract)
+        ? item.settingsContract
+        : contract.domains;
+    projected.eventCapabilities = resolvedContract.composite
+      ? contract.eventCapabilities
+      : !_.isUndefined(item.eventCapabilities)
+        ? item.eventCapabilities
+        : contract.eventCapabilities;
+    projected.layoutCapabilities = resolvedContract.composite
+      ? contract.layoutCapabilities
+      : !_.isUndefined(item.layoutCapabilities)
+        ? item.layoutCapabilities
+        : contract.layoutCapabilities;
   }
 
   return _.pickBy(projected, (value) => !_.isUndefined(value)) as FlowSurfaceCatalogProjectedItem;

@@ -8,6 +8,12 @@
  */
 
 import type { Completion, CompletionContext, CompletionResult, CompletionSource } from '@codemirror/autocomplete';
+import type { Text } from '@codemirror/state';
+import {
+  loadRunJSCompletionCatalog,
+  type RunJSCompletionCatalogEntry,
+  type RunJSCompletionCatalogLibrary,
+} from './completion-catalogs/runjsCompletionCatalog';
 import { isHtmlTemplateContext } from './htmlCompletion';
 import { createJsxCompletion } from './jsxCompletion';
 
@@ -16,11 +22,19 @@ const WORD_RE = /[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u;
 type CreateRunJSCompletionSourceOptions = {
   hostCtx: any;
   staticOptions?: Completion[];
+  moduleImportOptions?: RunJSImportModuleCompletion[];
+  catalogLoader?: (library: RunJSCompletionCatalogLibrary) => Promise<readonly RunJSCompletionCatalogEntry[]>;
   /**
    * Roots that should use FlowContext meta tree to provide deep completions.
    * When omitted/empty, all `ctx.*` roots are enabled.
    */
   metaRoots?: string[];
+};
+
+export type RunJSImportModuleCompletion = {
+  specifier: string;
+  detail?: string;
+  exports?: string[];
 };
 
 const isPromiseLike = (v: any): v is Promise<any> =>
@@ -29,9 +43,22 @@ const isPromiseLike = (v: any): v is Promise<any> =>
 export function createRunJSCompletionSource({
   hostCtx,
   staticOptions,
+  moduleImportOptions,
+  catalogLoader = loadRunJSCompletionCatalog,
   metaRoots,
 }: CreateRunJSCompletionSourceOptions): CompletionSource {
   const optionsSnapshot: Completion[] = Array.isArray(staticOptions) ? staticOptions : [];
+  const importModules = Array.isArray(moduleImportOptions)
+    ? moduleImportOptions
+        .map((item) => ({
+          specifier: typeof item?.specifier === 'string' ? item.specifier : '',
+          detail: typeof item?.detail === 'string' ? item.detail : undefined,
+          exports: Array.isArray(item?.exports)
+            ? Array.from(new Set(item.exports.map((name) => String(name || '').trim()).filter(Boolean))).sort()
+            : [],
+        }))
+        .filter((item) => item.specifier)
+    : [];
   const jsxCompletion = createJsxCompletion();
   const enabledRoots =
     Array.isArray(metaRoots) && metaRoots.length > 0 ? new Set(metaRoots.map((r) => String(r))) : null;
@@ -59,7 +86,7 @@ export function createRunJSCompletionSource({
 
   const normalizeLabel = (label: string): string => (typeof label === 'string' ? label.trim() : '');
 
-  const isInStringLiteral = (doc: any, pos: number): boolean => {
+  const isInStringLiteral = (doc: Text | undefined, pos: number, includeComments = false): boolean => {
     try {
       const end = typeof pos === 'number' && Number.isFinite(pos) ? Math.max(0, Math.floor(pos)) : 0;
       const start = Math.max(0, end - 4000);
@@ -156,7 +183,7 @@ export function createRunJSCompletionSource({
         }
       }
 
-      return inSingle || inDouble || inTemplate;
+      return inSingle || inDouble || inTemplate || (includeComments && (inLineComment || inBlockComment));
     } catch (_) {
       return false;
     }
@@ -368,6 +395,207 @@ export function createRunJSCompletionSource({
     return metaOptions;
   };
 
+  const getCurrentLineParts = (context: CompletionContext): { before: string; after: string; lineStart: number } => {
+    const doc = context.state.doc;
+    const pos = context.pos;
+    let lineStart = pos;
+    while (lineStart > 0 && doc.sliceString(lineStart - 1, lineStart) !== '\n') {
+      lineStart -= 1;
+    }
+
+    let lineEnd = pos;
+    const docLength = doc.length;
+    while (lineEnd < docLength && doc.sliceString(lineEnd, lineEnd + 1) !== '\n') {
+      lineEnd += 1;
+    }
+
+    return {
+      before: doc.sliceString(lineStart, pos),
+      after: doc.sliceString(pos, lineEnd),
+      lineStart,
+    };
+  };
+
+  const getImportSourceContext = (
+    context: CompletionContext,
+  ): { from: number; to: number; fragment: string } | null => {
+    if (!importModules.length) return null;
+    const { before, after } = getCurrentLineParts(context);
+    const match =
+      before.match(/\b(?:import|export)\s+(?:[^'"]*\s+from\s*)?(['"])([^'"]*)$/) ||
+      before.match(/\bimport\s*\(\s*(['"])([^'"]*)$/);
+    if (!match) return null;
+
+    const fragment = match[2] || '';
+    if (!context.explicit && !fragment) return null;
+
+    const suffix = after.match(/^([^'"]*)['"]/);
+    const to = suffix ? context.pos + suffix[1].length : context.pos;
+    return {
+      from: context.pos - fragment.length,
+      to,
+      fragment,
+    };
+  };
+
+  const getNamedImportContext = (
+    context: CompletionContext,
+  ): { from: number; to: number; moduleSpecifier: string } | null => {
+    if (!importModules.length) return null;
+    const { before, after } = getCurrentLineParts(context);
+    const beforeMatch = before.match(/\bimport\s+(?:type\s+)?\{([^{}]*)$/);
+    if (!beforeMatch) return null;
+
+    const afterMatch = after.match(/^[^{}]*\}\s*from\s*(['"])([^'"]+)\1/);
+    if (!afterMatch) return null;
+
+    const importedPrefix = beforeMatch[1] || '';
+    const currentNameMatch = importedPrefix.match(/[$_\p{Letter}][$_\p{Letter}\p{Number}]*$/u);
+    const typedName = currentNameMatch?.[0] || '';
+    if (!context.explicit && !typedName) return null;
+
+    return {
+      from: context.pos - typedName.length,
+      to: context.pos,
+      moduleSpecifier: afterMatch[2],
+    };
+  };
+
+  const buildImportSourceResult = (context: CompletionContext): CompletionResult | null => {
+    const sourceContext = getImportSourceContext(context);
+    if (!sourceContext) return null;
+
+    return {
+      from: sourceContext.from,
+      to: sourceContext.to,
+      options: importModules.map((item) => ({
+        label: item.specifier,
+        type: 'file',
+        detail: item.detail,
+        boost: 120,
+      })),
+      validFor: /^[^'"]*$/,
+    };
+  };
+
+  const buildNamedImportResult = (context: CompletionContext): CompletionResult | null => {
+    const namedContext = getNamedImportContext(context);
+    if (!namedContext) return null;
+
+    const moduleInfo = importModules.find((item) => item.specifier === namedContext.moduleSpecifier);
+    if (!moduleInfo?.exports?.length) return null;
+
+    return {
+      from: namedContext.from,
+      to: namedContext.to,
+      options: moduleInfo.exports.map((name) => ({
+        label: name,
+        type: 'variable',
+        detail: moduleInfo.specifier,
+        boost: 130,
+      })),
+      validFor: /^[$_\p{Letter}\p{Number}]*$/u,
+    };
+  };
+
+  type CatalogCompletionContext = {
+    library: RunJSCompletionCatalogLibrary;
+    from: number;
+    to: number;
+    staticPrefix: string;
+    excludedNames: ReadonlySet<string>;
+  };
+
+  const getCatalogCompletionContext = (context: CompletionContext): CatalogCompletionContext | null => {
+    if (isInStringLiteral(context.state.doc, context.pos, true)) return null;
+    const { before, after } = getCurrentLineParts(context);
+    const memberMatch = before.match(
+      /(ctx(?:\.libs)?\.(antdIcons|antd))\.([$_\p{Letter}][$_\p{Letter}\p{Number}]*)?$/u,
+    );
+    if (memberMatch) {
+      const fragment = memberMatch[3] || '';
+      const library = memberMatch[2] === 'antdIcons' ? 'antd-icons' : 'antd';
+      return {
+        library,
+        from: context.pos - fragment.length,
+        to: context.pos,
+        staticPrefix: `${memberMatch[1]}.`,
+        excludedNames: new Set<string>(),
+      };
+    }
+
+    const destructureBefore = before.match(/\b(?:const|let|var)\s*\{([^{}]*)$/u);
+    const destructureAfter = after.match(/^[^{}]*\}\s*=\s*(ctx(?:\.libs)?\.antd)\b/u);
+    if (!destructureBefore || !destructureAfter) return null;
+    const bindings = destructureBefore[1] || '';
+    const segments = bindings.split(',');
+    const currentSegment = segments.pop() || '';
+    if (currentSegment.includes(':') || currentSegment.includes('...')) return null;
+    const currentName = currentSegment.match(/[$_\p{Letter}][$_\p{Letter}\p{Number}]*$/u)?.[0] || '';
+    if (!context.explicit && !currentName) return null;
+    const excludedNames = new Set(
+      segments
+        .map((segment) => segment.trim().match(/^([$_\p{Letter}][$_\p{Letter}\p{Number}]*)/u)?.[1])
+        .filter((name): name is string => Boolean(name)),
+    );
+    return {
+      library: 'antd',
+      from: context.pos - currentName.length,
+      to: context.pos,
+      staticPrefix: `${destructureAfter[1]}.`,
+      excludedNames,
+    };
+  };
+
+  const catalogEntryType = (entry: RunJSCompletionCatalogEntry): Completion['type'] => {
+    if (entry.category === 'component' || entry.category === 'icon') return 'class';
+    if (entry.category === 'function') return 'function';
+    if (entry.category === 'object') return 'namespace';
+    return 'variable';
+  };
+
+  const getContextualStaticOptions = (prefix: string): Completion[] => {
+    const contextual = optionsSnapshot
+      .map((completion) => {
+        const label = normalizeLabel(completion.label);
+        if (!label.startsWith(prefix)) return undefined;
+        const memberName = label.slice(prefix.length).replace(/\(\)$/u, '');
+        if (!memberName || memberName.includes('.')) return undefined;
+        return { ...completion, label: memberName, displayLabel: memberName } as Completion;
+      })
+      .filter((completion): completion is Completion => Boolean(completion));
+    return dedupeByLabelKeepLast(contextual);
+  };
+
+  const buildCatalogResult = async (context: CompletionContext): Promise<CompletionResult | null> => {
+    const catalogContext = getCatalogCompletionContext(context);
+    if (!catalogContext) return null;
+    const entries = await catalogLoader(catalogContext.library);
+    const staticOptions = getContextualStaticOptions(catalogContext.staticPrefix).filter(
+      (completion) => !catalogContext.excludedNames.has(normalizeLabel(completion.label)),
+    );
+    const staticLabels = new Set(staticOptions.map((completion) => normalizeLabel(completion.label)));
+    const catalogOptions = entries
+      .filter((entry) => !catalogContext.excludedNames.has(entry.name) && !staticLabels.has(entry.name))
+      .map(
+        (entry): Completion => ({
+          label: entry.name,
+          type: catalogEntryType(entry),
+          detail: `${entry.category} · ${entry.packId}`,
+          info: entry.source,
+          boost: 55,
+        }),
+      );
+    const options = [...staticOptions, ...catalogOptions];
+    if (!options.length) return null;
+    return {
+      from: catalogContext.from,
+      to: catalogContext.to,
+      options,
+      validFor: /^[$_\p{Letter}\p{Number}]*$/u,
+    };
+  };
+
   const dedupeByLabelKeepLast = (list: Completion[]): Completion[] => {
     const seen = new Set<string>();
     const out: Completion[] = [];
@@ -397,10 +625,19 @@ export function createRunJSCompletionSource({
       // ignore
     }
 
+    const importSourceResult = buildImportSourceResult(context);
+    if (importSourceResult) return importSourceResult;
+
+    const namedImportResult = buildNamedImportResult(context);
+    if (namedImportResult) return namedImportResult;
+
+    const catalogResult = await buildCatalogResult(context);
+    if (catalogResult) return catalogResult;
+
     const word = context.matchBefore(WORD_RE);
     if (!word) {
       if (context.explicit) {
-        return { from: context.pos, to: context.pos, options: optionsSnapshot };
+        return optionsSnapshot.length ? { from: context.pos, to: context.pos, options: optionsSnapshot } : null;
       }
       return null;
     }
@@ -446,6 +683,9 @@ export function createRunJSCompletionSource({
 
     const merged =
       metaOptions.length > 0 ? dedupeByLabelKeepLast([...filteredSnapshot, ...metaOptions]) : optionsSnapshot;
+    if (!merged.length) {
+      return null;
+    }
 
     return {
       from: word.from,

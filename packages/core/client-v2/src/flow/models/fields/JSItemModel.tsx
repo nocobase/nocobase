@@ -7,11 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, FormItem, tExpr } from '@nocobase/flow-engine';
+import { FormItem, tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import React from 'react';
-import { CodeEditor } from '../../components/code-editor';
 import { CommonItemModel } from '../base/CommonItemModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
+import {
+  createJSItemRunJsUISchema,
+  createJSItemEmbeddedEditorUIMode,
+  createJSItemSourceBindingStep,
+  createJSItemSourceModeStep,
+  getJSItemRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  resetJSItemRuntimeElement,
+  runJSItemRuntime,
+} from './jsItemLightExtensionRuntime';
 
 /**
  * JSItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
@@ -21,6 +30,14 @@ import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 export class JSItemModel extends CommonItemModel {
   private _offResourceRefresh?: () => void;
   private _mountedOnce = false; // prevent first-mount double-run
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSItemRuntimeFlowSettingSteps(this);
+  }
 
   getInputArgs() {
     const inputArgs = {};
@@ -73,6 +90,9 @@ export class JSItemModel extends CommonItemModel {
   }
 
   protected onUnmount(): void {
+    if (this.context.ref?.current) {
+      resetJSItemRuntimeElement(this.context.ref.current);
+    }
     this._offResourceRefresh?.();
     this._offResourceRefresh = undefined;
   }
@@ -91,38 +111,17 @@ JSItemModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
   steps: {
+    sourceMode: createJSItemSourceModeStep(),
+    sourceBinding: createJSItemSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
-          'x-component-props': {
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSItemRunJsUISchema({ scene: 'block' }),
+      uiMode: createJSItemEmbeddedEditorUIMode,
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: `
 function JsItem() {
   return (
@@ -140,10 +139,15 @@ ctx.render(<JsItem />);
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+          await runJSItemRuntime({
+            ctx,
+            params: params || {},
+            runJs: {
+              code,
+              version,
+            },
+            element,
           });
-          await ctx.runjs(code, undefined, { version });
         });
       },
     },

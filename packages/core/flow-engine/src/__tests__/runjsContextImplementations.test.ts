@@ -115,6 +115,27 @@ describe('Specific RunJSContext implementations', () => {
     });
   });
 
+  describe('JSPageRunJSContext', () => {
+    it('documents the stable page facade and inherited render surface', () => {
+      const ctx = new FlowContext();
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSPageModel' } } });
+      const doc = getRunJSDocFor(ctx, { version: 'v2' });
+
+      expect(doc?.properties?.element).toBeTruthy();
+      expect(doc?.methods?.render).toBeTruthy();
+      expect(doc?.properties?.settings).toBeTruthy();
+      expect(doc?.properties?.runJsSource).toBeTruthy();
+      expect(doc?.properties?.page?.properties).toMatchObject({
+        uid: expect.anything(),
+        active: expect.anything(),
+        refresh: expect.anything(),
+        setDocumentTitle: expect.anything(),
+      });
+      expect(doc?.properties?.page?.properties).not.toHaveProperty('route');
+      expect(doc?.properties).not.toHaveProperty('app');
+    });
+  });
+
   describe('JSFieldRunJSContext', () => {
     it('should have record, value, and collection properties', () => {
       const ctx: any = { model: { constructor: { name: 'JSFieldModel' } } };

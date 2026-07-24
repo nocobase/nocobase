@@ -149,14 +149,16 @@ export class FlowExecutor {
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
         const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, runtimeCtx);
+        const legacyStepParams = await resolveDefaultParams(step.params, runtimeCtx);
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
-        combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
+        combinedParams = { ...actionDefaultParams, ...stepDefaultParams, ...legacyStepParams };
       } else if (step.handler) {
         // 对于内联 handler，为该步创建临时上下文并注入 step 定义
         runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, step);
         handler = step.handler;
+        const legacyStepParams = await resolveDefaultParams(step.params, runtimeCtx);
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
-        combinedParams = { ...stepDefaultParams };
+        combinedParams = { ...stepDefaultParams, ...legacyStepParams };
       } else {
         continue;
       }

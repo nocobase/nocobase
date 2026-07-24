@@ -81,6 +81,8 @@ import {
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
   normalizeFlowSurfaceCompatibleFilterGroupValue,
 } from './filter-group';
+import { type RunJsSourceBindingKind, validateRunJsSourceBinding } from './source-binding-authoring';
+import { resolveConfigureModelUse, resolveFieldModelUse } from './runjs-authoring/runtime/surface';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -258,11 +260,15 @@ const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
   'showBlockCard',
   'code',
   'version',
+  'sourceRef',
+  'sourceMode',
+  'sourceBinding',
+  'settings',
 ]);
-const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
+const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version', 'sourceRef'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, light-extension settings.sourceMode/settings.sourceBinding/settings.settings, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -4939,6 +4945,9 @@ function collectJsBlockPublicContractErrors(
         }),
       });
     });
+    collectJsBlockSourceSettingErrors(settings, `${path}.settings`, errors, {
+      requireSourceModeForBinding: true,
+    });
   }
 
   const inlineKeys = settings ? JS_BLOCK_TOP_LEVEL_JS_KEYS.filter((key) => hasOwn(settings, key)) : [];
@@ -4955,15 +4964,32 @@ function collectJsBlockPublicContractErrors(
     });
   }
 
+  const hasLightExtensionSourceInput = hasJsBlockLightExtensionSourceInput(settings);
+  if (hasOwn(block, 'script') && hasLightExtensionSourceInput) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-mixed-script-and-light-extension',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with light-extension settings.sourceBinding; use either applyBlueprint assets.scripts + block.script or light-extension settings.sourceBinding`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
   const hasInlineCode = typeof settings?.code === 'string' && !!settings.code.trim();
+  const hasLegacySourceRef = _.isPlainObject(settings?.sourceRef);
   const hasApplyBlueprintScriptInput = context.authoringActionName === 'applyBlueprint' && hasOwn(block, 'script');
   const hasScriptReference =
     context.authoringActionName === 'applyBlueprint' && typeof block.script === 'string' && !!block.script.trim();
-  if (!hasInlineCode && !hasScriptReference && !hasApplyBlueprintScriptInput) {
+  if (
+    !hasInlineCode &&
+    !hasLegacySourceRef &&
+    !hasLightExtensionSourceInput &&
+    !hasScriptReference &&
+    !hasApplyBlueprintScriptInput
+  ) {
     pushAuthoringError(errors, {
       path,
       ruleId: 'jsBlock-source-required',
-      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code or, for applyBlueprint only, a block.script asset reference`,
+      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code/sourceRef, light-extension ${path}.settings.sourceMode + ${path}.settings.sourceBinding, or, for applyBlueprint only, a block.script asset reference`,
       details: withJsBlockRepairHint(),
     });
   }
@@ -5011,6 +5037,16 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     });
   }
 
+  const hasLightExtensionSourceInput = hasJsBlockLightExtensionSourceInput(changes);
+  if (hasOwn(changes, 'script') && hasLightExtensionSourceInput) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-mixed-script-and-light-extension',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with light-extension sourceBinding`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
   if (!hasOwn(changes, 'settings')) {
     return;
   }
@@ -5019,21 +5055,138 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code, ${path}.version, and ${path}.showBlockCard`,
+      message: `flowSurfaces authoring ${path}.settings must be an object containing JS block instance settings`,
       details: withJsBlockRepairHint(),
     });
-    return;
   }
-  Object.keys(settings).forEach((key) => {
+}
+
+function hasJsBlockLightExtensionSourceInput(settings: any) {
+  return validateRunJsSourceBinding({
+    source: settings,
+    path: '$',
+    expectedKind: 'js-block',
+    requireExplicitSourceModeForBinding: true,
+    ruleIdPrefix: 'jsBlock',
+    surfaceLabel: 'JS block',
+  }).hasLightExtensionSourceInput;
+}
+
+function collectJsBlockSourceSettingErrors(
+  settings: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  options: {
+    requireSourceModeForBinding: boolean;
+  },
+) {
+  const result = validateRunJsSourceBinding({
+    source: settings,
+    path,
+    expectedKind: 'js-block',
+    requireExplicitSourceModeForBinding: options.requireSourceModeForBinding,
+    ruleIdPrefix: 'jsBlock',
+    surfaceLabel: 'JS block',
+  });
+  result.errors.forEach((error) => {
     pushAuthoringError(errors, {
-      path: `${path}.settings.${key}`,
-      ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock configure contract; use ${path}.${key}`,
-      details: withJsBlockRepairHint({
-        key,
-      }),
+      ...error,
+      details: withJsBlockRepairHint(error.details),
     });
   });
+}
+
+function collectRunJsSourceBindingErrors(
+  spec: any,
+  path: string,
+  expectedKind: RunJsSourceBindingKind,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+  options: {
+    currentSource?: any;
+    configure?: boolean;
+    ruleIdPrefix?: 'jsBlock' | 'runjs';
+    surfaceLabel?: string;
+  } = {},
+) {
+  const source = options.configure ? spec : _.isPlainObject(spec?.settings) ? spec.settings : undefined;
+  const sourcePath = options.configure ? path : `${path}.settings`;
+  const result = validateRunJsSourceBinding({
+    source,
+    currentSource: options.currentSource,
+    path: sourcePath,
+    expectedKind,
+    requireExplicitSourceModeForBinding: options.configure !== true,
+    ruleIdPrefix: options.ruleIdPrefix,
+    surfaceLabel: options.surfaceLabel,
+  });
+  result.errors.forEach((error) =>
+    pushAuthoringError(errors, {
+      ...error,
+      ...(options.ruleIdPrefix === 'jsBlock' ? { details: withJsBlockRepairHint(error.details) } : {}),
+    }),
+  );
+
+  const hasActiveScriptAsset =
+    context.authoringActionName === 'applyBlueprint' && typeof spec?.script === 'string' && !!spec.script.trim();
+  if (hasActiveScriptAsset && result.hasLightExtensionSourceInput) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'runjs-mixed-script-and-light-extension',
+      message: `flowSurfaces authoring ${path} cannot combine an applyBlueprint script asset with light-extension sourceBinding`,
+      details: {
+        expectedKind,
+      },
+    });
+  }
+
+  return result;
+}
+
+function resolveConfigureRunJsSourceContext(context: FlowSurfaceAuthoringValidationContext) {
+  const modelUse = resolveConfigureModelUse(context.currentNode);
+  const expectedKind = resolveRunJsSourceBindingKindForModelUse(modelUse);
+  if (!expectedKind) {
+    return null;
+  }
+  const currentNode =
+    String(context.currentNode?.use || '').trim() === modelUse
+      ? context.currentNode
+      : context.currentNode?.subModels?.field;
+  const groupKey = resolveRunJsSourceSettingsGroupKey(modelUse);
+  return {
+    modelUse,
+    expectedKind,
+    currentSource: _.get(currentNode, ['stepParams', groupKey, 'runJs']),
+  };
+}
+
+function resolveRunJsSourceBindingKindForModelUse(modelUse: string): RunJsSourceBindingKind | undefined {
+  if (modelUse === 'JSBlockModel') {
+    return 'js-block';
+  }
+  if (['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(modelUse)) {
+    return 'js-field';
+  }
+  if (['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel'].includes(modelUse)) {
+    return 'js-item';
+  }
+  if (
+    [
+      'JSActionModel',
+      'JSFormActionModel',
+      'JSRecordActionModel',
+      'JSCollectionActionModel',
+      'FilterFormJSActionModel',
+    ].includes(modelUse)
+  ) {
+    return 'js-action';
+  }
+  return undefined;
+}
+
+function resolveRunJsSourceSettingsGroupKey(modelUse: string) {
+  return resolveRunJsSourceBindingKindForModelUse(modelUse) === 'js-action' ? 'clickSettings' : 'jsSettings';
 }
 
 function collectRemovedDefaultActionOptOutErrors(block: any, path: string, errors: AuthoringErrorInput[]) {
@@ -5170,6 +5323,7 @@ function collectFieldGroupsShapeErrors(
           return;
         }
         collectApplyBlueprintScriptAssetReferenceErrors(field, itemPath, errors, context);
+        collectFieldRunJsSourceBindingErrors(field, itemPath, block, errors, context);
         collectRelationTitleFieldErrors(field, itemPath, block, context, errors);
         collectRelationPopupResourceErrors(field, itemPath, block, context, errors);
         collectPopupErrors(
@@ -5204,6 +5358,27 @@ async function collectConfigureErrors(
   collectLocalKeys(changes, localKeys);
   if (hostBlockType === 'jsBlock') {
     collectJsBlockConfigurePublicContractErrors(changes, '$.changes', errors);
+  }
+  const configureRunJsSourceContext = resolveConfigureRunJsSourceContext(context);
+  if (configureRunJsSourceContext && (hasOwn(changes, 'sourceMode') || hasOwn(changes, 'sourceBinding'))) {
+    collectRunJsSourceBindingErrors(changes, '$.changes', configureRunJsSourceContext.expectedKind, errors, context, {
+      currentSource: configureRunJsSourceContext.currentSource,
+      configure: true,
+      ruleIdPrefix: configureRunJsSourceContext.expectedKind === 'js-block' ? 'jsBlock' : 'runjs',
+      surfaceLabel: configureRunJsSourceContext.modelUse,
+    });
+  }
+  if (
+    configureRunJsSourceContext &&
+    configureRunJsSourceContext.expectedKind !== 'js-block' &&
+    hasOwn(changes, 'stepParams')
+  ) {
+    pushAuthoringError(errors, {
+      path: '$.changes.stepParams',
+      ruleId: 'runjs-stepParams-unsupported',
+      message:
+        'flowSurfaces authoring $.changes.stepParams is not accepted on public RunJS configure changes; use $.changes.code/sourceMode/sourceBinding/settings',
+    });
   }
   if (
     Object.prototype.hasOwnProperty.call(changes, 'fieldsLayout') &&
@@ -6386,6 +6561,9 @@ function isVisibleDataBlockBusinessResolvedField(field: any, fieldName: string) 
     return false;
   }
   const fieldInterface = String(getFieldInterface(field) || '').trim();
+  if (!fieldInterface) {
+    return false;
+  }
   if (NON_BUSINESS_VISIBLE_FIELD_INTERFACES.has(fieldInterface)) {
     return false;
   }
@@ -7787,6 +7965,26 @@ function collectActionErrors(
     return;
   }
   collectApplyBlueprintScriptAssetReferenceErrors(action, path, errors, context);
+  const sourceBindingResult =
+    actionType === 'js' || actionType === 'jsItem'
+      ? collectRunJsSourceBindingErrors(
+          action,
+          path,
+          actionType === 'jsItem' ? 'js-item' : 'js-action',
+          errors,
+          context,
+          {
+            surfaceLabel: actionType === 'jsItem' ? 'JS item action' : 'JS action',
+          },
+        )
+      : undefined;
+  if ((actionType === 'js' || actionType === 'jsItem') && hasOwn(action, 'stepParams')) {
+    pushAuthoringError(errors, {
+      path: `${path}.stepParams`,
+      ruleId: 'runjs-stepParams-unsupported',
+      message: `flowSurfaces authoring ${path}.stepParams is not accepted on public RunJS actions; use ${path}.settings.code/sourceMode/sourceBinding/settings`,
+    });
+  }
   collectAssignValuesErrors(action.settings?.assignValues, `${path}.settings.assignValues`, errors, block, context);
   collectTriggerWorkflowsErrors(action.settings?.triggerWorkflows, `${path}.settings.triggerWorkflows`, errors);
   collectLinkageRulesErrors(action.settings?.linkageRules, `${path}.settings.linkageRules`, errors);
@@ -7831,7 +8029,8 @@ function collectActionErrors(
       (typeof action.code === 'string' && action.code.trim()) ||
       hasApplyBlueprintRunnableScriptAssetReference(action.script, context) ||
       (typeof action.settings?.source === 'string' && action.settings.source.trim()) ||
-      (typeof action.settings?.code === 'string' && action.settings.code.trim());
+      (typeof action.settings?.code === 'string' && action.settings.code.trim()) ||
+      sourceBindingResult?.hasRunnableLightExtensionSource;
     if (!hasRunnableSource) {
       pushAuthoringError(errors, {
         path,
@@ -8614,6 +8813,7 @@ function collectFieldListErrors(
       return;
     }
     collectApplyBlueprintScriptAssetReferenceErrors(field, `${path}[${index}]`, errors, context);
+    collectFieldRunJsSourceBindingErrors(field, `${path}[${index}]`, block, errors, context);
     collectRelationTitleFieldErrors(field, `${path}[${index}]`, block, context, errors);
     collectRelationPopupResourceErrors(field, `${path}[${index}]`, block, context, errors);
     collectPopupErrors(
@@ -8625,6 +8825,27 @@ function collectFieldListErrors(
     );
     collectActionListErrors(field.actions, `${path}[${index}].actions`, errors, block, context);
     collectReactionErrors(field.reaction, `${path}[${index}].reaction`, localKeys, errors);
+  });
+}
+
+function collectFieldRunJsSourceBindingErrors(
+  field: any,
+  path: string,
+  block: any,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  const modelUse = resolveFieldModelUse(
+    String(field?.type || '').trim(),
+    String(field?.renderer || '').trim(),
+    String(block?.type || '').trim(),
+  );
+  const expectedKind = resolveRunJsSourceBindingKindForModelUse(modelUse);
+  if (!expectedKind) {
+    return;
+  }
+  collectRunJsSourceBindingErrors(field, path, expectedKind, errors, context, {
+    surfaceLabel: modelUse,
   });
 }
 

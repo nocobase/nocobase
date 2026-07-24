@@ -612,7 +612,7 @@ export const computeDiagnosticsFromText = (
     const ParserWithJSX = typeof jsx === 'function' ? Parser.extend(jsx()) : Parser;
     ast = ParserWithJSX.parse(text, {
       ecmaVersion: 2022,
-      sourceType: 'script',
+      sourceType: 'module',
       allowAwaitOutsideFunction: true,
       allowReturnOutsideFunction: true,
       locations: true,
@@ -741,6 +741,11 @@ export const computeDiagnosticsFromText = (
             break;
           case 'ClassDeclaration':
             addId(node.id);
+            break;
+          case 'ImportSpecifier':
+          case 'ImportDefaultSpecifier':
+          case 'ImportNamespaceSpecifier':
+            addId(node.local);
             break;
           default:
             break;
@@ -916,6 +921,9 @@ export const computeDiagnosticsFromText = (
             (parent.type === 'FunctionExpression' && parent.id === node) ||
             (parent.type === 'ClassDeclaration' && parent.id === node) ||
             (parent.type === 'ClassExpression' && parent.id === node) ||
+            (parent.type === 'ImportSpecifier' && (parent.imported === node || parent.local === node)) ||
+            (parent.type === 'ImportDefaultSpecifier' && parent.local === node) ||
+            (parent.type === 'ImportNamespaceSpecifier' && parent.local === node) ||
             (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
             (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
             (parent.type === 'LabeledStatement' && parent.label === node) ||

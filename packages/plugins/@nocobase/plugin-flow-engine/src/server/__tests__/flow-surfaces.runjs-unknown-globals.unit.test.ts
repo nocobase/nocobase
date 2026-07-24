@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import './runjs-source-inspector.setup';
 import {
   collectFlowRegistryRunJsAuthoringErrors,
   collectRunJsAuthoringErrors,
@@ -32,12 +33,46 @@ describe('flowSurfaces RunJS unknown global validation', () => {
         expect.objectContaining({
           ruleId: 'runjs-global-unknown',
           details: expect.objectContaining({
+            repairClass: 'unknown-global-stop',
             global: 'api',
             suggestedCapability: 'ctx.api',
           }),
         }),
       ]),
     );
+
+    const apiError = errors.find((error) => error.details?.global === 'api');
+    const suggestedCapability = apiError?.details?.suggestedCapability;
+    expect(suggestedCapability).toBe('ctx.api');
+    expect(
+      inspectRunJsAuthoringCode({
+        code: INVALID_BARE_API_CODE.replace(/\bapi\b/g, suggestedCapability),
+        path: '$.tabs[0].blocks[0].settings.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+  });
+
+  it('keeps ambiguous unknown globals rejected without inventing a ctx capability', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: ['const result = await legacySdk.load();', 'ctx.render(String(result));'].join('\n'),
+      path: '$.legacySdk.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            repairClass: 'unknown-global-stop',
+            global: 'legacySdk',
+          }),
+        }),
+      ]),
+    );
+    const legacySdkError = errors.find((error) => error.details?.global === 'legacySdk');
+    expect(legacySdkError?.details).not.toHaveProperty('suggestedCapability');
   });
 
   it('allows supported ctx APIs, declared aliases, and callback parameters', () => {

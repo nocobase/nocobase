@@ -13,6 +13,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { registerUiLayoutsFromApi } from './layoutRegistration';
 import { mobileOpenView } from './mobileOpenViewAction';
+import { registerMobileJSPageRunJSContext } from './mobileJSPageRunJSContext';
 import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 import { MobileMenuSettingsIconPicker } from './models/MobileMenuComponents';
 import { registerLayoutAwareDesktopRoutesPermissionsTab } from './permissions/layoutAwareDesktopRoutesPermissions';
@@ -40,6 +41,9 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       MobileChildPageModel: {
         loader: () => import('./models/MobilePageModels'),
       },
+      MobileJSPageModel: {
+        loader: () => import('./models/MobilePageModels'),
+      },
     });
     this.app.flowEngine.registerActions({
       openView: mobileOpenView,
@@ -48,6 +52,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       MobileMenuSettingsIconPicker,
     });
     registerMobilePageModelResolution();
+    registerMobileJSPageRunJSContext();
 
     this.pluginSettingsManager.addMenuItem({
       key: 'mobile',

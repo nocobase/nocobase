@@ -7,14 +7,74 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr } from '@nocobase/flow-engine';
+import { observable } from '@formily/reactive';
+import { Alert, Spin } from 'antd';
+import {
+  ElementProxy,
+  FlowCancelSaveException,
+  resetRunJSRuntimeElement,
+  tExpr,
+  type FlowRuntimeContext,
+  type FlowSettingsContext,
+  type StepDefinition,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
-import { CodeEditor } from '../../../components/code-editor';
+import { RunJSEditorField } from '../../../components/runjs-studio';
+import {
+  resolveRuntimeRunJS,
+  createRunJSSourceCascadeMenuUIMode,
+  shouldHideRunJSSourceMenu,
+  type RunJSSourceSettings,
+} from '../../../components/runjs-source';
+import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
+import {
+  createRunJSEditorEmbedUIMode,
+  createLightExtensionSettingSteps,
+  getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
+  normalizeLightExtensionSourceSettingsForBinding,
+  normalizeLightExtensionRuntimeError,
+  rememberLightExtensionBindingSettings,
+  resolveEffectiveRunJSSettings,
+  resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
+  setCanonicalLightExtensionSetting,
+  setCanonicalLightExtensionSource,
+  showPendingLightExtensionRequiredSettings,
+  type RuntimeErrorInfo,
+} from '../../utils/runjsSourceRuntimeCommon';
 
 const NAMESPACE = 'client';
+const INLINE_SOURCE_MODE = 'inline';
+const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+
+type JSBlockSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
+type JSBlockSourceModeParams = {
+  sourceMode?: string;
+  sourceBinding?: unknown;
+  settings?: unknown;
+};
+type JSBlockLightExtensionSourceBinding = {
+  repoId?: unknown;
+  repoTitle?: unknown;
+  entryId?: unknown;
+  entryTitle?: unknown;
+  entryName?: unknown;
+};
+
+type JSBlockRuntimeError = RuntimeErrorInfo;
+
+type JSBlockRuntimeState = {
+  loading: boolean;
+  error: JSBlockRuntimeError | null;
+  runId: number;
+};
+
+type RunJSExecutionResult = {
+  success?: boolean;
+  error?: unknown;
+};
 
 const getRootElement = (element: HTMLElement | null) => {
   if (!element) return document.documentElement;
@@ -54,6 +114,35 @@ const getPageHeader = (root: HTMLElement) => {
     (page.querySelector('.pageHeaderCss') as HTMLElement | null)
   );
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cloneJsonValue<T>(value: T): T {
+  if (value === undefined) {
+    return value;
+  }
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return value;
+  }
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
+  return normalizeLightExtensionRuntimeError(error, {
+    defaultTitle: 'JavaScript block runtime error',
+    defaultHint: 'Check the JavaScript block configuration and retry.',
+    defaultMessage: 'Failed to run JavaScript block',
+    outdatedHint: 'Refresh the block settings and choose the current entry.',
+    invalidSettingsHint: 'Open the block settings and fix the light extension settings.',
+  });
+}
 
 const getAddBlockContainer = (root: HTMLElement) => {
   const button = root.querySelector('[data-flow-add-block]') as HTMLElement | null;
@@ -159,7 +248,7 @@ const JSBlockPlainHost = ({
   height?: number;
   beforeContent?: React.ReactNode;
   afterContent?: React.ReactNode;
-  contentRef: React.RefObject<HTMLDivElement>;
+  contentRef: React.Ref<HTMLDivElement>;
   marginBlock: number;
 }) => {
   const hostRef = React.useRef<HTMLDivElement | null>(null);
@@ -190,13 +279,128 @@ const JSBlockPlainHost = ({
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
+  private _runtimeElement: HTMLDivElement | null = null;
+  private readonly runtimeElementRef = (element: HTMLDivElement | null) => {
+    (this.context.ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
+    if (element) {
+      this._runtimeElement = element;
+      return;
+    }
+    const previousElement = this._runtimeElement;
+    this._runtimeElement = null;
+    if (previousElement) {
+      queueMicrotask(() => {
+        if (this._runtimeElement !== previousElement) {
+          resetRunJSRuntimeElement(previousElement);
+        }
+      });
+    }
+  };
+  readonly runtimeState: JSBlockRuntimeState = observable({
+    loading: false,
+    error: null,
+    runId: 0,
+  });
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getLightExtensionRuntimeSettingSteps(this);
+  }
 
   get showBlockCard() {
     return this.getStepParams('jsSettings', 'showBlockCard')?.showBlockCard !== false;
   }
 
+  beginRuntimeRun() {
+    const runId = this.runtimeState.runId + 1;
+    this.runtimeState.runId = runId;
+    this.runtimeState.loading = true;
+    this.runtimeState.error = null;
+    return runId;
+  }
+
+  isCurrentRuntimeRun(runId: number) {
+    return this.runtimeState.runId === runId;
+  }
+
+  finishRuntimeRun(runId: number) {
+    if (!this.isCurrentRuntimeRun(runId)) {
+      return;
+    }
+    this.runtimeState.loading = false;
+    this.runtimeState.error = null;
+  }
+
+  failRuntimeRun(runId: number, error: unknown) {
+    if (!this.isCurrentRuntimeRun(runId)) {
+      return;
+    }
+    this.runtimeState.loading = false;
+    this.runtimeState.error = normalizeRuntimeError(error);
+  }
+
+  private renderRuntimeShell(): React.ReactNode {
+    if (this.runtimeState.loading) {
+      return (
+        <div
+          data-testid="js-block-runtime-loading"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 12,
+          }}
+        >
+          <Spin size="small" aria-label={this.context.t('Resolving JavaScript source')} />
+        </div>
+      );
+    }
+
+    if (this.runtimeState.error) {
+      const { title, hint, message, code, status, paths } = this.runtimeState.error;
+      const description = [
+        this.context.t(hint),
+        this.context.t(message),
+        paths?.length ? `${this.context.t('Fields')}: ${paths.join(', ')}` : null,
+        code ? `${this.context.t('Code')}: ${code}` : null,
+        status ? `${this.context.t('Status')}: ${status}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
+      return (
+        <Alert
+          data-testid="js-block-runtime-error"
+          type="error"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={this.context.t(title)}
+          description={description}
+        />
+      );
+    }
+
+    return null;
+  }
+
+  private mergeBeforeContent(beforeContent: React.ReactNode) {
+    const runtimeShell = this.renderRuntimeShell();
+    if (!runtimeShell) {
+      return beforeContent;
+    }
+    return (
+      <>
+        {runtimeShell}
+        {beforeContent}
+      </>
+    );
+  }
+
   renderComponent(): React.ReactNode {
-    return <div ref={this.context.ref} />;
+    return <div ref={this.runtimeElementRef} />;
   }
   render() {
     const decoratorProps = this.decoratorProps || {};
@@ -224,9 +428,9 @@ export class JSBlockModel extends BlockModel {
           heightMode={heightMode}
           height={height}
           style={style}
-          beforeContent={beforeContent}
+          beforeContent={this.mergeBeforeContent(beforeContent)}
           afterContent={afterContent}
-          contentRef={this.context.ref}
+          contentRef={this.runtimeElementRef}
           marginBlock={this.context.themeToken?.marginBlock ?? 0}
         />
       );
@@ -249,7 +453,8 @@ export class JSBlockModel extends BlockModel {
         heightMode={heightMode}
         {...cardProps}
       >
-        <div ref={this.context.ref} />
+        {this.renderRuntimeShell()}
+        <div ref={this.runtimeElementRef} />
       </BlockItemCard>
     );
   }
@@ -262,6 +467,147 @@ export class JSBlockModel extends BlockModel {
     }
     this._mountedOnce = true;
   }
+}
+
+function normalizeJSBlockSourceMode(value: unknown): JSBlockSourceMode {
+  return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
+}
+
+function getRunJsStepParams(model: JSBlockModel): Record<string, unknown> {
+  const params = model.getStepParams('jsSettings', 'runJs');
+  return isRecord(params) ? { ...params } : {};
+}
+
+async function getLightExtensionSettingsDescriptor(model: JSBlockModel, params: Record<string, unknown>) {
+  return getSharedLightExtensionSettingsDescriptor({
+    modelUid: model.uid,
+    ownerKind: 'flowModel.blockSettings',
+    ownerLocator: { modelUid: model.uid },
+    params,
+    sourceLocator: {
+      kind: 'flowModel.step',
+      modelUid: model.uid,
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+    },
+  });
+}
+
+async function getLightExtensionRuntimeSettingSteps(
+  model: JSBlockModel,
+): Promise<Record<string, StepDefinition> | undefined> {
+  const params = getRunJsStepParams(model);
+  const descriptor = await getLightExtensionSettingsDescriptor(model, params);
+  if (!descriptor) {
+    return undefined;
+  }
+  return createLightExtensionSettingSteps<JSBlockModel>({
+    descriptor,
+    settings: isRecord(params.settings) ? params.settings : {},
+    component: JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    syncValue: (ctx, fieldName, value) => setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value),
+    afterParamsSave: refreshJSBlockAfterSettingsSave,
+  });
+}
+
+function resolveLightExtensionRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
+  return isRecord(params.settings) ? cloneJsonValue(params.settings) : {};
+}
+
+function getLightExtensionStoredBindingTitle(binding: unknown): string | undefined {
+  if (!isRecord(binding)) {
+    return undefined;
+  }
+
+  const sourceBinding = binding as JSBlockLightExtensionSourceBinding;
+  return (
+    toNonEmptyString(sourceBinding.entryTitle) ||
+    toNonEmptyString(sourceBinding.entryName) ||
+    toNonEmptyString(sourceBinding.repoTitle)
+  );
+}
+
+function getLightExtensionFallbackBindingTitle(binding: unknown): string | undefined {
+  if (!isRecord(binding)) {
+    return undefined;
+  }
+
+  const sourceBinding = binding as JSBlockLightExtensionSourceBinding;
+  return toNonEmptyString(sourceBinding.entryId) || toNonEmptyString(sourceBinding.repoId);
+}
+
+async function resolveLightExtensionBindingTitle(ctx: { model: JSBlockModel }, params: Record<string, unknown>) {
+  return resolveSharedLightExtensionBindingTitle({
+    modelUid: ctx.model.uid,
+    ownerKind: 'flowModel.blockSettings',
+    ownerLocator: { modelUid: ctx.model.uid },
+    params,
+  });
+}
+
+async function getRunJsEditorTitle(ctx: { model: JSBlockModel }): Promise<string> {
+  const t = ctx.model.context.t.bind(ctx.model.context);
+  const params = getRunJsStepParams(ctx.model);
+  const baseTitle = t('Write JavaScript');
+  if (normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
+    return baseTitle;
+  }
+
+  const sourceTitle =
+    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
+    (await resolveLightExtensionBindingTitle(ctx, params)) ||
+    getLightExtensionFallbackBindingTitle(params.sourceBinding);
+  return sourceTitle
+    ? `${baseTitle} (${t('Light extension')}: ${sourceTitle})`
+    : `${baseTitle} (${t('Light extension')})`;
+}
+
+function getSourceModeDefaultParams(ctx: FlowSettingsContext<JSBlockModel>): JSBlockSourceModeParams {
+  const runJs = getRunJsStepParams(ctx.model);
+  return {
+    sourceMode: normalizeJSBlockSourceMode(runJs.sourceMode),
+    sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
+    settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
+  };
+}
+
+async function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, params: JSBlockSourceModeParams) {
+  const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+  const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
+  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
+    ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
+    throw new FlowCancelSaveException('Light extension source binding is required.');
+  }
+  const currentRunJs = getRunJsStepParams(ctx.model);
+  const descriptor =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
+      : null;
+  const normalized = normalizeLightExtensionSourceSettingsForBinding({
+    currentRunJs,
+    nextSourceMode: sourceMode,
+    nextSourceBinding: sourceBinding,
+    nextSettings: params.settings,
+    descriptor,
+  });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', {
+    sourceMode,
+    sourceBinding,
+    settings: normalized.settings,
+  });
+  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
+}
+
+async function refreshJSBlockAfterSettingsSave(ctx: FlowSettingsContext<JSBlockModel>) {
+  ctx.model.invalidateFlowCache('beforeRender', true);
+  await ctx.model.rerender();
+}
+
+async function refreshJSBlockAfterSourceSave(ctx: FlowSettingsContext<JSBlockModel>) {
+  await refreshJSBlockAfterSettingsSave(ctx);
+  await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
 }
 
 JSBlockModel.define({
@@ -282,38 +628,62 @@ JSBlockModel.registerFlow({
         showBlockCard: true,
       },
     },
+    sourceMode: {
+      title: tExpr('Code source'),
+      hideInSettings: shouldHideRunJSSourceMenu,
+      persistParams: false,
+      uiMode: createRunJSSourceCascadeMenuUIMode({
+        kind: 'js-block',
+      }),
+      useRawParams: true,
+      defaultParams: getSourceModeDefaultParams,
+      beforeParamsSave: syncSourceModeToRunJs,
+      afterParamsSave: refreshJSBlockAfterSourceSave,
+    },
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
       uiSchema: {
+        sourceMode: {
+          type: 'string',
+          'x-display': 'hidden',
+        },
+        sourceBinding: {
+          type: 'object',
+          'x-display': 'hidden',
+        },
+        settings: {
+          type: 'object',
+          'x-display': 'hidden',
+        },
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            sourceMetadata: {
+              lightExtensionKind: 'js-block',
+            },
+            surfaceStyle: 'render',
+            scene: 'block',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
+            containerStyle: {
+              height: '100%',
+              minHeight: 0,
+              minWidth: 0,
             },
           },
         },
       },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiMode: async (ctx: FlowRuntimeContext<JSBlockModel>) =>
+        createRunJSEditorEmbedUIMode(await getRunJsEditorTitle(ctx)),
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code:
             `// Welcome to the JS block
 // Create powerful interactive components with JavaScript
@@ -378,17 +748,74 @@ ctx.render(\`
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
-        ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
-            info: {
-              deprecated: {
-                replacedBy: 'ctx.render',
+        const model = ctx.model as JSBlockModel;
+        const runId = model.beginRuntimeRun();
+        const inlineRunJs = resolveRunJsParams(ctx, params);
+
+        ctx.onRefReady(ctx.ref, (element) => {
+          const run = async () => {
+            if (!model.isCurrentRuntimeRun(runId)) {
+              return;
+            }
+            resetRunJSRuntimeElement(element);
+            ctx.defineProperty('element', {
+              get: () => new ElementProxy(element),
+              info: {
+                deprecated: {
+                  replacedBy: 'ctx.render',
+                },
               },
-            },
+            });
+            const storedSettings = resolveLightExtensionRuntimeSettings(params || {});
+            const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+            const descriptor =
+              sourceMode === INLINE_SOURCE_MODE ? await getLightExtensionSettingsDescriptor(model, params || {}) : null;
+            const runtimeSettings = descriptor
+              ? resolveEffectiveRunJSSettings(descriptor, storedSettings)
+              : storedSettings;
+            const resolved = await resolveRuntimeRunJS({
+              runJs: inlineRunJs,
+              sourceMode,
+              sourceBinding: params?.sourceBinding,
+              settings: runtimeSettings,
+              context: {
+                modelUid: ctx.model.uid,
+              },
+            });
+
+            if (!model.isCurrentRuntimeRun(runId)) {
+              return;
+            }
+
+            ctx.defineProperty('settings', {
+              value: resolved.settings,
+            });
+            ctx.defineProperty('runJsSource', {
+              value: {
+                sourceMode: resolved.sourceMode,
+                sourceBinding: resolved.sourceBinding,
+                sourceMap: resolved.sourceMap,
+                context: resolved.context,
+              },
+            });
+
+            const result = (await ctx.runjs(resolved.code, undefined, {
+              version: resolved.version,
+            })) as RunJSExecutionResult;
+
+            if (result?.success === false) {
+              throw result.error || new Error('RunJS execution failed');
+            }
+
+            model.finishRuntimeRun(runId);
+          };
+
+          run().catch((error) => {
+            if (model.isCurrentRuntimeRun(runId)) {
+              resetRunJSRuntimeElement(element);
+            }
+            model.failRuntimeRun(runId, error);
           });
-          await ctx.runjs(code, undefined, { version });
         });
       },
     },

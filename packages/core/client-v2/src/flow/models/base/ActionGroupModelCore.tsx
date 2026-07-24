@@ -13,15 +13,27 @@ import {
   FlowModel,
   FlowModelContext,
   ModelConstructor,
+  type SubModelItem,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { ActionModel, ActionSceneEnum, ActionSceneType } from './ActionModelCore';
 import { areCapabilitiesSupported, getActionCapabilityNamesFromModelClass } from '../../utils/actionCapability';
 
+export interface ActionGroupMenuItemProviderContext {
+  groupModelClass: typeof ActionGroupModel;
+  ctx: FlowModelContext;
+  items: SubModelItem[];
+}
+
+export type ActionGroupMenuItemProvider = (
+  context: ActionGroupMenuItemProviderContext,
+) => SubModelItem | SubModelItem[] | null | undefined | Promise<SubModelItem | SubModelItem[] | null | undefined>;
+
 export class ActionGroupModel extends FlowModel {
   static baseClass?: string | ModelConstructor;
   static scene: ActionSceneType;
   private static _models: Map<string, typeof ActionModel>;
+  private static _menuItemProviders: Map<string, ActionGroupMenuItemProvider>;
 
   static getAllParentClasses(): any[] {
     const parentClasses = [];
@@ -58,6 +70,42 @@ export class ActionGroupModel extends FlowModel {
     }
 
     return allModels;
+  }
+
+  static get currentMenuItemProviders() {
+    if (!Object.prototype.hasOwnProperty.call(this, '_menuItemProviders') || !this._menuItemProviders) {
+      this._menuItemProviders = new Map();
+    }
+    return this._menuItemProviders;
+  }
+
+  static get menuItemProviders() {
+    const allProviders = new Map<string, ActionGroupMenuItemProvider>();
+
+    for (const parentClass of this.getAllParentClasses()) {
+      for (const [key, provider] of parentClass.currentMenuItemProviders) {
+        allProviders.set(key, provider);
+      }
+    }
+
+    for (const [key, provider] of this.currentMenuItemProviders) {
+      allProviders.set(key, provider);
+    }
+
+    return allProviders;
+  }
+
+  static registerMenuItemProvider(key: string, provider: ActionGroupMenuItemProvider): () => void {
+    this.currentMenuItemProviders.set(key, provider);
+    return () => {
+      if (this.currentMenuItemProviders.get(key) === provider) {
+        this.currentMenuItemProviders.delete(key);
+      }
+    };
+  }
+
+  static clearMenuItemProviders(): void {
+    this.currentMenuItemProviders.clear();
   }
 
   static registerActionModels(models: Record<string, any>) {
@@ -102,8 +150,35 @@ export class ActionGroupModel extends FlowModel {
       }
     }
 
-    return _.sortBy([...items, ...extra], 'sort');
+    const resolvedItems: SubModelItem[] = _.sortBy([...items, ...extra], 'sort');
+
+    for (const [key, provider] of this.menuItemProviders) {
+      try {
+        const provided = await provider({
+          groupModelClass: this,
+          ctx,
+          items: [...resolvedItems],
+        });
+        if (Array.isArray(provided)) {
+          resolvedItems.push(...provided);
+        } else if (provided) {
+          resolvedItems.push(provided);
+        }
+      } catch (error) {
+        console.error(`[NocoBase] Failed to resolve action group menu item provider '${key}':`, error);
+      }
+    }
+
+    return _.sortBy(resolvedItems, (item) => item.sort ?? 1000);
   }
+}
+
+export function registerActionGroupMenuItemProvider(key: string, provider: ActionGroupMenuItemProvider): () => void {
+  return ActionGroupModel.registerMenuItemProvider(key, provider);
+}
+
+export function clearActionGroupMenuItemProviders(): void {
+  ActionGroupModel.clearMenuItemProviders();
 }
 
 export class CollectionActionGroupModel extends ActionGroupModel {

@@ -36,6 +36,7 @@ describe('flowRunJSContext registry and doc', () => {
     it('should register all context types', () => {
       const contextTypes = [
         'JSBlockModel',
+        'JSPageModel',
         'JSFieldModel',
         'JSItemModel',
         'JSItemActionModel',
@@ -58,13 +59,22 @@ describe('flowRunJSContext registry and doc', () => {
 
     it('should expose scene metadata for contexts', () => {
       expect(getRunJSScenesForModel('JSBlockModel', 'v1')).toEqual(['block']);
+      expect(getRunJSScenesForModel('JSPageModel', 'v1')).toEqual(['page']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v1')).toEqual(['detail']);
       expect(getRunJSScenesForModel('JSItemActionModel', 'v1')).toEqual(['table']);
       expect(getRunJSScenesForModel('JSBlockModel', 'v2')).toEqual(['block']);
+      expect(getRunJSScenesForModel('JSPageModel', 'v2')).toEqual(['page']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v2')).toEqual(['detail']);
       expect(getRunJSScenesForModel('JSItemActionModel', 'v2')).toEqual(['table']);
       expect(getRunJSScenesForModel('UnknownModel', 'v1')).toEqual([]);
       expect(getRunJSScenesForModel('UnknownModel', 'v2')).toEqual([]);
+    });
+
+    it('matches model constructor names exactly', () => {
+      expect(RunJSContextRegistry.resolve('v1', 'JSPageModel')).not.toBe(RunJSContextRegistry.resolve('v1', '*'));
+      expect(RunJSContextRegistry.resolve('v1', 'UnregisteredJSPageModel')).toBe(
+        RunJSContextRegistry.resolve('v1', '*'),
+      );
     });
 
     it('should only execute once (idempotent)', async () => {

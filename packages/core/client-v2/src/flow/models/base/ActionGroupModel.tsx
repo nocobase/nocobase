@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { ActionGroupModel, CollectionActionGroupModel, RecordActionGroupModel } from './ActionGroupModelCore';
+export * from './ActionGroupModelCore';

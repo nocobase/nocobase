@@ -22,13 +22,42 @@ import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
+import { JSBlockSourceModeField } from './models/blocks/js-block/JSBlockSourceModeField';
+import {
+  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSPageSourceModeField,
+} from './models/base/PageModel/JSPageSourceModeField';
+import {
+  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSActionSourceModeField,
+} from './models/actions/JSActionSourceModeField';
+import {
+  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSFieldSourceModeField,
+} from './models/fields/JSFieldSourceModeField';
+import {
+  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSItemSourceModeField,
+} from './models/fields/JSItemSourceModeField';
 import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
+
+const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
+
+interface FlowEngineWithPluginFlowEngineState {
+  [PLUGIN_FLOW_ENGINE_LOADED]?: true;
+}
 
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
   TApp
 > {
   async load() {
+    const flowEngine = this.flowEngine as typeof this.flowEngine & FlowEngineWithPluginFlowEngineState;
+
+    if (flowEngine[PLUGIN_FLOW_ENGINE_LOADED]) {
+      return;
+    }
+
     registerDeviceTypeContext(this.flowEngine);
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
@@ -44,6 +73,14 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       IconPicker,
       DefaultValue,
       FlowSettingsVariableTextArea: TextAreaWithContextSelector,
+      JSBlockLightExtensionSourceField: JSBlockSourceModeField,
+      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageSourceModeField,
+      JSActionLightExtensionSourceField: JSActionSourceModeField,
+      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionSourceModeField,
+      JSFieldLightExtensionSourceField: JSFieldSourceModeField,
+      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
+      JSItemLightExtensionSourceField: JSItemSourceModeField,
+      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemSourceModeField,
     });
 
     // 动态流编辑入口
@@ -86,12 +123,15 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
         completion: { insertText: "await ctx.previewRunJS('console.log(1)', 'v2')" },
       },
     );
+    flowEngine[PLUGIN_FLOW_ENGINE_LOADED] = true;
   }
 }
 
 // Export all models for external use
 export * from './components/filter';
 export * from './components/code-editor';
+export * from './components/runjs-source';
+export * from './components/runjs-studio';
 export { default as FlowRoute } from './components/FlowRoute';
 export * from './components/TextAreaWithContextSelector';
 export * from './components/SkeletonFallback';
@@ -99,6 +139,7 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export * from './utils';
+export { stableSerialize } from './models/utils/runjsSourceRuntimeCommon';
 export * from './actions';
 export { FieldAssignValueInput } from './components/FieldAssignValueInput';
 export * from './system-settings';

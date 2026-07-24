@@ -13,13 +13,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
 import { MemoryRouter } from 'react-router-dom';
-import { NocoBaseDesktopRouteType } from '../../../../flow-compat';
+import { JS_PAGE_TYPE, NocoBaseDesktopRouteType } from '../../../../flow-compat';
 import {
   AdminLayoutMenuItemRenderer,
   AdminLayoutMenuItemModel,
   AdminLayoutModel,
   ADMIN_LAYOUT_MODEL_UID,
   getAdminLayoutMenuMovePositionOptions,
+  MENU_TYPE_OPTIONS,
   normalizeAdminLayoutMenuLegacyVariables,
   openAdminLayoutMenuLink,
   resolveAdminLayoutMenuLink,
@@ -30,15 +31,6 @@ import {
 const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
 }));
-
-vi.mock('../../../../application/CustomRouterContextProvider', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@nocobase/client/src/application/CustomRouterContextProvider')>();
-  return {
-    ...actual,
-    useNavigateNoUpdate: () => navigateMock,
-    useRouterBasename: () => '/apps/demo',
-  };
-});
 
 describe('AdminLayoutModel menu items', () => {
   let engine: FlowEngine;
@@ -706,7 +698,7 @@ describe('AdminLayoutModel menu items', () => {
         { engine },
         React.createElement(
           MemoryRouter,
-          { initialEntries: ['/admin/current-page'] },
+          { basename: '/apps/demo', initialEntries: ['/apps/demo/admin/current-page'] },
           React.createElement(AdminLayoutMenuItemRenderer, {
             renderType: 'item',
             item: {
@@ -827,7 +819,7 @@ describe('AdminLayoutModel menu items', () => {
         { engine },
         React.createElement(
           MemoryRouter,
-          { initialEntries: ['/admin/current-page'] },
+          { basename: '/apps/demo', initialEntries: ['/apps/demo/admin/current-page'] },
           React.createElement(AdminLayoutMenuItemRenderer, {
             renderType: 'group',
             item: {
@@ -1460,6 +1452,79 @@ describe('AdminLayoutModel menu items', () => {
       method: 'insertBefore',
     });
     expect(request).not.toHaveBeenCalled();
+    expect(createRoute.mock.calls[0][0].options).toBeUndefined();
+  });
+
+  it('should create JavaScript page routes from header sider and insert entry points', async () => {
+    const createRoute = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { data: { id: 101 } } })
+      .mockResolvedValueOnce({ data: { data: { id: 102 } } })
+      .mockResolvedValueOnce({ data: { data: { id: 103 } } });
+    const moveRoute = vi.fn().mockResolvedValue(undefined);
+    const loadOrCreateModel = vi.spyOn(engine, 'loadOrCreateModel');
+    engine.context.routeRepository.createRoute = createRoute;
+    engine.context.routeRepository.moveRoute = moveRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-js-page',
+      use: AdminLayoutMenuItemModel,
+      props: {},
+    });
+    const values = {
+      title: 'JavaScript page',
+      icon: 'CodeOutlined',
+    };
+
+    await model.createMenuFromMeta({ menuType: 'jsPage', source: 'header' }, values);
+    await model.createMenuFromMeta(
+      {
+        menuType: 'jsPage',
+        source: 'sider',
+        parentRoute: { id: 20, type: NocoBaseDesktopRouteType.group },
+      },
+      values,
+    );
+    await model.createMenuFromMeta(
+      {
+        menuType: 'jsPage',
+        source: 'insert',
+        insertPosition: 'beforeBegin',
+        targetRoute: { id: 30, parentId: 10, type: NocoBaseDesktopRouteType.flowPage },
+      },
+      values,
+    );
+
+    for (const [index, expectedParentId] of [undefined, 20, 10].entries()) {
+      expect(createRoute.mock.calls[index][0]).toMatchObject({
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'JavaScript page',
+        icon: 'CodeOutlined',
+        parentId: expectedParentId,
+        enableTabs: false,
+        options: {
+          pageType: JS_PAGE_TYPE,
+        },
+        children: [
+          expect.objectContaining({
+            type: NocoBaseDesktopRouteType.tabs,
+            hidden: true,
+          }),
+        ],
+      });
+      expect(createRoute.mock.calls[index][0].options).toEqual({ pageType: JS_PAGE_TYPE });
+    }
+    expect(createRoute.mock.calls[0][1]).toBeUndefined();
+    expect(createRoute.mock.calls[1][1]).toBeUndefined();
+    expect(createRoute.mock.calls[2][1]).toEqual({ refreshAfterMutation: false });
+    expect(moveRoute).toHaveBeenCalledWith({
+      sourceId: 103,
+      targetId: 30,
+      sortField: 'sort',
+      method: 'insertBefore',
+    });
+    expect(loadOrCreateModel).not.toHaveBeenCalled();
+    expect(MENU_TYPE_OPTIONS).toContainEqual({ label: 'JavaScript page', value: 'jsPage' });
   });
 
   it('should persist insert step using selected menu type', async () => {
@@ -1998,6 +2063,7 @@ describe('AdminLayoutModel menu items', () => {
     expect(schema?.menuType?.enum).toEqual([
       { label: 'Group', value: 'group' },
       { label: 'Page', value: 'flowPage' },
+      { label: 'JavaScript page', value: 'jsPage' },
       { label: 'Link', value: 'link' },
     ]);
     expect(schema?.href?.['x-reactions']).toMatchObject({

@@ -11,7 +11,7 @@
  * 通用的 Action 注册表基类（abstract）。
  * 抽取共享的注册逻辑，具体查询由子类实现。
  */
-import type { ActionDefinition } from '../types';
+import type { ActionDefinition, ActionRegistrationOptions } from '../types';
 import type { FlowModel } from '../models';
 import type { FlowContext, FlowRuntimeContext } from '../flowContext';
 
@@ -21,15 +21,16 @@ export abstract class BaseActionRegistry<TModel extends FlowModel = FlowModel, T
   // 子类可覆盖：当动作被注册（含覆盖）时触发，可用于缓存失效等
   protected onActionRegistered(): void {}
 
-  registerActions(defs: Record<string, ActionDefinition<TModel, TCtx>>): void {
+  registerActions(defs: Record<string, ActionDefinition<TModel, TCtx>>, options: ActionRegistrationOptions = {}): void {
     for (const [, def] of Object.entries(defs || {})) {
-      this.registerAction(def);
+      this.registerAction(def, options);
     }
   }
 
-  registerAction(def: ActionDefinition<TModel, TCtx>): void {
+  registerAction(def: ActionDefinition<TModel, TCtx>, options: ActionRegistrationOptions = {}): void {
     if (!def?.name) throw new Error('Action must have a name.');
-    if (this.actions.has(def.name)) {
+    const { warnOnOverwrite = true } = options;
+    if (warnOnOverwrite && this.actions.has(def.name)) {
       console.warn(`Action '${def.name}' is already registered. It will be overwritten.`);
     }
     this.actions.set(def.name, def);

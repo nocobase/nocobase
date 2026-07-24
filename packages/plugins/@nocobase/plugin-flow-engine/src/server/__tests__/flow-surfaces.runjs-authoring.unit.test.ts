@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import './runjs-source-inspector.setup';
 import {
   collectFlowRegistryRunJsAuthoringErrors,
   collectRunJsAuthoringErrors,
@@ -1473,6 +1474,11 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
         path: '$.runjs.recordCall.code',
       },
       {
+        code: 'const settings = ctx.settings();\nctx.render(String(settings?.title ?? ""));',
+        member: 'settings',
+        path: '$.runjs.settingsCall.code',
+      },
+      {
         code: "const total = ctx['collection']('customers');\nctx.render(String(total));",
         member: 'collection',
         path: '$.runjs.bracketCollectionCall.code',
@@ -1550,11 +1556,12 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
         code: [
           'const collectionName = ctx.collection?.name || "customers";',
           'const recordId = ctx.record?.id;',
+          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.lightExtension?.entryId;',
           'const resource = ctx.makeResource("MultiRecordResource");',
           'resource.setResourceName(collectionName);',
           'await resource.refresh({ params: { pageSize: 1 } });',
           'ctx.message.info("Loaded");',
-          'ctx.render(String(recordId ?? resource.getMeta()?.count ?? ""));',
+          'ctx.render(String(configuredTitle ?? recordId ?? resource.getMeta()?.count ?? ""));',
         ].join('\n'),
         path: '$.runjs.readCtxValues.code',
         modelUse: 'JSBlockModel',
@@ -1594,6 +1601,39 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
         modelUse: 'JSBlockModel',
       }).map((error: any) => error.ruleId),
     ).not.toContain('runjs-ctx-member-not-callable');
+
+    for (const modelUse of ['JSItemModel', 'JSItemActionModel']) {
+      const itemContextErrors = inspectRunJsAuthoringCode({
+        code: [
+          'const level = ctx.item?.index;',
+          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.lightExtension?.entryId;',
+          'ctx.render(String(configuredTitle ?? level ?? ""));',
+        ].join('\n'),
+        path: `$.runjs.${modelUse}.ctxValues.code`,
+        modelUse,
+      }).map((error: any) => error.ruleId);
+
+      expect(itemContextErrors).not.toContain('runjs-ctx-root-unknown');
+      expect(itemContextErrors).not.toContain('runjs-ctx-member-not-callable');
+
+      expect(
+        inspectRunJsAuthoringCode({
+          code: 'const settings = ctx.settings();\nctx.render(String(settings?.title ?? ""));',
+          path: `$.runjs.${modelUse}.settingsCall.code`,
+          modelUse,
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-ctx-member-not-callable',
+            details: expect.objectContaining({
+              capability: 'ctx.settings',
+              member: 'settings',
+            }),
+          }),
+        ]),
+      );
+    }
 
     expect(
       inspectRunJsAuthoringCode({

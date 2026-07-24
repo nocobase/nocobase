@@ -15,6 +15,7 @@ import { useRedirect, useSignIn } from '../hooks';
 const navigateMock = vi.fn();
 const mockState = vi.hoisted(() => ({
   basename: undefined as string | undefined,
+  matchRoutes: vi.fn(() => [{ route: { id: 'admin' } }]) as ReturnType<typeof vi.fn>,
   signIn: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
   request: vi.fn().mockResolvedValue({ data: {} }) as ReturnType<typeof vi.fn>,
 }));
@@ -29,7 +30,10 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('@nocobase/client-v2', () => ({
   useApp: () => ({
-    router: { getBasename: () => mockState.basename },
+    router: {
+      getBasename: () => mockState.basename,
+      matchRoutes: (...args: unknown[]) => mockState.matchRoutes(...args),
+    },
     apiClient: {
       auth: { signIn: (...args: unknown[]) => mockState.signIn(...args) },
       request: (...args: unknown[]) => mockState.request(...args),
@@ -38,9 +42,19 @@ vi.mock('@nocobase/client-v2', () => ({
 }));
 
 describe('plugin-auth client-v2 useRedirect', () => {
+  const originalLocation = globalThis.window.location;
+
   beforeEach(() => {
     navigateMock.mockReset();
     mockState.basename = undefined;
+    mockState.matchRoutes = vi.fn(() => [{ route: { id: 'admin' } }]);
+  });
+
+  afterEach(() => {
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
   });
 
   function wrap(initialEntries: string[]) {
@@ -104,11 +118,34 @@ describe('plugin-auth client-v2 useRedirect', () => {
 
     expect(navigateMock).toHaveBeenCalledWith('/admin', { replace: true });
   });
+
+  it('should use a document redirect when the target only matches the SPA not-found route', () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        replace,
+      },
+    });
+    mockState.basename = '/v';
+    mockState.matchRoutes = vi.fn(() => [{ route: { id: 'not-found', path: '*' } }]);
+    const { result } = renderHook(() => useRedirect('/admin'), {
+      wrapper: wrap(['/signin?redirect=%2Fv%2Fcustomer%2Forders%2F1%3Fstatus%3Dopen']),
+    });
+
+    result.current();
+
+    expect(mockState.matchRoutes).toHaveBeenCalledWith('/v/customer/orders/1?status=open');
+    expect(replace).toHaveBeenCalledWith('/v/customer/orders/1?status=open');
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('plugin-auth client-v2 useSignIn', () => {
   beforeEach(() => {
     mockState.basename = '/nocobase/v2';
+    mockState.matchRoutes = vi.fn(() => [{ route: { id: 'admin' } }]);
     mockState.signIn = vi.fn().mockResolvedValue(undefined);
     mockState.request = vi.fn().mockResolvedValue({ data: {} });
     navigateMock.mockReset();

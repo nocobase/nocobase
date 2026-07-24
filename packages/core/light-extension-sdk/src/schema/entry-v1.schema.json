@@ -1,0 +1,336 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
+  "title": "NocoBase light extension entry.json v1",
+  "description": "Canonical descriptor for one NocoBase light extension client Entry.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "key"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Descriptor contract version."
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+      "description": "Stable technical identity. It must not change when the Entry directory is renamed."
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "category": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+    },
+    "icon": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string"
+      }
+    },
+    "sort": {
+      "type": "integer"
+    },
+    "settings": {
+      "description": "Settings field definitions for this light extension Entry. Each property becomes an independent settings menu.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$",
+        "not": {
+          "enum": ["__proto__", "prototype", "constructor"]
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/settingsSchema"
+      }
+    }
+  },
+  "definitions": {
+    "jsonValue": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/jsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "not": {
+              "enum": ["__proto__", "prototype", "constructor"]
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/jsonValue"
+          }
+        }
+      ]
+    },
+    "componentProps": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "not": {
+          "enum": ["__proto__", "prototype", "constructor"]
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/jsonValue"
+      }
+    },
+    "conditionPath": {
+      "type": "string",
+      "pattern": "^(?!.*(?:^|\\.)(?:__proto__|prototype|constructor)(?:\\.|$))[A-Za-z_][A-Za-z0-9_-]*(?:\\.[A-Za-z_][A-Za-z0-9_-]*){0,15}$"
+    },
+    "conditionWithValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator", "value"],
+      "properties": {
+        "path": {
+          "$ref": "#/definitions/conditionPath"
+        },
+        "operator": {
+          "enum": ["$eq", "$ne"]
+        },
+        "value": {
+          "$ref": "#/definitions/jsonValue"
+        }
+      }
+    },
+    "conditionWithArrayValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator", "value"],
+      "properties": {
+        "path": {
+          "$ref": "#/definitions/conditionPath"
+        },
+        "operator": {
+          "enum": ["$in", "$notIn"]
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/jsonValue"
+          }
+        }
+      }
+    },
+    "conditionWithoutValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator"],
+      "properties": {
+        "path": {
+          "$ref": "#/definitions/conditionPath"
+        },
+        "operator": {
+          "enum": ["$empty", "$notEmpty"]
+        }
+      }
+    },
+    "conditionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logic", "items"],
+      "properties": {
+        "logic": {
+          "enum": ["$and", "$or"]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      }
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/conditionWithValue"
+        },
+        {
+          "$ref": "#/definitions/conditionWithArrayValue"
+        },
+        {
+          "$ref": "#/definitions/conditionWithoutValue"
+        },
+        {
+          "$ref": "#/definitions/conditionGroup"
+        }
+      ]
+    },
+    "noVisibleConditionSubtree": {
+      "properties": {
+        "x-visible-when": false,
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/noVisibleConditionSubtree"
+          }
+        },
+        "items": {
+          "$ref": "#/definitions/noVisibleConditionSubtree"
+        }
+      }
+    },
+    "arraySettingsSchema": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/settingsSchema"
+        },
+        {
+          "$ref": "#/definitions/noVisibleConditionSubtree"
+        }
+      ]
+    },
+    "settingsSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["object", "array", "string", "number", "integer", "boolean"]
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {
+          "$ref": "#/definitions/jsonValue"
+        },
+        "enum": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/jsonValue"
+          }
+        },
+        "required": {
+          "description": "Use true on a field to require it. Object schemas may also use a property-name array.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+              }
+            }
+          ]
+        },
+        "properties": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$",
+            "not": {
+              "enum": ["__proto__", "prototype", "constructor"]
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/settingsSchema"
+          }
+        },
+        "items": {
+          "$ref": "#/definitions/arraySettingsSchema"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "format": {
+          "type": "string"
+        },
+        "x-component": {
+          "enum": [
+            "Input",
+            "Input.TextArea",
+            "InputNumber",
+            "Select",
+            "CollectionSelect",
+            "CollectionFieldSelect",
+            "RoleSelect",
+            "DataSourceSelect",
+            "Switch",
+            "Checkbox",
+            "Radio.Group",
+            "DatePicker",
+            "ColorPicker"
+          ]
+        },
+        "x-component-props": {
+          "$ref": "#/definitions/componentProps"
+        },
+        "x-visible-when": {
+          "description": "Condition that controls whether this settings field is visible.",
+          "$ref": "#/definitions/condition"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": 1,
+      "key": "sales-kpi",
+      "title": "Sales KPI",
+      "settings": {
+        "mode": {
+          "type": "integer",
+          "enum": [1, 2],
+          "default": 1,
+          "required": true,
+          "x-component": "Select"
+        },
+        "title": {
+          "type": "string",
+          "x-component": "Input",
+          "x-visible-when": {
+            "path": "mode",
+            "operator": "$eq",
+            "value": 1
+          }
+        }
+      }
+    }
+  ]
+}

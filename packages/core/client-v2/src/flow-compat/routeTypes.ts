@@ -16,8 +16,12 @@ export enum NocoBaseDesktopRouteType {
   flowPage = 'flowPage',
 }
 
+export const JS_PAGE_TYPE = 'js-page' as const;
+export type V2PageType = typeof JS_PAGE_TYPE;
+
 export interface NocoBaseDesktopRouteOptions {
   hasPersistedMenuInstanceFlow?: boolean;
+  pageType?: V2PageType;
   hasPersistedPageTabFlowModel?: boolean;
   [key: string]: any;
 }

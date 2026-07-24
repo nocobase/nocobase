@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowContext } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { linkageAssignField, setFieldsDefaultValue, subFormLinkageAssignField } from '../linkageRules';
 

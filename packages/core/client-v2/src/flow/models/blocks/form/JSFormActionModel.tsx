@@ -10,12 +10,28 @@
 /**
  * JS Form Action：表单工具栏按钮点击执行 JS。
  */
-import { tExpr } from '@nocobase/flow-engine';
-import { CodeEditor } from '../../../components/code-editor';
+import { tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import { FormActionModel } from './FormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
+import {
+  createJSActionEmbeddedEditorUIMode,
+  createJSActionRunJsUISchema,
+  createJSActionSourceBindingStep,
+  createJSActionSourceModeStep,
+  getJSActionRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  runJSActionRuntime,
+} from '../../actions/jsActionLightExtensionRuntime';
 
-export class JSFormActionModel extends FormActionModel {}
+export class JSFormActionModel extends FormActionModel {
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'clickSettings') {
+      return undefined;
+    }
+
+    return getJSActionRuntimeFlowSettingSteps(this);
+  }
+}
 
 JSFormActionModel.define({
   label: tExpr('JS action'),
@@ -27,37 +43,17 @@ JSFormActionModel.registerFlow({
   on: 'click',
   title: tExpr('Click settings'),
   steps: {
+    sourceMode: createJSActionSourceModeStep(),
+    sourceBinding: createJSActionSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-component': CodeEditor,
-          'x-component-props': {
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSActionRunJsUISchema(),
+      uiMode: createJSActionEmbeddedEditorUIMode,
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: `
 const values = ctx.form?.getFieldsValue?.() || {};
 ctx.message.success('Current form values: ' + JSON.stringify(values));
@@ -73,7 +69,11 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
             await ctx.resource.refresh();
           }
         });
-        await ctx.runjs(code, undefined, { version });
+        await runJSActionRuntime({
+          ctx,
+          params: params || {},
+          runJs: { code, version },
+        });
       },
     },
   },

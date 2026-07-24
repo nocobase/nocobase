@@ -38,6 +38,14 @@ describe('runjsDiagnostics', () => {
     expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'no-noncallable-call')).toBe(true);
   });
 
+  it('does not flag ES module imports as static parse errors', async () => {
+    const ctx = createTestCtx();
+    const code = `import { abc } from './helper';\nabc();\n`;
+    const res = await diagnoseRunJS(code, ctx);
+    expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'parse-error')).toBe(false);
+    expect(res.issues.some((i) => i.type === 'lint' && /Possible undefined variable: abc/.test(i.message))).toBe(false);
+  });
+
   it('does not report JSX callback parameters as undefined variables', async () => {
     const ctx = createTestCtx();
     const code = `
@@ -59,6 +67,30 @@ ctx.render(<div />);
         (i) => i.type === 'lint' && i.ruleId === 'possible-undefined-variable' && /roles|record|role/.test(i.message),
       ),
     ).toBe(false);
+  });
+
+  it('provides a preview element when diagnoseRunJS executes ctx.render directly', async () => {
+    const ctx = new FlowContext() as any;
+    ctx.defineMethod('createJSRunner', async function (this: FlowContext, options?: any) {
+      const runjsCtx = new FlowContext();
+      runjsCtx.addDelegate(this);
+      runjsCtx.defineMethod('render', function (this: FlowContext, value: unknown) {
+        const element = this.element;
+        if (!element) {
+          throw new Error('ctx.render: container not provided and ctx.element is not available');
+        }
+        element.textContent = String(value);
+      });
+
+      return new JSRunner({
+        globals: { ...(options?.globals || {}), ctx: runjsCtx },
+        timeoutMs: options?.timeoutMs,
+      });
+    });
+
+    const res = await diagnoseRunJS('ctx.render("ok");', ctx);
+
+    expect(res.issues.some((i) => i.type === 'runtime')).toBe(false);
   });
 
   it('reports suspicious short ctx member call as a lint issue', async () => {
@@ -163,6 +195,55 @@ ctx.render(<div />);
     expect(runtimeIssue?.stack).toContain('frames omitted');
     const frameCount = (runtimeIssue?.stack?.match(/\nat /g) || []).length;
     expect(frameCount).toBe(1);
+  });
+
+  it('maps runtime error stacks back to RunJS workspace files', async () => {
+    const ctx = new FlowContext() as any;
+    ctx.defineMethod('createJSRunner', async () => {
+      const runjsCtx = new FlowContext();
+      const stack = [
+        'Error: boom',
+        '    at test (eval at <anonymous> (eval at makeEvaluate (http://localhost:23000/vendor.js:1:1)), <anonymous>:5:9)',
+      ].join('\n');
+
+      return {
+        globals: { ctx: runjsCtx },
+        run: async () => ({
+          success: false,
+          timeout: false,
+          error: {
+            name: 'Error',
+            message: 'boom',
+            stack,
+          },
+        }),
+      } as any;
+    });
+
+    const res = await diagnoseRunJS('1 + 1;', ctx, {
+      sourceMap: JSON.stringify({
+        version: 1,
+        kind: 'runjs-line-map',
+        sourceURL: 'nocobase-runjs://bundle/test.js',
+        generatedCodeLineOffset: 2,
+        mappings: [
+          {
+            generatedLine: 3,
+            source: 'src/helper.ts',
+            sourceLine: 2,
+            sourceColumn: 3,
+          },
+        ],
+      }),
+    });
+    const runtimeIssue = res.issues.find((i) => i.type === 'runtime' && i.ruleId === 'runtime-error');
+
+    expect(runtimeIssue).toMatchObject({
+      sourcePath: 'src/helper.ts',
+      location: { start: { line: 2, column: 3 } },
+    });
+    expect(runtimeIssue?.stack).toContain('src/helper.ts:2:3');
+    expect(runtimeIssue?.stack).not.toContain('<anonymous>:5:9');
   });
 
   it('previewRunJS returns message with truncation note when exceeding length limit', async () => {

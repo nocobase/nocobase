@@ -32,6 +32,11 @@ function stripV2Basename(target: string, basename?: string): string {
   return target;
 }
 
+function shouldUseDocumentRedirect(app: ReturnType<typeof useApp>, target: string) {
+  const matches = app.router.matchRoutes(target) || [];
+  return matches.length === 0 || matches.every((match) => match.route.id === 'not-found');
+}
+
 export function useRedirect(next = '/admin') {
   const app = useApp();
   const navigate = useNavigate();
@@ -41,8 +46,12 @@ export function useRedirect(next = '/admin') {
     const redirect = searchParams.get('redirect');
     const target = redirect || next;
     const basename = app.router.getBasename?.();
+    if (shouldUseDocumentRedirect(app, target)) {
+      window.location.replace(target);
+      return;
+    }
     navigate(stripV2Basename(target, basename), { replace: true });
-  }, [app.router, navigate, next, searchParams]);
+  }, [app, navigate, next, searchParams]);
 }
 
 export function useDocumentTitle(title: string) {

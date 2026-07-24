@@ -52,6 +52,25 @@ export type FlowSurfaceApplyBlueprintPage = {
 
 export type FlowSurfaceApplyBlueprintAssetMap = Record<string, Record<string, any>>;
 
+export type FlowSurfaceRunJsSourceBindingKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
+
+export type FlowSurfaceRunJsSourceBinding = {
+  type: 'light-extension-entry';
+  repoId: string;
+  entryId: string;
+  kind: FlowSurfaceRunJsSourceBindingKind;
+};
+
+export type FlowSurfaceRunJsPublicSettings = {
+  code?: string;
+  version?: string;
+  sourceMode?: 'inline' | 'light-extension';
+  sourceBinding?: FlowSurfaceRunJsSourceBinding;
+  settings?: Record<string, unknown>;
+};
+
+export type FlowSurfaceApplyBlueprintPublicSettings = FlowSurfaceRunJsPublicSettings & Record<string, unknown>;
+
 export type FlowSurfaceApplyBlueprintAssets = {
   scripts?: FlowSurfaceApplyBlueprintAssetMap;
   charts?: FlowSurfaceApplyBlueprintAssetMap;
@@ -120,7 +139,7 @@ export type FlowSurfaceApplyBlueprintFieldObjectSpec = {
   showIndex?: boolean;
   label?: string;
   target?: string;
-  settings?: Record<string, any>;
+  settings?: FlowSurfaceApplyBlueprintPublicSettings;
   popup?: FlowSurfaceApplyBlueprintPopup;
   script?: string;
   chart?: string;
@@ -218,7 +237,7 @@ export type FlowSurfaceApplyBlueprintActionObjectSpec = {
   key?: string;
   type: string;
   title?: string;
-  settings?: Record<string, any>;
+  settings?: FlowSurfaceApplyBlueprintPublicSettings;
   popup?: FlowSurfaceApplyBlueprintPopup;
   script?: string;
   chart?: string;
@@ -259,7 +278,7 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   associationField?: string;
   resource?: FlowSurfaceApplyBlueprintBlockResource;
   template?: Record<string, any>;
-  settings?: Record<string, any>;
+  settings?: FlowSurfaceApplyBlueprintPublicSettings;
   fields?: FlowSurfaceApplyBlueprintFieldSpec[];
   fieldGroups?: FlowSurfaceApplyBlueprintFieldGroupSpec[];
   fieldsLayout?: FlowSurfaceApplyBlueprintLayout;

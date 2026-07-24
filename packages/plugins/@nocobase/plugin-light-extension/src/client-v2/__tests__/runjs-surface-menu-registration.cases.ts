@@ -1,0 +1,168 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import {
+  ActionGroupModel,
+  ActionModel,
+  BlockGridModel,
+  clearActionGroupMenuItemProviders,
+  clearBlockGridSelectSceneAddBlockProviders,
+  clearFieldMenuItemProviders,
+  registerRunJSSurfaceMenuItemProvider,
+  resolveFieldMenuItems,
+} from '@nocobase/client-v2';
+import { FlowEngine, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import { registerLightExtensionModelMenus } from '../modelMenu/registerLightExtensionModelMenus';
+
+class JSRecordActionModel extends ActionModel {}
+JSRecordActionModel.define({ label: 'JS action' });
+
+class TestActionGroupModel extends ActionGroupModel {}
+TestActionGroupModel.registerActionModels({ JSRecordActionModel });
+
+describe('registerLightExtensionModelMenus', () => {
+  beforeEach(clearProviders);
+  afterEach(clearProviders);
+
+  it('contributes Light extension submenus to block, action, field, and column menus', async () => {
+    const dispose = registerLightExtensionModelMenus(createApi());
+    const blockItems = await resolveBlockItems();
+    const actionItems = await TestActionGroupModel.defineChildren(createContext());
+    const fieldItems = await resolveFieldMenuItems({
+      surface: 'form-field',
+      model: {} as never,
+      ctx: createContext(),
+      items: [
+        { key: 'display-fields', sort: 100 },
+        { key: 'js-field', sort: 110 },
+        { key: 'association-fields', sort: 1000 },
+      ],
+    });
+    const columnItems = await resolveFieldMenuItems({
+      surface: 'table-column',
+      model: {} as never,
+      ctx: createContext(),
+    });
+    const detailsItems = await resolveFieldMenuItems({
+      surface: 'details-field',
+      model: {} as never,
+      ctx: createContext(),
+    });
+    const filterFormItems = await resolveFieldMenuItems({
+      surface: 'filter-form-field',
+      model: {} as never,
+      ctx: createContext(),
+    });
+
+    expect(getOtherBlockChildren(blockItems)).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(actionItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(fieldItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(fieldItems.map((item) => item.key)).toEqual([
+      'display-fields',
+      'js-field',
+      'light-extension',
+      'association-fields',
+    ]);
+    expect(columnItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(detailsItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(filterFormItems).not.toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+
+    dispose();
+    expect(getOtherBlockChildren(await resolveBlockItems())).not.toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
+    expect(await TestActionGroupModel.defineChildren(createContext())).not.toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
+    expect(
+      await resolveFieldMenuItems({ surface: 'form-field', model: {} as never, ctx: createContext() }),
+    ).not.toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+  });
+
+  it('keeps providers active until every client lane releases its registration', async () => {
+    const firstApi = createApi();
+    const secondApi = createApi();
+    const disposeFirst = registerLightExtensionModelMenus(firstApi);
+    const disposeSecond = registerLightExtensionModelMenus(secondApi);
+
+    expect(getOtherBlockChildren(await resolveBlockItems())).toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
+    disposeSecond();
+    expect(getOtherBlockChildren(await resolveBlockItems())).toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
+    disposeFirst();
+    expect(getOtherBlockChildren(await resolveBlockItems())).not.toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
+  });
+
+  it('does not remove a later provider registered under the same catalog key', async () => {
+    const disposeLightExtension = registerLightExtensionModelMenus(createApi());
+    const disposeLater = registerRunJSSurfaceMenuItemProvider(
+      '@nocobase/plugin-light-extension/model-menus',
+      ({ surface }) => ({
+        key: `later-${surface}`,
+      }),
+    );
+
+    disposeLightExtension();
+
+    expect(getOtherBlockChildren(await resolveBlockItems())).toContainEqual(
+      expect.objectContaining({ key: 'later-block' }),
+    );
+    expect(await TestActionGroupModel.defineChildren(createContext())).toContainEqual(
+      expect.objectContaining({ key: 'later-action' }),
+    );
+    expect(
+      await resolveFieldMenuItems({ surface: 'form-field', model: {} as never, ctx: createContext() }),
+    ).toContainEqual(expect.objectContaining({ key: 'later-form-field' }));
+
+    disposeLater();
+  });
+});
+
+async function resolveBlockItems(): Promise<SubModelItem[]> {
+  const engine = new FlowEngine();
+  engine.registerModels({ BlockGridModel });
+  engine.context.defineProperty('view', { value: { inputArgs: {} } });
+  const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
+  const source = model.addBlockItems;
+  return typeof source === 'function' ? source(model.context) : source || [];
+}
+
+function getOtherBlockChildren(items: SubModelItem[]): SubModelItem[] {
+  const otherBlocks = items.find((item) => item.key === 'BlockModel');
+  return Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
+}
+
+function createContext(): FlowModelContext {
+  const engine = new FlowEngine();
+  engine.registerModels({ ActionModel, JSRecordActionModel, TestActionGroupModel });
+  return {
+    engine,
+    t: (key: string) => key,
+  } as FlowModelContext;
+}
+
+function createApi(): ApiClientLike {
+  return {
+    request: vi.fn(),
+  };
+}
+
+function clearProviders() {
+  clearBlockGridSelectSceneAddBlockProviders();
+  clearActionGroupMenuItemProviders();
+  clearFieldMenuItemProviders();
+}

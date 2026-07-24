@@ -47,6 +47,8 @@ jobs:
           cache: 'yarn'
 
       - run: yarn install --frozen-lockfile
+      - name: Check tracked RunJS artifacts (regenerate and commit them if this fails)
+        run: yarn workspace @nocobase/runjs generate:check
       - name: Pack dependencies
         run: |
           find . -name node_modules -type d -prune -print0 > node_modules.list
@@ -55,6 +57,13 @@ jobs:
               printf '%s\0' "$file" >> node_modules.list
             fi
           done
+          printf '%s\0' \
+            packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/antd.ts \
+            packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/icons.ts \
+            packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/loaders.ts \
+            packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/graphs \
+            packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/loaders.ts \
+            packages/core/runjs/src/completion-catalog/generated.ts >> node_modules.list
           tar --null -cf node_modules.tar -T node_modules.list
       - uses: actions/upload-artifact@v4
         with:
@@ -88,6 +97,14 @@ jobs:
           path: .
 
       - run: tar -xf node_modules.tar
+      - name: Check generated RunJS artifacts
+        run: |
+          test -f packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/antd.ts
+          test -f packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/icons.ts
+          test -f packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/loaders.ts
+          test -d packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/graphs
+          test -f packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/loaders.ts
+          test -f packages/core/runjs/src/completion-catalog/generated.ts
       - run: yarn test:client --shard=${{ matrix.shard }}/4 --silent
         env:
           LOGGER_LEVEL: error

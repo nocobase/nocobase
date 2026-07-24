@@ -17,7 +17,6 @@ import {
   isVariableExpression,
   parseValueToPath,
   isRunJSValue,
-  normalizeRunJSValue,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -33,6 +32,7 @@ import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOpt
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { RunJSValueEditor } from './RunJSValueEditor';
 import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
+import { evaluateInlineRunJSValue } from './runjs-source';
 
 interface Props {
   value: any;
@@ -40,6 +40,7 @@ interface Props {
   metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
   model: FieldModel;
   flags?: Record<string, any>;
+  sourceLabel?: string;
 }
 
 const snapshotOptions = (input: any): any[] | undefined => {
@@ -174,7 +175,7 @@ function createTempFieldClass(Base: any) {
 }
 
 export const DefaultValue = connect((props: Props) => {
-  const { value, onChange, metaTree: propMetaTree, flags: componentFlags, ...restProps } = props;
+  const { value, onChange, metaTree: propMetaTree, flags: componentFlags, sourceLabel, ...restProps } = props;
   const flowContext = useFlowContext();
   const { model } = flowContext;
   // no side-effects to original form until confirmed
@@ -238,9 +239,8 @@ export const DefaultValue = connect((props: Props) => {
       // RunJS default: execute and use the computed result for preview/backfill
       if (isRunJSValue(out)) {
         try {
-          const { code, version } = normalizeRunJSValue(out);
-          const ret = await model?.context?.runjs(code, undefined, { version });
-          out = ret?.success ? ret.value : undefined;
+          if (!out.code.trim()) return undefined;
+          out = await evaluateInlineRunJSValue({ ctx: model?.context, runJs: out });
         } catch {
           out = undefined;
         }
@@ -657,10 +657,16 @@ export const DefaultValue = connect((props: Props) => {
 
   const RunJSComponent = useMemo(() => {
     const C: React.FC<any> = (inputProps) => (
-      <RunJSValueEditor t={flowContext.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+      <RunJSValueEditor
+        t={flowContext.t}
+        value={inputProps?.value}
+        onChange={inputProps?.onChange}
+        sourceLabel={sourceLabel}
+        surfaceStyle="value"
+      />
     );
     return C;
-  }, [flowContext]);
+  }, [flowContext, sourceLabel]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       let base: MetaTreeNode[] = [];

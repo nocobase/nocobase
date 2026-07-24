@@ -26,16 +26,7 @@ describe('SnippetsDrawer', () => {
       },
     ];
     const onInsert = vi.fn();
-    render(
-      <SnippetsDrawer
-        open
-        onClose={() => {}}
-        getContainer={() => document.body}
-        entries={entries}
-        tr={(s) => s}
-        onInsert={onInsert}
-      />,
-    );
+    render(<SnippetsDrawer open onClose={() => {}} entries={entries} tr={(s) => s} onInsert={onInsert} />);
 
     // Expect both entries visible
     expect(await screen.findByText('A')).toBeTruthy();

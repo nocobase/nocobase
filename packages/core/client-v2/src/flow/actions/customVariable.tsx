@@ -22,6 +22,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { RunJSValueEditor } from '../components/RunJSValueEditor';
+import { evaluateInlineRunJSValue } from '../components/runjs-source';
 
 export const customVariable = defineAction({
   name: 'customVariable',
@@ -38,11 +39,16 @@ export const customVariable = defineAction({
   async handler(ctx, params) {
     const { variables = [] } = params;
 
-    variables.forEach((variable) => {
+    variables.forEach((variable, variableIndex) => {
+      if (!isSafeCustomVariableKey(variable.key)) {
+        console.warn('[customVariable] Ignored an unsafe variable identifier');
+        return;
+      }
       if (variable.type === 'runjs') {
         const getFunction = async () => {
-          const { code, version } = normalizeRunJSValue(variable.runjs);
-          return ctx.runjs(code, undefined, { version });
+          const runJs = normalizeRunJSValue(variable.runjs);
+          if (!runJs.code.trim()) return undefined;
+          return evaluateInlineRunJSValue({ ctx, runJs });
         };
         const metaFunction = () => ({
           title: variable.title,
@@ -95,6 +101,12 @@ export const customVariable = defineAction({
     });
   },
 });
+
+const UNSAFE_CUSTOM_VARIABLE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function isSafeCustomVariableKey(value: unknown): value is string {
+  return typeof value === 'string' && Boolean(value.trim()) && !UNSAFE_CUSTOM_VARIABLE_KEYS.has(value);
+}
 
 type FlowVariableType = 'formValue' | 'runjs';
 
@@ -361,7 +373,16 @@ function VariableEditor(props: VariableEditorProps) {
           <Form.Item
             label={t('Variable identifier')}
             name="key"
-            rules={[{ required: true, message: t('Please enter variable identifier') }]}
+            rules={[
+              { required: true, message: t('Please enter variable identifier') },
+              {
+                validator: async (_, nextKey) => {
+                  if (!isSafeCustomVariableKey(nextKey)) {
+                    throw new Error(t('Please enter variable identifier'));
+                  }
+                },
+              },
+            ]}
           >
             <Input placeholder={t('Please enter variable identifier')} />
           </Form.Item>
@@ -381,14 +402,22 @@ function VariableEditor(props: VariableEditorProps) {
               rules={[
                 {
                   validator: async (_, value) => {
-                    if (!isRunJSValue(value) || !normalizeRunJSValue(value).code.trim()) {
+                    const normalized = isRunJSValue(value) ? normalizeRunJSValue(value) : undefined;
+                    if (!normalized?.code.trim()) {
                       throw new Error(t('Please enter JavaScript code'));
                     }
                   },
                 },
               ]}
             >
-              <RunJSValueEditor t={t} scene="eventFlow" height="240px" containerStyle={{ width: '100%' }} />
+              <RunJSValueEditor
+                t={t}
+                scene="eventFlow"
+                height="240px"
+                containerStyle={{ width: '100%' }}
+                sourceLabel={`${t('Custom variable')} / ${t('RunJS')}`}
+                surfaceStyle="value"
+              />
             </Form.Item>
           ) : null}
         </Form>

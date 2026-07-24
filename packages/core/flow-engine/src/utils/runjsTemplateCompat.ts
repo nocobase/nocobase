@@ -13,6 +13,20 @@ type PrepareRunJsCodeOptions = {
   preprocessTemplates?: boolean;
 };
 
+type RunJSBuiltInModule = {
+  ctxLibName: string;
+};
+
+type BabelImportDeclaration = import('@babel/types').ImportDeclaration;
+type BabelNode = import('@babel/types').Node;
+type BabelStatement = import('@babel/types').Statement;
+
+type RunJSCodeReplacement = {
+  end: number;
+  start: number;
+  text: string;
+};
+
 const RESOLVE_JSON_TEMPLATE_CALL = 'ctx.resolveJsonTemplate';
 const CTX_TEMPLATE_MARKER_RE = /\{\{\s*ctx(?:\.|\[|\?\.)/;
 const CTX_LIBS_MARKER_RE = /\bctx(?:\?\.|\.)libs\b/;
@@ -22,11 +36,23 @@ const STRINGIFY_HELPER_RE = /\b__runjs_templateValueToString(?:_\d+)?\b/;
 const PREPROCESSED_MARKER_RE = /\b__runjs_ctx_tpl_\d+\b|\b__runjs_templateValueToString(?:_\d+)?\b/;
 const ENSURE_LIBS_MARKER_RE = /\b__runjs_ensure_libs\b/;
 const PREPARE_RUNJS_CODE_CACHE_LIMIT = 256;
+const RUNJS_BUILT_IN_MODULES: Readonly<Record<string, RunJSBuiltInModule>> = {
+  react: { ctxLibName: 'React' },
+  'react-dom/client': { ctxLibName: 'ReactDOM' },
+  antd: { ctxLibName: 'antd' },
+  '@ant-design/icons': { ctxLibName: 'antdIcons' },
+  dayjs: { ctxLibName: 'dayjs' },
+  lodash: { ctxLibName: 'lodash' },
+  mathjs: { ctxLibName: 'math' },
+  '@formulajs/formulajs': { ctxLibName: 'formula' },
+};
 
 const PREPARE_RUNJS_CODE_CACHE = {
   withTemplates: new Map<string, Promise<string>>(),
   withoutTemplates: new Map<string, Promise<string>>(),
 };
+
+let babelParserPromise: Promise<typeof import('@babel/parser')> | undefined;
 
 function lruGet<V>(map: Map<string, V>, key: string): V | undefined {
   const v = map.get(key);
@@ -42,6 +68,221 @@ function lruSet<V>(map: Map<string, V>, key: string, value: V, limit: number): v
   if (map.size <= limit) return;
   const oldestKey = map.keys().next().value;
   if (typeof oldestKey !== 'undefined') map.delete(oldestKey);
+}
+
+function resolveRunJSBuiltInModule(specifier: string): RunJSBuiltInModule | undefined {
+  return Object.prototype.hasOwnProperty.call(RUNJS_BUILT_IN_MODULES, specifier)
+    ? RUNJS_BUILT_IN_MODULES[specifier]
+    : undefined;
+}
+
+function getLineIndentation(code: string, index: number): string {
+  const lineStart = code.lastIndexOf('\n', index - 1) + 1;
+  const prefix = code.slice(lineStart, index);
+  return /^[ \t]*$/u.test(prefix) ? prefix : '';
+}
+
+function babelNodeChildren(node: BabelNode): BabelNode[] {
+  const children: BabelNode[] = [];
+  const record = node as unknown as Record<string, unknown>;
+  for (const value of Object.values(record)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item && typeof item === 'object' && typeof (item as { type?: unknown }).type === 'string') {
+          children.push(item as BabelNode);
+        }
+      }
+      continue;
+    }
+    if (value && typeof value === 'object' && typeof (value as { type?: unknown }).type === 'string') {
+      children.push(value as BabelNode);
+    }
+  }
+  return children;
+}
+
+function babelPatternBindsName(node: BabelNode | null | undefined, name: string): boolean {
+  if (!node) return false;
+  if (node.type === 'Identifier') return node.name === name;
+  if (node.type === 'RestElement') return babelPatternBindsName(node.argument, name);
+  if (node.type === 'AssignmentPattern') return babelPatternBindsName(node.left, name);
+  if (node.type === 'ObjectPattern') {
+    return node.properties.some((property) =>
+      property.type === 'RestElement'
+        ? babelPatternBindsName(property.argument, name)
+        : babelPatternBindsName(property.value, name),
+    );
+  }
+  if (node.type === 'ArrayPattern') {
+    return node.elements.some((element) => babelPatternBindsName(element, name));
+  }
+  if (node.type === 'TSParameterProperty') {
+    return babelPatternBindsName(node.parameter, name);
+  }
+  return false;
+}
+
+function importDeclarationBindsRuntimeName(declaration: BabelImportDeclaration, name: string): boolean {
+  if (declaration.importKind === 'type' || declaration.importKind === 'typeof') return false;
+  return declaration.specifiers.some(
+    (specifier) =>
+      specifier.local.name === name &&
+      (specifier.type !== 'ImportSpecifier' || (specifier.importKind !== 'type' && specifier.importKind !== 'typeof')),
+  );
+}
+
+function statementDeclaresTopLevelRuntimeName(statement: BabelStatement, name: string): boolean {
+  if (statement.type === 'ImportDeclaration') return importDeclarationBindsRuntimeName(statement, name);
+  if (statement.type === 'VariableDeclaration') {
+    return statement.declarations.some((declaration) => babelPatternBindsName(declaration.id, name));
+  }
+  if (
+    statement.type === 'FunctionDeclaration' ||
+    statement.type === 'ClassDeclaration' ||
+    statement.type === 'TSEnumDeclaration'
+  ) {
+    return statement.id?.name === name;
+  }
+  if (statement.type === 'TSModuleDeclaration') return statement.id.type === 'Identifier' && statement.id.name === name;
+  if (statement.type === 'TSImportEqualsDeclaration')
+    return statement.id.name === name && statement.importKind !== 'type';
+  if (statement.type === 'ExportNamedDeclaration' || statement.type === 'ExportDefaultDeclaration') {
+    const declaration = statement.declaration;
+    return Boolean(declaration && statementDeclaresTopLevelRuntimeName(declaration as BabelStatement, name));
+  }
+  return false;
+}
+
+const BABEL_NESTED_RUNTIME_SCOPES = new Set([
+  'ArrowFunctionExpression',
+  'ClassDeclaration',
+  'ClassExpression',
+  'ClassMethod',
+  'ClassPrivateMethod',
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'ObjectMethod',
+  'TSDeclareFunction',
+]);
+
+function containsFunctionScopedVarBinding(node: BabelNode, name: string): boolean {
+  if (BABEL_NESTED_RUNTIME_SCOPES.has(node.type)) return false;
+  if (
+    node.type === 'VariableDeclaration' &&
+    node.kind === 'var' &&
+    node.declarations.some((declaration) => babelPatternBindsName(declaration.id, name))
+  ) {
+    return true;
+  }
+  return babelNodeChildren(node).some((child) => containsFunctionScopedVarBinding(child, name));
+}
+
+function hasTopLevelRuntimeBinding(statements: BabelStatement[], name: string): boolean {
+  return statements.some(
+    (statement) =>
+      statementDeclaresTopLevelRuntimeName(statement, name) || containsFunctionScopedVarBinding(statement, name),
+  );
+}
+
+function buildRunJSBuiltInImportReplacement(
+  declaration: BabelImportDeclaration,
+  builtIn: RunJSBuiltInModule,
+  indentation: string,
+): string | undefined {
+  if (declaration.importKind === 'type' || declaration.importKind === 'typeof') {
+    return '';
+  }
+
+  const source = `ctx.libs.${builtIn.ctxLibName}`;
+  const declarations: string[] = [];
+  const destructuredBindings: string[] = [];
+
+  for (const specifier of declaration.specifiers) {
+    if (specifier.type === 'ImportDefaultSpecifier' || specifier.type === 'ImportNamespaceSpecifier') {
+      declarations.push(`const ${specifier.local.name} = ${source};`);
+      continue;
+    }
+    if (specifier.importKind === 'type' || specifier.importKind === 'typeof') {
+      continue;
+    }
+    const importedName = specifier.imported.type === 'Identifier' ? specifier.imported.name : specifier.imported.value;
+    const localName = specifier.local.name;
+    if (importedName === 'default') {
+      declarations.push(`const ${localName} = ${source};`);
+    } else {
+      destructuredBindings.push(importedName === localName ? importedName : `${importedName}: ${localName}`);
+    }
+  }
+
+  if (destructuredBindings.length) {
+    declarations.push(`const { ${destructuredBindings.join(', ')} } = ${source};`);
+  }
+
+  if (declarations.length) {
+    return declarations.join(`\n${indentation}`);
+  }
+  return declaration.specifiers.length ? '' : undefined;
+}
+
+async function rewriteRunJSBuiltInImports(code: string): Promise<string> {
+  if (!code.includes('import')) {
+    return code;
+  }
+
+  babelParserPromise ??= import('@babel/parser');
+  const { parse } = await babelParserPromise;
+  let ast: ReturnType<typeof parse>;
+  try {
+    ast = parse(code, {
+      allowAwaitOutsideFunction: true,
+      allowReturnOutsideFunction: true,
+      plugins: ['jsx', 'typescript', 'topLevelAwait'],
+      sourceType: 'module',
+    });
+  } catch {
+    return code;
+  }
+
+  const replacements: RunJSCodeReplacement[] = [];
+  let usesRuntimeCtx = false;
+
+  for (const statement of ast.program.body) {
+    if (statement.type !== 'ImportDeclaration') {
+      continue;
+    }
+    const builtIn = resolveRunJSBuiltInModule(statement.source.value);
+    if (!builtIn || typeof statement.start !== 'number' || typeof statement.end !== 'number') {
+      continue;
+    }
+    const replacement = buildRunJSBuiltInImportReplacement(
+      statement,
+      builtIn,
+      getLineIndentation(code, statement.start),
+    );
+    if (typeof replacement === 'undefined') {
+      continue;
+    }
+    usesRuntimeCtx ||= replacement.length > 0;
+    replacements.push({
+      end: statement.end,
+      start: statement.start,
+      text: replacement,
+    });
+  }
+
+  if (usesRuntimeCtx && hasTopLevelRuntimeBinding(ast.program.body, 'ctx')) {
+    throw new SyntaxError(
+      'Built-in module imports cannot be compiled in code that declares a top-level "ctx" runtime binding. Rename the binding because "ctx" is reserved for the RunJS context.',
+    );
+  }
+
+  return replacements
+    .sort((left, right) => right.start - left.start)
+    .reduce(
+      (output, replacement) =>
+        `${output.slice(0, replacement.start)}${replacement.text}${output.slice(replacement.end)}`,
+      code,
+    );
 }
 
 function isIdentChar(ch: string | undefined): boolean {
@@ -525,6 +766,12 @@ function extractUsedCtxLibKeys(code: string): string[] {
       const right = skipSpaceAndCommentsForward(code, i + 1);
       const rhsBaseEnd = readsCtxLibsBase(code, right);
       if (rhsBaseEnd !== null) {
+        const rhsAccess = tryReadCtxLibAccess(code, right);
+        if (rhsAccess?.key) {
+          out.add(rhsAccess.key);
+          i = rhsAccess.end;
+          continue;
+        }
         const leftEnd = skipWhitespaceBackward(code, i - 1);
         if (code[leftEnd] === '}') {
           let depth = 0;
@@ -804,12 +1051,15 @@ export async function prepareRunJsCode(code: string, options: PrepareRunJsCodeOp
   if (cached) return await cached;
 
   const task = (async () => {
-    if (!preprocessTemplates) return injectEnsureLibsPreamble(await compileRunJs(src));
+    if (!preprocessTemplates) {
+      return injectEnsureLibsPreamble(await compileRunJs(await rewriteRunJSBuiltInImports(src)));
+    }
 
     // 阶段 1：仅重写“裸”的 {{ ... }} 占位符，保持代码可解析（尤其是在 JSX 转换前）。
     const preBare = preprocessRunJsTemplates(src, { processStringLiterals: false });
+    const rewritten = await rewriteRunJSBuiltInImports(preBare);
     // 阶段 2：JSX -> JS。
-    const jsxCompiled = await compileRunJs(preBare);
+    const jsxCompiled = await compileRunJs(rewritten);
     // 阶段 3：对纯 JS 输出重写字符串/模板字面量（避免破坏 JSX 属性语法）。
     const out = preprocessRunJsTemplates(jsxCompiled, { processBarePlaceholders: false });
     // 阶段 4：为 ctx.libs 注入按需加载 preamble（保持用户同步访问语义）。

@@ -7,12 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr } from '@nocobase/flow-engine';
+import { ElementProxy, tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
-import { CodeEditor } from '../../components/code-editor';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
+import {
+  beginJSFieldRuntimeRun,
+  createJSFieldEmbeddedEditorUIMode,
+  createJSFieldRunJsUISchema,
+  createJSFieldSourceBindingStep,
+  createJSFieldSourceModeStep,
+  getJSFieldContextSignature,
+  getJSFieldRuntimeFlowSettingSteps,
+  getJSFieldSourceSignature,
+  hasRunnableJSFieldSource,
+  INLINE_SOURCE_MODE,
+  isCurrentJSFieldRuntimeRun,
+  resetJSFieldRuntimeElement,
+  renderJSFieldRuntimeError,
+  resolveJSFieldRuntimeRunJS,
+  runResolvedJSFieldCode,
+} from './jsFieldLightExtensionRuntime';
 
 const DEFAULT_CODE = `
 // Render an editable antd Input via JSX and keep it in sync with form value.
@@ -186,26 +202,29 @@ const JSFormRuntime: React.FC<{
   };
   // 统一获取&裁剪脚本代码，直接依赖具体 code 字符串，避免顶层 stepParams 引用未变化导致不更新
   const codeParam = model.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+  const sourceSignature = getJSFieldSourceSignature(model, resolveScriptCode(codeParam));
+  const contextSignature = getJSFieldContextSignature(model);
+  const runnableSource = hasRunnableJSFieldSource(model, resolveScriptCode(codeParam));
   const scriptCode = useMemo(() => {
     return resolveScriptCode(codeParam);
   }, [codeParam]);
 
   useEffect(() => {
-    if (!containerRef.current || !scriptCode) return;
+    if (!containerRef.current || !runnableSource) return;
     model.scheduleApplyJsSettings();
-  }, [model, scriptCode]);
+  }, [contextSignature, model, runnableSource, sourceSignature]);
 
   useEffect(() => {
-    if (!containerRef.current || !scriptCode) return;
+    if (!containerRef.current || !runnableSource) return;
     const event = new CustomEvent('js-field:value-change', { detail: value });
     containerRef.current.dispatchEvent(event);
-  }, [value, scriptCode]);
+  }, [contextSignature, value, runnableSource, sourceSignature]);
 
-  if (readOnly && !scriptCode) {
+  if (readOnly && !runnableSource) {
     return <span>{String(value ?? '')}</span>;
   }
 
-  if (!scriptCode) {
+  if (!runnableSource) {
     return (
       <Input value={value} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} style={{ width: '100%' }} />
     );
@@ -224,15 +243,25 @@ export class JSEditableFieldModel extends FieldModel {
   private _mountedOnce = false;
   private _pendingJsSettingsApply = false;
   private _lastAppliedJsSettings?: {
-    code: string;
+    signature: string;
+    contextSignature: string;
     disabled: boolean;
     readOnly: boolean;
     element: HTMLSpanElement | null;
   };
 
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSFieldRuntimeFlowSettingSteps(this);
+  }
+
   scheduleApplyJsSettings() {
     const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
-    if (!resolveScriptCode(codeParam)) return;
+    const scriptCode = resolveScriptCode(codeParam);
+    if (!hasRunnableJSFieldSource(this, scriptCode)) return;
 
     if (this._pendingJsSettingsApply) {
       return;
@@ -244,13 +273,16 @@ export class JSEditableFieldModel extends FieldModel {
 
       const nextCodeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
       const nextCode = resolveScriptCode(nextCodeParam);
+      const nextSignature = getJSFieldSourceSignature(this, nextCode);
+      const nextContextSignature = getJSFieldContextSignature(this);
       const nextElement = this.context.ref?.current as HTMLSpanElement | null;
-      if (!nextCode || !nextElement) {
+      if (!hasRunnableJSFieldSource(this, nextCode) || !nextElement) {
         return;
       }
 
       const nextRun = {
-        code: nextCode,
+        signature: nextSignature,
+        contextSignature: nextContextSignature,
         disabled: !!this.props?.disabled,
         readOnly: isReadOnlyMode(this),
         element: nextElement,
@@ -258,7 +290,8 @@ export class JSEditableFieldModel extends FieldModel {
       const lastRun = this._lastAppliedJsSettings;
       if (
         lastRun &&
-        lastRun.code === nextRun.code &&
+        lastRun.signature === nextRun.signature &&
+        lastRun.contextSignature === nextRun.contextSignature &&
         lastRun.disabled === nextRun.disabled &&
         lastRun.readOnly === nextRun.readOnly &&
         lastRun.element === nextRun.element
@@ -267,21 +300,27 @@ export class JSEditableFieldModel extends FieldModel {
       }
 
       this._lastAppliedJsSettings = nextRun;
-      void this.applyFlow('jsSettings');
+      this.applyFlow('jsSettings').catch((error) => {
+        if (this.context.ref?.current === nextElement) {
+          renderJSFieldRuntimeError(nextElement, error, 'js-editable-field-runtime-error');
+        }
+      });
     });
   }
 
   useHooksBeforeRender() {
     const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
     const scriptCode = resolveScriptCode(codeParam);
+    const sourceSignature = getJSFieldSourceSignature(this, scriptCode);
+    const contextSignature = getJSFieldContextSignature(this);
     const disabled = this.props?.disabled;
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      if (!scriptCode) return;
+      if (!hasRunnableJSFieldSource(this, scriptCode)) return;
       this.scheduleApplyJsSettings();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [scriptCode, disabled]);
+    }, [scriptCode, sourceSignature, contextSignature, disabled]);
   }
 
   render() {
@@ -325,80 +364,84 @@ JSEditableFieldModel.registerFlow({
   title: tExpr('JavaScript settings'),
   manual: true,
   steps: {
+    sourceMode: createJSFieldSourceModeStep(),
+    sourceBinding: createJSFieldSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
-          'x-component-props': {
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSFieldRunJsUISchema({ scene: 'formValue' }),
+      uiMode: createJSFieldEmbeddedEditorUIMode,
       defaultParams(ctx) {
-        const fieldTitle = ctx.collectionField?.title || 'field';
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
-        if (!code?.trim()) {
-          return;
-        }
+        const inlineRunJs = resolveRunJsParams(ctx, params);
 
         ctx.onRefReady(ctx.ref, async (element) => {
-          // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy((ctx.ref?.current as HTMLSpanElement | null) || element),
-            cache: false,
-          });
-          ctx.defineMethod('getValue', () => {
-            const namePath = resolveEffectiveNamePath(ctx);
-            if (namePath?.length) {
-              const fv = ctx.form?.getFieldValue?.(namePath);
-              return fv !== undefined ? fv : ctx.model.props?.value;
-            }
-            return ctx.model.props?.value;
-          });
-          ctx.defineMethod('setValue', (v) => {
-            try {
-              ctx.model.setProps('value', v);
+          const runId = beginJSFieldRuntimeRun(ctx.model);
+          try {
+            resetJSFieldRuntimeElement(element);
+            // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
+            ctx.defineProperty('element', {
+              get: () => new ElementProxy((ctx.ref?.current as HTMLSpanElement | null) || element),
+              cache: false,
+            });
+            ctx.defineMethod('getValue', () => {
               const namePath = resolveEffectiveNamePath(ctx);
               if (namePath?.length) {
-                setFormValue(ctx.form, namePath, v);
+                const fv = ctx.form?.getFieldValue?.(namePath);
+                return fv !== undefined ? fv : ctx.model.props?.value;
               }
-            } catch (_) {
-              // ignore
+              return ctx.model.props?.value;
+            });
+            ctx.defineMethod('setValue', (v) => {
+              try {
+                ctx.model.setProps('value', v);
+                const namePath = resolveEffectiveNamePath(ctx);
+                if (namePath?.length) {
+                  setFormValue(ctx.form, namePath, v);
+                }
+              } catch (_) {
+                // ignore
+              }
+            });
+            ctx.defineProperty('namePath', { get: () => resolveEffectiveNamePath(ctx), cache: false });
+            ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
+            ctx.defineProperty('readOnly', {
+              get: () => isReadOnlyMode(ctx.model),
+              cache: false,
+            });
+            ctx.defineProperty('value', {
+              get: () => ctx.model.props?.value,
+              cache: false,
+            });
+            ctx.defineProperty('record', {
+              get: () => ctx.model.context.record,
+              cache: false,
+            });
+            ctx.defineProperty('collectionField', {
+              get: () => ctx.model.context.collectionField,
+              cache: false,
+            });
+            const resolved = await resolveJSFieldRuntimeRunJS({
+              model: ctx.model,
+              params: params || {},
+              runJs: inlineRunJs,
+            });
+            if (!isCurrentJSFieldRuntimeRun(ctx.model, runId)) {
+              return;
             }
-          });
-          ctx.defineProperty('namePath', { get: () => resolveEffectiveNamePath(ctx), cache: false });
-          ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
-          ctx.defineProperty('readOnly', {
-            get: () => isReadOnlyMode(ctx.model),
-            cache: false,
-          });
-          await ctx.runjs(code, undefined, { version });
+            await runResolvedJSFieldCode({ ctx, resolved });
+          } catch (error) {
+            if (!isCurrentJSFieldRuntimeRun(ctx.model, runId)) {
+              return;
+            }
+            renderJSFieldRuntimeError(element, error, 'js-editable-field-runtime-error');
+          }
         });
       },
     },

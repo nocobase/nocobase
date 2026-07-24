@@ -7,11 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr } from '@nocobase/flow-engine';
+import { tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { CodeEditor } from '../../components/code-editor';
 import { ActionModel, ActionSceneEnum } from '../base';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
+import {
+  createJSActionEmbeddedEditorUIMode,
+  createJSActionRunJsUISchema,
+  createJSActionSourceBindingStep,
+  createJSActionSourceModeStep,
+  getJSActionRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  runJSActionRuntime,
+} from './jsActionLightExtensionRuntime';
 
 export class JSCollectionActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
@@ -20,6 +28,14 @@ export class JSCollectionActionModel extends ActionModel {
     title: tExpr('JS action'),
     icon: 'JavaScriptOutlined',
   };
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'clickSettings') {
+      return undefined;
+    }
+
+    return getJSActionRuntimeFlowSettingSteps(this);
+  }
 }
 
 JSCollectionActionModel.define({
@@ -35,37 +51,17 @@ JSCollectionActionModel.registerFlow({
   on: 'click',
   title: tExpr('Click settings'),
   steps: {
+    sourceMode: createJSActionSourceModeStep(),
+    sourceBinding: createJSActionSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-component': CodeEditor,
-          'x-component-props': {
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          styles: {
-            body: {
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSActionRunJsUISchema(),
+      uiMode: createJSActionEmbeddedEditorUIMode,
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: `
 const rows = ctx.resource?.getSelectedRows?.() || [];
 if (!rows.length) {
@@ -77,8 +73,11 @@ if (!rows.length) {
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
-        await ctx.runjs(code, undefined, { version });
+        await runJSActionRuntime({
+          ctx,
+          params: params || {},
+          runJs: resolveRunJsParams(ctx, params),
+        });
       },
     },
   },

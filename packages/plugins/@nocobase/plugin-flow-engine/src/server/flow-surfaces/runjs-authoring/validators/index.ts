@@ -9,7 +9,12 @@
 
 import type { FlowSurfaceErrorItemInput } from '../../errors';
 import type { RunJsAuthoringSurfaceStyle } from '../types';
-import { ALLOWED_CTX_ROOTS, BLOCKED_CTX_CAPABILITIES, CHART_CTX_ROOTS } from '../runtime/constants';
+import {
+  ALLOWED_CTX_ROOTS,
+  BLOCKED_CTX_CAPABILITIES,
+  CHART_CTX_ROOTS,
+  RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE,
+} from '../runtime/constants';
 import type { RunJsInspectionRuntime, RunJsInspectionValidator, RunJsScanResult } from '../runtime/types';
 import { buildRunJsAuthoringError } from '../runtime/errors';
 import { getResourceLikeCtxRunjsEntrypoint, isResourceLikeCtxRequest } from '../scan/source-patterns';
@@ -328,37 +333,6 @@ function collectDirectDomErrors(
         source,
         details: {
           capability: entry.match,
-        },
-      }),
-    );
-  });
-}
-
-function collectUnknownGlobalErrors(
-  path: string,
-  source: string,
-  scan: RunJsScanResult,
-  modelUse: string,
-  surface: string,
-  errors: FlowSurfaceErrorItemInput[],
-) {
-  scan.unknownBareGlobals.forEach((entry) => {
-    const suggestion = entry.suggestedCapability
-      ? `; use ${entry.suggestedCapability} or assign it to a local variable first`
-      : '; declare or import it before using it';
-    errors.push(
-      buildRunJsAuthoringError({
-        path,
-        repairClass: 'unknown-global-stop',
-        ruleId: 'runjs-global-unknown',
-        message: `flowSurfaces authoring ${path} cannot access unknown RunJS global ${entry.name}${suggestion}`,
-        modelUse,
-        surface,
-        index: entry.index,
-        source,
-        details: {
-          global: entry.name,
-          suggestedCapability: entry.suggestedCapability,
         },
       }),
     );
@@ -816,6 +790,7 @@ function collectSurfaceStyleErrors(
 function isAllowedCtxRoot(member: string, modelUse: string) {
   return (
     ALLOWED_CTX_ROOTS.has(member) ||
+    Boolean(modelUse && RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE[modelUse]?.has(member)) ||
     ((modelUse === 'ChartOptionModel' || modelUse === 'ChartEventsModel') && CHART_CTX_ROOTS.has(member))
   );
 }
@@ -865,14 +840,6 @@ export const RUNJS_INSPECTION_VALIDATORS: RunJsInspectionValidator[] = [
   ),
   createLegacyValidator('dom-global', (runtime, errors) => {
     collectDirectDomErrors(runtime.input.path, runtime.source, runtime.scan, runtime.modelUse, runtime.surface, errors);
-    collectUnknownGlobalErrors(
-      runtime.input.path,
-      runtime.source,
-      runtime.scan,
-      runtime.modelUse,
-      runtime.surface,
-      errors,
-    );
   }),
   createLegacyValidator('react-runtime', (runtime, errors) =>
     collectReactRuntimeErrors(

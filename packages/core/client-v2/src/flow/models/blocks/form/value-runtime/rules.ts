@@ -19,6 +19,7 @@ import type { FormAssignRuleItem, FormValueWriteMeta, NamePath, Patch, SetOption
 import { createTxId, isEmptyValue } from './utils';
 import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
 import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/SubTableFieldModel/rowIdentity';
+import { evaluateInlineRunJSValue } from '../../../../components/runjs-source';
 
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
@@ -116,7 +117,7 @@ export class RuleEngine {
   >();
   private readonly assignTemplatesByTargetPath = new Map<
     string,
-    Array<FormAssignRuleItem & { __key: string; __order: number }>
+    Array<FormAssignRuleItem & { __key: string; __order: number; __index: number }>
   >();
   /** 当前表单中“已配置到 UI 的字段（FormItemModel）”的 targetPath 集合，用于避免对 row grid 重复注册规则 */
   private readonly formItemTargetPaths = new Set<string>();
@@ -469,6 +470,7 @@ export class RuleEngine {
     const next = raw.map((item, index) => ({
       ...item,
       key: item?.key ? String(item.key) : `idx:${index}`,
+      __index: index,
     }));
     const prefix = 'form-assign:';
 
@@ -488,7 +490,7 @@ export class RuleEngine {
       if (!targetPath) continue;
       const arr = this.assignTemplatesByTargetPath.get(targetPath) || [];
       order += 1;
-      arr.push({ ...(item as any), __key: String(item.key), __order: order });
+      arr.push({ ...item, __key: String(item.key), __order: order, __index: item.__index });
       this.assignTemplatesByTargetPath.set(targetPath, arr);
     }
 
@@ -881,7 +883,7 @@ export class RuleEngine {
 
     const register = (
       targetPathForRule: string,
-      ruleTemplates: Array<FormAssignRuleItem & { __key: string; __order: number }>,
+      ruleTemplates: Array<FormAssignRuleItem & { __key: string; __order: number; __index: number }>,
     ) => {
       if (!ruleTemplates || ruleTemplates.length === 0) return;
       matchedTargetPaths?.add(targetPathForRule);
@@ -1716,15 +1718,14 @@ export class RuleEngine {
     collector: DepCollector,
     rule: RuntimeRule,
   ): Promise<any> {
+    const runJs = normalizeRunJSValue(rawValue);
+    if (!runJs.code.trim()) {
+      if (seq !== state.runSeq) return SKIP_RULE_VALUE;
+      this.commitRuleDeps(rule, state, collector);
+      return SKIP_RULE_VALUE;
+    }
     try {
-      const { code, version } = normalizeRunJSValue(rawValue);
-      const ret = await evalCtx.runjs(code, undefined, { version });
-      if (!ret?.success) {
-        if (seq !== state.runSeq) return SKIP_RULE_VALUE;
-        this.commitRuleDeps(rule, state, collector);
-        return SKIP_RULE_VALUE;
-      }
-      return ret.value;
+      return await evaluateInlineRunJSValue({ ctx: evalCtx, runJs });
     } catch {
       if (seq !== state.runSeq) return SKIP_RULE_VALUE;
       this.commitRuleDeps(rule, state, collector);

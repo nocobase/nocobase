@@ -17,6 +17,7 @@ import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContex
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionDefinition,
+  ActionRegistrationOptions,
   ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
@@ -29,6 +30,7 @@ import type {
   ParentFlowModel,
   PersistOptions,
   ResolveUseResult,
+  StepDefinition,
   StepParams,
 } from '../types';
 import { IModelComponentProps, ReadonlyModelProps } from '../types';
@@ -446,8 +448,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 注册仅当前 FlowModel 类及其子类可用的 Action。
    * 该注册是类级别的，不会影响全局（FlowEngine）的 Action 注册。
    */
-  public static registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
-    this.actionRegistry.registerAction(definition);
+  public static registerAction<TModel extends FlowModel = FlowModel>(
+    definition: ActionDefinition<TModel>,
+    options?: ActionRegistrationOptions,
+  ): void {
+    this.actionRegistry.registerAction(definition, options);
   }
 
   /**
@@ -455,8 +460,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   public static registerActions<TModel extends FlowModel = FlowModel>(
     actions: Record<string, ActionDefinition<TModel>>,
+    options?: ActionRegistrationOptions,
   ): void {
-    this.actionRegistry.registerActions(actions);
+    this.actionRegistry.registerActions(actions, options);
   }
 
   /**
@@ -769,6 +775,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const merged: [string, FlowDefinition][] = [...instanceEntriesWithIndex.map(({ e }) => e), ...staticEntries];
 
     return new Map<string, FlowDefinition>(merged);
+  }
+
+  public getRuntimeFlowSettingSteps(
+    _flowKey: string,
+  ): Record<string, StepDefinition> | Promise<Record<string, StepDefinition> | undefined> | undefined {
+    return undefined;
   }
 
   setProps(props: IModelComponentProps): void;
@@ -1480,15 +1492,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   async openStepSettingsDialog(flowKey: string, stepKey: string) {
     // 创建流程运行时上下文
     const flow = this.getFlow(flowKey);
-    const step = flow?.steps?.[stepKey];
+    if (!flow) {
+      console.error(`Flow ${flowKey} or step ${stepKey} not found`);
+      return;
+    }
 
-    if (!flow || !step) {
+    const { getFlowSettingSteps } = await import('../utils/runtimeFlowSettingSteps');
+    const flowSteps = await getFlowSettingSteps(this, flow, flowKey);
+    const step = flowSteps[stepKey];
+
+    if (!step) {
       console.error(`Flow ${flowKey} or step ${stepKey} not found`);
       return;
     }
 
     const ctx = new FlowRuntimeContext(this, flowKey, 'settings');
-    setupRuntimeContextSteps(ctx, flow.steps, this, flowKey);
+    setupRuntimeContextSteps(ctx, flowSteps, this, flowKey);
     ctx.defineProperty('currentStep', { value: step });
 
     const openStepSettingsDialog = await loadOpenStepSettingsDialog();

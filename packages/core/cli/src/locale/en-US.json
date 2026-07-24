@@ -90,6 +90,94 @@
     }
   },
   "commands": {
+    "light": {
+      "flags": {
+        "repo": "Light Extension repository id",
+        "entry": "JS Block or JS Page entry id",
+        "dir": "Local workspace directory",
+        "env": "Environment name",
+        "apiBaseUrl": "NocoBase API base URL",
+        "role": "Role override, sent as X-Role",
+        "authenticator": "Authenticator override, sent as X-Authenticator",
+        "token": "API key override",
+        "jsonOutput": "Print machine-readable JSON"
+      },
+      "operations": {
+        "entryRead": "Light Extension entry read",
+        "pull": "Light Extension pull",
+        "workspaceCheck": "Light Extension workspace check",
+        "save": "Light Extension save"
+      },
+      "pull": {
+        "summary": "Pull a JS Block or JS Page into a local source workspace",
+        "dirtyRefusal": "The target directory has local source changes ({{paths}}). Review or remove them before pulling.",
+        "unknownLocalState": "unknown local state",
+        "success": "Pulled {{count}} files into {{workspace}}.",
+        "baseHead": "Base Head: {{head}}",
+        "errors": {
+          "entryRepoMismatch": "Entry \"{{entry}}\" belongs to repository \"{{actualRepo}}\", not \"{{selectedRepo}}\"."
+        }
+      },
+      "check": {
+        "summary": "Run the authoritative check for a complete local Light Extension workspace",
+        "noProblems": "No diagnostics.",
+        "workspaceLocation": "workspace",
+        "success": "Workspace check accepted snapshot {{snapshotId}}.",
+        "baseHead": "Base Head: {{head}}",
+        "entriesAccepted": "{{count}} entries accepted.",
+        "errors": {
+          "rejected": "Workspace check rejected snapshot {{snapshotId}}.\n{{problems}}",
+          "notAccepted": "Workspace check did not accept snapshot {{snapshotId}}.\n{{problems}}"
+        }
+      },
+      "save": {
+        "summary": "Review and save the checked local Light Extension source delta",
+        "flags": {
+          "message": "Source commit message",
+          "yes": "Confirm saving the displayed source delta"
+        },
+        "defaultMessage": "Update Light Extension source",
+        "deltaSummary": "Delta: {{changedFiles}} files, {{additions}} additions, {{deletions}} deletions.",
+        "confirm": "Save this source delta to the Light Extension repository?",
+        "success": "Saved {{count}} files at Head {{head}}.",
+        "errors": {
+          "noChanges": "There are no local source changes to save.",
+          "confirmationRequired": "Saving requires an interactive confirmation or the explicit --yes flag.",
+          "cancelled": "Save cancelled.",
+          "conflict": "{{message}} Local files and the Pull baseline were kept unchanged. Pull the new Head and replay this patch; the CLI will not retry with a replaced Head."
+        }
+      },
+      "errors": {
+        "invalidValue": "{{label}} is missing or invalid.",
+        "missingApiBaseUrl": "Env \"{{envName}}\" does not have an API base URL. Use --api-base-url or configure the env first.",
+        "targetMismatch": "This workspace belongs to a different NocoBase app or env. Pull it again for the selected target before checking or saving.",
+        "checkAcceptedInvalid": "Workspace check accepted is missing or invalid.",
+        "checkArraysInvalid": "Workspace check diagnostics are missing or invalid.",
+        "httpFailure": "{{operation}} failed with HTTP {{status}}.",
+        "clientEntriesOnly": "The local Light Extension workflow only supports client entries.",
+        "unsupportedEntryKind": "The local Light Extension workflow only supports JS Block and JS Page entries; received \"{{kind}}\". Use the raw API command for other kinds.",
+        "pullFilesMissing": "Pull response must include the complete files array.",
+        "invalidWorkspacePath": "Invalid workspace path: {{path}}",
+        "nonUtf8Unsupported": "Binary or non-UTF-8 files are not supported by the first local Agent workflow: {{path}}.",
+        "controlBytesUnsupported": "Binary files and source containing NUL/control bytes are not supported by the first local Agent workflow: {{path}}.",
+        "symlinkUnsupported": "Symbolic links are not supported in a Light Extension workspace: {{path}}",
+        "stateVersion": "Unsupported Light Extension workspace state version: {{version}}. Pull the workspace again.",
+        "workspaceEntryKind": "Unsupported workspace entry kind: {{kind}}",
+        "stateMissing": "No Light Extension workspace state was found at {{statePath}}. Run `nb light pull` first.",
+        "stateInvalid": "The Light Extension workspace state at {{statePath}} is invalid.",
+        "duplicatePullPath": "Pull response contains a duplicate path: {{path}}",
+        "base64Unsupported": "Base64 or binary files are not supported by the first local Agent workflow: {{path}}.",
+        "pullUtf8Missing": "Pull response did not include UTF-8 content for {{path}}.",
+        "pullSelectionMismatch": "The selected repository, entry, and pull response do not match.",
+        "archivedRepository": "Archived Light Extension repositories cannot enter the local Agent workflow.",
+        "entryFilesMissing": "The pulled repository does not contain the selected entry source and descriptor. Repair the repository before using the local Agent workflow.",
+        "baselineMissing": "The Pull baseline for {{path}} is missing. Pull the workspace again before saving.",
+        "baselineHashMismatch": "The Pull baseline for {{path}} does not match the workspace state. Pull the workspace again before reviewing or saving changes.",
+        "checkRequired": "The current local snapshot has not passed the authoritative workspace check. Run `nb light check` after the latest file change.",
+        "saveRepoMismatch": "Save response repository does not match the local workspace.",
+        "unsafeDirectory": "Refusing to use an unsafe workspace directory: {{path}}"
+      }
+    },
     "envAdd": {
       "prompts": {
         "name": {

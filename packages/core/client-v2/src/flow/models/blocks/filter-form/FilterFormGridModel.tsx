@@ -24,6 +24,7 @@ import React from 'react';
 import { CollectionBlockModel, GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormItemModel } from './FilterFormItemModel';
+import { resolveFieldMenuItems } from '../../menuItemProviders';
 
 export class FilterFormGridModel extends GridModel {
   private fullLayoutBeforeCollapse?: GridLayoutV2;
@@ -401,6 +402,7 @@ export class FilterFormGridModel extends GridModel {
         model={this}
         afterSubModelInit={this.onModelCreated.bind(this)}
         keepDropdownOpen
+        items={(ctx) => resolveFieldMenuItems({ surface: 'filter-form-field', model: this, ctx })}
         subModelBaseClasses={['FilterFormItemModel', 'FilterFormCustomItemModel']}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>

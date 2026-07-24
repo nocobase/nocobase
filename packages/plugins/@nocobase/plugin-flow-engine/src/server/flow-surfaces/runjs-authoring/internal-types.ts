@@ -195,11 +195,6 @@ export type RunJsSourceBudget = {
 };
 
 export type RunJsAstInspection = {
-  unknownBareGlobals: Array<{
-    index: number;
-    name: string;
-    suggestedCapability?: string;
-  }>;
   invalidApiResourceCalls: Array<{
     index: number;
     match: string;

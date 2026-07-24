@@ -572,6 +572,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootLoading, setRootLoading] = useState(false);
   const activeSearchKeyRef = useRef<string | null>(null);
   const closeByOutsideClickRef = useRef(false);
+  const clickOnCurrentTriggerRef = useRef(false);
   const skipPreserveActiveSearchRef = useRef(false);
   const triggerOpenClassName = `nb-lazy-dropdown-trigger-${triggerId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const defaultOpenClassName = `${getPrefixCls('dropdown', props.prefixCls)}-open`;
@@ -682,6 +683,12 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       const target = event.target as HTMLElement | null;
       const isInsidePopup = target?.closest('.ant-dropdown, .ant-dropdown-menu, .ant-dropdown-menu-submenu-popup');
       const isInsideCurrentTrigger = target?.closest(`.${triggerOpenClassName}`);
+      if (event.type === 'click' && isInsideCurrentTrigger) {
+        clickOnCurrentTriggerRef.current = true;
+        queueMicrotask(() => {
+          clickOnCurrentTriggerRef.current = false;
+        });
+      }
       const isOutside = !isInsidePopup && !isInsideCurrentTrigger;
       closeByOutsideClickRef.current = isOutside;
       if (isOutside) {
@@ -691,9 +698,11 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
     document.addEventListener('pointerdown', markOutsideClick, true);
     document.addEventListener('mousedown', markOutsideClick, true);
+    document.addEventListener('click', markOutsideClick, true);
     return () => {
       document.removeEventListener('pointerdown', markOutsideClick, true);
       document.removeEventListener('mousedown', markOutsideClick, true);
+      document.removeEventListener('click', markOutsideClick, true);
     };
   }, [closeMenu, menuVisible, triggerOpenClassName]);
 
@@ -971,6 +980,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   return (
     <Dropdown
       {...props}
+      trigger={props.trigger ?? ['hover', 'click']}
       open={menuVisible}
       destroyPopupOnHide
       mouseLeaveDelay={props.mouseLeaveDelay ?? MENU_CLOSE_DELAY}
@@ -992,6 +1002,10 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         },
       }}
       onOpenChange={(visible, info) => {
+        if (!visible && info?.source === 'trigger' && clickOnCurrentTriggerRef.current) {
+          return;
+        }
+
         if (!visible && activeSearchKeyRef.current && info?.source === 'trigger' && !closeByOutsideClickRef.current) {
           return;
         }

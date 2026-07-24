@@ -111,6 +111,13 @@ const RECORD_ACTION_TYPE_ENUM = [
   'delete',
   'updateRecord',
 ];
+const NON_JS_NON_RECORD_ACTION_TYPE_ENUM = NON_RECORD_ACTION_TYPE_ENUM.filter(
+  (item) => item !== 'js' && item !== 'jsItem',
+);
+const NON_JS_RECORD_ACTION_TYPE_ENUM = RECORD_ACTION_TYPE_ENUM.filter((item) => item !== 'js' && item !== 'jsItem');
+const NON_JS_APPLY_BLUEPRINT_ACTION_TYPE_ENUM = APPLY_BLUEPRINT_ACTION_TYPE_ENUM.filter(
+  (item) => item !== 'js' && item !== 'jsItem',
+);
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
   'calendar',
@@ -184,6 +191,153 @@ const APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_DESCRIPTION =
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
+  };
+}
+
+function objectSchemaRef(name: string, description?: string) {
+  return {
+    type: 'object',
+    allOf: [ref(name)],
+    ...(description ? { description } : {}),
+  };
+}
+
+function buildJsActionTypeSettingsVariants(nonJsTypes: string[], allowMissingType = false) {
+  return [
+    ...(allowMissingType
+      ? [
+          {
+            not: {
+              required: ['type'],
+            },
+          },
+        ]
+      : []),
+    {
+      required: ['type'],
+      properties: {
+        type: {
+          type: 'string',
+          enum: nonJsTypes,
+        },
+        settings: ANY_OBJECT_SCHEMA,
+      },
+    },
+    {
+      required: ['type'],
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['js'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsActionSettings'),
+      },
+    },
+    {
+      required: ['type'],
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['jsItem'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+      },
+    },
+  ];
+}
+
+function buildJsFieldTypeSettingsVariants(fieldKey: 'fieldPath' | 'field', allowTemplate = false) {
+  return [
+    ...(allowTemplate ? [{ required: ['template'] }] : []),
+    {
+      required: [fieldKey],
+      not: {
+        anyOf: [{ required: ['renderer'] }, { required: ['type'] }, { required: ['template'] }],
+      },
+    },
+    {
+      required: [fieldKey, 'renderer'],
+      not: {
+        anyOf: [{ required: ['type'] }, { required: ['template'] }],
+      },
+      properties: {
+        renderer: {
+          type: 'string',
+          enum: ['js'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+      },
+    },
+    {
+      required: ['type'],
+      not: {
+        anyOf: [{ required: [fieldKey] }, { required: ['renderer'] }, { required: ['template'] }],
+      },
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['jsColumn'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+      },
+    },
+    {
+      required: ['type'],
+      not: {
+        anyOf: [{ required: [fieldKey] }, { required: ['renderer'] }, { required: ['template'] }],
+      },
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['jsItem'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+      },
+    },
+  ];
+}
+
+function buildRunJsSourceBindingSchema(kind: 'js-block' | 'js-field' | 'js-action' | 'js-item') {
+  return {
+    type: 'object',
+    required: ['type', 'repoId', 'entryId', 'kind'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['light-extension-entry'],
+      },
+      repoId: { type: 'string' },
+      entryId: { type: 'string' },
+      kind: {
+        type: 'string',
+        enum: [kind],
+      },
+    },
+    additionalProperties: false,
+  };
+}
+
+function buildRunJsSettingsSchema(sourceBinding: Record<string, any>) {
+  return {
+    type: 'object',
+    properties: {
+      code: {
+        type: 'string',
+        description: 'Legacy inline code or inline fallback retained alongside a light-extension binding.',
+      },
+      version: { type: 'string' },
+      sourceMode: {
+        type: 'string',
+        enum: ['inline', 'light-extension'],
+      },
+      sourceBinding,
+      settings: {
+        type: 'object',
+        description: 'Instance settings passed to the resolved light-extension source.',
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: true,
   };
 }
 
@@ -662,7 +816,7 @@ const actionDocs: Record<string, any> = {
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
       `In create mode, \`navigation.portalUid\` targets one enabled, role-accessible Multi-portal workspace and is mutually exclusive with \`navigation.layoutUid\`. Portal-backed mobile layouts ignore \`navigation.group\`, while desktop-backed portals scope group reuse and duplicate-page identity to that portal. If Multi-portal is unavailable, ordinary requests without \`portalUid\` keep their existing Admin behavior. ` +
-        `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.layoutUid\` optionally scopes menu group reuse, duplicate page identity checks, and newly created routes to an enabled UI layout such as \`admin-layout-model\` or \`mobile-layout-model\`; when the target layout type is mobile, applyBlueprint ignores \`navigation.group\` and creates a root-level mobile tab page. When \`layoutUid\` is omitted, routes keep the existing admin/default inheritance behavior. In non-mobile \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group in the target layout when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. AI employee actions use \`type: "aiEmployee"\` plus public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`; work context may target \`self\` or a same-blueprint block key and is persisted as real Flow Model \`uid\` values. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
+        `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.layoutUid\` optionally scopes menu group reuse, duplicate page identity checks, and newly created routes to an enabled UI layout such as \`admin-layout-model\` or \`mobile-layout-model\`; when the target layout type is mobile, applyBlueprint ignores \`navigation.group\` and creates a root-level mobile tab page. When \`layoutUid\` is omitted, routes keep the existing admin/default inheritance behavior. In non-mobile \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group in the target layout when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. AI employee actions use \`type: "aiEmployee"\` plus public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`; work context may target \`self\` or a same-blueprint block key and is persisted as real Flow Model \`uid\` values. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. JS blocks can instead store a repository binding with \`settings.sourceMode="light-extension"\`, \`settings.sourceBinding\`, and sibling instance \`settings.settings\`; repository-bound blocks must not combine \`script\` asset references in the same block. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
     ),
     requestBody: {
       required: true,
@@ -797,27 +951,27 @@ const actionDocs: Record<string, any> = {
               value: examples.configureAction,
             },
             jsBlockSettings: {
-              summary: 'Configure a JS block with decorator props and runJs code/version',
+              summary: 'Configure a JS block with decorator props and inline or light-extension source settings',
               value: examples.configureJsBlock,
             },
             jsActionSettings: {
-              summary: 'Configure a JS action with button text and runJs code/version',
+              summary: 'Configure a JS action with inline fallback and light-extension source settings',
               value: examples.configureJsAction,
             },
             jsItemActionSettings: {
-              summary: 'Configure a form JS item action with button text and runJs code/version',
+              summary: 'Configure a form JS item action with inline fallback and light-extension source settings',
               value: examples.configureJsItemAction,
             },
             jsFieldSettings: {
-              summary: 'Configure a JS field wrapper and inner JS field with code/version',
+              summary: 'Configure a JS field wrapper and inner field with light-extension source settings',
               value: examples.configureJsField,
             },
             jsColumnSettings: {
-              summary: 'Configure a JS column with width/fixed/code/version',
+              summary: 'Configure a JS column with js-field light-extension source settings',
               value: examples.configureJsColumn,
             },
             jsItemSettings: {
-              summary: 'Configure a JS item with label and runJs code/version',
+              summary: 'Configure a JS item with js-item light-extension source settings',
               value: examples.configureJsItem,
             },
             pageHeaderSettings: {
@@ -867,9 +1021,9 @@ const actionDocs: Record<string, any> = {
   },
   createPage: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Initialize a modern page for an existing bindable menu item',
+    summary: 'Create JS page',
     description: valuesCompatibilityNote(
-      'Initializes a modern page (v2) for an existing bindable menu item through `menuRouteId` first, and fills in the default BlockGridModel. Optional `layoutUid` asserts that the existing menu route belongs to the target UI layout. Optional `portalUid` asserts that it belongs to one enabled, role-accessible Multi-portal workspace and is mutually exclusive with `layoutUid`. Omitted values preserve the route scope and keep default admin compatibility. In compatibility mode, if `menuRouteId` is omitted, the old behavior still applies and a top-level menu plus page will be created automatically. Before initialization, do not call page/tab lifecycle actions such as `addTab`, `updateTab`, `moveTab`, `removeTab`, or `destroyPage`.',
+      'Pass `pageType="js-page"` to create a JS Page host without tabs or a grid. The response provides the backend-generated RunJS locator, authoring capabilities, idempotent replay signal, and truthful workspace bootstrap status. `idempotencyKey` is bound to the app and route scope; reusing it with a different request returns a conflict. If the workspace is pending or retryable after an error, retry the same request and key. When `pageType` is omitted, the existing Root Page behavior remains available and fills in the default tab and BlockGridModel. Optional `layoutUid` or `portalUid` preserves the existing navigation scope rules.',
     ),
     requestBody: requestBody('FlowSurfaceCreatePageRequest', examples.createPage),
     responses: responses('FlowSurfaceCreatePageResult'),
@@ -1360,6 +1514,28 @@ const parameters = {
 };
 
 const schemas = {
+  FlowSurfaceJsBlockSourceBinding: buildRunJsSourceBindingSchema('js-block'),
+  FlowSurfaceJsFieldSourceBinding: buildRunJsSourceBindingSchema('js-field'),
+  FlowSurfaceJsActionSourceBinding: buildRunJsSourceBindingSchema('js-action'),
+  FlowSurfaceJsItemSourceBinding: buildRunJsSourceBindingSchema('js-item'),
+  FlowSurfaceJsBlockSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsBlockSourceBinding')),
+  FlowSurfaceJsFieldSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsFieldSourceBinding')),
+  FlowSurfaceJsActionSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsActionSourceBinding')),
+  FlowSurfaceJsItemSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsItemSourceBinding')),
+  FlowSurfaceJsFieldOrItemSettings: buildRunJsSettingsSchema({
+    oneOf: [ref('FlowSurfaceJsFieldSourceBinding'), ref('FlowSurfaceJsItemSourceBinding')],
+  }),
+  FlowSurfaceJsActionOrItemSettings: buildRunJsSettingsSchema({
+    oneOf: [ref('FlowSurfaceJsActionSourceBinding'), ref('FlowSurfaceJsItemSourceBinding')],
+  }),
+  FlowSurfaceJsConfigureChanges: buildRunJsSettingsSchema({
+    oneOf: [
+      ref('FlowSurfaceJsBlockSourceBinding'),
+      ref('FlowSurfaceJsFieldSourceBinding'),
+      ref('FlowSurfaceJsActionSourceBinding'),
+      ref('FlowSurfaceJsItemSourceBinding'),
+    ],
+  }),
   FlowSurfaceMutateKey: {
     type: 'object',
     required: ['key'],
@@ -2537,6 +2713,23 @@ const schemas = {
       {
         type: 'object',
         required: ['fieldPath'],
+        oneOf: [
+          {
+            not: {
+              required: ['renderer'],
+            },
+          },
+          {
+            required: ['renderer'],
+            properties: {
+              renderer: {
+                type: 'string',
+                enum: ['js'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+        ],
         properties: {
           key: {
             type: 'string',
@@ -2564,7 +2757,10 @@ const schemas = {
             type: 'string',
             description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsFieldSettings',
+            'Public field settings. Bound JS fields use sourceBinding.kind="js-field".',
+          ),
           popup: ref('FlowSurfaceComposeRequestFieldPopup'),
         },
         additionalProperties: false,
@@ -2572,6 +2768,26 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: [
+          {
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsColumn'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+          {
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsItem'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+            },
+          },
+        ],
         properties: {
           key: {
             type: 'string',
@@ -2582,7 +2798,10 @@ const schemas = {
             enum: ['jsColumn', 'jsItem'],
             description: 'Standalone synthetic public field capability. Does not accept fieldPath.',
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsFieldOrItemSettings',
+            'Standalone jsColumn uses sourceBinding.kind="js-field"; jsItem uses sourceBinding.kind="js-item".',
+          ),
         },
         additionalProperties: false,
       },
@@ -2778,6 +2997,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_NON_RECORD_ACTION_TYPE_ENUM),
         properties: {
           key: {
             type: 'string',
@@ -2786,7 +3006,10 @@ const schemas = {
             type: 'string',
             enum: NON_RECORD_ACTION_TYPE_ENUM,
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsActionOrItemSettings',
+            'JS actions use sourceBinding.kind="js-action"; JS item actions use sourceBinding.kind="js-item".',
+          ),
           popup: ref('FlowSurfaceComposeRequestActionPopup'),
         },
         additionalProperties: false,
@@ -2825,6 +3048,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM),
         properties: {
           key: {
             type: 'string',
@@ -2833,7 +3057,7 @@ const schemas = {
             type: 'string',
             enum: RECORD_ACTION_TYPE_ENUM,
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
           popup: ref('FlowSurfaceComposeRequestActionPopup'),
         },
         additionalProperties: false,
@@ -2854,7 +3078,10 @@ const schemas = {
       },
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef(
+        'FlowSurfaceJsBlockSettings',
+        'Public block settings. JS blocks use sourceBinding.kind="js-block".',
+      ),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -2896,7 +3123,7 @@ const schemas = {
       },
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       fields: {
         type: 'array',
         items: ref('FlowSurfaceComposeFieldSpec'),
@@ -3945,7 +4172,7 @@ const schemas = {
       scripts: {
         type: 'object',
         description:
-          'Reusable JS settings keyed by asset name. Referenced script assets must provide non-empty `code`. Reference with block/field/action `script: "<key>"`; use `settings.code` and `settings.version` for inline JS code.',
+          'Reusable JS settings keyed by asset name. Referenced script assets must provide non-empty `code`. Reference with block/field/action `script: "<key>"`; use `settings.code` and `settings.version` for inline JS code. JS blocks using `settings.sourceMode="light-extension"` store `settings.sourceBinding` instead and must not also reference `script`.',
         additionalProperties: ANY_OBJECT_SCHEMA,
       },
       charts: {
@@ -4041,6 +4268,53 @@ const schemas = {
       },
       {
         type: 'object',
+        oneOf: [
+          {
+            required: ['field'],
+            not: {
+              anyOf: [{ required: ['renderer'] }, { required: ['type'] }],
+            },
+          },
+          {
+            required: ['field', 'renderer'],
+            not: {
+              required: ['type'],
+            },
+            properties: {
+              renderer: {
+                type: 'string',
+                enum: ['js'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+          {
+            required: ['type'],
+            not: {
+              anyOf: [{ required: ['field'] }, { required: ['renderer'] }],
+            },
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsColumn'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+          {
+            required: ['type'],
+            not: {
+              anyOf: [{ required: ['field'] }, { required: ['renderer'] }],
+            },
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsItem'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+            },
+          },
+        ],
         properties: {
           key: { type: 'string' },
           field: { type: 'string' },
@@ -4059,7 +4333,10 @@ const schemas = {
             type: 'string',
             description: 'String block key on the same tab or popup scope, typically used by filter-form fields.',
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsFieldOrItemSettings',
+            'Bound JS fields and jsColumn use sourceBinding.kind="js-field"; jsItem uses sourceBinding.kind="js-item".',
+          ),
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: {
             type: 'string',
@@ -4080,6 +4357,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_APPLY_BLUEPRINT_ACTION_TYPE_ENUM),
         properties: {
           key: { type: 'string' },
           type: {
@@ -4088,7 +4366,7 @@ const schemas = {
             description: `Action type. On record-capable blocks (\`table\`, \`details\`, \`list\`, \`gridCard\`), record actions such as \`view\`, \`edit\`, \`updateRecord\`, \`delete\`, and \`duplicate\` should normally be authored under \`recordActions\`; applyBlueprint also auto-promotes those common record actions from \`actions\` for convenience. ${APPLY_BLUEPRINT_ADD_CHILD_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: {
             type: 'string',
@@ -4109,6 +4387,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM),
         properties: {
           key: { type: 'string' },
           type: {
@@ -4117,7 +4396,7 @@ const schemas = {
             description: `Record-action type for record-capable blocks such as \`table\`, \`details\`, \`list\`, and \`gridCard\`. ${ADD_CHILD_TREE_TABLE_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: {
             type: 'string',
@@ -4165,7 +4444,7 @@ const schemas = {
       },
       resource: ref('FlowSurfaceBlockResourceInput'),
       template: ref('FlowSurfaceBlockTemplateRef'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: APPLY_BLUEPRINT_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -4574,7 +4853,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintRequest: {
     type: 'object',
     required: ['mode', 'tabs'],
-    description: `Simplified page-structure request object for applyBlueprint. \`version\` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. In create mode, \`navigation.layoutUid\` scopes menu group reuse, duplicate page identity, and newly created routes to the target layout; use \`mobile-layout-model\` for mobile pages, where \`navigation.group\` is ignored and the page is created as a root tab, and omit it for default admin behavior. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`, and referenced script assets must provide non-empty \`code\`; put inline JS in \`settings.code\` and \`settings.version\`. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} \`defaults.collections\` may provide main data-source collection-level fieldGroups, popup metadata with required \`name\` and \`description\`, and formBehavior for generated default add/edit popup forms; use \`defaults.dataSources.<dataSourceKey>.collections\` for external data sources. v1 does not support \`defaults.blocks\`.`,
+    description: `Simplified page-structure request object for applyBlueprint. \`version\` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. In create mode, \`navigation.layoutUid\` scopes menu group reuse, duplicate page identity, and newly created routes to the target layout; use \`mobile-layout-model\` for mobile pages, where \`navigation.group\` is ignored and the page is created as a root tab, and omit it for default admin behavior. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`, and referenced script assets must provide non-empty \`code\`; put inline JS in \`settings.code\` and \`settings.version\`. JS blocks can instead use repository-backed \`settings.sourceMode="light-extension"\`, \`settings.sourceBinding\`, and sibling instance \`settings.settings\`; do not combine repository binding with \`script\` in the same block. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} \`defaults.collections\` may provide main data-source collection-level fieldGroups, popup metadata with required \`name\` and \`description\`, and formBehavior for generated default add/edit popup forms; use \`defaults.dataSources.<dataSourceKey>.collections\` for external data sources. v1 does not support \`defaults.blocks\`.`,
     properties: {
       version: {
         type: 'string',
@@ -4662,7 +4941,7 @@ const schemas = {
     type: 'object',
     required: ['surface'],
     description:
-      "Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to '1'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; each block may declare approval-specific types, fixed generic types (`markdown`, `jsBlock`), or reuse `template: { uid, mode }`. `approvalInitiator` creates `approvalSubmit` by default, so callers should only add optional initiator actions such as `approvalSaveDraft` or `approvalWithdraw`. `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions. Authoring validation failures use the same aggregate `errors[]` retry contract as `applyBlueprint`.",
+      'Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to \'1\'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; each block may declare approval-specific types, fixed generic types (`markdown`, `jsBlock`), or reuse `template: { uid, mode }`. JS blocks can use inline `settings.code` or repository-backed `settings.sourceMode="light-extension"` plus `settings.sourceBinding` and sibling instance `settings.settings`. `approvalInitiator` creates `approvalSubmit` by default, so callers should only add optional initiator actions such as `approvalSaveDraft` or `approvalWithdraw`. `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions. Authoring validation failures use the same aggregate `errors[]` retry contract as `applyBlueprint`.',
     properties: {
       version: {
         type: 'string',
@@ -4714,7 +4993,10 @@ const schemas = {
     required: ['target', 'changes'],
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
-      changes: ANY_OBJECT_SCHEMA,
+      changes: objectSchemaRef(
+        'FlowSurfaceJsConfigureChanges',
+        'Semantic configure changes. For JS surfaces, sourceMode/sourceBinding/settings stay alongside legacy code/version.',
+      ),
       defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
     },
     additionalProperties: false,
@@ -4869,6 +5151,17 @@ const schemas = {
           'Optional enabled, role-accessible custom Multi-portal uid. Mutually exclusive with layoutUid. With menuRouteId, the route must already belong to this portal.',
       },
       menuRouteId: STRING_OR_INTEGER_SCHEMA,
+      pageType: {
+        type: 'string',
+        enum: ['root-page', 'js-page'],
+      },
+      idempotencyKey: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 255,
+        description:
+          'Persistent create key scoped to the current app and navigation route scope. The same key and request returns the original JS Page identity.',
+      },
       pageSchemaUid: {
         type: 'string',
       },
@@ -4940,6 +5233,89 @@ const schemas = {
       gridUid: {
         type: 'string',
       },
+      pageType: {
+        type: 'string',
+        enum: ['js-page'],
+      },
+      modelUse: {
+        type: 'string',
+        enum: ['JSPageModel'],
+      },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      capabilities: ref('FlowSurfaceJSPageCapabilities'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
+      idempotentReplay: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRunJSLocator: {
+    type: 'object',
+    required: ['kind', 'modelUid', 'flowKey', 'stepKey', 'paramPath', 'versionPath'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['flowModel.step'],
+      },
+      modelUid: {
+        type: 'string',
+      },
+      flowKey: {
+        type: 'string',
+        enum: ['jsSettings'],
+      },
+      stepKey: {
+        type: 'string',
+        enum: ['runJs'],
+      },
+      paramPath: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'string',
+          enum: ['code'],
+        },
+      },
+      versionPath: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'string',
+          enum: ['version'],
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceJSPageCapabilities: {
+    type: 'object',
+    required: ['tabs', 'blocks', 'compose', 'blueprint', 'export', 'runJSWorkspace'],
+    properties: {
+      tabs: { type: 'boolean', enum: [false] },
+      blocks: { type: 'boolean', enum: [false] },
+      compose: { type: 'boolean', enum: [false] },
+      blueprint: { type: 'boolean', enum: [false] },
+      export: { type: 'boolean', enum: [false] },
+      runJSWorkspace: { type: 'boolean', enum: [true] },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRunJSWorkspaceError: {
+    type: 'object',
+    required: ['code', 'message'],
+    properties: {
+      code: { type: 'string' },
+      message: { type: 'string' },
     },
     additionalProperties: false,
   },
@@ -5227,7 +5603,7 @@ const schemas = {
         items: ref('FlowSurfaceComposeFieldSpec'),
       },
       fieldsLayout: ref('FlowSurfaceComposeLayout'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -5279,20 +5655,22 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
     },
     additionalProperties: false,
   },
   FlowSurfaceAddFieldRequest: {
     type: 'object',
     required: ['target'],
-    oneOf: [
-      {
-        required: ['template'],
-      },
-      {
-        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
-      },
-    ],
+    oneOf: buildJsFieldTypeSettingsVariants('fieldPath', true),
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       template: ref('FlowSurfaceTemplateRef'),
@@ -5336,7 +5714,7 @@ const schemas = {
         type: 'string',
         description: 'Optional filter-form target selection key. This is not the same field as `target.uid`.',
       },
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsFieldOrItemSettings'),
       popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
@@ -5398,6 +5776,7 @@ const schemas = {
   FlowSurfaceAddActionRequest: {
     type: 'object',
     required: ['target'],
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_NON_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       type: {
@@ -5408,7 +5787,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
@@ -5446,6 +5825,7 @@ const schemas = {
   FlowSurfaceAddRecordActionRequest: {
     type: 'object',
     required: ['target'],
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       type: {
@@ -5456,7 +5836,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
@@ -5515,7 +5895,7 @@ const schemas = {
         items: ref('FlowSurfaceComposeFieldSpec'),
       },
       fieldsLayout: ref('FlowSurfaceComposeLayout'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -5526,14 +5906,7 @@ const schemas = {
   },
   FlowSurfaceAddFieldItem: {
     type: 'object',
-    oneOf: [
-      {
-        required: ['template'],
-      },
-      {
-        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
-      },
-    ],
+    oneOf: buildJsFieldTypeSettingsVariants('fieldPath', true),
     properties: {
       key: {
         type: 'string',
@@ -5575,13 +5948,14 @@ const schemas = {
       targetUid: {
         type: 'string',
       },
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsFieldOrItemSettings'),
       popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
   },
   FlowSurfaceAddActionItem: {
     type: 'object',
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_NON_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       key: {
         type: 'string',
@@ -5594,13 +5968,14 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
   },
   FlowSurfaceAddRecordActionItem: {
     type: 'object',
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       key: {
         type: 'string',
@@ -5613,7 +5988,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,

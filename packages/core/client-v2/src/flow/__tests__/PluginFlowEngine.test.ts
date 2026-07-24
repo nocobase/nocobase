@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient, PluginFlowEngine } from '@nocobase/client-v2';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createMockClient } from '../../MockApplication';
+import { PluginFlowEngine } from '../index';
 
 const { detectedDeviceType } = vi.hoisted(() => ({
   detectedDeviceType: { value: 'mobile' },
@@ -23,6 +25,30 @@ vi.mock('react-device-detect', () => ({
 describe('PluginFlowEngine', () => {
   beforeEach(() => {
     detectedDeviceType.value = 'mobile';
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('does not re-register actions when the same app loads twice', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const app = createMockClient({
+      plugins: [
+        [
+          PluginFlowEngine,
+          {
+            name: 'flow-engine',
+          },
+        ],
+      ],
+    });
+
+    await app.load();
+    await app.load();
+
+    expect(app.flowEngine.getAction('openView')).toBeTruthy();
+    expect(warn.mock.calls.flat().join('\n')).not.toContain("Action 'openView' is already registered");
   });
 
   it('should register the current device type before shared flow components', async () => {

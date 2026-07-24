@@ -20,6 +20,10 @@ vi.mock('../PageModel', () => ({
 
     static registerFlow() {}
 
+    supportsPageTabs() {
+      return true;
+    }
+
     setProps(key: string, value: any) {
       this.props[key] = value;
     }
@@ -204,6 +208,18 @@ describe('RootPageModel', () => {
       expect(mockApi.request.mock.invocationCallOrder[0]).toBeLessThan(
         mockRefreshDesktopRoutes.mock.invocationCallOrder[0],
       );
+    });
+
+    it('should not update desktop route enableTabs when tabs are unsupported', async () => {
+      vi.spyOn(rootPageModel, 'supportsPageTabs').mockReturnValue(false);
+
+      await rootPageModel.saveStepParams();
+
+      expect(mockPageModelSaveStepParams).toHaveBeenCalledOnce();
+      expect(mockApi.request).not.toHaveBeenCalled();
+      expect(mockRefreshDesktopRoutes).not.toHaveBeenCalled();
+      expect(mockContext.currentRoute.enableTabs).toBe(true);
+      expect(rootPageModel.props.enableTabs).toBeUndefined();
     });
   });
 

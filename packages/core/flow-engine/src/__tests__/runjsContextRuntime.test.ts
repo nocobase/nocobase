@@ -47,6 +47,26 @@ describe('RunJS Context Runtime Behavior', () => {
     });
   });
 
+  describe('JSPageRunJSContext', () => {
+    it('uses the exact page context and runtime facade', async () => {
+      const ctx = new FlowContext();
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSPageModel' } } });
+      ctx.defineProperty('page', {
+        value: {
+          uid: 'page-1',
+          active: true,
+          refresh: async () => undefined,
+          setDocumentTitle: () => undefined,
+        },
+      });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version: 'v2' });
+      const result = await runner.run('return [ctx.page.uid, ctx.page.active]');
+
+      expect(result).toMatchObject({ success: true, value: ['page-1', true] });
+    });
+  });
+
   describe('JSFieldRunJSContext', () => {
     it('should create JSField context successfully', async () => {
       const ctx = new FlowContext();
