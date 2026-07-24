@@ -88,7 +88,10 @@ describe('storage forms', () => {
     expect(publicAccessHelp).toHaveClass('anticon-question-circle');
     fireEvent.mouseEnter(publicAccessHelp);
     await waitFor(() => {
-      expect(screen.getByRole('tooltip')).toHaveTextContent(publicAccessDescription);
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toHaveTextContent(publicAccessDescription);
+      expect(tooltip.closest('.ant-tooltip')).toHaveClass('ant-tooltip-placement-topRight');
+      expect(tooltip.closest('.ant-tooltip')).toHaveStyle({ maxWidth: 'min(320px, calc(100vw - 32px))' });
     });
     expect(screen.getByText('Default storage')).toBeInTheDocument();
     expect(screen.getByText('Keep file in storage when destroy the file record')).toBeInTheDocument();
