@@ -37,10 +37,13 @@ type TestWorkspace = {
   commit: ReturnType<typeof vi.fn>;
 };
 
+let testWorkspaceInstanceSequence = 0;
+
 function createTestWorkspace(surfaceId: string, initialContent: string): TestWorkspace {
   let revision = 1;
   let files = new Map<string, string>([['src/index.ts', initialContent]]);
   let planSequence = 0;
+  const planNamespace = (testWorkspaceInstanceSequence += 1).toString(36);
   const plans = new Map<string, { baseSnapshotId: string; changes: CodeAuthoringChange[]; consumed: boolean }>();
   const commit = vi.fn();
 
@@ -109,7 +112,7 @@ function createTestWorkspace(surfaceId: string, initialContent: string): TestWor
       if (input.baseSnapshotId !== snapshot().snapshotId) {
         throw new Error('STALE_SNAPSHOT');
       }
-      const planId = `${surfaceId}:plan:${(planSequence += 1)}`;
+      const planId = `${surfaceId}:plan:${planNamespace}:${(planSequence += 1)}`;
       plans.set(planId, { baseSnapshotId: input.baseSnapshotId, changes: input.changes, consumed: false });
       return {
         planId,
@@ -127,7 +130,7 @@ function createTestWorkspace(surfaceId: string, initialContent: string): TestWor
     applyPreparedChanges: async (planId) => {
       const plan = plans.get(planId);
       if (!plan || plan.consumed) {
-        throw new Error('PLAN_NOT_FOUND');
+        throw Object.assign(new Error('PLAN_NOT_FOUND'), { code: 'PLAN_NOT_FOUND' });
       }
       if (plan.baseSnapshotId !== snapshot().snapshotId) {
         throw new Error('STALE_SNAPSHOT');
@@ -362,6 +365,56 @@ describe('workspace authoring integration', () => {
     expect(remounted.commit).not.toHaveBeenCalled();
     expect(store.getSessionState('session-a').codingTarget).toMatchObject({ surfaceId: 'workspace-a' });
     expect(store.getSessionState('session-b').codingTarget).toMatchObject({ surfaceId: 'workspace-b' });
+  });
+
+  it('rejects a pending approval plan after the same surface id is remounted', async () => {
+    const oldWorkspace = createTestWorkspace('workspace-a', 'export const target = "old";');
+    const unregisterOldWorkspace = authoringSurfaces.register(oldWorkspace.surface);
+    await parseWorkContext(app, [
+      { type: 'code-workspace', uid: 'workspace-a', content: { surfaceId: 'workspace-a' } },
+    ]);
+    const oldPrepared = await aiManager.frontendTools.execute('workspace-a:workspacePrepareChanges', {
+      baseSnapshotId: 'workspace-a:revision:1',
+      changes: [
+        {
+          type: 'update',
+          path: 'src/index.ts',
+          baseHash: 'src/index.ts:export const target = "old";',
+          content: 'export const target = "old-approved";',
+        },
+      ],
+    });
+    const oldPlanId = (oldPrepared as { content: { planId: string } }).content.planId;
+
+    unregisterOldWorkspace();
+    const remountedWorkspace = createTestWorkspace('workspace-a', 'export const target = "remounted";');
+    authoringSurfaces.register(remountedWorkspace.surface);
+    await parseWorkContext(app, [
+      { type: 'code-workspace', uid: 'workspace-a', content: { surfaceId: 'workspace-a' } },
+    ]);
+    const remountedPrepared = await aiManager.frontendTools.execute('workspace-a:workspacePrepareChanges', {
+      baseSnapshotId: 'workspace-a:revision:1',
+      changes: [
+        {
+          type: 'update',
+          path: 'src/index.ts',
+          baseHash: 'src/index.ts:export const target = "remounted";',
+          content: 'export const target = "new-unapproved";',
+        },
+      ],
+    });
+    const remountedPlanId = (remountedPrepared as { content: { planId: string } }).content.planId;
+
+    expect(remountedPlanId).not.toBe(oldPlanId);
+    await expect(
+      aiManager.frontendTools.execute('workspace-a:workspaceApplyPreparedChanges', { planId: oldPlanId }),
+    ).resolves.toMatchObject({
+      status: 'error',
+      content: { code: 'PLAN_NOT_FOUND', surfaceId: 'workspace-a' },
+    });
+    expect(oldWorkspace.commit).not.toHaveBeenCalled();
+    expect(remountedWorkspace.commit).not.toHaveBeenCalled();
+    expect(remountedWorkspace.getFiles()['src/index.ts']).toBe('export const target = "remounted";');
   });
 
   it('restores a persisted workspace target and blocks every legacy single-file coding tool', async () => {

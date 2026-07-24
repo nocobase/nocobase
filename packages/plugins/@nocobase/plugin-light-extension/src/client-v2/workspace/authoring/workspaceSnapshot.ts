@@ -17,6 +17,8 @@ export interface WorkspaceAuthoringFile {
   writable?: boolean;
   persisted?: boolean;
   description?: string;
+  scope?: string;
+  metadata?: Record<string, unknown>;
   mode?: string;
 }
 
@@ -52,7 +54,16 @@ export function buildWorkspaceAuthoringTreeSnapshot(
   }
 
   const files = [...sourceFiles, ...virtualFiles].sort(compareSnapshotFiles);
-  const snapshotId = hashWorkspaceAuthoringValue(files.map(({ source: _source, ...file }) => file));
+  const snapshotId = hashStableValue(
+    files.map((file) => ({
+      ...stableFileValue(file.source),
+      kind: file.kind,
+      path: file.path,
+      language: file.language,
+      writable: file.writable,
+      persisted: file.persisted,
+    })),
+  );
 
   return {
     snapshotId,
@@ -76,7 +87,10 @@ export function toCodeAuthoringFileMeta(file: WorkspaceAuthoringSnapshotFile): C
 }
 
 export function cloneWorkspaceAuthoringFiles(files: WorkspaceAuthoringFile[]): WorkspaceAuthoringFile[] {
-  return files.map((file) => ({ ...file }));
+  return files.map((file) => ({
+    ...file,
+    ...(file.metadata ? { metadata: cloneStableValue(file.metadata) as Record<string, unknown> } : {}),
+  }));
 }
 
 export function normalizeWorkspaceAuthoringPath(path: string): string {
@@ -129,28 +143,7 @@ export function inferWorkspaceAuthoringLanguage(path: string): string {
 }
 
 export function hashWorkspaceAuthoringValue(value: unknown): string {
-  const input = JSON.stringify(toStableHashValue(value)) ?? 'undefined';
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return `wa-${(hash >>> 0).toString(36)}`;
-}
-
-function toStableHashValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(toStableHashValue);
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .filter(([, entry]) => entry !== undefined && typeof entry !== 'function')
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entry]) => [key, toStableHashValue(entry)]),
-    );
-  }
-  return typeof value === 'bigint' || (typeof value === 'number' && !Number.isFinite(value)) ? String(value) : value;
+  return hashStableValue(value);
 }
 
 function normalizeFiles(
@@ -171,22 +164,20 @@ function normalizeFiles(
         content: file.content || '',
         language,
       };
-      const fileForHash = {
+      const metadataForHash = {
+        ...stableFileValue(normalizedSource),
         kind,
         path,
-        content: normalizedSource.content,
         language,
         writable,
         persisted,
-        description: normalizedSource.description,
-        mode: normalizedSource.mode,
       };
 
       return {
         path,
         content: normalizedSource.content,
         language,
-        hash: hashWorkspaceAuthoringValue(fileForHash),
+        hash: hashStableValue(metadataForHash),
         kind,
         writable,
         persisted,
@@ -204,4 +195,71 @@ function compareSnapshotFiles(left: WorkspaceAuthoringSnapshotFile, right: Works
     return pathOrder;
   }
   return left.kind.localeCompare(right.kind);
+}
+
+function stableFileValue(file: WorkspaceAuthoringFile): Record<string, unknown> {
+  const value: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(file)) {
+    if (typeof entry !== 'function' && entry !== undefined) {
+      value[key] = entry;
+    }
+  }
+  return value;
+}
+
+function hashStableValue(value: unknown): string {
+  const input = stableStringify(value);
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    first ^= code;
+    first = Math.imul(first, 0x01000193);
+    second ^= code + index;
+    second = Math.imul(second, 0x85ebca6b);
+  }
+
+  return `wa-${toHex(first)}${toHex(second)}`;
+}
+
+function toHex(value: number): string {
+  return (value >>> 0).toString(16).padStart(8, '0');
+}
+
+function stableStringify(value: unknown): string {
+  return JSON.stringify(toStableValue(value));
+}
+
+function toStableValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(toStableValue);
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, entry]) => entry !== undefined && typeof entry !== 'function')
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, toStableValue(entry)]),
+    );
+  }
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return String(value);
+  }
+  return value;
+}
+
+function cloneStableValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(cloneStableValue);
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, cloneStableValue(entry)]),
+    );
+  }
+  return value;
 }

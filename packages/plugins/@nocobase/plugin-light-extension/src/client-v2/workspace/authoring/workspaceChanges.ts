@@ -33,6 +33,8 @@ export type WorkspaceAuthoringErrorCode =
   | 'BINARY_CONTENT'
   | 'PATCH_CONFLICT'
   | 'PLAN_NOT_FOUND'
+  | 'PLAN_EXPIRED'
+  | 'PLAN_CONSUMED'
   | 'PLAN_APPLYING'
   | 'CAPABILITY_UNAVAILABLE'
   | 'SURFACE_DISPOSED';
