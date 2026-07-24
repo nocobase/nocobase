@@ -330,6 +330,95 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     }
   });
 
+  it('keeps read, write, patch, and run operations isolated across two single-file conversations', async () => {
+    const previousState = useChatMessagesStore.getState();
+    let firstCode = 'const label = "first";\n';
+    let secondCode = 'const label = "second";\n';
+    const runs: string[] = [];
+    const previews: string[] = [];
+    const firstApp = { name: 'shared-name' };
+    const secondApp = { name: 'shared-name' };
+    const firstApplicationKey = getChatApplicationKey(firstApp);
+    const secondApplicationKey = getChatApplicationKey(secondApp);
+    const store = useChatMessagesStore.getState();
+    store.registerEditorRef(firstApplicationKey, 'shared-editor', {
+      read: () => firstCode,
+      write: (code) => {
+        firstCode = code;
+      },
+      run: async () => {
+        runs.push('first');
+      },
+      snippetEntries: [],
+      logs: [],
+    });
+    store.registerEditorRef(secondApplicationKey, 'shared-editor', {
+      read: () => secondCode,
+      write: (code) => {
+        secondCode = code;
+      },
+      run: async () => {
+        runs.push('second');
+      },
+      snippetEntries: [],
+      logs: [],
+    });
+    store.bindSessionCodingTarget('session-a', {
+      type: 'single-file',
+      applicationKey: firstApplicationKey,
+      editorUid: 'shared-editor',
+    });
+    store.bindSessionCodingTarget('session-b', {
+      type: 'single-file',
+      applicationKey: secondApplicationKey,
+      editorUid: 'shared-editor',
+    });
+    const flowContext = {
+      previewRunJS: async (code: string) => {
+        previews.push(code);
+        return { success: true };
+      },
+    };
+
+    try {
+      useChatConversationsStore.setState({ currentConversation: 'session-a' });
+      expect((await readJSCodeTool[1].invoke.call({}, firstApp, {})).content.code).toBe(firstCode);
+      expect(
+        (await writeJSCodeTool[1].invoke.call({}, firstApp, { code: 'const label = "first-written";\n' })).status,
+      ).toBe('success');
+      expect(
+        (
+          await patchJSCodeTool[1].invoke.call({}, firstApp, {
+            patch: '@@ -1 +1 @@\n-const label = "first-written";\n+const label = "first-patched";\n',
+          })
+        ).status,
+      ).toBe('success');
+      expect((await lintAndTestJSTool[1].invoke.call({ flowContext }, firstApp, {})).status).toBe('success');
+
+      useChatConversationsStore.setState({ currentConversation: 'session-b' });
+      expect((await readJSCodeTool[1].invoke.call({}, secondApp, {})).content.code).toBe(secondCode);
+      expect(
+        (await writeJSCodeTool[1].invoke.call({}, secondApp, { code: 'const label = "second-written";\n' })).status,
+      ).toBe('success');
+      expect(
+        (
+          await patchJSCodeTool[1].invoke.call({}, secondApp, {
+            patch: '@@ -1 +1 @@\n-const label = "second-written";\n+const label = "second-patched";\n',
+          })
+        ).status,
+      ).toBe('success');
+      expect((await lintAndTestJSTool[1].invoke.call({ flowContext }, secondApp, {})).status).toBe('success');
+
+      expect(firstCode).toBe('const label = "first-patched";\n');
+      expect(secondCode).toBe('const label = "second-patched";\n');
+      expect(previews).toEqual([firstCode, secondCode]);
+      expect(runs).toEqual(['first', 'second']);
+    } finally {
+      useChatConversationsStore.setState({ currentConversation: undefined });
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
   it('rejects legacy single-file tools for workspace targets without reading, writing, or running code', async () => {
     const previousState = useChatMessagesStore.getState();
     const reads: string[] = [];
