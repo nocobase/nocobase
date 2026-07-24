@@ -134,11 +134,16 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
     requestSave: () => Promise<'saved'>;
   };
   type WorkspacePageProps = {
+    defaultFilesCollapsed?: boolean;
     onFooterActionsChange?: (actions: FooterActions | null) => void;
     onRequestClose?: () => void;
   };
 
-  const MockLightExtensionWorkspacePage = ({ onFooterActionsChange, onRequestClose }: WorkspacePageProps) => {
+  const MockLightExtensionWorkspacePage = ({
+    defaultFilesCollapsed,
+    onFooterActionsChange,
+    onRequestClose,
+  }: WorkspacePageProps) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
         dirty: true,
@@ -152,7 +157,11 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
       return () => onFooterActionsChange?.(null);
     }, [onFooterActionsChange, onRequestClose]);
 
-    return React.createElement('div', null, 'Mock source workspace');
+    return React.createElement(
+      'div',
+      { 'data-default-files-collapsed': String(Boolean(defaultFilesCollapsed)) },
+      'Mock source workspace',
+    );
   };
 
   return {
@@ -468,10 +477,23 @@ describe('LightExtensionListPage', () => {
     const syncAction = within(row).getByRole('button', { name: 'Sync code' });
     const editAction = within(row).getByRole('button', { name: 'Edit details Sales widgets' });
     const removeAction = within(row).getByRole('button', { name: 'Remove' });
-    expect(sourceAction).toBeEnabled();
-    expect(syncAction).toBeEnabled();
-    expect(editAction).toBeEnabled();
-    expect(removeAction).toBeEnabled();
+    expect(sourceAction).toHaveClass('ant-btn-link');
+    expect(sourceAction).toHaveTextContent('Edit code');
+    expect(syncAction).toHaveClass('ant-btn-link');
+    expect(syncAction).toHaveTextContent('Sync code');
+    expect(editAction).toHaveClass('ant-btn-link');
+    expect(editAction).toHaveTextContent('Edit details');
+    expect(removeAction).toHaveClass('ant-btn-link');
+    expect(removeAction).toHaveTextContent('Remove');
+    expect(sourceAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(syncAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(editAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(removeAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(
+      within(row)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Edit code', 'Sync code', 'Edit details', 'Remove']);
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -768,7 +790,7 @@ describe('LightExtensionListPage', () => {
     expect(matchesLightExtensionRepoFilter(repo, { enabled: { $isFalsy: true } })).toBe(false);
   });
 
-  it('opens and closes the source workspace drawer', async () => {
+  it('opens the source workspace drawer as a large side panel with files collapsed', async () => {
     mocks.api.listRepos.mockResolvedValueOnce([
       {
         id: 'ler_browser_smoke',
@@ -802,7 +824,14 @@ describe('LightExtensionListPage', () => {
 
     renderListPage('/admin/settings/light-extension?repoId=ler_browser_smoke&panel=source');
 
-    await screen.findByText('Mock source workspace');
+    const workspace = await screen.findByText('Mock source workspace');
+    expect(workspace).toHaveAttribute('data-default-files-collapsed', 'true');
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer-content-wrapper')).toHaveStyle({
+        width: 'min(1280px, calc(100vw - 64px))',
+      });
+      expect(document.querySelector('.ant-drawer-body')).toHaveStyle({ overflow: 'hidden', padding: '16px' });
+    });
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
