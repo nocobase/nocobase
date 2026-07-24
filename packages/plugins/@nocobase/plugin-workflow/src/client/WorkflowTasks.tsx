@@ -820,10 +820,38 @@ function TaskNavigationContent({ onWorkflowSelect }: { onWorkflowSelect?: () => 
               ],
       }))}
       className={css`
+        display: flex;
+        flex-direction: column;
         height: 100%;
-        overflow-y: auto;
+        min-height: 0;
+        overflow: hidden;
         background: ${token.colorBgContainer};
         border-inline-end: 0 !important;
+
+        > .ant-menu-submenu {
+          flex: none;
+          min-height: 0;
+        }
+
+        > .ant-menu-submenu-open {
+          display: flex;
+          flex: 0 1 auto;
+          flex-direction: column;
+          min-height: ${token.controlHeightLG + token.marginXXS * 2}px;
+          overflow: hidden;
+        }
+
+        > .ant-menu-submenu-open > .ant-menu-submenu-title {
+          flex: none;
+        }
+
+        > .ant-menu-submenu-open > .ant-menu-sub.ant-menu-inline {
+          flex: 1;
+          min-height: 0;
+          overflow-x: hidden;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+        }
 
         .ant-menu-sub.ant-menu-inline {
           width: calc(100% - ${token.marginXXS * 2}px);
