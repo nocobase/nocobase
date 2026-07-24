@@ -15,26 +15,34 @@ import { VscError } from '../../../shared/vsc-file/errors';
 import { BlobService } from '../services/BlobService';
 import type { PreparedTree } from '../services/TreeService';
 import { TreeService } from '../services/TreeService';
+import { VscFileService } from '../services/VscFileService';
 
 describe('vsc-file blob and tree services', () => {
   let db: Database;
   let blobService: BlobService;
   let treeService: TreeService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
     await db.import({
       directory: path.resolve(__dirname, '../collections'),
     });
     await db.sync();
+  });
 
+  beforeEach(async () => {
+    await db.sequelize.truncate({ cascade: true });
     blobService = new BlobService(db);
     treeService = new TreeService(db, blobService);
   });
 
-  afterEach(async () => {
-    await db?.close();
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await db.close();
   });
 
   it('writes one blob for identical normalized content', async () => {
@@ -58,39 +66,100 @@ describe('vsc-file blob and tree services', () => {
     const second = await blobService.ensureBlob('second\n');
     const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
     const transaction = await db.sequelize.transaction();
+    try {
+      const blobs = await blobService.loadBlobs([first.hash, second.hash, first.hash], { transaction });
 
-    const blobs = await blobService.loadBlobs([first.hash, second.hash, first.hash], { transaction });
+      expect(blobFind).toHaveBeenCalledTimes(1);
+      expect(blobFind).toHaveBeenCalledWith({
+        filter: {
+          hash: { $in: [first.hash, second.hash] },
+        },
+        fields: ['hash', 'size', 'content'],
+        transaction,
+      });
+      expect([...blobs.keys()]).toEqual(expect.arrayContaining([first.hash, second.hash]));
+      expect(blobs.get(first.hash)).toEqual(first);
+      expect(blobs.get(second.hash)).toEqual(second);
+      expect(blobs.get(first.hash)?.content).toBe('你好\nline 2\nline 3');
+      expect(blobs.get(first.hash)?.size).toBe(Buffer.byteLength('你好\nline 2\nline 3', 'utf8'));
 
-    expect(blobFind).toHaveBeenCalledTimes(1);
-    expect(blobFind).toHaveBeenCalledWith({
-      filter: {
-        hash: { $in: [first.hash, second.hash] },
-      },
-      fields: ['hash', 'size', 'content'],
-      transaction,
+      blobFind.mockClear();
+      const metadata = await blobService.loadBlobMetadata([second.hash, first.hash, second.hash], { transaction });
+
+      expect(blobFind).toHaveBeenCalledTimes(1);
+      expect(blobFind).toHaveBeenCalledWith({
+        filter: {
+          hash: { $in: [second.hash, first.hash] },
+        },
+        fields: ['hash', 'size'],
+        transaction,
+      });
+      expect(metadata.get(first.hash)).toEqual({ hash: first.hash, size: first.size });
+      expect(metadata.get(second.hash)).toEqual({ hash: second.hash, size: second.size });
+      expect(metadata.get(first.hash)).not.toHaveProperty('content');
+    } finally {
+      await transaction.rollback();
+    }
+  });
+
+  it('restores shared files in tree order, resolves getFile by hash, and rejects incomplete pulls', async () => {
+    const service = new VscFileService(db);
+    const sharedContent = '\ufeff共享\r\nline 2\rline 3';
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'shared-blob-contract',
+      name: 'main',
+      initialFiles: [
+        { path: 'z-last.txt', content: sharedContent },
+        { path: 'a-first.txt', content: sharedContent },
+      ],
     });
-    expect([...blobs.keys()]).toEqual(expect.arrayContaining([first.hash, second.hash]));
-    expect(blobs.get(first.hash)).toEqual(first);
-    expect(blobs.get(second.hash)).toEqual(second);
-    expect(blobs.get(first.hash)?.content).toBe('你好\nline 2\nline 3');
-    expect(blobs.get(first.hash)?.size).toBe(Buffer.byteLength('你好\nline 2\nline 3', 'utf8'));
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+    const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
+
+    const pull = await service.pullCommit({
+      repoId: repository.id,
+      commitId: initialCommit.id,
+      includeContent: 'all',
+    });
+
+    expect(pull.files?.map((file) => file.path)).toEqual(['a-first.txt', 'z-last.txt']);
+    expect(pull.files?.map((file) => file.content)).toEqual(['共享\nline 2\nline 3', '共享\nline 2\nline 3']);
+    expect(new Set(pull.files?.map((file) => file.blobHash)).size).toBe(1);
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(await db.getRepository('vscFileBlobs').count()).toBe(1);
 
     blobFind.mockClear();
-    const metadata = await blobService.loadBlobMetadata([second.hash, first.hash, second.hash], { transaction });
-
-    expect(blobFind).toHaveBeenCalledTimes(1);
-    expect(blobFind).toHaveBeenCalledWith({
-      filter: {
-        hash: { $in: [second.hash, first.hash] },
-      },
-      fields: ['hash', 'size'],
-      transaction,
+    const selected = await service.pullCommit({
+      repoId: repository.id,
+      commitId: initialCommit.id,
+      includeContent: 'selected',
+      selectedPaths: ['z-last.txt', 'missing.txt'],
     });
-    expect(metadata.get(first.hash)).toEqual({ hash: first.hash, size: first.size });
-    expect(metadata.get(second.hash)).toEqual({ hash: second.hash, size: second.size });
-    expect(metadata.get(first.hash)).not.toHaveProperty('content');
+    expect(selected.files?.filter((file) => typeof file.content === 'string')).toHaveLength(1);
+    expect(blobFind).toHaveBeenCalledTimes(1);
 
-    await transaction.rollback();
+    const treeEntryFindOne = vi.spyOn(db.getRepository('vscFileTreeEntries'), 'findOne');
+    const blobFindOne = vi.spyOn(db.getRepository('vscFileBlobs'), 'findOne');
+    const file = await service.getFile({ repoId: repository.id, path: 'a-first.txt' });
+    expect(file).toMatchObject({
+      path: 'a-first.txt',
+      blobHash: pull.files?.[0].blobHash,
+      content: '共享\nline 2\nline 3',
+    });
+    expect(treeEntryFindOne).toHaveBeenCalledTimes(1);
+    expect(blobFindOne).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: file.blobHash }));
+    expect(firstInvocationOrder(treeEntryFindOne)).toBeLessThan(firstInvocationOrder(blobFindOne));
+
+    await db.getRepository('vscFileBlobs').destroy({ filterByTk: file.blobHash });
+    await expect(
+      service.pullCommit({ repoId: repository.id, commitId: initialCommit.id, includeContent: 'all' }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'BLOB_NOT_FOUND',
+      message: `Blob "${file.blobHash}" was not found`,
+    });
   });
 
   it('does not query blobs for empty batch inputs', async () => {
@@ -306,3 +375,11 @@ describe('vsc-file blob and tree services', () => {
     expect(entries[1]).not.toHaveProperty('content');
   });
 });
+
+function firstInvocationOrder(spy: { mock: { invocationCallOrder: number[] } }): number {
+  const order = spy.mock.invocationCallOrder[0];
+  if (typeof order !== 'number') {
+    throw new Error('Expected spy to be invoked');
+  }
+  return order;
+}

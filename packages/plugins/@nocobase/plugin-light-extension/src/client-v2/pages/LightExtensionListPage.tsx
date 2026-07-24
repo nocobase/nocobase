@@ -702,6 +702,7 @@ function LightExtensionListPageInner() {
           embedded
           onFooterActionsChange={setSourceFooterActions}
           onRequestClose={closeDetailDrawer}
+          onSaved={loadRepos}
         />
       );
     }

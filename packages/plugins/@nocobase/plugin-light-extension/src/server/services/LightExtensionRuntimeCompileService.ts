@@ -11,6 +11,7 @@ import type { Database } from '@nocobase/database';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex, stableSerialize } from '@nocobase/runjs';
 import { randomUUID } from 'crypto';
 import { serialize } from 'node:v8';
+import { posix as pathPosix } from 'path';
 
 import {
   LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
@@ -53,7 +54,6 @@ import {
 } from './LightExtensionCompileContract';
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
-import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
 import { LightExtensionValidator, hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
@@ -128,7 +128,7 @@ export interface LightExtensionInitialWorkspacePublishResult {
 export class LightExtensionRuntimeCompileService {
   private referenceService?: ReferenceRefreshService;
 
-  private readonly compilerBuildIdentity: LightExtensionCompilerBuildIdentity;
+  private readonly configuredCompilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
 
   private readonly compileExecutor?: LightExtensionCompileExecutor;
 
@@ -147,11 +147,7 @@ export class LightExtensionRuntimeCompileService {
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
     options: LightExtensionRuntimeCompileServiceOptions = {},
   ) {
-    this.compilerBuildIdentity =
-      options.compilerBuildIdentity ||
-      (typeof compilerBridge.getCompilerBuildIdentity === 'function'
-        ? compilerBridge.getCompilerBuildIdentity()
-        : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
+    this.configuredCompilerBuildIdentity = options.compilerBuildIdentity;
     this.compileExecutor = options.compileExecutor;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
     this.validator = options.validator || new LightExtensionValidator();
@@ -159,6 +155,15 @@ export class LightExtensionRuntimeCompileService {
 
   useReferenceService(referenceService: ReferenceRefreshService): void {
     this.referenceService = referenceService;
+  }
+
+  private get compilerBuildIdentity(): LightExtensionCompilerBuildIdentity {
+    return (
+      this.configuredCompilerBuildIdentity ||
+      (typeof this.compilerBridge.getCompilerBuildIdentity === 'function'
+        ? this.compilerBridge.getCompilerBuildIdentity()
+        : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY)
+    );
   }
 
   async saveSource(
@@ -537,7 +542,7 @@ export class LightExtensionRuntimeCompileService {
         compiledResults.push(
           this.compilerBridge
             ? await this.compileEntryWithoutWorker(job, input, ctx)
-            : await executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 }),
+            : await this.executeCompileJobWithoutWorker(job),
         );
       }
     }
@@ -548,6 +553,11 @@ export class LightExtensionRuntimeCompileService {
       compiledEntryCount: compileJobs.length,
       compiledEntryIds: compileJobs.map(({ job }) => job.entryId),
     };
+  }
+
+  private async executeCompileJobWithoutWorker(job: LightExtensionCompileJob): Promise<LightExtensionCompileResult> {
+    const { executeLightExtensionCompileJob } = await import('./LightExtensionCompileJobExecutor');
+    return executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 });
   }
 
   private async compileEntryWithoutWorker(

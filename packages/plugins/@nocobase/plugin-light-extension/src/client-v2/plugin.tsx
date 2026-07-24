@@ -40,6 +40,7 @@ import { createMoveSourceToLightExtensionContribution } from './components/MoveS
 import { SettingsSingleField } from './components/SettingsAutoForm';
 import { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
+import { registerLightExtensionRuntimeAuthSession } from './resolvers/LightExtensionRuntimeCacheRegistry';
 import { createInlineLightExtensionSettingsDescriptorProvider } from './resolvers/InlineLightExtensionSettingsDescriptorProvider';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
@@ -54,6 +55,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
 
   async load() {
     this.disposers.push(installRunJSStudioClientV2());
+    this.disposers.push(registerLightExtensionRuntimeAuthSession(this.app.apiClient, this.app));
 
     const components = {
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,

@@ -533,13 +533,42 @@ describe('runjsSourceRuntimeCommon', () => {
     ).toEqual({ settings: { count: 2 }, missingRequiredPaths: [] });
   });
 
-  it('normalizes server error envelopes without changing surface-specific hints', () => {
+  it.each([
+    ['LIGHT_EXTENSION_BINDING_OUTDATED', 409, 'Light extension binding is outdated', 'Refresh this surface'],
+    ['LIGHT_EXTENSION_SETTINGS_INVALID', 422, 'Light extension settings are invalid', 'Fix settings'],
+    [
+      'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+      404,
+      'Light extension entry missing',
+      'Choose an available entry or restore this entry.',
+    ],
+    [
+      'LIGHT_EXTENSION_FORBIDDEN',
+      403,
+      'Light extension access denied',
+      'Ask an administrator for permission to use this light extension.',
+    ],
+    [
+      'LIGHT_EXTENSION_REPO_ARCHIVED',
+      409,
+      'Light extension repository is archived',
+      'Restore the repository or choose an entry from another repository.',
+    ],
+    [
+      undefined,
+      403,
+      'Light extension access denied',
+      'Ask an administrator for permission to use this light extension.',
+    ],
+    [undefined, 404, 'Light extension entry missing', 'Choose an available entry or restore this entry.'],
+  ])('normalizes %s server errors into the shared UI state', (code, status, title, hint) => {
+    const message = code || 'Request failed';
     const result = normalizeLightExtensionRuntimeError(
       {
         response: {
-          status: 409,
+          status,
           data: {
-            errors: [{ code: 'binding_outdated', message: 'Refresh required' }],
+            errors: [{ ...(code ? { code } : {}), message }],
           },
         },
       },
@@ -553,11 +582,11 @@ describe('runjsSourceRuntimeCommon', () => {
     );
 
     expect(result).toEqual({
-      title: 'Light extension binding is outdated',
-      hint: 'Refresh this surface',
-      message: 'Refresh required',
-      code: 'binding_outdated',
-      status: 409,
+      title,
+      hint,
+      message,
+      ...(code ? { code } : {}),
+      status,
     });
   });
 

@@ -15,6 +15,8 @@ import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRu
 const selectableEntry = {
   id: 'entry_order_total',
   repoId: 'repo_orders',
+  repoName: 'orders',
+  repoTitle: 'Orders',
   kind: 'js-block',
   entryName: 'order-total',
   entryPath: 'src/client/js-blocks/order-total/index.tsx',
@@ -47,28 +49,9 @@ const chartSelectableEntry = {
   runtimeCodeHash: 'runtime_hash_chart',
 };
 
-const selectableRepo = {
-  id: 'repo_orders',
-  name: 'orders',
-  normalizedName: 'orders',
-  title: 'Orders',
-  description: null,
-  lifecycleStatus: 'enabled',
-  healthStatus: 'ready',
-  headCommitId: 'commit_latest',
-};
-
 describe('light extension source menu items', () => {
   it('groups single-entry repositories before writing the current runtime binding', async () => {
-    const request = vi.fn(async (options: ApiRequestOptions) => {
-      if (options.url === 'lightExtensionRepos:list') {
-        return {
-          data: {
-            data: [selectableRepo],
-          },
-        };
-      }
-
+    const request = vi.fn(async () => {
       return {
         data: {
           data: [selectableEntry],
@@ -90,21 +73,11 @@ describe('light extension source menu items', () => {
     const repoItem = items?.[1];
     const entryItem = repoItem?.children?.[0];
 
-    expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'lightExtensionEntries:listSelectable',
-        method: 'post',
-        data: {
-          kind: 'js-block',
-        },
-      }),
-    );
-    expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'lightExtensionRepos:list',
-        method: 'post',
-      }),
-    );
+    expect(request).toHaveBeenCalledWith({
+      url: 'lightExtensionEntries:listSelectable',
+      method: 'post',
+    });
+    expect(request).toHaveBeenCalledTimes(1);
     expect(lightExtensionItem?.label).toBe('Light extensions');
     expect(lightExtensionItem?.disabled).toBe(true);
     expect(lightExtensionItem?.children).toBeUndefined();
@@ -132,6 +105,7 @@ describe('light extension source menu items', () => {
       sourceMode: 'light-extension',
       sourceBinding: {
         repoId: 'repo_orders',
+        repoName: 'orders',
         repoTitle: 'Orders',
         entryId: 'entry_order_total',
         entryTitle: 'order-total',
@@ -154,18 +128,11 @@ describe('light extension source menu items', () => {
         },
       }),
     ).resolves.toBe('Orders / order-total');
+    expect(request).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a repository submenu when a repository has multiple entries', async () => {
-    const request = vi.fn(async (options: ApiRequestOptions) => {
-      if (options.url === 'lightExtensionRepos:list') {
-        return {
-          data: {
-            data: [selectableRepo],
-          },
-        };
-      }
-
+    const request = vi.fn(async () => {
       return {
         data: {
           data: [selectableEntry, chartSelectableEntry],
@@ -186,6 +153,30 @@ describe('light extension source menu items', () => {
     expect(repoItem?.label).toBe('Orders');
     expect(repoItem?.children?.map((item) => item.label)).toEqual(['order-total', 'order-chart']);
     expect(repoItem?.searchText).toContain('order-chart');
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores persisted repository title hints unless the catalog authorizes them', async () => {
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [{ ...selectableEntry, repoName: undefined, repoTitle: undefined }],
+      },
+    });
+    const resolver = createLightExtensionRunJSResolver(createMockApiClient(request));
+
+    await expect(
+      resolver.getBindingTitle?.({
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'repo_orders',
+          repoTitle: 'Secret title',
+          entryId: 'entry_order_total',
+          entryName: 'order-total',
+          kind: 'js-block',
+        },
+      }),
+    ).resolves.toBe('repo_orders / order-total');
   });
 });
 

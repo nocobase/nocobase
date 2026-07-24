@@ -9,6 +9,8 @@
 
 import { sha256Hex } from '@nocobase/runjs';
 import { RUNJS_COMPILER_BUILD_IDENTITY } from '@nocobase/runjs/compiler';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { vi } from 'vitest';
 
 import {
@@ -66,6 +68,23 @@ describe('LightExtensionCompileContract', () => {
     expect(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.components.runjsCompilerBuildId).toBe(
       RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId,
     );
+  });
+
+  it('freezes the compiler identity before SES lockdown changes the runtime type-library fingerprint', () => {
+    const contractPath = path.resolve(__dirname, '../services/LightExtensionCompileContract.ts');
+    const sesPath = path.resolve(__dirname, '../../../../../../core/utils/src/ses.ts');
+    const baseline = readCompilerBuildId(
+      `const contract = require(${JSON.stringify(
+        contractPath,
+      )}); console.log(contract.LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.compilerBuildId);`,
+    );
+    const afterLockdown = readCompilerBuildId(
+      `const contract = require(${JSON.stringify(contractPath)}); const { lockdownSes } = require(${JSON.stringify(
+        sesPath,
+      )}); lockdownSes({ consoleTaming: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'moderate', stackFiltering: 'verbose' }); console.log(contract.LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.compilerBuildId);`,
+    );
+
+    expect(afterLockdown).toBe(baseline);
   });
 
   it('orders a complete batch by ordinal and rejects process-local values', () => {
@@ -152,6 +171,13 @@ describe('LightExtensionCompileContract', () => {
     expect(compileEntry.mock.calls[0][0].files[0]).not.toBe(files[0]);
   });
 });
+
+function readCompilerBuildId(script: string): string {
+  return execFileSync(process.execPath, ['--require', 'tsx/cjs', '--eval', script], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  }).trim();
+}
 
 function createCompileJob(ordinal: number): LightExtensionCompileJob {
   const entryName = `entry-${ordinal}`;

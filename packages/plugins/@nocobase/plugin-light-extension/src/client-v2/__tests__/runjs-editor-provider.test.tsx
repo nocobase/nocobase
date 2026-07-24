@@ -348,6 +348,10 @@ describe('RunJSLightExtensionEditorProvider', () => {
         throw new Error(`Unexpected request: ${options.url}`);
       }),
     };
+    const runtimeInvalidator = getOrCreateLightExtensionRuntimeCache(api, () => ({
+      invalidateRepo: vi.fn(),
+      clear: vi.fn(),
+    }));
     const value = {
       code: 'ctx.render(<div>persisted light extension</div>);',
       version: 'v2',
@@ -425,6 +429,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     });
     expect(onPersistedChange).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+    expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledWith('ler_example');
   });
 
   it('keeps the JS Page external binding when copyback fails', async () => {
@@ -742,7 +747,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(resolverApi.request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
       method: 'post',
-      data: { repoId: 'ler_example', kind: 'js-block' },
     });
     unregisterResolver();
   });

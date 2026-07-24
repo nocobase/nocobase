@@ -8,9 +8,9 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
+import { sha256Hex, stableSerialize } from '@nocobase/runjs';
 import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 import { uid } from '@nocobase/utils';
-import { createHash } from 'crypto';
 
 import { LightExtensionError } from '../../shared/errors';
 import type {
@@ -617,7 +617,7 @@ function normalizePlannedEntryValues(values: Record<string, unknown>): Partial<L
 }
 
 function createExistingEntriesFingerprint(records: Model[]): string {
-  return sha256(
+  return sha256Hex(
     stableSerialize(
       records
         .map(entryFromModel)
@@ -852,8 +852,8 @@ export function buildLightExtensionSettingsHashes(settingsSchema: Record<string,
   }
 
   return {
-    settingsSchemaHash: sha256(settingsSchemaSerialize(settingsSchema)),
-    settingsDefaultsHash: sha256(stableSerialize(extractRunJSSettingsDefault(settingsSchema).value)),
+    settingsSchemaHash: sha256Hex(settingsSchemaSerialize(settingsSchema)),
+    settingsDefaultsHash: sha256Hex(stableSerialize(extractRunJSSettingsDefault(settingsSchema).value)),
   };
 }
 
@@ -870,21 +870,6 @@ function settingsSchemaSerialize(value: unknown, parentKey?: string): string {
   return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }
 
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isPlainRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
 function cloneJsonValue(value: unknown): unknown {
   if (typeof value === 'undefined') {
     return undefined;
@@ -894,8 +879,4 @@ function cloneJsonValue(value: unknown): unknown {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function sha256(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
 }

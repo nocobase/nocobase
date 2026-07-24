@@ -20,15 +20,10 @@ import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
 import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionKind,
-  LightExtensionRepoRecord,
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
-import {
-  listLightExtensionRepos,
-  listSelectableLightExtensionEntries,
-  type ApiClientLike,
-} from '../api/lightExtensionEntriesRequests';
+import { listSelectableLightExtensionEntries, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
 
 export type LightExtensionModelMenuTarget = 'block' | 'action' | 'field' | 'column';
 
@@ -127,11 +122,7 @@ async function buildRepoItems(
   ctx: FlowModelContext,
 ): Promise<SubModelItem[]> {
   const kind = targetKinds[options.target];
-  const [entries, repos] = await Promise.all([
-    listSelectableLightExtensionEntries(api, { kind }),
-    listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
-  ]);
-  const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
+  const entries = await listSelectableLightExtensionEntries(api, { kind });
   const entriesByRepo = entries
     .filter((entry) => matchesTarget(entry, options.target))
     .reduce((groups, entry) => {
@@ -145,11 +136,11 @@ async function buildRepoItems(
     }, new Map<string, LightExtensionSelectableEntrySummary[]>());
 
   return Array.from(entriesByRepo, ([repoId, repoEntries]) => {
-    const repoLabel = repoLabels.get(repoId) || repoId;
+    const repoLabel = getRepoLabel(repoEntries[0]);
     return {
       key: `light-extension-repo:${repoId}`,
       label: repoLabel,
-      children: repoEntries.map((entry) => createEntryMenuItem(entry, repoLabel, options, ctx)),
+      children: repoEntries.map((entry) => createEntryMenuItem(entry, options, ctx)),
     } satisfies SubModelItem;
   });
 }
@@ -169,11 +160,10 @@ function matchesTarget(entry: LightExtensionSelectableEntrySummary, target: Ligh
 
 function createEntryMenuItem(
   entry: LightExtensionSelectableEntrySummary,
-  repoLabel: string,
   options: LightExtensionModelMenuOptions,
   ctx: FlowModelContext,
 ): SubModelItem {
-  const runJs = createRunJs(entry, repoLabel);
+  const runJs = createRunJs(entry);
   if (options.target === 'field') {
     return {
       key: `light-extension-entry:${entry.id}`,
@@ -199,11 +189,11 @@ function createEntryMenuItem(
   };
 }
 
-function createRunJs(entry: LightExtensionSelectableEntrySummary, repoLabel: string) {
+function createRunJs(entry: LightExtensionSelectableEntrySummary) {
   return {
     version: 'v2',
     sourceMode: 'light-extension',
-    sourceBinding: createRuntimeSourceBinding(entry, repoLabel),
+    sourceBinding: createRuntimeSourceBinding(entry),
     settings: extractRunJSSettingsDefaults(entry.settingsSchema),
   };
 }
@@ -306,14 +296,12 @@ function getModelUse(options: LightExtensionModelMenuOptions): string {
   return modelUse;
 }
 
-function createRuntimeSourceBinding(
-  entry: LightExtensionSelectableEntrySummary,
-  repoLabel: string,
-): LightExtensionRuntimeSourceBinding {
+function createRuntimeSourceBinding(entry: LightExtensionSelectableEntrySummary): LightExtensionRuntimeSourceBinding {
   return {
     type: 'light-extension-entry',
     repoId: entry.repoId,
-    repoTitle: repoLabel,
+    ...(typeof entry.repoName !== 'undefined' ? { repoName: entry.repoName } : {}),
+    ...(typeof entry.repoTitle !== 'undefined' ? { repoTitle: entry.repoTitle } : {}),
     entryId: entry.id,
     entryTitle: getEntryLabel(entry),
     entryName: entry.entryName,
@@ -322,12 +310,12 @@ function createRuntimeSourceBinding(
   };
 }
 
-function getRepoLabel(repo: LightExtensionRepoRecord): string {
-  return repo.title?.trim() || repo.name?.trim() || repo.id;
+function getRepoLabel(entry?: LightExtensionSelectableEntrySummary): string {
+  return entry?.repoTitle?.trim() || entry?.repoName?.trim() || entry?.repoId || '';
 }
 
 function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
-  return entry.title?.trim() || entry.entryName || entry.id;
+  return entry.entryName || entry.id;
 }
 
 function resolveSurfaceMenuOptions(

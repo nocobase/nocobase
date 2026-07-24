@@ -9,10 +9,11 @@
 
 import type { Transaction } from '@nocobase/database';
 import { buildRunJSFilesHash, type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
-import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
+import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
+import { createRequire } from 'node:module';
 import { posix as pathPosix } from 'path';
-import ts from 'typescript';
+import type { Expression, ImportDeclaration, SourceFile } from 'typescript';
 
 import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE, type LightExtensionKind } from '../../constants';
 import { isLightExtensionError } from '../../shared/errors';
@@ -34,6 +35,13 @@ const allowedCompileSdkImports = new Set([
   '@nocobase/light-extension-sdk/shared',
 ]);
 const allowedCompileSdkRuntimeHelpers = new Set(['defineSettings', 'assertSettings']);
+const requireTypeScript = createRequire(__filename);
+type TypeScriptModule = typeof import('typescript');
+let typescriptModule: TypeScriptModule | undefined;
+
+function getTypeScript(): TypeScriptModule {
+  return (typescriptModule ||= requireTypeScript('typescript') as TypeScriptModule);
+}
 
 export interface LightExtensionWorkspaceCompileFileInput {
   path: string;
@@ -112,6 +120,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     }
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
     const runtimeFiles = filterCurrentEntryDescriptor(input);
+    const { compileRunJSSourceWorkspace } = await import('@nocobase/runjs/compiler');
     const compiled = await compileRunJSSourceWorkspace({
       files: prepareLightExtensionCompileFiles(runtimeFiles, input.kind),
       entry: input.entryPath,
@@ -429,6 +438,7 @@ function filterCurrentEntryDescriptor(
 }
 
 export function rewriteLightExtensionSdkRuntimeImports(path: string, content: string): string {
+  const ts = getTypeScript();
   const sourceFile = ts.createSourceFile(
     path,
     content,
@@ -466,7 +476,8 @@ export function rewriteLightExtensionSdkRuntimeImports(path: string, content: st
   return `${output}${content.slice(cursor)}`;
 }
 
-function buildSdkImportReplacement(statement: ts.ImportDeclaration, sourceFile: ts.SourceFile): string | null {
+function buildSdkImportReplacement(statement: ImportDeclaration, sourceFile: SourceFile): string | null {
+  const ts = getTypeScript();
   const importClause = statement.importClause;
   if (!importClause || importClause.name || !importClause.namedBindings) {
     return null;
@@ -542,6 +553,7 @@ export function rewriteLightExtensionSettingsTypeImports(
   content: string,
   kind: LightExtensionKind,
 ): string {
+  const ts = getTypeScript();
   const sourceFile = ts.createSourceFile(
     path,
     content,
@@ -599,7 +611,8 @@ export function rewriteLightExtensionSettingsTypeImports(
     );
 }
 
-function getStringLiteralImportSpecifier(node: ts.Expression): string | null {
+function getStringLiteralImportSpecifier(node: Expression): string | null {
+  const ts = getTypeScript();
   if (ts.isStringLiteral(node)) {
     return node.text;
   }

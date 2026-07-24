@@ -14,18 +14,13 @@ import {
   type RunJSSourceResolver,
   type RunJSSourceResolverInput,
   type RunJSSourceResolverResult,
-  type RunJSSourceSettingsDescriptor,
+  stableSerialize,
 } from '@nocobase/client-v2';
-import {
-  extractRunJSSettingsDefaults,
-  normalizeLightExtensionEntrySelection,
-  normalizeLightExtensionSettings,
-} from '@nocobase/runjs/settings';
+import { extractRunJSSettingsDefaults, normalizeLightExtensionEntrySelection } from '@nocobase/runjs/settings';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionKind,
-  LightExtensionRepoRecord,
   LightExtensionRuntimeArtifactRecord,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
@@ -33,16 +28,18 @@ import type {
   LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import {
-  listLightExtensionRepos,
-  listSelectableLightExtensionEntries,
-  unwrapResourceResponse,
-} from '../api/lightExtensionEntriesRequests';
+import { listSelectableLightExtensionEntries, unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
 import {
   getLightExtensionSettingsDescriptorCache,
   type LightExtensionSettingsDescriptorCache,
 } from './LightExtensionSettingsDescriptorCache';
-import { getOrCreateLightExtensionRuntimeCache } from './LightExtensionRuntimeCacheRegistry';
+import {
+  getLightExtensionRuntimeIdentity,
+  getOrCreateLightExtensionRuntimeCache,
+  invalidateLightExtensionRuntimeCache,
+  LightExtensionCacheGeneration,
+  type LightExtensionCacheGenerationSnapshot,
+} from './LightExtensionRuntimeCacheRegistry';
 
 type ResourceResponse<T> = {
   data?: {
@@ -55,28 +52,24 @@ export type LightExtensionRunJSSourceResolver = RunJSSourceResolver & {
 };
 
 export function createLightExtensionRunJSResolver(api: ApiClientLike): LightExtensionRunJSSourceResolver {
-  const runtimeCache = getOrCreateLightExtensionRuntimeCache(api, () => new LightExtensionRuntimeCache());
+  const runtimeCache = getOrCreateLightExtensionRuntimeCache(
+    api,
+    (generation) => new LightExtensionRuntimeCache(generation),
+  );
   const settingsDescriptorCache = getLightExtensionSettingsDescriptorCache(api);
 
   return {
     sourceMode: 'light-extension',
     invalidateCache(repoId) {
+      invalidateLightExtensionRuntimeCache(api, repoId);
       if (repoId) {
-        runtimeCache.invalidateRepo(repoId);
         settingsDescriptorCache.invalidateRepo(repoId);
-        return;
+      } else {
+        settingsDescriptorCache.clear();
       }
-      runtimeCache.clear();
-      settingsDescriptorCache.clear();
     },
     async resolve(input) {
-      const binding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : undefined;
-      const kind = toSupportedKind(binding?.kind);
-      const settingsDescriptor =
-        binding && kind
-          ? settingsDescriptorCache.get({ repoId: binding.repoId, entryId: binding.entryId, kind })
-          : undefined;
-      const runtime = await resolveLightExtensionRuntimeSource(api, input, runtimeCache, settingsDescriptor);
+      const runtime = await resolveLightExtensionRuntimeSource(api, input, runtimeCache);
       return {
         code: runtime.code,
         version: runtime.version,
@@ -103,21 +96,17 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): LightExte
         return undefined;
       }
 
-      const [entries, repos] = await Promise.all([
-        listSelectableLightExtensionEntries(api, {
-          repoId: binding.repoId,
-          kind,
-        }),
-        listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
-      ]);
+      const entries = await listSelectableLightExtensionEntries(api, {
+        repoId: binding.repoId,
+        kind,
+      });
       settingsDescriptorCache.primeScope(binding.repoId, kind, entries);
       const entry = entries.find((item) => item.id === binding.entryId);
       if (!entry || entry.kind !== kind) {
         return undefined;
       }
 
-      const repo = repos.find((item) => item.id === binding.repoId);
-      return `${repo ? getRepoLabel(repo) : binding.repoId} / ${getEntryLabel(entry)}`;
+      return `${getRepoLabel(entry)} / ${getEntryLabel(entry)}`;
     },
     async getSettingsDescriptor(input) {
       const binding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : undefined;
@@ -154,40 +143,58 @@ interface ResolvedLightExtensionRuntimeSource extends LightExtensionRuntimeArtif
 }
 
 export class LightExtensionRuntimeCache {
+  static readonly POSITIVE_TTL_MS = 30_000;
+
   private readonly artifacts = new Map<string, LightExtensionRuntimeArtifactRecord>();
-  private readonly inFlight = new Map<string, Promise<LightExtensionRuntimeArtifactRecord>>();
+  private readonly artifactInFlight = new Map<string, Promise<LightExtensionRuntimeArtifactRecord>>();
+  private readonly resolveInFlight = new Map<string, Promise<ResolvedLightExtensionRuntimeSource>>();
   private readonly bindings = new Map<
     string,
     {
       sourceBinding: LightExtensionRuntimeSourceBinding;
       response: LightExtensionRuntimeResolveResult;
       artifact: LightExtensionRuntimeArtifactRecord;
+      expiresAt: number;
     }
   >();
+
+  constructor(private readonly generation = new LightExtensionCacheGeneration()) {}
 
   resolve(
     api: ApiClientLike,
     input: RunJSSourceResolverInput,
     sourceBinding: LightExtensionRuntimeSourceBinding,
-    settingsDescriptor?: RunJSSourceSettingsDescriptor,
   ): Promise<ResolvedLightExtensionRuntimeSource> {
-    const bindingKey = getRuntimeBindingKey(sourceBinding);
+    const requestInput = {
+      ...input,
+      settings: JSON.parse(JSON.stringify(input.settings || {})) as Record<string, unknown>,
+    };
+    const requestSourceBinding = { ...sourceBinding };
+    const identity = getLightExtensionRuntimeIdentity(api);
+    const generation = this.generation.get(requestSourceBinding.repoId);
+    const bindingKey = getRuntimeBindingKey(requestSourceBinding, requestInput.settings, identity, generation);
     const cached = this.bindings.get(bindingKey);
-    if (cached && settingsDescriptor?.entryId === sourceBinding.entryId) {
-      return Promise.resolve(
-        toResolvedRuntime(
-          {
-            ...cached.response,
-            settings: normalizeLightExtensionSettings(settingsDescriptor, input.settings),
-          },
-          cached.artifact,
-        ),
-      );
+    if (cached && cached.expiresAt > Date.now()) {
+      return Promise.resolve(toResolvedRuntime(cached.response, cached.artifact));
     }
-    return this.resolveUncached(api, input, sourceBinding, bindingKey);
+    if (cached) {
+      this.bindings.delete(bindingKey);
+    }
+    const existing = this.resolveInFlight.get(bindingKey);
+    if (existing) {
+      return existing;
+    }
+    const request = this.resolveUncached(api, requestInput, requestSourceBinding, bindingKey, identity, generation);
+    this.resolveInFlight.set(bindingKey, request);
+    return request.finally(() => {
+      if (this.resolveInFlight.get(bindingKey) === request) {
+        this.resolveInFlight.delete(bindingKey);
+      }
+    });
   }
 
   invalidateRepo(repoId: string): void {
+    this.generation.invalidateRepo(repoId);
     for (const [bindingKey, cached] of this.bindings) {
       if (cached.sourceBinding.repoId === repoId) {
         this.bindings.delete(bindingKey);
@@ -196,8 +203,10 @@ export class LightExtensionRuntimeCache {
   }
 
   clear(): void {
+    this.generation.clear();
     this.artifacts.clear();
-    this.inFlight.clear();
+    this.artifactInFlight.clear();
+    this.resolveInFlight.clear();
     this.bindings.clear();
   }
 
@@ -206,45 +215,111 @@ export class LightExtensionRuntimeCache {
     input: RunJSSourceResolverInput,
     sourceBinding: LightExtensionRuntimeSourceBinding,
     bindingKey: string,
+    identity: string,
+    generation: LightExtensionCacheGenerationSnapshot,
   ): Promise<ResolvedLightExtensionRuntimeSource> {
     const response = await requestRuntimeResolve(api, input, sourceBinding);
+    if (!this.isCurrent(api, sourceBinding.repoId, identity, generation)) {
+      return this.resolve(api, input, sourceBinding);
+    }
     try {
-      const artifact = await this.getArtifact(api, response);
-      this.bindings.set(bindingKey, { sourceBinding, response, artifact });
-      return toResolvedRuntime(response, artifact);
+      const artifact = await this.getArtifact(api, response, () =>
+        this.isCurrent(api, sourceBinding.repoId, identity, generation),
+      );
+      return this.cacheOrResolveCurrent(
+        api,
+        input,
+        sourceBinding,
+        bindingKey,
+        identity,
+        generation,
+        response,
+        artifact,
+      );
     } catch (error) {
       if (!isArtifactNotFoundError(error)) {
         throw error;
       }
     }
+    if (!this.isCurrent(api, sourceBinding.repoId, identity, generation)) {
+      return this.resolve(api, input, sourceBinding);
+    }
     const retryResponse = await requestRuntimeResolve(api, input, sourceBinding);
-    const retryArtifact = await this.getArtifact(api, retryResponse);
-    this.bindings.set(bindingKey, { sourceBinding, response: retryResponse, artifact: retryArtifact });
-    return toResolvedRuntime(retryResponse, retryArtifact);
+    if (!this.isCurrent(api, sourceBinding.repoId, identity, generation)) {
+      return this.resolve(api, input, sourceBinding);
+    }
+    const retryArtifact = await this.getArtifact(api, retryResponse, () =>
+      this.isCurrent(api, sourceBinding.repoId, identity, generation),
+    );
+    return this.cacheOrResolveCurrent(
+      api,
+      input,
+      sourceBinding,
+      bindingKey,
+      identity,
+      generation,
+      retryResponse,
+      retryArtifact,
+    );
   }
 
   private getArtifact(
     api: ApiClientLike,
     response: LightExtensionRuntimeResolveResult,
+    canCache: () => boolean,
   ): Promise<LightExtensionRuntimeArtifactRecord> {
     const cached = this.artifacts.get(response.artifactHash);
     if (cached) {
       return Promise.resolve(cached);
     }
-    const existing = this.inFlight.get(response.artifactHash);
-    if (existing) {
-      return existing;
+    const existing = this.artifactInFlight.get(response.artifactHash);
+    const request = existing || requestRuntimeArtifact(api, response);
+    if (!existing) {
+      this.artifactInFlight.set(response.artifactHash, request);
     }
-    const request = requestRuntimeArtifact(api, response).then((artifact) => {
-      this.artifacts.set(response.artifactHash, artifact);
-      return artifact;
+    return request
+      .then((artifact) => {
+        if (canCache()) {
+          this.artifacts.set(response.artifactHash, artifact);
+        }
+        return artifact;
+      })
+      .finally(() => {
+        if (!existing && this.artifactInFlight.get(response.artifactHash) === request) {
+          this.artifactInFlight.delete(response.artifactHash);
+        }
+      });
+  }
+
+  private cacheOrResolveCurrent(
+    api: ApiClientLike,
+    input: RunJSSourceResolverInput,
+    sourceBinding: LightExtensionRuntimeSourceBinding,
+    bindingKey: string,
+    identity: string,
+    generation: LightExtensionCacheGenerationSnapshot,
+    response: LightExtensionRuntimeResolveResult,
+    artifact: LightExtensionRuntimeArtifactRecord,
+  ): Promise<ResolvedLightExtensionRuntimeSource> {
+    if (!this.isCurrent(api, sourceBinding.repoId, identity, generation)) {
+      return this.resolve(api, input, sourceBinding);
+    }
+    this.bindings.set(bindingKey, {
+      sourceBinding,
+      response,
+      artifact,
+      expiresAt: Date.now() + LightExtensionRuntimeCache.POSITIVE_TTL_MS,
     });
-    this.inFlight.set(response.artifactHash, request);
-    return request.finally(() => {
-      if (this.inFlight.get(response.artifactHash) === request) {
-        this.inFlight.delete(response.artifactHash);
-      }
-    });
+    return Promise.resolve(toResolvedRuntime(response, artifact));
+  }
+
+  private isCurrent(
+    api: ApiClientLike,
+    repoId: string,
+    identity: string,
+    generation: LightExtensionCacheGenerationSnapshot,
+  ): boolean {
+    return this.generation.isCurrent(repoId, generation) && getLightExtensionRuntimeIdentity(api) === identity;
   }
 }
 
@@ -252,7 +327,6 @@ export async function resolveLightExtensionRuntimeSource(
   api: ApiClientLike,
   input: RunJSSourceResolverInput,
   runtimeCache = new LightExtensionRuntimeCache(),
-  settingsDescriptor?: RunJSSourceSettingsDescriptor,
 ): Promise<ResolvedLightExtensionRuntimeSource> {
   if (!isLightExtensionRuntimeSourceBinding(input.sourceBinding)) {
     throw new RunJSSourceResolverError("RunJS source 'light-extension' requires a valid sourceBinding", {
@@ -260,7 +334,7 @@ export async function resolveLightExtensionRuntimeSource(
       sourceMode: 'light-extension',
     });
   }
-  return runtimeCache.resolve(api, input, input.sourceBinding, settingsDescriptor);
+  return runtimeCache.resolve(api, input, input.sourceBinding);
 }
 
 async function requestRuntimeResolve(
@@ -304,8 +378,21 @@ function getRuntimeArtifactRequestUrl(artifactHash: string): string {
   return `/light-extension-runtime/artifacts/${encodeURIComponent(artifactHash)}`;
 }
 
-function getRuntimeBindingKey(sourceBinding: LightExtensionRuntimeSourceBinding): string {
-  return JSON.stringify([sourceBinding.repoId, sourceBinding.entryId, sourceBinding.kind]);
+function getRuntimeBindingKey(
+  sourceBinding: LightExtensionRuntimeSourceBinding,
+  settings: unknown,
+  identity: string,
+  generation: LightExtensionCacheGenerationSnapshot,
+): string {
+  return JSON.stringify([
+    identity,
+    generation.global,
+    generation.repo,
+    sourceBinding.repoId,
+    sourceBinding.entryId,
+    sourceBinding.kind,
+    stableSerialize(settings || {}),
+  ]);
 }
 
 function toResolvedRuntime(
@@ -344,14 +431,10 @@ async function listLightExtensionSourceMenuItems(
     return [];
   }
 
-  const [entries, repos] = await Promise.all([
-    listSelectableLightExtensionEntries(api, { kind }),
-    listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
-  ]);
+  const entries = await listSelectableLightExtensionEntries(api, { kind });
   const selectableEntries = entries.filter((entry) => entry.kind === kind && entry.runtimeAvailable === true);
   const t = input.t || ((key: string) => key);
   const currentBinding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : null;
-  const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
   const entriesByRepo = selectableEntries.reduce((groups, entry) => {
     const entriesInRepo = groups.get(entry.repoId);
     if (entriesInRepo) {
@@ -365,12 +448,16 @@ async function listLightExtensionSourceMenuItems(
     settingsDescriptorCache.primeScope(repoId, kind, entriesInRepo);
   }
   const sourceItems = Array.from(entriesByRepo.entries()).map(([repoId, entriesInRepo]) => {
-    const repoLabel = repoLabels.get(repoId) || repoId;
+    const repoLabel = getRepoLabel(entriesInRepo[0]);
     const entryItems = entriesInRepo.map((entry) => createEntryMenuItem(entry, currentBinding, input, t, repoLabel));
     return {
       key: `repo:${repoId}`,
       label: repoLabel,
-      searchText: [repoId, repoLabel, ...entriesInRepo.map((entry) => getEntryLabel(entry))].join(' '),
+      searchText: [
+        repoId,
+        repoLabel,
+        ...entriesInRepo.flatMap((entry) => [getEntryLabel(entry), entry.entryName, entry.entryPath]),
+      ].join(' '),
       children: entryItems,
     };
   });
@@ -419,11 +506,11 @@ function createEntryMenuItem(
         ...defaultParams,
         ...params,
         sourceMode: 'light-extension',
-        sourceBinding: createRuntimeSourceBinding(entry, repoLabel),
+        sourceBinding: createRuntimeSourceBinding(entry),
         settings: normalizeLightExtensionEntrySelection({
           currentBinding: params.sourceBinding,
           currentSettings: params.settings,
-          nextBinding: createRuntimeSourceBinding(entry, repoLabel),
+          nextBinding: createRuntimeSourceBinding(entry),
           descriptor: {
             entryId: entry.id,
             settingsSchemaHash: entry.settingsSchemaHash,
@@ -436,14 +523,12 @@ function createEntryMenuItem(
   };
 }
 
-function createRuntimeSourceBinding(
-  entry: LightExtensionSelectableEntrySummary,
-  repoLabel: string,
-): LightExtensionRuntimeSourceBinding {
+function createRuntimeSourceBinding(entry: LightExtensionSelectableEntrySummary): LightExtensionRuntimeSourceBinding {
   return {
     type: 'light-extension-entry',
     repoId: entry.repoId,
-    repoTitle: repoLabel,
+    ...(typeof entry.repoName !== 'undefined' ? { repoName: entry.repoName } : {}),
+    ...(typeof entry.repoTitle !== 'undefined' ? { repoTitle: entry.repoTitle } : {}),
     entryId: entry.id,
     entryTitle: getEntryLabel(entry),
     entryName: entry.entryName,
@@ -452,8 +537,8 @@ function createRuntimeSourceBinding(
   };
 }
 
-function getRepoLabel(repo: LightExtensionRepoRecord): string {
-  return repo.title?.trim() || repo.name || repo.id;
+function getRepoLabel(entry?: LightExtensionSelectableEntrySummary): string {
+  return entry?.repoTitle?.trim() || entry?.repoName?.trim() || entry?.repoId || '';
 }
 
 function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => string): string {
@@ -504,6 +589,7 @@ export function isLightExtensionRuntimeSourceBinding(value: unknown): value is L
 const LIGHT_EXTENSION_SOURCE_BINDING_KEYS = new Set([
   'type',
   'repoId',
+  'repoName',
   'repoTitle',
   'entryId',
   'entryTitle',

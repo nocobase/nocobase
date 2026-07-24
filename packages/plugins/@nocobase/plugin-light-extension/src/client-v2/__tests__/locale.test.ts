@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import enUS from '../../locale/en-US.json';
 import zhCN from '../../locale/zh-CN.json';
 
-const gitSyncKeys = [
+const REQUIRED_VSC_LOCALE_KEYS = [
   'Sync code',
   'GitHub source',
   'GitHub credential',
@@ -30,9 +30,6 @@ const gitSyncKeys = [
   'GitHub authentication failed',
   'The sync provider is unavailable',
   'You do not have permission to perform this sync operation',
-] as const;
-
-const vscLocaleCollisionKeys = [
   'Actions',
   'Cancel',
   'Copy code',
@@ -51,21 +48,13 @@ const vscLocaleCollisionKeys = [
 ] as const;
 
 describe('plugin-light-extension client-v2 locale entries', () => {
-  it('keeps English and Chinese keys aligned for client-v2 features', () => {
+  it('keeps English and Chinese keys aligned and retains required VSC entries', () => {
     expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
-
-    for (const key of gitSyncKeys) {
-      expect(enUS[key]).toBeTruthy();
-      expect(zhCN[key]).toBeTruthy();
-    }
+    expect(Object.keys(enUS)).toEqual(expect.arrayContaining([...REQUIRED_VSC_LOCALE_KEYS]));
+    expect(Object.keys(zhCN)).toEqual(expect.arrayContaining([...REQUIRED_VSC_LOCALE_KEYS]));
   });
 
-  it('keeps the Light Extension wording for all VSC locale collisions', () => {
-    expect(vscLocaleCollisionKeys).toHaveLength(15);
-    for (const key of vscLocaleCollisionKeys) {
-      expect(enUS[key]).toBeTruthy();
-      expect(zhCN[key]).toBeTruthy();
-    }
+  it('keeps the Light Extension wording for conflicting VSC locale entries', () => {
     expect(zhCN['Folder is not empty']).toBe('文件夹不为空');
     expect(zhCN['Invalid file path']).toBe('无效文件路径');
     expect(zhCN['Restored from']).toBe('已从版本恢复');

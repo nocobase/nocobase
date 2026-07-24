@@ -37,12 +37,55 @@ class FormItemModel extends FlowModel<{ subModels: { field?: JSEditableFieldMode
 class JSEditableFieldModel extends FlowModel {}
 
 const entries: LightExtensionSelectableEntrySummary[] = [
-  createEntry({ id: 'block', kind: 'js-block', repoId: 'repo-a', title: 'Dashboard block' }),
-  createEntry({ id: 'action', kind: 'js-action', repoId: 'repo-a', title: 'Refresh action' }),
-  createEntry({ id: 'field', kind: 'js-field', repoId: 'repo-a', title: 'Status field', category: null }),
-  createEntry({ id: 'field-category', kind: 'js-field', repoId: 'repo-b', category: 'js-field' }),
-  createEntry({ id: 'field-business-category', kind: 'js-field', repoId: 'repo-b', category: 'sales' }),
-  createEntry({ id: 'column', kind: 'js-field', repoId: 'repo-b', title: 'Summary column', category: 'js-column' }),
+  createEntry({
+    id: 'block',
+    kind: 'js-block',
+    repoId: 'repo-a',
+    repoName: 'repo-a',
+    repoTitle: 'Repository A',
+    title: 'Dashboard block',
+  }),
+  createEntry({
+    id: 'action',
+    kind: 'js-action',
+    repoId: 'repo-a',
+    repoName: 'repo-a',
+    repoTitle: 'Repository A',
+    title: 'Refresh action',
+  }),
+  createEntry({
+    id: 'field',
+    kind: 'js-field',
+    repoId: 'repo-a',
+    repoName: 'repo-a',
+    repoTitle: 'Repository A',
+    title: 'Status field',
+  }),
+  createEntry({
+    id: 'field-category',
+    kind: 'js-field',
+    repoId: 'repo-b',
+    repoName: 'repo-b',
+    repoTitle: 'Repository B',
+    category: 'js-field',
+  }),
+  createEntry({
+    id: 'field-business-category',
+    kind: 'js-field',
+    repoId: 'repo-b',
+    repoName: 'repo-b',
+    repoTitle: 'Repository B',
+    category: 'sales',
+  }),
+  createEntry({
+    id: 'column',
+    kind: 'js-field',
+    repoId: 'repo-b',
+    repoName: 'repo-b',
+    repoTitle: 'Repository B',
+    title: 'Summary column',
+    category: 'js-column',
+  }),
 ];
 
 describe('createLightExtensionModelMenuProvider', () => {
@@ -98,7 +141,7 @@ describe('createLightExtensionModelMenuProvider', () => {
       });
       if (item.label === 'column') {
         expect(getAtPath(reloaded.serialize(), ['stepParams', 'tableColumnSettings', 'title'])).toEqual({
-          title: 'Summary column',
+          title: 'column',
         });
       }
     }
@@ -128,6 +171,7 @@ describe('createLightExtensionModelMenuProvider', () => {
     const leaf = await findLeaf(root, entryId);
     const runJs = leaf.createModelOptions?.stepParams?.[flowKey]?.runJs;
 
+    expect(leaf.label).toBe(entryId);
     expect(leaf.createModelOptions).toMatchObject({ use: expectedUse });
     expect(leaf.useModel).toBe(expectedUse);
     expect(runJs).toEqual({
@@ -147,7 +191,7 @@ describe('createLightExtensionModelMenuProvider', () => {
     });
     if (options.target === 'column') {
       expect(leaf.createModelOptions).toMatchObject({
-        stepParams: { tableColumnSettings: { title: { title: 'Summary column' } } },
+        stepParams: { tableColumnSettings: { title: { title: 'column' } } },
       });
     }
   });
@@ -215,23 +259,10 @@ describe('createLightExtensionModelMenuProvider', () => {
     expect(await getLeafIds(columnRepos)).toEqual(['column']);
   });
 
-  it('falls back to repoId when repository listing is denied and returns a disabled item when entries fail', async () => {
-    const fallbackApi = createApi({ repos: [] });
+  it('falls back to repoId and returns a disabled item when loading fails', async () => {
+    const fallbackApi = createApi({ includeRepoLabels: false });
     const root = await getRootItem(fallbackApi, { target: 'block' });
     expect((await resolveChildren(root))[0].label).toBe('repo-a');
-
-    const repoDeniedApi: ApiClientLike = {
-      request: vi.fn(async <TResponse>(options) => {
-        if (options.url === 'lightExtensionRepos:list') {
-          throw new Error('forbidden');
-        }
-        return { data: { data: entries.filter((entry) => entry.kind === 'js-block') } } as TResponse;
-      }),
-    };
-    const repoDeniedRoot = await getRootItem(repoDeniedApi, { target: 'block' });
-    const repoDeniedItem = (await resolveChildren(repoDeniedRoot))[0];
-    expect(repoDeniedItem.label).toBe('repo-a');
-    expect(repoDeniedItem.disabled).not.toBe(true);
 
     const failingApi: ApiClientLike = { request: vi.fn().mockRejectedValue(new Error('network')) };
     const failingRoot = await getRootItem(failingApi, { target: 'block' });
@@ -313,18 +344,17 @@ function createFieldContext(): FlowModelContext {
   } as unknown as FlowModelContext;
 }
 
-function createApi(input: { repos?: Array<Record<string, unknown>> } = {}): ApiClientLike {
-  const repos = input.repos ?? [
-    { id: 'repo-a', name: 'repo-a', title: 'Repository A' },
-    { id: 'repo-b', name: 'repo-b', title: 'Repository B' },
-  ];
+function createApi(input: { includeRepoLabels?: boolean } = {}): ApiClientLike {
+  const catalog =
+    input.includeRepoLabels === false
+      ? entries.map(({ repoName: _repoName, repoTitle: _repoTitle, ...entry }) => entry)
+      : entries;
   return {
     request: vi.fn(async <TResponse>(options) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        const kind = (options.data as { kind?: string } | undefined)?.kind;
-        return { data: { data: entries.filter((entry) => entry.kind === kind) } } as TResponse;
+      if (options.url !== 'lightExtensionEntries:listSelectable') {
+        throw new Error(`Unexpected request: ${options.url}`);
       }
-      return { data: { data: repos } } as TResponse;
+      return { data: { data: catalog } } as TResponse;
     }),
   };
 }

@@ -144,6 +144,31 @@ describe('LightExtensionCreateFromRemoteService', () => {
     expect(remote).toMatchObject({ lastSyncedAt: expect.any(String) });
   });
 
+  it('preserves removed generic RunJS files as inert remote source', async () => {
+    adapter.advanceRemote([...validFiles(), ...removedGenericRunJSFiles()], { branch: 'main' });
+
+    const result = await service.create({
+      name: 'Remote Legacy RunJS',
+      provider: 'github',
+      config: remoteConfig,
+      authRef: null,
+    });
+    const internalRepo = await repoService.getInternalRepo(result.repo.id);
+    const remote = await runtime.getRemote(internalRepo.vscRepoId, 'origin');
+    const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: result.repo.id } });
+    const plan = await runtime.planRemote(remote?.id as string);
+
+    expect(result).toMatchObject({
+      repo: { healthStatus: 'ready' },
+      plan: { state: 'in-sync', action: 'noop' },
+      fileCount: 4,
+    });
+    expect(entries).toEqual([
+      expect.objectContaining({ kind: 'js-block', entryName: 'sales-kpi', healthStatus: 'ready' }),
+    ]);
+    expect(plan).toMatchObject({ state: 'in-sync', action: 'noop' });
+  });
+
   it('keeps the fetched revision as the baseline when the remote advances later', async () => {
     const result = await service.create({
       name: 'Remote Advances',
@@ -360,5 +385,20 @@ function updatedFiles(label: string): VscRemoteSnapshotFile[] {
       language: 'typescript',
     },
     validFiles()[1],
+  ];
+}
+
+function removedGenericRunJSFiles(): VscRemoteSnapshotFile[] {
+  return [
+    {
+      path: 'src/client/runjs/calculate-subtotal/index.ts',
+      content: 'return 1;\n',
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/runjs/calculate-subtotal/entry.json',
+      content: '{"schemaVersion":1,"key":"calculate-subtotal"}',
+      language: 'json',
+    },
   ];
 }

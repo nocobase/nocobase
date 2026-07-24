@@ -8,14 +8,18 @@
  */
 
 import type { Diagnostic } from '@codemirror/lint';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   getRunJSTypeLibraryPackRegistryDebugState,
 } from '../typescriptLibraryRegistry';
-import { clearTypeScriptProjectCachesForTests, createTypeScriptProjectSession } from '../typescriptProject';
+import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
 
 function errorMessages(diagnostics: Diagnostic[]): string[] {
   return diagnostics.filter((diagnostic) => diagnostic.severity === 'error').map((diagnostic) => diagnostic.message);
@@ -32,6 +36,8 @@ afterEach(() => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS official mathjs and Formula.js TypeScript project', () => {
   it('uses official expression, matrix, numeric, and spreadsheet formula types', async () => {
@@ -53,13 +59,13 @@ void average;
 void round;
 void absolute;
 `;
-    const session = createTypeScriptProjectSession();
-
-    expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-    expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
-    const state = session.getDebugState();
-    expect(state.rootFileNames).toContain('/__runjs__/type-packs/mathjs-bridge.d.ts');
-    expect(state.rootFileNames).toContain('/__runjs__/type-packs/formulajs-bridge.d.ts');
+    await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
+      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
+      const state = session.getDebugState();
+      expect(state.rootFileNames).toContain('/__runjs__/type-packs/mathjs-bridge.d.ts');
+      expect(state.rootFileNames).toContain('/__runjs__/type-packs/formulajs-bridge.d.ts');
+    });
   });
 
   it('reports official invalid calls and misspelled members', async () => {
@@ -71,14 +77,15 @@ ctx.libs.formula.ABS();
 ctx.libs.formula.ROUND(1);
 ctx.libs.formula.AVERGE(1, 2);
 `;
-    const session = createTypeScriptProjectSession();
-    const messages = errorMessages(await session.getDiagnostics(project(code), code));
+    await withTypeScriptProjectSession(async (session) => {
+      const messages = errorMessages(await session.getDiagnostics(project(code), code));
 
-    expect(messages.some((message) => /Expected 1-2 arguments/.test(message))).toBe(true);
-    expect(messages.some((message) => /No overload matches this call/.test(message))).toBe(true);
-    expect(messages.some((message) => /matrx/.test(message))).toBe(true);
-    expect(messages.some((message) => /ABS|Expected 1 arguments/.test(message))).toBe(true);
-    expect(messages.some((message) => /AVERGE/.test(message))).toBe(true);
+      expect(messages.some((message) => /Expected 1-2 arguments/.test(message))).toBe(true);
+      expect(messages.some((message) => /No overload matches this call/.test(message))).toBe(true);
+      expect(messages.some((message) => /matrx/.test(message))).toBe(true);
+      expect(messages.some((message) => /ABS|Expected 1 arguments/.test(message))).toBe(true);
+      expect(messages.some((message) => /AVERGE/.test(message))).toBe(true);
+    });
   });
 
   it('records independent manifest contracts', () => {

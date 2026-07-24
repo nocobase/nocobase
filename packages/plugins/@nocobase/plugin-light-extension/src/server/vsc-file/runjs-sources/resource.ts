@@ -68,7 +68,8 @@ import { LightExtensionSchemaValidator } from '../../services/light-extension-va
 import type { RunJSSourceAuthoringInspectorRegistry } from './RunJSSourceAuthoringInspectorRegistry';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
 import { canonicalizeRunJSCompileFile } from './canonicalCompileFiles';
-import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from './compiler';
+import { compileRunJSSourceWorkspace } from './lazyCompiler';
+import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 
 const inlineRunJSEntryDescriptorPath = 'src/client/entry.json';
 const emptyRunJSRenderSource = 'ctx.render(null);';

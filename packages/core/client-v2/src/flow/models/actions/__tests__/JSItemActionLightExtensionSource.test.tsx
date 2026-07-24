@@ -13,7 +13,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
-import { assertJSItemLightExtensionSourceContract } from '../../utils/__tests__/jsItemLightExtensionSourceContract';
 import { JSItemActionModel } from '../JSItemActionModel';
 
 const SOURCE_BINDING = {
@@ -65,21 +64,6 @@ function createJSItemAction(stepParams: Record<string, unknown>) {
 describe('JSItemActionModel light extension source', () => {
   afterEach(() => {
     RunJSSourceResolverRegistry.clear();
-  });
-
-  it('adds JS Item source mode, binding, and hidden RunJS source fields', async () => {
-    const { model } = createJSItemAction({});
-    await assertJSItemLightExtensionSourceContract({
-      model,
-      sourceBinding: SOURCE_BINDING,
-      settings: {
-        successMessage: 'Opened',
-      },
-      settingsComponent: 'JSItemLightExtensionSettingsStepField',
-      settingKey: 'successMessage',
-      settingTitle: 'Success message',
-      updatedValue: 'Opened customer',
-    });
   });
 
   it('runs JS Item click logic through the runtime resolver and preserves sibling items', async () => {

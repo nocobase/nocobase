@@ -8,14 +8,18 @@
  */
 
 import type { Diagnostic } from '@codemirror/lint';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   getRunJSTypeLibraryPackRegistryDebugState,
 } from '../typescriptLibraryRegistry';
-import { clearTypeScriptProjectCachesForTests, createTypeScriptProjectSession } from '../typescriptProject';
+import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
 
 function errorMessages(diagnostics: Diagnostic[]): string[] {
   return diagnostics.filter((diagnostic) => diagnostic.severity === 'error').map((diagnostic) => diagnostic.message);
@@ -32,6 +36,8 @@ afterEach(() => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS official dayjs and lodash TypeScript project', () => {
   it('uses official callable, instance, overload, generic, and debounce types', async () => {
@@ -50,13 +56,13 @@ void label;
 void name;
 void flushed;
 `;
-    const session = createTypeScriptProjectSession();
-
-    expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-    expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
-    const state = session.getDebugState();
-    expect(state.rootFileNames).toContain('/__runjs__/type-packs/dayjs-bridge.d.ts');
-    expect(state.rootFileNames).toContain('/__runjs__/type-packs/lodash-bridge.d.ts');
+    await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
+      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
+      const state = session.getDebugState();
+      expect(state.rootFileNames).toContain('/__runjs__/type-packs/dayjs-bridge.d.ts');
+      expect(state.rootFileNames).toContain('/__runjs__/type-packs/lodash-bridge.d.ts');
+    });
   });
 
   it('reports official invalid calls, misspelled members, and unavailable dayjs plugins', async () => {
@@ -68,14 +74,15 @@ ctx.libs.lodash.clonDeep({ value: 1 });
 ctx.libs.lodash.debounce(123, 20);
 const count: number = ctx.libs.lodash.get({ name: 'Ada' }, 'name');
 `;
-    const session = createTypeScriptProjectSession();
-    const messages = errorMessages(await session.getDiagnostics(project(code), code));
+    await withTypeScriptProjectSession(async (session) => {
+      const messages = errorMessages(await session.getDiagnostics(project(code), code));
 
-    expect(messages.some((message) => /formatt/.test(message))).toBe(true);
-    expect(messages.some((message) => /utc/.test(message))).toBe(true);
-    expect(messages.some((message) => /clonDeep/.test(message))).toBe(true);
-    expect(messages.some((message) => /number|callable|Function/.test(message))).toBe(true);
-    expect(messages.some((message) => /string/.test(message) && /number/.test(message))).toBe(true);
+      expect(messages.some((message) => /formatt/.test(message))).toBe(true);
+      expect(messages.some((message) => /utc/.test(message))).toBe(true);
+      expect(messages.some((message) => /clonDeep/.test(message))).toBe(true);
+      expect(messages.some((message) => /number|callable|Function/.test(message))).toBe(true);
+      expect(messages.some((message) => /string/.test(message) && /number/.test(message))).toBe(true);
+    });
   });
 
   it('records installed package contracts', () => {

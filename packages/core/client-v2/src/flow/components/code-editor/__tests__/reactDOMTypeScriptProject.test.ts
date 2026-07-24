@@ -9,18 +9,18 @@
 
 import type { Diagnostic } from '@codemirror/lint';
 import { RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   getRunJSTypeLibraryPackRegistryDebugState,
 } from '../typescriptLibraryRegistry';
-import {
-  clearTypeScriptProjectCachesForTests,
-  createTypeScriptProjectSession,
-  type CodeEditorTypeScriptProject,
-} from '../typescriptProject';
+import { clearTypeScriptProjectCachesForTests, type CodeEditorTypeScriptProject } from '../typescriptProject';
 
 function reactDOMProject(code: string): CodeEditorTypeScriptProject {
   return {
@@ -39,21 +39,25 @@ afterEach(() => {
   clearTypeScriptProjectCachesForTests();
 });
 
+afterAll(shutdownTypeScriptProjectSessionSuite);
+
 describe('RunJS official ReactDOM TypeScript project', () => {
   it('loads ReactDOM with React once and leaves ordinary projects unloaded', async () => {
     const ordinaryCode = 'ctx.logger.info("ready");';
-    const ordinarySession = createTypeScriptProjectSession();
-    expect(await ordinarySession.getDiagnostics(reactDOMProject(ordinaryCode), ordinaryCode)).toEqual([]);
+    await withTypeScriptProjectSession(async (ordinarySession) => {
+      expect(await ordinarySession.getDiagnostics(reactDOMProject(ordinaryCode), ordinaryCode)).toEqual([]);
+    });
     expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(0);
 
     const code = 'const root = ctx.ReactDOM.createRoot(ctx.element); root.render(<div />); root.unmount();';
-    const session = createTypeScriptProjectSession();
-    expect(errorMessages(await session.getDiagnostics(reactDOMProject(code), code))).toEqual([]);
-    expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
-    const state = session.getDebugState();
-    expect(new Set(state.allFileNames).size).toBe(state.allFileNames.length);
-    expect(state.rootFileNames).toContain('/__runjs__/type-packs/react-bridge.d.ts');
-    expect(state.rootFileNames).toContain('/__runjs__/type-packs/react-dom-client-bridge.d.ts');
+    await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(reactDOMProject(code), code))).toEqual([]);
+      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
+      const state = session.getDebugState();
+      expect(new Set(state.allFileNames).size).toBe(state.allFileNames.length);
+      expect(state.rootFileNames).toContain('/__runjs__/type-packs/react-bridge.d.ts');
+      expect(state.rootFileNames).toContain('/__runjs__/type-packs/react-dom-client-bridge.d.ts');
+    });
   });
 
   it('keeps the overlay minimal and records compatible official versions', () => {

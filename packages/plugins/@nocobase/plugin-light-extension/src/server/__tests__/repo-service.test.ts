@@ -193,6 +193,16 @@ describe('plugin-light-extension repo service', () => {
     ).resolves.toBe(1);
   });
 
+  it('reads only entry fields required for repository statistics', async () => {
+    await service.createRepo({ name: 'Repository statistics' }, { requestId: 'req_repo_statistics' });
+    const entriesRepository = app.db.getRepository('lightExtensionEntries');
+    const findEntries = vi.spyOn(entriesRepository, 'find');
+
+    await service.listRepos();
+
+    expect(findEntries).toHaveBeenCalledWith(expect.objectContaining({ fields: ['repoId', 'kind', 'healthStatus'] }));
+  });
+
   it('creates the default template as the first commit for an empty initialFiles array', async () => {
     const repo = await service.createRepo(
       {

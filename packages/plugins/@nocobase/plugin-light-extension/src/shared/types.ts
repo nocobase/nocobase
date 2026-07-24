@@ -356,6 +356,8 @@ export interface LightExtensionWorkspacePreviewResult {
 export interface LightExtensionSelectableEntrySummary {
   id: string;
   repoId: string;
+  repoName?: string | null;
+  repoTitle?: string | null;
   kind: string;
   entryName: string;
   entryPath: string;
@@ -379,6 +381,7 @@ export interface LightExtensionSelectableEntriesInput {
 export interface LightExtensionRuntimeSourceBinding extends Record<string, unknown> {
   type: 'light-extension-entry';
   repoId: string;
+  repoName?: string | null;
   repoTitle?: string | null;
   entryId: string;
   entryTitle?: string | null;

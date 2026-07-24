@@ -377,6 +377,7 @@
   "Save version": "保存版本",
   "Saved changes": "已保存修改",
   "Saved successfully": "保存成功",
+  "Saved successfully; newer local changes remain unsaved": "保存成功；较新的本地更改仍未保存",
   "Select a file": "选择文件",
   "Select a version": "选择版本",
   "Seq": "序号",

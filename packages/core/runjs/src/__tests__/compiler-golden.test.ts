@@ -343,6 +343,241 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     await expect(executeArtifact(result.artifact.code, { libs: {} })).resolves.toBe(42);
   });
 
+  it('keeps runtime line mappings aligned after TypeScript-only lines are erased', async () => {
+    const result = await compileRunJSSourceWorkspace({
+      files: [
+        { path: 'index.ts', content: "import { run } from './helper'; run();" },
+        {
+          path: 'helper.ts',
+          content: [
+            'type RuntimeOptions = { enabled: boolean };',
+            'const options: RuntimeOptions = { enabled: true };',
+            'export function run() { if (options.enabled) {',
+            '  throw new Error("typed boom");',
+            '} }',
+          ].join('\n'),
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+
+    const sourceMap = JSON.parse(result.artifact.sourceMap || '{}') as {
+      generatedCodeLineOffset?: number;
+      kind?: string;
+      mappings?: Array<{ generatedLine: number; source: string; sourceLine: number }>;
+    };
+    const throwMapping = sourceMap.mappings?.find(
+      (mapping) => mapping.source === 'helper.ts' && mapping.sourceLine === 4,
+    );
+    expect(sourceMap).toEqual(expect.objectContaining({ generatedCodeLineOffset: 2, kind: 'runjs-line-map' }));
+    expect(result.artifact.code).toContain('//# sourceURL=nocobase-runjs://bundle/');
+    expect(throwMapping).toBeTruthy();
+    expect(result.artifact.code.split('\n')[(throwMapping?.generatedLine || 1) - 1]).toContain('typed boom');
+  });
+
+  it('reports missing relative imports with source location', async () => {
+    const result = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: "import value from './missing'; return value;" }],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode).toBe('RUNJS_IMPORT_NOT_FOUND');
+    expect(result.artifact.diagnostics[0]).toMatchObject({
+      code: 'RUNJS_IMPORT_NOT_FOUND',
+      path: 'index.ts',
+      line: 1,
+      column: 19,
+    });
+  });
+
+  it.each([
+    {
+      name: 'directory index imports',
+      files: [
+        { path: 'index.ts', content: "import { value } from './helpers'; return value;" },
+        { path: 'helpers/index.ts', content: "export const value = 'directory';" },
+      ],
+      expected: 'directory',
+    },
+    {
+      name: 'empty named side-effect imports',
+      files: [
+        { path: 'index.ts', content: "import {} from './setup'; return globalThis.runJSSideEffect;" },
+        { path: 'setup.ts', content: "globalThis.runJSSideEffect = 'side-effect';" },
+      ],
+      expected: 'side-effect',
+    },
+    {
+      name: 'anonymous async default exports',
+      files: [
+        { path: 'index.ts', content: "import read from './read'; return await read();" },
+        { path: 'read.ts', content: "export default async function () { return 'async-default'; }" },
+      ],
+      expected: 'async-default',
+    },
+    {
+      name: 'mutable named export live bindings',
+      files: [
+        { path: 'index.ts', content: "import { count, increment } from './counter'; increment(); return count;" },
+        { path: 'counter.ts', content: 'export let count = 0; export function increment() { count += 1; }' },
+      ],
+      expected: 1,
+    },
+    {
+      name: 'JSON default and named imports',
+      files: [
+        {
+          path: 'index.ts',
+          content: "import config, { title } from './config.json'; return `${title}:${config.count}`;",
+        },
+        { path: 'config.json', content: '{"title":"Dashboard","count":3}' },
+      ],
+      expected: 'Dashboard:3',
+    },
+  ])('executes $name', async ({ files, expected }) => {
+    const result = await compileRunJSSourceWorkspace({ files, entry: 'index.ts', surfaceStyle: 'value' });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    const value = await executeArtifact(result.artifact.code, { libs: {} });
+    delete (globalThis as typeof globalThis & { runJSSideEffect?: string }).runJSSideEffect;
+    expect(value).toEqual(expected);
+  });
+
+  it.each([
+    {
+      name: 'dynamic imports',
+      files: [
+        { path: 'index.ts', content: "return await import('./helper');" },
+        { path: 'helper.ts', content: 'export const value = 1;' },
+      ],
+      failureCode: 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED',
+    },
+    {
+      name: 'top-level returns in imported modules',
+      files: [
+        { path: 'index.ts', content: "import { value } from './helper'; return value;" },
+        { path: 'helper.ts', content: 'return 1; export const value = 2;' },
+      ],
+      failureCode: 'RUNJS_COMPILE_FAILED',
+      message: 'Top-level return',
+    },
+  ])('rejects $name', async ({ files, failureCode, message }) => {
+    const result = await compileRunJSSourceWorkspace({ files, entry: 'index.ts', surfaceStyle: 'value' });
+
+    expect(result.failureCode).toBe(failureCode);
+    if (message) expect(result.artifact.diagnostics[0]?.message).toContain(message);
+  });
+
+  it('reports syntax errors after module transform', async () => {
+    const result = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.js',
+          content: "import { value as duplicate } from './helper'; const duplicate = 2; return duplicate;",
+        },
+        { path: 'helper.js', content: 'export const value = 1;' },
+      ],
+      entry: 'index.js',
+      surfaceStyle: 'action',
+    });
+
+    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(result.artifact.diagnostics[0]).toMatchObject({ code: 'RUNJS_COMPILE_FAILED', path: 'index.js' });
+    expect(result.artifact.diagnostics[0]?.message).toContain('already been declared');
+  });
+
+  it('applies injected authoring diagnostics', async () => {
+    const inspectAuthoring = () => [
+      {
+        severity: 'error' as const,
+        code: 'RUNJS_COMPILE_FAILED',
+        ruleId: 'custom-authoring-rule',
+        path: 'index.ts',
+        line: 1,
+        column: 1,
+        message: 'custom authoring validation failed',
+      },
+    ];
+    const browser = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: 'return 1;' }],
+      entry: 'index.ts',
+      inspectAuthoring,
+      surfaceStyle: 'value',
+    });
+    expect(browser.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ruleId: 'custom-authoring-rule' })]),
+    );
+  });
+
+  it('enforces runtime globals and value/render surface contracts', async () => {
+    const unknownGlobal = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: 'return missingRuntimeValue;' }],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+    const invalidValue = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: 'ctx.render(null);' }],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+    const invalidRender = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.tsx', content: 'const value = 1;' }],
+      entry: 'index.tsx',
+      surfaceStyle: 'render',
+    });
+
+    expect(unknownGlobal.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ruleId: 'runjs-global-unknown' })]),
+    );
+    expect(invalidValue.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ruleId: 'runjs-value-render-forbidden' }),
+        expect.objectContaining({ ruleId: 'runjs-value-return-required' }),
+      ]),
+    );
+    expect(invalidRender.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ruleId: 'runjs-render-required' })]),
+    );
+  });
+
+  it('accepts local, imported, and chart event globals while rejecting missing type names', async () => {
+    const localBindings = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.tsx',
+          content: [
+            "import { label } from './label';",
+            'type Options = Record<string, MissingType>;',
+            'const renderLabel = (suffix: string) => `${label}${suffix}`;',
+            'ctx.render(<div>{renderLabel("!")}</div>);',
+          ].join('\n'),
+        },
+        { path: 'label.ts', content: "export const label = 'Ready';" },
+      ],
+      entry: 'index.tsx',
+      surfaceStyle: 'render',
+    });
+    const chartEvents = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: "if (params?.name) { chart.off('click'); }" }],
+      entry: 'index.ts',
+      locator: { kind: 'chart.events', modelUid: 'chart-model' },
+      surfaceStyle: 'action',
+    });
+
+    expect(localBindings.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'MissingType'"),
+        }),
+      ]),
+    );
+    expect(chartEvents.failureCode).toBeUndefined();
+    expect(chartEvents.artifact.diagnostics).toEqual([]);
+  });
+
   it('uses TypeScript semantic diagnostics as a backend compile gate', async () => {
     const result = await compileRunJSSourceWorkspace({
       files: [{ path: 'index.ts', content: "const count: number = 'invalid';\nreturn count;" }],

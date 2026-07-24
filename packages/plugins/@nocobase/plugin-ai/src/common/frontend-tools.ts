@@ -9,8 +9,6 @@
 
 export const LOAD_FRONTEND_TOOL_NAME = 'loadFrontendTool';
 export const EXECUTE_FRONTEND_TOOL_NAME = 'executeFrontendTool';
-export const FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION =
-  'Tool permission is enforced by the runtime. Do not ask the user for a separate confirmation in chat. Call executeFrontendTool directly; when approval is required, the UI will pause and show the Allow use action before execution.';
 
 export type FrontendToolPermission = 'ASK' | 'ALLOW';
 

@@ -106,6 +106,7 @@ function isLightExtensionBinding(
 const LIGHT_EXTENSION_SOURCE_BINDING_KEYS = new Set([
   'type',
   'repoId',
+  'repoName',
   'repoTitle',
   'entryId',
   'entryTitle',
@@ -146,9 +147,13 @@ function getBindingLabel(binding: LightExtensionRuntimeSourceBinding): string {
   return binding.entryName || binding.entryTitle || binding.entryId || binding.repoTitle || binding.repoId;
 }
 
-function getBindingDisplayLabel(binding: LightExtensionRuntimeSourceBinding, sourceLabel: string): string {
-  const repoLabel = binding.repoTitle || binding.repoId;
-  const entryLabel = getBindingLabel(binding);
+function getBindingDisplayLabel(
+  binding: LightExtensionRuntimeSourceBinding,
+  entry: LightExtensionSelectableEntrySummary | null,
+  sourceLabel: string,
+): string {
+  const repoLabel = entry ? getLightExtensionRepoLabel(entry) : binding.repoId;
+  const entryLabel = entry ? getLightExtensionEntryLabel(entry) : getBindingLabel(binding);
   const bindingLabel = repoLabel && entryLabel !== repoLabel ? `${repoLabel} / ${entryLabel}` : entryLabel;
   return `${sourceLabel} / ${bindingLabel}`;
 }
@@ -443,7 +448,9 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const lightExtensionBinding = (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       {sourceBinding ? (
-        <Typography.Text strong>{getBindingDisplayLabel(sourceBinding, t('Light extension'))}</Typography.Text>
+        <Typography.Text strong>
+          {getBindingDisplayLabel(sourceBinding, selectedEntry, t('Light extension'))}
+        </Typography.Text>
       ) : null}
       {sourceBinding && selectedEntry ? (
         hasSettings ? (
@@ -560,6 +567,8 @@ function createLightExtensionRuntimeSourceBinding(
   return {
     type: 'light-extension-entry',
     repoId: entry.repoId,
+    ...(typeof entry.repoName !== 'undefined' ? { repoName: entry.repoName } : {}),
+    ...(typeof entry.repoTitle !== 'undefined' ? { repoTitle: entry.repoTitle } : {}),
     entryId: entry.id,
     entryTitle: getLightExtensionEntryLabel(entry),
     entryName: entry.entryName,
@@ -570,6 +579,10 @@ function createLightExtensionRuntimeSourceBinding(
 
 function getLightExtensionEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
   return entry.entryName || entry.id;
+}
+
+function getLightExtensionRepoLabel(entry: LightExtensionSelectableEntrySummary): string {
+  return entry.repoTitle?.trim() || entry.repoName?.trim() || entry.repoId;
 }
 
 export default JSBlockLightExtensionSourceField;

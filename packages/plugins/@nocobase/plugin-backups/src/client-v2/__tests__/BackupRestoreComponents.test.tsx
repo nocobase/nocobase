@@ -126,6 +126,7 @@ describe('backup restore components', () => {
       expect(mocks.flowContext.api.request).toHaveBeenCalledWith({
         url: 'backups:restore',
         method: 'post',
+        skipNotify: true,
         data: {
           name: 'backup.zip',
           password: '',
@@ -192,6 +193,7 @@ describe('backup restore components', () => {
       expect(mocks.flowContext.api.request).toHaveBeenCalledWith({
         url: 'backups:upload',
         method: 'post',
+        skipNotify: true,
         data: expect.any(FormData),
       }),
     );

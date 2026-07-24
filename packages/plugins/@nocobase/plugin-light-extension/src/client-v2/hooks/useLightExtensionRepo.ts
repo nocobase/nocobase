@@ -196,13 +196,21 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
 
   const listRepos = useCallback(() => requestOperation('listRepos', undefined), [requestOperation]);
   const createRepo = useCallback(
-    (input: LightExtensionCreateRepoInput) => requestOperation('createRepo', input),
-    [requestOperation],
+    async (input: LightExtensionCreateRepoInput) => {
+      const result = await requestOperation('createRepo', input);
+      invalidateLightExtensionRuntimeCache(ctx.api, result.id);
+      return result;
+    },
+    [ctx.api, requestOperation],
   );
   const getRepo = useCallback((repoId: string) => requestOperation('getRepo', { repoId }), [requestOperation]);
   const updateRepo = useCallback(
-    (input: LightExtensionUpdateRepoInput) => requestOperation('updateRepo', input),
-    [requestOperation],
+    async (input: LightExtensionUpdateRepoInput) => {
+      const result = await requestOperation('updateRepo', input);
+      invalidateLightExtensionRuntimeCache(ctx.api, input.repoId);
+      return result;
+    },
+    [ctx.api, requestOperation],
   );
   const changeLifecycle = useCallback(
     async (input: LightExtensionChangeLifecycleInput) => {

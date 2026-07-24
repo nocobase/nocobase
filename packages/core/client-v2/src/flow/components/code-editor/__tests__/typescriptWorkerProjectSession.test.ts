@@ -7,15 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createTypeScriptProjectSession, type CodeEditorTypeScriptProject } from '../typescriptProject';
+import {
+  createTypeScriptProjectSession as createProjectSession,
+  type CodeEditorTypeScriptProject,
+  type CodeEditorTypeScriptProjectSession,
+} from '../typescriptProject';
 import {
   clearRunJSTypeLibraryPackRegistryForTests,
   createRunJSTypeLibraryRegistry,
   registerRunJSTypeLibraryPackLoader,
 } from '../typescriptLibraryRegistry';
+import { SharedTypeScriptWorkerOwner } from '../sharedTypeScriptWorkerOwner';
 import { TypeScriptWorkerRuntime } from '../typescriptWorkerRuntime';
 import {
   RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
@@ -25,7 +30,12 @@ import {
   type TypeScriptWorkerRequest,
   type TypeScriptWorkerResponse,
 } from '../typescriptWorkerProtocol';
-import { resolveTypeScriptWorkerUrl, type TypeScriptWorkerFactory } from '../typescriptWorkerProjectSession';
+import {
+  resolveTypeScriptWorkerUrl,
+  WorkerBackedTypeScriptProjectSession,
+  type TypeScriptWorkerFactory,
+} from '../typescriptWorkerProjectSession';
+import { shutdownTypeScriptProjectSessionSuite } from './helpers/withTypeScriptProjectSession';
 
 function fakePack(answer = 42): RunJSTypeLibraryPack {
   return {
@@ -64,6 +74,17 @@ function deferred<T>() {
   return { promise, resolve: resolveDeferred };
 }
 
+const sessions = new Set<CodeEditorTypeScriptProjectSession>();
+const owners = new Set<SharedTypeScriptWorkerOwner>();
+
+function createTypeScriptProjectSession(
+  options?: Parameters<typeof createProjectSession>[0],
+): CodeEditorTypeScriptProjectSession {
+  const session = createProjectSession(options);
+  sessions.add(session);
+  return session;
+}
+
 type MessageListener = (event: MessageEvent<TypeScriptWorkerOutgoingMessage>) => void;
 type ErrorListener = (event: ErrorEvent) => void;
 
@@ -77,6 +98,7 @@ class InMemoryTypeScriptWorker {
   private readonly runtime = new TypeScriptWorkerRuntime();
   private bridgeRequestId = 0;
   private terminated = false;
+  terminateCount = 0;
 
   private crashedAfterPackRequest = false;
 
@@ -115,6 +137,7 @@ class InMemoryTypeScriptWorker {
   }
 
   terminate(): void {
+    this.terminateCount += 1;
     this.terminated = true;
     this.runtime.disposeAll();
   }
@@ -138,7 +161,11 @@ class InMemoryTypeScriptWorker {
         protocolVersion: RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION,
         request,
       });
-      if (this.crashAfterFirstPackRequest && !this.crashedAfterPackRequest) {
+      if (
+        this.crashAfterFirstPackRequest &&
+        !this.crashedAfterPackRequest &&
+        request.packId !== RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID
+      ) {
         this.crashedAfterPackRequest = true;
         this.terminated = true;
         this.emitError('simulated pack bridge crash');
@@ -183,6 +210,7 @@ class InMemoryTypeScriptWorker {
               this.runtime.sync(
                 request.projectId,
                 request.documentVersion,
+                request.targetRevision,
                 request.snapshot,
                 this.loadPack(request.projectId, request.documentVersion),
               );
@@ -190,6 +218,8 @@ class InMemoryTypeScriptWorker {
               this.runtime.update(
                 request.projectId,
                 request.documentVersion,
+                request.baseRevision as number,
+                request.targetRevision,
                 request.update,
                 this.loadPack(request.projectId, request.documentVersion),
               );
@@ -228,6 +258,82 @@ class InMemoryTypeScriptWorker {
   }
 }
 
+class ProtocolTestWorker {
+  private readonly errorListeners: ErrorListener[] = [];
+  private readonly messageListeners: MessageListener[] = [];
+  private heldSyncResponses: TypeScriptWorkerResponse[] = [];
+  holdSync = false;
+  readonly messages: TypeScriptWorkerIncomingMessage[] = [];
+  terminateCount = 0;
+
+  constructor(private readonly responseProtocolVersion = RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION) {}
+
+  addEventListener(type: 'error' | 'message', listener: ErrorListener | MessageListener): void {
+    if (type === 'error') this.errorListeners.push(listener as ErrorListener);
+    else this.messageListeners.push(listener as MessageListener);
+  }
+
+  postMessage(message: TypeScriptWorkerIncomingMessage): void {
+    this.messages.push(message);
+    if (message.kind === 'load-pack-result') return;
+    const response = {
+      documentVersion: message.documentVersion,
+      projectId: message.projectId,
+      protocolVersion: this.responseProtocolVersion,
+      requestId: message.requestId,
+      ...(message.kind === 'sync'
+        ? { kind: 'synced', result: null }
+        : message.kind === 'diagnostics'
+          ? { kind: 'diagnostics-result', result: [] }
+          : message.kind === 'debug'
+            ? {
+                kind: 'debug-result',
+                result: {
+                  actualLoadIds: [],
+                  allFileNames: [],
+                  cacheHitIds: [],
+                  dependencyFileCount: 0,
+                  disposed: false,
+                  fileVersions: {},
+                  immutableCacheCharacterCount: 0,
+                  immutableFileCount: 0,
+                  immutableSnapshotCreationCount: 0,
+                  languageServiceCreationCount: 0,
+                  packRequestIds: [],
+                  peakDeclarationCharacterCount: 0,
+                  programSourceFileCount: 0,
+                  rootFileNames: [],
+                },
+              }
+            : message.kind === 'completion'
+              ? { kind: 'completion-result', result: null }
+              : message.kind === 'hover'
+                ? { kind: 'hover-result', result: null }
+                : { kind: 'disposed', result: null }),
+    } as TypeScriptWorkerResponse;
+    if (message.kind === 'sync' && this.holdSync) {
+      this.heldSyncResponses.push(response);
+      return;
+    }
+    queueMicrotask(() => this.emit(response));
+  }
+
+  releaseNextSync(): void {
+    const response = this.heldSyncResponses.shift();
+    if (response) this.emit(response);
+  }
+
+  terminate(): void {
+    this.terminateCount += 1;
+  }
+
+  private emit(message: TypeScriptWorkerResponse): void {
+    for (const listener of this.messageListeners) {
+      listener({ data: message } as MessageEvent<TypeScriptWorkerOutgoingMessage>);
+    }
+  }
+}
+
 function project(code: string, registry = createRunJSTypeLibraryRegistry()): CodeEditorTypeScriptProject {
   if (!registry.has('fake-lib')) {
     registry.register({
@@ -258,9 +364,72 @@ function inMemoryFactory(
   };
 }
 
-afterEach(() => clearRunJSTypeLibraryPackRegistryForTests());
+afterEach(async () => {
+  for (const session of sessions) session.dispose();
+  await Promise.all([...sessions].map((session) => session.whenDisposed()));
+  sessions.clear();
+  for (const owner of owners) owner.dispose();
+  owners.clear();
+  clearRunJSTypeLibraryPackRegistryForTests();
+});
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('TypeScript worker project session', () => {
+  it('does not create a Worker when an unused session is disposed', async () => {
+    const workerFactory = vi.fn(() => new InMemoryTypeScriptWorker());
+    const session = createTypeScriptProjectSession({ workerFactory });
+
+    session.dispose();
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(workerFactory).not.toHaveBeenCalled();
+  });
+
+  it('terminates a used Worker once and clears retained project state', async () => {
+    const worker = new InMemoryTypeScriptWorker();
+    const workerFactory = vi.fn(() => worker);
+    const session = new WorkerBackedTypeScriptProjectSession(workerFactory);
+    const retainedState = session as unknown as { acknowledgedState: unknown };
+    const code = 'ctx.logger.info("ready");';
+    sessions.add(session);
+
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(retainedState.acknowledgedState).not.toBeNull();
+
+    session.dispose();
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(workerFactory).toHaveBeenCalledTimes(1);
+    expect(worker.terminateCount).toBe(1);
+    expect(retainedState.acknowledgedState).toBeNull();
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(workerFactory).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles pending requests before disposal completes', async () => {
+    const loading = deferred<RunJSTypeLibraryPack>();
+    const registry = createRunJSTypeLibraryRegistry();
+    const loader = vi.fn(() => loading.promise);
+    registry.register({ id: 'fake-lib', libraryName: 'fakeLib', loader, topLevelNames: ['fakeLib'] });
+    const worker = new InMemoryTypeScriptWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    const code = 'ctx.libs.fakeLib.answer;';
+    sessions.add(session);
+
+    const diagnostics = session.getDiagnostics(project(code, registry), code);
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
+
+    session.dispose();
+    await session.whenDisposed();
+
+    expect(await diagnostics).toEqual([]);
+    expect(worker.terminateCount).toBe(1);
+    loading.resolve(fakePack());
+  });
+
   it('loads real built-in React and Ant Design packs through the worker bridge', async () => {
     const code = `
 const element = ctx.React.createElement('div');
@@ -378,8 +547,15 @@ void element; void button;
     const code = 'ctx.logger.info("ready");';
     expect(await session.getDiagnostics(project(code), code)).toEqual([]);
     expect(workers).toHaveLength(2);
+    expect(workers[0].terminateCount).toBe(1);
 
     workers[0].emitError('late error from replaced worker');
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(workers).toHaveLength(2);
+
+    session.dispose();
+    await session.whenDisposed();
+    expect(workers[1].terminateCount).toBe(1);
     expect(await session.getDiagnostics(project(code), code)).toEqual([]);
     expect(workers).toHaveLength(2);
   });
@@ -426,6 +602,7 @@ void element; void button;
       .map(([message]) => message)
       .filter((message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync');
     expect(syncRequests[0].snapshot?.files[0].content).toBe(firstCode);
+    expect(syncRequests[0]).toEqual(expect.objectContaining({ baseRevision: null, targetRevision: 1 }));
     expect(syncRequests[1].snapshot).toBeUndefined();
     expect(syncRequests[1]).toEqual(
       expect.objectContaining({
@@ -433,8 +610,248 @@ void element; void button;
           fileRemovals: [],
           fileUpserts: [{ content: secondCode, path: 'src/main.ts' }],
         }),
+        baseRevision: 1,
+        targetRevision: 2,
       }),
     );
+  });
+
+  it('does not trust reused caller revisions after an in-place file mutation', async () => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      documentRevision: 1,
+      files: [{ content: 'export const value = 1;', path: 'src/main.ts', revision: 1 }],
+      projectRevision: 1,
+    };
+
+    await session.getDiagnostics(currentProject, currentProject.files[0].content);
+    currentProject.files[0].content = 'export const value = 2;';
+    await session.getDiagnostics(currentProject, currentProject.files[0].content);
+
+    const syncRequests = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(syncRequests).toHaveLength(2);
+    expect(syncRequests[1]).toMatchObject({
+      baseRevision: 1,
+      targetRevision: 2,
+      update: {
+        fileRemovals: [],
+        fileUpserts: [{ content: 'export const value = 2;', path: 'src/main.ts' }],
+      },
+    });
+  });
+
+  it('keeps main-thread fallback current when callers reuse revisions', async () => {
+    const session = createTypeScriptProjectSession({
+      workerFactory: () => {
+        throw new Error('module workers unavailable');
+      },
+    });
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      documentRevision: 1,
+      files: [{ content: 'const value: string = 1;', path: 'src/main.ts', revision: 1 }],
+      ignoredDiagnosticCodes: [6133],
+      projectRevision: 1,
+    };
+
+    expect(await session.getDiagnostics(currentProject, currentProject.files[0].content)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 2322 })]),
+    );
+    currentProject.files[0].content = 'const value: string = "ready";';
+    expect(await session.getDiagnostics(currentProject, currentProject.files[0].content)).toEqual([]);
+  });
+
+  const metadataChanges: Array<[string, (project: CodeEditorTypeScriptProject) => CodeEditorTypeScriptProject]> = [
+    ['current file', (current) => ({ ...current, currentFilePath: 'src/second.ts' })],
+    ['compiler options', (current) => ({ ...current, compilerOptions: { strict: false } })],
+    ['RunJS context', (current) => ({ ...current, runJSContext: { modelUse: 'JSBlockModel' } })],
+    ['registry', (current) => ({ ...current, typeLibraryRegistry: createRunJSTypeLibraryRegistry() })],
+    [
+      'library IDs',
+      (current) => ({
+        ...current,
+        typeLibraryIds: ['fake-lib'],
+      }),
+    ],
+    [
+      'declaration files',
+      (current) => ({
+        ...current,
+        declarationFiles: [{ content: 'declare const extra: string;', path: 'src/extra.d.ts' }],
+      }),
+    ],
+    ['auto-import rewriting', (current) => ({ ...current, rewriteBuiltInAutoImports: true })],
+  ];
+
+  it.each(metadataChanges)('increments the sync revision when %s changes', async (_name, change) => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const files = [
+      { content: 'export const first = 1;', path: 'src/first.ts', revision: 1 },
+      { content: 'export const second = 2;', path: 'src/second.ts', revision: 2 },
+    ];
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/first.ts',
+      documentRevision: 1,
+      files,
+      projectRevision: 1,
+    };
+
+    await session.getDiagnostics(currentProject);
+    await session.getDiagnostics(change(currentProject));
+
+    const syncRequests = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(syncRequests).toHaveLength(2);
+    expect(syncRequests[1]).toEqual(expect.objectContaining({ baseRevision: 1, targetRevision: 2 }));
+  });
+
+  it('does not serialize or resend a warm 10 MiB project and sends only changed file revisions', async () => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const content = 'x'.repeat(50_000);
+    const files = Array.from({ length: 200 }, (_, index) => ({
+      content,
+      path: `src/file-${index}.ts`,
+      revision: index + 1,
+    }));
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: files[0].path,
+      documentRevision: 1,
+      files,
+      projectRevision: 1,
+    };
+
+    for (let index = 0; index < 100; index += 1) {
+      expect(await session.getDiagnostics(currentProject, content)).toEqual([]);
+    }
+    expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(1);
+
+    const changedContent = `export const changed = true;${'y'.repeat(50_000)}`;
+    const changedFiles = files.map((file, index) =>
+      index === 7 ? { ...file, content: changedContent, revision: 201 } : file,
+    );
+    await session.getDiagnostics({ ...currentProject, files: changedFiles, projectRevision: 2 }, content);
+    const changedSync = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    )[1];
+    expect(changedSync.snapshot).toBeUndefined();
+    expect(changedSync.update).toEqual(
+      expect.objectContaining({
+        fileRemovals: [],
+        fileUpserts: [{ content: changedContent, path: 'src/file-7.ts' }],
+      }),
+    );
+    expect(JSON.stringify(changedSync).length).toBeLessThan(100_000);
+
+    await session.getDiagnostics(
+      { ...currentProject, files: changedFiles.filter((file) => file.path !== 'src/file-8.ts'), projectRevision: 3 },
+      content,
+    );
+    const deletedSync = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    )[2];
+    expect(deletedSync.update).toEqual(
+      expect.objectContaining({
+        fileRemovals: ['src/file-8.ts'],
+        fileUpserts: [],
+      }),
+    );
+  });
+
+  it('shares one synchronization ACK for concurrent operations at the same revision', async () => {
+    const worker = new ProtocolTestWorker();
+    worker.holdSync = true;
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const code = 'export const value = 1;';
+    const currentProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'main.ts',
+      documentRevision: 1,
+      files: [{ content: code, path: 'main.ts', revision: 1 }],
+      projectRevision: 1,
+    };
+
+    const diagnostics = session.getDiagnostics(currentProject, code);
+    const hover = session.getHover(currentProject, 5, code);
+    await vi.waitFor(() => expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(1));
+    worker.releaseNextSync();
+
+    await expect(Promise.all([diagnostics, hover])).resolves.toEqual([[], null]);
+    expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(1);
+  });
+
+  it('applies different revisions in ACK order', async () => {
+    const worker = new ProtocolTestWorker();
+    const session = new WorkerBackedTypeScriptProjectSession(() => worker);
+    sessions.add(session);
+    const initialFiles = [
+      { content: 'export const a = 0;', path: 'a.ts', revision: 1 },
+      { content: 'export const b = 0;', path: 'b.ts', revision: 2 },
+    ];
+    const initialProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'a.ts',
+      documentRevision: 1,
+      files: initialFiles,
+      projectRevision: 1,
+    };
+    await session.getDiagnostics(initialProject, initialFiles[0].content);
+
+    worker.holdSync = true;
+    const revisionA: CodeEditorTypeScriptProject = {
+      ...initialProject,
+      documentRevision: 2,
+      files: [{ content: 'export const a = 1;', path: 'a.ts', revision: 3 }, initialFiles[1]],
+      projectRevision: 2,
+    };
+    const revisionB: CodeEditorTypeScriptProject = {
+      ...initialProject,
+      documentRevision: 3,
+      files: [initialFiles[0], { content: 'export const b = 2;', path: 'b.ts', revision: 4 }],
+      projectRevision: 3,
+    };
+    const requestA = session.getDiagnostics(revisionA, revisionA.files[0].content);
+    const requestB = session.getHover(revisionB, 5, revisionB.files[0].content);
+
+    await vi.waitFor(() => expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(2));
+    worker.releaseNextSync();
+    await vi.waitFor(() => expect(worker.messages.filter((message) => message.kind === 'sync')).toHaveLength(3));
+    const syncRequests = worker.messages.filter(
+      (message): message is Extract<TypeScriptWorkerRequest, { kind: 'sync' }> => message.kind === 'sync',
+    );
+    expect(syncRequests[1]).toEqual(expect.objectContaining({ baseRevision: 1, targetRevision: 2 }));
+    expect(syncRequests[2]).toEqual(expect.objectContaining({ baseRevision: 2, targetRevision: 3 }));
+    expect(syncRequests[2].update?.fileUpserts).toEqual([
+      { content: 'export const a = 0;', path: 'a.ts' },
+      { content: 'export const b = 2;', path: 'b.ts' },
+    ]);
+    worker.releaseNextSync();
+    await Promise.all([requestA, requestB]);
+  });
+
+  it('fails deterministically when a cached worker responds with an older protocol', async () => {
+    const workers: ProtocolTestWorker[] = [];
+    const session = new WorkerBackedTypeScriptProjectSession(() => {
+      const worker = new ProtocolTestWorker(RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION - 1);
+      workers.push(worker);
+      return worker;
+    });
+    sessions.add(session);
+    const code = 'export const value = 1;';
+
+    expect(
+      await session.getDiagnostics({ currentFilePath: 'main.ts', files: [{ content: code, path: 'main.ts' }] }, code),
+    ).toEqual([]);
+    expect(workers).toHaveLength(2);
+    expect(workers.every((worker) => worker.terminateCount === 1)).toBe(true);
   });
 
   it('isolates project registries and releases worker-owned state', async () => {
@@ -442,16 +859,29 @@ void element; void button;
     first.register({ id: 'fake-lib', libraryName: 'fakeLib', loader: () => fakePack(42), topLevelNames: ['fakeLib'] });
     const second = createRunJSTypeLibraryRegistry();
     second.register({ id: 'fake-lib', libraryName: 'fakeLib', loader: () => fakePack(7), topLevelNames: ['fakeLib'] });
-    const firstSession = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
-    const secondSession = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
+    const owner = new SharedTypeScriptWorkerOwner();
+    owners.add(owner);
+    const workers: InMemoryTypeScriptWorker[] = [];
+    const workerFactory = () => {
+      const worker = new InMemoryTypeScriptWorker();
+      workers.push(worker);
+      return worker;
+    };
+    const firstSession = createTypeScriptProjectSession({ workerFactory, workerOwner: owner });
+    const secondSession = createTypeScriptProjectSession({ workerFactory, workerOwner: owner });
 
     expect(await firstSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 42;', first))).toEqual([]);
     expect(await secondSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second))).toEqual([]);
+    expect(workers).toHaveLength(1);
     firstSession.dispose();
+    await firstSession.whenDisposed();
     expect(firstSession.getDebugState()).toEqual(
       expect.objectContaining({ allFileNames: [], disposed: true, immutableFileCount: 0 }),
     );
     expect(await secondSession.getDiagnostics(project('ctx.libs.fakeLib.answer satisfies 7;', second))).toEqual([]);
+    secondSession.dispose();
+    await secondSession.whenDisposed();
+    owner.dispose();
   });
 
   it('does not deliver an old worker pack response to a replacement worker with the same bridge id', async () => {
@@ -469,7 +899,7 @@ void element; void button;
     const code = 'ctx.libs.fakeLib.answer satisfies 42;';
     const diagnostics = session.getDiagnostics(project(code, registry), code);
 
-    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2), { timeout: 5_000 });
     oldLoad.resolve(fakePack(99));
     await Promise.resolve();
     replacementLoad.resolve(fakePack(42));
@@ -485,12 +915,18 @@ void element; void button;
       requestId: 9,
     };
     expect(JSON.parse(JSON.stringify(request))).toEqual(request);
-    const source = await import('node:fs/promises').then((fs) =>
-      fs.readFile(
-        `${process.cwd()}/packages/core/client-v2/src/flow/components/code-editor/typescriptWorkerProjectSession.ts`,
-        'utf8',
+    const [source, runtimeSource] = await import('node:fs/promises').then((fs) =>
+      Promise.all(
+        ['typescriptWorkerProjectSession.ts', 'typescriptWorkerRuntime.ts'].map((fileName) =>
+          fs.readFile(`${process.cwd()}/packages/core/client-v2/src/flow/components/code-editor/${fileName}`, 'utf8'),
+        ),
       ),
     );
+    expect(source).not.toContain(
+      "import { runJSTypeScriptEnvironmentPack } from './generated/runJSTypeScriptEnvironmentFiles'",
+    );
+    expect(source).toContain("await import('./generated/runJSTypeScriptEnvironmentFiles')");
+    expect(runtimeSource).toContain("import('./generated/runJSTypeScriptEnvironmentFiles')");
     expect(source).toContain("new URL('./typescriptProject.worker.ts', import.meta.url)");
     expect(source).toContain("type: 'module'");
     const workerGlobals = globalThis as typeof globalThis & { __NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__?: string };

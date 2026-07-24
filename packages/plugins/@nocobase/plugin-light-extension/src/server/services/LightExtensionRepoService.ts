@@ -38,13 +38,18 @@ import { normalizeVscBridgeError } from './errorContract';
 export interface LightExtensionServiceContext {
   actorUserId?: string | null;
   can?: LightExtensionCanFunction;
+  currentUser?: unknown;
   requestId?: string;
   requestSource?: string;
+  state?: Record<string, unknown>;
+  timezone?: string;
   transaction?: Transaction;
   /** @internal */
   deferredRejectedPushAudits?: Array<() => Promise<void>>;
   /** @internal */
   deferSuccessfulCompileAudit?: boolean;
+  /** @internal */
+  allowRemovedGenericRunJSSource?: boolean;
 }
 
 export interface LightExtensionRepoInternalRecord extends LightExtensionRepoRecord {
@@ -112,7 +117,7 @@ export class LightExtensionRepoService {
     const metadata = this.normalizeCreateMetadata(input);
     const repoId = options.repoId || `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
-    this.assertValidInitialFiles(initialFiles);
+    this.assertValidInitialFiles(initialFiles, ctx.allowRemovedGenericRunJSSource);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.assertRepoNameAvailable(metadata.name, metadata.normalizedName, transaction);
@@ -314,13 +319,17 @@ export class LightExtensionRepoService {
     };
   }
 
-  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined): void {
+  private assertValidInitialFiles(
+    files: LightExtensionTreeEntryInput[] | undefined,
+    allowRemovedGenericRunJSSource = false,
+  ): void {
     if (!files) {
       return;
     }
 
     const diagnostics = this.validator.validateInitialFiles({
       files,
+      allowRemovedGenericRunJSSource,
     });
     if (!hasErrorDiagnostic(diagnostics)) {
       return;
@@ -346,6 +355,7 @@ export class LightExtensionRepoService {
       const entryRecords = repoIds.length
         ? await this.db.getRepository('lightExtensionEntries').find({
             filter: { repoId: { $in: repoIds } },
+            fields: ['repoId', 'kind', 'healthStatus'],
             transaction,
           })
         : [];
