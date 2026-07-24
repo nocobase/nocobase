@@ -9,22 +9,25 @@
 
 import { createMockServer, MockServer } from '@nocobase/test';
 
-export async function prepareApp(): Promise<MockServer> {
+export async function prepareApp(options?: { plugins?: string[] }): Promise<MockServer> {
+  const plugins = [
+    'acl',
+    'error-handler',
+    'field-sort',
+    'users',
+    'ui-schema-storage',
+    'data-source-main',
+    'auth',
+    'data-source-manager',
+    'collection-tree',
+    ...(options?.plugins || []),
+    'system-settings',
+  ];
+
   const app = await createMockServer({
     registerActions: true,
     acl: true,
-    plugins: [
-      'acl',
-      'error-handler',
-      'field-sort',
-      'users',
-      'ui-schema-storage',
-      'data-source-main',
-      'auth',
-      'data-source-manager',
-      'collection-tree',
-      'system-settings',
-    ],
+    plugins,
     logger: {
       system: {
         level: 'debug',
