@@ -456,7 +456,6 @@ const EnabledModelsInput: React.FC<{
     provider: [],
     custom: [],
   });
-  const modelIdIssues = new Map(getCustomModelIdIssues(config).map((issue) => [issue.index, issue]));
 
   useEffect(() => {
     modelsCache.current[config.mode] = config.models;
@@ -510,6 +509,13 @@ const EnabledModelsInput: React.FC<{
   const changeModels = (models: ModelOption[]) => {
     onChange?.({ mode: config.mode, models });
   };
+  const revalidateModelIds = () => {
+    const modelIdFields = config.models.map((_, index) => ['enabledModels', 'models', index, 'value']);
+    if (!modelIdFields.some((field) => form.getFieldError(field).length)) {
+      return;
+    }
+    form.validateFields(modelIdFields).catch(() => undefined);
+  };
 
   return (
     <Radio.Group value={config.mode} onChange={(event) => changeMode(event.target.value)} style={{ width: '100%' }}>
@@ -558,58 +564,52 @@ const EnabledModelsInput: React.FC<{
         ) : null}
         <Radio value="custom">{t('Manual input')}</Radio>
         {config.mode === 'custom' ? (
-          <Flex vertical gap="small" style={{ paddingInlineStart: enabledModelsIndent }}>
-            {config.models.map((model, index) => {
-              const modelIdIssue = modelIdIssues.get(index);
-              return (
-                <Flex key={`${model.value}:${index}`} gap="small" align="baseline">
-                  <Flex vertical gap={token.paddingXXS} style={{ width: customModelInputWidth }}>
-                    <Input
-                      aria-describedby={modelIdIssue ? `model-id-error-${index}` : undefined}
-                      aria-invalid={!!modelIdIssue}
-                      placeholder={t('Model id')}
-                      status={modelIdIssue ? 'error' : undefined}
-                      value={model.value}
-                      onChange={(event) => {
-                        const nextModels = [...config.models];
-                        nextModels[index] = { ...nextModels[index], value: event.target.value };
-                        changeModels(nextModels);
-                      }}
+          <Form.List name={['enabledModels', 'models']}>
+            {(fields, { add, remove }) => (
+              <Flex vertical gap="small" style={{ paddingInlineStart: enabledModelsIndent }}>
+                {fields.map((field) => (
+                  <Flex key={field.key} gap="small" align="baseline">
+                    <Form.Item
+                      name={[field.name, 'value']}
+                      style={{ marginBottom: 0, width: customModelInputWidth }}
+                      validateTrigger="onSubmit"
+                      rules={[
+                        {
+                          validator: async () => {
+                            const issue = getCustomModelIdIssues(form.getFieldValue('enabledModels')).find(
+                              (currentIssue) => currentIssue.index === field.name,
+                            );
+                            if (issue) {
+                              throw new Error(getModelIdIssueMessage(issue, t));
+                            }
+                          },
+                        },
+                      ]}
+                    >
+                      <Input placeholder={t('Model id')} onChange={revalidateModelIds} />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'label']} noStyle>
+                      <Input placeholder={t('Display name')} style={{ width: customModelInputWidth }} />
+                    </Form.Item>
+                    <Button
+                      type="text"
+                      icon={<DeleteOutlined />}
+                      aria-label={t('Delete')}
+                      onClick={() => remove(field.name)}
                     />
-                    {modelIdIssue ? (
-                      <Typography.Text id={`model-id-error-${index}`} role="alert" type="danger">
-                        {getModelIdIssueMessage(modelIdIssue, t)}
-                      </Typography.Text>
-                    ) : null}
                   </Flex>
-                  <Input
-                    placeholder={t('Display name')}
-                    style={{ width: customModelInputWidth }}
-                    value={model.label}
-                    onChange={(event) => {
-                      const nextModels = [...config.models];
-                      nextModels[index] = { ...nextModels[index], label: event.target.value };
-                      changeModels(nextModels);
-                    }}
-                  />
-                  <Button
-                    type="text"
-                    icon={<DeleteOutlined />}
-                    aria-label={t('Delete')}
-                    onClick={() => changeModels(config.models.filter((_, currentIndex) => currentIndex !== index))}
-                  />
-                </Flex>
-              );
-            })}
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              style={{ width: '100%' }}
-              onClick={() => changeModels([...config.models, { label: '', value: '' }])}
-            >
-              {t('Add model')}
-            </Button>
-          </Flex>
+                ))}
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  style={{ width: '100%' }}
+                  onClick={() => add({ label: '', value: '' })}
+                >
+                  {t('Add model')}
+                </Button>
+              </Flex>
+            )}
+          </Form.List>
         ) : null}
       </Flex>
     </Radio.Group>
@@ -669,19 +669,7 @@ export const LLMServiceForm: React.FC<{
         </Form.Item>
       ) : null}
       {providerKey ? (
-        <Form.Item
-          name="enabledModels"
-          label={labelWithColon(t('Enabled Models'))}
-          help={false}
-          rules={[
-            {
-              validator: (_rule: unknown, value: unknown) => {
-                const issue = getCustomModelIdIssues(value)[0];
-                return issue ? Promise.reject(new Error(getModelIdIssueMessage(issue, t))) : Promise.resolve();
-              },
-            },
-          ]}
-        >
+        <Form.Item name="enabledModels" label={labelWithColon(t('Enabled Models'))}>
           <EnabledModelsInput />
         </Form.Item>
       ) : null}
