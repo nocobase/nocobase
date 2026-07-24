@@ -605,39 +605,56 @@ describe('plugin-light-extension file service resource bridge', () => {
     const fileService = new LightExtensionFileService(app.db, auditService, permissionService, repoService);
     const repo = await repoService.createRepo({ name: 'Push Archive Race' }, { requestId: 'req_push_race_create' });
     const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
-    const transaction = await app.db.sequelize.transaction();
+    const pushInput = {
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'should reject after archive',
+      files: [
+        {
+          path: 'README.md',
+          content: '# Should not commit\n',
+          language: 'markdown',
+        },
+      ],
+    };
+    let pushPromise: Promise<unknown>;
 
-    await app.db.getModel('lightExtensionRepos').findByPk(repo.id, {
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
-    const pushPromise = fileService.push(
-      {
-        repoId: repo.id,
-        expectedHeadCommitId: repo.headCommitId,
-        message: 'should reject after archive',
-        files: [
-          {
-            path: 'README.md',
-            content: '# Should not commit\n',
-            language: 'markdown',
-          },
-        ],
-      },
-      {
+    if (app.db.sequelize.getDialect() === 'sqlite') {
+      const prepared = await fileService.prepareSourceCandidate(pushInput, {
+        requestId: 'req_push_race_prepare',
+      });
+      await app.db.getRepository('lightExtensionRepos').update({
+        filterByTk: repo.id,
+        values: {
+          lifecycleStatus: 'archived',
+        },
+      });
+      pushPromise = app.db.sequelize.transaction((transaction) =>
+        fileService.publishSourceCandidate(prepared, {
+          requestId: 'req_push_race_publish',
+          transaction,
+        }),
+      );
+    } else {
+      const transaction = await app.db.sequelize.transaction();
+      await app.db.getModel('lightExtensionRepos').findByPk(repo.id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      pushPromise = fileService.push(pushInput, {
         requestId: 'req_push_race_push',
-      },
-    );
+      });
 
-    await delay(100);
-    await app.db.getRepository('lightExtensionRepos').update({
-      filterByTk: repo.id,
-      values: {
-        lifecycleStatus: 'archived',
-      },
-      transaction,
-    });
-    await transaction.commit();
+      await delay(100);
+      await app.db.getRepository('lightExtensionRepos').update({
+        filterByTk: repo.id,
+        values: {
+          lifecycleStatus: 'archived',
+        },
+        transaction,
+      });
+      await transaction.commit();
+    }
 
     await expect(pushPromise).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_REPO_ARCHIVED',

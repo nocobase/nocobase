@@ -308,6 +308,11 @@ function normalizePullError(error: unknown): Error {
     return mapRemoteSyncErrorToLightExtension(error);
   }
   if (isLightExtensionError(error)) {
+    if (error.code === 'LIGHT_EXTENSION_SOURCE_OUTDATED') {
+      return mapRemoteSyncErrorToLightExtension(
+        new RemoteSyncError('LOCAL_OUTDATED', error.message, { details: error.details }),
+      );
+    }
     return error;
   }
   return new LightExtensionError('LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE', 'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE', {

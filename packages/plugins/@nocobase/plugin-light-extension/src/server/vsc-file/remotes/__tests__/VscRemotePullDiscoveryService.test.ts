@@ -293,13 +293,13 @@ describe('VscRemotePullDiscoveryService', () => {
     const setup = await createMappedRemote('apply-lease');
     adapter.advanceRemote([{ path: 'README.md', content: '# slow apply\n' }]);
     const input = await createPullInput(setup.remote, setup.commitId);
-    const service = createService({ leaseDurationMs: 30, applyLeaseDurationMs: 500 });
-    const discovery = await service.discover(input, { leaseDurationMs: 30 });
+    const service = createService({ leaseDurationMs: 250, applyLeaseDurationMs: 500 });
+    const discovery = await service.discover(input, { leaseDurationMs: 250 });
 
     const result = await service.apply(requireHandle(discovery.handle), {
       lockOwner: async () => setup.repoId,
       applyOwnerSnapshot: async (transaction) => {
-        await new Promise((resolve) => setTimeout(resolve, 60));
+        await new Promise((resolve) => setTimeout(resolve, 300));
         const push = await vsc.push(
           {
             repoId: setup.repoId,
@@ -587,6 +587,38 @@ describe('VscRemotePullDiscoveryService claim lease heartbeat', () => {
       await expect(action).resolves.toBe('prepared');
       expect(renewLease).toHaveBeenCalledWith('job-slow-prepare', 'claim-slow-prepare', 30);
       expect(renewLease.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('accepts a successful final renewal after a transient heartbeat failure', async () => {
+    vi.useFakeTimers();
+    try {
+      const renewLease = vi.fn().mockRejectedValueOnce(new Error('database is locked')).mockResolvedValue({});
+      const service = new VscRemotePullDiscoveryService({} as Database, {
+        adapterRegistry: {} as RemoteSyncAdapterRegistry,
+        jobStore: { renewLease } as unknown as SyncJobStore,
+      });
+      const action = service.runWithClaimLease(
+        {
+          remote: {} as VscFileRemoteRecord,
+          jobId: 'job-transient-heartbeat',
+          claimToken: 'claim-transient-heartbeat',
+          leaseDurationMs: 30,
+          expectedLocalCommitId: 'commit-1',
+          expectedRemoteRevision: 'revision-2',
+          expectedRemoteTargetVersion: 1,
+          planFingerprint: 'sha256:plan',
+          snapshot: {} as VscRemoteSnapshot,
+        },
+        () => new Promise<string>((resolve) => setTimeout(() => resolve('prepared'), 20)),
+      );
+
+      await vi.advanceTimersByTimeAsync(20);
+
+      await expect(action).resolves.toBe('prepared');
+      expect(renewLease).toHaveBeenCalledTimes(3);
     } finally {
       vi.useRealTimers();
     }

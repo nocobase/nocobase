@@ -177,12 +177,21 @@ export class LightExtensionRuntimeCompileService {
     }
     try {
       const prepared = await this.prepareSaveSource(input, operationContext);
-      return await this.db.sequelize.transaction((transaction) =>
-        this.publishPreparedSave(prepared, {
-          ...operationContext,
-          transaction,
-        }),
-      );
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          return await this.db.sequelize.transaction((transaction) =>
+            this.publishPreparedSave(prepared, {
+              ...operationContext,
+              transaction,
+            }),
+          );
+        } catch (error) {
+          if (this.db.sequelize.getDialect() !== 'sqlite' || !isSqliteBusyError(error) || attempt >= 2) {
+            throw error;
+          }
+          await delay(100);
+        }
+      }
     } catch (error) {
       for (const recordRejectedPush of deferredRejectedPushAudits) {
         await recordRejectedPush();
@@ -736,6 +745,21 @@ export class LightExtensionRuntimeCompileService {
       diagnostics,
     };
   }
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function createCompileJob(

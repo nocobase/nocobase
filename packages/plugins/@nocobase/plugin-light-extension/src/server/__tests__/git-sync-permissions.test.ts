@@ -65,6 +65,7 @@ describe('light extension Git sync permissions acceptance', () => {
     const registrations: Array<{ resource: string; action: string; condition: string | AclCondition }> = [];
     const app = {
       db: {} as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
       acl: {
         allow: vi.fn((resource: string, actions: string | string[], condition: string | AclCondition) => {
           for (const action of Array.isArray(actions) ? actions : [actions]) {
@@ -73,6 +74,7 @@ describe('light extension Git sync permissions acceptance', () => {
         }),
         registerSnippet: vi.fn(),
       },
+      auditManager: { registerActions: vi.fn(), log: vi.fn() },
       pm: { get: vi.fn(() => null), getPlugins: vi.fn(() => new Map()) },
       resourceManager: { define: vi.fn(), options: {} },
       on: vi.fn(),

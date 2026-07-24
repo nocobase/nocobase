@@ -64,7 +64,7 @@ P1 does not include creating a page directly from an Entry, an App Bridge API, o
 
 ## Source Save Contract
 
-`lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It performs the VSC commit, workspace validation, entry reconciliation, and runtime compilation in one database transaction. There is no separate scan action or scan state.
+`lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It materializes and validates the workspace, plans entry reconciliation, and compiles the runtime outside the database transaction. The publish transaction then revalidates the repository Head and prepared candidate before atomically committing the VSC source, entries, runtime artifacts, and references. There is no separate scan action or scan state.
 
 The CLI exposes the same contract for UTF-8 JS Block and JS Page workspaces:
 
@@ -195,12 +195,16 @@ interface LightExtensionMoveSourceInput {
 
 The move dialog exposes one human-readable name for the light extension and one kind-specific name for the moved JS surface. Repository and entry `title` values use those names directly. Stable lowercase repository and entry `name` values are derived internally for identifiers and source paths, so users do not need to manage separate name/title fields or slug rules.
 
-The server executes these operations in one database transaction:
+The server prepares the move outside the database transaction:
 
 1. Resolve the trusted RunJS source adapter, check host write permission, read the current owner, and compare `expectedOwnerFingerprint`.
-2. Derive the light-extension kind from the trusted owner metadata, relocate the workspace, and either create a repository or save into an existing repository.
-3. Validate and compile the destination source, require the new entry to be healthy, and write `{ sourceMode: 'light-extension', sourceBinding }` back to the host through `writeExternalBinding`.
-4. Rebuild the FlowModel reference index and return the repository, entry, binding, and new owner fingerprint.
+2. Derive the light-extension kind from the trusted owner metadata, relocate the workspace, inspect the destination, and validate and compile a prepared source candidate.
+
+The publish transaction then locks and revalidates the host owner, destination Head, binding identity, and prepared candidate before it:
+
+1. Creates or updates the destination repository source, entries, and runtime artifacts.
+2. Requires the new entry to be healthy and writes `{ sourceMode: 'light-extension', sourceBinding }` back to the host through `writeExternalBinding`.
+3. Rebuilds the FlowModel reference index, completes the move operation, and returns the repository, entry, binding, and new owner fingerprint.
 
 If any step fails, destination source, compiled artifacts, host binding, and reference indexes roll back together. The host keeps its previous inline `code`, `version`, and `sourceRef` fields as a compatibility fallback after the external binding is written.
 

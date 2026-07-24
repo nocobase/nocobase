@@ -745,23 +745,17 @@ export class VscRemotePullDiscoveryService {
     action: () => Promise<T>,
   ): Promise<T> {
     const intervalMs = Math.max(10, Math.floor(leaseDurationMs / 3));
-    let heartbeatError: RemoteSyncError | null = null;
     let heartbeat = Promise.resolve();
     const timer = setInterval(() => {
       heartbeat = heartbeat
         .then(() => this.jobStore.renewLease(jobId, claimToken, leaseDurationMs))
         .then(() => undefined)
-        .catch((error: unknown) => {
-          heartbeatError = toRemoteSyncError(error);
-        });
+        .catch(() => undefined);
     }, intervalMs);
 
     try {
       const result = await action();
       await heartbeat;
-      if (heartbeatError) {
-        throw heartbeatError;
-      }
       await this.jobStore.renewLease(jobId, claimToken, leaseDurationMs);
       return result;
     } finally {
