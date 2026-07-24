@@ -14,5 +14,7 @@ export * from './MimetypeField';
 export * from './NameField';
 export * from './ParanoidField';
 export * from './PathField';
+export * from './PublicAccessField';
 export * from './RenameModeField';
 export * from './TitleField';
+export * from './UseOriginalUrlField';

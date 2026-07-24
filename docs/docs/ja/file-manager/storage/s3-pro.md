@@ -12,7 +12,7 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
 
 1. クライアントサイドアップロード：ファイルアップロードプロセスはNocoBaseサーバーを経由せず、ファイルストレージサービスに直接接続するため、より効率的で高速なアップロード体験を実現します。
     
-2. プライベートアクセス：ファイルにアクセスする際、すべてのURLは署名付きの一時的な認証アドレスとなり、ファイルアクセスの安全性と有効性を確保します。
+2. プライベートアクセス：デフォルトでは有効期限付きの署名 URL を使用します。公開 Bucket 向けに署名なし URL を生成することもできます。
 
 ## ユースケース
 
@@ -34,6 +34,57 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
 4. ポップアップが表示されたら、多くの入力項目があるフォームが表示されます。対応するファイルサービスに関するパラメータ情報は、後続のドキュメントを参照し、フォームに正しく入力してください。
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
+
+## URL 設定
+
+S3 Pro では、ファイル管理の共通オプションである「NocoBase URL」「元の URL」「公開アクセスを許可」に加えて、アップロード URL とアクセス URL の形式、および署名付き URL を使用するかどうかを個別に設定できます。共通オプションについては、[ストレージエンジンの概要](./index.md#ファイル-url-とアクセス制御)を参照してください。
+
+各オプションは異なる段階を制御します。
+
+- 「NocoBase URL / 元の URL」は、ファイルレコードが返すアドレスを制御します
+- 「公開アクセスを許可」は、NocoBase URL へのアクセス時にファイルレコードの閲覧権限をチェックするかどうかを制御します
+- 「署名付き URL を使用しない」は、オブジェクトストレージが URL の署名を検証するかどうかを制御します
+
+これらの設定は独立して組み合わせられます。デフォルトでは、NocoBase URL を使用し、「公開アクセスを許可」をチェックせず、署名付き URL を有効にしておくことを推奨します。
+
+![S3 Pro の URL 設定](https://static-docs.nocobase.com/20260723221441.png)
+
+### 選択方法
+
+| ユースケース | ファイル URL | 公開アクセスを許可 | 署名付き URL を使用しない |
+| --- | --- | --- | --- |
+| Bucket を非公開のまま、ファイルにロール権限とデータ権限を適用する | NocoBase URL | チェックしない | チェックしない |
+| Bucket を非公開のまま、公開用の NocoBase ファイルアドレスを提供する | NocoBase URL | チェックする | チェックしない |
+| 外部サービスがストレージアドレスへ一時的にアクセスする | 元の URL | 該当なし | チェックせず、Access URL expiration を設定する |
+| 公開 Bucket または CDN で署名なしの元のアドレスを使用する | 元の URL | 該当なし | チェックする |
+
+### アップロード URL 形式
+
+「アップロード URL 形式」は、クライアントがファイルをアップロードするときに使用する S3 URL を制御します。ストレージサービスがサポートする形式を選択してください。設定フォームには、現在の Endpoint、Bucket、パスに基づく例が表示されます。
+
+- 「Bucket as subdomain」：`https://bucket-name.s3.example.com/path/to/object`
+- 「Bucket as subpath」：`https://s3.example.com/bucket-name/path/to/object`
+- 「Ignore bucket」：`https://upload.example.com/path/to/object`
+
+### アクセス URL 形式
+
+「アクセス URL 形式」は、S3 Pro がファイルアクセスアドレスを生成するときに、Bucket をドメインに含めるか、パスに含めるか、URL に含めないかを制御します。アップロード URL と同じ 3 つの形式がありますが、個別に設定できます。たとえば、アップロードには S3 Endpoint を使用し、アクセスには Bucket を含まない CDN ドメインを使用できます。
+
+このオプションは、元の URL と、NocoBase URL が最終的にリダイレクトするストレージアドレスに影響します。ただし、NocoBase URL 自体の形式は変わりません。
+
+### 署名付き URL を使用しない
+
+S3 Pro はデフォルトで署名付き URL を使用します。生成された元の URL には、次のような署名パラメータが含まれます。
+
+```text
+https://bucket-name.s3.example.com/path/to/object?X-Amz-Signature=xxxx
+```
+
+署名付き URL は「Access URL expiration」で設定した期間だけ有効で、Bucket は非公開のままにできます。NocoBase URL を使用する場合、権限チェックに成功した後で、NocoBase が署名付きアドレスを生成するか、そのアドレスへリダイレクトします。
+
+「署名付き URL を使用しない」をチェックすると、S3 Pro は署名パラメータのないアドレスを生成します。この場合、Bucket とアップロードされたオブジェクトで公開読み取りを許可する必要があり、「Access URL expiration」は適用されません。
+
+「署名付き URL を使用しない」は、ストレージサービスによる署名検証だけを制御し、NocoBase のファイルレコード権限は変更しません。NocoBase URL を選択し、「公開アクセスを許可」をチェックしていない場合、リクエストは引き続き先に NocoBase の権限チェックを通過する必要があります。
 
 ## サービスプロバイダー設定
 
@@ -116,9 +167,9 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
-#### パブリックアクセス（オプション）
+#### 署名なしの公開アクセス（オプション）
 
-これは必須の設定ではありません。アップロードしたファイルを完全に公開する必要がある場合に設定します。
+署名なし URL が必要な場合にのみ設定してください。Bucket とアップロードされたオブジェクトで公開読み取りを許可する必要があります。公開用の NocoBase URL だけが必要な場合は、「公開アクセスを許可」をチェックして署名付き URL を使い続ければ、Bucket を公開する必要はありません。
 
 1. 「Permissions」パネルに移動し、「Object Ownership」までスクロールして「編集」をクリックし、ACLsを有効にします。
 
@@ -128,7 +179,7 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
-3. NocoBaseで「Public access」にチェックを入れます。
+3. NocoBase で「署名付き URL を使用しない」にチェックを入れます。
 
 #### サムネイル設定（オプション）
 
@@ -152,7 +203,7 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
 5. NocoBaseの設定には、いくつかの注意点があります。
    1. `Thumbnail rule`：画像処理に関連するパラメータ（例： `?width=100`）を入力します。詳細は [AWSドキュメント](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html) をご参照ください。
    2. `Access endpoint`：デプロイ後のOutputs -> ApiEndpointの値を入力します。
-   3. `Full access URL style`：**Ignore** にチェックを入れる必要があります（設定時にバケット名が入力済みのため、アクセス時に再度指定する必要はありません）。
+   3. 「アクセス URL 形式」：Bucket 名はすでに設定に含まれており、アクセス URL には不要なため、「Ignore bucket」を選択します。
    
    ![](https://static-docs.nocobase.com/20250414152135514.png)
 
@@ -238,7 +289,7 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
 
 1. `Thumbnail rule` に関連するパラメータを入力します。具体的なパラメータ設定は、[画像処理パラメータ](https://www.alibabacloud.com/help/en/object-storage-service/latest/process-images) をご参照ください。
 
-2. `Full upload URL style` と `Full access URL style` は同じで構いません。
+2. 「アップロード URL 形式」と「アクセス URL 形式」は同じ設定にできます。
 
 #### 設定例
 
@@ -275,7 +326,7 @@ pkg: '@nocobase/plugin-file-storage-s3-pro'
    - **AccessKey ID** と **AccessKey Secret** は、前の手順で保存したテキストです。
    - **Region**：プライベートデプロイされたMinIOにはRegionの概念がないため、「auto」に設定できます。
    - **Endpoint**：デプロイしたサービスドメイン名またはIPアドレスを入力します。
-   - `Full access URL style` は「Path-Style」に設定する必要があります。
+   - 「アクセス URL 形式」を「Bucket as subpath」に設定します。
 
 #### 設定例
 

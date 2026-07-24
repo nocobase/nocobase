@@ -14,7 +14,7 @@ Trên cơ sở plugin File Manager, bổ sung hỗ trợ loại lưu trữ file 
 
 1. Upload từ client: Quá trình upload file không cần thông qua server NocoBase, kết nối trực tiếp với dịch vụ lưu trữ file, mang lại trải nghiệm upload hiệu quả và nhanh chóng hơn.
     
-2. Truy cập riêng tư: Khi truy cập file, tất cả URL đều là địa chỉ ủy quyền tạm thời có chữ ký, đảm bảo tính bảo mật và thời hạn của truy cập file.
+2. Truy cập riêng tư: Mặc định sử dụng URL có chữ ký kèm thời hạn. Cũng có thể tạo URL không chữ ký cho Bucket công khai.
 
 
 ## Tình huống sử dụng
@@ -37,6 +37,57 @@ Trên cơ sở plugin File Manager, bổ sung hỗ trợ loại lưu trữ file 
 4. Sau khi popup xuất hiện, bạn sẽ thấy có khá nhiều nội dung form cần điền. Có thể tham khảo tài liệu sau để lấy thông tin tham số liên quan của dịch vụ file tương ứng và điền chính xác vào form.
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
+
+## Cấu hình URL
+
+Ngoài các tùy chọn chung của File Manager gồm "URL NocoBase", "URL gốc" và "Cho phép truy cập công khai", S3 Pro còn cho phép cấu hình riêng định dạng URL upload, URL truy cập và việc có sử dụng URL có chữ ký hay không. Xem [Tổng quan Storage Engine](./index.md#url-file-và-kiểm-soát-truy-cập) để biết ý nghĩa của các tùy chọn chung.
+
+Các tùy chọn này kiểm soát những giai đoạn khác nhau:
+
+- "URL NocoBase / URL gốc" kiểm soát địa chỉ mà bản ghi file trả về
+- "Cho phép truy cập công khai" kiểm soát việc có kiểm tra quyền xem của bản ghi file khi truy cập URL NocoBase hay không
+- "Không sử dụng URL có chữ ký" kiểm soát việc Object Storage có xác thực chữ ký URL hay không
+
+Các cấu hình này có thể kết hợp độc lập. Cấu hình mặc định được khuyến nghị là dùng URL NocoBase, không tích chọn "Cho phép truy cập công khai" và giữ URL có chữ ký được bật.
+
+![Cấu hình URL S3 Pro](https://static-docs.nocobase.com/20260723221441.png)
+
+### Cách chọn
+
+| Tình huống sử dụng | URL file | Cho phép truy cập công khai | Không sử dụng URL có chữ ký |
+| --- | --- | --- | --- |
+| File cần tuân theo quyền role và quyền dữ liệu trong khi Bucket vẫn riêng tư | URL NocoBase | Không tích chọn | Không tích chọn |
+| Cần địa chỉ file NocoBase công khai trong khi Bucket vẫn riêng tư | URL NocoBase | Tích chọn | Không tích chọn |
+| Dịch vụ bên ngoài cần truy cập tạm thời vào địa chỉ storage | URL gốc | Không áp dụng | Không tích chọn; cấu hình Access URL expiration |
+| Bucket công khai hoặc CDN cần địa chỉ gốc không chữ ký | URL gốc | Không áp dụng | Tích chọn |
+
+### Định dạng URL tải lên
+
+"Định dạng URL tải lên" kiểm soát URL S3 mà client sử dụng khi upload file. Chọn định dạng được dịch vụ storage hỗ trợ. Form cấu hình hiển thị ví dụ dựa trên Endpoint, Bucket và đường dẫn hiện tại:
+
+- "Bucket as subdomain": `https://bucket-name.s3.example.com/path/to/object`
+- "Bucket as subpath": `https://s3.example.com/bucket-name/path/to/object`
+- "Ignore bucket": `https://upload.example.com/path/to/object`
+
+### Định dạng URL truy cập
+
+"Định dạng URL truy cập" kiểm soát việc Bucket xuất hiện trong domain, trong đường dẫn hay không xuất hiện trong URL khi S3 Pro tạo địa chỉ truy cập file. Có cùng ba định dạng như URL upload nhưng có thể cấu hình riêng—ví dụ upload sử dụng S3 Endpoint, còn truy cập sử dụng domain CDN không chứa Bucket.
+
+Tùy chọn này ảnh hưởng đến URL gốc và địa chỉ storage mà URL NocoBase cuối cùng chuyển hướng đến, nhưng không thay đổi định dạng của chính URL NocoBase.
+
+### Không sử dụng URL có chữ ký
+
+S3 Pro mặc định sử dụng URL có chữ ký. URL gốc được tạo sẽ chứa tham số chữ ký, ví dụ:
+
+```text
+https://bucket-name.s3.example.com/path/to/object?X-Amz-Signature=xxxx
+```
+
+URL có chữ ký có hiệu lực trong thời gian được cấu hình tại "Access URL expiration", và Bucket có thể giữ riêng tư. Khi sử dụng URL NocoBase, NocoBase tạo hoặc chuyển hướng đến địa chỉ có chữ ký sau khi kiểm tra quyền thành công.
+
+Khi tích chọn "Không sử dụng URL có chữ ký", S3 Pro tạo địa chỉ không có tham số chữ ký. Bucket và object đã upload phải cho phép đọc công khai, đồng thời "Access URL expiration" không còn hiệu lực.
+
+"Không sử dụng URL có chữ ký" chỉ kiểm soát việc dịch vụ storage xác thực chữ ký, không thay đổi quyền của bản ghi NocoBase. Nếu chọn URL NocoBase và không tích chọn "Cho phép truy cập công khai", request vẫn phải vượt qua kiểm tra quyền NocoBase trước.
 
 
 ## Cấu hình nhà cung cấp
@@ -120,9 +171,9 @@ Trên cơ sở plugin File Manager, bổ sung hỗ trợ loại lưu trữ file 
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
-#### Truy cập công khai (Tùy chọn)
+#### Truy cập công khai không chữ ký (Tùy chọn)
 
-Đây là cấu hình không bắt buộc, khi bạn cần để file upload hoàn toàn công khai thì cấu hình
+Chỉ cấu hình khi cần URL không chữ ký, vì Bucket và object đã upload phải cho phép đọc công khai. Nếu chỉ cần chia sẻ URL NocoBase công khai, hãy tích chọn "Cho phép truy cập công khai" và tiếp tục dùng URL có chữ ký; không cần mở công khai Bucket.
 
 1. Vào panel Permissions, cuộn xuống đến Object Ownership, click chỉnh sửa, bật ACLs
 
@@ -132,7 +183,7 @@ Trên cơ sở plugin File Manager, bổ sung hỗ trợ loại lưu trữ file 
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
-3. Trong NocoBase tích chọn Public access
+3. Trong NocoBase tích chọn "Không sử dụng URL có chữ ký"
 
 
 #### Cấu hình thumbnail (Tùy chọn)
@@ -157,7 +208,7 @@ Cấu hình này là tùy chọn, áp dụng khi cần tối ưu kích thước 
 5. Trong cấu hình NocoBase, có một số lưu ý sau:
    1. `Thumbnail rule`: Điền tham số liên quan đến xử lý hình ảnh, ví dụ `?width=100`. Cụ thể có thể tham khảo [Tài liệu AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
    2. `Access endpoint`: Điền giá trị ApiEndpoint trong Outputs sau khi triển khai.
-   3. `Full access URL style`: Cần tích chọn **Ignore** (vì khi cấu hình đã điền tên Bucket, khi truy cập không cần nữa).
+   3. "Định dạng URL truy cập": Chọn "Ignore bucket" vì tên Bucket đã có trong cấu hình và không cần xuất hiện trong URL truy cập.
    
    ![](https://static-docs.nocobase.com/20250414152135514.png)
 
@@ -246,7 +297,7 @@ Cấu hình này là tùy chọn, chỉ sử dụng khi cần tối ưu kích th
 
 1. Điền các tham số liên quan của `Thumbnail rule`. Cài đặt tham số cụ thể có thể tham khảo [Tham số xử lý hình ảnh](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1).
 
-2. `Full upload URL style` và `Full access URL style` giữ giống nhau là được.
+2. "Định dạng URL tải lên" và "Định dạng URL truy cập" có thể dùng cùng một cấu hình.
 
 #### Ví dụ cấu hình
 
@@ -283,7 +334,7 @@ Cấu hình này là tùy chọn, chỉ sử dụng khi cần tối ưu kích th
    - **AccessKey ID** và **AccessKey Secret** là văn bản đã lưu ở bước trước
    - **Region**: MinIO triển khai riêng tư không có khái niệm Region, có thể cấu hình thành "auto"
    - **Endpoint**: Điền tên miền hoặc địa chỉ IP của dịch vụ đã triển khai
-   - Cần đặt Full access URL style thành Path-Style
+   - Đặt "Định dạng URL truy cập" thành "Bucket as subpath"
 
 #### Ví dụ cấu hình
 
