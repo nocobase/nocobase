@@ -336,9 +336,8 @@ La columna “Tipo de datos” proviene de la clasificación integrada. Los dato
 | Tabla | Descripción | Tipo de datos | Estrategia predeterminada | Control de versiones | Copia/restauración |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
+| `aiKnowledgeBase` | Tipo de base de conocimiento, ID externo, base de datos vectorial, servicio LLM, modelo de embedding e información básica | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
 | `aiVectorDatabases` | Vector database service and connection configuration | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
 
 ### Environment variables
 

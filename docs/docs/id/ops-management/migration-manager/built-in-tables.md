@@ -336,9 +336,8 @@ Kolom “Tipe data” berasal dari klasifikasi bawaan. Data dasar sistem ikut ko
 | Tabel | Deskripsi | Tipe data | Strategi migrasi default | Kontrol versi | Backup/restore |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
+| `aiKnowledgeBase` | Jenis basis pengetahuan, ID eksternal, basis data vektor, layanan LLM, model embedding, dan informasi dasar | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
 | `aiVectorDatabases` | Vector database service and connection configuration | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
 
 ### Environment variables
 

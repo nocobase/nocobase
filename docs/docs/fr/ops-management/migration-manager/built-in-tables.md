@@ -336,9 +336,8 @@ La colonne « Type de données » provient de la classification intégrée. Les 
 | Table | Description | Type de données | Stratégie par défaut | Gestion des versions | Sauvegarde/restauration |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
+| `aiKnowledgeBase` | Type de base de connaissances, ID externe, base de données vectorielle, service LLM, modèle d’embedding et informations de base | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
 | `aiVectorDatabases` | Vector database service and connection configuration | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
 
 ### Environment variables
 
