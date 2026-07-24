@@ -71,6 +71,7 @@ export class LightExtensionCreateFromRemoteService {
         ...ctx,
         transaction,
         requestSource: ctx.requestSource || 'light-extension-create-from-git',
+        allowRemovedGenericRunJSSource: true,
       };
       const repo = await this.repoService.createRepo(
         {
@@ -143,7 +144,10 @@ export class LightExtensionCreateFromRemoteService {
         details: { diagnostics: [] },
       });
     }
-    const diagnostics = this.repoService.getValidator().validateInitialFiles({ files });
+    const diagnostics = this.repoService.getValidator().validateInitialFiles({
+      files,
+      allowRemovedGenericRunJSSource: true,
+    });
     if (!hasErrorDiagnostic(diagnostics)) {
       return;
     }
