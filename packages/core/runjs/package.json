@@ -58,10 +58,11 @@
     "react-dom": "^18.2.0"
   },
   "scripts": {
-    "generate": "yarn generate:completion-catalogs && yarn generate:dom-type-bridge && yarn generate:type-packs",
-    "generate:check": "yarn generate:completion-catalogs --check && yarn generate:dom-type-bridge --check && yarn generate:type-packs --check",
+    "generate": "yarn generate:completion-catalogs && yarn generate:dom-type-bridge && yarn generate:typescript-environment && yarn generate:type-packs",
+    "generate:check": "yarn generate:completion-catalogs --check && yarn generate:dom-type-bridge --check && yarn generate:typescript-environment --check && yarn generate:type-packs --check",
     "generate:completion-catalogs": "tsx scripts/generate-completion-catalogs.ts",
     "generate:dom-type-bridge": "tsx scripts/generate-dom-type-only-bridge.ts",
+    "generate:typescript-environment": "tsx scripts/generate-typescript-environment.ts",
     "generate:type-packs": "tsx scripts/generate-type-packs.ts"
   }
 }

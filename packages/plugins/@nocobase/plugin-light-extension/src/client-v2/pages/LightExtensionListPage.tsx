@@ -698,9 +698,11 @@ function LightExtensionListPageInner() {
     if (activePanel === 'source') {
       return (
         <LightExtensionWorkspacePage
+          defaultFilesCollapsed
           embedded
           onFooterActionsChange={setSourceFooterActions}
           onRequestClose={closeDetailDrawer}
+          onSaved={loadRepos}
         />
       );
     }
@@ -818,7 +820,6 @@ function LightExtensionListPageInner() {
         onClose={closeEditDrawer}
         open={Boolean(editTarget)}
         title={t('Edit light extension')}
-        width={520}
       >
         <Form form={editForm} id="light-extension-edit-form" layout="vertical" onFinish={updateRepo}>
           <Form.Item

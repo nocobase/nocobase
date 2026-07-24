@@ -24,7 +24,7 @@ import type { VscPermissionHook } from './permissions';
 import { createRunJSSourcePermissionHook, VscPermissionHookRegistry } from './permissions';
 import { RunJSSourceAuthoringInspectorRegistry } from './runjs-sources/RunJSSourceAuthoringInspectorRegistry';
 import { RunJSSourceAdapterRegistry, createRunJSSourcesResource, runJSSourceActionNames } from './runjs-sources';
-import { inspectRunJSSourceCode } from './runjs-sources/compiler/source-inspection';
+import { inspectRunJSSourceCode } from './runjs-sources/lazyCompiler';
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../../shared/vsc-file/runjs-source-types';
 

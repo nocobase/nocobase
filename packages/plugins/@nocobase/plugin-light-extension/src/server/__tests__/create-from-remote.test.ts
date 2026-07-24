@@ -44,6 +44,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
   let runtime: RemoteSyncRuntimeService;
   let auditService: LightExtensionAuditService;
   let repoService: LightExtensionRepoService;
+  let runtimeCompileService: LightExtensionRuntimeCompileService;
   let service: LightExtensionCreateFromRemoteService;
   let validateCredential: ReturnType<typeof vi.fn>;
 
@@ -65,12 +66,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     );
     const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     const compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-    const runtimeCompileService = new LightExtensionRuntimeCompileService(
-      app.db,
-      fileService,
-      entryService,
-      compilerBridge,
-    );
+    runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
     const referenceService = new ReferenceService(app.db, auditService, permissionService);
     runtimeCompileService.useReferenceService(referenceService);
     adapter = new DeterministicRemoteAdapter({
@@ -102,6 +98,8 @@ describe('LightExtensionCreateFromRemoteService', () => {
   });
 
   it('atomically creates compiled source, a fixed remote target, mapping, succeeded job, and in-sync baseline', async () => {
+    const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
+    const publishPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'publishPreparedInitialWorkspace');
     const result = await service.create({
       name: 'Remote Sales KPI',
       title: 'Remote Sales KPI',
@@ -119,6 +117,8 @@ describe('LightExtensionCreateFromRemoteService', () => {
     const job = await app.db.getRepository('vscFileSyncJobs').findOne({ filter: { remoteId: remote?.id } });
 
     expect(validateCredential).toHaveBeenCalledWith('{{ $env.GITHUB_SYNC }}');
+    expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
+    expect(publishPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(result).toMatchObject({
       repo: { healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
       remote: { config: { branch: 'main' }, authRef: '{{ $env.GITHUB_SYNC }}' },
@@ -142,6 +142,31 @@ describe('LightExtensionCreateFromRemoteService', () => {
       resultRemoteRevision: 'remote-initial',
     });
     expect(remote).toMatchObject({ lastSyncedAt: expect.any(String) });
+  });
+
+  it('preserves removed generic RunJS files as inert remote source', async () => {
+    adapter.advanceRemote([...validFiles(), ...removedGenericRunJSFiles()], { branch: 'main' });
+
+    const result = await service.create({
+      name: 'Remote Legacy RunJS',
+      provider: 'github',
+      config: remoteConfig,
+      authRef: null,
+    });
+    const internalRepo = await repoService.getInternalRepo(result.repo.id);
+    const remote = await runtime.getRemote(internalRepo.vscRepoId, 'origin');
+    const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: result.repo.id } });
+    const plan = await runtime.planRemote(remote?.id as string);
+
+    expect(result).toMatchObject({
+      repo: { healthStatus: 'ready' },
+      plan: { state: 'in-sync', action: 'noop' },
+      fileCount: 4,
+    });
+    expect(entries).toEqual([
+      expect.objectContaining({ kind: 'js-block', entryName: 'sales-kpi', healthStatus: 'ready' }),
+    ]);
+    expect(plan).toMatchObject({ state: 'in-sync', action: 'noop' });
   });
 
   it('keeps the fetched revision as the baseline when the remote advances later', async () => {
@@ -360,5 +385,20 @@ function updatedFiles(label: string): VscRemoteSnapshotFile[] {
       language: 'typescript',
     },
     validFiles()[1],
+  ];
+}
+
+function removedGenericRunJSFiles(): VscRemoteSnapshotFile[] {
+  return [
+    {
+      path: 'src/client/runjs/calculate-subtotal/index.ts',
+      content: 'return 1;\n',
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/runjs/calculate-subtotal/entry.json',
+      content: '{"schemaVersion":1,"key":"calculate-subtotal"}',
+      language: 'json',
+    },
   ];
 }

@@ -92,6 +92,7 @@ export interface RemoteSyncPullCoordinator {
     handle: VscRemotePullHandle,
     ownerApply: VscRemotePullOwnerApply<TOwner, TResult>,
   ): Promise<{ job: VscFileSyncJobRecord; result: { localCommitId: string; contentHash: string } & TResult }>;
+  runWithClaimLease<TResult>(handle: VscRemotePullHandle, action: () => Promise<TResult>): Promise<TResult>;
   failApply(handle: VscRemotePullHandle, code: RemoteSyncErrorCode): Promise<void>;
   listRecoverablePullJobs(): Promise<VscFileSyncJobRecord[]>;
 }

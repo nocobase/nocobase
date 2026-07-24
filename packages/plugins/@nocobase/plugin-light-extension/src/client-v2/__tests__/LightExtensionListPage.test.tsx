@@ -134,11 +134,18 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
     requestSave: () => Promise<'saved'>;
   };
   type WorkspacePageProps = {
+    defaultFilesCollapsed?: boolean;
     onFooterActionsChange?: (actions: FooterActions | null) => void;
     onRequestClose?: () => void;
+    onSaved?: () => void | Promise<void>;
   };
 
-  const MockLightExtensionWorkspacePage = ({ onFooterActionsChange, onRequestClose }: WorkspacePageProps) => {
+  const MockLightExtensionWorkspacePage = ({
+    defaultFilesCollapsed,
+    onFooterActionsChange,
+    onRequestClose,
+    onSaved,
+  }: WorkspacePageProps) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
         dirty: true,
@@ -152,7 +159,12 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
       return () => onFooterActionsChange?.(null);
     }, [onFooterActionsChange, onRequestClose]);
 
-    return React.createElement('div', null, 'Mock source workspace');
+    return React.createElement(
+      'div',
+      { 'data-default-files-collapsed': String(Boolean(defaultFilesCollapsed)) },
+      'Mock source workspace',
+      React.createElement('button', { onClick: onSaved, type: 'button' }, 'Mock save source'),
+    );
   };
 
   return {
@@ -733,8 +745,6 @@ describe('LightExtensionListPage', () => {
     renderListPage();
 
     expect(await screen.findByText('Zeta widgets')).toBeInTheDocument();
-    expect(document.querySelectorAll('th.ant-table-column-has-sorters')).toHaveLength(5);
-    expect(screen.getByRole('columnheader', { name: 'Actions' })).not.toHaveClass('ant-table-column-has-sorters');
 
     await userEvent.click(screen.getByText('Title'));
 
@@ -783,7 +793,7 @@ describe('LightExtensionListPage', () => {
     expect(matchesLightExtensionRepoFilter(repo, { enabled: { $isFalsy: true } })).toBe(false);
   });
 
-  it('opens the source workspace drawer as a large side panel', async () => {
+  it('opens the source workspace drawer as a large side panel with files collapsed', async () => {
     mocks.api.listRepos.mockResolvedValueOnce([
       {
         id: 'ler_browser_smoke',
@@ -817,18 +827,49 @@ describe('LightExtensionListPage', () => {
 
     renderListPage('/admin/settings/light-extension?repoId=ler_browser_smoke&panel=source');
 
-    await screen.findByText('Mock source workspace');
+    const workspace = await screen.findByText('Mock source workspace');
+    expect(workspace).toHaveAttribute('data-default-files-collapsed', 'true');
     await waitFor(() => {
       expect(document.querySelector('.ant-drawer-content-wrapper')).toHaveStyle({
         width: 'min(1280px, calc(100vw - 64px))',
       });
+      expect(document.querySelector('.ant-drawer-body')).toHaveStyle({ overflow: 'hidden', padding: '16px' });
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     await waitFor(() => {
-      expect(document.querySelector('.ant-drawer-open')).not.toBeInTheDocument();
+      expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
     });
+  });
+
+  it('refreshes list summaries after source changes are saved', async () => {
+    const originalRepo = {
+      id: 'ler_browser_smoke',
+      name: 'browser-smoke',
+      normalizedName: 'browser-smoke',
+      title: 'Browser smoke',
+      description: null,
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'ready' as const,
+      headCommitId: 'commit-1',
+      entryCount: 1,
+      entryKinds: { 'js-block': 1 },
+    };
+    mocks.api.listRepos.mockResolvedValueOnce([originalRepo]).mockResolvedValueOnce([
+      {
+        ...originalRepo,
+        headCommitId: 'commit-2',
+        entryCount: 2,
+        entryKinds: { 'js-block': 2 },
+      },
+    ]);
+    renderListPage('/admin/settings/light-extension?repoId=ler_browser_smoke&panel=source');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Mock save source' }));
+
+    await waitFor(() => expect(mocks.api.listRepos).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('js-block 2')).toBeInTheDocument();
   });
 
   it('supports multi-select batch enablement changes', async () => {

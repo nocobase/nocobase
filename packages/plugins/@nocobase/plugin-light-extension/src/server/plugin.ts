@@ -225,6 +225,7 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
 
+    await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     const vscFileServerModule = this.requireVscFileServerModule();
     await vscFileServerModule.load();
@@ -281,6 +282,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       {
         compileExecutor: this.compileWorkerPool,
+        validator: this.validator,
       },
     );
     this.repoService.useReferenceService(this.referenceService);
@@ -350,6 +352,7 @@ export class PluginLightExtensionServer extends Plugin {
   }
 
   async afterDisable() {
+    await this.shutdownCompileInfrastructure();
     this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();

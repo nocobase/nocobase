@@ -9,7 +9,6 @@
 
 import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
-  diagnoseRunJS,
   useApp,
   useFullscreenOverlay,
   type CodeAuthoringDiagnostic,
@@ -17,7 +16,7 @@ import {
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
-import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
+import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -56,7 +55,6 @@ import type {
 } from './studioInternalTypes';
 import {
   appendDiagnostics,
-  appendRunDiagnostics,
   buildNewFilePath,
   buildNewFolderPath,
   buildRunJSExportFileName,
@@ -137,6 +135,26 @@ function getNextHistoryCursor(
   nextBeforeSeq?: number | null,
 ): number | null {
   return items.length === pageSize ? nextBeforeSeq ?? items[items.length - 1]?.seq ?? null : null;
+}
+
+function withWorkspaceFileRevisions(
+  previousFiles: RunJSWorkspaceFile[],
+  nextFiles: RunJSWorkspaceFile[],
+  nextRevision: () => number,
+): RunJSWorkspaceFile[] {
+  const previousByPath = new Map(previousFiles.map((file) => [file.path, file]));
+  return normalizeWorkspaceFiles(nextFiles).map((file) => {
+    const previous = previousByPath.get(file.path);
+    if (
+      previous &&
+      previous.content === file.content &&
+      previous.language === file.language &&
+      previous.mode === file.mode
+    ) {
+      return { ...file, revision: previous.revision };
+    }
+    return { ...file, revision: nextRevision() };
+  });
 }
 
 type RunJSStudioControllerProps = Omit<RunJSEditorProviderRenderProps, 'locator'> & {
@@ -319,7 +337,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const requestSeqRef = useRef(0);
   const historyRequestSeqRef = useRef(0);
   const consoleSeqRef = useRef(0);
+  const fileRevisionSeqRef = useRef(0);
+  const operationSequenceRef = useRef(0);
+  const projectRevisionRef = useRef(0);
+  const workspaceGenerationRef = useRef(0);
   const latestWorkspaceSnapshotRef = useRef('');
+  const previousActivePathRef = useRef<string>();
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const studioRootRef = useRef<HTMLDivElement>(null);
@@ -329,8 +352,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     reject: (error: unknown) => void;
   } | null>(null);
   const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
+  const openSaveModalRef = useRef<() => Promise<boolean>>(async () => false);
   const confirmedCloseRef = useRef(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
+  const [projectRevision, setProjectRevision] = useState(0);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
   const [actionError, setActionError] = useState<ActionErrorState | null>(null);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
@@ -393,10 +418,16 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const embedded = editorChrome === 'embedded';
 
   const workspaceReadOnly = Boolean(readOnly || disabled || (workspace && !workspace.permissions.canWrite));
-  const workspaceEditingDisabled = workspaceReadOnly || saving;
+  const workspaceEditingDisabled = workspaceReadOnly;
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
   const saveSummary = summarizeWorkspaceChanges(baseFiles, files);
-  const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version);
+  const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version, {
+    locatorKey,
+    operationSequence: operationSequenceRef.current,
+    projectRevision,
+    repoId: workspace?.repository.repoId,
+    workspaceGeneration: workspaceGenerationRef.current,
+  });
   const showDiff = activeTab === 'diff';
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const runJSModelUse =
@@ -488,10 +519,35 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   }, []);
 
   const syncWorkspaceSnapshotRef = useCallback(
-    (nextFiles: RunJSWorkspaceFile[], nextEntryPath: string) => {
-      latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(nextFiles, nextEntryPath, value.version);
+    (nextFiles: RunJSWorkspaceFile[], nextEntryPath: string, repoId = workspace?.repository.repoId) => {
+      projectRevisionRef.current += 1;
+      operationSequenceRef.current += 1;
+      setProjectRevision(projectRevisionRef.current);
+      latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(nextFiles, nextEntryPath, value.version, {
+        locatorKey,
+        operationSequence: operationSequenceRef.current,
+        projectRevision: projectRevisionRef.current,
+        repoId,
+        workspaceGeneration: workspaceGenerationRef.current,
+      });
     },
-    [value.version],
+    [locatorKey, value.version, workspace?.repository.repoId],
+  );
+
+  const beginWorkspaceOperation = useCallback(
+    (requestFiles: RunJSWorkspaceFile[], requestEntryPath: string, repoId = workspace?.repository.repoId) => {
+      operationSequenceRef.current += 1;
+      const token = buildWorkspaceSnapshotKey(requestFiles, requestEntryPath, value.version, {
+        locatorKey,
+        operationSequence: operationSequenceRef.current,
+        projectRevision: projectRevisionRef.current,
+        repoId,
+        workspaceGeneration: workspaceGenerationRef.current,
+      });
+      latestWorkspaceSnapshotRef.current = token;
+      return token;
+    },
+    [locatorKey, value.version, workspace?.repository.repoId],
   );
 
   const clearConsole = useCallback(() => {
@@ -499,6 +555,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   }, []);
 
   const invalidatePreview = useCallback(() => {
+    setPreviewing(false);
     setPreviewArtifact(null);
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
@@ -558,6 +615,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     requestSeqRef.current += 1;
     historyRequestSeqRef.current += 1;
     latestWorkspaceSnapshotRef.current = '';
+    workspaceGenerationRef.current += 1;
+    projectRevisionRef.current += 1;
+    operationSequenceRef.current += 1;
+    setProjectRevision(projectRevisionRef.current);
+    const embeddedSaveRequest = embeddedSaveRequestRef.current;
+    embeddedSaveRequestRef.current = null;
+    embeddedSavePromiseRef.current = null;
+    embeddedSaveRequest?.resolve('cancelled');
     hasUnsavedLocalChangesRef.current = false;
     confirmedCloseRef.current = false;
     setWorkspace(null);
@@ -605,6 +670,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     latestWorkspaceSnapshotRef.current = currentPreviewSnapshotKey;
   }, [currentPreviewSnapshotKey]);
 
+  useEffect(() => {
+    if (!workspace || previousActivePathRef.current === activePath) return;
+    previousActivePathRef.current = activePath;
+    syncWorkspaceSnapshotRef(files, entryPath);
+  }, [activePath, entryPath, files, syncWorkspaceSnapshotRef, workspace]);
+
   const openFilePath = useCallback((path: string | undefined) => {
     if (!path) {
       return;
@@ -643,9 +714,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
   const applyWorkspaceLoadResult = useCallback(
     (loaded: WorkspaceLoadResult) => {
+      workspaceGenerationRef.current += 1;
+      const nextCurrentFiles = withWorkspaceFileRevisions([], loaded.currentFiles, () => ++fileRevisionSeqRef.current);
       const nextActivePath =
-        loaded.currentFiles.find((file) => file.path === loaded.entryPath)?.path ||
-        loaded.currentFiles[0]?.path ||
+        nextCurrentFiles.find((file) => file.path === loaded.entryPath)?.path ||
+        nextCurrentFiles[0]?.path ||
         loaded.entryPath;
 
       historyRequestSeqRef.current += 1;
@@ -655,15 +728,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setHistoryLoadingMore(false);
       setHistoryNextBeforeSeq(getNextHistoryCursor(loaded.opened.history.items, commitHistoryDefaultLimit));
       setBaseFiles(loaded.baseFiles);
-      setSavedFiles(loaded.currentFiles);
-      setFiles(loaded.currentFiles);
+      setSavedFiles(nextCurrentFiles);
+      setFiles(nextCurrentFiles);
       setEntryPath(loaded.entryPath);
       setEditorRevealPosition(undefined);
-      latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(
-        loaded.currentFiles,
-        loaded.entryPath,
-        value.version,
-      );
+      syncWorkspaceSnapshotRef(nextCurrentFiles, loaded.entryPath, loaded.opened.repository.repoId);
       setActivePath(nextActivePath);
       setOpenPaths([nextActivePath]);
       setSelectedDiffPath(undefined);
@@ -673,7 +742,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setRestoringVersion(false);
       setActionError(null);
     },
-    [value.version],
+    [syncWorkspaceSnapshotRef],
   );
 
   const loadWorkspace = useCallback(async (): Promise<WorkspaceLoadResult | null> => {
@@ -777,7 +846,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
       if (event.key === 'Enter') {
         event.preventDefault();
-        runPreview();
+        checkWorkspace();
         return;
       }
 
@@ -818,7 +887,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     };
   }, [hasUnsavedLocalChanges]);
 
-  const runPreview = async () => {
+  const checkWorkspace = async () => {
     const currentWorkspace = workspace
       ? { opened: workspace, baseFiles, currentFiles: files, entryPath }
       : await loadWorkspace();
@@ -826,19 +895,25 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return;
     }
 
+    const requestLocator = props.locator;
+    const requestRepoId = currentWorkspace.opened.repository.repoId;
+    const requestBaseCommitId = currentWorkspace.opened.repository.headCommitId;
+
     clearConsole();
     setActionError(null);
     setActiveTab('code');
     setPreviewing(true);
     setPreviewDiagnostics([]);
-    const requestSnapshotKey = buildWorkspaceSnapshotKey(
+    const requestSnapshotKey = beginWorkspaceOperation(
       currentWorkspace.currentFiles,
       currentWorkspace.entryPath,
-      value.version,
+      requestRepoId,
     );
     try {
       const result = await runJSSourceRequest('compilePreview', {
-        locator: props.locator,
+        locator: requestLocator,
+        repoId: requestRepoId,
+        baseCommitId: requestBaseCommitId,
         files: buildWorkspaceChanges([], currentWorkspace.currentFiles),
         entryPath: currentWorkspace.entryPath,
         version: value.version,
@@ -847,43 +922,21 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return;
       }
       setPreviewDiagnostics(result.artifact.diagnostics);
-      setPreviewArtifact({
-        code: result.artifact.code,
-        version: result.artifact.version,
-        snapshotKey: requestSnapshotKey,
-      });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
-      if (!hasCompileError) {
-        if (props.onPreview) {
-          await props.onPreview({
-            ...value,
-            code: result.artifact.code,
-            version: result.artifact.version,
-          } as RunJSValue);
-        } else if (flowCtx) {
-          const runDiagnostics = await diagnoseRunJS(result.artifact.code, flowCtx as unknown as FlowContext, {
-            sourceMap: result.artifact.sourceMap,
-            version: result.artifact.version,
-          });
-          if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
-            return;
-          }
-          appendRunDiagnostics(runDiagnostics, appendConsole);
-        }
-      }
       appendConsole({
         level: hasCompileError ? 'error' : 'info',
-        message: hasCompileError ? t('Compile failed') : t('Run completed'),
+        message: hasCompileError ? t('Source check failed') : t('Source check passed'),
       });
     } catch (error) {
-      reportActionError(error, t('Run failed'), runPreview);
+      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return;
+      reportActionError(error, t('Source check failed'), checkWorkspace);
       appendConsole({
         level: 'error',
-        message: formatVscComponentError(error, t('Run failed')),
+        message: formatVscComponentError(error, t('Source check failed')),
       });
     } finally {
-      setPreviewing(false);
+      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) setPreviewing(false);
     }
   };
 
@@ -917,7 +970,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
     const requestFiles = normalizeWorkspaceFiles(files);
     const requestEntryPath = entryPath;
-    const requestSnapshotKey = currentPreviewSnapshotKey;
+    const requestSnapshotKey = beginWorkspaceOperation(requestFiles, requestEntryPath);
     try {
       const compiled = await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
       if (!compiled) {
@@ -927,6 +980,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setSaveOpen(true);
       return true;
     } catch (error) {
+      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return false;
       reportActionError(error, t('Save failed'), openSaveModal);
       appendConsole({
         level: 'error',
@@ -935,6 +989,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return false;
     }
   };
+  openSaveModalRef.current = openSaveModal;
 
   const showSaveDiagnostics = useCallback((diagnostics: RunJSCompileDiagnostic[]) => {
     setSaveDiagnostics(diagnostics);
@@ -958,9 +1013,15 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
     setSaving(true);
     setActionError(null);
-    const requestSnapshotKey = currentPreviewSnapshotKey;
     const requestFiles = normalizeWorkspaceFiles(files);
     const requestEntryPath = entryPath;
+    const requestSnapshotKey = currentPreviewSnapshotKey;
+    const requestLocator = props.locator;
+    const requestRepoId = workspace.repository.repoId;
+    const requestBaseCommitId = workspace.repository.headCommitId;
+    const requestBaseOwnerFingerprint = workspace.ownerFingerprint;
+    const requestGeneration = workspaceGenerationRef.current;
+    const requestVersionMessage = versionMessage.trim();
     try {
       const compiled =
         previewArtifact &&
@@ -969,19 +1030,18 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           ? previewArtifact
           : await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
       if (!compiled) {
-        finishEmbeddedSaveRequest('cancelled');
         return;
       }
 
-      let savedArtifact = compiled;
+      let persistedFiles = requestFiles;
       let result: RunJSSourceSaveResult;
       try {
         result = await runJSSourceRequest('save', {
-          locator: props.locator,
-          repoId: workspace.repository.repoId,
-          baseCommitId: workspace.repository.headCommitId,
-          baseOwnerFingerprint: workspace.ownerFingerprint,
-          message: versionMessage.trim(),
+          locator: requestLocator,
+          repoId: requestRepoId,
+          baseCommitId: requestBaseCommitId,
+          baseOwnerFingerprint: requestBaseOwnerFingerprint,
+          message: requestVersionMessage,
           files: buildWorkspaceChanges([], requestFiles),
           entryPath: requestEntryPath,
           version: compiled.version,
@@ -990,8 +1050,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         if (!(error instanceof RunJSSourceRequestError) || error.code !== 'BASE_COMMIT_OUTDATED') {
           throw error;
         }
+        if (workspaceGenerationRef.current !== requestGeneration) return;
 
-        const latest = await runJSSourceRequest('openLatest', { locator: props.locator });
+        const latest = await runJSSourceRequest('openLatest', { locator: requestLocator });
+        if (workspaceGenerationRef.current !== requestGeneration) return;
         const merged = mergeRunJSWorkspaceFiles(baseFiles, requestFiles, latest.files);
         if (merged.conflictPaths.length) {
           throw new Error(
@@ -1007,13 +1069,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         const recoveredFiles = merged.files;
         const recoveredEntryPath = resolveWorkspaceEntryPath(recoveredFiles, requestEntryPath);
         const preview = await runJSSourceRequest('compilePreview', {
-          locator: props.locator,
+          locator: requestLocator,
           repoId: latest.repository.repoId,
           baseCommitId: latest.repository.headCommitId,
           files: buildWorkspaceChanges([], recoveredFiles),
           entryPath: recoveredEntryPath,
           version: value.version,
         });
+        if (workspaceGenerationRef.current !== requestGeneration) return;
         setPreviewDiagnostics(preview.artifact.diagnostics);
         appendDiagnostics(preview.artifact.diagnostics, appendConsole);
         if (hasCompileErrorDiagnostics(preview.artifact.diagnostics)) {
@@ -1021,47 +1084,67 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           finishEmbeddedSaveRequest('cancelled');
           return;
         }
-        savedArtifact = {
-          code: preview.artifact.code,
-          version: preview.artifact.version,
-          snapshotKey: buildWorkspaceSnapshotKey(recoveredFiles, recoveredEntryPath, preview.artifact.version),
-        };
+        persistedFiles = recoveredFiles;
         result = await runJSSourceRequest('save', {
-          locator: props.locator,
+          locator: requestLocator,
           repoId: latest.repository.repoId,
           baseCommitId: latest.repository.headCommitId,
           baseOwnerFingerprint: latest.ownerFingerprint,
-          message: versionMessage.trim(),
+          message: requestVersionMessage,
           files: buildWorkspaceChanges([], recoveredFiles),
           entryPath: recoveredEntryPath,
           version: preview.artifact.version,
         });
       }
+      if (workspaceGenerationRef.current !== requestGeneration) return;
       if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+        setWorkspace((current) =>
+          current?.repository.repoId === requestRepoId
+            ? {
+                ...current,
+                repository: {
+                  ...current.repository,
+                  ...result.repository,
+                  repoId: requestRepoId,
+                },
+                ownerFingerprint: result.ownerFingerprint,
+                source: {
+                  ...current.source,
+                  ownerFingerprint: result.ownerFingerprint,
+                },
+              }
+            : current,
+        );
+        setBaseFiles(persistedFiles);
+        setSavedFiles(persistedFiles);
         appendConsole({
           level: 'info',
-          message: t('Saved successfully'),
+          message: t('Saved successfully; newer local changes remain unsaved'),
         });
-        finishEmbeddedSaveRequest('saved');
+        setNotice({ type: 'info', message: t('Saved successfully; newer local changes remain unsaved') });
         return;
       }
       setSaveOpen(false);
+      setSaving(false);
       appendConsole({
         level: 'info',
         message: t('Saved successfully'),
       });
+      const loaded = await loadWorkspace();
+      if (!loaded) {
+        throw new Error(t('Failed to load source'));
+      }
       (onPersistedChange || onChange)?.(
         withSavedSourceRef(
           {
             ...value,
-            code: savedArtifact.code,
-            version: savedArtifact.version,
+            code: loaded.opened.legacy.code,
+            version: loaded.opened.legacy.version,
           },
           result,
           props.locator,
         ),
       );
-      await loadWorkspace();
       setPreviewDiagnostics(result.artifact.diagnostics);
       finishEmbeddedSaveRequest('saved');
       if (!embedded) {
@@ -1073,6 +1156,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         }
       }
     } catch (error) {
+      if (workspaceGenerationRef.current !== requestGeneration) return;
       failEmbeddedSaveRequest(error);
       reportActionError(error, t('Save failed'), save);
       appendConsole({
@@ -1080,7 +1164,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         message: formatVscComponentError(error, t('Save failed')),
       });
     } finally {
-      setSaving(false);
+      if (workspaceGenerationRef.current === requestGeneration) setSaving(false);
     }
   };
 
@@ -1093,6 +1177,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return null;
     }
 
+    const requestLocator = props.locator;
+    const requestRepoId = workspace.repository.repoId;
+    const requestBaseCommitId = workspace.repository.headCommitId;
+
     const workspaceDiagnostics = validateRunJSWorkspaceForSave(requestFiles, requestEntryPath, t);
     if (hasCompileErrorDiagnostics(workspaceDiagnostics)) {
       setPreviewDiagnostics(workspaceDiagnostics);
@@ -1104,7 +1192,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setPreviewing(true);
     try {
       const result = await runJSSourceRequest('compilePreview', {
-        locator: props.locator,
+        locator: requestLocator,
+        repoId: requestRepoId,
+        baseCommitId: requestBaseCommitId,
         files: buildWorkspaceChanges([], requestFiles),
         entryPath: requestEntryPath,
         version: value.version,
@@ -1128,7 +1218,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setPreviewArtifact(compiled);
       return compiled;
     } finally {
-      setPreviewing(false);
+      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) setPreviewing(false);
     }
   };
 
@@ -1146,7 +1236,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     embeddedSavePromiseRef.current = promise;
     const opened = await openSaveModal();
     if (!opened && embeddedSavePromiseRef.current === promise) {
-      finishEmbeddedSaveRequest('cancelled');
+      if (!hasUnsavedLocalChangesRef.current) {
+        finishEmbeddedSaveRequest('unchanged');
+      } else {
+        await Promise.resolve();
+        await openSaveModalRef.current();
+      }
     }
     return promise;
   };
@@ -1250,7 +1345,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     if (!workspace || !props.locator || workspaceEditingDisabled) {
       return;
     }
-    const restoreSnapshotKey = latestWorkspaceSnapshotRef.current;
+    const restoreSnapshotKey = beginWorkspaceOperation(files, entryPath, workspace.repository.repoId);
 
     setRestoringVersion(true);
     setActionError(null);
@@ -1268,7 +1363,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         });
         return;
       }
-      const nextFiles = normalizeWorkspaceFiles(result.files);
+      const nextFiles = withWorkspaceFileRevisions(files, result.files, () => ++fileRevisionSeqRef.current);
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
       const nextActivePath = nextFiles.find((file) => file.path === nextEntryPath)?.path || nextFiles[0]?.path;
       setFiles(nextFiles);
@@ -1284,13 +1379,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         message: `${t('Restored from')} ${formatVersion(commit.seq)}`,
       });
     } catch (error) {
+      if (latestWorkspaceSnapshotRef.current !== restoreSnapshotKey) return;
       reportActionError(error, t('Failed to restore version'), () => loadVersionIntoEditor(commit));
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to restore version')),
       });
     } finally {
-      setRestoringVersion(false);
+      if (latestWorkspaceSnapshotRef.current === restoreSnapshotKey) setRestoringVersion(false);
     }
   };
 
@@ -1318,7 +1414,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         language: inferLanguageFromPath(nextPath),
       });
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-      const syncedFiles = ensureManifestEntry(nextFiles, nextEntryPath, true);
+      const syncedFiles = withWorkspaceFileRevisions(
+        current,
+        ensureManifestEntry(nextFiles, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
+      );
       syncWorkspaceSnapshotRef(syncedFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
       return syncedFiles;
@@ -1336,11 +1436,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     invalidatePreview();
     setFiles((current) => {
       const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
-      const nextFiles = ensureManifestFolders(
+      const nextFiles = withWorkspaceFileRevisions(
         current,
-        [...collectRunJSWorkspaceFolders(current), nextPath],
-        nextEntryPath,
-        true,
+        ensureManifestFolders(current, [...collectRunJSWorkspaceFolders(current), nextPath], nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
       );
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
@@ -1374,7 +1473,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setFiles((current) => {
       const renamed = replaceWorkspaceFilePath(current, path, normalizedNextPath);
       const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = ensureManifestEntry(renamed, nextEntryPath, true);
+      const nextFiles = withWorkspaceFileRevisions(
+        current,
+        ensureManifestEntry(renamed, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
+      );
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
       return nextFiles;
@@ -1416,11 +1519,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         replaceRunJSPathPrefix(folder, path, normalizedNextPath),
       );
       const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = ensureManifestFolders(
-        ensureManifestEntry(renamed, nextEntryPath, true),
-        nextFolders,
-        nextEntryPath,
-        true,
+      const nextFiles = withWorkspaceFileRevisions(
+        current,
+        ensureManifestFolders(ensureManifestEntry(renamed, nextEntryPath, true), nextFolders, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
       );
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
@@ -1445,7 +1547,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setFiles((current) => {
       const nextFolders = collectRunJSWorkspaceFolders(current).filter((folder) => folder !== path);
       const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
-      const nextFiles = ensureManifestFolders(current, nextFolders, nextEntryPath, true);
+      const nextFiles = withWorkspaceFileRevisions(
+        current,
+        ensureManifestFolders(current, nextFolders, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
+      );
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
       return nextFiles;
@@ -1477,7 +1583,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setFiles((current) => {
       const renamed = replaceWorkspaceFilePath(current, path, nextPath);
       const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = ensureManifestEntry(renamed, nextEntryPath, true);
+      const nextFiles = withWorkspaceFileRevisions(
+        current,
+        ensureManifestEntry(renamed, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
+      );
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
       return nextFiles;
@@ -1543,9 +1653,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         isRunJSPathInsideFolder(folder, path) ? replaceRunJSPathPrefix(folder, path, nextPath) : folder,
       );
       const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = isRunJSPathInsideFolder(runJSManifestPath, path)
-        ? renamed
-        : ensureManifestFolders(ensureManifestEntry(renamed, nextEntryPath, true), nextFolders, nextEntryPath, true);
+      const nextFiles = withWorkspaceFileRevisions(
+        current,
+        isRunJSPathInsideFolder(runJSManifestPath, path)
+          ? renamed
+          : ensureManifestFolders(ensureManifestEntry(renamed, nextEntryPath, true), nextFolders, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
+      );
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
       return nextFiles;
@@ -1563,7 +1677,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setFiles((current) => {
       const nextFiles = removeWorkspaceFile(current, path);
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-      const syncedFiles = ensureManifestEntry(nextFiles, nextEntryPath, true);
+      const syncedFiles = withWorkspaceFileRevisions(
+        current,
+        ensureManifestEntry(nextFiles, nextEntryPath, true),
+        () => ++fileRevisionSeqRef.current,
+      );
       const nextActivePath = syncedFiles.find((file) => file.path === nextEntryPath)?.path || syncedFiles[0]?.path;
       syncWorkspaceSnapshotRef(syncedFiles, nextEntryPath);
       setEntryPath(nextEntryPath);
@@ -1583,10 +1701,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
     invalidatePreview();
     setFiles((current) => {
-      const nextFiles = updateWorkspaceFile(current, activePath, (file) => ({
-        ...file,
-        content,
-      }));
+      const nextFiles = withWorkspaceFileRevisions(
+        current,
+        updateWorkspaceFile(current, activePath, (file) => ({
+          ...file,
+          content,
+        })),
+        () => ++fileRevisionSeqRef.current,
+      );
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
       if (nextEntryPath !== entryPath) {
         setEntryPath(nextEntryPath);
@@ -1798,6 +1920,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const discardLocalAndContinue = async () => {
     hasUnsavedLocalChangesRef.current = false;
     setFiles(savedFiles);
+    syncWorkspaceSnapshotRef(savedFiles, resolveWorkspaceEntryPath(savedFiles, entryPath));
     setCloseConfirmOpen(false);
     if (pendingDirtyAction === 'refresh') {
       await loadWorkspace();
@@ -2301,9 +2424,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
                         onAuthoringSurfaceActivate={activateAuthoringSurface}
-                        onRunPreview={runPreview}
+                        onCheck={checkWorkspace}
                         openPaths={openPaths}
-                        previewing={previewing}
+                        checking={previewing}
+                        projectRevision={projectRevision}
                         readOnly={workspaceEditingDisabled}
                         revealPosition={editorRevealPosition}
                         onRevealPositionApplied={consumeEditorRevealPosition}
@@ -2409,7 +2533,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
       <SaveDiagnosticsModal
         diagnostics={saveDiagnostics.length > 0 ? saveDiagnostics : previewDiagnostics}
-        onCancel={() => setSaveDiagnosticsOpen(false)}
+        onCancel={() => {
+          setSaveDiagnosticsOpen(false);
+          finishEmbeddedSaveRequest('cancelled');
+        }}
         onJump={(diagnostic) => {
           if (!diagnostic.path) {
             return;

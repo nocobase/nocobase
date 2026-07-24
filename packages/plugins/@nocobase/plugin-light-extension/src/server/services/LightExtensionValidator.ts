@@ -50,6 +50,7 @@ import {
   findEntryIndexFile,
   isAllowedSharedFilePath,
   isCodeFile,
+  isRemovedGenericRunJSSourcePath,
   normalizeFiles,
   normalizeSourcePath,
   validateDeleteSourcePath,
@@ -166,6 +167,7 @@ export class LightExtensionValidator {
   validateSyncBatch(input: {
     files: LightExtensionSourceFileInput[];
     existingPaths?: Iterable<string>;
+    allowRemovedGenericRunJSSource?: boolean;
   }): LightExtensionDiagnostic[] {
     const diagnostics: LightExtensionDiagnostic[] = [];
     const existingPathSet = input.existingPaths
@@ -182,6 +184,18 @@ export class LightExtensionValidator {
       );
     }
     for (const file of input.files) {
+      const path = normalizeSourcePath(file.path);
+      if (isRemovedGenericRunJSSourcePath(path) && !input.allowRemovedGenericRunJSSource) {
+        diagnostics.push(
+          diagnostic(
+            'workspace_path_not_allowed',
+            'error',
+            'Source file path is outside the allowed light-extension roots',
+            { path },
+          ),
+        );
+        continue;
+      }
       if (file.operation === 'delete') {
         diagnostics.push(...validateDeleteSourcePath(file.path, existingPathSet));
         continue;
@@ -190,7 +204,6 @@ export class LightExtensionValidator {
         continue;
       }
 
-      const path = normalizeSourcePath(file.path);
       const pathKind = classifySourcePath(path);
       const pathTarget =
         pathKind.status === 'enabled'
@@ -234,7 +247,10 @@ export class LightExtensionValidator {
     return sortDiagnostics(removeBlockedGlobalDiagnostics(uniqueDiagnostics(diagnostics)));
   }
 
-  validateInitialFiles(input: { files: LightExtensionSourceFileInput[] }): LightExtensionDiagnostic[] {
+  validateInitialFiles(input: {
+    files: LightExtensionSourceFileInput[];
+    allowRemovedGenericRunJSSource?: boolean;
+  }): LightExtensionDiagnostic[] {
     const writeDiagnostics = this.validateSyncBatch(input);
     const workspaceValidation = this.validateWorkspace(input);
     return sortDiagnostics(uniqueDiagnostics([...writeDiagnostics, ...workspaceValidation.diagnostics]));

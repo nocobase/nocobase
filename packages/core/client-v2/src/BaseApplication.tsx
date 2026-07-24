@@ -30,6 +30,7 @@ import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
+import { TypeScriptWorkerOwnerProvider } from './flow/components/code-editor/TypeScriptWorkerOwnerProvider';
 import { EntryActionManager } from './entry-actions';
 import { SystemSettingsSource } from './flow/system-settings';
 import { LayoutManager } from './layout-manager/LayoutManager';
@@ -373,6 +374,7 @@ export abstract class BaseApplication<
   protected addBaseProviders() {
     this.use(I18nextProvider, { i18n: this.i18n });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
+    this.use(TypeScriptWorkerOwnerProvider);
     this.use(GlobalThemeProvider);
     this.use(AntdAppProvider);
   }

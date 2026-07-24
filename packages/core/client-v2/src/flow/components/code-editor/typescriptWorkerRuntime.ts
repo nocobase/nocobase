@@ -9,9 +9,10 @@
 
 import {
   buildRunJSTypeScriptContextDeclaration,
-  buildRunJSTypeScriptEnvironmentFiles,
   collectRunJSTypeLibraryUsage,
   createRunJSTypeScriptCompilerOptions,
+  RUNJS_TYPESCRIPT_ENVIRONMENT_LIBRARY_NAME,
+  RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
   selectRunJSTypeLibraryRequests,
   type RunJSTypeLibraryPack,
   type RunJSTypeLibraryPackDependency,
@@ -19,7 +20,6 @@ import {
   RUNJS_TYPESCRIPT_CONTEXT_PATH,
 } from '@nocobase/runjs/client-v2';
 
-import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
 import {
   getRunJSBuiltInAutoImportLibrary,
   isRunJSTypeScriptAutoImportSourceAllowed,
@@ -31,6 +31,7 @@ import {
   TypeScriptVirtualFileSystem,
   type TypeScriptVirtualFileInput,
 } from './typescriptVirtualFileSystem';
+import { RUNJS_TYPESCRIPT_WORKER_REVISION_MISMATCH } from './typescriptWorkerProtocol';
 import type {
   TypeScriptWorkerCompletionChange,
   TypeScriptWorkerCompletionEntry,
@@ -65,6 +66,7 @@ type ProjectState = {
   dependencyFileCount: number;
   disposed: boolean;
   documentVersion: number;
+  revision: number;
   languageServiceCreationCount: number;
   loadPack: TypeScriptWorkerPackLoader;
   loadedFullPackIds: Map<string, string>;
@@ -75,7 +77,6 @@ type ProjectState = {
   snapshot: TypeScriptWorkerProjectSnapshot;
 };
 
-const environmentFiles = buildRunJSTypeScriptEnvironmentFiles(runJSTypeScriptLibSources);
 const completionPreferences: import('typescript').UserPreferences = {
   allowIncompleteCompletions: true,
   includeCompletionsForModuleExports: true,
@@ -90,6 +91,9 @@ const completionFormatOptions: import('typescript').FormatCodeSettings = {
   tabSize: 2,
 };
 let typeScriptPromise: Promise<TypeScriptModule> | null = null;
+const typeScriptEnvironmentPackPromise = import('./generated/runJSTypeScriptEnvironmentFiles').then(
+  (module) => module.runJSTypeScriptEnvironmentPack,
+);
 
 async function loadTypeScript(): Promise<TypeScriptModule> {
   typeScriptPromise ||= import('typescript');
@@ -194,7 +198,11 @@ async function loadPackWithDependencies(
   let loading = state.packCache.get(request.packId);
   if (!loading) {
     state.actualLoadIds.push(request.packId);
-    loading = state.loadPack(request).catch((error: unknown) => {
+    loading = (
+      request.packId === RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID
+        ? typeScriptEnvironmentPackPromise
+        : state.loadPack(request)
+    ).catch((error: unknown) => {
       if (state.packCache.get(request.packId) === loading) state.packCache.delete(request.packId);
       throw error;
     });
@@ -247,6 +255,16 @@ async function loadProjectPacks(
   );
   for (const request of requests) state.packRequestIds.push(request.packId);
   const packs = new Map<string, RunJSTypeLibraryPack>();
+  await loadPackWithDependencies(
+    state,
+    {
+      kind: 'library',
+      libraryName: RUNJS_TYPESCRIPT_ENVIRONMENT_LIBRARY_NAME,
+      packId: RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
+    },
+    new Set(),
+    packs,
+  );
   for (const request of requests) await loadPackWithDependencies(state, request, new Set(), packs);
   return [...packs.values()].sort((left, right) => left.id.localeCompare(right.id));
 }
@@ -448,6 +466,7 @@ export class TypeScriptWorkerRuntime {
   sync(
     projectId: string,
     documentVersion: number,
+    targetRevision: number,
     snapshot: TypeScriptWorkerProjectSnapshot,
     loadPack: TypeScriptWorkerPackLoader,
   ): void {
@@ -462,6 +481,7 @@ export class TypeScriptWorkerRuntime {
         clearTypeScriptImmutableFileCacheNamespace(projectId);
       }
       existing.documentVersion = documentVersion;
+      existing.revision = targetRevision;
       existing.snapshot = snapshot;
       existing.loadPack = loadPack;
       existing.disposed = false;
@@ -473,6 +493,7 @@ export class TypeScriptWorkerRuntime {
       dependencyFileCount: 0,
       disposed: false,
       documentVersion,
+      revision: targetRevision,
       languageServiceCreationCount: 0,
       loadPack,
       loadedFullPackIds: new Map(),
@@ -487,11 +508,16 @@ export class TypeScriptWorkerRuntime {
   update(
     projectId: string,
     documentVersion: number,
+    baseRevision: number,
+    targetRevision: number,
     update: TypeScriptWorkerProjectUpdate,
     loadPack: TypeScriptWorkerPackLoader,
   ): void {
     const state = this.projects.get(projectId);
     if (!state) throw new Error(`TypeScript worker project is not initialized: ${projectId}`);
+    if (state.revision !== baseRevision) {
+      throw new Error(`${RUNJS_TYPESCRIPT_WORKER_REVISION_MISMATCH}:${state.revision}:${baseRevision}`);
+    }
     if (documentVersion < state.documentVersion) return;
     const files = new Map(state.snapshot.files.map((file) => [file.path, file]));
     for (const path of update.fileRemovals) files.delete(path);
@@ -502,6 +528,7 @@ export class TypeScriptWorkerRuntime {
     this.sync(
       projectId,
       documentVersion,
+      targetRevision,
       {
         compilerOptions: update.compilerOptions,
         currentFilePath: update.currentFilePath,
@@ -657,9 +684,6 @@ export class TypeScriptWorkerRuntime {
     const files = new Map<string, TypeScriptVirtualFileInput>();
     for (const file of [...snapshot.files, ...snapshot.declarationFiles]) {
       mergeFile(files, { content: file.content, fileName: toFileName(file.path), root: true });
-    }
-    for (const file of environmentFiles) {
-      mergeFile(files, { content: file.content, fileName: file.path, immutable: true, root: true });
     }
     mergeFile(files, {
       content: buildRunJSTypeScriptContextDeclaration(snapshot.runJSContext?.modelUse, {

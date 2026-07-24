@@ -213,7 +213,7 @@ describe('plugin-light-extension supported kinds validator', () => {
     );
   });
 
-  it('rejects the removed generic RunJS authoring root in full-workspace and incremental validation', () => {
+  it('keeps removed generic RunJS source inert for remote snapshots but rejects direct authoring', () => {
     const validator = new LightExtensionValidator();
     const files = [
       { path: 'src/client/runjs/example/index.ts', content: 'return 1;\n' },
@@ -221,17 +221,14 @@ describe('plugin-light-extension supported kinds validator', () => {
     ];
     const workspace = validator.validateWorkspace({ files });
     const initial = validator.validateInitialFiles({ files });
+    const remoteInitial = validator.validateInitialFiles({ files, allowRemovedGenericRunJSSource: true });
     const syncBatch = validator.validateSyncBatch({ files });
 
-    expect(workspace.accepted).toBe(false);
+    expect(workspace.accepted).toBe(true);
     expect(workspace.entries).toEqual([]);
-    expect(workspace.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 'workspace_path_not_allowed', path: 'src/client/runjs/example/index.ts' }),
-        expect.objectContaining({ code: 'workspace_path_not_allowed', path: 'src/client/runjs/example/entry.json' }),
-      ]),
-    );
+    expect(workspace.diagnostics).toEqual([]);
     expect(initial).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'workspace_path_not_allowed' })]));
+    expect(remoteInitial).toEqual([]);
     expect(syncBatch).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: 'workspace_path_not_allowed' })]),
     );

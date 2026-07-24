@@ -239,6 +239,7 @@ describe('vsc-file remote runtime bootstrap', () => {
       remote: { id: 'remote_pull' },
       jobId: 'job_pull',
       claimToken: 'claim_pull',
+      leaseDurationMs: 30_000,
       expectedLocalCommitId: 'commit_pull',
       expectedRemoteRevision: 'rev_pull',
       expectedRemoteTargetVersion: 2,

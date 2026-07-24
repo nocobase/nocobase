@@ -85,6 +85,13 @@ describe('PreparedCandidateWorkspace identity guard', () => {
     expect(() => assertPreparedCandidateWorkspace(candidate, { commitId: 'commit_other' })).toThrow(
       'belongs to a different commit',
     );
+    const forgedCandidate = { ...candidate };
+    expect(() => assertPreparedCandidateWorkspace(forgedCandidate, { transaction })).toThrow(
+      'was not prepared by the light-extension file service',
+    );
+    expect(() => assertPreparedCandidateWorkspace(structuredClone(candidate), { transaction })).toThrow(
+      'was not prepared by the light-extension file service',
+    );
     expect(Object.keys(candidate)).not.toContain('transaction');
   });
 });

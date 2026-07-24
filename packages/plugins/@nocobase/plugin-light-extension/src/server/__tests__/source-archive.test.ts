@@ -98,6 +98,19 @@ describe('plugin-light-extension source ZIP archive', () => {
     });
   });
 
+  it('rejects symbolic links before extracting source files', async () => {
+    const zip = new JSZip();
+    zip.file('src/client/link.ts', '../shared/target.ts', { unixPermissions: 0o120777 });
+    const zipBase64 = await zip.generateAsync({ type: 'base64', platform: 'UNIX' });
+
+    await expect(parseLightExtensionSourceArchive(zipBase64, new LightExtensionValidator())).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_symlink_not_allowed' })]),
+      },
+    });
+  });
+
   it('rejects compressed, uncompressed, and per-file budget overruns before accepting source', async () => {
     const zipBase64 = await createZipBase64({
       'src/client/js-blocks/example/index.js': `export default ${JSON.stringify('a'.repeat(1024))};\n`,

@@ -36,9 +36,8 @@ export type FlowSurfaceRunJSWorkspaceBootstrapInput = {
   authoringContext: FlowSurfaceRunJSAuthoringContext;
 };
 
-export type FlowSurfaceRunJSAuthoringContext = Pick<
-  RunJSSourceAdapterContext,
-  'userId' | 'request' | 'state' | 'currentUser' | 'timezone' | 'can'
+export type FlowSurfaceRunJSAuthoringContext = Partial<
+  Pick<RunJSSourceAdapterContext, 'userId' | 'request' | 'state' | 'currentUser' | 'timezone' | 'can'>
 >;
 
 export type FlowSurfaceRunJSWorkspaceBootstrapResult = {

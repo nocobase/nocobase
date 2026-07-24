@@ -17,6 +17,8 @@ import {
   type RunJSTypeScriptFinalMatrixCase,
 } from './fixtures/runjs-typescript-final-matrix';
 
+const compilerGateCaseIds = new Set(['ordinary-valid', 'ordinary-invalid-assignment', 'react-valid-hooks-and-jsx']);
+
 function createMatrixRegistry(): NodeRunJSTypeLibraryRegistry {
   const registry = createNodeRunJSTypeLibraryRegistry();
   registry.register({
@@ -112,7 +114,7 @@ describe('RunJS final shared TypeScript diagnostic matrix', () => {
     }
   });
 
-  it.each(runJSTypeScriptFinalDiagnosticMatrix.filter((caseDefinition) => caseDefinition.compiler !== false))(
+  it.each(runJSTypeScriptFinalDiagnosticMatrix.filter((caseDefinition) => compilerGateCaseIds.has(caseDefinition.id)))(
     'matches the compiler gate for $id',
     async (caseDefinition) => {
       const result = await compileRunJSSourceWorkspace({

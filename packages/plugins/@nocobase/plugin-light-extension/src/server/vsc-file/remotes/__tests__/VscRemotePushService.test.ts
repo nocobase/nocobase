@@ -20,6 +20,7 @@ import { VscPermissionHookRegistry } from '../../permissions';
 import { CommitService } from '../../services/CommitService';
 import { TreeService } from '../../services/TreeService';
 import { VscFileService } from '../../services/VscFileService';
+import { validateVscRemoteAuthRef, type VscRemoteAuthRef } from '../credentialRef';
 import { ExternalCommitMapStore } from '../ExternalCommitMapStore';
 import { RemoteReconcileService } from '../RemoteReconcileService';
 import { RemoteSyncError } from '../RemoteSyncAdapter';
@@ -323,9 +324,16 @@ describe('VscRemotePushService', () => {
       name: 'origin',
       provider: 'github',
       config: remoteConfig,
-      authRef,
+      authRef: await validAuthRef(authRef),
     });
     return { repoId: created.repository.id, commitId: created.initialCommit.id, remote };
+  }
+
+  async function validAuthRef(authRef: string | null): Promise<VscRemoteAuthRef | null> {
+    if (authRef === null) {
+      return null;
+    }
+    return validateVscRemoteAuthRef(authRef, async (name) => ({ name, type: 'secret' }));
   }
 
   async function createPushInput(remote: VscFileRemoteRecord, commitId: string) {

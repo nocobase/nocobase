@@ -8,6 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
+import type { RunJSRuntimeArtifact } from '@nocobase/runjs';
 import {
   assertRunJSCompileInputLimits,
   buildRunJSRuntimeCodeHash,
@@ -18,6 +19,7 @@ import {
   type RunJSSourceAdapterContext,
   type RunJSSourceAdapterRegistry,
   type RunJSSourceLocator,
+  type PreparedPush,
   type VscCommitRecord,
   type VscFileChange,
   type VscRepositoryRecord,
@@ -36,7 +38,6 @@ import type {
 } from '../../shared/types';
 import { LightExtensionError } from '../../shared/errors';
 import { LightExtensionEntryService } from './LightExtensionEntryService';
-import { rewriteRelativeImports } from './MoveSourceService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
@@ -44,13 +45,19 @@ import {
   LightExtensionWorkspaceCompilerBridge,
   rewriteLightExtensionSdkRuntimeImports,
 } from './LightExtensionWorkspaceCompilerBridge';
+import {
+  collectRelativeModuleSpecifiers,
+  getSourceScriptKind,
+  isSourceCodeFile,
+  normalizeSourceWorkspacePath,
+  resolveRelativeSourcePath,
+  rewriteRelativeImports,
+} from './sourceRelocation';
 
 const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const RUNJS_ENTRY_ROOT = 'src/client';
 const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
 const LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE = 'entry.json';
-const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'] as const;
-const RESOLVABLE_EXTENSIONS = [...CODE_EXTENSIONS, '.json'] as const;
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 const LIGHT_EXTENSION_SDK_TYPE_MODULES = new Set([
   '@nocobase/light-extension-sdk/client',
@@ -75,6 +82,16 @@ type FlowModelRepositoryLike = {
 
 export interface MoveToInlineServiceContext extends LightExtensionServiceContext {
   adapterContext: RunJSSourceAdapterContext;
+}
+
+interface PreparedMoveToInline {
+  locator: FlowModelStepLocator;
+  entryPath: string;
+  ownerFingerprint: string;
+  surfaceStyle: string;
+  artifact: RunJSRuntimeArtifact;
+  commitMetadata: Record<string, unknown>;
+  preparedPush: PreparedPush;
 }
 
 export class MoveToInlineService {
@@ -105,20 +122,20 @@ export class MoveToInlineService {
           content: '',
         },
       ]);
+      const prepared = await this.prepareMoveToInline(input, ctx, relocatedFiles);
       return await this.db.sequelize.transaction((transaction) =>
-        this.moveToInlineInTransaction(input, ctx, relocatedFiles, transaction),
+        this.publishMoveToInline(input, ctx, prepared, transaction),
       );
     } catch (error) {
       throw normalizeMoveToInlineError(error);
     }
   }
 
-  private async moveToInlineInTransaction(
+  private async prepareMoveToInline(
     input: LightExtensionMoveToInlineInput,
     ctx: MoveToInlineServiceContext,
     relocatedFiles: LightExtensionMoveSourceWorkspaceFile[],
-    transaction: Transaction,
-  ): Promise<LightExtensionMoveToInlineResult> {
+  ): Promise<PreparedMoveToInline> {
     const locator = requireFlowModelStepLocator(input.locator);
     const registry = this.getAdapterRegistry();
     const vscFileService = this.getVscFileService();
@@ -130,12 +147,8 @@ export class MoveToInlineService {
     const adapterContext: RunJSSourceAdapterContext = {
       ...ctx.adapterContext,
       sourceTransition: 'external-to-inline',
-      transaction,
     };
-    const serviceContext: LightExtensionServiceContext = {
-      ...ctx,
-      transaction,
-    };
+    const serviceContext: LightExtensionServiceContext = { ...ctx };
     const vscContext: VscServiceContext = {
       authorId: ctx.actorUserId,
       request: {
@@ -143,11 +156,10 @@ export class MoveToInlineService {
         resourceName: 'runJSSources',
         actionName: 'save',
       },
-      transaction,
     };
 
     await adapter.assertCanWrite({ locator, ctx: adapterContext });
-    const currentModel = await getFlowModel(this.db, locator.modelUid, transaction);
+    const currentModel = await getFlowModel(this.db, locator.modelUid);
     assertCurrentLightExtensionBinding(currentModel, locator, input);
 
     const identity = buildRunJSSourceRepositoryIdentity(locator);
@@ -161,29 +173,11 @@ export class MoveToInlineService {
       },
       vscContext,
     );
-    const repository = await vscFileService.getRepositoryForUpdate({ repoId: ensured.repository.id }, vscContext);
+    const repository = ensured.repository;
     assertRepositoryIdentity(repository, identity);
 
     const entry = await this.entryService.getEntry(input.entryId, serviceContext);
-    if (
-      entry.repoId !== input.repoId ||
-      entry.kind !== input.kind ||
-      normalizeWorkspacePath(entry.entryPath) !== normalizeWorkspacePath(input.entryPath)
-    ) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_BINDING_OUTDATED',
-        'The selected light extension entry changed before it could be moved to inline code',
-        {
-          status: 409,
-          details: {
-            repoId: input.repoId,
-            entryId: input.entryId,
-            entryPath: input.entryPath,
-            kind: input.kind,
-          },
-        },
-      );
-    }
+    assertCurrentEntry(entry, input);
 
     const legacy = await adapter.readLegacy({ locator, ctx: adapterContext });
     if (!isMoveToInlineHostSupported(input.kind, legacy.metadata?.modelUse)) {
@@ -282,7 +276,7 @@ export class MoveToInlineService {
       surfaceStyle: legacy.surfaceStyle,
       runtimeCodeHash,
     };
-    const pushed = await vscFileService.push(
+    const preparedPush = await vscFileService.preparePush(
       {
         repoId: repository.id,
         baseCommitId: repository.headCommitId,
@@ -295,22 +289,83 @@ export class MoveToInlineService {
       vscContext,
     );
 
-    await lockFlowModel(this.db, locator.modelUid, transaction);
-    assertCurrentLightExtensionBinding(await getFlowModel(this.db, locator.modelUid, transaction), locator, input);
-    await adapter.writeRuntime({
+    return {
       locator,
+      entryPath,
+      ownerFingerprint: legacy.ownerFingerprint,
+      surfaceStyle: legacy.surfaceStyle,
       artifact,
+      commitMetadata,
+      preparedPush,
+    };
+  }
+
+  private async publishMoveToInline(
+    input: LightExtensionMoveToInlineInput,
+    ctx: MoveToInlineServiceContext,
+    prepared: PreparedMoveToInline,
+    transaction: Transaction,
+  ): Promise<LightExtensionMoveToInlineResult> {
+    const registry = this.getAdapterRegistry();
+    const vscFileService = this.getVscFileService();
+    if (!registry || !vscFileService) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+    }
+    const adapter = registry.require(prepared.locator.kind);
+    const adapterContext: RunJSSourceAdapterContext = {
+      ...ctx.adapterContext,
+      sourceTransition: 'external-to-inline',
+      transaction,
+    };
+    const serviceContext: LightExtensionServiceContext = { ...ctx, transaction };
+    const vscContext: VscServiceContext = {
+      authorId: ctx.actorUserId,
+      request: {
+        ...adapterContext.request,
+        resourceName: 'runJSSources',
+        actionName: 'save',
+      },
+      transaction,
+    };
+
+    await adapter.assertCanWrite({ locator: prepared.locator, ctx: adapterContext });
+    assertCurrentLightExtensionBinding(
+      await getFlowModel(this.db, prepared.locator.modelUid, transaction),
+      prepared.locator,
+      input,
+    );
+    const entry = await this.entryService.getEntry(input.entryId, serviceContext);
+    assertCurrentEntry(entry, input);
+    const legacy = await adapter.readLegacy({ locator: prepared.locator, ctx: adapterContext });
+    if (!isMoveToInlineHostSupported(input.kind, legacy.metadata?.modelUse)) {
+      throw unsupportedLocator(prepared.locator);
+    }
+    if (legacy.ownerFingerprint !== prepared.ownerFingerprint || legacy.surfaceStyle !== prepared.surfaceStyle) {
+      throw bindingOutdated(input);
+    }
+
+    const pushed = await vscFileService.publishPreparedPush(prepared.preparedPush, vscContext);
+
+    await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
+    assertCurrentLightExtensionBinding(
+      await getFlowModel(this.db, prepared.locator.modelUid, transaction),
+      prepared.locator,
+      input,
+    );
+    await adapter.writeRuntime({
+      locator: prepared.locator,
+      artifact: prepared.artifact,
       commitId: pushed.commit.id,
-      baseOwnerFingerprint: legacy.ownerFingerprint,
+      baseOwnerFingerprint: prepared.ownerFingerprint,
       ctx: adapterContext,
     });
-    await setFlowModelSourceModeInline(this.db, locator, input, transaction);
-    const ownerFingerprint = await adapter.getFingerprint({ locator, ctx: adapterContext });
+    await setFlowModelSourceModeInline(this.db, prepared.locator, input, transaction);
+    const ownerFingerprint = await adapter.getFingerprint({ locator: prepared.locator, ctx: adapterContext });
     await updateRunJSCommitMetadata(
       this.db,
       pushed.commit,
       {
-        ...commitMetadata,
+        ...prepared.commitMetadata,
         ownerFingerprint,
       },
       transaction,
@@ -318,7 +373,7 @@ export class MoveToInlineService {
 
     await this.referenceService.syncFlowModelReferencesForNodeTree(
       {
-        rootUid: locator.modelUid,
+        rootUid: prepared.locator.modelUid,
         action: 'lightExtensions.moveToInline',
       },
       serviceContext,
@@ -326,18 +381,18 @@ export class MoveToInlineService {
 
     const sourceRef = {
       type: 'vsc-file' as const,
-      repoId: repository.id,
+      repoId: pushed.repository.id,
       commitId: pushed.commit.id,
-      entry: entryPath,
+      entry: prepared.entryPath,
     };
     return {
-      runJSRepoId: repository.id,
+      runJSRepoId: pushed.repository.id,
       commitId: pushed.commit.id,
       ownerFingerprint,
-      code: artifact.code,
-      version: artifact.version,
-      entryPath,
-      filesHash: artifact.filesHash,
+      code: prepared.artifact.code,
+      version: prepared.artifact.version,
+      entryPath: prepared.entryPath,
+      filesHash: prepared.artifact.filesHash,
       sourceRef,
     };
   }
@@ -350,16 +405,16 @@ export function collectAndRelocateInlineFiles(input: {
 }): LightExtensionMoveSourceWorkspaceFile[] {
   const sourceFiles = new Map<string, LightExtensionMoveSourceWorkspaceFile>();
   for (const file of input.files) {
-    const path = normalizeWorkspacePath(file.path);
+    const path = normalizeSourceWorkspacePath(file.path);
     if (sourceFiles.has(path)) {
       throw invalidInput(`Duplicate workspace path "${path}"`);
     }
     sourceFiles.set(path, { ...file, path });
   }
 
-  const entryPath = normalizeWorkspacePath(input.entryPath);
+  const entryPath = normalizeSourceWorkspacePath(input.entryPath);
   const entryFile = sourceFiles.get(entryPath);
-  if (!entryFile || !isCodeFile(entryPath)) {
+  if (!entryFile || !isSourceCodeFile(entryPath)) {
     throw invalidInput('Light extension entry file is missing or invalid');
   }
   const entryRoot = pathPosix.dirname(entryPath);
@@ -405,11 +460,11 @@ function rewriteLightExtensionTypeImportsForInline(
   content: string,
   kind?: LightExtensionMoveToInlineInput['kind'],
 ): string {
-  if (!isCodeFile(path)) {
+  if (!isSourceCodeFile(path)) {
     return content;
   }
 
-  const sourceFile = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, getScriptKind(path));
+  const sourceFile = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, getSourceScriptKind(path));
   const replacements: Array<{ start: number; end: number; value: string }> = [];
   const declaredNames = new Set<string>();
   for (const statement of sourceFile.statements) {
@@ -559,12 +614,12 @@ function collectReachablePaths(
     }
     selected.add(path);
     const file = files.get(path);
-    if (!file || !isCodeFile(path)) {
+    if (!file || !isSourceCodeFile(path)) {
       continue;
     }
 
     for (const specifier of collectRelativeModuleSpecifiers(path, file.content)) {
-      const importedPath = resolveImportedPath(path, specifier, files);
+      const importedPath = resolveRelativeSourcePath(path, specifier, (candidate) => files.has(candidate));
       if (!importedPath) {
         continue;
       }
@@ -580,53 +635,12 @@ function collectReachablePaths(
   return selected;
 }
 
-function collectRelativeModuleSpecifiers(path: string, content: string): string[] {
-  const sourceFile = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, getScriptKind(path));
-  const specifiers: string[] = [];
-  for (const statement of sourceFile.statements) {
-    if (ts.isImportDeclaration(statement)) {
-      if (!ts.isStringLiteral(statement.moduleSpecifier)) {
-        continue;
-      }
-      const specifier = statement.moduleSpecifier.text;
-      if (specifier.startsWith('.')) {
-        specifiers.push(specifier);
-      }
-      continue;
-    }
-
-    if (
-      ts.isExportDeclaration(statement) &&
-      statement.moduleSpecifier &&
-      ts.isStringLiteral(statement.moduleSpecifier) &&
-      statement.moduleSpecifier.text.startsWith('.')
-    ) {
-      specifiers.push(statement.moduleSpecifier.text);
-    }
-  }
-  return specifiers;
-}
-
-function resolveImportedPath(
-  sourcePath: string,
-  specifier: string,
-  files: Map<string, LightExtensionMoveSourceWorkspaceFile>,
-): string | null {
-  const basePath = normalizeWorkspacePath(pathPosix.join(pathPosix.dirname(sourcePath), specifier));
-  const candidates = [
-    basePath,
-    ...RESOLVABLE_EXTENSIONS.map((extension) => `${basePath}${extension}`),
-    ...RESOLVABLE_EXTENSIONS.map((extension) => `${basePath}/index${extension}`),
-  ];
-  return candidates.find((candidate) => files.has(candidate)) || null;
-}
-
 function isAllowedEntryDependency(path: string, entryRoot: string): boolean {
   return path === entryRoot || path.startsWith(`${entryRoot}/`) || path.startsWith(`${LIGHT_EXTENSION_SHARED_ROOT}/`);
 }
 
 function relocateEntryPath(entryPath: string): string {
-  return `${RUNJS_ENTRY_ROOT}/index${pathPosix.extname(normalizeWorkspacePath(entryPath))}`;
+  return `${RUNJS_ENTRY_ROOT}/index${pathPosix.extname(normalizeSourceWorkspacePath(entryPath))}`;
 }
 
 function withRunJSManifest(
@@ -698,7 +712,7 @@ async function lockFlowModel(db: Database, modelUid: string, transaction: Transa
   });
 }
 
-async function getFlowModel(db: Database, modelUid: string, transaction: Transaction): Promise<JsonRecord> {
+async function getFlowModel(db: Database, modelUid: string, transaction?: Transaction): Promise<JsonRecord> {
   const model = await getFlowModelRepository(db).findModelById(modelUid, {
     includeAsyncNode: true,
     transaction,
@@ -739,6 +753,24 @@ function assertCurrentLightExtensionBinding(
     sourceBinding.kind !== input.kind
   ) {
     throw bindingOutdated(input);
+  }
+}
+
+function assertCurrentEntry(
+  entry: Awaited<ReturnType<LightExtensionEntryService['getEntry']>>,
+  input: Pick<LightExtensionMoveToInlineInput, 'repoId' | 'entryId' | 'entryPath' | 'kind'>,
+): void {
+  if (
+    entry.id !== input.entryId ||
+    entry.repoId !== input.repoId ||
+    entry.kind !== input.kind ||
+    normalizeSourceWorkspacePath(entry.entryPath) !== normalizeSourceWorkspacePath(input.entryPath)
+  ) {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_BINDING_OUTDATED',
+      'The selected light extension entry changed before it could be moved to inline code',
+      { status: 409, details: input },
+    );
   }
 }
 
@@ -858,31 +890,6 @@ function isLightExtensionBinding(value: unknown): value is LightExtensionRuntime
     typeof value.entryId === 'string' &&
     typeof value.kind === 'string'
   );
-}
-
-function normalizeWorkspacePath(value: string): string {
-  const normalized = pathPosix.normalize(String(value || '').trim()).replace(/^\.\/+/, '');
-  if (!normalized || normalized === '.' || normalized.startsWith('../') || normalized.startsWith('/')) {
-    throw invalidInput(`Invalid workspace path "${value}"`);
-  }
-  return normalized;
-}
-
-function isCodeFile(path: string): boolean {
-  return CODE_EXTENSIONS.includes(pathPosix.extname(path).toLowerCase() as (typeof CODE_EXTENSIONS)[number]);
-}
-
-function getScriptKind(path: string): ts.ScriptKind {
-  if (path.endsWith('.tsx')) {
-    return ts.ScriptKind.TSX;
-  }
-  if (path.endsWith('.jsx')) {
-    return ts.ScriptKind.JSX;
-  }
-  if (path.endsWith('.js')) {
-    return ts.ScriptKind.JS;
-  }
-  return ts.ScriptKind.TS;
 }
 
 function bindingOutdated(

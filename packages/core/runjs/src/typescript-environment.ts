@@ -76,6 +76,8 @@ export interface RunJSTypeScriptEnvironmentFile {
 export const RUNJS_TYPESCRIPT_ES_LIB_PATH = '/__runjs__/lib.es2020.d.ts';
 export const RUNJS_TYPESCRIPT_DOM_LIB_PATH = '/__runjs__/lib.dom.d.ts';
 export const RUNJS_TYPESCRIPT_BROWSER_GLOBALS_PATH = '/__runjs__/browser-globals.d.ts';
+export const RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID = 'runjs/typescript-environment';
+export const RUNJS_TYPESCRIPT_ENVIRONMENT_LIBRARY_NAME = '__runjs_typescript_environment';
 
 const libReferenceDirective = /^\/\/\/\s*<reference\b[^>]*\/>\s*$/gmu;
 

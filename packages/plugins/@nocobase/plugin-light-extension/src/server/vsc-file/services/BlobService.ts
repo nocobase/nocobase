@@ -30,15 +30,28 @@ export class BlobService {
   async ensureBlob(content: string, options: EnsureBlobOptions = {}): Promise<VscStoredBlob> {
     const blob = normalizeBlob(content);
     const blobModel = this.db.getModel<Model<VscStoredBlob>>('vscFileBlobs');
-    const [record] = await blobModel.findOrCreate({
-      where: {
-        hash: blob.hash,
-      },
-      defaults: blob,
-      transaction: options.transaction,
-    });
-
-    return blobFromRecord(record);
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        const [record] = await blobModel.findOrCreate({
+          where: {
+            hash: blob.hash,
+          },
+          defaults: blob,
+          transaction: options.transaction,
+        });
+        return blobFromRecord(record);
+      } catch (error) {
+        if (
+          options.transaction ||
+          this.db.sequelize.getDialect() !== 'sqlite' ||
+          !isSqliteBusyError(error) ||
+          attempt >= 2
+        ) {
+          throw error;
+        }
+        await delay(100);
+      }
+    }
   }
 
   async loadBlobMetadata(
@@ -116,6 +129,21 @@ function blobFromRecord(record: Model<VscStoredBlob>): VscStoredBlob {
     size: record.get('size') as number,
     content: record.get('content') as string,
   };
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function blobMetadataFromRecord(record: Model<VscStoredBlobMetadata>): VscStoredBlobMetadata {

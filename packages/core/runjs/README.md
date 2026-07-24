@@ -153,9 +153,10 @@ yarn test packages/core/runjs/src/__tests__/final-diagnostic-matrix.test.ts --ru
 ```
 
 The final diagnostic matrix is pure data in
-`src/__tests__/fixtures/runjs-typescript-final-matrix.ts`. Node source inspection and the compiler gate consume it;
-browser project tests should consume the same cases and compare TypeScript diagnostic codes plus the stable message
-fragments, not full compiler wording.
+`src/__tests__/fixtures/runjs-typescript-final-matrix.ts`. Node source inspection and browser project tests consume the
+complete matrix and compare TypeScript diagnostic codes plus stable message fragments, not full compiler wording. The
+compiler gate uses only representative success, semantic-error, and TSX cases; compiler import/bundle failures live in
+`compiler-golden.test.ts`.
 
 Browser editor tests use the client test command, for example:
 

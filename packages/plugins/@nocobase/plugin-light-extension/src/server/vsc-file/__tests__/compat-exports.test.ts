@@ -16,9 +16,18 @@ import { compileRunJSSourceWorkspace as compileCoreWorkspace } from '@nocobase/r
 import { buildRunJSFilesHash, buildRunJSRuntimeCodeHash, compileRunJSSourceWorkspace } from '../../index';
 
 describe('plugin-vsc-file RunJS compatibility exports', () => {
-  it('keeps old compiler and hash imports available', () => {
-    expect(compileRunJSSourceWorkspace).toBe(compileCoreWorkspace);
-    expect(buildRunJSFilesHash).toBe(buildCoreFilesHash);
-    expect(buildRunJSRuntimeCodeHash).toBe(buildCoreRuntimeCodeHash);
+  it('keeps old compiler and hash imports behaviorally compatible', async () => {
+    const files = [{ path: 'index.ts', content: 'return 42;' }];
+    const input = { entry: 'index.ts', files, surfaceStyle: 'value' as const };
+    const [compatResult, coreResult] = await Promise.all([
+      compileRunJSSourceWorkspace(input),
+      compileCoreWorkspace(input),
+    ]);
+
+    expect(compatResult).toEqual(coreResult);
+    expect(buildRunJSFilesHash(files)).toBe(buildCoreFilesHash(files));
+    expect(buildRunJSRuntimeCodeHash(compatResult.artifact.code)).toBe(
+      buildCoreRuntimeCodeHash(coreResult.artifact.code),
+    );
   });
 });

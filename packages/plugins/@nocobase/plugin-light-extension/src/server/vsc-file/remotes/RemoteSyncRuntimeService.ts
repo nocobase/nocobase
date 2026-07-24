@@ -179,6 +179,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
         }
         return result;
       },
+      runWithClaimLease: (handle, action) => this.pullService.runWithClaimLease(handle, action),
       failApply: async (handle, code) => {
         await this.pullService.failApply(handle, code);
         const payload = {

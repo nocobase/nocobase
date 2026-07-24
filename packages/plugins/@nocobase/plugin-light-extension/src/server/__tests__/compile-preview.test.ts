@@ -160,6 +160,9 @@ describe('plugin-light-extension compile preview', () => {
       },
     });
     expect(result.artifact?.code).toContain('Unsaved preview');
+    expect(result).not.toHaveProperty('candidate');
+    expect(result).not.toHaveProperty('workspace');
+    expect(result).not.toHaveProperty('preparedSave');
     expect(fileService.pull).not.toHaveBeenCalled();
     expect(entriesRepository.create).not.toHaveBeenCalled();
     expect(entriesRepository.update).not.toHaveBeenCalled();

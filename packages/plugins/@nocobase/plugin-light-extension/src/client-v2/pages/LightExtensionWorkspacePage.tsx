@@ -52,18 +52,12 @@ import {
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import type {
   LightExtensionDiagnostic,
-  LightExtensionEntryRuntimeArtifact,
   LightExtensionFileChange,
   LightExtensionRepoRecord,
   LightExtensionCommitRecord,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
 import DiagnosticsPanel from '../components/DiagnosticsPanel';
-import { isBrowserProvisionalPreviewEnabled } from '../browser-preview/BrowserPreviewSession';
-import {
-  getLightExtensionPreviewSurfaceStyle,
-  useBrowserProvisionalPreview,
-} from '../browser-preview/useBrowserProvisionalPreview';
 import {
   getLightExtensionErrorDiagnostics,
   LightExtensionHookError,
@@ -91,14 +85,12 @@ import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExte
 type WorkspaceFile = RunJSWorkspaceFile;
 
 interface LightExtensionWorkspacePageProps {
-  browserProvisionalPreview?: boolean;
   embedded?: boolean;
   defaultFilesCollapsed?: boolean;
   repoId?: string;
   initialPath?: string;
   workspaceScope?: LightExtensionWorkspaceScope;
   entryId?: string | null;
-  onPreview?: (artifact: LightExtensionEntryRuntimeArtifact) => void | Promise<void>;
   onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
@@ -143,14 +135,12 @@ const HISTORY_PAGE_SIZE = 20;
 const REPOSITORY_WORKSPACE_SCOPE: LightExtensionWorkspaceScope = { mode: 'repository' };
 
 function LightExtensionWorkspacePage({
-  browserProvisionalPreview,
   embedded = false,
   defaultFilesCollapsed = false,
   repoId: repoIdProp,
   initialPath,
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
   entryId,
-  onPreview,
   onMoveToInline,
   onFooterActionsChange,
   onRequestClose,
@@ -168,7 +158,8 @@ function LightExtensionWorkspacePage({
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
-  const [files, setFiles] = useState<WorkspaceFile[]>([]);
+  const [files, setFilesState] = useState<WorkspaceFile[]>([]);
+  const [projectRevision, setProjectRevision] = useState(0);
   const [folders, setFolders] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
@@ -184,8 +175,7 @@ function LightExtensionWorkspacePage({
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
-  const [suppressedProvisionalPreviewSnapshot, setSuppressedProvisionalPreviewSnapshot] = useState<string>();
+  const [checking, setChecking] = useState(false);
   const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
@@ -207,7 +197,7 @@ function LightExtensionWorkspacePage({
   const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
   const historyRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const latestPreviewSnapshotRef = useRef('');
+  const latestCheckSnapshotRef = useRef('');
   const authoringSourceFilesRef = useRef<WorkspaceFile[]>([]);
   const authoringVirtualFilesRef = useRef<WorkspaceFile[]>([]);
   const authoringActivePathRef = useRef<string | undefined>();
@@ -215,6 +205,10 @@ function LightExtensionWorkspacePage({
   const authoringBlockedDirtyPathsRef = useRef<Set<string>>(new Set());
   const authoringWorkspaceWritableRef = useRef(false);
   const authoringWorkspaceScopeRef = useRef(workspaceScope);
+  const setFiles = useCallback((nextFiles: React.SetStateAction<WorkspaceFile[]>) => {
+    setFilesState(nextFiles);
+    setProjectRevision((current) => current + 1);
+  }, []);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -287,7 +281,7 @@ function LightExtensionWorkspacePage({
         setInitializedRepoId(repoId);
       }
     },
-    [getRepo, initialPath, listCommits, pull, repoId, t],
+    [getRepo, initialPath, listCommits, pull, repoId, setFiles, t],
   );
 
   useEffect(() => {
@@ -318,45 +312,10 @@ function LightExtensionWorkspacePage({
   );
   const activeFileReadOnly =
     !canWrite || !activePath || !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
-  const previewSnapshotKey = useMemo(
-    () => buildWorkspacePreviewSnapshot(files, workspaceScope),
-    [files, workspaceScope],
-  );
-  const suppressProvisionalPreview = previewSnapshotKey === suppressedProvisionalPreviewSnapshot;
-  latestPreviewSnapshotRef.current = previewSnapshotKey;
-  const canPreview = entryScoped && Boolean(onPreview);
+  const checkSnapshotKey = useMemo(() => buildWorkspacePreviewSnapshot(files, workspaceScope), [files, workspaceScope]);
+  latestCheckSnapshotRef.current = checkSnapshotKey;
+  const canCheck = entryScoped;
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
-  const browserPreviewEntry = useMemo(
-    () =>
-      workspaceScope.mode === 'entry'
-        ? {
-            entryPath: workspaceScope.entryPath,
-            kind: workspaceScope.kind,
-            runtimeVersion: 'v2',
-            surfaceStyle: getLightExtensionPreviewSurfaceStyle(workspaceScope.kind),
-          }
-        : undefined,
-    [workspaceScope],
-  );
-  const browserPreviewEnabled = entryScoped && (browserProvisionalPreview ?? isBrowserProvisionalPreviewEnabled());
-  const provisionalPreview = useBrowserProvisionalPreview({
-    enabled: browserPreviewEnabled,
-    files,
-    entry: browserPreviewEntry,
-    suppressBuild: suppressProvisionalPreview,
-  });
-  useEffect(() => {
-    if (suppressedProvisionalPreviewSnapshot && previewSnapshotKey !== suppressedProvisionalPreviewSnapshot) {
-      setSuppressedProvisionalPreviewSnapshot(undefined);
-    }
-  }, [previewSnapshotKey, suppressedProvisionalPreviewSnapshot]);
-  const visibleDiagnostics = useMemo(
-    () =>
-      provisionalPreview.enabled && provisionalPreview.diagnostics.length > 0
-        ? [...provisionalPreview.diagnostics, ...diagnostics]
-        : diagnostics,
-    [diagnostics, provisionalPreview.diagnostics, provisionalPreview.enabled],
-  );
   const authoringScopeKey =
     workspaceScope.mode === 'repository'
       ? 'repository'
@@ -911,7 +870,6 @@ function LightExtensionWorkspacePage({
           (file) => !nextSourcePaths.has(file.path),
         );
         authoringActivePathRef.current = nextActivePath;
-        setSuppressedProvisionalPreviewSnapshot(buildWorkspacePreviewSnapshot(nextFiles, registeredWorkspaceScope));
         setFiles(nextFiles);
         setFolders(collectWorkspaceFolders(nextFiles));
         setActivePath(nextActivePath);
@@ -996,6 +954,7 @@ function LightExtensionWorkspacePage({
     openDiagnosticSource,
     repo,
     repoId,
+    setFiles,
     t,
   ]);
 
@@ -1006,13 +965,13 @@ function LightExtensionWorkspacePage({
     [app],
   );
 
-  const runPreview = useCallback(async () => {
-    if (!canPreview || workspaceScope.mode !== 'entry' || !onPreview) {
+  const checkWorkspace = useCallback(async () => {
+    if (!canCheck || workspaceScope.mode !== 'entry') {
       return;
     }
 
-    const requestSnapshotKey = previewSnapshotKey;
-    setPreviewing(true);
+    const requestSnapshotKey = checkSnapshotKey;
+    setChecking(true);
     setNotice(null);
     try {
       const result = await compileWorkspacePreview({
@@ -1028,25 +987,24 @@ function LightExtensionWorkspacePage({
           mode: file.mode,
         })),
       });
-      if (latestPreviewSnapshotRef.current !== requestSnapshotKey) {
-        setNotice({ type: 'info', message: t('Source changed while preview was compiling. Run again.') });
+      if (latestCheckSnapshotRef.current !== requestSnapshotKey) {
+        setNotice({ type: 'info', message: t('Source changed while checking. Check again.') });
         return;
       }
 
       setDiagnostics(result.diagnostics);
-      if (!result.accepted || !result.artifact) {
-        setNotice({ type: 'error', message: t('Preview failed') });
+      if (!result.accepted) {
+        setNotice({ type: 'error', message: t('Source check failed') });
         return;
       }
-
-      await onPreview(result.artifact);
+      setNotice({ type: 'success', message: t('Source check passed') });
     } catch (error) {
       setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
+      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Source check failed') });
     } finally {
-      setPreviewing(false);
+      setChecking(false);
     }
-  }, [canPreview, compileWorkspacePreview, entryId, files, onPreview, previewSnapshotKey, repoId, t, workspaceScope]);
+  }, [canCheck, checkSnapshotKey, compileWorkspacePreview, entryId, files, repoId, t, workspaceScope]);
 
   const moveToInline = useCallback(async () => {
     if (!canMoveToInline || workspaceScope.mode !== 'entry' || !onMoveToInline) {
@@ -1179,7 +1137,7 @@ function LightExtensionWorkspacePage({
         setImporting(false);
       }
     },
-    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, t, workspaceScope],
+    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, setFiles, t, workspaceScope],
   );
 
   if (!repoId) {
@@ -1361,23 +1319,6 @@ function LightExtensionWorkspacePage({
                       {activeFileReadOnly && entryScoped ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
                       ) : null}
-                      {provisionalPreview.enabled ? (
-                        <Alert
-                          aria-live="polite"
-                          message={getProvisionalPreviewStatusMessage(provisionalPreview.status, t)}
-                          showIcon
-                          style={{ marginBottom: 8 }}
-                          type={
-                            provisionalPreview.status === 'degraded'
-                              ? 'warning'
-                              : provisionalPreview.status === 'diagnostic'
-                                ? 'info'
-                                : provisionalPreview.status === 'ready'
-                                  ? 'success'
-                                  : 'info'
-                          }
-                        />
-                      ) : null}
                       <CodeTab
                         activeFile={activeFile}
                         activePath={activePath}
@@ -1397,15 +1338,16 @@ function LightExtensionWorkspacePage({
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
                         onAuthoringSurfaceActivate={activateAuthoringSurface}
-                        onRunPreview={canPreview ? runPreview : undefined}
+                        onCheck={canCheck ? checkWorkspace : undefined}
                         openPaths={openPaths}
-                        previewing={previewing}
+                        checking={checking}
+                        projectRevision={projectRevision}
                         readOnly={activeFileReadOnly}
                         revealPosition={editorRevealPosition}
                         onRevealPositionApplied={consumeEditorRevealPosition}
                         runJSGlobalContextType={activeEntryContext.globalContextType}
                         savedFiles={baseFiles}
-                        showRunButton={canPreview}
+                        showCheckButton={canCheck}
                         t={studioT}
                         toolbarActions={
                           canMoveToInline ? (
@@ -1436,11 +1378,11 @@ function LightExtensionWorkspacePage({
                   maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
                   minHeight: 96,
                   overflowX: 'hidden',
-                  overflowY: visibleDiagnostics.length > 0 ? 'auto' : 'hidden',
+                  overflowY: diagnostics.length > 0 ? 'auto' : 'hidden',
                   padding: 12,
                 }}
               >
-                <DiagnosticsPanel diagnostics={visibleDiagnostics} onOpenDiagnostic={openDiagnosticSource} />
+                <DiagnosticsPanel diagnostics={diagnostics} onOpenDiagnostic={openDiagnosticSource} />
               </div>
             </div>,
             workspaceFullscreen.container,
@@ -1514,25 +1456,6 @@ function LightExtensionWorkspacePage({
       />
     </Flex>
   );
-}
-
-function getProvisionalPreviewStatusMessage(
-  status: ReturnType<typeof useBrowserProvisionalPreview>['status'],
-  t: (key: string) => string,
-): string {
-  if (status === 'degraded') {
-    return t('Local provisional preview is unavailable. Save will continue on the server.');
-  }
-  if (status === 'diagnostic') {
-    return t('Local provisional preview reported diagnostics. Server Save remains authoritative.');
-  }
-  if (status === 'ready') {
-    return t('Local provisional preview is ready. Server Save remains authoritative.');
-  }
-  if (status === 'suppressed') {
-    return t('Local provisional preview is paused for AI-authored changes. Edit manually to rebuild.');
-  }
-  return t('Building local provisional preview');
 }
 
 function buildLightExtensionAuthoringSurfaceId(
@@ -1677,7 +1600,6 @@ function getEntryName(workspaceScope: Extract<LightExtensionWorkspaceScope, { mo
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   return entryRoot?.split('/').pop() || '';
 }
-
 function normalizeWorkspaceFiles(files: LightExtensionTreeEntryInput[]): WorkspaceFile[] {
   return files
     .map((file) => ({

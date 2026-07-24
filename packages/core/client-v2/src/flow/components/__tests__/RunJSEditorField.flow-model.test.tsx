@@ -61,6 +61,7 @@ function createFlowModelHarness(options: string | FlowModelHarnessOptions = 'fm_
 describe('RunJSEditorField FlowModel integration', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
+    vi.useRealTimers();
   });
 
   it('generates flowModel.step locators from flow settings context and syncs saved values locally', async () => {
@@ -471,6 +472,7 @@ describe('RunJSEditorField FlowModel integration', () => {
     flowContext.defineMethod('getStepFormValues', () => persistedValue);
     const emit = vi.spyOn(model.emitter, 'emit');
     const siblingEmit = vi.spyOn(siblingModel.emitter, 'emit');
+    const unrelatedEmit = vi.spyOn(unrelatedModel.emitter, 'emit');
     const modelRerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
     const siblingRerender = vi.spyOn(siblingModel, 'rerender').mockResolvedValue(undefined);
     const unrelatedRerender = vi.spyOn(unrelatedModel, 'rerender').mockResolvedValue(undefined);
@@ -505,8 +507,233 @@ describe('RunJSEditorField FlowModel integration', () => {
     expect(unrelatedRerender).not.toHaveBeenCalled();
     expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
     expect(siblingEmit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
+    expect(unrelatedEmit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(0);
     expect(model.getStepParams('jsSettings', 'runJs')).toEqual(persistedValue);
   });
+
+  it('refreshes only path-aware RunJS hosts and deduplicates models reachable through multiple paths', async () => {
+    const engine = new FlowEngine();
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'ler_path_aware',
+      entryId: 'lee_path_aware',
+      kind: 'js-block',
+    };
+    const persistedValue = {
+      code: 'ctx.render("remote");',
+      keep: true,
+      sourceBinding,
+      sourceMode: 'light-extension',
+      version: 'v2',
+    };
+    const model = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_path_aware_current',
+      stepParams: { jsSettings: { runJs: persistedValue } },
+    });
+    const scriptModel = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_path_aware_script',
+      stepParams: {
+        clickSettings: { runJs: { keep: true, script: 'return 1;', sourceBinding, sourceMode: 'light-extension' } },
+      },
+    });
+    const keyedModel = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_path_aware_keyed',
+      stepParams: {
+        rules: {
+          runJs: [{ code: 'return 2;', key: 'rule-1', sourceBinding, sourceMode: 'light-extension' }],
+        },
+      },
+    });
+    const ordinaryConfigModel = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_path_aware_config',
+      stepParams: {
+        settings: { ordinary: { code: 'return 4;', sourceBinding, sourceMode: 'light-extension' } },
+      },
+    });
+    const inlineModel = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_path_aware_inline',
+      stepParams: { jsSettings: { runJs: { code: 'return 3;', sourceBinding, sourceMode: 'inline' } } },
+    });
+    model.setSubModel('duplicatePath', scriptModel);
+
+    const rerenders = [model, scriptModel, keyedModel, ordinaryConfigModel, inlineModel].map((target) =>
+      vi.spyOn(target, 'rerender').mockResolvedValue(undefined),
+    );
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    flowContext.defineMethod('getStepFormValues', () => persistedValue);
+    let pendingRefresh: Promise<unknown> | undefined;
+    RunJSEditorRegistry.registerProvider({
+      key: 'path-aware-source-refresh-provider',
+      renderEditor: (props) => (
+        <button
+          type="button"
+          onClick={() => {
+            pendingRefresh = Promise.resolve(props.onPersistedChange?.(props.value));
+          }}
+        >
+          refresh path-aware hosts
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: persistedValue, path: `${model.uid}_jsSettings_runJs` }}>
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={persistedValue} />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'refresh path-aware hosts' }));
+    await pendingRefresh;
+
+    expect(rerenders.map((rerender) => rerender.mock.calls.length)).toEqual([1, 1, 1, 0, 0]);
+  });
+
+  it('scans 500 loaded models while refreshing only the 10 matching RunJS hosts', async () => {
+    const engine = new FlowEngine();
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'ler_scale',
+      entryId: 'lee_scale',
+      kind: 'js-block',
+    };
+    const persistedValue = {
+      code: 'ctx.render("remote");',
+      sourceBinding,
+      sourceMode: 'light-extension',
+      version: 'v2',
+    };
+    const models = Array.from({ length: 500 }, (_, index) => {
+      const matchingHost =
+        index % 3 === 0
+          ? { code: 'return 1;', keep: true, sourceBinding, sourceMode: 'light-extension' }
+          : index % 3 === 1
+            ? { keep: true, script: 'return 1;', sourceBinding, sourceMode: 'light-extension' }
+            : { rows: [{ code: 'return 1;', key: `row-${index}`, sourceBinding, sourceMode: 'light-extension' }] };
+      const stepValue =
+        index < 10
+          ? matchingHost
+          : index === 10
+            ? { ordinary: { sourceBinding, sourceMode: 'light-extension' } }
+            : {
+                code: 'return 1;',
+                sourceBinding: { ...sourceBinding, entryId: `lee_${index}` },
+                sourceMode: 'light-extension',
+              };
+      return engine.createModel<FlowModel>({
+        use: 'FlowModel',
+        uid: `fm_source_scale_${index}`,
+        stepParams: { jsSettings: { runJs: stepValue } },
+      });
+    });
+    const model = models[0];
+    const rerenders = models.map((target) => vi.spyOn(target, 'rerender').mockResolvedValue(undefined));
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    flowContext.defineMethod('getStepFormValues', () => persistedValue);
+    let pendingRefresh: Promise<unknown> | undefined;
+    RunJSEditorRegistry.registerProvider({
+      key: 'scale-source-refresh-provider',
+      renderEditor: (props) => (
+        <button
+          type="button"
+          onClick={() => {
+            pendingRefresh = Promise.resolve(props.onPersistedChange?.(props.value));
+          }}
+        >
+          refresh scale hosts
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: persistedValue, path: `${model.uid}_jsSettings_runJs` }}>
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={persistedValue} />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'refresh scale hosts' }));
+    await pendingRefresh;
+
+    expect(rerenders.filter((rerender) => rerender.mock.calls.length === 1)).toHaveLength(10);
+    expect(rerenders.slice(10).every((rerender) => rerender.mock.calls.length === 0)).toBe(true);
+  });
+
+  it.each([
+    { changed: true, initialMode: 'inline', expectedDelayedRuns: 1 },
+    { changed: false, initialMode: 'light-extension', expectedDelayedRuns: 0 },
+  ])(
+    'keeps current-model and fork refreshes single-path when changed=$changed',
+    async ({ changed, initialMode, expectedDelayedRuns }) => {
+      vi.useFakeTimers();
+      const engine = new FlowEngine();
+      const sourceBinding = {
+        type: 'light-extension-entry',
+        repoId: 'ler_fork',
+        entryId: 'lee_fork',
+        kind: 'js-block',
+      };
+      const initialValue = {
+        code: 'return 1;',
+        ...(initialMode === 'light-extension' ? { sourceBinding } : {}),
+        sourceMode: initialMode,
+        version: 'v2',
+      };
+      const persistedValue = { ...initialValue, sourceBinding, sourceMode: 'light-extension' };
+      const model = engine.createModel<FlowModel>({
+        use: 'FlowModel',
+        uid: `fm_fork_${changed}`,
+        stepParams: { jsSettings: { runJs: initialValue } },
+      });
+      const fork = model.createFork();
+      const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+      flowContext.defineMethod('getStepFormValues', () => initialValue);
+      await model.dispatchEvent('beforeRender', { source: 'test' });
+      const dispatchEvent = vi.spyOn(model, 'dispatchEvent');
+      const emit = vi.spyOn(model.emitter, 'emit');
+      const invalidate = vi.spyOn(model, 'invalidateFlowCache');
+      const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+      const forkRerender = vi.fn().mockResolvedValue(undefined);
+      (fork as unknown as { rerender: typeof forkRerender }).rerender = forkRerender;
+      let pendingRefresh: Promise<unknown> | undefined;
+      RunJSEditorRegistry.registerProvider({
+        key: `fork-source-refresh-provider-${changed}`,
+        renderEditor: (props) => (
+          <button
+            type="button"
+            onClick={() => {
+              pendingRefresh = Promise.resolve(props.onPersistedChange?.(persistedValue));
+            }}
+          >
+            refresh fork hosts
+          </button>
+        ),
+      });
+
+      render(
+        <FlowContextProvider context={flowContext}>
+          <FlowStepContext.Provider value={{ params: initialValue, path: `${model.uid}_jsSettings_runJs` }}>
+            <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={initialValue} />
+          </FlowStepContext.Provider>
+        </FlowContextProvider>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'refresh fork hosts' }));
+      await pendingRefresh;
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
+      expect(invalidate).toHaveBeenCalledTimes(1);
+      expect(invalidate).toHaveBeenCalledWith('beforeRender');
+      expect(rerender).toHaveBeenCalledTimes(1);
+      expect(forkRerender).toHaveBeenCalledTimes(1);
+      expect(dispatchEvent.mock.calls.filter(([event]) => event === 'beforeRender')).toHaveLength(expectedDelayedRuns);
+    },
+  );
 
   it('keeps inline fallback edits in the form without mutating model params', () => {
     const harness = createFlowModelHarness();

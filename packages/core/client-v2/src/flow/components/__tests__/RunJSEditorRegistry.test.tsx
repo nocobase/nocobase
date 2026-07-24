@@ -233,4 +233,20 @@ describe('RunJSEditorRegistry', () => {
     expect(screen.queryByText('temporary provider')).toBeNull();
     expect(screen.getByLabelText('// Use return to output value')).toBeInTheDocument();
   });
+
+  it('keeps a replacement provider when the previous provider unregisters', () => {
+    const unregisterPrevious = RunJSEditorRegistry.registerProvider({
+      key: 'replaceable',
+      renderEditor: () => <div>previous provider</div>,
+    });
+    const replacement = {
+      key: 'replaceable',
+      renderEditor: () => <div>replacement provider</div>,
+    };
+
+    RunJSEditorRegistry.registerProvider(replacement);
+    unregisterPrevious();
+
+    expect(RunJSEditorRegistry.getProviders()).toEqual([replacement]);
+  });
 });

@@ -22,7 +22,7 @@ import {
   Typography,
 } from 'antd';
 import type { SelectProps } from 'antd';
-import { ApplicationContext } from '@nocobase/client-v2';
+import { ApplicationContext, stableSerialize } from '@nocobase/client-v2';
 import {
   extractRunJSSettingsDefaults,
   isSettingsFieldVisible,
@@ -295,21 +295,6 @@ function createValidationError(
   code?: string,
 ): SettingsValidationError {
   return { code, label, path, message };
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }
 
 export function formatSettingsValidationErrors(

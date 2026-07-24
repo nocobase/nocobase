@@ -9,7 +9,7 @@
 
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { serialize } from 'node:v8';
+import { deserialize, serialize } from 'node:v8';
 import { Worker } from 'node:worker_threads';
 
 import {
@@ -95,6 +95,7 @@ interface CompileTask {
   startedAt?: number;
   attempt: number;
   resolve: (result: LightExtensionCompileResult) => void;
+  reject: (error: Error) => void;
 }
 
 interface WorkerListeners {
@@ -107,8 +108,14 @@ interface WorkerSlot {
   id: number;
   handle: LightExtensionCompileWorkerHandle;
   listeners: WorkerListeners;
+  ready: boolean;
   task?: CompileTask;
   timeout?: NodeJS.Timeout;
+}
+
+interface PreparedCompileJob {
+  job: LightExtensionCompileJob;
+  byteSize: number;
 }
 
 interface CapacityWaiter {
@@ -168,7 +175,6 @@ export class LightExtensionCompileWorkerPool {
 
   constructor(options: LightExtensionCompileWorkerPoolOptions = {}) {
     this.options = normalizeOptions(options);
-    this.slots.push(this.createWorkerSlot(1));
   }
 
   submit(job: LightExtensionCompileJob): Promise<LightExtensionCompileResult> {
@@ -180,12 +186,25 @@ export class LightExtensionCompileWorkerPool {
         ),
       );
     }
+    let prepared: PreparedCompileJob;
     try {
-      assertLightExtensionCompileJob(job);
+      prepared = prepareCompileJob(job);
     } catch (error) {
       return Promise.reject(error);
     }
-    const byteSize = serialize(job).byteLength;
+    return this.submitPrepared(prepared);
+  }
+
+  private submitPrepared(prepared: PreparedCompileJob): Promise<LightExtensionCompileResult> {
+    if (this.shuttingDown || this.closed) {
+      return this.rejectSubmission(
+        new LightExtensionCompilePoolError(
+          'LIGHT_EXTENSION_COMPILE_POOL_CLOSED',
+          'Light extension compile worker pool is shutting down',
+        ),
+      );
+    }
+    const { byteSize, job } = prepared;
     if (byteSize > this.options.maxJobBytes) {
       return this.rejectSubmission(
         new LightExtensionCompilePoolError(
@@ -211,13 +230,20 @@ export class LightExtensionCompileWorkerPool {
       );
     }
 
-    return new Promise<LightExtensionCompileResult>((resolve) => {
+    try {
+      this.ensureWorkerSlot();
+    } catch (error) {
+      return Promise.reject(error);
+    }
+
+    return new Promise<LightExtensionCompileResult>((resolve, reject) => {
       const task: CompileTask = {
         job,
         byteSize,
         enqueuedAt: performance.now(),
         attempt: 1,
         resolve,
+        reject,
       };
       this.inflightBytes += byteSize;
       this.maxInflightBytes = Math.max(this.maxInflightBytes, this.inflightBytes);
@@ -230,17 +256,21 @@ export class LightExtensionCompileWorkerPool {
     job: LightExtensionCompileJob,
     signal?: AbortSignal,
   ): Promise<LightExtensionCompileResult> {
-    assertLightExtensionCompileJob(job);
-    const byteSize = serialize(job).byteLength;
-    await this.waitForCapacity(byteSize, signal);
-    try {
-      return await this.submit(job);
-    } catch (error) {
-      if (!isRetryableAdmissionError(error)) {
-        throw error;
+    const prepared = prepareCompileJob(job);
+    let retry: boolean;
+    do {
+      retry = false;
+      await this.waitForCapacity(prepared.byteSize, signal);
+      try {
+        return await this.submitPrepared(prepared);
+      } catch (error) {
+        if (!isRetryableAdmissionError(error)) {
+          throw error;
+        }
+        retry = true;
       }
-      return this.submitWithBackpressure(job, signal);
-    }
+    } while (retry);
+    throw new Error('Compile backpressure retry ended unexpectedly');
   }
 
   async waitForCapacity(byteSize: number, signal?: AbortSignal): Promise<void> {
@@ -331,7 +361,7 @@ export class LightExtensionCompileWorkerPool {
 
   private createWorkerSlot(workerId: number): WorkerSlot {
     const handle = this.options.workerFactory(workerId);
-    const slot = {} as WorkerSlot;
+    const slot = { id: workerId, handle, ready: false } as WorkerSlot;
     const listeners: WorkerListeners = {
       message: (message) => this.handleWorkerMessage(slot, handle, message),
       error: (error) => this.scheduleWorkerFailure(slot, handle, error, 'LIGHT_EXTENSION_COMPILE_WORKER_CRASH'),
@@ -344,7 +374,7 @@ export class LightExtensionCompileWorkerPool {
         );
       },
     };
-    Object.assign(slot, { id: workerId, handle, listeners });
+    slot.listeners = listeners;
     handle.on('message', listeners.message);
     handle.on('error', listeners.error);
     handle.on('exit', listeners.exit);
@@ -398,7 +428,14 @@ export class LightExtensionCompileWorkerPool {
     handle: LightExtensionCompileWorkerHandle,
     message: LightExtensionCompileWorkerResponse,
   ): void {
-    if (slot.handle !== handle || message.type === 'ready' || message.type === 'shutdown-complete') {
+    if (slot.handle !== handle) {
+      return;
+    }
+    if (message.type === 'ready') {
+      slot.ready = true;
+      return;
+    }
+    if (message.type === 'shutdown-complete') {
       return;
     }
     const task = slot.task;
@@ -443,6 +480,18 @@ export class LightExtensionCompileWorkerPool {
       return;
     }
     this.failedWorkers.add(handle);
+    if (!slot.ready) {
+      this.rejectWorkerInitialization(slot, error);
+      this.detachWorker(slot, handle);
+      const slotIndex = this.slots.indexOf(slot);
+      if (slotIndex >= 0) {
+        this.slots.splice(slotIndex, 1);
+      }
+      await handle.terminate().catch(() => -1);
+      this.notifyCapacityWaiters();
+      this.notifyDrain();
+      return;
+    }
     const threadId = handle.threadId;
     const task = slot.task;
     this.clearSlotTask(slot);
@@ -474,7 +523,12 @@ export class LightExtensionCompileWorkerPool {
     const slotIndex = this.slots.indexOf(slot);
     if (!this.shuttingDown && slotIndex >= 0) {
       this.restarts += 1;
-      this.slots[slotIndex] = this.createWorkerSlot(slot.id);
+      try {
+        this.slots[slotIndex] = this.createWorkerSlot(slot.id);
+      } catch (failure) {
+        this.slots.splice(slotIndex, 1);
+        this.rejectQueuedTasks(failure instanceof Error ? failure : new Error(String(failure)));
+      }
     }
     this.dispatch();
     this.notifyCapacityWaiters();
@@ -507,6 +561,27 @@ export class LightExtensionCompileWorkerPool {
     this.inflightBytes = Math.max(0, this.inflightBytes - task.byteSize);
     this.completed += 1;
     task.resolve(result);
+  }
+
+  private rejectTask(task: CompileTask, error: Error): void {
+    this.inflightBytes = Math.max(0, this.inflightBytes - task.byteSize);
+    task.reject(error);
+  }
+
+  private rejectWorkerInitialization(slot: WorkerSlot, error: Error): void {
+    const activeTask = slot.task;
+    this.clearSlotTask(slot);
+    if (activeTask) {
+      this.rejectTask(activeTask, error);
+    }
+    this.rejectQueuedTasks(error);
+  }
+
+  private rejectQueuedTasks(error: Error): void {
+    for (const task of this.queue.splice(0)) {
+      this.rejectTask(task, error);
+    }
+    this.rejectCapacityWaiters(error);
   }
 
   private forceSettleOutstandingTasks(): void {
@@ -587,6 +662,12 @@ export class LightExtensionCompileWorkerPool {
     handle.off('exit', slot.listeners.exit);
   }
 
+  private ensureWorkerSlot(): void {
+    if (this.slots.length === 0) {
+      this.slots.push(this.createWorkerSlot(1));
+    }
+  }
+
   private hasAdmissionSlot(): boolean {
     return this.queue.length < this.options.maxQueueLength || (this.queue.length === 0 && this.active === 0);
   }
@@ -663,6 +744,15 @@ export class LightExtensionCompileWorkerPool {
       resolve();
     }
   }
+}
+
+function prepareCompileJob(job: LightExtensionCompileJob): PreparedCompileJob {
+  assertLightExtensionCompileJob(job);
+  const payload = serialize(job);
+  return Object.freeze({
+    job: deserialize(payload) as LightExtensionCompileJob,
+    byteSize: payload.byteLength,
+  });
 }
 
 function isRetryableAdmissionError(error: unknown): boolean {

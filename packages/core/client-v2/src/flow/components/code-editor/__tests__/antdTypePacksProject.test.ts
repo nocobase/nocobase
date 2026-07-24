@@ -8,11 +8,15 @@
  */
 
 import type { Diagnostic } from '@codemirror/lint';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
+import {
+  shutdownTypeScriptProjectSessionSuite,
+  withTypeScriptProjectSession,
+} from './helpers/withTypeScriptProjectSession';
 import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import { clearRunJSTypeLibraryPackRegistryForTests } from '../typescriptLibraryRegistry';
-import { clearTypeScriptProjectCachesForTests, createTypeScriptProjectSession } from '../typescriptProject';
+import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
 
 function errorMessages(diagnostics: Diagnostic[]): string[] {
   return diagnostics.filter((diagnostic) => diagnostic.severity === 'error').map((diagnostic) => diagnostic.message);
@@ -29,6 +33,8 @@ afterEach(() => {
   clearRunJSTypeLibraryPackRegistryForTests();
   clearTypeScriptProjectCachesForTests();
 });
+
+afterAll(shutdownTypeScriptProjectSessionSuite);
 
 describe('RunJS generated Ant Design and Icons TypeScript packs', () => {
   it('loads representative Ant Design symbols with official props, generics, hooks, and static APIs', async () => {
@@ -50,14 +56,14 @@ const notice = message.success('Saved');
 const title = <Typography.Title level={2}>Title</Typography.Title>;
 void button; void input; void table; void formView; void picker; void modal; void notice; void title;
 `;
-    const session = createTypeScriptProjectSession();
-
-    expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-    const roots = session.getDebugState().rootFileNames;
-    for (const name of ['button', 'date-picker', 'form', 'input', 'message', 'modal', 'table', 'typography']) {
-      expect(roots.some((fileName) => fileName.endsWith(`/antd/${name}-bridge.d.ts`))).toBe(true);
-    }
-    expect(roots).not.toContain('/__runjs__/type-packs/antd-full-bridge.d.ts');
+    await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
+      const roots = session.getDebugState().rootFileNames;
+      for (const name of ['button', 'date-picker', 'form', 'input', 'message', 'modal', 'table', 'typography']) {
+        expect(roots.some((fileName) => fileName.endsWith(`/antd/${name}-bridge.d.ts`))).toBe(true);
+      }
+      expect(roots).not.toContain('/__runjs__/type-packs/antd-full-bridge.d.ts');
+    });
   });
 
   it('reports official invalid Ant Design props and unknown symbols', async () => {
@@ -69,12 +75,14 @@ const { Button, DatePicker, Input, Typography } = ctx.antd;
 <Typography.Title level={7}>Invalid</Typography.Title>;
 ctx.libs.antd.NotAComponent;
 `;
-    const messages = errorMessages(await createTypeScriptProjectSession().getDiagnostics(project(code), code));
+    await withTypeScriptProjectSession(async (session) => {
+      const messages = errorMessages(await session.getDiagnostics(project(code), code));
 
-    expect(messages.some((message) => /rainbow/.test(message))).toBe(true);
-    expect(messages.some((message) => /boolean/.test(message))).toBe(true);
-    expect(messages.some((message) => /number/.test(message) && /string/.test(message))).toBe(true);
-    expect(messages.some((message) => /NotAComponent/.test(message))).toBe(true);
+      expect(messages.some((message) => /rainbow/.test(message))).toBe(true);
+      expect(messages.some((message) => /boolean/.test(message))).toBe(true);
+      expect(messages.some((message) => /number/.test(message) && /string/.test(message))).toBe(true);
+      expect(messages.some((message) => /NotAComponent/.test(message))).toBe(true);
+    });
   });
 
   it('loads only requested icon groups plus the shared base and React pack', async () => {
@@ -84,18 +92,18 @@ const plus = <PlusOutlined spin rotate={90} aria-label="add" />;
 const minus = <MinusOutlined onClick={(event) => event.currentTarget.focus()} />;
 void plus; void minus;
 `;
-    const session = createTypeScriptProjectSession();
-
-    expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-    const roots = session.getDebugState().rootFileNames;
-    expect(roots).toEqual(
-      expect.arrayContaining([
-        '/__runjs__/type-packs/antd-icons/base-bridge.d.ts',
-        '/__runjs__/type-packs/antd-icons/m-bridge.d.ts',
-        '/__runjs__/type-packs/antd-icons/p-bridge.d.ts',
-      ]),
-    );
-    expect(roots.some((fileName) => fileName.includes('antd-icons-full'))).toBe(false);
+    await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
+      const roots = session.getDebugState().rootFileNames;
+      expect(roots).toEqual(
+        expect.arrayContaining([
+          '/__runjs__/type-packs/antd-icons/base-bridge.d.ts',
+          '/__runjs__/type-packs/antd-icons/m-bridge.d.ts',
+          '/__runjs__/type-packs/antd-icons/p-bridge.d.ts',
+        ]),
+      );
+      expect(roots.some((fileName) => fileName.includes('antd-icons-full'))).toBe(false);
+    });
   });
 
   it('reports invalid icon props and records symbol/group manifests', async () => {
@@ -104,11 +112,13 @@ const { PlusOutlined } = ctx.libs.antdIcons;
 <PlusOutlined spin="yes" rotate="90" unknownProp />;
 ctx.libs.antdIcons.NotAnIcon;
 `;
-    const messages = errorMessages(await createTypeScriptProjectSession().getDiagnostics(project(code), code));
+    await withTypeScriptProjectSession(async (session) => {
+      const messages = errorMessages(await session.getDiagnostics(project(code), code));
 
-    expect(messages.some((message) => /boolean/.test(message))).toBe(true);
-    expect(messages.some((message) => /number/.test(message))).toBe(true);
-    expect(messages.some((message) => /NotAnIcon/.test(message))).toBe(true);
+      expect(messages.some((message) => /boolean/.test(message))).toBe(true);
+      expect(messages.some((message) => /number/.test(message))).toBe(true);
+      expect(messages.some((message) => /NotAnIcon/.test(message))).toBe(true);
+    });
     expect(generatedRunJSTypeLibraryPackManifest).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'antd/Button', sourcePackage: 'antd' }),

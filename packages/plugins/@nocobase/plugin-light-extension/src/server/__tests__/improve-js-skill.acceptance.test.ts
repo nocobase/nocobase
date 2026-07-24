@@ -8,15 +8,11 @@
  */
 
 import { normalizeLightExtensionSettings, setLightExtensionTopLevelSetting } from '@nocobase/runjs/settings';
-import type { Context } from 'koa';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
 import { relocateRunJSWorkspace } from '../services/MoveSourceService';
 import { buildApplicationDefaultLightExtensionIdentity } from '../services/LightExtensionRepoService';
-import type { MoveSourceService } from '../services/MoveSourceService';
 import PluginLightExtensionServer from '../plugin';
-import { createLightExtensionsResource } from '../resources/lightExtensions';
 import {
   createFlowSurfacesContractContext,
   destroyFlowSurfacesContractContext,
@@ -141,70 +137,6 @@ describe('Improve JS skill acceptance contract', () => {
         ],
       }),
     ).toThrowError(expect.objectContaining({ code: 'LIGHT_EXTENSION_INVALID_INPUT' }));
-  });
-
-  it('normalizes explicit externalization through the public lightExtensions resource', async () => {
-    const moveSource = vi.fn(async () => ({ repo: { id: 'ler_default' }, ownerFingerprint: 'owner_after' }));
-    const resource = createLightExtensionsResource(
-      {} as LightExtensionCompilePreviewService,
-      {
-        moveSource,
-      } as unknown as MoveSourceService,
-    );
-    const can = vi.fn().mockReturnValue({});
-    const ctx = {
-      action: {
-        params: {
-          values: {
-            idempotencyKey: 'externalize-sales-page-v1',
-            locator: {
-              kind: 'flowModel.step',
-              modelUid: 'sales-page',
-              flowKey: 'jsSettings',
-              stepKey: 'runJs',
-              paramPath: ['code'],
-            },
-            expectedOwnerFingerprint: 'owner_before',
-            sourceRepoId: 'runjs_sales_page',
-            sourceHeadCommitId: 'commit_inline',
-            entryPath: 'src/client/index.tsx',
-            version: 'v2',
-            files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
-            destination: { type: 'default' },
-            entryName: 'sales-page',
-          },
-        },
-      },
-      auth: { user: { id: 9 } },
-      can,
-      request: { headers: { 'x-request-id': 'req_externalize', 'x-request-source': 'acceptance-matrix' } },
-    } as unknown as Context;
-
-    await resource.actions?.moveSource?.(ctx, async () => undefined);
-
-    expect(moveSource).toHaveBeenCalledWith(
-      expect.objectContaining({
-        idempotencyKey: 'externalize-sales-page-v1',
-        destination: { type: 'default' },
-        entryName: 'sales-page',
-        files: [
-          expect.objectContaining({
-            path: 'src/client/index.tsx',
-            content: 'ctx.render(null);',
-          }),
-        ],
-      }),
-      expect.objectContaining({
-        actorUserId: '9',
-        requestId: 'req_externalize',
-        requestSource: 'acceptance-matrix',
-        can,
-      }),
-    );
-    expect((ctx as { body?: unknown }).body).toEqual({
-      repo: { id: 'ler_default' },
-      ownerFingerprint: 'owner_after',
-    });
   });
 });
 

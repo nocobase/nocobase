@@ -10,7 +10,7 @@
 export * from './RunJSSourceAdapterRegistry';
 export * from './RunJSSourceAuthoringInspectorRegistry';
 export * from './canonicalCompileFiles';
-export * from './compiler';
+export * from './lazyCompiler';
 export {
   assertRunJSCompileInputLimits,
   createFlowSurfaceRunJSWorkspaceBootstrapPort,

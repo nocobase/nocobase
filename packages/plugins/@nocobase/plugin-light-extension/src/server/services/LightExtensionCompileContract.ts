@@ -8,8 +8,10 @@
  */
 
 import { sha256Hex, stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
-import { RUNJS_COMPILER_BUILD_IDENTITY, type RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler';
+import type { RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
+import { createRequire } from 'node:module';
+import { posix as pathPosix } from 'path';
 
 import {
   LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
@@ -19,7 +21,18 @@ import {
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import type { CompileInputManifest } from './LightExtensionCompileKey';
-import { sortDiagnostics } from './LightExtensionValidator';
+import type { LightExtensionServiceContext } from './LightExtensionRepoService';
+import type {
+  LightExtensionWorkspaceCompileFileInput,
+  LightExtensionWorkspaceCompileResult,
+  LightExtensionWorkspaceCompilerBridge,
+} from './LightExtensionWorkspaceCompilerBridge';
+import {
+  LightExtensionValidator,
+  sortDiagnostics,
+  type LightExtensionSourceFileInput,
+  type LightExtensionWorkspaceValidationResult,
+} from './LightExtensionValidator';
 import { LIGHT_EXTENSION_SDK_TEMPLATE_VERSION, LIGHT_EXTENSION_VALIDATOR_VERSION } from './LightExtensionValidator';
 
 export type LightExtensionSurfaceStyle = 'render' | 'value' | 'action';
@@ -96,9 +109,21 @@ export interface LightExtensionCompilerBuildIdentity {
   runjs: RunJSCompilerBuildIdentity;
 }
 
+const requireCompiler = createRequire(__filename);
+
+function getRunJSCompilerBuildIdentity(): RunJSCompilerBuildIdentity {
+  return (
+    requireCompiler('@nocobase/runjs/compiler') as {
+      RUNJS_COMPILER_BUILD_IDENTITY: RunJSCompilerBuildIdentity;
+    }
+  ).RUNJS_COMPILER_BUILD_IDENTITY;
+}
+
 export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS: Readonly<LightExtensionCompilerBuildIdentityComponents> =
   Object.freeze({
-    runjsCompilerBuildId: RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId,
+    get runjsCompilerBuildId() {
+      return getRunJSCompilerBuildIdentity().compilerBuildId;
+    },
     compilerBridgeContract: LIGHT_EXTENSION_COMPILER_BRIDGE_CONTRACT_VERSION,
     importRewritePolicy: LIGHT_EXTENSION_IMPORT_REWRITE_POLICY_VERSION,
     importSecurityPolicy: LIGHT_EXTENSION_IMPORT_SECURITY_POLICY_VERSION,
@@ -114,7 +139,7 @@ export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS: Readonly<LightE
 
 export function buildLightExtensionCompilerBuildIdentity(
   components: LightExtensionCompilerBuildIdentityComponents = LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS,
-  runjs: RunJSCompilerBuildIdentity = RUNJS_COMPILER_BUILD_IDENTITY,
+  runjs: RunJSCompilerBuildIdentity = getRunJSCompilerBuildIdentity(),
 ): LightExtensionCompilerBuildIdentity {
   const normalizedComponents = { ...components };
   return {
@@ -124,7 +149,76 @@ export function buildLightExtensionCompilerBuildIdentity(
   };
 }
 
-export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY = Object.freeze(buildLightExtensionCompilerBuildIdentity());
+export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY: Readonly<LightExtensionCompilerBuildIdentity> = Object.freeze(
+  buildLightExtensionCompilerBuildIdentity(),
+);
+
+export function validateLightExtensionWorkspace(
+  validator: Pick<LightExtensionValidator, 'validateWorkspace'>,
+  files: readonly LightExtensionSourceFileInput[],
+): LightExtensionWorkspaceValidationResult {
+  return validator.validateWorkspace({
+    files: files.map((file) => ({ ...file })),
+  });
+}
+
+export interface LightExtensionValidatedCompileEntry {
+  kind: LightExtensionKind;
+  entryName: string;
+  entryPath: string;
+  descriptorPath: string;
+}
+
+export interface LightExtensionValidatedCompileInput {
+  repoId: string;
+  entryId?: string | null;
+  operation: 'compilePreview' | 'runtimeCompile';
+  entry: LightExtensionValidatedCompileEntry;
+  runtimeVersion?: string;
+  files: readonly LightExtensionWorkspaceCompileFileInput[];
+}
+
+export function compileLightExtensionValidatedEntry(
+  compiler: Pick<LightExtensionWorkspaceCompilerBridge, 'compileEntry'>,
+  input: LightExtensionValidatedCompileInput,
+  ctx: LightExtensionServiceContext,
+): Promise<LightExtensionWorkspaceCompileResult> {
+  const files = selectLightExtensionEntryCompileFiles(input.files, input.entry);
+
+  return compiler.compileEntry(
+    {
+      repoId: input.repoId,
+      entryId: input.entryId,
+      operation: input.operation,
+      kind: input.entry.kind,
+      entryName: input.entry.entryName,
+      entryPath: input.entry.entryPath,
+      runtimeVersion: input.runtimeVersion,
+      files,
+    },
+    ctx,
+  );
+}
+
+export function selectLightExtensionEntryCompileFiles<T extends LightExtensionWorkspaceCompileFileInput>(
+  files: readonly T[],
+  entry: Pick<LightExtensionValidatedCompileEntry, 'entryPath' | 'descriptorPath'>,
+): T[] {
+  const rootPath = getEntryRootPath(entry.entryPath);
+
+  return files
+    .filter(
+      (file) =>
+        file.path !== entry.descriptorPath &&
+        (file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/')),
+    )
+    .map((file) => ({ ...file }));
+}
+
+function getEntryRootPath(entryPath: string): string {
+  const normalized = pathPosix.normalize(entryPath.trim()).replace(/^\.\/+/, '');
+  return pathPosix.extname(normalized) ? pathPosix.dirname(normalized) : normalized;
+}
 
 const sha256Pattern = /^[a-f0-9]{64}$/u;
 

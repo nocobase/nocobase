@@ -38,13 +38,18 @@ import { normalizeVscBridgeError } from './errorContract';
 export interface LightExtensionServiceContext {
   actorUserId?: string | null;
   can?: LightExtensionCanFunction;
+  currentUser?: unknown;
   requestId?: string;
   requestSource?: string;
+  state?: Record<string, unknown>;
+  timezone?: string;
   transaction?: Transaction;
   /** @internal */
   deferredRejectedPushAudits?: Array<() => Promise<void>>;
   /** @internal */
   deferSuccessfulCompileAudit?: boolean;
+  /** @internal */
+  allowRemovedGenericRunJSSource?: boolean;
 }
 
 export interface LightExtensionRepoInternalRecord extends LightExtensionRepoRecord {
@@ -61,6 +66,10 @@ export interface LightExtensionCreateMetadata {
   normalizedName: string;
   title: string | null | undefined;
   description: string | null | undefined;
+}
+
+export interface LightExtensionCreateRepoOptions {
+  repoId?: string;
 }
 
 export class LightExtensionRepoService {
@@ -102,12 +111,13 @@ export class LightExtensionRepoService {
   async createRepo(
     input: LightExtensionCreateRepoInput,
     ctx: LightExtensionServiceContext = {},
+    options: LightExtensionCreateRepoOptions = {},
   ): Promise<LightExtensionRepoRecord> {
     const requestId = getRequestId(ctx);
     const metadata = this.normalizeCreateMetadata(input);
-    const repoId = `ler_${uid()}`;
+    const repoId = options.repoId || `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
-    this.assertValidInitialFiles(initialFiles);
+    this.assertValidInitialFiles(initialFiles, ctx.allowRemovedGenericRunJSSource);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.assertRepoNameAvailable(metadata.name, metadata.normalizedName, transaction);
@@ -278,6 +288,21 @@ export class LightExtensionRepoService {
           return stripInternalRepo(concurrent);
         }
       }
+      if (this.db.sequelize.getDialect() === 'sqlite' && isSqliteBusyError(error)) {
+        for (let attempt = 0; attempt < 50; attempt += 1) {
+          await delay(100);
+          try {
+            const concurrent = await this.findInternalRepo(identity.repoId, ctx);
+            if (concurrent) {
+              return stripInternalRepo(concurrent);
+            }
+          } catch (lookupError) {
+            if (!isSqliteBusyError(lookupError)) {
+              throw lookupError;
+            }
+          }
+        }
+      }
       throw error;
     }
   }
@@ -294,13 +319,17 @@ export class LightExtensionRepoService {
     };
   }
 
-  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined): void {
+  private assertValidInitialFiles(
+    files: LightExtensionTreeEntryInput[] | undefined,
+    allowRemovedGenericRunJSSource = false,
+  ): void {
     if (!files) {
       return;
     }
 
     const diagnostics = this.validator.validateInitialFiles({
       files,
+      allowRemovedGenericRunJSSource,
     });
     if (!hasErrorDiagnostic(diagnostics)) {
       return;
@@ -326,6 +355,7 @@ export class LightExtensionRepoService {
       const entryRecords = repoIds.length
         ? await this.db.getRepository('lightExtensionEntries').find({
             filter: { repoId: { $in: repoIds } },
+            fields: ['repoId', 'kind', 'healthStatus'],
             transaction,
           })
         : [];
@@ -443,14 +473,106 @@ export class LightExtensionRepoService {
     assertLifecycleStatus(input.lifecycleStatus, 'lifecycleStatus');
     const requestId = getRequestId(ctx);
 
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const current = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
+    try {
+      return await this.withTransaction(ctx.transaction, async (transaction) => {
+        const current = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
 
-      if (input.lifecycleStatus === 'archived') {
-        await this.assertRemoteSyncIdle(current.vscRepoId, transaction);
-      }
+        if (input.lifecycleStatus === 'archived') {
+          await this.assertRemoteSyncIdle(current.vscRepoId, transaction);
+        }
 
-      if (current.lifecycleStatus === 'archived' && input.lifecycleStatus !== 'archived') {
+        if (current.lifecycleStatus === 'archived' && input.lifecycleStatus !== 'archived') {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_REPO_ARCHIVED',
+            'Archived light extension repositories cannot be re-enabled',
+            {
+              details: {
+                repoId: input.repoId,
+                currentLifecycleStatus: current.lifecycleStatus,
+                requestedLifecycleStatus: input.lifecycleStatus,
+              },
+            },
+          );
+        }
+
+        if (current.lifecycleStatus === input.lifecycleStatus) {
+          await this.auditService.recordLifecycleEvent({
+            repoId: input.repoId,
+            action: 'repoLifecycleChange',
+            result: 'success',
+            requestId,
+            actorUserId: ctx.actorUserId,
+            fromStatus: current.lifecycleStatus,
+            toStatus: current.lifecycleStatus,
+            message: 'Light extension lifecycle status already matches the requested status',
+            details: {
+              unchanged: true,
+            },
+            transaction,
+          });
+
+          return stripInternalRepo(current);
+        }
+
+        const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>('lightExtensionRepos');
+        await repoModel.update(
+          {
+            lifecycleStatus: input.lifecycleStatus,
+          },
+          {
+            where: {
+              id: input.repoId,
+            },
+            transaction,
+          },
+        );
+
+        if (input.lifecycleStatus === 'archived') {
+          await this.runVsc(current.id, () =>
+            this.vscFileService.archiveRepository(
+              {
+                repoId: current.vscRepoId,
+              },
+              this.createVscContext({
+                ctx,
+                transaction,
+                requestId,
+                repoId: current.id,
+                aclAction: 'archive',
+                reason: 'archive light-extension source repository',
+                allowedActions: ['archiveRepository'],
+              }),
+            ),
+          );
+        }
+
+        const next = await this.getInternalRepo(input.repoId, { ...ctx, transaction });
+        await this.referenceService?.refreshReferencesForRepo(
+          input.repoId,
+          {
+            ...ctx,
+            transaction,
+            requestId,
+          },
+          'repo_lifecycle_change',
+        );
+        await this.auditService.recordLifecycleEvent({
+          repoId: input.repoId,
+          action: 'repoLifecycleChange',
+          result: 'success',
+          requestId,
+          actorUserId: ctx.actorUserId,
+          fromStatus: current.lifecycleStatus,
+          toStatus: next.lifecycleStatus,
+          message: 'Light extension lifecycle status changed',
+          transaction,
+        });
+
+        return stripInternalRepo(next);
+      });
+    } catch (error) {
+      if (error instanceof LightExtensionError && error.code === 'LIGHT_EXTENSION_REPO_ARCHIVED') {
+        const current = await this.getInternalRepo(input.repoId, ctx);
         await this.recordLifecycleBlocked({
           repoId: input.repoId,
           requestId,
@@ -459,99 +581,12 @@ export class LightExtensionRepoService {
           toStatus: input.lifecycleStatus,
           reasonCode: 'repo_archived',
           message: 'Archived light extension repositories cannot be re-enabled',
-          details: {
-            currentLifecycleStatus: current.lifecycleStatus,
-            requestedLifecycleStatus: input.lifecycleStatus,
-          },
+          details: error.details,
+          transaction: ctx.transaction,
         });
-        throw new LightExtensionError(
-          'LIGHT_EXTENSION_REPO_ARCHIVED',
-          'Archived light extension repositories cannot be re-enabled',
-          {
-            details: {
-              repoId: input.repoId,
-              currentLifecycleStatus: current.lifecycleStatus,
-              requestedLifecycleStatus: input.lifecycleStatus,
-            },
-          },
-        );
       }
-
-      if (current.lifecycleStatus === input.lifecycleStatus) {
-        await this.auditService.recordLifecycleEvent({
-          repoId: input.repoId,
-          action: 'repoLifecycleChange',
-          result: 'success',
-          requestId,
-          actorUserId: ctx.actorUserId,
-          fromStatus: current.lifecycleStatus,
-          toStatus: current.lifecycleStatus,
-          message: 'Light extension lifecycle status already matches the requested status',
-          details: {
-            unchanged: true,
-          },
-          transaction,
-        });
-
-        return stripInternalRepo(current);
-      }
-
-      const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>('lightExtensionRepos');
-      await repoModel.update(
-        {
-          lifecycleStatus: input.lifecycleStatus,
-        },
-        {
-          where: {
-            id: input.repoId,
-          },
-          transaction,
-        },
-      );
-
-      if (input.lifecycleStatus === 'archived') {
-        await this.runVsc(current.id, () =>
-          this.vscFileService.archiveRepository(
-            {
-              repoId: current.vscRepoId,
-            },
-            this.createVscContext({
-              ctx,
-              transaction,
-              requestId,
-              repoId: current.id,
-              aclAction: 'archive',
-              reason: 'archive light-extension source repository',
-              allowedActions: ['archiveRepository'],
-            }),
-          ),
-        );
-      }
-
-      const next = await this.getInternalRepo(input.repoId, { ...ctx, transaction });
-      await this.referenceService?.refreshReferencesForRepo(
-        input.repoId,
-        {
-          ...ctx,
-          transaction,
-          requestId,
-        },
-        'repo_lifecycle_change',
-      );
-      await this.auditService.recordLifecycleEvent({
-        repoId: input.repoId,
-        action: 'repoLifecycleChange',
-        result: 'success',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        fromStatus: current.lifecycleStatus,
-        toStatus: next.lifecycleStatus,
-        message: 'Light extension lifecycle status changed',
-        transaction,
-      });
-
-      return stripInternalRepo(next);
-    });
+      throw error;
+    }
   }
 
   async archiveRepo(
@@ -580,13 +615,6 @@ export class LightExtensionRepoService {
         const referenceCount = await this.countRepoReferences(input.repoId, transaction);
 
         if (referenceCount > 0) {
-          await this.recordDeleteBlockedByReferences(
-            input.repoId,
-            requestId,
-            ctx,
-            repo.lifecycleStatus,
-            referenceCount,
-          );
           throw referenceExistsError(input.repoId, referenceCount);
         }
 
@@ -614,13 +642,6 @@ export class LightExtensionRepoService {
         });
         const finalReferenceCount = await this.countRepoReferences(input.repoId, transaction);
         if (finalReferenceCount > 0) {
-          await this.recordDeleteBlockedByReferences(
-            input.repoId,
-            requestId,
-            ctx,
-            repo.lifecycleStatus,
-            finalReferenceCount,
-          );
           throw referenceExistsError(input.repoId, finalReferenceCount);
         }
 
@@ -643,9 +664,22 @@ export class LightExtensionRepoService {
         return stripInternalRepo(repo);
       });
     } catch (error) {
+      if (error instanceof LightExtensionError && error.code === 'LIGHT_EXTENSION_REFERENCE_EXISTS') {
+        const repo = await this.getInternalRepo(input.repoId, ctx);
+        const referenceCount = await this.countRepoReferences(input.repoId, ctx.transaction);
+        await this.recordDeleteBlockedByReferences(
+          input.repoId,
+          requestId,
+          ctx,
+          repo.lifecycleStatus,
+          referenceCount,
+          ctx.transaction,
+        );
+        throw error;
+      }
       if (isReferenceConstraintError(error)) {
         const referenceCount = await this.countRepoReferences(input.repoId);
-        await this.recordDeleteBlockedByReferences(input.repoId, requestId, ctx, null, referenceCount);
+        await this.recordDeleteBlockedByReferences(input.repoId, requestId, ctx, null, referenceCount, ctx.transaction);
         throw referenceExistsError(input.repoId, referenceCount);
       }
 
@@ -794,6 +828,7 @@ export class LightExtensionRepoService {
     ctx: LightExtensionServiceContext,
     lifecycleStatus: string | null,
     referenceCount: number,
+    transaction?: Transaction,
   ): Promise<void> {
     await this.auditService.recordLifecycleEvent({
       repoId,
@@ -807,6 +842,7 @@ export class LightExtensionRepoService {
       details: {
         referenceCount,
       },
+      transaction,
     });
   }
 
@@ -819,6 +855,7 @@ export class LightExtensionRepoService {
     reasonCode: string;
     message: string;
     details?: Record<string, unknown>;
+    transaction?: Transaction;
   }): Promise<void> {
     await this.auditService.recordLifecycleEvent({
       repoId: input.repoId,
@@ -831,6 +868,7 @@ export class LightExtensionRepoService {
       reasonCode: input.reasonCode,
       message: input.message,
       details: input.details,
+      transaction: input.transaction,
     });
   }
 
@@ -978,6 +1016,21 @@ function referenceExistsError(repoId: string, referenceCount: number): LightExte
 
 function isReferenceConstraintError(error: unknown): boolean {
   return error instanceof Error && error.name === 'SequelizeForeignKeyConstraintError';
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function optionalTrim(value: string | null | undefined): string | null | undefined {

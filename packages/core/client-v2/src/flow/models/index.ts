@@ -12,4 +12,5 @@ export * from './base';
 export * from './blocks';
 export * from './fields';
 export * from './menuItemProviders';
+export * from './runJSSurfaceMenuCatalog';
 export * from './topbar';

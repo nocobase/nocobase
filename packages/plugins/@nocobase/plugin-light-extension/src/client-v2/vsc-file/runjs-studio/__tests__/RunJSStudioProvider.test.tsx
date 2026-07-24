@@ -21,7 +21,6 @@ const mocks = vi.hoisted(() => ({
   activeAuthoringSurfaceId: undefined as string | undefined,
   authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
   closeView: vi.fn(),
-  diagnoseRunJS: vi.fn(),
   request: vi.fn(),
   view: {} as {
     beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
@@ -104,7 +103,6 @@ vi.mock('@nocobase/client-v2', () => ({
       />
     </div>
   ),
-  diagnoseRunJS: mocks.diagnoseRunJS,
   useApp: () => ({
     name: 'test-app',
     aiManager: {
@@ -302,17 +300,20 @@ function createDataTransfer() {
   };
 }
 
+function deferred<T>() {
+  let resolveDeferred!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolveDeferred = resolve;
+  });
+  return { promise, resolve: resolveDeferred };
+}
+
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
     mocks.activeAuthoringSurfaceId = undefined;
     mocks.authoringSurfaces.clear();
     mocks.view.close = mocks.closeView;
     Reflect.deleteProperty(mocks.view, 'beforeClose');
-    mocks.diagnoseRunJS.mockResolvedValue({
-      execution: { finished: true, started: true, timeout: false },
-      issues: [],
-      logs: [],
-    });
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
       if (url === 'runJSSources:open') {
         return Promise.resolve({
@@ -541,7 +542,7 @@ describe('runJSStudioProvider', () => {
     const requiredKeys = [
       'File resource manager',
       'Console logs',
-      'Run',
+      'Check',
       'Save',
       'Saved successfully',
       'Unsaved changes',
@@ -562,7 +563,7 @@ describe('runJSStudioProvider', () => {
       'Back to editor',
       'Base',
       'Saved',
-      'No logs yet. Click Run to execute.',
+      'No messages yet. Click Check to validate.',
       'Click to restore',
       'Restore {{version}}?',
       'This will copy files from this version into the editor.',
@@ -619,14 +620,14 @@ describe('runJSStudioProvider', () => {
     expect(screen.queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Open Studio' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
     expect(screen.getByTestId('mock-code-editor').getAttribute('data-runjs-model-use')).toBe('JSBlockModel');
     expect(screen.queryByRole('button', { name: 'Import workspace' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();
     expect(screen.getByLabelText('Open files').style.overflowY).toBe('hidden');
-    expect(screen.getByText('No logs yet. Click Run to execute.')).toBeTruthy();
+    expect(screen.getByText('No messages yet. Click Check to validate.')).toBeTruthy();
     expect(screen.getByTestId('runjs-studio-editor').style.overflow).toBe('hidden');
     expect(screen.getByTestId('runjs-studio-editor').style.minHeight).toMatch(/^(0|0px)$/);
     expect(screen.getByTestId('runjs-studio-workspace').style.minHeight).toMatch(/^(0|0px)$/);
@@ -684,7 +685,7 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-authoring-surface-id', surfaceId);
     fireEvent.focus(editor);
     expect(mocks.activeAuthoringSurfaceId).toBe(surfaceId);
-    expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
   });
 
@@ -721,6 +722,190 @@ describe('runJSStudioProvider', () => {
     });
 
     expect(mocks.closeView).not.toHaveBeenCalled();
+  });
+
+  it('ignores a check response after the workspace changes', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) throw new Error('Default request mock is unavailable');
+    const preview = deferred<unknown>();
+    const onPreview = vi.fn();
+    mocks.request.mockImplementation((request) =>
+      request.url === 'runJSSources:compilePreview' ? preview.promise : defaultRequest(request),
+    );
+    renderEditor(vi.fn(), { onPreview });
+
+    const editor = await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:compilePreview' })),
+    );
+    fireEvent.change(editor, { target: { value: 'return 3;' } });
+
+    preview.resolve({
+      data: {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          artifact: {
+            code: 'return 2;',
+            version: 'v2',
+            sourceMap: previewSourceMap,
+            diagnostics: [],
+            filesHash: 'files-hash-stale',
+            entryPath: 'src/client/index.tsx',
+          },
+        },
+      },
+    });
+    await act(async () => {
+      await preview.promise;
+      await Promise.resolve();
+    });
+
+    expect(onPreview).not.toHaveBeenCalled();
+    expect(editor).toHaveValue('return 3;');
+    expect(screen.getByRole('button', { name: 'Check' })).not.toBeDisabled();
+  });
+
+  it('ignores a check response after switching to another locator', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) throw new Error('Default request mock is unavailable');
+    const preview = deferred<unknown>();
+    const onPreview = vi.fn();
+    const nextLocator = { ...locator, modelUid: 'fm_2' };
+    const nextOpenResult = {
+      ...openResult,
+      locator: nextLocator,
+      files: [{ ...openResult.files[0], content: 'return next;' }],
+      legacy: { ...openResult.legacy, code: 'return next;' },
+    };
+    mocks.request.mockImplementation((request: { data?: { locator?: { modelUid?: string } }; url: string }) => {
+      if (request.url === 'runJSSources:compilePreview') return preview.promise;
+      if (request.url === 'runJSSources:open' && request.data?.locator?.modelUid === nextLocator.modelUid) {
+        return Promise.resolve({ data: { data: nextOpenResult } });
+      }
+      return defaultRequest(request);
+    });
+    const rendered = renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:compilePreview' })),
+    );
+
+    rendered.rerender(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return next;', version: 'v2' },
+          onChange: vi.fn(),
+          locator: nextLocator,
+          onPreview,
+          scene: 'block',
+        })}
+      </>,
+    );
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;'));
+
+    preview.resolve({
+      data: {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          artifact: {
+            code: 'return 1;',
+            version: 'v2',
+            sourceMap: previewSourceMap,
+            diagnostics: [],
+            filesHash: 'files-hash-stale-locator',
+            entryPath: 'src/client/index.tsx',
+          },
+        },
+      },
+    });
+    await act(async () => {
+      await preview.promise;
+      await Promise.resolve();
+    });
+
+    expect(onPreview).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;');
+  });
+
+  it('keeps an embedded save pending when newer local edits exist', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) throw new Error('Default request mock is unavailable');
+    const saveResponse = await defaultRequest({ url: 'runJSSources:save' });
+    const pendingSave = deferred<unknown>();
+    let saveRequestCount = 0;
+    mocks.request.mockImplementation((request) => {
+      if (request.url !== 'runJSSources:save') return defaultRequest(request);
+      saveRequestCount += 1;
+      return saveRequestCount === 1 ? pendingSave.promise : defaultRequest(request);
+    });
+    let controller:
+      | { dirty: boolean; requestSave: () => Promise<'cancelled' | 'saved' | 'unchanged'>; saving: boolean }
+      | undefined;
+    renderEditor(vi.fn(), {
+      editorChrome: 'embedded',
+      onEmbeddedEditorControllerChange: (next: typeof controller | null) => {
+        if (next) controller = next;
+      },
+    });
+
+    const editor = await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    await waitFor(() => expect(controller?.dirty).toBe(true));
+    const result = controller?.requestSave();
+    if (!result) throw new Error('Embedded save controller was not registered');
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Save older snapshot' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(controller?.saving).toBe(true));
+
+    fireEvent.change(editor, { target: { value: 'return 3;' } });
+    await act(async () => {
+      pendingSave.resolve(saveResponse);
+      await pendingSave.promise;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await waitFor(() => expect(controller).toEqual(expect.objectContaining({ dirty: true, saving: false })));
+    let settled = false;
+    result
+      .then(() => {
+        settled = true;
+      })
+      .catch(() => {
+        settled = true;
+      });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      const saveRequests = mocks.request.mock.calls
+        .map(([request]) => request as { url: string; data?: Record<string, unknown> })
+        .filter((request) => request.url === 'runJSSources:save');
+      expect(saveRequests).toHaveLength(2);
+      expect(saveRequests[1]?.data).toEqual(
+        expect.objectContaining({
+          baseCommitId: 'commit-2',
+          baseOwnerFingerprint: 'owner-fingerprint-2',
+          files: expect.arrayContaining([
+            expect.objectContaining({ path: 'src/client/index.tsx', content: 'return 3;' }),
+          ]),
+        }),
+      );
+    });
+
+    let saveResult: 'cancelled' | 'saved' | 'unchanged' | undefined;
+    await act(async () => {
+      saveResult = await result;
+    });
+    expect(saveResult).toBe('saved');
   });
 
   it('uses the drawer viewport height instead of the legacy compact editor height', async () => {
@@ -1046,16 +1231,11 @@ describe('runJSStudioProvider', () => {
     expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
   });
 
-  it('compiles on Run and appends client-side preview logs', async () => {
-    mocks.diagnoseRunJS.mockResolvedValueOnce({
-      execution: { finished: true, started: true, timeout: false },
-      issues: [],
-      logs: [{ level: 'log', message: 'hello!' }],
-    });
+  it('checks the current workspace without executing the compiled artifact', async () => {
     renderEditor();
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -1064,27 +1244,7 @@ describe('runJSStudioProvider', () => {
         }),
       );
     });
-    expect(mocks.diagnoseRunJS).toHaveBeenCalledWith('return 1;', expect.anything(), {
-      sourceMap: previewSourceMap,
-      version: 'v2',
-    });
-    expect(await screen.findByText(/\[log\] hello!/)).toBeTruthy();
-  });
-
-  it('uses the host preview without executing host-dependent code in the generic diagnostics context', async () => {
-    const onPreview = vi.fn();
-    renderEditor(vi.fn(), { onPreview });
-
-    await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-
-    await waitFor(() =>
-      expect(onPreview).toHaveBeenCalledWith({
-        code: 'return 1;',
-        version: 'v2',
-      }),
-    );
-    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+    expect(await screen.findByText(/\[info\] Source check passed/)).toBeTruthy();
   });
 
   it('resolves the fixed src/client index entry by extension priority', async () => {
@@ -1138,7 +1298,7 @@ describe('runJSStudioProvider', () => {
     renderEditor();
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -1205,7 +1365,7 @@ describe('runJSStudioProvider', () => {
     renderEditor();
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -1217,32 +1377,6 @@ describe('runJSStudioProvider', () => {
         }),
       );
     });
-  });
-
-  it('shows mapped runtime diagnostics as clickable file locations', async () => {
-    mocks.diagnoseRunJS.mockResolvedValueOnce({
-      execution: { finished: true, started: true, timeout: false },
-      issues: [
-        {
-          type: 'runtime',
-          message: 'boom',
-          sourcePath: 'src/client/index.tsx',
-          location: { start: { line: 2, column: 3 } },
-        },
-      ],
-      logs: [],
-    });
-    renderEditor();
-
-    await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
-
-    const location = await screen.findByRole('button', {
-      name: '[error] src/client/index.tsx:2:3 boom',
-    });
-    fireEvent.click(location);
-    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-reveal-line', '2');
-    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-reveal-column', '3');
   });
 
   it('toggles the editor area into a diff against the saved file', async () => {
@@ -1351,12 +1485,43 @@ describe('runJSStudioProvider', () => {
   });
 
   it('requires a version message before saving a version', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) {
+      throw new Error('Expected the default request mock implementation');
+    }
+    let saved = false;
+    mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
+      if (options.url === 'runJSSources:save') {
+        saved = true;
+        return defaultRequest(options);
+      }
+      if (options.url === 'runJSSources:open' && saved) {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              legacy: {
+                ...openResult.legacy,
+                code: 'return canonicalSavedRuntime;',
+                version: 'v3',
+              },
+              files: openResult.files.map((file) =>
+                file.path === 'src/client/index.tsx' ? { ...file, content: 'return 2;' } : file,
+              ),
+            },
+          },
+        });
+      }
+      return defaultRequest(options);
+    });
     const onChange = vi.fn();
     const onPersistedChange = vi.fn();
     renderEditor(onChange, { onPersistedChange });
     const editor = await screen.findByLabelText('Edit file content');
 
     fireEvent.change(editor, { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    expect(await screen.findByText(/\[info\] Source check passed/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     const dialog = await screen.findByRole('dialog');
@@ -1395,8 +1560,8 @@ describe('runJSStudioProvider', () => {
     });
     expect(onPersistedChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: 'return 2;',
-        version: 'v2',
+        code: 'return canonicalSavedRuntime;',
+        version: 'v3',
         sourceRef: {
           type: 'vsc-file',
           repoId: 'repo-1',
@@ -1405,8 +1570,44 @@ describe('runJSStudioProvider', () => {
         },
       }),
     );
+    expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
+      2,
+    );
     expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();
+  });
+
+  it('does not persist a new source reference when canonical post-Save readback fails', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) {
+      throw new Error('Expected the default request mock implementation');
+    }
+    let saved = false;
+    mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
+      if (options.url === 'runJSSources:save') {
+        saved = true;
+        return defaultRequest(options);
+      }
+      if (options.url === 'runJSSources:open' && saved) {
+        return Promise.reject(new Error('canonical readback unavailable'));
+      }
+      return defaultRequest(options);
+    });
+    const onPersistedChange = vi.fn();
+    renderEditor(vi.fn(), { onPersistedChange });
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Save version' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Update code' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Save failed')).toBeTruthy();
+    expect(onPersistedChange).not.toHaveBeenCalled();
+    expect(mocks.closeView).not.toHaveBeenCalled();
   });
 
   it('opens latest, three-way merges, recompiles, and saves with fresh CAS after a stale Head', async () => {

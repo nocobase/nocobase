@@ -525,10 +525,26 @@ export class VscFileService {
   }
 
   async push(input: PushInput, ctx: VscServiceContext = {}): Promise<PushResult> {
-    const result = await this.pushInternal(input, ctx, {
-      checkPermission: true,
-      materializeCandidate: false,
-    });
+    let result: InternalPushResult;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        result = await this.pushInternal(input, ctx, {
+          checkPermission: true,
+          materializeCandidate: false,
+        });
+        break;
+      } catch (error) {
+        if (
+          ctx.transaction ||
+          this.db.sequelize.getDialect() !== 'sqlite' ||
+          !isSqliteBusyError(error) ||
+          attempt >= 2
+        ) {
+          throw error;
+        }
+        await delay(100);
+      }
+    }
 
     return {
       repository: result.repository,
@@ -975,4 +991,19 @@ function isBlobDiffEndpoint(endpoint: DiffFileEndpoint | null | undefined): bool
 
 function cloneRecord(value: Readonly<Record<string, unknown>>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

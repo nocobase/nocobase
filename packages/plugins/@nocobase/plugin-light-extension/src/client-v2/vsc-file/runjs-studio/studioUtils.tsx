@@ -545,7 +545,7 @@ export function buildRunJSImportModuleCompletionSignature(files: RunJSWorkspaceF
     .filter((file) => file.path !== activePath)
     .filter((file) => file.path !== runJSManifestPath)
     .filter((file) => Boolean(getImportableRunJSExtension(file.path)))
-    .map((file) => `${file.path}\u0000${file.content}`)
+    .map((file) => `${file.path}\u0000${file.revision ?? file.content}`)
     .sort()
     .join('\u0001');
 }
@@ -585,6 +585,7 @@ export function buildRunJSTypeScriptProject(
     declarationFiles?: RunJSWorkspaceFile[];
     globalContextType?: string;
     modelUse?: string;
+    projectRevision?: number;
   } = {},
 ): RunJSTypeScriptProject | undefined {
   if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
@@ -596,18 +597,21 @@ export function buildRunJSTypeScriptProject(
     ignoredDiagnosticCodes: [1108],
     rewriteBuiltInAutoImports: true,
     typeLibraryIds: ['react'],
+    projectRevision: context.projectRevision,
     files: files
       .filter((file) => file.path !== runJSManifestPath)
       .filter((file) => isRunJSTypeScriptWorkspaceFile(file.path))
       .map((file) => ({
         content: file.content,
         path: file.path,
+        revision: file.revision,
       })),
     ...(context.declarationFiles?.length
       ? {
           declarationFiles: context.declarationFiles.map((file) => ({
             content: file.content,
             path: file.path,
+            revision: file.revision,
           })),
         }
       : {}),

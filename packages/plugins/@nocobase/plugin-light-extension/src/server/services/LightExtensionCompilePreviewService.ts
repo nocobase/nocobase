@@ -18,11 +18,11 @@ import type {
   LightExtensionCompilePreviewResult,
   LightExtensionDiagnostic,
   LightExtensionEntryRecord,
-  LightExtensionPulledFile,
   LightExtensionWorkspacePreviewInput,
   LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
+import { compileLightExtensionValidatedEntry, validateLightExtensionWorkspace } from './LightExtensionCompileContract';
 import { entryFromModel } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
@@ -93,9 +93,7 @@ export class LightExtensionCompilePreviewService {
       },
       previewContext,
     );
-    const validation = this.validator.validateWorkspace({
-      files: toValidatorFiles(pull.files || []),
-    });
+    const validation = validateLightExtensionWorkspace(this.validator, toValidatorFiles(pull.files || []));
     const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
     const persistedEntries = await this.listPersistedEntries(input.repoId, previewContext);
     const targets = buildPreviewTargets(input, validation.entries, persistedEntries);
@@ -129,14 +127,14 @@ export class LightExtensionCompilePreviewService {
         continue;
       }
 
-      const compiled = await this.compilerBridge.compileEntry(
+      const compiled = await compileLightExtensionValidatedEntry(
+        this.compilerBridge,
         {
           repoId: input.repoId,
           entryId: target.entryId,
-          kind: target.validationEntry.kind,
-          entryName: target.validationEntry.entryName,
-          entryPath: target.validationEntry.entryPath,
-          files: getEntryCompileFiles(pull.files || [], target.validationEntry),
+          operation: 'compilePreview',
+          entry: target.validationEntry,
+          files: pull.files || [],
         },
         previewContext,
       );
@@ -216,9 +214,7 @@ export class LightExtensionCompilePreviewService {
     }
 
     const previewFiles = input.files;
-    const validation = this.validator.validateWorkspace({
-      files: previewFiles.map((file) => ({ ...file })),
-    });
+    const validation = validateLightExtensionWorkspace(this.validator, previewFiles);
     const targetKind = input.kind;
     const targetEntryPath = input.entryPath?.trim();
     if (!targetKind && !targetEntryPath) {
@@ -285,16 +281,15 @@ export class LightExtensionCompilePreviewService {
       };
     }
 
-    const compiled = await this.compilerBridge.compileEntry(
+    const compiled = await compileLightExtensionValidatedEntry(
+      this.compilerBridge,
       {
         repoId: input.repoId,
         entryId: input.entryId,
         operation: 'compilePreview',
-        kind: validationEntry.kind,
-        entryName: validationEntry.entryName,
-        entryPath: validationEntry.entryPath,
+        entry: validationEntry,
         runtimeVersion: input.runtimeVersion,
-        files: getEntryCompileFiles(previewFiles, validationEntry),
+        files: previewFiles,
       },
       previewContext,
     );
@@ -355,16 +350,15 @@ export class LightExtensionCompilePreviewService {
       }
 
       const runtimeVersion = input.runtimeVersion || persistedEntry?.runtimeVersion || 'v2';
-      const compiled = await this.compilerBridge.compileEntry(
+      const compiled = await compileLightExtensionValidatedEntry(
+        this.compilerBridge,
         {
           repoId: input.repoId,
           entryId,
           operation: 'compilePreview',
-          kind: validationEntry.kind,
-          entryName: validationEntry.entryName,
-          entryPath: validationEntry.entryPath,
+          entry: validationEntry,
           runtimeVersion,
-          files: getEntryCompileFiles(files, validationEntry),
+          files,
         },
         ctx,
       );
@@ -662,32 +656,6 @@ function buildWorkspaceBlockedEntryResult(
     diagnostics: sortDiagnostics([...target.diagnostics, ...workspaceDiagnostics]),
     failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
   };
-}
-
-function getEntryCompileFiles(
-  files: readonly (Pick<LightExtensionPulledFile, 'content' | 'path'> &
-    Partial<Pick<LightExtensionPulledFile, 'blobHash' | 'language'>>)[],
-  entry: LightExtensionEntryValidationResult,
-) {
-  const rootPath = getEntryRootPath(entry);
-
-  return files
-    .filter(
-      (file) =>
-        file.path !== entry.descriptorPath &&
-        (file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/')),
-    )
-    .map((file) => ({
-      path: file.path,
-      content: file.content,
-      blobHash: file.blobHash,
-      language: file.language,
-    }));
-}
-
-function getEntryRootPath(entry: LightExtensionEntryValidationResult): string {
-  const normalized = normalizeSourcePath(entry.entryPath);
-  return pathPosix.extname(normalized) ? pathPosix.dirname(normalized) : normalized;
 }
 
 function summarizeArtifact(

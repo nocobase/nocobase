@@ -207,10 +207,11 @@ vi.mock('../vsc-file/public-api', () => {
     CodeTab: ({
       activeFile,
       onChange,
-      onRunPreview,
+      onCheck,
       scene,
-      showRunButton,
-      previewing,
+      showCheckButton,
+      checking,
+      projectRevision,
       readOnly,
       toolbarActions,
       workspaceFiles,
@@ -224,10 +225,11 @@ vi.mock('../vsc-file/public-api', () => {
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
-      onRunPreview?: () => void;
+      onCheck?: () => void;
       scene?: string;
-      showRunButton?: boolean;
-      previewing?: boolean;
+      showCheckButton?: boolean;
+      checking?: boolean;
+      projectRevision: number;
       readOnly?: boolean;
       toolbarActions?: React.ReactNode;
       workspaceFiles: Array<{ content: string; path: string }>;
@@ -244,24 +246,25 @@ vi.mock('../vsc-file/public-api', () => {
     }) => (
       <div
         data-authoring-surface-id={authoringSurfaceId || ''}
-        data-has-run-preview={String(Boolean(onRunPreview))}
+        data-has-check={String(Boolean(onCheck))}
         data-scene={scene || ''}
-        data-show-run-button={String(showRunButton)}
+        data-show-check-button={String(showCheckButton)}
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
         data-reveal-column={revealPosition?.column}
         data-reveal-line={revealPosition?.line}
         data-reveal-path={revealPosition?.path}
+        data-project-revision={projectRevision}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
         <button onClick={() => onFilesCollapsedChange(!filesCollapsed)} type="button">
           {filesCollapsed ? 'Expand files' : 'Collapse files'}
         </button>
-        {showRunButton ? (
-          <button disabled={!onRunPreview} onClick={onRunPreview} type="button">
-            {previewing ? 'Running' : 'Run'}
+        {showCheckButton ? (
+          <button disabled={!onCheck} onClick={onCheck} type="button">
+            {checking ? 'Checking' : 'Check'}
           </button>
         ) : null}
         {toolbarActions}
@@ -505,9 +508,6 @@ describe('LightExtensionWorkspacePage', () => {
 
     const workspace = await screen.findByTestId('light-extension-runjs-studio-workspace');
     expect(screen.queryByTestId('runjs-files-panel')).not.toBeInTheDocument();
-    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({
-      overflowY: 'hidden',
-    });
     expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveTextContent('Diagnostics');
 
     fireEvent.click(within(workspace).getByRole('button', { name: 'Expand files' }));
@@ -549,12 +549,17 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     await screen.findByTestId('runjs-code-tab');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'false');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'false');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-check-button', 'false');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-check', 'false');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-scene', '');
+    const initialProjectRevision = Number(screen.getByTestId('runjs-code-tab').getAttribute('data-project-revision'));
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'export default function SalesKpi() { return "ok"; }\n' },
     });
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-project-revision',
+      String(initialProjectRevision + 1),
+    );
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await confirmSaveVersion('Update sales KPI');
 
@@ -727,8 +732,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(onRequestClose).not.toHaveBeenCalled();
   });
 
-  it('compiles and previews the current unsaved entry workspace without saving it', async () => {
-    const onPreview = vi.fn();
+  it('checks the current unsaved entry workspace without saving or applying the artifact', async () => {
     const workspaceScope: LightExtensionWorkspaceScope = {
       mode: 'entry',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -740,7 +744,6 @@ describe('LightExtensionWorkspacePage', () => {
         <LightExtensionWorkspacePage
           embedded
           entryId="lee_sales_kpi"
-          onPreview={onPreview}
           repoId="ler_sales"
           workspaceScope={workspaceScope}
         />
@@ -748,13 +751,12 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     await screen.findByTestId('runjs-code-tab');
-    expect(screen.queryByText('Building local provisional preview')).not.toBeInTheDocument();
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'true');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-check-button', 'true');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-check', 'true');
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'ctx.render(<div>unsaved preview</div>);\n' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
 
     await waitFor(() => expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(1));
     expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
@@ -770,16 +772,8 @@ describe('LightExtensionWorkspacePage', () => {
         }),
       ],
     });
-    await waitFor(() =>
-      expect(onPreview).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: 'ctx.render(<div>preview</div>);',
-          version: 'v2',
-        }),
-      ),
-    );
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
-    expect(screen.queryByText('Preview updated')).not.toBeInTheDocument();
+    expect(await screen.findByText('Source check passed')).toBeInTheDocument();
   });
 
   it('offers moving the current unsaved entry workspace back to inline code', async () => {
@@ -1897,7 +1891,6 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
-    expect(screen.getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({ overflowY: 'auto' });
   });
 
   it('opens diagnostic source locations after save validation failure', async () => {

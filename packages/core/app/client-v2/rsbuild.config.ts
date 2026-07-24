@@ -15,7 +15,6 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generateV2Plugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
-import { addWasmUrlAssetRule } from '../rsbuildWasmUrlAsset';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -346,7 +345,6 @@ export default defineConfig(({ command }) => {
     tools: {
       rspack(config) {
         config.target = ['web', 'es2020'];
-        addWasmUrlAssetRule(config);
         config.output.module = isBuild;
         config.output.chunkFormat = isBuild ? 'module' : 'array-push';
         config.experiments = {

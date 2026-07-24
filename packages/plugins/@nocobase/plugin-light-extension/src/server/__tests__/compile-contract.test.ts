@@ -9,13 +9,18 @@
 
 import { sha256Hex } from '@nocobase/runjs';
 import { RUNJS_COMPILER_BUILD_IDENTITY } from '@nocobase/runjs/compiler';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { vi } from 'vitest';
 
 import {
   aggregateLightExtensionCompileResults,
   assertStructuredClonePlainData,
+  compileLightExtensionValidatedEntry,
   createLightExtensionCompileInfrastructureFailure,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  validateLightExtensionWorkspace,
   type LightExtensionCompileJob,
 } from '../services/LightExtensionCompileContract';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
@@ -65,6 +70,23 @@ describe('LightExtensionCompileContract', () => {
     );
   });
 
+  it('freezes the compiler identity before SES lockdown changes the runtime type-library fingerprint', () => {
+    const contractPath = path.resolve(__dirname, '../services/LightExtensionCompileContract.ts');
+    const sesPath = path.resolve(__dirname, '../../../../../../core/utils/src/ses.ts');
+    const baseline = readCompilerBuildId(
+      `const contract = require(${JSON.stringify(
+        contractPath,
+      )}); console.log(contract.LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.compilerBuildId);`,
+    );
+    const afterLockdown = readCompilerBuildId(
+      `const contract = require(${JSON.stringify(contractPath)}); const { lockdownSes } = require(${JSON.stringify(
+        sesPath,
+      )}); lockdownSes({ consoleTaming: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'moderate', stackFiltering: 'verbose' }); console.log(contract.LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.compilerBuildId);`,
+    );
+
+    expect(afterLockdown).toBe(baseline);
+  });
+
   it('orders a complete batch by ordinal and rejects process-local values', () => {
     const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2)];
     const results = [jobs[2], jobs[0], jobs[1]].map((job) =>
@@ -89,7 +111,73 @@ describe('LightExtensionCompileContract', () => {
       'Value.transaction must not contain class instances or process-local objects',
     );
   });
+
+  it('validates a cloned workspace input without exposing a publish-capable object', () => {
+    const files = [{ path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' }];
+    const validation = {
+      accepted: true,
+      diagnostics: [],
+      entries: [],
+      capabilities: {} as never,
+    };
+    const validateWorkspace = vi.fn().mockReturnValue(validation);
+
+    const result = validateLightExtensionWorkspace({ validateWorkspace }, files);
+
+    expect(result).toBe(validation);
+    expect(validateWorkspace).toHaveBeenCalledWith({ files: [{ ...files[0] }] });
+    expect(validateWorkspace.mock.calls[0][0].files).not.toBe(files);
+    expect(validateWorkspace.mock.calls[0][0].files[0]).not.toBe(files[0]);
+    expect(result).not.toHaveProperty('candidate');
+    expect(result).not.toHaveProperty('workspace');
+  });
+
+  it('compiles only validated entry and shared files through the pure compile helper', async () => {
+    const compileEntry = vi.fn().mockResolvedValue({ accepted: true, diagnostics: [] });
+    const files = [
+      { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' },
+      { path: 'src/client/js-blocks/example/entry.json', content: '{"schemaVersion":1,"key":"example"}' },
+      { path: 'src/shared/format.ts', content: 'export const format = String;' },
+      { path: 'README.md', content: '# ignored' },
+    ];
+
+    await compileLightExtensionValidatedEntry(
+      { compileEntry },
+      {
+        repoId: 'repo_example',
+        entryId: 'entry_example',
+        operation: 'compilePreview',
+        entry: {
+          kind: 'js-block',
+          entryName: 'example',
+          entryPath: 'src/client/js-blocks/example/index.tsx',
+          descriptorPath: 'src/client/js-blocks/example/entry.json',
+        },
+        runtimeVersion: 'v2',
+        files,
+      },
+      { requestId: 'request_example' },
+    );
+
+    expect(compileEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoId: 'repo_example',
+        entryId: 'entry_example',
+        operation: 'compilePreview',
+        files: [files[0], files[2]],
+      }),
+      { requestId: 'request_example' },
+    );
+    expect(compileEntry.mock.calls[0][0].files[0]).not.toBe(files[0]);
+  });
 });
+
+function readCompilerBuildId(script: string): string {
+  return execFileSync(process.execPath, ['--require', 'tsx/cjs', '--eval', script], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  }).trim();
+}
 
 function createCompileJob(ordinal: number): LightExtensionCompileJob {
   const entryName = `entry-${ordinal}`;

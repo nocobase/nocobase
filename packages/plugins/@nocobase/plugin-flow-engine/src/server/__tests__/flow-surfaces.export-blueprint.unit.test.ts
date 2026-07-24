@@ -949,6 +949,14 @@ describe('flowSurfaces exportBlueprint', () => {
         tabs: [
           {
             key: 'mainTab',
+            layout: {
+              rows: [
+                [
+                  { key: 'employeesTable', span: 12 },
+                  { key: 'employeesForm', span: 12 },
+                ],
+              ],
+            },
             blocks: [
               {
                 key: 'employeesTable',
@@ -988,6 +996,10 @@ describe('flowSurfaces exportBlueprint', () => {
     });
     expect(createRes.status, readErrorMessage(createRes)).toBe(200);
     const pageSchemaUid = getData(createRes).target.pageSchemaUid as string;
+    const readback = await readPage(rootAgent, pageSchemaUid);
+    const submitAction = collectDescendantNodes(readback.tree, (item) => item?.use === 'FormSubmitActionModel')[0];
+    expect(submitAction?.uid).toBeTruthy();
+    await context.flowRepo.remove(submitAction.uid);
 
     const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
       values: {
@@ -1020,6 +1032,13 @@ describe('flowSurfaces exportBlueprint', () => {
       values: exported.document,
     });
     expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
+    const replacedReadback = await readPage(rootAgent, pageSchemaUid);
+    const replacedSubmitAction = collectDescendantNodes(
+      replacedReadback.tree,
+      (item) => item?.use === 'FormSubmitActionModel',
+    )[0];
+    expect(replacedSubmitAction?.uid).toBeTruthy();
+    await context.flowRepo.remove(replacedSubmitAction.uid);
 
     const replacedExportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
       values: {

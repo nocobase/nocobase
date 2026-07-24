@@ -42,6 +42,7 @@ import { createMoveSourceToLightExtensionContribution } from '../client-v2/compo
 import { registerLightExtensionModelMenus } from '../client-v2/modelMenu/registerLightExtensionModelMenus';
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
+import { registerLightExtensionRuntimeAuthSession } from '../client-v2/resolvers/LightExtensionRuntimeCacheRegistry';
 import { createInlineLightExtensionSettingsDescriptorProvider } from '../client-v2/resolvers/InlineLightExtensionSettingsDescriptorProvider';
 
 interface LightExtensionLegacyClientOptions {
@@ -165,6 +166,7 @@ export class PluginLightExtensionClient {
     }
 
     if (this.app?.apiClient) {
+      this.disposers.push(registerLightExtensionRuntimeAuthSession(this.app.apiClient, this.app));
       this.disposers.push(registerLightExtensionModelMenus(this.app.apiClient));
       this.disposers.push(
         RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),

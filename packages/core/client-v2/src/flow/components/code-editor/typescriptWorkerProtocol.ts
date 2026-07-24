@@ -13,7 +13,8 @@ import type {
   RunJSTypeLibraryUsageDefinition,
 } from '@nocobase/runjs/client-v2';
 
-export const RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION = 1 as const;
+export const RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION = 2 as const;
+export const RUNJS_TYPESCRIPT_WORKER_REVISION_MISMATCH = 'RUNJS_TYPESCRIPT_WORKER_REVISION_MISMATCH';
 
 export type TypeScriptWorkerOperation = 'completion' | 'diagnostics' | 'hover';
 
@@ -110,8 +111,10 @@ type RequestBase = {
 
 export type TypeScriptWorkerRequest =
   | (RequestBase & {
+      baseRevision: number | null;
       kind: 'sync';
       snapshot?: TypeScriptWorkerProjectSnapshot;
+      targetRevision: number;
       update?: TypeScriptWorkerProjectUpdate;
     })
   | (RequestBase & { explicit: boolean; kind: 'completion'; position: number })
@@ -152,11 +155,34 @@ export interface TypeScriptWorkerLoadPackResponse {
 export type TypeScriptWorkerIncomingMessage = TypeScriptWorkerRequest | TypeScriptWorkerLoadPackResponse;
 export type TypeScriptWorkerOutgoingMessage = TypeScriptWorkerResponse | TypeScriptWorkerLoadPackRequest;
 
+export function getTypeScriptWorkerProtocolVersion(value: unknown): number | null {
+  if (typeof value !== 'object' || value === null || !('protocolVersion' in value)) return null;
+  const version = (value as { protocolVersion?: unknown }).protocolVersion;
+  return typeof version === 'number' ? version : null;
+}
+
 export function isTypeScriptWorkerProtocolMessage(value: unknown): value is { protocolVersion: number } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'protocolVersion' in value &&
-    (value as { protocolVersion?: unknown }).protocolVersion === RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION
-  );
+  return getTypeScriptWorkerProtocolVersion(value) === RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION;
+}
+
+export function createTypeScriptWorkerProtocolMismatchResponse(value: unknown): Record<string, unknown> | null {
+  const protocolVersion = getTypeScriptWorkerProtocolVersion(value);
+  if (
+    protocolVersion === null ||
+    typeof value !== 'object' ||
+    value === null ||
+    !('requestId' in value) ||
+    !('documentVersion' in value) ||
+    !('projectId' in value)
+  ) {
+    return null;
+  }
+  return {
+    documentVersion: value.documentVersion,
+    error: `RunJS TypeScript worker protocol mismatch: client=${protocolVersion}, worker=${RUNJS_TYPESCRIPT_WORKER_PROTOCOL_VERSION}`,
+    kind: 'error',
+    projectId: value.projectId,
+    protocolVersion,
+    requestId: value.requestId,
+  };
 }

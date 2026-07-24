@@ -68,7 +68,8 @@ import { LightExtensionSchemaValidator } from '../../services/light-extension-va
 import type { RunJSSourceAuthoringInspectorRegistry } from './RunJSSourceAuthoringInspectorRegistry';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
 import { canonicalizeRunJSCompileFile } from './canonicalCompileFiles';
-import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from './compiler';
+import { compileRunJSSourceWorkspace } from './lazyCompiler';
+import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 
 const inlineRunJSEntryDescriptorPath = 'src/client/entry.json';
 const emptyRunJSRenderSource = 'ctx.render(null);';
@@ -333,6 +334,11 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
     const saveInput = normalizeSaveInput(input);
     const adapter = registry.require(saveInput.locator.kind);
     const service = new VscFileService(db, permissionHooks);
+
+    if (saveInput.repoId) {
+      const preflightCtx = createAdapterContext(ctx);
+      await service.getRepository({ repoId: saveInput.repoId }, createServiceContext(preflightCtx, undefined));
+    }
 
     return db.sequelize.transaction(async (transaction) => {
       const adapterCtx = createAdapterContext(ctx, transaction);

@@ -253,7 +253,7 @@ export class TreeService {
   async ensurePreparedTree(prepared: PreparedTree, transaction?: Transaction): Promise<VscStoredTree> {
     this.assertPreparedTree(prepared);
 
-    return this.withTransaction(transaction, async (activeTransaction) => {
+    const persist = async (activeTransaction: Transaction): Promise<VscStoredTree> => {
       const blobModel = this.db.getModel<Model<VscStoredBlob>>('vscFileBlobs');
       for (const blob of prepared.canonicalBlobs) {
         await blobModel.findOrCreate({
@@ -295,7 +295,18 @@ export class TreeService {
       });
 
       return treeFromRecord(tree);
-    });
+    };
+
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.withTransaction(transaction, persist);
+      } catch (error) {
+        if (transaction || this.db.sequelize.getDialect() !== 'sqlite' || !isSqliteBusyError(error) || attempt >= 2) {
+          throw error;
+        }
+        await delay(100);
+      }
+    }
   }
 
   async loadTreeEntries(treeHash: string, options: EnsureTreeOptions = {}): Promise<VscNormalizedTreeEntry[]> {
@@ -327,6 +338,21 @@ export class TreeService {
 
     return this.db.sequelize.transaction(run);
   }
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function hashNormalizedTree(entries: readonly Readonly<VscNormalizedTreeEntry>[]): string {

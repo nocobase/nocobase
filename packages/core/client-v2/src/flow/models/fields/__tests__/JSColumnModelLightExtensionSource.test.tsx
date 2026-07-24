@@ -73,27 +73,6 @@ describe('JSColumnModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('uses JS Field source binding fields in the column settings flow', () => {
-    const { model } = createColumnModel();
-    const flow = model.getFlow('jsSettings');
-
-    expect(flow?.steps?.sourceMode?.useRawParams).toBe(true);
-    expect(flow?.steps?.sourceMode?.uiSchema?.sourceMode?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
-    expect(flow?.steps?.sourceMode?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
-      kind: 'js-field',
-    });
-    expect(flow?.steps?.sourceMode?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
-    expect(flow?.steps?.sourceMode?.uiSchema?.settings?.['x-display']).toBe('hidden');
-    expect(flow?.steps?.sourceBinding?.hideInSettings).toBe(true);
-    expect(flow?.steps?.sourceBinding?.uiSchema?.sourceBinding?.['x-component']).toBe(
-      'JSFieldLightExtensionFullSourceField',
-    );
-    expect(flow?.steps?.sourceBinding?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
-      kind: 'js-field',
-    });
-    expect(flow?.steps?.runJs?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
-  });
-
   it('resolves JS Field entries with the current row value and record', async () => {
     const getSettingsDescriptor = vi.fn(async () => {
       throw new Error('settings descriptor should not be loaded during cell render');

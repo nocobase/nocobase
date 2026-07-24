@@ -38,7 +38,6 @@ const mocks = vi.hoisted(() => {
   return {
     app: { aiManager: { authoringSurfaces: authoringSurfaceRegistry } },
     authoringSurfaces,
-    diagnoseRunJS: vi.fn(),
     request: vi.fn(),
     state,
     t: (key: string) => key,
@@ -91,7 +90,6 @@ vi.mock('@nocobase/client-v2', () => ({
       {runButton}
     </div>
   ),
-  diagnoseRunJS: mocks.diagnoseRunJS,
   useApp: () => mocks.app,
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
@@ -217,11 +215,6 @@ describe('RunJS Studio authoring surface', () => {
   beforeEach(() => {
     mocks.state.activeSurfaceId = undefined;
     mocks.authoringSurfaces.clear();
-    mocks.diagnoseRunJS.mockResolvedValue({
-      execution: { finished: true, started: true, timeout: false },
-      issues: [],
-      logs: [],
-    });
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
       if (url === 'runJSSources:open') {
         return Promise.resolve({ data: { data: openResult } });
@@ -559,7 +552,7 @@ describe('RunJS Studio authoring surface', () => {
     renderEditor();
     const surface = await getRegisteredSurface();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
     await waitFor(async () => {
       expect((await surface.getSnapshot()).diagnostics).toHaveLength(2);
     });
@@ -656,7 +649,6 @@ describe('RunJS Studio authoring surface', () => {
       ]),
     );
     expect(onPreview).not.toHaveBeenCalled();
-    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
     expect(mocks.request.mock.calls.some(([request]) => request.url === 'runJSSources:save')).toBe(false);
   });
 
