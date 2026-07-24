@@ -336,9 +336,8 @@ Cột “Loại dữ liệu” đến từ phân loại tích hợp. Dữ liệu
 | Bảng | Mô tả | Loại dữ liệu | Chiến lược mặc định | Quản lý phiên bản | Backup/restore |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
+| `aiKnowledgeBase` | Loại cơ sở tri thức, ID bên ngoài, cơ sở dữ liệu vector, dịch vụ LLM, mô hình embedding và thông tin cơ bản | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
 | `aiVectorDatabases` | Vector database service and connection configuration | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
 
 ### Environment variables
 

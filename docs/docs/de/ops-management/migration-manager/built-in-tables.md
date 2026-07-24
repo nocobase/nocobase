@@ -336,9 +336,8 @@ Die Spalte „Datentyp“ stammt aus der integrierten Klassifikation. Systembasi
 | Tabelle | Beschreibung | Datentyp | Standardstrategie der Migration | Versionsverwaltung | Backup/Wiederherstellung |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
+| `aiKnowledgeBase` | Wissensdatenbanktyp, externe ID, Vektordatenbank, LLM-Dienst, Embedding-Modell und Basisinformationen | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
 | `aiVectorDatabases` | Vector database service and connection configuration | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
 
 ### Environment variables
 
