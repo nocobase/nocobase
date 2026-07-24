@@ -128,6 +128,7 @@ export interface FlowSurfaceAuthoringValidationContext {
   currentNode?: any;
   skipGeneratedPopupDefaultFieldGroups?: boolean;
   skipGeneratedLayoutSingleColumnErrors?: boolean;
+  dynamicBlockTypes?: ReadonlySet<string>;
   findModelById?: (
     uid: string,
     options?: {
@@ -4783,12 +4784,14 @@ function collectBlockErrors(
   }
 
   const blockType = String(block.type || '').trim();
+  const isDynamicBlock = !!blockType && context.dynamicBlockTypes?.has(blockType);
   const hasFields = Object.prototype.hasOwnProperty.call(block, 'fields');
   const hasFieldGroups = Object.prototype.hasOwnProperty.call(block, 'fieldGroups');
   const hasFieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout');
 
   collectJsBlockPublicContractErrors(block, path, errors, context);
   collectApplyBlueprintScriptAssetReferenceErrors(block, path, errors, context);
+  collectDynamicBlockUnsupportedSectionErrors(block, blockType, path, errors, context);
 
   if (Object.prototype.hasOwnProperty.call(block, 'layout')) {
     pushAuthoringError(errors, {
@@ -4833,7 +4836,9 @@ function collectBlockErrors(
     context,
   );
   collectSemanticBindingErrors(block, blockType, path, errors, context);
-  collectVisibleDataBlockFieldErrors(block, blockType, path, errors, context);
+  if (!isDynamicBlock) {
+    collectVisibleDataBlockFieldErrors(block, blockType, path, errors, context);
+  }
   collectCommentsBlockErrors(block, blockType, path, errors, context);
   collectRecordHistoryBlockErrors(block, blockType, path, errors, context);
   collectLocalizedChartSettingsErrors(block, blockType, path, errors, context);
@@ -4866,6 +4871,38 @@ function collectBlockErrors(
   collectHiddenPopupSettingsErrors(block.settings, `${path}.settings`, blockType, errors, descendantContext);
   collectReactionErrors(block.reaction, `${path}.reaction`, localKeys, errors);
   collectFieldListErrors(block.fields, `${path}.fields`, errors, localKeys, context, block);
+}
+
+function collectDynamicBlockUnsupportedSectionErrors(
+  block: any,
+  blockType: string,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!blockType || !context.dynamicBlockTypes?.has(blockType)) {
+    return;
+  }
+  [
+    'template',
+    'fields',
+    'fieldGroups',
+    'fieldsLayout',
+    'actions',
+    'recordActions',
+    'popup',
+    'defaultActionSettings',
+    'defaultFilter',
+  ].forEach((section) => {
+    if (!Object.prototype.hasOwnProperty.call(block, section)) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.${section}`,
+      ruleId: `${blockType}-dynamic-block-unsupported-${section}`,
+      message: `flowSurfaces authoring ${path} dynamic block '${blockType}' does not support ${section}; use its public settings/initParams contract`,
+    });
+  });
 }
 
 function collectJsBlockPublicContractErrors(

@@ -232,6 +232,36 @@ describe('GanttBlockModel scroll helpers', () => {
 });
 
 describe('GanttBlockModel settings', () => {
+  test('prefers business date fields over audit timestamps by default', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'tasks',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'createdAt', type: 'datetime', interface: 'createdAt' },
+        { name: 'updatedAt', type: 'datetime', interface: 'updatedAt' },
+        { name: 'startAt', type: 'datetime', interface: 'datetime' },
+        { name: 'endAt', type: 'datetime', interface: 'datetime' },
+      ],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    });
+
+    expect(model.getDefaultStartFieldName()).toBe('startAt');
+    expect(model.getDefaultEndFieldName()).toBe('endAt');
+  });
+
   test('hides table-only settings that are not supported by the gantt block', () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel });

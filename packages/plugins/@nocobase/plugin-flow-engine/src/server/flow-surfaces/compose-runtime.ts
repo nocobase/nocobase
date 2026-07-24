@@ -197,7 +197,7 @@ function assertComposeRuntimeDeps(plan: FlowSurfaceCompiledComposePlan, deps: Fl
   if (plan.mode === 'replace' && plan.existingItemUids.length) {
     requireComposeRuntimeDep('removeExistingItem', deps.removeExistingItem, 'replace');
   }
-  if (plan.blocks.some((block) => hasInlineSettings(block.spec.settings))) {
+  if (plan.blocks.some((block) => shouldApplyBlockSettings(block.spec))) {
     requireComposeRuntimeDep('applyNodeSettings', deps.applyNodeSettings, 'block settings');
   }
   if (plan.fields.some((field) => hasInlineSettings(field.spec.settings))) {
@@ -272,7 +272,7 @@ async function applyBlockSettings(deps: FlowSurfaceComposeRuntimeDeps, state: Fl
     return;
   }
   for (const block of state.blocks) {
-    if (!hasInlineSettings(block.spec.settings)) {
+    if (!shouldApplyBlockSettings(block.spec)) {
       continue;
     }
     const settings = deps.resolveBlockSettings
@@ -560,6 +560,10 @@ function buildActionResultSummary(
 
 function hasInlineSettings(value: FlowSurfaceComposeObject | undefined) {
   return !!value && Object.keys(value).length > 0;
+}
+
+function shouldApplyBlockSettings(spec: FlowSurfaceComposeNormalizedBlockSpec) {
+  return !spec.isDynamic && hasInlineSettings(spec.settings);
 }
 
 function resolveComposeFieldLayoutUid(result: FlowSurfaceComposeFieldResult) {

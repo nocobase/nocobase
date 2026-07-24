@@ -48,6 +48,7 @@ const FLOW_SURFACE_CATALOG_EXPAND_SET = new Set<FlowSurfaceCatalogExpand>([
   'item.configureOptions',
   'item.contracts',
   'item.allowedContainerUses',
+  'item.identity',
   'node.contracts',
 ]);
 
@@ -159,6 +160,7 @@ export function buildCatalogExpandFlags(expands: Iterable<FlowSurfaceCatalogExpa
     includeItemConfigureOptions: expandSet.has('item.configureOptions'),
     includeItemContracts: expandSet.has('item.contracts'),
     includeItemAllowedContainerUses: expandSet.has('item.allowedContainerUses'),
+    includeItemIdentity: expandSet.has('item.identity'),
     includeNodeContracts: expandSet.has('node.contracts'),
   };
 }

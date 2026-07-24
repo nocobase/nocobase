@@ -9,13 +9,119 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
+import { getPackageDir } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import { join } from 'path';
+import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
+import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './flow-surfaces/capability-policy';
 import { registerFlowSurfacesResource } from './flow-surfaces';
+import { loadFlowSurfaceAutoSnapshotsFromDirectory } from './flow-surfaces/extractor/snapshot';
+import { FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } from './flow-surfaces/extractor/types';
+import type { FlowSurfaceAutoSnapshot } from './flow-surfaces/extractor/types';
+import type { FlowSurfaceCapabilityDiagnosticWarning } from './flow-surfaces/types';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
+function getFlowSurfacePackagedAutoSnapshotDir(packageRoot: string) {
+  return join(packageRoot, 'dist', 'flow-surfaces-capabilities');
+}
+
+function getFlowSurfaceCoreAutoSnapshotDir(packageRoot: string) {
+  return join(packageRoot, 'es', 'flow-surfaces-capabilities');
+}
+
+function dedupeFlowSurfaceAutoSnapshots(
+  snapshots: readonly FlowSurfaceAutoSnapshot[],
+): readonly FlowSurfaceAutoSnapshot[] {
+  const byPlugin = new Map<string, FlowSurfaceAutoSnapshot>();
+  for (const snapshot of snapshots) {
+    const existing = byPlugin.get(snapshot.plugin);
+    if (!existing || shouldReplaceFlowSurfaceAutoSnapshot(existing, snapshot)) {
+      byPlugin.set(snapshot.plugin, snapshot);
+    }
+  }
+  return Array.from(byPlugin.values()).sort((left, right) => left.plugin.localeCompare(right.plugin));
+}
+
+function mergeFlowSurfaceAutoSnapshots(
+  packagedSnapshots: readonly FlowSurfaceAutoSnapshot[],
+  storageSnapshots: readonly FlowSurfaceAutoSnapshot[],
+) {
+  const byPlugin = new Map(
+    dedupeFlowSurfaceAutoSnapshots(packagedSnapshots).map((snapshot) => [snapshot.plugin, snapshot]),
+  );
+  for (const snapshot of dedupeFlowSurfaceAutoSnapshots(storageSnapshots)) {
+    const packagedSnapshot = byPlugin.get(snapshot.plugin);
+    if (!packagedSnapshot || shouldStorageOverridePackagedFlowSurfaceAutoSnapshot(packagedSnapshot, snapshot)) {
+      byPlugin.set(snapshot.plugin, snapshot);
+    }
+  }
+  return Array.from(byPlugin.values()).sort((left, right) => left.plugin.localeCompare(right.plugin));
+}
+
+function shouldStorageOverridePackagedFlowSurfaceAutoSnapshot(
+  packagedSnapshot: FlowSurfaceAutoSnapshot,
+  storageSnapshot: FlowSurfaceAutoSnapshot,
+) {
+  if (
+    (packagedSnapshot.pluginVersion || storageSnapshot.pluginVersion) &&
+    packagedSnapshot.pluginVersion !== storageSnapshot.pluginVersion
+  ) {
+    return false;
+  }
+  if (packagedSnapshot.sourceHash !== storageSnapshot.sourceHash) {
+    return false;
+  }
+  if (packagedSnapshot.extractorVersion !== storageSnapshot.extractorVersion) {
+    return false;
+  }
+
+  const packagedContractRank = getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(packagedSnapshot);
+  const storageContractRank = getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(storageSnapshot);
+  if (storageContractRank !== packagedContractRank) {
+    return storageContractRank > packagedContractRank;
+  }
+
+  const packagedGeneratedAt = Date.parse(packagedSnapshot.generatedAt);
+  const storageGeneratedAt = Date.parse(storageSnapshot.generatedAt);
+  const packagedHasValidDate = Number.isFinite(packagedGeneratedAt);
+  const storageHasValidDate = Number.isFinite(storageGeneratedAt);
+  if (packagedHasValidDate !== storageHasValidDate) {
+    return storageHasValidDate;
+  }
+  if (packagedHasValidDate && packagedGeneratedAt !== storageGeneratedAt) {
+    return storageGeneratedAt > packagedGeneratedAt;
+  }
+  if (!packagedHasValidDate && packagedSnapshot.generatedAt !== storageSnapshot.generatedAt) {
+    return false;
+  }
+  return true;
+}
+
+function shouldReplaceFlowSurfaceAutoSnapshot(existing: FlowSurfaceAutoSnapshot, next: FlowSurfaceAutoSnapshot) {
+  const existingContractVersion = getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(existing);
+  const nextContractVersion = getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(next);
+  if (existingContractVersion !== nextContractVersion) {
+    return nextContractVersion > existingContractVersion;
+  }
+  return true;
+}
+
+function getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(snapshot: FlowSurfaceAutoSnapshot) {
+  if (!snapshot.inferredAuthoring?.capabilities?.length) {
+    return 0;
+  }
+  return snapshot.inferredAuthoring.contractVersion === FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION
+    ? FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION
+    : 0;
+}
+
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
+  readonly flowSurfaceCapabilityProviders = new FlowSurfaceCapabilityProviderRegistry();
+  flowSurfaceAutoSnapshots: readonly FlowSurfaceAutoSnapshot[] = [];
+  flowSurfaceAutoSnapshotLoadWarnings: readonly FlowSurfaceCapabilityDiagnosticWarning[] = [];
+
   async afterAdd() {}
 
   async beforeLoad() {
@@ -49,6 +155,8 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async load() {
     await super.load();
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.options);
+    await this.loadFlowSurfaceAutoSnapshots(capabilityPolicyConfig.extractorSnapshotDir);
     registerFlowSurfacesResource(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
@@ -151,6 +259,85 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         await next();
       },
     });
+  }
+
+  protected async loadFlowSurfaceAutoSnapshots(snapshotDir?: string): Promise<readonly FlowSurfaceAutoSnapshot[]> {
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.options);
+    const dir = snapshotDir || capabilityPolicyConfig.extractorSnapshotDir;
+    const diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [];
+    const snapshots = await this.loadFlowSurfaceAutoSnapshotsFromStorage(dir, diagnosticWarnings);
+    this.flowSurfaceAutoSnapshots = snapshots;
+    this.flowSurfaceAutoSnapshotLoadWarnings = diagnosticWarnings;
+    return snapshots;
+  }
+
+  protected async loadFlowSurfaceAutoSnapshotsFromStorage(
+    dir: string,
+    diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [],
+  ) {
+    const packagedSnapshots = await this.loadFlowSurfacePackagedAutoSnapshots(diagnosticWarnings);
+    const storageSnapshots = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir, diagnosticWarnings });
+    return mergeFlowSurfaceAutoSnapshots(packagedSnapshots, storageSnapshots);
+  }
+
+  protected async loadFlowSurfacePackagedAutoSnapshots(
+    diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [],
+  ) {
+    const dirs = await this.getFlowSurfacePackagedAutoSnapshotDirs();
+    const snapshots: FlowSurfaceAutoSnapshot[] = [];
+    for (const dir of dirs) {
+      snapshots.push(...(await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir, diagnosticWarnings })));
+    }
+    return snapshots;
+  }
+
+  protected async getFlowSurfacePackagedAutoSnapshotDirs() {
+    const packageNames = await this.resolveEnabledPluginPackageNamesForAutoSnapshots();
+    const dirs: string[] = [];
+    const coreClientRoot = this.resolveFlowSurfaceAutoSnapshotPackageRoot('@nocobase/client-v2');
+    if (coreClientRoot) {
+      dirs.push(getFlowSurfaceCoreAutoSnapshotDir(coreClientRoot));
+    }
+    for (const packageName of packageNames) {
+      const packageRoot = this.resolveFlowSurfaceAutoSnapshotPackageRoot(packageName);
+      if (packageRoot) {
+        dirs.push(getFlowSurfacePackagedAutoSnapshotDir(packageRoot));
+      }
+    }
+    return Array.from(new Set(dirs)).sort((left, right) => left.localeCompare(right));
+  }
+
+  protected async resolveEnabledPluginPackageNamesForAutoSnapshots() {
+    try {
+      const records = await this.app?.pm?.repository?.find?.({
+        fields: ['packageName'],
+        filter: {
+          enabled: true,
+        },
+      });
+      if (!Array.isArray(records)) {
+        return [];
+      }
+      return Array.from(
+        new Set(
+          records.map((record) => String(record?.packageName || '').trim()).filter((packageName) => !!packageName),
+        ),
+      ).sort((left, right) => left.localeCompare(right));
+    } catch (error) {
+      this.app?.logger?.warn?.(
+        'flowSurfaces packaged auto snapshot discovery failed',
+        error instanceof Error ? { error: error.message } : { error: String(error) },
+      );
+      return [];
+    }
+  }
+
+  protected resolveFlowSurfaceAutoSnapshotPackageRoot(packageName: string) {
+    try {
+      return getPackageDir(packageName);
+    } catch {
+      return undefined;
+    }
   }
 
   async install() {}

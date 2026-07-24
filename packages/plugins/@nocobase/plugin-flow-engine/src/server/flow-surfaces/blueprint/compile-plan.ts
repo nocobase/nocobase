@@ -63,7 +63,10 @@ function buildTabSelectorFromUid(uid: string): FlowSurfacePlanSelector {
 
 function compileCreatePlan(
   document: FlowSurfaceApplyBlueprintDocument,
-  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+  options: {
+    getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
+    dynamicBlockTypes?: ReadonlySet<string>;
+  } = {},
 ): FlowSurfaceApplyBlueprintProgram {
   const steps: FlowSurfacePlanStep[] = [];
   const chrome = buildPageChrome(document);
@@ -131,7 +134,11 @@ function compileCreatePlan(
     selectors: {
       target: buildTabSelectorFromStep(CREATE_PAGE_STEP_ID),
     },
-    values: compileTabComposeValues(document.tabs[0], document, 0, { mode: 'append', getCollection }),
+    values: compileTabComposeValues(document.tabs[0], document, 0, {
+      mode: 'append',
+      getCollection: options.getCollection,
+      dynamicBlockTypes: options.dynamicBlockTypes,
+    }),
   });
 
   document.tabs.slice(1).forEach((tab, offset) => {
@@ -159,7 +166,11 @@ function compileCreatePlan(
       selectors: {
         target: buildTabSelectorFromStep(addTabStepId),
       },
-      values: compileTabComposeValues(tab, document, tabIndex, { mode: 'append', getCollection }),
+      values: compileTabComposeValues(tab, document, tabIndex, {
+        mode: 'append',
+        getCollection: options.getCollection,
+        dynamicBlockTypes: options.dynamicBlockTypes,
+      }),
     });
   });
 
@@ -186,7 +197,10 @@ function buildPageConfigureChanges(document: FlowSurfaceApplyBlueprintDocument) 
 function compileReplacePlan(
   document: FlowSurfaceApplyBlueprintDocument,
   targetInfo: FlowSurfaceApplyBlueprintReplaceTargetInfo,
-  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+  options: {
+    getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
+    dynamicBlockTypes?: ReadonlySet<string>;
+  } = {},
 ): FlowSurfaceApplyBlueprintProgram {
   const steps: FlowSurfacePlanStep[] = [];
   const pageChanges = buildPageConfigureChanges(document);
@@ -231,7 +245,11 @@ function compileReplacePlan(
         selectors: {
           target: buildTabSelectorFromUid(existingTab.uid),
         },
-        values: compileTabComposeValues(tab, document, index, { mode: 'replace', getCollection }),
+        values: compileTabComposeValues(tab, document, index, {
+          mode: 'replace',
+          getCollection: options.getCollection,
+          dynamicBlockTypes: options.dynamicBlockTypes,
+        }),
       });
       return;
     }
@@ -260,7 +278,11 @@ function compileReplacePlan(
       selectors: {
         target: buildTabSelectorFromStep(addTabStepId),
       },
-      values: compileTabComposeValues(tab, document, index, { mode: 'append', getCollection }),
+      values: compileTabComposeValues(tab, document, index, {
+        mode: 'append',
+        getCollection: options.getCollection,
+        dynamicBlockTypes: options.dynamicBlockTypes,
+      }),
     });
   });
 
@@ -295,15 +317,22 @@ export function compileFlowSurfaceApplyBlueprintRequest(
   options: {
     replaceTarget?: FlowSurfaceApplyBlueprintReplaceTargetInfo;
     getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
+    dynamicBlockTypes?: ReadonlySet<string>;
   } = {},
 ): FlowSurfaceApplyBlueprintProgram {
   if (document.mode === 'create') {
-    return compileCreatePlan(document, options.getCollection);
+    return compileCreatePlan(document, {
+      getCollection: options.getCollection,
+      dynamicBlockTypes: options.dynamicBlockTypes,
+    });
   }
   if (!options.replaceTarget) {
     throwBadRequest(`flowSurfaces applyBlueprint replace target resolution is missing`);
   }
-  return compileReplacePlan(document, options.replaceTarget, options.getCollection);
+  return compileReplacePlan(document, options.replaceTarget, {
+    getCollection: options.getCollection,
+    dynamicBlockTypes: options.dynamicBlockTypes,
+  });
 }
 
 export function resolveApplyBlueprintPageLocator(

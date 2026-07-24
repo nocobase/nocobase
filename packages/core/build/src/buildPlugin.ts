@@ -334,7 +334,6 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   for (const dep of Object.keys(deps)) {
     const { outputDir, mainFile, pkg, nccConfig, depDir } = deps[dep];
     const outputPackageJson = path.join(outputDir, 'package.json');
-
     // cache check
     if (fs.existsSync(outputPackageJson)) {
       const outputPackage = require(outputPackageJson);

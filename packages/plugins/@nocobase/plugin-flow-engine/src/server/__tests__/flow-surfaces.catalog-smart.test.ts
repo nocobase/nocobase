@@ -23,28 +23,31 @@ import {
   projectCatalogItem,
   projectCatalogNode,
 } from '../flow-surfaces/catalog-smart.projector';
+import type { FlowSurfaceNodeContract } from '../flow-surfaces/types';
 
 describe('flowSurfaces catalog smart helpers', () => {
   function createProjectorOptions() {
-    const getNodeContract = vi.fn(() => ({
-      editableDomains: ['props'],
-      domains: {
-        props: {
-          allowedKeys: ['title'],
-          mergeStrategy: 'deep',
-          schema: { type: 'object' },
+    const getNodeContract = vi.fn(
+      (): FlowSurfaceNodeContract => ({
+        editableDomains: ['props'],
+        domains: {
+          props: {
+            allowedKeys: ['title'],
+            mergeStrategy: 'deep',
+            schema: { type: 'object' },
+          },
         },
-      },
-      eventCapabilities: {
-        direct: ['click'],
-      },
-      layoutCapabilities: {
-        supported: true,
-      },
-    }));
+        eventCapabilities: {
+          direct: ['click'],
+        },
+        layoutCapabilities: {
+          supported: true,
+        },
+      }),
+    );
 
     return {
-      getEditableDomains: vi.fn(() => ['props']),
+      getEditableDomains: vi.fn(() => ['props' as const]),
       getConfigureOptions: vi.fn(() => ({
         title: {
           type: 'string',
@@ -147,7 +150,7 @@ describe('flowSurfaces catalog smart helpers', () => {
 
   it('should keep field candidates light and decorate on demand', () => {
     const options = createProjectorOptions();
-    const candidate = buildFieldCatalogLightCandidate({
+    const source = {
       key: 'nickname',
       label: 'Nickname',
       use: 'InputFieldModel',
@@ -175,7 +178,8 @@ describe('flowSurfaces catalog smart helpers', () => {
       },
       allowedContainerUses: ['FormBlockModel'],
       renderer: 'js',
-    });
+    };
+    const candidate = buildFieldCatalogLightCandidate(source);
 
     expect(candidate).toEqual({
       key: 'nickname',
@@ -184,27 +188,41 @@ describe('flowSurfaces catalog smart helpers', () => {
       kind: 'field',
       renderer: 'js',
     });
+    expect(candidate.allowedContainerUses).toBeUndefined();
 
     const decorated = expandFieldCatalogCandidate(
-      candidate,
-      buildCatalogExpandFlags(['item.configureOptions', 'item.contracts']),
+      source,
+      buildCatalogExpandFlags(['item.configureOptions', 'item.contracts', 'item.identity']),
       options,
     );
 
     expect(decorated).toMatchObject({
       key: 'nickname',
       configureOptions: {
-        title: {
-          type: 'string',
+        hidden: {
+          type: 'boolean',
         },
       },
       editableDomains: ['props'],
       settingsSchema: {
         type: 'object',
       },
+      publicType: 'js',
+      origin: 'builtInStatic',
+      supportLevel: 'create-and-configure',
+      confidence: 'high',
+      semantic: {
+        title: 'Nickname',
+      },
+      availability: {
+        create: {
+          supported: true,
+          acceptsSettings: true,
+        },
+      },
       settingsContract: {
         props: {
-          allowedKeys: ['title'],
+          allowedKeys: ['hidden'],
           mergeStrategy: 'deep',
           schema: { type: 'object' },
         },
@@ -216,38 +234,132 @@ describe('flowSurfaces catalog smart helpers', () => {
         supported: true,
       },
     });
-    expect((decorated as any).allowedContainerUses).toBeUndefined();
-    expect(options.getConfigureOptions).toHaveBeenCalledTimes(1);
-    expect(options.getEditableDomains).toHaveBeenCalledTimes(1);
-    expect(options.getSettingsSchema).toHaveBeenCalledTimes(1);
-    expect(options.getNodeContract).toHaveBeenCalledTimes(1);
+    expect(decorated.allowedContainerUses).toBeUndefined();
+    expect(options.getConfigureOptions).not.toHaveBeenCalled();
+    expect(options.getEditableDomains).not.toHaveBeenCalled();
+    expect(options.getSettingsSchema).not.toHaveBeenCalled();
+    expect(options.getNodeContract).not.toHaveBeenCalled();
   });
 
-  it('should keep popup block resourceBindings on light projections', () => {
+  it('should derive stable public field types only when capability identity is expanded', () => {
     const options = createProjectorOptions();
+    expect(
+      expandFieldCatalogCandidate(
+        {
+          key: 'department.title',
+          label: 'Department / Title',
+          use: 'TableColumnModel',
+          fieldUse: 'DisplayTextFieldModel',
+          wrapperUse: 'TableColumnModel',
+        },
+        buildCatalogExpandFlags(['item.identity']),
+        options,
+      ),
+    ).toMatchObject({
+      key: 'department.title',
+      publicType: 'text',
+    });
 
+    expect(
+      expandFieldCatalogCandidate(
+        {
+          key: 'nickname',
+          label: 'Nickname',
+          use: 'InputFieldModel',
+        },
+        buildCatalogExpandFlags(['item.identity']),
+        options,
+      ),
+    ).toMatchObject({
+      key: 'nickname',
+      publicType: 'nickname',
+    });
+  });
+
+  it('should preserve field public summaries and expand stable identity', () => {
+    const options = createProjectorOptions();
     const projected = projectCatalogItem(
       {
-        key: 'table',
-        label: 'Table',
-        use: 'TableBlockModel',
-        kind: 'block',
-        resourceBindings: [
-          {
-            key: 'currentCollection',
-            label: 'Current collection',
+        key: 'nickname',
+        label: 'Nickname',
+        use: 'FormItemModel',
+        kind: 'field',
+        publicType: 'input',
+        ownerPlugin: '@nocobase/core/client',
+        origin: 'builtInStatic',
+        supportLevel: 'create-and-configure',
+        confidence: 'high',
+        availability: {
+          render: { supported: true },
+          readback: { supported: true },
+          create: {
+            supported: true,
+            acceptsInitParams: true,
+            acceptsSettings: true,
           },
-        ],
+          configure: { supported: true },
+        },
       },
-      buildCatalogExpandFlags([]),
+      buildCatalogExpandFlags(['item.identity']),
       options,
     );
+
+    expect(projected).toMatchObject({
+      key: 'nickname',
+      publicType: 'input',
+      ownerPlugin: '@nocobase/core/client',
+      supportLevel: 'create-and-configure',
+      availability: {
+        create: {
+          acceptsSettings: true,
+        },
+        configure: {
+          supported: true,
+        },
+      },
+      identity: {
+        capabilityId: 'builtInStatic:fieldComponent:%40nocobase%2Fcore%2Fclient:input',
+      },
+    });
+  });
+
+  it('should keep the legacy catalog item shape light until identity is expanded', () => {
+    const options = createProjectorOptions();
+    const source = {
+      key: 'table',
+      label: 'Table',
+      use: 'TableBlockModel',
+      kind: 'block' as const,
+      publicType: 'table',
+      ownerPlugin: '@nocobase/core/client',
+      origin: 'builtInStatic',
+      supportLevel: 'create-only',
+      confidence: 'high',
+      semantic: { title: 'Table', aliases: ['table'] },
+      placement: { slots: ['blocks'] },
+      availability: {
+        render: { supported: true },
+        readback: { supported: true },
+        create: { supported: true },
+        configure: { supported: false },
+      },
+      resourceBindings: [
+        {
+          key: 'currentCollection',
+          label: 'Current collection',
+        },
+      ],
+    };
+    const projected = projectCatalogItem(source, buildCatalogExpandFlags([]), options);
+    const expanded = projectCatalogItem(source, buildCatalogExpandFlags(['item.identity']), options);
 
     expect(projected).toEqual({
       key: 'table',
       label: 'Table',
       use: 'TableBlockModel',
       kind: 'block',
+      publicType: 'table',
+      ownerPlugin: '@nocobase/core/client',
       resourceBindings: [
         {
           key: 'currentCollection',
@@ -255,6 +367,16 @@ describe('flowSurfaces catalog smart helpers', () => {
         },
       ],
     });
+    expect(expanded).toMatchObject({
+      publicType: 'table',
+      ownerPlugin: '@nocobase/core/client',
+      origin: 'builtInStatic',
+      supportLevel: 'create-only',
+      confidence: 'high',
+      semantic: { title: 'Table' },
+      availability: { create: { supported: true } },
+    });
+    expect(JSON.stringify(projected).length).toBeLessThan(JSON.stringify(expanded).length / 2);
   });
 
   it('should lazily load contract fields for items and nodes', () => {
@@ -292,7 +414,7 @@ describe('flowSurfaces catalog smart helpers', () => {
       },
       {
         kind: 'block',
-      } as any,
+      },
       buildCatalogExpandFlags([]),
       options,
     );
@@ -312,7 +434,7 @@ describe('flowSurfaces catalog smart helpers', () => {
       },
       {
         kind: 'block',
-      } as any,
+      },
       buildCatalogExpandFlags(['node.contracts']),
       options,
     );
