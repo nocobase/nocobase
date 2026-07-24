@@ -169,7 +169,7 @@ export class LightExtensionRuntimeCache {
       ...input,
       settings: JSON.parse(JSON.stringify(input.settings || {})) as Record<string, unknown>,
     };
-    const requestSourceBinding = structuredClone(sourceBinding);
+    const requestSourceBinding = { ...sourceBinding };
     const identity = getLightExtensionRuntimeIdentity(api);
     const generation = this.generation.get(requestSourceBinding.repoId);
     const bindingKey = getRuntimeBindingKey(requestSourceBinding, requestInput.settings, identity, generation);

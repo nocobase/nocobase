@@ -136,9 +136,10 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   type WorkspacePageProps = {
     onFooterActionsChange?: (actions: FooterActions | null) => void;
     onRequestClose?: () => void;
+    onSaved?: () => void | Promise<void>;
   };
 
-  const MockLightExtensionWorkspacePage = ({ onFooterActionsChange, onRequestClose }: WorkspacePageProps) => {
+  const MockLightExtensionWorkspacePage = ({ onFooterActionsChange, onRequestClose, onSaved }: WorkspacePageProps) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
         dirty: true,
@@ -152,7 +153,12 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
       return () => onFooterActionsChange?.(null);
     }, [onFooterActionsChange, onRequestClose]);
 
-    return React.createElement('div', null, 'Mock source workspace');
+    return React.createElement(
+      'div',
+      null,
+      'Mock source workspace',
+      React.createElement('button', { onClick: onSaved, type: 'button' }, 'Mock save source'),
+    );
   };
 
   return {
@@ -829,6 +835,35 @@ describe('LightExtensionListPage', () => {
     await waitFor(() => {
       expect(document.querySelector('.ant-drawer-open')).not.toBeInTheDocument();
     });
+  });
+
+  it('refreshes list summaries after source changes are saved', async () => {
+    const originalRepo = {
+      id: 'ler_browser_smoke',
+      name: 'browser-smoke',
+      normalizedName: 'browser-smoke',
+      title: 'Browser smoke',
+      description: null,
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'ready' as const,
+      headCommitId: 'commit-1',
+      entryCount: 1,
+      entryKinds: { 'js-block': 1 },
+    };
+    mocks.api.listRepos.mockResolvedValueOnce([originalRepo]).mockResolvedValueOnce([
+      {
+        ...originalRepo,
+        headCommitId: 'commit-2',
+        entryCount: 2,
+        entryKinds: { 'js-block': 2 },
+      },
+    ]);
+    renderListPage('/admin/settings/light-extension?repoId=ler_browser_smoke&panel=source');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Mock save source' }));
+
+    await waitFor(() => expect(mocks.api.listRepos).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('js-block 2')).toBeInTheDocument();
   });
 
   it('supports multi-select batch enablement changes', async () => {

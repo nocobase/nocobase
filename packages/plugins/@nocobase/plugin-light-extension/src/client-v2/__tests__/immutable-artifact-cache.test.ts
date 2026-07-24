@@ -150,6 +150,21 @@ describe('light extension immutable artifact cache', () => {
     expect(request.mock.calls.filter(([options]) => options.method === 'post')).toHaveLength(1);
   });
 
+  it('accepts a proxied source binding from flow model state', async () => {
+    const request = vi.fn(async (options: ApiRequestOptions) => {
+      return options.method === 'get' ? artifactResponse() : resolveResponse(options.data);
+    });
+    const { resolver } = createResolver(request);
+    const proxiedSourceBinding = new Proxy(sourceBinding, {});
+
+    await expect(
+      resolver.resolve({ sourceMode: 'light-extension', sourceBinding: proxiedSourceBinding, settings: {} }),
+    ).resolves.toMatchObject({ code: expect.stringContaining('ACTION_V1') });
+    expect(request.mock.calls.find(([options]) => options.method === 'post')?.[0].data).toMatchObject({
+      sourceBinding,
+    });
+  });
+
   it('fetches artifacts through the API client when resolve returns a custom prefixed URL', async () => {
     const request = vi.fn(async (options: ApiRequestOptions) => {
       return options.method === 'get'
