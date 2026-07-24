@@ -63,6 +63,26 @@ describe('gateway', () => {
       expect((req as any).originalUrl).toBe('/api/__app/demo/idpOAuth:authorize?foo=bar');
     });
 
+    it('should resolve app name from sub-app portal path without rewriting request url', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      try {
+        process.env.APP_PUBLIC_PATH = '/console/';
+        const req = {
+          url: '/console/x/apps/crm/admin/settings',
+          headers: {},
+        };
+
+        expect(await gateway.getRequestHandleAppName(req as any)).toBe('crm');
+        expect(req.url).toBe('/console/x/apps/crm/admin/settings');
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
     it('should resolve app name from canonical and bare file URLs when APP_PUBLIC_PATH is set', async () => {
       const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
       process.env.APP_PUBLIC_PATH = '/nocobase';

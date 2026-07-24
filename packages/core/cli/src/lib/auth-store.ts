@@ -107,6 +107,12 @@ export interface EnvConfigEntry {
   setupState?: 'prepared' | 'installed';
   /** Initial install language saved for prepare/install flows. */
   lang?: string;
+  /** Initial development mode (INIT_DEVELOPMENT_MODE). */
+  developmentMode?: string;
+  /** Initial Portal name (INIT_PORTAL_NAME). */
+  portalName?: string;
+  /** Initial Portal template Git URL or local path (INIT_PORTAL_TEMPLATE). */
+  portalTemplate?: string;
   rootUsername?: string;
   rootEmail?: string;
   rootPassword?: string;
@@ -172,6 +178,7 @@ export interface AuthConfig {
     init?: {
       defaultUiHost?: string;
       defaultApiHost?: string;
+      defaultPortalTemplate?: string;
     };
   };
   lastEnv?: string;
@@ -295,6 +302,7 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
   const locale = normalizeOptionalCliLocale(settings.locale);
   const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
   const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
+  const defaultPortalTemplate = normalizeOptionalString(settings.init?.defaultPortalTemplate);
   const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
   const logRetentionDays =
     typeof settings.log?.retentionDays === 'number' && Number.isInteger(settings.log.retentionDays)
@@ -318,11 +326,12 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(locale ? { locale } : {}),
-      ...(defaultUiHost || defaultApiHost
+      ...(defaultUiHost || defaultApiHost || defaultPortalTemplate
         ? {
             init: {
               ...(defaultUiHost ? { defaultUiHost } : {}),
               ...(defaultApiHost ? { defaultApiHost } : {}),
+              ...(defaultPortalTemplate ? { defaultPortalTemplate } : {}),
             },
           }
         : {}),

@@ -52,6 +52,10 @@ const MISSING_COMMAND_SPECS = {
     displayName: 'pnpm',
     configKey: 'bin.pnpm',
   },
+  npm: {
+    displayName: 'npm',
+    configKey: 'bin.npm',
+  },
 } as const;
 const DOCKER_DAEMON_UNAVAILABLE_PATTERNS = [
   /cannot connect to the docker daemon/i,
@@ -67,6 +71,7 @@ async function resolveCommandName(name: string): Promise<string> {
 type CommandProcessOptions = {
   cwd?: string;
   env?: Record<string, string>;
+  envMode?: 'inherit' | 'replace';
   errorName?: string;
   timeoutMs?: number;
 };
@@ -79,6 +84,16 @@ type RunProcessOptions = CommandProcessOptions & {
 
 function shouldTeeInheritedOutput(options?: RunProcessOptions): boolean {
   return options?.stdio === 'inherit' && Boolean(String(process.env.NB_CLI_ACTIVE_LOG_FILE ?? '').trim());
+}
+
+function buildProcessEnv(options?: CommandProcessOptions): NodeJS.ProcessEnv {
+  if (options?.envMode === 'replace') {
+    return options.env ?? {};
+  }
+  return {
+    ...process.env,
+    ...options?.env,
+  };
 }
 
 function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
@@ -192,10 +207,7 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
     const child = spawn(command, [...args], {
       stdio,
       cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
+      env: buildProcessEnv(options),
       windowsHide: process.platform === 'win32',
     });
     if (options?.stdio === 'pipe' || shouldTeeInheritedOutput(options)) {
@@ -325,10 +337,7 @@ export async function commandSucceeds(name: string, args: string[], options?: Co
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
+      env: buildProcessEnv(options),
       stdio: 'ignore',
       windowsHide: process.platform === 'win32',
     });
@@ -361,10 +370,7 @@ export async function commandOutput(name: string, args: string[], options?: Comm
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
+      env: buildProcessEnv(options),
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: process.platform === 'win32',
     });
@@ -431,10 +437,7 @@ export async function commandOutputViaFile(
     const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
       const child = spawn(command, [...args], {
         cwd,
-        env: {
-          ...process.env,
-          ...options?.env,
-        },
+        env: buildProcessEnv(options),
         stdio: ['ignore', stdoutHandle.fd, stderrHandle.fd],
         windowsHide: process.platform === 'win32',
       });

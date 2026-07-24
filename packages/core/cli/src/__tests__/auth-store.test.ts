@@ -346,6 +346,19 @@ test('cli config stores explicit locale under settings', async () => {
   });
 });
 
+test('cli config stores the default portal template under init settings', async () => {
+  await withTempCliHome(async () => {
+    const template = await setCliConfigValue('default-portal-template', '/workspace/portal-template', {
+      scope: 'global',
+    });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(template).toBe('/workspace/portal-template');
+    expect(config.settings?.init?.defaultPortalTemplate).toBe('/workspace/portal-template');
+    expect(await getCliConfigValue('default-portal-template', { scope: 'global' })).toBe('/workspace/portal-template');
+  });
+});
+
 test('cli config stores explicit binary overrides under settings', async () => {
   await withTempCliHome(async () => {
     const dockerBin = await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
@@ -449,6 +462,7 @@ test('cli config reads docker defaults from legacy name when explicit settings a
 test('cli config list and delete only affect explicit settings', async () => {
   await withTempCliHome(async () => {
     await setCliConfigValue('locale', 'zh-CN', { scope: 'global' });
+    await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
     await setCliConfigValue('license.pkg-url', 'https://pkg.example.com', { scope: 'global' });
     await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
     await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
@@ -460,6 +474,7 @@ test('cli config list and delete only affect explicit settings', async () => {
 
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       locale: 'zh-CN',
+      'default-portal-template': '/workspace/portal-template',
       'license.pkg-url': 'https://pkg.example.com/',
       'docker.network': 'nocobase-team',
       'bin.docker': '/usr/local/bin/docker',
@@ -471,6 +486,7 @@ test('cli config list and delete only affect explicit settings', async () => {
     });
 
     expect(await deleteCliConfigValue('locale', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('default-portal-template', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('docker.container-prefix', { scope: 'global' })).toBe(false);
     expect(await deleteCliConfigValue('docker.network', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('bin.docker', { scope: 'global' })).toBe(true);
@@ -512,6 +528,12 @@ test('cli config returns default log retention days', async () => {
 test('cli config returns default log enabled state', async () => {
   await withTempCliHome(async () => {
     expect(await getCliConfigValue('log.enabled', { scope: 'global' })).toBe('true');
+  });
+});
+
+test('cli config returns an empty default portal template when not configured', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('default-portal-template', { scope: 'global' })).toBe('');
   });
 });
 

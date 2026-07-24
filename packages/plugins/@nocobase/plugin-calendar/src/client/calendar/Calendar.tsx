@@ -50,7 +50,7 @@ import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, type Locale } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import zhCN from 'date-fns/locale/zh-CN';
 import ru from 'date-fns/locale/ru';
@@ -287,7 +287,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       const apiClient = useAPIClient();
-      const locales = {
+      const locales: Record<'zh-CN' | 'en-US' | 'ru-RU', Locale> = {
         'zh-CN': zhCN,
         'en-US': enUS,
         'ru-RU': ru,

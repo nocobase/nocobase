@@ -341,6 +341,21 @@
           "message": "应用子路径（例如 /nocobase/）",
           "placeholder": "/ 或 /nocobase/"
         },
+        "developmentMode": {
+          "message": "谁来主导开发？",
+          "noCodeLabel": "人主导开发",
+          "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
+          "vibeCodingLabel": "AI 主导开发",
+          "vibeCodingHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
+        },
+        "portalName": {
+          "message": "初始化 Portal 名称",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "起始模板（将复制到 ./storage/portals/）",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
+        },
         "storagePath": {
           "message": "上传文件和本地存储目录",
           "placeholder": "./<env>/storage/"
@@ -440,6 +455,21 @@
         },
         "skipDownload": {
           "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
+        },
+        "developmentMode": {
+          "message": "谁来主导开发？",
+          "noCodeLabel": "人主导开发",
+          "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
+          "vibeCodingLabel": "AI 主导开发",
+          "vibeCodingHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
+        },
+        "portalName": {
+          "message": "初始化 Portal 名称",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "起始模板（将复制到 ./storage/portals/）",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
       "webUi": {
@@ -461,6 +491,10 @@
         "downloadAppFiles": {
           "title": "应用来源和版本",
           "description": "选择应用的获取方式，以及要使用的来源和版本。"
+        },
+        "developmentMode": {
+          "title": "开发方式",
+          "description": "选择适合你的应用开发方式。"
         },
         "configureDatabase": {
           "title": "配置数据库",

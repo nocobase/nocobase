@@ -68,6 +68,7 @@ import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
+import { prepareInitialPortalTemplate } from '../lib/portal-template.js';
 import {
   buildHookContext,
   persistHookScript,
@@ -104,6 +105,10 @@ const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
+const DEFAULT_INSTALL_DEVELOPMENT_MODE = 'no-code';
+const DEFAULT_INSTALL_PORTAL_NAME = 'admin';
+const DEFAULT_INSTALL_PORTAL_TEMPLATE = 'git@github.com:nocobase/admin-starter.git';
+const INSTALL_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
 
 function toOptionalPromptString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -250,6 +255,10 @@ function defaultBuiltinDbImageForDialect(value: PromptValue | undefined, options
 
 function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
   return String(value ?? '').trim() === 'kingbase' ? 'kingbase' : DEFAULT_INSTALL_DB_DATABASE;
+}
+
+function isVibeCodingMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return String(values.developmentMode ?? DEFAULT_INSTALL_DEVELOPMENT_MODE).trim() === 'vibe-coding';
 }
 
 function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
@@ -427,6 +436,9 @@ type InstallParsedFlags = {
   'app-port'?: string;
   'storage-path'?: string;
   'app-public-path'?: string;
+  'development-mode'?: string;
+  'portal-name'?: string;
+  'portal-template'?: string;
   'root-username'?: string;
   'root-email'?: string;
   'root-password'?: string;
@@ -635,6 +647,16 @@ export default class Install extends Command {
     'app-public-path': Flags.string({
       description: 'Public path for the local app, for example / or /console/',
     }),
+    'development-mode': Flags.string({
+      description: 'Initial development mode for the installed app',
+      options: [...INSTALL_DEVELOPMENT_MODES],
+    }),
+    'portal-name': Flags.string({
+      description: 'Initial portal name when --development-mode vibe-coding is used',
+    }),
+    'portal-template': Flags.string({
+      description: 'Initial portal template Git URL or local path when --development-mode vibe-coding is used',
+    }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
       required: false,
@@ -745,6 +767,42 @@ export default class Install extends Command {
         initialValue: '/',
         yesInitialValue: '/',
         validate: validateAppPublicPath,
+      },
+      developmentMode: {
+        type: 'select',
+        message: installText('prompts.developmentMode.message'),
+        options: [
+          {
+            value: 'no-code',
+            label: installText('prompts.developmentMode.noCodeLabel'),
+            hint: installText('prompts.developmentMode.noCodeHint'),
+          },
+          {
+            value: 'vibe-coding',
+            label: installText('prompts.developmentMode.vibeCodingLabel'),
+            hint: installText('prompts.developmentMode.vibeCodingHint'),
+          },
+        ],
+        initialValue: DEFAULT_INSTALL_DEVELOPMENT_MODE,
+        yesInitialValue: DEFAULT_INSTALL_DEVELOPMENT_MODE,
+        required: true,
+      },
+      portalName: {
+        type: 'text',
+        message: installText('prompts.portalName.message'),
+        placeholder: DEFAULT_INSTALL_PORTAL_NAME,
+        initialValue: DEFAULT_INSTALL_PORTAL_NAME,
+        yesInitialValue: DEFAULT_INSTALL_PORTAL_NAME,
+        hidden: (values) => !isVibeCodingMode(values),
+        required: true,
+      },
+      portalTemplate: {
+        type: 'text',
+        message: installText('prompts.portalTemplate.message'),
+        placeholder: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        yesInitialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        hidden: (values) => !isVibeCodingMode(values),
+        required: true,
       },
     };
   }
@@ -1033,6 +1091,27 @@ export default class Install extends Command {
       }
     }
 
+    if (flags['development-mode'] !== undefined) {
+      const v = String(flags['development-mode'] ?? '').trim();
+      if (v) {
+        preset.developmentMode = v;
+      }
+    }
+
+    if (flags['portal-name'] !== undefined) {
+      const v = String(flags['portal-name'] ?? '').trim();
+      if (v) {
+        preset.portalName = v;
+      }
+    }
+
+    if (flags['portal-template'] !== undefined) {
+      const v = String(flags['portal-template'] ?? '').trim();
+      if (v) {
+        preset.portalTemplate = v;
+      }
+    }
+
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
     }
@@ -1133,6 +1212,9 @@ export default class Install extends Command {
       'appPort',
       'storagePath',
       'appPublicPath',
+      'developmentMode',
+      'portalName',
+      'portalTemplate',
     ]);
   }
 
@@ -1456,6 +1538,9 @@ export default class Install extends Command {
     const rootPassword = Install.toOptionalPromptString(config.rootPassword);
     const rootNickname = Install.toOptionalPromptString(config.rootNickname);
     const lang = Install.toOptionalPromptString(config.lang);
+    const developmentMode = Install.toOptionalPromptString(config.developmentMode);
+    const portalName = Install.toOptionalPromptString(config.portalName);
+    const portalTemplate = Install.toOptionalPromptString(config.portalTemplate);
     const auth = config.auth as { type?: string; accessToken?: string } | undefined;
     const savedAuthType = Install.toOptionalPromptString(config.authType) ?? Install.toOptionalPromptString(auth?.type);
 
@@ -1466,6 +1551,9 @@ export default class Install extends Command {
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
+      ...(developmentMode ? { developmentMode } : {}),
+      ...(portalName ? { portalName } : {}),
+      ...(portalTemplate ? { portalTemplate } : {}),
       ...(hookScript ? { hookScript } : {}),
     };
 
@@ -1632,7 +1720,7 @@ export default class Install extends Command {
 
   static async buildAppPromptInitialValues(params: {
     envName?: string;
-    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path'>;
+    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path' | 'portal-template'>;
     warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
     const initialValues: PromptInitialValues = {};
@@ -1655,6 +1743,13 @@ export default class Install extends Command {
         label: 'Default app port',
         warn: params.warnOnPortFallback ?? true,
       });
+    }
+
+    if (params.flags['portal-template'] === undefined) {
+      const defaultPortalTemplate = Install.toOptionalPromptString(await getCliConfigValue('default-portal-template'));
+      if (defaultPortalTemplate) {
+        initialValues.portalTemplate = defaultPortalTemplate;
+      }
     }
 
     return initialValues;
@@ -1883,17 +1978,26 @@ export default class Install extends Command {
     );
   }
 
-  private static buildInitAppEnvVars(params: {
-    appResults: Record<string, PromptValue>;
-    rootResults: Record<string, PromptValue>;
-  }): Record<string, string> {
-    return buildInitAppEnvVarsFromConfig({
-      lang: String(params.appResults.lang ?? ''),
-      rootUsername: String(params.rootResults.rootUsername ?? ''),
-      rootEmail: String(params.rootResults.rootEmail ?? ''),
-      rootPassword: String(params.rootResults.rootPassword ?? ''),
-      rootNickname: String(params.rootResults.rootNickname ?? ''),
-    });
+  private static buildInitAppEnvVars(
+    params: {
+      appResults: Record<string, PromptValue>;
+      rootResults: Record<string, PromptValue>;
+    },
+    options: { includePortal?: boolean } = {},
+  ): Record<string, string> {
+    return buildInitAppEnvVarsFromConfig(
+      {
+        lang: String(params.appResults.lang ?? ''),
+        rootUsername: String(params.rootResults.rootUsername ?? ''),
+        rootEmail: String(params.rootResults.rootEmail ?? ''),
+        rootPassword: String(params.rootResults.rootPassword ?? ''),
+        rootNickname: String(params.rootResults.rootNickname ?? ''),
+        developmentMode: String(params.appResults.developmentMode ?? ''),
+        portalName: String(params.appResults.portalName ?? ''),
+        portalTemplate: String(params.appResults.portalTemplate ?? ''),
+      },
+      options,
+    );
   }
 
   private static shouldPublishBuiltinDbPort(source: PromptValue | undefined): boolean {
@@ -2351,10 +2455,13 @@ export default class Install extends Command {
       params.envName,
       configuredEnvFile ? { envFile: configuredEnvFile } : undefined,
     );
-    const initEnvVars = Install.buildInitAppEnvVars({
-      appResults: params.appResults,
-      rootResults: params.rootResults,
-    });
+    const initEnvVars = Install.buildInitAppEnvVars(
+      {
+        appResults: params.appResults,
+        rootResults: params.rootResults,
+      },
+      { includePortal: false },
+    );
     const containerPort = resolveDockerImageContainerPort(imageRef);
     const args = [
       'run',
@@ -2753,10 +2860,13 @@ export default class Install extends Command {
         String(params.dbResults.dbDatabase ?? DEFAULT_INSTALL_DB_DATABASE).trim() || DEFAULT_INSTALL_DB_DATABASE,
       DB_USER: String(params.dbResults.dbUser ?? DEFAULT_INSTALL_DB_USER).trim() || DEFAULT_INSTALL_DB_USER,
       DB_PASSWORD: String(params.dbResults.dbPassword ?? DEFAULT_INSTALL_DB_PASSWORD) || DEFAULT_INSTALL_DB_PASSWORD,
-      ...Install.buildInitAppEnvVars({
-        appResults: params.appResults,
-        rootResults: params.rootResults,
-      }),
+      ...Install.buildInitAppEnvVars(
+        {
+          appResults: params.appResults,
+          rootResults: params.rootResults,
+        },
+        { includePortal: false },
+      ),
     };
     setOptionalEnvVar(env, 'APP_PUBLIC_PATH', Install.toOptionalPromptString(params.appResults.appPublicPath));
     setOptionalEnvVar(env, 'DB_SCHEMA', optionalEnvString(params.dbResults.dbSchema));
@@ -3023,6 +3133,23 @@ export default class Install extends Command {
     return argv;
   }
 
+  private async prepareInitialPortalIfNeeded(params: {
+    envName: string;
+    appResults: Record<string, PromptValue>;
+    verbose?: boolean;
+  }): Promise<void> {
+    await prepareInitialPortalTemplate({
+      developmentMode: Install.toOptionalPromptString(params.appResults.developmentMode),
+      portalName: Install.toOptionalPromptString(params.appResults.portalName),
+      portalTemplate: Install.toOptionalPromptString(params.appResults.portalTemplate),
+      storagePath: Install.resolveAbsoluteStoragePath(params.envName, params.appResults),
+      verbose: params.verbose,
+      onStartTask: (message) => this.logStage(message),
+      onSucceedTask: (message) => printInfo(message),
+      onFailTask: (message) => printWarning(message),
+    });
+  }
+
   private async runInstallHookIfNeeded(params: {
     hookName: HookName;
     envName: string;
@@ -3093,6 +3220,9 @@ export default class Install extends Command {
     const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
     const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
+    const developmentMode = Install.toOptionalPromptString(params.appResults.developmentMode);
+    const portalName = Install.toOptionalPromptString(params.appResults.portalName);
+    const portalTemplate = Install.toOptionalPromptString(params.appResults.portalTemplate);
     const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : undefined;
     const derivedStoragePath = appPath ? deriveConfiguredStoragePath(appPath) : undefined;
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
@@ -3128,6 +3258,9 @@ export default class Install extends Command {
       ...(appPublicPath ? { appPublicPath } : {}),
       ...(envFile ? { envFile } : {}),
       lang: params.appResults.lang,
+      developmentMode,
+      portalName,
+      portalTemplate,
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
       builtinDb: params.dbResults.builtinDb,
@@ -3185,6 +3318,7 @@ export default class Install extends Command {
           'app-root-path': parsed['app-root-path'] ?? Install.toOptionalPromptString(appPreset.appRootPath),
           'app-port': parsed['app-port'] ?? Install.toOptionalPromptString(appPreset.appPort),
           'storage-path': parsed['storage-path'] ?? Install.toOptionalPromptString(appPreset.storagePath),
+          'portal-template': parsed['portal-template'] ?? Install.toOptionalPromptString(appPreset.portalTemplate),
         },
       }),
       values: appPreset,
@@ -3439,6 +3573,14 @@ export default class Install extends Command {
         dbResults,
         rootResults,
         envAddResults,
+      });
+    }
+
+    if (shouldStartApp) {
+      await this.prepareInitialPortalIfNeeded({
+        envName,
+        appResults,
+        verbose: parsed.verbose,
       });
     }
 

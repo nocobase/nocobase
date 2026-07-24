@@ -83,6 +83,7 @@ module.exports = (cli) => {
     .option('-c, --client')
     .option('-s, --server')
     .option('--db-sync')
+    .option('--quickstart')
     .option('--rsbuild')
     .option('--client-v2-only')
     .option('-i, --inspect [port]')

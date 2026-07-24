@@ -341,6 +341,21 @@
           "message": "App subpath (for example, /nocobase/)",
           "placeholder": "/ or /nocobase/"
         },
+        "developmentMode": {
+          "message": "Who will lead development?",
+          "noCodeLabel": "Human-led development",
+          "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
+          "vibeCodingLabel": "AI-led development",
+          "vibeCodingHint": "You describe what you need, and AI writes the code and builds the application for you."
+        },
+        "portalName": {
+          "message": "Initial portal name",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "Starter template (copied to ./storage/portals/)",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
+        },
         "storagePath": {
           "message": "Uploads and local files directory",
           "placeholder": "./<env>/storage/"
@@ -440,6 +455,21 @@
         },
         "skipDownload": {
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
+        },
+        "developmentMode": {
+          "message": "Who will lead development?",
+          "noCodeLabel": "Human-led development",
+          "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
+          "vibeCodingLabel": "AI-led development",
+          "vibeCodingHint": "You describe what you need, and AI writes the code and builds the application for you."
+        },
+        "portalName": {
+          "message": "Initial portal name",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "Starter template (copied to ./storage/portals/)",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
       "webUi": {
@@ -461,6 +491,10 @@
         "downloadAppFiles": {
           "title": "App source and version",
           "description": "Choose how to get the app and which source and version to use."
+        },
+        "developmentMode": {
+          "title": "Development approach",
+          "description": "Choose the development approach for your application."
         },
         "configureDatabase": {
           "title": "Configure the database",

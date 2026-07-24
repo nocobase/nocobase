@@ -16,6 +16,10 @@ import { IncomingRequest } from '.';
 // of this default lives in packages/core/cli-v1/src/util.js
 // (DEFAULT_MODERN_CLIENT_PREFIX). See docs/adr/0001-modern-client-prefix.md.
 export const MODERN_CLIENT_DIST_DIR = 'v';
+export const PORTAL_CLIENT_PREFIX = 'x';
+export const DEFAULT_PORTAL_APP_NAME = 'main';
+export const DEFAULT_PORTAL_NAME = 'admin';
+export const PORTAL_MANIFEST_FILE = 'portal-manifest.json';
 
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
@@ -36,6 +40,25 @@ export function resolveV2PublicPath(appPublicPath = '/') {
   const publicPath = resolvePublicPath(appPublicPath);
   const prefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
   return `${publicPath.replace(/\/$/, '')}/${prefix}/`;
+}
+
+export function normalizePortalName(value?: string) {
+  const segment = String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  return segment || DEFAULT_PORTAL_NAME;
+}
+
+export function normalizePortalAppName(value?: string) {
+  const segment = String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  return segment || DEFAULT_PORTAL_APP_NAME;
+}
+
+export function resolvePortalPublicPath(portalName: string, appPublicPath = '/') {
+  const publicPath = resolvePublicPath(appPublicPath);
+  return `${publicPath.replace(/\/$/, '')}/${PORTAL_CLIENT_PREFIX}/${normalizePortalName(portalName)}/`;
 }
 
 function ensureTrailingSlash(value: string) {

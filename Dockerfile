@@ -73,6 +73,8 @@ ARG INCLUDE_DOCS_ARCHIVE=1
 ARG INSTALL_POSTGRES_16_CLIENT=1
 ARG INSTALL_CJK_FONTS=1
 ARG NGINX_VERSION=1.30.1-1~bookworm
+ARG YARN_VERSION=1.22.22
+ARG PNPM_VERSION=11
 ARG USE_ALIYUN_MIRROR=0
 ENV NB_SKIP_STARTUP_UPDATE=1 \
     NOCOBASE_RUNNING_IN_DOCKER=true
@@ -125,6 +127,14 @@ RUN set -eux; \
   nginx -v; \
   mysql --version; \
   mysqldump --version; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    export COREPACK_NPM_REGISTRY=https://registry.npmmirror.com; \
+  fi; \
+  corepack enable; \
+  corepack install -g "yarn@${YARN_VERSION}"; \
+  corepack install -g "pnpm@${PNPM_VERSION}"; \
+  yarn --version; \
+  pnpm --version; \
   apt-get purge -y --auto-remove wget gnupg dirmngr; \
   rm -rf \
     /etc/apt/sources.list.d/nginx.list \

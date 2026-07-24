@@ -14,7 +14,7 @@ import { get, omit } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-big-calendar';
 import { dateFnsLocalizer } from 'react-big-calendar';
-import { format, getDay, parse, startOfWeek } from 'date-fns';
+import { format, getDay, parse, startOfWeek, type Locale } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import ru from 'date-fns/locale/ru';
 import zhCN from 'date-fns/locale/zh-CN';
@@ -69,7 +69,7 @@ export const getCalendarEventDisplayRange = (eventStart: Dayjs, intervalTime: nu
 };
 
 const WEEKS = ['month', 'week', 'day'] as View[];
-const LOCALES = {
+const LOCALES: Record<'zh-CN' | 'en-US' | 'ru-RU', Locale> = {
   'zh-CN': zhCN,
   'en-US': enUS,
   'ru-RU': ru,

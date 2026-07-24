@@ -147,6 +147,7 @@ export default defineConfig(({ command }) => {
   const fileBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/files/`);
   const localStorageBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/storage/uploads/`);
   const staticBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/static/`);
+  const portalBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/x/`);
   const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
   // Build bakes the FIXED dist-dir segment (`/v/`) as a sentinel that the
   // server rewrites to the runtime prefix per request. Dev serves under the
@@ -287,6 +288,12 @@ export default defineConfig(({ command }) => {
           target: proxyTargetUrl,
           changeOrigin: true,
         },
+        [portalBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
+          xfwd: true,
+        },
         [wsBasePath]: {
           target: proxyTargetUrl,
           changeOrigin: true,
@@ -317,6 +324,7 @@ export default defineConfig(({ command }) => {
               pathname.startsWith(apiBasePath) ||
               pathname.startsWith(wsBasePath) ||
               pathname.startsWith(localStorageBasePath) ||
+              pathname.startsWith(portalBasePath) ||
               pathname.startsWith(staticBasePath)
             ) {
               next();

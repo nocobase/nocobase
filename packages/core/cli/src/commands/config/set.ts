@@ -16,6 +16,7 @@ export default class ConfigSet extends Command {
   static override description = 'Set a CLI configuration value for a supported configuration key.';
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale zh-CN',
+    '<%= config.bin %> <%= command.id %> default-portal-template git@github.com:nocobase/admin-starter.git',
     '<%= config.bin %> <%= command.id %> update.policy prompt',
     '<%= config.bin %> <%= command.id %> docker.network nocobase',
     '<%= config.bin %> <%= command.id %> docker.container-prefix nb',
