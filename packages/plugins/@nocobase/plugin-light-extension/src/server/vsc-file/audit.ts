@@ -338,7 +338,7 @@ function normalizeAuditRunJSSourceLocator(value: unknown): RunJSSourceLocator | 
 }
 
 function getRunJSSourceAuditOwnerId(locator: RunJSSourceLocator): string {
-  return 'modelUid' in locator ? locator.modelUid : String(locator.nodeId);
+  return locator.modelUid;
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

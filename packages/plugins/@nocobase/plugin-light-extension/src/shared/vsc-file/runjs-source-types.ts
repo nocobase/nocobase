@@ -105,7 +105,7 @@ export function getRunJSSourceOwnerId(locator: RunJSSourceLocator): string {
 }
 
 function getStableOwnerId(locator: RunJSSourceLocator): string {
-  return 'modelUid' in locator ? locator.modelUid : String(locator.nodeId);
+  return locator.modelUid;
 }
 
 function getSourcePathSegments(
