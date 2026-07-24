@@ -137,23 +137,9 @@ export function buildLightExtensionCompilerBuildIdentity(
   };
 }
 
-let compilerBuildIdentity: LightExtensionCompilerBuildIdentity | undefined;
-
-function getLightExtensionCompilerBuildIdentity(): LightExtensionCompilerBuildIdentity {
-  return (compilerBuildIdentity ||= Object.freeze(buildLightExtensionCompilerBuildIdentity()));
-}
-
-export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY: Readonly<LightExtensionCompilerBuildIdentity> = Object.freeze({
-  get compilerBuildId() {
-    return getLightExtensionCompilerBuildIdentity().compilerBuildId;
-  },
-  get components() {
-    return getLightExtensionCompilerBuildIdentity().components;
-  },
-  get runjs() {
-    return getLightExtensionCompilerBuildIdentity().runjs;
-  },
-});
+export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY: Readonly<LightExtensionCompilerBuildIdentity> = Object.freeze(
+  buildLightExtensionCompilerBuildIdentity(),
+);
 
 const sha256Pattern = /^[a-f0-9]{64}$/u;
 
