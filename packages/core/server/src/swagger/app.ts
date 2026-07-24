@@ -13,7 +13,22 @@ export default {
       tags: ['app'],
       summary: 'Get the current application language',
       description: 'Return the current locale used by the server.',
-      parameters: [],
+      parameters: [
+        {
+          name: 'locale',
+          in: 'query',
+          required: false,
+          schema: { type: 'string' },
+          description: 'Requested application locale. The server validates it against enabled languages.',
+        },
+        {
+          name: 'ns',
+          in: 'query',
+          required: false,
+          schema: { type: 'string' },
+          description: 'Comma-separated resource namespaces to return. Omit it to preserve the full legacy payload.',
+        },
+      ],
       responses: {
         200: {
           description: 'OK',

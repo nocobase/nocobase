@@ -17,6 +17,7 @@ import { listAppPortals } from './appPortals';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import { filterLocaleResources } from './localeResources';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -115,7 +116,7 @@ export class PluginClientServer extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          const resources = await ctx.app.localeManager.get(lang);
+          const resources = filterLocaleResources(await ctx.app.localeManager.get(lang), ctx.request.query.ns);
           ctx.body = {
             lang,
             ...resources,
