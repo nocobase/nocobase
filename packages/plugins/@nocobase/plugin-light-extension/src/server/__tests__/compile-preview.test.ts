@@ -173,6 +173,50 @@ describe('plugin-light-extension compile preview', () => {
     }
   });
 
+  it('compiles relative imports from unsaved workspace files', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([]);
+    const fileService = createFileServiceStub(repo, []);
+    const { service } = createPreviewService(db, fileService);
+
+    const result = await service.compileWorkspacePreview({
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      entryId: 'lee_sales_kpi',
+      kind: 'js-block',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      runtimeVersion: 'v2',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'import { title } from "./message";\nctx.render(<div>{title}</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/message.ts',
+          content: 'export const title = "Unsaved relative import";\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'sales-kpi', title: 'Sales KPI' }),
+          language: 'json',
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      accepted: true,
+      diagnostics: [],
+      artifact: {
+        version: 'v2',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      },
+    });
+    expect(result.artifact?.code).toContain('Unsaved relative import');
+    expect(fileService.pull).not.toHaveBeenCalled();
+  });
+
   it('rejects an unsaved workspace check when the pulled Head is stale', async () => {
     const repo = createRepo();
     const { db } = createDbStub([]);

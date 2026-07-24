@@ -53,16 +53,16 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@nocobase/client-v2', async () => {
-  const ReactModule = await vi.importActual<typeof import('react')>('react');
-  return {
-    ApplicationContext: ReactModule.createContext({
-      aiManager: {
-        authoringSurfaces: {
-          register: mocks.authoring.register,
-          activate: mocks.authoring.activate,
-        },
+  const app = {
+    aiManager: {
+      authoringSurfaces: {
+        register: mocks.authoring.register,
+        activate: mocks.authoring.activate,
       },
-    }),
+    },
+  };
+  return {
+    useApp: () => app,
     useFullscreenOverlay: () => {
       const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
 

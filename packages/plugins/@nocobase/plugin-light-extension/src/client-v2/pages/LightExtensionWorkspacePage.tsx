@@ -14,10 +14,10 @@ import {
   type LightExtensionSettingsTypegenResult,
 } from '@nocobase/light-extension-sdk/typegen';
 import {
-  ApplicationContext,
   type CodeAuthoringDiagnostic,
   type CodeEditorRevealPosition,
   type EmbeddedRunJSEditorSaveResult,
+  useApp,
   useFullscreenOverlay,
 } from '@nocobase/client-v2';
 import {
@@ -147,7 +147,7 @@ function LightExtensionWorkspacePage({
   onSaved,
 }: LightExtensionWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
-  const app = React.useContext(ApplicationContext);
+  const app = useApp();
   const { token } = theme.useToken();
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
