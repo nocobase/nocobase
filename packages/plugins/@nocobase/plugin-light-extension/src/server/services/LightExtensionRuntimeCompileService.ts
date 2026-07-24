@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex, stableSerialize } from '@nocobase/runjs';
 import { randomUUID } from 'crypto';
 import { serialize } from 'node:v8';
 
@@ -97,6 +97,7 @@ export interface LightExtensionRuntimeCompileServiceOptions {
 
 interface LightExtensionPreparedCompileState {
   readonly entryPlan: LightExtensionEntryReconcilePlan;
+  readonly compileFingerprint: string;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
   readonly compileEntries: ReadonlyArray<LightExtensionSaveSourceResult['compile']['entries'][number]>;
   readonly diagnostics: readonly LightExtensionDiagnostic[];
@@ -324,6 +325,11 @@ export class LightExtensionRuntimeCompileService {
     );
     return Object.freeze({
       entryPlan,
+      compileFingerprint: buildPreparedCompileFingerprint(
+        entryPlan.result.entries,
+        successfulResults,
+        this.compilerBuildIdentity,
+      ),
       compileResults: Object.freeze(successfulResults.map((entry) => Object.freeze(entry))),
       compileEntries: Object.freeze(compileEntries),
       diagnostics: Object.freeze(diagnostics),
@@ -346,6 +352,7 @@ export class LightExtensionRuntimeCompileService {
         'Prepared save must be created by this runtime compile service instance',
       );
     }
+    this.assertPreparedCompileFingerprint(prepared);
     const candidate = await this.fileService.publishSourceCandidate(prepared.candidate, ctx);
     await this.entryService.publishReconcilePlan(prepared.entryPlan, transaction);
     await this.publishCompiledEntries.publishCompiledEntries(
@@ -404,6 +411,7 @@ export class LightExtensionRuntimeCompileService {
         'Prepared initial workspace must be created by this runtime compile service instance',
       );
     }
+    this.assertPreparedCompileFingerprint(prepared);
     const repo = await this.db.getRepository('lightExtensionRepos').findOne({
       filterByTk: prepared.repoId,
       transaction,
@@ -450,6 +458,21 @@ export class LightExtensionRuntimeCompileService {
       entries: [...prepared.compileEntries],
       diagnostics: [...prepared.diagnostics],
     };
+  }
+
+  private assertPreparedCompileFingerprint(prepared: LightExtensionPreparedCompileState): void {
+    const currentFingerprint = buildPreparedCompileFingerprint(
+      prepared.entryPlan.result.entries,
+      prepared.compileResults,
+      this.compilerBuildIdentity,
+    );
+    if (currentFingerprint !== prepared.compileFingerprint) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_OUTDATED',
+        'Light extension compile inputs changed before the prepared workspace was published',
+        { details: { repoId: prepared.entryPlan.repoId } },
+      );
+    }
   }
 
   private async recordPublishedCompileAudits(
@@ -912,6 +935,42 @@ function toFailedCompileEntryResult(
     diagnostics: result.diagnostics,
     failureCode: result.failureCode,
   };
+}
+
+function buildPreparedCompileFingerprint(
+  entries: readonly LightExtensionEntryRecord[],
+  results: readonly LightExtensionCompileSuccessResult[],
+  compilerBuildIdentity: LightExtensionCompilerBuildIdentity,
+): string {
+  const entryInputs = entries
+    .map((entry) => ({
+      id: entry.id,
+      repoId: entry.repoId,
+      target: entry.target,
+      kind: entry.kind,
+      entryName: entry.entryName,
+      entryPath: entry.entryPath,
+      descriptorPath: entry.descriptorPath,
+      settingsSchemaHash: entry.settingsSchemaHash,
+      settingsDefaultsHash: entry.settingsDefaultsHash,
+      healthStatus: entry.healthStatus,
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const compileInputs = results
+    .map((result) => ({
+      entryId: result.entryId,
+      repoId: result.repoId,
+      entryName: result.entryName,
+      kind: result.kind,
+      entryPath: result.entryPath,
+      compileKey: result.compileKey,
+      filesHash: result.filesHash,
+      compilerBuildId: result.compilerBuildId,
+      inputManifest: result.inputManifest,
+    }))
+    .sort((left, right) => left.entryId.localeCompare(right.entryId));
+
+  return sha256Hex(stableSerialize({ compilerBuildIdentity, entryInputs, compileInputs }));
 }
 
 function prepareEntryCompileInputs(

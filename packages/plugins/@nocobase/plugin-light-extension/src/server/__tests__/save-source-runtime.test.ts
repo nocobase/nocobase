@@ -14,6 +14,7 @@ import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import {
   buildLightExtensionCompilerBuildIdentity,
+  LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS,
 } from '../services/LightExtensionCompileContract';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
@@ -398,6 +399,75 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     await expect(
       app.db.sequelize.transaction((transaction) => runtimeCompileService.publishPreparedSave(forged, { transaction })),
     ).rejects.toThrow('must be created by this runtime compile service instance');
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
+  });
+
+  it('rejects a prepared save when the compiler and type-library identity changes before publish', async () => {
+    const compilerBuildIdentity = structuredClone(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
+    const buildAwareService = new LightExtensionRuntimeCompileService(
+      app.db,
+      fileService,
+      entryService,
+      compilerBridge,
+      { compilerBuildIdentity },
+    );
+    const repo = await repoService.createRepo({
+      name: 'Prepared Save Compile Identity',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const prepared = await buildAwareService.prepareSaveSource({
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'prepare compile identity',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Prepared compile identity</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const changedRunjsBuildId = 'a'.repeat(64);
+    compilerBuildIdentity.runjs.components.typeLibraryFingerprint = 'b'.repeat(64);
+    compilerBuildIdentity.runjs.compilerBuildId = changedRunjsBuildId;
+    compilerBuildIdentity.components.runjsCompilerBuildId = changedRunjsBuildId;
+    compilerBuildIdentity.compilerBuildId = buildLightExtensionCompilerBuildIdentity(
+      compilerBuildIdentity.components,
+      compilerBuildIdentity.runjs,
+    ).compilerBuildId;
+
+    await expect(
+      app.db.sequelize.transaction((transaction) => buildAwareService.publishPreparedSave(prepared, { transaction })),
+    ).rejects.toThrow('compile inputs changed before the prepared workspace was published');
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
+  });
+
+  it('rejects a prepared save when descriptor or settings inputs change before publish', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Prepared Save Entry Inputs',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const prepared = await runtimeCompileService.prepareSaveSource({
+      repoId: repo.id,
+      expectedHeadCommitId: repo.headCommitId,
+      message: 'prepare entry inputs',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Prepared entry inputs</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const preparedEntry = prepared.entryPlan.result.entries[0];
+    preparedEntry.descriptorPath = 'src/client/js-blocks/sales-kpi/changed-entry.json';
+    preparedEntry.settingsSchemaHash = 'c'.repeat(64);
+
+    await expect(
+      app.db.sequelize.transaction((transaction) =>
+        runtimeCompileService.publishPreparedSave(prepared, { transaction }),
+      ),
+    ).rejects.toThrow('compile inputs changed before the prepared workspace was published');
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
   });
 
