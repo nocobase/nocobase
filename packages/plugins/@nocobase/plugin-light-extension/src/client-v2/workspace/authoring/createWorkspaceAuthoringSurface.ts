@@ -57,11 +57,8 @@ export interface CreateWorkspaceAuthoringSurfaceOptions {
   validateDraft: () => CodeAuthoringDiagnostic[] | Promise<CodeAuthoringDiagnostic[]>;
   reveal: (path: string, range?: CodeAuthoringRange) => void | Promise<void>;
   supportedLanguages?: readonly string[];
-  planTtlMs?: number;
-  maxPlans?: number;
   searchMaxResults?: number;
   searchMaxContextLength?: number;
-  now?: () => number;
   unavailableReason?: string;
   changeCapabilities?: {
     prepareChanges: boolean;
@@ -72,23 +69,17 @@ export interface CreateWorkspaceAuthoringSurfaceOptions {
 interface StoredWorkspaceAuthoringPlan extends PreparedCodeAuthoringChangeSet {
   nextSourceFiles: WorkspaceAuthoringFile[];
   changedPaths: string[];
-  status: 'prepared' | 'applying' | 'consumed';
+  applying: boolean;
 }
 
-const DEFAULT_PLAN_TTL_MS = 5 * 60 * 1000;
-const DEFAULT_MAX_PLANS = 32;
 const DEFAULT_SEARCH_MAX_RESULTS = 50;
 const DEFAULT_SEARCH_CONTEXT_LENGTH = 240;
 
 export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthoringSurfaceOptions): CodeAuthoringSurface {
-  const now = options.now || Date.now;
-  const planTtlMs = Math.max(1, options.planTtlMs ?? DEFAULT_PLAN_TTL_MS);
-  const maxPlans = Math.max(1, options.maxPlans ?? DEFAULT_MAX_PLANS);
   const searchMaxResults = Math.max(1, options.searchMaxResults ?? DEFAULT_SEARCH_MAX_RESULTS);
   const searchMaxContextLength = Math.max(1, options.searchMaxContextLength ?? DEFAULT_SEARCH_CONTEXT_LENGTH);
-  const plans = new Map<string, StoredWorkspaceAuthoringPlan>();
+  let preparedPlan: StoredWorkspaceAuthoringPlan | undefined;
   let disposed = false;
-  let applyingPlanId: string | undefined;
   let planSequence = 0;
 
   const capabilities: CodeAuthoringCapabilities = {
@@ -251,6 +242,12 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
 
   const prepareChanges: CodeAuthoringSurface['prepareChanges'] = async (input) => {
     assertAvailable();
+    if (preparedPlan?.applying) {
+      throw new WorkspaceAuthoringError('PLAN_APPLYING', 'A workspace change plan is already being applied', {
+        surfaceId: options.id,
+        planId: preparedPlan.planId,
+      });
+    }
     if (!capabilities.prepareChanges) {
       throw new WorkspaceAuthoringError(
         'CAPABILITY_UNAVAILABLE',
@@ -267,25 +264,17 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
       getPathAccess: options.getPathAccess,
       supportedLanguages: options.supportedLanguages,
     });
-    const createdAt = now();
-    const planId = `${options.id}:plan:${createdAt.toString(36)}:${(planSequence += 1).toString(36)}`;
-    const plan: StoredWorkspaceAuthoringPlan = {
-      planId,
+    preparedPlan = {
+      planId: `${options.id}:plan:${(planSequence += 1).toString(36)}`,
       surfaceId: options.id,
       baseSnapshotId: snapshot.snapshotId,
       changes: prepared.changes,
       diffs: prepared.diffs,
-      warnings: [],
-      createdAt,
-      expiresAt: createdAt + planTtlMs,
-      saved: false,
       nextSourceFiles: prepared.nextSourceFiles,
       changedPaths: prepared.changedPaths,
-      status: 'prepared',
+      applying: false,
     };
-    evictPlans(plans, maxPlans - 1);
-    plans.set(planId, plan);
-    return toPublicPlan(plan);
+    return toPublicPlan(preparedPlan);
   };
 
   const applyPreparedChanges: CodeAuthoringSurface['applyPreparedChanges'] = async (planId) => {
@@ -297,40 +286,18 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
         { surfaceId: options.id, planId, reason: options.unavailableReason },
       );
     }
-    const plan = plans.get(planId);
-    if (!plan || plan.surfaceId !== options.id) {
+    const plan = preparedPlan;
+    if (!plan || plan.planId !== planId) {
       throw new WorkspaceAuthoringError('PLAN_NOT_FOUND', `Unknown authoring plan: ${planId}`, {
         surfaceId: options.id,
         planId,
       });
     }
-    if (plan.status === 'consumed') {
-      throw new WorkspaceAuthoringError('PLAN_CONSUMED', `Authoring plan was already applied: ${planId}`, {
-        surfaceId: options.id,
-        planId,
-      });
-    }
-    if (plan.status === 'applying') {
+    if (plan.applying) {
       throw new WorkspaceAuthoringError('PLAN_APPLYING', `Authoring plan is already being applied: ${planId}`, {
         surfaceId: options.id,
         planId,
       });
-    }
-    if (now() >= plan.expiresAt) {
-      throw new WorkspaceAuthoringError('PLAN_EXPIRED', `Authoring plan expired: ${planId}`, {
-        surfaceId: options.id,
-        planId,
-      });
-    }
-    if (applyingPlanId) {
-      throw new WorkspaceAuthoringError(
-        'PLAN_APPLYING',
-        `Another authoring plan is already being applied: ${applyingPlanId}`,
-        {
-          surfaceId: options.id,
-          planId,
-        },
-      );
     }
 
     const currentSnapshot = getInternalSnapshot();
@@ -348,13 +315,12 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
     }
     assertWorkspaceAuthoringPlanAccess(options.id, plan.changes, options.getPathAccess);
 
-    plan.status = 'applying';
-    applyingPlanId = planId;
+    plan.applying = true;
     try {
       const nextSourceFiles = cloneWorkspaceAuthoringFiles(plan.nextSourceFiles);
       const committedSnapshot = getInternalSnapshot(nextSourceFiles);
       await options.commitSourceFiles(nextSourceFiles);
-      plan.status = 'consumed';
+      preparedPlan = undefined;
       let publicSnapshot: CodeAuthoringSnapshot;
       try {
         publicSnapshot = await buildPublicSnapshot(committedSnapshot);
@@ -368,14 +334,10 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
         saved: false,
       };
     } catch (error) {
-      if (plan.status !== 'consumed') {
-        plan.status = 'prepared';
+      if (preparedPlan === plan) {
+        plan.applying = false;
       }
       throw error;
-    } finally {
-      if (applyingPlanId === planId) {
-        applyingPlanId = undefined;
-      }
     }
   };
 
@@ -423,7 +385,7 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
         return;
       }
       disposed = true;
-      plans.clear();
+      preparedPlan = undefined;
     },
   };
 }
@@ -457,16 +419,6 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, Math.floor(value)));
 }
 
-function evictPlans(plans: Map<string, StoredWorkspaceAuthoringPlan>, targetSize: number): void {
-  while (plans.size > targetSize) {
-    const oldestPlanId = plans.keys().next().value;
-    if (typeof oldestPlanId !== 'string') {
-      return;
-    }
-    plans.delete(oldestPlanId);
-  }
-}
-
 function toPublicPlan(plan: StoredWorkspaceAuthoringPlan): PreparedCodeAuthoringChangeSet {
   return {
     planId: plan.planId,
@@ -474,9 +426,5 @@ function toPublicPlan(plan: StoredWorkspaceAuthoringPlan): PreparedCodeAuthoring
     baseSnapshotId: plan.baseSnapshotId,
     changes: plan.changes.map((change) => ({ ...change })),
     diffs: plan.diffs.map((diff) => ({ ...diff })),
-    warnings: [...plan.warnings],
-    createdAt: plan.createdAt,
-    expiresAt: plan.expiresAt,
-    saved: false,
   };
 }

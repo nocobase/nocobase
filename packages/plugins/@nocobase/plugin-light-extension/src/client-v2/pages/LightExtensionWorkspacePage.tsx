@@ -1515,40 +1515,14 @@ function toLightExtensionAuthoringFiles(
       readOnly: !access.canUpdate,
       writable: access.canUpdate,
       persisted: !virtual,
-      scope: getLightExtensionAuthoringFileScope(access.reason),
-      metadata: {
-        generated: virtual,
-        entryDescriptor: access.reason === 'entry_descriptor',
-        blockedDirtyChange: access.reason === 'blocked_dirty_change',
-        accessReason: access.reason || null,
-        mode: file.mode || null,
-      },
+      mode: file.mode,
     };
     return authoringFile;
   });
 }
 
 function getWorkspaceAuthoringFileMode(file: WorkspaceAuthoringFile): string | undefined {
-  const mode = file.metadata?.mode;
-  return typeof mode === 'string' ? mode : undefined;
-}
-
-function getLightExtensionAuthoringFileScope(
-  reason: ReturnType<typeof getLightExtensionWorkspaceAuthoringPathAccess>['reason'],
-): string {
-  if (reason === 'generated_file') {
-    return 'generated';
-  }
-  if (reason === 'entry_descriptor') {
-    return 'entry-descriptor';
-  }
-  if (reason === 'outside_entry_scope') {
-    return 'shared-read-only';
-  }
-  if (reason === 'repository_authoring_gate') {
-    return 'repository-gated';
-  }
-  return 'entry';
+  return file.mode;
 }
 
 function toCodeAuthoringDiagnostics(

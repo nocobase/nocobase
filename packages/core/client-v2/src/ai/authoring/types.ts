@@ -127,10 +127,6 @@ export interface PreparedCodeAuthoringChangeSet {
   baseSnapshotId: string;
   changes: CodeAuthoringChange[];
   diffs: CodeAuthoringFileDiff[];
-  warnings: string[];
-  createdAt: number;
-  expiresAt: number;
-  saved: false;
 }
 
 export interface CodeAuthoringApplyResult {

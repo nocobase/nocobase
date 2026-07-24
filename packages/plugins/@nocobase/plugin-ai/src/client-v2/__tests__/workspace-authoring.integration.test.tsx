@@ -122,10 +122,6 @@ function createTestWorkspace(surfaceId: string, initialContent: string): TestWor
           before: files.get(change.path),
           after: change.type === 'delete' || change.type === 'patch' ? undefined : change.content,
         })),
-        warnings: [],
-        createdAt: 1,
-        expiresAt: 2,
-        saved: false,
       };
     },
     applyPreparedChanges: async (planId) => {
@@ -249,7 +245,7 @@ describe('workspace authoring integration', () => {
         { type: 'create', path: 'src/helper.ts', content: 'export const helper = 2;', language: 'typescript' },
       ],
     });
-    expect(prepareResult).toMatchObject({ status: 'success', content: { saved: false, diffs: expect.any(Array) } });
+    expect(prepareResult).toMatchObject({ status: 'success', content: { diffs: expect.any(Array) } });
     expect(workspace.getFiles()).toEqual({ 'src/index.ts': 'export const value = 1;' });
     expect(workspace.commit).not.toHaveBeenCalled();
 

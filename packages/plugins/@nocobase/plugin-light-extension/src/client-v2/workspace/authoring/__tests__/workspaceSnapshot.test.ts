@@ -33,33 +33,33 @@ describe('workspace authoring snapshot', () => {
     expect(first.virtualFiles[0]).toMatchObject({ kind: 'virtual', writable: false, persisted: false });
   });
 
-  it('changes file hashes and the tree revision when content or access metadata changes', () => {
+  it('changes file hashes and the tree revision when content or file metadata changes', () => {
     const base = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 1;', scope: 'entry:a' }],
+      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 1;', mode: '100644' }],
       virtualFiles: [],
     });
     const contentChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 2;', scope: 'entry:a' }],
+      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 2;', mode: '100644' }],
       virtualFiles: [],
     });
     const pathChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [{ path: 'src/main.ts', content: 'export const value = 1;', scope: 'entry:a' }],
+      sourceFiles: [{ path: 'src/main.ts', content: 'export const value = 1;', mode: '100644' }],
       virtualFiles: [],
     });
-    const scopeChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 1;', scope: 'entry:b' }],
+    const modeChanged = buildWorkspaceAuthoringTreeSnapshot({
+      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 1;', mode: '100755' }],
       virtualFiles: [],
     });
     const readOnlyChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 1;', scope: 'entry:a', readOnly: true }],
+      sourceFiles: [{ path: 'src/index.ts', content: 'export const value = 1;', mode: '100644', readOnly: true }],
       virtualFiles: [],
     });
 
     expect(contentChanged.snapshotId).not.toBe(base.snapshotId);
     expect(pathChanged.snapshotId).not.toBe(base.snapshotId);
-    expect(scopeChanged.snapshotId).not.toBe(base.snapshotId);
+    expect(modeChanged.snapshotId).not.toBe(base.snapshotId);
     expect(readOnlyChanged.snapshotId).not.toBe(base.snapshotId);
     expect(contentChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
-    expect(scopeChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
+    expect(modeChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
   });
 });

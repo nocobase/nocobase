@@ -25,7 +25,15 @@ describe('@nocobase/runjs package exports', () => {
     };
 
     expect(Object.keys(packageJson.exports).sort()).toEqual(
-      ['.', './client-v2', './compiler', './compiler/portable', './package.json', './settings'].sort(),
+      [
+        '.',
+        './client-v2',
+        './compiler',
+        './compiler/build-identity',
+        './compiler/portable',
+        './package.json',
+        './settings',
+      ].sort(),
     );
   });
 

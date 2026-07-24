@@ -270,7 +270,7 @@ function toAuthoringSourceFiles(files: RunJSWorkspaceFile[]): WorkspaceAuthoring
     content: file.content,
     language: file.language,
     persisted: true,
-    ...(file.mode ? { metadata: { mode: file.mode } } : {}),
+    mode: file.mode,
   }));
 }
 
@@ -280,7 +280,7 @@ function toRunJSWorkspaceFiles(files: WorkspaceAuthoringFile[]): RunJSWorkspaceF
       path: file.path,
       content: file.content,
       language: file.language,
-      ...(typeof file.metadata?.mode === 'string' ? { mode: file.metadata.mode } : {}),
+      mode: file.mode,
     })),
   );
 }

@@ -14,7 +14,7 @@ import {
   type RunJSCompileDiagnostic,
   type RunJSRuntimeArtifact,
 } from '@nocobase/runjs';
-import type { RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
+import { compileRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
 import { performance } from 'node:perf_hooks';
 import { threadId } from 'node:worker_threads';
 import { posix as pathPosix } from 'path';
@@ -71,9 +71,8 @@ export async function executeLightExtensionCompileJob(input: {
       },
       sourceInspector,
     };
-    const compiler = await import('@nocobase/runjs/compiler');
-    sourceInspector ||= new compiler.RunJSSourceWorkspaceInspector();
-    const compiled = await compiler.compileRunJSSourceWorkspace({ ...compileInput, sourceInspector });
+    sourceInspector ||= new RunJSSourceWorkspaceInspector();
+    const compiled = await compileRunJSSourceWorkspace({ ...compileInput, sourceInspector });
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map(toLightExtensionDiagnostic));
     if (hasErrorDiagnostic(diagnostics)) {
       return {

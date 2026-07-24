@@ -70,10 +70,6 @@ function createSurface(snapshotRef: { current: CodeAuthoringSnapshot }): CodeAut
       baseSnapshotId: input.baseSnapshotId,
       changes: input.changes,
       diffs: [{ path: 'src/helper.ts', status: 'created', after: 'export const helper = 1;' }],
-      warnings: [],
-      createdAt: 1,
-      expiresAt: 2,
-      saved: false,
     })),
     applyPreparedChanges: vi.fn(async (planId) => ({
       surfaceId: 'workspace-1',
@@ -144,7 +140,7 @@ describe('workspace authoring frontend tools', () => {
       }),
     ).resolves.toMatchObject({
       status: 'success',
-      content: { planId: 'plan-1', diffs: [{ path: 'src/helper.ts' }], saved: false },
+      content: { planId: 'plan-1', diffs: [{ path: 'src/helper.ts' }] },
     });
     expect(surface.applyPreparedChanges).not.toHaveBeenCalled();
 
