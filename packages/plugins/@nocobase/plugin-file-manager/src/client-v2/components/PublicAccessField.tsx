@@ -33,7 +33,12 @@ export function PublicAccessCheckbox({ checked, onChange, disabled, t }: PublicA
       <Checkbox checked={checked} onChange={(event) => onChange?.(event.target.checked)} disabled={disabled}>
         {t('Allow public access')}
       </Checkbox>
-      <Tooltip title={description}>
+      <Tooltip
+        title={description}
+        placement="topRight"
+        autoAdjustOverflow={{ adjustX: true, adjustY: true }}
+        styles={{ root: { maxWidth: `min(320px, calc(100vw - ${token.margin * 2}px))` } }}
+      >
         <QuestionCircleOutlined
           tabIndex={0}
           role="img"
