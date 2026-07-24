@@ -24807,6 +24807,104 @@ export class FlowSurfacesService {
     ]);
   }
 
+  private findFieldMenuAssociationLeafCandidateDirected(input: {
+    mode: 'table' | 'details' | 'form';
+    ownerUse: string;
+    resourceInit: Record<string, any>;
+    fieldPath: string;
+    enabledPackages?: ReadonlySet<string>;
+  }): FlowSurfaceFieldMenuCandidate | null {
+    const segments = String(input.fieldPath || '')
+      .split('.')
+      .filter(Boolean);
+    if (segments.length < 2) {
+      return null;
+    }
+
+    const leafFieldName = segments[segments.length - 1];
+    const associationSegments = segments.slice(0, -1);
+    let collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    if (!collection) {
+      return null;
+    }
+
+    const titlePrefix: string[] = [];
+    let associationPathName = '';
+    const visitedCollectionKeys: string[] = [];
+    const rootCycleKey = buildCatalogCollectionCycleKey(collection, input.resourceInit.dataSourceKey);
+    if (rootCycleKey) {
+      visitedCollectionKeys.push(rootCycleKey);
+    }
+
+    for (const associationFieldName of associationSegments) {
+      const associationField = getCollectionFields(collection).find(
+        (field) => getFieldName(field) === associationFieldName,
+      );
+      if (!associationField || !getFieldInterface(associationField) || !isAssociationField(associationField)) {
+        return null;
+      }
+
+      const fieldInterface = String(getFieldInterface(associationField) || '').trim();
+      if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+        return null;
+      }
+
+      const targetCollection = resolveFieldTargetCollection(
+        associationField,
+        input.resourceInit.dataSourceKey,
+        (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      );
+      if (!targetCollection) {
+        return null;
+      }
+
+      associationPathName = associationPathName
+        ? \.\
+        : associationFieldName;
+      titlePrefix.push(getFieldTitle(associationField));
+
+      const cycleKey = buildCatalogCollectionCycleKey(targetCollection, input.resourceInit.dataSourceKey);
+      if (cycleKey && visitedCollectionKeys.includes(cycleKey)) {
+        return null;
+      }
+      if (cycleKey) {
+        visitedCollectionKeys.push(cycleKey);
+      }
+      collection = targetCollection;
+    }
+
+    const targetField = getCollectionFields(collection).find((field) => getFieldName(field) === leafFieldName);
+    if (!targetField || !getFieldInterface(targetField)) {
+      return null;
+    }
+
+    const displaySemantics = this.resolveAssociationLeafDisplaySemantics(
+      targetField,
+      input.resourceInit.dataSourceKey,
+      input.enabledPackages,
+    );
+    if (!displaySemantics) {
+      return null;
+    }
+    if (
+      isRelationBackingForeignKeyField(collection, targetField) &&
+      !this.isCollectionTitleField(collection, leafFieldName)
+    ) {
+      return null;
+    }
+
+    return {
+      field: targetField,
+      fieldPath: \.\,
+      associationPathName,
+      label: [...titlePrefix, getFieldTitle(targetField)].join(' / '),
+      supportsJs: input.mode !== 'form',
+      explicitWrapperUse: input.mode === 'form' ? 'FormAssociationItemModel' : undefined,
+      explicitFieldUse: displaySemantics.fieldUse,
+      defaultTitleField: displaySemantics.defaultTitleField,
+    };
+  }
+
   private findFieldMenuCandidate(input: {
     ownerUse: string;
     resourceInit: Record<string, any>;
@@ -24814,17 +24912,39 @@ export class FlowSurfacesService {
     associationPathName?: string;
     enabledPackages?: ReadonlySet<string>;
   }) {
-    const candidates = this.buildFieldMenuCandidates({
+    const mode = this.getFieldMenuCatalogMode(input.ownerUse);
+    if (!mode) {
+      return null;
+    }
+
+    const normalizedFieldPath = normalizeFieldPath(input.fieldPath, input.associationPathName);
+    if (!normalizedFieldPath) {
+      return null;
+    }
+
+    // addField only needs the requested path. Build the full association menu only for
+    // catalog/menu listing paths; single-field lookup stays O(path) on large graphs.
+    const directCandidates = this.buildFieldMenuDirectCandidates({
+      mode,
       ownerUse: input.ownerUse,
       resourceInit: input.resourceInit,
       enabledPackages: input.enabledPackages,
     });
-    const normalizedFieldPath = normalizeFieldPath(input.fieldPath, input.associationPathName);
-    return (
-      candidates.find(
+    const directMatched =
+      directCandidates.find(
         (candidate) => normalizeFieldPath(candidate.fieldPath, candidate.associationPathName) === normalizedFieldPath,
-      ) || null
-    );
+      ) || null;
+    if (directMatched) {
+      return directMatched;
+    }
+
+    return this.findFieldMenuAssociationLeafCandidateDirected({
+      mode,
+      ownerUse: input.ownerUse,
+      resourceInit: input.resourceInit,
+      fieldPath: normalizedFieldPath,
+      enabledPackages: input.enabledPackages,
+    });
   }
 
   private buildCatalogItemOptionalFields(
