@@ -139,6 +139,7 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export * from './utils';
+export { stableSerialize } from './models/utils/runjsSourceRuntimeCommon';
 export * from './actions';
 export { FieldAssignValueInput } from './components/FieldAssignValueInput';
 export * from './system-settings';

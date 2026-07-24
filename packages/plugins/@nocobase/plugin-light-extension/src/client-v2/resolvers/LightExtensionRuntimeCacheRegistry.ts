@@ -95,12 +95,11 @@ export class LightExtensionCacheGeneration {
 }
 
 export function getLightExtensionCacheGeneration(api: object): LightExtensionCacheGeneration {
-  const existing = cacheGenerations.get(api);
-  if (existing) {
-    return existing;
+  let generation = cacheGenerations.get(api);
+  if (!generation) {
+    generation = new LightExtensionCacheGeneration();
+    cacheGenerations.set(api, generation);
   }
-  const generation = new LightExtensionCacheGeneration();
-  cacheGenerations.set(api, generation);
   return generation;
 }
 
@@ -108,12 +107,11 @@ export function getOrCreateLightExtensionRuntimeCache<TCache extends LightExtens
   api: object,
   create: (generation: LightExtensionCacheGeneration) => TCache,
 ): TCache {
-  const existing = runtimeCaches.get(api);
-  if (existing) {
-    return existing as TCache;
+  let cache = runtimeCaches.get(api) as TCache | undefined;
+  if (!cache) {
+    cache = create(getLightExtensionCacheGeneration(api));
+    runtimeCaches.set(api, cache);
   }
-  const cache = create(getLightExtensionCacheGeneration(api));
-  runtimeCaches.set(api, cache);
   return cache;
 }
 
@@ -233,14 +231,8 @@ export function getOrLoadLightExtensionSelectableCatalog<T>(
 
 export function invalidateLightExtensionRuntimeCache(api: object, repoId?: string): void {
   const generation = getLightExtensionCacheGeneration(api);
-  const cache = runtimeCaches.get(api);
-  if (!cache) {
-    if (repoId) {
-      generation.invalidateRepo(repoId);
-    } else {
-      generation.clear();
-    }
-  } else if (repoId) {
+  const cache = runtimeCaches.get(api) || generation;
+  if (repoId) {
     cache.invalidateRepo(repoId);
   } else {
     cache.clear();
@@ -254,27 +246,25 @@ export function invalidateLightExtensionRuntimeCache(api: object, repoId?: strin
 }
 
 function getSelectableCatalogState(api: object): SelectableCatalogState {
-  const existing = selectableCatalogs.get(api);
-  if (existing) {
-    return existing;
+  let state = selectableCatalogs.get(api);
+  if (!state) {
+    state = { inFlight: new Map() };
+    selectableCatalogs.set(api, state);
   }
-  const state: SelectableCatalogState = { inFlight: new Map() };
-  selectableCatalogs.set(api, state);
   return state;
 }
 
 function getFallbackIdentityRegistration(api: object): LightExtensionRuntimeIdentityRegistration {
-  const existing = fallbackIdentityRegistrations.get(api);
-  if (existing) {
-    return existing;
+  let registration = fallbackIdentityRegistrations.get(api);
+  if (!registration) {
+    registration = {
+      provider: () => readRuntimeIdentity(api),
+      initialized: false,
+      sessionEpoch: 0,
+      permissionGeneration: 0,
+    };
+    fallbackIdentityRegistrations.set(api, registration);
   }
-  const registration: LightExtensionRuntimeIdentityRegistration = {
-    provider: () => readRuntimeIdentity(api),
-    initialized: false,
-    sessionEpoch: 0,
-    permissionGeneration: 0,
-  };
-  fallbackIdentityRegistrations.set(api, registration);
   return registration;
 }
 
@@ -302,10 +292,9 @@ function readAuthValue(auth: Record<string, unknown> | null, getterName: string,
 
 function getEventTarget(app?: object): EventTargetLike | undefined {
   const eventBus = toRecord(toRecord(app)?.eventBus);
-  if (typeof eventBus?.addEventListener !== 'function' || typeof eventBus.removeEventListener !== 'function') {
-    return undefined;
-  }
-  return eventBus as EventTargetLike;
+  return typeof eventBus?.addEventListener === 'function' && typeof eventBus.removeEventListener === 'function'
+    ? (eventBus as EventTargetLike)
+    : undefined;
 }
 
 function toRecord(value: unknown): Record<string, unknown> | null {

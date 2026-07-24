@@ -14,6 +14,7 @@ import {
   type RunJSSourceResolver,
   type RunJSSourceResolverInput,
   type RunJSSourceResolverResult,
+  stableSerialize,
 } from '@nocobase/client-v2';
 import { extractRunJSSettingsDefaults, normalizeLightExtensionEntrySelection } from '@nocobase/runjs/settings';
 
@@ -60,13 +61,12 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): LightExte
   return {
     sourceMode: 'light-extension',
     invalidateCache(repoId) {
+      invalidateLightExtensionRuntimeCache(api, repoId);
       if (repoId) {
-        invalidateLightExtensionRuntimeCache(api, repoId);
         settingsDescriptorCache.invalidateRepo(repoId);
-        return;
+      } else {
+        settingsDescriptorCache.clear();
       }
-      invalidateLightExtensionRuntimeCache(api);
-      settingsDescriptorCache.clear();
     },
     async resolve(input) {
       const runtime = await resolveLightExtensionRuntimeSource(api, input, runtimeCache);
@@ -273,26 +273,22 @@ export class LightExtensionRuntimeCache {
       return Promise.resolve(cached);
     }
     const existing = this.artifactInFlight.get(response.artifactHash);
-    if (existing) {
-      return existing.then((artifact) => {
+    const request = existing || requestRuntimeArtifact(api, response);
+    if (!existing) {
+      this.artifactInFlight.set(response.artifactHash, request);
+    }
+    return request
+      .then((artifact) => {
         if (canCache()) {
           this.artifacts.set(response.artifactHash, artifact);
         }
         return artifact;
+      })
+      .finally(() => {
+        if (!existing && this.artifactInFlight.get(response.artifactHash) === request) {
+          this.artifactInFlight.delete(response.artifactHash);
+        }
       });
-    }
-    const request = requestRuntimeArtifact(api, response).then((artifact) => {
-      if (canCache()) {
-        this.artifacts.set(response.artifactHash, artifact);
-      }
-      return artifact;
-    });
-    this.artifactInFlight.set(response.artifactHash, request);
-    return request.finally(() => {
-      if (this.artifactInFlight.get(response.artifactHash) === request) {
-        this.artifactInFlight.delete(response.artifactHash);
-      }
-    });
   }
 
   private cacheOrResolveCurrent(
@@ -397,21 +393,6 @@ function getRuntimeBindingKey(
     sourceBinding.kind,
     stableSerialize(settings || {}),
   ]);
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
-      .join(',')}}`;
-  }
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }
 
 function toResolvedRuntime(

@@ -26,12 +26,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@nocobase/client-v2', async () => {
-  const ReactModule = await import('react');
-  return {
-    ApplicationContext: ReactModule.createContext(null),
-  };
-});
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
+  ApplicationContext: (await import('react')).createContext(null),
+}));
 
 describe('SettingsAutoForm', () => {
   it('uses the complete candidate root for object draft visibility without rendering the object title twice', async () => {

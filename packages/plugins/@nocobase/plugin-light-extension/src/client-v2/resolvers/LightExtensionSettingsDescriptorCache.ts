@@ -210,12 +210,11 @@ export class LightExtensionSettingsDescriptorCache {
 const descriptorCaches = new WeakMap<object, LightExtensionSettingsDescriptorCache>();
 
 export function getLightExtensionSettingsDescriptorCache(api: object): LightExtensionSettingsDescriptorCache {
-  const existing = descriptorCaches.get(api);
-  if (existing) {
-    return existing;
+  let cache = descriptorCaches.get(api);
+  if (!cache) {
+    cache = new LightExtensionSettingsDescriptorCache(getLightExtensionCacheGeneration(api));
+    descriptorCaches.set(api, cache);
   }
-  const cache = new LightExtensionSettingsDescriptorCache(getLightExtensionCacheGeneration(api));
-  descriptorCaches.set(api, cache);
   return cache;
 }
 
@@ -226,7 +225,7 @@ export function invalidateLightExtensionSettingsDescriptorCache(api: object, rep
   }
   if (repoId) {
     cache.invalidateRepo(repoId);
-    return;
+  } else {
+    cache.clear();
   }
-  cache.clear();
 }

@@ -9,7 +9,7 @@
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import type { Database, Filter, Model } from '@nocobase/database';
-import { createHash } from 'crypto';
+import { sha256Hex, stableSerialize } from '@nocobase/runjs';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
@@ -531,13 +531,8 @@ function toSelectableEntrySummary(
 }
 
 function getPermissionParams(permission: unknown): Record<string, unknown> | undefined {
-  if (!permission || typeof permission !== 'object' || Array.isArray(permission)) {
-    return undefined;
-  }
-  const params = (permission as { params?: unknown }).params;
-  return params && typeof params === 'object' && !Array.isArray(params)
-    ? (params as Record<string, unknown>)
-    : undefined;
+  const params = isPlainRecord(permission) ? permission.params : undefined;
+  return isPlainRecord(params) ? params : undefined;
 }
 
 function getVisibleRepoLabelFields(params?: Record<string, unknown>): Array<'name' | 'title'> {
@@ -577,22 +572,7 @@ function normalizeCommitId(value: unknown): string | null {
 }
 
 function stableJsonHash(value: unknown): string {
-  return createHash('sha256').update(stableSerialize(value)).digest('hex');
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isPlainRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
+  return sha256Hex(stableSerialize(value));
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
