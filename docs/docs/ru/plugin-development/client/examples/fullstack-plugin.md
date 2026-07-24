@@ -40,7 +40,7 @@ keywords: "интеграция фронтенда и бэкенда,TableBlockM
 Полный исходный код см. в [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Если хотите запустить и посмотреть локально:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 Ниже шаг за шагом построим этот плагин с нуля.
@@ -50,10 +50,16 @@ yarn pm enable @nocobase-example/plugin-custom-table-block-resource
 Выполните в корне репозитория:
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
+
+Затем запустите режим разработки, чтобы изменения кода подхватывались горячей перезагрузкой:
+
+```bash
+nb source dev
+```
 
 ## Шаг 2: определить таблицу данных (сервер)
 
@@ -458,7 +464,7 @@ export default PluginCustomTableBlockResourceClientV2;
 ## Шаг 9: включить плагин
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 После включения:

@@ -12,13 +12,13 @@ Hier sind häufige Stolpersteine bei der Client-Plugin-Entwicklung gesammelt. We
 
 ### Nach dem Erstellen ist das Plugin im Manager nicht sichtbar
 
-Stellen Sie sicher, dass `yarn pm create` ausgeführt wurde und nicht das Verzeichnis manuell erstellt. `yarn pm create` erzeugt nicht nur Dateien, sondern registriert das Plugin auch in der Datenbanktabelle `applicationPlugins`. Falls das Verzeichnis manuell erstellt wurde, können Sie mit `yarn nocobase upgrade` einen erneuten Scan ausführen.
+Stellen Sie sicher, dass `nb scaffold plugin` ausgeführt wurde und nicht das Verzeichnis manuell erstellt. `nb scaffold plugin` erzeugt nicht nur Dateien, sondern registriert das Plugin auch in der Datenbanktabelle `applicationPlugins`. Falls das Verzeichnis manuell erstellt wurde, können Sie mit `nb app upgrade` einen erneuten Scan ausführen.
 
 ### Nach dem Aktivieren des Plugins ändert sich auf der Seite nichts
 
 Prüfen Sie in dieser Reihenfolge:
 
-1. Bestätigen Sie, dass `yarn pm enable <pluginName>` ausgeführt wurde
+1. Bestätigen Sie, dass `nb plugin enable <pluginName>` ausgeführt wurde
 2. Aktualisieren Sie den Browser (manchmal ist ein erzwungenes Aktualisieren nötig: `Ctrl+Shift+R`)
 3. Prüfen Sie die Browser-Konsole auf Fehler
 
@@ -30,7 +30,7 @@ Verschiedene Dateitypen verhalten sich beim Hot-Reload unterschiedlich:
 | --- | --- |
 | tsx/ts unter `src/client-v2/` | Automatischer Hot-Reload, keine Aktion nötig |
 | Übersetzungsdateien unter `src/locale/` | **Anwendung neu starten** |
-| Neu hinzugefügte oder geänderte Collection unter `src/server/collections/` | `yarn nocobase upgrade` ausführen |
+| Neu hinzugefügte oder geänderte Collection unter `src/server/collections/` | `nb app upgrade` ausführen |
 
 Wenn Client-Code geändert wurde, aber kein Hot-Reload erfolgt, versuchen Sie zunächst, den Browser zu aktualisieren.
 
@@ -220,15 +220,15 @@ Prüfen Sie in dieser Reihenfolge:
 
 ## Build- und Deployment-bezogen
 
-### `yarn build --tar` meldet „no paths specified to add to archive"
+### `nb source build --tar` meldet „no paths specified to add to archive"
 
-Beim Ausführen von `yarn build <pluginName> --tar` tritt der Fehler auf:
+Beim Ausführen von `nb source build <pluginName> --tar` tritt der Fehler auf:
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-Während `yarn build <pluginName>` (ohne `--tar`) normal funktioniert.
+Während `nb source build <pluginName>` (ohne `--tar`) normal funktioniert.
 
 Diese Fehler treten in der Regel auf, weil das `.npmignore` des Plugins **Negationssyntax** verwendet (das `!`-Präfix von npm). Beim Packen mit `--tar` liest NocoBase jede Zeile von `.npmignore` und stellt ihr ein `!` voran, um sie in ein `fast-glob`-Ausschlussmuster zu konvertieren. Wenn Ihr `.npmignore` bereits Negationssyntax verwendet, beispielsweise:
 
@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 Dieses Problem entsteht in der Regel dadurch, dass das **Plugin eingebaute Abhängigkeiten von NocoBase in seinem eigenen `node_modules/` mitgepackt hat**. Das Build-System von NocoBase pflegt eine [external-Liste](../../dependency-management) — die darin enthaltenen Pakete (z. B. `react`, `antd`, `axios`, `lodash` usw.) werden vom NocoBase-Host bereitgestellt und sollten nicht ins Plugin gepackt werden. Wenn das Plugin eine private Kopie mitbringt, kann es zur Laufzeit zu Konflikten mit der bereits geladenen Version des Hosts kommen, die zu allerhand seltsamen Fehlern führen.
 
-**Warum es lokal kein Problem gibt:** Bei lokaler Entwicklung liegt das Plugin im Verzeichnis `packages/plugins/` und hat kein privates `node_modules/`; Abhängigkeiten werden auf die im Projekt-Stamm bereits geladenen Versionen aufgelöst, sodass kein Konflikt entsteht.
+**Warum es lokal kein Problem gibt:** Bei lokaler Entwicklung liegt das Plugin im Verzeichnis `plugins/` und hat kein privates `node_modules/`; Abhängigkeiten werden auf die im Projekt-Stamm bereits geladenen Versionen aufgelöst, sodass kein Konflikt entsteht.
 
 **Lösung:** Verschieben Sie alle `dependencies` in der `package.json` des Plugins in `devDependencies` — das Build-System von NocoBase verarbeitet die Abhängigkeiten des Plugins automatisch:
 

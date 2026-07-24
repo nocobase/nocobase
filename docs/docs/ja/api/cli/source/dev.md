@@ -6,7 +6,7 @@ keywords: "nb source dev,NocoBase CLI,開発モード,ホットリロード"
 
 # nb source dev
 
-npm または Git ソースの env で開発モードを起動します。Docker env の場合は [`nb app logs`](../app/logs.md) で実行ログを確認してください。
+npm または Git ソースの env で開発モードを起動します。ソースコードディレクトリ（`<app-path>/source/`）で実行する必要があります。Docker env の場合は [`nb app logs`](../app/logs.md) で実行ログを確認してください。
 
 ## 使い方
 

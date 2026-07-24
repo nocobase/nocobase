@@ -34,20 +34,26 @@ Crearemos tres botones de acción personalizados, uno por escenario:
 Código fuente completo en [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action). Para ejecutarlo en local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-action
+nb plugin enable @nocobase-example/plugin-simple-action
 ```
 
 A continuación se construye el plugin paso a paso desde cero.
 
 ## Paso 1: crear el esqueleto del plugin
 
-Desde la raíz del repositorio:
+Desde la raíz del repositorio o en el directorio `source/`:
 
 ```bash
-yarn pm create @my-project/plugin-simple-action
+nb scaffold plugin @my-project/plugin-simple-action
 ```
 
 Para más detalles, consulte [Crear el primer plugin](../../write-your-first-plugin).
+
+A continuación, inicie el modo de desarrollo para que sus cambios de código se recarguen en caliente:
+
+```bash
+nb source dev
+```
 
 ## Paso 2: crear los modelos de acción
 
@@ -240,7 +246,7 @@ export default PluginSimpleActionClient;
 ## Paso 5: activar el plugin
 
 ```bash
-yarn pm enable @my-project/plugin-simple-action
+nb plugin enable @my-project/plugin-simple-action
 ```
 
 Una vez activado, podrá añadir estos botones desde "Configurar acciones" en el bloque de tabla.

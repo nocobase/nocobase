@@ -29,8 +29,19 @@ Depois que o plugin é habilitado:
 
 Certifique-se de que você já tem:
 
-1. Um ambiente de desenvolvimento NocoBase em execução (a inicialização do NocoBase CLI instala automaticamente as NocoBase Skills)
-2. Um editor com suporte a Agent de IA aberto (por exemplo, Claude Code, Codex, Cursor, etc.)
+1. Um projeto NocoBase criado via `nb init --ui` (recomenda-se a origem Git)
+2. Um editor com suporte a AI Agent aberto (por exemplo, Claude Code, Codex, Cursor, etc.), com o diretório de trabalho definido como o diretório raiz do projeto (`<app-path>`)
+
+O diretório do projeto criado via `nb init` possui a seguinte estrutura:
+
+```bash
+<app-path>/
+├── .nb/                  # Metadados salvos pelo CLI para o env atual
+├── source/               # Código-fonte da aplicação (NocoBase core + plugins integrados)
+├── storage/              # Diretório de dados em tempo de execução
+├── plugins/              # Código-fonte dos seus plugins (nb scaffold plugin gera aqui)
+└── .env                  # Arquivo de variáveis de ambiente da aplicação
+```
 
 :::warning Atenção
 
@@ -41,7 +52,7 @@ Certifique-se de que você já tem:
 
 ## Começando
 
-No diretório raiz do seu projeto NocoBase, envie o seguinte prompt à IA:
+No diretório raiz do seu projeto NocoBase (o `<app-path>` criado via `nb init`), envie o seguinte prompt à IA:
 
 ```
 Ajude-me a usar a skill nocobase-plugin-development para desenvolver um plugin de marca d'água para o NocoBase.
@@ -80,10 +91,16 @@ Após confirmar o plano, a IA começa a escrever o código.
 ### 2. Criar o scaffold do plugin
 
 ```bash
-yarn pm create @my-project/plugin-watermark
+nb scaffold plugin @my-project/plugin-watermark
 ```
 
-A IA gera a estrutura padrão de diretórios do plugin em `packages/plugins/@my-project/plugin-watermark/`.
+A IA gera a estrutura padrão de diretórios do plugin em `plugins/@my-project/plugin-watermark/`.
+
+Depois de criar o scaffold, inicie o modo de desenvolvimento no diretório raiz do projeto (`<app-path>`) para que suas alterações de código sejam recarregadas a quente:
+
+```bash
+nb source dev
+```
 
 ### 3. Escrever o código do servidor
 
@@ -113,7 +130,7 @@ A IA gera automaticamente os pacotes de idiomas em chinês e inglês, sem necess
 ### 6. Habilitar o plugin
 
 ```bash
-yarn pm enable @my-project/plugin-watermark
+nb plugin enable @my-project/plugin-watermark
 ```
 
 Após habilitar, abra uma página do NocoBase e você verá a marca d'água sobreposta ao conteúdo.

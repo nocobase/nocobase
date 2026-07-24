@@ -37,20 +37,26 @@ Tras activar el plugin, en un bloque de tabla localice una columna asociada a un
 Código fuente completo en [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Para ejecutarlo en local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 A continuación se construye el plugin paso a paso.
 
 ## Paso 1: crear el esqueleto del plugin
 
-Desde la raíz del repositorio:
+En la raíz del proyecto o en el directorio `source/` :
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Para más detalles, consulte [Crear el primer plugin](../../write-your-first-plugin).
+
+A continuación, inicie el modo de desarrollo para que sus cambios de código se recarguen en caliente:
+
+```bash
+nb source dev
+```
 
 ## Paso 2: crear el modelo del campo
 
@@ -140,7 +146,7 @@ export default PluginFieldSimpleClient;
 ## Paso 5: activar el plugin
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 Una vez activado, en un bloque de tabla localice una columna de campo de texto de una sola línea, abra el botón de configuración de la columna y, en el desplegable "Componente de campo", podrá cambiar al componente personalizado.

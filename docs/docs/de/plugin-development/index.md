@@ -1,3 +1,9 @@
+---
+title: "Übersicht zur Plugin-Entwicklung"
+description: "NocoBase Mikrokernel-Architektur, Plugin-Lebenszyklus, Verzeichnisstruktur, Plug & Play, Full-Stack-Integration, client/server Quellcode, package.json Metadaten."
+keywords: "Plugin-Entwicklung,NocoBase Plugin,Mikrokernel,Plugin-Lebenszyklus,Full-Stack-Integration,NocoBase Erweiterung"
+---
+
 # Übersicht zur Plugin-Entwicklung
 
 NocoBase setzt auf eine **Mikrokernel-Architektur**. Der Kern ist dabei ausschließlich für die Planung des Plugin-Lebenszyklus, das Abhängigkeitsmanagement und die Kapselung grundlegender Funktionen zuständig. Alle Geschäftsfunktionen werden als Plugins bereitgestellt. Das Verständnis der Organisationsstruktur, des Lebenszyklus und der Verwaltung von Plugins ist daher der erste Schritt, um NocoBase anzupassen.
@@ -14,27 +20,38 @@ Jedes Plugin ist ein eigenständiges npm-Paket und enthält typischerweise die f
 ```bash
 plugin-hello/
 ├─ package.json          # Plugin-Name, Abhängigkeiten und NocoBase Plugin-Metadaten
-├─ client.js             # Frontend-Build-Artefakt für das Laden zur Laufzeit
+├─ client-v2.js          # Frontend-Build-Artefakt für das Laden zur Laufzeit
 ├─ server.js             # Serverseitiges Build-Artefakt für das Laden zur Laufzeit
 ├─ src/
-│  ├─ client/            # Clientseitiger Quellcode, kann Blöcke, Aktionen, Felder usw. registrieren
+│  ├─ client-v2/         # Clientseitiger Quellcode, kann Blöcke, Aktionen, Felder usw. registrieren
 │  └─ server/            # Serverseitiger Quellcode, kann Ressourcen, Ereignisse, Befehle usw. registrieren
 ```
 
+## Voraussetzungen
+
+Bevor Sie mit der Plugin-Entwicklung beginnen, müssen Sie zunächst eine Anwendung über die NocoBase CLI initialisieren. Die CLI unterstützt zwei Quellen: npm und Git:
+
+- **npm-Quelle** (`create-nocobase-app`): Ideal für den schnellen Einstieg, sofort einsatzbereit.
+- **Git-Quelle** (empfohlen): Klonen Sie das NocoBase-Quellcode-Repository. Bei der KI-Entwicklung kann direkt auf den Kernquellcode verwiesen werden, was bessere Ergebnisse liefert.
+
+Weitere Informationen finden Sie unter [Installation per CLI](../nocobase-cli/installation/cli.md) oder [KI-Agent-Integrationsanleitung](../ai/quick-start.mdx).
+
 ## Verzeichnis-Konventionen und Lade-Reihenfolge
 
-NocoBase scannt standardmäßig die folgenden Verzeichnisse, um Plugins zu laden:
+Die über `nb init` erstellte Anwendung hat folgende Verzeichnisstruktur:
 
 ```bash
-my-nocobase-app/
-├── packages/
-│   └── plugins/          # Plugins in Entwicklung (höchste Priorität)
-└── storage/
-    └── plugins/          # Kompilierte Plugins, z. B. hochgeladene oder veröffentlichte Plugins
+<app-path>/
+├── .nb/                  # Von der CLI gespeicherte Metadaten für die aktuelle Umgebung
+├── source/               # Anwendungsquellcode (NocoBase-Projekt)
+├── storage/              # Laufzeitdatenverzeichnis
+│   └── plugins/          # Kompilierte Plugins (hochgeladene oder importierte)
+├── plugins/              # Deine Plugin-Quellcodes (nb scaffold plugin erzeugt sie hier)
+└── .env                  # Umgebungsvariablen der Anwendung
 ```
 
-- `packages/plugins`: Dieses Verzeichnis wird für die lokale Plugin-Entwicklung genutzt und unterstützt Echtzeit-Kompilierung und Debugging.
-- `storage/plugins`: Hier werden kompilierte Plugins gespeichert, wie z. B. kommerzielle Versionen oder Plugins von Drittanbietern.
+- `plugins/`: Dein Plugin-Quellcodeverzeichnis. Über `nb scaffold plugin` erstellte Plugins werden hier abgelegt. `nb` synchronisiert sie automatisch nach `source/packages/plugins/` für den Entwicklungs- und Build-Prozess — du musst das `source/`-Verzeichnis nicht manuell bearbeiten.
+- `storage/plugins/`: Hier werden kompilierte Plugins gespeichert, wie z. B. kommerzielle Versionen oder Plugins von Drittanbietern.
 
 ## Plugin-Lebenszyklus und -Zustände
 
@@ -57,19 +74,13 @@ Ein Plugin durchläuft typischerweise die folgenden Phasen:
 
 ```bash
 # 1. Plugin-Gerüst erstellen
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 
-# 2. Plugin-Paket herunterladen (download oder link)
-yarn pm pull @my-project/plugin-hello
+# 2. Plugin aktivieren (automatische Installation bei erster Aktivierung)
+nb plugin enable @my-project/plugin-hello
 
-# 3. Plugin aktivieren (automatische Installation bei erster Aktivierung)
-yarn pm enable @my-project/plugin-hello
-
-# 4. Plugin deaktivieren
-yarn pm disable @my-project/plugin-hello
-
-# 5. Plugin entfernen
-yarn pm remove @my-project/plugin-hello
+# 3. Plugin deaktivieren
+nb plugin disable @my-project/plugin-hello
 ```
 
 ## Plugin-Verwaltungsoberfläche
@@ -79,3 +90,12 @@ Greifen Sie im Browser auf den Plugin-Manager zu, um Plugins intuitiv anzuzeigen
 **Standard-URL:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
 
 ![Plugin-Manager](https://static-docs.nocobase.com/20251030195350.png)
+
+## Verwandte Links
+
+- [Ihren ersten Plugin entwickeln](./write-your-first-plugin.md) — Ein Block-Plugin von Grund auf erstellen und den Entwicklungs-Workflow kennenlernen
+- [Projektstruktur](./project-structure.md) — Verzeichnis-Konventionen und Plugin-Lade-Reihenfolge des NocoBase-Projekts
+- [Server-Entwicklung Übersicht](./server/index.md) — Gesamtübersicht und Kernkonzepte der serverseitigen Plugin-Entwicklung
+- [Client-Entwicklung Übersicht](./client/index.md) — Gesamtübersicht und Kernkonzepte der clientseitigen Plugin-Entwicklung
+- [Build und Paketierung](./build.md) — Build- und Paketierungsprozess für Plugins
+- [Abhängigkeitsverwaltung](./dependency-management.md) — Deklaration und Verwaltung von Plugin-Abhängigkeiten

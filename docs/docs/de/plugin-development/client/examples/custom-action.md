@@ -34,20 +34,26 @@ Wir erstellen drei benutzerdefinierte Aktionsbuttons, die jeweils einem der drei
 Vollständigen Quellcode siehe [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action). Wenn Sie es lokal ausprobieren möchten:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-action
+nb plugin enable @nocobase-example/plugin-simple-action
 ```
 
 Im Folgenden bauen wir dieses Plugin Schritt für Schritt von Grund auf auf.
 
 ## Schritt 1: Plugin-Gerüst erstellen
 
-Im Stammverzeichnis des Repositories ausführen:
+Im Projektstammverzeichnis oder `source/`-Verzeichnis ausführen:
 
 ```bash
-yarn pm create @my-project/plugin-simple-action
+nb scaffold plugin @my-project/plugin-simple-action
 ```
 
 Detaillierte Erläuterungen siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
+
+Starten Sie anschließend den Entwicklungsmodus, damit Ihre Codeänderungen per Hot-Reload übernommen werden:
+
+```bash
+nb source dev
+```
 
 ## Schritt 2: Aktionsmodelle erstellen
 
@@ -240,7 +246,7 @@ export default PluginSimpleActionClient;
 ## Schritt 5: Plugin aktivieren
 
 ```bash
-yarn pm enable @my-project/plugin-simple-action
+nb plugin enable @my-project/plugin-simple-action
 ```
 
 Nach der Aktivierung können Sie unter „Aktion konfigurieren" eines Tabellenblocks diese benutzerdefinierten Aktionsbuttons hinzufügen.

@@ -37,20 +37,26 @@ Setelah plugin diaktifkan, di Block tabel temukan kolom Field single-line text, 
 Source code lengkap lihat [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Jika Anda ingin langsung menjalankannya secara lokal untuk melihat hasilnya:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 Berikutnya, mari kita bangun plugin ini dari nol, langkah demi langkah.
 
 ## Langkah 1: Membuat Skeleton Plugin
 
-Eksekusi di direktori root repository:
+Eksekusi di direktori root proyek atau direktori `source/`:
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
+
+Selanjutnya jalankan mode pengembangan agar perubahan kode Anda di-hot-reload:
+
+```bash
+nb source dev
+```
 
 ## Langkah 2: Membuat Model Field
 
@@ -140,7 +146,7 @@ export default PluginFieldSimpleClient;
 ## Langkah 5: Mengaktifkan Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 Setelah diaktifkan, di Block tabel temukan kolom Field single-line text, klik tombol konfigurasi kolom, di dropdown menu "Component Field" Anda dapat berpindah ke Component tampilan kustom ini.

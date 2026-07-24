@@ -26,23 +26,24 @@ Thời điểm thực thi Migration chia làm ba loại:
 
 ## Tạo tệp Migration
 
-Tệp Migration được đặt trong `src/server/migrations/*.ts` của thư mục Plugin. NocoBase cung cấp lệnh `create-migration` để nhanh chóng sinh tệp migration.
+Tệp Migration được đặt trong `src/server/migrations/*.ts` của thư mục Plugin. NocoBase CLI cung cấp lệnh `nb scaffold migration` để nhanh chóng sinh tệp migration.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-Tham số tùy chọn
+Tham số
 
 | Tham số | Mô tả |
 |------|------|
-| `--pkg <pkg>` | Chỉ định tên gói Plugin |
-| `--on [on]`  | Chỉ định thời điểm thực thi, có thể chọn `beforeLoad`, `afterSync`, `afterLoad` |
+| `<name>` | Tên migration, bắt buộc |
+| `--pkg <pkg>` | Chỉ định tên gói Plugin, bắt buộc |
+| `--on <timing>` | Chỉ định thời điểm thực thi, có thể chọn `beforeLoad`, `afterSync`, `afterLoad` |
 
 Ví dụ
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 Đường dẫn tệp migration được sinh ra như sau:
@@ -146,10 +147,10 @@ Ngoài các thuộc tính phổ biến đã liệt kê ở trên, Migration còn
 
 ## Kích hoạt Migration
 
-Việc thực thi Migration được kích hoạt bởi lệnh `nocobase upgrade`:
+Việc thực thi Migration được kích hoạt bởi lệnh upgrade:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 Khi nâng cấp, hệ thống sẽ phán đoán thứ tự thực thi dựa trên loại Migration và `appVersion`.
@@ -204,6 +205,6 @@ Dùng Mock Server có thể nhanh chóng mô phỏng tình huống nâng cấp, 
 - [Collections](./collections.md) — Định nghĩa cấu trúc bảng dữ liệu thường cần điều chỉnh trong Migration
 - [Database](./database.md) — API thao tác dữ liệu thông qua `this.db` trong Migration
 - [Plugin](./plugin.md) — Cách tổ chức và tải tệp Migration trong Plugin
-- [Command](./command.md) — Kích hoạt migration thông qua các lệnh `nocobase upgrade` và `create-migration`
+- [Command](./command.md) — Kích hoạt migration thông qua các lệnh `nb app upgrade` và `nb scaffold migration`
 - [Test](./test.md) — Kiểm thử kết quả thực thi Migration bằng Mock Server
 - [Migration API](../../api/server/migration.md) — Tham chiếu API đầy đủ của lớp Migration

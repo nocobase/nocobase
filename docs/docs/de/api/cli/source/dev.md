@@ -6,7 +6,7 @@ keywords: "nb source dev,NocoBase CLI,Entwicklungsmodus,Hot-Reload"
 
 # nb source dev
 
-Startet den Entwicklungsmodus in einer env mit npm- oder Git-Quelle. Für Docker env verwenden Sie bitte [`nb app logs`](../app/logs.md), um die Laufzeitlogs anzusehen.
+Startet den Entwicklungsmodus in einer env mit npm- oder Git-Quelle. Der Befehl muss im Quellcodeverzeichnis (`<app-path>/source/`) ausgeführt werden. Für Docker env verwenden Sie bitte [`nb app logs`](../app/logs.md), um die Laufzeitlogs anzusehen.
 
 ## Verwendung
 

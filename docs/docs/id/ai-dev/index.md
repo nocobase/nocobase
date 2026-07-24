@@ -10,6 +10,23 @@ Pengembangan Plugin AI adalah kemampuan pengembangan Plugin dengan bantuan AI ya
 
 Kemampuan Pengembangan Plugin AI berbasis pada Skill [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development). Jika Anda sudah menginisialisasi melalui NocoBase CLI (`nb init`), Skill ini akan otomatis terinstal.
 
+## Di Mana Menjalankan AI Agent
+
+Pengembangan Plugin AI perlu menjalankan AI Agent di direktori root proyek NocoBase yang dibuat melalui `nb init`. CLI mendukung dua sumber yaitu npm dan Git — **disarankan menggunakan sumber Git**, sehingga AI dapat langsung merujuk source code inti NocoBase dan hasil pengembangan akan lebih baik.
+
+Struktur direktori proyek yang dibuat `nb init` adalah sebagai berikut (yaitu `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # Metadata yang disimpan CLI untuk env saat ini
+├── source/               # Source code aplikasi (inti NocoBase + plugin bawaan)
+├── storage/              # Direktori data runtime
+├── plugins/              # Source code plugin Anda (nb scaffold plugin menghasilkan di sini)
+└── .env                  # File environment variable aplikasi
+```
+
+Saat membuka AI Agent (seperti Claude Code, Codex, Cursor, dll), alihkan direktori kerja ke `<app-path>` untuk mulai mengembangkan Plugin.
+
 ## Mulai Cepat
 
 Jika Anda sudah memasang [NocoBase CLI](../ai/quick-start.md), Anda dapat melewati langkah ini.
@@ -41,11 +58,13 @@ Browser akan secara otomatis membuka halaman konfigurasi visual, memandu Anda un
 
 ## Dari Satu Kalimat ke Plugin Lengkap
 
-Setelah instalasi selesai, Anda dapat langsung menggunakan bahasa natural untuk memberi tahu AI Plugin apa yang ingin Anda kembangkan. Berikut adalah beberapa skenario nyata, rasakan kemampuan pengembangan Plugin AI.
+Setelah instalasi selesai, buka AI Agent dalam direktori root proyek (`<app-path>`), lalu Anda dapat langsung menggunakan bahasa natural untuk memberi tahu AI Plugin apa yang ingin Anda kembangkan. Berikut adalah beberapa skenario nyata, rasakan kemampuan pengembangan Plugin AI.
 
 ### Pengembangan Plugin Watermark dengan Satu Kalimat
 
 Satu prompt, AI dapat membantu Anda menghasilkan Plugin watermark yang lengkap — termasuk logika rendering frontend, deteksi anti-tamper, API penyimpanan setting backend, dan halaman setting Plugin.
+
+Di `<app-path>` kirimkan prompt berikut ke AI:
 
 ```
 Bantu saya menggunakan nocobase-plugin-development skill untuk mengembangkan Plugin watermark NocoBase,
@@ -64,6 +83,8 @@ Selama proses ini Anda hanya perlu mendeskripsikan kebutuhan, membuat keputusan,
 ### Membuat Komponen Field Kustom dengan Satu Kalimat
 
 Ingin membuat Field integer ditampilkan sebagai rating bintang? Beri tahu AI tampilan yang Anda inginkan, ia akan membantu Anda menghasilkan FieldModel kustom, mengganti komponen rendering Field default.
+
+Sama halnya, di `<app-path>` kirimkan prompt berikut ke AI:
 
 ```
 Tolong gunakan nocobase-plugin-development skill untuk membantu saya mengembangkan Plugin NocoBase, namanya @my-scope/plugin-rating,

@@ -20,10 +20,10 @@ O momento de execução das Migrations é dividido em três tipos:
 
 ## Criar Arquivos de Migration
 
-Os arquivos de Migration devem ser colocados no diretório do **plugin**, em `src/server/migrations/*.ts`. O NocoBase oferece o comando `create-migration` para gerar arquivos de migration rapidamente.
+Os arquivos de Migration devem ser colocados no diretório do **plugin**, em `src/server/migrations/*.ts`. O NocoBase oferece o comando `nb scaffold migration` para gerar arquivos de migration rapidamente.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration [options] <name>
 ```
 
 Parâmetros Opcionais
@@ -36,7 +36,7 @@ Parâmetros Opcionais
 Exemplo
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg=@nocobase/plugin-client
 ```
 
 O caminho do arquivo de migration gerado é o seguinte:
@@ -136,10 +136,10 @@ Além das propriedades comuns listadas acima, a Migration também oferece APIs r
 
 ## Acionar Migrations
 
-A execução das Migrations é acionada pelo comando `nocobase upgrade`:
+A execução das Migrations é acionada pelo comando `nb app upgrade`:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 Durante o upgrade, o sistema determinará a ordem de execução com base no tipo de Migration e no `appVersion`.

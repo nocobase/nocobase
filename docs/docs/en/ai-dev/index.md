@@ -10,6 +10,23 @@ AI plugin development is an AI-assisted plugin development capability provided b
 
 The AI plugin development capability is powered by the [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill. If you have already initialized via the NocoBase CLI (`nb init`), this Skill is automatically installed.
 
+## Where to Run AI Agent
+
+AI plugin development requires running your AI Agent in the project root created by `nb init`. The CLI supports both npm and Git sources -- **Git source is recommended**, as it lets AI directly reference the NocoBase core source code for better development results.
+
+The project directory structure created by `nb init` is as follows (referred to as `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # CLI metadata for the current env
+├── source/               # Application source code (NocoBase core + built-in plugins)
+├── storage/              # Runtime data directory
+├── plugins/              # Your plugin source code (nb scaffold plugin generates here)
+└── .env                  # Application environment variables
+```
+
+When opening your AI Agent (such as Claude Code, Codex, Cursor, etc.), set the working directory to `<app-path>` to start developing plugins.
+
 ## Quick Start
 
 If you have already installed the [NocoBase CLI](../ai/quick-start.md), you can skip this step.
@@ -41,11 +58,13 @@ Your browser will automatically open the visual configuration page, guiding you 
 
 ## From One Sentence to a Complete Plugin
 
-After installation, you can directly tell AI in natural language what plugin you want to develop. Here are a few real-world scenarios to give you a feel for the capabilities of AI plugin development.
+After installation, open your AI Agent in the project root (`<app-path>`) and tell it in natural language what plugin you want to develop. Here are a few real-world scenarios to give you a feel for the capabilities of AI plugin development.
 
 ### Build a Watermark Plugin with One Sentence
 
 With a single prompt, AI can help you generate a complete watermark plugin -- including frontend rendering logic, tamper detection, backend settings storage API, and a plugin settings page.
+
+In `<app-path>`, send the following prompt to AI:
 
 ```
 Help me use nocobase-plugin-development skill to develop a NocoBase watermark plugin.
@@ -64,6 +83,8 @@ Throughout the process, you only need to describe your requirements and make dec
 ### Build a Custom Field Component with One Sentence
 
 Want to display an integer field as star ratings? Tell AI the display effect you want, and it will generate a custom FieldModel to replace the default field rendering component.
+
+Also in `<app-path>`, send the following prompt to AI:
 
 ```
 Help me use nocobase-plugin-development skill to develop a NocoBase plugin called @my-scope/plugin-rating.

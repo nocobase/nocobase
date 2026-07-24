@@ -40,20 +40,26 @@ keywords: "フロントエンド・バックエンド連携,TableBlockModel,defi
 完全なソースコードは [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource) を参照してください。ローカルで動作確認したい場合：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 以下、ゼロからこのプラグインを構築していきます。
 
 ## ステップ1：プラグインスケルトンの作成
 
-リポジトリのルートで実行します：
+プロジェクトルートまたは `source/` ディレクトリで実行します：
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
+
+続いて開発モードを起動すると、コードを変更するたびにホットリロードされます：
+
+```bash
+nb source dev
+```
 
 ## ステップ2：データテーブルの定義（サーバーサイド）
 
@@ -459,7 +465,7 @@ export default PluginCustomTableBlockResourceClientV2;
 ## ステップ9：プラグインの有効化
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 有効化後：

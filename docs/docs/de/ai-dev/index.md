@@ -10,6 +10,23 @@ Das KI-Entwicklungs-Plugin ist eine von NocoBase bereitgestellte Funktion zur KI
 
 Die Funktionalität des KI-Entwicklungs-Plugins basiert auf dem [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill. Wenn Sie die Initialisierung bereits über die NocoBase CLI (`nb init`) durchgeführt haben, wird dieses Skill automatisch installiert.
 
+## Wo den KI-Agenten ausführen
+
+Die KI-gestützte Plugin-Entwicklung erfordert, dass der KI-Agent im Stammverzeichnis eines über `nb init` erstellten NocoBase-Projekts ausgeführt wird. Die CLI unterstützt npm- und Git-Quellen — **die Git-Quelle wird empfohlen**, da die KI damit direkt auf den NocoBase-Kernquellcode verweisen kann und bessere Ergebnisse erzielt.
+
+Die über `nb init` erstellte Projektverzeichnisstruktur sieht wie folgt aus (`<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # Von der CLI gespeicherte Metadaten für die aktuelle Umgebung
+├── source/               # Anwendungsquellcode-Projekt (NocoBase-Kern + integrierte Plugins)
+├── storage/              # Laufzeitdatenverzeichnis
+├── plugins/              # Deine Plugin-Quellcodes (nb scaffold plugin erzeugt sie hier)
+└── .env                  # Umgebungsvariablen der Anwendung
+```
+
+Öffnen Sie den KI-Agenten (z. B. Claude Code, Codex, Cursor usw.) und wechseln Sie das Arbeitsverzeichnis zu `<app-path>`, um mit der Plugin-Entwicklung zu beginnen.
+
 ## Schnellstart
 
 Wenn Sie die [NocoBase CLI](../ai/quick-start.md) bereits installiert haben, können Sie diesen Schritt überspringen.
@@ -41,11 +58,13 @@ Der Browser öffnet automatisch eine grafische Konfigurationsseite, die Sie durc
 
 ## Von einem Satz zum vollständigen Plugin
 
-Nach der Installation können Sie der KI direkt in natürlicher Sprache mitteilen, welches Plugin Sie entwickeln möchten. Im Folgenden finden Sie einige reale Szenarien, anhand derer Sie die Möglichkeiten der KI-Entwicklung erleben können.
+Nach der Installation öffnen Sie den KI-Agenten im Projektstammverzeichnis (`<app-path>`) und können der KI direkt in natürlicher Sprache mitteilen, welches Plugin Sie entwickeln möchten. Im Folgenden finden Sie einige reale Szenarien, anhand derer Sie die Möglichkeiten der KI-Entwicklung erleben können.
 
 ### Watermark-Plugin mit einem Satz entwickeln
 
 Mit einer einzigen Eingabeaufforderung kann die KI ein vollständiges Watermark-Plugin für Sie generieren – einschließlich Frontend-Rendering-Logik, Manipulationsschutz, Backend-API für Einstellungsspeicherung und Plugin-Einstellungsseite.
+
+Senden Sie die folgende Eingabeaufforderung im Verzeichnis `<app-path>` an die KI:
 
 ```
 Hilf mir mit dem nocobase-plugin-development Skill, ein NocoBase-Watermark-Plugin zu entwickeln.
@@ -64,6 +83,8 @@ Während des gesamten Prozesses müssen Sie nur Anforderungen beschreiben und En
 ### Eine benutzerdefinierte Feldkomponente mit einem Satz erstellen
 
 Möchten Sie ein Integer-Feld als Sterne-Bewertung anzeigen lassen? Beschreiben Sie der KI den gewünschten Anzeigeeffekt, und sie generiert ein benutzerdefiniertes FieldModel, das die Standard-Renderkomponente des Felds ersetzt.
+
+Senden Sie ebenfalls im Verzeichnis `<app-path>` die folgende Eingabeaufforderung an die KI:
 
 ```
 Bitte hilf mir mit dem nocobase-plugin-development Skill, ein NocoBase-Plugin namens @my-scope/plugin-rating zu entwickeln.

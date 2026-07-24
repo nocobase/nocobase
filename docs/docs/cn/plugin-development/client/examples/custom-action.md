@@ -34,20 +34,26 @@ keywords: "自定义操作,ActionModel,ActionSceneEnum,操作按钮,NocoBase"
 完整源码见 [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action)。如果你想直接在本地跑起来看效果：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-action
+nb plugin enable @nocobase-example/plugin-simple-action
 ```
 
 下面从零开始，一步步搭建这个插件。
 
 ## 第一步：创建插件骨架
 
-在仓库根目录执行：
+在项目根目录或 `source/` 目录下执行：
 
 ```bash
-yarn pm create @my-project/plugin-simple-action
+nb scaffold plugin @my-project/plugin-simple-action
 ```
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
+
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
 
 ## 第二步：创建操作模型
 
@@ -240,7 +246,7 @@ export default PluginSimpleActionClient;
 ## 第五步：启用插件
 
 ```bash
-yarn pm enable @my-project/plugin-simple-action
+nb plugin enable @my-project/plugin-simple-action
 ```
 
 启用后，在表格区块的「配置操作」中就能添加这些自定义操作按钮了。

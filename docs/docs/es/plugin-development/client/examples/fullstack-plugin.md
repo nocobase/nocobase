@@ -40,20 +40,26 @@ Vamos a crear un plugin de "tareas pendientes" con las siguientes capacidades:
 Código fuente completo en [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Para ejecutarlo en local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 A continuación se construye el plugin paso a paso.
 
 ## Paso 1: crear el esqueleto del plugin
 
-Desde la raíz del repositorio:
+En la raíz del proyecto o en el directorio `source/` :
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Para más detalles, consulte [Crear el primer plugin](../../write-your-first-plugin).
+
+A continuación, inicie el modo de desarrollo para que sus cambios de código se recarguen en caliente:
+
+```bash
+nb source dev
+```
 
 ## Paso 2: definir la tabla (servidor)
 
@@ -458,7 +464,7 @@ Puntos clave:
 ## Paso 9: activar el plugin
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 Una vez activado:

@@ -38,13 +38,14 @@ async function getProjectVersion() {
 
 class PluginGenerator extends Generator {
   constructor(options) {
-    const { log, context = {}, cwd, baseDir, ...opts } = options;
+    const { log, context = {}, cwd, baseDir, targetRoot, ...opts } = options;
     super({
       ...opts,
       baseDir: baseDir || cwd || process.cwd(),
     });
     this.context = context;
     this.log = log || console.log;
+    this.targetRoot = targetRoot;
   }
 
   async getContext() {
@@ -62,7 +63,7 @@ class PluginGenerator extends Generator {
 
   async writing() {
     const { name } = this.context;
-    const target = resolve(process.cwd(), 'packages/plugins/', name);
+    const target = this.targetRoot ? resolve(this.targetRoot, name) : resolve(process.cwd(), 'packages/plugins/', name);
     if (existsSync(target)) {
       this.log(chalk.red(`[${name}] plugin already exists.`));
       return;
@@ -76,6 +77,10 @@ class PluginGenerator extends Generator {
     this.log('');
     genTsConfigPaths();
     execa.sync('yarn', ['postinstall'], { shell: true, stdio: 'inherit' });
+    if (this.targetRoot) {
+      this.log(`The plugin folder is in ${chalk.green(target)}`);
+      return;
+    }
     this.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
   }
 }

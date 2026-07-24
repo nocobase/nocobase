@@ -6,7 +6,7 @@ keywords: "nb source,NocoBase CLI,Source code,download,dev,build,test"
 
 # nb source
 
-Quản lý dự án source code NocoBase cục bộ. Env npm/Git dùng thư mục source cục bộ; còn env Docker thường chỉ cần dùng [`nb app`](../app/index.md) để quản lý runtime.
+Quản lý dự án source code NocoBase cục bộ. Các lệnh `nb source` cần được thực thi trong thư mục source (`<app-path>/source/`). Env npm/Git dùng thư mục source cục bộ; còn env Docker thường chỉ cần dùng [`nb app`](../app/index.md) để quản lý runtime.
 
 ## Cách dùng
 

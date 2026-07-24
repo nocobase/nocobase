@@ -1093,7 +1093,7 @@ export default class SourceDownload extends Command {
       this.log(`Building app in ${projectRoot}`);
       await this.config.runCommand('source:build', [
         ...this.buildCommandArgv(projectRoot, flags),
-        ...(this.isVerbose() ? ['--verbose'] : []),
+        ...(this.isVerbose() ? ['--verbose'] : ['--no-verbose']),
       ]);
     }
     this.log(`${flags.replace ? 'NocoBase source' : 'NocoBase app'} is ready at ${projectRoot}`);
@@ -1136,7 +1136,7 @@ export default class SourceDownload extends Command {
       this.log(`Building app in ${projectRoot}`);
       await this.config.runCommand('source:build', [
         ...this.buildCommandArgv(projectRoot, flags),
-        ...(this.isVerbose() ? ['--verbose'] : []),
+        ...(this.isVerbose() ? ['--verbose'] : ['--no-verbose']),
       ]);
     }
     this.log(`${flags.replace ? 'NocoBase source' : 'NocoBase app'} is ready at ${projectRoot}`);

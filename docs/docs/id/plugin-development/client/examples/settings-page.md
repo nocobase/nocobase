@@ -37,20 +37,26 @@ Yang akan kita buat adalah halaman pengaturan "External Service Configuration":
 Source code lengkap lihat [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page). Jika Anda ingin langsung menjalankannya secara lokal untuk melihat hasilnya:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-settings-page
+nb plugin enable @nocobase-example/plugin-settings-page
 ```
 
 Berikutnya, mari kita bangun plugin ini dari nol, langkah demi langkah.
 
 ## Langkah 1: Membuat Skeleton Plugin
 
-Eksekusi di direktori root repository:
+Eksekusi di direktori root proyek atau direktori `source/`:
 
 ```bash
-yarn pm create @my-project/plugin-settings-page
+nb scaffold plugin @my-project/plugin-settings-page
 ```
 
-Ini akan menghasilkan struktur file dasar di `packages/plugins/@my-project/plugin-settings-page`, termasuk direktori `src/client-v2/`, `src/server/`, `src/locale/`, dll. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
+Ini akan menghasilkan struktur file dasar di `plugins/@my-project/plugin-settings-page`, termasuk direktori `src/client-v2/`, `src/server/`, `src/locale/`, dll. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
+
+Selanjutnya jalankan mode pengembangan agar perubahan kode Anda di-hot-reload:
+
+```bash
+nb source dev
+```
 
 ## Langkah 2: Mendaftarkan Halaman Pengaturan
 
@@ -370,7 +376,7 @@ Halaman ini sangat sederhana — menggunakan `Descriptions` dari Antd untuk mena
 ## Langkah 7: Mengaktifkan Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-settings-page
+nb plugin enable @my-project/plugin-settings-page
 ```
 
 Setelah diaktifkan refresh halaman, di menu "Konfigurasi Plugin" Anda akan melihat entry "External Service Configuration".

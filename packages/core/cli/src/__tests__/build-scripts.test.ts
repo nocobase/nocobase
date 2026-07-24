@@ -49,3 +49,28 @@ test('build script copies locale JSON files into dist/locale', async () => {
     expect(distContent).toBe(sourceContent);
   }
 });
+
+test('build script copies scaffold templates into dist/scaffolds', async () => {
+  const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const buildScript = path.join(packageRoot, 'scripts', 'build.mjs');
+  const sourceTemplatePath = path.join(packageRoot, 'src', 'scaffolds', 'plugin', 'templates', 'package.json.tpl');
+  const distTemplatePath = path.join(packageRoot, 'dist', 'scaffolds', 'plugin', 'templates', 'package.json.tpl');
+
+  const build = spawnSync(process.execPath, [buildScript], {
+    cwd: packageRoot,
+    stdio: 'pipe',
+    encoding: 'utf8',
+  });
+
+  expect(
+    build.status,
+    build.stderr || build.stdout || 'expected build script to exit successfully',
+  ).toBe(0);
+
+  const [sourceContent, distContent] = await Promise.all([
+    fsp.readFile(sourceTemplatePath, 'utf8'),
+    fsp.readFile(distTemplatePath, 'utf8'),
+  ]);
+
+  expect(distContent).toBe(sourceContent);
+});

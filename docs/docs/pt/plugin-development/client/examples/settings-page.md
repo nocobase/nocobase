@@ -37,20 +37,26 @@ Vamos criar uma página de configurações "Configurações do serviço externo"
 O código-fonte completo está em [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page). Se quiser executar localmente para ver o resultado:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-settings-page
+nb plugin enable @nocobase-example/plugin-settings-page
 ```
 
 A seguir, montamos esse plugin do zero, passo a passo.
 
 ## Passo 1: criar o esqueleto do plugin
 
-Na raiz do repositório, execute:
+No diretório raiz do projeto ou no diretório `source/`, execute:
 
 ```bash
-yarn pm create @my-project/plugin-settings-page
+nb scaffold plugin @my-project/plugin-settings-page
 ```
 
-Isso gera a estrutura básica de arquivos em `packages/plugins/@my-project/plugin-settings-page`, incluindo os diretórios `src/client-v2/`, `src/server/`, `src/locale/` etc. Para mais detalhes, veja [Escreva seu primeiro plugin](../../write-your-first-plugin).
+Isso gera a estrutura básica de arquivos em `plugins/@my-project/plugin-settings-page`, incluindo os diretórios `src/client-v2/`, `src/server/`, `src/locale/` etc. Para mais detalhes, veja [Escreva seu primeiro plugin](../../write-your-first-plugin).
+
+Em seguida, inicie o modo de desenvolvimento para que suas alterações de código sejam recarregadas a quente:
+
+```bash
+nb source dev
+```
 
 ## Passo 2: registrar a página de configurações
 
@@ -370,7 +376,7 @@ Esta página é simples — usa `Descriptions` do Antd para mostrar informaçõe
 ## Passo 7: ativar o plugin
 
 ```bash
-yarn pm enable @my-project/plugin-settings-page
+nb plugin enable @my-project/plugin-settings-page
 ```
 
 Após ativar, atualize a página, e no menu "Configurações do plugin" aparecerá a entrada "Configurações do serviço externo".

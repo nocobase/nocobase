@@ -6,7 +6,7 @@ keywords: "nb source dev,NocoBase CLI,开发模式,热更新"
 
 # nb source dev
 
-在 npm 或 Git 来源的 env 中启动开发模式。Docker env 请使用 [`nb app logs`](../app/logs.md) 查看运行日志。
+在 npm 或 Git 来源的 env 中启动开发模式。需要在源码目录（`<app-path>/source/`）下执行。Docker env 请使用 [`nb app logs`](../app/logs.md) 查看运行日志。
 
 ## 用法
 

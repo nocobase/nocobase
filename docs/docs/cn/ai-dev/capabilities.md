@@ -28,7 +28,20 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 - **明确告诉 AI 要创建或改造一个 NocoBase 插件，并提供插件名**——比如「请你用 nocobase-plugin-development skill 帮我开发一个 NocoBase 插件，名叫 @my-scope/plugin-rating」。不提供插件名的话，AI 可能不知道往哪里生成代码。
 - **提示词里明确指定使用 nocobase-plugin-development skill**——比如「请你用 nocobase-plugin-development skill 帮我开发一个 NocoBase 插件……」。这样 AI Agent 能直接读取 Skills 的能力，避免进入 plan 模式而忽略 Skills。
-- **在 NocoBase 源码仓库的根目录下运行 AI Agent**——这样 AI 能自动找到项目结构、依赖和已有插件。如果你不在源码根目录，需要额外告诉 AI Agent 源码仓库的路径。
+- **在 `nb init` 创建的项目根目录下运行 AI Agent**——推荐使用 Git 来源创建项目，这样 AI 能直接参考 NocoBase 核心源码，开发效果更好。如果你不在项目根目录，需要额外告诉 AI Agent 项目的路径。
+
+`nb init` 创建的项目目录结构如下（即 `<app-path>`）：
+
+```bash
+<app-path>/
+├── .nb/                  # CLI 为当前 env 保存的元数据
+├── source/               # 应用源码工程（NocoBase 核心 + 内置插件）
+├── storage/              # 运行时数据目录
+├── plugins/              # 你的插件源码（nb scaffold plugin 生成在这里）
+└── .env                  # 应用环境变量文件
+```
+
+下面所有提示词示例都假设你在 `<app-path>` 下打开 AI Agent 执行。
 
 ## 快速索引
 
@@ -49,16 +62,16 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 AI 可以根据你的需求描述，生成一个完整的 NocoBase 插件目录结构——包括前后端入口文件、类型定义和基础配置。
 
-提示词示例：
+在项目根目录（`<app-path>`）下打开 AI Agent，发送提示词：
 
 ```
 帮我创建一个 NocoBase 插件，插件名叫 @my-scope/plugin-todo
 ```
 
-AI 会执行 `yarn pm create @my-scope/plugin-todo` 并生成标准目录：
+AI 会执行 `nb scaffold plugin @my-scope/plugin-todo` 并生成标准目录：
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts

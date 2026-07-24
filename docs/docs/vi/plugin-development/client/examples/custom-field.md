@@ -37,20 +37,26 @@ Sau khi bật plugin, tìm một cột field single-line text trong block table,
 Toàn bộ source code xem tại [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Nếu bạn muốn chạy thử trực tiếp ở local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 Sau đây ta sẽ xây dựng plugin này từ đầu, từng bước một.
 
 ## Bước 1: Tạo khung plugin
 
-Tại thư mục gốc của repo, chạy:
+Tại thư mục gốc của project hoặc thư mục `source/`, chạy:
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
+
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
 
 ## Bước 2: Tạo Field Model
 
@@ -140,7 +146,7 @@ export default PluginFieldSimpleClient;
 ## Bước 5: Bật plugin
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 Sau khi bật, tìm một cột field single-line text trong block table, click vào nút cấu hình của cột, trong dropdown "Field component" bạn có thể chuyển sang component hiển thị tùy chỉnh này.

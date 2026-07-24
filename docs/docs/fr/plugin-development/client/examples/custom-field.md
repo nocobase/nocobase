@@ -37,20 +37,26 @@ Une fois le plugin activé, dans un bloc tableau, trouvez la colonne d'un champ 
 Code source complet : [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Pour le faire tourner directement en local :
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 Construisons ce plugin pas à pas, à partir de zéro.
 
 ## Étape 1 : créer le squelette du plugin
 
-À la racine du dépôt :
+À la racine du projet ou dans le répertoire `source/` :
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Voir [Écrire votre premier plugin](../../write-your-first-plugin) pour les détails.
+
+Lancez ensuite le mode développement pour que vos modifications de code soient rechargées à chaud :
+
+```bash
+nb source dev
+```
 
 ## Étape 2 : créer le modèle de champ
 
@@ -140,7 +146,7 @@ export default PluginFieldSimpleClient;
 ## Étape 5 : activer le plugin
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 Une fois activé, dans un bloc tableau, trouvez la colonne d'un champ texte sur une ligne, cliquez sur le bouton de configuration de la colonne et, dans le menu déroulant « Composant de champ », vous pourrez basculer vers ce composant d'affichage personnalisé.

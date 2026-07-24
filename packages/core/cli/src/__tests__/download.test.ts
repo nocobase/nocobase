@@ -228,7 +228,9 @@ test('downloadFromGit maps alpha to develop and builds with --no-dts by default'
       },
     ],
   ]);
-  expect(runCommand.mock.calls).toEqual([['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']]]);
+  expect(runCommand.mock.calls).toEqual([
+    ['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts', '--no-verbose']],
+  ]);
 });
 
 test('downloadFromGit runs hook before dependency install', async () => {
