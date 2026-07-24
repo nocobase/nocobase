@@ -90,4 +90,28 @@ describe('client-v2 chatbox utils', () => {
     ]);
     expect(getContent).toHaveBeenCalledTimes(2);
   });
+
+  it('clears a persisted frontend tool catalog when the current provider returns no tools', async () => {
+    const app = {
+      pm: {
+        get: () => ({
+          aiManager: {
+            getWorkContext: () => ({ getFrontendTools: async () => [] }),
+          },
+        }),
+      },
+    };
+    const staleTool = {
+      id: 'workspace-1:workspaceDescribe',
+      blockUid: 'workspace-1',
+      name: 'workspaceDescribe',
+      description: 'Stale workspace tool',
+      permission: 'ALLOW' as const,
+      inputSchema: { type: 'object', properties: {} },
+    };
+
+    await expect(
+      parseWorkContext(app, [{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [staleTool] }]),
+    ).resolves.toEqual([{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [] }]);
+  });
 });

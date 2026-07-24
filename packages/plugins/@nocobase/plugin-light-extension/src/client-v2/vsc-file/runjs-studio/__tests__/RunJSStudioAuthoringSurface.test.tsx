@@ -41,6 +41,7 @@ const mocks = vi.hoisted(() => {
     diagnoseRunJS: vi.fn(),
     request: vi.fn(),
     state,
+    t: (key: string) => key,
   };
 });
 
@@ -97,7 +98,7 @@ vi.mock('@nocobase/client-v2', () => ({
 }));
 
 vi.mock('../../locale', () => ({
-  useT: () => (key: string) => key,
+  useT: () => mocks.t,
 }));
 
 const locator = {
@@ -406,6 +407,52 @@ describe('RunJS Studio authoring surface', () => {
       'src/client/index.tsx',
     ]);
     expect(saveRequest?.data?.files?.some((file) => file.path === 'types/generated-context.d.ts')).toBe(false);
+  });
+
+  it('keeps the hidden RunJS manifest unreadable and immutable through the authoring surface', async () => {
+    mocks.request.mockImplementationOnce(({ url }: { url: string }) => {
+      if (url !== 'runJSSources:open') {
+        throw new Error(`Unexpected request: ${url}`);
+      }
+      return Promise.resolve({
+        data: {
+          data: {
+            ...openResult,
+            files: [
+              ...openResult.files,
+              {
+                path: '.nocobase/runjs-source.json',
+                content: '{"entry":"src/client/index.tsx"}\n',
+                language: 'json',
+                mode: '100644',
+              },
+            ],
+          },
+        },
+      });
+    });
+    renderEditor();
+    const surface = await getRegisteredSurface();
+    const snapshot = await surface.getSnapshot();
+
+    expect(snapshot.files.map((file) => file.path)).not.toContain('.nocobase/runjs-source.json');
+    await expect(surface.read(['.nocobase/runjs-source.json'])).resolves.toEqual([]);
+    await expect(
+      surface.prepareChanges({
+        baseSnapshotId: snapshot.snapshotId,
+        changes: [
+          {
+            type: 'update',
+            path: '.nocobase/runjs-source.json',
+            baseHash: 'unavailable-to-ai',
+            content: '{"entry":"src/client/other.tsx"}\n',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({
+      code: 'PATH_ACCESS_DENIED',
+      details: { reason: 'RunJS internal manifest cannot be changed' },
+    });
   });
 
   it('validates the complete unsaved workspace without invoking preview execution', async () => {

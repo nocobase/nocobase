@@ -175,9 +175,7 @@ export const parseWorkContext = async (app: WorkContextApplication, workContext:
     }
     if (contextOptions?.getFrontendTools) {
       const frontendTools = await contextOptions.getFrontendTools(app, context);
-      if (frontendTools.length) {
-        parsedContext.frontendTools = frontendTools;
-      }
+      parsedContext.frontendTools = frontendTools;
     }
     parsed.push(parsedContext);
   }

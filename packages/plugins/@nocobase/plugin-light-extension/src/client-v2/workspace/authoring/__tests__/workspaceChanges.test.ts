@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { CodeAuthoringChange, CodeAuthoringDiagnostic, CodeAuthoringSnapshot } from '@nocobase/client-v2';
+import type {
+  CodeAuthoringChange,
+  CodeAuthoringDiagnostic,
+  CodeAuthoringSnapshot,
+  CodeAuthoringSurface,
+} from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createWorkspaceAuthoringSurface } from '../createWorkspaceAuthoringSurface';
@@ -19,6 +24,7 @@ function createHarness(
     sourceFiles?: WorkspaceAuthoringFile[];
     virtualFiles?: WorkspaceAuthoringFile[];
     now?: () => number;
+    maxPlans?: number;
   } = {},
 ) {
   let sourceFiles = overrides.sourceFiles || [
@@ -72,6 +78,7 @@ function createHarness(
     validateDraft: () => diagnostics,
     reveal: vi.fn(),
     now: overrides.now,
+    maxPlans: overrides.maxPlans,
     planTtlMs: 100,
     supportedLanguages: ['typescript', 'javascript', 'json'],
   });
@@ -155,6 +162,149 @@ describe('workspace authoring changes', () => {
     await expectAuthoringError(harness.surface.applyPreparedChanges(plan.planId), 'STALE_SNAPSHOT');
     expect(harness.commitSourceFiles).not.toHaveBeenCalled();
     expect(harness.getSourceFiles()[0].content).toBe('manual edit\n');
+  });
+
+  it('serializes plan commits and never overwrites edits made while post-commit diagnostics are pending', async () => {
+    let sourceFiles: WorkspaceAuthoringFile[] = [
+      { path: 'src/index.ts', content: 'export const value = 1;\n', language: 'typescript' },
+    ];
+    let resolveCommit: (() => void) | undefined;
+    let resolveDiagnostics: ((diagnostics: CodeAuthoringDiagnostic[]) => void) | undefined;
+    let diagnosticsStarted = false;
+    const diagnosticsPromise = new Promise<CodeAuthoringDiagnostic[]>((resolve) => {
+      resolveDiagnostics = resolve;
+    });
+    const commitSourceFiles = vi.fn(
+      (nextFiles: WorkspaceAuthoringFile[]) =>
+        new Promise<void>((resolve) => {
+          resolveCommit = () => {
+            sourceFiles = nextFiles;
+            resolve();
+          };
+        }),
+    );
+    const surface = createWorkspaceAuthoringSurface({
+      id: 'workspace:serialized-apply',
+      kind: 'runjs-workspace',
+      title: 'Serialized workspace',
+      scope: { type: 'entry', id: 'entry-1' },
+      getSourceFiles: () => sourceFiles,
+      getVirtualFiles: () => [],
+      commitSourceFiles,
+      getActivePath: () => 'src/index.ts',
+      getPathAccess: () => ({ canCreate: true, canUpdate: true, canPatch: true, canDelete: true }),
+      canReadForAI: () => true,
+      getDiagnostics: () => (diagnosticsStarted ? diagnosticsPromise : []),
+      sanitizeDiagnostic: (diagnostic) => diagnostic,
+      validateDraft: () => [],
+      reveal: vi.fn(),
+    });
+    const snapshot = await surface.getSnapshot();
+    const file = getSnapshotFile(snapshot, 'src/index.ts');
+    const firstPlan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [{ type: 'update', path: file.path, baseHash: file.hash, content: 'export const value = 2;\n' }],
+    });
+    const secondPlan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [{ type: 'update', path: file.path, baseHash: file.hash, content: 'export const value = 3;\n' }],
+    });
+
+    const firstApply = surface.applyPreparedChanges(firstPlan.planId);
+    await vi.waitFor(() => expect(commitSourceFiles).toHaveBeenCalledTimes(1));
+    await expectAuthoringError(surface.applyPreparedChanges(secondPlan.planId), 'PLAN_APPLYING');
+
+    diagnosticsStarted = true;
+    resolveCommit?.();
+    await vi.waitFor(() => expect(sourceFiles[0].content).toBe('export const value = 2;\n'));
+    sourceFiles[0].content = 'manual edit after commit\n';
+    resolveDiagnostics?.([]);
+    await expect(firstApply).resolves.toMatchObject({ saved: false });
+    expect(sourceFiles[0].content).toBe('manual edit after commit\n');
+
+    await expectAuthoringError(surface.applyPreparedChanges(firstPlan.planId), 'PLAN_CONSUMED');
+    await expectAuthoringError(surface.applyPreparedChanges(secondPlan.planId), 'STALE_SNAPSHOT');
+  });
+
+  it('keeps a committed plan consumed when post-commit diagnostic projection fails', async () => {
+    let sourceFiles: WorkspaceAuthoringFile[] = [
+      { path: 'src/index.ts', content: 'export const value = 1;\n', language: 'typescript' },
+    ];
+    let failDiagnostics = false;
+    const surface = createWorkspaceAuthoringSurface({
+      id: 'workspace:diagnostic-fallback',
+      kind: 'runjs-workspace',
+      title: 'Diagnostic fallback workspace',
+      scope: { type: 'entry', id: 'entry-1' },
+      getSourceFiles: () => sourceFiles,
+      getVirtualFiles: () => [],
+      commitSourceFiles: (nextFiles) => {
+        sourceFiles = nextFiles;
+        failDiagnostics = true;
+      },
+      getActivePath: () => 'src/index.ts',
+      getPathAccess: () => ({ canCreate: true, canUpdate: true, canPatch: true, canDelete: true }),
+      canReadForAI: () => true,
+      getDiagnostics: () => {
+        if (failDiagnostics) {
+          throw new Error('diagnostics unavailable');
+        }
+        return [];
+      },
+      sanitizeDiagnostic: (diagnostic) => diagnostic,
+      validateDraft: () => [],
+      reveal: vi.fn(),
+    });
+    const snapshot = await surface.getSnapshot();
+    const file = getSnapshotFile(snapshot, 'src/index.ts');
+    const plan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [{ type: 'update', path: file.path, baseHash: file.hash, content: 'export const value = 2;\n' }],
+    });
+
+    await expect(surface.applyPreparedChanges(plan.planId)).resolves.toMatchObject({
+      snapshot: { diagnostics: [] },
+      saved: false,
+    });
+    expect(sourceFiles[0].content).toBe('export const value = 2;\n');
+    await expectAuthoringError(surface.applyPreparedChanges(plan.planId), 'PLAN_CONSUMED');
+  });
+
+  it('returns committed apply success when the surface is disposed immediately after commit', async () => {
+    let sourceFiles: WorkspaceAuthoringFile[] = [
+      { path: 'src/index.ts', content: 'export const value = 1;\n', language: 'typescript' },
+    ];
+    const surface: CodeAuthoringSurface = createWorkspaceAuthoringSurface({
+      id: 'workspace:dispose-after-commit',
+      kind: 'runjs-workspace',
+      title: 'Dispose after commit workspace',
+      scope: { type: 'entry', id: 'entry-1' },
+      getSourceFiles: () => sourceFiles,
+      getVirtualFiles: () => [],
+      commitSourceFiles: (nextFiles) => {
+        sourceFiles = nextFiles;
+        surface.dispose?.();
+      },
+      getActivePath: () => 'src/index.ts',
+      getPathAccess: () => ({ canCreate: true, canUpdate: true, canPatch: true, canDelete: true }),
+      canReadForAI: () => true,
+      getDiagnostics: () => [],
+      sanitizeDiagnostic: (diagnostic) => diagnostic,
+      validateDraft: () => [],
+      reveal: vi.fn(),
+    });
+    const snapshot = await surface.getSnapshot();
+    const file = getSnapshotFile(snapshot, 'src/index.ts');
+    const plan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [{ type: 'update', path: file.path, baseHash: file.hash, content: 'export const value = 2;\n' }],
+    });
+
+    await expect(surface.applyPreparedChanges(plan.planId)).resolves.toMatchObject({
+      changedPaths: ['src/index.ts'],
+      saved: false,
+    });
+    expect(sourceFiles[0].content).toBe('export const value = 2;\n');
   });
 
   it.each([
@@ -244,6 +394,25 @@ describe('workspace authoring changes', () => {
     harness.surface.dispose?.();
     await expectAuthoringError(harness.surface.applyPreparedChanges(plan.planId), 'SURFACE_DISPOSED');
     expect(harness.commitSourceFiles).not.toHaveBeenCalled();
+  });
+
+  it('evicts the oldest prepared plan when the per-surface capacity is reached', async () => {
+    const harness = createHarness({ maxPlans: 2 });
+    const snapshot = await harness.surface.getSnapshot();
+    const index = getSnapshotFile(snapshot, 'src/index.ts');
+    const prepare = (content: string) =>
+      harness.surface.prepareChanges({
+        baseSnapshotId: snapshot.snapshotId,
+        changes: [{ type: 'update' as const, path: index.path, baseHash: index.hash, content }],
+      });
+
+    const first = await prepare('first\n');
+    const second = await prepare('second\n');
+    const third = await prepare('third\n');
+
+    await expectAuthoringError(harness.surface.applyPreparedChanges(first.planId), 'PLAN_NOT_FOUND');
+    await expect(harness.surface.applyPreparedChanges(second.planId)).resolves.toMatchObject({ saved: false });
+    await expectAuthoringError(harness.surface.applyPreparedChanges(third.planId), 'STALE_SNAPSHOT');
   });
 
   it('uses the same read policy for descriptors, reads, searches, and diagnostics with bounded output', async () => {

@@ -84,6 +84,7 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
   const searchMaxContextLength = Math.max(1, options.searchMaxContextLength ?? DEFAULT_SEARCH_CONTEXT_LENGTH);
   const plans = new Map<string, StoredWorkspaceAuthoringPlan>();
   let disposed = false;
+  let applyingPlanId: string | undefined;
   let planSequence = 0;
 
   const capabilities: CodeAuthoringCapabilities = {
@@ -165,7 +166,7 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
   ): Promise<CodeAuthoringSnapshot> => {
     const readableFiles = internalSnapshot.files.filter(canReadSnapshotFile);
     const activePath = normalizeOptionalPath(options.getActivePath());
-    const rawDiagnostics = diagnostics || (await options.getDiagnostics());
+    const rawDiagnostics = diagnostics ?? (await options.getDiagnostics());
     return {
       surfaceId: options.id,
       kind: options.kind,
@@ -316,6 +317,16 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
         planId,
       });
     }
+    if (applyingPlanId) {
+      throw new WorkspaceAuthoringError(
+        'PLAN_APPLYING',
+        `Another authoring plan is already being applied: ${applyingPlanId}`,
+        {
+          surfaceId: options.id,
+          planId,
+        },
+      );
+    }
 
     const currentSnapshot = getInternalSnapshot();
     if (currentSnapshot.snapshotId !== plan.baseSnapshotId) {
@@ -333,12 +344,18 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
     assertWorkspaceAuthoringPlanAccess(options.id, plan.changes, options.getPathAccess);
 
     plan.status = 'applying';
+    applyingPlanId = planId;
     try {
       const nextSourceFiles = cloneWorkspaceAuthoringFiles(plan.nextSourceFiles);
-      const nextSnapshot = getInternalSnapshot(nextSourceFiles);
-      const publicSnapshot = await buildPublicSnapshot(nextSnapshot);
+      const committedSnapshot = getInternalSnapshot(nextSourceFiles);
       await options.commitSourceFiles(nextSourceFiles);
       plan.status = 'consumed';
+      let publicSnapshot: CodeAuthoringSnapshot;
+      try {
+        publicSnapshot = await buildPublicSnapshot(committedSnapshot);
+      } catch {
+        publicSnapshot = await buildPublicSnapshot(committedSnapshot, []);
+      }
       return {
         surfaceId: options.id,
         snapshot: publicSnapshot,
@@ -346,8 +363,14 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
         saved: false,
       };
     } catch (error) {
-      plan.status = 'prepared';
+      if (plan.status !== 'consumed') {
+        plan.status = 'prepared';
+      }
       throw error;
+    } finally {
+      if (applyingPlanId === planId) {
+        applyingPlanId = undefined;
+      }
     }
   };
 

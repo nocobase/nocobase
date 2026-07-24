@@ -221,9 +221,15 @@ export async function registerWorkspaceAuthoringTools(
   registry: FrontendToolRegistry,
   surfaceId: string,
 ): Promise<FrontendToolManifest[]> {
+  const clearIfStillBound = (boundSurface?: CodeAuthoringSurface) => {
+    const currentSurface = app.aiManager.authoringSurfaces.get(surfaceId);
+    if (!currentSurface || currentSurface === boundSurface) {
+      registry.clear(surfaceId);
+    }
+  };
   const boundSurface = app.aiManager.authoringSurfaces.get(surfaceId);
   if (!boundSurface) {
-    registry.clear(surfaceId);
+    clearIfStillBound();
     return [];
   }
 
@@ -231,11 +237,11 @@ export async function registerWorkspaceAuthoringTools(
   try {
     snapshot = await boundSurface.getSnapshot();
   } catch {
-    registry.clear(surfaceId);
+    clearIfStillBound(boundSurface);
     return [];
   }
   if (snapshot.surfaceId !== surfaceId || app.aiManager.authoringSurfaces.get(surfaceId) !== boundSurface) {
-    registry.clear(surfaceId);
+    clearIfStillBound(boundSurface);
     return [];
   }
 
@@ -259,13 +265,16 @@ async function executeWorkspaceTool(
   capability: WorkspaceCapability,
   args: unknown,
 ): Promise<FrontendToolInvokeResult> {
-  const currentSurface = app.aiManager.authoringSurfaces.get(surfaceId);
-  if (!currentSurface || currentSurface !== boundSurface) {
+  const isCurrentSurface = () => app.aiManager.authoringSurfaces.get(surfaceId) === boundSurface;
+  if (!isCurrentSurface()) {
     return toolError(surfaceId, toolName, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
   }
 
   try {
-    const snapshot = await currentSurface.getSnapshot();
+    const snapshot = await boundSurface.getSnapshot();
+    if (!isCurrentSurface()) {
+      return toolError(surfaceId, toolName, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
+    }
     if (snapshot.surfaceId !== surfaceId) {
       return toolError(surfaceId, toolName, 'WORKSPACE_SURFACE_MISMATCH', 'The bound workspace identity changed.');
     }
@@ -278,9 +287,15 @@ async function executeWorkspaceTool(
       );
     }
 
-    const content = await invokeWorkspaceTool(currentSurface, snapshot, toolName, args);
+    const content = await invokeWorkspaceTool(boundSurface, snapshot, toolName, args);
+    if (toolName !== WORKSPACE_AUTHORING_TOOL_NAMES.applyPreparedChanges && !isCurrentSurface()) {
+      return toolError(surfaceId, toolName, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
+    }
     return { status: 'success', content };
   } catch (error) {
+    if (!isCurrentSurface()) {
+      return toolError(surfaceId, toolName, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
+    }
     return toolError(
       surfaceId,
       toolName,
@@ -383,8 +398,66 @@ function requirePrepareInput(value: unknown): Parameters<CodeAuthoringSurface['p
   }
   return {
     baseSnapshotId,
-    changes: input.changes as CodeAuthoringChange[],
+    changes: input.changes.map(requireChange),
   };
+}
+
+function requireChange(value: unknown, index: number): CodeAuthoringChange {
+  const input = requireRecord(value);
+  const type = input.type;
+  const path = requireStringProperty(input, 'path');
+  if (path.length > MAX_PATH_LENGTH) {
+    throw new Error(`Workspace change path is too long at index ${index}.`);
+  }
+  if (type === 'create') {
+    assertAllowedProperties(input, ['type', 'path', 'content', 'language'], index);
+    const content = requireStringValue(input.content, 'content', index, true);
+    const language =
+      input.language === undefined ? undefined : requireStringValue(input.language, 'language', index, true);
+    return { type, path, content, ...(language === undefined ? {} : { language }) };
+  }
+  if (type === 'update') {
+    assertAllowedProperties(input, ['type', 'path', 'baseHash', 'content'], index);
+    return {
+      type,
+      path,
+      baseHash: requireStringValue(input.baseHash, 'baseHash', index),
+      content: requireStringValue(input.content, 'content', index, true),
+    };
+  }
+  if (type === 'patch') {
+    assertAllowedProperties(input, ['type', 'path', 'baseHash', 'patch'], index);
+    return {
+      type,
+      path,
+      baseHash: requireStringValue(input.baseHash, 'baseHash', index),
+      patch: requireStringValue(input.patch, 'patch', index, true),
+    };
+  }
+  if (type === 'delete') {
+    assertAllowedProperties(input, ['type', 'path', 'baseHash'], index);
+    return {
+      type,
+      path,
+      baseHash: requireStringValue(input.baseHash, 'baseHash', index),
+    };
+  }
+  throw new Error(`Workspace change type is invalid at index ${index}.`);
+}
+
+function requireStringValue(value: unknown, property: string, index: number, allowEmpty = false): string {
+  if (typeof value !== 'string' || (!allowEmpty && !value.trim())) {
+    throw new Error(`Workspace change ${property} is invalid at index ${index}.`);
+  }
+  return value;
+}
+
+function assertAllowedProperties(input: Record<string, unknown>, allowed: string[], index: number): void {
+  const allowedProperties = new Set(allowed);
+  const unexpectedProperty = Object.keys(input).find((key) => !allowedProperties.has(key));
+  if (unexpectedProperty) {
+    throw new Error(`Workspace change property is not allowed at index ${index}: ${unexpectedProperty}.`);
+  }
 }
 
 function requireBoundedInteger(value: unknown, minimum: number, maximum: number, name: string): number {

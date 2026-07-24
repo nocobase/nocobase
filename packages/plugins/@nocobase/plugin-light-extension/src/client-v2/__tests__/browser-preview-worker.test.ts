@@ -550,4 +550,84 @@ describe('useBrowserProvisionalPreview', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'));
     unmount();
   });
+
+  it('does not build or execute a provisional preview while the current draft is suppressed', async () => {
+    const session = {
+      cancelLatestBuild: vi.fn(async () => undefined),
+      syncWorkspace: vi.fn(async () => undefined),
+      build: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as BrowserPreviewSession;
+    const sandbox = {
+      execute: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as ProvisionalPreviewSandbox;
+    const sessionFactory = vi.fn(() => session);
+    const sandboxFactory = vi.fn(() => sandbox);
+    const initialProps = {
+      enabled: true,
+      files: file('suppressed'),
+      entry: entry(),
+      suppressBuild: true,
+      debounceMs: 0,
+      sessionFactory,
+      sandboxFactory,
+    };
+    const { result, rerender, unmount } = renderHook((props) => useBrowserProvisionalPreview(props), { initialProps });
+
+    await waitFor(() => expect(sessionFactory).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.status).toBe('suppressed'));
+    expect(sandboxFactory).toHaveBeenCalledTimes(1);
+    expect(session.syncWorkspace).not.toHaveBeenCalled();
+    expect(session.build).not.toHaveBeenCalled();
+    expect(sandbox.execute).not.toHaveBeenCalled();
+
+    rerender({ ...initialProps, files: file('manual edit'), suppressBuild: false });
+    await waitFor(() => expect(session.syncWorkspace).toHaveBeenCalled());
+    unmount();
+  });
+
+  it('settles an in-flight build as suppressed when AI-authored files replace the current draft', async () => {
+    let resolveBuild: ((result: ProvisionalCompileResult) => void) | undefined;
+    const session = {
+      cancelLatestBuild: vi.fn(async () => undefined),
+      syncWorkspace: vi.fn(async () => undefined),
+      build: vi.fn(
+        () =>
+          new Promise<ProvisionalCompileResult>((resolve) => {
+            resolveBuild = resolve;
+          }),
+      ),
+      dispose: vi.fn(),
+    } as unknown as BrowserPreviewSession;
+    const sandbox = {
+      execute: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as ProvisionalPreviewSandbox;
+    const initialProps = {
+      enabled: true,
+      files: file('before apply'),
+      entry: entry(),
+      suppressBuild: false,
+      debounceMs: 0,
+      sessionFactory: () => session,
+      sandboxFactory: () => sandbox,
+    };
+    const { result, rerender, unmount } = renderHook((props) => useBrowserProvisionalPreview(props), { initialProps });
+
+    await waitFor(() => expect(result.current.status).toBe('building'));
+    rerender({ ...initialProps, files: file('AI-authored draft'), suppressBuild: true });
+    await waitFor(() => expect(result.current.status).toBe('suppressed'));
+
+    resolveBuild?.({
+      accepted: true,
+      artifact: { code: 'export default 1;', metadata: { provisional: true, trust: 'client-advisory' } },
+      diagnostics: [],
+      metrics: {},
+    } as ProvisionalCompileResult);
+    await Promise.resolve();
+    expect(result.current.status).toBe('suppressed');
+    expect(sandbox.execute).not.toHaveBeenCalled();
+    unmount();
+  });
 });

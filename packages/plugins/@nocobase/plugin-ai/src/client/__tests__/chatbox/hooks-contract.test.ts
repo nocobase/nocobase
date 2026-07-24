@@ -23,6 +23,7 @@ import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatb
 import {
   CHAT_DEFAULT_SESSION_KEY,
   CHAT_EMPTY_SESSION_STATE,
+  getChatApplicationKey,
   useChatMessagesStore,
 } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
 import { useChatToolCallStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tool-call';
@@ -47,44 +48,54 @@ const mockRuntime = vi.hoisted(() => {
     accept: vi.fn(),
     getBySession: vi.fn(),
   };
+  const resources = { aiConversations, aiWorkflowTasks };
+  const storage = { getItem: vi.fn(() => null) };
   const request = vi.fn();
   const getModel = vi.fn();
   const toolInvoke = vi.fn();
-
-  return {
-    resources: {
-      aiConversations,
-      aiWorkflowTasks,
+  const app = {
+    i18n: {
+      t: vi.fn((key: string, options?: { nickname?: string }) =>
+        options?.nickname ? `${key}:${options.nickname}` : key,
+      ),
     },
-    request,
-    app: {
-      i18n: {
-        t: vi.fn((key: string, options?: { nickname?: string }) =>
-          options?.nickname ? `${key}:${options.nickname}` : key,
+    flowEngine: {
+      getModel,
+    },
+    pm: {
+      get: vi.fn(() => ({ aiManager: {} })),
+    },
+    aiManager: {
+      toolsManager: {
+        useTools: vi.fn(
+          () =>
+            new Map([
+              [
+                'localTool',
+                {
+                  invoke: toolInvoke,
+                },
+              ],
+            ]),
         ),
       },
-      flowEngine: {
-        getModel,
-      },
-      aiManager: {
-        toolsManager: {
-          useTools: vi.fn(
-            () =>
-              new Map([
-                [
-                  'localTool',
-                  {
-                    invoke: toolInvoke,
-                  },
-                ],
-              ]),
-          ),
-        },
-      },
     },
-    storage: {
-      getItem: vi.fn(() => null),
+  };
+  const clientV2App = {
+    ...app,
+    apiClient: {
+      storage,
+      request,
+      resource: (name: keyof typeof resources) => resources[name],
     },
+  };
+
+  return {
+    resources,
+    request,
+    app,
+    clientV2App,
+    storage,
     services: [
       {
         llmService: 'openai',
@@ -163,14 +174,7 @@ vi.mock('@nocobase/client', async () => {
 vi.mock('@nocobase/client-v2', () => ({
   DecisionActions: {},
   ToolCall: {},
-  useApp: () => ({
-    ...mockRuntime.app,
-    apiClient: {
-      storage: mockRuntime.storage,
-      request: mockRuntime.request,
-      resource: (name: keyof typeof mockRuntime.resources) => mockRuntime.resources[name],
-    },
-  }),
+  useApp: () => mockRuntime.clientV2App,
 }));
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
@@ -681,6 +685,182 @@ describe('useChatMessageActions contract', () => {
         .messages.map((message) => message.key),
     ).toEqual(['older', 'newer', 'local-error']);
     expect(useChatBoxStore.getState().model).toEqual({ llmService: 'openai', model: 'gpt-4o' });
+  });
+
+  it('restores the server-persisted workspace target before the bounded message history fallback', async () => {
+    useChatMessagesStore.getState().bindSessionCodingTarget('session-a', {
+      type: 'single-file',
+      applicationKey: 'stale-app',
+      editorUid: 'stale-editor',
+    });
+    mockRuntime.resources.aiConversations.getMessages.mockResolvedValue({
+      data: {
+        data: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              content: 'old workspace context',
+              workContext: [
+                {
+                  type: 'code-workspace',
+                  uid: 'workspace-from-history',
+                  title: 'History workspace',
+                  content: {
+                    surfaceId: 'workspace-from-history',
+                    kind: 'light-extension',
+                    title: 'History workspace',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        meta: {
+          codingTarget: {
+            type: 'workspace',
+            surfaceId: 'workspace-from-metadata',
+            kind: 'light-extension',
+            title: 'Metadata workspace',
+          },
+        },
+      },
+    });
+
+    const { result } = renderHook(() => useChatMessageActions());
+    await act(async () => {
+      await result.current.loadMessages('session-a');
+    });
+
+    expect(useChatMessagesStore.getState().getSessionState('session-a')).toMatchObject({
+      codingTarget: {
+        type: 'workspace',
+        applicationKey: expect.any(String),
+        surfaceId: 'workspace-from-metadata',
+        kind: 'light-extension',
+        title: 'Metadata workspace',
+      },
+      contextItems: [
+        {
+          type: 'code-workspace',
+          uid: 'workspace-from-metadata',
+        },
+      ],
+    });
+    expect(useChatMessagesStore.getState().getSessionState('session-a').codingTarget?.applicationKey).not.toBe(
+      'stale-app',
+    );
+  });
+
+  it('persists workspace target metadata when sending to an existing conversation', async () => {
+    useChatMessagesStore.getState().bindSessionCodingTarget('session-a', {
+      type: 'workspace',
+      applicationKey: getChatApplicationKey(mockRuntime.clientV2App),
+      surfaceId: 'workspace-a',
+      kind: 'light-extension',
+      title: 'Workspace A',
+    });
+    mockRuntime.request.mockResolvedValue({ data: null });
+
+    const { result } = renderHook(() => useChatMessageActions());
+    await act(async () => {
+      await result.current.sendMessages({
+        sessionId: 'session-a',
+        aiEmployee: atlas,
+        messages: [{ type: 'text', content: 'Update the workspace' }],
+        workContext: [],
+      });
+    });
+
+    expect(mockRuntime.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          sessionId: 'session-a',
+          codingTarget: {
+            type: 'workspace',
+            surfaceId: 'workspace-a',
+            kind: 'light-extension',
+            title: 'Workspace A',
+          },
+        }),
+      }),
+    );
+  });
+
+  it('persists the draft workspace target when creating a conversation', async () => {
+    useChatMessagesStore.getState().bindSessionCodingTarget(undefined, {
+      type: 'workspace',
+      applicationKey: getChatApplicationKey(mockRuntime.clientV2App),
+      surfaceId: 'workspace-draft',
+      kind: 'runjs-studio',
+      title: 'Draft workspace',
+    });
+    mockRuntime.resources.aiConversations.create.mockResolvedValue({
+      data: { data: { sessionId: 'created-session' } },
+    });
+    mockRuntime.request.mockResolvedValue({ data: null });
+
+    const { result } = renderHook(() => useChatMessageActions());
+    await act(async () => {
+      await result.current.sendMessages({
+        aiEmployee: atlas,
+        messages: [{ type: 'text', content: 'Update the draft workspace' }],
+        workContext: [],
+      });
+    });
+
+    const codingTarget = {
+      type: 'workspace',
+      surfaceId: 'workspace-draft',
+      kind: 'runjs-studio',
+      title: 'Draft workspace',
+    };
+    expect(mockRuntime.resources.aiConversations.create).toHaveBeenCalledWith({
+      values: expect.objectContaining({ codingTarget }),
+    });
+    expect(mockRuntime.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          sessionId: 'created-session',
+          codingTarget,
+        }),
+      }),
+    );
+    expect(useChatMessagesStore.getState().getSessionState('created-session').codingTarget).toMatchObject({
+      surfaceId: 'workspace-draft',
+    });
+  });
+
+  it('does not persist a workspace target owned by another application instance', async () => {
+    useChatMessagesStore.getState().bindSessionCodingTarget(undefined, {
+      type: 'workspace',
+      applicationKey: 'another-application',
+      surfaceId: 'foreign-workspace',
+      kind: 'light-extension',
+      title: 'Foreign workspace',
+    });
+    mockRuntime.resources.aiConversations.create.mockResolvedValue({
+      data: { data: { sessionId: 'created-session' } },
+    });
+    mockRuntime.request.mockResolvedValue({ data: null });
+
+    const { result } = renderHook(() => useChatMessageActions());
+    await act(async () => {
+      await result.current.sendMessages({
+        aiEmployee: atlas,
+        messages: [{ type: 'text', content: 'Send without a foreign target' }],
+        workContext: [],
+      });
+    });
+
+    expect(mockRuntime.resources.aiConversations.create).toHaveBeenCalledWith({
+      values: expect.not.objectContaining({ codingTarget: expect.anything() }),
+    });
+    expect(mockRuntime.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ codingTarget: expect.anything() }),
+      }),
+    );
   });
 
   it('prepends cursor history without replacing current messages and only marks current open conversation read', async () => {

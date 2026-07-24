@@ -181,6 +181,7 @@ function LightExtensionWorkspacePage({
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [suppressedProvisionalPreviewSnapshot, setSuppressedProvisionalPreviewSnapshot] = useState<string>();
   const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
@@ -317,6 +318,7 @@ function LightExtensionWorkspacePage({
     () => buildWorkspacePreviewSnapshot(files, workspaceScope),
     [files, workspaceScope],
   );
+  const suppressProvisionalPreview = previewSnapshotKey === suppressedProvisionalPreviewSnapshot;
   latestPreviewSnapshotRef.current = previewSnapshotKey;
   const canPreview = entryScoped && Boolean(onPreview);
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
@@ -337,7 +339,13 @@ function LightExtensionWorkspacePage({
     enabled: browserPreviewEnabled,
     files,
     entry: browserPreviewEntry,
+    suppressBuild: suppressProvisionalPreview,
   });
+  useEffect(() => {
+    if (suppressedProvisionalPreviewSnapshot && previewSnapshotKey !== suppressedProvisionalPreviewSnapshot) {
+      setSuppressedProvisionalPreviewSnapshot(undefined);
+    }
+  }, [previewSnapshotKey, suppressedProvisionalPreviewSnapshot]);
   const visibleDiagnostics = useMemo(
     () =>
       provisionalPreview.enabled && provisionalPreview.diagnostics.length > 0
@@ -888,6 +896,7 @@ function LightExtensionWorkspacePage({
           (file) => !nextSourcePaths.has(file.path),
         );
         authoringActivePathRef.current = nextActivePath;
+        setSuppressedProvisionalPreviewSnapshot(buildWorkspacePreviewSnapshot(nextFiles, registeredWorkspaceScope));
         setFiles(nextFiles);
         setFolders(collectWorkspaceFolders(nextFiles));
         setActivePath(nextActivePath);
@@ -1502,6 +1511,9 @@ function getProvisionalPreviewStatusMessage(
   }
   if (status === 'ready') {
     return t('Local provisional preview is ready. Server Save remains authoritative.');
+  }
+  if (status === 'suppressed') {
+    return t('Local provisional preview is paused for AI-authored changes. Edit manually to rebuild.');
   }
   return t('Building local provisional preview');
 }

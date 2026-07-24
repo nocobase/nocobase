@@ -12,6 +12,10 @@ import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
 import type { FrontendToolManifest } from '../../common/frontend-tools';
+import {
+  parseWorkspaceCodingTargetMetadata,
+  type WorkspaceCodingTargetMetadata,
+} from '../../common/workspace-coding-target';
 
 export type AIConversationsOptions = {
   systemMessage?: unknown;
@@ -19,6 +23,7 @@ export type AIConversationsOptions = {
   conversationSettings?: unknown;
   modelSettings?: unknown;
   frontendTools?: FrontendToolManifest[];
+  codingTarget?: WorkspaceCodingTargetMetadata;
   [key: string]: unknown;
 };
 
@@ -56,9 +61,10 @@ export type GetAIConversationMessagesParams = {
 export type ParsedMessageRow = AIMessage & Model;
 
 export type GetAIConversationMessagesResult = {
-  rows: any[];
+  rows: unknown[];
   hasMore?: boolean;
   cursor?: string | null;
+  codingTarget?: WorkspaceCodingTargetMetadata;
 };
 
 export const registerAIConversationReadNotification = (plugin: PluginAIServer) => {
@@ -121,7 +127,7 @@ export class AIConversationsManager {
       throw new Error('invalid sessionId');
     }
 
-    const { systemMessage, skillSettings, conversationSettings, modelSettings } = inputOptions ?? {};
+    const { systemMessage, skillSettings, conversationSettings, modelSettings, codingTarget } = inputOptions ?? {};
     const options = conversation.options ?? {};
     if (systemMessage) {
       options['systemMessage'] = systemMessage;
@@ -134,6 +140,9 @@ export class AIConversationsManager {
     }
     if (modelSettings) {
       options['modelSettings'] = modelSettings;
+    }
+    if (codingTarget) {
+      options['codingTarget'] = codingTarget;
     }
     const values: Record<string, unknown> = { options };
     if (title) {
@@ -323,6 +332,8 @@ export class AIConversationsManager {
       subAgentConversationMessageMap.set(row.sessionId, sessionMessages);
     }
 
+    const codingTarget = parseWorkspaceCodingTargetMetadata(conversation.options?.codingTarget);
+
     return {
       rows: data.map((row: ParsedMessageRow) => {
         const parsedRow = parseMessageRow(row);
@@ -342,6 +353,7 @@ export class AIConversationsManager {
         hasMore,
         cursor: newCursor,
       }),
+      ...(codingTarget ? { codingTarget } : {}),
     };
   }
 

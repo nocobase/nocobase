@@ -38,6 +38,9 @@ const mocks = vi.hoisted(() => ({
     activate: vi.fn(),
     unregister: vi.fn(),
   },
+  preview: {
+    hook: vi.fn(() => ({ enabled: false, diagnostics: [], status: 'idle' })),
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -74,7 +77,7 @@ vi.mock('../browser-preview/BrowserPreviewSession', () => ({
 
 vi.mock('../browser-preview/useBrowserProvisionalPreview', () => ({
   getLightExtensionPreviewSurfaceStyle: () => 'page',
-  useBrowserProvisionalPreview: () => ({ enabled: false, diagnostics: [], status: 'idle' }),
+  useBrowserProvisionalPreview: mocks.preview.hook,
 }));
 
 vi.mock('../components/DiagnosticsPanel', () => ({ default: () => null }));
@@ -144,11 +147,11 @@ function getRegisteredSurface(): CodeAuthoringSurface {
   return surface;
 }
 
-function renderEntryWorkspace() {
+function renderEntryWorkspace(browserProvisionalPreview = false) {
   return render(
     <MemoryRouter>
       <LightExtensionWorkspacePage
-        browserProvisionalPreview={false}
+        browserProvisionalPreview={browserProvisionalPreview}
         embedded
         entryId="entry-sales-kpi"
         initialPath={entryPath}
@@ -204,7 +207,7 @@ describe('LightExtensionWorkspace authoring surface', () => {
   });
 
   it('projects only entry dependencies and applies source-only changes without preview or save', async () => {
-    renderEntryWorkspace();
+    renderEntryWorkspace(true);
     await screen.findByTestId('code-tab');
     await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
     const surface = getRegisteredSurface();
@@ -264,6 +267,9 @@ describe('LightExtensionWorkspace authoring surface', () => {
     });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
+    expect(mocks.preview.hook).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: true, suppressBuild: true }),
+    );
     expect(mocks.authoring.activate).not.toHaveBeenCalled();
     fireEvent.focus(screen.getByLabelText('Edit file content'));
     expect(mocks.authoring.activate).toHaveBeenCalledWith(surface.id);

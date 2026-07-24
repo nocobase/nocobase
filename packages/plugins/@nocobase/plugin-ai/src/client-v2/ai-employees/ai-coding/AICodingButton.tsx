@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, Popover, Tooltip, theme } from 'antd';
 import { useApp, type EditorRef } from '@nocobase/client-v2';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
@@ -56,6 +56,11 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const { triggerTask } = useChatBoxActions();
     const ctx = useFlowContext();
     const applicationKey = useMemo(() => getChatApplicationKey(app), [app]);
+    const codingContextRequestRef = useRef(0);
+    const latestAuthoringSurfaceIdRef = useRef(authoringSurfaceId);
+    const latestConversationRef = useRef(currentConversation);
+    latestAuthoringSurfaceIdRef.current = authoringSurfaceId;
+    latestConversationRef.current = currentConversation;
 
     const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
@@ -73,6 +78,13 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     useEffect(() => {
       setActive('AICodingButton', !!aiEmployee);
     }, [aiEmployee, setActive]);
+
+    useEffect(
+      () => () => {
+        codingContextRequestRef.current += 1;
+      },
+      [],
+    );
 
     const [showTooltip, setShowTooltip] = useState(false);
     const [errorOccurred, setErrorOccurred] = useState(false);
@@ -128,7 +140,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       return null;
     }
 
-    const resolveCodingContext = async (): Promise<{ target: ChatCodingTarget; item: ContextItem } | null> => {
+    const resolveCodingContext = async (
+      requestId: number,
+    ): Promise<{ target: ChatCodingTarget; item: ContextItem } | null> => {
       if (authoringSurfaceId) {
         const surface = app.aiManager.authoringSurfaces.get(authoringSurfaceId);
         if (!surface) {
@@ -136,6 +150,19 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
           return null;
         }
         const snapshot = await surface.describe();
+        if (
+          codingContextRequestRef.current !== requestId ||
+          latestAuthoringSurfaceIdRef.current !== authoringSurfaceId
+        ) {
+          return null;
+        }
+        if (
+          app.aiManager.authoringSurfaces.get(authoringSurfaceId) !== surface ||
+          snapshot.surfaceId !== authoringSurfaceId
+        ) {
+          setShowTooltip(true);
+          return null;
+        }
         const target: WorkspaceChatCodingTarget = {
           type: 'workspace',
           applicationKey,
@@ -178,25 +205,19 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     };
 
     const bindCodingContext = async (willTriggerTask: boolean, taskList?: Task[]) => {
-      const resolved = await resolveCodingContext();
-      if (!resolved) {
+      const requestedConversation = currentConversation;
+      const requestId = codingContextRequestRef.current + 1;
+      codingContextRequestRef.current = requestId;
+      const resolved = await resolveCodingContext(requestId);
+      if (!resolved || latestConversationRef.current !== requestedConversation) {
         return;
       }
-      const currentBinding = chat.bindCodingTarget(resolved.target, ctx);
-      if (currentBinding.status === 'mismatch') {
+      const targetChat = willTriggerTask && currentConversation ? chat.for(undefined) : chat;
+      const targetBinding = targetChat.bindCodingTarget(resolved.target, ctx);
+      if (targetBinding.status === 'mismatch') {
         setTargetMismatch(true);
         setShowTooltip(true);
         return;
-      }
-
-      const targetChat = willTriggerTask && currentConversation ? chat.for(undefined) : chat;
-      if (targetChat.sessionKey !== chat.sessionKey) {
-        const draftBinding = targetChat.bindCodingTarget(resolved.target, ctx);
-        if (draftBinding.status === 'mismatch') {
-          setTargetMismatch(true);
-          setShowTooltip(true);
-          return;
-        }
       }
       setTargetMismatch(false);
       const resolvedTasks = taskList?.map((task) => ({

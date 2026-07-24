@@ -56,11 +56,17 @@ export const CodeWorkspaceContext: WorkContextOptions = {
     }
     try {
       const snapshot = await surface.describe();
+      if (app.aiManager.authoringSurfaces.get(surfaceId) !== surface) {
+        return workspaceContextError(surfaceId, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
+      }
       if (snapshot.surfaceId !== surfaceId) {
         return workspaceContextError(surfaceId, 'WORKSPACE_SURFACE_MISMATCH', 'The bound workspace identity changed.');
       }
       return snapshot;
     } catch (error) {
+      if (app.aiManager.authoringSurfaces.get(surfaceId) !== surface) {
+        return workspaceContextError(surfaceId, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
+      }
       return workspaceContextError(
         surfaceId,
         getErrorCode(error),

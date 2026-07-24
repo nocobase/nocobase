@@ -17,9 +17,14 @@ import type {
   Message,
   SkillSettings,
   WebSearching,
+  WorkspaceChatCodingTarget,
 } from '../../types';
 import { getOrCreateGlobalStore } from '../../stores/global-store';
 import { createObservableStore } from './create-selectors';
+import {
+  parseWorkspaceCodingTargetMetadata,
+  type WorkspaceCodingTargetMetadata,
+} from '../../../../common/workspace-coding-target';
 
 export const CHAT_DEFAULT_SESSION_KEY = '__draft__';
 
@@ -111,6 +116,122 @@ const isSameCodingTarget = (left: ChatCodingTarget, right: ChatCodingTarget) => 
   return left.type === 'single-file' && right.type === 'single-file' && left.editorUid === right.editorUid;
 };
 
+type RestoredWorkspaceCodingContext = {
+  target: Omit<WorkspaceChatCodingTarget, 'applicationKey'>;
+  item: ContextItem;
+};
+
+const createRestoredWorkspaceCodingContext = (
+  target: WorkspaceCodingTargetMetadata,
+): RestoredWorkspaceCodingContext => ({
+  target,
+  item: {
+    type: 'code-workspace',
+    uid: target.surfaceId,
+    title: target.title,
+    content: {
+      surfaceId: target.surfaceId,
+      kind: target.kind,
+      title: target.title,
+    },
+  },
+});
+
+export const getWorkspaceCodingTargetMetadata = (
+  target?: ChatCodingTarget,
+): WorkspaceCodingTargetMetadata | undefined => {
+  if (target?.type !== 'workspace') {
+    return undefined;
+  }
+  return {
+    type: 'workspace',
+    surfaceId: target.surfaceId,
+    kind: target.kind,
+    title: target.title,
+  };
+};
+
+export const findWorkspaceCodingContext = (messages: Message[]): RestoredWorkspaceCodingContext | undefined => {
+  for (const message of messages) {
+    const workContext = Array.isArray(message.content?.workContext) ? message.content.workContext : [];
+    for (const item of workContext) {
+      if (item?.type !== 'code-workspace') {
+        continue;
+      }
+      const content = item.content;
+      const contentRecord = content && typeof content === 'object' && !Array.isArray(content) ? content : undefined;
+      const contentSurfaceId =
+        contentRecord && 'surfaceId' in contentRecord && typeof contentRecord.surfaceId === 'string'
+          ? contentRecord.surfaceId
+          : undefined;
+      const itemSurfaceId = typeof item.uid === 'string' && item.uid ? item.uid : undefined;
+      if (
+        (contentSurfaceId && itemSurfaceId && contentSurfaceId !== itemSurfaceId) ||
+        (!contentSurfaceId && !itemSurfaceId)
+      ) {
+        continue;
+      }
+      const surfaceId = contentSurfaceId || itemSurfaceId;
+      if (!surfaceId) {
+        continue;
+      }
+      const kind =
+        contentRecord && 'kind' in contentRecord && typeof contentRecord.kind === 'string' && contentRecord.kind
+          ? contentRecord.kind
+          : 'code-workspace';
+      const contentTitle =
+        contentRecord && 'title' in contentRecord && typeof contentRecord.title === 'string'
+          ? contentRecord.title
+          : undefined;
+      const title = (typeof item.title === 'string' && item.title) || contentTitle || surfaceId;
+      const target = parseWorkspaceCodingTargetMetadata({ type: 'workspace', surfaceId, kind, title });
+      if (target) {
+        return createRestoredWorkspaceCodingContext(target);
+      }
+    }
+  }
+  return undefined;
+};
+
+export const restoreSessionWorkspaceCodingTargetFromMetadata = (
+  sessionId: string,
+  applicationKey: string,
+  metadata: unknown,
+): boolean => {
+  const target = parseWorkspaceCodingTargetMetadata(metadata);
+  if (!target) {
+    return false;
+  }
+  const restoredWorkspace = createRestoredWorkspaceCodingContext(target);
+  useChatMessagesStore
+    .getState()
+    .restoreSessionWorkspaceCodingTarget(
+      sessionId,
+      { ...restoredWorkspace.target, applicationKey },
+      restoredWorkspace.item,
+    );
+  return true;
+};
+
+export const restoreSessionWorkspaceCodingTargetFromMessages = (
+  sessionId: string,
+  applicationKey: string,
+  messages: Message[],
+): boolean => {
+  const restoredWorkspace = findWorkspaceCodingContext(messages);
+  if (!restoredWorkspace) {
+    return false;
+  }
+  useChatMessagesStore
+    .getState()
+    .restoreSessionWorkspaceCodingTarget(
+      sessionId,
+      { ...restoredWorkspace.target, applicationKey },
+      restoredWorkspace.item,
+    );
+  return true;
+};
+
 const resolveSessionState = (state: { sessions: Record<string, ChatSessionState> }, sessionId?: string) =>
   state.sessions[getChatSessionKey(sessionId)] ?? createInitialSessionState();
 
@@ -136,6 +257,11 @@ export interface ChatMessagesActions {
     target: ChatCodingTarget,
     flowContext?: unknown,
   ) => ChatCodingTargetBindingResult;
+  restoreSessionWorkspaceCodingTarget: (
+    sessionId: string,
+    target: WorkspaceChatCodingTarget,
+    item: ContextItem,
+  ) => void;
   setSessionFlowContext: (sessionId: string | undefined, flowContext: unknown) => void;
 
   getSessionState: (sessionId?: string) => ChatSessionState;
@@ -467,6 +593,23 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
         );
         return { status: currentTarget ? 'already-bound' : 'bound', target };
       },
+
+      restoreSessionWorkspaceCodingTarget: (sessionId, target, item) =>
+        set((state) =>
+          updateSessionState(state, sessionId, (session) => ({
+            ...session,
+            codingTarget: target,
+            codingTargetMismatch: undefined,
+            currentEditorRefUid: undefined,
+            flowContext: undefined,
+            contextItems: [
+              ...session.contextItems.filter(
+                (contextItem) => contextItem.type !== 'code-workspace' && contextItem.type !== 'code-editor',
+              ),
+              item,
+            ],
+          })),
+        ),
 
       setSessionWebSearching: (sessionId, webSearching) =>
         set((state) =>

@@ -16,6 +16,10 @@ import { AIMessageInput } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { EXECUTE_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import { findCurrentFrontendTool } from '../frontend-tools';
+import {
+  isSameWorkspaceCodingTargetMetadata,
+  parseWorkspaceCodingTargetMetadata,
+} from '../../common/workspace-coding-target';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -188,8 +192,18 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
-        ctx.action.params.values || {};
+      const {
+        aiEmployee,
+        systemMessage,
+        skillSettings,
+        conversationSettings,
+        modelSettings,
+        codingTarget: rawCodingTarget,
+      } = ctx.action.params.values || {};
+      const codingTarget = parseWorkspaceCodingTargetMetadata(rawCodingTarget);
+      if (rawCodingTarget !== undefined && !codingTarget) {
+        ctx.throw(400, ctx.t('Invalid workspace coding target'));
+      }
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -207,6 +221,7 @@ export default {
             skillSettings,
             conversationSettings,
             modelSettings,
+            ...(codingTarget ? { codingTarget } : {}),
           },
         });
       } catch (error) {
@@ -351,6 +366,7 @@ export default {
         model,
         webSearch,
         stream = true,
+        codingTarget: rawCodingTarget,
       } = ctx.action.params.values || {};
 
       const shouldStream = stream !== false;
@@ -366,8 +382,13 @@ export default {
         if (!Array.isArray(messages)) {
           throw new ResourceActionError(400, ctx.t('messages must be an array'));
         }
-        normalizeIncomingMessageAttachments(ctx, messages);
-        const userMessage = messages.find((message: any) => message.role === 'user');
+        const incomingMessages = messages as AIMessageInput[];
+        const codingTarget = parseWorkspaceCodingTargetMetadata(rawCodingTarget);
+        if (rawCodingTarget !== undefined && !codingTarget) {
+          throw new ResourceActionError(400, ctx.t('Invalid workspace coding target'));
+        }
+        normalizeIncomingMessageAttachments(ctx, incomingMessages);
+        const userMessage = incomingMessages.find((message) => message.role === 'user');
         if (!userMessage) {
           throw new ResourceActionError(400, ctx.t('user message is required'));
         }
@@ -386,20 +407,47 @@ export default {
           throw new ResourceActionError(400, ctx.t('AI employee not found'));
         }
 
+        let conversationChanged = false;
         if (!conversation.title) {
-          const textUserMessage = messages.find(
-            (message: any) => message.role === 'user' && message.content?.type === 'text' && message.content?.content,
+          const textUserMessage = incomingMessages.find(
+            (message) =>
+              message.role === 'user' &&
+              message.content?.type === 'text' &&
+              typeof message.content.content === 'string' &&
+              message.content.content,
           );
 
-          if (textUserMessage) {
-            const content = textUserMessage.content.content;
+          const content = textUserMessage?.content.content;
+          if (typeof content === 'string' && content) {
             conversation.title = content.substring(0, 30);
-            await conversation.save();
+            conversationChanged = true;
           }
         }
 
+        if (codingTarget) {
+          const options = isRecord(conversation.options) ? conversation.options : {};
+          const storedCodingTarget = parseWorkspaceCodingTargetMetadata(options.codingTarget);
+          if (options.codingTarget !== undefined && !storedCodingTarget) {
+            throw new ResourceActionError(409, ctx.t('Conversation workspace coding target is invalid'));
+          }
+          if (storedCodingTarget && !isSameWorkspaceCodingTargetMetadata(storedCodingTarget, codingTarget)) {
+            throw new ResourceActionError(409, ctx.t('Conversation workspace coding target cannot be changed'));
+          }
+          if (!storedCodingTarget) {
+            conversation.options = {
+              ...options,
+              codingTarget,
+            };
+            conversationChanged = true;
+          }
+        }
+
+        if (conversationChanged) {
+          await conversation.save();
+        }
+
         if (await isReachParallelLimit(ctx)) {
-          await saveUserMessages(ctx, sessionId, messages, editingMessageId);
+          await saveUserMessages(ctx, sessionId, incomingMessages, editingMessageId);
           throw new ResourceActionError(400, ctx.t('There are conversations in progress. Please try again later.'));
         }
 
@@ -433,7 +481,7 @@ export default {
             if (toolMessages?.length) {
               for (let i = toolMessages.length - 1; i >= 0; i--) {
                 const toolMessage = toolMessages[i];
-                messages.unshift({
+                incomingMessages.unshift({
                   role: toolMessage.role,
                   content: toolMessage.content,
                   toolCalls: toolMessage.toolCalls,
@@ -447,9 +495,9 @@ export default {
         }
 
         if (shouldStream) {
-          await aiEmployee.stream({ userMessages: messages, messageId: editingMessageId });
+          await aiEmployee.stream({ userMessages: incomingMessages, messageId: editingMessageId });
         } else {
-          ctx.body = await aiEmployee.invoke({ userMessages: messages, messageId: editingMessageId });
+          ctx.body = await aiEmployee.invoke({ userMessages: incomingMessages, messageId: editingMessageId });
         }
       } catch (err) {
         ctx.log.error(err);

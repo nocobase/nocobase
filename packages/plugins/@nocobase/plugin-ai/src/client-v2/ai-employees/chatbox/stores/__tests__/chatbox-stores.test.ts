@@ -10,7 +10,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ChatEditorRef, Conversation, Message } from '../../../types';
 import { useChatConversationsStore } from '../chat-conversations';
-import { CHAT_DEFAULT_SESSION_KEY, getChatApplicationKey, useChatMessagesStore } from '../chat-messages';
+import {
+  CHAT_DEFAULT_SESSION_KEY,
+  getChatApplicationKey,
+  getWorkspaceCodingTargetMetadata,
+  restoreSessionWorkspaceCodingTargetFromMessages,
+  restoreSessionWorkspaceCodingTargetFromMetadata,
+  useChatMessagesStore,
+} from '../chat-messages';
 import { useChatToolCallStore } from '../chat-tool-call';
 import { useChatToolsStore } from '../chat-tools';
 import { useWorkflowTasksStore, type WorkflowTask } from '../workflow-tasks';
@@ -348,6 +355,112 @@ describe('client-v2 chatbox stores', () => {
     expect(store.getSessionState('session-a')).toMatchObject({
       codingTarget: { surfaceId: 'workspace-a' },
       codingTargetMismatch: { surfaceId: 'workspace-b' },
+    });
+  });
+
+  it('restores the authoritative workspace target and safe context from persisted conversation messages', () => {
+    const store = useChatMessagesStore.getState();
+    store.bindSessionCodingTarget('session-a', {
+      type: 'single-file',
+      applicationKey: 'stale-app',
+      editorUid: 'stale-editor',
+    });
+    store.setSessionContextItems('session-a', [
+      { type: 'code-editor', uid: 'stale-editor' },
+      { type: 'datasource', uid: 'main' },
+    ]);
+    const restored = restoreSessionWorkspaceCodingTargetFromMessages('session-a', 'app-a', [
+      {
+        role: 'user',
+        content: {
+          content: 'Update the workspace',
+          workContext: [
+            {
+              type: 'code-workspace',
+              uid: 'workspace-a',
+              title: 'Workspace A',
+              content: {
+                surfaceId: 'workspace-a',
+                kind: 'light-extension',
+                title: 'Workspace A',
+                files: [{ path: 'private/secret.ts', content: 'must not be restored' }],
+              },
+              frontendTools: [],
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(restored).toBe(true);
+    expect(store.getSessionState('session-a')).toMatchObject({
+      codingTarget: {
+        type: 'workspace',
+        applicationKey: 'app-a',
+        surfaceId: 'workspace-a',
+        kind: 'light-extension',
+        title: 'Workspace A',
+      },
+      codingTargetMismatch: undefined,
+      contextItems: [
+        { type: 'datasource', uid: 'main' },
+        {
+          type: 'code-workspace',
+          uid: 'workspace-a',
+          content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
+        },
+      ],
+    });
+    expect(JSON.stringify(store.getSessionState('session-a').contextItems)).not.toContain('private/secret.ts');
+  });
+
+  it('restores a safe server-persisted workspace target without an application key', () => {
+    const store = useChatMessagesStore.getState();
+    store.bindSessionCodingTarget('session-a', {
+      type: 'single-file',
+      applicationKey: 'stale-app',
+      editorUid: 'stale-editor',
+    });
+
+    expect(
+      restoreSessionWorkspaceCodingTargetFromMetadata('session-a', 'current-app', {
+        type: 'workspace',
+        surfaceId: 'workspace-a',
+        kind: 'light-extension',
+        title: 'Workspace A',
+      }),
+    ).toBe(true);
+    expect(store.getSessionState('session-a')).toMatchObject({
+      codingTarget: {
+        type: 'workspace',
+        applicationKey: 'current-app',
+        surfaceId: 'workspace-a',
+        kind: 'light-extension',
+        title: 'Workspace A',
+      },
+      codingTargetMismatch: undefined,
+      contextItems: [
+        {
+          type: 'code-workspace',
+          uid: 'workspace-a',
+          content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
+        },
+      ],
+    });
+    expect(
+      restoreSessionWorkspaceCodingTargetFromMetadata('session-a', 'current-app', {
+        type: 'workspace',
+        applicationKey: 'leaked-app',
+        surfaceId: 'workspace-b',
+        kind: 'light-extension',
+        title: 'Workspace B',
+      }),
+    ).toBe(false);
+    expect(getWorkspaceCodingTargetMetadata(store.getSessionState('session-a').codingTarget)).toEqual({
+      type: 'workspace',
+      surfaceId: 'workspace-a',
+      kind: 'light-extension',
+      title: 'Workspace A',
     });
   });
 

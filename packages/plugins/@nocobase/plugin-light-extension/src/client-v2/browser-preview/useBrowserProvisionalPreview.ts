@@ -23,6 +23,7 @@ export type BrowserProvisionalPreviewStatus =
   | 'disabled'
   | 'initializing'
   | 'building'
+  | 'suppressed'
   | 'ready'
   | 'diagnostic'
   | 'degraded';
@@ -40,6 +41,7 @@ interface UseBrowserProvisionalPreviewInput {
   enabled: boolean;
   files: LightExtensionTreeEntryInput[];
   entry?: BrowserPreviewEntryContract;
+  suppressBuild?: boolean;
   debounceMs?: number;
   sessionFactory?: () => BrowserPreviewSession;
   sandboxFactory?: () => ProvisionalPreviewSandbox;
@@ -55,6 +57,7 @@ export function useBrowserProvisionalPreview({
   enabled,
   files,
   entry,
+  suppressBuild = false,
   debounceMs = 350,
   sessionFactory,
   sandboxFactory,
@@ -91,6 +94,15 @@ export function useBrowserProvisionalPreview({
 
   useEffect(() => {
     if (!enabled || !entry || workspaceFiles.length === 0 || !sessionRef.current || !sandboxRef.current) {
+      return;
+    }
+    if (suppressBuild) {
+      buildSequenceRef.current += 1;
+      setState({
+        enabled: true,
+        status: 'suppressed',
+        diagnostics: [],
+      });
       return;
     }
     const sequence = ++buildSequenceRef.current;
@@ -172,7 +184,7 @@ export function useBrowserProvisionalPreview({
     return () => {
       clearTimeout(timer);
     };
-  }, [debounceMs, enabled, entry, workspaceFiles]);
+  }, [debounceMs, enabled, entry, suppressBuild, workspaceFiles]);
 
   return state;
 }

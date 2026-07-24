@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CodeAuthoringSurface, EditorRef } from '@nocobase/client-v2';
 import { AICodingButton } from '../AICodingButton';
@@ -255,6 +255,139 @@ describe('AICodingButton authoring targets', () => {
       type: 'code-editor',
       uid: 'editor-a',
       content: { code: 'const value = 1;' },
+    });
+  });
+
+  it('binds only the new draft when starting a task from an existing conversation', async () => {
+    surfaces.set('workspace-a', createSurface('workspace-a', 'Workspace A'));
+    useChatBoxStore.setState({ open: false, currentEmployee: undefined });
+    render(
+      <AICodingButton
+        uid="editor-a"
+        scene="RunJS"
+        language="javascript"
+        authoringSurfaceId="workspace-a"
+        editorRef={editorRef()}
+        setActive={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI coding assistant' }));
+    await waitFor(() =>
+      expect(useChatMessagesStore.getState().getSessionState(undefined).codingTarget).toMatchObject({
+        surfaceId: 'workspace-a',
+      }),
+    );
+    expect(useChatMessagesStore.getState().getSessionState('session-a').codingTarget).toBeUndefined();
+    expect(triggerTask).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not bind a workspace that unmounts while its description is pending', async () => {
+    let resolveDescription: ((snapshot: Awaited<ReturnType<CodeAuthoringSurface['describe']>>) => void) | undefined;
+    const surface = createSurface('workspace-a', 'Workspace A');
+    vi.mocked(surface.describe).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDescription = resolve;
+        }),
+    );
+    surfaces.set(surface.id, surface);
+    const rendered = render(
+      <AICodingButton
+        uid="editor-a"
+        scene="RunJS"
+        language="javascript"
+        authoringSurfaceId="workspace-a"
+        editorRef={editorRef()}
+        setActive={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI coding assistant' }));
+    await waitFor(() => expect(surface.describe).toHaveBeenCalledTimes(1));
+    surfaces.delete('workspace-a');
+    await act(async () => {
+      resolveDescription?.({
+        surfaceId: 'workspace-a',
+        kind: 'light-extension',
+        title: 'Workspace A',
+        scope: { type: 'light-extension', id: 'workspace-a' },
+        snapshotId: 'workspace-a:snapshot',
+        files: [],
+        diagnostics: [],
+        capabilities: {
+          describe: true,
+          listFiles: true,
+          readFiles: true,
+          search: true,
+          prepareChanges: true,
+          applyPreparedChanges: true,
+          validateDraft: true,
+          reveal: true,
+          supportedChanges: ['create', 'update', 'patch', 'delete'],
+        },
+      });
+    });
+    expect(useChatMessagesStore.getState().getSessionState('session-a').codingTarget).toBeUndefined();
+    expect(triggerTask).not.toHaveBeenCalled();
+
+    rendered.unmount();
+  });
+
+  it('keeps the latest workspace click when descriptions complete out of order', async () => {
+    let resolveFirstDescription:
+      | ((snapshot: Awaited<ReturnType<CodeAuthoringSurface['describe']>>) => void)
+      | undefined;
+    const firstSurface = createSurface('workspace-a', 'Workspace A');
+    vi.mocked(firstSurface.describe).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstDescription = resolve;
+        }),
+    );
+    surfaces.set('workspace-a', firstSurface);
+    surfaces.set('workspace-b', createSurface('workspace-b', 'Workspace B'));
+    const sharedProps = {
+      scene: 'RunJS',
+      language: 'javascript',
+      editorRef: editorRef(),
+      setActive: vi.fn(),
+    };
+    const { rerender } = render(<AICodingButton uid="editor-a" authoringSurfaceId="workspace-a" {...sharedProps} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI coding assistant' }));
+    await waitFor(() => expect(firstSurface.describe).toHaveBeenCalledTimes(1));
+    rerender(<AICodingButton uid="editor-b" authoringSurfaceId="workspace-b" {...sharedProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'AI coding assistant' }));
+    await waitFor(() =>
+      expect(useChatMessagesStore.getState().getSessionState('session-a').codingTarget).toMatchObject({
+        surfaceId: 'workspace-b',
+      }),
+    );
+    await act(async () => {
+      resolveFirstDescription?.({
+        surfaceId: 'workspace-a',
+        kind: 'light-extension',
+        title: 'Workspace A',
+        scope: { type: 'light-extension', id: 'workspace-a' },
+        snapshotId: 'workspace-a:snapshot',
+        files: [],
+        diagnostics: [],
+        capabilities: {
+          describe: true,
+          listFiles: true,
+          readFiles: true,
+          search: true,
+          prepareChanges: true,
+          applyPreparedChanges: true,
+          validateDraft: true,
+          reveal: true,
+          supportedChanges: ['create', 'update', 'patch', 'delete'],
+        },
+      });
+    });
+    expect(useChatMessagesStore.getState().getSessionState('session-a').codingTarget).toMatchObject({
+      surfaceId: 'workspace-b',
     });
   });
 });

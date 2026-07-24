@@ -1796,8 +1796,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         const canWrite = Boolean(workspaceRef.current?.permissions.canWrite && !readOnly && !disabled);
         return toAuthoringSourceFiles(filesRef.current).map((file) => ({
           ...file,
-          readOnly: !canWrite,
-          writable: canWrite,
+          readOnly: !canWrite || file.path === runJSManifestPath,
+          writable: canWrite && file.path !== runJSManifestPath,
         }));
       },
       getVirtualFiles: () =>
@@ -1833,7 +1833,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       getActivePath: () => activePathRef.current,
       getPathAccess: (path, changeType) => {
         const currentWorkspace = workspaceRef.current;
-        const validPath = validateRunJSWorkspacePath(path, (key) => key).valid;
+        const internalManifest = path === runJSManifestPath;
+        const validPath = !internalManifest && validateRunJSWorkspacePath(path, (key) => key).valid;
         const canWrite = Boolean(currentWorkspace?.permissions.canWrite && !readOnly && !disabled);
         const deletesEntry = changeType === 'delete' && path === entryPathRef.current;
         return {
@@ -1846,14 +1847,16 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
             ? 'Workspace write permission is required'
             : readOnly || disabled
               ? 'RunJS Studio is read-only'
-              : !validPath
-                ? 'Path is outside the RunJS workspace'
-                : deletesEntry
-                  ? 'RunJS entry file cannot be deleted'
-                  : undefined,
+              : internalManifest
+                ? t('RunJS internal manifest cannot be changed')
+                : !validPath
+                  ? 'Path is outside the RunJS workspace'
+                  : deletesEntry
+                    ? 'RunJS entry file cannot be deleted'
+                    : undefined,
         };
       },
-      canReadForAI: () => workspaceRef.current?.permissions.canRead === true,
+      canReadForAI: (file) => workspaceRef.current?.permissions.canRead === true && file.path !== runJSManifestPath,
       getDiagnostics: () => previewDiagnosticsRef.current.map(toAuthoringDiagnostic),
       sanitizeDiagnostic: (diagnostic) => diagnostic,
       validateDraft: async () => {
@@ -1905,7 +1908,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     });
 
     return app.aiManager.authoringSurfaces.register(surface);
-  }, [app, authoringSurfaceId, disabled, invalidatePreview, readOnly]);
+  }, [app, authoringSurfaceId, disabled, invalidatePreview, readOnly, t]);
 
   const activateAuthoringSurface = useCallback(
     (surfaceId: string) => {
