@@ -19,7 +19,7 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
-import { homedir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { extname, isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
@@ -90,7 +90,7 @@ function getSocketPath() {
     return isAbsolute(socketPath) ? socketPath : resolve(process.cwd(), socketPath);
   }
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
-    return resolve(homedir(), '.nocobase', 'gateway.sock');
+    return resolve(tmpdir(), 'nocobase', 'gateway.sock');
   }
   return storagePathJoin('gateway.sock');
 }
