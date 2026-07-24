@@ -1,7 +1,9 @@
 import common from './common.js';
 import path from 'node:path';
+import portalUtils from '@nocobase/utils/portal.js';
 
 const { getPackagePaths, generateV2Plugins, generatePlugins } = common;
+const { PortalRequestResolver } = portalUtils;
 
 export function getRsbuildAlias() {
   return getPackagePaths().reduce((memo, item) => {
@@ -23,6 +25,11 @@ export function getRsbuildBrowserAlias() {
   addPackageModuleAlias(alias, '@nocobase/client-v2', '@nocobase/client-v2', 'es/index.mjs');
   addPackageModuleAlias(alias, '@nocobase/client-v2', '@nocobase/client-v2/flow-compat', 'es/flow-compat/index.mjs');
   return alias;
+}
+
+export function createPortalProxyBypass(appPublicPath) {
+  const resolver = new PortalRequestResolver();
+  return (req) => (resolver.resolve(req.url || '/', appPublicPath) ? undefined : true);
 }
 
 export { generateV2Plugins, generatePlugins };

@@ -15,7 +15,7 @@ import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
-import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
+import { createPortalProxyBypass, generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -252,6 +252,12 @@ export default defineConfig(({ command }) => {
             [`^${v2BasePath}`]: v2BasePath,
           },
           xfwd: true,
+        },
+        [resolvedAppPublicPath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          xfwd: true,
+          bypass: createPortalProxyBypass(resolvedAppPublicPath),
         },
       },
       historyApiFallback: {
