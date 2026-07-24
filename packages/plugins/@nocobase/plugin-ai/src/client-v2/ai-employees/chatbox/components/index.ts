@@ -10,5 +10,6 @@
 export { ChatBox } from './ChatBox';
 export { ChatBoxLayout } from './ChatBoxLayout';
 export { ChatButton } from './ChatButton';
+export { ChatBoxUnreadBadge } from './ChatBoxUnreadBadge';
 export { AIEmployeeSwitcher } from './AIEmployeeSwitcher';
 export { ModelSwitcher } from './ModelSwitcher';

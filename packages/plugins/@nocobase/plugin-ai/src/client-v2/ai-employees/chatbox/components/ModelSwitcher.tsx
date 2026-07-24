@@ -23,24 +23,25 @@ import {
   MODEL_PREFERENCE_STORAGE_KEY,
   resolveModel,
 } from '../model';
-import { useChatBoxStore, type ModelRef } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
+import { type ModelRef } from '../stores/chat-box';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { AddLLMModal } from './AddLLMModal';
 
 export const ModelSwitcher: React.FC<{
   disabled?: boolean;
-}> = observer(({ disabled }) => {
+  allowedModelKeys?: string[];
+}> = observer(({ disabled, allowedModelKeys }) => {
   const t = useT();
   const app = useApp();
   const { message } = AntdApp.useApp();
   const { token } = theme.useToken();
   const [isOpen, setIsOpen] = useState(false);
   const repository = useAIConfigRepository();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const currentEmployeeUsername = currentEmployee?.username;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const model = useChatBoxStore.use.model();
-  const setModel = useChatBoxStore.use.setModel();
+  const currentConversation = chatConversationModel.currentConversation;
+  const model = chatBoxModel.model;
   const llmServices = repository.llmServices;
   const [addModalOpen, setAddModalOpen] = useState(false);
   const pluginSettingsManager = app.pluginSettingsManager as
@@ -59,10 +60,14 @@ export const ModelSwitcher: React.FC<{
     () => getAIEmployeeModelServices(currentEmployee, llmServices),
     [currentEmployee, llmServices],
   );
-  const scopedModels = useMemo(() => getAllModels(scopedServices), [scopedServices]);
+  const visibleServices = useMemo(
+    () => getVisibleModelServices(scopedServices, allowedModelKeys, currentConversation ? model : undefined),
+    [allowedModelKeys, currentConversation, model, scopedServices],
+  );
+  const scopedModels = useMemo(() => getAllModels(visibleServices), [visibleServices]);
   const servicesWithModels = useMemo(
-    () => scopedServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
-    [scopedServices],
+    () => visibleServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
+    [visibleServices],
   );
 
   useEffect(() => {
@@ -71,9 +76,9 @@ export const ModelSwitcher: React.FC<{
     }
     const resolved = resolveModel(app.apiClient, currentEmployee, allModels, model);
     if (!isSameModel(resolved, model)) {
-      setModel(resolved);
+      chatBoxModel.setModel(resolved);
     }
-  }, [allModels, app.apiClient, currentConversation, currentEmployee, currentEmployeeUsername, model, setModel]);
+  }, [allModels, app.apiClient, chatBoxModel, currentConversation, currentEmployee, currentEmployeeUsername, model]);
 
   const selectedModel = useMemo(() => {
     if (isValidModel(model, scopedModels)) {
@@ -89,7 +94,7 @@ export const ModelSwitcher: React.FC<{
 
   const handleSelect = useCallback(
     (target: ModelRef) => {
-      setModel(target);
+      chatBoxModel.setModel(target);
       if (currentEmployee) {
         try {
           app.apiClient.storage?.setItem(MODEL_PREFERENCE_STORAGE_KEY + currentEmployee.username, getModelKey(target));
@@ -98,7 +103,7 @@ export const ModelSwitcher: React.FC<{
         }
       }
     },
-    [app.apiClient.storage, currentEmployee, setModel],
+    [app.apiClient.storage, chatBoxModel, currentEmployee],
   );
 
   const menuItems = useMemo<MenuProps['items']>(() => {
@@ -230,6 +235,36 @@ export const ModelSwitcher: React.FC<{
 
 function getModelKey(model: ModelRef) {
   return `${model.llmService}:${model.model}`;
+}
+
+export function getVisibleModelServices(
+  services: LLMServiceItem[],
+  allowedModelKeys?: string[],
+  currentConversationModel?: ModelRef | null,
+) {
+  if (!allowedModelKeys?.length) {
+    return services;
+  }
+  const allowedSet = new Set(allowedModelKeys);
+  return services
+    .map((service) => ({
+      ...service,
+      enabledModels: service.enabledModels.filter((item) =>
+        isAllowedOrCurrentModel(
+          { llmService: service.llmService, model: item.value },
+          allowedSet,
+          currentConversationModel,
+        ),
+      ),
+    }))
+    .filter((service) => service.enabledModels.length > 0);
+}
+
+function isAllowedOrCurrentModel(model: ModelRef, allowedSet: Set<string>, currentConversationModel?: ModelRef | null) {
+  if (allowedSet.has(getModelKey(model))) {
+    return true;
+  }
+  return currentConversationModel ? isSameModel(model, currentConversationModel) : false;
 }
 
 function getModelLabel(services: LLMServiceItem[], model: ModelRef | null | undefined) {

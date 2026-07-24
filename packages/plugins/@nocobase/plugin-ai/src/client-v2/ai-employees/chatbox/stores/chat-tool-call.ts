@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getOrCreateGlobalStore } from '../../stores/global-store';
-import { createObservableStore } from './create-selectors';
+import { action, define, observable } from '@nocobase/flow-engine';
 import { getChatSessionKey } from './chat-messages';
 
 type ToolCallInvokeState = { id: string; invokeStatus: string };
@@ -21,13 +20,15 @@ export const CHAT_EMPTY_TOOL_CALL_SESSION_STATE: ChatToolCallSessionState = {
   toolCalls: {},
 };
 
-type ChatToolCallState = {
-  sessions: Record<string, ChatToolCallSessionState>;
-};
-
 const createInitialSessionState = (): ChatToolCallSessionState => ({
   toolCalls: {},
 });
+
+const createObservableSessionState = (state?: Partial<ChatToolCallSessionState>): ChatToolCallSessionState =>
+  observable.shallow({
+    ...createInitialSessionState(),
+    ...(state ?? {}),
+  });
 
 const cloneSessionState = (session: ChatToolCallSessionState): ChatToolCallSessionState => ({
   ...session,
@@ -37,97 +38,97 @@ const cloneSessionState = (session: ChatToolCallSessionState): ChatToolCallSessi
   }, {}),
 });
 
-const resolveSessionState = (state: { sessions: Record<string, ChatToolCallSessionState> }, sessionId: string) =>
-  state.sessions[getChatSessionKey(sessionId)] ?? createInitialSessionState();
+export class ChatToolCallModel {
+  sessions: Record<string, ChatToolCallSessionState> = observable.shallow({});
 
-const updateSessionState = (
-  state: ChatToolCallState,
-  sessionId: string,
-  updater: (session: ChatToolCallSessionState) => ChatToolCallSessionState,
-) => {
-  const key = getChatSessionKey(sessionId);
-  const nextSession = updater(resolveSessionState(state, key));
-  return {
-    sessions: {
-      ...state.sessions,
+  constructor() {
+    define(this, {
+      sessions: observable.shallow,
+      resetSessionState: action,
+      migrateSessionState: action,
+      updateToolCallInvokeStatus: action,
+    });
+  }
+
+  private resolveSessionState(sessionId: string) {
+    return this.sessions[getChatSessionKey(sessionId)] ?? createObservableSessionState();
+  }
+
+  private ensureSessionState(sessionId: string) {
+    const key = getChatSessionKey(sessionId);
+    const session = this.sessions[key];
+    if (session) {
+      return session;
+    }
+
+    const nextSession = createObservableSessionState();
+    this.sessions = {
+      ...this.sessions,
       [key]: nextSession,
-    },
-  };
-};
-
-export interface ChatToolCallActions {
-  getSessionState: (sessionId: string) => ChatToolCallSessionState;
-  resetSessionState: (sessionId: string) => void;
-  migrateSessionState: (fromSessionId: string, toSessionId: string) => void;
-  updateToolCallInvokeStatus: (sessionId: string, messageId: string, toolCallId: string, invokeStatus: string) => void;
-  isAllWaiting: (sessionId: string, messageId: string) => boolean;
-  isInterrupted: (sessionId: string, messageId: string, toolCallId: string) => boolean;
-  getInvokeStatus: (sessionId: string, messageId: string, toolCallId: string) => string | undefined;
-}
-
-export const useChatToolCallStore = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-tool-call-store', () =>
-  createObservableStore<ChatToolCallState & ChatToolCallActions>((set, get) => {
-    return {
-      sessions: {},
-
-      getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
-
-      resetSessionState: (sessionId) =>
-        set((state) => updateSessionState(state, sessionId, () => createInitialSessionState())),
-
-      migrateSessionState: (fromSessionId, toSessionId) => {
-        const fromKey = getChatSessionKey(fromSessionId);
-        const toKey = getChatSessionKey(toSessionId);
-        if (fromKey === toKey) {
-          return;
-        }
-        set((state) => {
-          const sourceSession = resolveSessionState(state, fromKey);
-          const nextSessions = { ...state.sessions, [toKey]: cloneSessionState(sourceSession) };
-
-          delete nextSessions[fromKey];
-          return {
-            sessions: nextSessions,
-          };
-        });
-      },
-
-      updateToolCallInvokeStatus: (sessionId, messageId, toolCallId, invokeStatus) => {
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => {
-            const list = session.toolCalls[messageId] ?? [];
-
-            const exists = list.some((tc) => tc.id === toolCallId);
-
-            const nextList = exists
-              ? list.map((tc) => (tc.id === toolCallId ? { ...tc, invokeStatus } : tc))
-              : [...list, { id: toolCallId, invokeStatus }];
-
-            return {
-              toolCalls: {
-                ...session.toolCalls,
-                [messageId]: nextList,
-              },
-            };
-          }),
-        );
-      },
-      isAllWaiting: (sessionId, messageId) => {
-        const list = resolveSessionState(get(), sessionId).toolCalls[messageId];
-        if (!list || list.length === 0) return false;
-
-        return list.every((x) => x.invokeStatus === 'waiting');
-      },
-      isInterrupted: (sessionId, messageId, toolCallId) => {
-        const list = resolveSessionState(get(), sessionId).toolCalls[messageId] ?? [];
-        const toolCall = list.find((x) => x.id === toolCallId);
-        return toolCall?.invokeStatus === 'interrupted';
-      },
-      getInvokeStatus: (sessionId, messageId, toolCallId) => {
-        const list = resolveSessionState(get(), sessionId).toolCalls[messageId] ?? [];
-        const toolCall = list.find((x) => x.id === toolCallId);
-        return toolCall?.invokeStatus;
-      },
     };
-  }),
-);
+    return nextSession;
+  }
+
+  private updateSessionState(
+    sessionId: string,
+    updater: (session: ChatToolCallSessionState) => ChatToolCallSessionState,
+  ) {
+    const session = this.ensureSessionState(sessionId);
+    Object.assign(session, updater(session));
+  }
+
+  getSessionState = (sessionId: string) => cloneSessionState(this.resolveSessionState(sessionId));
+
+  resetSessionState = (sessionId: string) => {
+    this.updateSessionState(sessionId, () => createInitialSessionState());
+  };
+
+  migrateSessionState = (fromSessionId: string, toSessionId: string) => {
+    const fromKey = getChatSessionKey(fromSessionId);
+    const toKey = getChatSessionKey(toSessionId);
+    if (fromKey === toKey) {
+      return;
+    }
+
+    const sourceSession = this.resolveSessionState(fromKey);
+    const nextSessions = { ...this.sessions, [toKey]: createObservableSessionState(cloneSessionState(sourceSession)) };
+    delete nextSessions[fromKey];
+    this.sessions = nextSessions;
+  };
+
+  updateToolCallInvokeStatus = (sessionId: string, messageId: string, toolCallId: string, invokeStatus: string) => {
+    this.updateSessionState(sessionId, (session) => {
+      const list = session.toolCalls[messageId] ?? [];
+      const exists = list.some((tc) => tc.id === toolCallId);
+      const nextList = exists
+        ? list.map((tc) => (tc.id === toolCallId ? { ...tc, invokeStatus } : tc))
+        : [...list, { id: toolCallId, invokeStatus }];
+
+      return {
+        toolCalls: {
+          ...session.toolCalls,
+          [messageId]: nextList,
+        },
+      };
+    });
+  };
+
+  isAllWaiting = (sessionId: string, messageId: string) => {
+    const list = this.resolveSessionState(sessionId).toolCalls[messageId];
+    if (!list || list.length === 0) return false;
+
+    return list.every((x) => x.invokeStatus === 'waiting');
+  };
+
+  isInterrupted = (sessionId: string, messageId: string, toolCallId: string) => {
+    const list = this.resolveSessionState(sessionId).toolCalls[messageId] ?? [];
+    const toolCall = list.find((x) => x.id === toolCallId);
+    return toolCall?.invokeStatus === 'interrupted';
+  };
+
+  getInvokeStatus = (sessionId: string, messageId: string, toolCallId: string) => {
+    const list = this.resolveSessionState(sessionId).toolCalls[messageId] ?? [];
+    const toolCall = list.find((x) => x.id === toolCallId);
+    return toolCall?.invokeStatus;
+  };
+}

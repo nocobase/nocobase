@@ -11,10 +11,10 @@ import React from 'react';
 import { Card, Spin, theme } from 'antd';
 import { DatabaseOutlined, ExclamationCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
-import { useChatToolsStore } from '../chatbox/stores/chat-tools';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { isCurrentLiveMessage } from '../chatbox/utils';
 import type { CollectionDataType, DataModelingArgs } from './data-modeling/types';
 
@@ -34,17 +34,16 @@ function normalizeCollections(collections: DataModelingArgs['collections']): Col
   }
 }
 
-export const DataModelingCard: React.FC<ToolsUIProperties<DataModelingArgs>> = ({ messageId, toolCall }) => {
+export const DataModelingCard: React.FC<ToolsUIProperties<DataModelingArgs>> = observer(({ messageId, toolCall }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const responseLoading = chat.use.responseLoading();
   const messages = chat.use.messages();
-  const setOpen = useChatToolsStore.use.setOpenToolModal();
-  const setActiveTool = useChatToolsStore.use.setActiveTool();
-  const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
-  const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
+  const { chatToolModel } = runtime;
+  const toolsByMessageId = chatToolModel.toolsByMessageId;
   const version = toolsByMessageId[messageId]?.[toolCall.id]?.version;
   const latestMessageId = messages[messages.length - 1]?.content?.messageId;
   const generating = responseLoading && isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId);
@@ -76,9 +75,9 @@ export const DataModelingCard: React.FC<ToolsUIProperties<DataModelingArgs>> = (
         if (generating || !collections) {
           return;
         }
-        setActiveTool(toolCall);
-        setActiveMessageId(messageId);
-        setOpen(true);
+        chatToolModel.setActiveTool(toolCall);
+        chatToolModel.setActiveMessageId(messageId);
+        chatToolModel.setOpenToolModal(true);
       }}
     >
       <Card.Meta
@@ -104,4 +103,4 @@ export const DataModelingCard: React.FC<ToolsUIProperties<DataModelingArgs>> = (
       />
     </Card>
   );
-};
+});

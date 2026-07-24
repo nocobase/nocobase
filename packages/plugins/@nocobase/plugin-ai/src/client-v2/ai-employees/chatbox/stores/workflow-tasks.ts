@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getOrCreateGlobalStore } from '../../stores/global-store';
-import { createObservableStore } from './create-selectors';
+import { action, define, observable } from '@nocobase/flow-engine';
 
 export type WorkflowTask = {
   id: string;
@@ -46,28 +45,9 @@ export type WorkflowTaskDetail = WorkflowTask & {
   } | null;
 };
 
-type WorkflowTasksState = {
-  workflowTasks: WorkflowTask[];
-  currentWorkflowTask?: WorkflowTaskDetail;
-  unreadCount: number;
-  loading: boolean;
-  keyword: string;
-  selectedJobStatus?: number;
-};
+type WorkflowTaskStateUpdater<T> = T | ((prev: T) => T);
 
-type WorkflowTasksActions = {
-  setWorkflowTasks: (workflowTasks: WorkflowTask[] | ((prev: WorkflowTask[]) => WorkflowTask[])) => void;
-  setCurrentWorkflowTask: (
-    workflowTask: WorkflowTaskDetail | undefined | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
-  ) => void;
-  setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
-  markWorkflowTaskRead: (sessionId: string) => void;
-  setLoading: (loading: boolean) => void;
-  setKeyword: (keyword: string) => void;
-  setSelectedJobStatus: (selectedJobStatus: number | undefined) => void;
-};
-
-const JOB_STATUS = {
+export const JOB_STATUS = {
   PENDING: 0,
   RESOLVED: 1,
   FAILED: -1,
@@ -91,7 +71,7 @@ const aiWorkflowTaskJobStatusMap: Record<string, number> = {
   retry_needed: JOB_STATUS.RETRY_NEEDED,
 };
 
-const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
+export const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
   if (typeof workflowTask.jobStatus === 'number') {
     return workflowTask;
   }
@@ -102,63 +82,77 @@ const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
   };
 };
 
-export const useWorkflowTasksStore = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store', () =>
-  createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({
-    workflowTasks: [],
-    currentWorkflowTask: undefined,
-    unreadCount: 0,
-    loading: false,
-    keyword: '',
-    selectedJobStatus: undefined,
+export class WorkflowTaskModel {
+  workflowTasks: WorkflowTask[] = observable.shallow([]);
+  currentWorkflowTask: WorkflowTaskDetail | undefined = undefined;
+  unreadCount = 0;
+  loading = false;
+  keyword = '';
+  selectedJobStatus: number | undefined = undefined;
 
-    setWorkflowTasks: (workflowTasks) =>
-      set((state) => {
-        const nextWorkflowTasks =
-          typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks;
-        return {
-          workflowTasks: nextWorkflowTasks.map(normalizeWorkflowTask),
-        };
-      }),
+  constructor() {
+    define(this, {
+      workflowTasks: observable.shallow,
+      currentWorkflowTask: observable.ref,
+      unreadCount: observable.ref,
+      loading: observable.ref,
+      keyword: observable.ref,
+      selectedJobStatus: observable.ref,
+      setWorkflowTasks: action,
+      setCurrentWorkflowTask: action,
+      setUnreadCount: action,
+      markWorkflowTaskRead: action,
+      setLoading: action,
+      setKeyword: action,
+      setSelectedJobStatus: action,
+    });
+  }
 
-    setCurrentWorkflowTask: (currentWorkflowTask) =>
-      set((state) => ({
-        currentWorkflowTask:
-          typeof currentWorkflowTask === 'function'
-            ? currentWorkflowTask(state.currentWorkflowTask)
-            : currentWorkflowTask,
-      })),
+  setWorkflowTasks = (workflowTasks: WorkflowTaskStateUpdater<WorkflowTask[]>) => {
+    const nextWorkflowTasks = typeof workflowTasks === 'function' ? workflowTasks(this.workflowTasks) : workflowTasks;
+    this.workflowTasks = nextWorkflowTasks.map(normalizeWorkflowTask);
+  };
 
-    setUnreadCount: (unreadCount) =>
-      set((state) => ({
-        unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
-      })),
+  setCurrentWorkflowTask = (
+    currentWorkflowTask:
+      | WorkflowTaskDetail
+      | undefined
+      | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
+  ) => {
+    this.currentWorkflowTask =
+      typeof currentWorkflowTask === 'function' ? currentWorkflowTask(this.currentWorkflowTask) : currentWorkflowTask;
+  };
 
-    markWorkflowTaskRead: (sessionId) =>
-      set((state) => {
-        const target = state.workflowTasks.find((item) => item.sessionId === sessionId);
-        if (!target || target.read) {
-          return {
-            workflowTasks: state.workflowTasks,
-            unreadCount: state.unreadCount,
-          };
-        }
-        return {
-          workflowTasks: state.workflowTasks.map((item) =>
-            item.sessionId === sessionId
-              ? {
-                  ...item,
-                  read: true,
-                }
-              : item,
-          ),
-          unreadCount: Math.max(0, state.unreadCount - 1),
-        };
-      }),
+  setUnreadCount = (unreadCount: WorkflowTaskStateUpdater<number>) => {
+    this.unreadCount = typeof unreadCount === 'function' ? unreadCount(this.unreadCount) : unreadCount;
+  };
 
-    setLoading: (loading) => set({ loading }),
+  markWorkflowTaskRead = (sessionId: string) => {
+    const target = this.workflowTasks.find((item) => item.sessionId === sessionId);
+    if (!target || target.read) {
+      return;
+    }
 
-    setKeyword: (keyword) => set({ keyword }),
+    this.workflowTasks = this.workflowTasks.map((item) =>
+      item.sessionId === sessionId
+        ? {
+            ...item,
+            read: true,
+          }
+        : item,
+    );
+    this.unreadCount = Math.max(0, this.unreadCount - 1);
+  };
 
-    setSelectedJobStatus: (selectedJobStatus) => set({ selectedJobStatus }),
-  })),
-);
+  setLoading = (loading: boolean) => {
+    this.loading = loading;
+  };
+
+  setKeyword = (keyword: string) => {
+    this.keyword = keyword;
+  };
+
+  setSelectedJobStatus = (selectedJobStatus: number | undefined) => {
+    this.selectedJobStatus = selectedJobStatus;
+  };
+}

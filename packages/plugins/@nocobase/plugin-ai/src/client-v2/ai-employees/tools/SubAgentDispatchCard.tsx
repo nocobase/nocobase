@@ -16,7 +16,7 @@ import { avatars } from '../avatars';
 import type { AIEmployee } from '../types';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { isCurrentLiveMessage } from '../chatbox/utils';
 
 type SubAgentDispatchArgs = {
@@ -35,8 +35,9 @@ export const SubAgentDispatchCard: React.FC<ToolsUIProperties<SubAgentDispatchAr
   ({ messageId, toolCall }) => {
     const { token } = theme.useToken();
     const aiConfigRepository = useAIConfigRepository();
-    const currentConversation = useChatConversationsStore.use.currentConversation();
-    const chat = useChat(currentConversation);
+    const runtime = useChatBoxRuntime();
+    const currentConversation = runtime.chatConversationModel.currentConversation;
+    const chat = useChat(currentConversation, runtime);
     const responseLoading = chat.use.responseLoading();
     const messages = chat.use.messages();
     const [expanded, setExpanded] = useState(false);
