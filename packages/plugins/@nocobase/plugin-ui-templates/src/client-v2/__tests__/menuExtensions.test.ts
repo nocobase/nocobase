@@ -113,6 +113,27 @@ describe('registerMenuExtensions', () => {
       label: 'Convert reference to duplicate',
       sort: -8,
     });
+
+    class PopupSubTableEditActionModel extends FlowModel {}
+    PopupSubTableEditActionModel.registerFlow({
+      key: 'popupSettings',
+      title: 'Popup settings',
+      steps: {
+        openView: {
+          title: 'Open view',
+          use: 'openView',
+        },
+      },
+    });
+    const popupSubTableEdit = new PopupSubTableEditActionModel({
+      uid: 'popup-sub-table-edit',
+      use: 'PopupSubTableEditActionModel',
+      flowEngine: engine,
+    });
+    popupSubTableEdit.setStepParams('popupSettings', 'openView', { popupTemplateUid: 'tpl-popup' });
+    const popupSubTableEditItems = await PopupSubTableEditActionModel.getExtraMenuItems(popupSubTableEdit, t);
+    expect(findItem(popupSubTableEditItems, 'block-reference:save-popup-as-template')).toBeUndefined();
+    expect(findItem(popupSubTableEditItems, 'block-reference:convert-popup-template-to-copy')).toBeUndefined();
   });
 
   it('keeps popup template context when converting popup template to copy mode', async () => {
