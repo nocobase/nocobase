@@ -70,6 +70,18 @@ export default {
     'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
   },
+  useOriginalUrl: {
+    type: 'boolean',
+    title: `{{t("File URL", { ns: "${NAMESPACE}" })}}`,
+    'x-decorator': 'FormItem',
+    'x-component': 'UseOriginalUrlRadio',
+    default: false,
+  },
+  public: {
+    type: 'boolean',
+    'x-display': 'hidden',
+    default: false,
+  },
   renameMode: {
     title: `{{t("Renaming", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Renaming strategy to avoid filename conflicts when uploading files.", { ns: "${NAMESPACE}" })}}`,
