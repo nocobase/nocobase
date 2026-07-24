@@ -64,7 +64,16 @@ describe('frontend tools', () => {
   });
 
   it('keeps workspace apply bound to the first conversation catalog and accepts only planId', async () => {
-    const conversation: { options: Record<string, unknown> } = { options: {} };
+    const conversation: { options: Record<string, unknown> } = {
+      options: {
+        codingTarget: {
+          type: 'workspace',
+          surfaceId: 'workspace-1',
+          kind: 'runjs-studio',
+          title: 'Workspace one',
+        },
+      },
+    };
     const ctx = {
       action: {
         params: {
@@ -123,6 +132,160 @@ describe('frontend tools', () => {
     ];
     await expect(findCurrentFrontendTool(ctx, 'workspace-2:workspaceApplyPreparedChanges')).resolves.toBeUndefined();
     await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toEqual(workspaceApplyTool);
+  });
+
+  it('rejects a first frontend tool catalog from another surface when the request omits codingTarget', async () => {
+    const updateConversation = vi.fn();
+    const conversation = {
+      options: {
+        codingTarget: {
+          type: 'workspace',
+          surfaceId: 'workspace-1',
+          kind: 'runjs-studio',
+          title: 'Workspace one',
+        },
+      },
+    };
+    const mismatchedTool = {
+      ...workspaceApplyTool,
+      id: 'workspace-2:workspaceApplyPreparedChanges',
+      blockUid: 'workspace-2',
+    };
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            sessionId: 'workspace-session',
+            messages: [
+              {
+                role: 'user',
+                workContext: [{ type: 'code-workspace', uid: 'workspace-2', frontendTools: [mismatchedTool] }],
+              },
+            ],
+          },
+        },
+      },
+      db: {
+        getRepository: () => ({
+          findOne: vi.fn().mockResolvedValue(conversation),
+          update: updateConversation,
+        }),
+      },
+    } as unknown as Context;
+
+    await expect(findCurrentFrontendTool(ctx, mismatchedTool.id)).resolves.toBeUndefined();
+    expect(updateConversation).not.toHaveBeenCalled();
+
+    ctx.action.params.values.messages = [
+      {
+        role: 'user',
+        workContext: [{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [workspaceApplyTool] }],
+      },
+    ];
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toEqual(workspaceApplyTool);
+    expect(updateConversation).toHaveBeenCalledWith({
+      filter: { sessionId: 'workspace-session' },
+      values: {
+        options: {
+          codingTarget: conversation.options.codingTarget,
+          frontendTools: [workspaceApplyTool],
+        },
+      },
+    });
+  });
+
+  it('does not expose a persisted frontend tool catalog from another surface', async () => {
+    const mismatchedTool = {
+      ...workspaceApplyTool,
+      id: 'workspace-2:workspaceApplyPreparedChanges',
+      blockUid: 'workspace-2',
+    };
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            sessionId: 'workspace-session',
+          },
+        },
+      },
+      db: {
+        getRepository: () => ({
+          findOne: vi.fn().mockResolvedValue({
+            options: {
+              codingTarget: {
+                type: 'workspace',
+                surfaceId: 'workspace-1',
+                kind: 'runjs-studio',
+                title: 'Workspace one',
+              },
+              frontendTools: [mismatchedTool],
+            },
+          }),
+        }),
+      },
+    } as unknown as Context;
+
+    await expect(findCurrentFrontendTool(ctx, mismatchedTool.id)).resolves.toBeUndefined();
+  });
+
+  it('fails closed when a conversation has an invalid persisted coding target', async () => {
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            sessionId: 'workspace-session',
+          },
+        },
+      },
+      db: {
+        getRepository: () => ({
+          findOne: vi.fn().mockResolvedValue({
+            options: {
+              codingTarget: {
+                type: 'workspace',
+                surfaceId: '',
+                kind: 'runjs-studio',
+                title: 'Invalid workspace',
+              },
+              frontendTools: [workspaceApplyTool],
+            },
+          }),
+        }),
+      },
+    } as unknown as Context;
+
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toBeUndefined();
+  });
+
+  it('fails closed when a sessionless request explicitly provides an invalid coding target', async () => {
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            codingTarget: {
+              type: 'workspace',
+              surfaceId: '',
+              kind: 'runjs-studio',
+              title: 'Invalid workspace',
+            },
+            messages: [
+              {
+                role: 'user',
+                workContext: [
+                  {
+                    type: 'code-workspace',
+                    uid: 'workspace-1',
+                    frontendTools: [workspaceApplyTool],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    } as unknown as Context;
+
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toBeUndefined();
   });
 
   it('exposes frontend tools only for bound conversations and keeps the catalog on the loader', () => {

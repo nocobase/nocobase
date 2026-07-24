@@ -172,6 +172,28 @@ describe('Light Extension AI authoring contract', () => {
     expect(contract.preview).not.toHaveBeenCalled();
   });
 
+  it('tracks hidden file revisions without exposing hidden paths or content through public reads', async () => {
+    const contract = createContractSurface();
+    const before = await contract.surface.getSnapshot();
+
+    contract.editSource(hiddenPath, 'export const hiddenRevisionMarker = "hidden-revision-2";\n');
+
+    const projection = await contract.surface.describe();
+    const listed = await contract.surface.list();
+    const read = await contract.surface.read([entryPath, hiddenPath]);
+    const searched = await contract.surface.search({ query: 'hidden-revision-2' });
+
+    expect(projection.snapshotId).not.toBe(before.snapshotId);
+    expect(projection.files.map((file) => file.path)).not.toContain(hiddenPath);
+    expect(listed.map((file) => file.path)).not.toContain(hiddenPath);
+    expect(read.map((file) => file.path)).toEqual([entryPath]);
+    expect(searched).toEqual([]);
+    for (const publicResult of [projection, listed, read, searched]) {
+      expect(JSON.stringify(publicResult)).not.toContain(hiddenPath);
+      expect(JSON.stringify(publicResult)).not.toContain('hidden-revision-2');
+    }
+  });
+
   it('rejects traversal, hidden, generated, descriptor, stale, bad-hash, and duplicate-plan changes', async () => {
     const contract = createContractSurface();
     const snapshot = await contract.surface.getSnapshot();

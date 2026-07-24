@@ -197,6 +197,7 @@ export function prepareWorkspaceAuthoringChanges(
       continue;
     }
 
+    assertSupportedLanguage(surfaceId, change.path, existingSnapshot.language, supportedLanguages);
     const nextContent =
       change.type === 'patch'
         ? applyStrictUnifiedPatch(existing.content, change.patch, surfaceId, change.path)

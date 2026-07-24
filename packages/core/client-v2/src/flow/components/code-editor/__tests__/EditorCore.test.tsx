@@ -263,6 +263,37 @@ describe('EditorCore', () => {
     expect(document.activeElement).toBe(originalContent);
   });
 
+  it('reveals a source line and column without applying the runtime wrapper offset', () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const onRevealPositionApplied = vi.fn();
+    const value = 'first\nsecond\nthird';
+    const firstPosition = { line: 2, column: 3 };
+    const { rerender } = render(
+      <EditorCore
+        onRevealPositionApplied={onRevealPositionApplied}
+        revealPosition={firstPosition}
+        value={value}
+        viewRef={viewRef}
+      />,
+    );
+
+    expect(viewRef.current?.state.selection.main).toMatchObject({ anchor: 8, head: 8 });
+    expect(onRevealPositionApplied).toHaveBeenLastCalledWith(firstPosition);
+
+    const secondPosition = { line: 3, column: 2 };
+    rerender(
+      <EditorCore
+        onRevealPositionApplied={onRevealPositionApplied}
+        revealPosition={secondPosition}
+        value={value}
+        viewRef={viewRef}
+      />,
+    );
+
+    expect(viewRef.current?.state.selection.main).toMatchObject({ anchor: 14, head: 14 });
+    expect(onRevealPositionApplied).toHaveBeenLastCalledWith(secondPosition);
+  });
+
   it('wires JSON Schema validation into CodeMirror', async () => {
     const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
     render(

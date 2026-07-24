@@ -13,7 +13,7 @@ import {
   useApp,
   useFullscreenOverlay,
   type CodeAuthoringDiagnostic,
-  type CodeAuthoringRange,
+  type CodeEditorRevealPosition,
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
@@ -143,6 +143,15 @@ type RunJSStudioControllerProps = Omit<RunJSEditorProviderRenderProps, 'locator'
   locator?: RunJSSourceLocator;
 };
 
+const REDACTED_RUNJS_WORKSPACE_PATH = '[redacted RunJS workspace path]';
+
+type RunJSWorkspacePathReference = {
+  path: string;
+  reference: string;
+};
+
+const runJSWorkspacePathReferencesCache = new WeakMap<ReadonlySet<string>, RunJSWorkspacePathReference[]>();
+
 function toAuthoringDiagnostic(diagnostic: RunJSCompileDiagnostic): CodeAuthoringDiagnostic {
   const line = typeof diagnostic.line === 'number' ? Math.max(1, diagnostic.line) : undefined;
   const column = typeof diagnostic.column === 'number' ? Math.max(1, diagnostic.column) : undefined;
@@ -154,6 +163,87 @@ function toAuthoringDiagnostic(diagnostic: RunJSCompileDiagnostic): CodeAuthorin
     ...(diagnostic.code || diagnostic.ruleId ? { code: diagnostic.code || diagnostic.ruleId } : {}),
     source: 'runjs-compiler',
   };
+}
+
+function canReadRunJSAuthoringFile(file: WorkspaceAuthoringFile, canRead: boolean): boolean {
+  if (!canRead || file.path === runJSManifestPath) {
+    return false;
+  }
+  if (file.persisted === false) {
+    try {
+      const normalizedPath = normalizeRunJSWorkspacePath(file.path);
+      return !normalizedPath
+        .split('/')
+        .slice(0, -1)
+        .some((segment) => segment.startsWith('.'));
+    } catch (_) {
+      return false;
+    }
+  }
+  return validateRunJSWorkspacePath(file.path, (key) => key).valid;
+}
+
+function sanitizeRunJSAuthoringDiagnostic(
+  diagnostic: CodeAuthoringDiagnostic,
+  readablePaths: ReadonlySet<string>,
+  workspacePaths: ReadonlySet<string>,
+): CodeAuthoringDiagnostic | null {
+  let normalizedPath: string | undefined;
+  if (diagnostic.path) {
+    try {
+      normalizedPath = normalizeRunJSWorkspacePath(diagnostic.path);
+    } catch (_) {
+      return null;
+    }
+    if (!readablePaths.has(normalizedPath)) {
+      return null;
+    }
+  }
+  return {
+    ...diagnostic,
+    message: redactRunJSAuthoringDiagnosticMessage(diagnostic.message, readablePaths, workspacePaths),
+    ...(normalizedPath ? { path: normalizedPath } : {}),
+  };
+}
+
+function redactRunJSAuthoringDiagnosticMessage(
+  message: string,
+  readablePaths: ReadonlySet<string>,
+  workspacePaths: ReadonlySet<string>,
+): string {
+  const pathReferences = getRunJSWorkspacePathReferences(workspacePaths);
+  let result = '';
+  let offset = 0;
+  while (offset < message.length) {
+    const matchedPath = pathReferences.find(({ reference }) => message.startsWith(reference, offset));
+    if (!matchedPath) {
+      result += message[offset];
+      offset += 1;
+      continue;
+    }
+    result += readablePaths.has(matchedPath.path) ? matchedPath.reference : REDACTED_RUNJS_WORKSPACE_PATH;
+    offset += matchedPath.reference.length;
+  }
+  return result;
+}
+
+function getRunJSWorkspacePathReferences(workspacePaths: ReadonlySet<string>): RunJSWorkspacePathReference[] {
+  const cachedReferences = runJSWorkspacePathReferencesCache.get(workspacePaths);
+  if (cachedReferences) {
+    return cachedReferences;
+  }
+  const references = Array.from(workspacePaths).flatMap((path) => {
+    const windowsReference = path.replaceAll('/', '\\');
+    return windowsReference === path
+      ? [{ path, reference: path }]
+      : [
+          { path, reference: path },
+          { path, reference: windowsReference },
+        ];
+  });
+  references.sort((left, right) => right.reference.length - left.reference.length);
+  runJSWorkspacePathReferencesCache.set(workspacePaths, references);
+  return references;
 }
 
 function toAuthoringSourceFiles(files: RunJSWorkspaceFile[]): WorkspaceAuthoringFile[] {
@@ -250,6 +340,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [entryPath, setEntryPath] = useState(defaultEntryPath);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
+  const [editorRevealPosition, setEditorRevealPosition] = useState<
+    (CodeEditorRevealPosition & { path: string }) | undefined
+  >();
   const [activeTab, setActiveTab] = useState('code');
   const [filesCollapsed, setFilesCollapsed] = useState(true);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
@@ -285,7 +378,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const valueVersionRef = useRef(value.version);
   const workspaceTypeScriptContextResolverRef = useRef(props.workspaceTypeScriptContextResolver);
   const runJSSourceRequestRef = useRef(runJSSourceRequest);
-  const authoringRevealRef = useRef<{ path: string; range?: CodeAuthoringRange } | null>(null);
   workspaceRef.current = workspace;
   filesRef.current = files;
   entryPathRef.current = entryPath;
@@ -478,6 +570,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setEntryPath(defaultEntryPath);
     setActivePath(undefined);
     setOpenPaths([]);
+    setEditorRevealPosition(undefined);
     setActiveTab('code');
     setConsoleEntries([]);
     setSaveOpen(false);
@@ -518,7 +611,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
 
     setActivePath(path);
+    setEditorRevealPosition(undefined);
     setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
+  }, []);
+
+  const consumeEditorRevealPosition = useCallback((position: CodeEditorRevealPosition) => {
+    setEditorRevealPosition((current) => (current === position ? undefined : current));
   }, []);
 
   const closeOpenFile = useCallback(
@@ -560,6 +658,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setSavedFiles(loaded.currentFiles);
       setFiles(loaded.currentFiles);
       setEntryPath(loaded.entryPath);
+      setEditorRevealPosition(undefined);
       latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(
         loaded.currentFiles,
         loaded.entryPath,
@@ -1856,9 +1955,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                     : undefined,
         };
       },
-      canReadForAI: (file) => workspaceRef.current?.permissions.canRead === true && file.path !== runJSManifestPath,
+      canReadForAI: (file) => canReadRunJSAuthoringFile(file, workspaceRef.current?.permissions.canRead === true),
       getDiagnostics: () => previewDiagnosticsRef.current.map(toAuthoringDiagnostic),
-      sanitizeDiagnostic: (diagnostic) => diagnostic,
+      sanitizeDiagnostic: sanitizeRunJSAuthoringDiagnostic,
       validateDraft: async () => {
         const currentWorkspace = workspaceRef.current;
         const locator = locatorRef.current;
@@ -1882,11 +1981,19 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return result.artifact.diagnostics.map(toAuthoringDiagnostic);
       },
       reveal: (path, range) => {
-        authoringRevealRef.current = { path, range };
         if (filesRef.current.some((file) => file.path === path)) {
           setActivePath(path);
           setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
           setActiveTab('code');
+          setEditorRevealPosition(
+            range?.start.line
+              ? {
+                  path,
+                  line: range.start.line,
+                  column: range.start.column || 1,
+                }
+              : undefined,
+          );
         }
       },
       supportedLanguages: [
@@ -2198,6 +2305,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         openPaths={openPaths}
                         previewing={previewing}
                         readOnly={workspaceEditingDisabled}
+                        revealPosition={editorRevealPosition}
+                        onRevealPositionApplied={consumeEditorRevealPosition}
                         runJSModelUse={runJSModelUse}
                         savedFiles={savedFiles}
                         scene={scene}
@@ -2220,6 +2329,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         if (entry.path) {
                           openFilePath(entry.path);
                           setActiveTab('code');
+                          if (entry.line) {
+                            setEditorRevealPosition({
+                              path: entry.path,
+                              line: entry.line,
+                              column: entry.column || 1,
+                            });
+                          }
                         }
                       }}
                       onResize={setConsoleHeight}
@@ -2300,6 +2416,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           }
           openFilePath(diagnostic.path);
           setActiveTab('code');
+          if (diagnostic.line) {
+            setEditorRevealPosition({
+              path: diagnostic.path,
+              line: diagnostic.line,
+              column: diagnostic.column || 1,
+            });
+          }
           setSaveDiagnosticsOpen(false);
         }}
         open={saveDiagnosticsOpen}

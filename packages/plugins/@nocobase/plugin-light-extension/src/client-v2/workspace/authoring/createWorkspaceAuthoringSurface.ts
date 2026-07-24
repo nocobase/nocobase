@@ -49,7 +49,11 @@ export interface CreateWorkspaceAuthoringSurfaceOptions {
   getPathAccess: WorkspaceAuthoringPathAccessResolver;
   canReadForAI: (file: WorkspaceAuthoringFile) => boolean;
   getDiagnostics: () => CodeAuthoringDiagnostic[] | Promise<CodeAuthoringDiagnostic[]>;
-  sanitizeDiagnostic: (diagnostic: CodeAuthoringDiagnostic) => CodeAuthoringDiagnostic | null;
+  sanitizeDiagnostic: (
+    diagnostic: CodeAuthoringDiagnostic,
+    readablePaths: ReadonlySet<string>,
+    workspacePaths: ReadonlySet<string>,
+  ) => CodeAuthoringDiagnostic | null;
   validateDraft: () => CodeAuthoringDiagnostic[] | Promise<CodeAuthoringDiagnostic[]>;
   reveal: (path: string, range?: CodeAuthoringRange) => void | Promise<void>;
   supportedLanguages?: readonly string[];
@@ -136,9 +140,10 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
     snapshot: WorkspaceAuthoringTreeSnapshot,
   ): CodeAuthoringDiagnostic[] => {
     const readablePaths = new Set(snapshot.files.filter(canReadSnapshotFile).map((file) => file.path));
+    const workspacePaths = new Set(snapshot.files.map((file) => file.path));
     const sanitized: CodeAuthoringDiagnostic[] = [];
     for (const diagnostic of diagnostics) {
-      const safeDiagnostic = options.sanitizeDiagnostic(diagnostic);
+      const safeDiagnostic = options.sanitizeDiagnostic(diagnostic, readablePaths, workspacePaths);
       if (!safeDiagnostic) {
         continue;
       }

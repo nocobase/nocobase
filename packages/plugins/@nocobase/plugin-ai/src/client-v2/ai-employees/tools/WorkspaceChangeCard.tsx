@@ -25,9 +25,10 @@ type WorkspaceDiff = {
 
 type WorkspaceToolContent = {
   changedPaths?: string[];
+  code?: string;
   diffs?: WorkspaceDiff[];
   diagnostics?: unknown[];
-  error?: { message?: string };
+  error?: { code?: string; message?: string };
   message?: string;
   saved?: boolean;
   snapshot?: { diagnostics?: unknown[] };
@@ -45,6 +46,34 @@ const statusTag: Record<WorkspaceDiff['status'], string> = {
   created: 'A',
   modified: 'M',
   deleted: 'D',
+};
+
+const workspaceErrorTranslationKeys: Record<string, string> = {
+  INVALID_CHANGE: 'Workspace change request is invalid.',
+  INVALID_PATH: 'Workspace file path is invalid.',
+  STALE_SNAPSHOT: 'Workspace snapshot is stale',
+  DUPLICATE_TARGET: 'Workspace change targets the same file more than once.',
+  FILE_EXISTS: 'Workspace file already exists.',
+  FILE_NOT_FOUND: 'Workspace file was not found.',
+  BASE_HASH_MISMATCH: 'Workspace file changed since it was read.',
+  PATH_ACCESS_DENIED: 'Workspace file access is denied.',
+  READ_ONLY_FILE: 'Workspace file is read-only.',
+  VIRTUAL_FILE: 'Virtual workspace files cannot be changed.',
+  UNSUPPORTED_LANGUAGE: 'Workspace file language is not supported.',
+  BINARY_CONTENT: 'Binary workspace file content is not supported.',
+  PATCH_CONFLICT: 'Workspace patch no longer applies.',
+  PLAN_NOT_FOUND: 'Workspace change plan was not found.',
+  PLAN_EXPIRED: 'Workspace change plan has expired.',
+  PLAN_CONSUMED: 'Workspace change plan has already been applied.',
+  PLAN_APPLYING: 'Workspace change plan is already being applied.',
+  CAPABILITY_UNAVAILABLE: 'Workspace authoring is unavailable.',
+  SURFACE_DISPOSED: 'Workspace is no longer available.',
+  WORKSPACE_SURFACE_UNAVAILABLE: 'Workspace is unavailable.',
+  WORKSPACE_SURFACE_MISMATCH: 'Workspace identity has changed.',
+  WORKSPACE_CAPABILITY_UNAVAILABLE: 'Workspace authoring is unavailable.',
+  WORKSPACE_TOOL_ERROR: 'Workspace tool execution failed.',
+  WORKSPACE_CONTEXT_MISMATCH: 'Workspace context has changed.',
+  WORKSPACE_CONTEXT_ERROR: 'Workspace context is unavailable.',
 };
 
 export function isWorkspaceAuthoringToolId(toolId: unknown): boolean {
@@ -76,7 +105,7 @@ function WorkspaceAuthoringChangeCard({
   const action = args?.toolId?.endsWith(`:${WORKSPACE_AUTHORING_TOOL_NAMES.prepareChanges}`) ? 'prepare' : 'apply';
   const diffs = getDiffs(args, result);
   const changedPaths = getChangedPaths(diffs, result);
-  const errorMessage = getErrorMessage(toolCall.status, result, t('Workspace tool execution failed.'));
+  const errorMessage = getErrorMessage(toolCall.status, result, t);
   const diagnostics = result?.diagnostics || result?.snapshot?.diagnostics || [];
   const saved = result?.saved === true;
   const approvalPending = action === 'apply' && toolCall.invokeStatus === 'interrupted' && toolCall.auto !== true;
@@ -285,12 +314,13 @@ function getChangedPaths(diffs: WorkspaceDiff[], result: WorkspaceToolContent | 
 function getErrorMessage(
   status: ToolsUIProperties['toolCall']['status'],
   result: WorkspaceToolContent | null,
-  fallbackMessage: string,
+  translate: (key: string) => string,
 ) {
   if (status !== 'error' && result?.status !== 'error') {
     return undefined;
   }
-  return result?.error?.message || result?.message || fallbackMessage;
+  const code = result?.code || result?.error?.code;
+  return translate((code && workspaceErrorTranslationKeys[code]) || 'Workspace tool execution failed.');
 }
 
 function formatDiff(diff: WorkspaceDiff): string {

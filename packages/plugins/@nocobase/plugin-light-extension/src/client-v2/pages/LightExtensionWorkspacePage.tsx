@@ -16,6 +16,7 @@ import {
 import {
   ApplicationContext,
   type CodeAuthoringDiagnostic,
+  type CodeEditorRevealPosition,
   type EmbeddedRunJSEditorSaveResult,
   useFullscreenOverlay,
 } from '@nocobase/client-v2';
@@ -171,6 +172,9 @@ function LightExtensionWorkspacePage({
   const [folders, setFolders] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
+  const [editorRevealPosition, setEditorRevealPosition] = useState<
+    (CodeEditorRevealPosition & { path: string }) | undefined
+  >();
   const [filesCollapsed, setFilesCollapsed] = useState(defaultFilesCollapsed);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
@@ -211,7 +215,6 @@ function LightExtensionWorkspacePage({
   const authoringBlockedDirtyPathsRef = useRef<Set<string>>(new Set());
   const authoringWorkspaceWritableRef = useRef(false);
   const authoringWorkspaceScopeRef = useRef(workspaceScope);
-  const lastAuthoringRevealRef = useRef<LightExtensionDiagnostic | null>(null);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -236,6 +239,7 @@ function LightExtensionWorkspacePage({
       historyRequestSeqRef.current = historyRequestSeq;
       setHistoryLoading(false);
       setHistoryLoadingMore(false);
+      setEditorRevealPosition(undefined);
       setLoading(true);
       if (options.resetNotice !== false) {
         setNotice(null);
@@ -381,8 +385,13 @@ function LightExtensionWorkspacePage({
     }
 
     setActivePath(path);
+    setEditorRevealPosition(undefined);
     setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
     setIsDiff(false);
+  }, []);
+
+  const consumeEditorRevealPosition = useCallback((position: CodeEditorRevealPosition) => {
+    setEditorRevealPosition((current) => (current === position ? undefined : current));
   }, []);
 
   const closeOpenFile = useCallback(
@@ -831,7 +840,6 @@ function LightExtensionWorkspacePage({
 
   const openDiagnosticSource = useCallback(
     (diagnostic: LightExtensionDiagnostic) => {
-      lastAuthoringRevealRef.current = diagnostic;
       if (!diagnostic.path) {
         return;
       }
@@ -841,6 +849,13 @@ function LightExtensionWorkspacePage({
       }
 
       openFilePath(diagnostic.path);
+      if (diagnostic.line) {
+        setEditorRevealPosition({
+          path: diagnostic.path,
+          line: diagnostic.line,
+          column: diagnostic.column || 1,
+        });
+      }
       setNotice({ type: 'info', message: t('Opened diagnostic source') });
     },
     [openFilePath, t],
@@ -1386,6 +1401,8 @@ function LightExtensionWorkspacePage({
                         openPaths={openPaths}
                         previewing={previewing}
                         readOnly={activeFileReadOnly}
+                        revealPosition={editorRevealPosition}
+                        onRevealPositionApplied={consumeEditorRevealPosition}
                         runJSGlobalContextType={activeEntryContext.globalContextType}
                         savedFiles={baseFiles}
                         showRunButton={canPreview}

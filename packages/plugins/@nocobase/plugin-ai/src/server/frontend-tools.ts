@@ -16,6 +16,7 @@ import {
   type FrontendToolManifest,
   isFrontendToolManifest,
 } from '../common/frontend-tools';
+import { parseWorkspaceCodingTargetMetadata } from '../common/workspace-coding-target';
 import type { WorkContext } from './types/ai-message.type';
 
 type MessageLike = {
@@ -34,6 +35,9 @@ type FrontendToolResultInput = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
+
+const hasOwnProperty = (value: Record<string, unknown>, property: string): boolean =>
+  Object.prototype.hasOwnProperty.call(value, property);
 
 const isMessageLike = (value: unknown): value is MessageLike => !!value && typeof value === 'object';
 
@@ -82,11 +86,27 @@ const findRequestFrontendTools = (ctx: Context): FrontendToolManifest[] => {
   return [];
 };
 
+const alignFrontendToolsToCodingTarget = (
+  frontendTools: FrontendToolManifest[],
+  codingTarget: ReturnType<typeof parseWorkspaceCodingTargetMetadata>,
+): FrontendToolManifest[] => {
+  if (!codingTarget) {
+    return frontendTools;
+  }
+  return frontendTools.filter((tool) => tool.blockUid === codingTarget.surfaceId);
+};
+
 export const listCurrentFrontendTools = async (ctx: Context, sessionId?: string): Promise<FrontendToolManifest[]> => {
-  const requestSessionId = ctx.action?.params?.values?.sessionId;
+  const requestValues = ctx.action?.params?.values;
+  const requestSessionId = requestValues?.sessionId;
   const currentSessionId = sessionId ?? (typeof requestSessionId === 'string' ? requestSessionId : '');
   if (!currentSessionId) {
-    return findRequestFrontendTools(ctx);
+    const requestValuesRecord = isRecord(requestValues) ? requestValues : {};
+    const requestCodingTarget = parseWorkspaceCodingTargetMetadata(requestValuesRecord.codingTarget);
+    if (hasOwnProperty(requestValuesRecord, 'codingTarget') && !requestCodingTarget) {
+      return [];
+    }
+    return alignFrontendToolsToCodingTarget(findRequestFrontendTools(ctx), requestCodingTarget);
   }
 
   const conversationRepository = ctx.db.getRepository('aiConversations');
@@ -96,12 +116,17 @@ export const listCurrentFrontendTools = async (ctx: Context, sessionId?: string)
     },
   })) as ConversationLike | null;
   const options = conversation?.options;
-  const boundTools = normalizeFrontendToolManifests(isRecord(options) ? options.frontendTools : undefined);
-  if (boundTools.length) {
-    return boundTools;
+  const conversationOptions = isRecord(options) ? options : {};
+  const codingTarget = parseWorkspaceCodingTargetMetadata(conversationOptions.codingTarget);
+  if (hasOwnProperty(conversationOptions, 'codingTarget') && !codingTarget) {
+    return [];
+  }
+  const normalizedBoundTools = normalizeFrontendToolManifests(conversationOptions.frontendTools);
+  if (normalizedBoundTools.length) {
+    return alignFrontendToolsToCodingTarget(normalizedBoundTools, codingTarget);
   }
 
-  const frontendTools = findRequestFrontendTools(ctx);
+  const frontendTools = alignFrontendToolsToCodingTarget(findRequestFrontendTools(ctx), codingTarget);
   if (!frontendTools.length || !conversation) {
     return frontendTools;
   }
@@ -112,7 +137,7 @@ export const listCurrentFrontendTools = async (ctx: Context, sessionId?: string)
     },
     values: {
       options: {
-        ...(isRecord(options) ? options : {}),
+        ...conversationOptions,
         frontendTools,
       },
     },

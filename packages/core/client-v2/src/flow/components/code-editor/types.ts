@@ -23,6 +23,11 @@ export interface EditorRef {
   logs: RunLog[];
 }
 
+export interface CodeEditorRevealPosition {
+  line: number;
+  column: number;
+}
+
 export type CodeEditorExtra = ComponentType<{
   name?: string;
   language?: string;

@@ -18,7 +18,7 @@ import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { createPortal } from 'react-dom';
 import { EditorCore } from './core/EditorCore';
-import type { EditorRef } from './types';
+import type { CodeEditorRevealPosition, EditorRef } from './types';
 import { RightExtra as RightExtraPanel } from './panels/RightExtra';
 import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
@@ -49,6 +49,8 @@ export interface CodeEditorProps {
   jsonSchema?: CodeEditorJsonSchema;
   scene?: string | string[];
   authoringSurfaceId?: string;
+  revealPosition?: CodeEditorRevealPosition;
+  onRevealPositionApplied?: (position: CodeEditorRevealPosition) => void;
   RightExtra?: React.FC<{ viewRef: React.MutableRefObject<EditorView | null> }>;
   toolbarLeftExtra?: React.ReactNode;
   runButton?: React.ReactNode;
@@ -88,6 +90,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   jsonSchema,
   scene,
   authoringSurfaceId,
+  revealPosition,
+  onRevealPositionApplied,
   RightExtra,
   toolbarLeftExtra,
   runButton,
@@ -286,6 +290,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         typescriptProjectRef={typescriptProject ? typescriptProjectRef : undefined}
         language={language}
         jsonSchema={jsonSchema}
+        revealPosition={revealPosition}
+        onRevealPositionApplied={onRevealPositionApplied}
         viewRef={viewRef}
       />
       {showLogs ? (

@@ -64,21 +64,31 @@ vi.mock('@nocobase/client-v2', () => ({
     onChange,
     placeholder,
     readonly,
+    revealPosition,
+    runButton,
     value,
   }: {
     authoringSurfaceId?: string;
     onChange?: (value: string) => void;
     placeholder?: string;
     readonly?: boolean;
+    revealPosition?: { line: number; column: number };
+    runButton?: React.ReactNode;
     value?: string;
   }) => (
-    <div data-authoring-surface-id={authoringSurfaceId} data-testid="mock-code-editor">
+    <div
+      data-authoring-surface-id={authoringSurfaceId}
+      data-reveal-column={revealPosition?.column}
+      data-reveal-line={revealPosition?.line}
+      data-testid="mock-code-editor"
+    >
       <textarea
         aria-label={placeholder}
         onChange={(event) => onChange?.(event.target.value)}
         readOnly={readonly}
         value={value || ''}
       />
+      {runButton}
     </div>
   ),
   diagnoseRunJS: mocks.diagnoseRunJS,
@@ -387,6 +397,8 @@ describe('RunJS Studio authoring surface', () => {
       await surface.reveal('src/client/helper.ts', { start: { line: 1, column: 14 } });
     });
     expect(screen.getByLabelText('Edit file content')).toHaveValue('export const helper = 2;');
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-reveal-line', '1');
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-reveal-column', '14');
 
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     const dialog = await screen.findByRole('dialog', { name: 'Save version' });
@@ -409,7 +421,7 @@ describe('RunJS Studio authoring surface', () => {
     expect(saveRequest?.data?.files?.some((file) => file.path === 'types/generated-context.d.ts')).toBe(false);
   });
 
-  it('keeps the hidden RunJS manifest unreadable and immutable through the authoring surface', async () => {
+  it('keeps the internal manifest and invalid source paths unreadable through the authoring surface', async () => {
     mocks.request.mockImplementationOnce(({ url }: { url: string }) => {
       if (url !== 'runJSSources:open') {
         throw new Error(`Unexpected request: ${url}`);
@@ -426,6 +438,18 @@ describe('RunJS Studio authoring surface', () => {
                 language: 'json',
                 mode: '100644',
               },
+              {
+                path: 'src/.private/secret.ts',
+                content: 'export const secret = true;\n',
+                language: 'typescript',
+                mode: '100644',
+              },
+              {
+                path: 'private/outside.ts',
+                content: 'export const outside = true;\n',
+                language: 'typescript',
+                mode: '100644',
+              },
             ],
           },
         },
@@ -435,8 +459,12 @@ describe('RunJS Studio authoring surface', () => {
     const surface = await getRegisteredSurface();
     const snapshot = await surface.getSnapshot();
 
-    expect(snapshot.files.map((file) => file.path)).not.toContain('.nocobase/runjs-source.json');
-    await expect(surface.read(['.nocobase/runjs-source.json'])).resolves.toEqual([]);
+    expect(snapshot.files.map((file) => file.path)).not.toEqual(
+      expect.arrayContaining(['.nocobase/runjs-source.json', 'src/.private/secret.ts', 'private/outside.ts']),
+    );
+    await expect(
+      surface.read(['.nocobase/runjs-source.json', 'src/.private/secret.ts', 'private/outside.ts']),
+    ).resolves.toEqual([]);
     await expect(
       surface.prepareChanges({
         baseSnapshotId: snapshot.snapshotId,
@@ -453,6 +481,100 @@ describe('RunJS Studio authoring surface', () => {
       code: 'PATH_ACCESS_DENIED',
       details: { reason: 'RunJS internal manifest cannot be changed' },
     });
+  });
+
+  it('redacts unreadable RunJS paths from snapshot and validation diagnostics', async () => {
+    const diagnostics = [
+      {
+        path: 'src/client/index.tsx',
+        line: 1,
+        column: 1,
+        message:
+          "Readable failure references .nocobase/runjs-source.json, src/.private/secret.ts, private/outside.ts, 'src/.private/My Secret.ts', src/.private/Unquoted Secret.ts, private/foo.bar Secret.ts, and \"src/.private/O'Reilly Secret.ts\".",
+        severity: 'error' as const,
+      },
+      {
+        path: '.nocobase/runjs-source.json',
+        message: 'Internal manifest failure',
+        severity: 'error' as const,
+      },
+      {
+        path: 'src/.private/secret.ts',
+        message: 'Hidden source failure',
+        severity: 'error' as const,
+      },
+      {
+        path: 'private/outside.ts',
+        message: 'Outside source failure',
+        severity: 'error' as const,
+      },
+      {
+        message:
+          'Workspace failure references src/client/index.tsx, .nocobase/runjs-source.json, src/.private/secret.ts, and private/outside.ts.',
+        severity: 'warning' as const,
+      },
+    ];
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              files: [
+                ...openResult.files,
+                ...[
+                  '.nocobase/runjs-source.json',
+                  'src/.private/secret.ts',
+                  'private/outside.ts',
+                  'src/.private/My Secret.ts',
+                  'src/.private/Unquoted Secret.ts',
+                  'private/foo.bar Secret.ts',
+                  "src/.private/O'Reilly Secret.ts",
+                ].map((path) => ({ path, content: 'hidden', language: 'typescript', mode: '100644' })),
+              ],
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:compilePreview') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code: 'compiled code',
+                version: 'v2',
+                sourceMap: null,
+                diagnostics,
+                filesHash: 'files-hash-redacted-diagnostics',
+                entryPath: 'src/client/index.tsx',
+              },
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+    renderEditor();
+    const surface = await getRegisteredSurface();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(async () => {
+      expect((await surface.getSnapshot()).diagnostics).toHaveLength(2);
+    });
+
+    const snapshot = await surface.getSnapshot();
+    const validation = await surface.validateDraft();
+    const expectedMessages = [
+      'Readable failure references [redacted RunJS workspace path], [redacted RunJS workspace path], [redacted RunJS workspace path], \'[redacted RunJS workspace path]\', [redacted RunJS workspace path], [redacted RunJS workspace path], and "[redacted RunJS workspace path]".',
+      'Workspace failure references src/client/index.tsx, [redacted RunJS workspace path], [redacted RunJS workspace path], and [redacted RunJS workspace path].',
+    ];
+    expect(snapshot.diagnostics.map((diagnostic) => diagnostic.message)).toEqual(expectedMessages);
+    expect(validation.diagnostics).toEqual([]);
+    expect(JSON.stringify({ snapshot, validation })).not.toMatch(
+      /\.nocobase\/runjs-source\.json|src\/\.private\/secret\.ts|private\/outside\.ts|My Secret\.ts|Unquoted Secret\.ts|foo\.bar Secret\.ts|O'Reilly Secret\.ts/,
+    );
   });
 
   it('validates the complete unsaved workspace without invoking preview execution', async () => {

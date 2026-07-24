@@ -220,6 +220,7 @@ vi.mock('../vsc-file/public-api', () => {
       jsonSchemaResolver,
       authoringSurfaceId,
       onAuthoringSurfaceActivate,
+      revealPosition,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
@@ -239,6 +240,7 @@ vi.mock('../vsc-file/public-api', () => {
       ) => { uri: string } | undefined;
       authoringSurfaceId?: string;
       onAuthoringSurfaceActivate?: (surfaceId: string) => void;
+      revealPosition?: { path: string; line: number; column: number };
     }) => (
       <div
         data-authoring-surface-id={authoringSurfaceId || ''}
@@ -248,6 +250,9 @@ vi.mock('../vsc-file/public-api', () => {
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
+        data-reveal-column={revealPosition?.column}
+        data-reveal-line={revealPosition?.line}
+        data-reveal-path={revealPosition?.path}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -1935,6 +1940,12 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));
     expect(await screen.findByText('Opened diagnostic source')).toBeInTheDocument();
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-reveal-path',
+      'src/client/js-blocks/sales-kpi/index.tsx',
+    );
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-reveal-line', '1');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-reveal-column', '8');
   });
 
   it('loads a history version through pullCommit instead of pull ref', async () => {

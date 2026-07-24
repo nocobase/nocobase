@@ -49,6 +49,7 @@ vi.mock('@nocobase/client-v2', () => ({
     onChange,
     placeholder,
     readonly,
+    revealPosition,
     toolbarLeftExtra,
     runButton,
     fullscreenControl,
@@ -62,6 +63,7 @@ vi.mock('@nocobase/client-v2', () => ({
     onChange?: (value: string) => void;
     placeholder?: string;
     readonly?: boolean;
+    revealPosition?: { line: number; column: number };
     toolbarLeftExtra?: React.ReactNode;
     runButton?: React.ReactNode;
     fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
@@ -78,6 +80,8 @@ vi.mock('@nocobase/client-v2', () => ({
       data-enable-linter={String(Boolean(enableLinter))}
       data-json-schema-uri={jsonSchema?.uri}
       data-language={language}
+      data-reveal-column={revealPosition?.column}
+      data-reveal-line={revealPosition?.line}
       data-runjs-declaration-files={typescriptProject?.declarationFiles?.map((file) => file.path).join(',')}
       data-runjs-global-context-type={typescriptProject?.runJSContext?.globalContextType}
       data-runjs-model-use={typescriptProject?.runJSContext?.modelUse}
@@ -1237,7 +1241,8 @@ describe('runJSStudioProvider', () => {
       name: '[error] src/client/index.tsx:2:3 boom',
     });
     fireEvent.click(location);
-    expect(screen.getByLabelText('Edit file content')).toBeTruthy();
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-reveal-line', '2');
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-reveal-column', '3');
   });
 
   it('toggles the editor area into a diff against the saved file', async () => {

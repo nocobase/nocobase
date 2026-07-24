@@ -39,6 +39,8 @@ import {
   createTypeScriptProjectSession,
   type CodeEditorTypeScriptProjectRef,
 } from '../typescriptProject';
+import { jumpTo } from '../errorHelpers';
+import type { CodeEditorRevealPosition } from '../types';
 import { resolveTooltipParent } from './tooltipParent';
 
 const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
@@ -136,6 +138,8 @@ export const EditorCore: React.FC<{
   typescriptProjectRef?: CodeEditorTypeScriptProjectRef;
   language?: string;
   jsonSchema?: CodeEditorJsonSchema;
+  revealPosition?: CodeEditorRevealPosition;
+  onRevealPositionApplied?: (position: CodeEditorRevealPosition) => void;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -152,6 +156,8 @@ export const EditorCore: React.FC<{
   typescriptProjectRef,
   language,
   jsonSchema,
+  revealPosition,
+  onRevealPositionApplied,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -383,6 +389,16 @@ export const EditorCore: React.FC<{
       selection,
     });
   }, [value, viewRef]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !revealPosition) {
+      return;
+    }
+
+    jumpTo(view, revealPosition.line, revealPosition.column, 0);
+    onRevealPositionApplied?.(revealPosition);
+  }, [onRevealPositionApplied, revealPosition, viewRef]);
 
   const editorContainerMinHeight =
     typeof minHeight === 'undefined' ? 120 : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;

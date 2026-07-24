@@ -103,16 +103,21 @@ vi.mock('../vsc-file/public-api', () => ({
     authoringSurfaceId,
     onAuthoringSurfaceActivate,
     onChange,
+    revealPosition,
     workspaceFiles,
   }: {
     activeFile?: { path: string; content: string };
     authoringSurfaceId?: string;
     onAuthoringSurfaceActivate?: (surfaceId: string) => void;
     onChange: (content: string) => void;
+    revealPosition?: { path: string; line: number; column: number };
     workspaceFiles: Array<{ path: string }>;
   }) => (
     <div
       data-authoring-surface-id={authoringSurfaceId}
+      data-reveal-column={revealPosition?.column}
+      data-reveal-line={revealPosition?.line}
+      data-reveal-path={revealPosition?.path}
       data-testid="code-tab"
       data-workspace-paths={workspaceFiles.map((file) => file.path).join(',')}
     >
@@ -280,6 +285,12 @@ describe('LightExtensionWorkspace authoring surface', () => {
       });
     });
     expect(screen.getByTestId('active-path')).toHaveTextContent('src/client/js-blocks/sales-kpi/formatCurrency.ts');
+    expect(screen.getByTestId('code-tab')).toHaveAttribute(
+      'data-reveal-path',
+      'src/client/js-blocks/sales-kpi/formatCurrency.ts',
+    );
+    expect(screen.getByTestId('code-tab')).toHaveAttribute('data-reveal-line', '1');
+    expect(screen.getByTestId('code-tab')).toHaveAttribute('data-reveal-column', '8');
   });
 
   it('validates the complete source tree, filters diagnostics, and marks results stale after manual edits', async () => {

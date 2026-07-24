@@ -99,12 +99,18 @@ describe('WorkspaceChangeCard', () => {
             auto: true,
             status: 'error',
             args: { toolId: 'workspace-1:workspaceApplyPreparedChanges', args: { planId: 'plan-1' } },
-            content: { status: 'error', content: { message: 'The workspace changed' } },
+            content: {
+              status: 'error',
+              content: { code: 'STALE_SNAPSHOT', message: 'Raw workspace error must not be displayed' },
+            },
           } as never
         }
       />,
     );
-    expect(screen.getByTestId('workspace-change-card-error')).toHaveTextContent('The workspace changed');
+    expect(screen.getByTestId('workspace-change-card-error')).toHaveTextContent('Workspace snapshot is stale');
+    expect(screen.getByTestId('workspace-change-card-error')).not.toHaveTextContent(
+      'Raw workspace error must not be displayed',
+    );
 
     rerender(
       <WorkspaceChangeCard
@@ -124,6 +130,24 @@ describe('WorkspaceChangeCard', () => {
     );
     expect(screen.getByTestId('frontend-tool-execution-card')).toHaveTextContent('block-1:refresh_dashboard');
     expect(screen.getByRole('button', { name: 'Allow use' })).toBeTruthy();
+  });
+
+  it('uses the translated generic error for unknown workspace error codes', () => {
+    renderCard({
+      id: 'call-unknown-error',
+      name: 'executeFrontendTool',
+      invokeStatus: 'done',
+      auto: true,
+      status: 'error',
+      args: { toolId: 'workspace-1:workspacePrepareChanges', args: { changes: [] } },
+      content: {
+        status: 'error',
+        content: { code: 'UNKNOWN_WORKSPACE_ERROR', message: 'Unknown raw workspace error' },
+      },
+    });
+
+    expect(screen.getByTestId('workspace-change-card-error')).toHaveTextContent('Workspace tool execution failed.');
+    expect(screen.getByTestId('workspace-change-card-error')).not.toHaveTextContent('Unknown raw workspace error');
   });
 
   it('can transition from streaming fallback arguments to a workspace card without changing hook order', () => {

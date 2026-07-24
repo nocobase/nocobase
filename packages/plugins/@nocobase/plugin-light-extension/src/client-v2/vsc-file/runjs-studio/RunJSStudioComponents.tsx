@@ -30,6 +30,7 @@ import {
   CodeEditor,
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
+  type CodeEditorRevealPosition,
   type RunJSWorkspaceTypeScriptContextResolver,
 } from '@nocobase/client-v2';
 import {
@@ -861,6 +862,8 @@ export function CodeTab(props: {
   workspaceFiles: RunJSWorkspaceFile[];
   fullscreenControl?: CodeEditorFullscreenControl;
   jsonSchemaResolver?: RunJSWorkspaceJsonSchemaResolver;
+  revealPosition?: (CodeEditorRevealPosition & { path: string }) | undefined;
+  onRevealPositionApplied?: (position: CodeEditorRevealPosition) => void;
 }) {
   const {
     activeFile,
@@ -892,6 +895,8 @@ export function CodeTab(props: {
     workspaceFiles,
     fullscreenControl,
     jsonSchemaResolver,
+    revealPosition,
+    onRevealPositionApplied,
   } = props;
   const handleAuthoringSurfaceFocus = React.useCallback(() => {
     if (authoringSurfaceId) {
@@ -1039,6 +1044,8 @@ export function CodeTab(props: {
         onChange={isDiff ? undefined : onChange}
         placeholder={t('Edit file content')}
         readonly={readOnly || isDiff}
+        revealPosition={revealPosition?.path === activeFile.path ? revealPosition : undefined}
+        onRevealPositionApplied={onRevealPositionApplied}
         runButton={runAndDiffActions}
         scene={scene}
         showLogs={false}

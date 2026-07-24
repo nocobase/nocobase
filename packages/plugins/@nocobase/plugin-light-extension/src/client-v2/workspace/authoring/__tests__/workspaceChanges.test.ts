@@ -332,6 +332,24 @@ describe('workspace authoring changes', () => {
     expect(harness.commitSourceFiles).not.toHaveBeenCalled();
   });
 
+  it.each(['update', 'patch'] as const)('rejects %s changes to files with unsupported languages', async (type) => {
+    const harness = createHarness({
+      sourceFiles: [{ path: 'src/image.png', content: 'original', language: 'binary' }],
+    });
+    const snapshot = await harness.surface.getSnapshot();
+    const file = getSnapshotFile(snapshot, 'src/image.png');
+    const change: CodeAuthoringChange =
+      type === 'update'
+        ? { type, path: file.path, baseHash: file.hash, content: 'updated' }
+        : { type, path: file.path, baseHash: file.hash, patch: '@@ -1,1 +1,1 @@\n-original\n+updated\n' };
+
+    await expectAuthoringError(
+      harness.surface.prepareChanges({ baseSnapshotId: snapshot.snapshotId, changes: [change] }),
+      'UNSUPPORTED_LANGUAGE',
+    );
+    expect(harness.commitSourceFiles).not.toHaveBeenCalled();
+  });
+
   it('rejects duplicate targets, read-only files, wrong hashes, and inexact patches', async () => {
     const harness = createHarness();
     const snapshot = await harness.surface.getSnapshot();
