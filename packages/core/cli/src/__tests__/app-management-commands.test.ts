@@ -5959,6 +5959,7 @@ test('dev runs local npm/git source envs with a generated port when --port is om
   await Dev.prototype.run.call(command);
 
   expect(mocks.printInfo.mock.calls).toEqual([
+    ['Using env "dev".'],
     ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
   ]);
   expect(mocks.startTask.mock.calls).toEqual([['Running local postinstall for "dev"...']]);
@@ -5967,7 +5968,7 @@ test('dev runs local npm/git source envs with a generated port when --port is om
     [runtime, ['postinstall'], { stdio: 'inherit' }],
     [
       runtime,
-      ['dev', '--rsbuild', '--db-sync', '--port', '5544', '--client', '--inspect', '9229'],
+      ['dev', '--rsbuild', '--quickstart', '--db-sync', '--port', '5544', '--client', '--inspect', '9229'],
       { stdio: 'inherit' },
     ],
   ]);
@@ -6010,7 +6011,14 @@ test('dev uses an explicit port instead of the saved app port', async () => {
   await Dev.prototype.run.call(command);
 
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['dev', '--rsbuild', '--port', '12000', '--server']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
+    'dev',
+    '--rsbuild',
+    '--quickstart',
+    '--port',
+    '12000',
+    '--server',
+  ]);
   expect(mocks.findAvailableTcpPort.mock.calls.length).toBe(0);
   expect(mocks.run.mock.calls.length).toBe(0);
 });
@@ -6065,7 +6073,13 @@ test('dev adds devtools and installs dependencies for npm source envs', async ()
     ],
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['dev', '--rsbuild', '--port', '12000']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
+    'dev',
+    '--rsbuild',
+    '--quickstart',
+    '--port',
+    '12000',
+  ]);
 });
 
 test('dev installs dependencies when npm source devtools is declared but missing from node_modules', async () => {
