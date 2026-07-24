@@ -11,6 +11,11 @@ import { CollectionFieldModel, defineAction, FlowEngineContext, tExpr } from '@n
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 import { buildAssociationOptions } from './displayFieldComponent';
 import type { FieldModel } from '../models/base/FieldModel';
+import {
+  rebuildAssociationFieldSubModel,
+  shouldUseAssociationFieldComponentState,
+  type AssociationFieldPatternMode,
+} from '../internal/utils/associationFieldSubModelState';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
 
 export const fieldComponent = defineAction({
@@ -87,12 +92,27 @@ export const fieldComponent = defineAction({
         typeof selected?.defaultProps === 'function'
           ? selected.defaultProps(ctx, ctx.collectionField)
           : selected?.defaultProps;
-      await rebuildFieldSubModel({
-        parentModel: ctx.model,
-        targetUse: params.use,
-        defaultProps,
-        pattern: ctx.model.getProps().pattern,
-      });
+      const pattern = ctx.model.getProps().pattern;
+      const mode: AssociationFieldPatternMode = pattern === 'readPretty' ? 'readPretty' : 'editable';
+      const useAssociationState =
+        ctx.collectionField?.isAssociationField?.() && shouldUseAssociationFieldComponentState(ctx.model, params.use);
+      if (useAssociationState) {
+        await rebuildAssociationFieldSubModel({
+          parentModel: ctx.model,
+          targetUse: params.use,
+          defaultProps,
+          sourceMode: mode,
+          targetMode: mode,
+          pattern,
+        });
+      } else {
+        await rebuildFieldSubModel({
+          parentModel: ctx.model,
+          targetUse: params.use,
+          defaultProps,
+          pattern,
+        });
+      }
     }
   },
   defaultParams: (ctx: any) => {

@@ -16,6 +16,17 @@ export class ChinaRegionInterface extends BaseInterface {
     }
     const { field } = ctx;
     const items = str.split('/');
+    const componentProps = this.options?.uiSchema?.['x-component-props'] || {};
+    const maxLevel = Number(componentProps.maxLevel ?? 3);
+
+    if (Number.isFinite(maxLevel) && items.length > maxLevel) {
+      throw new Error(`china region path exceeds the configured max level ${maxLevel}`);
+    }
+
+    if (Number.isFinite(maxLevel) && componentProps.changeOnSelectLast && items.length !== maxLevel) {
+      throw new Error(`china region must be selected to the last level ${maxLevel}`);
+    }
+
     const repository = field.database.getRepository(field.target) as Repository;
 
     const instances = await repository.find({

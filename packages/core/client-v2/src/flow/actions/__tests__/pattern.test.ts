@@ -231,6 +231,35 @@ describe('pattern action', () => {
     });
   });
 
+  it('synchronizes disabled state to the field component model', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      DummyFormItemModel,
+      FieldModel,
+    });
+    const parent = engine.createModel<DummyFormItemModel>({
+      use: DummyFormItemModel,
+      uid: 'form-item-disabled',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-disabled',
+        },
+      },
+    });
+    const ctx = makeCtx(parent);
+
+    await pattern.beforeParamsSave?.(ctx, { pattern: 'disabled' }, { pattern: 'editable' });
+
+    expect(parent.props).toMatchObject({ disabled: true, pattern: 'editable' });
+    expect(parent.subModels.field?.props.disabled).toBe(true);
+
+    await pattern.beforeParamsSave?.(ctx, { pattern: 'editable' }, { pattern: 'disabled' });
+
+    expect(parent.props).toMatchObject({ disabled: false, pattern: 'editable' });
+    expect(parent.subModels.field?.props.disabled).toBe(false);
+  });
+
   it('passes the association title field to the rebuilt display field model', async () => {
     const engine = new FlowEngine();
     engine.registerModels({

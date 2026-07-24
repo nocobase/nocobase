@@ -14,7 +14,18 @@ import { FieldModel } from '../../../models/base/FieldModel';
 import { rebuildFieldSubModel, getFieldBindingUse } from '../rebuildFieldSubModel';
 
 class DummyTargetFieldModel extends FieldModel {}
+class DummyTargetWithDefaultsFieldModel extends FieldModel {}
 class DummyColumnModel extends FlowModel {}
+class DummyDefaultColumnModel extends FlowModel {}
+
+DummyTargetWithDefaultsFieldModel.define({
+  createModelOptions: {
+    use: 'DummyTargetWithDefaultsFieldModel',
+    subModels: {
+      columns: [{ use: 'DummyDefaultColumnModel', uid: 'default-column' }],
+    },
+  },
+});
 
 class DummyParentModel extends FlowModel<{ subModels: { field?: FieldModel } }> {
   getFieldSettingsInitParams() {
@@ -30,7 +41,9 @@ describe('rebuildFieldSubModel', () => {
     engine.registerModels({
       FieldModel,
       DummyTargetFieldModel,
+      DummyTargetWithDefaultsFieldModel,
       DummyColumnModel,
+      DummyDefaultColumnModel,
       DummyParentModel,
     });
   });
@@ -106,6 +119,59 @@ describe('rebuildFieldSubModel', () => {
     const cols = rebuilt.subModels?.['columns'] as any[];
     expect(Array.isArray(cols)).toBe(true);
     expect(cols.map((c) => c.uid)).toEqual(['col-1', 'col-2']);
+  });
+
+  test('uses target model defaults when subModel preservation is disabled', async () => {
+    const parent = engine.createModel<DummyParentModel>({
+      use: DummyParentModel,
+      uid: 'parent-target-defaults',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-target-defaults',
+          subModels: {
+            columns: [{ use: DummyColumnModel, uid: 'old-column' }],
+          },
+        },
+      },
+    });
+
+    await rebuildFieldSubModel({
+      parentModel: parent,
+      targetUse: 'DummyTargetWithDefaultsFieldModel',
+      preserveSubModels: false,
+    });
+
+    const columns = parent.subModels.field?.subModels.columns as FlowModel[];
+    expect(columns.map((column) => column.uid)).toEqual(['default-column']);
+  });
+
+  test('uses explicitly supplied target subModels', async () => {
+    const parent = engine.createModel<DummyParentModel>({
+      use: DummyParentModel,
+      uid: 'parent-explicit-submodels',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-explicit-submodels',
+          subModels: {
+            columns: [{ use: DummyColumnModel, uid: 'old-column' }],
+          },
+        },
+      },
+    });
+
+    await rebuildFieldSubModel({
+      parentModel: parent,
+      targetUse: 'DummyTargetWithDefaultsFieldModel',
+      preserveSubModels: false,
+      subModels: {
+        columns: [{ use: DummyColumnModel, uid: 'restored-column' }],
+      },
+    });
+
+    const columns = parent.subModels.field?.subModels.columns as FlowModel[];
+    expect(columns.map((column) => column.uid)).toEqual(['restored-column']);
   });
 
   test('preserves compatible step params when rebuilding with the same field model use', async () => {

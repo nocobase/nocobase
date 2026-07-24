@@ -232,6 +232,18 @@ const ArrayNester = ({
       cache: false,
     });
   }, [disabled, gridModel.context]);
+  useEffect(() => {
+    Object.values(forksRef.current).forEach((fork) => {
+      fork.setProps({ disabled });
+      fork.context.defineProperty('parentDisabled', {
+        get: () => disabled,
+        cache: false,
+      });
+      fork.mapSubModels('items', (item) => {
+        item.setProps({ disabled });
+      });
+    });
+  }, [disabled]);
 
   return (
     <Card
@@ -269,7 +281,6 @@ const ArrayNester = ({
                   get: () => fieldIndex,
                   cache: false,
                 });
-                console.log(fieldPathArray);
                 currentFork.context.defineProperty('fieldPathArray', {
                   get: () => fieldPathArray,
                   cache: false,
