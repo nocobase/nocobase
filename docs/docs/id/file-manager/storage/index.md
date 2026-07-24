@@ -24,30 +24,6 @@ Saat ini tipe engine yang didukung built-in oleh NocoBase adalah sebagai berikut
 - [S3 Pro](./s3-pro)
 
 Sistem akan otomatis menambahkan satu local storage engine saat instalasi, yang dapat langsung digunakan. Anda juga dapat menambahkan engine baru atau mengedit parameter engine yang sudah ada.
-
-
-Jika Anda sudah menggunakan storage engine yang hanya mendukung akses publik dan ingin memigrasikan file historis ke S3 Pro, lihat [Migrasi ke S3 Pro](./migrate-to-s3-pro.md).
-
-## Aksesibilitas file
-
-Setiap storage engine mendukung kontrol akses file yang berbeda. Sebelum konfigurasi, pastikan apakah file memerlukan akses privat:
-
-| Storage engine | Aksesibilitas file |
-| --- | --- |
-| [Local Storage](./local) | Hanya mendukung akses publik; akses privat tidak didukung |
-| [Amazon S3](./amazon-s3) | Hanya mendukung akses publik; akses privat tidak didukung |
-| [Aliyun OSS](./aliyun-oss) | Hanya mendukung akses publik; akses privat tidak didukung |
-| [Tencent COS](./tencent-cos) | Hanya mendukung akses publik; akses privat tidak didukung |
-| [S3 Pro](./s3-pro) | Mendukung akses privat melalui URL bertanda tangan sementara |
-
-:::warning Perhatian
-
-Local Storage, Amazon S3, Aliyun OSS, dan Tencent COS tidak melakukan autentikasi login untuk akses file dan tidak membuat URL bertanda tangan sementara. Setelah file di-upload, siapa pun yang memiliki URL akses file dapat mengakses file tersebut secara langsung.
-
-Jika perlu menyimpan kontrak, dokumen identitas, materi internal, atau file lain yang tidak boleh publik, gunakan [S3 Pro](./s3-pro) dan aktifkan akses privat.
-
-:::
-
 ## Parameter Umum Engine
 
 Selain parameter spesifik untuk setiap kategori engine, bagian berikut adalah parameter umum (contoh dengan local storage):
@@ -87,11 +63,75 @@ Setelah dicentang, diatur sebagai storage engine default sistem. Saat field atta
 Setelah dicentang, saat record data attachment atau file collection dihapus, file yang sudah di-upload di storage engine tetap dipertahankan. Default tidak dicentang, yaitu saat hapus record akan sekaligus menghapus file di storage engine.
 
 :::info{title=Tips}
-Setelah file di-upload, akses path akhir akan terdiri dari beberapa bagian yang di-concat:
+Saat "URL asli" dipilih, alamat storage akhir disusun dari beberapa bagian:
 
 ```
 <basis akses URL>/<path>/<nama file><extension>
 ```
 
 Seperti: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+
+Saat "URL NocoBase" dipilih, record file mengembalikan path NocoBase dengan format `/files/...`. Konfigurasi di atas tetap digunakan saat mengakses service storage.
 :::
+
+## URL file dan kontrol akses
+
+Storage engine dapat mengembalikan URL NocoBase atau URL asli dari service storage. URL NocoBase digunakan secara default. Pilih URL asli hanya ketika service eksternal harus menggunakan alamat storage secara langsung.
+
+Konfigurasi ini berlaku per storage engine. Setelah disimpan, file yang sudah ada dan file baru yang di-upload di engine tersebut akan mengembalikan URL dalam bentuk yang dipilih. File tidak dipindahkan atau di-upload ulang.
+
+![Konfigurasi URL file](https://static-docs.nocobase.com/20260723221234.png)
+
+### URL NocoBase
+
+Record file mengembalikan path akses yang disediakan oleh NocoBase, contohnya:
+
+```text
+/files/main/main/attachments/1.png
+```
+
+Request ke URL ini terlebih dahulu melewati NocoBase dan mengikuti izin melihat yang dikonfigurasi untuk record file terkait. NocoBase hanya membaca file atau mengalihkan ke alamat yang dibuat oleh service storage setelah pemeriksaan izin berhasil.
+
+Ini adalah pilihan default yang direkomendasikan. Record file mengembalikan path NocoBase, sehingga pemanggil tidak perlu mengetahui apakah local storage atau cloud storage yang digunakan.
+
+### URL asli
+
+Record file langsung mengembalikan alamat yang dibuat oleh service storage, contohnya:
+
+```text
+https://storage.example.com/path/to/file.png
+```
+
+URL ini tidak melewati NocoBase dan tidak memeriksa izin melihat record file. Untuk local storage, URL ini adalah alamat file statis lokal. Untuk cloud storage, URL ini biasanya merupakan alamat object storage atau CDN.
+
+Pilih URL asli hanya ketika Markdown, halaman eksternal, atau service pihak ketiga harus menggunakan alamat storage secara langsung.
+
+:::warning Perhatian
+
+Setelah URL asli dipilih, siapa pun yang memiliki URL valid dapat melewati pemeriksaan izin NocoBase dan mengakses file. Jika URL tidak memiliki tanda tangan atau masa berlaku, pastikan bucket dan file mengizinkan akses baca publik.
+
+:::
+
+### Izinkan akses publik
+
+"Izinkan akses publik" hanya berlaku saat "URL NocoBase" dipilih. Saat dicentang, storage engine tetap mengembalikan URL NocoBase, tetapi NocoBase tidak lagi memeriksa izin record file ketika URL diakses. Siapa pun yang memiliki URL dapat mengakses file.
+
+Opsi ini tidak mengubah konfigurasi baca publik milik service storage. Opsi ini hanya mengontrol apakah NocoBase memeriksa izin record file.
+
+### Cara memilih
+
+| Skenario penggunaan | URL file | Izinkan akses publik |
+| --- | --- | --- |
+| File harus mengikuti izin role dan data | URL NocoBase | Tidak dicentang |
+| Diperlukan alamat file NocoBase yang dapat dibagikan secara publik | URL NocoBase | Dicentang |
+| Markdown, halaman eksternal, atau service pihak ketiga harus membaca alamat storage secara langsung | URL asli | Tidak berlaku |
+
+:::warning Perhatian
+
+[Local Storage](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss), dan [Tencent COS](./tencent-cos) tidak membuat URL bertanda tangan sementara. Meskipun URL NocoBase dan izin record file diaktifkan, siapa pun yang sudah memperoleh alamat asli service storage tetap dapat mengakses file secara langsung.
+
+Untuk kontrak, dokumen identitas, materi internal, atau file lain yang tidak boleh publik, gunakan [S3 Pro](./s3-pro) dan lihat konfigurasi kontrol akses khususnya.
+
+:::
+
+Jika Anda sudah menggunakan storage engine publik dan ingin memigrasikan file yang ada ke S3 Pro, lihat [Migrasi ke S3 Pro](./migrate-to-s3-pro.md).
