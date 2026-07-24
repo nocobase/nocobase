@@ -143,6 +143,34 @@ afterEach(() => {
 });
 
 describe('AICodingButton authoring targets', () => {
+  it('renders exactly one assistant trigger for each simultaneously mounted workspace editor', () => {
+    surfaces.set('workspace-a', createSurface('workspace-a', 'Workspace A'));
+    surfaces.set('workspace-b', createSurface('workspace-b', 'Workspace B'));
+
+    render(
+      <>
+        <AICodingButton
+          uid="editor-a"
+          scene="RunJS"
+          language="javascript"
+          authoringSurfaceId="workspace-a"
+          editorRef={editorRef()}
+          setActive={vi.fn()}
+        />
+        <AICodingButton
+          uid="editor-b"
+          scene="RunJS"
+          language="javascript"
+          authoringSurfaceId="workspace-b"
+          editorRef={editorRef()}
+          setActive={vi.fn()}
+        />
+      </>,
+    );
+
+    expect(screen.getAllByRole('button', { name: 'AI coding assistant' })).toHaveLength(2);
+  });
+
   it('binds an available workspace without reading source during render or storing full source in context', async () => {
     const surface = createSurface('workspace-a', 'Workspace A');
     surfaces.set(surface.id, surface);

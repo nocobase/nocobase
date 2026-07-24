@@ -332,10 +332,26 @@ describe('workspace authoring integration', () => {
 
     unregisterFirst();
     await expect(aiManager.frontendTools.execute('workspace-a:workspaceDescribe', {})).rejects.toThrow('unavailable');
-    await expect(aiManager.frontendTools.execute('workspace-b:workspaceDescribe', {})).resolves.toMatchObject({
-      status: 'success',
-      content: { surfaceId: 'workspace-b' },
+    const secondPrepared = await aiManager.frontendTools.execute('workspace-b:workspacePrepareChanges', {
+      baseSnapshotId: 'workspace-b:revision:1',
+      changes: [
+        {
+          type: 'update',
+          path: 'src/index.ts',
+          baseHash: 'src/index.ts:export const target = "B";',
+          content: 'export const target = "B-updated-after-a-unmount";',
+        },
+      ],
     });
+    const secondPlanId = (secondPrepared as { content: { planId: string } }).content.planId;
+    await expect(
+      aiManager.frontendTools.execute('workspace-b:workspaceApplyPreparedChanges', { planId: secondPlanId }),
+    ).resolves.toMatchObject({
+      status: 'success',
+      content: { surfaceId: 'workspace-b', changedPaths: ['src/index.ts'], saved: false },
+    });
+    expect(first.getFiles()['src/index.ts']).toBe('export const target = "A-updated";');
+    expect(second.getFiles()['src/index.ts']).toBe('export const target = "B-updated-after-a-unmount";');
 
     const remounted = createTestWorkspace('workspace-a', 'export const target = "A-remounted";');
     authoringSurfaces.register(remounted.surface);
