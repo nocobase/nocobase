@@ -4575,6 +4575,10 @@ export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
+    const submit = delegate.blockModel?.submitFromRunJs?.bind(delegate.blockModel);
+    if (delegate.form && submit) {
+      this.defineProperty('form', { value: { ...delegate.form, submit } });
+    }
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
     this.defineProperty('dayjs', {
