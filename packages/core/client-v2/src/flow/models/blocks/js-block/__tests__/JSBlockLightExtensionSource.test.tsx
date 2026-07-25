@@ -419,6 +419,50 @@ describe('JSBlockModel light extension source', () => {
     expect(rerenderSpy).toHaveBeenCalled();
   });
 
+  it('allows switching a light-extension-only block to empty inline code', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({ code: 'ctx.render("remote");' }),
+      getSettingsDescriptor: async () => SETTINGS_DESCRIPTOR,
+    });
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel });
+    const model = engine.createModel<JSBlockModel>({
+      use: 'JSBlockModel',
+      uid: 'js-block-source-menu-switch-to-inline',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceMode: 'light-extension',
+            sourceBinding: SOURCE_BINDING,
+            settings: { title: 'Sales' },
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const sourceModeStep = model.getFlow('jsSettings')?.steps?.sourceMode as {
+      beforeParamsSave?: (ctx: typeof model.context, params: Record<string, unknown>, previousParams: unknown) => void;
+    };
+
+    await sourceModeStep.beforeParamsSave?.(
+      model.context,
+      {
+        sourceMode: 'inline',
+        sourceBinding: undefined,
+        settings: { title: 'Sales' },
+      },
+      {},
+    );
+
+    expect(model.getStepParams('jsSettings', 'runJs')).toEqual({
+      sourceMode: 'inline',
+      code: '',
+      settings: { title: 'Sales' },
+      version: 'v2',
+    });
+  });
+
   it('does not generate runtime settings steps for inline JS blocks', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ JSBlockModel });
@@ -863,5 +907,24 @@ describe('JSBlockModel light extension source', () => {
     expect(alert).toHaveTextContent('Light extension settings are invalid');
     expect(alert).toHaveTextContent('Open the block settings and fix the light extension settings.');
     expect(alert).toHaveTextContent('Fields: pageSize');
+  });
+
+  it('runs pure inline code when the workspace has no entry.json settings descriptor', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-block-missing-entry-json-test',
+      canHandle: (input) => input.sourceMode === 'inline' && Boolean(input.sourceRef),
+      // Missing entry.json is optional: provider reports no settings schema.
+      getSettingsDescriptor: async () => undefined,
+    });
+
+    renderJSBlock({
+      code: 'ctx.render(<span data-testid="inline-no-settings">ok</span>);',
+      sourceMode: 'inline',
+      sourceRef: { type: 'vsc-file', repoId: 'repo-block', commitId: 'commit-1' },
+      version: 'v2',
+    });
+
+    expect(await screen.findByTestId('inline-no-settings')).toHaveTextContent('ok');
+    expect(screen.queryByTestId('js-block-runtime-error')).toBeNull();
   });
 });

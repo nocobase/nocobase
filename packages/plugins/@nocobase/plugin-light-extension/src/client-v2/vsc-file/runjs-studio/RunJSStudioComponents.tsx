@@ -844,10 +844,8 @@ export function CodeTab(props: {
   onDiffToggle: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
-  onCheck?: () => void;
   onRunPreview?: () => void;
   openPaths: string[];
-  checking?: boolean;
   previewing?: boolean;
   projectRevision: number;
   readOnly: boolean;
@@ -856,7 +854,6 @@ export function CodeTab(props: {
   workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
-  showCheckButton?: boolean;
   showRunButton?: boolean;
   t: (key: string) => string;
   toolbarActions?: React.ReactNode;
@@ -878,10 +875,8 @@ export function CodeTab(props: {
     onDiffToggle,
     onFilesCollapsedChange,
     onOpenFile,
-    onCheck,
     onRunPreview,
     openPaths,
-    checking,
     previewing,
     projectRevision,
     readOnly,
@@ -890,7 +885,6 @@ export function CodeTab(props: {
     workspaceTypeScriptContextResolver,
     savedFiles,
     scene,
-    showCheckButton = true,
     showRunButton = true,
     t,
     toolbarActions,
@@ -957,18 +951,14 @@ export function CodeTab(props: {
       </div>
     </div>
   );
+  // Order: text actions first (Run), then icon actions (Diff + move/source toolbar contributions).
+  // Keeps Snippets/Run text buttons contiguous and icon buttons (Diff, Move to …) grouped after them.
   const runAndDiffActions = (
     <Space size={8}>
-      {toolbarActions}
       <Space.Compact>
         {showRunButton ? (
           <Button disabled={isDiff || !onRunPreview || busy} loading={previewing} onClick={onRunPreview} size="small">
             {t('Run')}
-          </Button>
-        ) : null}
-        {showCheckButton ? (
-          <Button disabled={isDiff || !onCheck || busy} loading={checking} onClick={onCheck} size="small">
-            {t('Check')}
           </Button>
         ) : null}
         <Tooltip title={t('Diff')}>
@@ -981,6 +971,7 @@ export function CodeTab(props: {
           />
         </Tooltip>
       </Space.Compact>
+      {toolbarActions}
     </Space>
   );
 
@@ -1701,7 +1692,7 @@ export function ConsolePanel(props: {
               minHeight: 48,
             }}
           >
-            {t('No messages yet. Click Run to preview or Check to validate.')}
+            {t('No messages yet. Click Run to preview.')}
           </div>
         ) : null}
         {entries.map((entry) => (

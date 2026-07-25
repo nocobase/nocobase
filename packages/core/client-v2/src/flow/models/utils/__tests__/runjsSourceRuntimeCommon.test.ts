@@ -379,6 +379,74 @@ describe('runjsSourceRuntimeCommon', () => {
     });
   });
 
+  it('pins empty inline code when switching from a light-extension-only binding', () => {
+    const setStepParams = vi.fn();
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'repo_1',
+      entryId: 'entry_1',
+      kind: 'js-block',
+    };
+    const model = {
+      getStepParams: () => ({
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding,
+        settings: { title: 'Sales' },
+      }),
+      setStepParams,
+    } as never;
+
+    setCanonicalLightExtensionSource(model, 'jsSettings', {
+      sourceMode: 'inline',
+      sourceBinding: undefined,
+      settings: { title: 'Sales' },
+    });
+
+    expect(setStepParams).toHaveBeenCalledWith('jsSettings', {
+      runJs: {
+        version: 'v2',
+        sourceMode: 'inline',
+        code: '',
+        settings: { title: 'Sales' },
+      },
+    });
+    expect(setStepParams.mock.calls[0][1].runJs).not.toHaveProperty('sourceBinding');
+  });
+
+  it('keeps existing inline code when switching back from a light extension binding', () => {
+    const setStepParams = vi.fn();
+    const model = {
+      getStepParams: () => ({
+        code: 'ctx.render("kept inline");',
+        version: 'v1',
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'repo_1',
+          entryId: 'entry_1',
+          kind: 'js-block',
+        },
+        settings: {},
+      }),
+      setStepParams,
+    } as never;
+
+    setCanonicalLightExtensionSource(model, 'jsSettings', {
+      sourceMode: 'inline',
+      settings: {},
+    });
+
+    expect(setStepParams).toHaveBeenCalledWith('jsSettings', {
+      runJs: {
+        code: 'ctx.render("kept inline");',
+        version: 'v1',
+        sourceMode: 'inline',
+        settings: {},
+      },
+    });
+  });
+
   it('rejects binding settings when the entry declares no settings schema', () => {
     let caught: unknown;
     try {

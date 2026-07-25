@@ -165,7 +165,6 @@ function LightExtensionWorkspacePage({
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [checking, setChecking] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -297,7 +296,6 @@ function LightExtensionWorkspacePage({
     !canWrite || !activePath || !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
   const checkSnapshotKey = useMemo(() => buildWorkspacePreviewSnapshot(files, workspaceScope), [files, workspaceScope]);
   latestCheckSnapshotRef.current = checkSnapshotKey;
-  const canCheck = entryScoped;
   const canPreview = entryScoped && Boolean(onPreview);
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
 
@@ -771,47 +769,6 @@ function LightExtensionWorkspacePage({
     [files, openFilePath, t],
   );
 
-  const checkWorkspace = useCallback(async () => {
-    if (!canCheck || workspaceScope.mode !== 'entry') {
-      return;
-    }
-
-    const requestSnapshotKey = checkSnapshotKey;
-    setChecking(true);
-    setNotice(null);
-    try {
-      const result = await compileWorkspacePreview({
-        repoId,
-        entryId,
-        kind: workspaceScope.kind,
-        entryPath: workspaceScope.entryPath,
-        runtimeVersion: 'v2',
-        files: files.map((file) => ({
-          path: file.path,
-          content: file.content,
-          language: file.language,
-          mode: file.mode,
-        })),
-      });
-      if (latestCheckSnapshotRef.current !== requestSnapshotKey) {
-        setNotice({ type: 'info', message: t('Source changed while checking. Check again.') });
-        return;
-      }
-
-      setDiagnostics(result.diagnostics);
-      if (!result.accepted) {
-        setNotice({ type: 'error', message: t('Source check failed') });
-        return;
-      }
-      setNotice({ type: 'success', message: t('Source check passed') });
-    } catch (error) {
-      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Source check failed') });
-    } finally {
-      setChecking(false);
-    }
-  }, [canCheck, checkSnapshotKey, compileWorkspacePreview, entryId, files, repoId, t, workspaceScope]);
-
   const runPreview = useCallback(async () => {
     if (!canPreview || workspaceScope.mode !== 'entry' || !onPreview) {
       return;
@@ -1169,7 +1126,7 @@ function LightExtensionWorkspacePage({
                       <CodeTab
                         activeFile={activeFile}
                         activePath={activePath}
-                        busy={checking || previewing}
+                        busy={previewing}
                         diffRows={diffRows}
                         emptyDiffDescription={t('No changes between current editor and saved source')}
                         filesCollapsed={filesCollapsed}
@@ -1184,16 +1141,13 @@ function LightExtensionWorkspacePage({
                         onDiffToggle={() => setIsDiff((current) => !current)}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
-                        onCheck={canCheck ? checkWorkspace : undefined}
                         onRunPreview={canPreview ? runPreview : undefined}
                         openPaths={openPaths}
-                        checking={checking}
                         previewing={previewing}
                         projectRevision={projectRevision}
                         readOnly={activeFileReadOnly}
                         runJSGlobalContextType={activeEntryContext.globalContextType}
                         savedFiles={baseFiles}
-                        showCheckButton={canCheck}
                         showRunButton={canPreview}
                         t={studioT}
                         toolbarActions={

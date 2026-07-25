@@ -1382,12 +1382,16 @@ function normalizeInitialRunJSSource(value: unknown): RunJSSourceInitialSource |
   }
 
   const source = toRecord(value);
-  if (typeof source.code !== 'string' || typeof source.version !== 'string' || !source.version) {
+  if (typeof source.version !== 'string' || !source.version) {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS initial source is invalid');
+  }
+  // Missing code is treated as empty inline source (e.g. light-extension → inline with no stored code).
+  if (source.code !== undefined && source.code !== null && typeof source.code !== 'string') {
     throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS initial source is invalid');
   }
 
   return {
-    code: source.code,
+    code: typeof source.code === 'string' ? source.code : '',
     version: source.version,
   };
 }
@@ -1715,16 +1719,30 @@ function ensureRunJSManifestFiles(legacy: RunJSLegacySource, files: PulledFile[]
 
 function buildOpenSettingsDescriptor(repoId: string, files: PulledFile[]): RunJSSourceOpenSettingsDescriptor {
   const descriptorFile = files.find((file) => normalizePath(file.path) === inlineRunJSEntryDescriptorPath);
+  // Inline workspaces may omit entry.json entirely: that means "no settings", not a hard failure.
+  // Only validate when the file is present so bad JSON / invalid schema still surfaces.
+  if (!descriptorFile) {
+    const emptyHashes = buildLightExtensionSettingsHashes(null);
+    return {
+      descriptorPath: inlineRunJSEntryDescriptorPath,
+      entryId: null,
+      key: null,
+      schema: null,
+      defaults: {},
+      settingsSchemaHash: emptyHashes.settingsSchemaHash,
+      settingsDefaultsHash: emptyHashes.settingsDefaultsHash,
+      diagnostics: [],
+    };
+  }
+
   const diagnostics: LightExtensionDiagnostic[] = [];
   const descriptor = inlineRunJSSettingsSchemaValidator.validateEntryDescriptor(
-    descriptorFile
-      ? {
-          path: inlineRunJSEntryDescriptorPath,
-          content: typeof descriptorFile.content === 'string' ? descriptorFile.content : '',
-          size: Buffer.byteLength(typeof descriptorFile.content === 'string' ? descriptorFile.content : '', 'utf8'),
-          language: descriptorFile.language,
-        }
-      : undefined,
+    {
+      path: inlineRunJSEntryDescriptorPath,
+      content: typeof descriptorFile.content === 'string' ? descriptorFile.content : '',
+      size: Buffer.byteLength(typeof descriptorFile.content === 'string' ? descriptorFile.content : '', 'utf8'),
+      language: descriptorFile.language,
+    },
     diagnostics,
     {},
   );

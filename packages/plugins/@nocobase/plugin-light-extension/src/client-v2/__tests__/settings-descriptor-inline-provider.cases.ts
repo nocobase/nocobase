@@ -84,8 +84,74 @@ describe('inline light extension settings descriptor provider', () => {
     });
   });
 
+  it('treats a missing entry.json as no settings instead of a hard failure', async () => {
+    const request = vi.fn(async () => ({
+      data: {
+        data: {
+          repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_1' },
+          files: [],
+          settingsDescriptor: {
+            descriptorPath: 'src/client/entry.json',
+            entryId: null,
+            key: null,
+            settingsSchemaHash: null,
+            settingsDefaultsHash: null,
+            schema: null,
+            defaults: {},
+            diagnostics: [
+              {
+                code: 'entry_descriptor_missing',
+                severity: 'error',
+                message: 'Entry root must include entry.json',
+                path: 'src/client/entry.json',
+              },
+            ],
+          },
+        },
+      },
+    }));
+    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+
+    await expect(
+      provider.getSettingsDescriptor({
+        sourceMode: 'inline',
+        sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
+        locator,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('treats an empty settings descriptor without entryId as no settings', async () => {
+    const request = vi.fn(async () => ({
+      data: {
+        data: {
+          repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_1' },
+          files: [],
+          settingsDescriptor: {
+            descriptorPath: 'src/client/entry.json',
+            entryId: null,
+            key: null,
+            settingsSchemaHash: null,
+            settingsDefaultsHash: null,
+            schema: null,
+            defaults: {},
+            diagnostics: [],
+          },
+        },
+      },
+    }));
+    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+
+    await expect(
+      provider.getSettingsDescriptor({
+        sourceMode: 'inline',
+        sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
+        locator,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it.each([
-    ['missing file', 'entry_descriptor_missing'],
     ['bad JSON', 'entry_descriptor_json_invalid'],
     ['conflicting settings forms', 'entry_descriptor_settings_conflict'],
   ])('surfaces canonical diagnostics for %s', async (_label, diagnosticCode) => {

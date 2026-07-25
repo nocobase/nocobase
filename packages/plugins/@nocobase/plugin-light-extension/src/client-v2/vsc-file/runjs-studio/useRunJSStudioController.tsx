@@ -216,7 +216,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
   const [previewing, setPreviewing] = useState(false);
-  const [previewAction, setPreviewAction] = useState<'check' | 'run' | null>(null);
   const [saving, setSaving] = useState(false);
   const [previewDiagnostics, setPreviewDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnostics, setSaveDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
@@ -370,7 +369,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
   const invalidatePreview = useCallback(() => {
     setPreviewing(false);
-    setPreviewAction(null);
     setPreviewArtifact(null);
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
@@ -455,7 +453,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setSaveOpen(false);
     setVersionMessage('');
     setPreviewing(false);
-    setPreviewAction(null);
     setSaving(false);
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
@@ -568,8 +565,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       const opened = await runJSSourceRequest('open', {
         locator: props.locator,
         initialSource: {
-          code: value.code,
-          version: value.version,
+          // Blocks created from a light-extension menu entry may have no stored code. Always pass a
+          // string so open does not reject with RUNJS_SOURCE_LOCATOR_INVALID.
+          code: typeof value.code === 'string' ? value.code : '',
+          version: typeof value.version === 'string' && value.version ? value.version : 'v2',
         },
       });
       const loaded = buildWorkspaceLoadResult(opened);
@@ -696,63 +695,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     };
   }, [hasUnsavedLocalChanges]);
 
-  const checkWorkspace = async () => {
-    const currentWorkspace = workspace
-      ? { opened: workspace, baseFiles, currentFiles: files, entryPath }
-      : await loadWorkspace();
-    if (!currentWorkspace || !props.locator) {
-      return;
-    }
-
-    const requestLocator = props.locator;
-    const requestRepoId = currentWorkspace.opened.repository.repoId;
-    const requestBaseCommitId = currentWorkspace.opened.repository.headCommitId;
-
-    clearConsole();
-    setActionError(null);
-    setActiveTab('code');
-    setPreviewing(true);
-    setPreviewAction('check');
-    setPreviewDiagnostics([]);
-    const requestSnapshotKey = beginWorkspaceOperation(
-      currentWorkspace.currentFiles,
-      currentWorkspace.entryPath,
-      requestRepoId,
-    );
-    try {
-      const result = await runJSSourceRequest('compilePreview', {
-        locator: requestLocator,
-        repoId: requestRepoId,
-        baseCommitId: requestBaseCommitId,
-        files: buildWorkspaceChanges([], currentWorkspace.currentFiles),
-        entryPath: currentWorkspace.entryPath,
-        version: value.version,
-      });
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
-        return;
-      }
-      setPreviewDiagnostics(result.artifact.diagnostics);
-      appendDiagnostics(result.artifact.diagnostics, appendConsole);
-      const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
-      appendConsole({
-        level: hasCompileError ? 'error' : 'info',
-        message: hasCompileError ? t('Source check failed') : t('Source check passed'),
-      });
-    } catch (error) {
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return;
-      reportActionError(error, t('Source check failed'), checkWorkspace);
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Source check failed')),
-      });
-    } finally {
-      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
-        setPreviewing(false);
-        setPreviewAction(null);
-      }
-    }
-  };
-
   const runPreview = async () => {
     const currentWorkspace = workspace
       ? { opened: workspace, baseFiles, currentFiles: files, entryPath }
@@ -769,7 +711,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setActionError(null);
     setActiveTab('code');
     setPreviewing(true);
-    setPreviewAction('run');
     setPreviewDiagnostics([]);
     const requestSnapshotKey = beginWorkspaceOperation(
       currentWorkspace.currentFiles,
@@ -828,7 +769,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     } finally {
       if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
         setPreviewing(false);
-        setPreviewAction(null);
       }
     }
   };
@@ -1083,7 +1023,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
 
     setPreviewing(true);
-    setPreviewAction(null);
     try {
       const result = await runJSSourceRequest('compilePreview', {
         locator: requestLocator,
@@ -1114,7 +1053,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     } finally {
       if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
         setPreviewing(false);
-        setPreviewAction(null);
       }
     }
   };
@@ -2173,11 +2111,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onDiffToggle={toggleDiff}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
-                        onCheck={checkWorkspace}
                         onRunPreview={runPreview}
                         openPaths={openPaths}
-                        checking={previewing && previewAction === 'check'}
-                        previewing={previewing && previewAction === 'run'}
+                        previewing={previewing}
                         projectRevision={projectRevision}
                         readOnly={workspaceEditingDisabled}
                         runJSModelUse={runJSModelUse}
