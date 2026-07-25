@@ -233,4 +233,89 @@ export const runJSSourcePaths = {
       },
     },
   },
+  '/runJSSources:saveChanges': {
+    post: {
+      tags: ['runJSSources'],
+      summary: 'Save explicit RunJS file changes and update the owner runtime atomically',
+      description: [
+        'Apply only the paths listed in changes. Every omitted workspace path remains unchanged, and a file is deleted only by an explicit operation: "delete" change.',
+        'Each upsert contains the complete UTF-8 content of that changed file only. The server materializes the base tree plus changes, generates the managed manifest update, compiles the complete candidate workspace, and commits source/runtime/owner state atomically.',
+        'Use expectedBlobHash from open/openLatest for every update or delete. A new path must use expectedBlobHash: null and must not already exist. A mismatch returns RUNJS_FILE_CONFLICT with the conflicting path and hashes.',
+        '.nocobase/runjs-source.json is server-managed and cannot be upserted or deleted through ordinary changes.',
+        'Pass repoId, baseCommitId, and baseOwnerFingerprint from the same open/openLatest response. Use --body-file for multi-file source so Unicode, newlines, quotes, and template strings are preserved exactly.',
+      ].join('\n\n'),
+      requestBody: {
+        required: true,
+        description:
+          'Root incremental save payload consumed directly by runJSSources:saveChanges. Do not wrap it in values.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['locator', 'repoId', 'baseCommitId', 'baseOwnerFingerprint', 'message', 'changes'],
+              properties: {
+                locator: locatorProperty,
+                repoId: {
+                  type: 'string',
+                  minLength: 1,
+                  description: 'Repository id returned by open/openLatest.',
+                },
+                baseCommitId: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Exact repository headCommitId returned by the same open/openLatest response.',
+                },
+                baseOwnerFingerprint: {
+                  type: 'string',
+                  minLength: 1,
+                  description: 'Exact ownerFingerprint returned by the same open/openLatest response.',
+                },
+                message: {
+                  type: 'string',
+                  minLength: 3,
+                  maxLength: 200,
+                  description: 'Source commit message.',
+                },
+                changes: {
+                  type: 'array',
+                  minItems: 1,
+                  description:
+                    'Explicit changed paths only. Omitted paths remain unchanged; deletion requires operation: "delete".',
+                  items: {
+                    $ref: '#/components/schemas/RunJSSourceIncrementalFileChange',
+                  },
+                },
+                entryPath: {
+                  type: 'string',
+                  description:
+                    'Preferred workspace entry path. Defaults to the managed manifest or src/client/index.*.',
+                },
+                version: {
+                  type: 'string',
+                  description: 'Optional runtime version; defaults to the live owner version.',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Changes committed and the owner runtime artifact updated.',
+          content: jsonContent('RunJSSourceSaveEnvelope'),
+        },
+        400: errorResponse(
+          'The locator, changed path, commit message, request shape, or materialized workspace compilation is invalid.',
+        ),
+        403: errorResponse(
+          'The current user cannot write this owner, the repository belongs to another domain, or a managed file was changed directly.',
+        ),
+        404: errorResponse('The owner or repository cannot be found.'),
+        409: errorResponse(
+          'The repository Head or owner fingerprint changed, an expectedBlobHash conflicts, the repository is archived, or the changes have no effect.',
+        ),
+        413: errorResponse('The materialized workspace exceeds RunJS repository limits.'),
+      },
+    },
+  },
 };

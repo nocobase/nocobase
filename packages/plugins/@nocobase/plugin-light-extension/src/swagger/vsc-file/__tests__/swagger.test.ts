@@ -29,6 +29,7 @@ test('publishes only owner-aware RunJS workspace authoring actions', () => {
       '/runJSSources:open',
       '/runJSSources:openLatest',
       '/runJSSources:save',
+      '/runJSSources:saveChanges',
       '/lightExtensionFiles:saveSource',
     ]),
   );
@@ -52,6 +53,38 @@ test('documents save as a guarded complete snapshot', () => {
   expect(save.description).toContain('omitted from files is deleted');
   expect(save.description).toContain('baseCommitId');
   expect(save.description).toContain('baseOwnerFingerprint');
+});
+
+test('documents saveChanges as an explicit delta with per-path blob guards', () => {
+  const saveChanges = swagger.paths['/runJSSources:saveChanges'].post;
+  const schema = saveChanges.requestBody.content['application/json'].schema;
+  const changeSchema = swagger.components.schemas.RunJSSourceIncrementalFileChange;
+  const [upsert, deletion] = changeSchema.oneOf;
+
+  expect(schema.required).toEqual(['locator', 'repoId', 'baseCommitId', 'baseOwnerFingerprint', 'message', 'changes']);
+  expect(schema.properties).not.toHaveProperty('files');
+  expect(schema.properties.changes.items).toEqual({
+    $ref: '#/components/schemas/RunJSSourceIncrementalFileChange',
+  });
+  expect(saveChanges.description).toContain('omitted workspace path remains unchanged');
+  expect(saveChanges.description).toContain('explicit operation: "delete"');
+  expect(saveChanges.description).toContain('complete UTF-8 content of that changed file only');
+  expect(saveChanges.description).toContain('RUNJS_FILE_CONFLICT');
+  expect(saveChanges.description).toContain('.nocobase/runjs-source.json is server-managed');
+  expect(upsert.required).toEqual(['operation', 'path', 'expectedBlobHash', 'content']);
+  expect(upsert.properties.expectedBlobHash).toMatchObject({ nullable: true, pattern: '^[a-f0-9]{64}$' });
+  expect(deletion.required).toEqual(['operation', 'path', 'expectedBlobHash']);
+  expect(deletion.properties.expectedBlobHash).toMatchObject({ pattern: '^[a-f0-9]{64}$' });
+});
+
+test('documents stable blob metadata and managed files in open results', () => {
+  const files = swagger.components.schemas.RunJSSourceOpenResult.properties.files;
+  const workspaceFile = swagger.components.schemas.RunJSSourceWorkspaceFile;
+
+  expect(files.items).toEqual({ $ref: '#/components/schemas/RunJSSourceWorkspaceFile' });
+  expect(workspaceFile.required).toEqual(['path', 'blobHash', 'size', 'managed']);
+  expect(workspaceFile.properties.blobHash.pattern).toBe('^[a-f0-9]{64}$');
+  expect(workspaceFile.properties.managed.description).toContain('cannot be changed through ordinary saveChanges');
 });
 
 test('documents openLatest missing-workspace discovery without repository creation', () => {

@@ -14,6 +14,7 @@ import type {
   RunJSSourceInitialSource,
   RunJSSourceLocator,
   RunJSSourceOpenResult,
+  RunJSSourceSaveChangesInput,
   RunJSSourceSaveInput,
   RunJSSourceSaveResult,
   RunJSSurfaceStyle,
@@ -30,6 +31,9 @@ import type {
 export interface RunJSWorkspaceFile {
   path: string;
   content: string;
+  blobHash: string;
+  size: number;
+  managed: boolean;
   language?: string;
   mode?: string;
   revision?: number;
@@ -159,6 +163,10 @@ export interface RunJSSourceRequestMap {
   };
   save: {
     input: RunJSSourceSaveInput;
+    result: RunJSSourceSaveResult;
+  };
+  saveChanges: {
+    input: RunJSSourceSaveChangesInput;
     result: RunJSSourceSaveResult;
   };
   exportZip: {

@@ -15,6 +15,8 @@ import enUS from '../../../../locale/en-US.json';
 import zhCN from '../../../../locale/zh-CN.json';
 import { runJSStudioProvider } from '../RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
+import type { RunJSSourceActionInput } from '../types';
+import { runJSSourceActionNames } from '../useRunJSSourceResource';
 import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
@@ -431,6 +433,32 @@ describe('runJSStudioProvider', () => {
         },
       });
     });
+  });
+
+  it('exposes the typed incremental save action without changing the Studio save route', () => {
+    const input: RunJSSourceActionInput<'saveChanges'> = {
+      locator,
+      repoId: repository.id,
+      baseCommitId: repository.headCommitId,
+      baseOwnerFingerprint: openResult.ownerFingerprint,
+      message: 'Update one RunJS file',
+      changes: [
+        {
+          operation: 'upsert',
+          path: 'src/client/index.tsx',
+          expectedBlobHash: 'a'.repeat(64),
+          content: 'return 2;',
+        },
+      ],
+    };
+
+    expect(runJSSourceActionNames).toContain('saveChanges');
+    expect(input.changes).toEqual([
+      expect.objectContaining({
+        operation: 'upsert',
+        expectedBlobHash: 'a'.repeat(64),
+      }),
+    ]);
   });
 
   it('handles only flow model step locators and prefers sourceLocator', () => {

@@ -10,11 +10,13 @@
 import type { Context } from '@nocobase/actions';
 import type { Database, Model } from '@nocobase/database';
 
+import { sha256Hex } from '../../shared/vsc-file/hash';
 import {
   getRunJSSourceOwnerId,
   normalizeRunJSSourceLocator,
   type RunJSSourceLocator,
 } from '../../shared/vsc-file/runjs-source-types';
+import { normalizeText } from '../../shared/vsc-file/text';
 
 export const vscFileAuditActionNames = [
   'createRepository',
@@ -25,7 +27,7 @@ export const vscFileAuditActionNames = [
   'updateRef',
 ] as const;
 
-export const runJSSourceAuditActionNames = ['save', 'importZip', 'restoreFromCode'] as const;
+export const runJSSourceAuditActionNames = ['save', 'saveChanges', 'importZip', 'restoreFromCode'] as const;
 
 type VscFileAuditActionName = (typeof vscFileAuditActionNames)[number];
 type RunJSSourceAuditActionName = (typeof runJSSourceAuditActionNames)[number];
@@ -131,7 +133,10 @@ async function getRunJSSourceAuditMetadata(db: Database, ctx: Context): Promise<
       ownerId: locator ? getRunJSSourceAuditOwnerId(locator) : undefined,
       repositoryOwnerId: repository?.ownerId || (locator ? getRunJSSourceOwnerId(locator) : undefined),
       sourceCommitId: toStringValue(input.sourceCommitId),
-      message: actionName === 'save' || actionName === 'importZip' ? toStringValue(input.message) : undefined,
+      message:
+        actionName === 'save' || actionName === 'saveChanges' || actionName === 'importZip'
+          ? toStringValue(input.message)
+          : undefined,
     }),
     request: {
       body: sanitizeRunJSSourceRequestBody(actionName, input, locator),
@@ -204,8 +209,12 @@ function sanitizeRunJSSourceRequestBody(
     locatorKind: locator?.kind || toStringValue(input.locatorKind),
     repoId: toStringValue(input.repoId),
     sourceCommitId: toStringValue(input.sourceCommitId),
-    message: actionName === 'save' || actionName === 'importZip' ? toStringValue(input.message) : undefined,
-    files: sanitizeFileList(input.files),
+    message:
+      actionName === 'save' || actionName === 'saveChanges' || actionName === 'importZip'
+        ? toStringValue(input.message)
+        : undefined,
+    files: actionName === 'saveChanges' ? undefined : sanitizeFileList(input.files),
+    changes: actionName === 'saveChanges' ? sanitizeRunJSSourceChanges(input.changes) : undefined,
   });
 }
 
@@ -302,6 +311,43 @@ function sanitizeFileList(value: unknown): Array<Record<string, unknown>> | unde
       mode: toStringValue(record.mode),
     });
   });
+}
+
+function sanitizeRunJSSourceChanges(value: unknown): Array<Record<string, unknown>> | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.map((change) => {
+    const record = toRecord(change);
+    const contentSummary = summarizeContent(record.content);
+
+    return compactObject({
+      path: toStringValue(record.path),
+      operation: toStringValue(record.operation),
+      expectedBlobHash: toNullableStringValue(record.expectedBlobHash),
+      size: contentSummary?.size,
+      contentHash: contentSummary?.hash,
+    });
+  });
+}
+
+function summarizeContent(value: unknown): { size: number; hash: string } | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  let content = value;
+  try {
+    content = normalizeText(value);
+  } catch {
+    // Invalid source still needs a safe audit summary when the request is rejected.
+  }
+
+  return {
+    size: Buffer.byteLength(content, 'utf8'),
+    hash: sha256Hex(content),
+  };
 }
 
 async function findRepository(db: Database, repoId: string): Promise<VscAuditRepository | null> {

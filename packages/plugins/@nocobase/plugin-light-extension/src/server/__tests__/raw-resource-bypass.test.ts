@@ -245,9 +245,29 @@ describe('plugin-light-extension raw resource bypass guard', () => {
         version: 'v2',
       },
     });
+    const saveChanges = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId,
+        baseCommitId: null,
+        baseOwnerFingerprint: 'raw-resource-owner',
+        message: 'raw incremental save should fail',
+        changes: [
+          {
+            path: 'src/client/helper.ts',
+            operation: 'upsert',
+            expectedBlobHash: null,
+            content: 'export const secret = "save changes secret";',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
 
     expect(preview.status).toBe(403);
     expect(save.status).toBe(403);
+    expect(saveChanges.status).toBe(403);
     expect(preview.body.errors[0].details).toMatchObject({
       ownerType: 'light-extension',
       rawResourceAction: 'runJSSources:compilePreview',
@@ -256,6 +276,11 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     expect(save.body.errors[0].details).toMatchObject({
       ownerType: 'light-extension',
       rawResourceAction: 'runJSSources:save',
+      result: 'denied',
+    });
+    expect(saveChanges.body.errors[0].details).toMatchObject({
+      ownerType: 'light-extension',
+      rawResourceAction: 'runJSSources:saveChanges',
       result: 'denied',
     });
 
@@ -268,10 +293,11 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     const serializedLogs = JSON.stringify(logs.map((log) => log.toJSON()));
 
     expect(logs.map((log) => log.get('rawResourceAction'))).toEqual(
-      expect.arrayContaining(['runJSSources:compilePreview', 'runJSSources:save']),
+      expect.arrayContaining(['runJSSources:compilePreview', 'runJSSources:save', 'runJSSources:saveChanges']),
     );
     expect(serializedLogs).not.toContain('preview secret');
     expect(serializedLogs).not.toContain('save secret');
+    expect(serializedLogs).not.toContain('save changes secret');
     expect(serializedLogs).not.toContain(repoId);
   });
 

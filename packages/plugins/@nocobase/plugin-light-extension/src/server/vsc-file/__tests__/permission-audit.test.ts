@@ -10,6 +10,8 @@
 import type { Context } from '@nocobase/actions';
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { VscError } from '../../../shared/vsc-file/errors';
+import { getRunJSSourceOwnerId, type RunJSSourceLocator } from '../../../shared/vsc-file/runjs-source-types';
 import { runJSSourceAuditActionNames, vscFileAuditActionNames } from '../audit';
 import type { VscPermissionHookInput } from '../permissions';
 import PluginLightExtensionServer from '../../plugin';
@@ -308,6 +310,106 @@ describe('vsc-file permission hooks and audit registration', () => {
     }
   });
 
+  it('allows an authorized logged-in caller to use the incremental RunJS action', async () => {
+    const locator = createRunJSSourceLocator('fm_incremental_authorized');
+    let ownerFingerprint = 'owner:fm_incremental_authorized:v1';
+    await createRunJSSourceRepository('repo_incremental_authorized', locator);
+    unregisterHooks.push(
+      getPlugin().registerRunJSSourceAdapter({
+        kind: 'flowModel.step',
+        assertCanRead: () => undefined,
+        assertCanWrite: () => undefined,
+        readLegacy: () => ({
+          code: 'ctx.render("legacy");',
+          version: 'v2',
+          label: 'Authorized incremental source',
+          surfaceStyle: 'render',
+          language: 'typescript',
+          ownerFingerprint,
+        }),
+        getFingerprint: () => ownerFingerprint,
+        writeRuntime: () => {
+          ownerFingerprint = 'owner:fm_incremental_authorized:v2';
+          return { ownerFingerprint };
+        },
+      }),
+    );
+
+    const response = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: 'repo_incremental_authorized',
+        baseCommitId: null,
+        baseOwnerFingerprint: 'owner:fm_incremental_authorized:v1',
+        message: 'Create authorized source',
+        changes: [
+          {
+            operation: 'upsert',
+            path: 'src/client/index.tsx',
+            expectedBlobHash: null,
+            content: 'ctx.render("authorized");',
+          },
+        ],
+      },
+    });
+
+    expect(response.status, JSON.stringify(response.body)).toBe(200);
+    expect(response.body.data).toMatchObject({
+      repository: { id: 'repo_incremental_authorized' },
+      ownerFingerprint: 'owner:fm_incremental_authorized:v2',
+    });
+  });
+
+  it('returns the adapter permission denial from the incremental RunJS action', async () => {
+    const locator = createRunJSSourceLocator('fm_incremental_denied');
+    await createRunJSSourceRepository('repo_incremental_denied', locator);
+    unregisterHooks.push(
+      getPlugin().registerRunJSSourceAdapter({
+        kind: 'flowModel.step',
+        assertCanRead: () => undefined,
+        assertCanWrite: () => {
+          throw new VscError('PERMISSION_DENIED', 'Adapter denied incremental authoring');
+        },
+        readLegacy: () => ({
+          code: 'ctx.render("legacy");',
+          version: 'v2',
+          label: 'Denied incremental source',
+          surfaceStyle: 'render',
+          language: 'typescript',
+          ownerFingerprint: 'owner:fm_incremental_denied:v1',
+        }),
+        getFingerprint: () => 'owner:fm_incremental_denied:v1',
+        writeRuntime: () => {
+          throw new Error('Unexpected runtime write');
+        },
+      }),
+    );
+
+    const response = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: 'repo_incremental_denied',
+        baseCommitId: null,
+        baseOwnerFingerprint: 'owner:fm_incremental_denied:v1',
+        message: 'Reject denied source',
+        changes: [
+          {
+            operation: 'upsert',
+            path: 'src/client/index.tsx',
+            expectedBlobHash: null,
+            content: 'ctx.render("denied secret");',
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      message: 'Adapter denied incremental authoring',
+    });
+  });
+
   it('registers audit manager actions for vscFile write operations', async () => {
     for (const actionName of vscFileAuditActionNames) {
       const action = getAuditAction(actionName);
@@ -527,6 +629,132 @@ describe('vsc-file permission hooks and audit registration', () => {
     expect(JSON.stringify(metadata)).not.toContain('response file secret');
   });
 
+  it('audits successful and conflicting incremental saves with content summaries only', async () => {
+    const locator = createRunJSSourceLocator('fm_incremental_audit');
+    const content = 'ctx.render("incremental request secret");';
+    const params = {
+      values: {
+        locator,
+        repoId: 'repo_incremental_audit',
+        baseCommitId: 'commit_base',
+        baseOwnerFingerprint: 'owner:incremental:v1',
+        message: 'Update one incremental file',
+        changes: [
+          {
+            path: 'src/client/index.tsx',
+            operation: 'upsert',
+            expectedBlobHash: 'a'.repeat(64),
+            content,
+          },
+          {
+            path: 'src/client/obsolete.ts',
+            operation: 'delete',
+            expectedBlobHash: 'b'.repeat(64),
+          },
+        ],
+      },
+    };
+    const success = await expectRunJSSourceAuditMetadata(
+      'saveChanges',
+      params,
+      {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          repository: {
+            id: 'repo_incremental_audit',
+            ownerType: 'runjs-source',
+            ownerId: 'runjs:flowModel.step:fm_incremental_audit:source-path-hash',
+          },
+          commit: {
+            id: 'commit_next',
+            repoId: 'repo_incremental_audit',
+          },
+          artifact: {
+            entryPath: 'src/client/index.tsx',
+            filesHash: 'files-hash',
+            runtimeCodeHash: 'runtime-hash',
+            code: 'compiled response secret',
+            sourceMap: 'source map secret',
+            diagnostics: [],
+          },
+          ownerFingerprint: 'owner:incremental:v2',
+        },
+      },
+      {
+        resource: 'runJSSources',
+        action: 'saveChanges',
+        locatorKind: 'flowModel.step',
+        repoId: 'repo_incremental_audit',
+        commitId: 'commit_next',
+        ownerId: 'fm_incremental_audit',
+        message: 'Update one incremental file',
+      },
+    );
+
+    expect(success.request?.body).toMatchObject({
+      locatorKind: 'flowModel.step',
+      repoId: 'repo_incremental_audit',
+      message: 'Update one incremental file',
+      changes: [
+        {
+          path: 'src/client/index.tsx',
+          operation: 'upsert',
+          expectedBlobHash: 'a'.repeat(64),
+          size: Buffer.byteLength(content, 'utf8'),
+          contentHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+        },
+        {
+          path: 'src/client/obsolete.ts',
+          operation: 'delete',
+          expectedBlobHash: 'b'.repeat(64),
+        },
+      ],
+    });
+    expect(success.request?.body).not.toHaveProperty('files');
+    expect(JSON.stringify(success)).not.toContain('incremental request secret');
+    expect(JSON.stringify(success)).not.toContain('compiled response secret');
+    expect(JSON.stringify(success)).not.toContain('source map secret');
+
+    const conflict = await expectRunJSSourceAuditMetadata(
+      'saveChanges',
+      params,
+      {
+        errors: [
+          {
+            code: 'RUNJS_FILE_CONFLICT',
+            message: 'RunJS source file changed after the workspace was opened',
+            status: 409,
+            details: {
+              path: 'src/client/index.tsx',
+              expectedBlobHash: 'a'.repeat(64),
+              currentBlobHash: 'c'.repeat(64),
+            },
+          },
+        ],
+      },
+      {
+        resource: 'runJSSources',
+        action: 'saveChanges',
+        locatorKind: 'flowModel.step',
+        repoId: 'repo_incremental_audit',
+        ownerId: 'fm_incremental_audit',
+        message: 'Update one incremental file',
+      },
+    );
+
+    expect(conflict.request?.body).toMatchObject({
+      changes: expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          operation: 'upsert',
+          expectedBlobHash: 'a'.repeat(64),
+        }),
+      ]),
+    });
+    expect(JSON.stringify(conflict)).not.toContain('incremental request secret');
+  });
+
   it('audits RunJS import and recovery without leaking ZIP or source content', async () => {
     const locator = {
       kind: 'flowModel.step' as const,
@@ -675,5 +903,37 @@ describe('vsc-file permission hooks and audit registration', () => {
 
     expect(response.status).toBe(200);
     return response.body.data.repository as VscRepositoryForTest;
+  }
+
+  async function createRunJSSourceRepository(repoId: string, locator: RunJSSourceLocator): Promise<void> {
+    await app.db.getRepository('vscFileRepositories').create({
+      values: {
+        id: repoId,
+        ownerType: 'runjs-source',
+        ownerId: getRunJSSourceOwnerId(locator),
+        name: 'source',
+        status: 'active',
+        defaultRef: 'head',
+        headSeq: 0,
+      },
+    });
+    await app.db.getRepository('vscFileRefs').create({
+      values: {
+        repoId,
+        name: 'head',
+        type: 'branch',
+        commitId: null,
+      },
+    });
+  }
+
+  function createRunJSSourceLocator(modelUid: string): Extract<RunJSSourceLocator, { kind: 'flowModel.step' }> {
+    return {
+      kind: 'flowModel.step',
+      modelUid,
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
   }
 });

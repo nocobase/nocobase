@@ -20,6 +20,7 @@ export const runJSSourceActionNames = [
   'restoreFromCode',
   'compilePreview',
   'save',
+  'saveChanges',
   'exportZip',
   'importZip',
   'listHistory',

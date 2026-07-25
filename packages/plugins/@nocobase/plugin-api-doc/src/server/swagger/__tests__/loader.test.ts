@@ -61,7 +61,7 @@ describe('loadSwagger', () => {
     expect(loadSwagger(packageRoot).paths).toHaveProperty('/source');
   });
 
-  test.each(['/lightExtensionFiles:saveSource', '/runJSSources:save'])(
+  test.each(['/lightExtensionFiles:saveSource', '/runJSSources:save', '/runJSSources:saveChanges'])(
     'loads %s from the combined Light Extension Swagger entry',
     (expectedPath) => {
       const swagger = loadSwagger('@nocobase/plugin-light-extension');

@@ -21,7 +21,7 @@ const publicActions = {
   lightExtensionReferences: ['readReferences'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview'],
-  runJSSources: ['open', 'openLatest', 'compilePreview', 'save'],
+  runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
 } as const;
 
 describe('light-extension swagger', () => {
@@ -94,6 +94,10 @@ describe('light-extension swagger', () => {
     expect(schemas.RunJSSourceOpenResult.properties.settingsDescriptor).toEqual({
       $ref: '#/components/schemas/RunJSSourceSettingsDescriptor',
     });
+    expect(schemas.RunJSSourceOpenResult.properties.files.items).toEqual({
+      $ref: '#/components/schemas/RunJSSourceWorkspaceFile',
+    });
+    expect(schemas.RunJSSourceWorkspaceFile.required).toEqual(['path', 'blobHash', 'size', 'managed']);
     expect(schemas.RunJSSourceSettingsDescriptor.required).toEqual(
       expect.arrayContaining([
         'descriptorPath',

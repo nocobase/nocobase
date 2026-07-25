@@ -100,6 +100,71 @@ export const runJSSourceSchemas = {
       mode: { type: 'string' },
     },
   },
+  RunJSSourceIncrementalFileChange: {
+    oneOf: [
+      {
+        type: 'object',
+        required: ['operation', 'path', 'expectedBlobHash', 'content'],
+        properties: {
+          operation: { type: 'string', enum: ['upsert'] },
+          path: {
+            type: 'string',
+            description:
+              'One changed RunJS workspace path. .nocobase/runjs-source.json is server-managed and cannot be changed directly.',
+          },
+          expectedBlobHash: {
+            type: 'string',
+            nullable: true,
+            pattern: '^[a-f0-9]{64}$',
+            description:
+              'Use null only when creating a path that does not exist. Updating an existing path requires its exact blobHash from open/openLatest.',
+          },
+          content: {
+            type: 'string',
+            description: 'Complete UTF-8 content of this changed file only. Unlisted workspace paths remain unchanged.',
+          },
+          language: { type: 'string' },
+          mode: { type: 'string' },
+        },
+      },
+      {
+        type: 'object',
+        required: ['operation', 'path', 'expectedBlobHash'],
+        properties: {
+          operation: { type: 'string', enum: ['delete'] },
+          path: {
+            type: 'string',
+            description:
+              'Existing RunJS workspace path to delete explicitly. .nocobase/runjs-source.json cannot be deleted directly.',
+          },
+          expectedBlobHash: {
+            type: 'string',
+            pattern: '^[a-f0-9]{64}$',
+            description: 'Exact blobHash returned by open/openLatest for the file being deleted.',
+          },
+        },
+      },
+    ],
+    description:
+      'One explicit incremental RunJS file change. Omitted paths remain unchanged; deletion is never inferred from omission.',
+  },
+  RunJSSourceWorkspaceFile: {
+    type: 'object',
+    required: ['path', 'blobHash', 'size', 'managed'],
+    properties: {
+      path: { type: 'string' },
+      content: { type: 'string' },
+      blobHash: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+      size: { type: 'integer', minimum: 0 },
+      managed: {
+        type: 'boolean',
+        description:
+          'When true, the file is generated and maintained by the server and cannot be changed through ordinary saveChanges requests.',
+      },
+      language: { type: 'string' },
+      mode: { type: 'string' },
+    },
+  },
   RunJSSourceDiagnostic: {
     type: 'object',
     required: ['message'],
@@ -198,7 +263,7 @@ export const runJSSourceSchemas = {
       repository: { $ref: '#/components/schemas/RunJSSourceRepository' },
       files: {
         type: 'array',
-        items: { type: 'object', additionalProperties: true },
+        items: { $ref: '#/components/schemas/RunJSSourceWorkspaceFile' },
       },
       permissions: {
         type: 'object',

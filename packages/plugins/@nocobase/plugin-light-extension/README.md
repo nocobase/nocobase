@@ -12,6 +12,7 @@ Light extensions organize multi-file RunJS entries for complete JavaScript model
 - Runtime code is resolved by supported JS Model surfaces through entry bindings. The plugin owns repository organization, entry metadata, compiled runtime artifacts, settings validation, reference indexes, and selection UI; it does not add a separate publication/version-policy layer.
 - Runtime resolution is available to logged-in page users, matching the existing RunJS source runtime. Repository authoring and management remain behind `pm.light-extension`, so page users do not receive create, save, archive, or delete permissions merely to execute an existing binding.
 - Core MVP targets client-v2 first. During the current admin-shell transition, the legacy client bundle also registers the same minimal settings page so `/admin/settings/light-extension` can load without a remote-plugin 404. That bridge must stay thin: no `@nocobase/client` imports, no SchemaComponent runtime, and no ordinary plugin-management concepts.
+- The standard NocoBase preset loads the shared Workspace infrastructure by default. Availability of that infrastructure does not create a Light Extension Repository or externalize inline RunJS source automatically; both remain explicit authoring operations.
 
 ## Supported product model
 
@@ -63,6 +64,10 @@ JS Page source is trusted administrator code, not a sandbox for untrusted user s
 P1 does not include creating a page directly from an Entry, an App Bridge API, or a marketplace/distribution workflow.
 
 ## Source Save Contract
+
+Ordinary Agent authoring for an inline RunJS owner uses `runJSSources:open` or `runJSSources:openLatest`, edits only the intended paths, and submits those paths through delta `runJSSources:saveChanges`. Paths omitted from `changes` remain unchanged, deletion requires an explicit `operation: "delete"`, and every update or delete carries the `blobHash` returned when the workspace was opened. The server materializes and compiles the complete candidate workspace before atomically committing source, runtime, and owner state. The legacy `runJSSources:save` action remains a complete replacement snapshot for existing Studio and compatibility callers.
+
+Creating a Light Extension Repository or moving an inline RunJS owner into one remains an explicit user choice. Once a source is bound to an active Light Extension Repository, authoring must use the light-extension domain APIs below; raw `runJSSources:saveChanges` is not an alternative repository save path.
 
 `lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It materializes and validates the workspace, plans entry reconciliation, and compiles the runtime outside the database transaction. The publish transaction then revalidates the repository Head and prepared candidate before atomically committing the VSC source, entries, runtime artifacts, and references. There is no separate scan action or scan state.
 
