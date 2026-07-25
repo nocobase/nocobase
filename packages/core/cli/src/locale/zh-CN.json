@@ -168,6 +168,52 @@
         "refusal": "拒绝对 env \"{{requestedEnv}}\" 执行该命令，因为当前 env 是 \"{{currentEnv}}\"，且当前 agent 会话无法进行交互确认。\n\n出于安全考虑，agent 不会自动切换 env，也不会替你自动补上 --yes。\n\n如果要继续：\n- 请先自行执行 `nb env use {{requestedEnv}}`，然后重新运行该命令，或\n- 使用相同命令并追加 `--env {{requestedEnv}} --yes`，以确认这是一次性的跨 env 操作。"
       }
     },
+    "portalCreate": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "templateInvalidDirectory": "Portal 模板 \"{{source}}\" 无效：需要是一个目录。",
+        "localTemplateMissing": "Portal 模板目录不存在：{{source}}",
+        "templateUnresolved": "无法解析 Portal 模板 \"{{source}}\"。{{details}}",
+        "templateDownloadFailed": "无法通过 npm pack 下载 Portal 模板 \"{{source}}\"。{{details}}",
+        "templateExtractFailed": "解压 Portal 模板 \"{{source}}\" 失败：{{details}}",
+        "templateMissingPackageJson": "Portal 模板 \"{{source}}\" 无效：缺少 package.json。",
+        "npmPackNoTarball": "npm pack 没有为 {{source}} 生成本地 tarball。",
+        "npmPackMultipleTarballs": "npm pack 为 {{source}} 生成了多个 tarball。",
+        "invalidPortalName": "Portal 名称 \"{{value}}\" 无效。请使用小写字母、数字、下划线或连字符，并以小写字母或数字开头。",
+        "invalidPortalAppName": "从 apiBaseUrl 解析出的 Portal app 名称 \"{{value}}\" 无效。请使用字母、数字、下划线或连字符，并以字母或数字开头。",
+        "missingApiBaseUrl": "无法创建 Portal workspace，因为当前 env 没有 apiBaseUrl。",
+        "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal workspace：{{portalDir}}",
+        "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal workspace。",
+        "workspaceExists": "Portal workspace 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。"
+      },
+      "messages": {
+        "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
+        "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}。",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}"
+      }
+    },
+    "portalDeploy": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
+        "packageJsonMissing": "Portal workspace 无效：{{portalDir}} 中缺少 package.json。",
+        "distMissing": "Portal build 没有生成 {{distDir}}/index.html。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 部署 Portal workspace。",
+        "uploadFailed": "Portal dist 上传失败，状态码 {{status}}\n{{details}}"
+      },
+      "messages": {
+        "deployed": "Portal \"{{portal}}\" 已部署。",
+        "mode": "Mode：{{mode}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "dist": "Dist：{{dist}}",
+        "localDist": "本地 dist：{{dist}}",
+        "serverDist": "服务端 dist：{{dist}}"
+      }
+    },
     "license": {
       "activate": {
         "interactive": {

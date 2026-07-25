@@ -16,7 +16,6 @@ import {
   normalizeInitDevelopmentMode,
   validatePortalAppName,
   validatePortalName,
-  type PortalManifest,
 } from '../portal-init';
 
 const originalStoragePath = process.env.STORAGE_PATH;
@@ -104,20 +103,7 @@ test('copies a local portal template into storage/portals/<app>/<portal>', async
       undefined,
     );
     await expect(fs.promises.access(path.join(storagePath, 'portals', 'main', 'admin', '.git'))).rejects.toThrow();
-
-    const manifest = JSON.parse(
-      await fs.promises.readFile(path.join(storagePath, 'portals', 'portal-manifest.json'), 'utf-8'),
-    ) as PortalManifest;
-    expect(manifest.defaultPortal).toBe('admin');
-    expect(manifest.portals[0]).toMatchObject({
-      app: 'main',
-      name: 'admin',
-      path: '/admin',
-      source: {
-        type: 'local',
-        url: templatePath,
-      },
-    });
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
   } finally {
     await fs.promises.rm(storagePath, { recursive: true, force: true });
     await fs.promises.rm(templatePath, { recursive: true, force: true });
@@ -140,25 +126,13 @@ test('uses the bundled default portal template when vibe-coding mode has no expl
     };
     expect(packageJson.name).toBe('@nocobase/portal-template-default');
     await expect(fs.promises.access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-
-    const manifest = JSON.parse(
-      await fs.promises.readFile(path.join(storagePath, 'portals', 'portal-manifest.json'), 'utf-8'),
-    ) as PortalManifest;
-    expect(manifest.portals[0]).toMatchObject({
-      app: 'main',
-      name: 'admin',
-      path: '/admin',
-      source: {
-        type: 'local',
-        url: expect.stringContaining('@nocobase/portal-template-default'),
-      },
-    });
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
   } finally {
     await fs.promises.rm(storagePath, { recursive: true, force: true });
   }
 });
 
-test('copies a local portal template into a sub-app portal directory and appends manifest entry', async () => {
+test('copies local portal templates into main and sub-app portal directories', async () => {
   const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-storage-'));
   const mainTemplatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-main-'));
   const subTemplatePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-sub-'));
@@ -185,21 +159,7 @@ test('copies a local portal template into a sub-app portal directory and appends
     await expect(fs.promises.access(path.join(storagePath, 'portals', 'crm', 'admin', 'package.json'))).resolves.toBe(
       undefined,
     );
-
-    const manifest = JSON.parse(
-      await fs.promises.readFile(path.join(storagePath, 'portals', 'portal-manifest.json'), 'utf-8'),
-    ) as PortalManifest;
-    expect(manifest.defaultPortal).toBe('admin');
-    expect(manifest.portals).toHaveLength(2);
-    expect(manifest.portals[1]).toMatchObject({
-      app: 'crm',
-      name: 'admin',
-      path: '/admin',
-      source: {
-        type: 'local',
-        url: subTemplatePath,
-      },
-    });
+    await expect(fs.promises.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
   } finally {
     await fs.promises.rm(storagePath, { recursive: true, force: true });
     await fs.promises.rm(mainTemplatePath, { recursive: true, force: true });

@@ -19,7 +19,6 @@ export const MODERN_CLIENT_DIST_DIR = 'v';
 export const PORTAL_CLIENT_PREFIX = 'x';
 export const DEFAULT_PORTAL_APP_NAME = 'main';
 export const DEFAULT_PORTAL_NAME = 'admin';
-export const PORTAL_MANIFEST_FILE = 'portal-manifest.json';
 
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';

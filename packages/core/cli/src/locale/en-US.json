@@ -168,6 +168,52 @@
         "refusal": "Refusing to run against env \"{{requestedEnv}}\" because the current env is \"{{currentEnv}}\" and interactive confirmation is unavailable in the current agent session.\n\nFor safety, the agent will not switch envs automatically and will not add --yes on your behalf.\n\nTo continue:\n- run `nb env use {{requestedEnv}}` yourself and then re-run the command, or\n- re-run the same command with `--env {{requestedEnv}} --yes` to confirm this one-off cross-env operation."
       }
     },
+    "portalCreate": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "templateInvalidDirectory": "Portal template \"{{source}}\" is invalid: expected a directory.",
+        "localTemplateMissing": "Portal template directory does not exist: {{source}}",
+        "templateUnresolved": "Portal template \"{{source}}\" could not be resolved. {{details}}",
+        "templateDownloadFailed": "Failed to download Portal template \"{{source}}\" with npm pack. {{details}}",
+        "templateExtractFailed": "Failed to extract Portal template \"{{source}}\": {{details}}",
+        "templateMissingPackageJson": "Portal template \"{{source}}\" is invalid: package.json is missing.",
+        "npmPackNoTarball": "npm pack did not produce a local tarball for {{source}}.",
+        "npmPackMultipleTarballs": "npm pack produced multiple tarballs for {{source}}.",
+        "invalidPortalName": "Invalid Portal name \"{{value}}\". Use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.",
+        "invalidPortalAppName": "Invalid Portal app name \"{{value}}\" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, and start with a letter or number.",
+        "missingApiBaseUrl": "Cannot create a Portal workspace because the selected env has no apiBaseUrl.",
+        "outsideParent": "Refusing to modify a Portal workspace outside {{parentDir}}: {{portalDir}}",
+        "sshUnsupported": "Cannot create a Portal workspace for ssh envs in the first version.",
+        "workspaceExists": "Portal workspace already exists: {{portalDir}}\nPass --force to delete it and create a new workspace."
+      },
+      "messages": {
+        "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
+        "created": "Portal \"{{portal}}\" created at {{portalDir}}.",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}"
+      }
+    },
+    "portalDeploy": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
+        "packageJsonMissing": "Portal workspace is invalid: package.json is missing in {{portalDir}}.",
+        "distMissing": "Portal build did not produce {{distDir}}/index.html.",
+        "unsupportedEnvKind": "Cannot deploy a Portal workspace for {{kind}} envs in the first version.",
+        "uploadFailed": "Portal dist upload failed with status {{status}}\n{{details}}"
+      },
+      "messages": {
+        "deployed": "Portal \"{{portal}}\" deployed.",
+        "mode": "Mode: {{mode}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "dist": "Dist: {{dist}}",
+        "localDist": "Local dist: {{dist}}",
+        "serverDist": "Server dist: {{dist}}"
+      }
+    },
     "license": {
       "activate": {
         "interactive": {

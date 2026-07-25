@@ -35,11 +35,10 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
-test('prepares a local yarn portal template and writes the manifest', async () => {
+test('prepares a local yarn portal template without writing a manifest', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-template-');
   const runCommand = vi.fn().mockResolvedValue(undefined);
-  const commandOutput = vi.fn().mockResolvedValue('');
   await writePortalTemplate(templatePath, 'yarn.lock');
   await fsp.mkdir(path.join(templatePath, '.git'), { recursive: true });
   await fsp.writeFile(path.join(templatePath, 'local-only.ts'), 'export const localOnly = true;\n');
@@ -56,7 +55,6 @@ test('prepares a local yarn portal template and writes the manifest', async () =
       portalTemplate: templatePath,
       storagePath,
       runCommand,
-      commandOutput,
     }),
   ).resolves.toEqual({ prepared: true });
 
@@ -83,21 +81,7 @@ test('prepares a local yarn portal template and writes the manifest', async () =
     stdio: 'ignore',
   });
 
-  const manifest = JSON.parse(await fsp.readFile(path.join(storagePath, 'portals', 'portal-manifest.json'), 'utf-8'));
-  expect(manifest).toMatchObject({
-    defaultPortal: 'admin',
-    portals: [
-      {
-        app: 'main',
-        name: 'admin',
-        path: '/admin',
-        source: {
-          type: 'local',
-          url: templatePath,
-        },
-      },
-    ],
-  });
+  await expect(fsp.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 });
 
 test('uses pnpm and npm based on the copied portal lockfile', async () => {
@@ -228,15 +212,8 @@ test('skips an already prepared portal', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-template-');
   const portalDir = path.join(storagePath, 'portals', 'main', 'admin');
-  await fsp.mkdir(portalDir, { recursive: true });
-  await fsp.mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await fsp.writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'admin',
-      portals: [{ app: 'main', name: 'admin', path: '/admin', source: { type: 'local', url: templatePath } }],
-    }),
-  );
+  await fsp.mkdir(path.join(portalDir, 'dist'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'dist', 'index.html'), '<div id="root"></div>');
   const runCommand = vi.fn().mockResolvedValue(undefined);
 
   await expect(

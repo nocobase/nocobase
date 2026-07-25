@@ -17,7 +17,6 @@ import { promisify } from 'util';
 import {
   DEFAULT_PORTAL_APP_NAME,
   DEFAULT_PORTAL_NAME,
-  PORTAL_MANIFEST_FILE,
   normalizePortalAppName,
   normalizePortalName,
 } from './gateway/utils';
@@ -26,20 +25,6 @@ const execFileAsync = promisify(execFile);
 const DEFAULT_PORTAL_TEMPLATE_PACKAGE = '@nocobase/portal-template-default';
 
 export type InitDevelopmentMode = 'no-code' | 'vibe-coding';
-
-export interface PortalManifest {
-  defaultPortal: string;
-  portals: Array<{
-    app: string;
-    name: string;
-    path: string;
-    source: {
-      type: 'git' | 'local';
-      url: string;
-      commit?: string;
-    };
-  }>;
-}
 
 export interface InitPortalOptions {
   appName?: string;
@@ -81,13 +66,6 @@ export function validatePortalAppName(value?: string): string {
     );
   }
   return appName;
-}
-
-function normalizeManifestPortalPath(value: unknown, fallbackName: string): string {
-  const segment = String(value || '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '');
-  return `/${segment || normalizePortalName(fallbackName)}`;
 }
 
 async function pathExists(filePath: string): Promise<boolean> {
@@ -150,92 +128,6 @@ function resolveDefaultPortalTemplateDir(): string {
   }
 }
 
-async function readGitCommit(cwd: string): Promise<string | undefined> {
-  try {
-    const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd });
-    return trimValue(stdout) || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function readGitRemoteHead(repository: string): Promise<string | undefined> {
-  try {
-    const { stdout } = await execFileAsync('git', ['ls-remote', repository, 'HEAD']);
-    return trimValue(stdout).split(/\s+/, 1)[0] || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function writePortalManifestForApp(
-  appName: string,
-  portalName: string,
-  templateUrl: string,
-  sourceType: PortalManifest['portals'][number]['source']['type'],
-  commit?: string,
-): Promise<void> {
-  const manifestPath = storagePathJoin('portals', PORTAL_MANIFEST_FILE);
-  const fallbackManifest: PortalManifest = {
-    defaultPortal: portalName,
-    portals: [],
-  };
-
-  let manifest = fallbackManifest;
-  if (await pathExists(manifestPath)) {
-    try {
-      manifest = {
-        ...fallbackManifest,
-        ...(JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8')) as Partial<PortalManifest>),
-      };
-      manifest.portals = Array.isArray(manifest.portals) ? manifest.portals : [];
-      manifest.defaultPortal = normalizePortalName(manifest.defaultPortal || portalName);
-      manifest.portals = manifest.portals.map((portal) => {
-        const normalizedName = normalizePortalName(portal.name || manifest.defaultPortal);
-        return {
-          ...portal,
-          app: normalizePortalAppName((portal as any).app || DEFAULT_PORTAL_APP_NAME),
-          name: normalizedName,
-          path: normalizeManifestPortalPath((portal as any).path, normalizedName),
-        };
-      });
-    } catch {
-      manifest = fallbackManifest;
-    }
-  }
-
-  const entry = {
-    app: appName,
-    name: portalName,
-    path: `/${portalName}`,
-    source: {
-      type: sourceType,
-      url: templateUrl,
-      ...(commit ? { commit } : {}),
-    },
-  };
-  const existingIndex = manifest.portals.findIndex(
-    (portal) =>
-      normalizePortalAppName((portal as any).app || DEFAULT_PORTAL_APP_NAME) === appName &&
-      normalizePortalName(portal.name) === portalName,
-  );
-
-  if (existingIndex >= 0) {
-    manifest.portals[existingIndex] = {
-      ...manifest.portals[existingIndex],
-      ...entry,
-    };
-  } else {
-    manifest.portals.push(entry);
-  }
-
-  if (appName === DEFAULT_PORTAL_APP_NAME || !manifest.defaultPortal) {
-    manifest.defaultPortal = portalName;
-  }
-
-  await fs.promises.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8');
-}
-
 export async function initializePortalFromEnv(options: InitPortalOptions = {}): Promise<void> {
   const developmentMode = normalizeInitDevelopmentMode(options.developmentMode ?? process.env.INIT_DEVELOPMENT_MODE);
   if (developmentMode === 'no-code') {
@@ -265,12 +157,8 @@ export async function initializePortalFromEnv(options: InitPortalOptions = {}): 
     if (!(await pathExists(packageJsonPath))) {
       throw new Error(`Portal template "${templateUrl}" is invalid: package.json is missing.`);
     }
-    const sourceType = localTemplateDir ? 'local' : 'git';
-    const commit =
-      sourceType === 'git' ? (await readGitCommit(tempDir)) || (await readGitRemoteHead(templateUrl)) : undefined;
     cleanupPortalDir = true;
     await copyTemplate(templateDir, portalDir);
-    await writePortalManifestForApp(appName, portalName, templateUrl, sourceType, commit);
     cleanupPortalDir = false;
   } catch (error) {
     if (cleanupPortalDir) {

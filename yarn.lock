@@ -7138,6 +7138,11 @@
     "@nocobase/license-kit-win32-ia32-msvc" "0.3.8"
     "@nocobase/license-kit-win32-x64-msvc" "0.3.8"
 
+"@nocobase/portal-template-default@^1.0.0":
+  version "1.0.5"
+  resolved "https://registry.npmmirror.com/@nocobase/portal-template-default/-/portal-template-default-1.0.5.tgz#03451c5a01e4f68e93ae95010ee90399f4ea502f"
+  integrity sha512-P/A9G6NQWUzI2mvuHwNgjbgBWimzUi8cAVX2+DrwKzvFptUYNsgJsmS2m9mT41dL+HFApV8u/hr4lO29OCmumg==
+
 "@nocobase/utils@2.x":
   version "2.1.24"
   resolved "https://registry.npmjs.org/@nocobase/utils/-/utils-2.1.24.tgz#09c83a03f96c6c9bca87f27915957a98ce1054b7"

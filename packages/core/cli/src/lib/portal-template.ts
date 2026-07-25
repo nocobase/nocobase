@@ -7,34 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { commandOutput, run } from './run-npm.js';
+import { buildPortalCommandEnv } from './portal-command-env.js';
+import { run } from './run-npm.js';
 
 const DEFAULT_PORTAL_APP_NAME = 'main';
 const DEFAULT_PORTAL_NAME = 'admin';
-const PORTAL_MANIFEST_FILE = 'portal-manifest.json';
 const PORTAL_CLIENT_PREFIX = 'x';
-
-type PortalSourceType = 'git' | 'local';
-
-type PortalManifest = {
-  defaultPortal: string;
-  portals: PortalManifestEntry[];
-};
-
-type PortalManifestEntry = {
-  app: string;
-  name: string;
-  path: string;
-  source: {
-    type: PortalSourceType;
-    url: string;
-    commit?: string;
-  };
-};
 
 type PortalPackageManager = {
   executable: 'yarn' | 'pnpm' | 'npm';
@@ -57,7 +39,6 @@ type CommandOutput = (
   args: string[],
   options?: Pick<RunOptions, 'cwd' | 'env' | 'errorName' | 'timeoutMs'>,
 ) => Promise<string>;
-
 export type PrepareInitialPortalOptions = {
   appName?: string;
   developmentMode?: string;
@@ -81,24 +62,6 @@ function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-function buildPortalCommandEnv(env: Record<string, string> = {}): Record<string, string> {
-  const out: Record<string, string> = {};
-  const put = (key: string) => {
-    const value = process.env[key];
-    if (value) {
-      out[key] = value;
-    }
-  };
-
-  put('PATH');
-  put('Path');
-  put('PATHEXT');
-  put('SystemRoot');
-  put('WINDIR');
-  put('ComSpec');
-  return { ...out, ...env };
-}
-
 function normalizePortalName(value?: string): string {
   const segment = String(value || '')
     .trim()
@@ -119,13 +82,6 @@ function validatePortalSegment(kind: string, value: string): void {
       `Invalid ${kind} "${value}". Use letters, numbers, underscores, or hyphens, and start with a letter or number.`,
     );
   }
-}
-
-function manifestPortalPath(value: unknown, fallbackName: string): string {
-  const segment = String(value || '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '');
-  return `/${segment || normalizePortalName(fallbackName)}`;
 }
 
 async function pathExists(filePath: string): Promise<boolean> {
@@ -215,119 +171,6 @@ async function installAndBuildPortal(params: {
   });
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function normalizeManifestEntry(value: unknown, defaultPortal: string): PortalManifestEntry | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-  const name = normalizePortalName(trimValue(value.name) || defaultPortal);
-  const source = isRecord(value.source) ? value.source : {};
-  const sourceType = trimValue(source.type) === 'local' ? 'local' : 'git';
-  const commit = trimValue(source.commit);
-  return {
-    app: normalizePortalAppName(trimValue(value.app) || DEFAULT_PORTAL_APP_NAME),
-    name,
-    path: manifestPortalPath(value.path, name),
-    source: {
-      type: sourceType,
-      url: trimValue(source.url),
-      ...(commit ? { commit } : {}),
-    },
-  };
-}
-
-async function readPortalManifest(manifestPath: string, defaultPortal: string): Promise<PortalManifest> {
-  const fallback: PortalManifest = {
-    defaultPortal,
-    portals: [],
-  };
-  if (!(await pathExists(manifestPath))) {
-    return fallback;
-  }
-
-  try {
-    const parsed = JSON.parse(await readFile(manifestPath, 'utf-8')) as unknown;
-    if (!isRecord(parsed)) {
-      return fallback;
-    }
-    const normalizedDefaultPortal = normalizePortalName(trimValue(parsed.defaultPortal) || defaultPortal);
-    const portals = Array.isArray(parsed.portals)
-      ? parsed.portals
-          .map((portal) => normalizeManifestEntry(portal, normalizedDefaultPortal))
-          .filter((portal): portal is PortalManifestEntry => Boolean(portal))
-      : [];
-    return {
-      defaultPortal: normalizedDefaultPortal,
-      portals,
-    };
-  } catch {
-    return fallback;
-  }
-}
-
-async function writePortalManifest(params: {
-  storagePath: string;
-  appName: string;
-  portalName: string;
-  templateUrl: string;
-  sourceType: PortalSourceType;
-  commit?: string;
-}): Promise<void> {
-  const manifestPath = path.join(params.storagePath, 'portals', PORTAL_MANIFEST_FILE);
-  const manifest = await readPortalManifest(manifestPath, params.portalName);
-  const entry: PortalManifestEntry = {
-    app: params.appName,
-    name: params.portalName,
-    path: `/${params.portalName}`,
-    source: {
-      type: params.sourceType,
-      url: params.templateUrl,
-      ...(params.commit ? { commit: params.commit } : {}),
-    },
-  };
-  const existingIndex = manifest.portals.findIndex(
-    (portal) => portal.app === params.appName && portal.name === params.portalName,
-  );
-
-  if (existingIndex >= 0) {
-    manifest.portals[existingIndex] = entry;
-  } else {
-    manifest.portals.push(entry);
-  }
-  if (params.appName === DEFAULT_PORTAL_APP_NAME || !manifest.defaultPortal) {
-    manifest.defaultPortal = params.portalName;
-  }
-
-  await mkdir(path.dirname(manifestPath), { recursive: true });
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8');
-}
-
-async function manifestHasPortal(params: { storagePath: string; appName: string; portalName: string }): Promise<boolean> {
-  const manifestPath = path.join(params.storagePath, 'portals', PORTAL_MANIFEST_FILE);
-  const manifest = await readPortalManifest(manifestPath, params.portalName);
-  return manifest.portals.some((portal) => portal.app === params.appName && portal.name === params.portalName);
-}
-
-async function readGitCommit(cwd: string, commandOutputFn: CommandOutput): Promise<string | undefined> {
-  try {
-    return trimValue(await commandOutputFn('git', ['rev-parse', 'HEAD'], { cwd, errorName: 'git rev-parse' })) || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function readGitRemoteHead(repository: string, commandOutputFn: CommandOutput): Promise<string | undefined> {
-  try {
-    const stdout = await commandOutputFn('git', ['ls-remote', repository, 'HEAD'], { errorName: 'git ls-remote' });
-    return trimValue(stdout).split(/\s+/, 1)[0] || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export async function prepareInitialPortalTemplate(
   options: PrepareInitialPortalOptions,
 ): Promise<PrepareInitialPortalResult> {
@@ -353,7 +196,7 @@ export async function prepareInitialPortalTemplate(
 
   const portalDir = path.join(storagePath, 'portals', appName, portalName);
   if (await pathExists(portalDir)) {
-    if (await manifestHasPortal({ storagePath, appName, portalName })) {
+    if (await pathExists(path.join(portalDir, 'dist', 'index.html'))) {
       return { prepared: false, skippedReason: 'already-prepared' };
     }
     await rm(portalDir, { recursive: true, force: true });
@@ -361,14 +204,12 @@ export async function prepareInitialPortalTemplate(
 
   options.onStartTask?.(`Preparing Portal "${portalName}" from template...`);
   const runCommand = options.runCommand ?? run;
-  const commandOutputFn = options.commandOutput ?? commandOutput;
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-'));
   let cleanupPortalDir = false;
 
   try {
     const localTemplateDir = await getLocalTemplateDir(templateUrl);
     const templateDir = localTemplateDir || tempDir;
-    const sourceType: PortalSourceType = localTemplateDir ? 'local' : 'git';
     if (!localTemplateDir) {
       await runCommand('git', ['clone', '--depth', '1', templateUrl, tempDir], {
         errorName: 'git clone',
@@ -380,10 +221,6 @@ export async function prepareInitialPortalTemplate(
       throw new Error(`Portal template "${templateUrl}" is invalid: package.json is missing.`);
     }
 
-    const commit =
-      sourceType === 'git'
-        ? (await readGitCommit(tempDir, commandOutputFn)) || (await readGitRemoteHead(templateUrl, commandOutputFn))
-        : undefined;
     cleanupPortalDir = true;
     await copyTemplate(templateDir, portalDir);
     await rm(path.join(portalDir, 'node_modules'), { recursive: true, force: true });
@@ -392,14 +229,6 @@ export async function prepareInitialPortalTemplate(
       portalName,
       verbose: options.verbose,
       runCommand,
-    });
-    await writePortalManifest({
-      storagePath,
-      appName,
-      portalName,
-      templateUrl,
-      sourceType,
-      commit,
     });
     cleanupPortalDir = false;
     options.onSucceedTask?.(`Portal "${portalName}" is ready.`);

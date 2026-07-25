@@ -80,27 +80,17 @@ test('gateway serves APP_PUBLIC_PATH + /dist/ from storage/dist-client', async (
   );
 });
 
-test('gateway redirects /x/ to the default portal path from manifest', async () => {
+test('gateway returns 404 for portal root without an explicit portal name', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
-  await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'admin',
-      portals: [{ name: 'admin', path: '/admin' }],
-    }),
-  );
-
   try {
     const gateway = Gateway.getInstance();
     const response = await supertest.agent(gateway.getCallback()).get('/console/x/');
 
-    expect(response.status).toBe(302);
-    expect(response.headers.location).toBe('/console/x/admin/');
+    expect(response.status).toBe(404);
     expect(serveHandlerMock).not.toHaveBeenCalled();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -113,43 +103,27 @@ test('gateway redirects a portal path without trailing slash', async () => {
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
-  await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'admin',
-      portals: [{ name: 'admin', path: '/admin' }],
-    }),
-  );
-
   try {
     const gateway = Gateway.getInstance();
-    const response = await supertest.agent(gateway.getCallback()).get('/console/x/admin');
+    const response = await supertest.agent(gateway.getCallback()).get('/console/x/admin?from=portal');
 
     expect(response.status).toBe(302);
-    expect(response.headers.location).toBe('/console/x/admin/');
+    expect(response.headers.location).toBe('/console/x/admin/?from=portal');
     expect(serveHandlerMock).not.toHaveBeenCalled();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
 });
 
-test('gateway serves main portal assets by manifest path from storage/portals/main/<portal name>/dist', async () => {
+test('gateway serves main portal assets from storage/portals/main/<portal>/dist', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await mkdir(path.join(storagePath, 'portals', 'main', 'console', 'dist'), { recursive: true });
-  await writeFile(path.join(storagePath, 'portals', 'main', 'console', 'dist', 'index.html'), '<div id="root"></div>');
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'console',
-      portals: [{ app: 'main', name: 'console', path: '/admin' }],
-    }),
-  );
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
+  await writeFile(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
 
   try {
     const gateway = Gateway.getInstance();
@@ -163,7 +137,7 @@ test('gateway serves main portal assets by manifest path from storage/portals/ma
       }),
       expect.anything(),
       expect.objectContaining({
-        public: path.join(storagePath, 'portals', 'main', 'console', 'dist'),
+        public: path.join(storagePath, 'portals', 'main', 'admin', 'dist'),
         directoryListing: false,
       }),
     );
@@ -172,16 +146,16 @@ test('gateway serves main portal assets by manifest path from storage/portals/ma
   }
 });
 
-test('gateway maps portal deep links by manifest path to the portal index html', async () => {
+test('gateway maps portal deep links to the portal index html', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await mkdir(path.join(storagePath, 'portals', 'main', 'console', 'dist'), { recursive: true });
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
   await writeFile(
-    path.join(storagePath, 'portals', 'main', 'console', 'dist', 'index.html'),
+    path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'),
     [
       '<html>',
       '<head>',
@@ -194,13 +168,6 @@ test('gateway maps portal deep links by manifest path to the portal index html',
       '<body><div id="root"></div></body>',
       '</html>',
     ].join(''),
-  );
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'console',
-      portals: [{ app: 'main', name: 'console', path: '/admin' }],
-    }),
   );
 
   try {
@@ -227,15 +194,8 @@ test('gateway serves sub-app portal assets from storage/portals/<subapp>/<portal
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await mkdir(path.join(storagePath, 'portals', 'crm', 'console', 'dist'), { recursive: true });
-  await writeFile(path.join(storagePath, 'portals', 'crm', 'console', 'dist', 'index.html'), '<div id="root"></div>');
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'console',
-      portals: [{ app: 'main', name: 'console', path: '/admin' }],
-    }),
-  );
+  await mkdir(path.join(storagePath, 'portals', 'crm', 'admin', 'dist'), { recursive: true });
+  await writeFile(path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
 
   try {
     const gateway = Gateway.getInstance();
@@ -249,7 +209,7 @@ test('gateway serves sub-app portal assets from storage/portals/<subapp>/<portal
       }),
       expect.anything(),
       expect.objectContaining({
-        public: path.join(storagePath, 'portals', 'crm', 'console', 'dist'),
+        public: path.join(storagePath, 'portals', 'crm', 'admin', 'dist'),
         directoryListing: false,
       }),
     );
@@ -258,47 +218,31 @@ test('gateway serves sub-app portal assets from storage/portals/<subapp>/<portal
   }
 });
 
-test('gateway redirects a sub-app portal root to the default portal path', async () => {
+test('gateway redirects a sub-app portal path without trailing slash', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
-  await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'console',
-      portals: [{ app: 'main', name: 'console', path: '/admin' }],
-    }),
-  );
-
   try {
     const gateway = Gateway.getInstance();
-    const response = await supertest.agent(gateway.getCallback()).get('/console/x/apps/crm/');
+    const response = await supertest.agent(gateway.getCallback()).get('/console/x/apps/crm/admin?from=portal');
 
     expect(response.status).toBe(302);
-    expect(response.headers.location).toBe('/console/x/apps/crm/admin/');
+    expect(response.headers.location).toBe('/console/x/apps/crm/admin/?from=portal');
     expect(serveHandlerMock).not.toHaveBeenCalled();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
 });
 
-test('gateway returns 404 when the manifest portal has not been built', async () => {
+test('gateway returns 404 when a portal has not been built', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await writeFile(
-    path.join(storagePath, 'portals', 'portal-manifest.json'),
-    JSON.stringify({
-      defaultPortal: 'admin',
-      portals: [{ name: 'admin', path: '/admin' }],
-    }),
-  );
 
   try {
     const gateway = Gateway.getInstance();
