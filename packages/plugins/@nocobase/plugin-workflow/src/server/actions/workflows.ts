@@ -97,7 +97,7 @@ export async function destroy(context: Context, next) {
       transaction,
     });
     const ids = new Set<number>(items.map((item) => item.id));
-    const affectedKeys = Array.from(new Set(items.map((item) => item.key)));
+    const affectedKeys = Array.from(new Set<string>(items.map((item) => item.get('key') as string)));
     const affectedTaskStats = affectedKeys.length
       ? await context.db.getRepository('userWorkflowTaskStats').find({
           filter: {
@@ -107,7 +107,7 @@ export async function destroy(context: Context, next) {
           transaction,
         })
       : [];
-    const affectedUserIds = Array.from(new Set(affectedTaskStats.map((item) => item.userId)));
+    const affectedUserIds = Array.from(new Set<number>(affectedTaskStats.map((item) => item.get('userId') as number)));
     const keysSet = new Set<string>(items.filter((item) => item.current).map((item) => item.key));
     const revisions = await repository.find({
       filter: {
