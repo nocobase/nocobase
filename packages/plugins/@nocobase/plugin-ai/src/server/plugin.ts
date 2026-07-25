@@ -56,7 +56,6 @@ import {
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 import { appendAIFileAttachmentSource } from './attachments';
-import { resolveFlowModelWorkContext } from './frontend-tools';
 
 type MCPClientModel = Model<{ useUserContext?: boolean }>;
 type TransactionOptions = {
@@ -358,9 +357,6 @@ export class PluginAIServer extends Plugin {
   }
 
   registerWorkContextResolveStrategy() {
-    this.workContextHandler.registerStrategy('flow-model', {
-      resolve: resolveFlowModelWorkContext,
-    });
     this.workContextHandler.registerStrategy('datasource', {
       resolve: this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
     });

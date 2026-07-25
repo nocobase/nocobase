@@ -83,23 +83,12 @@ export async function getFile(ctx: Context, next: Next) {
   const authorizedByExtension =
     fileAccessParams && !temporaryAccess ? await plugin.authorizeFileAccess(ctx, fileAccessParams) : false;
 
-  let filter: object = { id };
-  if (
-    !temporaryAccess &&
-    !authorizedByExtension &&
-    ctx.app.options.acl !== false &&
-    ctx.dataSource.options?.useACL !== false &&
-    ctx.dataSource.options?.acl !== false
-  ) {
-    filter = await resolveFileAccessFilter(ctx, collection as Collection, filter);
-  }
-
-  const file = await ctx.getCurrentRepository().findOne({
-    filter,
-    fields: ['id', 'storageId', 'path', 'filename', 'extname', 'mimetype', 'url', 'meta'],
+  const fields = ['id', 'storageId', 'path', 'filename', 'extname', 'mimetype', 'url', 'meta'];
+  let file = await ctx.getCurrentRepository().findOne({
+    filter: { id },
+    fields,
     context: ctx,
   });
-
   const storageId = getFileRecordValue(file, 'storageId');
   if (!file || !storageId) {
     return ctx.throw(404);
@@ -109,6 +98,26 @@ export async function getFile(ctx: Context, next: Next) {
   }
   if (ctx.state.fileAccess?.extname && ctx.state.fileAccess.extname !== getFileRecordValue(file, 'extname')) {
     return ctx.throw(404);
+  }
+
+  const publicAccess = Boolean(plugin.storagesCache.get(storageId)?.options?.public);
+  if (
+    !temporaryAccess &&
+    !publicAccess &&
+    !authorizedByExtension &&
+    ctx.app.options.acl !== false &&
+    ctx.dataSource.options?.useACL !== false &&
+    ctx.dataSource.options?.acl !== false
+  ) {
+    const filter = await resolveFileAccessFilter(ctx, collection as Collection, { id });
+    file = await ctx.getCurrentRepository().findOne({
+      filter,
+      fields,
+      context: ctx,
+    });
+    if (!file) {
+      return ctx.throw(404);
+    }
   }
 
   const download = !temporaryAccess && ctx.method === 'GET' && ctx.query.download === '1';
