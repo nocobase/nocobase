@@ -34,6 +34,8 @@ export type {
   RunJSSourceOpenSettingsDescriptor,
   RunJSSourcePermissionCheck,
   RunJSSourcePermissionResult,
+  RunJSSourceFileChange,
+  RunJSSourceSaveChangesInput,
   RunJSSourceSaveInput,
   RunJSSourceSaveResult,
   RunJSSurfaceStyle,

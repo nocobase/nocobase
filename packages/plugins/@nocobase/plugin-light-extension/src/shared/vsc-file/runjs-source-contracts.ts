@@ -78,6 +78,9 @@ export interface RunJSSourceRepositoryRecord extends VscRepositoryRecord {
 export interface RunJSSourceWorkspaceFile {
   path: string;
   content?: string;
+  blobHash: string;
+  size: number;
+  managed: boolean;
   language?: string;
   mode?: string;
 }
@@ -119,6 +122,22 @@ export interface RunJSSourceSaveInput {
   baseOwnerFingerprint: string;
   message: string;
   files: VscFileChange[];
+  entryPath?: string;
+  version?: string;
+}
+
+export interface RunJSSourceFileChange extends VscFileChange {
+  operation: 'upsert' | 'delete';
+  expectedBlobHash: string | null;
+}
+
+export interface RunJSSourceSaveChangesInput {
+  locator: RunJSSourceLocator;
+  repoId: string;
+  baseCommitId: string | null;
+  baseOwnerFingerprint: string;
+  message: string;
+  changes: RunJSSourceFileChange[];
   entryPath?: string;
   version?: string;
 }

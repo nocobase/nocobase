@@ -18,7 +18,7 @@ function readJson(relativePath: string) {
 }
 
 describe('Light Extension preset boundary', () => {
-  it('ships one optional package and no standalone VSC package metadata', () => {
+  it('ships the built-in Workspace provider and no standalone VSC package metadata', () => {
     const preset = readJson('packages/presets/nocobase/package.json');
     const flowEngine = readJson('packages/plugins/@nocobase/plugin-flow-engine/package.json');
     const workflowJavaScript = readJson('packages/plugins/@nocobase/plugin-workflow-javascript/package.json');
@@ -28,7 +28,7 @@ describe('Light Extension preset boundary', () => {
 
     expect(preset.dependencies).toHaveProperty(LIGHT_EXTENSION_PACKAGE);
     expect(preset.dependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
-    expect(preset.builtIn).not.toContain(LIGHT_EXTENSION_PACKAGE);
+    expect(preset.builtIn).toContain(LIGHT_EXTENSION_PACKAGE);
     expect(preset.builtIn).not.toContain(VSC_FILE_PACKAGE);
     expect(flowEngine.devDependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
     expect(workflowJavaScript.devDependencies).not.toHaveProperty(VSC_FILE_PACKAGE);

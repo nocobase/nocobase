@@ -44,8 +44,11 @@ import {
   type RunJSSourcePermissionCheck,
   type RunJSSourceOpenResult,
   type RunJSSourceOpenSettingsDescriptor,
+  type RunJSSourceFileChange,
+  type RunJSSourceSaveChangesInput,
   type RunJSSourceSaveInput,
   type RunJSSourceSaveResult,
+  type RunJSSourceWorkspaceFile,
 } from '../../../shared/vsc-file/runjs-source-types';
 import type {
   VscCommitRecord,
@@ -83,6 +86,7 @@ export const runJSSourceActionNames = [
   'restoreFromCode',
   'compilePreview',
   'save',
+  'saveChanges',
   'exportZip',
   'importZip',
   'listHistory',
@@ -465,6 +469,148 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         locator: saveInput.locator,
         ctx: adapterCtx,
       });
+      const commit = await updateRunJSCommitMetadata(
+        db,
+        pushResult.commit,
+        {
+          ...saveMetadata,
+          ownerFingerprint: nextOwnerFingerprint,
+        },
+        transaction,
+      );
+
+      return {
+        locator: saveInput.locator,
+        locatorKind: saveInput.locator.kind,
+        repository: pushResult.repository,
+        commit,
+        artifact: {
+          entryPath: artifact.entryPath || null,
+          filesHash: artifact.filesHash,
+          runtimeCodeHash,
+          diagnostics: artifact.diagnostics,
+        },
+        ownerFingerprint: nextOwnerFingerprint,
+        writeResult: {
+          ...writeResult,
+          ownerFingerprint: nextOwnerFingerprint,
+        },
+      };
+    });
+  },
+  saveChanges: async (
+    db,
+    registry,
+    permissionHooks,
+    authoringInspectors,
+    input,
+    ctx,
+  ): Promise<RunJSSourceSaveResult> => {
+    const saveInput = normalizeSaveChangesInput(input);
+    const adapter = registry.require(saveInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+    const preflightCtx = createAdapterContext(ctx);
+    await service.getRepository({ repoId: saveInput.repoId }, createServiceContext(preflightCtx, undefined));
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const request = adapterCtx.request;
+      const userId = adapterCtx.userId;
+
+      await adapter.assertCanWrite({ locator: saveInput.locator, ctx: adapterCtx });
+
+      const repositoryIdentity = buildRunJSSourceRepositoryIdentity(saveInput.locator);
+      const serviceCtx = {
+        authorId: userId,
+        request,
+        transaction,
+      };
+      const repository = await service.getRepositoryForUpdate({ repoId: saveInput.repoId }, serviceCtx);
+      assertRepositoryMatchesIdentity(repository, repositoryIdentity, saveInput.locator.kind);
+      assertBaseCommitMatches(saveInput.baseCommitId, repository.headCommitId);
+      const legacy = await adapter.readLegacy({ locator: saveInput.locator, ctx: adapterCtx });
+      const baseCommitId = repository.headCommitId;
+      const headOwnerFingerprint = await getHeadOwnerFingerprintForRepository(service, repository, serviceCtx);
+      assertBaseOwnerFingerprintMatches(
+        saveInput.baseOwnerFingerprint,
+        headOwnerFingerprint,
+        legacy.ownerFingerprint,
+        saveInput.locator.kind,
+      );
+      await assertCurrentOwnerFingerprint(adapter, saveInput.locator, adapterCtx, legacy.ownerFingerprint);
+      const validatedOwnerFingerprint = legacy.ownerFingerprint;
+      const baseFiles = baseCommitId
+        ? await loadCommitFilesForCompile(db, repository.id, baseCommitId, transaction)
+        : [];
+      assertIncrementalRunJSFileChanges(baseFiles, saveInput.changes);
+      const candidateWithoutManifest = await materializeRunJSCompileFiles(
+        db,
+        repository.id,
+        baseCommitId,
+        { files: saveInput.changes },
+        serviceCtx,
+      );
+      const entryPath = selectEntryPath(candidateWithoutManifest, saveInput.entryPath);
+      const runtimeVersion = saveInput.version || legacy.version;
+      const saveFiles = [
+        ...saveInput.changes,
+        runJSManifestFileChange(entryPath, runtimeVersion, legacy.surfaceStyle, candidateWithoutManifest),
+      ];
+      const compileFiles = await materializeRunJSCompileFiles(
+        db,
+        repository.id,
+        baseCommitId,
+        { files: saveFiles },
+        serviceCtx,
+      );
+      assertRunJSCompileInputLimits(compileFiles);
+      const compiled = await compileRunJSSourceWorkspace({
+        files: compileFiles,
+        entry: entryPath,
+        runtimeVersion,
+        surfaceStyle: legacy.surfaceStyle,
+        locator: saveInput.locator,
+        legacy: legacyAuthoringInfo(legacy),
+        inspectAuthoring: createRunJSSourceAuthoringInspector(authoringInspectors),
+      });
+      assertRunJSCompileSucceeded(compiled);
+      const artifact = compiled.artifact;
+      const runtimeCodeHash = buildRunJSRuntimeCodeHash(artifact.code);
+      artifact.metadata = {
+        ...artifact.metadata,
+        repoId: repository.id,
+        runtimeCodeHash,
+      };
+      const saveMetadata = {
+        sourceKind: saveInput.locator.kind,
+        ownerFingerprint: validatedOwnerFingerprint,
+        filesHash: artifact.filesHash,
+        entry: artifact.entryPath || null,
+        runtimeVersion: artifact.version,
+        surfaceStyle: legacy.surfaceStyle,
+        runtimeCodeHash,
+      };
+      const pushResult = await pushRunJSSourceCommit(
+        service,
+        {
+          repoId: repository.id,
+          baseCommitId,
+          message: saveInput.message,
+          files: saveFiles,
+          authorId: userId,
+          metadata: saveMetadata,
+        },
+        serviceCtx,
+      );
+      await assertCurrentOwnerFingerprint(adapter, saveInput.locator, adapterCtx, validatedOwnerFingerprint);
+      const writeResult = await adapter.writeRuntime({
+        locator: saveInput.locator,
+        artifact,
+        commitId: pushResult.commit.id,
+        baseOwnerFingerprint: validatedOwnerFingerprint,
+        ctx: adapterCtx,
+      });
+      const nextOwnerFingerprint = await adapter.getFingerprint({ locator: saveInput.locator, ctx: adapterCtx });
       const commit = await updateRunJSCommitMetadata(
         db,
         pushResult.commit,
@@ -1702,17 +1848,18 @@ function ensureRunJSManifestFiles(legacy: RunJSLegacySource, files: PulledFile[]
   }
 
   const manifest = defaultRunJSManifestFile(legacy);
+  const content = String(manifest.content || '');
   return [
     ...files,
     {
       path: manifest.path,
       pathHash: pathHash(manifest.path),
       pathLowerHash: pathLowerHash(manifest.path),
-      blobHash: '',
-      size: Buffer.byteLength(String(manifest.content || ''), 'utf8'),
+      blobHash: sha256Hex(content),
+      size: Buffer.byteLength(content, 'utf8'),
       language: manifest.language || 'json',
       mode: manifest.mode || '100644',
-      content: String(manifest.content || ''),
+      content,
     },
   ].sort((left, right) => left.path.localeCompare(right.path));
 }
@@ -1783,7 +1930,7 @@ function buildOpenResult(input: BuildOpenResultInput): RunJSSourceOpenResult & R
       metadata: input.legacy.metadata,
     },
     repository,
-    files: input.files,
+    files: input.files.map(serializeRunJSSourceWorkspaceFile),
     permissions: {
       canRead: true,
       canWrite: input.permissions.canWrite,
@@ -1793,6 +1940,21 @@ function buildOpenResult(input: BuildOpenResultInput): RunJSSourceOpenResult & R
       items: input.history,
     },
     settingsDescriptor: buildOpenSettingsDescriptor(repository.repoId, input.files),
+  };
+}
+
+function serializeRunJSSourceWorkspaceFile(file: PulledFile): RunJSSourceWorkspaceFile {
+  const content = typeof file.content === 'string' ? file.content : undefined;
+  return {
+    path: file.path,
+    content,
+    blobHash: file.blobHash || (content === undefined ? '' : sha256Hex(normalizeText(content))),
+    size: Number.isSafeInteger(file.size)
+      ? file.size
+      : Buffer.byteLength(content === undefined ? '' : normalizeText(content), 'utf8'),
+    managed: normalizePath(file.path) === runJSManifestPath,
+    language: file.language,
+    mode: file.mode,
   };
 }
 
@@ -1914,6 +2076,41 @@ async function materializeRunJSCompileFiles(
   return Array.from(filesByPath.values())
     .sort((left, right) => left.path.localeCompare(right.path))
     .map(canonicalCompileFileChange);
+}
+
+function assertIncrementalRunJSFileChanges(baseFiles: SaveCompileFile[], changes: RunJSSourceFileChange[]): void {
+  const baseFilesByPath = new Map(baseFiles.map((file) => [file.path, file]));
+  const seenPaths = new Set<string>();
+
+  for (const change of changes) {
+    const path = normalizePath(change.path);
+    if (path === runJSManifestPath) {
+      throw new VscError('PERMISSION_DENIED', `RunJS managed file "${path}" cannot be changed directly`, {
+        details: {
+          path,
+          managed: true,
+        },
+      });
+    }
+    if (seenPaths.has(path)) {
+      throw new VscError('PATH_INVALID', `RunJS changes contain duplicate path "${path}"`, {
+        details: { path },
+      });
+    }
+    seenPaths.add(path);
+
+    const currentFile = baseFilesByPath.get(path);
+    const currentBlobHash = currentFile?.blobHash || null;
+    if ((change.operation === 'delete' && !currentFile) || change.expectedBlobHash !== currentBlobHash) {
+      throw new VscError('RUNJS_FILE_CONFLICT', `RunJS file "${path}" changed after it was opened`, {
+        details: {
+          path,
+          expectedBlobHash: change.expectedBlobHash,
+          currentBlobHash,
+        },
+      });
+    }
+  }
 }
 
 function canonicalCompileFileChange(file: SaveCompileFile): VscFileChange {
@@ -2296,6 +2493,19 @@ function normalizeSaveInput(input: ResourceActionInput): RunJSSourceSaveInput {
   };
 }
 
+function normalizeSaveChangesInput(input: ResourceActionInput): RunJSSourceSaveChangesInput {
+  return {
+    locator: normalizeRunJSSourceLocator(input.locator),
+    repoId: requireString(input, 'repoId'),
+    baseCommitId: requireNullableString(input, 'baseCommitId'),
+    baseOwnerFingerprint: requireString(input, 'baseOwnerFingerprint'),
+    message: requireCommitMessage(input.message),
+    changes: requireArray(input, 'changes', normalizeRunJSIncrementalFileChange),
+    entryPath: optionalRunJSWorkspacePath(input, 'entryPath'),
+    version: optionalString(input, 'version'),
+  };
+}
+
 function assertBaseCommitMatches(baseCommitId: string | null, currentHeadCommitId: string | null): void {
   if (baseCommitId === currentHeadCommitId) {
     return;
@@ -2581,6 +2791,27 @@ function normalizeRunJSFileChange(value: unknown, label: string): VscFileChange 
   return normalizeRunJSFilePath(normalizeFileChange(value, label), `${label}.path`);
 }
 
+function normalizeRunJSIncrementalFileChange(value: unknown, label: string): RunJSSourceFileChange {
+  const input = requireRecord(value, label);
+  const operation = requireFileOperation(input, 'operation', label);
+  const content = input.content;
+  if (operation === 'upsert' && typeof content !== 'string') {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${label}.content" must be a string`);
+  }
+
+  return normalizeRunJSFilePath(
+    compactObject({
+      path: requireString(input, 'path'),
+      operation,
+      expectedBlobHash: requireNullableString(input, 'expectedBlobHash'),
+      content: operation === 'upsert' ? content : undefined,
+      language: optionalString(input, 'language'),
+      mode: optionalString(input, 'mode'),
+    }) as unknown as RunJSSourceFileChange,
+    `${label}.path`,
+  );
+}
+
 function normalizePreviewFileChange(value: unknown, label: string): VscFileChange {
   const file = normalizeFileChange(value, label);
 
@@ -2630,6 +2861,19 @@ function optionalFileOperation(
   }
 
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${label}.${key}" is invalid`);
+}
+
+function requireFileOperation(
+  input: ResourceActionInput,
+  key: string,
+  label: string,
+): RunJSSourceFileChange['operation'] {
+  const operation = optionalFileOperation(input, key, label);
+  if (operation) {
+    return operation;
+  }
+
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${label}.${key}" is required`);
 }
 
 function requireRecord(value: unknown, label: string): ResourceActionInput {

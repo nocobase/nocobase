@@ -10,6 +10,7 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 
+import { maxFileSize } from '../../../shared/vsc-file/constants';
 import { VscError } from '../../../shared/vsc-file/errors';
 import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../../shared/vsc-file/runjs-source-types';
 import { runJSManifestPath } from '../../../shared/vsc-file/runjs-workspace-path';
@@ -508,6 +509,543 @@ describe('runJSSources resource', () => {
       code: 'RUNJS_SAVE_NO_CHANGES',
       status: 409,
     });
+  });
+
+  it('opens stable file metadata and incrementally changes only explicitly listed paths', async () => {
+    const locator = createLocator('fm_incremental_save');
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
+    registerFlowModelAdapter({
+      label: 'JS block / Incremental save',
+      modelUid: 'fm_incremental_save',
+      readCode: () => 'ctx.render("legacy");',
+      onSave: (artifact) => runtimeArtifacts.push(artifact),
+    });
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const initialized = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Initialize incremental workspace',
+        files: [
+          {
+            path: 'README.md',
+            content: '# Incremental workspace\n',
+          },
+          {
+            path: 'src/client/helper.ts',
+            content: 'export const value = "before";',
+            language: 'typescript',
+          },
+          {
+            path: 'src/client/index.tsx',
+            content: 'import { value } from "./helper";\nctx.render(value);',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+    expect(initialized.status).toBe(200);
+
+    const workspace = await agent.resource('runJSSources').open({ values: { locator } });
+    const files = workspace.body.data.files as Array<{
+      path: string;
+      content: string;
+      blobHash: string;
+      size: number;
+      managed: boolean;
+    }>;
+    expect(files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: runJSManifestPath,
+          blobHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+          managed: true,
+        }),
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          blobHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+          managed: false,
+        }),
+      ]),
+    );
+    for (const file of files) {
+      expect(file.size).toBe(Buffer.byteLength(file.content, 'utf8'));
+    }
+    const latestWorkspace = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latestWorkspace.body.data.files).toEqual(files);
+    const indexFile = files.find((file) => file.path === 'src/client/index.tsx');
+    const helperFile = files.find((file) => file.path === 'src/client/helper.ts');
+    const readmeFile = files.find((file) => file.path === 'README.md');
+    if (!indexFile || !helperFile || !readmeFile) {
+      throw new Error('Incremental workspace fixtures were not opened');
+    }
+
+    const changed = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        baseCommitId: workspace.body.data.repository.headCommitId,
+        baseOwnerFingerprint: workspace.body.data.ownerFingerprint,
+        message: 'Incrementally update helper',
+        changes: [
+          {
+            operation: 'upsert',
+            path: helperFile.path,
+            expectedBlobHash: helperFile.blobHash,
+            content: 'export const value = "after";',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(changed.status).toBe(200);
+    expect(changed.body.data).toMatchObject({
+      repository: {
+        headCommitId: changed.body.data.commit.id,
+      },
+      artifact: {
+        entryPath: 'src/client/index.tsx',
+        filesHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+        runtimeCodeHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      },
+      ownerFingerprint: 'owner:fm_incremental_save:v2',
+    });
+    expect(runtimeArtifacts[runtimeArtifacts.length - 1]?.code).toContain('after');
+
+    const changedVersion = await agent.resource('runJSSources').getVersion({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        commitId: changed.body.data.commit.id,
+        includeFiles: true,
+      },
+    });
+    expect(changedVersion.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: indexFile.path,
+          blobHash: indexFile.blobHash,
+          content: indexFile.content,
+        }),
+        expect.objectContaining({
+          path: readmeFile.path,
+          blobHash: readmeFile.blobHash,
+          content: readmeFile.content,
+        }),
+      ]),
+    );
+
+    const created = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        baseCommitId: changed.body.data.commit.id,
+        baseOwnerFingerprint: changed.body.data.ownerFingerprint,
+        message: 'Incrementally create component',
+        changes: [
+          {
+            operation: 'upsert',
+            path: 'src/client/components/NewPanel.ts',
+            expectedBlobHash: null,
+            content: 'export const panelLabel = "new";',
+          },
+        ],
+      },
+    });
+    expect(created.status).toBe(200);
+    const createdVersion = await agent.resource('runJSSources').getVersion({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        commitId: created.body.data.commit.id,
+        includeFiles: true,
+      },
+    });
+    expect(createdVersion.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: indexFile.path, blobHash: indexFile.blobHash }),
+        expect.objectContaining({ path: readmeFile.path, blobHash: readmeFile.blobHash }),
+        expect.objectContaining({ path: helperFile.path, content: 'export const value = "after";' }),
+        expect.objectContaining({
+          path: 'src/client/components/NewPanel.ts',
+          content: 'export const panelLabel = "new";',
+        }),
+      ]),
+    );
+
+    const deleted = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        baseCommitId: created.body.data.commit.id,
+        baseOwnerFingerprint: created.body.data.ownerFingerprint,
+        message: 'Explicitly delete readme',
+        changes: [
+          {
+            operation: 'delete',
+            path: readmeFile.path,
+            expectedBlobHash: readmeFile.blobHash,
+          },
+        ],
+      },
+    });
+    expect(deleted.status).toBe(200);
+    const deletedVersion = await agent.resource('runJSSources').getVersion({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        commitId: deleted.body.data.commit.id,
+        includeFiles: true,
+      },
+    });
+    expect(deletedVersion.body.data.files.map((file: { path: string }) => file.path)).not.toContain('README.md');
+    expect(deletedVersion.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: indexFile.path, blobHash: indexFile.blobHash }),
+        expect.objectContaining({ path: helperFile.path, content: 'export const value = "after";' }),
+        expect.objectContaining({ path: 'src/client/components/NewPanel.ts' }),
+      ]),
+    );
+
+    const stale = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: workspace.body.data.repository.id,
+        baseCommitId: workspace.body.data.repository.headCommitId,
+        baseOwnerFingerprint: workspace.body.data.ownerFingerprint,
+        message: 'Reject stale incremental base',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: 'ctx.render("stale");',
+          },
+        ],
+      },
+    });
+    expect(stale.status).toBe(409);
+    expect(stale.body.errors[0]).toMatchObject({ code: 'BASE_COMMIT_OUTDATED' });
+  });
+
+  it('rejects incremental blob conflicts and direct managed manifest changes without side effects', async () => {
+    const locator = createLocator('fm_incremental_conflict');
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
+    registerFlowModelAdapter({
+      label: 'JS block / Incremental conflict',
+      modelUid: 'fm_incremental_conflict',
+      readCode: () => 'ctx.render("legacy");',
+      onSave: (artifact) => runtimeArtifacts.push(artifact),
+    });
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const indexFile = opened.body.data.files.find((file: { path: string }) => file.path === 'src/client/index.tsx');
+    const manifestFile = opened.body.data.files.find((file: { path: string }) => file.path === runJSManifestPath);
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+
+    const conflicted = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Reject stale file blob',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: '0'.repeat(64),
+            content: 'ctx.render("conflicted");',
+          },
+        ],
+      },
+    });
+    expect(conflicted.status).toBe(409);
+    expect(conflicted.body.errors[0]).toMatchObject({
+      code: 'RUNJS_FILE_CONFLICT',
+      details: {
+        path: indexFile.path,
+        expectedBlobHash: '0'.repeat(64),
+        currentBlobHash: indexFile.blobHash,
+      },
+    });
+
+    const existingAsCreate = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Reject existing file as create',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: null,
+            content: 'ctx.render("not a create");',
+          },
+        ],
+      },
+    });
+    expect(existingAsCreate.status).toBe(409);
+    expect(existingAsCreate.body.errors[0]).toMatchObject({
+      code: 'RUNJS_FILE_CONFLICT',
+      details: {
+        path: indexFile.path,
+        expectedBlobHash: null,
+        currentBlobHash: indexFile.blobHash,
+      },
+    });
+
+    const missingDelete = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Reject deleting missing file',
+        changes: [
+          {
+            operation: 'delete',
+            path: 'src/client/missing.ts',
+            expectedBlobHash: null,
+          },
+        ],
+      },
+    });
+    expect(missingDelete.status).toBe(409);
+    expect(missingDelete.body.errors[0]).toMatchObject({
+      code: 'RUNJS_FILE_CONFLICT',
+      details: {
+        path: 'src/client/missing.ts',
+        expectedBlobHash: null,
+        currentBlobHash: null,
+      },
+    });
+
+    const managed = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Reject managed manifest edit',
+        changes: [
+          {
+            operation: 'delete',
+            path: manifestFile.path,
+            expectedBlobHash: manifestFile.blobHash,
+          },
+        ],
+      },
+    });
+    expect(managed.status).toBe(403);
+    expect(managed.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: {
+        path: runJSManifestPath,
+        managed: true,
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+    expect(runtimeArtifacts).toHaveLength(0);
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.body.data.repository.headCommitId).toBe(opened.body.data.repository.headCommitId);
+    expect(latest.body.data.ownerFingerprint).toBe(opened.body.data.ownerFingerprint);
+  });
+
+  it('keeps incremental no-op, compile, resource-limit, owner, and runtime-write failures atomic', async () => {
+    const locator = createLocator('fm_incremental_atomic');
+    let ownerFingerprint = 'owner:fm_incremental_atomic:v1';
+    let runtimeWriteCount = 0;
+    let rejectRuntimeWrite = false;
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Incremental atomic',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: () => {
+        runtimeWriteCount += 1;
+        if (rejectRuntimeWrite) {
+          throw new VscError('INTERNAL_ERROR', 'Runtime write failed');
+        }
+        ownerFingerprint = 'owner:fm_incremental_atomic:v2';
+        return { ownerFingerprint };
+      },
+    });
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const indexFile = opened.body.data.files.find((file: { path: string }) => file.path === 'src/client/index.tsx');
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    const baseValues = {
+      locator,
+      repoId: opened.body.data.repository.id,
+      baseCommitId: opened.body.data.repository.headCommitId,
+      baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+    };
+
+    const noOp = await agent.resource('runJSSources').saveChanges({
+      values: {
+        ...baseValues,
+        message: 'Reject unchanged incremental file',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: indexFile.content,
+          },
+        ],
+      },
+    });
+    expect(noOp.status).toBe(409);
+    expect(noOp.body.errors[0]).toMatchObject({ code: 'RUNJS_SAVE_NO_CHANGES' });
+
+    const compileFailure = await agent.resource('runJSSources').saveChanges({
+      values: {
+        ...baseValues,
+        message: 'Reject incomplete incremental compile',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: 'import { missing } from "./missing";\nctx.render(missing);',
+          },
+        ],
+      },
+    });
+    expect(compileFailure.status).toBe(400);
+    expect(compileFailure.body.errors[0]).toMatchObject({ code: 'RUNJS_IMPORT_NOT_FOUND' });
+
+    const oversized = await agent.resource('runJSSources').saveChanges({
+      values: {
+        ...baseValues,
+        message: 'Reject oversized incremental file',
+        changes: [
+          {
+            operation: 'upsert',
+            path: 'src/client/oversized.ts',
+            expectedBlobHash: null,
+            content: 'x'.repeat(maxFileSize + 1),
+          },
+        ],
+      },
+    });
+    expect(oversized.status).toBe(413);
+    expect(oversized.body.errors[0]).toMatchObject({ code: 'FILE_TOO_LARGE' });
+
+    ownerFingerprint = 'owner:fm_incremental_atomic:external';
+    const staleOwner = await agent.resource('runJSSources').saveChanges({
+      values: {
+        ...baseValues,
+        message: 'Reject stale incremental owner',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: 'ctx.render("stale owner");',
+          },
+        ],
+      },
+    });
+    expect(staleOwner.status).toBe(409);
+    expect(staleOwner.body.errors[0]).toMatchObject({ code: 'RUNJS_SOURCE_OWNER_OUTDATED' });
+
+    ownerFingerprint = opened.body.data.ownerFingerprint;
+    rejectRuntimeWrite = true;
+    const runtimeFailure = await agent.resource('runJSSources').saveChanges({
+      values: {
+        ...baseValues,
+        message: 'Roll back failed runtime write',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: 'ctx.render("runtime failure");',
+          },
+        ],
+      },
+    });
+    expect(runtimeFailure.status).toBe(500);
+    expect(runtimeFailure.body.errors[0]).toMatchObject({ code: 'INTERNAL_ERROR' });
+    expect(runtimeWriteCount).toBe(1);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.body.data.repository.headCommitId).toBe(opened.body.data.repository.headCommitId);
+    expect(latest.body.data.files).toEqual(opened.body.data.files);
+  });
+
+  it('keeps incremental permission failures free of repository and runtime side effects', async () => {
+    const locator = createLocator('fm_incremental_permission');
+    let canWrite = true;
+    let runtimeWritten = false;
+    const ownerFingerprint = 'owner:fm_incremental_permission:v1';
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {
+        if (!canWrite) {
+          throw new VscError('PERMISSION_DENIED', 'RunJS source is read only');
+        }
+      },
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Incremental permission',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: () => {
+        runtimeWritten = true;
+        return { ownerFingerprint };
+      },
+    });
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const indexFile = opened.body.data.files.find((file: { path: string }) => file.path === 'src/client/index.tsx');
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    canWrite = false;
+
+    const response = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Reject incremental permission failure',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: 'ctx.render("forbidden");',
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0]).toMatchObject({ code: 'PERMISSION_DENIED' });
+    expect(runtimeWritten).toBe(false);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
   });
 
   it('previews files as a complete workspace snapshot when repoId is supplied', async () => {
