@@ -11,6 +11,7 @@ import type { CodeAuthoringCapabilities, CodeAuthoringSnapshot, CodeAuthoringSur
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CodeWorkspaceContext } from '../../context/code-workspace';
+import { executeFrontendTool } from '../../frontend-tools';
 import { FrontendToolRegistry } from '../../../manager/frontend-tool-registry';
 import { registerWorkspaceAuthoringTools, WORKSPACE_AUTHORING_TOOL_NAMES } from '../workspace-authoring';
 
@@ -292,6 +293,26 @@ describe('workspace authoring frontend tools', () => {
       status: 'success',
       content: { changedPaths: ['src/helper.ts'], saved: false },
     });
+  });
+
+  it('rebinds workspace tools to the current same-id surface after apply cleanup', async () => {
+    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
+    registry.clear('workspace-1');
+    const remountedSurface = createSurface(snapshotRef);
+    surfaces.set('workspace-1', remountedSurface);
+
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspaceValidateDraft',
+        args: {},
+      }),
+    ).resolves.toMatchObject({
+      status: 'success',
+      content: { surfaceId: 'workspace-1', diagnostics: [] },
+    });
+    expect(surface.validateDraft).not.toHaveBeenCalled();
+    expect(remountedSurface.validateDraft).toHaveBeenCalledTimes(1);
+    expect(registry.list('workspace-1')).toHaveLength(7);
   });
 
   it('does not let an old async registration clear tools registered by a same-id remount', async () => {
