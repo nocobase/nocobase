@@ -152,7 +152,7 @@ Contohnya, menambahkan plugin `hello` ke proyek `my-nocobase-app`, maka nama pak
 PLUGIN_PACKAGE_PREFIX dapat dikonfigurasi sebagai:
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
 ```
 
 Maka korespondensi antara nama plugin dan nama paket adalah sebagai berikut:
