@@ -19,6 +19,7 @@ import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
   closeView: vi.fn(),
+  diagnoseRunJS: vi.fn(),
   request: vi.fn(),
   view: {} as {
     beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
@@ -94,6 +95,7 @@ vi.mock('@nocobase/client-v2', () => ({
       />
     </div>
   ),
+  diagnoseRunJS: mocks.diagnoseRunJS,
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
     const [overlayEl, setOverlayEl] = React.useState<HTMLDivElement | null>(null);
@@ -280,6 +282,11 @@ describe('runJSStudioProvider', () => {
   beforeEach(() => {
     mocks.view.close = mocks.closeView;
     Reflect.deleteProperty(mocks.view, 'beforeClose');
+    mocks.diagnoseRunJS.mockResolvedValue({
+      execution: { finished: true, started: true, timeout: false },
+      issues: [],
+      logs: [],
+    });
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
       if (url === 'runJSSources:open') {
         return Promise.resolve({
@@ -508,6 +515,7 @@ describe('runJSStudioProvider', () => {
     const requiredKeys = [
       'File resource manager',
       'Console logs',
+      'Run',
       'Check',
       'Save',
       'Saved successfully',
@@ -529,7 +537,7 @@ describe('runJSStudioProvider', () => {
       'Back to editor',
       'Base',
       'Saved',
-      'No messages yet. Click Check to validate.',
+      'No messages yet. Click Run to preview or Check to validate.',
       'Click to restore',
       'Restore {{version}}?',
       'This will copy files from this version into the editor.',
@@ -586,6 +594,7 @@ describe('runJSStudioProvider', () => {
     expect(screen.queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Open Studio' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
     expect(screen.getByTestId('mock-code-editor').getAttribute('data-runjs-model-use')).toBe('JSBlockModel');
@@ -593,7 +602,7 @@ describe('runJSStudioProvider', () => {
     expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();
     expect(screen.getByLabelText('Open files').style.overflowY).toBe('hidden');
-    expect(screen.getByText('No messages yet. Click Check to validate.')).toBeTruthy();
+    expect(screen.getByText('No messages yet. Click Run to preview or Check to validate.')).toBeTruthy();
     expect(screen.getByTestId('runjs-studio-editor').style.overflow).toBe('hidden');
     expect(screen.getByTestId('runjs-studio-editor').style.minHeight).toMatch(/^(0|0px)$/);
     expect(screen.getByTestId('runjs-studio-workspace').style.minHeight).toMatch(/^(0|0px)$/);
@@ -1196,6 +1205,44 @@ describe('runJSStudioProvider', () => {
       );
     });
     expect(await screen.findByText(/\[info\] Source check passed/)).toBeTruthy();
+    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+  });
+
+  it('runs the compiled artifact through the host preview when available', async () => {
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() =>
+      expect(onPreview).toHaveBeenCalledWith({
+        code: 'return 1;',
+        version: 'v2',
+      }),
+    );
+    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+  });
+
+  it('runs the compiled artifact in the current Flow context without a host preview', async () => {
+    mocks.diagnoseRunJS.mockResolvedValueOnce({
+      execution: { finished: true, started: true, timeout: false },
+      issues: [],
+      logs: [{ level: 'log', message: 'hello!' }],
+    });
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() =>
+      expect(mocks.diagnoseRunJS).toHaveBeenCalledWith('return 1;', expect.anything(), {
+        sourceMap: previewSourceMap,
+        version: 'v2',
+      }),
+    );
+    expect(await screen.findByText(/\[log\] hello!/)).toBeTruthy();
   });
 
   it('resolves the fixed src/client index entry by extension priority', async () => {

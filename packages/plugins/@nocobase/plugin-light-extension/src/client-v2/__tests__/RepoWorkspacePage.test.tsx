@@ -191,9 +191,12 @@ vi.mock('../vsc-file/public-api', () => {
       activeFile,
       onChange,
       onCheck,
+      onRunPreview,
       scene,
       showCheckButton,
+      showRunButton,
       checking,
+      previewing,
       projectRevision,
       readOnly,
       toolbarActions,
@@ -206,9 +209,12 @@ vi.mock('../vsc-file/public-api', () => {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
       onCheck?: () => void;
+      onRunPreview?: () => void;
       scene?: string;
       showCheckButton?: boolean;
+      showRunButton?: boolean;
       checking?: boolean;
+      previewing?: boolean;
       projectRevision: number;
       readOnly?: boolean;
       toolbarActions?: React.ReactNode;
@@ -223,8 +229,10 @@ vi.mock('../vsc-file/public-api', () => {
     }) => (
       <div
         data-has-check={String(Boolean(onCheck))}
+        data-has-run={String(Boolean(onRunPreview))}
         data-scene={scene || ''}
         data-show-check-button={String(showCheckButton)}
+        data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
@@ -238,6 +246,11 @@ vi.mock('../vsc-file/public-api', () => {
         {showCheckButton ? (
           <button disabled={!onCheck} onClick={onCheck} type="button">
             {checking ? 'Checking' : 'Check'}
+          </button>
+        ) : null}
+        {showRunButton ? (
+          <button disabled={!onRunPreview} onClick={onRunPreview} type="button">
+            {previewing ? 'Running' : 'Run'}
           </button>
         ) : null}
         {toolbarActions}
@@ -710,6 +723,43 @@ describe('LightExtensionWorkspacePage', () => {
     });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(await screen.findByText('Source check passed')).toBeInTheDocument();
+  });
+
+  it('runs the current unsaved entry workspace through the host preview', async () => {
+    const onPreview = vi.fn(async () => undefined);
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onPreview={onPreview}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run', 'true');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>unsaved run</div>);\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
+    expect(onPreview).toHaveBeenCalledWith({
+      code: 'ctx.render(<div>preview</div>);',
+      version: 'v2',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+    });
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
   it('offers moving the current unsaved entry workspace back to inline code', async () => {

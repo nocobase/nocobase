@@ -378,12 +378,13 @@ describe('MoveToInlineService', () => {
       preparePush,
       publishPreparedPush,
     } as unknown as VscFileService;
+    const getVscFileService = vi.fn(() => vscFileService);
     const service = new MoveToInlineService(
       db,
       { getEntry: vi.fn(async () => pageEntry) } as never,
       { compileEntry } as never,
       { syncFlowModelReferencesForNodeTree: syncReferences } as never,
-      () => vscFileService,
+      getVscFileService,
       () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
     );
 
@@ -461,6 +462,7 @@ describe('MoveToInlineService', () => {
       }),
     );
     expect(preparePush.mock.invocationCallOrder[0]).toBeLessThan(lockFlowModelRecord.mock.invocationCallOrder[0]);
+    expect(getVscFileService).toHaveBeenCalledTimes(1);
     expect(publishPreparedPush).toHaveBeenCalledWith(preparedPush, expect.objectContaining({ transaction }));
     expect(compileEntry.mock.calls[0][1]?.transaction).toBeUndefined();
     expect(preparePush.mock.calls[0][1]?.transaction).toBeUndefined();

@@ -143,59 +143,15 @@ describe('MoveSourceToLightExtension', () => {
     expect(screen.queryByText('archived-repo')).toBeNull();
   });
 
-  it('selects and submits the application default destination with a stable idempotency key', async () => {
-    const request = vi.fn(async ({ url }: { url: string }) => {
-      if (url === 'lightExtensionRepos:list') {
-        return { data: { data: [] } };
-      }
-      if (url === 'lightExtensions:moveSource') {
-        return {
-          data: {
-            data: {
-              binding: {
-                type: 'light-extension-entry',
-                repoId: 'ler_default',
-                entryId: 'lee_default',
-                entryName: 'js-block',
-                entryPath: 'src/client/js-blocks/js-block/index.tsx',
-                kind: 'js-block',
-              },
-            },
-          },
-        };
-      }
-      throw new Error(`Unexpected request: ${url}`);
-    });
-
-    render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
-    const defaultDestination = await screen.findByRole('radio', { name: 'Application default light extension' });
-    expect(defaultDestination).toBeChecked();
-    fireEvent.click(screen.getByRole('button', { name: 'Move' }));
-
-    await waitFor(() => {
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'lightExtensions:moveSource',
-          data: expect.objectContaining({
-            destination: { type: 'default' },
-            idempotencyKey: expect.stringMatching(/^move-source-[a-z0-9]+-[a-z0-9]+$/),
-          }),
-        }),
-      );
-    });
-  });
-
   it('derives the same idempotency key for the same semantic request', () => {
     const first = {
       locator: { kind: 'flowModel.step', modelUid: 'fm_1' },
-      destination: { type: 'default' },
+      destination: { type: 'existing', repoId: 'ler_1' },
       files: [{ path: 'src/main.ts', content: 'return 1;' }],
     };
     const reordered = {
       files: [{ content: 'return 1;', path: 'src/main.ts' }],
-      destination: { type: 'default' },
+      destination: { type: 'existing', repoId: 'ler_1' },
       locator: { modelUid: 'fm_1', kind: 'flowModel.step' },
     };
 

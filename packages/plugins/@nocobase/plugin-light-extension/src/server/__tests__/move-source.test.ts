@@ -712,52 +712,6 @@ describe('MoveSourceService', () => {
     expect(saveSource).not.toHaveBeenCalled();
   });
 
-  it('authorizes before reserving an operation or creating the default destination', async () => {
-    const operationModel = createMoveOperationModel();
-    const getOrCreateApplicationDefaultRepo = vi.fn();
-    const saveSource = vi.fn();
-    const service = createFailureService({
-      saveSource,
-      operationModel,
-      getOrCreateApplicationDefaultRepo,
-      assertCanWrite: vi.fn(async () => {
-        throw new Error('permission denied');
-      }),
-    });
-
-    await expect(
-      service.moveSource(
-        createMoveSourceInput({
-          destination: { type: 'default' },
-          idempotencyKey: 'move-default-sales-kpi',
-        }),
-        { adapterContext: {} },
-      ),
-    ).rejects.toThrow('permission denied');
-
-    expect(operationModel.model.findOne).toHaveBeenCalledOnce();
-    expect(operationModel.model.findOrCreate).not.toHaveBeenCalled();
-    expect(getOrCreateApplicationDefaultRepo).not.toHaveBeenCalled();
-    expect(saveSource).not.toHaveBeenCalled();
-  });
-
-  it('resolves the default destination from the stable application identity', async () => {
-    const getOrCreateApplicationDefaultRepo = vi.fn(async () => repo);
-    const service = createFailureService({
-      saveSource: vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] })),
-      getOrCreateApplicationDefaultRepo,
-      applicationName: 'sales-app',
-    });
-
-    await expect(
-      service.moveSource(createMoveSourceInput({ destination: { type: 'default' } }), { adapterContext: {} }),
-    ).resolves.toMatchObject({ repo: { id: repo.id }, entry: { id: entry.id } });
-    expect(getOrCreateApplicationDefaultRepo).toHaveBeenCalledWith(
-      'sales-app',
-      expect.objectContaining({ adapterContext: {} }),
-    );
-  });
-
   it('returns the persisted result when a completed move operation is replayed', async () => {
     const operationModel = createMoveOperationModel();
     const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));

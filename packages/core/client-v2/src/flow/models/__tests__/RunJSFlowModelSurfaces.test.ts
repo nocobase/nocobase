@@ -89,7 +89,7 @@ const surfaces: SurfaceSpec[] = [
     scene: 'block',
     settingsComponent: JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: false,
-    minHeight: '320px',
+    minHeight: 'calc(100vh - 42px)',
   },
   {
     name: 'JSFieldModel',

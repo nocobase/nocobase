@@ -57,7 +57,7 @@ describe('move-to-inline resource', () => {
             entryPath: 'src/client/index.tsx',
             version: 'v2',
             files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
-            destination: { type: 'default' },
+            destination: { type: 'existing', repoId: 'ler_default' },
             entryName: 'sales-page',
           },
         },
@@ -72,7 +72,7 @@ describe('move-to-inline resource', () => {
     expect(moveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey: 'externalize-sales-page-v1',
-        destination: { type: 'default' },
+        destination: { type: 'existing', repoId: 'ler_default' },
         entryName: 'sales-page',
         files: [expect.objectContaining({ path: 'src/client/index.tsx', content: 'ctx.render(null);' })],
       }),

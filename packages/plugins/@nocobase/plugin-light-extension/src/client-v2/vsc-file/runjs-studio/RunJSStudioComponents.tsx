@@ -834,6 +834,7 @@ export function FilesPanel(props: {
 export function CodeTab(props: {
   activeFile?: RunJSWorkspaceFile;
   activePath?: string;
+  busy?: boolean;
   diffRows: RunJSLineDiffRow[];
   emptyDiffDescription?: string;
   filesCollapsed: boolean;
@@ -844,8 +845,10 @@ export function CodeTab(props: {
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
   onCheck?: () => void;
+  onRunPreview?: () => void;
   openPaths: string[];
   checking?: boolean;
+  previewing?: boolean;
   projectRevision: number;
   readOnly: boolean;
   runJSModelUse?: string;
@@ -854,6 +857,7 @@ export function CodeTab(props: {
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
   showCheckButton?: boolean;
+  showRunButton?: boolean;
   t: (key: string) => string;
   toolbarActions?: React.ReactNode;
   version: string;
@@ -864,6 +868,7 @@ export function CodeTab(props: {
   const {
     activeFile,
     activePath,
+    busy = false,
     diffRows,
     emptyDiffDescription,
     filesCollapsed,
@@ -874,8 +879,10 @@ export function CodeTab(props: {
     onFilesCollapsedChange,
     onOpenFile,
     onCheck,
+    onRunPreview,
     openPaths,
     checking,
+    previewing,
     projectRevision,
     readOnly,
     runJSModelUse,
@@ -884,6 +891,7 @@ export function CodeTab(props: {
     savedFiles,
     scene,
     showCheckButton = true,
+    showRunButton = true,
     t,
     toolbarActions,
     version,
@@ -953,8 +961,13 @@ export function CodeTab(props: {
     <Space size={8}>
       {toolbarActions}
       <Space.Compact>
+        {showRunButton ? (
+          <Button disabled={isDiff || !onRunPreview || busy} loading={previewing} onClick={onRunPreview} size="small">
+            {t('Run')}
+          </Button>
+        ) : null}
         {showCheckButton ? (
-          <Button disabled={isDiff || !onCheck} loading={checking} onClick={onCheck} size="small">
+          <Button disabled={isDiff || !onCheck || busy} loading={checking} onClick={onCheck} size="small">
             {t('Check')}
           </Button>
         ) : null}
@@ -1688,7 +1701,7 @@ export function ConsolePanel(props: {
               minHeight: 48,
             }}
           >
-            {t('No messages yet. Click Check to validate.')}
+            {t('No messages yet. Click Run to preview or Check to validate.')}
           </div>
         ) : null}
         {entries.map((entry) => (
