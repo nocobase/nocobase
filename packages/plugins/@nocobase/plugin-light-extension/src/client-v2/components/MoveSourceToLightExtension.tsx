@@ -25,7 +25,7 @@ import {
 } from '../api/lightExtensionEntriesRequests';
 import { useT } from '../locale';
 
-type MoveDestinationType = 'default' | 'existing' | 'new';
+type MoveDestinationType = 'existing' | 'new';
 
 interface MoveSourceFormValues {
   destinationType: MoveDestinationType;
@@ -89,7 +89,7 @@ export const MoveSourceToLightExtension: React.FC<{
   const [loadingRepos, setLoadingRepos] = React.useState(false);
   const [moving, setMoving] = React.useState(false);
   const [repos, setRepos] = React.useState<LightExtensionRepoRecord[]>([]);
-  const destinationType = Form.useWatch('destinationType', form) || 'default';
+  const destinationType = Form.useWatch('destinationType', form) || 'existing';
   const kind = resolveLightExtensionKind(context);
   const entryNameLabel = kind ? t(KIND_NAME_LABELS[kind]) : '';
 
@@ -113,7 +113,7 @@ export const MoveSourceToLightExtension: React.FC<{
     }
     const suggestedName = suggestDisplayName(context, kind);
     form.setFieldsValue({
-      destinationType: 'default',
+      destinationType: 'existing',
       entryTitle: suggestedName,
       repoTitle: suggestedName,
     });
@@ -130,15 +130,13 @@ export const MoveSourceToLightExtension: React.FC<{
     const technicalNameSalt = `${context.workspace.ownerFingerprint}:${context.workspace.repository.repoId}`;
     const entryName = createTechnicalName(entryTitle, kind, technicalNameSalt);
     const destination =
-      values.destinationType === 'default'
-        ? ({ type: 'default' } as const)
-        : values.destinationType === 'existing'
-          ? ({ type: 'existing', repoId: String(values.repoId || '') } as const)
-          : ({
-              type: 'new',
-              name: createTechnicalName(String(values.repoTitle || ''), 'light-extension', technicalNameSalt),
-              title: values.repoTitle?.trim() || null,
-            } as const);
+      values.destinationType === 'existing'
+        ? ({ type: 'existing', repoId: String(values.repoId || '') } as const)
+        : ({
+            type: 'new',
+            name: createTechnicalName(String(values.repoTitle || ''), 'light-extension', technicalNameSalt),
+            title: values.repoTitle?.trim() || null,
+          } as const);
     const moveInput = {
       locator: context.locator,
       expectedOwnerFingerprint: context.workspace.ownerFingerprint,
@@ -193,7 +191,6 @@ export const MoveSourceToLightExtension: React.FC<{
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item label={t('Destination')} name="destinationType">
             <Radio.Group>
-              <Radio value="default">{t('Application default light extension')}</Radio>
               <Radio value="existing">{t('Existing light extension')}</Radio>
               <Radio value="new">{t('Create new light extension')}</Radio>
             </Radio.Group>

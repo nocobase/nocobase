@@ -122,9 +122,13 @@ export class MoveToInlineService {
           content: '',
         },
       ]);
-      const prepared = await this.prepareMoveToInline(input, ctx, relocatedFiles);
+      const vscFileService = this.getVscFileService();
+      if (!vscFileService) {
+        throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+      }
+      const prepared = await this.prepareMoveToInline(input, ctx, relocatedFiles, vscFileService);
       return await this.db.sequelize.transaction((transaction) =>
-        this.publishMoveToInline(input, ctx, prepared, transaction),
+        this.publishMoveToInline(input, ctx, prepared, vscFileService, transaction),
       );
     } catch (error) {
       throw normalizeMoveToInlineError(error);
@@ -135,11 +139,11 @@ export class MoveToInlineService {
     input: LightExtensionMoveToInlineInput,
     ctx: MoveToInlineServiceContext,
     relocatedFiles: LightExtensionMoveSourceWorkspaceFile[],
+    vscFileService: VscFileService,
   ): Promise<PreparedMoveToInline> {
     const locator = requireFlowModelStepLocator(input.locator);
     const registry = this.getAdapterRegistry();
-    const vscFileService = this.getVscFileService();
-    if (!registry || !vscFileService) {
+    if (!registry) {
       throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
     }
 
@@ -304,11 +308,11 @@ export class MoveToInlineService {
     input: LightExtensionMoveToInlineInput,
     ctx: MoveToInlineServiceContext,
     prepared: PreparedMoveToInline,
+    vscFileService: VscFileService,
     transaction: Transaction,
   ): Promise<LightExtensionMoveToInlineResult> {
     const registry = this.getAdapterRegistry();
-    const vscFileService = this.getVscFileService();
-    if (!registry || !vscFileService) {
+    if (!registry) {
       throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
     }
     const adapter = registry.require(prepared.locator.kind);

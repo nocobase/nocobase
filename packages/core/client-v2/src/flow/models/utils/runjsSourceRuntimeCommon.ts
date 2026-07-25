@@ -842,13 +842,26 @@ export function setCanonicalLightExtensionSource(
   },
 ): void {
   const runJs = cloneRecord(model.getStepParams(flowKey, 'runJs'));
+  // Light-extension-only bindings often omit `code`. When switching back to inline, pin the stored
+  // string (or empty) so runtime/editor defaultParams never inject the welcome template, and studio
+  // open always receives a valid initialSource.code.
+  const nextRunJs: Record<string, unknown> = {
+    ...runJs,
+    sourceMode: value.sourceMode,
+    settings: cloneRecord(value.settings),
+  };
+  if (value.sourceMode === INLINE_SOURCE_MODE) {
+    nextRunJs.code = typeof runJs.code === 'string' ? runJs.code : '';
+    if (value.sourceBinding) {
+      nextRunJs.sourceBinding = value.sourceBinding;
+    } else {
+      delete nextRunJs.sourceBinding;
+    }
+  } else {
+    nextRunJs.sourceBinding = value.sourceBinding;
+  }
   model.setStepParams(flowKey, {
-    runJs: {
-      ...runJs,
-      sourceMode: value.sourceMode,
-      sourceBinding: value.sourceBinding,
-      settings: cloneRecord(value.settings),
-    },
+    runJs: nextRunJs,
   });
 }
 

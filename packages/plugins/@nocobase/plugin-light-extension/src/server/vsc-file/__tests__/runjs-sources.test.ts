@@ -350,7 +350,8 @@ describe('runJSSources resource', () => {
       entryId: null,
       settingsSchemaHash: null,
       settingsDefaultsHash: null,
-      diagnostics: [expect.objectContaining({ code: 'entry_descriptor_missing', severity: 'error' })],
+      // Missing entry.json is optional for pure inline workspaces (no settings schema).
+      diagnostics: [],
     });
 
     const descriptorContent = `${JSON.stringify(

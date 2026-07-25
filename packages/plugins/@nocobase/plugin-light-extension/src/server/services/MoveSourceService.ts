@@ -187,17 +187,6 @@ export class MoveSourceService {
         return operationResolution.replayResult;
       }
       operation = operationResolution.reservation;
-      if (input.destination.type === 'default') {
-        const defaultRepo = await this.repoService.getOrCreateApplicationDefaultRepo(this.applicationName, ctx);
-        return await this.moveSourceToExistingRepo(
-          {
-            ...input,
-            destination: { type: 'existing', repoId: defaultRepo.id },
-          },
-          ctx,
-          operation,
-        );
-      }
       if (input.destination.type === 'existing') {
         return await this.moveSourceToExistingRepo(input, ctx, operation);
       }

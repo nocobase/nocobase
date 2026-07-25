@@ -197,10 +197,10 @@ vi.mock('../vsc-file/public-api', () => {
     CodeTab: ({
       activeFile,
       onChange,
-      onCheck,
+      onRunPreview,
       scene,
-      showCheckButton,
-      checking,
+      showRunButton,
+      previewing,
       projectRevision,
       readOnly,
       toolbarActions,
@@ -212,10 +212,10 @@ vi.mock('../vsc-file/public-api', () => {
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
-      onCheck?: () => void;
+      onRunPreview?: () => void;
       scene?: string;
-      showCheckButton?: boolean;
-      checking?: boolean;
+      showRunButton?: boolean;
+      previewing?: boolean;
       projectRevision: number;
       readOnly?: boolean;
       toolbarActions?: React.ReactNode;
@@ -229,9 +229,9 @@ vi.mock('../vsc-file/public-api', () => {
       ) => { uri: string } | undefined;
     }) => (
       <div
-        data-has-check={String(Boolean(onCheck))}
+        data-has-run={String(Boolean(onRunPreview))}
         data-scene={scene || ''}
-        data-show-check-button={String(showCheckButton)}
+        data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
@@ -242,9 +242,9 @@ vi.mock('../vsc-file/public-api', () => {
         <button onClick={() => onFilesCollapsedChange(!filesCollapsed)} type="button">
           {filesCollapsed ? 'Expand files' : 'Collapse files'}
         </button>
-        {showCheckButton ? (
-          <button disabled={!onCheck} onClick={onCheck} type="button">
-            {checking ? 'Checking' : 'Check'}
+        {showRunButton ? (
+          <button disabled={!onRunPreview} onClick={onRunPreview} type="button">
+            {previewing ? 'Running' : 'Run'}
           </button>
         ) : null}
         {toolbarActions}
@@ -491,8 +491,6 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     await screen.findByTestId('runjs-code-tab');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-check-button', 'false');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-check', 'false');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-scene', '');
     const initialProjectRevision = Number(screen.getByTestId('runjs-code-tab').getAttribute('data-project-revision'));
     fireEvent.change(screen.getByLabelText('Edit file content'), {
@@ -674,7 +672,8 @@ describe('LightExtensionWorkspacePage', () => {
     expect(onRequestClose).not.toHaveBeenCalled();
   });
 
-  it('checks the current unsaved entry workspace without saving or applying the artifact', async () => {
+  it('runs the current unsaved entry workspace through the host preview', async () => {
+    const onPreview = vi.fn(async () => undefined);
     const workspaceScope: LightExtensionWorkspaceScope = {
       mode: 'entry',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -686,6 +685,7 @@ describe('LightExtensionWorkspacePage', () => {
         <LightExtensionWorkspacePage
           embedded
           entryId="lee_sales_kpi"
+          onPreview={onPreview}
           repoId="ler_sales"
           workspaceScope={workspaceScope}
         />
@@ -693,29 +693,20 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     await screen.findByTestId('runjs-code-tab');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-check-button', 'true');
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-check', 'true');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run', 'true');
     fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>unsaved preview</div>);\n' },
+      target: { value: 'ctx.render(<div>unsaved run</div>);\n' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
-    await waitFor(() => expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(1));
-    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
-      repoId: 'ler_sales',
-      entryId: 'lee_sales_kpi',
-      kind: 'js-block',
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
+    expect(onPreview).toHaveBeenCalledWith({
+      code: 'ctx.render(<div>preview</div>);',
+      version: 'v2',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      runtimeVersion: 'v2',
-      files: [
-        expect.objectContaining({
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
-          content: 'ctx.render(<div>unsaved preview</div>);\n',
-        }),
-      ],
     });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
-    expect(await screen.findByText('Source check passed')).toBeInTheDocument();
   });
 
   it('offers moving the current unsaved entry workspace back to inline code', async () => {

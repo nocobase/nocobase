@@ -62,9 +62,20 @@ export function createInlineLightExtensionSettingsDescriptorProvider(
         return undefined;
       }
       const descriptor = workspace.settingsDescriptor;
-      const errorDiagnostics = descriptor.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
-      if (errorDiagnostics.length > 0 || !descriptor.entryId) {
-        throw new InlineRunJSSettingsDescriptorError(descriptor.descriptorPath, errorDiagnostics);
+      if (!descriptor) {
+        return undefined;
+      }
+      // Missing entry.json is optional for pure inline workspaces: no settings schema, keep running.
+      // Only reject when entry.json exists but is invalid (bad JSON, unsupported fields, etc.).
+      const errorDiagnostics = (descriptor.diagnostics || []).filter((diagnostic) => diagnostic.severity === 'error');
+      const blockingDiagnostics = errorDiagnostics.filter(
+        (diagnostic) => diagnostic.code !== 'entry_descriptor_missing',
+      );
+      if (blockingDiagnostics.length > 0) {
+        throw new InlineRunJSSettingsDescriptorError(descriptor.descriptorPath, blockingDiagnostics);
+      }
+      if (!descriptor.entryId) {
+        return undefined;
       }
 
       return {

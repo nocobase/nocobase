@@ -20,6 +20,7 @@ import { runJSManifestPath } from '../workspaceUtils';
 const mocks = vi.hoisted(() => ({
   authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
   closeView: vi.fn(),
+  diagnoseRunJS: vi.fn(),
   request: vi.fn(),
   view: {} as {
     beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
@@ -114,6 +115,7 @@ vi.mock('@nocobase/client-v2', () => ({
       },
     },
   }),
+  diagnoseRunJS: mocks.diagnoseRunJS,
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
     const [overlayEl, setOverlayEl] = React.useState<HTMLDivElement | null>(null);
@@ -301,6 +303,11 @@ describe('runJSStudioProvider', () => {
     mocks.authoringSurfaces.clear();
     mocks.view.close = mocks.closeView;
     Reflect.deleteProperty(mocks.view, 'beforeClose');
+    mocks.diagnoseRunJS.mockResolvedValue({
+      execution: { finished: true, started: true, timeout: false },
+      issues: [],
+      logs: [],
+    });
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
       if (url === 'runJSSources:open') {
         return Promise.resolve({
@@ -529,7 +536,7 @@ describe('runJSStudioProvider', () => {
     const requiredKeys = [
       'File resource manager',
       'Console logs',
-      'Check',
+      'Run',
       'Save',
       'Saved successfully',
       'Unsaved changes',
@@ -550,7 +557,7 @@ describe('runJSStudioProvider', () => {
       'Back to editor',
       'Base',
       'Saved',
-      'No messages yet. Click Check to validate.',
+      'No messages yet. Click Run to preview.',
       'Click to restore',
       'Restore {{version}}?',
       'This will copy files from this version into the editor.',
@@ -588,6 +595,26 @@ describe('runJSStudioProvider', () => {
     }
   });
 
+  it('opens the workspace with empty initial code when the RunJS value has no code', async () => {
+    renderEditor(vi.fn(), {
+      value: { version: 'v2' },
+    });
+
+    expect(await screen.findByRole('button', { name: 'Expand files' })).toBeTruthy();
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'runJSSources:open',
+        data: {
+          locator,
+          initialSource: {
+            code: '',
+            version: 'v2',
+          },
+        },
+      }),
+    );
+  });
+
   it('renders the workspace directly without the launcher', async () => {
     renderEditor();
 
@@ -607,14 +634,15 @@ describe('runJSStudioProvider', () => {
     expect(screen.queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Open Studio' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
     expect(screen.getByTestId('mock-code-editor').getAttribute('data-runjs-model-use')).toBe('JSBlockModel');
     expect(screen.queryByRole('button', { name: 'Import workspace' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();
     expect(screen.getByLabelText('Open files').style.overflowY).toBe('hidden');
-    expect(screen.getByText('No messages yet. Click Check to validate.')).toBeTruthy();
+    expect(screen.getByText('No messages yet. Click Run to preview.')).toBeTruthy();
     expect(screen.getByTestId('runjs-studio-editor').style.overflow).toBe('hidden');
     expect(screen.getByTestId('runjs-studio-editor').style.minHeight).toMatch(/^(0|0px)$/);
     expect(screen.getByTestId('runjs-studio-workspace').style.minHeight).toMatch(/^(0|0px)$/);
@@ -696,7 +724,7 @@ describe('runJSStudioProvider', () => {
     expect(mocks.closeView).not.toHaveBeenCalled();
   });
 
-  it('ignores a check response after the workspace changes', async () => {
+  it('ignores a run response after the workspace changes', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');
     const preview = deferred<unknown>();
@@ -708,7 +736,7 @@ describe('runJSStudioProvider', () => {
 
     const editor = await screen.findByRole('textbox', { name: 'Edit file content' });
     fireEvent.change(editor, { target: { value: 'return 2;' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:compilePreview' })),
     );
@@ -737,10 +765,10 @@ describe('runJSStudioProvider', () => {
 
     expect(onPreview).not.toHaveBeenCalled();
     expect(editor).toHaveValue('return 3;');
-    expect(screen.getByRole('button', { name: 'Check' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run' })).not.toBeDisabled();
   });
 
-  it('ignores a check response after switching to another locator', async () => {
+  it('ignores a run response after switching to another locator', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');
     const preview = deferred<unknown>();
@@ -762,7 +790,7 @@ describe('runJSStudioProvider', () => {
     const rendered = renderEditor(vi.fn(), { onPreview });
 
     await screen.findByRole('textbox', { name: 'Edit file content' });
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:compilePreview' })),
     );
@@ -1203,20 +1231,41 @@ describe('runJSStudioProvider', () => {
     expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
   });
 
-  it('checks the current workspace without executing the compiled artifact', async () => {
+  it('runs the compiled artifact through the host preview when available', async () => {
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() =>
+      expect(onPreview).toHaveBeenCalledWith({
+        code: 'return 1;',
+        version: 'v2',
+      }),
+    );
+    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+  });
+
+  it('runs the compiled artifact in the current Flow context without a host preview', async () => {
+    mocks.diagnoseRunJS.mockResolvedValueOnce({
+      execution: { finished: true, started: true, timeout: false },
+      issues: [],
+      logs: [{ level: 'log', message: 'hello!' }],
+    });
     renderEditor();
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
-    await waitFor(() => {
-      expect(mocks.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'runJSSources:compilePreview',
-        }),
-      );
-    });
-    expect(await screen.findByText(/\[info\] Source check passed/)).toBeTruthy();
+    await waitFor(() =>
+      expect(mocks.diagnoseRunJS).toHaveBeenCalledWith('return 1;', expect.anything(), {
+        sourceMap: previewSourceMap,
+        version: 'v2',
+      }),
+    );
+    expect(await screen.findByText(/\[log\] hello!/)).toBeTruthy();
   });
 
   it('resolves the fixed src/client index entry by extension priority', async () => {
@@ -1267,10 +1316,11 @@ describe('runJSStudioProvider', () => {
       });
     });
 
-    renderEditor();
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -1281,6 +1331,10 @@ describe('runJSStudioProvider', () => {
           }),
         }),
       );
+    });
+    expect(onPreview).toHaveBeenCalledWith({
+      code: 'ctx.render("tsx");',
+      version: 'v2',
     });
   });
 
@@ -1334,10 +1388,11 @@ describe('runJSStudioProvider', () => {
       });
     });
 
-    renderEditor();
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -1348,6 +1403,10 @@ describe('runJSStudioProvider', () => {
           }),
         }),
       );
+    });
+    expect(onPreview).toHaveBeenCalledWith({
+      code: 'ctx.render("main");',
+      version: 'v2',
     });
   });
 
@@ -1492,8 +1551,6 @@ describe('runJSStudioProvider', () => {
     const editor = await screen.findByLabelText('Edit file content');
 
     fireEvent.change(editor, { target: { value: 'return 2;' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
-    expect(await screen.findByText(/\[info\] Source check passed/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     const dialog = await screen.findByRole('dialog');
@@ -1543,7 +1600,7 @@ describe('runJSStudioProvider', () => {
       }),
     );
     expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
-      2,
+      1,
     );
     expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();

@@ -9,13 +9,14 @@
 
 import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
+  diagnoseRunJS,
   useApp,
   useFullscreenOverlay,
   type CodeAuthoringDiagnostic,
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
-import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
+import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -54,6 +55,7 @@ import type {
 } from './studioInternalTypes';
 import {
   appendDiagnostics,
+  appendRunDiagnostics,
   buildNewFilePath,
   buildNewFolderPath,
   buildRunJSExportFileName,
@@ -746,8 +748,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       const opened = await runJSSourceRequest('open', {
         locator: props.locator,
         initialSource: {
-          code: value.code,
-          version: value.version,
+          // Blocks created from a light-extension menu entry may have no stored code. Always pass a
+          // string so open does not reject with RUNJS_SOURCE_LOCATOR_INVALID.
+          code: typeof value.code === 'string' ? value.code : '',
+          version: typeof value.version === 'string' && value.version ? value.version : 'v2',
         },
       });
       const loaded = buildWorkspaceLoadResult(opened);
@@ -833,7 +837,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
       if (event.key === 'Enter') {
         event.preventDefault();
-        checkWorkspace();
+        runPreview();
         return;
       }
 
@@ -874,7 +878,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     };
   }, [hasUnsavedLocalChanges]);
 
-  const checkWorkspace = async () => {
+  const runPreview = async () => {
     const currentWorkspace = workspace
       ? { opened: workspace, baseFiles, currentFiles: files, entryPath }
       : await loadWorkspace();
@@ -909,21 +913,46 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return;
       }
       setPreviewDiagnostics(result.artifact.diagnostics);
+      setPreviewArtifact({
+        code: result.artifact.code,
+        version: result.artifact.version,
+        snapshotKey: requestSnapshotKey,
+      });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
+      if (!hasCompileError) {
+        if (props.onPreview) {
+          await props.onPreview({
+            ...value,
+            code: result.artifact.code,
+            version: result.artifact.version,
+          });
+        } else if (flowCtx) {
+          const runDiagnostics = await diagnoseRunJS(result.artifact.code, flowCtx as unknown as FlowContext, {
+            sourceMap: result.artifact.sourceMap,
+            version: result.artifact.version,
+          });
+          if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+            return;
+          }
+          appendRunDiagnostics(runDiagnostics, appendConsole);
+        }
+      }
       appendConsole({
         level: hasCompileError ? 'error' : 'info',
-        message: hasCompileError ? t('Source check failed') : t('Source check passed'),
+        message: hasCompileError ? t('Compile failed') : t('Run completed'),
       });
     } catch (error) {
       if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return;
-      reportActionError(error, t('Source check failed'), checkWorkspace);
+      reportActionError(error, t('Run failed'), runPreview);
       appendConsole({
         level: 'error',
-        message: formatVscComponentError(error, t('Source check failed')),
+        message: formatVscComponentError(error, t('Run failed')),
       });
     } finally {
-      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) setPreviewing(false);
+      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
+        setPreviewing(false);
+      }
     }
   };
 
@@ -1205,7 +1234,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setPreviewArtifact(compiled);
       return compiled;
     } finally {
-      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) setPreviewing(false);
+      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
+        setPreviewing(false);
+      }
     }
   };
 
@@ -2368,6 +2399,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         activeFile={activeFile}
                         activePath={activePath}
                         authoringSurfaceId={authoringSurfaceId}
+                        busy={previewing}
                         diffRows={lineDiffRows}
                         isDiff={showDiff}
                         jsonSchemaResolver={props.workspaceJsonSchemaResolver}
@@ -2381,9 +2413,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onDiffToggle={toggleDiff}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
-                        onCheck={checkWorkspace}
+                        onRunPreview={runPreview}
                         openPaths={openPaths}
-                        checking={previewing}
+                        previewing={previewing}
                         projectRevision={projectRevision}
                         readOnly={workspaceEditingDisabled}
                         runJSModelUse={runJSModelUse}
