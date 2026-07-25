@@ -10,8 +10,11 @@
 import type { ToolsOptions } from '@nocobase/client-v2';
 import { EXECUTE_FRONTEND_TOOL_NAME, LOAD_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import { getFrontendToolRegistry } from '../manager/frontend-tool-registry';
-import { WorkspaceChangeCard } from './tools/WorkspaceChangeCard';
-import { registerWorkspaceAuthoringTools, WORKSPACE_AUTHORING_TOOL_NAMES } from './tools/workspace-authoring';
+import {
+  executeWorkspaceAuthoringTool,
+  getWorkspaceAuthoringToolManifests,
+  parseWorkspaceAuthoringToolId,
+} from './tools/workspace-authoring';
 
 type FrontendToolParams = {
   toolId?: unknown;
@@ -33,37 +36,33 @@ const getToolId = (params: FrontendToolParams): string => {
   return params.toolId;
 };
 
-const getWorkspaceSurfaceId = (toolId: string): string | undefined => {
-  for (const toolName of Object.values(WORKSPACE_AUTHORING_TOOL_NAMES)) {
-    const suffix = `:${toolName}`;
-    if (toolId.endsWith(suffix)) {
-      return toolId.slice(0, -suffix.length) || undefined;
-    }
-  }
-  return undefined;
-};
-
 const executeRegisteredFrontendTool = async (
   app: Parameters<NonNullable<ToolsOptions['invoke']>>[0],
   params: FrontendToolParams,
 ) => {
-  const registry = getRegistry(app);
   const toolId = getToolId(params);
-  const surfaceId = getWorkspaceSurfaceId(toolId);
-  if (surfaceId && !registry.list(surfaceId).some((tool) => tool.id === toolId)) {
-    await registerWorkspaceAuthoringTools(
-      app as unknown as Parameters<typeof registerWorkspaceAuthoringTools>[0],
-      registry,
-      surfaceId,
-    );
+  const workspaceResult = await executeWorkspaceAuthoringTool(app, toolId, params.args ?? {});
+  if (workspaceResult !== undefined) {
+    return workspaceResult;
   }
-  return registry.execute(toolId, params.args ?? {});
+  return getRegistry(app).execute(toolId, params.args ?? {});
 };
 
 export const loadFrontendTool: [string, ToolsOptions] = [
   LOAD_FRONTEND_TOOL_NAME,
   {
-    invoke: async (app, params: FrontendToolParams) => getRegistry(app).getManifest(getToolId(params)),
+    invoke: async (app, params: FrontendToolParams) => {
+      const toolId = getToolId(params);
+      const workspaceTool = parseWorkspaceAuthoringToolId(toolId);
+      if (workspaceTool) {
+        const manifest = getWorkspaceAuthoringToolManifests(workspaceTool.surfaceId).find((tool) => tool.id === toolId);
+        if (!manifest) {
+          throw new Error(`Workspace frontend tool is unavailable: ${toolId}`);
+        }
+        return manifest;
+      }
+      return getRegistry(app).getManifest(toolId);
+    },
   },
 ];
 
@@ -71,8 +70,5 @@ export const executeFrontendTool: [string, ToolsOptions] = [
   EXECUTE_FRONTEND_TOOL_NAME,
   {
     invoke: executeRegisteredFrontendTool,
-    ui: {
-      card: WorkspaceChangeCard,
-    },
   },
 ];

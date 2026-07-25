@@ -12,144 +12,43 @@ import { describe, expect, it } from 'vitest';
 import { buildWorkspaceAuthoringTreeSnapshot } from '../workspaceSnapshot';
 
 describe('workspace authoring snapshot', () => {
-  it('creates the same revision for the same normalized and sorted tree', () => {
+  it('normalizes and sorts the same tree to the same revision', () => {
     const first = buildWorkspaceAuthoringTreeSnapshot({
       sourceFiles: [
         { path: 'src\\b.ts', content: 'b', language: 'typescript' },
         { path: './src/a.ts', content: 'a', language: 'typescript' },
       ],
-      virtualFiles: [{ path: '.generated/types.d.ts', content: 'declare const value: string;', readOnly: true }],
+      virtualFiles: [{ path: '.generated/types.d.ts', content: 'declare const value: string;' }],
     });
     const second = buildWorkspaceAuthoringTreeSnapshot({
       sourceFiles: [
         { path: 'src/a.ts', content: 'a', language: 'typescript' },
         { path: 'src/b.ts', content: 'b', language: 'typescript' },
       ],
-      virtualFiles: [{ path: '.generated/types.d.ts', content: 'declare const value: string;', readOnly: true }],
+      virtualFiles: [{ path: '.generated/types.d.ts', content: 'declare const value: string;' }],
     });
 
     expect(first.snapshotId).toBe(second.snapshotId);
-    expect(first.files.map((file) => file.path)).toEqual(['.generated/types.d.ts', 'src/a.ts', 'src/b.ts']);
-    expect(first.virtualFiles[0]).toMatchObject({ kind: 'virtual', writable: false, persisted: false });
+    expect(first.files.map((file) => [file.path, file.kind, file.writable])).toEqual([
+      ['.generated/types.d.ts', 'virtual', false],
+      ['src/a.ts', 'source', true],
+      ['src/b.ts', 'source', true],
+    ]);
   });
 
-  it('changes file hashes and the tree revision when content or access metadata changes', () => {
-    const base = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/index.ts',
-          content: 'export const value = 1;',
-          scope: 'entry:a',
-          mode: '100644',
-          metadata: { access: { role: 'developer' } },
-        },
-      ],
-      virtualFiles: [],
-    });
-    const contentChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/index.ts',
-          content: 'export const value = 2;',
-          scope: 'entry:a',
-          mode: '100644',
-          metadata: { access: { role: 'developer' } },
-        },
-      ],
-      virtualFiles: [],
-    });
-    const pathChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/main.ts',
-          content: 'export const value = 1;',
-          scope: 'entry:a',
-          mode: '100644',
-          metadata: { access: { role: 'developer' } },
-        },
-      ],
-      virtualFiles: [],
-    });
-    const scopeChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/index.ts',
-          content: 'export const value = 1;',
-          scope: 'entry:b',
-          mode: '100644',
-          metadata: { access: { role: 'developer' } },
-        },
-      ],
-      virtualFiles: [],
-    });
-    const metadataChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/index.ts',
-          content: 'export const value = 1;',
-          scope: 'entry:a',
-          mode: '100644',
-          metadata: { access: { role: 'admin' } },
-        },
-      ],
-      virtualFiles: [],
-    });
-    const modeChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/index.ts',
-          content: 'export const value = 1;',
-          scope: 'entry:a',
-          mode: '100755',
-          metadata: { access: { role: 'developer' } },
-        },
-      ],
-      virtualFiles: [],
-    });
-    const readOnlyChanged = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [
-        {
-          path: 'src/index.ts',
-          content: 'export const value = 1;',
-          scope: 'entry:a',
-          mode: '100644',
-          metadata: { access: { role: 'developer' } },
-          readOnly: true,
-        },
-      ],
-      virtualFiles: [],
-    });
+  it('changes revisions when content or effective write access changes', () => {
+    const createSnapshot = (content: string, readOnly = false) =>
+      buildWorkspaceAuthoringTreeSnapshot({
+        sourceFiles: [{ path: 'src/index.ts', content, language: 'typescript', readOnly }],
+        virtualFiles: [],
+      });
+    const base = createSnapshot('export const value = 1;');
+    const contentChanged = createSnapshot('export const value = 2;');
+    const readOnlyChanged = createSnapshot('export const value = 1;', true);
 
     expect(contentChanged.snapshotId).not.toBe(base.snapshotId);
-    expect(pathChanged.snapshotId).not.toBe(base.snapshotId);
-    expect(scopeChanged.snapshotId).not.toBe(base.snapshotId);
-    expect(metadataChanged.snapshotId).not.toBe(base.snapshotId);
-    expect(modeChanged.snapshotId).not.toBe(base.snapshotId);
-    expect(readOnlyChanged.snapshotId).not.toBe(base.snapshotId);
     expect(contentChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
-    expect(scopeChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
-    expect(metadataChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
-    expect(modeChanged.sourceFiles[0].hash).not.toBe(base.sourceFiles[0].hash);
-
-    const sourceMetadata = base.sourceFiles[0].source.metadata as { access: { role: string } };
-    sourceMetadata.access.role = 'mutated';
-    expect(base.sourceFiles[0].hash).not.toBe(
-      buildWorkspaceAuthoringTreeSnapshot({
-        sourceFiles: [base.sourceFiles[0].source],
-        virtualFiles: [],
-      }).sourceFiles[0].hash,
-    );
-  });
-
-  it('deep clones nested file metadata into the snapshot', () => {
-    const metadata = { access: { role: 'developer' } };
-    const snapshot = buildWorkspaceAuthoringTreeSnapshot({
-      sourceFiles: [{ path: 'src/index.ts', content: 'export default 1;', metadata }],
-      virtualFiles: [],
-    });
-
-    metadata.access.role = 'admin';
-
-    expect(snapshot.sourceFiles[0].source.metadata).toEqual({ access: { role: 'developer' } });
+    expect(readOnlyChanged.snapshotId).not.toBe(base.snapshotId);
+    expect(readOnlyChanged.sourceFiles[0].writable).toBe(false);
   });
 });

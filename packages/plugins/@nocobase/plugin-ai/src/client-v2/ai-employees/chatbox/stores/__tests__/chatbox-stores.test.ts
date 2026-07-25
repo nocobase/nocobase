@@ -8,16 +8,9 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import type { ChatEditorRef, Conversation, Message } from '../../../types';
+import type { Conversation, Message } from '../../../types';
 import { useChatConversationsStore } from '../chat-conversations';
-import {
-  CHAT_DEFAULT_SESSION_KEY,
-  getChatApplicationKey,
-  getWorkspaceCodingTargetMetadata,
-  restoreSessionWorkspaceCodingTargetFromMessages,
-  restoreSessionWorkspaceCodingTargetFromMetadata,
-  useChatMessagesStore,
-} from '../chat-messages';
+import { CHAT_DEFAULT_SESSION_KEY, useChatMessagesStore } from '../chat-messages';
 import { useChatToolCallStore } from '../chat-tool-call';
 import { useChatToolsStore } from '../chat-tools';
 import { useWorkflowTasksStore, type WorkflowTask } from '../workflow-tasks';
@@ -269,231 +262,23 @@ describe('client-v2 chatbox stores', () => {
     expect(useWorkflowTasksStore.getState().unreadCount).toBe(0);
   });
 
-  it('keeps coding targets, editor selections, and flow contexts isolated by session', () => {
-    const firstFlowContext = { name: 'first' };
-    const secondFlowContext = { name: 'second' };
-    const store = useChatMessagesStore.getState();
-
-    expect(
-      store.bindSessionCodingTarget(
-        'session-a',
-        { type: 'single-file', applicationKey: 'app-a', editorUid: 'editor-a' },
-        firstFlowContext,
-      ).status,
-    ).toBe('bound');
-    expect(
-      store.bindSessionCodingTarget(
-        'session-b',
-        {
-          type: 'workspace',
-          applicationKey: 'app-b',
-          surfaceId: 'workspace-b',
-          kind: 'light-extension',
-          title: 'Workspace B',
-        },
-        secondFlowContext,
-      ).status,
-    ).toBe('bound');
-
-    expect(store.getSessionState('session-a')).toMatchObject({
-      codingTarget: { type: 'single-file', applicationKey: 'app-a', editorUid: 'editor-a' },
-      currentEditorRefUid: 'editor-a',
-      flowContext: firstFlowContext,
-    });
-    expect(store.getSessionState('session-b')).toMatchObject({
-      codingTarget: { type: 'workspace', applicationKey: 'app-b', surfaceId: 'workspace-b' },
-      flowContext: secondFlowContext,
-    });
-    expect(store.getSessionState('session-b').currentEditorRefUid).toBeUndefined();
-  });
-
-  it('migrates a draft coding target and resets the draft without leaking it to a new conversation', () => {
+  it('migrates a draft workspace guard and resets the draft', () => {
     const store = useChatMessagesStore.getState();
     store.setSessionMessages(undefined, [messageWithToolCalls('draft-message', [])]);
     store.setSessionContextItems(undefined, [{ type: 'code-workspace', uid: 'workspace-a' }]);
-    store.bindSessionCodingTarget(undefined, {
-      type: 'workspace',
-      applicationKey: 'app-a',
-      surfaceId: 'workspace-a',
-      kind: 'light-extension',
-      title: 'Workspace A',
-    });
+    store.setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
 
     store.migrateSessionState(undefined, 'created-session');
 
     expect(store.getSessionState('created-session')).toMatchObject({
       messages: [{ key: 'draft-message' }],
       contextItems: [{ type: 'code-workspace', uid: 'workspace-a' }],
-      codingTarget: { type: 'workspace', surfaceId: 'workspace-a' },
+      workspaceSurfaceId: 'workspace-a',
     });
-    expect(store.getSessionState(undefined).codingTarget).toBeUndefined();
+    expect(store.getSessionState(undefined).workspaceSurfaceId).toBeUndefined();
     expect(store.getSessionState(undefined).contextItems).toEqual([]);
 
     store.resetSessionState('created-session');
-    expect(store.getSessionState('created-session').codingTarget).toBeUndefined();
-  });
-
-  it('reports a target mismatch without rebinding the conversation', () => {
-    const store = useChatMessagesStore.getState();
-    store.bindSessionCodingTarget('session-a', {
-      type: 'workspace',
-      applicationKey: 'app-a',
-      surfaceId: 'workspace-a',
-      kind: 'light-extension',
-      title: 'Workspace A',
-    });
-
-    const result = store.bindSessionCodingTarget('session-a', {
-      type: 'workspace',
-      applicationKey: 'app-a',
-      surfaceId: 'workspace-b',
-      kind: 'light-extension',
-      title: 'Workspace B',
-    });
-
-    expect(result).toMatchObject({ status: 'mismatch', requestedTarget: { surfaceId: 'workspace-b' } });
-    expect(store.getSessionState('session-a')).toMatchObject({
-      codingTarget: { surfaceId: 'workspace-a' },
-      codingTargetMismatch: { surfaceId: 'workspace-b' },
-    });
-  });
-
-  it('restores the authoritative workspace target and safe context from persisted conversation messages', () => {
-    const store = useChatMessagesStore.getState();
-    store.bindSessionCodingTarget('session-a', {
-      type: 'single-file',
-      applicationKey: 'stale-app',
-      editorUid: 'stale-editor',
-    });
-    store.setSessionContextItems('session-a', [
-      { type: 'code-editor', uid: 'stale-editor' },
-      { type: 'datasource', uid: 'main' },
-    ]);
-    const restored = restoreSessionWorkspaceCodingTargetFromMessages('session-a', 'app-a', [
-      {
-        role: 'user',
-        content: {
-          content: 'Update the workspace',
-          workContext: [
-            {
-              type: 'code-workspace',
-              uid: 'workspace-a',
-              title: 'Workspace A',
-              content: {
-                surfaceId: 'workspace-a',
-                kind: 'light-extension',
-                title: 'Workspace A',
-                files: [{ path: 'private/secret.ts', content: 'must not be restored' }],
-              },
-              frontendTools: [],
-            },
-          ],
-        },
-      },
-    ]);
-
-    expect(restored).toBe(true);
-    expect(store.getSessionState('session-a')).toMatchObject({
-      codingTarget: {
-        type: 'workspace',
-        applicationKey: 'app-a',
-        surfaceId: 'workspace-a',
-        kind: 'light-extension',
-        title: 'Workspace A',
-      },
-      codingTargetMismatch: undefined,
-      contextItems: [
-        { type: 'datasource', uid: 'main' },
-        {
-          type: 'code-workspace',
-          uid: 'workspace-a',
-          content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
-        },
-      ],
-    });
-    expect(JSON.stringify(store.getSessionState('session-a').contextItems)).not.toContain('private/secret.ts');
-  });
-
-  it('restores a safe server-persisted workspace target without an application key', () => {
-    const store = useChatMessagesStore.getState();
-    store.bindSessionCodingTarget('session-a', {
-      type: 'single-file',
-      applicationKey: 'stale-app',
-      editorUid: 'stale-editor',
-    });
-
-    expect(
-      restoreSessionWorkspaceCodingTargetFromMetadata('session-a', 'current-app', {
-        type: 'workspace',
-        surfaceId: 'workspace-a',
-        kind: 'light-extension',
-        title: 'Workspace A',
-      }),
-    ).toBe(true);
-    expect(store.getSessionState('session-a')).toMatchObject({
-      codingTarget: {
-        type: 'workspace',
-        applicationKey: 'current-app',
-        surfaceId: 'workspace-a',
-        kind: 'light-extension',
-        title: 'Workspace A',
-      },
-      codingTargetMismatch: undefined,
-      contextItems: [
-        {
-          type: 'code-workspace',
-          uid: 'workspace-a',
-          content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
-        },
-      ],
-    });
-    expect(
-      restoreSessionWorkspaceCodingTargetFromMetadata('session-a', 'current-app', {
-        type: 'workspace',
-        applicationKey: 'leaked-app',
-        surfaceId: 'workspace-b',
-        kind: 'light-extension',
-        title: 'Workspace B',
-      }),
-    ).toBe(false);
-    expect(getWorkspaceCodingTargetMetadata(store.getSessionState('session-a').codingTarget)).toEqual({
-      type: 'workspace',
-      surfaceId: 'workspace-a',
-      kind: 'light-extension',
-      title: 'Workspace A',
-    });
-  });
-
-  it('partitions editor refs by application and only unregisters the matching mount instance', () => {
-    const createEditorRef = (code: string): ChatEditorRef => ({
-      read: () => code,
-      write: () => undefined,
-      snippetEntries: [],
-      logs: [],
-    });
-    const first = createEditorRef('first');
-    const replacement = createEditorRef('replacement');
-    const otherApp = createEditorRef('other-app');
-    const store = useChatMessagesStore.getState();
-
-    const unregisterFirst = store.registerEditorRef('app-a', 'shared-editor', first);
-    const unregisterReplacement = store.registerEditorRef('app-a', 'shared-editor', replacement);
-    store.registerEditorRef('app-b', 'shared-editor', otherApp);
-
-    unregisterFirst();
-    expect(useChatMessagesStore.getState().editorRef['app-a']['shared-editor']).toBe(replacement);
-    expect(useChatMessagesStore.getState().editorRef['app-b']['shared-editor']).toBe(otherApp);
-
-    unregisterReplacement();
-    expect(useChatMessagesStore.getState().editorRef['app-a']).toBeUndefined();
-    expect(useChatMessagesStore.getState().editorRef['app-b']['shared-editor']).toBe(otherApp);
-  });
-
-  it('assigns distinct stable keys to application instances with the same display name', () => {
-    const firstApp = { name: 'main' };
-    const secondApp = { name: 'main' };
-
-    expect(getChatApplicationKey(firstApp)).toBe(getChatApplicationKey(firstApp));
-    expect(getChatApplicationKey(firstApp)).not.toBe(getChatApplicationKey(secondApp));
+    expect(store.getSessionState('created-session').workspaceSurfaceId).toBeUndefined();
   });
 });

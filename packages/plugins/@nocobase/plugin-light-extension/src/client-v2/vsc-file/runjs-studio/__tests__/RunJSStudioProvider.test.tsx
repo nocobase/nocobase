@@ -18,7 +18,6 @@ import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
 import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
-  activeAuthoringSurfaceId: undefined as string | undefined,
   authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
   closeView: vi.fn(),
   request: vi.fn(),
@@ -48,7 +47,6 @@ vi.mock('@nocobase/client-v2', () => ({
     onChange,
     placeholder,
     readonly,
-    revealPosition,
     toolbarLeftExtra,
     runButton,
     fullscreenControl,
@@ -62,7 +60,6 @@ vi.mock('@nocobase/client-v2', () => ({
     onChange?: (value: string) => void;
     placeholder?: string;
     readonly?: boolean;
-    revealPosition?: { line: number; column: number };
     toolbarLeftExtra?: React.ReactNode;
     runButton?: React.ReactNode;
     fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
@@ -79,8 +76,6 @@ vi.mock('@nocobase/client-v2', () => ({
       data-enable-linter={String(Boolean(enableLinter))}
       data-json-schema-uri={jsonSchema?.uri}
       data-language={language}
-      data-reveal-column={revealPosition?.column}
-      data-reveal-line={revealPosition?.line}
       data-runjs-declaration-files={typescriptProject?.declarationFiles?.map((file) => file.path).join(',')}
       data-runjs-global-context-type={typescriptProject?.runJSContext?.globalContextType}
       data-runjs-model-use={typescriptProject?.runJSContext?.modelUse}
@@ -107,13 +102,6 @@ vi.mock('@nocobase/client-v2', () => ({
     name: 'test-app',
     aiManager: {
       authoringSurfaces: {
-        activate: (surfaceId: string) => {
-          if (!mocks.authoringSurfaces.has(surfaceId)) {
-            throw new Error(`Unknown authoring surface: ${surfaceId}`);
-          }
-          mocks.activeAuthoringSurfaceId = surfaceId;
-        },
-        get: (surfaceId: string) => mocks.authoringSurfaces.get(surfaceId),
         register: (surface: { id: string; dispose?: () => void }) => {
           mocks.authoringSurfaces.set(surface.id, surface);
           return () => {
@@ -310,7 +298,6 @@ function deferred<T>() {
 
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
-    mocks.activeAuthoringSurfaceId = undefined;
     mocks.authoringSurfaces.clear();
     mocks.view.close = mocks.closeView;
     Reflect.deleteProperty(mocks.view, 'beforeClose');
@@ -672,21 +659,6 @@ describe('runJSStudioProvider', () => {
     expect(historyPanel.style.maxHeight).toBe('40px');
     expect(historyPanel.style.marginTop).toBe('auto');
     expect(within(historyPanel).getByRole('button', { name: 'Expand history' })).toBeTruthy();
-  });
-
-  it('forwards and activates the registered authoring surface without changing Studio behavior', async () => {
-    renderEditor();
-
-    const editor = await screen.findByLabelText('Edit file content');
-    await waitFor(() => expect(mocks.authoringSurfaces.size).toBe(1));
-    const surfaceId = Array.from(mocks.authoringSurfaces.keys())[0];
-
-    expect(surfaceId).toMatch(/^runjs-studio:/);
-    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-authoring-surface-id', surfaceId);
-    fireEvent.focus(editor);
-    expect(mocks.activeAuthoringSurfaceId).toBe(surfaceId);
-    expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
   });
 
   it('falls through to the next editor when opening Studio fails', async () => {

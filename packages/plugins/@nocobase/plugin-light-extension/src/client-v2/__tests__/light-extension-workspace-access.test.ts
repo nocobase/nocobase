@@ -108,7 +108,6 @@ describe('light extension entry workspace access', () => {
       canRead: true,
       canCreate: true,
       canUpdate: true,
-      canPatch: true,
       canDelete: true,
     });
     expect(
@@ -117,14 +116,12 @@ describe('light extension entry workspace access', () => {
       canRead: true,
       canCreate: true,
       canUpdate: true,
-      canPatch: true,
       canDelete: true,
     });
     expect(getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/entry.json')).toEqual({
       canRead: true,
       canCreate: false,
       canUpdate: false,
-      canPatch: false,
       canDelete: false,
       reason: 'entry_descriptor',
     });
@@ -132,7 +129,6 @@ describe('light extension entry workspace access', () => {
       canRead: true,
       canCreate: false,
       canUpdate: false,
-      canPatch: false,
       canDelete: false,
     });
     expect(canReadLightExtensionWorkspacePathForAI(scope, 'tsconfig.json')).toBe(true);
@@ -163,7 +159,6 @@ describe('light extension entry workspace access', () => {
       canRead: true,
       canCreate: false,
       canUpdate: false,
-      canPatch: false,
       canDelete: false,
       reason: 'generated_file',
     });
@@ -177,7 +172,6 @@ describe('light extension entry workspace access', () => {
       canRead: false,
       canCreate: false,
       canUpdate: false,
-      canPatch: false,
       canDelete: false,
       reason: 'repository_authoring_gate',
     });

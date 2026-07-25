@@ -15,8 +15,6 @@ export interface CodeAuthoringFileMeta {
   hash: string;
   kind: CodeAuthoringFileKind;
   writable: boolean;
-  persisted: boolean;
-  size: number;
   description?: string;
 }
 
@@ -45,35 +43,14 @@ export interface CodeAuthoringDiagnostic {
   source?: string;
 }
 
-export interface CodeAuthoringCapabilities {
-  describe: boolean;
-  listFiles: boolean;
-  readFiles: boolean;
-  search: boolean;
-  prepareChanges: boolean;
-  applyPreparedChanges: boolean;
-  validateDraft: boolean;
-  reveal: boolean;
-  supportedChanges: CodeAuthoringChange['type'][];
-  unavailableReason?: string;
-}
-
-export interface CodeAuthoringScope {
-  type: string;
-  id: string;
-  label?: string;
-}
-
 export interface CodeAuthoringSnapshot {
   surfaceId: string;
   kind: string;
   title: string;
-  scope: CodeAuthoringScope;
   snapshotId: string;
   activePath?: string;
   files: CodeAuthoringFileMeta[];
   diagnostics: CodeAuthoringDiagnostic[];
-  capabilities: CodeAuthoringCapabilities;
 }
 
 export interface CodeAuthoringCreateChange {
@@ -90,24 +67,13 @@ export interface CodeAuthoringUpdateChange {
   content: string;
 }
 
-export interface CodeAuthoringPatchChange {
-  type: 'patch';
-  path: string;
-  baseHash: string;
-  patch: string;
-}
-
 export interface CodeAuthoringDeleteChange {
   type: 'delete';
   path: string;
   baseHash: string;
 }
 
-export type CodeAuthoringChange =
-  | CodeAuthoringCreateChange
-  | CodeAuthoringUpdateChange
-  | CodeAuthoringPatchChange
-  | CodeAuthoringDeleteChange;
+export type CodeAuthoringChange = CodeAuthoringCreateChange | CodeAuthoringUpdateChange | CodeAuthoringDeleteChange;
 
 export interface CodeAuthoringPrepareInput {
   baseSnapshotId: string;
@@ -131,9 +97,8 @@ export interface PreparedCodeAuthoringChangeSet {
 
 export interface CodeAuthoringApplyResult {
   surfaceId: string;
-  snapshot: CodeAuthoringSnapshot;
+  snapshotId: string;
   changedPaths: string[];
-  saved: false;
 }
 
 export interface CodeAuthoringValidationResult {
@@ -141,7 +106,6 @@ export interface CodeAuthoringValidationResult {
   snapshotId: string;
   diagnostics: CodeAuthoringDiagnostic[];
   stale: boolean;
-  saved: false;
 }
 
 export interface CodeAuthoringSearchOptions {
@@ -160,22 +124,11 @@ export interface CodeAuthoringSearchMatch {
 
 export interface CodeAuthoringSurface {
   readonly id: string;
-  describe(): Promise<CodeAuthoringSnapshot>;
   getSnapshot(): Promise<CodeAuthoringSnapshot>;
-  list(): Promise<CodeAuthoringFileMeta[]>;
   read(paths: string[]): Promise<CodeAuthoringFile[]>;
   search(options: CodeAuthoringSearchOptions): Promise<CodeAuthoringSearchMatch[]>;
   prepareChanges(input: CodeAuthoringPrepareInput): Promise<PreparedCodeAuthoringChangeSet>;
   applyPreparedChanges(planId: string): Promise<CodeAuthoringApplyResult>;
   validateDraft(): Promise<CodeAuthoringValidationResult>;
-  reveal(path: string, range?: CodeAuthoringRange): Promise<void>;
   dispose?(): void;
 }
-
-export type CodeAuthoringSurfaceEvent =
-  | { type: 'register'; surfaceId: string; surface: CodeAuthoringSurface }
-  | { type: 'activate'; surfaceId: string; surface: CodeAuthoringSurface }
-  | { type: 'deactivate'; surfaceId: string; surface: CodeAuthoringSurface }
-  | { type: 'unregister'; surfaceId: string; surface: CodeAuthoringSurface };
-
-export type CodeAuthoringSurfaceListener = (event: CodeAuthoringSurfaceEvent) => void;

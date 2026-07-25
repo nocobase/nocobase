@@ -12,7 +12,6 @@ import {
   useApp,
   useFullscreenOverlay,
   type CodeAuthoringDiagnostic,
-  type CodeEditorRevealPosition,
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
@@ -183,11 +182,11 @@ function toAuthoringDiagnostic(diagnostic: RunJSCompileDiagnostic): CodeAuthorin
   };
 }
 
-function canReadRunJSAuthoringFile(file: WorkspaceAuthoringFile, canRead: boolean): boolean {
+function canReadRunJSAuthoringFile(file: WorkspaceAuthoringFile, canRead: boolean, sourceFile: boolean): boolean {
   if (!canRead || file.path === runJSManifestPath) {
     return false;
   }
-  if (file.persisted === false) {
+  if (!sourceFile) {
     try {
       const normalizedPath = normalizeRunJSWorkspacePath(file.path);
       return !normalizedPath
@@ -269,7 +268,6 @@ function toAuthoringSourceFiles(files: RunJSWorkspaceFile[]): WorkspaceAuthoring
     path: file.path,
     content: file.content,
     language: file.language,
-    persisted: true,
     mode: file.mode,
   }));
 }
@@ -305,7 +303,6 @@ function collectAuthoringVirtualFiles(
         language: declaration.language,
         readOnly: true,
         writable: false,
-        persisted: false,
         description: 'Generated TypeScript declaration',
       });
     }
@@ -365,9 +362,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [entryPath, setEntryPath] = useState(defaultEntryPath);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
-  const [editorRevealPosition, setEditorRevealPosition] = useState<
-    (CodeEditorRevealPosition & { path: string }) | undefined
-  >();
   const [activeTab, setActiveTab] = useState('code');
   const [filesCollapsed, setFilesCollapsed] = useState(true);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
@@ -435,7 +429,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const historyItems = workspace?.history?.items || [];
   const baseVersion = formatVersion(workspace?.repository?.headSeq);
   const authoringSurfaceId =
-    workspace && props.locator
+    workspace && props.locator && workspace.permissions.canWrite && !readOnly && !disabled
       ? `runjs-studio:${hashWorkspaceAuthoringValue({
           locator: props.locator,
           repositoryId: workspace.repository.repoId,
@@ -635,7 +629,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setEntryPath(defaultEntryPath);
     setActivePath(undefined);
     setOpenPaths([]);
-    setEditorRevealPosition(undefined);
     setActiveTab('code');
     setConsoleEntries([]);
     setSaveOpen(false);
@@ -682,12 +675,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
 
     setActivePath(path);
-    setEditorRevealPosition(undefined);
     setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
-  }, []);
-
-  const consumeEditorRevealPosition = useCallback((position: CodeEditorRevealPosition) => {
-    setEditorRevealPosition((current) => (current === position ? undefined : current));
   }, []);
 
   const closeOpenFile = useCallback(
@@ -731,7 +719,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setSavedFiles(nextCurrentFiles);
       setFiles(nextCurrentFiles);
       setEntryPath(loaded.entryPath);
-      setEditorRevealPosition(undefined);
       syncWorkspaceSnapshotRef(nextCurrentFiles, loaded.entryPath, loaded.opened.repository.repoId);
       setActivePath(nextActivePath);
       setOpenPaths([nextActivePath]);
@@ -2009,11 +1996,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       id: authoringSurfaceId,
       kind: 'runjs-studio',
       title: workspaceRef.current.source.label,
-      scope: {
-        type: workspaceRef.current.source.kind,
-        id: workspaceRef.current.repository.repoId,
-        label: workspaceRef.current.source.label,
-      },
       getSourceFiles: () => {
         const canWrite = Boolean(workspaceRef.current?.permissions.canWrite && !readOnly && !disabled);
         return toAuthoringSourceFiles(filesRef.current).map((file) => ({
@@ -2062,9 +2044,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return {
           canCreate: validPath && canWrite,
           canUpdate: validPath && canWrite,
-          canPatch: validPath && canWrite,
           canDelete: validPath && canWrite && !deletesEntry,
-          canWrite: validPath && canWrite,
           reason: !currentWorkspace?.permissions.canWrite
             ? 'Workspace write permission is required'
             : readOnly || disabled
@@ -2078,7 +2058,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                     : undefined,
         };
       },
-      canReadForAI: (file) => canReadRunJSAuthoringFile(file, workspaceRef.current?.permissions.canRead === true),
+      canReadForAI: (file) =>
+        canReadRunJSAuthoringFile(
+          file,
+          workspaceRef.current?.permissions.canRead === true,
+          filesRef.current.some((sourceFile) => sourceFile.path === file.path),
+        ),
       getDiagnostics: () => previewDiagnosticsRef.current.map(toAuthoringDiagnostic),
       sanitizeDiagnostic: sanitizeRunJSAuthoringDiagnostic,
       validateDraft: async () => {
@@ -2103,22 +2088,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         });
         return result.artifact.diagnostics.map(toAuthoringDiagnostic);
       },
-      reveal: (path, range) => {
-        if (filesRef.current.some((file) => file.path === path)) {
-          setActivePath(path);
-          setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
-          setActiveTab('code');
-          setEditorRevealPosition(
-            range?.start.line
-              ? {
-                  path,
-                  line: range.start.line,
-                  column: range.start.column || 1,
-                }
-              : undefined,
-          );
-        }
-      },
       supportedLanguages: [
         'css',
         'html',
@@ -2131,21 +2100,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         'typescriptreact',
         'yaml',
       ],
-      changeCapabilities: {
-        prepareChanges: workspaceRef.current.permissions.canWrite && !readOnly && !disabled,
-        applyPreparedChanges: workspaceRef.current.permissions.canWrite && !readOnly && !disabled,
-      },
     });
 
     return app.aiManager.authoringSurfaces.register(surface);
   }, [app, authoringSurfaceId, disabled, invalidatePreview, readOnly, t]);
-
-  const activateAuthoringSurface = useCallback(
-    (surfaceId: string) => {
-      app.aiManager.authoringSurfaces.activate(surfaceId);
-    },
-    [app],
-  );
 
   useEffect(() => {
     if (!embedded || !onEmbeddedEditorControllerChange) {
@@ -2423,14 +2381,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onDiffToggle={toggleDiff}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
-                        onAuthoringSurfaceActivate={activateAuthoringSurface}
                         onCheck={checkWorkspace}
                         openPaths={openPaths}
                         checking={previewing}
                         projectRevision={projectRevision}
                         readOnly={workspaceEditingDisabled}
-                        revealPosition={editorRevealPosition}
-                        onRevealPositionApplied={consumeEditorRevealPosition}
                         runJSModelUse={runJSModelUse}
                         savedFiles={savedFiles}
                         scene={scene}
@@ -2453,13 +2408,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         if (entry.path) {
                           openFilePath(entry.path);
                           setActiveTab('code');
-                          if (entry.line) {
-                            setEditorRevealPosition({
-                              path: entry.path,
-                              line: entry.line,
-                              column: entry.column || 1,
-                            });
-                          }
                         }
                       }}
                       onResize={setConsoleHeight}
@@ -2543,13 +2491,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           }
           openFilePath(diagnostic.path);
           setActiveTab('code');
-          if (diagnostic.line) {
-            setEditorRevealPosition({
-              path: diagnostic.path,
-              line: diagnostic.line,
-              column: diagnostic.column || 1,
-            });
-          }
           setSaveDiagnosticsOpen(false);
         }}
         open={saveDiagnosticsOpen}

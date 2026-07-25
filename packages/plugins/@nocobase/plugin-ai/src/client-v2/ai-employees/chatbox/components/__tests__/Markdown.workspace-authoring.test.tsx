@@ -15,9 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Code } from '../Markdown';
 
 const mocks = vi.hoisted(() => ({
-  codingTarget: { type: 'workspace', surfaceId: 'workspace-1' } as
-    | { type: 'workspace'; surfaceId: string }
-    | { type: 'single-file'; editorUid: string },
+  workspaceSurfaceId: 'workspace-1' as string | undefined,
   write: vi.fn(),
 }));
 
@@ -32,7 +30,7 @@ vi.mock('../../../../locale', () => ({
 vi.mock('../../hooks/useChat', () => ({
   useChat: () => ({
     use: {
-      codingTarget: () => mocks.codingTarget,
+      workspaceSurfaceId: () => mocks.workspaceSurfaceId,
       currentEditorRefUid: () => 'editor-1',
       editorRef: () => ({ 'editor-1': { write: mocks.write } }),
     },
@@ -49,7 +47,7 @@ vi.mock('../Actions', () => ({ Actions: () => null }));
 
 describe('Markdown workspace authoring', () => {
   beforeEach(() => {
-    mocks.codingTarget = { type: 'workspace', surfaceId: 'workspace-1' };
+    mocks.workspaceSurfaceId = 'workspace-1';
     mocks.write.mockClear();
   });
 
@@ -66,7 +64,7 @@ describe('Markdown workspace authoring', () => {
   });
 
   it('preserves direct editor apply for a legacy single-file session', () => {
-    mocks.codingTarget = { type: 'single-file', editorUid: 'editor-1' };
+    mocks.workspaceSurfaceId = undefined;
     render(
       <App>
         <Code className="language-js">return 3;</Code>

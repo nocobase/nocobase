@@ -30,7 +30,6 @@ import {
   CodeEditor,
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
-  type CodeEditorRevealPosition,
   type RunJSWorkspaceTypeScriptContextResolver,
 } from '@nocobase/client-v2';
 import {
@@ -845,7 +844,6 @@ export function CodeTab(props: {
   onDiffToggle: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
-  onAuthoringSurfaceActivate?: (surfaceId: string) => void;
   onCheck?: () => void;
   openPaths: string[];
   checking?: boolean;
@@ -863,8 +861,6 @@ export function CodeTab(props: {
   workspaceFiles: RunJSWorkspaceFile[];
   fullscreenControl?: CodeEditorFullscreenControl;
   jsonSchemaResolver?: RunJSWorkspaceJsonSchemaResolver;
-  revealPosition?: (CodeEditorRevealPosition & { path: string }) | undefined;
-  onRevealPositionApplied?: (position: CodeEditorRevealPosition) => void;
 }) {
   const {
     activeFile,
@@ -879,7 +875,6 @@ export function CodeTab(props: {
     onDiffToggle,
     onFilesCollapsedChange,
     onOpenFile,
-    onAuthoringSurfaceActivate,
     onCheck,
     openPaths,
     checking,
@@ -897,14 +892,7 @@ export function CodeTab(props: {
     workspaceFiles,
     fullscreenControl,
     jsonSchemaResolver,
-    revealPosition,
-    onRevealPositionApplied,
   } = props;
-  const handleAuthoringSurfaceFocus = React.useCallback(() => {
-    if (authoringSurfaceId) {
-      onAuthoringSurfaceActivate?.(authoringSurfaceId);
-    }
-  }, [authoringSurfaceId, onAuthoringSurfaceActivate]);
   const openFiles = openPaths
     .map((path) => workspaceFiles.find((file) => file.path === path))
     .filter((file): file is RunJSWorkspaceFile => Boolean(file));
@@ -989,7 +977,6 @@ export function CodeTab(props: {
     return (
       <section
         aria-label={t('Code')}
-        onFocusCapture={handleAuthoringSurfaceFocus}
         style={{
           border: '1px solid #d9d9d9',
           borderRadius: 6,
@@ -1024,7 +1011,6 @@ export function CodeTab(props: {
     <section
       aria-label={t('Code')}
       data-runjs-code-editor="true"
-      onFocusCapture={handleAuthoringSurfaceFocus}
       style={{
         display: 'flex',
         flex: 1,
@@ -1047,8 +1033,6 @@ export function CodeTab(props: {
         onChange={isDiff ? undefined : onChange}
         placeholder={t('Edit file content')}
         readonly={readOnly || isDiff}
-        revealPosition={revealPosition?.path === activeFile.path ? revealPosition : undefined}
-        onRevealPositionApplied={onRevealPositionApplied}
         runButton={runAndDiffActions}
         scene={scene}
         showLogs={false}

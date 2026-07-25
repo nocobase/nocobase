@@ -8,15 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import {
-  Attachment,
-  ChatCodingTarget,
-  ChatEditorRef,
-  ContextItem,
-  Message,
-  SkillSettings,
-  WebSearching,
-} from '../../types';
+import { Attachment, ChatEditorRef, ContextItem, Message, SkillSettings, WebSearching } from '../../types';
 import {
   CHAT_EMPTY_SESSION_STATE,
   ChatSessionState,
@@ -78,12 +70,12 @@ const createChatFacade = (sessionId?: string) => {
       useChatMessagesStore.getState().updateSessionLastSubAgentMessage(sessionKey, subSessionId, username, updater),
     updateSubAgentConversationStatus: (subSessionId: string, status: 'pending' | 'completed') =>
       useChatMessagesStore.getState().updateSessionSubAgentConversationStatus(sessionKey, subSessionId, status),
-    registerEditorRef: (applicationKey: string, uid: string, editorRef: ChatEditorRef) =>
-      useChatMessagesStore.getState().registerEditorRef(applicationKey, uid, editorRef),
-    bindCodingTarget: (target: ChatCodingTarget, flowContext?: unknown) =>
-      useChatMessagesStore.getState().bindSessionCodingTarget(sessionKey, target, flowContext),
-    setFlowContext: (flowContext: unknown) =>
-      useChatMessagesStore.getState().setSessionFlowContext(sessionKey, flowContext),
+    setEditorRef: (uid: string, editorRef: ChatEditorRef | null) =>
+      useChatMessagesStore.getState().setEditorRef(uid, editorRef),
+    setCurrentEditorRefUid: (uid: string) => useChatMessagesStore.getState().setCurrentEditorRefUid(uid),
+    setFlowContext: (flowContext: unknown) => useChatMessagesStore.getState().setFlowContext(flowContext),
+    setWorkspaceSurfaceId: (surfaceId?: string) =>
+      useChatMessagesStore.getState().setSessionWorkspaceSurfaceId(sessionKey, surfaceId),
     migrateSessionState: (toSessionId: string) =>
       useChatMessagesStore.getState().migrateSessionState(sessionKey, toSessionId),
     resetSessionState: (patch?: Partial<ChatSessionState>) =>
@@ -134,24 +126,17 @@ const createChatFacade = (sessionId?: string) => {
       webSearching: function useWebSearching() {
         return useChatMessagesStore((state) => selectSessionState(state, sessionKey).webSearching);
       },
-      codingTarget: function useCodingTarget() {
-        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).codingTarget);
-      },
-      codingTargetMismatch: function useCodingTargetMismatch() {
-        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).codingTargetMismatch);
-      },
-
       editorRef: function useEditorRef() {
-        return useChatMessagesStore((state) => {
-          const target = selectSessionState(state, sessionKey).codingTarget;
-          return target ? state.editorRef[target.applicationKey] : undefined;
-        });
+        return useChatMessagesStore.use.editorRef();
       },
       currentEditorRefUid: function useCurrentEditorRefUid() {
-        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).currentEditorRefUid);
+        return useChatMessagesStore.use.currentEditorRefUid();
       },
       flowContext: function useFlowContext() {
-        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).flowContext);
+        return useChatMessagesStore.use.flowContext();
+      },
+      workspaceSurfaceId: function useWorkspaceSurfaceId() {
+        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).workspaceSurfaceId);
       },
     },
     getState: () => {
@@ -159,7 +144,9 @@ const createChatFacade = (sessionId?: string) => {
       const sessionState = state.getSessionState(sessionKey);
       return {
         ...sessionState,
-        editorRef: sessionState.codingTarget ? state.editorRef[sessionState.codingTarget.applicationKey] : undefined,
+        editorRef: state.editorRef,
+        currentEditorRefUid: state.currentEditorRefUid,
+        flowContext: state.flowContext,
         ...actions,
       };
     },

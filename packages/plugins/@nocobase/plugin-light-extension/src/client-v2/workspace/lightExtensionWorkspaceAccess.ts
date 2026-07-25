@@ -31,7 +31,6 @@ export interface LightExtensionWorkspaceAuthoringPathAccess {
   canRead: boolean;
   canCreate: boolean;
   canUpdate: boolean;
-  canPatch: boolean;
   canDelete: boolean;
   reason?:
     | 'repository_authoring_gate'
@@ -209,7 +208,6 @@ export function getLightExtensionWorkspaceAuthoringPathAccess(
     canRead: true,
     canCreate: true,
     canUpdate: true,
-    canPatch: true,
     canDelete: true,
   };
 }
@@ -261,7 +259,6 @@ function denyAuthoringAccess(
     canRead: false,
     canCreate: false,
     canUpdate: false,
-    canPatch: false,
     canDelete: false,
     reason,
   };

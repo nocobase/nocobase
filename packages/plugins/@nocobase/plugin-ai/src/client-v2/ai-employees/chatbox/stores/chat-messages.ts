@@ -8,39 +8,11 @@
  */
 
 import { randomId } from '@nocobase/flow-engine';
-import type {
-  Attachment,
-  ChatCodingTarget,
-  ChatCodingTargetBindingResult,
-  ChatEditorRef,
-  ContextItem,
-  Message,
-  SkillSettings,
-  WebSearching,
-  WorkspaceChatCodingTarget,
-} from '../../types';
+import type { Attachment, ChatEditorRef, ContextItem, Message, SkillSettings, WebSearching } from '../../types';
 import { getOrCreateGlobalStore } from '../../stores/global-store';
 import { createObservableStore } from './create-selectors';
-import {
-  parseWorkspaceCodingTargetMetadata,
-  type WorkspaceCodingTargetMetadata,
-} from '../../../../common/workspace-coding-target';
 
 export const CHAT_DEFAULT_SESSION_KEY = '__draft__';
-
-const chatApplicationKeys = new WeakMap<object, string>();
-let chatApplicationKeySequence = 0;
-
-export const getChatApplicationKey = (application: { name?: string }): string => {
-  const existingKey = chatApplicationKeys.get(application);
-  if (existingKey) {
-    return existingKey;
-  }
-  chatApplicationKeySequence += 1;
-  const key = `${application.name || 'application'}:${chatApplicationKeySequence.toString(36)}`;
-  chatApplicationKeys.set(application, key);
-  return key;
-};
 
 export const getChatSessionKey = (sessionId?: string) => sessionId || CHAT_DEFAULT_SESSION_KEY;
 
@@ -61,10 +33,7 @@ export type ChatSessionState = {
   webSearching?: WebSearching;
   backgroundWorking: boolean;
   resumeStreamFailed: boolean;
-  codingTarget?: ChatCodingTarget;
-  codingTargetMismatch?: ChatCodingTarget;
-  currentEditorRefUid?: string;
-  flowContext?: unknown;
+  workspaceSurfaceId?: string;
 };
 
 export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
@@ -81,15 +50,14 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   webSearching: null,
   backgroundWorking: false,
   resumeStreamFailed: false,
-  codingTarget: undefined,
-  codingTargetMismatch: undefined,
-  currentEditorRefUid: undefined,
-  flowContext: undefined,
+  workspaceSurfaceId: undefined,
 };
 
 type ChatMessagesState = {
   sessions: Record<string, ChatSessionState>;
-  editorRef: Record<string, Record<string, ChatEditorRef>>;
+  editorRef?: Record<string, ChatEditorRef | null>;
+  currentEditorRefUid?: string;
+  flowContext?: unknown;
 };
 
 type SessionStateUpdater<T> = T | ((prev: T) => T);
@@ -105,132 +73,6 @@ const cloneSessionState = (session: ChatSessionState): ChatSessionState => ({
   attachments: [...session.attachments],
   contextItems: [...session.contextItems],
 });
-
-const isSameCodingTarget = (left: ChatCodingTarget, right: ChatCodingTarget) => {
-  if (left.type !== right.type || left.applicationKey !== right.applicationKey) {
-    return false;
-  }
-  if (left.type === 'workspace' && right.type === 'workspace') {
-    return left.surfaceId === right.surfaceId;
-  }
-  return left.type === 'single-file' && right.type === 'single-file' && left.editorUid === right.editorUid;
-};
-
-type RestoredWorkspaceCodingContext = {
-  target: Omit<WorkspaceChatCodingTarget, 'applicationKey'>;
-  item: ContextItem;
-};
-
-const createRestoredWorkspaceCodingContext = (
-  target: WorkspaceCodingTargetMetadata,
-): RestoredWorkspaceCodingContext => ({
-  target,
-  item: {
-    type: 'code-workspace',
-    uid: target.surfaceId,
-    title: target.title,
-    content: {
-      surfaceId: target.surfaceId,
-      kind: target.kind,
-      title: target.title,
-    },
-  },
-});
-
-export const getWorkspaceCodingTargetMetadata = (
-  target?: ChatCodingTarget,
-): WorkspaceCodingTargetMetadata | undefined => {
-  if (target?.type !== 'workspace') {
-    return undefined;
-  }
-  return {
-    type: 'workspace',
-    surfaceId: target.surfaceId,
-    kind: target.kind,
-    title: target.title,
-  };
-};
-
-export const findWorkspaceCodingContext = (messages: Message[]): RestoredWorkspaceCodingContext | undefined => {
-  for (const message of messages) {
-    const workContext = Array.isArray(message.content?.workContext) ? message.content.workContext : [];
-    for (const item of workContext) {
-      if (item?.type !== 'code-workspace') {
-        continue;
-      }
-      const content = item.content;
-      const contentRecord = content && typeof content === 'object' && !Array.isArray(content) ? content : undefined;
-      const contentSurfaceId =
-        contentRecord && 'surfaceId' in contentRecord && typeof contentRecord.surfaceId === 'string'
-          ? contentRecord.surfaceId
-          : undefined;
-      const itemSurfaceId = typeof item.uid === 'string' && item.uid ? item.uid : undefined;
-      if (
-        (contentSurfaceId && itemSurfaceId && contentSurfaceId !== itemSurfaceId) ||
-        (!contentSurfaceId && !itemSurfaceId)
-      ) {
-        continue;
-      }
-      const surfaceId = contentSurfaceId || itemSurfaceId;
-      if (!surfaceId) {
-        continue;
-      }
-      const kind =
-        contentRecord && 'kind' in contentRecord && typeof contentRecord.kind === 'string' && contentRecord.kind
-          ? contentRecord.kind
-          : 'code-workspace';
-      const contentTitle =
-        contentRecord && 'title' in contentRecord && typeof contentRecord.title === 'string'
-          ? contentRecord.title
-          : undefined;
-      const title = (typeof item.title === 'string' && item.title) || contentTitle || surfaceId;
-      const target = parseWorkspaceCodingTargetMetadata({ type: 'workspace', surfaceId, kind, title });
-      if (target) {
-        return createRestoredWorkspaceCodingContext(target);
-      }
-    }
-  }
-  return undefined;
-};
-
-export const restoreSessionWorkspaceCodingTargetFromMetadata = (
-  sessionId: string,
-  applicationKey: string,
-  metadata: unknown,
-): boolean => {
-  const target = parseWorkspaceCodingTargetMetadata(metadata);
-  if (!target) {
-    return false;
-  }
-  const restoredWorkspace = createRestoredWorkspaceCodingContext(target);
-  useChatMessagesStore
-    .getState()
-    .restoreSessionWorkspaceCodingTarget(
-      sessionId,
-      { ...restoredWorkspace.target, applicationKey },
-      restoredWorkspace.item,
-    );
-  return true;
-};
-
-export const restoreSessionWorkspaceCodingTargetFromMessages = (
-  sessionId: string,
-  applicationKey: string,
-  messages: Message[],
-): boolean => {
-  const restoredWorkspace = findWorkspaceCodingContext(messages);
-  if (!restoredWorkspace) {
-    return false;
-  }
-  useChatMessagesStore
-    .getState()
-    .restoreSessionWorkspaceCodingTarget(
-      sessionId,
-      { ...restoredWorkspace.target, applicationKey },
-      restoredWorkspace.item,
-    );
-  return true;
-};
 
 const resolveSessionState = (state: { sessions: Record<string, ChatSessionState> }, sessionId?: string) =>
   state.sessions[getChatSessionKey(sessionId)] ?? createInitialSessionState();
@@ -251,18 +93,10 @@ const updateSessionState = (
 };
 
 export interface ChatMessagesActions {
-  registerEditorRef: (applicationKey: string, uid: string, editorRef: ChatEditorRef) => () => void;
-  bindSessionCodingTarget: (
-    sessionId: string | undefined,
-    target: ChatCodingTarget,
-    flowContext?: unknown,
-  ) => ChatCodingTargetBindingResult;
-  restoreSessionWorkspaceCodingTarget: (
-    sessionId: string,
-    target: WorkspaceChatCodingTarget,
-    item: ContextItem,
-  ) => void;
-  setSessionFlowContext: (sessionId: string | undefined, flowContext: unknown) => void;
+  setEditorRef: (uid: string, editorRef: ChatEditorRef | null) => void;
+  setCurrentEditorRefUid: (uid: string) => void;
+  setFlowContext: (ctx: unknown) => void;
+  setSessionWorkspaceSurfaceId: (sessionId: string | undefined, surfaceId?: string) => void;
 
   getSessionState: (sessionId?: string) => ChatSessionState;
   resetSessionState: (sessionId?: string, patch?: Partial<ChatSessionState>) => void;
@@ -318,6 +152,8 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
         [CHAT_DEFAULT_SESSION_KEY]: defaultSession,
       },
       editorRef: {},
+      currentEditorRefUid: null,
+      flowContext: null,
 
       getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
 
@@ -535,81 +371,9 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
           })),
         ),
 
-      registerEditorRef: (applicationKey, uid, editorRef) => {
-        set((state) => ({
-          editorRef: {
-            ...state.editorRef,
-            [applicationKey]: {
-              ...state.editorRef[applicationKey],
-              [uid]: editorRef,
-            },
-          },
-        }));
-        let registered = true;
-        return () => {
-          if (!registered) {
-            return;
-          }
-          registered = false;
-          set((state) => {
-            const applicationEditors = state.editorRef[applicationKey];
-            if (applicationEditors?.[uid] !== editorRef) {
-              return state;
-            }
-            const nextApplicationEditors = { ...applicationEditors };
-            delete nextApplicationEditors[uid];
-            const nextEditorRef = { ...state.editorRef };
-            if (Object.keys(nextApplicationEditors).length) {
-              nextEditorRef[applicationKey] = nextApplicationEditors;
-            } else {
-              delete nextEditorRef[applicationKey];
-            }
-            return { editorRef: nextEditorRef };
-          });
-        };
-      },
+      setEditorRef: (uid, editorRef) => set((state) => ({ editorRef: { ...state.editorRef, [uid]: editorRef } })),
 
-      bindSessionCodingTarget: (sessionId, target, flowContext) => {
-        const session = resolveSessionState(get(), sessionId);
-        const currentTarget = session.codingTarget;
-        if (currentTarget && !isSameCodingTarget(currentTarget, target)) {
-          set((state) =>
-            updateSessionState(state, sessionId, (currentSession) => ({
-              ...currentSession,
-              codingTargetMismatch: target,
-            })),
-          );
-          return { status: 'mismatch', target: currentTarget, requestedTarget: target };
-        }
-
-        set((state) =>
-          updateSessionState(state, sessionId, (currentSession) => ({
-            ...currentSession,
-            codingTarget: target,
-            codingTargetMismatch: undefined,
-            currentEditorRefUid: target.type === 'single-file' ? target.editorUid : undefined,
-            flowContext,
-          })),
-        );
-        return { status: currentTarget ? 'already-bound' : 'bound', target };
-      },
-
-      restoreSessionWorkspaceCodingTarget: (sessionId, target, item) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            codingTarget: target,
-            codingTargetMismatch: undefined,
-            currentEditorRefUid: undefined,
-            flowContext: undefined,
-            contextItems: [
-              ...session.contextItems.filter(
-                (contextItem) => contextItem.type !== 'code-workspace' && contextItem.type !== 'code-editor',
-              ),
-              item,
-            ],
-          })),
-        ),
+      setCurrentEditorRefUid: (uid) => set({ currentEditorRefUid: uid }),
 
       setSessionWebSearching: (sessionId, webSearching) =>
         set((state) =>
@@ -619,11 +383,13 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
           })),
         ),
 
-      setSessionFlowContext: (sessionId, flowContext) =>
+      setFlowContext: (flowContext) => set({ flowContext }),
+
+      setSessionWorkspaceSurfaceId: (sessionId, workspaceSurfaceId) =>
         set((state) =>
           updateSessionState(state, sessionId, (session) => ({
             ...session,
-            flowContext,
+            workspaceSurfaceId,
           })),
         ),
 

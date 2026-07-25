@@ -8,14 +8,12 @@
  */
 
 import { CodeOutlined } from '@ant-design/icons';
-import type { Application } from '@nocobase/client-v2';
 import { Space } from 'antd';
 import React from 'react';
 
 import { useT } from '../../locale';
-import { getFrontendToolRegistry } from '../../manager/frontend-tool-registry';
 import type { ContextItem, WorkContextOptions } from '../types';
-import { registerWorkspaceAuthoringTools } from '../tools/workspace-authoring';
+import { getWorkspaceAuthoringToolManifests } from '../tools/workspace-authoring';
 
 type CodeWorkspaceContent = {
   surfaceId?: unknown;
@@ -55,7 +53,7 @@ export const CodeWorkspaceContext: WorkContextOptions = {
       return workspaceContextError(surfaceId, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
     }
     try {
-      const snapshot = await surface.describe();
+      const snapshot = await surface.getSnapshot();
       if (app.aiManager.authoringSurfaces.get(surfaceId) !== surface) {
         return workspaceContextError(surfaceId, 'WORKSPACE_SURFACE_UNAVAILABLE', 'The bound workspace is unavailable.');
       }
@@ -76,11 +74,10 @@ export const CodeWorkspaceContext: WorkContextOptions = {
   },
   getFrontendTools: async (app, item) => {
     const surfaceId = getSurfaceId(item);
-    const registry = getFrontendToolRegistry(app);
-    if (!surfaceId || !registry) {
+    if (!surfaceId) {
       return [];
     }
-    return registerWorkspaceAuthoringTools(app as Application, registry, surfaceId);
+    return getWorkspaceAuthoringToolManifests(surfaceId);
   },
 };
 

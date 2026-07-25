@@ -48,16 +48,12 @@ const { AIResourceContextCollector } = lazy(
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this.app);
-  private workspaceAuthoringSurfaceCleanup?: () => void;
 
   async afterAdd() {
     // await this.app.pm.add()
   }
 
-  async beforeLoad() {
-    this.workspaceAuthoringSurfaceCleanup?.();
-    this.workspaceAuthoringSurfaceCleanup = undefined;
-  }
+  async beforeLoad() {}
 
   // You can get and modify the app instance here
   async load() {
@@ -144,12 +140,6 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('code-workspace', CodeWorkspaceContext);
     // 使用可视化员工的工作上下文参数
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
-
-    this.workspaceAuthoringSurfaceCleanup = this.app.aiManager.authoringSurfaces.subscribe((event) => {
-      if (event.type === 'unregister') {
-        this.aiManager.frontendTools.clear(event.surfaceId);
-      }
-    });
 
     registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
   }

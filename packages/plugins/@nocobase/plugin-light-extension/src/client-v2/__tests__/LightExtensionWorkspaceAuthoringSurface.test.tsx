@@ -13,7 +13,6 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { LightExtensionWorkspacePreviewResult } from '../../shared/types';
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
 import LightExtensionWorkspacePage from '../pages/LightExtensionWorkspacePage';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
@@ -35,7 +34,6 @@ const mocks = vi.hoisted(() => ({
   authoring: {
     surface: undefined as CodeAuthoringSurface | undefined,
     register: vi.fn(),
-    activate: vi.fn(),
     unregister: vi.fn(),
   },
 }));
@@ -49,7 +47,6 @@ vi.mock('@nocobase/client-v2', async () => {
     aiManager: {
       authoringSurfaces: {
         register: mocks.authoring.register,
-        activate: mocks.authoring.activate,
       },
     },
   };
@@ -89,23 +86,16 @@ vi.mock('../vsc-file/public-api', () => ({
   CodeTab: ({
     activeFile,
     authoringSurfaceId,
-    onAuthoringSurfaceActivate,
     onChange,
-    revealPosition,
     workspaceFiles,
   }: {
     activeFile?: { path: string; content: string };
     authoringSurfaceId?: string;
-    onAuthoringSurfaceActivate?: (surfaceId: string) => void;
     onChange: (content: string) => void;
-    revealPosition?: { path: string; line: number; column: number };
     workspaceFiles: Array<{ path: string }>;
   }) => (
     <div
       data-authoring-surface-id={authoringSurfaceId}
-      data-reveal-column={revealPosition?.column}
-      data-reveal-line={revealPosition?.line}
-      data-reveal-path={revealPosition?.path}
       data-testid="code-tab"
       data-workspace-paths={workspaceFiles.map((file) => file.path).join(',')}
     >
@@ -113,11 +103,6 @@ vi.mock('../vsc-file/public-api', () => ({
       <textarea
         aria-label="Edit file content"
         onChange={(event) => onChange(event.target.value)}
-        onFocus={() => {
-          if (authoringSurfaceId) {
-            onAuthoringSurfaceActivate?.(authoringSurfaceId);
-          }
-        }}
         value={activeFile?.content || ''}
       />
     </div>
@@ -198,7 +183,7 @@ describe('LightExtensionWorkspace authoring surface', () => {
     mocks.api.compileWorkspacePreview.mockResolvedValue({ accepted: true, diagnostics: [] });
   });
 
-  it('projects only entry dependencies and applies source-only changes without compiling or saving', async () => {
+  it('projects the entry scope, applies draft changes, and validates without saving', async () => {
     renderEntryWorkspace();
     await screen.findByTestId('code-tab');
     await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
@@ -225,7 +210,6 @@ describe('LightExtensionWorkspace authoring surface', () => {
     expect(snapshot.files.find((file) => file.path === '.light-extension/types/sdk.d.ts')).toMatchObject({
       kind: 'virtual',
       writable: false,
-      persisted: false,
     });
     const indexMeta = snapshot.files.find((file) => file.path === entryPath);
     if (!indexMeta) {
@@ -259,82 +243,7 @@ describe('LightExtensionWorkspace authoring surface', () => {
     });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
-    expect(mocks.authoring.activate).not.toHaveBeenCalled();
-    fireEvent.focus(screen.getByLabelText('Edit file content'));
-    expect(mocks.authoring.activate).toHaveBeenCalledWith(surface.id);
-
-    await act(async () => {
-      await surface.reveal('src/client/js-blocks/sales-kpi/formatCurrency.ts', {
-        start: { line: 1, column: 8 },
-      });
-    });
-    expect(screen.getByTestId('active-path')).toHaveTextContent('src/client/js-blocks/sales-kpi/formatCurrency.ts');
-    expect(screen.getByTestId('code-tab')).toHaveAttribute(
-      'data-reveal-path',
-      'src/client/js-blocks/sales-kpi/formatCurrency.ts',
-    );
-    expect(screen.getByTestId('code-tab')).toHaveAttribute('data-reveal-line', '1');
-    expect(screen.getByTestId('code-tab')).toHaveAttribute('data-reveal-column', '8');
-  });
-
-  it('validates the complete source tree, filters diagnostics, and marks results stale after manual edits', async () => {
-    let resolveCompile: ((result: LightExtensionWorkspacePreviewResult) => void) | undefined;
-    mocks.api.compileWorkspacePreview.mockImplementationOnce(
-      () =>
-        new Promise<LightExtensionWorkspacePreviewResult>((resolve) => {
-          resolveCompile = resolve;
-        }),
-    );
-    renderEntryWorkspace();
-    await screen.findByTestId('code-tab');
-    await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
-    const surface = getRegisteredSurface();
-    const validationPromise = surface.validateDraft();
-
-    fireEvent.change(screen.getByLabelText('Edit file content'), { target: { value: 'manual edit\n' } });
-    await act(async () => {
-      resolveCompile?.({
-        accepted: false,
-        diagnostics: [
-          {
-            code: 'entry_error',
-            severity: 'error',
-            message: 'Entry error imported from src/client/js-actions/secret/index.ts',
-            path: entryPath,
-            line: 3,
-            column: 7,
-            kind: 'js-block',
-            entryName: 'sales-kpi',
-          },
-          {
-            code: 'secret_error',
-            severity: 'error',
-            message: 'Secret error in src/client/js-actions/secret/index.ts',
-            path: 'src/client/js-actions/secret/index.ts',
-            kind: 'js-action',
-            entryName: 'secret',
-          },
-          {
-            code: 'other_entry_error',
-            severity: 'warning',
-            message: 'Other entry failed',
-            kind: 'js-action',
-            entryName: 'secret',
-          },
-        ],
-      });
-    });
-    const result = await validationPromise;
-
-    expect(result).toMatchObject({ stale: true, saved: false });
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        code: 'entry_error',
-        message: 'Entry error imported from [redacted light extension entry path]',
-        path: entryPath,
-        range: { start: { line: 3, column: 7 } },
-      }),
-    ]);
+    await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
     expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',

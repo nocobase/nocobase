@@ -15,7 +15,6 @@ import {
 } from '@nocobase/light-extension-sdk/typegen';
 import {
   type CodeAuthoringDiagnostic,
-  type CodeEditorRevealPosition,
   type EmbeddedRunJSEditorSaveResult,
   useApp,
   useFullscreenOverlay,
@@ -163,9 +162,6 @@ function LightExtensionWorkspacePage({
   const [folders, setFolders] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
-  const [editorRevealPosition, setEditorRevealPosition] = useState<
-    (CodeEditorRevealPosition & { path: string }) | undefined
-  >();
   const [filesCollapsed, setFilesCollapsed] = useState(defaultFilesCollapsed);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
@@ -233,7 +229,6 @@ function LightExtensionWorkspacePage({
       historyRequestSeqRef.current = historyRequestSeq;
       setHistoryLoading(false);
       setHistoryLoadingMore(false);
-      setEditorRevealPosition(undefined);
       setLoading(true);
       if (options.resetNotice !== false) {
         setNotice(null);
@@ -316,11 +311,10 @@ function LightExtensionWorkspacePage({
   latestCheckSnapshotRef.current = checkSnapshotKey;
   const canCheck = entryScoped;
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
-  const authoringScopeKey =
-    workspaceScope.mode === 'repository'
-      ? 'repository'
-      : `entry:${workspaceScope.kind}:${normalizeWorkspacePath(workspaceScope.entryPath)}`;
-  const authoringSurfaceId = buildLightExtensionAuthoringSurfaceId(repoId, workspaceScope, entryId);
+  const authoringSurfaceId =
+    workspaceScope.mode === 'entry' && canWrite
+      ? buildLightExtensionAuthoringSurfaceId(repoId, workspaceScope, entryId)
+      : undefined;
   const sourcePathSet = useMemo(() => new Set(files.map((file) => file.path)), [files]);
   const virtualAuthoringFiles = useMemo(
     () => authoringFiles.filter((file) => !sourcePathSet.has(file.path)),
@@ -344,13 +338,8 @@ function LightExtensionWorkspacePage({
     }
 
     setActivePath(path);
-    setEditorRevealPosition(undefined);
     setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
     setIsDiff(false);
-  }, []);
-
-  const consumeEditorRevealPosition = useCallback((position: CodeEditorRevealPosition) => {
-    setEditorRevealPosition((current) => (current === position ? undefined : current));
   }, []);
 
   const closeOpenFile = useCallback(
@@ -808,36 +797,24 @@ function LightExtensionWorkspacePage({
       }
 
       openFilePath(diagnostic.path);
-      if (diagnostic.line) {
-        setEditorRevealPosition({
-          path: diagnostic.path,
-          line: diagnostic.line,
-          column: diagnostic.column || 1,
-        });
-      }
       setNotice({ type: 'info', message: t('Opened diagnostic source') });
     },
     [openFilePath, t],
   );
 
   useEffect(() => {
-    if (!app?.aiManager?.authoringSurfaces || !repoId || !repo) {
+    if (!app?.aiManager?.authoringSurfaces || !authoringSurfaceId || !repoId || !repo || !canWrite) {
       return;
     }
 
     const registeredWorkspaceScope = authoringWorkspaceScopeRef.current;
-    const repositoryGated = registeredWorkspaceScope.mode === 'repository';
-    const changeEnabled = registeredWorkspaceScope.mode === 'entry' && canWrite;
-    const unavailableReason = repositoryGated
-      ? t('Other light extension entries are read-only here')
-      : canWrite
-        ? undefined
-        : t('Archived repositories are read-only');
+    if (registeredWorkspaceScope.mode !== 'entry') {
+      return;
+    }
     const surface = createWorkspaceAuthoringSurface({
       id: authoringSurfaceId,
       kind: 'light-extension-workspace',
       title: repo.title || repo.name || t('Source workspace'),
-      scope: buildLightExtensionAuthoringScope(repoId, registeredWorkspaceScope, entryId),
       getSourceFiles: () =>
         toLightExtensionAuthoringFiles(
           authoringSourceFilesRef.current,
@@ -891,21 +868,17 @@ function LightExtensionWorkspacePage({
         return {
           canCreate: access.canCreate,
           canUpdate: access.canUpdate,
-          canPatch: access.canPatch,
           canDelete: access.canDelete,
           reason: access.reason,
         };
       },
       canReadForAI: (file) =>
         canReadLightExtensionWorkspacePathForAI(registeredWorkspaceScope, file.path, {
-          virtual: file.persisted === false,
+          virtual: authoringVirtualFilesRef.current.some((virtualFile) => virtualFile.path === file.path),
         }),
       getDiagnostics: () => toCodeAuthoringDiagnostics(authoringDiagnosticsRef.current, registeredWorkspaceScope),
       sanitizeDiagnostic: (diagnostic) => diagnostic,
       validateDraft: async () => {
-        if (registeredWorkspaceScope.mode !== 'entry') {
-          return [];
-        }
         const currentFiles = authoringSourceFilesRef.current;
         const result = await compileWorkspacePreview({
           repoId,
@@ -922,48 +895,11 @@ function LightExtensionWorkspacePage({
         });
         return toCodeAuthoringDiagnostics(result.diagnostics, registeredWorkspaceScope);
       },
-      reveal: (path, range) => {
-        openDiagnosticSource({
-          code: 'authoring_reveal',
-          severity: 'warning',
-          message: path,
-          path,
-          line: range?.start.line,
-          column: range?.start.column,
-          ...(registeredWorkspaceScope.mode === 'entry'
-            ? { kind: registeredWorkspaceScope.kind, entryName: getEntryName(registeredWorkspaceScope) }
-            : {}),
-        });
-      },
       supportedLanguages: ['css', 'javascript', 'javascriptreact', 'json', 'typescript', 'typescriptreact'],
-      changeCapabilities: {
-        prepareChanges: changeEnabled,
-        applyPreparedChanges: changeEnabled,
-      },
-      unavailableReason,
     });
     const unregister = app.aiManager.authoringSurfaces.register(surface);
     return unregister;
-  }, [
-    app,
-    authoringScopeKey,
-    authoringSurfaceId,
-    canWrite,
-    compileWorkspacePreview,
-    entryId,
-    openDiagnosticSource,
-    repo,
-    repoId,
-    setFiles,
-    t,
-  ]);
-
-  const activateAuthoringSurface = useCallback(
-    (surfaceId: string) => {
-      app?.aiManager?.authoringSurfaces.activate(surfaceId);
-    },
-    [app],
-  );
+  }, [app, authoringSurfaceId, canWrite, compileWorkspacePreview, entryId, repo, repoId, setFiles, t]);
 
   const checkWorkspace = useCallback(async () => {
     if (!canCheck || workspaceScope.mode !== 'entry') {
@@ -1337,14 +1273,11 @@ function LightExtensionWorkspacePage({
                         onDiffToggle={() => setIsDiff((current) => !current)}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
-                        onAuthoringSurfaceActivate={activateAuthoringSurface}
                         onCheck={canCheck ? checkWorkspace : undefined}
                         openPaths={openPaths}
                         checking={checking}
                         projectRevision={projectRevision}
                         readOnly={activeFileReadOnly}
-                        revealPosition={editorRevealPosition}
-                        onRevealPositionApplied={consumeEditorRevealPosition}
                         runJSGlobalContextType={activeEntryContext.globalContextType}
                         savedFiles={baseFiles}
                         showCheckButton={canCheck}
@@ -1460,13 +1393,10 @@ function LightExtensionWorkspacePage({
 
 function buildLightExtensionAuthoringSurfaceId(
   repoId: string,
-  workspaceScope: LightExtensionWorkspaceScope,
+  workspaceScope: Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>,
   entryId?: string | null,
 ): string {
   const repoSegment = encodeURIComponent(repoId || 'unknown');
-  if (workspaceScope.mode === 'repository') {
-    return `light-extension:${repoSegment}:repository`;
-  }
   return [
     'light-extension',
     repoSegment,
@@ -1475,24 +1405,6 @@ function buildLightExtensionAuthoringSurfaceId(
     encodeURIComponent(workspaceScope.kind),
     encodeURIComponent(normalizeWorkspacePath(workspaceScope.entryPath)),
   ].join(':');
-}
-
-function buildLightExtensionAuthoringScope(
-  repoId: string,
-  workspaceScope: LightExtensionWorkspaceScope,
-  entryId?: string | null,
-) {
-  if (workspaceScope.mode === 'repository') {
-    return {
-      type: 'light-extension-repository',
-      id: repoId,
-    };
-  }
-  return {
-    type: 'light-extension-entry',
-    id: entryId || normalizeWorkspacePath(workspaceScope.entryPath),
-    label: normalizeWorkspacePath(workspaceScope.entryPath),
-  };
 }
 
 function toLightExtensionAuthoringFiles(
@@ -1514,7 +1426,6 @@ function toLightExtensionAuthoringFiles(
       language: file.language,
       readOnly: !access.canUpdate,
       writable: access.canUpdate,
-      persisted: !virtual,
       mode: file.mode,
     };
     return authoringFile;

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useApp, type ToolsOptions } from '@nocobase/client-v2';
+import type { ToolsOptions } from '@nocobase/client-v2';
 import type { FlowContext } from '@nocobase/flow-engine';
 import { getSnippetBody } from '@nocobase/flow-engine';
 import { applyPatch } from 'diff';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
-import { getChatApplicationKey, useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import type { ChatEditorRef } from '../types';
 
 type FlowInfoContext = FlowContext & {
@@ -38,58 +38,39 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function getCurrentEditorRef(app: { name: string }) {
+function assertLegacyToolAvailable() {
   const state = useChatMessagesStore.getState();
   const sessionId = useChatConversationsStore.getState().currentConversation;
-  const target = state.getSessionState(sessionId).codingTarget;
-  const applicationKey = getChatApplicationKey(app);
-  if (!target) {
-    throw new Error('Current code editor is not available.');
-  }
-  if (target.applicationKey !== applicationKey) {
-    throw new Error('The bound code editor belongs to a different application.');
-  }
-  if (target.type === 'workspace') {
-    throw new Error(workspaceToolError);
-  }
-  const editorRef = state.editorRef[target.applicationKey]?.[target.editorUid];
-  if (!editorRef) {
-    throw new Error('Current code editor is not available.');
-  }
-  return { applicationKey: target.applicationKey, uid: target.editorUid, editorRef };
-}
-
-function assertCompatibleLegacyToolTarget(app: { name: string }) {
-  const state = useChatMessagesStore.getState();
-  const sessionId = useChatConversationsStore.getState().currentConversation;
-  const target = state.getSessionState(sessionId).codingTarget;
-  if (!target) {
-    return;
-  }
-  if (target.applicationKey !== getChatApplicationKey(app)) {
-    throw new Error('The bound code editor belongs to a different application.');
-  }
-  if (target.type === 'workspace') {
+  if (state.getSessionState(sessionId).workspaceSurfaceId) {
     throw new Error(workspaceToolError);
   }
 }
 
-function getEditorState(app: { name: string }) {
-  const { applicationKey, uid, editorRef } = getCurrentEditorRef(app);
+function getCurrentEditorRef() {
+  const state = useChatMessagesStore.getState();
+  const uid = state.currentEditorRefUid;
+  const editorRef = uid ? state.editorRef?.[uid] : null;
+  return { uid, editorRef };
+}
+
+function getEditorState() {
+  assertLegacyToolAvailable();
+  const { uid, editorRef } = getCurrentEditorRef();
+  if (!uid || !editorRef) {
+    throw new Error('Current code editor is not available.');
+  }
   const code = editorRef.read();
   return {
-    applicationKey,
     uid,
     editorRef,
     code,
-    version: editorVersions.get(`${applicationKey}:${uid}`) ?? 0,
+    version: editorVersions.get(uid) ?? 0,
   };
 }
 
-function bumpEditorVersion(applicationKey: string, uid: string) {
-  const key = `${applicationKey}:${uid}`;
-  const version = (editorVersions.get(key) ?? 0) + 1;
-  editorVersions.set(key, version);
+function bumpEditorVersion(uid: string) {
+  const version = (editorVersions.get(uid) ?? 0) + 1;
+  editorVersions.set(uid, version);
   return version;
 }
 
@@ -170,16 +151,11 @@ export const listCodeSnippetTool: [string, ToolsOptions] = [
       return (this.editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
     },
     useHooks(this: EditorToolState) {
-      const app = useApp();
-      const applicationKey = getChatApplicationKey(app);
       const currentConversation = useChatConversationsStore.use.currentConversation();
       const chat = useChat(currentConversation);
-      const target = chat.use.codingTarget();
       const editorRefMap = chat.use.editorRef() ?? {};
-      this.editorRef =
-        target?.type === 'single-file' && target.applicationKey === applicationKey
-          ? editorRefMap[target.editorUid] ?? null
-          : null;
+      const currentEditorRefUid = chat.use.currentEditorRefUid();
+      this.editorRef = currentEditorRefUid ? editorRefMap[currentEditorRefUid] : null;
       return this;
     },
   },
@@ -202,13 +178,10 @@ export const getContextApisTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const app = useApp();
-      const applicationKey = getChatApplicationKey(app);
       const currentConversation = useChatConversationsStore.use.currentConversation();
       const chat = useChat(currentConversation);
-      const target = chat.use.codingTarget();
       const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = target?.applicationKey === applicationKey ? flowContext : undefined;
+      this.flowContext = flowContext;
       return this;
     },
   },
@@ -222,13 +195,10 @@ export const getContextEnvsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const app = useApp();
-      const applicationKey = getChatApplicationKey(app);
       const currentConversation = useChatConversationsStore.use.currentConversation();
       const chat = useChat(currentConversation);
-      const target = chat.use.codingTarget();
       const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = target?.applicationKey === applicationKey ? flowContext : undefined;
+      this.flowContext = flowContext;
       return this;
     },
   },
@@ -245,13 +215,10 @@ export const getContextVarsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const app = useApp();
-      const applicationKey = getChatApplicationKey(app);
       const currentConversation = useChatConversationsStore.use.currentConversation();
       const chat = useChat(currentConversation);
-      const target = chat.use.codingTarget();
       const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = target?.applicationKey === applicationKey ? flowContext : undefined;
+      this.flowContext = flowContext;
       return this;
     },
   },
@@ -260,9 +227,9 @@ export const getContextVarsTool: [string, ToolsOptions] = [
 export const writeJSCodeTool: [string, ToolsOptions] = [
   'writeJSCode',
   {
-    async invoke(app, args: { code?: unknown }) {
+    async invoke(_app, args: { code?: unknown }) {
       try {
-        assertCompatibleLegacyToolTarget(app);
+        assertLegacyToolAvailable();
       } catch (error) {
         return {
           status: 'error',
@@ -283,7 +250,7 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
       }
       let current;
       try {
-        current = getCurrentEditorRef(app);
+        current = getCurrentEditorRef();
       } catch (error) {
         return {
           status: 'error',
@@ -295,7 +262,7 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
       }
       const { code } = args;
       current.editorRef.write(code);
-      const version = bumpEditorVersion(current.applicationKey, current.uid);
+      const version = bumpEditorVersion(current.uid);
       return {
         status: 'success',
         content: {
@@ -312,9 +279,9 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
 export const readJSCodeTool: [string, ToolsOptions] = [
   'readJSCode',
   {
-    async invoke(app) {
+    async invoke() {
       try {
-        const current = getEditorState(app);
+        const current = getEditorState();
         return {
           status: 'success',
           content: {
@@ -341,9 +308,9 @@ export const readJSCodeTool: [string, ToolsOptions] = [
 export const patchJSCodeTool: [string, ToolsOptions] = [
   'patchJSCode',
   {
-    async invoke(app, args: { patch?: unknown }) {
+    async invoke(_app, args: { patch?: unknown }) {
       try {
-        assertCompatibleLegacyToolTarget(app);
+        assertLegacyToolAvailable();
       } catch (error) {
         return {
           status: 'error',
@@ -364,7 +331,7 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
       }
       let current;
       try {
-        current = getEditorState(app);
+        current = getEditorState();
       } catch (error) {
         return {
           status: 'error',
@@ -377,7 +344,7 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
       try {
         const nextCode = applyUnifiedDiff(current.code, args.patch);
         current.editorRef.write(nextCode);
-        const version = bumpEditorVersion(current.applicationKey, current.uid);
+        const version = bumpEditorVersion(current.uid);
         return {
           status: 'success',
           content: {
@@ -409,9 +376,9 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
       let editorState: ReturnType<typeof getEditorState> | undefined;
       try {
         if (typeof args?.code === 'string') {
-          assertCompatibleLegacyToolTarget(app);
+          assertLegacyToolAvailable();
         } else {
-          editorState = getEditorState(app);
+          editorState = getEditorState();
         }
       } catch (error) {
         return {
@@ -467,13 +434,10 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
       }
     },
     useHooks(this: FlowContextToolState) {
-      const app = useApp();
-      const applicationKey = getChatApplicationKey(app);
       const currentConversation = useChatConversationsStore.use.currentConversation();
       const chat = useChat(currentConversation);
-      const target = chat.use.codingTarget();
       const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = target?.applicationKey === applicationKey ? flowContext : undefined;
+      this.flowContext = flowContext;
       return this;
     },
   },

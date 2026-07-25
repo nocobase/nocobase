@@ -15,10 +15,7 @@ export interface WorkspaceAuthoringFile {
   language?: string;
   readOnly?: boolean;
   writable?: boolean;
-  persisted?: boolean;
   description?: string;
-  scope?: string;
-  metadata?: Record<string, unknown>;
   mode?: string;
 }
 
@@ -33,40 +30,23 @@ export interface WorkspaceAuthoringTreeSnapshot {
   files: WorkspaceAuthoringSnapshotFile[];
 }
 
-export interface BuildWorkspaceAuthoringSnapshotOptions {
+export function buildWorkspaceAuthoringTreeSnapshot(options: {
   sourceFiles: WorkspaceAuthoringFile[];
   virtualFiles: WorkspaceAuthoringFile[];
   getPathWritable?: (path: string, file: WorkspaceAuthoringFile) => boolean;
-}
-
-export function buildWorkspaceAuthoringTreeSnapshot(
-  options: BuildWorkspaceAuthoringSnapshotOptions,
-): WorkspaceAuthoringTreeSnapshot {
+}): WorkspaceAuthoringTreeSnapshot {
   const sourceFiles = normalizeFiles(options.sourceFiles, 'source', options.getPathWritable);
   const virtualFiles = normalizeFiles(options.virtualFiles, 'virtual', options.getPathWritable);
-  const allPaths = new Set<string>();
-
-  for (const file of [...sourceFiles, ...virtualFiles]) {
-    if (allPaths.has(file.path)) {
+  const files = [...sourceFiles, ...virtualFiles].sort(compareFiles);
+  const paths = new Set<string>();
+  for (const file of files) {
+    if (paths.has(file.path)) {
       throw new Error(`Workspace authoring files contain duplicate path: ${file.path}`);
     }
-    allPaths.add(file.path);
+    paths.add(file.path);
   }
-
-  const files = [...sourceFiles, ...virtualFiles].sort(compareSnapshotFiles);
-  const snapshotId = hashStableValue(
-    files.map((file) => ({
-      ...stableFileValue(file.source),
-      kind: file.kind,
-      path: file.path,
-      language: file.language,
-      writable: file.writable,
-      persisted: file.persisted,
-    })),
-  );
-
   return {
-    snapshotId,
+    snapshotId: hashWorkspaceAuthoringValue(files.map(({ source: _source, ...file }) => file)),
     sourceFiles,
     virtualFiles,
     files,
@@ -80,70 +60,64 @@ export function toCodeAuthoringFileMeta(file: WorkspaceAuthoringSnapshotFile): C
     hash: file.hash,
     kind: file.kind,
     writable: file.writable,
-    persisted: file.persisted,
-    size: file.size,
     ...(file.description ? { description: file.description } : {}),
   };
 }
 
 export function cloneWorkspaceAuthoringFiles(files: WorkspaceAuthoringFile[]): WorkspaceAuthoringFile[] {
-  return files.map((file) => ({
-    ...file,
-    ...(file.metadata ? { metadata: cloneStableValue(file.metadata) as Record<string, unknown> } : {}),
-  }));
+  return files.map((file) => ({ ...file }));
 }
 
 export function normalizeWorkspaceAuthoringPath(path: string): string {
   if (typeof path !== 'string' || path.includes('\0')) {
     throw new Error('Workspace authoring path must be a non-empty text path');
   }
-
   const trimmed = path.trim();
   if (!trimmed || /^(?:[a-zA-Z]:[\\/]|[\\/]{1,2})/.test(trimmed)) {
     throw new Error(`Workspace authoring path must be relative: ${path}`);
   }
-
   const segments = trimmed.replace(/\\/g, '/').split('/');
-  const normalizedSegments: string[] = [];
-  for (const segment of segments) {
-    if (!segment || segment === '.') {
-      continue;
-    }
-    if (segment === '..') {
-      throw new Error(`Workspace authoring path cannot contain '..': ${path}`);
-    }
-    normalizedSegments.push(segment);
+  if (segments.some((segment) => segment === '..')) {
+    throw new Error(`Workspace authoring path cannot contain '..': ${path}`);
   }
-
-  if (!normalizedSegments.length) {
+  const normalized = segments.filter((segment) => segment && segment !== '.').join('/');
+  if (!normalized) {
     throw new Error('Workspace authoring path must not be empty');
   }
-
-  return normalizedSegments.join('/');
+  return normalized;
 }
 
 export function inferWorkspaceAuthoringLanguage(path: string): string {
   const extension = path.split('.').pop()?.toLowerCase();
-  const languageByExtension: Record<string, string> = {
-    css: 'css',
-    html: 'html',
-    js: 'javascript',
-    jsx: 'javascriptreact',
-    json: 'json',
-    md: 'markdown',
-    mjs: 'javascript',
-    cjs: 'javascript',
-    ts: 'typescript',
-    tsx: 'typescriptreact',
-    txt: 'plaintext',
-    yaml: 'yaml',
-    yml: 'yaml',
-  };
-  return (extension && languageByExtension[extension]) || 'plaintext';
+  return (
+    (extension &&
+      {
+        css: 'css',
+        html: 'html',
+        js: 'javascript',
+        jsx: 'javascriptreact',
+        json: 'json',
+        md: 'markdown',
+        mjs: 'javascript',
+        cjs: 'javascript',
+        ts: 'typescript',
+        tsx: 'typescriptreact',
+        txt: 'plaintext',
+        yaml: 'yaml',
+        yml: 'yaml',
+      }[extension]) ||
+    'plaintext'
+  );
 }
 
 export function hashWorkspaceAuthoringValue(value: unknown): string {
-  return hashStableValue(value);
+  const input = JSON.stringify(toStableValue(value)) ?? 'undefined';
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `wa-${(hash >>> 0).toString(36)}`;
 }
 
 function normalizeFiles(
@@ -151,84 +125,30 @@ function normalizeFiles(
   kind: CodeAuthoringFileKind,
   getPathWritable?: (path: string, file: WorkspaceAuthoringFile) => boolean,
 ): WorkspaceAuthoringSnapshotFile[] {
-  return cloneWorkspaceAuthoringFiles(files)
-    .map((file) => {
-      const path = normalizeWorkspaceAuthoringPath(file.path);
-      const language = file.language?.trim() || inferWorkspaceAuthoringLanguage(path);
-      const writableByFile = file.writable !== false && file.readOnly !== true;
-      const writable = kind === 'source' && writableByFile && (getPathWritable?.(path, file) ?? true);
-      const persisted = kind === 'source' ? file.persisted !== false : file.persisted === true;
-      const normalizedSource: WorkspaceAuthoringFile = {
-        ...file,
-        path,
-        content: file.content || '',
-        language,
-      };
-      const metadataForHash = {
-        ...stableFileValue(normalizedSource),
-        kind,
-        path,
-        language,
-        writable,
-        persisted,
-      };
-
-      return {
-        path,
-        content: normalizedSource.content,
-        language,
-        hash: hashStableValue(metadataForHash),
-        kind,
-        writable,
-        persisted,
-        size: new TextEncoder().encode(normalizedSource.content).byteLength,
-        ...(file.description ? { description: file.description } : {}),
-        source: normalizedSource,
-      };
-    })
-    .sort(compareSnapshotFiles);
+  return files.map((source) => {
+    const path = normalizeWorkspaceAuthoringPath(source.path);
+    const language = source.language?.trim() || inferWorkspaceAuthoringLanguage(path);
+    const normalizedSource = { ...source, path, language, content: source.content || '' };
+    const writable =
+      kind === 'source' &&
+      source.readOnly !== true &&
+      source.writable !== false &&
+      (getPathWritable?.(path, normalizedSource) ?? true);
+    return {
+      path,
+      content: normalizedSource.content,
+      language,
+      hash: hashWorkspaceAuthoringValue({ path, content: normalizedSource.content, language, kind, writable }),
+      kind,
+      writable,
+      ...(source.description ? { description: source.description } : {}),
+      source: normalizedSource,
+    };
+  });
 }
 
-function compareSnapshotFiles(left: WorkspaceAuthoringSnapshotFile, right: WorkspaceAuthoringSnapshotFile): number {
-  const pathOrder = left.path.localeCompare(right.path);
-  if (pathOrder !== 0) {
-    return pathOrder;
-  }
-  return left.kind.localeCompare(right.kind);
-}
-
-function stableFileValue(file: WorkspaceAuthoringFile): Record<string, unknown> {
-  const value: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(file)) {
-    if (typeof entry !== 'function' && entry !== undefined) {
-      value[key] = entry;
-    }
-  }
-  return value;
-}
-
-function hashStableValue(value: unknown): string {
-  const input = stableStringify(value);
-  let first = 0x811c9dc5;
-  let second = 0x9e3779b9;
-
-  for (let index = 0; index < input.length; index += 1) {
-    const code = input.charCodeAt(index);
-    first ^= code;
-    first = Math.imul(first, 0x01000193);
-    second ^= code + index;
-    second = Math.imul(second, 0x85ebca6b);
-  }
-
-  return `wa-${toHex(first)}${toHex(second)}`;
-}
-
-function toHex(value: number): string {
-  return (value >>> 0).toString(16).padStart(8, '0');
-}
-
-function stableStringify(value: unknown): string {
-  return JSON.stringify(toStableValue(value));
+function compareFiles(left: WorkspaceAuthoringSnapshotFile, right: WorkspaceAuthoringSnapshotFile): number {
+  return left.path.localeCompare(right.path) || left.kind.localeCompare(right.kind);
 }
 
 function toStableValue(value: unknown): unknown {
@@ -243,23 +163,5 @@ function toStableValue(value: unknown): unknown {
         .map(([key, entry]) => [key, toStableValue(entry)]),
     );
   }
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-  if (typeof value === 'number' && !Number.isFinite(value)) {
-    return String(value);
-  }
-  return value;
-}
-
-function cloneStableValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(cloneStableValue);
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, cloneStableValue(entry)]),
-    );
-  }
-  return value;
+  return typeof value === 'bigint' || (typeof value === 'number' && !Number.isFinite(value)) ? String(value) : value;
 }

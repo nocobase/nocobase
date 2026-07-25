@@ -23,12 +23,6 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
-import {
-  getChatApplicationKey,
-  getWorkspaceCodingTargetMetadata,
-  restoreSessionWorkspaceCodingTargetFromMessages,
-  restoreSessionWorkspaceCodingTargetFromMetadata,
-} from '../stores/chat-messages';
 
 const STREAM_UPDATE_INTERVAL = 50;
 
@@ -70,7 +64,6 @@ type MessagesResponse = {
   meta: {
     cursor?: string;
     hasMore?: boolean;
-    codingTarget?: unknown;
   };
 };
 
@@ -246,17 +239,6 @@ export const useChatMessageActions = () => {
           return;
         }
         const newMessages = [...data.data].reverse();
-        if (!cursor) {
-          const applicationKey = getChatApplicationKey(app);
-          const restoredFromMetadata = restoreSessionWorkspaceCodingTargetFromMetadata(
-            sessionId,
-            applicationKey,
-            data.meta?.codingTarget,
-          );
-          if (!restoredFromMetadata) {
-            restoreSessionWorkspaceCodingTargetFromMessages(sessionId, applicationKey, newMessages);
-          }
-        }
         const services = !cursor ? await aiConfigRepository.getLLMServices() : [];
         const conversationModel = !cursor ? getConversationModel(newMessages, services) : null;
         if (conversationModel) {
@@ -325,7 +307,6 @@ export const useChatMessageActions = () => {
     },
     [
       api,
-      app,
       aiConfigRepository,
       getConversationModel,
       getSessionChat,
@@ -780,11 +761,6 @@ export const useChatMessageActions = () => {
     const lastRenderedMessage = renderedSessionMessages.at(-1);
 
     const parsedWorkContext = await parseWorkContext(app, Array.isArray(workContext) ? workContext : []);
-    const sessionCodingTarget = sessionChat.codingTarget;
-    const codingTarget =
-      sessionCodingTarget?.applicationKey === getChatApplicationKey(app)
-        ? getWorkspaceCodingTargetMetadata(sessionCodingTarget)
-        : undefined;
     const msgs = sendMsgs.map((msg, index) => ({
       key: randomId(),
       role: 'user',
@@ -825,7 +801,6 @@ export const useChatMessageActions = () => {
           aiEmployee,
           systemMessage,
           skillSettings,
-          ...(codingTarget ? { codingTarget } : {}),
           modelSettings: model
             ? {
                 llmService: model.llmService,
@@ -879,7 +854,6 @@ export const useChatMessageActions = () => {
           editingMessageId,
           model,
           webSearch,
-          ...(codingTarget ? { codingTarget } : {}),
         },
         responseType: 'stream',
         adapter: 'fetch',

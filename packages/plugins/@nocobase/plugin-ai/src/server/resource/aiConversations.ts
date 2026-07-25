@@ -8,6 +8,7 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
+import type { ToolsEntry } from '@nocobase/ai';
 import PluginAIServer from '../plugin';
 import { Model, Op } from '@nocobase/database';
 import { ResourceActionError, sendSSEError } from '../utils';
@@ -16,10 +17,6 @@ import { AIMessageInput } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { EXECUTE_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import { findCurrentFrontendTool } from '../frontend-tools';
-import {
-  isSameWorkspaceCodingTargetMetadata,
-  parseWorkspaceCodingTargetMetadata,
-} from '../../common/workspace-coding-target';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -192,18 +189,8 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      const {
-        aiEmployee,
-        systemMessage,
-        skillSettings,
-        conversationSettings,
-        modelSettings,
-        codingTarget: rawCodingTarget,
-      } = ctx.action.params.values || {};
-      const codingTarget = parseWorkspaceCodingTargetMetadata(rawCodingTarget);
-      if (rawCodingTarget !== undefined && !codingTarget) {
-        ctx.throw(400, ctx.t('Invalid workspace coding target'));
-      }
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
+        ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -221,7 +208,6 @@ export default {
             skillSettings,
             conversationSettings,
             modelSettings,
-            ...(codingTarget ? { codingTarget } : {}),
           },
         });
       } catch (error) {
@@ -366,7 +352,6 @@ export default {
         model,
         webSearch,
         stream = true,
-        codingTarget: rawCodingTarget,
       } = ctx.action.params.values || {};
 
       const shouldStream = stream !== false;
@@ -383,10 +368,6 @@ export default {
           throw new ResourceActionError(400, ctx.t('messages must be an array'));
         }
         const incomingMessages = messages as AIMessageInput[];
-        const codingTarget = parseWorkspaceCodingTargetMetadata(rawCodingTarget);
-        if (rawCodingTarget !== undefined && !codingTarget) {
-          throw new ResourceActionError(400, ctx.t('Invalid workspace coding target'));
-        }
         normalizeIncomingMessageAttachments(ctx, incomingMessages);
         const userMessage = incomingMessages.find((message) => message.role === 'user');
         if (!userMessage) {
@@ -407,7 +388,6 @@ export default {
           throw new ResourceActionError(400, ctx.t('AI employee not found'));
         }
 
-        let conversationChanged = false;
         if (!conversation.title) {
           const textUserMessage = incomingMessages.find(
             (message) =>
@@ -420,30 +400,8 @@ export default {
           const content = textUserMessage?.content.content;
           if (typeof content === 'string' && content) {
             conversation.title = content.substring(0, 30);
-            conversationChanged = true;
+            await conversation.save();
           }
-        }
-
-        if (codingTarget) {
-          const options = isRecord(conversation.options) ? conversation.options : {};
-          const storedCodingTarget = parseWorkspaceCodingTargetMetadata(options.codingTarget);
-          if (options.codingTarget !== undefined && !storedCodingTarget) {
-            throw new ResourceActionError(409, ctx.t('Conversation workspace coding target is invalid'));
-          }
-          if (storedCodingTarget && !isSameWorkspaceCodingTargetMetadata(storedCodingTarget, codingTarget)) {
-            throw new ResourceActionError(409, ctx.t('Conversation workspace coding target cannot be changed'));
-          }
-          if (!storedCodingTarget) {
-            conversation.options = {
-              ...options,
-              codingTarget,
-            };
-            conversationChanged = true;
-          }
-        }
-
-        if (conversationChanged) {
-          await conversation.save();
         }
 
         if (await isReachParallelLimit(ctx)) {
@@ -815,7 +773,7 @@ export default {
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
-      const toolsList = await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId, ctx });
+      const toolsList = (await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId, ctx })) as ToolsEntry[];
       const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
 
       for (const toolCall of toolCalls) {

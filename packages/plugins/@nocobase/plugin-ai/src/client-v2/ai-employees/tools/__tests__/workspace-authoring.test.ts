@@ -7,299 +7,113 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { CodeAuthoringCapabilities, CodeAuthoringSnapshot, CodeAuthoringSurface } from '@nocobase/client-v2';
+import type { CodeAuthoringSnapshot, CodeAuthoringSurface } from '@nocobase/client-v2';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CodeWorkspaceContext } from '../../context/code-workspace';
-import { executeFrontendTool } from '../../frontend-tools';
-import { FrontendToolRegistry } from '../../../manager/frontend-tool-registry';
-import { registerWorkspaceAuthoringTools, WORKSPACE_AUTHORING_TOOL_NAMES } from '../workspace-authoring';
+import { executeFrontendTool, loadFrontendTool } from '../../frontend-tools';
+import { getWorkspaceAuthoringToolManifests, WORKSPACE_AUTHORING_TOOL_NAMES } from '../workspace-authoring';
 
-const fullCapabilities: CodeAuthoringCapabilities = {
-  describe: true,
-  listFiles: true,
-  readFiles: true,
-  search: true,
-  prepareChanges: true,
-  applyPreparedChanges: true,
-  validateDraft: true,
-  reveal: true,
-  supportedChanges: ['create', 'update', 'patch', 'delete'],
-};
-
-function createSnapshot(capabilities: CodeAuthoringCapabilities = fullCapabilities): CodeAuthoringSnapshot {
+function createSnapshot(snapshotId: string): CodeAuthoringSnapshot {
   return {
     surfaceId: 'workspace-1',
     kind: 'runjs-studio',
     title: 'Workspace one',
-    scope: { type: 'flowModel.step', id: 'repo-1' },
-    snapshotId: 'snapshot-1',
+    snapshotId,
     activePath: 'src/index.ts',
     files: [
       {
         path: 'src/index.ts',
         language: 'typescript',
-        hash: 'hash-1',
+        hash: `hash-${snapshotId}`,
         kind: 'source',
         writable: true,
-        persisted: true,
-        size: 9,
       },
     ],
     diagnostics: [],
-    capabilities,
   };
 }
 
-function createSurface(snapshotRef: { current: CodeAuthoringSnapshot }): CodeAuthoringSurface {
+function createSurface(snapshotId: string, content = 'export const value = 1;'): CodeAuthoringSurface {
+  const snapshot = createSnapshot(snapshotId);
   return {
     id: 'workspace-1',
-    describe: vi.fn(async () => snapshotRef.current),
-    getSnapshot: vi.fn(async () => snapshotRef.current),
-    list: vi.fn(async () => snapshotRef.current.files),
-    read: vi.fn(async (paths) =>
-      paths.map((path) => ({
-        ...snapshotRef.current.files[0],
-        path,
-        content: `content:${path}`,
-      })),
-    ),
-    search: vi.fn(async () => [{ path: 'src/index.ts', line: 1, column: 1, preview: 'return 1' }]),
+    getSnapshot: vi.fn(async () => snapshot),
+    read: vi.fn(async () => [{ ...snapshot.files[0], content }]),
+    search: vi.fn(async () => [{ path: 'src/index.ts', line: 1, column: 1, preview: content }]),
     prepareChanges: vi.fn(async (input) => ({
       planId: 'plan-1',
       surfaceId: 'workspace-1',
       baseSnapshotId: input.baseSnapshotId,
       changes: input.changes,
-      diffs: [{ path: 'src/helper.ts', status: 'created', after: 'export const helper = 1;' }],
+      diffs: [{ path: 'src/index.ts', status: 'modified', before: content, after: 'updated' }],
     })),
-    applyPreparedChanges: vi.fn(async (planId) => ({
+    applyPreparedChanges: vi.fn(async () => ({
       surfaceId: 'workspace-1',
-      snapshot: snapshotRef.current,
-      changedPaths: planId === 'plan-1' ? ['src/helper.ts'] : [],
-      saved: false,
+      snapshotId: 'snapshot-applied',
+      changedPaths: ['src/index.ts'],
     })),
     validateDraft: vi.fn(async () => ({
       surfaceId: 'workspace-1',
-      snapshotId: snapshotRef.current.snapshotId,
+      snapshotId,
       diagnostics: [],
       stale: false,
-      saved: false,
     })),
-    reveal: vi.fn(async () => undefined),
   };
 }
 
 describe('workspace authoring frontend tools', () => {
-  let snapshotRef: { current: CodeAuthoringSnapshot };
-  let surface: CodeAuthoringSurface;
   let surfaces: Map<string, CodeAuthoringSurface>;
-  let registry: FrontendToolRegistry;
   let app: {
     aiManager: { authoringSurfaces: { get: (surfaceId: string) => CodeAuthoringSurface | undefined } };
-    pm: { get: () => { aiManager: { frontendTools: FrontendToolRegistry } } };
+    pm: { get: () => undefined };
   };
 
   beforeEach(() => {
-    snapshotRef = { current: createSnapshot() };
-    surface = createSurface(snapshotRef);
-    surfaces = new Map([['workspace-1', surface]]);
-    registry = new FrontendToolRegistry();
+    surfaces = new Map([['workspace-1', createSurface('snapshot-1')]]);
     app = {
       aiManager: { authoringSurfaces: { get: (surfaceId) => surfaces.get(surfaceId) } },
-      pm: { get: () => ({ aiManager: { frontendTools: registry } }) },
+      pm: { get: () => undefined },
     };
   });
 
-  it('registers the scoped catalog with ALLOW reads and ASK apply, without preview or save tools', async () => {
-    const manifests = await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    const permissions = Object.fromEntries(manifests.map((manifest) => [manifest.name, manifest.permission]));
+  it('publishes six scoped tools and requires approval only for apply', async () => {
+    const manifests = getWorkspaceAuthoringToolManifests('workspace-1');
 
     expect(manifests.map((manifest) => manifest.name)).toEqual(Object.values(WORKSPACE_AUTHORING_TOOL_NAMES));
-    expect(permissions).toMatchObject({
+    expect(Object.fromEntries(manifests.map((manifest) => [manifest.name, manifest.permission]))).toMatchObject({
       workspaceDescribe: 'ALLOW',
-      workspaceListFiles: 'ALLOW',
       workspaceReadFiles: 'ALLOW',
       workspaceSearch: 'ALLOW',
       workspacePrepareChanges: 'ALLOW',
       workspaceApplyPreparedChanges: 'ASK',
       workspaceValidateDraft: 'ALLOW',
     });
-    expect(manifests.map((manifest) => manifest.name)).not.toEqual(
-      expect.arrayContaining(['workspaceRunPreview', 'workspaceSave']),
-    );
-    expect(manifests.every((manifest) => manifest.id === `workspace-1:${manifest.name}`)).toBe(true);
-  });
-
-  it('keeps prepare side-effect free and applies only the opaque plan id', async () => {
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    const changes = [{ type: 'create' as const, path: 'src/helper.ts', content: 'export const helper = 1;' }];
-
     await expect(
-      registry.execute('workspace-1:workspacePrepareChanges', {
-        baseSnapshotId: 'snapshot-1',
-        changes,
-      }),
-    ).resolves.toMatchObject({
-      status: 'success',
-      content: { planId: 'plan-1', diffs: [{ path: 'src/helper.ts' }] },
-    });
-    expect(surface.applyPreparedChanges).not.toHaveBeenCalled();
-
-    await expect(
-      registry.execute('workspace-1:workspaceApplyPreparedChanges', { planId: 'plan-1' }),
-    ).resolves.toMatchObject({
-      status: 'success',
-      content: { changedPaths: ['src/helper.ts'], saved: false },
-    });
-    expect(surface.applyPreparedChanges).toHaveBeenCalledWith('plan-1');
+      loadFrontendTool[1].invoke?.(app as never, { toolId: 'workspace-1:workspaceApplyPreparedChanges' }),
+    ).resolves.toMatchObject({ permission: 'ASK' });
   });
 
-  it('omits disabled capabilities and rechecks the bound surface instance at execution time', async () => {
-    snapshotRef.current = createSnapshot({
-      ...fullCapabilities,
-      prepareChanges: false,
-      applyPreparedChanges: false,
-      unavailableReason: 'Read-only repository',
-    });
-    const manifests = await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    expect(manifests.map((manifest) => manifest.name)).not.toEqual(
-      expect.arrayContaining(['workspacePrepareChanges', 'workspaceApplyPreparedChanges']),
-    );
-
-    snapshotRef.current = createSnapshot();
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    surfaces.set('workspace-1', createSurface(snapshotRef));
-    await expect(registry.execute('workspace-1:workspaceDescribe', {})).resolves.toMatchObject({
-      status: 'error',
-      content: { code: 'WORKSPACE_SURFACE_UNAVAILABLE', surfaceId: 'workspace-1' },
-    });
-  });
-
-  it('resolves fresh safe snapshot metadata and scoped tools from code-workspace context', async () => {
-    const item = {
-      type: 'code-workspace',
-      uid: 'workspace-1',
-      title: 'Workspace one',
-      content: { surfaceId: 'workspace-1', title: 'stale lightweight content' },
-    };
-    snapshotRef.current = { ...createSnapshot(), snapshotId: 'snapshot-latest' };
-
-    await expect(CodeWorkspaceContext.getContent?.(app as never, item)).resolves.toMatchObject({
-      surfaceId: 'workspace-1',
-      snapshotId: 'snapshot-latest',
-      files: [expect.objectContaining({ path: 'src/index.ts' })],
-    });
-    const manifests = await CodeWorkspaceContext.getFrontendTools?.(app as never, item);
-    expect(manifests?.every((manifest) => manifest.blockUid === 'workspace-1')).toBe(true);
-    expect(manifests).toHaveLength(7);
-
-    surfaces.delete('workspace-1');
-    await expect(CodeWorkspaceContext.getContent?.(app as never, item)).resolves.toMatchObject({
-      status: 'error',
-      error: { code: 'WORKSPACE_SURFACE_UNAVAILABLE' },
-    });
-    await expect(registry.execute('workspace-1:workspaceDescribe', {})).resolves.toMatchObject({
-      status: 'error',
-      content: { code: 'WORKSPACE_SURFACE_UNAVAILABLE' },
-    });
-  });
-
-  it('rejects mismatched snapshots and clears stale closures when registration can no longer snapshot', async () => {
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    expect(registry.list('workspace-1')).toHaveLength(7);
-
-    snapshotRef.current = { ...createSnapshot(), surfaceId: 'workspace-other' };
-    await expect(
-      CodeWorkspaceContext.getContent?.(app as never, {
-        type: 'code-workspace',
-        uid: 'workspace-1',
-        content: { surfaceId: 'workspace-1' },
-      }),
-    ).resolves.toMatchObject({
-      status: 'error',
-      error: { code: 'WORKSPACE_SURFACE_MISMATCH' },
-    });
-    await expect(registerWorkspaceAuthoringTools(app, registry, 'workspace-1')).resolves.toEqual([]);
-    expect(registry.list('workspace-1')).toEqual([]);
-
-    snapshotRef.current = createSnapshot();
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    vi.mocked(surface.getSnapshot).mockRejectedValueOnce(new Error('disposed'));
-    await expect(registerWorkspaceAuthoringTools(app, registry, 'workspace-1')).resolves.toEqual([]);
-    expect(registry.list('workspace-1')).toEqual([]);
-  });
-
-  it('rejects results from a surface that is replaced while an async tool or context call is pending', async () => {
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    let resolveList: ((files: CodeAuthoringSnapshot['files']) => void) | undefined;
-    vi.mocked(surface.list).mockImplementationOnce(
-      () =>
-        new Promise<CodeAuthoringSnapshot['files']>((resolve) => {
-          resolveList = resolve;
-        }),
-    );
-    const listPromise = registry.execute('workspace-1:workspaceListFiles', {});
-    await vi.waitFor(() => expect(surface.list).toHaveBeenCalled());
-    surfaces.set('workspace-1', createSurface(snapshotRef));
-    resolveList?.(snapshotRef.current.files);
-    await expect(listPromise).resolves.toMatchObject({
-      status: 'error',
-      content: { code: 'WORKSPACE_SURFACE_UNAVAILABLE', surfaceId: 'workspace-1' },
-    });
-
-    surfaces.set('workspace-1', surface);
-    let resolveDescription: ((snapshot: CodeAuthoringSnapshot) => void) | undefined;
-    vi.mocked(surface.describe).mockImplementationOnce(
-      () =>
-        new Promise<CodeAuthoringSnapshot>((resolve) => {
-          resolveDescription = resolve;
-        }),
-    );
-    const contextPromise = CodeWorkspaceContext.getContent?.(app as never, {
-      type: 'code-workspace',
-      uid: 'workspace-1',
-      content: { surfaceId: 'workspace-1' },
-    });
-    await vi.waitFor(() => expect(surface.describe).toHaveBeenCalled());
-    surfaces.set('workspace-1', createSurface(snapshotRef));
-    resolveDescription?.(snapshotRef.current);
-    await expect(contextPromise).resolves.toMatchObject({
-      status: 'error',
-      error: { code: 'WORKSPACE_SURFACE_UNAVAILABLE' },
-    });
-  });
-
-  it('reports a completed apply as successful when the surface is replaced after commit', async () => {
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    let resolveApply: ((result: Awaited<ReturnType<CodeAuthoringSurface['applyPreparedChanges']>>) => void) | undefined;
-    vi.mocked(surface.applyPreparedChanges).mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveApply = resolve;
-        }),
-    );
-
-    const applyPromise = registry.execute('workspace-1:workspaceApplyPreparedChanges', { planId: 'plan-1' });
-    await vi.waitFor(() => expect(surface.applyPreparedChanges).toHaveBeenCalledWith('plan-1'));
-    surfaces.set('workspace-1', createSurface(snapshotRef));
-    resolveApply?.({
-      surfaceId: 'workspace-1',
-      snapshot: snapshotRef.current,
-      changedPaths: ['src/helper.ts'],
-      saved: false,
-    });
-
-    await expect(applyPromise).resolves.toMatchObject({
-      status: 'success',
-      content: { changedPaths: ['src/helper.ts'], saved: false },
-    });
-  });
-
-  it('rebinds workspace tools to the current same-id surface after apply cleanup', async () => {
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    registry.clear('workspace-1');
-    const remountedSurface = createSurface(snapshotRef);
+  it('looks up the current same-id surface for every execution', async () => {
+    const oldSurface = surfaces.get('workspace-1');
+    const remountedSurface = createSurface('snapshot-2', 'export const value = 2;');
     surfaces.set('workspace-1', remountedSurface);
+
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspaceReadFiles',
+        args: { paths: ['src/index.ts'] },
+      }),
+    ).resolves.toMatchObject({
+      status: 'success',
+      content: { files: [expect.objectContaining({ content: 'export const value = 2;' })] },
+    });
+    expect(oldSurface?.read).not.toHaveBeenCalled();
+    expect(remountedSurface.read).toHaveBeenCalledWith(['src/index.ts']);
+  });
+
+  it('returns a structured error when the surface is unavailable', async () => {
+    surfaces.clear();
 
     await expect(
       executeFrontendTool[1].invoke?.(app as never, {
@@ -307,54 +121,58 @@ describe('workspace authoring frontend tools', () => {
         args: {},
       }),
     ).resolves.toMatchObject({
-      status: 'success',
-      content: { surfaceId: 'workspace-1', diagnostics: [] },
-    });
-    expect(surface.validateDraft).not.toHaveBeenCalled();
-    expect(remountedSurface.validateDraft).toHaveBeenCalledTimes(1);
-    expect(registry.list('workspace-1')).toHaveLength(7);
-  });
-
-  it('does not let an old async registration clear tools registered by a same-id remount', async () => {
-    let resolveOldSnapshot: ((snapshot: CodeAuthoringSnapshot) => void) | undefined;
-    vi.mocked(surface.getSnapshot).mockImplementationOnce(
-      () =>
-        new Promise<CodeAuthoringSnapshot>((resolve) => {
-          resolveOldSnapshot = resolve;
-        }),
-    );
-    const oldRegistration = registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    await vi.waitFor(() => expect(surface.getSnapshot).toHaveBeenCalledTimes(1));
-
-    const remountedSurface = createSurface(snapshotRef);
-    surfaces.set('workspace-1', remountedSurface);
-    await expect(registerWorkspaceAuthoringTools(app, registry, 'workspace-1')).resolves.toHaveLength(7);
-    resolveOldSnapshot?.(snapshotRef.current);
-    await expect(oldRegistration).resolves.toEqual([]);
-
-    expect(registry.list('workspace-1')).toHaveLength(7);
-    await expect(registry.execute('workspace-1:workspaceDescribe', {})).resolves.toMatchObject({
-      status: 'success',
-      content: { surfaceId: 'workspace-1' },
+      status: 'error',
+      content: { code: 'WORKSPACE_SURFACE_UNAVAILABLE', surfaceId: 'workspace-1' },
     });
   });
 
-  it('rejects malformed runtime changes before calling the authoring surface', async () => {
-    await registerWorkspaceAuthoringTools(app, registry, 'workspace-1');
-    const malformedChanges = [
-      { type: 'rename', path: 'src/index.ts', baseHash: 'hash-1', content: 'broken' },
-      { type: 'update', path: 'src/index.ts', baseHash: 'hash-1', content: { invalid: true } },
-      { type: 'delete', path: 'src/index.ts', baseHash: 'hash-1', changes: [] },
-    ];
+  it('validates change arguments before invoking the surface', async () => {
+    const surface = surfaces.get('workspace-1');
 
-    for (const change of malformedChanges) {
-      await expect(
-        registry.execute('workspace-1:workspacePrepareChanges', {
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspacePrepareChanges',
+        args: {
           baseSnapshotId: 'snapshot-1',
-          changes: [change],
-        }),
-      ).resolves.toMatchObject({ status: 'error', content: { code: 'WORKSPACE_TOOL_ERROR' } });
+          changes: [{ type: 'patch', path: 'src/index.ts', patch: 'unsupported' }],
+        },
+      }),
+    ).resolves.toMatchObject({ status: 'error', content: { code: 'WORKSPACE_TOOL_ERROR' } });
+    expect(surface?.prepareChanges).not.toHaveBeenCalled();
+  });
+
+  it('reports truncated search previews', async () => {
+    const surface = surfaces.get('workspace-1');
+    if (!surface) {
+      throw new Error('Expected workspace surface');
     }
-    expect(surface.prepareChanges).not.toHaveBeenCalled();
+    vi.mocked(surface.search).mockResolvedValue([
+      { path: 'src/index.ts', line: 1, column: 1, preview: 'x'.repeat(1_001) },
+    ]);
+
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspaceSearch',
+        args: { query: 'x' },
+      }),
+    ).resolves.toMatchObject({ status: 'success', content: { truncated: true } });
+  });
+
+  it('resolves fresh snapshots and scoped manifests from workspace context', async () => {
+    const item = {
+      type: 'code-workspace',
+      uid: 'workspace-1',
+      content: { surfaceId: 'workspace-1', title: 'stale content' },
+    };
+
+    await expect(CodeWorkspaceContext.getContent?.(app as never, item)).resolves.toMatchObject({
+      surfaceId: 'workspace-1',
+      snapshotId: 'snapshot-1',
+    });
+    surfaces.set('workspace-1', createSurface('snapshot-2'));
+    await expect(CodeWorkspaceContext.getContent?.(app as never, item)).resolves.toMatchObject({
+      snapshotId: 'snapshot-2',
+    });
+    await expect(CodeWorkspaceContext.getFrontendTools?.(app as never, item)).resolves.toHaveLength(6);
   });
 });
