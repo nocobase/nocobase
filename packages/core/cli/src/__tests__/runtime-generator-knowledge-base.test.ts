@@ -58,6 +58,15 @@ describe('knowledge base runtime generator', () => {
     expect(runtime.commands.some((command) => command.commandId.startsWith('kb tasks '))).toBe(false);
   });
 
+  it('generates repeatable fields flags for knowledge base collection lists', async () => {
+    for (const commandId of ['kb vector-databases list', 'kb list', 'kb documents list']) {
+      const command = await getCommand(commandId);
+      expect(command.parameters).toContainEqual(
+        expect.objectContaining({ flagName: 'fields', in: 'query', type: 'array', isArray: true }),
+      );
+    }
+  });
+
   it('generates JSON body flags for connection testing, knowledge base writes, and hit testing', async () => {
     const connection = await getCommand('kb vector-databases test-connection');
     expect(connection.parameters).toEqual(

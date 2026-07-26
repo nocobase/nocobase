@@ -54,6 +54,15 @@ describe('AI runtime generator', () => {
     expect(runtime.commands.some((command) => command.commandId.startsWith('ai settings '))).toBe(false);
   });
 
+  it('generates repeatable fields flags for AI collection lists', async () => {
+    for (const commandId of ['ai llm-services list', 'ai employees list']) {
+      const command = await getCommand(commandId);
+      expect(command.parameters).toContainEqual(
+        expect.objectContaining({ flagName: 'fields', in: 'query', type: 'array', isArray: true }),
+      );
+    }
+  });
+
   it('generates JSON body flags for provider discovery and strict LLM service writes', async () => {
     const providerModels = await getCommand('ai llm-providers list-provider-models');
     expect(providerModels.parameters).toEqual(

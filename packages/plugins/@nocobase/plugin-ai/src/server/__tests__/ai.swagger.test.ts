@@ -80,6 +80,14 @@ describe('AI plugin Swagger', () => {
     expect(document.paths['/aiEmployees:getTemplates']).toBeUndefined();
   });
 
+  it('exposes fields projection on collection list actions', () => {
+    for (const path of ['/llmServices:list', '/aiEmployees:list']) {
+      expect(getOperation(path, 'get')?.parameters).toContainEqual(
+        expect.objectContaining({ name: 'fields', in: 'query' }),
+      );
+    }
+  });
+
   it('keeps custom action parameters aligned with their server action parameter sources', () => {
     expect(getRequestSchema('/ai:listProviderModels', 'post')).toBe(schemas.LLMProviderModelsRequest);
     expect(getRequestSchema('/ai:testFlight', 'post')).toBe(schemas.LLMTestFlightRequest);

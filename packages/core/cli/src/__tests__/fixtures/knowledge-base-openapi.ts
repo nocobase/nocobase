@@ -16,6 +16,7 @@ const filterByTkParameter = {
 
 const listParameters = [
   { name: 'filter', in: 'query', schema: { type: 'object', additionalProperties: true } },
+  { name: 'fields', in: 'query', schema: { type: 'array', items: { type: 'string' } } },
   { name: 'sort', in: 'query', schema: { type: 'array', items: { type: 'string' } } },
   { name: 'page', in: 'query', schema: { type: 'integer' } },
   { name: 'pageSize', in: 'query', schema: { type: 'integer' } },

@@ -65,6 +65,17 @@ export const listParameters = [
     },
   },
   {
+    name: 'fields',
+    in: 'query',
+    description: 'Fields to include in the response.',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+    },
+  },
+  {
     name: 'sort',
     in: 'query',
     description: 'Sort fields. Prefix a field with - for descending order.',
