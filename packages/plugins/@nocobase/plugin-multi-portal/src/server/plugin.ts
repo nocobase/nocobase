@@ -107,6 +107,11 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:destroy',
   'multiPortals:deploy',
 ];
+
+type PortalDeployTarEntry = {
+  type?: unknown;
+  linkpath?: unknown;
+};
 const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = [
   'roles.multiPortals:*',
   'rolesMultiPortalDesktopRoutes:*',
@@ -491,7 +496,11 @@ function validatePortalDeployBasePath(appName: string, portalName: string, baseP
   }
 }
 
-function validatePortalDeployTarEntry(entryPath: string, entry: { type?: string; linkpath?: string }) {
+function isPortalDeployTarEntry(entry: unknown): entry is PortalDeployTarEntry {
+  return Boolean(entry) && typeof entry === 'object';
+}
+
+function validatePortalDeployTarEntry(entryPath: string, entry: unknown) {
   const normalizedEntryPath = path.normalize(entryPath);
   if (
     path.isAbsolute(entryPath) ||
@@ -502,11 +511,13 @@ function validatePortalDeployTarEntry(entryPath: string, entry: { type?: string;
     throw new Error(`Invalid dist archive entry path: ${entryPath}`);
   }
 
-  if (entry.type === 'SymbolicLink' || entry.type === 'Link') {
+  const entryType = isPortalDeployTarEntry(entry) ? entry.type : undefined;
+  if (entryType === 'SymbolicLink' || entryType === 'Link') {
     throw new Error(`Invalid dist archive link entry: ${entryPath}`);
   }
 
-  if (entry.linkpath) {
+  const linkpath = isPortalDeployTarEntry(entry) ? entry.linkpath : undefined;
+  if (linkpath) {
     throw new Error(`Invalid dist archive link target: ${entryPath}`);
   }
 

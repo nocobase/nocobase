@@ -71,6 +71,7 @@
     "@nocobase/plugin-mobile": "2.2.0-beta.15",
     "@nocobase/plugin-multi-app-manager": "2.2.0-beta.15",
     "@nocobase/plugin-multi-keyword-filter": "2.2.0-beta.15",
+    "@nocobase/plugin-multi-portal": "2.2.0-beta.15",
     "@nocobase/plugin-notification-email": "2.2.0-beta.15",
     "@nocobase/plugin-notification-in-app-message": "2.2.0-beta.15",
     "@nocobase/plugin-notification-manager": "2.2.0-beta.15",
