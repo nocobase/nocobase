@@ -7139,9 +7139,9 @@
     "@nocobase/license-kit-win32-x64-msvc" "0.3.8"
 
 "@nocobase/portal-template-default@^1.0.0":
-  version "1.0.8"
-  resolved "https://registry.npmjs.org/@nocobase/portal-template-default/-/portal-template-default-1.0.8.tgz#d699ffcbc371acaec9f79d09bdfe3704bd91062e"
-  integrity sha512-/UtuJdJySc8Oz6ZIVuXJBC5fSJK0tWu9khUCEkGSapvDsV2KA1um3Mybtgyj/KK4Vj5Obny7H1HiJk/54ynBrQ==
+  version "1.0.9"
+  resolved "https://registry.npmjs.org/@nocobase/portal-template-default/-/portal-template-default-1.0.9.tgz#232a7d4faf52f0624804bd4d899cf3ada1a80597"
+  integrity sha512-eKV8apZQ7Z9Yvkze+gHaLTXABsgBytNWYkCKT7h49OlRZ/4F+1do5jJ/0isiBhK6RiOBZcqMf0ViHN/h6cKv4g==
 
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
