@@ -35,7 +35,8 @@ describe('customVariable RunJS values', () => {
       ],
     });
 
-    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe(42);
+    // Resolves to the {success, value} envelope, matching released behavior for saved expressions that read `.value`
+    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toEqual({ success: true, value: 42 });
     expect(runjs).toHaveBeenCalledWith('return ctx.formValues.amount;', undefined, { version: 'v2' });
   });
 

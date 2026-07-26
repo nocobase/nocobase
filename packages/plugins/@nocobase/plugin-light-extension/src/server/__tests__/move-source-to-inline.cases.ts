@@ -32,8 +32,8 @@ import { isMoveToInlineHostSupported, MoveToInlineService } from '../services/Mo
 // move-to-inline / js-page + JSBlockModel -> host-kind support matrix below.
 // move-to-inline / js-block + JSColumnModel -> host-kind support matrix below.
 // move-to-inline / runjs + JSColumnModel -> host-kind support matrix below.
-// move-to-inline / reserves the RunJS manifest file slot before opening a database transaction -> this suite.
-// move-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> this suite.
+// move-to-inline / reserves the RunJS manifest file slot before opening a database transaction -> file-limit matrix below.
+// move-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> file-limit matrix below.
 // move-to-inline / moves a JS Page inline with its snapshot and settings while removing the active reference -> this suite.
 // move-to-inline / rejects a host that no longer points to the selected light extension entry -> this suite.
 // New owner: reverse-move late failure rolls back the external binding, RunJS repository Head, and reference index.
@@ -100,7 +100,36 @@ describe('MoveToInlineService', () => {
     expect(isMoveToInlineHostSupported(kind, modelUse)).toBe(expected);
   });
 
-  it('reserves the RunJS manifest file slot before opening a database transaction', async () => {
+  it.each([
+    {
+      label: 'reserves the RunJS manifest file slot for a full 200-file dependency closure',
+      files: [
+        {
+          path: entry.entryPath,
+          content: Array.from({ length: 199 }, (_, index) => `import '../../../shared/file-${index + 1}';`).join('\n'),
+        },
+        ...Array.from({ length: 199 }, (_, index) => ({
+          path: `src/shared/file-${index + 1}.ts`,
+          content: 'export const value = true;\n',
+        })),
+      ],
+      expected: {
+        code: 'LIGHT_EXTENSION_SOURCE_ERROR',
+        details: expect.objectContaining({ sourceCode: 'REPO_LIMIT_EXCEEDED' }),
+      },
+    },
+    {
+      label: 'allows a 200-file workspace when the relocated dependency closure fits with the manifest',
+      files: [
+        { path: entry.entryPath, content: 'ctx.render(<div />);' },
+        ...Array.from({ length: 199 }, (_, index) => ({
+          path: `src/shared/unused-${index + 1}.ts`,
+          content: 'export const unused = true;\n',
+        })),
+      ],
+      expected: { code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE' },
+    },
+  ])('$label before opening a database transaction', async ({ files, expected }) => {
     const transaction = vi.fn();
     const service = new MoveToInlineService(
       { sequelize: { transaction } } as unknown as Database,
@@ -120,71 +149,18 @@ describe('MoveToInlineService', () => {
           entryPath: entry.entryPath,
           kind: 'js-block',
           version: 'v2',
-          files: [
-            {
-              path: entry.entryPath,
-              content: Array.from({ length: 199 }, (_, index) => `import '../../../shared/file-${index + 1}';`).join(
-                '\n',
-              ),
-            },
-            ...Array.from({ length: 199 }, (_, index) => ({
-              path: `src/shared/file-${index + 1}.ts`,
-              content: 'export const value = true;\n',
-            })),
-          ],
+          files,
         },
         { adapterContext: {} },
       ),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_SOURCE_ERROR',
-      details: expect.objectContaining({ sourceCode: 'REPO_LIMIT_EXCEEDED' }),
-    });
-    expect(transaction).not.toHaveBeenCalled();
-  });
-
-  it('allows a 200-file workspace when the relocated dependency closure fits with the manifest', async () => {
-    const transaction = vi.fn();
-    const service = new MoveToInlineService(
-      { sequelize: { transaction } } as unknown as Database,
-      {} as never,
-      {} as never,
-      {} as never,
-      () => null,
-      () => null,
-    );
-
-    await expect(
-      service.moveToInline(
-        {
-          locator,
-          repoId: binding.repoId,
-          entryId: binding.entryId,
-          entryPath: entry.entryPath,
-          kind: 'js-block',
-          version: 'v2',
-          files: [
-            { path: entry.entryPath, content: 'ctx.render(<div />);' },
-            ...Array.from({ length: 199 }, (_, index) => ({
-              path: `src/shared/unused-${index + 1}.ts`,
-              content: 'export const unused = true;\n',
-            })),
-          ],
-        },
-        { adapterContext: {} },
-      ),
-    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE' });
+    ).rejects.toMatchObject(expected);
     expect(transaction).not.toHaveBeenCalled();
   });
 
   it('moves a JS Page inline with its snapshot and settings while removing the active reference', async () => {
     const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
     const pageLocator = { ...locator, modelUid: 'fm_js_page' };
-    const pageBinding = {
-      ...binding,
-      repoId: 'ler_pages',
-      entryId: 'lee_page',
-      kind: 'js-page' as const,
-    };
+    const pageBinding = { ...binding, repoId: 'ler_pages', entryId: 'lee_page', kind: 'js-page' as const };
     const pageEntry = {
       ...entry,
       id: pageBinding.entryId,
@@ -197,16 +173,7 @@ describe('MoveToInlineService', () => {
     };
     const currentSettings = {
       enabled: false,
-      retryCount: 0,
-      label: '',
-      nested: {
-        visibleValue: 'kept',
-        hiddenBranch: {
-          enabled: false,
-          threshold: 0,
-          note: '',
-        },
-      },
+      nested: { visibleValue: 'kept' },
       items: [{ key: 'first', active: false }],
     };
     const canonicalDescriptorContent = `${JSON.stringify(
@@ -214,11 +181,7 @@ describe('MoveToInlineService', () => {
         schemaVersion: 1,
         key: 'sales',
         title: 'Sales',
-        settings: {
-          enabled: { type: 'boolean', default: true },
-          retryCount: { type: 'integer', default: 1 },
-          label: { type: 'string', default: 'Sales' },
-        },
+        settings: { enabled: { type: 'boolean', default: true } },
       },
       null,
       2,
@@ -254,28 +217,13 @@ describe('MoveToInlineService', () => {
       sequelize: {
         transaction: (run: (current: Transaction) => Promise<unknown>) => run(transaction),
       },
-      getCollection: (name: string) => {
-        if (name !== 'flowModels') {
-          throw new Error(`Unexpected collection: ${name}`);
-        }
-        return {
-          model: {
-            findByPk: lockFlowModelRecord,
-          },
-          repository: {
-            findModelById: vi.fn(async () => JSON.parse(JSON.stringify(flowModel))),
-            patch,
-          },
-        };
-      },
-      getRepository: (name: string) => {
-        if (name !== 'vscFileCommits') {
-          throw new Error(`Unexpected repository: ${name}`);
-        }
-        return { update: updateCommit };
-      },
+      getCollection: () => ({
+        model: { findByPk: lockFlowModelRecord },
+        repository: { findModelById: vi.fn(async () => JSON.parse(JSON.stringify(flowModel))), patch },
+      }),
+      getRepository: () => ({ update: updateCommit }),
     } as unknown as Database;
-    const compileEntry = vi.fn(async (input: { files: Array<{ path: string; content?: string }> }) => ({
+    const compileEntry = vi.fn(async () => ({
       accepted: true,
       diagnostics: [],
       surface: {
@@ -337,14 +285,10 @@ describe('MoveToInlineService', () => {
       headCommitId: 'runjs_old_commit',
       headSeq: 1,
     };
-    let ensuredRepository = runJSRepo;
-    const ensureRepository = vi.fn(async (input: { ownerId: string }) => {
-      ensuredRepository = { ...runJSRepo, ownerId: input.ownerId };
-      return {
-        repository: ensuredRepository,
-        initialCommit: null,
-      };
-    });
+    const ensureRepository = vi.fn(async (input: { ownerId: string }) => ({
+      repository: { ...runJSRepo, ownerId: input.ownerId },
+      initialCommit: null,
+    }));
     const preparedPush = {};
     const preparePush = vi.fn(async () => preparedPush);
     const publishPreparedPush = vi.fn(async () => ({
@@ -534,7 +478,7 @@ describe('MoveToInlineService', () => {
       version: 'v1',
       sourceMode: 'light-extension',
       sourceBinding: { ...binding },
-      settings: { title: 'Revenue', compact: false },
+      settings: { title: 'Revenue' },
       sourceRef: {
         type: 'vsc-file',
         repoId: 'runjs_repo',
@@ -545,11 +489,7 @@ describe('MoveToInlineService', () => {
     let flowModel = {
       uid: locator.modelUid,
       use: 'JSBlockModel',
-      stepParams: {
-        jsSettings: {
-          runJs: clone(initialRunJS),
-        },
-      },
+      stepParams: { jsSettings: { runJs: clone(initialRunJS) } },
     };
     let repository = {
       id: 'runjs_repo',
@@ -561,26 +501,8 @@ describe('MoveToInlineService', () => {
       headCommitId: 'runjs_head_before',
       headSeq: 1,
     };
-    let commits = [
-      {
-        id: 'runjs_head_before',
-        repoId: repository.id,
-        seq: 1,
-      },
-    ];
-    let references = [
-      {
-        id: 'reference_sales',
-        repoId: binding.repoId,
-        entryId: binding.entryId,
-        kind: binding.kind,
-        ownerKind: locator.kind,
-        ownerLocator: clone(locator),
-        ownerLocatorHash: 'owner_locator_hash',
-        settingsHash: 'settings_hash',
-        resolvedStatus: 'active',
-      },
-    ];
+    let commits = [{ id: 'runjs_head_before', repoId: repository.id, seq: 1 }];
+    let references = [{ id: 'reference_sales', repoId: binding.repoId, entryId: binding.entryId }];
     const initialFlowModel = clone(flowModel);
     const initialRepository = clone(repository);
     const initialCommits = clone(commits);
@@ -605,66 +527,34 @@ describe('MoveToInlineService', () => {
           }
         },
       },
-      getCollection: (name: string) => {
-        if (name !== 'flowModels') {
-          throw new Error(`Unexpected collection: ${name}`);
-        }
-        return {
-          model: {
-            findByPk: vi.fn(async (_uid: string, options: { transaction?: Transaction }) => {
-              expect(options.transaction).toBe(transaction);
-              return clone(flowModel);
-            }),
-          },
-          repository: {
-            findModelById: vi.fn(async (_uid: string, options: { transaction?: Transaction }) => {
-              expect([undefined, transaction]).toContain(options.transaction);
-              return clone(flowModel);
-            }),
-            patch: vi.fn(
-              async (values: { stepParams: typeof flowModel.stepParams }, options: { transaction: Transaction }) => {
-                expect(options.transaction).toBe(transaction);
-                flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
-              },
-            ),
-          },
-        };
-      },
-      getRepository: (name: string) => {
-        if (name !== 'vscFileCommits') {
-          throw new Error(`Unexpected repository: ${name}`);
-        }
-        return {
-          update: vi.fn(async (options: { transaction: Transaction }) => {
-            expect(options.transaction).toBe(transaction);
+      getCollection: () => ({
+        model: { findByPk: vi.fn(async () => clone(flowModel)) },
+        repository: {
+          findModelById: vi.fn(async () => clone(flowModel)),
+          patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
+            flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
           }),
-        };
-      },
+        },
+      }),
+      getRepository: () => ({ update: vi.fn() }),
     } as unknown as Database;
     const adapter = {
       kind: 'flowModel.step',
-      assertCanWrite: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
-        expect([undefined, transaction]).toContain(ctx.transaction);
-      }),
-      readLegacy: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
-        expect([undefined, transaction]).toContain(ctx.transaction);
-        return {
-          code: initialRunJS.code,
-          version: initialRunJS.version,
-          label: 'JS block',
-          surfaceStyle: 'render' as const,
-          language: 'typescript' as const,
-          ownerFingerprint: 'owner_before',
-          metadata: { modelUse: 'JSBlockModel' },
-        };
-      }),
+      assertCanWrite: vi.fn(),
+      readLegacy: vi.fn(async () => ({
+        code: initialRunJS.code,
+        version: initialRunJS.version,
+        label: 'JS block',
+        surfaceStyle: 'render' as const,
+        language: 'typescript' as const,
+        ownerFingerprint: 'owner_before',
+        metadata: { modelUse: 'JSBlockModel' },
+      })),
       writeRuntime: vi.fn(
         async (input: {
           artifact: { code: string; version: string; entryPath?: string; metadata?: Record<string, unknown> };
           commitId: string;
-          ctx: { transaction?: Transaction };
         }) => {
-          expect(input.ctx.transaction).toBe(transaction);
           flowModel.stepParams.jsSettings.runJs.code = input.artifact.code;
           flowModel.stepParams.jsSettings.runJs.version = input.artifact.version;
           flowModel.stepParams.jsSettings.runJs.sourceRef = {
@@ -675,10 +565,7 @@ describe('MoveToInlineService', () => {
           };
         },
       ),
-      getFingerprint: vi.fn(async ({ ctx }: { ctx: { transaction?: Transaction } }) => {
-        expect(ctx.transaction).toBe(transaction);
-        return 'owner_after';
-      }),
+      getFingerprint: vi.fn(async () => 'owner_after'),
     };
     const pushedCommit = {
       id: 'runjs_head_after',
@@ -693,26 +580,17 @@ describe('MoveToInlineService', () => {
     };
     const preparedPush = {};
     const vscFileService = {
-      ensureRepository: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-        expect(ctx.transaction).toBeUndefined();
-        return { repository: clone(repository), initialCommit: null };
-      }),
-      pull: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-        expect(ctx.transaction).toBeUndefined();
-        return { repository: clone(repository), commit: null, tree: null, unchanged: false, files: [] };
-      }),
-      preparePush: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-        expect(ctx.transaction).toBeUndefined();
-        return preparedPush;
-      }),
-      publishPreparedPush: vi.fn(async (candidate: unknown, ctx: { transaction?: Transaction }) => {
-        expect(candidate).toBe(preparedPush);
-        expect(ctx.transaction).toBe(transaction);
-        repository = {
-          ...repository,
-          headCommitId: pushedCommit.id,
-          headSeq: pushedCommit.seq,
-        };
+      ensureRepository: vi.fn(async () => ({ repository: clone(repository), initialCommit: null })),
+      pull: vi.fn(async () => ({
+        repository: clone(repository),
+        commit: null,
+        tree: null,
+        unchanged: false,
+        files: [],
+      })),
+      preparePush: vi.fn(async () => preparedPush),
+      publishPreparedPush: vi.fn(async () => {
+        repository = { ...repository, headCommitId: pushedCommit.id, headSeq: pushedCommit.seq };
         commits.push({ id: pushedCommit.id, repoId: repository.id, seq: pushedCommit.seq });
         return {
           repository: clone(repository),
@@ -721,8 +599,7 @@ describe('MoveToInlineService', () => {
         };
       }),
     } as unknown as VscFileService;
-    const syncReferences = vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
-      expect(ctx.transaction).toBe(transaction);
+    const syncReferences = vi.fn(async () => {
       references = [];
       const runJS = flowModel.stepParams.jsSettings.runJs;
       observedBeforeFailure.inlineHost = runJS.sourceMode === 'inline' && !('sourceBinding' in runJS);

@@ -64,9 +64,11 @@ describe('linkageRunjs', () => {
     );
 
     const editorProps = mocks.runJSValueEditor.mock.calls.at(-1)?.[0];
+    // Legacy `{ script }` values must normalize to v1 so `{{ ctx.* }}` preprocessing keeps running, matching how
+    // origin/next executed them (`await ctx.runjs(script)` with no version → v1 default).
     expect(editorProps?.value).toEqual({
       code: 'return ctx.formValues.amount;',
-      version: 'v2',
+      version: 'v1',
     });
     expect(editorProps?.sourceLocator).toBeUndefined();
 
@@ -89,6 +91,6 @@ describe('linkageRunjs', () => {
       value: { script: 'return 7;' },
     });
 
-    expect(runjs).toHaveBeenCalledWith('return 7;', undefined, { version: 'v2' });
+    expect(runjs).toHaveBeenCalledWith('return 7;', undefined, { version: 'v1' });
   });
 });

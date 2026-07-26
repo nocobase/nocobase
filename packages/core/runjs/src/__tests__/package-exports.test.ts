@@ -32,6 +32,7 @@ describe('@nocobase/runjs package exports', () => {
         './compiler/build-identity',
         './compiler/portable',
         './package.json',
+        './server',
         './settings',
       ].sort(),
     );

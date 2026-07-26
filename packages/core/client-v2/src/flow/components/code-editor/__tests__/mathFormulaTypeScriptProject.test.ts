@@ -14,11 +14,7 @@ import {
   shutdownTypeScriptProjectSessionSuite,
   withTypeScriptProjectSession,
 } from './helpers/withTypeScriptProjectSession';
-import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
-import {
-  clearRunJSTypeLibraryPackRegistryForTests,
-  getRunJSTypeLibraryPackRegistryDebugState,
-} from '../typescriptLibraryRegistry';
+import { clearRunJSTypeLibraryPackRegistryForTests } from '../typescriptLibraryRegistry';
 import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
 
 function errorMessages(diagnostics: Diagnostic[]): string[] {
@@ -39,65 +35,22 @@ afterEach(() => {
 
 afterAll(shutdownTypeScriptProjectSessionSuite);
 
+// Pack content is covered by packages/core/runjs/src/type-packs/*/__tests__ and the official-type-packs-*.cases
+// layer in core/runjs; this file only smoke-tests that the packs load into the editor project.
 describe('RunJS official mathjs and Formula.js TypeScript project', () => {
-  it('uses official expression, matrix, numeric, and spreadsheet formula types', async () => {
+  it('loads the mathjs and Formula.js packs into the editor project and resolves a representative completion', async () => {
     const code = `
-const evaluated = ctx.libs.math.evaluate('2 + 3');
-const rounded: number = ctx.libs.math.round(2.345, 2);
-const matrix = ctx.libs.math.matrix([[1, 2], [3, 4]]);
-const matrixSize: number[] = matrix.size();
 const total: number = ctx.libs.formula.SUM(1, 2, 3);
-const average: number = ctx.libs.formula.AVERAGE(1, 2, 3);
-const { round } = ctx.libs.math;
-const { ABS } = ctx.libs.formula;
-const absolute: number | Error = ABS(-5);
-void evaluated;
-void rounded;
-void matrixSize;
+const rounded: number = ctx.libs.math.round(2.345, 2);
 void total;
-void average;
-void round;
-void absolute;
+void rounded;
 `;
+    const editorProject = project(code);
     await withTypeScriptProjectSession(async (session) => {
-      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
-      const state = session.getDebugState();
-      expect(state.rootFileNames).toContain('/__runjs__/type-packs/mathjs-bridge.d.ts');
-      expect(state.rootFileNames).toContain('/__runjs__/type-packs/formulajs-bridge.d.ts');
+      expect(errorMessages(await session.getDiagnostics(editorProject, code))).toEqual([]);
+      const completionPosition = code.indexOf('ctx.libs.math.') + 'ctx.libs.math.'.length;
+      const completion = await session.getCompletionResult(editorProject, completionPosition, code, true);
+      expect(completion?.options.some((option) => option.label === 'round')).toBe(true);
     });
-  });
-
-  it('reports official invalid calls and misspelled members', async () => {
-    const code = `
-ctx.libs.math.evaluate();
-ctx.libs.math.round('2.5', 2);
-ctx.libs.math.matrx([[1, 2]]);
-ctx.libs.formula.ABS();
-ctx.libs.formula.ROUND(1);
-ctx.libs.formula.AVERGE(1, 2);
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      const messages = errorMessages(await session.getDiagnostics(project(code), code));
-
-      expect(messages.some((message) => /Expected 1-2 arguments/.test(message))).toBe(true);
-      expect(messages.some((message) => /No overload matches this call/.test(message))).toBe(true);
-      expect(messages.some((message) => /matrx/.test(message))).toBe(true);
-      expect(messages.some((message) => /ABS|Expected 1 arguments/.test(message))).toBe(true);
-      expect(messages.some((message) => /AVERGE/.test(message))).toBe(true);
-    });
-  });
-
-  it('records independent manifest contracts', () => {
-    expect(generatedRunJSTypeLibraryPackManifest).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'mathjs', sourcePackage: 'mathjs', rootFileCount: 1 }),
-        expect.objectContaining({
-          id: 'formulajs',
-          sourcePackage: '@formulajs/formulajs',
-          rootFileCount: 1,
-        }),
-      ]),
-    );
   });
 });

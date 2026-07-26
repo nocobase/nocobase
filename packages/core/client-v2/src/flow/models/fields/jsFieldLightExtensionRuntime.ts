@@ -255,7 +255,8 @@ export async function runResolvedJSFieldCode(input: {
 
   const result = (await ctx.runjs(resolved.code, undefined, { version: resolved.version })) as RunJSExecutionResult;
 
-  if (result?.success === false) {
+  // Inline scripts keep the released behavior: envelope failures stay silent instead of rendering an error
+  if (result?.success === false && resolved.sourceMode !== INLINE_SOURCE_MODE) {
     throw result.error || new Error('RunJS execution failed');
   }
 }

@@ -9,7 +9,8 @@
 
 import path from 'node:path';
 
-import { sha256Hex, stableSerialize } from '..';
+import { stableSerialize } from '..';
+import { sha256Hex } from '../server';
 import {
   generatedRunJSAntdCompletionCatalog,
   generatedRunJSAntdIconsCompletionCatalog,

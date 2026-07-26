@@ -11,7 +11,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 
-import { normalizeText, sha256Hex, stableSerialize } from '..';
+import { normalizeText, stableSerialize } from '..';
+import { sha256Hex } from '../server';
 import type { RunJSTypeLibraryFile, RunJSTypeLibraryPack, RunJSTypeLibraryPackDependency } from '../typescript-library';
 
 export interface RunJSTypeLibraryPackRootFileInput {

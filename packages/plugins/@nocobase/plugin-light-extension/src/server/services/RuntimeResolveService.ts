@@ -9,7 +9,8 @@
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import type { Database, Filter, Model } from '@nocobase/database';
-import { sha256Hex, stableSerialize } from '@nocobase/runjs';
+import { stableSerialize } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';

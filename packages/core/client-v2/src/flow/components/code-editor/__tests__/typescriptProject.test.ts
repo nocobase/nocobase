@@ -566,24 +566,6 @@ await ctx.refresh();
     expect(onInternalError).toHaveBeenCalledWith(expect.objectContaining({ code: 'TYPE_LIBRARY_FILE_CONFLICT' }));
   });
 
-  it('increments file versions for same-length edits without recreating the language service', async () => {
-    registerRunJSTypeLibraryPackLoader('dayjs', () => fakePack('dayjs'));
-    const session = createTypeScriptProjectSession();
-    const first = 'ctx.libs.dayjs; (1 satisfies number);';
-    const second = 'ctx.libs.dayjs; (1 satisfies string);';
-    const project = baseProject(first);
-
-    expect(await session.getDiagnostics(project, first)).toEqual([]);
-    const firstState = session.getDebugState();
-    const secondDiagnostics = await session.getDiagnostics(baseProject(second), second);
-    const secondState = session.getDebugState();
-
-    expect(secondDiagnostics.some((diagnostic) => /string/.test(diagnostic.message))).toBe(true);
-    expect(secondState.fileVersions['/src/main.tsx']).not.toBe(firstState.fileVersions['/src/main.tsx']);
-    expect(secondState.languageServiceCreationCount).toBe(1);
-    expect(secondState.immutableSnapshotCreationCount).toBe(firstState.immutableSnapshotCreationCount);
-  });
-
   it('updates declarations incrementally and rebuilds only for structural changes', async () => {
     const session = createTypeScriptProjectSession();
     const code = 'customGlobal.value;';

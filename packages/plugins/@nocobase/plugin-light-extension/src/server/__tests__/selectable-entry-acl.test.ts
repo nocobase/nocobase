@@ -44,11 +44,22 @@ describe('selectable entry catalog ACL', () => {
     await grantSelectable('selectableOnly');
 
     const response = await agent.resource('lightExtensionEntries').listSelectable();
+    const repos = await agent.resource('lightExtensionRepos').list();
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(2);
+    expect(response.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          repoId: expect.any(String),
+          kind: 'js-block',
+          settingsSchema: expect.any(Object),
+        }),
+      ]),
+    );
     expect(response.body.data[0]).not.toHaveProperty('repoName');
     expect(response.body.data[0]).not.toHaveProperty('repoTitle');
+    expect(repos.status).toBe(403);
   });
 
   it('rejects the catalog when listSelectable itself is not granted', async () => {
@@ -58,6 +69,26 @@ describe('selectable entry catalog ACL', () => {
     const response = await agent.resource('lightExtensionEntries').listSelectable();
 
     expect(response.status).toBe(403);
+  });
+
+  it('denies host-create-only callers without leaking selectable metadata', async () => {
+    const agent = await createRoleAgent('hostCreateOnly', 'catalog-host-create-only');
+    await rootAgent.resource('roles.resources', 'hostCreateOnly').create({
+      values: {
+        name: 'lightExtensions',
+        usingActionsConfig: true,
+        actions: [{ name: 'moveSource' }],
+      },
+    });
+
+    const response = await agent.resource('lightExtensionEntries').listSelectable({ values: { kind: 'js-block' } });
+
+    expect(response.status).toBe(403);
+    const body = JSON.stringify(response.body);
+    expect(body).not.toContain('visible-repo');
+    expect(body).not.toContain('ler_visible');
+    expect(body).not.toContain('entry_ler_visible');
+    expect(body).not.toContain('settingsSchema');
   });
 
   it('does not fetch or return repo labels hidden by field permissions', async () => {

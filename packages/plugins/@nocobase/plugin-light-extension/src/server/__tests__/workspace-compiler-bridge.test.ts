@@ -8,7 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import { sha256Hex } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';

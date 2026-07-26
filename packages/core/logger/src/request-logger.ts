@@ -44,7 +44,6 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
     ctx.logger = ctx.log = contextLogger;
     const startTime = Date.now();
     const url = redactSensitiveQuery(ctx.url);
-    const action = redactSensitiveFields(ctx.action?.toJSON?.());
     const requestInfo = {
       method: ctx.method,
       path: url,
@@ -53,7 +52,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
       message: `request ${ctx.method} ${url}`,
       ...requestInfo,
       req: redactSensitiveFields(pick(ctx.request.toJSON(), options?.requestWhitelist || defaultRequestWhitelist)),
-      action,
+      action: redactSensitiveFields(ctx.action?.toJSON?.()),
       app: appName,
       ...(requestSource ? { requestSource } : {}),
       reqId,
@@ -72,7 +71,8 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         message: `response ${url}`,
         ...requestInfo,
         res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
-        action,
+        // ctx.action is assigned by the resourcer middleware inside next(), so it must be captured after next() completes
+        action: redactSensitiveFields(ctx.action?.toJSON?.()),
         userId: ctx.auth?.user?.id,
         username: ctx.auth?.user?.username,
         status: ctx.status,

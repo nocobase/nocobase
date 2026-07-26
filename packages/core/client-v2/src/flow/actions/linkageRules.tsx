@@ -1011,7 +1011,10 @@ function normalizeLinkageRunJSValue(value: unknown): RunJSValue | undefined {
     return undefined;
   }
   const script = (value as { script?: unknown }).script;
-  return typeof script === 'string' ? { code: script, version: 'v2' } : undefined;
+  // Legacy `{ script }` values were authored before the v2 runtime and rely on `{{ ctx.* }}` template
+  // preprocessing, which only runs under v1. Default them to v1 (matching normalizeRunJSValue and every sibling
+  // linkage path) so previously-saved scripts keep working; forcing v2 here silently broke them.
+  return typeof script === 'string' ? { code: script, version: 'v1' } : undefined;
 }
 
 const LinkageRunJSValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {

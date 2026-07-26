@@ -7,9 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createHash } from 'crypto';
-import { posix as pathPosix } from 'path';
-
 export * from './typescript-library';
 export * from './typescript-library-usage';
 export * from './lodash-type-library';
@@ -111,10 +108,6 @@ export type RunJSCompileFailureCode =
   | 'RUNJS_IMPORT_NOT_FOUND'
   | 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED';
 
-export function sha256Hex(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
-}
-
 export function stableSerialize(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
@@ -129,24 +122,6 @@ export function stableSerialize(value: unknown): string {
 
   const serialized = JSON.stringify(value);
   return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-export function buildRunJSFilesHash(files: RunJSCompileFile[]): string {
-  return sha256Hex(stableSerialize(files));
-}
-
-export function buildRunJSRuntimeCodeHash(code: string): string {
-  return sha256Hex(code);
-}
-
-export function buildRunJSArtifactHash(input: {
-  code: string;
-  sourceMap?: string | null;
-  version: string;
-  entryPath: string;
-  runtimeContract: string;
-}): string {
-  return sha256Hex(stableSerialize(input));
 }
 
 export function normalizePath(value: string): string {
@@ -173,7 +148,7 @@ export function normalizePath(value: string): string {
   if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) {
     throw new RunJSError('RUNJS_PATH_INVALID', 'Path must not contain empty, current, or parent segments');
   }
-  return pathPosix.normalize(normalized);
+  return normalized;
 }
 
 export function normalizeText(value: string): string {

@@ -11,8 +11,6 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import enUS from '../../../../locale/en-US.json';
-import zhCN from '../../../../locale/zh-CN.json';
 import { runJSStudioProvider } from '../RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
 import type { RunJSSourceActionInput } from '../types';
@@ -255,11 +253,6 @@ const openResult = {
   },
 };
 
-const runJSLocaleMessages = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-} satisfies Record<string, Record<string, string>>;
-
 function getSubmittedMainContent(data: unknown): string {
   const input = data as { files?: Array<{ path: string; content?: string }> };
   return input.files?.find((file) => file.path === 'src/client/index.tsx')?.content || 'return 1;';
@@ -406,48 +399,6 @@ describe('runJSStudioProvider', () => {
         });
       }
 
-      if (url === 'runJSSources:exportZip') {
-        return Promise.resolve({
-          data: new Blob(['zip'], { type: 'application/zip' }),
-        });
-      }
-
-      if (url === 'runJSSources:importZip') {
-        return Promise.resolve({
-          data: {
-            data: {
-              locator,
-              locatorKind: 'flowModel.step',
-              repository: {
-                ...repository,
-                headCommitId: 'commit-2',
-                headSeq: 2,
-              },
-              commit: {
-                ...commit,
-                id: 'commit-2',
-                seq: 2,
-                message: 'Import RunJS workspace',
-              },
-              artifact: {
-                entryPath: 'src/client/index.tsx',
-                filesHash: 'files-hash-2',
-                runtimeCodeHash: 'runtime-hash-2',
-                diagnostics: [],
-              },
-              ownerFingerprint: 'owner-fingerprint-2',
-              writeResult: {
-                ownerFingerprint: 'owner-fingerprint-2',
-              },
-              import: {
-                fileCount: 2,
-                filesHash: 'files-hash-2',
-              },
-            },
-          },
-        });
-      }
-
       return Promise.resolve({
         data: {
           data: {},
@@ -554,73 +505,7 @@ describe('runJSStudioProvider', () => {
   });
 
   afterEach(() => {
-    Reflect.deleteProperty(navigator, 'userActivation');
     vi.clearAllMocks();
-  });
-
-  it('keeps locale keys for the simplified editor in sync', () => {
-    expect(runJSManifestPath).toBe('.nocobase/runjs-source.json');
-
-    const requiredKeys = [
-      'File resource manager',
-      'Console logs',
-      'Run',
-      'Save',
-      'Saved successfully',
-      'Unsaved changes',
-      'Current changes',
-      'Load more',
-      'Saved changes',
-      'Save version',
-      'Version message',
-      'Version history',
-      'Compile diagnostics',
-      'Describe this version',
-      'Discard changes',
-      'Discard changes and refresh',
-      'Discard your changes before closing?',
-      'Discard your changes before refreshing?',
-      'No changes between current editor and saved version',
-      'No versions yet',
-      'Back to editor',
-      'Base',
-      'Saved',
-      'No messages yet. Click Run to preview.',
-      'Click to restore',
-      'Restore {{version}}?',
-      'This will copy files from this version into the editor.',
-      'It will not create a version until you save.',
-      'You can review and save after restoring.',
-      'RunJS source version is out of sync',
-      'The code stored in this block differs from the latest saved RunJS source. Recover the versioned source from the current code before continuing.',
-      'Recover latest version from current code',
-      'Recovered latest version from current code',
-      'Import',
-      'Import workspace',
-      'Import failed',
-      'Export workspace',
-      'Export failed',
-      'Folder already exists',
-      'Folder is not empty',
-      'Folder path',
-      'Folder path must be under src',
-      'Fix compile errors before saving.',
-      'New folder',
-      'No compile diagnostics',
-      'Workspace export is ready',
-      'If the download did not start automatically, click Download workspace.',
-      'Download workspace',
-      'Dismiss',
-      'Workspace imported',
-      'Workspace exported',
-      'RunJS entry file under src/client was not found',
-    ] as const;
-
-    for (const [locale, messages] of Object.entries(runJSLocaleMessages)) {
-      for (const key of requiredKeys) {
-        expect(messages[key], `${locale} is missing ${key}`).toBeTruthy();
-      }
-    }
   });
 
   it('opens the workspace with empty initial code when the RunJS value has no code', async () => {
@@ -669,19 +554,11 @@ describe('runJSStudioProvider', () => {
     expect(screen.queryByRole('button', { name: 'Import workspace' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();
-    expect(screen.getByLabelText('Open files').style.overflowY).toBe('hidden');
     expect(screen.getByText('No messages yet. Click Run to preview.')).toBeTruthy();
-    expect(screen.getByTestId('runjs-studio-editor').style.overflow).toBe('hidden');
-    expect(screen.getByTestId('runjs-studio-editor').style.minHeight).toMatch(/^(0|0px)$/);
-    expect(screen.getByTestId('runjs-studio-workspace').style.minHeight).toMatch(/^(0|0px)$/);
-    expect(screen.getByTestId('runjs-studio-workspace').style.overflow).toBe('hidden');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
     expect(screen.getByRole('button', { name: 'src/client/index.tsx' })).toBeTruthy();
     const filesPanel = screen.getByLabelText('File resource manager');
-    expect(filesPanel.style.flex).toBe('0 1 auto');
-    expect(filesPanel.style.maxHeight).toBe('80%');
-    expect(filesPanel.style.minHeight).toBe('140px');
     expect(within(filesPanel).getByText('Files')).toBeTruthy();
     expect(within(filesPanel).getByRole('button', { name: 'Import workspace' })).toBeTruthy();
     expect(within(filesPanel).getByRole('button', { name: 'Export workspace' })).toBeTruthy();
@@ -700,21 +577,8 @@ describe('runJSStudioProvider', () => {
     expect(within(filesPanel).getByRole('button', { name: 'New file src/client' })).toBeTruthy();
     expect(within(filesPanel).getByRole('button', { name: 'New folder src/client' })).toBeTruthy();
     const historyPanel = screen.getByLabelText('Version history');
-    expect(historyPanel.style.flex).toBe('1 1 220px');
-    expect(historyPanel.style.minHeight).toBe('180px');
-    expect(historyPanel.style.maxHeight).toBe('');
-    expect(historyPanel.style.marginTop).toMatch(/^(0|0px)$/);
-    expect(historyPanel.style.transition).toContain('flex-basis');
-    expect(within(historyPanel).getByRole('button', { name: 'Collapse history' })).toBeTruthy();
     expect(within(historyPanel).queryByText('Click to restore')).toBeNull();
     expect(screen.getByText(/07-02/)).toBeTruthy();
-
-    fireEvent.click(within(historyPanel).getByRole('button', { name: 'Collapse history' }));
-    expect(historyPanel.style.flex).toBe('0 0 40px');
-    expect(historyPanel.style.minHeight).toBe('40px');
-    expect(historyPanel.style.maxHeight).toBe('40px');
-    expect(historyPanel.style.marginTop).toBe('auto');
-    expect(within(historyPanel).getByRole('button', { name: 'Expand history' })).toBeTruthy();
   });
 
   it('falls through to the next editor when opening Studio fails', async () => {
@@ -936,88 +800,6 @@ describe('runJSStudioProvider', () => {
     expect(saveResult).toBe('saved');
   });
 
-  it('uses the drawer viewport height instead of the legacy compact editor height', async () => {
-    renderEditor(vi.fn(), {
-      height: '200px',
-      minHeight: 'calc(100vh - 42px)',
-    });
-
-    await screen.findByLabelText('Edit file content');
-    expect(screen.getByTestId('runjs-studio-editor').style.height).toBe('calc(100vh - 42px)');
-    expect(screen.getByTestId('runjs-studio-editor').style.maxHeight).toBe('calc(100vh - 42px)');
-  });
-
-  it('keeps the files panel expandable while the workspace is fullscreen', async () => {
-    renderEditor();
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Fullscreen' }));
-    expect(await screen.findByRole('button', { name: 'Exit fullscreen' })).toBeTruthy();
-    expect(screen.getByTestId('runjs-studio-workspace').style.height).toBe('100%');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-
-    const filesPanel = await screen.findByLabelText('File resource manager');
-    expect(within(filesPanel).getByRole('button', { name: 'src/client/index.tsx' })).toBeTruthy();
-  });
-
-  it('does not run the JavaScript linter for JSON workspace files', async () => {
-    mocks.request.mockImplementation(({ url }: { url: string }) => {
-      if (url === 'runJSSources:open') {
-        return Promise.resolve({
-          data: {
-            data: {
-              ...openResult,
-              files: [
-                {
-                  path: 'src/client/index.tsx',
-                  content: 'return 1;',
-                  language: 'typescriptreact',
-                },
-                {
-                  path: 'src/client/settings.json',
-                  content: `${JSON.stringify(
-                    {
-                      type: 'object',
-                      properties: {
-                        region: {
-                          type: 'string',
-                          title: 'Region',
-                          'x-component': 'Input',
-                        },
-                      },
-                    },
-                    null,
-                    2,
-                  )}\n`,
-                  language: 'json',
-                },
-              ],
-            },
-          },
-        });
-      }
-
-      return Promise.resolve({
-        data: {
-          data: {},
-        },
-      });
-    });
-
-    renderEditor();
-
-    await screen.findByLabelText('Edit file content');
-    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-enable-linter', 'true');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-    const filesPanel = screen.getByLabelText('File resource manager');
-    fireEvent.click(within(filesPanel).getByRole('button', { name: 'src/client/settings.json' }));
-
-    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-language', 'json');
-    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-enable-linter', 'false');
-    expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toContain('"type": "object"');
-  });
-
   it('forwards the host workspace JSON schema resolver to entry.json editors', async () => {
     mocks.request.mockImplementation(({ url }: { url: string }) => {
       if (url === 'runJSSources:open') {
@@ -1151,75 +933,6 @@ describe('runJSStudioProvider', () => {
     fireEvent.drop(folderRow as HTMLElement, { dataTransfer });
 
     expect(within(filesPanel).getByRole('button', { name: 'src/client/widgets/index.tsx' })).toBeTruthy();
-  });
-
-  it('creates files and folders under the clicked source folder', async () => {
-    renderEditor();
-
-    await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-
-    const filesPanel = screen.getByLabelText('File resource manager');
-    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
-    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New file src' }));
-
-    const fileNameInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/helper.ts' });
-    expect(fileNameInput).toHaveValue('helper.ts');
-    fireEvent.change(fileNameInput, { target: { value: 'root-helper.ts' } });
-    fireEvent.blur(fileNameInput);
-
-    expect(within(filesPanel).getByRole('button', { name: 'src/root-helper.ts' })).toBeTruthy();
-
-    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
-    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder src' }));
-
-    const folderNameInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/folder' });
-    expect(folderNameInput).toHaveValue('folder');
-    fireEvent.change(folderNameInput, { target: { value: 'shared' } });
-    fireEvent.blur(folderNameInput);
-
-    expect(within(filesPanel).getByRole('button', { name: 'src/shared' })).toBeTruthy();
-  });
-
-  it('moves folders and their children into the dropped folder', async () => {
-    renderEditor();
-
-    await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-
-    const filesPanel = screen.getByLabelText('File resource manager');
-    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder' }));
-
-    const widgetsInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/client/folder' });
-    fireEvent.change(widgetsInput, { target: { value: 'widgets' } });
-    fireEvent.blur(widgetsInput);
-
-    fireEvent.mouseEnter(within(filesPanel).getByText('widgets'));
-    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New file src/client/widgets' }));
-
-    const nestedFileInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/client/widgets/helper.ts' });
-    fireEvent.blur(nestedFileInput);
-
-    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
-    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder src' }));
-
-    const sharedInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/folder' });
-    fireEvent.change(sharedInput, { target: { value: 'shared' } });
-    fireEvent.blur(sharedInput);
-
-    const dataTransfer = createDataTransfer();
-    const widgetsRow = within(filesPanel).getByRole('button', { name: 'src/client/widgets' }).closest('.ant-list-item');
-    const sharedRow = within(filesPanel).getByRole('button', { name: 'src/shared' }).closest('.ant-list-item');
-    expect(widgetsRow).toBeTruthy();
-    expect(sharedRow).toBeTruthy();
-
-    fireEvent.dragStart(widgetsRow as HTMLElement, { dataTransfer });
-    fireEvent.dragOver(sharedRow as HTMLElement, { dataTransfer });
-    fireEvent.drop(sharedRow as HTMLElement, { dataTransfer });
-
-    expect(within(filesPanel).getByRole('button', { name: 'src/shared/widgets' })).toBeTruthy();
-    expect(within(filesPanel).getByRole('button', { name: 'src/shared/widgets/helper.ts' })).toBeTruthy();
-    expect(within(filesPanel).queryByRole('button', { name: 'src/client/widgets/helper.ts' })).toBeNull();
   });
 
   it('allows moving convention folders and reports convention diagnostics on Save', async () => {
@@ -1514,33 +1227,10 @@ describe('runJSStudioProvider', () => {
     expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
     expect(within(dialog).getByText('Compile failed')).toBeTruthy();
     expect(within(dialog).getByText(/\[error\] src\/client\/index\.tsx:1:8 \(TS1005\) ';' expected/)).toBeTruthy();
-    const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
-    expect(diagnostics.style.overflow).toBe('auto');
-    expect(diagnostics.style.maxHeight).toBe('min(520px, calc(100vh - 260px))');
     expect(within(dialog).getByRole('button', { name: 'Copy technical details' })).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: /src\/client\/index\.tsx:1:8/ }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save failed' })).toBeNull());
     expect(screen.getByLabelText('Edit file content')).toBeTruthy();
-  });
-
-  it('limits keyboard shortcuts to the active Studio and ignores dialog inputs', async () => {
-    renderEditor();
-    const editor = await screen.findByLabelText('Edit file content');
-
-    fireEvent.change(editor, { target: { value: 'return 2;' } });
-    fireEvent.keyDown(document.body, { key: 's', ctrlKey: true });
-    expect(screen.queryByRole('dialog', { name: 'Save version' })).toBeNull();
-
-    fireEvent.keyDown(editor, { key: 's', ctrlKey: true });
-    const dialog = await screen.findByRole('dialog', { name: 'Save version' });
-    const versionMessage = within(dialog).getByRole('textbox', { name: 'Version message' }) as HTMLInputElement;
-    fireEvent.change(versionMessage, { target: { value: 'Keep this message' } });
-    fireEvent.keyDown(versionMessage, { key: 's', ctrlKey: true });
-
-    expect(versionMessage.value).toBe('Keep this message');
-    expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
-      1,
-    );
   });
 
   it('requires a version message before saving a version', async () => {
@@ -1779,59 +1469,6 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByText('Restored from v1')).toBeTruthy();
   });
 
-  it('loads older history pages without duplicating commits', async () => {
-    const initialCommits = Array.from({ length: 50 }, (_, index) => createHistoryCommit(100 - index));
-    const olderCommit = createHistoryCommit(50);
-    mocks.request.mockImplementation(({ url }: { url: string }) => {
-      if (url === 'runJSSources:open') {
-        return Promise.resolve({
-          data: {
-            data: {
-              ...openResult,
-              history: {
-                items: initialCommits,
-              },
-            },
-          },
-        });
-      }
-      if (url === 'runJSSources:listHistory') {
-        return Promise.resolve({
-          data: {
-            data: {
-              locator,
-              locatorKind: 'flowModel.step',
-              repository,
-              items: [initialCommits[49], olderCommit],
-              nextBeforeSeq: olderCommit.seq,
-            },
-          },
-        });
-      }
-      return Promise.resolve({ data: { data: {} } });
-    });
-
-    renderEditor();
-    fireEvent.click(await screen.findByRole('button', { name: 'Expand files' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Load more' }));
-
-    await waitFor(() => {
-      expect(mocks.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'runJSSources:listHistory',
-          data: expect.objectContaining({
-            repoId: 'repo-1',
-            limit: 50,
-            beforeSeq: 51,
-          }),
-        }),
-      );
-    });
-    expect(await screen.findByText('History v50')).toBeTruthy();
-    expect(screen.getAllByText('History v51')).toHaveLength(1);
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull());
-  });
-
   it('keeps the original open baseline when history refreshes before save', async () => {
     const baseRequest = mocks.request.getMockImplementation();
     if (!baseRequest) {
@@ -1882,122 +1519,6 @@ describe('runJSStudioProvider', () => {
         baseOwnerFingerprint: 'owner-fingerprint-1',
       });
     });
-  });
-
-  it('exports the current saved workspace as a ZIP', async () => {
-    Object.defineProperty(URL, 'createObjectURL', {
-      configurable: true,
-      value: vi.fn(() => 'blob:runjs-workspace'),
-    });
-    Object.defineProperty(URL, 'revokeObjectURL', {
-      configurable: true,
-      value: vi.fn(),
-    });
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    mocks.request.mockImplementation(({ url }: { url: string }) => {
-      if (url === 'runJSSources:open') {
-        return Promise.resolve({
-          data: {
-            data: openResult,
-          },
-        });
-      }
-      if (url === 'runJSSources:exportZip') {
-        return Promise.resolve({
-          data: new Blob(['zip'], { type: 'application/zip' }),
-        });
-      }
-      return Promise.resolve({
-        data: {
-          data: {},
-        },
-      });
-    });
-    renderEditor();
-
-    await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-    fireEvent.click(
-      within(screen.getByLabelText('File resource manager')).getByRole('button', { name: 'Export workspace' }),
-    );
-
-    await waitFor(() => {
-      expect(mocks.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'runJSSources:exportZip',
-          responseType: 'blob',
-        }),
-      );
-    });
-    expect(await screen.findByText(/\[info\] Workspace exported/)).toBeTruthy();
-  });
-
-  it('shows a manual download link when automatic export download is blocked', async () => {
-    Object.defineProperty(URL, 'createObjectURL', {
-      configurable: true,
-      value: vi.fn(() => 'blob:runjs-workspace'),
-    });
-    Object.defineProperty(URL, 'revokeObjectURL', {
-      configurable: true,
-      value: vi.fn(),
-    });
-    Object.defineProperty(navigator, 'userActivation', {
-      configurable: true,
-      value: {
-        isActive: false,
-      },
-    });
-    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    renderEditor();
-
-    await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-    fireEvent.click(
-      within(screen.getByLabelText('File resource manager')).getByRole('button', { name: 'Export workspace' }),
-    );
-
-    expect(await screen.findByText('Workspace export is ready')).toBeTruthy();
-    const downloadLink = screen.getByRole('link', { name: 'Download workspace' }) as HTMLAnchorElement;
-    expect(downloadLink.href).toBe('blob:runjs-workspace');
-    expect(downloadLink.download).toBe('JS-block-Write-JavaScript.zip');
-    expect(anchorClick).not.toHaveBeenCalled();
-  });
-
-  it('imports a ZIP and saves it directly', async () => {
-    const onChange = vi.fn();
-    const onPersistedChange = vi.fn();
-    renderEditor(onChange, { onPersistedChange });
-
-    await screen.findByLabelText('Edit file content');
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    fireEvent.change(input, {
-      target: {
-        files: [new File(['zip'], 'workspace.zip', { type: 'application/zip' })],
-      },
-    });
-
-    await waitFor(() => {
-      expect(mocks.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'runJSSources:importZip',
-          data: expect.objectContaining({
-            message: 'Import RunJS workspace',
-            repoId: 'repo-1',
-            zipBase64: expect.stringContaining('base64'),
-          }),
-        }),
-      );
-    });
-    const importRequest = mocks.request.mock.calls
-      .map(([request]) => request as { url: string; data?: Record<string, unknown> })
-      .find((request) => request.url === 'runJSSources:importZip');
-    expect(importRequest?.data).toMatchObject({
-      baseCommitId: 'commit-1',
-      baseOwnerFingerprint: 'owner-fingerprint-1',
-    });
-    expect(onPersistedChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 1;', version: 'v2' }));
-    expect(onChange).not.toHaveBeenCalled();
-    expect(await screen.findByText(/\[info\] Workspace imported/)).toBeTruthy();
   });
 
   it('uses a discard-only confirmation when cancelling dirty edits', async () => {

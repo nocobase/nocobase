@@ -106,13 +106,15 @@ describe('settings hash identity', () => {
   });
 
   it('distinguishes missing settings schemas from explicit empty schemas', () => {
+    const emptyHash = createHash('sha256').update('{}').digest('hex');
+
     expect(buildLightExtensionSettingsHashes(null)).toEqual({
       settingsSchemaHash: null,
       settingsDefaultsHash: null,
     });
     expect(buildLightExtensionSettingsHashes({})).toEqual({
-      settingsSchemaHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
-      settingsDefaultsHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      settingsSchemaHash: emptyHash,
+      settingsDefaultsHash: emptyHash,
     });
   });
 });

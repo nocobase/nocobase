@@ -12,6 +12,8 @@ import { Alert, Spin } from 'antd';
 import {
   ElementProxy,
   FlowCancelSaveException,
+  FlowExitAllException,
+  FlowExitException,
   resetRunJSRuntimeElement,
   tExpr,
   type FlowRuntimeContext,
@@ -314,10 +316,10 @@ export class JSBlockModel extends BlockModel {
     return this.getStepParams('jsSettings', 'showBlockCard')?.showBlockCard !== false;
   }
 
-  beginRuntimeRun() {
+  beginRuntimeRun(showLoading = true) {
     const runId = this.runtimeState.runId + 1;
     this.runtimeState.runId = runId;
-    this.runtimeState.loading = true;
+    this.runtimeState.loading = showLoading;
     this.runtimeState.error = null;
     return runId;
   }
@@ -749,7 +751,9 @@ ctx.render(\`
       },
       async handler(ctx, params) {
         const model = ctx.model as JSBlockModel;
-        const runId = model.beginRuntimeRun();
+        // Inline blocks resolve locally and never showed a loading state before light-extension existed
+        const handlerSourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+        const runId = model.beginRuntimeRun(handlerSourceMode !== INLINE_SOURCE_MODE);
         const inlineRunJs = resolveRunJsParams(ctx, params);
 
         ctx.onRefReady(ctx.ref, (element) => {
@@ -803,7 +807,8 @@ ctx.render(\`
               version: resolved.version,
             })) as RunJSExecutionResult;
 
-            if (result?.success === false) {
+            // Inline scripts keep the released behavior: failures stay silent and partial output is preserved
+            if (result?.success === false && resolved.sourceMode !== INLINE_SOURCE_MODE) {
               throw result.error || new Error('RunJS execution failed');
             }
 
@@ -811,6 +816,10 @@ ctx.render(\`
           };
 
           run().catch((error) => {
+            if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
+              model.finishRuntimeRun(runId);
+              return;
+            }
             if (model.isCurrentRuntimeRun(runId)) {
               resetRunJSRuntimeElement(element);
             }

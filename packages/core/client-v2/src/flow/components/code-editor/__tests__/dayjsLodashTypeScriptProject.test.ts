@@ -14,11 +14,7 @@ import {
   shutdownTypeScriptProjectSessionSuite,
   withTypeScriptProjectSession,
 } from './helpers/withTypeScriptProjectSession';
-import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
-import {
-  clearRunJSTypeLibraryPackRegistryForTests,
-  getRunJSTypeLibraryPackRegistryDebugState,
-} from '../typescriptLibraryRegistry';
+import { clearRunJSTypeLibraryPackRegistryForTests } from '../typescriptLibraryRegistry';
 import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
 
 function errorMessages(diagnostics: Diagnostic[]): string[] {
@@ -39,58 +35,22 @@ afterEach(() => {
 
 afterAll(shutdownTypeScriptProjectSessionSuite);
 
+// Pack content is covered by packages/core/runjs/src/type-packs/*/__tests__ and the official-type-packs-*.cases
+// layer in core/runjs; this file only smoke-tests that the packs load into the editor project.
 describe('RunJS official dayjs and lodash TypeScript project', () => {
-  it('uses official callable, instance, overload, generic, and debounce types', async () => {
+  it('loads the dayjs and lodash packs into the editor project and resolves a representative completion', async () => {
     const code = `
-const date = ctx.dayjs('2026-07-14').add(2, 'day');
-const sameDate = ctx.libs.dayjs(date);
-const label: string = sameDate.format('YYYY-MM-DD');
-const record = { profile: { name: 'Ada' }, count: 1 };
-const name: string = ctx.libs.lodash.get(record, 'profile.name');
-const cloned = ctx.libs.lodash.cloneDeep(record);
-const updated = ctx.libs.lodash.set(cloned, 'count', 2);
-const debounced = ctx.libs.lodash.debounce((value: number) => value + updated.count, 20);
-debounced.cancel();
-const flushed: number | undefined = debounced.flush();
+const label: string = ctx.libs.dayjs('2026-07-14').add(2, 'day').format('YYYY-MM-DD');
+const name: string = ctx.libs.lodash.get({ profile: { name: 'Ada' } }, 'profile.name');
 void label;
 void name;
-void flushed;
 `;
+    const editorProject = project(code);
     await withTypeScriptProjectSession(async (session) => {
-      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(2);
-      const state = session.getDebugState();
-      expect(state.rootFileNames).toContain('/__runjs__/type-packs/dayjs-bridge.d.ts');
-      expect(state.rootFileNames).toContain('/__runjs__/type-packs/lodash-bridge.d.ts');
+      expect(errorMessages(await session.getDiagnostics(editorProject, code))).toEqual([]);
+      const completionPosition = code.indexOf('ctx.libs.lodash.') + 'ctx.libs.lodash.'.length;
+      const completion = await session.getCompletionResult(editorProject, completionPosition, code, true);
+      expect(completion?.options.some((option) => option.label === 'get')).toBe(true);
     });
-  });
-
-  it('reports official invalid calls, misspelled members, and unavailable dayjs plugins', async () => {
-    const code = `
-ctx.dayjs().add('two', 'day');
-ctx.libs.dayjs().formatt('YYYY');
-ctx.dayjs.utc();
-ctx.libs.lodash.clonDeep({ value: 1 });
-ctx.libs.lodash.debounce(123, 20);
-const count: number = ctx.libs.lodash.get({ name: 'Ada' }, 'name');
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      const messages = errorMessages(await session.getDiagnostics(project(code), code));
-
-      expect(messages.some((message) => /formatt/.test(message))).toBe(true);
-      expect(messages.some((message) => /utc/.test(message))).toBe(true);
-      expect(messages.some((message) => /clonDeep/.test(message))).toBe(true);
-      expect(messages.some((message) => /number|callable|Function/.test(message))).toBe(true);
-      expect(messages.some((message) => /string/.test(message) && /number/.test(message))).toBe(true);
-    });
-  });
-
-  it('records installed package contracts', () => {
-    expect(generatedRunJSTypeLibraryPackManifest).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'dayjs', sourcePackage: 'dayjs', rootFileCount: 1 }),
-        expect.objectContaining({ id: 'lodash', sourcePackage: '@types/lodash', rootFileCount: 1 }),
-      ]),
-    );
   });
 });

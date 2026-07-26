@@ -271,7 +271,15 @@ export function createRunJSEditorEmbedUIMode(title?: string) {
   if (!RunJSEditorRegistry.getProviders().length) {
     return {
       type: 'embed' as const,
-      props: baseProps,
+      props: {
+        ...baseProps,
+        styles: {
+          body: {
+            // The fallback inline editor positions itself with position:fixed; the transform makes the drawer body its containing block
+            transform: 'translateX(0)',
+          },
+        },
+      },
     };
   }
 

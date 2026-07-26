@@ -81,10 +81,6 @@ export function listReferenceOwnerAdapters(): LightExtensionReferenceOwnerAdapte
   return REFERENCE_OWNER_ADAPTERS.map(toPublicOwnerAdapterContract);
 }
 
-export function getReferenceOwnerAdapterByKind(kind: string): ReferenceOwnerAdapter | undefined {
-  return REFERENCE_OWNER_ADAPTERS.find((adapter) => adapter.kind === kind);
-}
-
 export function getReferenceOwnerAdapterByUse(use: string): ReferenceOwnerAdapter | undefined {
   return REFERENCE_OWNER_ADAPTERS.find((adapter) => adapter.modelUse === use || adapter.modelUses?.includes(use));
 }

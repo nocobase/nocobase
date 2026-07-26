@@ -22,7 +22,6 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { RunJSValueEditor } from '../components/RunJSValueEditor';
-import { evaluateInlineRunJSValue } from '../components/runjs-source';
 
 export const customVariable = defineAction({
   name: 'customVariable',
@@ -48,7 +47,8 @@ export const customVariable = defineAction({
         const getFunction = async () => {
           const runJs = normalizeRunJSValue(variable.runjs);
           if (!runJs.code.trim()) return undefined;
-          return evaluateInlineRunJSValue({ ctx, runJs });
+          // Keep resolving to the {success, value} envelope for compatibility with saved expressions that read `.value`
+          return ctx.runjs(runJs.code, undefined, { version: runJs.version });
         };
         const metaFunction = () => ({
           title: variable.title,

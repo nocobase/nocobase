@@ -10,7 +10,8 @@
 import ts from 'typescript';
 
 import type { RunJSCompileDiagnostic, RunJSSourceAuthoringLegacyInfo, RunJSSourceLocator, RunJSSurfaceStyle } from '..';
-import { normalizePath, sha256Hex, stableSerialize } from '..';
+import { normalizePath, stableSerialize } from '..';
+import { sha256Hex } from '../server';
 import {
   buildRunJSTypeScriptEnvironmentFiles,
   RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES,

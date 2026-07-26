@@ -7,13 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  buildRunJSArtifactHash,
-  buildRunJSRuntimeCodeHash,
-  stableSerialize,
-  type RunJSCompileDiagnostic,
-  type RunJSRuntimeArtifact,
-} from '@nocobase/runjs';
+import { stableSerialize, type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs/server';
 import type { RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
 import { performance } from 'node:perf_hooks';
 import { threadId } from 'node:worker_threads';
