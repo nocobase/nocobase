@@ -24,7 +24,7 @@
 
 import React, { useMemo } from 'react';
 import { ConfigProvider } from 'antd';
-import { VariableHybridInput } from '@nocobase/flow-engine';
+import { VariableHybridInput, type MetaTreeNode } from '@nocobase/flow-engine';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
 import { workflowVariableConverters } from './workflowVariableConverters';
 
@@ -40,14 +40,21 @@ export type WorkflowVariableInputProps = {
    *  `Form.Item` the status is inherited automatically. */
   status?: 'error' | 'warning';
   /** Variable-tree options forwarded to each upstream `useVariables` (types
-   *  filter, appends, depth, fieldNames). */
+   *  filter, appends, depth, fieldNames). Ignored when `metaTree` is given. */
   variableOptions?: UseWorkflowVariableOptions;
+  /** An explicit variable tree, replacing the canvas-derived one. Pass this
+   *  outside the workflow canvas — e.g. the approval message template manager,
+   *  where the renderer's scope is fixed by the server, not by upstream nodes.
+   *  An empty array is honoured as "no variables"; omit the prop to fall back
+   *  to the canvas tree. */
+  metaTree?: MetaTreeNode[];
 };
 
 export function WorkflowVariableInput(props: WorkflowVariableInputProps) {
-  const { variableOptions, disabled, ...rest } = props;
+  const { variableOptions, disabled, metaTree: metaTreeProp, ...rest } = props;
   const { componentDisabled } = ConfigProvider.useConfig();
-  const metaTree = useWorkflowVariableOptions(variableOptions);
+  const canvasMetaTree = useWorkflowVariableOptions(variableOptions);
+  const metaTree = metaTreeProp ?? canvasMetaTree;
   const tree = useMemo(() => metaTree, [metaTree]);
   return (
     <VariableHybridInput
