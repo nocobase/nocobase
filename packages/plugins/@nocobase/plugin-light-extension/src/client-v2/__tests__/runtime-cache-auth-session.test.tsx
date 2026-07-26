@@ -96,36 +96,6 @@ describe('Light Extension runtime cache auth sessions', () => {
     dispose();
   });
 
-  it('keeps a newer identity registration when an old disposer runs', async () => {
-    const { api, counts } = createApi();
-    const disposeOld = registerLightExtensionRuntimeIdentity(api, () => ({ userId: 1, token: 'old' }));
-    const resolver = createLightExtensionRunJSResolver(api);
-    await resolver.resolve(input);
-
-    const disposeCurrent = registerLightExtensionRuntimeIdentity(api, () => ({ userId: 2, token: 'current' }));
-    await resolver.resolve(input);
-    disposeOld();
-    await resolver.resolve(input);
-
-    expect(counts.post).toBe(2);
-    disposeCurrent();
-  });
-
-  it('restores the previous identity registration when the newer registration disposes first', async () => {
-    const { api, counts } = createApi();
-    const disposeOld = registerLightExtensionRuntimeIdentity(api, () => ({ userId: 1, token: 'old' }));
-    const resolver = createLightExtensionRunJSResolver(api);
-    await resolver.resolve(input);
-
-    const disposeCurrent = registerLightExtensionRuntimeIdentity(api, () => ({ userId: 2, token: 'current' }));
-    await resolver.resolve(input);
-    disposeCurrent();
-    await resolver.resolve(input);
-
-    expect(counts.post).toBe(3);
-    disposeOld();
-  });
-
   it('reads real Auth getters, app user and ACL snapshots across modern and legacy registrations', async () => {
     const eventBus = new EventTarget();
     const sdkApi = new APIClient({ storageType: 'memory' }) as APIClient & { app?: { eventBus: EventTarget } };

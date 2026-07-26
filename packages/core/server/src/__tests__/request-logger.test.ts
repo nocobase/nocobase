@@ -108,7 +108,7 @@ describe('request logger', () => {
     }
 
     expect(entries).toHaveLength(2);
-    expect(entries[0].action).toBe(entries[1].action);
+    expect(entries[0].action).toEqual(entries[1].action);
     expect(entries[0].action).toMatchObject({
       params: {
         values: {
@@ -121,6 +121,25 @@ describe('request logger', () => {
       },
     });
     expect(JSON.stringify(entries)).not.toContain(token);
+  });
+
+  it('logs the action assigned by the resourcer during next() in the response entry', async () => {
+    const { entries, middleware } = createLoggerHarness();
+    const ctx = createContext();
+    delete (ctx as { action?: unknown }).action;
+
+    await middleware(ctx, async () => {
+      (ctx as { action?: unknown }).action = {
+        toJSON: () => ({ resourceName: 'users', actionName: 'list', params: { values: { password: 'pw' } } }),
+      };
+    });
+
+    expect(entries[0].action).toBeUndefined();
+    expect(entries[1].action).toMatchObject({
+      resourceName: 'users',
+      actionName: 'list',
+      params: { values: { password: '[REDACTED]' } },
+    });
   });
 
   it('keeps the response error contract unchanged', async () => {

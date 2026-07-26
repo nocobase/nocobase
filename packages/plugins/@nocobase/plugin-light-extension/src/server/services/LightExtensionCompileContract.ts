@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { sha256Hex, stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
+import { stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import type { RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
 import { createRequire } from 'node:module';

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { sha256Hex } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import { RUNJS_COMPILER_BUILD_IDENTITY } from '@nocobase/runjs/compiler';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';

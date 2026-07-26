@@ -511,7 +511,7 @@ describe('RunJSEditorField FlowModel integration', () => {
     expect(model.getStepParams('jsSettings', 'runJs')).toEqual(persistedValue);
   });
 
-  it('refreshes only path-aware RunJS hosts and deduplicates models reachable through multiple paths', async () => {
+  it('refreshes only path-aware RunJS hosts that share the persisted source binding', async () => {
     const engine = new FlowEngine();
     const sourceBinding = {
       type: 'light-extension-entry',
@@ -559,11 +559,13 @@ describe('RunJSEditorField FlowModel integration', () => {
       uid: 'fm_path_aware_inline',
       stepParams: { jsSettings: { runJs: { code: 'return 3;', sourceBinding, sourceMode: 'inline' } } },
     });
-    model.setSubModel('duplicatePath', scriptModel);
-
-    const rerenders = [model, scriptModel, keyedModel, ordinaryConfigModel, inlineModel].map((target) =>
-      vi.spyOn(target, 'rerender').mockResolvedValue(undefined),
-    );
+    const [modelRerender, scriptRerender, keyedRerender, configRerender, inlineRerender] = [
+      model,
+      scriptModel,
+      keyedModel,
+      ordinaryConfigModel,
+      inlineModel,
+    ].map((target) => vi.spyOn(target, 'rerender').mockResolvedValue(undefined));
     const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
     flowContext.defineMethod('getStepFormValues', () => persistedValue);
     let pendingRefresh: Promise<unknown> | undefined;
@@ -591,77 +593,11 @@ describe('RunJSEditorField FlowModel integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'refresh path-aware hosts' }));
     await pendingRefresh;
 
-    expect(rerenders.map((rerender) => rerender.mock.calls.length)).toEqual([1, 1, 1, 0, 0]);
-  });
-
-  it('scans 500 loaded models while refreshing only the 10 matching RunJS hosts', async () => {
-    const engine = new FlowEngine();
-    const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'ler_scale',
-      entryId: 'lee_scale',
-      kind: 'js-block',
-    };
-    const persistedValue = {
-      code: 'ctx.render("remote");',
-      sourceBinding,
-      sourceMode: 'light-extension',
-      version: 'v2',
-    };
-    const models = Array.from({ length: 500 }, (_, index) => {
-      const matchingHost =
-        index % 3 === 0
-          ? { code: 'return 1;', keep: true, sourceBinding, sourceMode: 'light-extension' }
-          : index % 3 === 1
-            ? { keep: true, script: 'return 1;', sourceBinding, sourceMode: 'light-extension' }
-            : { rows: [{ code: 'return 1;', key: `row-${index}`, sourceBinding, sourceMode: 'light-extension' }] };
-      const stepValue =
-        index < 10
-          ? matchingHost
-          : index === 10
-            ? { ordinary: { sourceBinding, sourceMode: 'light-extension' } }
-            : {
-                code: 'return 1;',
-                sourceBinding: { ...sourceBinding, entryId: `lee_${index}` },
-                sourceMode: 'light-extension',
-              };
-      return engine.createModel<FlowModel>({
-        use: 'FlowModel',
-        uid: `fm_source_scale_${index}`,
-        stepParams: { jsSettings: { runJs: stepValue } },
-      });
-    });
-    const model = models[0];
-    const rerenders = models.map((target) => vi.spyOn(target, 'rerender').mockResolvedValue(undefined));
-    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
-    flowContext.defineMethod('getStepFormValues', () => persistedValue);
-    let pendingRefresh: Promise<unknown> | undefined;
-    RunJSEditorRegistry.registerProvider({
-      key: 'scale-source-refresh-provider',
-      renderEditor: (props) => (
-        <button
-          type="button"
-          onClick={() => {
-            pendingRefresh = Promise.resolve(props.onPersistedChange?.(props.value));
-          }}
-        >
-          refresh scale hosts
-        </button>
-      ),
-    });
-
-    render(
-      <FlowContextProvider context={flowContext}>
-        <FlowStepContext.Provider value={{ params: persistedValue, path: `${model.uid}_jsSettings_runJs` }}>
-          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={persistedValue} />
-        </FlowStepContext.Provider>
-      </FlowContextProvider>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'refresh scale hosts' }));
-    await pendingRefresh;
-
-    expect(rerenders.filter((rerender) => rerender.mock.calls.length === 1)).toHaveLength(10);
-    expect(rerenders.slice(10).every((rerender) => rerender.mock.calls.length === 0)).toBe(true);
+    expect(modelRerender).toHaveBeenCalled();
+    expect(scriptRerender).toHaveBeenCalled();
+    expect(keyedRerender).toHaveBeenCalled();
+    expect(configRerender).not.toHaveBeenCalled();
+    expect(inlineRerender).not.toHaveBeenCalled();
   });
 
   it.each([

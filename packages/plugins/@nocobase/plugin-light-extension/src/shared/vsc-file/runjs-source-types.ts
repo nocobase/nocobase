@@ -10,7 +10,7 @@
 import { VscError } from './errors';
 import { sha256Hex } from './hash';
 export { buildRunJSOwnerFingerprint } from '@nocobase/server';
-export { buildRunJSArtifactHash, buildRunJSFilesHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs';
+export { buildRunJSArtifactHash, buildRunJSFilesHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs/server';
 import type { RunJSSourceLocator } from './runjs-source-contracts';
 import type { VscRepositoryIdentity } from './types';
 

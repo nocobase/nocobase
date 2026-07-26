@@ -10,7 +10,8 @@
 import { version as esbuildVersion } from 'esbuild';
 import ts from 'typescript';
 
-import { sha256Hex, stableSerialize } from '..';
+import { stableSerialize } from '..';
+import { sha256Hex } from '../server';
 import { RUNJS_TYPESCRIPT_DOM_TYPE_ONLY_BRIDGE_DECLARATION } from '../generated/dom-type-only-bridge';
 import {
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,

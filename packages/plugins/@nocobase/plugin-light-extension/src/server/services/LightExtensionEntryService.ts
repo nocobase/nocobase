@@ -8,7 +8,8 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import { sha256Hex, stableSerialize } from '@nocobase/runjs';
+import { stableSerialize } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 import { uid } from '@nocobase/utils';
 

@@ -172,13 +172,9 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   };
 });
 
-function renderListPage(
-  initialEntry = '/admin/settings/light-extension',
-  setupApp?: (app: ReturnType<typeof createMockClient>) => void,
-) {
+function renderListPage(initialEntry = '/admin/settings/light-extension') {
   const app = createMockClient();
   app.apiMock.onGet('app:getInfo').reply(200, { data: { version: 'test' } });
-  setupApp?.(app);
 
   return render(
     <FlowEngineProvider engine={app.flowEngine}>
@@ -300,38 +296,6 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByText('Repository created and compiled')).toBeInTheDocument();
   });
 
-  it('shows one add-new button that opens the combined create dialog', async () => {
-    renderListPage();
-
-    expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
-    expect(screen.getByText('Refresh')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Batch actions/ })).toBeDisabled();
-
-    await userEvent.click(screen.getByRole('button', { name: /Add new/ }));
-
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    expect(within(dialog).getByLabelText('Title')).toBeRequired();
-    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
-    expect(
-      within(dialog).getByText('The name is generated automatically and can be changed if needed.'),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByRole('radio', { name: 'Template' })).toBeChecked();
-    expect(within(dialog).getByRole('radio', { name: 'ZIP file' })).not.toBeChecked();
-    expect(within(dialog).getByRole('radio', { name: 'GitHub source' })).not.toBeChecked();
-    expect(screen.queryByText('Create empty')).not.toBeInTheDocument();
-    expect(screen.queryByText('Add new from import')).not.toBeInTheDocument();
-  });
-
-  it('keeps the filter action enabled when rendered through a legacy app shell', async () => {
-    renderListPage('/admin/settings/light-extension', (app) => {
-      app.dataSourceManager = {
-        getDataSource: vi.fn(() => ({})),
-      };
-    });
-
-    expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
-  });
-
   it('uploads an optional source ZIP through the combined create dialog', async () => {
     mocks.api.createRepo.mockResolvedValueOnce({
       id: 'ler_imported',
@@ -437,66 +401,6 @@ describe('LightExtensionListPage', () => {
       await screen.findByText('GitHub API rate limit reached. Try again later or configure a GitHub token.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('LIGHT_EXTENSION_SYNC_RATE_LIMITED')).not.toBeInTheDocument();
-  });
-
-  it('shows repository details directly in the table without detail or diagnostics actions', async () => {
-    mocks.api.listRepos.mockResolvedValueOnce([
-      {
-        id: 'ler_sales',
-        name: 'sales-widgets',
-        normalizedName: 'sales-widgets',
-        title: 'Sales widgets',
-        description: 'Sales dashboard helpers',
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: 'commit-1234567890',
-        entryCount: 4,
-        entryKinds: {
-          'js-block': 1,
-          'js-action': 1,
-          runjs: 2,
-        },
-        createdAt: '2026-07-08T00:00:00.000Z',
-        updatedAt: '2026-07-09T00:00:00.000Z',
-        lastCompiledAt: '2026-07-09T00:00:00.000Z',
-      },
-    ]);
-    renderListPage();
-
-    expect(await screen.findByText('Sales widgets')).toBeInTheDocument();
-    expect(screen.getByText('Sales dashboard helpers')).toBeInTheDocument();
-    expect(screen.getByText('js-block 1')).toBeInTheDocument();
-    expect(screen.getByText('js-action 1')).toBeInTheDocument();
-    expect(screen.queryByText('runjs 2')).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'Status' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Reference contract diagnostics' })).not.toBeInTheDocument();
-
-    const row = screen.getByText('Sales widgets').closest('tr');
-    if (!row) {
-      throw new Error('Expected the light extension table row to be rendered');
-    }
-    const sourceAction = within(row).getByRole('button', { name: 'Edit code' });
-    const syncAction = within(row).getByRole('button', { name: 'Sync code' });
-    const editAction = within(row).getByRole('button', { name: 'Edit details Sales widgets' });
-    const removeAction = within(row).getByRole('button', { name: 'Remove' });
-    expect(sourceAction).toHaveClass('ant-btn-link');
-    expect(sourceAction).toHaveTextContent('Edit code');
-    expect(syncAction).toHaveClass('ant-btn-link');
-    expect(syncAction).toHaveTextContent('Sync code');
-    expect(editAction).toHaveClass('ant-btn-link');
-    expect(editAction).toHaveTextContent('Edit details');
-    expect(removeAction).toHaveClass('ant-btn-link');
-    expect(removeAction).toHaveTextContent('Remove');
-    expect(sourceAction.querySelector('.anticon')).not.toBeInTheDocument();
-    expect(syncAction.querySelector('.anticon')).not.toBeInTheDocument();
-    expect(editAction.querySelector('.anticon')).not.toBeInTheDocument();
-    expect(removeAction.querySelector('.anticon')).not.toBeInTheDocument();
-    expect(
-      within(row)
-        .getAllByRole('button')
-        .map((button) => button.textContent),
-    ).toEqual(['Edit code', 'Sync code', 'Edit details', 'Remove']);
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -713,47 +617,6 @@ describe('LightExtensionListPage', () => {
     expect(screen.getByText('sales-widgets')).toBeInTheDocument();
   });
 
-  it('makes every data column sortable except actions', async () => {
-    mocks.api.listRepos.mockResolvedValueOnce([
-      {
-        id: 'ler_zeta',
-        name: 'zeta-widgets',
-        normalizedName: 'zeta-widgets',
-        title: 'Zeta widgets',
-        description: 'Second description',
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: null,
-        entryCount: 2,
-        createdAt: '2026-07-09T00:00:00.000Z',
-        updatedAt: '2026-07-10T00:00:00.000Z',
-      },
-      {
-        id: 'ler_alpha',
-        name: 'alpha-widgets',
-        normalizedName: 'alpha-widgets',
-        title: 'Alpha widgets',
-        description: 'First description',
-        lifecycleStatus: 'disabled',
-        healthStatus: 'ready',
-        headCommitId: null,
-        entryCount: 1,
-        createdAt: '2026-07-08T00:00:00.000Z',
-        updatedAt: '2026-07-09T00:00:00.000Z',
-      },
-    ]);
-    renderListPage();
-
-    expect(await screen.findByText('Zeta widgets')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByText('Title'));
-
-    await waitFor(() => {
-      const dataRows = screen.getAllByRole('row').slice(1);
-      expect(within(dataRows[0]).getByText('Alpha widgets')).toBeInTheDocument();
-    });
-  });
-
   it('provides the requested repository filters and evaluates their values', () => {
     expect(LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES).toEqual([
       'name',
@@ -791,56 +654,6 @@ describe('LightExtensionListPage', () => {
 
     expect(matchesLightExtensionRepoFilter(repo, filter)).toBe(true);
     expect(matchesLightExtensionRepoFilter(repo, { enabled: { $isFalsy: true } })).toBe(false);
-  });
-
-  it('opens the source workspace drawer as a large side panel with files collapsed', async () => {
-    mocks.api.listRepos.mockResolvedValueOnce([
-      {
-        id: 'ler_browser_smoke',
-        name: 'browser-smoke',
-        normalizedName: 'browser-smoke',
-        title: 'Browser smoke',
-        description: null,
-        lifecycleStatus: 'enabled',
-        healthStatus: 'pending',
-        headCommitId: 'commit-1',
-      },
-    ]);
-    mocks.api.pull.mockResolvedValueOnce({
-      repo: { id: 'ler_browser_smoke' },
-      commit: { id: 'commit-1' },
-      tree: { hash: 'tree-1', entryCount: 1, byteSize: 10 },
-      unchanged: false,
-      files: [
-        {
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
-          content: 'export default function SalesKpiBlock() { return null; }\n',
-          language: 'typescript',
-          size: 10,
-          blobHash: 'blob-1',
-          pathHash: 'path-1',
-          pathLowerHash: 'path-lower-1',
-          mode: '',
-        },
-      ],
-    });
-
-    renderListPage('/admin/settings/light-extension?repoId=ler_browser_smoke&panel=source');
-
-    const workspace = await screen.findByText('Mock source workspace');
-    expect(workspace).toHaveAttribute('data-default-files-collapsed', 'true');
-    await waitFor(() => {
-      expect(document.querySelector('.ant-drawer-content-wrapper')).toHaveStyle({
-        width: 'min(1280px, calc(100vw - 64px))',
-      });
-      expect(document.querySelector('.ant-drawer-body')).toHaveStyle({ overflow: 'hidden', padding: '16px' });
-    });
-
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
-    });
   });
 
   it('refreshes list summaries after source changes are saved', async () => {

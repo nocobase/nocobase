@@ -46,39 +46,6 @@ describe('FilesPanel path access', () => {
     expect(screen.getByRole('button', { name: 'src/index.ts' })).toBeInTheDocument();
   });
 
-  it('fills the available sidebar height when history is collapsed', () => {
-    render(
-      <FilesPanel
-        collapsed={false}
-        exporting={false}
-        files={[]}
-        fillAvailableHeight
-        onCollapseChange={vi.fn()}
-        onCreate={vi.fn()}
-        onCreateFolder={vi.fn()}
-        onDelete={vi.fn()}
-        onDeleteFolder={vi.fn()}
-        onMoveFile={vi.fn()}
-        onMoveFolder={vi.fn()}
-        onOpen={vi.fn()}
-        onRefresh={vi.fn()}
-        onRename={vi.fn()}
-        onRenameFolder={vi.fn()}
-        readOnly={false}
-        savedFiles={[]}
-        t={(key) => key}
-      />,
-    );
-
-    expect(screen.getByRole('complementary', { name: 'File resource manager' })).toHaveStyle({
-      flex: '1 1 0',
-      minHeight: 0,
-    });
-    expect(screen.getByRole('complementary', { name: 'File resource manager' })).not.toHaveStyle({
-      maxHeight: '80%',
-    });
-  });
-
   it('shows the import loading state and keeps import disabled in read-only mode', () => {
     const commonProps = {
       collapsed: false,

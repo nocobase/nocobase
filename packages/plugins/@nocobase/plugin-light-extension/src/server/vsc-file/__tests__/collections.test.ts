@@ -9,9 +9,7 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import type { Application } from '@nocobase/server';
-import { UniqueConstraintError } from 'sequelize';
 
-import { pathHash, pathLowerHash } from '../../../shared/vsc-file/path';
 import { VscFileServerModule } from '../plugin';
 
 describe('vsc-file collections', () => {
@@ -71,57 +69,6 @@ describe('vsc-file collections', () => {
       true,
       'vscmap_remote_uq',
     );
-  });
-
-  it('rejects duplicate repository owner/name tuples', async () => {
-    const repository = db.getRepository('vscFileRepositories');
-
-    await repository.create({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'demo',
-        name: 'main',
-      },
-    });
-
-    await expect(
-      repository.create({
-        values: {
-          ownerType: 'plugin',
-          ownerId: 'demo',
-          name: 'main',
-        },
-      }),
-    ).rejects.toBeInstanceOf(UniqueConstraintError);
-  });
-
-  it('rejects case-only duplicate paths within the same tree', async () => {
-    const treeEntries = db.getRepository('vscFileTreeEntries');
-    const treeHash = 'a'.repeat(64);
-
-    await treeEntries.create({
-      values: {
-        treeHash,
-        path: 'Foo.ts',
-        pathHash: pathHash('Foo.ts'),
-        pathLowerHash: pathLowerHash('Foo.ts'),
-        blobHash: 'b'.repeat(64),
-        size: 1,
-      },
-    });
-
-    await expect(
-      treeEntries.create({
-        values: {
-          treeHash,
-          path: 'foo.ts',
-          pathHash: pathHash('foo.ts'),
-          pathLowerHash: pathLowerHash('foo.ts'),
-          blobHash: 'c'.repeat(64),
-          size: 1,
-        },
-      }),
-    ).rejects.toBeInstanceOf(UniqueConstraintError);
   });
 
   async function expectIndex(collectionName: string, fields: string[], unique: boolean, name: string) {

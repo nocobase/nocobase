@@ -11,7 +11,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 
-import { sha256Hex, stableSerialize } from '..';
+import { stableSerialize } from '..';
+import { sha256Hex } from '../server';
 
 export type RunJSCompletionCatalogCategory = 'component' | 'function' | 'icon' | 'object' | 'variable';
 

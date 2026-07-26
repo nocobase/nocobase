@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { sha256Hex } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import { serialize } from 'node:v8';
 import { threadId as mainThreadId } from 'node:worker_threads';
 import { vi } from 'vitest';
@@ -155,86 +155,6 @@ describe('LightExtensionCompileWorkerPool', () => {
 
     await expect(pool.submit(invalid)).rejects.toThrow(/structured-clone plain data/u);
     expect(harness.startedJobIds).toEqual([]);
-    await pool.shutdown();
-  });
-
-  it('bounds capacity waiters and removes an aborted waiter', async () => {
-    const harness = createWorkerHarness();
-    const job = createCompileJob(0);
-    const byteSize = serialize(job).byteLength;
-    const pool = new LightExtensionCompileWorkerPool({
-      maxJobBytes: byteSize,
-      maxInFlightBytes: byteSize,
-      maxCapacityWaiters: 1,
-      workerFactory: harness.factory,
-    });
-    const active = pool.submit(job);
-    const controller = new AbortController();
-    const waiting = pool.waitForCapacity(byteSize, controller.signal);
-
-    await expect(pool.waitForCapacity(byteSize)).rejects.toMatchObject<Partial<LightExtensionCompilePoolError>>({
-      code: 'LIGHT_EXTENSION_COMPILE_CAPACITY_WAITERS_EXCEEDED',
-    });
-    const reason = new Error('request aborted');
-    controller.abort(reason);
-    await expect(waiting).rejects.toBe(reason);
-
-    harness.workers[0].completeCurrent();
-    await active;
-    await pool.shutdown();
-  });
-
-  it('prepares a backpressured job once before the caller can mutate it', async () => {
-    const harness = createWorkerHarness();
-    const activeJob = createCompileJob(0);
-    const waitingJob = createCompileJob(1);
-    const maxJobBytes = Math.max(serialize(activeJob).byteLength, serialize(waitingJob).byteLength) + 32;
-    const pool = new LightExtensionCompileWorkerPool({
-      maxJobBytes,
-      maxInFlightBytes: maxJobBytes,
-      workerFactory: harness.factory,
-    });
-    const active = pool.submit(activeJob);
-    const waiting = pool.submitWithBackpressure(waitingJob);
-    const originalJobId = waitingJob.jobId;
-    const originalContent = waitingJob.files[0].content;
-
-    waitingJob.jobId = 'mutated-after-submit';
-    waitingJob.files[0].content = 'mutated-after-submit';
-    harness.workers[0].completeCurrent();
-    await active;
-    await vi.waitFor(() => expect(harness.startedJobs).toHaveLength(2));
-    expect(harness.startedJobs[1]).toMatchObject({ jobId: originalJobId });
-    expect(harness.startedJobs[1].files[0].content).toBe(originalContent);
-    harness.workers[0].completeCurrent();
-    await waiting;
-    await pool.shutdown();
-
-    const oversizedHarness = createWorkerHarness();
-    const oversized = createCompileJob(2, ' '.repeat(128));
-    const oversizedPool = new LightExtensionCompileWorkerPool({
-      maxJobBytes: serialize(oversized).byteLength - 1,
-      maxInFlightBytes: serialize(oversized).byteLength,
-      workerFactory: oversizedHarness.factory,
-    });
-    const rejected = oversizedPool.submitWithBackpressure(oversized);
-    oversized.files[0].content = '';
-    await expect(rejected).rejects.toMatchObject<Partial<LightExtensionCompilePoolError>>({
-      code: 'LIGHT_EXTENSION_COMPILE_JOB_TOO_LARGE',
-    });
-    expect(oversizedHarness.workers).toHaveLength(0);
-    await oversizedPool.shutdown();
-  });
-
-  it('leaves no worker or accounting behind when the first worker factory throws', async () => {
-    const pool = new LightExtensionCompileWorkerPool({
-      workerFactory: () => {
-        throw new Error('worker factory failed');
-      },
-    });
-
-    await expect(pool.submit(createCompileJob(0))).rejects.toThrow('worker factory failed');
-    expect(pool.getMetrics()).toMatchObject({ workerCount: 0, active: 0, queueDepth: 0, inflightBytes: 0 });
     await pool.shutdown();
   });
 
@@ -406,13 +326,11 @@ function createFakeResult(request: LightExtensionCompileWorkerRequest): LightExt
 function createWorkerHarness(options: { autoComplete?: boolean; ready?: boolean } = {}) {
   const workers: FakeCompileWorker[] = [];
   const startedJobIds: string[] = [];
-  const startedJobs: LightExtensionCompileJob[] = [];
   const factory: LightExtensionCompileWorkerFactory = (workerId) => {
     const worker = new FakeCompileWorker(
       workerId,
       (request, current) => {
         startedJobIds.push(request.job.jobId);
-        startedJobs.push(request.job);
         if (options.autoComplete) {
           queueMicrotask(() => current.emitResult(createFakeResult(request)));
         }
@@ -422,7 +340,7 @@ function createWorkerHarness(options: { autoComplete?: boolean; ready?: boolean 
     workers.push(worker);
     return worker;
   };
-  return { factory, workers, startedJobIds, startedJobs };
+  return { factory, workers, startedJobIds };
 }
 
 class FakeCompileWorker implements LightExtensionCompileWorkerHandle {

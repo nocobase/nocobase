@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizePath, sha256Hex, stableSerialize } from '@nocobase/runjs';
+import { normalizePath, stableSerialize } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import { posix as pathPosix } from 'path';
 
 import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT, type LightExtensionKind } from '../../constants';

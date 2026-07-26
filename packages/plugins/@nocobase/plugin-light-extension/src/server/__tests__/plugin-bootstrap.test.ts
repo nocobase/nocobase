@@ -9,7 +9,7 @@
 
 import type { Application } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
-import { sha256Hex } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs/server';
 import { execFileSync } from 'node:child_process';
 import { vi } from 'vitest';
 

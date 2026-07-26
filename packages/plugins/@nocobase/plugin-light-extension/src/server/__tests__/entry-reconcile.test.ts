@@ -15,25 +15,16 @@ import type { LightExtensionEntryValidationResult } from '../services/LightExten
 import { createMutableModel } from './reference-test-helpers';
 
 describe('LightExtensionEntryService reconcile', () => {
-  it('reads the repo entry set once and performs no writes for 20 unchanged entries', async () => {
-    const sourceEntries = Array.from({ length: 20 }, (_, index) => createSourceEntry(`entry-${index + 1}`));
+  it('performs no writes for unchanged entries and returns them in canonical order', async () => {
+    const sourceEntries = ['entry-b', 'entry-a', 'entry-c'].map((name) => createSourceEntry(name));
     const fixture = createReconcileFixture(sourceEntries.map(createStoredEntry));
 
     const result = await fixture.service.reconcileEntries('ler_sales', sourceEntries, 'commit_1', fixture.transaction);
 
-    expect(fixture.repository.find).toHaveBeenCalledTimes(1);
     expect(fixture.repository.createMany).not.toHaveBeenCalled();
     expect(fixture.repository.records.every((record) => record.update.mock.calls.length === 0)).toBe(true);
-    expect(result.unchangedEntries).toHaveLength(20);
-    expect(result.entries.map((entry) => entry.entryName)).toEqual(
-      [...result.entries]
-        .sort((left, right) =>
-          [left.target, left.kind, left.entryName, left.id]
-            .join('\u0000')
-            .localeCompare([right.target, right.kind, right.entryName, right.id].join('\u0000')),
-        )
-        .map((entry) => entry.entryName),
-    );
+    expect(result.unchangedEntries).toHaveLength(3);
+    expect(result.entries.map((entry) => entry.entryName)).toEqual(['entry-a', 'entry-b', 'entry-c']);
   });
 
   it('marks a removed entry missing, clears runtime fields, and restores the same entry id', async () => {

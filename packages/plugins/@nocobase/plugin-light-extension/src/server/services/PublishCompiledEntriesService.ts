@@ -8,13 +8,8 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import {
-  buildRunJSArtifactHash,
-  buildRunJSRuntimeCodeHash,
-  sha256Hex,
-  stableSerialize,
-  type RunJSRuntimeArtifact,
-} from '@nocobase/runjs';
+import { stableSerialize, type RunJSRuntimeArtifact } from '@nocobase/runjs';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
 import { Buffer } from 'node:buffer';
 
 import { LightExtensionError } from '../../shared/errors';

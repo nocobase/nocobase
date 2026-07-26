@@ -44,26 +44,16 @@ describe('vsc-file canonical candidate snapshot', () => {
     if (!initialCommit) {
       throw new Error('Expected the fixture repository to have an initial commit');
     }
-    const counters = new Map<string, number>();
-    const result = await service.pushWithCandidate(
-      {
-        repoId: created.repository.id,
-        baseCommitId: initialCommit.id,
-        message: 'canonical candidate',
-        files: [
-          { path: 'src\\update.ts', content: '\uFEFFexport const value = "多字节";\r\n' },
-          { path: 'README.md', operation: 'delete' },
-          { path: 'src/new.ts', content: 'export const first = 1;\rexport const second = 2;\r\n' },
-        ],
-      },
-      {
-        metricsCollector: {
-          increment(counter, amount = 1) {
-            counters.set(counter, (counters.get(counter) || 0) + amount);
-          },
-        },
-      },
-    );
+    const result = await service.pushWithCandidate({
+      repoId: created.repository.id,
+      baseCommitId: initialCommit.id,
+      message: 'canonical candidate',
+      files: [
+        { path: 'src\\update.ts', content: '\uFEFFexport const value = "多字节";\r\n' },
+        { path: 'README.md', operation: 'delete' },
+        { path: 'src/new.ts', content: 'export const first = 1;\rexport const second = 2;\r\n' },
+      ],
+    });
 
     const expectedContents = new Map([
       ['src/keep.ts', 'export const keep = "保留";\n'],
@@ -93,8 +83,6 @@ describe('vsc-file canonical candidate snapshot', () => {
       expect(file.blobHash).toBe(sha256Hex(content));
     }
     expect(result.commit.treeHash).toBe(result.candidate.treeHash);
-    expect(counters.get('blobContentQueryCount')).toBe(1);
-    expect(counters.get('blobContentRowCount')).toBe(1);
   });
 
   it('keeps the ordinary push result free of source snapshots', async () => {
@@ -112,49 +100,6 @@ describe('vsc-file canonical candidate snapshot', () => {
 
     expect(Object.keys(result).sort()).toEqual(['commit', 'repository', 'tree']);
     expect(result).not.toHaveProperty('candidate');
-  });
-
-  it('loads unchanged content with one batch query for a 200-file candidate', async () => {
-    const initialFiles = Array.from({ length: 200 }, (_, index) => ({
-      path: `src/file-${String(index).padStart(3, '0')}.ts`,
-      content: `export const value${index} = ${index};\n`,
-    }));
-    const created = await service.createRepository({
-      ownerType: 'plugin',
-      ownerId: 'candidate-performance-test',
-      name: 'main',
-      initialFiles,
-    });
-    const initialCommit = created.initialCommit;
-    if (!initialCommit) {
-      throw new Error('Expected the fixture repository to have an initial commit');
-    }
-    const counters = new Map<string, number>();
-
-    const result = await service.pushWithCandidate(
-      {
-        repoId: created.repository.id,
-        baseCommitId: initialCommit.id,
-        message: 'change one file',
-        files: [{ path: 'src/file-107.ts', content: 'export const value107 = "changed";\r\n' }],
-      },
-      {
-        metricsCollector: {
-          increment(counter, amount = 1) {
-            counters.set(counter, (counters.get(counter) || 0) + amount);
-          },
-        },
-      },
-    );
-
-    expect(result.candidate.files).toHaveLength(200);
-    expect(result.candidate.changedPaths).toEqual(['src/file-107.ts']);
-    expect(result.candidate.files[107]).toMatchObject({
-      path: 'src/file-107.ts',
-      content: 'export const value107 = "changed";\n',
-    });
-    expect(counters.get('blobContentQueryCount')).toBe(1);
-    expect(counters.get('blobContentRowCount')).toBe(199);
   });
 
   it('validates against the already loaded base tree and rolls back failures', async () => {

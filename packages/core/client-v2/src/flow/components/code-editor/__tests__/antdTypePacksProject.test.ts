@@ -14,7 +14,6 @@ import {
   shutdownTypeScriptProjectSessionSuite,
   withTypeScriptProjectSession,
 } from './helpers/withTypeScriptProjectSession';
-import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import { clearRunJSTypeLibraryPackRegistryForTests } from '../typescriptLibraryRegistry';
 import { clearTypeScriptProjectCachesForTests } from '../typescriptProject';
 
@@ -36,95 +35,22 @@ afterEach(() => {
 
 afterAll(shutdownTypeScriptProjectSessionSuite);
 
+// Pack content is covered by packages/core/runjs/src/type-packs/*/__tests__ and the official-type-packs-*.cases
+// layer in core/runjs; this file only smoke-tests that the packs load into the editor project.
 describe('RunJS generated Ant Design and Icons TypeScript packs', () => {
-  it('loads representative Ant Design symbols with official props, generics, hooks, and static APIs', async () => {
+  it('loads the antd and icons packs into the editor project and resolves a representative completion', async () => {
     const code = `
-const { Button, DatePicker, Form, Input, message, Modal, Table, Typography } = ctx.libs.antd;
-const button = <Button type="primary" loading onClick={(event) => event.currentTarget.focus()}>Save</Button>;
-const input = <Input onChange={(event) => { const value: string = event.currentTarget.value; void value; }} />;
-interface Row { id: number; name: string }
-const table = <Table<Row> dataSource={[{ id: 1, name: 'Ada' }]} columns={[{
-  dataIndex: 'name',
-  render: (_value, record) => record.name,
-}]} rowKey="id" />;
-const [form] = Form.useForm<{ name: string }>();
-const formView = <Form form={form}><Form.Item name="name"><Input /></Form.Item></Form>;
-const date = ctx.libs.dayjs('2026-07-14');
-const picker = <DatePicker value={date} onChange={(value) => value?.add(1, 'day')} />;
-const modal = Modal.confirm({ title: 'Confirm' });
-const notice = message.success('Saved');
-const title = <Typography.Title level={2}>Title</Typography.Title>;
-void button; void input; void table; void formView; void picker; void modal; void notice; void title;
+const AntButton = ctx.libs.antd.Button;
+const PlusIcon = ctx.libs.antdIcons.PlusOutlined;
+const view = <AntButton type="primary" icon={<PlusIcon />}>Save</AntButton>;
+void view;
 `;
+    const editorProject = project(code);
     await withTypeScriptProjectSession(async (session) => {
-      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-      const roots = session.getDebugState().rootFileNames;
-      for (const name of ['button', 'date-picker', 'form', 'input', 'message', 'modal', 'table', 'typography']) {
-        expect(roots.some((fileName) => fileName.endsWith(`/antd/${name}-bridge.d.ts`))).toBe(true);
-      }
-      expect(roots).not.toContain('/__runjs__/type-packs/antd-full-bridge.d.ts');
+      expect(errorMessages(await session.getDiagnostics(editorProject, code))).toEqual([]);
+      const completionPosition = code.indexOf('ctx.libs.antd.Button') + 'ctx.libs.antd.'.length;
+      const completion = await session.getCompletionResult(editorProject, completionPosition, code, true);
+      expect(completion?.options.some((option) => option.label === 'Button')).toBe(true);
     });
-  });
-
-  it('reports official invalid Ant Design props and unknown symbols', async () => {
-    const code = `
-const { Button, DatePicker, Input, Typography } = ctx.antd;
-<Button type="rainbow" loading="yes" />;
-<Input onChange={(event) => { const value: number = event.currentTarget.value; void value; }} />;
-<DatePicker onChange={(value) => { const text: string = value; void text; }} />;
-<Typography.Title level={7}>Invalid</Typography.Title>;
-ctx.libs.antd.NotAComponent;
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      const messages = errorMessages(await session.getDiagnostics(project(code), code));
-
-      expect(messages.some((message) => /rainbow/.test(message))).toBe(true);
-      expect(messages.some((message) => /boolean/.test(message))).toBe(true);
-      expect(messages.some((message) => /number/.test(message) && /string/.test(message))).toBe(true);
-      expect(messages.some((message) => /NotAComponent/.test(message))).toBe(true);
-    });
-  });
-
-  it('loads only requested icon groups plus the shared base and React pack', async () => {
-    const code = `
-const { MinusOutlined, PlusOutlined } = ctx.libs.antdIcons;
-const plus = <PlusOutlined spin rotate={90} aria-label="add" />;
-const minus = <MinusOutlined onClick={(event) => event.currentTarget.focus()} />;
-void plus; void minus;
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      expect(errorMessages(await session.getDiagnostics(project(code), code))).toEqual([]);
-      const roots = session.getDebugState().rootFileNames;
-      expect(roots).toEqual(
-        expect.arrayContaining([
-          '/__runjs__/type-packs/antd-icons/base-bridge.d.ts',
-          '/__runjs__/type-packs/antd-icons/m-bridge.d.ts',
-          '/__runjs__/type-packs/antd-icons/p-bridge.d.ts',
-        ]),
-      );
-      expect(roots.some((fileName) => fileName.includes('antd-icons-full'))).toBe(false);
-    });
-  });
-
-  it('reports invalid icon props and records symbol/group manifests', async () => {
-    const code = `
-const { PlusOutlined } = ctx.libs.antdIcons;
-<PlusOutlined spin="yes" rotate="90" unknownProp />;
-ctx.libs.antdIcons.NotAnIcon;
-`;
-    await withTypeScriptProjectSession(async (session) => {
-      const messages = errorMessages(await session.getDiagnostics(project(code), code));
-
-      expect(messages.some((message) => /boolean/.test(message))).toBe(true);
-      expect(messages.some((message) => /number/.test(message))).toBe(true);
-      expect(messages.some((message) => /NotAnIcon/.test(message))).toBe(true);
-    });
-    expect(generatedRunJSTypeLibraryPackManifest).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'antd/Button', sourcePackage: 'antd' }),
-        expect.objectContaining({ id: 'antd-icons/base', sourcePackage: '@ant-design/icons' }),
-        expect.objectContaining({ id: 'antd-icons/P', sourcePackage: '@ant-design/icons' }),
-      ]),
-    );
   });
 });

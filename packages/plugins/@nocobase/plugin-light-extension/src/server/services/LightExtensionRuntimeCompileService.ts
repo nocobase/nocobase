@@ -8,7 +8,8 @@
  */
 
 import type { Database } from '@nocobase/database';
-import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex, stableSerialize } from '@nocobase/runjs';
+import { stableSerialize } from '@nocobase/runjs';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
 import { randomUUID } from 'crypto';
 import { serialize } from 'node:v8';
 import { posix as pathPosix } from 'path';

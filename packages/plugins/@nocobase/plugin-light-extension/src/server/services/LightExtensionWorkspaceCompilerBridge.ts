@@ -8,7 +8,8 @@
  */
 
 import type { Transaction } from '@nocobase/database';
-import { buildRunJSFilesHash, type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
+import { type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
+import { buildRunJSFilesHash } from '@nocobase/runjs/server';
 import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
 import { createRequire } from 'node:module';

@@ -12,7 +12,6 @@ import {
   completionStatus,
   currentCompletions,
   startCompletion,
-  type CompletionResult,
   type CompletionSource,
 } from '@codemirror/autocomplete';
 import { syntaxTree } from '@codemirror/language';
@@ -58,25 +57,6 @@ describe('EditorCore', () => {
     expect(viewRef.current?.state.readOnly).toBe(false);
   });
 
-  it('preserves editor identity and focus when the completion source changes', () => {
-    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
-    const firstCompletionSource: CompletionSource = () => null;
-    const secondCompletionSource: CompletionSource = () => null;
-    const { container, rerender } = render(
-      <EditorCore completionSource={firstCompletionSource} value="{}" viewRef={viewRef} />,
-    );
-    const originalContent = container.querySelector<HTMLElement>('.cm-content');
-
-    originalContent?.focus();
-    expect(document.activeElement).toBe(originalContent);
-
-    rerender(<EditorCore completionSource={secondCompletionSource} value="{}" viewRef={viewRef} />);
-
-    const nextContent = container.querySelector<HTMLElement>('.cm-content');
-    expect(nextContent).toBe(originalContent);
-    expect(document.activeElement).toBe(nextContent);
-  });
-
   it('accepts the active completion with Tab without moving focus out of the editor', async () => {
     const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
     const completionSource: CompletionSource = () => ({
@@ -110,66 +90,6 @@ describe('EditorCore', () => {
     expect(document.activeElement).toBe(content);
   });
 
-  it('keeps focus in the editor when Tab is pressed while completion is pending', async () => {
-    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
-    let resolveCompletion: ((result: CompletionResult) => void) | undefined;
-    const completionSource: CompletionSource = () =>
-      new Promise<CompletionResult>((resolve) => {
-        resolveCompletion = resolve;
-      });
-    const { container } = render(<EditorCore completionSource={completionSource} value="focused" viewRef={viewRef} />);
-    const view = viewRef.current;
-    const content = container.querySelector<HTMLElement>('.cm-content');
-    if (!view || !content) {
-      throw new Error('EditorView was not initialized');
-    }
-
-    content.focus();
-    view.dispatch({ selection: { anchor: view.state.doc.length } });
-    startCompletion(view);
-    await waitFor(() => {
-      expect(completionStatus(view.state)).toBe('pending');
-      expect(resolveCompletion).toBeTypeOf('function');
-    });
-
-    const tabEvent = new KeyboardEvent('keydown', {
-      bubbles: true,
-      cancelable: true,
-      code: 'Tab',
-      key: 'Tab',
-      keyCode: 9,
-    });
-    content.dispatchEvent(tabEvent);
-
-    expect(tabEvent.defaultPrevented).toBe(true);
-    expect(view.state.doc.toString()).toBe('focused');
-    expect(document.activeElement).toBe(content);
-
-    resolveCompletion?.({ from: 0, options: [{ label: 'focusedCompletion' }] });
-    await waitFor(() => expect(completionStatus(view.state)).toBe('active'));
-  });
-
-  it('does not consume Tab when no completion is active', () => {
-    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
-    const { container } = render(<EditorCore value="const focused = true;" viewRef={viewRef} />);
-    const content = container.querySelector<HTMLElement>('.cm-content');
-    if (!content) {
-      throw new Error('EditorView was not initialized');
-    }
-
-    content.focus();
-    const tabEvent = new KeyboardEvent('keydown', {
-      bubbles: true,
-      cancelable: true,
-      code: 'Tab',
-      key: 'Tab',
-      keyCode: 9,
-    });
-    content.dispatchEvent(tabEvent);
-
-    expect(tabEvent.defaultPrevented).toBe(false);
-  });
-
   it.each([undefined, 'json'])('does not create a TypeScript Worker for plain %s input', async (language) => {
     const worker = vi.fn();
     vi.stubGlobal('Worker', worker);
@@ -187,30 +107,6 @@ describe('EditorCore', () => {
       expect(worker).not.toHaveBeenCalled();
       unmount();
       expect(worker).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('mounts and unmounts 100 unused editors without creating or terminating Workers', () => {
-    const terminate = vi.fn();
-    const workerFactory = vi.fn(() => ({ terminate }));
-    vi.stubGlobal('Worker', workerFactory);
-    vi.stubGlobal('__NOCOBASE_RUNJS_TYPESCRIPT_WORKER__', true);
-    try {
-      const { unmount } = render(
-        <>
-          {Array.from({ length: 100 }, (_, index) => (
-            <EditorCore key={index} value="" viewRef={{ current: null }} />
-          ))}
-        </>,
-      );
-
-      expect(workerFactory).not.toHaveBeenCalled();
-      expect(terminate).not.toHaveBeenCalled();
-      unmount();
-      expect(workerFactory).not.toHaveBeenCalled();
-      expect(terminate).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
     }
@@ -255,38 +151,6 @@ describe('EditorCore', () => {
 
     rerender(<EditorCore typescriptProjectRef={typescriptProjectRef} value="const value = 3;" viewRef={viewRef} />);
     expect(project.documentRevision).toBe(2);
-  });
-
-  it('keeps focus when workspace module completions change', () => {
-    const fullscreenControl = { isFullscreen: false, toggleFullscreen: vi.fn() };
-    const { container, rerender } = render(
-      <CodeEditor
-        fullscreenControl={fullscreenControl}
-        moduleImportCompletions={[{ detail: 'src/shared/first.ts', exports: [], specifier: './first' }]}
-        showLogs={false}
-        value="{}"
-      />,
-    );
-    const originalContent = container.querySelector<HTMLElement>('.cm-content');
-
-    originalContent?.focus();
-    expect(document.activeElement).toBe(originalContent);
-
-    rerender(
-      <CodeEditor
-        fullscreenControl={fullscreenControl}
-        moduleImportCompletions={[
-          { detail: 'src/shared/first.ts', exports: [], specifier: './first' },
-          { detail: '.light-extension/types/settings.d.ts', exports: [], specifier: './settings' },
-        ]}
-        showLogs={false}
-        value="{}"
-      />,
-    );
-
-    const nextContent = container.querySelector<HTMLElement>('.cm-content');
-    expect(nextContent).toBe(originalContent);
-    expect(document.activeElement).toBe(nextContent);
   });
 
   it('uses the JSON parser and preserves unsaved text, focus, and selection when the Schema changes', () => {

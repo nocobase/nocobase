@@ -22,9 +22,7 @@ import path from 'path';
 import ts from 'typescript';
 
 import {
-  buildRunJSFilesHash,
   normalizePath,
-  sha256Hex,
   type RunJSCompileDiagnostic,
   type RunJSCompileFailureCode,
   type RunJSCompileFile,
@@ -34,6 +32,7 @@ import {
   type RunJSSourceLocator,
   type RunJSSurfaceStyle,
 } from '..';
+import { buildRunJSFilesHash, sha256Hex } from '../server';
 import type { NodeRunJSTypeLibraryRegistry } from './node-type-library';
 import { inspectRunJSSourceWorkspaceWithDependencies, RunJSSourceWorkspaceInspector } from './source-inspection';
 import {

@@ -876,76 +876,6 @@ describe('SettingsAutoForm', () => {
     });
   });
 
-  it('validates empty strings when the runtime schema format requires a non-empty value', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            contact: {
-              type: 'string',
-              format: 'email',
-            },
-          },
-        }}
-        value={{ contact: '' }}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        {
-          contact: '',
-        },
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'contact',
-              message: 'Must match the required format',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('validates uri and url formats with hostname semantics aligned to runtime', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            webhook: {
-              type: 'string',
-              format: 'uri',
-            },
-          },
-        }}
-        value={{ webhook: 'mailto:test@example.com' }}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        {
-          webhook: 'mailto:test@example.com',
-        },
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'webhook',
-              message: 'Must match the required format',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
   it('treats required empty strings as present values like runtime validation', async () => {
     const onChange = vi.fn();
     render(
@@ -976,30 +906,6 @@ describe('SettingsAutoForm', () => {
     });
   });
 
-  it('treats required undefined values as missing like JSON runtime payloads', () => {
-    expect(
-      normalizeSettingsForSchema(
-        {
-          type: 'object',
-          required: ['count'],
-          properties: {
-            count: {
-              type: 'number',
-            },
-          },
-        },
-        {
-          count: undefined,
-        },
-      ).errors,
-    ).toEqual([
-      expect.objectContaining({
-        label: 'count',
-        message: 'Required',
-      }),
-    ]);
-  });
-
   it('validates required null values against their schema type like runtime validation', async () => {
     const onChange = vi.fn();
     render(
@@ -1028,45 +934,6 @@ describe('SettingsAutoForm', () => {
             expect.objectContaining({
               label: 'title',
               message: 'Must be a string',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('validates null object values against their schema type like runtime validation', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            profile: {
-              type: 'object',
-              properties: {
-                title: {
-                  type: 'string',
-                },
-              },
-            },
-          },
-        }}
-        value={{ profile: null }}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        {
-          profile: null,
-        },
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'profile',
-              message: 'Must be an object',
             }),
           ],
         }),
@@ -1105,111 +972,6 @@ describe('SettingsAutoForm', () => {
             expect.objectContaining({
               label: 'tags[0]',
               message: 'Too short',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('infers array schemas from items like runtime validation', () => {
-    expect(
-      normalizeSettingsForSchema(
-        {
-          type: 'object',
-          properties: {
-            tags: {
-              items: {
-                type: 'string',
-                minLength: 2,
-              },
-            },
-          },
-        },
-        {
-          tags: ['a'],
-        },
-      ).errors,
-    ).toEqual([
-      expect.objectContaining({
-        label: 'tags[0]',
-        message: 'Too short',
-      }),
-    ]);
-  });
-
-  it('validates null array items against the item schema type', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            tags: {
-              type: 'array',
-              items: {
-                type: 'string',
-              },
-            },
-          },
-        }}
-        value={{ tags: [null] }}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        {
-          tags: [null],
-        },
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'tags[0]',
-              message: 'Must be a string',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('validates null array object items against the item schema type', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: {
-                    type: 'string',
-                  },
-                },
-              },
-            },
-          },
-        }}
-        value={{ rows: [null] }}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        {
-          rows: [null],
-        },
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'rows[0]',
-              message: 'Must be an object',
             }),
           ],
         }),

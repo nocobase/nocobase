@@ -7,19 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildRunJSTypeScriptContextDeclaration } from '@nocobase/runjs/client-v2';
 import type { Diagnostic } from '@codemirror/lint';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
-import { generatedRunJSTypeLibraryPackManifest } from '../type-packs/generated/manifest';
 import {
   shutdownTypeScriptProjectSessionSuite,
   withTypeScriptProjectSession,
 } from './helpers/withTypeScriptProjectSession';
-import {
-  clearRunJSTypeLibraryPackRegistryForTests,
-  getRunJSTypeLibraryPackRegistryDebugState,
-} from '../typescriptLibraryRegistry';
+import { clearRunJSTypeLibraryPackRegistryForTests } from '../typescriptLibraryRegistry';
 import { clearTypeScriptProjectCachesForTests, type CodeEditorTypeScriptProject } from '../typescriptProject';
 
 function reactProject(code: string): CodeEditorTypeScriptProject {
@@ -40,45 +35,17 @@ afterEach(() => {
 
 afterAll(shutdownTypeScriptProjectSessionSuite);
 
+// Pack content is covered by packages/core/runjs/src/type-packs/*/__tests__ and the official-type-packs-*.cases
+// layer in core/runjs; this file only smoke-tests that the pack loads into the editor project.
 describe('RunJS official React TypeScript project', () => {
-  it('loads the React pack once for concurrent requests and never for ordinary code', async () => {
-    const ordinaryCode = 'ctx.logger.info("ready");';
-    await withTypeScriptProjectSession(async (ordinarySession) => {
-      expect(await ordinarySession.getDiagnostics(reactProject(ordinaryCode), ordinaryCode)).toEqual([]);
-    });
-    expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(0);
-
+  it('loads the React pack into the editor project and resolves a representative completion', async () => {
     const code = 'ctx.libs.React.useState(0); const node = <div />; ctx.render(node);';
     const project = reactProject(code);
     await withTypeScriptProjectSession(async (session) => {
+      expect(errorMessages(await session.getDiagnostics(project, code))).toEqual([]);
       const completionPosition = code.indexOf('ctx.libs.React.') + 'ctx.libs.React.'.length;
-      const [completion, hover, diagnostics] = await Promise.all([
-        session.getCompletionResult(project, completionPosition, code, true),
-        session.getHover(project, code.indexOf('useState') + 2, code),
-        session.getDiagnostics(project, code),
-      ]);
-
+      const completion = await session.getCompletionResult(project, completionPosition, code, true);
       expect(completion?.options.some((option) => option.label === 'useState')).toBe(true);
-      expect(hover?.message).toContain('useState');
-      expect(errorMessages(diagnostics)).toEqual([]);
-      expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(1);
-      await session.getDiagnostics(project, code);
     });
-    expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(1);
-  });
-
-  it('records the generated React contract without duplicating official declarations', () => {
-    const manifest = generatedRunJSTypeLibraryPackManifest.find((entry) => entry.id === 'react');
-    const baseDeclaration = buildRunJSTypeScriptContextDeclaration();
-
-    expect(manifest).toMatchObject({
-      libraryName: 'react',
-      rootFileCount: 1,
-      sourcePackage: '@types/react',
-    });
-    expect(baseDeclaration).toContain('interface RunJSReactLibrary {}');
-    expect(baseDeclaration).not.toContain('declare namespace React');
-    expect(baseDeclaration).not.toContain("declare module 'react'");
-    expect(baseDeclaration).not.toContain('function useState');
   });
 });

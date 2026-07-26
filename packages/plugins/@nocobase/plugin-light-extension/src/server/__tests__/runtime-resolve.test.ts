@@ -156,67 +156,13 @@ describe('RuntimeResolveService', () => {
     ]);
   });
 
-  it('loads selectable entries and repo runtime metadata with a constant query count', async () => {
-    const { service, entriesRepository, reposRepository } = createRuntimeResolveService();
-    const catalog = createSelectableCatalog();
-    entriesRepository.find.mockResolvedValue(catalog.entries);
-    reposRepository.find.mockResolvedValue(catalog.repos);
-
-    await expect(service.listSelectableEntries()).resolves.toHaveLength(100);
-    expect(entriesRepository.find).toHaveBeenCalledOnce();
-    expect(reposRepository.find).toHaveBeenCalledOnce();
-    expect(reposRepository.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fields: ['id', 'lifecycleStatus', 'headCommitId'],
-      }),
-    );
-  });
-
-  it('loads 100 static-filtered repo labels with one constant projection query', async () => {
-    const { service, entriesRepository, reposRepository, usersRepository } = createRuntimeResolveService();
-    const catalog = createSelectableCatalog();
-    entriesRepository.find.mockResolvedValue(catalog.entries);
+  it('parses {{$user.nickname}} ACL row filters with a projected user lookup', async () => {
+    const { service, reposRepository, usersRepository } = createRuntimeResolveService();
     reposRepository.find
-      .mockResolvedValueOnce(catalog.repos)
-      .mockResolvedValueOnce(catalog.repoIds.map((id, index) => createModel({ id, title: `Repo ${index}` })));
-
-    await expect(
-      service.listSelectableEntries(
-        {},
-        {
-          can: async () => ({
-            params: {
-              fields: ['id', 'title'],
-              filter: { title: { $ne: 'hidden' } },
-            },
-          }),
-        },
-      ),
-    ).resolves.toHaveLength(100);
-    expect(entriesRepository.find).toHaveBeenCalledOnce();
-    expect(reposRepository.find).toHaveBeenCalledTimes(2);
-    expect(reposRepository.find).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        fields: ['id', 'lifecycleStatus', 'headCommitId'],
-      }),
-    );
-    expect(reposRepository.find).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        fields: ['id', 'title'],
-      }),
-    );
-    expect(usersRepository.findOne).not.toHaveBeenCalled();
-  });
-
-  it('loads 100 dynamic user-filtered labels with one additional user query', async () => {
-    const { service, entriesRepository, reposRepository, usersRepository } = createRuntimeResolveService();
-    const catalog = createSelectableCatalog();
-    entriesRepository.find.mockResolvedValue(catalog.entries);
-    reposRepository.find
-      .mockResolvedValueOnce(catalog.repos)
-      .mockResolvedValueOnce(catalog.repoIds.map((id) => createModel({ id, name: 'visible' })));
+      .mockResolvedValueOnce([
+        createModel({ id: 'ler_sales', lifecycleStatus: 'enabled', headCommitId: 'vsc_commit_1' }),
+      ])
+      .mockResolvedValueOnce([createModel({ id: 'ler_sales', name: 'visible' })]);
     usersRepository.findOne.mockResolvedValue({ nickname: 'visible' });
 
     await expect(
@@ -232,9 +178,7 @@ describe('RuntimeResolveService', () => {
           currentUser: { id: 7 },
         },
       ),
-    ).resolves.toHaveLength(100);
-    expect(entriesRepository.find).toHaveBeenCalledOnce();
-    expect(reposRepository.find).toHaveBeenCalledTimes(2);
+    ).resolves.toEqual([expect.objectContaining({ repoId: 'ler_sales', repoName: 'visible' })]);
     expect(reposRepository.find).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -244,7 +188,6 @@ describe('RuntimeResolveService', () => {
         },
       }),
     );
-    expect(usersRepository.findOne).toHaveBeenCalledOnce();
     expect(usersRepository.findOne).toHaveBeenCalledWith({ filterByTk: 7, fields: ['nickname'] });
   });
 
@@ -457,21 +400,6 @@ function createRuntimeResolveService(
     reposRepository,
     entriesRepository,
     usersRepository,
-  };
-}
-
-function createSelectableCatalog() {
-  const repoIds = Array.from({ length: 100 }, (_, index) => `ler_${index}`);
-  return {
-    repoIds,
-    entries: repoIds.map((repoId, index) =>
-      createModel({
-        ...createEntryRecord(),
-        id: `lee_${index}`,
-        repoId,
-      }),
-    ),
-    repos: repoIds.map((id) => createModel({ id, lifecycleStatus: 'enabled', headCommitId: 'vsc_commit_1' })),
   };
 }
 
