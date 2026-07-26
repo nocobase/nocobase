@@ -3142,6 +3142,7 @@ export default class Install extends Command {
       developmentMode: Install.toOptionalPromptString(params.appResults.developmentMode),
       portalName: Install.toOptionalPromptString(params.appResults.portalName),
       portalTemplate: Install.toOptionalPromptString(params.appResults.portalTemplate),
+      npmRegistry: Install.toOptionalPromptString(params.appResults.npmRegistry),
       storagePath: Install.resolveAbsoluteStoragePath(params.envName, params.appResults),
       verbose: params.verbose,
       onStartTask: (message) => this.logStage(message),

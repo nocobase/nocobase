@@ -265,6 +265,7 @@ async function prepareInitialPortalForRuntime(
     developmentMode: runtime.env.config?.developmentMode,
     portalName: runtime.env.config?.portalName,
     portalTemplate: runtime.env.config?.portalTemplate,
+    npmRegistry: runtime.env.config?.npmRegistry,
     storagePath: runtime.env.storagePath || runtime.env.config?.storagePath,
     verbose,
     onStartTask: startTask,

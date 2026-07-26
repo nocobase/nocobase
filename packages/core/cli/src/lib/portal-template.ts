@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { resolvePortalTemplate, type ResolvedPortalTemplate } from './portal-create.js';
 import { run } from './run-npm.js';
 
 const DEFAULT_PORTAL_APP_NAME = 'main';
@@ -25,6 +26,8 @@ type RunOptions = {
   errorName?: string;
   stdio?: 'inherit' | 'pipe' | 'ignore';
   timeoutMs?: number;
+  onStdout?: (chunk: string) => void;
+  onStderr?: (chunk: string) => void;
 };
 
 type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
@@ -38,6 +41,7 @@ export type PrepareInitialPortalOptions = {
   developmentMode?: string;
   portalName?: string;
   portalTemplate?: string;
+  npmRegistry?: string;
   storagePath?: string;
   verbose?: boolean;
   runCommand?: RunCommand;
@@ -94,6 +98,15 @@ function resolveLocalTemplatePath(templateSource: string): string {
   return templateSource;
 }
 
+function isGitTemplateSource(templateSource: string): boolean {
+  return (
+    templateSource.startsWith('git@') ||
+    templateSource.startsWith('git+') ||
+    /^https?:\/\//i.test(templateSource) ||
+    templateSource.endsWith('.git')
+  );
+}
+
 async function getLocalTemplateDir(templateSource: string): Promise<string | undefined> {
   let localPath: string;
   try {
@@ -113,6 +126,41 @@ async function getLocalTemplateDir(templateSource: string): Promise<string | und
     throw new Error(`Portal template "${templateSource}" is invalid: expected a directory.`);
   }
   return localPath;
+}
+
+async function resolveInitialPortalTemplate(params: {
+  templateSource: string;
+  tempDir: string;
+  npmRegistry?: string;
+  verbose?: boolean;
+  runCommand: RunCommand;
+}): Promise<ResolvedPortalTemplate> {
+  const localTemplateDir = await getLocalTemplateDir(params.templateSource);
+  if (localTemplateDir) {
+    return {
+      dir: localTemplateDir,
+      source: params.templateSource,
+      type: 'local',
+    };
+  }
+
+  if (!isGitTemplateSource(params.templateSource)) {
+    return resolvePortalTemplate(params.templateSource, {
+      npmRegistry: params.npmRegistry,
+      runCommand: params.runCommand,
+    });
+  }
+
+  await params.runCommand('git', ['clone', '--depth', '1', params.templateSource, params.tempDir], {
+    errorName: 'git clone',
+    stdio: params.verbose ? 'inherit' : 'ignore',
+  });
+
+  return {
+    dir: params.tempDir,
+    source: params.templateSource,
+    type: 'local',
+  };
 }
 
 async function copyTemplate(sourceDir: string, targetDir: string): Promise<void> {
@@ -177,16 +225,17 @@ export async function prepareInitialPortalTemplate(
   const runCommand = options.runCommand ?? run;
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-'));
   let cleanupPortalDir = false;
+  let template: ResolvedPortalTemplate | undefined;
 
   try {
-    const localTemplateDir = await getLocalTemplateDir(templateUrl);
-    const templateDir = localTemplateDir || tempDir;
-    if (!localTemplateDir) {
-      await runCommand('git', ['clone', '--depth', '1', templateUrl, tempDir], {
-        errorName: 'git clone',
-        stdio: options.verbose ? 'inherit' : 'ignore',
-      });
-    }
+    template = await resolveInitialPortalTemplate({
+      templateSource: templateUrl,
+      tempDir,
+      npmRegistry: options.npmRegistry,
+      verbose: options.verbose,
+      runCommand,
+    });
+    const templateDir = template.dir;
 
     if (!(await pathExists(path.join(templateDir, 'package.json')))) {
       throw new Error(`Portal template "${templateUrl}" is invalid: package.json is missing.`);
@@ -212,5 +261,6 @@ export async function prepareInitialPortalTemplate(
     throw error;
   } finally {
     await rm(tempDir, { recursive: true, force: true });
+    await template?.cleanup?.();
   }
 }

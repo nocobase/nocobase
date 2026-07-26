@@ -10,6 +10,7 @@
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import * as tar from 'tar';
 import { afterEach, expect, test, vi } from 'vitest';
 import { prepareInitialPortalTemplate } from '../lib/portal-template';
 
@@ -28,6 +29,18 @@ async function writePortalTemplate(templatePath: string, lockfile?: string): Pro
   if (lockfile) {
     await fsp.writeFile(path.join(templatePath, lockfile), '');
   }
+}
+
+async function writePortalTemplateTarball(templatePath: string, tarballPath: string): Promise<void> {
+  await tar.create(
+    {
+      cwd: templatePath,
+      file: tarballPath,
+      gzip: true,
+      prefix: 'package/',
+    },
+    await fsp.readdir(templatePath),
+  );
 }
 
 afterEach(async () => {
@@ -125,6 +138,95 @@ test('builds copied portal templates with yarn build:html regardless of lockfile
         NOCOBASE_PORTAL_BASE: '/x/npm_portal/',
       }),
       envMode: 'replace',
+    }),
+  );
+});
+
+test('downloads npm package portal templates before building html', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-template-package-');
+  await writePortalTemplate(templatePath);
+  const runCommand = vi.fn(async (name: string, args: string[], options?: { cwd?: string }) => {
+    if (name === 'npm') {
+      expect(args).toEqual([
+        'pack',
+        '--silent',
+        '--registry=https://registry.example.com',
+        '@nocobase/missing-portal-template',
+      ]);
+      await writePortalTemplateTarball(
+        templatePath,
+        path.join(String(options?.cwd), 'nocobase-missing-portal-template-1.0.0.tgz'),
+      );
+    }
+  });
+
+  await prepareInitialPortalTemplate({
+    developmentMode: 'vibe-coding',
+    portalName: 'admin',
+    portalTemplate: '@nocobase/missing-portal-template',
+    npmRegistry: 'https://registry.example.com/',
+    storagePath,
+    runCommand,
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'admin');
+  await expect(fsp.access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
+  expect(runCommand).toHaveBeenNthCalledWith(
+    1,
+    'npm',
+    ['pack', '--silent', '--registry=https://registry.example.com', '@nocobase/missing-portal-template'],
+    expect.objectContaining({
+      stdio: 'pipe',
+      errorName: 'npm pack',
+    }),
+  );
+  expect(runCommand).toHaveBeenNthCalledWith(
+    2,
+    'yarn',
+    ['build:html'],
+    expect.objectContaining({
+      cwd: portalDir,
+      env: expect.objectContaining({
+        NOCOBASE_API_URL: '/api',
+        NOCOBASE_PORTAL_BASE: '/x/admin/',
+      }),
+    }),
+  );
+});
+
+test('keeps http template URLs on the git clone path', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
+  const runCommand = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'git') {
+      await writePortalTemplate(String(args[4]));
+    }
+  });
+
+  await prepareInitialPortalTemplate({
+    developmentMode: 'vibe-coding',
+    portalName: 'admin',
+    portalTemplate: 'https://github.com/nocobase/admin-starter',
+    storagePath,
+    runCommand,
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'admin');
+  expect(runCommand).toHaveBeenNthCalledWith(
+    1,
+    'git',
+    ['clone', '--depth', '1', 'https://github.com/nocobase/admin-starter', expect.any(String)],
+    expect.objectContaining({
+      errorName: 'git clone',
+      stdio: 'ignore',
+    }),
+  );
+  expect(runCommand).toHaveBeenNthCalledWith(
+    2,
+    'yarn',
+    ['build:html'],
+    expect.objectContaining({
+      cwd: portalDir,
     }),
   );
 });
