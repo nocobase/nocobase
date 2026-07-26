@@ -145,6 +145,7 @@
   "Load frontend tool": "Load frontend tool",
   "Load the input schema of a frontend tool provided by the selected block.": "Load the input schema of a frontend tool provided by the selected block.",
   "Execute frontend tool": "Execute frontend tool",
+  "Code workspace": "Code workspace",
   "Execute a frontend tool provided by the selected block.": "Execute a frontend tool provided by the selected block.",
   "Generates ECharts options (JSON) based on user input or data context.": "Generates ECharts options (JSON) based on user input or data context.",
   "Get code snippet content": "Get code snippet content",

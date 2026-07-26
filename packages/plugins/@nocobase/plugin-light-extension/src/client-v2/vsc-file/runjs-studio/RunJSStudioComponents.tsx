@@ -834,6 +834,7 @@ export function FilesPanel(props: {
 export function CodeTab(props: {
   activeFile?: RunJSWorkspaceFile;
   activePath?: string;
+  authoringSurfaceId?: string;
   busy?: boolean;
   diffRows: RunJSLineDiffRow[];
   emptyDiffDescription?: string;
@@ -865,6 +866,7 @@ export function CodeTab(props: {
   const {
     activeFile,
     activePath,
+    authoringSurfaceId,
     busy = false,
     diffRows,
     emptyDiffDescription,
@@ -1024,6 +1026,7 @@ export function CodeTab(props: {
       }}
     >
       <CodeEditor
+        authoringSurfaceId={authoringSurfaceId}
         enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
         height="100%"
         language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}

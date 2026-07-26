@@ -47,6 +47,13 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
+  useApp: () => ({
+    aiManager: {
+      authoringSurfaces: {
+        register: () => vi.fn(),
+      },
+    },
+  }),
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
 
@@ -330,7 +337,6 @@ vi.mock('../vsc-file/public-api', () => {
       ) : null,
   };
 });
-
 vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {

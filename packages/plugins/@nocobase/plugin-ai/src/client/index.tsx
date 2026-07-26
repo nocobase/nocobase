@@ -26,6 +26,7 @@ import { AIConfigRepository } from '../client-v2/repositories/AIConfigRepository
 import { FlowModelsContext } from '../client-v2/ai-employees/context/flow-models';
 import { DatasourceContext } from '../client-v2/ai-employees/context/datasource';
 import { CodeEditorContext } from '../client-v2/ai-employees/context/code-editor';
+import { CodeWorkspaceContext } from '../client-v2/ai-employees/context/code-workspace';
 import { chartConfigWorkContext } from '../client-v2/ai-employees/context/chart-config';
 import { setupAICoding } from '../client-v2/ai-employees/ai-coding/setup';
 import { setupDataModeling } from '../client-v2/ai-employees/data-modeling/setup';
@@ -136,6 +137,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
+    this.aiManager.registerWorkContext('code-workspace', CodeWorkspaceContext);
     // 使用可视化员工的工作上下文参数
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
 

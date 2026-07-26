@@ -1,0 +1,318 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { CodeAuthoringSurface } from '@nocobase/client-v2';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
+import LightExtensionWorkspacePage from '../pages/LightExtensionWorkspacePage';
+import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
+
+const entryPath = 'src/client/js-blocks/sales-kpi/index.tsx';
+const entryScope: LightExtensionWorkspaceScope = { mode: 'entry', entryPath, kind: 'js-block' };
+
+const mocks = vi.hoisted(() => ({
+  t: (key: string) => key,
+  api: {
+    getRepo: vi.fn(),
+    inspectSourceArchive: vi.fn(),
+    pull: vi.fn(),
+    pullCommit: vi.fn(),
+    saveSource: vi.fn(),
+    compileWorkspacePreview: vi.fn(),
+    listCommits: vi.fn(),
+  },
+  authoring: {
+    surface: undefined as CodeAuthoringSurface | undefined,
+    register: vi.fn(),
+    unregister: vi.fn(),
+  },
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: mocks.t }),
+}));
+
+vi.mock('@nocobase/client-v2', async () => {
+  const app = {
+    aiManager: {
+      authoringSurfaces: {
+        register: mocks.authoring.register,
+      },
+    },
+  };
+  return {
+    useApp: () => app,
+    useFullscreenOverlay: () => {
+      const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
+      return {
+        isFullscreen: false,
+        toggleFullscreen: vi.fn(),
+        placeholderRef: setContainer,
+        placeholderStyle: {},
+        container,
+      };
+    },
+  };
+});
+
+vi.mock('../components/DiagnosticsPanel', () => ({ default: () => null }));
+
+vi.mock('../vsc-file/public-api', () => ({
+  buildLineDiff: () => [],
+  inferLanguageFromPath: (path: string) => {
+    if (path.endsWith('.tsx')) return 'typescriptreact';
+    if (path.endsWith('.ts')) return 'typescript';
+    if (path.endsWith('.json')) return 'json';
+    return 'plaintext';
+  },
+  mergeHistoryItems: <T,>(current: T[], next: T[]) => [...current, ...next],
+  summarizeWorkspaceChanges: () => ({ files: 1, additions: 1, deletions: 1 }),
+  useVscFileT: () => (key: string) => key,
+  FilesPanel: () => <div data-testid="files-panel" />,
+  VersionHistoryDock: () => null,
+  RestoreVersionModal: () => null,
+  SaveVersionModal: () => null,
+  CloseConfirmModal: () => null,
+  CodeTab: ({
+    activeFile,
+    authoringSurfaceId,
+    onChange,
+    workspaceFiles,
+  }: {
+    activeFile?: { path: string; content: string };
+    authoringSurfaceId?: string;
+    onChange: (content: string) => void;
+    workspaceFiles: Array<{ path: string }>;
+  }) => (
+    <div
+      data-authoring-surface-id={authoringSurfaceId}
+      data-testid="code-tab"
+      data-workspace-paths={workspaceFiles.map((file) => file.path).join(',')}
+    >
+      <span data-testid="active-path">{activeFile?.path}</span>
+      <textarea
+        aria-label="Edit file content"
+        onChange={(event) => onChange(event.target.value)}
+        value={activeFile?.content || ''}
+      />
+    </div>
+  ),
+}));
+
+vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    useLightExtensionRepo: () => ({ ...mocks.api }) as unknown as UseLightExtensionRepoResult,
+  };
+});
+
+function getRegisteredSurface(): CodeAuthoringSurface {
+  const surface = mocks.authoring.surface;
+  if (!surface) {
+    throw new Error('Expected a registered authoring surface');
+  }
+  return surface;
+}
+
+function renderEntryWorkspace() {
+  return render(
+    <MemoryRouter>
+      <LightExtensionWorkspacePage
+        embedded
+        entryId="entry-sales-kpi"
+        initialPath={entryPath}
+        repoId="ler_sales"
+        workspaceScope={entryScope}
+      />
+    </MemoryRouter>,
+  );
+}
+
+describe('LightExtensionWorkspace authoring surface', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.authoring.surface = undefined;
+    mocks.authoring.register.mockImplementation((surface: CodeAuthoringSurface) => {
+      mocks.authoring.surface = surface;
+      return mocks.authoring.unregister;
+    });
+    mocks.api.getRepo.mockResolvedValue({
+      id: 'ler_sales',
+      name: 'sales-widgets',
+      title: 'Sales widgets',
+      lifecycleStatus: 'enabled',
+    });
+    mocks.api.pull.mockResolvedValue({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      files: [
+        {
+          path: entryPath,
+          content: 'export default function SalesKpi() { return null; }\n',
+          language: 'typescriptreact',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: '{"schemaVersion":1,"key":"sales-kpi"}',
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-actions/secret/index.ts',
+          content: 'export const secret = true;\n',
+          language: 'typescript',
+        },
+        { path: 'src/shared/currency.ts', content: 'export const currency = "USD";\n', language: 'typescript' },
+        { path: 'tsconfig.json', content: '{}\n', language: 'json' },
+        { path: 'README.md', content: 'private repository notes\n', language: 'markdown' },
+      ],
+    });
+    mocks.api.pullCommit.mockResolvedValue({ files: [] });
+    mocks.api.listCommits.mockResolvedValue([]);
+    mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
+    mocks.api.compileWorkspacePreview.mockResolvedValue({ accepted: true, diagnostics: [] });
+  });
+
+  it('projects the entry scope, applies draft changes, and validates without saving', async () => {
+    renderEntryWorkspace();
+    await screen.findByTestId('code-tab');
+    await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
+    const surface = getRegisteredSurface();
+    const snapshot = await surface.getSnapshot();
+
+    expect(surface.id).toBe(
+      'light-extension:ler_sales:entry:entry-sales-kpi:js-block:src%2Fclient%2Fjs-blocks%2Fsales-kpi%2Findex.tsx',
+    );
+    expect(snapshot.files.map((file) => file.path)).toEqual(
+      expect.arrayContaining([
+        entryPath,
+        'src/client/js-blocks/sales-kpi/entry.json',
+        'src/shared/currency.ts',
+        'tsconfig.json',
+        '.light-extension/types/sdk.d.ts',
+      ]),
+    );
+    expect(snapshot.files.map((file) => file.path)).not.toEqual(
+      expect.arrayContaining(['src/client/js-actions/secret/index.ts', 'README.md']),
+    );
+    const descriptorMeta = snapshot.files.find((file) => file.path.endsWith('/entry.json'));
+    expect(descriptorMeta).toMatchObject({ writable: true });
+    expect(snapshot.files.find((file) => file.path === 'src/shared/currency.ts')).toMatchObject({ writable: false });
+    expect(snapshot.files.find((file) => file.path === '.light-extension/types/sdk.d.ts')).toMatchObject({
+      kind: 'virtual',
+      writable: false,
+    });
+    const indexMeta = snapshot.files.find((file) => file.path === entryPath);
+    if (!indexMeta || !descriptorMeta) {
+      throw new Error('Expected entry source and descriptor metadata');
+    }
+    const descriptorContent = '{"schemaVersion":1,"key":"sales-kpi","settings":{"refresh":{"type":"boolean"}}}';
+    const plan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [
+        {
+          type: 'update',
+          path: entryPath,
+          baseHash: indexMeta.hash,
+          content: "import { formatCurrency } from './formatCurrency';\nexport default formatCurrency;\n",
+        },
+        {
+          type: 'create',
+          path: 'src/client/js-blocks/sales-kpi/formatCurrency.ts',
+          content: 'export const formatCurrency = () => "USD";\n',
+          language: 'typescript',
+        },
+        {
+          type: 'update',
+          path: descriptorMeta.path,
+          baseHash: descriptorMeta.hash,
+          content: descriptorContent,
+        },
+      ],
+    });
+
+    await act(async () => {
+      await surface.applyPreparedChanges(plan.planId);
+    });
+
+    await waitFor(async () => {
+      const nextSnapshot = await surface.getSnapshot();
+      expect(nextSnapshot.files.map((file) => file.path)).toContain('src/client/js-blocks/sales-kpi/formatCurrency.ts');
+    });
+    await expect(surface.read([descriptorMeta.path])).resolves.toEqual([
+      expect.objectContaining({ path: descriptorMeta.path, content: descriptorContent, writable: true }),
+    ]);
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+    expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
+    await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
+    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoId: 'ler_sales',
+        entryId: 'entry-sales-kpi',
+        entryPath,
+        files: expect.arrayContaining([
+          expect.objectContaining({ path: entryPath }),
+          expect.objectContaining({ path: 'src/client/js-actions/secret/index.ts' }),
+          expect.objectContaining({ path: 'src/shared/currency.ts' }),
+        ]),
+      }),
+    );
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
+  it('creates a missing entry descriptor but rejects deleting it', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      files: [
+        {
+          path: entryPath,
+          content: 'export default function SalesKpi() { return null; }\n',
+          language: 'typescriptreact',
+        },
+      ],
+    });
+    renderEntryWorkspace();
+    await screen.findByTestId('code-tab');
+    await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
+    const surface = getRegisteredSurface();
+    const snapshot = await surface.getSnapshot();
+    const descriptorPath = 'src/client/js-blocks/sales-kpi/entry.json';
+    const descriptorContent = '{"schemaVersion":1,"key":"sales-kpi"}';
+
+    const createPlan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [{ type: 'create', path: descriptorPath, content: descriptorContent, language: 'json' }],
+    });
+    await act(async () => {
+      await surface.applyPreparedChanges(createPlan.planId);
+    });
+
+    const nextSnapshot = await surface.getSnapshot();
+    const descriptorMeta = nextSnapshot.files.find((file) => file.path === descriptorPath);
+    expect(descriptorMeta).toMatchObject({ writable: true });
+    await expect(surface.read([descriptorPath])).resolves.toEqual([
+      expect.objectContaining({ path: descriptorPath, content: descriptorContent }),
+    ]);
+    if (!descriptorMeta) {
+      throw new Error('Expected created entry descriptor metadata');
+    }
+    await expect(
+      surface.prepareChanges({
+        baseSnapshotId: nextSnapshot.snapshotId,
+        changes: [{ type: 'delete', path: descriptorPath, baseHash: descriptorMeta.hash }],
+      }),
+    ).rejects.toMatchObject({ code: 'PATH_ACCESS_DENIED' });
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+});

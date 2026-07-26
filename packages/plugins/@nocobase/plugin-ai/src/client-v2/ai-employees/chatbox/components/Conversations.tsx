@@ -251,11 +251,12 @@ export const Conversations: React.FC = memo(() => {
       await app.apiClient.resource('aiConversations').destroy({
         filterByTk: sessionId,
       });
+      chat.for(sessionId).resetSessionState();
       message.success(t('Deleted successfully'));
       refresh();
       startNewConversation();
     },
-    [app.apiClient, message, refresh, startNewConversation, t],
+    [app.apiClient, chat, message, refresh, startNewConversation, t],
   );
 
   const openDeleteConfirm = useCallback(

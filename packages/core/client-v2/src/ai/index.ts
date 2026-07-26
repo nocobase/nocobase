@@ -8,6 +8,7 @@
  */
 
 export * from './ai-manager';
+export * from './authoring';
 export * from './tools-manager';
 export * from './skills-manager';
 export * from './utils';

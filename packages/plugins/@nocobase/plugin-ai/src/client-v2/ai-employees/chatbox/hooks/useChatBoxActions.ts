@@ -173,7 +173,7 @@ export const useChatBoxActions = () => {
       setCurrentConversation(undefined);
       setCurrentWorkflowTask(undefined);
       clear(undefined, undefined);
-      draftChat.setMessages([]);
+      draftChat.resetSessionState();
       return;
     }
     const greetingMsg = {
@@ -187,7 +187,7 @@ export const useChatBoxActions = () => {
     setCurrentConversation(undefined);
     setCurrentWorkflowTask(undefined);
     clear(undefined, undefined);
-    draftChat.setMessages([greetingMsg]);
+    draftChat.resetSessionState({ messages: [greetingMsg] });
     senderRef?.current?.focus();
   }, [clear, currentEmployee, draftChat, senderRef, setCurrentConversation, setCurrentWorkflowTask, t]);
 
@@ -208,9 +208,9 @@ export const useChatBoxActions = () => {
           },
         };
         senderRef?.current?.focus();
-        draftChat.setMessages([greetingMsg]);
+        draftChat.resetSessionState({ messages: [greetingMsg] });
       } else {
-        draftChat.setMessages([]);
+        draftChat.resetSessionState();
       }
     },
     [clear, draftChat, senderRef, setCurrentConversation, setCurrentEmployee, setCurrentWorkflowTask, setModel, t],

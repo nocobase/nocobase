@@ -20,6 +20,7 @@ import {
   compactPatchForDisplay,
   shouldSkipCodeToolCardRender,
 } from '../../../client-v2/ai-employees/tools/CodeToolCard';
+import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-conversations';
 import { useChatMessagesStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
 
 describe('ai coding context tools', () => {
@@ -83,7 +84,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           },
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
@@ -97,7 +98,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
             }),
           },
         },
-        {} as any,
+        {} as never,
         {},
       );
 
@@ -122,7 +123,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           run: async () => undefined,
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
@@ -139,7 +140,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
             },
           },
         },
-        {} as any,
+        {} as never,
         { code: '' },
       );
 
@@ -165,12 +166,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           },
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
     try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {
+      const result = await patchJSCodeTool[1].invoke.call({}, {} as never, {
         patch: `@@ -1,2 +1,2 @@
 -const label = "old";
 +const label = "new";
@@ -200,12 +201,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           },
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
     try {
-      const result = await writeJSCodeTool[1].invoke.call({}, {} as any, {});
+      const result = await writeJSCodeTool[1].invoke.call({}, {} as never, {});
 
       expect(result.status).toBe('error');
       expect(result.content.message).toContain('`code` must be a string');
@@ -229,12 +230,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           },
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
     try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {});
+      const result = await patchJSCodeTool[1].invoke.call({}, {} as never, {});
 
       expect(result.status).toBe('error');
       expect(result.content.message).toContain('`patch` must be a non-empty string');
@@ -256,12 +257,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           write: () => undefined,
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
     try {
-      const result = await readJSCodeTool[1].invoke.call({}, {} as any, {});
+      const result = await readJSCodeTool[1].invoke.call({}, {} as never, {});
 
       expect(result.status).toBe('success');
       expect(result.content.success).toBe(true);
@@ -286,12 +287,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
           },
           snippetEntries: [],
           logs: [],
-        } as any,
+        },
       },
     });
 
     try {
-      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {
+      const result = await patchJSCodeTool[1].invoke.call({}, {} as never, {
         patch: `@@ -1,2 +1,2 @@
 -const missing = "old";
 +const missing = "new";
@@ -306,8 +307,92 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
       useChatMessagesStore.setState(previousState, true);
     }
   });
-});
+  it('rejects legacy single-file tools for workspace sessions', async () => {
+    const previousMessagesState = useChatMessagesStore.getState();
+    const previousConversation = useChatConversationsStore.getState().currentConversation;
+    const reads: string[] = [];
+    const writes: string[] = [];
+    const runs: string[] = [];
+    const previews: string[] = [];
 
+    useChatMessagesStore.setState({
+      ...previousMessagesState,
+      currentEditorRefUid: 'editor-a',
+      editorRef: {
+        'editor-a': {
+          read: () => {
+            reads.push('read');
+            return 'source';
+          },
+          write: (code: string) => {
+            writes.push(code);
+          },
+          run: async () => {
+            runs.push('run');
+          },
+          snippetEntries: [],
+          logs: [],
+        },
+      },
+    });
+    useChatMessagesStore.getState().setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
+    useChatConversationsStore.setState({ currentConversation: undefined });
+
+    const flowContext = {
+      previewRunJS: async (code: string) => {
+        previews.push(code);
+        return { success: true };
+      },
+    };
+
+    try {
+      const results = await Promise.all([
+        readJSCodeTool[1].invoke.call({}, {} as never, {}),
+        writeJSCodeTool[1].invoke.call({}, {} as never, { code: 'next' }),
+        patchJSCodeTool[1].invoke.call({}, {} as never, { patch: '@@ -1 +1 @@\\n-old\\n+new\\n' }),
+        lintAndTestJSTool[1].invoke.call({ flowContext }, {} as never, { code: 'explicit code' }),
+      ]);
+
+      for (const result of results) {
+        expect(result.status).toBe('error');
+        expect(result.content.message).toContain('Workspace tools');
+      }
+      expect(reads).toEqual([]);
+      expect(writes).toEqual([]);
+      expect(runs).toEqual([]);
+      expect(previews).toEqual([]);
+    } finally {
+      useChatConversationsStore.setState({ currentConversation: previousConversation });
+      useChatMessagesStore.setState(previousMessagesState, true);
+    }
+  });
+
+  it('preserves explicit linting without a mounted single-file editor', async () => {
+    const previousState = useChatMessagesStore.getState();
+    useChatMessagesStore.getState().resetSessionState(undefined);
+    const previewedCode: string[] = [];
+
+    try {
+      const result = await lintAndTestJSTool[1].invoke.call(
+        {
+          flowContext: {
+            previewRunJS: async (code: string) => {
+              previewedCode.push(code);
+              return { success: true };
+            },
+          },
+        },
+        {} as never,
+        { code: 'const explicit = true;' },
+      );
+
+      expect(result.status).toBe('success');
+      expect(previewedCode).toEqual(['const explicit = true;']);
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+});
 describe('tool code card rendering', () => {
   it('skips rendering while streamed args are temporarily invalid', () => {
     const previous = {

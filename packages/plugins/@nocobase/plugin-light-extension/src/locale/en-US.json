@@ -420,6 +420,7 @@
   "Workspace exported": "Workspace exported",
   "Workspace imported": "Workspace imported",
   "RunJS workspace has conflicting changes. Resolve them and save again.": "RunJS workspace has conflicting changes. Resolve them and save again.",
+  "RunJS internal manifest cannot be changed": "RunJS internal manifest cannot be changed",
   "{{files}} file(s) changed, +{{additions}} -{{deletions}}": "{{files}} file(s) changed, +{{additions}} -{{deletions}}",
   "added": "added",
   "deleted": "deleted",
