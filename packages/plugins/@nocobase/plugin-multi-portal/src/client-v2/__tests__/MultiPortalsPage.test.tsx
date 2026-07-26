@@ -422,6 +422,63 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
+  it('should allow deleting default portals from the table', async () => {
+    const user = userEvent.setup();
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              title: 'Admin',
+              uid: '__default_admin__',
+              routeName: 'admin',
+              routePath: '/admin',
+              uiLayout: {
+                title: 'Desktop layout',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: { apps: [], portals: [] } } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    const { container } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Admin')).toBeInTheDocument();
+    const toolbar = container.querySelector('.ant-flex');
+    const toolbarDeleteButton = within(toolbar as HTMLElement).getByRole('button', { name: /Delete/ });
+    expect(toolbarDeleteButton).toBeDisabled();
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes[1]).not.toBeDisabled();
+    await user.click(checkboxes[1]);
+    expect(toolbarDeleteButton).not.toBeDisabled();
+
+    const actionCell = container.querySelector('tbody tr .ant-table-cell:last-child');
+    await user.click(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ }));
+    expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
+    expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
+  });
+
   it('should poll portal logs while the dialog is open', async () => {
     const getLog = vi
       .fn()
@@ -1049,6 +1106,136 @@ describe('plugin-multi-portal settings page', () => {
         },
       });
     });
+  });
+
+  it('should allow toggling enabled for default portals from the table', async () => {
+    const user = userEvent.setup();
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              title: 'Admin',
+              uid: '__default_admin__',
+              routeName: 'admin',
+              routePath: '/admin',
+              uiLayout: {
+                title: 'Desktop layout',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: { apps: [], portals: [] } } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Admin')).toBeInTheDocument();
+    const enabledSwitch = screen.getByRole('switch', { name: 'Enabled' });
+    expect(enabledSwitch).not.toBeDisabled();
+    await user.click(enabledSwitch);
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: '__default_admin__',
+        values: {
+          title: 'Admin',
+          uid: '__default_admin__',
+          routeName: 'admin',
+          routePath: '/admin',
+          uiLayoutUid: 'mobile-layout-model',
+          icon: null,
+          developmentMode: 'no-code',
+          enabled: false,
+        },
+      });
+    });
+  });
+
+  it('should allow toggling enabled for default portals from the edit form', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              title: 'Admin',
+              uid: '__default_admin__',
+              routeName: 'admin',
+              routePath: '/admin',
+              uiLayout: {
+                title: 'Desktop layout',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: [
+              {
+                uid: 'mobile-layout-model',
+                title: 'Mobile layout',
+              },
+            ],
+          },
+        }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
+    expect(within(dialog).getByLabelText('Portal slug')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
   });
 
   it('should populate the layout field from the appended uiLayout relation when editing', async () => {

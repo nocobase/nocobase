@@ -429,6 +429,8 @@ describe('plugin-multi-portal server', () => {
     });
     await app.db.sync();
 
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
     const response = await app.agent().resource('multiPortals').list();
     const portals = response.body.data as Array<Record<string, unknown>>;
     const noCodeAdminPortal = await app.db.getRepository('multiPortals').findOne({
@@ -468,6 +470,63 @@ describe('plugin-multi-portal server', () => {
         }),
       ]),
     );
+  });
+
+  it('should allow deleting default portals', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
+    const response = await app.agent().resource('multiPortals').destroy({
+      filterByTk: '__default_mobile__',
+    });
+    const mobilePortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_mobile__',
+    });
+    const listResponse = await app.agent().resource('multiPortals').list();
+    const portals = listResponse.body.data as Array<Record<string, unknown>>;
+
+    expect(response.status).toBe(200);
+    expect(mobilePortal).toBeNull();
+    expect(portals).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          uid: '__default_mobile__',
+        }),
+      ]),
+    );
+  });
+
+  it('should allow updating enabled for default portals', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .update({
+        filterByTk: '__default_mobile__',
+        values: {
+          enabled: false,
+          routeName: 'changed-mobile',
+        },
+      });
+    const mobilePortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_mobile__',
+    });
+
+    expect(response.status).toBe(200);
+    expect(mobilePortal?.get('enabled')).toBe(false);
+    expect(mobilePortal?.get('routeName')).toBe('mobile');
   });
 
   it('should publish custom enabled portal manifest through app supervisor', async () => {

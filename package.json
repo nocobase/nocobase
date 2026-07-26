@@ -27,7 +27,7 @@
     "build": "nocobase-v1 build",
     "build:client-v2": "nocobase-v1 build --client-v2-only",
     "tar": "nocobase-v1 tar",
-    "test": "nb source test --verbose",
+    "test": "nocobase-v1 test",
     "test:server": "nocobase-v1 test:server",
     "test:server-coverage": "nocobase-v1 test-coverage:server",
     "test:client": "nocobase-v1 test:client",

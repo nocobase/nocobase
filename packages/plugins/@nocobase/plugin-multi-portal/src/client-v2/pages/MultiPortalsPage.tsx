@@ -634,7 +634,6 @@ const MultiPortalsPage: React.FC = () => {
           <Switch
             aria-label={t('Enabled')}
             checked={value}
-            disabled={record.defaultPortal}
             loading={updatingEnabledRowKeys.includes(record.uid)}
             size="small"
             onChange={async (checked) => {
@@ -664,11 +663,9 @@ const MultiPortalsPage: React.FC = () => {
             <Button type="link" style={actionLinkButtonStyle} onClick={() => openFormDrawer(record)}>
               {t('Edit')}
             </Button>
-            {!record.defaultPortal && (
-              <Button type="link" style={actionLinkButtonStyle} onClick={() => handleDelete(record.uid)}>
-                {t('Delete')}
-              </Button>
-            )}
+            <Button type="link" style={actionLinkButtonStyle} onClick={() => handleDelete(record.uid)}>
+              {t('Delete')}
+            </Button>
           </Space>
         ),
       },
@@ -711,9 +708,6 @@ const MultiPortalsPage: React.FC = () => {
         rowSelection={{
           selectedRowKeys,
           onChange: (keys) => setSelectedRowKeys(keys as MultiPortalPrimaryKey[]),
-          getCheckboxProps: (record) => ({
-            disabled: record.defaultPortal,
-          }),
         }}
         onChange={handleTableChange}
       />
@@ -892,7 +886,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           valuePropName="checked"
           extra={t('When disabled, this portal will not be registered or accessible.')}
         >
-          <Switch disabled={record?.defaultPortal} />
+          <Switch />
         </Form.Item>
       </Form>
     </DrawerFormLayout>

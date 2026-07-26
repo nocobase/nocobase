@@ -620,13 +620,6 @@ function getDefaultMultiPortalUiLayoutUid(portal: DefaultMultiPortalRecord) {
     : null;
 }
 
-function getDefaultMultiPortalUidsFromFilterByTk(filterByTk: unknown) {
-  if (Array.isArray(filterByTk)) {
-    return filterByTk.filter(isDefaultMultiPortalUid);
-  }
-  return isDefaultMultiPortalUid(filterByTk) ? [filterByTk] : [];
-}
-
 function withCustomMultiPortalFilter(filter: Record<string, unknown> = {}) {
   const customFilter = { ...filter };
   const uidFilter = customFilter.uid;
@@ -806,17 +799,7 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
   for (const defaultPortal of DEFAULT_MULTI_PORTALS) {
     const existing = await repository.findOne({
       filterByTk: defaultPortal.uid,
-      fields: [
-        'uid',
-        'title',
-        'icon',
-        'developmentMode',
-        'routeName',
-        'routePath',
-        'authCheck',
-        'enabled',
-        'uiLayoutUid',
-      ],
+      fields: ['uid', 'title', 'icon', 'developmentMode', 'routeName', 'routePath', 'authCheck', 'uiLayoutUid'],
       transaction: options?.transaction,
     });
 
@@ -834,7 +817,6 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
       routeName: defaultPortal.routeName,
       routePath: defaultPortal.routePath,
       authCheck: defaultPortal.authCheck,
-      enabled: defaultPortal.enabled,
       uiLayoutUid: getDefaultMultiPortalUiLayoutUid(defaultPortal),
     };
     const shouldRepair = Object.entries(protectedValues).some(([field, value]) => existing.get(field) !== value);
@@ -846,11 +828,6 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
       });
     }
   }
-}
-
-async function ensureDefaultMultiPortalsBeforeList(ctx: ResourcerContext, next: () => Promise<void>) {
-  await ensureDefaultMultiPortals(ctx.db);
-  await next();
 }
 
 async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () => Promise<void>) {
@@ -868,7 +845,6 @@ async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () =
     routeName: defaultPortal.routeName,
     routePath: defaultPortal.routePath,
     authCheck: defaultPortal.authCheck,
-    enabled: defaultPortal.enabled,
     uiLayoutUid: getDefaultMultiPortalUiLayoutUid(defaultPortal),
   };
 
@@ -877,6 +853,9 @@ async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () =
   }
   if (Object.prototype.hasOwnProperty.call(rawValues, 'icon')) {
     values.icon = rawValues.icon;
+  }
+  if (Object.prototype.hasOwnProperty.call(rawValues, 'enabled')) {
+    values.enabled = rawValues.enabled;
   }
 
   ctx.action?.mergeParams(
@@ -887,16 +866,6 @@ async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () =
       values: 'overwrite',
     },
   );
-  await next();
-}
-
-async function preventDefaultMultiPortalDestroy(ctx: ResourcerContext, next: () => Promise<void>) {
-  const defaultUids = getDefaultMultiPortalUidsFromFilterByTk(ctx.action?.params.filterByTk);
-  if (defaultUids.length) {
-    ctx.throw(400, 'Default portals cannot be deleted');
-    return;
-  }
-
   await next();
 }
 
@@ -2084,8 +2053,6 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async beforeLoad() {
-    this.app.resourceManager.registerPreActionHandler('multiPortals:list', ensureDefaultMultiPortalsBeforeList);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:get', ensureDefaultMultiPortalsBeforeList);
     this.app.resourceManager.registerPreActionHandler(
       'desktopRoutes:listAccessible',
       addMultiPortalListAccessibleGuard,
@@ -2104,7 +2071,6 @@ export class PluginMultiPortalServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventUiLayoutRouteNameConflict);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:destroy', preventDefaultMultiPortalDestroy);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', captureExplicitDesktopRouteUiLayouts, {
       before: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
     });
