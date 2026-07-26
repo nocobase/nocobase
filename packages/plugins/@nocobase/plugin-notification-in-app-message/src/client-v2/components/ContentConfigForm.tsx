@@ -20,6 +20,10 @@ function withPrefix(namePrefix: Array<string | number> | undefined, ...segments:
 export function ContentConfigForm(props: ContentConfigFormProps) {
   const { t } = useInAppMessageTranslation();
   const compileT = useT();
+  // `variableOptions` is the caller's own variable tree (v1 parity: the approval message template manager passes the
+  // scope the server actually injects). Only when it is absent do we fall back to the canvas-derived workflow tree,
+  // which is what the workflow notification node wants.
+  const { variableOptions } = props;
 
   return (
     <>
@@ -28,14 +32,19 @@ export function ContentConfigForm(props: ContentConfigFormProps) {
         label={t('Message title')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableInput variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={variableOptions} variableOptions={{ types: ['string'] }} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'content')}
         label={t('Message content')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableTextArea autoSize={{ minRows: 10 }} placeholder="Hi," delimiters={['{{{', '}}}']} />
+        <WorkflowVariableTextArea
+          autoSize={{ minRows: 10 }}
+          metaTree={variableOptions}
+          placeholder="Hi,"
+          delimiters={['{{{', '}}}']}
+        />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'url')}
@@ -44,7 +53,7 @@ export function ContentConfigForm(props: ContentConfigFormProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={variableOptions} variableOptions={{ types: ['string'] }} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'mobileUrl')}
@@ -53,7 +62,7 @@ export function ContentConfigForm(props: ContentConfigFormProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/m". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={variableOptions} variableOptions={{ types: ['string'] }} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'duration')}
