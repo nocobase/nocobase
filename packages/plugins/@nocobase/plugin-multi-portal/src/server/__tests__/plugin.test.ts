@@ -35,14 +35,7 @@ const spawnMock = vi.hoisted(() => {
     subprocess.stderr = new PassThrough();
 
     process.nextTick(() => {
-      if (command === 'pnpm' && process.env.MOCK_MULTI_PORTAL_PNPM_MISSING === 'true') {
-        const error = new Error('spawn pnpm ENOENT') as Error & { code: string };
-        error.code = 'ENOENT';
-        subprocess.emit('error', error);
-        return;
-      }
-      const isBuildCommand =
-        (command === 'pnpm' && args[0] === 'build') || (command === 'npm' && args.join(' ') === 'run build');
+      const isBuildCommand = command === 'yarn' && args[0] === 'build:html';
       subprocess.stdout.write(`${command} ${args.join(' ')} stdout\n`);
       subprocess.stderr.write(`${command} ${args.join(' ')} stderr\n`);
       subprocess.stdout.end();
@@ -213,7 +206,6 @@ describe('plugin-multi-portal server', () => {
   beforeEach(async () => {
     execFileMock.mockClear();
     spawnMock.mockClear();
-    delete process.env.MOCK_MULTI_PORTAL_PNPM_MISSING;
     storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-multi-portal-'));
     process.env.STORAGE_PATH = storagePath;
   });
@@ -224,7 +216,6 @@ describe('plugin-multi-portal server', () => {
     }
     await app?.destroy();
     app = undefined;
-    delete process.env.MOCK_MULTI_PORTAL_PNPM_MISSING;
     if (storagePath) {
       await rm(storagePath, { recursive: true, force: true });
     }
@@ -591,7 +582,6 @@ describe('plugin-multi-portal server', () => {
   it('should prepare a storage portal from the default template for vibe-coding multi-portals', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/api';
-    process.env.MOCK_MULTI_PORTAL_PNPM_MISSING = 'true';
     process.env.NODE_OPTIONS = '--preserve-symlinks --max_old_space_size=4096 --preserve-symlinks-main';
     app = await createMockServer({
       registerActions: true,
@@ -621,25 +611,8 @@ describe('plugin-multi-portal server', () => {
       '/console/x/storageTemplatePortal/',
     );
     expect(spawnMock).toHaveBeenCalledWith(
-      'pnpm',
-      ['install'],
-      expect.objectContaining({
-        cwd: portalDir,
-        env: expect.not.objectContaining({
-          NODE_OPTIONS: expect.stringContaining('--preserve-symlinks'),
-        }),
-      }),
-    );
-    expect(spawnMock).toHaveBeenCalledWith(
-      'npm',
-      ['install'],
-      expect.objectContaining({
-        cwd: portalDir,
-      }),
-    );
-    expect(spawnMock).toHaveBeenCalledWith(
-      'npm',
-      ['run', 'build'],
+      'yarn',
+      ['build:html'],
       expect.objectContaining({
         cwd: portalDir,
         env: expect.objectContaining({

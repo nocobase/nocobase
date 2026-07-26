@@ -53,7 +53,6 @@ const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
 const MULTI_PORTAL_MANIFEST_SYNC_MESSAGE_TYPE = 'multi-portal:app-manifest-changed';
 const DEFAULT_PORTAL_TEMPLATE_PACKAGE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
-const PORTAL_STORAGE_COMMAND_NOT_FOUND_ERROR_CODES = new Set(['ENOENT', 'ENOTDIR']);
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
 const PORTAL_PUBLIC_DIR_MODE = 0o755;
@@ -360,10 +359,6 @@ async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise
   });
 }
 
-function isPortalStorageCommandNotFoundError(error: unknown) {
-  return isRecordLike(error) && PORTAL_STORAGE_COMMAND_NOT_FOUND_ERROR_CODES.has(String(error.code || ''));
-}
-
 function sanitizePortalStorageNodeOptions(value: unknown) {
   return trimString(value)
     .split(/\s+/)
@@ -380,27 +375,6 @@ function getPortalStorageCommandEnv(env: NodeJS.ProcessEnv = {}) {
     delete commandEnv.NODE_OPTIONS;
   }
   return commandEnv;
-}
-
-async function runPortalStorageCommand(
-  primaryCommand: string,
-  primaryArgs: string[],
-  fallbackCommand: string,
-  fallbackArgs: string[],
-  options: PortalStorageCommandOptions,
-) {
-  try {
-    await runPortalStorageCommandOnce(primaryCommand, primaryArgs, options);
-  } catch (error) {
-    if (!isPortalStorageCommandNotFoundError(error)) {
-      throw error;
-    }
-    await appendPortalStorageLog(
-      options.logPath,
-      `Command not found: ${primaryCommand}. Falling back to ${fallbackCommand}.`,
-    );
-    await runPortalStorageCommandOnce(fallbackCommand, fallbackArgs, options);
-  }
 }
 
 async function runPortalStorageCommandOnce(command: string, args: string[], options: PortalStorageCommandOptions) {
@@ -459,14 +433,8 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
   }
 }
 
-async function installAndBuildPortalStorageItem(portalDir: string, item: MultiPortalStorageItem): Promise<void> {
+async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorageItem): Promise<void> {
   const logPath = getPortalStorageLogPath(item);
-  await appendPortalStorageLog(logPath, `Installing dependencies for portal ${item.appName}/${item.portalName}.`);
-  await runPortalStorageCommand('pnpm', ['install'], 'npm', ['install'], {
-    cwd: portalDir,
-    env: getPortalStorageCommandEnv(),
-    logPath,
-  });
   const buildEnv = getPortalStorageCommandEnv({
     NOCOBASE_API_URL: getPortalStorageApiUrl(),
     NOCOBASE_PORTAL_BASE: getPortalStorageBasePath(item.portalName),
@@ -478,7 +446,7 @@ async function installAndBuildPortalStorageItem(portalDir: string, item: MultiPo
       buildEnv.NOCOBASE_PORTAL_BASE || ''
     } APP_PUBLIC_PATH=${buildEnv.APP_PUBLIC_PATH || ''}`,
   );
-  await runPortalStorageCommand('pnpm', ['build'], 'npm', ['run', 'build'], {
+  await runPortalStorageCommandOnce('yarn', ['build:html'], {
     cwd: portalDir,
     env: buildEnv,
     logPath,
@@ -1738,7 +1706,7 @@ export class PluginMultiPortalServer extends Plugin {
         }
 
         if (item.enabled) {
-          await installAndBuildPortalStorageItem(portalDir, item);
+          await buildPortalStorageItem(portalDir, item);
           return;
         }
 
@@ -1771,7 +1739,7 @@ export class PluginMultiPortalServer extends Plugin {
 
     if (item.enabled) {
       if (!(await pathExists(portalIndex))) {
-        await installAndBuildPortalStorageItem(portalDir, item);
+        await buildPortalStorageItem(portalDir, item);
       }
       return;
     }

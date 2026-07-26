@@ -18,12 +18,6 @@ const DEFAULT_PORTAL_APP_NAME = 'main';
 const DEFAULT_PORTAL_NAME = 'admin';
 const PORTAL_CLIENT_PREFIX = 'x';
 
-type PortalPackageManager = {
-  executable: 'yarn' | 'pnpm' | 'npm';
-  installArgs: string[];
-  buildArgs: string[];
-};
-
 type RunOptions = {
   cwd?: string;
   env?: Record<string, string>;
@@ -129,44 +123,21 @@ async function copyTemplate(sourceDir: string, targetDir: string): Promise<void>
   });
 }
 
-async function resolvePortalPackageManager(portalDir: string): Promise<PortalPackageManager> {
-  if (await pathExists(path.join(portalDir, 'yarn.lock'))) {
-    return { executable: 'yarn', installArgs: ['install'], buildArgs: ['build'] };
-  }
-  if (await pathExists(path.join(portalDir, 'pnpm-lock.yaml'))) {
-    return { executable: 'pnpm', installArgs: ['install'], buildArgs: ['build'] };
-  }
-  if (await pathExists(path.join(portalDir, 'package-lock.json'))) {
-    return { executable: 'npm', installArgs: ['install'], buildArgs: ['run', 'build'] };
-  }
-  throw new Error(
-    `Portal template is invalid: expected yarn.lock, pnpm-lock.yaml, or package-lock.json in ${portalDir}.`,
-  );
-}
-
-async function installAndBuildPortal(params: {
+async function buildPortalHtml(params: {
   portalDir: string;
   portalName: string;
   verbose?: boolean;
   runCommand: RunCommand;
 }): Promise<void> {
-  const packageManager = await resolvePortalPackageManager(params.portalDir);
   const stdio = params.verbose ? 'inherit' : 'ignore';
-  await params.runCommand(packageManager.executable, packageManager.installArgs, {
-    cwd: params.portalDir,
-    env: buildPortalCommandEnv(),
-    envMode: 'replace',
-    errorName: `${packageManager.executable} install`,
-    stdio,
-  });
-  await params.runCommand(packageManager.executable, packageManager.buildArgs, {
+  await params.runCommand('yarn', ['build:html'], {
     cwd: params.portalDir,
     env: buildPortalCommandEnv({
       NOCOBASE_API_URL: '/api',
       NOCOBASE_PORTAL_BASE: `/${PORTAL_CLIENT_PREFIX}/${params.portalName}/`,
     }),
     envMode: 'replace',
-    errorName: `${packageManager.executable} build`,
+    errorName: 'yarn build:html',
     stdio,
   });
 }
@@ -224,7 +195,7 @@ export async function prepareInitialPortalTemplate(
     cleanupPortalDir = true;
     await copyTemplate(templateDir, portalDir);
     await rm(path.join(portalDir, 'node_modules'), { recursive: true, force: true });
-    await installAndBuildPortal({
+    await buildPortalHtml({
       portalDir,
       portalName,
       verbose: options.verbose,

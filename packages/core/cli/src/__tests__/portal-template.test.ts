@@ -13,8 +13,6 @@ import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 import { prepareInitialPortalTemplate } from '../lib/portal-template';
 
-type LockfileName = 'yarn.lock' | 'pnpm-lock.yaml' | 'package-lock.json';
-
 const tempDirs: string[] = [];
 
 async function makeTempDir(prefix: string): Promise<string> {
@@ -23,11 +21,13 @@ async function makeTempDir(prefix: string): Promise<string> {
   return dir;
 }
 
-async function writePortalTemplate(templatePath: string, lockfile: LockfileName): Promise<void> {
+async function writePortalTemplate(templatePath: string, lockfile?: string): Promise<void> {
   await fsp.writeFile(path.join(templatePath, 'package.json'), '{"name":"portal-template"}\n');
   await fsp.mkdir(path.join(templatePath, 'src'), { recursive: true });
   await fsp.writeFile(path.join(templatePath, 'src', 'index.tsx'), 'export default null;\n');
-  await fsp.writeFile(path.join(templatePath, lockfile), '');
+  if (lockfile) {
+    await fsp.writeFile(path.join(templatePath, lockfile), '');
+  }
 }
 
 afterEach(async () => {
@@ -63,28 +63,22 @@ test('prepares a local yarn portal template without writing a manifest', async (
   await expect(fsp.access(path.join(portalDir, 'local-only.ts'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.git'))).rejects.toThrow();
   await expect(fsp.access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-  expect(runCommand).toHaveBeenNthCalledWith(1, 'yarn', ['install'], {
-    cwd: portalDir,
-    env: expect.any(Object),
-    envMode: 'replace',
-    errorName: 'yarn install',
-    stdio: 'ignore',
-  });
-  expect(runCommand).toHaveBeenNthCalledWith(2, 'yarn', ['build'], {
+  expect(runCommand).toHaveBeenCalledTimes(1);
+  expect(runCommand).toHaveBeenCalledWith('yarn', ['build:html'], {
     cwd: portalDir,
     env: expect.objectContaining({
       NOCOBASE_API_URL: '/api',
       NOCOBASE_PORTAL_BASE: '/x/admin/',
     }),
     envMode: 'replace',
-    errorName: 'yarn build',
+    errorName: 'yarn build:html',
     stdio: 'ignore',
   });
 
   await expect(fsp.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 });
 
-test('uses pnpm and npm based on the copied portal lockfile', async () => {
+test('builds copied portal templates with yarn build:html regardless of lockfile', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
   const pnpmTemplatePath = await makeTempDir('nocobase-cli-portal-template-pnpm-');
   const npmTemplatePath = await makeTempDir('nocobase-cli-portal-template-npm-');
@@ -109,14 +103,8 @@ test('uses pnpm and npm based on the copied portal lockfile', async () => {
 
   expect(runCommand).toHaveBeenNthCalledWith(
     1,
-    'pnpm',
-    ['install'],
-    expect.objectContaining({ cwd: path.join(storagePath, 'portals', 'main', 'pnpm_portal') }),
-  );
-  expect(runCommand).toHaveBeenNthCalledWith(
-    2,
-    'pnpm',
-    ['build'],
+    'yarn',
+    ['build:html'],
     expect.objectContaining({
       cwd: path.join(storagePath, 'portals', 'main', 'pnpm_portal'),
       env: expect.objectContaining({
@@ -127,15 +115,9 @@ test('uses pnpm and npm based on the copied portal lockfile', async () => {
     }),
   );
   expect(runCommand).toHaveBeenNthCalledWith(
-    3,
-    'npm',
-    ['install'],
-    expect.objectContaining({ cwd: path.join(storagePath, 'portals', 'main', 'npm_portal') }),
-  );
-  expect(runCommand).toHaveBeenNthCalledWith(
-    4,
-    'npm',
-    ['run', 'build'],
+    2,
+    'yarn',
+    ['build:html'],
     expect.objectContaining({
       cwd: path.join(storagePath, 'portals', 'main', 'npm_portal'),
       env: expect.objectContaining({
@@ -164,18 +146,10 @@ test('runs portal package manager commands with an isolated environment', async 
     runCommand,
   });
 
-  expect(runCommand).toHaveBeenNthCalledWith(
-    1,
-    'pnpm',
-    ['install'],
-    expect.objectContaining({
-      envMode: 'replace',
-    }),
-  );
-  expect(runCommand).toHaveBeenNthCalledWith(
-    2,
-    'pnpm',
-    ['build'],
+  expect(runCommand).toHaveBeenCalledTimes(1);
+  expect(runCommand).toHaveBeenCalledWith(
+    'yarn',
+    ['build:html'],
     expect.objectContaining({
       env: expect.objectContaining({
         NOCOBASE_API_URL: '/api',
@@ -186,15 +160,13 @@ test('runs portal package manager commands with an isolated environment', async 
   );
   expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NODE_OPTIONS');
   expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('INIT_PORTAL_TEMPLATE');
-  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
-  expect(runCommand.mock.calls[1]?.[2]?.env).not.toHaveProperty('NODE_OPTIONS');
-  expect(runCommand.mock.calls[1]?.[2]?.env).not.toHaveProperty('INIT_PORTAL_TEMPLATE');
 });
 
 test('cleans up a copied portal when preparation fails', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-template-');
-  await fsp.writeFile(path.join(templatePath, 'package.json'), '{"name":"portal-template"}\n');
+  const runCommand = vi.fn().mockRejectedValue(new Error('build failed'));
+  await writePortalTemplate(templatePath);
 
   await expect(
     prepareInitialPortalTemplate({
@@ -202,9 +174,9 @@ test('cleans up a copied portal when preparation fails', async () => {
       portalName: 'admin',
       portalTemplate: templatePath,
       storagePath,
-      runCommand: vi.fn().mockResolvedValue(undefined),
+      runCommand,
     }),
-  ).rejects.toThrow(/expected yarn\.lock, pnpm-lock\.yaml, or package-lock\.json/);
+  ).rejects.toThrow('build failed');
   await expect(fsp.access(path.join(storagePath, 'portals', 'main', 'admin'))).rejects.toThrow();
 });
 
