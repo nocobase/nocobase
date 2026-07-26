@@ -235,6 +235,21 @@
         "localSynced": "Local synced"
       }
     },
+    "portalInfo": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "notFound": "Portal \"{{portal}}\" was not found."
+      },
+      "fields": {
+        "name": "Name",
+        "url": "URL",
+        "developmentMode": "Development mode",
+        "path": "Local path",
+        "enabled": "Enabled",
+        "localSynced": "Local synced"
+      }
+    },
     "portalDestroy": {
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",

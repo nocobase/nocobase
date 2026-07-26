@@ -23,6 +23,21 @@ vi.mock('../lib/auth-store.js', () => ({
 
 vi.mock('../lib/portal-list.js', () => ({
   listPortalWorkspaces: mocks.listPortalWorkspaces,
+  toPortalOutputItem: (item: {
+    routeName: string;
+    portalUrl: string;
+    developmentMode: string;
+    portalDir: string;
+    enabled: boolean;
+    localSynced: boolean | null;
+  }) => ({
+    name: item.routeName,
+    url: item.portalUrl,
+    developmentMode: item.developmentMode,
+    localPath: item.localSynced === true ? item.portalDir : '',
+    enabled: item.enabled,
+    localSynced: item.localSynced,
+  }),
 }));
 
 vi.mock('../lib/ui.js', async (importOriginal) => {
@@ -181,4 +196,87 @@ test('portal list prints an empty message when no portals exist', async () => {
 
   expect(log).not.toHaveBeenCalled();
   expect(mocks.printInfo.mock.calls).toEqual([['No Portal records found.']]);
+});
+
+test('portal list prints JSON output when requested', async () => {
+  const { default: PortalList } = await import('../commands/portal/list.js');
+  const env = {
+    name: 'remote1',
+    kind: 'http',
+    apiBaseUrl: 'http://localhost:56187/api',
+    storagePath: '/Users/chen/test6/remote1/source/storage',
+    config: {
+      apiBaseUrl: 'http://localhost:56187/api',
+    },
+  };
+  const log = vi.fn();
+  mocks.getCurrentEnvName.mockResolvedValue('remote1');
+  mocks.getEnv.mockResolvedValue(env);
+  mocks.listPortalWorkspaces.mockResolvedValue({
+    app: 'main',
+    mode: 'http',
+    storagePath: '/Users/chen/test6/remote1/source/storage',
+    items: [
+      {
+        uid: 'customer',
+        routeName: 'customer',
+        routePath: '/customer',
+        developmentMode: 'vibe-coding',
+        enabled: true,
+        portalUrl: 'http://localhost:56187/x/customer/',
+        portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
+        localSynced: true,
+      },
+      {
+        uid: 'admin',
+        routeName: 'admin',
+        routePath: '/admin',
+        developmentMode: 'no-code',
+        enabled: false,
+        portalUrl: '',
+        portalDir: '',
+        localSynced: null,
+      },
+    ],
+  });
+
+  const command = Object.assign(Object.create(PortalList.prototype), {
+    argv: ['--json'],
+    parse: vi.fn(async () => ({
+      flags: {
+        'json-output': true,
+      },
+    })),
+    config: {
+      pjson: {
+        version: '1.2.3',
+      },
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+    log,
+  });
+
+  await PortalList.prototype.run.call(command);
+
+  expect(JSON.parse(log.mock.calls[0][0])).toEqual([
+    {
+      name: 'customer',
+      url: 'http://localhost:56187/x/customer/',
+      developmentMode: 'vibe-coding',
+      localPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
+      enabled: true,
+      localSynced: true,
+    },
+    {
+      name: 'admin',
+      url: '',
+      developmentMode: 'no-code',
+      localPath: '',
+      enabled: false,
+      localSynced: null,
+    },
+  ]);
+  expect(mocks.printInfo).not.toHaveBeenCalled();
 });

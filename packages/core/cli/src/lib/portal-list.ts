@@ -43,6 +43,15 @@ export type PortalListItem = {
   localSynced: boolean | null;
 };
 
+export type PortalOutputItem = {
+  name: string;
+  url: string;
+  developmentMode: string;
+  localPath: string;
+  enabled: boolean;
+  localSynced: boolean | null;
+};
+
 export type PortalListResult = {
   app: string;
   mode: PortalListMode;
@@ -162,6 +171,17 @@ function buildNoCodePortalBasePath(params: { appPublicPath: string; routePath: s
   const normalizedRoutePath = normalizeNoCodeRoutePath(params.routePath, params.appPublicPath);
   const segment = normalizedRoutePath === '/' ? 'v' : `v/${normalizedRoutePath.replace(/^\/+/, '')}`;
   return appendAppPublicPath(params.appPublicPath, segment, { trailingSlash: normalizedRoutePath === '/' });
+}
+
+export function toPortalOutputItem(item: PortalListItem): PortalOutputItem {
+  return {
+    name: item.routeName,
+    url: item.portalUrl,
+    developmentMode: item.developmentMode,
+    localPath: item.localSynced === true ? item.portalDir : '',
+    enabled: item.enabled,
+    localSynced: item.localSynced,
+  };
 }
 
 async function listMultiPortalRecords(params: {

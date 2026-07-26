@@ -37,6 +37,8 @@ type RunOptions = {
   errorName?: string;
   stdio?: 'inherit' | 'pipe' | 'ignore';
   timeoutMs?: number;
+  onStdout?: (chunk: string) => void;
+  onStderr?: (chunk: string) => void;
 };
 
 type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;

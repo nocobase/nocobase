@@ -235,6 +235,21 @@
         "localSynced": "本地已同步"
       }
     },
+    "portalInfo": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "notFound": "Portal \"{{portal}}\" 不存在。"
+      },
+      "fields": {
+        "name": "名称",
+        "url": "访问 URL",
+        "developmentMode": "开发模式",
+        "path": "本地路径",
+        "enabled": "启用",
+        "localSynced": "本地已同步"
+      }
+    },
     "portalDestroy": {
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",

@@ -13,19 +13,18 @@ import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { findPortalListItem, formatPortalInfo } from '../../lib/portal-info.js';
-import { deployPortalWorkspace } from '../../lib/portal-deploy.js';
-import { listPortalWorkspaces } from '../../lib/portal-list.js';
-import { printSuccess } from '../../lib/ui.js';
+import { listPortalWorkspaces, toPortalOutputItem } from '../../lib/portal-list.js';
 
-const portalDeployText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
-  translateCli(`commands.portalDeploy.${key}`, values, { fallback });
+const portalInfoText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
+  translateCli(`commands.portalInfo.${key}`, values, { fallback });
 
-export default class PortalDeploy extends Command {
-  static override summary = 'Build and deploy a Portal workspace';
+export default class PortalInfo extends Command {
+  static override summary = 'Show Portal record and local workspace details';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --json',
   ];
 
   static override args = {
@@ -45,10 +44,16 @@ export default class PortalDeploy extends Command {
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
+    'json-output': Flags.boolean({
+      char: 'j',
+      aliases: ['json'],
+      description: 'Print Portal details as JSON',
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(PortalDeploy);
+    const { args, flags } = await this.parse(PortalInfo);
     const requestedEnv = hasExplicitEnvSelection(this.argv) ? flags.env : undefined;
     const confirmed = await ensureCrossEnvConfirmed({
       command: this,
@@ -64,7 +69,7 @@ export default class PortalDeploy extends Command {
     const env = await getEnv(envName, { scope });
     if (!env) {
       this.error(
-        portalDeployText(
+        portalInfoText(
           requestedEnv ? 'errors.envNotConfigured' : 'errors.noEnvConfigured',
           { envName },
           requestedEnv
@@ -74,33 +79,22 @@ export default class PortalDeploy extends Command {
       );
     }
 
-    const result = await deployPortalWorkspace({
-      portal: args.portal,
+    const result = await listPortalWorkspaces({
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
     });
-
-    printSuccess(
-      portalDeployText('messages.deployed', { portal: result.portal }, `Portal "${result.portal}" deployed.`),
-    );
-    const info = await listPortalWorkspaces({
-      env,
-      envName,
-      cliVersion: String(this.config.pjson.version ?? '').trim(),
-    });
-    const portal = findPortalListItem(info.items, result.portal);
+    const portal = findPortalListItem(result.items, args.portal);
     if (!portal) {
-      this.error(
-        translateCli(
-          `commands.portalInfo.errors.notFound`,
-          { portal: result.portal },
-          {
-            fallback: `Portal "${result.portal}" was not found.`,
-          },
-        ),
-      );
+      this.error(portalInfoText('errors.notFound', { portal: args.portal }, `Portal "${args.portal}" was not found.`));
     }
+    const outputItem = toPortalOutputItem(portal);
+
+    if (flags['json-output']) {
+      this.log(JSON.stringify(outputItem, null, 2));
+      return;
+    }
+
     this.log(formatPortalInfo(portal));
   }
 }

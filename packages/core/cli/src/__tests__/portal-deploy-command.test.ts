@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   getEnv: vi.fn(),
   deployPortalWorkspace: vi.fn(),
+  listPortalWorkspaces: vi.fn(),
   printInfo: vi.fn(),
   printSuccess: vi.fn(),
 }));
@@ -24,6 +25,25 @@ vi.mock('../lib/auth-store.js', () => ({
 
 vi.mock('../lib/portal-deploy.js', () => ({
   deployPortalWorkspace: mocks.deployPortalWorkspace,
+}));
+
+vi.mock('../lib/portal-list.js', () => ({
+  listPortalWorkspaces: mocks.listPortalWorkspaces,
+  toPortalOutputItem: (item: {
+    routeName: string;
+    portalUrl: string;
+    developmentMode: string;
+    portalDir: string;
+    enabled: boolean;
+    localSynced: boolean | null;
+  }) => ({
+    name: item.routeName,
+    url: item.portalUrl,
+    developmentMode: item.developmentMode,
+    localPath: item.localSynced === true ? item.portalDir : '',
+    enabled: item.enabled,
+    localSynced: item.localSynced,
+  }),
 }));
 
 vi.mock('../lib/ui.js', async (importOriginal) => {
@@ -63,6 +83,23 @@ test('portal deploy resolves the current env name before deploying', async () =>
     uploaded: true,
     recordSynced: true,
   });
+  mocks.listPortalWorkspaces.mockResolvedValue({
+    app: 'main',
+    mode: 'http',
+    storagePath: '/Users/chen/test6/remote1/source/storage',
+    items: [
+      {
+        uid: 'cba',
+        routeName: 'cba',
+        routePath: '/cba',
+        developmentMode: 'vibe-coding',
+        enabled: true,
+        portalUrl: 'http://localhost:56187/x/cba/',
+        portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+        localSynced: true,
+      },
+    ],
+  });
 
   const command = Object.assign(Object.create(PortalDeploy.prototype), {
     argv: [],
@@ -78,6 +115,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
     error: (message: string) => {
       throw new Error(message);
     },
+    log: vi.fn(),
   });
 
   await PortalDeploy.prototype.run.call(command);
@@ -94,12 +132,26 @@ test('portal deploy resolves the current env name before deploying', async () =>
       },
     ],
   ]);
-  expect(mocks.printInfo.mock.calls).toEqual([
-    ['Mode: http'],
-    ['App: main'],
-    ['Base: /x/cba/'],
-    ['Record: synced'],
-    ['Local dist: /Users/chen/test6/remote1/source/storage/portals/main/cba/dist'],
-    ['Server dist: portals/main/cba/dist'],
+  expect(mocks.listPortalWorkspaces.mock.calls).toEqual([
+    [
+      {
+        env,
+        envName: 'remote1',
+        cliVersion: '1.2.3',
+      },
+    ],
+  ]);
+  expect(mocks.printInfo).not.toHaveBeenCalled();
+  expect(command.log.mock.calls).toEqual([
+    [
+      [
+        'Name: cba',
+        'URL: http://localhost:56187/x/cba/',
+        'Development mode: vibe-coding',
+        'Local path: /Users/chen/test6/remote1/source/storage/portals/main/cba',
+        'Enabled: yes',
+        'Local synced: yes',
+      ].join('\n'),
+    ],
   ]);
 });

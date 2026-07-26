@@ -12,7 +12,7 @@ import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
-import { listPortalWorkspaces } from '../../lib/portal-list.js';
+import { listPortalWorkspaces, toPortalOutputItem } from '../../lib/portal-list.js';
 import { printInfo, renderTable } from '../../lib/ui.js';
 
 const portalListText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
@@ -31,6 +31,7 @@ export default class PortalList extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env dev --yes',
+    '<%= config.bin %> <%= command.id %> --json',
   ];
 
   static override flags = {
@@ -41,6 +42,12 @@ export default class PortalList extends Command {
     yes: Flags.boolean({
       char: 'y',
       description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
+    'json-output': Flags.boolean({
+      char: 'j',
+      aliases: ['json'],
+      description: 'Print Portal records as JSON',
       default: false,
     }),
   };
@@ -77,8 +84,14 @@ export default class PortalList extends Command {
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
     });
+    const outputItems = result.items.map(toPortalOutputItem);
 
-    if (!result.items.length) {
+    if (flags['json-output']) {
+      this.log(JSON.stringify(outputItems, null, 2));
+      return;
+    }
+
+    if (!outputItems.length) {
       printInfo(portalListText('messages.empty', undefined, 'No Portal records found.'));
       return;
     }
@@ -93,11 +106,11 @@ export default class PortalList extends Command {
           portalListText('table.enabled', undefined, 'Enabled'),
           portalListText('table.localSynced', undefined, 'Local synced'),
         ],
-        result.items.map((item) => [
-          item.routeName,
-          item.portalUrl,
+        outputItems.map((item) => [
+          item.name,
+          item.url,
           item.developmentMode,
-          item.localSynced === true ? item.portalDir : '',
+          item.localPath,
           formatBoolean(item.enabled),
           formatBoolean(item.localSynced),
         ]),
