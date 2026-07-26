@@ -216,6 +216,47 @@
         "serverDist": "服务端 dist：{{dist}}"
       }
     },
+    "portalList": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 列出 Portal workspace。",
+        "listFailed": "Portal 列表获取失败，状态码 {{status}}\n{{details}}"
+      },
+      "messages": {
+        "empty": "没有找到 Portal 记录。"
+      },
+      "table": {
+        "name": "名称",
+        "url": "访问 URL",
+        "developmentMode": "开发模式",
+        "path": "本地路径",
+        "enabled": "启用",
+        "localSynced": "本地已同步"
+      }
+    },
+    "portalDestroy": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "confirmationRequired": "非交互模式下拒绝删除 Portal。请追加 --yes 后重试。",
+        "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal workspace：{{portalDir}}",
+        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n如需忽略本地文件缺失，请追加 --force。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal workspace。",
+        "recordDestroyFailed": "Portal 记录删除失败，状态码 {{status}}\n{{details}}"
+      },
+      "prompts": {
+        "confirm": "删除 Portal \"{{portal}}\" 并移除它的 storage 目录？"
+      },
+      "messages": {
+        "destroyed": "Portal \"{{portal}}\" 已删除。",
+        "mode": "Mode：{{mode}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "record": "记录：{{status}}",
+        "workspace": "Workspace：{{status}}（{{dir}}）"
+      }
+    },
     "portalDev": {
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",

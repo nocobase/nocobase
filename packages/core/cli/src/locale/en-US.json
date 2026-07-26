@@ -216,6 +216,47 @@
         "serverDist": "Server dist: {{dist}}"
       }
     },
+    "portalList": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "unsupportedEnvKind": "Cannot list Portal workspaces for {{kind}} envs in the first version.",
+        "listFailed": "Portal list failed with status {{status}}\n{{details}}"
+      },
+      "messages": {
+        "empty": "No Portal records found."
+      },
+      "table": {
+        "name": "Name",
+        "url": "URL",
+        "developmentMode": "Development mode",
+        "path": "Local path",
+        "enabled": "Enabled",
+        "localSynced": "Local synced"
+      }
+    },
+    "portalDestroy": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "confirmationRequired": "Refusing to destroy a Portal in non-interactive mode without --yes.",
+        "outsideParent": "Refusing to delete a Portal workspace outside {{parentDir}}: {{portalDir}}",
+        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nPass --force to ignore missing local files.",
+        "unsupportedEnvKind": "Cannot destroy a Portal workspace for {{kind}} envs in the first version.",
+        "recordDestroyFailed": "Portal record destroy failed with status {{status}}\n{{details}}"
+      },
+      "prompts": {
+        "confirm": "Destroy Portal \"{{portal}}\" and delete its storage directory?"
+      },
+      "messages": {
+        "destroyed": "Portal \"{{portal}}\" destroyed.",
+        "mode": "Mode: {{mode}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "record": "Record: {{status}}",
+        "workspace": "Workspace: {{status}} ({{dir}})"
+      }
+    },
     "portalDev": {
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
