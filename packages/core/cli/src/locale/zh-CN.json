@@ -202,16 +202,34 @@
         "packageJsonMissing": "Portal workspace 无效：{{portalDir}} 中缺少 package.json。",
         "distMissing": "Portal build 没有生成 {{distDir}}/index.html。",
         "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 部署 Portal workspace。",
-        "uploadFailed": "Portal dist 上传失败，状态码 {{status}}\n{{details}}"
+        "uploadFailed": "Portal dist 上传失败，状态码 {{status}}\n{{details}}",
+        "recordSyncFailed": "Portal 记录同步失败，状态码 {{status}}\n{{details}}"
       },
       "messages": {
         "deployed": "Portal \"{{portal}}\" 已部署。",
         "mode": "Mode：{{mode}}",
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
+        "record": "记录：已同步",
         "dist": "Dist：{{dist}}",
         "localDist": "本地 dist：{{dist}}",
         "serverDist": "服务端 dist：{{dist}}"
+      }
+    },
+    "portalDev": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
+        "packageJsonMissing": "Portal workspace 无效：{{portalDir}} 中缺少 package.json。",
+        "sshUnsupported": "第一版暂不支持为 ssh env 启动 Portal workspace 开发服务。"
+      },
+      "messages": {
+        "starting": "正在启动 Portal \"{{portal}}\"...",
+        "mode": "Mode：{{mode}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "dir": "目录：{{dir}}"
       }
     },
     "license": {

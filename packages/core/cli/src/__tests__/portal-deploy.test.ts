@@ -74,11 +74,48 @@ async function preparePortalWorkspace(params: {
   return portalDir;
 }
 
+function expectPortalRecordFirstOrCreate(options: RequestOptions, portal = 'customer') {
+  const body = JSON.parse(String(options.flags.body));
+
+  expect(options).toEqual(
+    expect.objectContaining({
+      flags: expect.objectContaining({
+        filterKeys: ['uid'],
+      }),
+      operation: expect.objectContaining({
+        method: 'POST',
+        pathTemplate: '/multiPortals:firstOrCreate',
+        parameters: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'filterKeys[]',
+            flagName: 'filterKeys',
+            in: 'query',
+            isArray: true,
+          }),
+        ]),
+      }),
+    }),
+  );
+  expect(body).toEqual(
+    expect.objectContaining({
+      uid: portal,
+      title: portal === 'customer' ? 'Customer' : expect.any(String),
+      developmentMode: 'vibe-coding',
+      routeName: portal,
+      routePath: `/${portal}`,
+      authCheck: true,
+      enabled: true,
+      uiLayoutUid: 'admin-layout-model',
+      skipCreatePortalDirectory: true,
+    }),
+  );
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
-test('updates env files, builds, and finishes locally without uploading', async () => {
+test('updates env files, builds, and syncs the portal record locally without uploading dist', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
   const portalDir = await preparePortalWorkspace({
     storagePath,
@@ -90,7 +127,7 @@ test('updates env files, builds, and finishes locally without uploading', async 
     await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
     await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
   });
-  const apiRequest = vi.fn();
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: { uid: 'customer' } } }));
 
   await expect(
     deployPortalWorkspace({
@@ -110,6 +147,7 @@ test('updates env files, builds, and finishes locally without uploading', async 
     portalBase: '/console/x/apps/crm/customer/',
     mode: 'local',
     uploaded: false,
+    recordSynced: true,
   });
 
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['build'], {
@@ -121,7 +159,8 @@ test('updates env files, builds, and finishes locally without uploading', async 
     envMode: 'replace',
     errorName: 'pnpm build',
   });
-  expect(apiRequest).not.toHaveBeenCalled();
+  expect(apiRequest).toHaveBeenCalledTimes(1);
+  expectPortalRecordFirstOrCreate(apiRequest.mock.calls[0][0]);
   expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
     'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/console/api/__app/crm\nNOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
   );
@@ -132,14 +171,14 @@ test('updates env files, builds, and finishes locally without uploading', async 
   );
 });
 
-test('docker deploy builds without uploading', async () => {
+test('docker deploy builds and syncs the portal record without uploading dist', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
   const portalDir = await preparePortalWorkspace({ storagePath });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
     await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
     await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
   });
-  const apiRequest = vi.fn();
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: { uid: 'customer' } } }));
 
   await expect(
     deployPortalWorkspace({
@@ -152,8 +191,10 @@ test('docker deploy builds without uploading', async () => {
     portalDir,
     mode: 'docker',
     uploaded: false,
+    recordSynced: true,
   });
-  expect(apiRequest).not.toHaveBeenCalled();
+  expect(apiRequest).toHaveBeenCalledTimes(1);
+  expectPortalRecordFirstOrCreate(apiRequest.mock.calls[0][0]);
 });
 
 test('http deploy builds, packs dist, and uploads it', async () => {
@@ -168,6 +209,10 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 'console.log("ok");\n');
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/multiPortals:firstOrCreate') {
+      return { ok: true, status: 200, data: { data: { uid: 'customer' } } };
+    }
+
     const filePath = String(options.flags.file);
     const entries: string[] = [];
     await tar.list({
@@ -199,10 +244,12 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     portalDir,
     mode: 'http',
     uploaded: true,
+    recordSynced: true,
     serverDistPath: 'portals/crm/customer/dist',
   });
 
-  expect(apiRequest).toHaveBeenCalledWith(
+  expect(apiRequest).toHaveBeenNthCalledWith(
+    1,
     expect.objectContaining({
       cliVersion: '1.2.3',
       envName: 'prod',
@@ -218,6 +265,7 @@ test('http deploy builds, packs dist, and uploads it', async () => {
       }),
     }),
   );
+  expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['build'], {
     cwd: portalDir,
     env: expect.objectContaining({
@@ -261,7 +309,10 @@ test('http deploy uses env source storage when no local storagePath is configure
       portalDir,
       mode: 'http',
       uploaded: true,
+      recordSynced: true,
     });
+    expect(apiRequest).toHaveBeenCalledTimes(2);
+    expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
   } finally {
     if (originalCliRoot === undefined) {
       delete process.env[NB_CLI_ROOT_ENV];
@@ -269,6 +320,28 @@ test('http deploy uses env source storage when no local storagePath is configure
       process.env[NB_CLI_ROOT_ENV] = originalCliRoot;
     }
   }
+});
+
+test('fails when portal record sync fails', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
+  await preparePortalWorkspace({ storagePath });
+  const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+  });
+  const apiRequest = vi.fn(async () => ({ ok: false, status: 500, data: { errors: [{ message: 'boom' }] } }));
+
+  await expect(
+    deployPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({ storagePath }),
+      runCommand,
+      apiRequest,
+    }),
+  ).rejects.toThrow(/Portal record sync failed with status 500/);
+
+  expect(apiRequest).toHaveBeenCalledTimes(1);
+  expectPortalRecordFirstOrCreate(apiRequest.mock.calls[0][0]);
 });
 
 test('fails when workspace is missing', async () => {

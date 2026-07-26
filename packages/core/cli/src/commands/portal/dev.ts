@@ -12,14 +12,14 @@ import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
-import { deployPortalWorkspace } from '../../lib/portal-deploy.js';
-import { printInfo, printSuccess } from '../../lib/ui.js';
+import { devPortalWorkspace } from '../../lib/portal-dev.js';
+import { printInfo } from '../../lib/ui.js';
 
-const portalDeployText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
-  translateCli(`commands.portalDeploy.${key}`, values, { fallback });
+const portalDevText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
+  translateCli(`commands.portalDev.${key}`, values, { fallback });
 
-export default class PortalDeploy extends Command {
-  static override summary = 'Build and deploy a Portal workspace';
+export default class PortalDev extends Command {
+  static override summary = 'Start a Portal workspace in development mode';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -46,7 +46,7 @@ export default class PortalDeploy extends Command {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(PortalDeploy);
+    const { args, flags } = await this.parse(PortalDev);
     const requestedEnv = hasExplicitEnvSelection(this.argv) ? flags.env : undefined;
     const confirmed = await ensureCrossEnvConfirmed({
       command: this,
@@ -62,7 +62,7 @@ export default class PortalDeploy extends Command {
     const env = await getEnv(envName, { scope });
     if (!env) {
       this.error(
-        portalDeployText(
+        portalDevText(
           requestedEnv ? 'errors.envNotConfigured' : 'errors.noEnvConfigured',
           { envName },
           requestedEnv
@@ -72,35 +72,18 @@ export default class PortalDeploy extends Command {
       );
     }
 
-    const result = await deployPortalWorkspace({
+    await devPortalWorkspace({
       portal: args.portal,
       env,
-      envName,
-      cliVersion: String(this.config.pjson.version ?? '').trim(),
-    });
-
-    printSuccess(
-      portalDeployText('messages.deployed', { portal: result.portal }, `Portal "${result.portal}" deployed.`),
-    );
-    printInfo(portalDeployText('messages.mode', { mode: result.mode }, `Mode: ${result.mode}`));
-    printInfo(portalDeployText('messages.app', { app: result.app }, `App: ${result.app}`));
-    printInfo(portalDeployText('messages.base', { base: result.portalBase }, `Base: ${result.portalBase}`));
-    if (result.recordSynced) {
-      printInfo(portalDeployText('messages.record', undefined, 'Record: synced'));
-    }
-    if (result.uploaded) {
-      printInfo(portalDeployText('messages.localDist', { dist: result.distDir }, `Local dist: ${result.distDir}`));
-      if (result.serverDistPath) {
+      onStart: (result) => {
         printInfo(
-          portalDeployText(
-            'messages.serverDist',
-            { dist: result.serverDistPath },
-            `Server dist: ${result.serverDistPath}`,
-          ),
+          portalDevText('messages.starting', { portal: result.portal }, `Starting Portal "${result.portal}"...`),
         );
-      }
-    } else {
-      printInfo(portalDeployText('messages.dist', { dist: result.distDir }, `Dist: ${result.distDir}`));
-    }
+        printInfo(portalDevText('messages.mode', { mode: result.mode }, `Mode: ${result.mode}`));
+        printInfo(portalDevText('messages.app', { app: result.app }, `App: ${result.app}`));
+        printInfo(portalDevText('messages.base', { base: result.portalBase }, `Base: ${result.portalBase}`));
+        printInfo(portalDevText('messages.dir', { dir: result.portalDir }, `Dir: ${result.portalDir}`));
+      },
+    });
   }
 }

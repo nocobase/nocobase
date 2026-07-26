@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
@@ -16,12 +16,13 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
   resolvePortalAppFromApiBaseUrl,
-  resolvePortalEnvApiUrl,
   resolvePortalStoragePath,
+  titleFromPortalSlug,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { updatePortalEnvFiles } from './portal-env-files.js';
 import { run } from './run-npm.js';
 
 type RunOptions = {
@@ -59,6 +60,7 @@ export type PortalDeployResult = {
   serverDistPath?: string;
   mode: PortalDeployMode;
   uploaded: boolean;
+  recordSynced: boolean;
 };
 
 type PortalDeployUploadResult = {
@@ -103,6 +105,24 @@ const DEPLOY_OPERATION: RequestOperation = {
   ],
 };
 
+const FIRST_OR_CREATE_PORTAL_OPERATION: RequestOperation = {
+  method: 'POST',
+  pathTemplate: '/multiPortals:firstOrCreate',
+  hasBody: true,
+  bodyRequired: true,
+  parameters: [
+    {
+      name: 'filterKeys[]',
+      flagName: 'filterKeys',
+      in: 'query',
+      required: true,
+      isArray: true,
+    },
+  ],
+};
+
+const DEFAULT_PORTAL_UI_LAYOUT_UID = 'admin-layout-model';
+
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
@@ -139,57 +159,6 @@ async function assertFileExists(filePath: string, message: string): Promise<void
     // Throw the normalized message below.
   }
   throw new Error(message);
-}
-
-function upsertEnvContent(content: string, values: Record<string, string>): string {
-  const nextValues = { ...values };
-  const lines = content ? content.replace(/\r\n/g, '\n').split('\n') : [];
-  const result: string[] = [];
-
-  for (const line of lines) {
-    if (!line && result.length === lines.length - 1) {
-      continue;
-    }
-    const match = line.match(/^(\s*)([A-Za-z_][A-Za-z0-9_]*)\s*=/);
-    const key = match?.[2];
-    if (key && Object.prototype.hasOwnProperty.call(nextValues, key)) {
-      result.push(`${key}=${nextValues[key]}`);
-      delete nextValues[key];
-      continue;
-    }
-    result.push(line);
-  }
-
-  for (const [key, value] of Object.entries(nextValues)) {
-    result.push(`${key}=${value}`);
-  }
-
-  return `${result.join('\n').replace(/\n*$/, '')}\n`;
-}
-
-export async function upsertPortalEnvFile(filePath: string, values: Record<string, string>): Promise<void> {
-  let content = '';
-  try {
-    content = await readFile(filePath, 'utf-8');
-  } catch {
-    content = '';
-  }
-  await writeFile(filePath, upsertEnvContent(content, values), 'utf-8');
-}
-
-async function updatePortalEnvFiles(params: {
-  portalDir: string;
-  apiBaseUrl: string;
-  portalBase: string;
-}): Promise<void> {
-  await upsertPortalEnvFile(path.join(params.portalDir, '.env'), {
-    NOCOBASE_API_URL: resolvePortalEnvApiUrl(params.apiBaseUrl),
-    NOCOBASE_PORTAL_BASE: params.portalBase,
-  });
-  await upsertPortalEnvFile(path.join(params.portalDir, '.env.local'), {
-    NOCOBASE_API_URL: params.apiBaseUrl,
-    NOCOBASE_PORTAL_BASE: params.portalBase,
-  });
 }
 
 async function packPortalDist(distDir: string): Promise<{ archivePath: string; cleanup: () => Promise<void> }> {
@@ -249,6 +218,44 @@ async function uploadPortalDist(params: {
   };
 }
 
+async function syncMultiPortalRecord(params: {
+  portal: string;
+  envName?: string;
+  cliVersion?: string;
+  apiRequest?: ApiRequest;
+}): Promise<void> {
+  const apiRequest = params.apiRequest ?? executeApiRequest;
+  const response = await apiRequest({
+    cliVersion: params.cliVersion ?? '',
+    envName: params.envName,
+    flags: {
+      filterKeys: ['uid'],
+      body: JSON.stringify({
+        uid: params.portal,
+        title: titleFromPortalSlug(params.portal),
+        developmentMode: 'vibe-coding',
+        routeName: params.portal,
+        routePath: `/${params.portal}`,
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_PORTAL_UI_LAYOUT_UID,
+        skipCreatePortalDirectory: true,
+      }),
+    },
+    operation: FIRST_OR_CREATE_PORTAL_OPERATION,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      portalDeployText(
+        'errors.recordSyncFailed',
+        { status: response.status, details: JSON.stringify(response.data, null, 2) },
+        `Portal record sync failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`,
+      ),
+    );
+  }
+}
+
 export async function deployPortalWorkspace(options: PortalDeployOptions): Promise<PortalDeployResult> {
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
@@ -303,6 +310,13 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   );
 
   if (options.env.kind === 'local' || options.env.kind === 'docker') {
+    await syncMultiPortalRecord({
+      portal,
+      envName: options.envName,
+      cliVersion: options.cliVersion,
+      apiRequest: options.apiRequest,
+    });
+
     return {
       app,
       portal,
@@ -311,6 +325,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       distDir,
       mode: options.env.kind,
       uploaded: false,
+      recordSynced: true,
     };
   }
 
@@ -340,6 +355,13 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     await archive.cleanup();
   }
 
+  await syncMultiPortalRecord({
+    portal,
+    envName: options.envName,
+    cliVersion: options.cliVersion,
+    apiRequest: options.apiRequest,
+  });
+
   return {
     app,
     portal,
@@ -349,5 +371,6 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     serverDistPath: uploadResult.distPath,
     mode: 'http',
     uploaded: true,
+    recordSynced: true,
   };
 }

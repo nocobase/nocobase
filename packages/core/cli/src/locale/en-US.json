@@ -202,16 +202,34 @@
         "packageJsonMissing": "Portal workspace is invalid: package.json is missing in {{portalDir}}.",
         "distMissing": "Portal build did not produce {{distDir}}/index.html.",
         "unsupportedEnvKind": "Cannot deploy a Portal workspace for {{kind}} envs in the first version.",
-        "uploadFailed": "Portal dist upload failed with status {{status}}\n{{details}}"
+        "uploadFailed": "Portal dist upload failed with status {{status}}\n{{details}}",
+        "recordSyncFailed": "Portal record sync failed with status {{status}}\n{{details}}"
       },
       "messages": {
         "deployed": "Portal \"{{portal}}\" deployed.",
         "mode": "Mode: {{mode}}",
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
+        "record": "Record: synced",
         "dist": "Dist: {{dist}}",
         "localDist": "Local dist: {{dist}}",
         "serverDist": "Server dist: {{dist}}"
+      }
+    },
+    "portalDev": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
+        "packageJsonMissing": "Portal workspace is invalid: package.json is missing in {{portalDir}}.",
+        "sshUnsupported": "Cannot start a Portal workspace in dev mode for ssh envs in the first version."
+      },
+      "messages": {
+        "starting": "Starting Portal \"{{portal}}\"...",
+        "mode": "Mode: {{mode}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "dir": "Dir: {{dir}}"
       }
     },
     "license": {

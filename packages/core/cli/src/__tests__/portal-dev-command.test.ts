@@ -12,9 +12,8 @@ import { beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   getEnv: vi.fn(),
-  deployPortalWorkspace: vi.fn(),
+  devPortalWorkspace: vi.fn(),
   printInfo: vi.fn(),
-  printSuccess: vi.fn(),
 }));
 
 vi.mock('../lib/auth-store.js', () => ({
@@ -22,8 +21,8 @@ vi.mock('../lib/auth-store.js', () => ({
   getEnv: mocks.getEnv,
 }));
 
-vi.mock('../lib/portal-deploy.js', () => ({
-  deployPortalWorkspace: mocks.deployPortalWorkspace,
+vi.mock('../lib/portal-dev.js', () => ({
+  devPortalWorkspace: mocks.devPortalWorkspace,
 }));
 
 vi.mock('../lib/ui.js', async (importOriginal) => {
@@ -31,7 +30,6 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
   return {
     ...actual,
     printInfo: mocks.printInfo,
-    printSuccess: mocks.printSuccess,
   };
 });
 
@@ -39,8 +37,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-test('portal deploy resolves the current env name before deploying', async () => {
-  const { default: PortalDeploy } = await import('../commands/portal/deploy.js');
+test('portal dev resolves the current env name before starting dev', async () => {
+  const { default: PortalDev } = await import('../commands/portal/dev.js');
   const env = {
     name: 'remote1',
     kind: 'http',
@@ -52,54 +50,47 @@ test('portal deploy resolves the current env name before deploying', async () =>
   };
   mocks.getCurrentEnvName.mockResolvedValue('remote1');
   mocks.getEnv.mockResolvedValue(env);
-  mocks.deployPortalWorkspace.mockResolvedValue({
-    app: 'main',
-    portal: 'cba',
-    portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
-    portalBase: '/x/cba/',
-    distDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba/dist',
-    serverDistPath: 'portals/main/cba/dist',
-    mode: 'http',
-    uploaded: true,
-    recordSynced: true,
+  mocks.devPortalWorkspace.mockImplementation(async (options) => {
+    options.onStart({
+      app: 'main',
+      portal: 'cba',
+      portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+      portalBase: '/x/cba/',
+      mode: 'http',
+    });
+    return {
+      app: 'main',
+      portal: 'cba',
+      portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+      portalBase: '/x/cba/',
+      mode: 'http',
+    };
   });
 
-  const command = Object.assign(Object.create(PortalDeploy.prototype), {
+  const command = Object.assign(Object.create(PortalDev.prototype), {
     argv: [],
     parse: vi.fn(async () => ({
       args: { portal: 'cba' },
       flags: {},
     })),
-    config: {
-      pjson: {
-        version: '1.2.3',
-      },
-    },
     error: (message: string) => {
       throw new Error(message);
     },
   });
 
-  await PortalDeploy.prototype.run.call(command);
+  await PortalDev.prototype.run.call(command);
 
   expect(mocks.getCurrentEnvName.mock.calls).toEqual([[{ scope: 'global' }]]);
   expect(mocks.getEnv.mock.calls).toEqual([['remote1', { scope: 'global' }]]);
-  expect(mocks.deployPortalWorkspace.mock.calls).toEqual([
-    [
-      {
-        portal: 'cba',
-        env,
-        envName: 'remote1',
-        cliVersion: '1.2.3',
-      },
-    ],
-  ]);
+  expect(mocks.devPortalWorkspace.mock.calls[0][0]).toMatchObject({
+    portal: 'cba',
+    env,
+  });
   expect(mocks.printInfo.mock.calls).toEqual([
+    ['Starting Portal "cba"...'],
     ['Mode: http'],
     ['App: main'],
     ['Base: /x/cba/'],
-    ['Record: synced'],
-    ['Local dist: /Users/chen/test6/remote1/source/storage/portals/main/cba/dist'],
-    ['Server dist: portals/main/cba/dist'],
+    ['Dir: /Users/chen/test6/remote1/source/storage/portals/main/cba'],
   ]);
 });
