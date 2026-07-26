@@ -9,7 +9,7 @@
 
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
-import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import type { ChildProcess } from 'child_process';
@@ -170,12 +170,15 @@ function collectRouteTitles(routes: RouteResponseItem[] = []) {
   ]);
 }
 
-async function createPortalDistArchive(rootDir: string, files: Record<string, string>) {
+async function createPortalDistArchive(rootDir: string, files: Record<string, string>, modes?: Record<string, number>) {
   const distSourceDir = path.join(rootDir, `dist-source-${Date.now()}-${Math.random().toString().slice(2)}`);
   const archivePath = path.join(rootDir, `dist-${Date.now()}-${Math.random().toString().slice(2)}.tar.gz`);
   for (const [fileName, content] of Object.entries(files)) {
     await mkdir(path.dirname(path.join(distSourceDir, fileName)), { recursive: true });
     await writeFile(path.join(distSourceDir, fileName), content, 'utf-8');
+  }
+  for (const [entryPath, mode] of Object.entries(modes ?? {})) {
+    await chmod(path.join(distSourceDir, entryPath), mode);
   }
   await tar.create(
     {
@@ -846,13 +849,24 @@ describe('plugin-multi-portal server', () => {
     });
     await app.db.sync();
 
-    const archivePath = await createPortalDistArchive(storagePath as string, {
-      'index.html': '<div id="root"></div>',
-      'assets/index.js': 'console.log("portal");\n',
-    });
+    const archivePath = await createPortalDistArchive(
+      storagePath as string,
+      {
+        'index.html': '<div id="root"></div>',
+        'assets/index.js': 'console.log("portal");\n',
+      },
+      {
+        assets: 0o700,
+        'index.html': 0o600,
+        'assets/index.js': 0o600,
+      },
+    );
     const portalDir = path.join(storagePath as string, 'portals', 'main', 'customer');
     await mkdir(path.join(portalDir, '.dist-upload-stale'), { recursive: true });
     await mkdir(path.join(portalDir, '.dist-backup-stale'), { recursive: true });
+    await chmod(path.join(storagePath as string, 'portals'), 0o700);
+    await chmod(path.join(storagePath as string, 'portals', 'main'), 0o700);
+    await chmod(portalDir, 0o700);
     const response = await app
       .agent()
       .resource('multiPortals')
@@ -882,6 +896,13 @@ describe('plugin-multi-portal server', () => {
     await expect(
       readFile(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'assets', 'index.js'), 'utf-8'),
     ).resolves.toBe('console.log("portal");\n');
+    expect((await stat(path.join(storagePath as string, 'portals'))).mode & 0o777).toBe(0o755);
+    expect((await stat(path.join(storagePath as string, 'portals', 'main'))).mode & 0o777).toBe(0o755);
+    expect((await stat(portalDir)).mode & 0o777).toBe(0o755);
+    expect((await stat(path.join(portalDir, 'dist'))).mode & 0o777).toBe(0o755);
+    expect((await stat(path.join(portalDir, 'dist', 'assets'))).mode & 0o777).toBe(0o755);
+    expect((await stat(path.join(portalDir, 'dist', 'index.html'))).mode & 0o777).toBe(0o644);
+    expect((await stat(path.join(portalDir, 'dist', 'assets', 'index.js'))).mode & 0o777).toBe(0o644);
     await expect(readdir(portalDir)).resolves.not.toEqual(
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );

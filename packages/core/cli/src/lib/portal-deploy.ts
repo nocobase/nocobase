@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
@@ -122,6 +122,8 @@ const FIRST_OR_CREATE_PORTAL_OPERATION: RequestOperation = {
 };
 
 const DEFAULT_PORTAL_UI_LAYOUT_UID = 'admin-layout-model';
+const PORTAL_PUBLIC_DIR_MODE = 0o755;
+const PORTAL_PUBLIC_FILE_MODE = 0o644;
 
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
@@ -147,6 +149,35 @@ async function pathExists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function chmodPortalDistTree(targetDir: string): Promise<void> {
+  await chmod(targetDir, PORTAL_PUBLIC_DIR_MODE);
+  const entries = await readdir(targetDir, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (entry) => {
+      const entryPath = path.join(targetDir, entry.name);
+      if (entry.isDirectory()) {
+        await chmodPortalDistTree(entryPath);
+        return;
+      }
+      if (entry.isFile()) {
+        await chmod(entryPath, PORTAL_PUBLIC_FILE_MODE);
+      }
+    }),
+  );
+}
+
+async function ensurePortalDistPublicReadable(params: {
+  storagePath: string;
+  app: string;
+  portalDir: string;
+  distDir: string;
+}): Promise<void> {
+  await chmod(path.join(params.storagePath, 'portals'), PORTAL_PUBLIC_DIR_MODE);
+  await chmod(path.join(params.storagePath, 'portals', params.app), PORTAL_PUBLIC_DIR_MODE);
+  await chmod(params.portalDir, PORTAL_PUBLIC_DIR_MODE);
+  await chmodPortalDistTree(params.distDir);
 }
 
 async function assertFileExists(filePath: string, message: string): Promise<void> {
@@ -308,6 +339,12 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       `Portal build did not produce ${path.join(distDir, 'index.html')}.`,
     ),
   );
+  await ensurePortalDistPublicReadable({
+    storagePath,
+    app,
+    portalDir,
+    distDir,
+  });
 
   if (options.env.kind === 'local' || options.env.kind === 'docker') {
     await syncMultiPortalRecord({

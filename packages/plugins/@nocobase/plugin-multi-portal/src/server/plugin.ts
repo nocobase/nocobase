@@ -56,6 +56,8 @@ const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_STORAGE_COMMAND_NOT_FOUND_ERROR_CODES = new Set(['ENOENT', 'ENOTDIR']);
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
+const PORTAL_PUBLIC_DIR_MODE = 0o755;
+const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const DEFAULT_ADMIN_MULTI_PORTAL_UID = '__default_admin__';
 const DEFAULT_ADMIN_VIBE_CODING_MULTI_PORTAL_UID = '__default_admin_vibe_coding__';
 const DEFAULT_MOBILE_MULTI_PORTAL_UID = '__default_mobile__';
@@ -562,6 +564,32 @@ async function movePortalDeployDir(sourceDir: string, targetDir: string): Promis
   }
 }
 
+async function chmodPortalDistTree(targetDir: string): Promise<void> {
+  await fs.promises.chmod(targetDir, PORTAL_PUBLIC_DIR_MODE);
+  const entries = await fs.promises.readdir(targetDir, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (entry) => {
+      const entryPath = path.join(targetDir, entry.name);
+      if (entry.isDirectory()) {
+        await chmodPortalDistTree(entryPath);
+        return;
+      }
+      if (entry.isFile()) {
+        await fs.promises.chmod(entryPath, PORTAL_PUBLIC_FILE_MODE);
+      }
+    }),
+  );
+}
+
+async function ensurePortalDistPublicReadable(portalDir: string, distDir: string): Promise<void> {
+  const appDir = path.dirname(portalDir);
+  const portalsDir = path.dirname(appDir);
+  await fs.promises.chmod(portalsDir, PORTAL_PUBLIC_DIR_MODE);
+  await fs.promises.chmod(appDir, PORTAL_PUBLIC_DIR_MODE);
+  await fs.promises.chmod(portalDir, PORTAL_PUBLIC_DIR_MODE);
+  await chmodPortalDistTree(distDir);
+}
+
 async function replacePortalDistFromArchive(params: {
   filePath: string;
   appName: string;
@@ -596,6 +624,7 @@ async function replacePortalDistFromArchive(params: {
       hasBackup = true;
     }
     await movePortalDeployDir(uploadDir, distDir);
+    await ensurePortalDistPublicReadable(portalDir, distDir);
     if (hasBackup) {
       await fs.promises.rm(backupDir, { recursive: true, force: true });
       hasBackup = false;

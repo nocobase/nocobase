@@ -169,6 +169,11 @@ test('updates env files, builds, and syncs the portal record locally without upl
       'LOCAL_ONLY=true\n' +
       'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n',
   );
+  expect((await fsp.stat(path.join(storagePath, 'portals'))).mode & 0o777).toBe(0o755);
+  expect((await fsp.stat(path.join(storagePath, 'portals', 'crm'))).mode & 0o777).toBe(0o755);
+  expect((await fsp.stat(portalDir)).mode & 0o777).toBe(0o755);
+  expect((await fsp.stat(path.join(portalDir, 'dist'))).mode & 0o777).toBe(0o755);
+  expect((await fsp.stat(path.join(portalDir, 'dist', 'index.html'))).mode & 0o777).toBe(0o644);
 });
 
 test('docker deploy builds and syncs the portal record without uploading dist', async () => {
@@ -207,6 +212,10 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'assets'), { recursive: true });
     await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
     await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 'console.log("ok");\n');
+    await fsp.chmod(path.join(String(options?.cwd), 'dist'), 0o700);
+    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'assets'), 0o700);
+    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'index.html'), 0o600);
+    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 0o600);
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/multiPortals:firstOrCreate') {
@@ -219,6 +228,15 @@ test('http deploy builds, packs dist, and uploads it', async () => {
       file: filePath,
       onentry: (entry) => {
         entries.push(entry.path);
+        if (entry.path === 'index.html') {
+          expect(entry.mode).toBe(0o644);
+        }
+        if (entry.path === 'assets') {
+          expect(entry.mode).toBe(0o755);
+        }
+        if (entry.path === 'assets/index.js') {
+          expect(entry.mode).toBe(0o644);
+        }
       },
     });
     expect(entries).toEqual(expect.arrayContaining(['index.html', 'assets/index.js']));
