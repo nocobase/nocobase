@@ -186,6 +186,54 @@ server {
 
 
 
+    location ^~ {{publicPath}}x/apps/ {
+        absolute_redirect off;
+
+        if ($uri ~ ^{{publicPath}}x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {
+            return 308 {{publicPath}}x/apps/$subapp/$portal/$is_args$args;
+        }
+
+        if ($uri !~ ^{{publicPath}}x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {
+            return 404;
+        }
+
+        root {{cwd}}/storage;
+
+        if ($portal_path = "") {
+            rewrite ^ /portals/$subapp/$portal/dist/index.html break;
+        }
+
+        try_files
+            /portals/$subapp/$portal/dist/$portal_path
+            /portals/$subapp/$portal/dist/$portal_path/
+            /portals/$subapp/$portal/dist/index.html
+            =404;
+    }
+
+    location ^~ {{publicPath}}x/ {
+        absolute_redirect off;
+
+        if ($uri ~ ^{{publicPath}}x/(?<portal>[A-Za-z0-9_-]+)$) {
+            return 308 {{publicPath}}x/$portal/$is_args$args;
+        }
+
+        if ($uri !~ ^{{publicPath}}x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {
+            return 404;
+        }
+
+        root {{cwd}}/storage;
+
+        if ($portal_path = "") {
+            rewrite ^ /portals/main/$portal/dist/index.html break;
+        }
+
+        try_files
+            /portals/main/$portal/dist/$portal_path
+            /portals/main/$portal/dist/$portal_path/
+            /portals/main/$portal/dist/index.html
+            =404;
+    }
+
     location {{publicPath}} {
         alias {{cwd}}/node_modules/@nocobase/app/dist/client/;
         try_files $uri $uri/ /index.html;
