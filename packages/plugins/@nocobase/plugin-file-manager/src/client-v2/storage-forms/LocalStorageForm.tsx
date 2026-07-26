@@ -18,6 +18,7 @@ import {
   PathField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from '../components';
 
 export default function LocalStorageForm() {
@@ -33,6 +34,7 @@ export default function LocalStorageForm() {
       </Form.Item>
       <PathField addonBefore="storage/uploads/" />
       <RenameModeField />
+      <UseOriginalUrlField />
       <FileSizeField />
       <MimetypeField />
       <DefaultField />
