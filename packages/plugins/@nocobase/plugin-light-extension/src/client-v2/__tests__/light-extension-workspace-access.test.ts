@@ -120,10 +120,9 @@ describe('light extension entry workspace access', () => {
     });
     expect(getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/entry.json')).toEqual({
       canRead: true,
-      canCreate: false,
-      canUpdate: false,
+      canCreate: true,
+      canUpdate: true,
       canDelete: false,
-      reason: 'entry_descriptor',
     });
     expect(getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/shared/helpers.ts')).toMatchObject({
       canRead: true,
@@ -168,6 +167,16 @@ describe('light extension entry workspace access', () => {
     expect(
       getLightExtensionWorkspaceAuthoringPathAccess(scope, scope.entryPath, { workspaceWritable: false }),
     ).toMatchObject({ canRead: true, canUpdate: false, reason: 'workspace_read_only' });
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/entry.json', {
+        blockedDirtyChange: true,
+      }),
+    ).toMatchObject({ canRead: true, canCreate: false, canUpdate: false, reason: 'blocked_dirty_change' });
+    expect(
+      getLightExtensionWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/entry.json', {
+        workspaceWritable: false,
+      }),
+    ).toMatchObject({ canRead: true, canCreate: false, canUpdate: false, reason: 'workspace_read_only' });
     expect(getLightExtensionWorkspaceAuthoringPathAccess({ mode: 'repository' }, scope.entryPath)).toEqual({
       canRead: false,
       canCreate: false,

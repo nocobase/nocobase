@@ -35,7 +35,6 @@ export interface LightExtensionWorkspaceAuthoringPathAccess {
   reason?:
     | 'repository_authoring_gate'
     | 'outside_entry_scope'
-    | 'entry_descriptor'
     | 'generated_file'
     | 'blocked_dirty_change'
     | 'workspace_read_only';
@@ -183,13 +182,6 @@ export function getLightExtensionWorkspaceAuthoringPathAccess(
     };
   }
 
-  if (normalizedPath === `${entryRoot}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`) {
-    return {
-      ...denyAuthoringAccess('entry_descriptor'),
-      canRead: true,
-    };
-  }
-
   if (options.blockedDirtyChange) {
     return {
       ...denyAuthoringAccess('blocked_dirty_change'),
@@ -201,6 +193,15 @@ export function getLightExtensionWorkspaceAuthoringPathAccess(
     return {
       ...denyAuthoringAccess('workspace_read_only'),
       canRead: true,
+    };
+  }
+
+  if (normalizedPath === `${entryRoot}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`) {
+    return {
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: false,
     };
   }
 

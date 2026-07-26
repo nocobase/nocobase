@@ -205,16 +205,18 @@ describe('LightExtensionWorkspace authoring surface', () => {
     expect(snapshot.files.map((file) => file.path)).not.toEqual(
       expect.arrayContaining(['src/client/js-actions/secret/index.ts', 'README.md']),
     );
-    expect(snapshot.files.find((file) => file.path.endsWith('/entry.json'))).toMatchObject({ writable: false });
+    const descriptorMeta = snapshot.files.find((file) => file.path.endsWith('/entry.json'));
+    expect(descriptorMeta).toMatchObject({ writable: true });
     expect(snapshot.files.find((file) => file.path === 'src/shared/currency.ts')).toMatchObject({ writable: false });
     expect(snapshot.files.find((file) => file.path === '.light-extension/types/sdk.d.ts')).toMatchObject({
       kind: 'virtual',
       writable: false,
     });
     const indexMeta = snapshot.files.find((file) => file.path === entryPath);
-    if (!indexMeta) {
-      throw new Error('Expected entry source metadata');
+    if (!indexMeta || !descriptorMeta) {
+      throw new Error('Expected entry source and descriptor metadata');
     }
+    const descriptorContent = '{"schemaVersion":1,"key":"sales-kpi","settings":{"refresh":{"type":"boolean"}}}';
     const plan = await surface.prepareChanges({
       baseSnapshotId: snapshot.snapshotId,
       changes: [
@@ -230,6 +232,12 @@ describe('LightExtensionWorkspace authoring surface', () => {
           content: 'export const formatCurrency = () => "USD";\n',
           language: 'typescript',
         },
+        {
+          type: 'update',
+          path: descriptorMeta.path,
+          baseHash: descriptorMeta.hash,
+          content: descriptorContent,
+        },
       ],
     });
 
@@ -241,6 +249,9 @@ describe('LightExtensionWorkspace authoring surface', () => {
       const nextSnapshot = await surface.getSnapshot();
       expect(nextSnapshot.files.map((file) => file.path)).toContain('src/client/js-blocks/sales-kpi/formatCurrency.ts');
     });
+    await expect(surface.read([descriptorMeta.path])).resolves.toEqual([
+      expect.objectContaining({ path: descriptorMeta.path, content: descriptorContent, writable: true }),
+    ]);
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
     await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
@@ -256,6 +267,52 @@ describe('LightExtensionWorkspace authoring surface', () => {
         ]),
       }),
     );
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
+  it('creates a missing entry descriptor but rejects deleting it', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      files: [
+        {
+          path: entryPath,
+          content: 'export default function SalesKpi() { return null; }\n',
+          language: 'typescriptreact',
+        },
+      ],
+    });
+    renderEntryWorkspace();
+    await screen.findByTestId('code-tab');
+    await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
+    const surface = getRegisteredSurface();
+    const snapshot = await surface.getSnapshot();
+    const descriptorPath = 'src/client/js-blocks/sales-kpi/entry.json';
+    const descriptorContent = '{"schemaVersion":1,"key":"sales-kpi"}';
+
+    const createPlan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [{ type: 'create', path: descriptorPath, content: descriptorContent, language: 'json' }],
+    });
+    await act(async () => {
+      await surface.applyPreparedChanges(createPlan.planId);
+    });
+
+    const nextSnapshot = await surface.getSnapshot();
+    const descriptorMeta = nextSnapshot.files.find((file) => file.path === descriptorPath);
+    expect(descriptorMeta).toMatchObject({ writable: true });
+    await expect(surface.read([descriptorPath])).resolves.toEqual([
+      expect.objectContaining({ path: descriptorPath, content: descriptorContent }),
+    ]);
+    if (!descriptorMeta) {
+      throw new Error('Expected created entry descriptor metadata');
+    }
+    await expect(
+      surface.prepareChanges({
+        baseSnapshotId: nextSnapshot.snapshotId,
+        changes: [{ type: 'delete', path: descriptorPath, baseHash: descriptorMeta.hash }],
+      }),
+    ).rejects.toMatchObject({ code: 'PATH_ACCESS_DENIED' });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 });
