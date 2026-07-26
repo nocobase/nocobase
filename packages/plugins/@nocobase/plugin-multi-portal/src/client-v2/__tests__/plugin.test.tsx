@@ -253,7 +253,7 @@ describe('PluginMultiPortalClientV2', () => {
     });
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'multi-portal',
-      title: 'Multi-portal',
+      title: 'Portal manager',
       icon: 'PartitionOutlined',
       aclSnippet: 'pm.multi-portal',
       showTabs: true,
@@ -262,13 +262,13 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'multi-portal',
       key: 'index',
-      title: 'Multi-portal',
+      title: 'Portal manager',
       aclSnippet: 'pm.multi-portal',
       componentLoader: expect.any(Function),
     });
     expect(addPermissionsTab).toHaveBeenCalledWith({
       key: 'multi-portals',
-      label: 'Multi-portal',
+      label: 'Portals',
       sort: 22,
       componentLoader: expect.any(Function),
     });
@@ -297,7 +297,7 @@ describe('PluginMultiPortalClientV2', () => {
     });
   });
 
-  it('should register the portal block model for the add block menu', async () => {
+  it('should register the portal block model while keeping it hidden from the add block menu', async () => {
     const app = createMockClient({
       plugins: [PluginMultiPortalClientV2],
     });
@@ -310,11 +310,8 @@ describe('PluginMultiPortalClientV2', () => {
     const ModelClass = app.flowEngine.getModelClass('MultiPortalBlockModel');
     expect(ModelClass).toBeDefined();
     expect(ModelClass?.prototype).toBeInstanceOf(BlockModel);
-
-    const items = await buildSubModelItems(BlockModel)(app.flowEngine.context);
-    const portalBlockItem = items.find((item) => item.useModel === 'MultiPortalBlockModel');
-
-    expect(portalBlockItem).toMatchObject({
+    expect(ModelClass?.meta).toMatchObject({
+      hide: true,
       label: '{{t("Portals", {"ns":["@nocobase/plugin-multi-portal","client"]})}}',
       createModelOptions: {
         use: 'MultiPortalBlockModel',
@@ -327,6 +324,9 @@ describe('PluginMultiPortalClientV2', () => {
         },
       },
     });
+
+    const items = await buildSubModelItems(BlockModel)(app.flowEngine.context);
+    expect(items.some((item) => item.createModelOptions?.use === 'MultiPortalBlockModel')).toBe(false);
   });
 
   it('should render accessible portals from listAccessible without frontend filtering', async () => {
@@ -587,17 +587,28 @@ describe('PluginMultiPortalClientV2', () => {
     await tabModel.save();
 
     expect(request).toHaveBeenCalledTimes(2);
-    for (const call of request.mock.calls) {
-      expect(call[0]).toEqual(
-        expect.objectContaining({
-          url: 'desktopRoutes:updateOrCreate',
-          data: expect.objectContaining({
-            multiPortals: ['mobile-portal-model-tab-test'],
-          }),
+    expect(request.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        url: 'desktopRoutes:updateOrCreate',
+        data: expect.objectContaining({
+          multiPortals: ['mobile-portal-model-tab-test'],
         }),
-      );
-      expect(call[0].data).not.toHaveProperty('uiLayouts');
-    }
+      }),
+    );
+    expect(request.mock.calls[0][0].data).not.toHaveProperty('uiLayouts');
+    expect(request.mock.calls[1][0]).toEqual(
+      expect.objectContaining({
+        url: 'desktopRoutes:update?filter[id]=991',
+        data: expect.objectContaining({
+          schemaUid: 'portal-tab-schema',
+        }),
+      }),
+    );
+    expect(request.mock.calls[1][0].data).not.toHaveProperty('multiPortals');
+    expect(request.mock.calls[1][0].data).not.toHaveProperty('uiLayouts');
+    expect(tabModel.props.route).toMatchObject({
+      multiPortals: ['mobile-portal-model-tab-test'],
+    });
   });
 
   it('should request portal scoped routes and keep route caches isolated', async () => {

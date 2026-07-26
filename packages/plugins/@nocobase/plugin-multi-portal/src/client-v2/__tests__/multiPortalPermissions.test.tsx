@@ -63,7 +63,7 @@ describe('plugin-multi-portal route permissions', () => {
       </AntdApp>,
     );
 
-    expect(await screen.findByText('Multi-portal')).toBeInTheDocument();
+    expect(await screen.findByText('Portals')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Allow access to Customer portal' })).toBeChecked();
     expect(screen.getByRole('columnheader', { name: 'Routes permissions' })).toBeInTheDocument();
 
@@ -230,7 +230,7 @@ describe('plugin-multi-portal route permissions', () => {
     expect(
       screen.getByRole('dialog', { name: 'Configure routes permissions for Customer portal' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Multi-portal')).toBeInTheDocument();
+    expect(screen.getByText('Portals')).toBeInTheDocument();
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
@@ -315,7 +315,7 @@ describe('plugin-multi-portal route permissions', () => {
         allowNewMultiPortal: true,
       }),
     );
-    expect(screen.getByText('Multi-portal')).toBeInTheDocument();
+    expect(screen.getByText('Portals')).toBeInTheDocument();
   });
 
   it('should show an empty portal route drawer when the portal has no routes', async () => {
