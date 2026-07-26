@@ -33,6 +33,7 @@ export type ChatSessionState = {
   webSearching?: WebSearching;
   backgroundWorking: boolean;
   resumeStreamFailed: boolean;
+  workspaceSurfaceId?: string;
 };
 
 export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
@@ -49,6 +50,7 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   webSearching: null,
   backgroundWorking: false,
   resumeStreamFailed: false,
+  workspaceSurfaceId: undefined,
 };
 
 type ChatMessagesState = {
@@ -94,6 +96,7 @@ export interface ChatMessagesActions {
   setEditorRef: (uid: string, editorRef: ChatEditorRef | null) => void;
   setCurrentEditorRefUid: (uid: string) => void;
   setFlowContext: (ctx: unknown) => void;
+  setSessionWorkspaceSurfaceId: (sessionId: string | undefined, surfaceId?: string) => void;
 
   getSessionState: (sessionId?: string) => ChatSessionState;
   resetSessionState: (sessionId?: string, patch?: Partial<ChatSessionState>) => void;
@@ -381,6 +384,14 @@ export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/
         ),
 
       setFlowContext: (flowContext) => set({ flowContext }),
+
+      setSessionWorkspaceSurfaceId: (sessionId, workspaceSurfaceId) =>
+        set((state) =>
+          updateSessionState(state, sessionId, (session) => ({
+            ...session,
+            workspaceSurfaceId,
+          })),
+        ),
 
       addSessionSubAgentMessage: (sessionId, subSessionId, msg) => {
         get().addSessionSubAgentMessages(sessionId, subSessionId, [msg]);

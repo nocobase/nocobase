@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { isCurrentLiveMessage, parseWorkContext } from '../utils';
 
 describe('client-v2 chatbox utils', () => {
@@ -56,5 +56,62 @@ describe('client-v2 chatbox utils', () => {
         frontendTools: [frontendTool],
       },
     ]);
+  });
+
+  it('refreshes code workspace content on every send even when lightweight content already exists', async () => {
+    const getContent = vi
+      .fn()
+      .mockResolvedValueOnce({ surfaceId: 'workspace-1', revision: 'revision-1' })
+      .mockResolvedValueOnce({ surfaceId: 'workspace-1', revision: 'revision-2' });
+    const app = {
+      pm: {
+        get: () => ({
+          aiManager: {
+            getWorkContext: () => ({ getContent }),
+          },
+        }),
+      },
+    };
+    const workContext = [{ type: 'code-workspace', uid: 'workspace-1', content: { title: 'Workspace' } }];
+
+    await expect(parseWorkContext(app, workContext)).resolves.toEqual([
+      {
+        type: 'code-workspace',
+        uid: 'workspace-1',
+        content: { surfaceId: 'workspace-1', revision: 'revision-1' },
+      },
+    ]);
+    await expect(parseWorkContext(app, workContext)).resolves.toEqual([
+      {
+        type: 'code-workspace',
+        uid: 'workspace-1',
+        content: { surfaceId: 'workspace-1', revision: 'revision-2' },
+      },
+    ]);
+    expect(getContent).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears a persisted frontend tool catalog when the current provider returns no tools', async () => {
+    const app = {
+      pm: {
+        get: () => ({
+          aiManager: {
+            getWorkContext: () => ({ getFrontendTools: async () => [] }),
+          },
+        }),
+      },
+    };
+    const staleTool = {
+      id: 'workspace-1:workspaceDescribe',
+      blockUid: 'workspace-1',
+      name: 'workspaceDescribe',
+      description: 'Stale workspace tool',
+      permission: 'ALLOW' as const,
+      inputSchema: { type: 'object', properties: {} },
+    };
+
+    await expect(
+      parseWorkContext(app, [{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [staleTool] }]),
+    ).resolves.toEqual([{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [] }]);
   });
 });

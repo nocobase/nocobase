@@ -74,6 +74,8 @@ const createChatFacade = (sessionId?: string) => {
       useChatMessagesStore.getState().setEditorRef(uid, editorRef),
     setCurrentEditorRefUid: (uid: string) => useChatMessagesStore.getState().setCurrentEditorRefUid(uid),
     setFlowContext: (flowContext: unknown) => useChatMessagesStore.getState().setFlowContext(flowContext),
+    setWorkspaceSurfaceId: (surfaceId?: string) =>
+      useChatMessagesStore.getState().setSessionWorkspaceSurfaceId(sessionKey, surfaceId),
     migrateSessionState: (toSessionId: string) =>
       useChatMessagesStore.getState().migrateSessionState(sessionKey, toSessionId),
     resetSessionState: (patch?: Partial<ChatSessionState>) =>
@@ -124,7 +126,6 @@ const createChatFacade = (sessionId?: string) => {
       webSearching: function useWebSearching() {
         return useChatMessagesStore((state) => selectSessionState(state, sessionKey).webSearching);
       },
-
       editorRef: function useEditorRef() {
         return useChatMessagesStore.use.editorRef();
       },
@@ -133,6 +134,9 @@ const createChatFacade = (sessionId?: string) => {
       },
       flowContext: function useFlowContext() {
         return useChatMessagesStore.use.flowContext();
+      },
+      workspaceSurfaceId: function useWorkspaceSurfaceId() {
+        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).workspaceSurfaceId);
       },
     },
     getState: () => {

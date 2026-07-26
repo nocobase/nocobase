@@ -5,6 +5,9 @@
   "types": "./lib/index.d.ts",
   "typesVersions": {
     "*": {
+      "compiler/build-identity": [
+        "./lib/compiler/build-identity.d.ts"
+      ],
       "compiler/portable": [
         "./lib/compiler/portable.d.ts"
       ]
@@ -21,6 +24,11 @@
       "types": "./lib/compiler/index.d.ts",
       "import": "./lib/compiler/index.js",
       "require": "./lib/compiler/index.js"
+    },
+    "./compiler/build-identity": {
+      "types": "./lib/compiler/build-identity.d.ts",
+      "import": "./lib/compiler/build-identity.js",
+      "require": "./lib/compiler/build-identity.js"
     },
     "./compiler/portable": {
       "types": "./lib/compiler/portable.d.ts",

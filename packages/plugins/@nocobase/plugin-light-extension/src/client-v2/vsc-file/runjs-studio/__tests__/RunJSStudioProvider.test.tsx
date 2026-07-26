@@ -16,6 +16,7 @@ import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
 import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
+  authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
   closeView: vi.fn(),
   diagnoseRunJS: vi.fn(),
   request: vi.fn(),
@@ -40,6 +41,7 @@ vi.mock('@nocobase/flow-engine', () => ({
 
 vi.mock('@nocobase/client-v2', () => ({
   CodeEditor: ({
+    authoringSurfaceId,
     value,
     onChange,
     placeholder,
@@ -52,6 +54,7 @@ vi.mock('@nocobase/client-v2', () => ({
     typescriptProject,
     jsonSchema,
   }: {
+    authoringSurfaceId?: string;
     value?: string;
     onChange?: (value: string) => void;
     placeholder?: string;
@@ -68,6 +71,7 @@ vi.mock('@nocobase/client-v2', () => ({
     jsonSchema?: { uri?: string };
   }) => (
     <div
+      data-authoring-surface-id={authoringSurfaceId}
       data-enable-linter={String(Boolean(enableLinter))}
       data-json-schema-uri={jsonSchema?.uri}
       data-language={language}
@@ -93,6 +97,22 @@ vi.mock('@nocobase/client-v2', () => ({
       />
     </div>
   ),
+  useApp: () => ({
+    name: 'test-app',
+    aiManager: {
+      authoringSurfaces: {
+        register: (surface: { id: string; dispose?: () => void }) => {
+          mocks.authoringSurfaces.set(surface.id, surface);
+          return () => {
+            if (mocks.authoringSurfaces.get(surface.id) === surface) {
+              mocks.authoringSurfaces.delete(surface.id);
+              surface.dispose?.();
+            }
+          };
+        },
+      },
+    },
+  }),
   diagnoseRunJS: mocks.diagnoseRunJS,
   useFullscreenOverlay: () => {
     const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
@@ -273,6 +293,7 @@ function deferred<T>() {
 
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
+    mocks.authoringSurfaces.clear();
     mocks.view.close = mocks.closeView;
     Reflect.deleteProperty(mocks.view, 'beforeClose');
     mocks.diagnoseRunJS.mockResolvedValue({
@@ -567,7 +588,7 @@ describe('runJSStudioProvider', () => {
     expect(mocks.closeView).not.toHaveBeenCalled();
   });
 
-  it('ignores a preview response after the workspace changes', async () => {
+  it('ignores a run response after the workspace changes', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');
     const preview = deferred<unknown>();
@@ -611,7 +632,7 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByRole('button', { name: 'Run' })).not.toBeDisabled();
   });
 
-  it('ignores a preview response after switching to another locator', async () => {
+  it('ignores a run response after switching to another locator', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');
     const preview = deferred<unknown>();

@@ -113,7 +113,6 @@ const mockRuntime = vi.hoisted(() => {
     },
   };
 });
-
 vi.mock('@nocobase/client', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
 

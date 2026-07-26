@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, Popover, Tooltip, theme } from 'antd';
-import type { EditorRef } from '@nocobase/client-v2';
+import { useApp, type EditorRef } from '@nocobase/client-v2';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 
 import { useT } from '../../locale';
@@ -20,7 +20,7 @@ import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { AIEmployeeProfileCard } from '../ProfileCard';
-import type { AIEmployee, Task } from '../types';
+import type { AIEmployee, ContextItem, Task } from '../types';
 import prompts from './prompts';
 
 export interface AICodingButtonProps {
@@ -28,21 +28,19 @@ export interface AICodingButtonProps {
   name?: string;
   scene: string;
   language: string;
+  authoringSurfaceId?: string;
   editorRef: EditorRef;
   setActive: (key: string, active: boolean) => void;
 }
 
-const isBuiltIn = (aiEmployee: AIEmployee) => {
-  return aiEmployee?.builtIn && aiEmployee?.deprecated !== true;
-};
+const isBuiltIn = (aiEmployee: AIEmployee) => aiEmployee?.builtIn && aiEmployee?.deprecated !== true;
 
-const isEngineer = (aiEmployee: AIEmployee) => {
-  return isBuiltIn(aiEmployee) && aiEmployee.username === 'nathan';
-};
+const isEngineer = (aiEmployee: AIEmployee) => isBuiltIn(aiEmployee) && aiEmployee.username === 'nathan';
 
 export const AICodingButton: React.FC<AICodingButtonProps> = observer(
-  ({ uid, scene, language, editorRef, setActive }) => {
+  ({ uid, scene, language, authoringSurfaceId, editorRef, setActive }) => {
     const t = useT();
+    const app = useApp();
     const { token } = theme.useToken();
     const aiConfigRepository = useAIConfigRepository();
     const aiEmployees = aiConfigRepository.aiEmployees;
@@ -55,34 +53,49 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const setEditorRef = chat.setEditorRef;
     const setCurrentEditorRefUid = chat.setCurrentEditorRefUid;
     const ctx = useFlowContext();
+    const workspaceRequestRef = useRef(0);
+    const latestSurfaceIdRef = useRef(authoringSurfaceId);
+    latestSurfaceIdRef.current = authoringSurfaceId;
 
-    const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
+    const aiEmployee = aiEmployees.find(isEngineer);
 
     useEffect(() => {
       aiConfigRepository.getAIEmployees();
     }, [aiConfigRepository]);
 
     useEffect(() => {
+      if (authoringSurfaceId) {
+        return;
+      }
       setEditorRef(uid, editorRef);
       setCurrentEditorRefUid(uid);
       return () => {
         setEditorRef(uid, null);
       };
-    }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid]);
+    }, [authoringSurfaceId, editorRef, setCurrentEditorRefUid, setEditorRef, uid]);
 
     useEffect(() => {
       setActive('AICodingButton', !!aiEmployee);
     }, [aiEmployee, setActive]);
 
     useEffect(() => {
-      chat.setFlowContext(ctx);
-    }, [chat, ctx]);
+      if (!authoringSurfaceId) {
+        chat.setFlowContext(ctx);
+      }
+    }, [authoringSurfaceId, chat, ctx]);
+
+    useEffect(
+      () => () => {
+        workspaceRequestRef.current += 1;
+      },
+      [],
+    );
 
     const [showTooltip, setShowTooltip] = useState(false);
     const [errorOccurred, setErrorOccurred] = useState(false);
 
     useEffect(() => {
-      const isError = editorRef.logs.some((log) => log.level === 'error');
+      const isError = !authoringSurfaceId && editorRef.logs.some((log) => log.level === 'error');
       setErrorOccurred(isError);
       setShowTooltip(isError);
       if (!isError) {
@@ -94,25 +107,25 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       return () => {
         window.clearTimeout(timer);
       };
-    }, [editorRef.logs]);
+    }, [authoringSurfaceId, editorRef.logs]);
 
     const taskMap = useMemo<Record<string, Task>>(() => {
       const createTask = (prototype: Partial<Task>): Task => {
         const { message, ...rest } = prototype;
         return {
           message: {
-            workContext: [
-              {
-                type: 'code-editor',
-                uid,
-                title: `${scene}(${language})`,
-                content: {
-                  scene,
-                  language,
-                  code: editorRef.read(),
-                },
-              },
-            ],
+            ...(!authoringSurfaceId
+              ? {
+                  workContext: [
+                    {
+                      type: 'code-editor',
+                      uid,
+                      title: `${scene}(${language})`,
+                      content: { scene, language, code: editorRef.read() },
+                    },
+                  ],
+                }
+              : {}),
             ...(message ?? {}),
           },
           autoSend: false,
@@ -137,7 +150,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
           autoSend: errorOccurred,
         }),
       };
-    }, [editorRef, errorOccurred, language, scene, t, uid]);
+    }, [authoringSurfaceId, editorRef, errorOccurred, language, scene, t, uid]);
 
     const tasks = useMemo(() => Object.values(taskMap), [taskMap]);
 
@@ -145,21 +158,66 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       return null;
     }
 
+    const resolveWorkspaceContext = async (): Promise<ContextItem | null> => {
+      if (!authoringSurfaceId) {
+        return null;
+      }
+      const requestId = workspaceRequestRef.current + 1;
+      workspaceRequestRef.current = requestId;
+      const surface = app.aiManager.authoringSurfaces.get(authoringSurfaceId);
+      if (!surface) {
+        setShowTooltip(true);
+        return null;
+      }
+      const snapshot = await surface.getSnapshot();
+      if (
+        workspaceRequestRef.current !== requestId ||
+        latestSurfaceIdRef.current !== authoringSurfaceId ||
+        app.aiManager.authoringSurfaces.get(authoringSurfaceId) !== surface ||
+        snapshot.surfaceId !== authoringSurfaceId
+      ) {
+        return null;
+      }
+      return {
+        type: 'code-workspace',
+        uid: authoringSurfaceId,
+        title: snapshot.title,
+        content: { surfaceId: authoringSurfaceId, kind: snapshot.kind, title: snapshot.title },
+      };
+    };
+
+    const triggerWorkspaceTasks = async (selectedTasks: Task[]) => {
+      const item = await resolveWorkspaceContext();
+      if (!item || !authoringSurfaceId) {
+        return;
+      }
+      const workspaceTasks = selectedTasks.map((task) => ({
+        ...task,
+        message: { ...(task.message ?? {}), workContext: [item] },
+      }));
+      await triggerTask({ aiEmployee, tasks: workspaceTasks });
+      if (latestSurfaceIdRef.current === authoringSurfaceId) {
+        const draftChat = chat.for(undefined);
+        draftChat.setContextItems([item]);
+        draftChat.setWorkspaceSurfaceId(authoringSurfaceId);
+      }
+    };
+
     const addCodeEditorContext = () => {
       setCurrentEditorRefUid(uid);
       addContextItems({
         type: 'code-editor',
         uid,
         title: `${scene}(${language})`,
-        content: {
-          scene,
-          language,
-          code: editorRef.read(),
-        },
+        content: { scene, language, code: editorRef.read() },
       });
     };
 
     const handleAvatarClick = () => {
+      if (authoringSurfaceId) {
+        triggerWorkspaceTasks(tasks).catch(console.error);
+        return;
+      }
       if (!open || currentEmployee?.username !== aiEmployee.username) {
         const hasError = editorRef.logs.some((log) => log.level === 'error');
         triggerTask({ aiEmployee, tasks: hasError ? [taskMap.logsDiagnosis] : tasks }).catch(console.error);
@@ -168,6 +226,10 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     };
 
     const handleTaskClick = (task: Task) => {
+      if (authoringSurfaceId) {
+        triggerWorkspaceTasks([task]).catch(console.error);
+        return;
+      }
       triggerTask({ aiEmployee, tasks: [task] }).catch(console.error);
       addCodeEditorContext();
     };

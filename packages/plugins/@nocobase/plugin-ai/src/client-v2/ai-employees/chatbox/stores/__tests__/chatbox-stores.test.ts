@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Conversation, Message } from '../../../types';
 import { useChatConversationsStore } from '../chat-conversations';
+import { CHAT_DEFAULT_SESSION_KEY, useChatMessagesStore } from '../chat-messages';
 import { useChatToolCallStore } from '../chat-tool-call';
 import { useChatToolsStore } from '../chat-tools';
 import { useWorkflowTasksStore, type WorkflowTask } from '../workflow-tasks';
@@ -24,6 +25,12 @@ const resetStores = () => {
     unreadCount: 0,
   });
   useChatToolCallStore.setState({ sessions: {} });
+  useChatMessagesStore.setState({
+    sessions: {
+      [CHAT_DEFAULT_SESSION_KEY]: useChatMessagesStore.getState().getSessionState('__missing__'),
+    },
+    editorRef: {},
+  });
   useChatToolsStore.setState({
     toolsByName: {},
     toolsByMessageId: {},
@@ -253,5 +260,25 @@ describe('client-v2 chatbox stores', () => {
     useWorkflowTasksStore.getState().markWorkflowTaskRead('session-a');
     useWorkflowTasksStore.getState().markWorkflowTaskRead('missing-session');
     expect(useWorkflowTasksStore.getState().unreadCount).toBe(0);
+  });
+
+  it('migrates a draft workspace guard and resets the draft', () => {
+    const store = useChatMessagesStore.getState();
+    store.setSessionMessages(undefined, [messageWithToolCalls('draft-message', [])]);
+    store.setSessionContextItems(undefined, [{ type: 'code-workspace', uid: 'workspace-a' }]);
+    store.setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
+
+    store.migrateSessionState(undefined, 'created-session');
+
+    expect(store.getSessionState('created-session')).toMatchObject({
+      messages: [{ key: 'draft-message' }],
+      contextItems: [{ type: 'code-workspace', uid: 'workspace-a' }],
+      workspaceSurfaceId: 'workspace-a',
+    });
+    expect(store.getSessionState(undefined).workspaceSurfaceId).toBeUndefined();
+    expect(store.getSessionState(undefined).contextItems).toEqual([]);
+
+    store.resetSessionState('created-session');
+    expect(store.getSessionState('created-session').workspaceSurfaceId).toBeUndefined();
   });
 });

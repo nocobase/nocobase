@@ -8,10 +8,12 @@
  */
 
 import type { BaseApplication } from '../BaseApplication';
+import { CodeAuthoringSurfaceRegistry } from './authoring';
 import { DefaultToolsManager, ToolsManager } from './tools-manager';
 
 export class AIManager {
   toolsManager: ToolsManager;
+  authoringSurfaces = new CodeAuthoringSurfaceRegistry();
 
   constructor(protected readonly app: BaseApplication<any>) {
     this.toolsManager = new DefaultToolsManager(this.app);

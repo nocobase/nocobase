@@ -87,6 +87,20 @@ describe('LightExtensionCompileContract', () => {
     expect(afterLockdown).toBe(baseline);
   });
 
+  it('keeps workspace compilation available after SES lockdown', () => {
+    const contractPath = path.resolve(__dirname, '../services/LightExtensionCompileContract.ts');
+    const sesPath = path.resolve(__dirname, '../../../../../../core/utils/src/ses.ts');
+    const diagnostics = JSON.parse(
+      readCompilerBuildId(
+        `require(${JSON.stringify(contractPath)}); const { lockdownSes } = require(${JSON.stringify(
+          sesPath,
+        )}); lockdownSes({ consoleTaming: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'moderate', stackFiltering: 'verbose' }); require('@nocobase/runjs/compiler').compileRunJSSourceWorkspace({ files: [{ path: 'src/client/index.tsx', content: 'ctx.render(<div />);' }], entry: 'src/client/index.tsx', surfaceStyle: 'render' }).then((result) => process.stdout.write(JSON.stringify(result.artifact.diagnostics)));`,
+      ),
+    );
+
+    expect(diagnostics).toEqual([]);
+  });
+
   it('orders a complete batch by ordinal and rejects process-local values', () => {
     const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2)];
     const results = [jobs[2], jobs[0], jobs[1]].map((job) =>
