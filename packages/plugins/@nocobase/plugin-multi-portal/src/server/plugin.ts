@@ -2006,6 +2006,7 @@ export class PluginMultiPortalServer extends Plugin {
     })();
 
     this.portalStorageTasks.set(taskKey, task);
+    await task;
   }
 
   private async ensurePortalStorageItem(item: MultiPortalStorageItem) {
