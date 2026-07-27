@@ -113,7 +113,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 PLUGIN_PACKAGE_PREFIX 可以配置为：
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
 ```
 
 则插件名称和包名对应关系如下：

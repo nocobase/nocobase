@@ -146,7 +146,7 @@ Por ejemplo, si desea añadir el **plugin** `hello` al proyecto `my-nocobase-app
 `PLUGIN_PACKAGE_PREFIX` se puede configurar de la siguiente manera:
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
 ```
 
 La correspondencia entre el nombre del **plugin** y el nombre del paquete es la siguiente:
