@@ -16,6 +16,7 @@ import {
   inferLanguageFromPath,
   mergeHistoryItems,
   mergeRunJSWorkspaceFiles,
+  normalizeWorkspaceFiles,
 } from '../workspaceUtils';
 
 function createHistoryItem(id: string, seq: number, message: string): RunJSSourceHistoryItem {
@@ -33,6 +34,33 @@ function createHistoryItem(id: string, seq: number, message: string): RunJSSourc
 }
 
 describe('workspaceUtils', () => {
+  it('preserves persisted metadata while accepting newly created workspace files', () => {
+    expect(
+      normalizeWorkspaceFiles([
+        {
+          path: 'src/existing.ts',
+          content: 'export const existing = true;',
+          blobHash: 'blob-existing',
+          size: 29,
+          managed: false,
+        },
+        { path: 'src/new.ts', content: 'export const created = true;' },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        path: 'src/existing.ts',
+        content: 'export const existing = true;',
+        blobHash: 'blob-existing',
+        size: 29,
+        managed: false,
+      }),
+      expect.objectContaining({
+        path: 'src/new.ts',
+        content: 'export const created = true;',
+      }),
+    ]);
+  });
+
   it('keeps content-sensitive snapshot keys for callers without revision state', () => {
     expect(buildWorkspaceSnapshotKey([{ path: 'src/index.ts', content: 'one' }], 'src/index.ts', 'v2')).not.toBe(
       buildWorkspaceSnapshotKey([{ path: 'src/index.ts', content: 'two' }], 'src/index.ts', 'v2'),

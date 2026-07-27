@@ -38,6 +38,7 @@ export type {
   RunJSSourceSaveChangesInput,
   RunJSSourceSaveInput,
   RunJSSourceSaveResult,
+  RunJSSourceWorkspaceFile,
   RunJSSurfaceStyle,
 } from './runjs-source-contracts';
 

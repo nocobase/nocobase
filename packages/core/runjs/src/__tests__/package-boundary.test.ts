@@ -21,6 +21,12 @@ const forbiddenImports = [
 ];
 
 describe('@nocobase/runjs package boundary', () => {
+  it('exposes the server declarations to legacy TypeScript module resolution', () => {
+    const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
+
+    expect(packageJson.typesVersions?.['*']?.server).toEqual(['./lib/server.d.ts']);
+  });
+
   it('does not import application, plugin, database, UI, or Koa runtimes', () => {
     const sourceRoot = path.resolve(__dirname, '..');
     const sourceFiles = collectSourceFiles(sourceRoot).filter(

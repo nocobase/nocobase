@@ -17,6 +17,7 @@ import type {
   RunJSSourceSaveChangesInput,
   RunJSSourceSaveInput,
   RunJSSourceSaveResult,
+  RunJSSourceWorkspaceFile,
   RunJSSurfaceStyle,
 } from '../../../shared/vsc-file/runjs-source-contracts';
 export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../../shared/vsc-file/runjs-source-contracts';
@@ -31,9 +32,9 @@ import type {
 export interface RunJSWorkspaceFile {
   path: string;
   content: string;
-  blobHash: string;
-  size: number;
-  managed: boolean;
+  blobHash?: string;
+  size?: number;
+  managed?: boolean;
   language?: string;
   mode?: string;
   revision?: number;
@@ -69,7 +70,7 @@ export interface RunJSSourceOpenWorkspaceResult extends RunJSSourceOpenResult {
   repositoryIdentity: VscRepositoryIdentity;
   repository: RunJSSourceRepositoryRecord;
   source: RunJSSourceInfo;
-  files: RunJSWorkspaceFile[];
+  files: RunJSSourceWorkspaceFile[];
   permissions: RunJSSourcePermissions;
   history: RunJSSourceHistoryState;
 }

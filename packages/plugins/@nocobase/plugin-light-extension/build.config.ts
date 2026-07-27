@@ -12,37 +12,61 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-const sourceDependencies = ['@nocobase/light-extension-sdk', '@nocobase/runjs'] as const;
+const sourceDependencies = [
+  {
+    packageName: '@nocobase/light-extension-sdk',
+    exportKeys: ['.', './client', './schema', './schema/server', './shared', './typegen'],
+    declarationChecks: [],
+  },
+  {
+    packageName: '@nocobase/runjs',
+    exportKeys: ['.', './compiler', './server', './settings'],
+    declarationChecks: [{ path: 'lib/server.d.ts', includes: 'buildRunJSFilesHash' }],
+  },
+  {
+    packageName: '@nocobase/client-v2',
+    exportKeys: ['.'],
+    declarationChecks: [
+      { path: 'es/ai/authoring/types.d.ts', includes: 'CodeAuthoringDiagnostic' },
+      { path: 'es/ai/ai-manager.d.ts', includes: 'authoringSurfaces' },
+      { path: 'es/flow/components/code-editor/types.d.ts', includes: 'authoringSurfaceId' },
+    ],
+  },
+] as const;
 const repositoryRoot = path.resolve(__dirname, '../../../..');
 
 export default defineConfig({
   beforeBuild: async (log) => {
-    const missingDependencies = sourceDependencies.filter((packageName) => !hasBuiltOutput(packageName));
-    if (!missingDependencies.length) {
+    const outdatedDependencies = sourceDependencies.filter((dependency) => !hasRequiredBuiltOutput(dependency));
+    if (!outdatedDependencies.length) {
       return;
     }
 
-    log(`building source dependencies: ${missingDependencies.join(', ')}`);
-    await buildSourceDependencies(missingDependencies);
+    const packageNames = outdatedDependencies.map((dependency) => dependency.packageName);
+    log(`building source dependencies: ${packageNames.join(', ')}`);
+    await buildSourceDependencies(packageNames);
   },
 });
 
-function hasBuiltOutput(packageName: string): boolean {
+function hasRequiredBuiltOutput(dependency: (typeof sourceDependencies)[number]): boolean {
   try {
-    const packageJsonPath = require.resolve(`${packageName}/package.json`, { paths: [__dirname] });
+    const packageJsonPath = require.resolve(`${dependency.packageName}/package.json`, { paths: [__dirname] });
     const packageJson: unknown = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    if (!isRecord(packageJson)) {
+    if (!isRecord(packageJson) || !isRecord(packageJson.exports)) {
       return false;
     }
     const packageRoot = path.dirname(packageJsonPath);
     const outputPaths = new Set<string>();
-    collectOutputPaths(packageJson.main, outputPaths);
-    collectOutputPaths(packageJson.types, outputPaths);
-    collectOutputPaths(packageJson.exports, outputPaths);
-    return (
-      outputPaths.size > 0 &&
-      [...outputPaths].every((outputPath) => fs.existsSync(path.resolve(packageRoot, outputPath)))
-    );
+    dependency.exportKeys.forEach((exportKey) => collectOutputPaths(packageJson.exports[exportKey], outputPaths));
+    const resolvedOutputPaths = [...outputPaths].map((outputPath) => path.resolve(packageRoot, outputPath));
+    if (!resolvedOutputPaths.length || resolvedOutputPaths.some((outputPath) => !fs.existsSync(outputPath))) {
+      return false;
+    }
+
+    return dependency.declarationChecks.every((check) => {
+      const declarationPath = path.resolve(packageRoot, check.path);
+      return fs.existsSync(declarationPath) && fs.readFileSync(declarationPath, 'utf8').includes(check.includes);
+    });
   } catch {
     return false;
   }

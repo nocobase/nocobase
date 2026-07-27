@@ -10,6 +10,9 @@
       ],
       "compiler/portable": [
         "./lib/compiler/portable.d.ts"
+      ],
+      "server": [
+        "./lib/server.d.ts"
       ]
     }
   },

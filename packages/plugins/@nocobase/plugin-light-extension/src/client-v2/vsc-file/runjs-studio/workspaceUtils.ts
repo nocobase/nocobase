@@ -30,11 +30,13 @@ export { defaultRunJSEntryPath, defaultRunJSSourceRoot, runJSManifestPath };
 
 export const fixedRunJSWorkspaceFolders = ['.nocobase', 'src', defaultRunJSSourceRoot];
 
+type RunJSWorkspaceFileInput = Omit<RunJSWorkspaceFile, 'content'> & { content?: string };
+
 export function compareRunJSPaths(left: string, right: string): number {
   return left.localeCompare(right);
 }
 
-export function normalizeWorkspaceFiles(files: RunJSWorkspaceFile[]): RunJSWorkspaceFile[] {
+export function normalizeWorkspaceFiles(files: RunJSWorkspaceFileInput[]): RunJSWorkspaceFile[] {
   const byPath = new Map<string, RunJSWorkspaceFile>();
 
   for (const file of files) {
@@ -42,6 +44,9 @@ export function normalizeWorkspaceFiles(files: RunJSWorkspaceFile[]): RunJSWorks
     byPath.set(path, {
       path,
       content: file.content || '',
+      ...(file.blobHash !== undefined ? { blobHash: file.blobHash } : {}),
+      ...(file.size !== undefined ? { size: file.size } : {}),
+      ...(file.managed !== undefined ? { managed: file.managed } : {}),
       language: file.language || inferLanguageFromPath(path),
       mode: file.mode,
       revision: file.revision,
@@ -106,9 +111,9 @@ export interface RunJSWorkspaceMergeResult {
 }
 
 export function mergeRunJSWorkspaceFiles(
-  baseFiles: RunJSWorkspaceFile[],
-  localFiles: RunJSWorkspaceFile[],
-  latestFiles: RunJSWorkspaceFile[],
+  baseFiles: RunJSWorkspaceFileInput[],
+  localFiles: RunJSWorkspaceFileInput[],
+  latestFiles: RunJSWorkspaceFileInput[],
 ): RunJSWorkspaceMergeResult {
   const baseByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
   const localByPath = new Map(normalizeWorkspaceFiles(localFiles).map((file) => [file.path, file]));
