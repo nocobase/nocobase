@@ -352,7 +352,7 @@ function resolveDefaultPortalTemplateDir(): string {
 }
 
 async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
-  const ignoredSegments = new Set(['.git', 'node_modules', 'dist', '.DS_Store']);
+  const ignoredSegments = new Set(['.git', 'node_modules', '.DS_Store']);
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,

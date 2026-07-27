@@ -609,6 +609,7 @@ describe('plugin-multi-portal server', () => {
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'favicon.ico'))).resolves.toBeUndefined();
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
