@@ -123,6 +123,14 @@ const getRelationFieldPrompt = (collectionField: CollectionFieldLike) => {
   }[1]", and never return only a primitive id.`;
 };
 
+const getFormItemDisplayTitle = (model: FlowModel, collectionField: CollectionFieldLike) => {
+  if (!(model instanceof FormItemModel)) {
+    return collectionField.title;
+  }
+  const label = (model.props as { label?: unknown })?.label;
+  return typeof label === 'string' ? label : collectionField.title;
+};
+
 const toSimplifyForm = (model: FormBlockLike) => {
   const result: {
     uid: string;
@@ -142,6 +150,7 @@ const toSimplifyForm = (model: FormBlockLike) => {
       if (!duplicateFields.has(collectionField.name)) {
         result.fields.push({
           name: collectionField.name,
+          title: getFormItemDisplayTitle(subModel, collectionField),
           type: collectionField.type,
           enum: collectionField.enum,
           readonly: collectionField.readonly,
@@ -216,7 +225,7 @@ const toSimplifyComponentTree = async (model: FlowModel): Promise<SimplifyCompon
       name: collectionField.name,
       type: collectionField.type,
       dataType: collectionField.dataType,
-      title: collectionField.title,
+      title: getFormItemDisplayTitle(model, collectionField),
       enum: collectionField.enum,
       defaultValue: collectionField.defaultValue,
     };
