@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './typescript-library';
-export * from './typescript-library-usage';
-export * from './lodash-type-library';
-export * from './type-packs/dayjs';
-export * from './type-packs/antd';
-export * from './type-packs/antd-icons';
-export * from './type-packs/formulajs';
-export * from './type-packs/mathjs';
-
 const maxRunJSPathLength = 512;
 const windowsDrivePrefix = /^[A-Za-z]:\//;
 const utf8Bom = '\ufeff';

@@ -41,10 +41,6 @@ type StaticCompletionEntry = {
   ctxLibAutoImport?: string;
 };
 
-type RunJSStaticCompletion = Completion & {
-  runJSBuiltInAutoImport?: boolean;
-};
-
 const NON_ELEMENT_COMPLETION_SCENES = new Set(['eventFlow', 'formValue', 'linkage']);
 const QUALIFIED_REACT_HOOK_COMPLETION_LABELS = new Set([
   'ctx.libs.React.useState()',
@@ -193,16 +189,7 @@ const staticEntry = ({
     info,
     boost,
     apply: insertText ? createApply(insertText, ctxLibAutoImport) : undefined,
-    runJSBuiltInAutoImport: Boolean(ctxLibAutoImport),
-  }) as RunJSStaticCompletion;
-
-export function filterRunJSCompletionsForTypeScriptAutoImports(
-  completions: Completion[],
-  typeScriptAutoImportsEnabled: boolean,
-): Completion[] {
-  if (!typeScriptAutoImportsEnabled) return completions;
-  return completions.filter((completion) => !(completion as RunJSStaticCompletion).runJSBuiltInAutoImport);
-}
+  }) as Completion;
 
 const SAFE_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
   {

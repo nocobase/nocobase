@@ -33,7 +33,6 @@ import {
   type RunJSSurfaceStyle,
 } from '..';
 import { buildRunJSFilesHash, sha256Hex } from '../server';
-import type { NodeRunJSTypeLibraryRegistry } from './node-type-library';
 import { inspectRunJSSourceWorkspaceWithDependencies, RunJSSourceWorkspaceInspector } from './source-inspection';
 import {
   isRunJSImportablePath,
@@ -44,12 +43,9 @@ import {
 } from './portable';
 
 export * from './source-inspection';
-export * from './node-type-library';
 export * from './portable';
 export * from './build-identity';
 export * from './typescript-project';
-export * from '../completion-catalog/generator';
-export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';
 
 export type RunJSCompileFileInput = RunJSCompileFile;
@@ -63,8 +59,6 @@ export interface CompileRunJSSourceWorkspaceInput {
   legacy?: RunJSSourceAuthoringLegacyInfo;
   inspectAuthoring?: RunJSSourceAuthoringInspector;
   additionalAllowedGlobals?: Iterable<string>;
-  typeLibraryIds?: readonly string[];
-  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
   sourceInspector?: RunJSSourceWorkspaceInspector;
 }
 
@@ -279,8 +273,6 @@ function toSourceInspectionInput(
     locator: input.locator,
     legacy: input.legacy,
     additionalAllowedGlobals: input.additionalAllowedGlobals,
-    typeLibraryIds: input.typeLibraryIds,
-    typeLibraryRegistry: input.typeLibraryRegistry,
   };
 }
 

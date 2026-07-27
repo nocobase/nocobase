@@ -120,7 +120,7 @@ vi.mock('@nocobase/flow-engine', () => {
   };
 });
 
-import { buildRunJSCompletions, filterRunJSCompletionsForTypeScriptAutoImports } from '../runjsCompletions';
+import { buildRunJSCompletions } from '../runjsCompletions';
 
 describe('buildRunJSCompletions', () => {
   const labelsOf = (completions: any[]) => new Set(completions.map((c: any) => c.label));
@@ -189,15 +189,6 @@ describe('buildRunJSCompletions', () => {
       { from: 0, to: 0, insert: 'const { useEffect } = ctx.libs.React;\n' },
       { from: 0, to: 'useEff'.length, insert: 'useEffect' },
     ]);
-  });
-
-  it('lets TypeScript own built-in auto imports without duplicating static React entries', async () => {
-    const { completions } = await buildRunJSCompletions({}, 'v2', 'block');
-    const filtered = filterRunJSCompletionsForTypeScriptAutoImports(completions, true);
-
-    expect(filtered.filter((completion) => completion.label === 'useEffect')).toHaveLength(0);
-    expect(filtered.some((completion) => completion.label === 'ctx.libs.React.useEffect()')).toBe(false);
-    expect(filterRunJSCompletionsForTypeScriptAutoImports(completions, false)).toBe(completions);
   });
 
   it('does not insert the same ctx.libs React declaration more than once', async () => {
