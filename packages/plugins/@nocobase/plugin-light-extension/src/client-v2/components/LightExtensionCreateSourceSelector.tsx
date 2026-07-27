@@ -8,7 +8,7 @@
  */
 
 import { UploadOutlined } from '@ant-design/icons';
-import type { VscGitHubRemoteConfig } from '../../shared/vsc-file/public-api';
+import type { VscGitRemoteConfigDraft } from '../../shared/vsc-file/public-api';
 import { Alert, Form, Radio, Space, Upload } from 'antd';
 import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,20 +16,20 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useT } from '../locale';
 import LightExtensionGitSourceFields, {
   createEmptyLightExtensionGitSourceDraft,
-  type LightExtensionGitHubSourceValue,
+  type LightExtensionGitSourceValue,
   type LightExtensionGitSourceDraft,
 } from './LightExtensionGitSourceFields';
 import type { LightExtensionEnvironmentVariableRecord } from './LightExtensionSecretVariableInput';
 
-export type LightExtensionCreateSourceMode = 'template' | 'zip' | 'github';
+export type LightExtensionCreateSourceMode = 'template' | 'zip' | 'git';
 
 export type LightExtensionCreateSource =
   | { mode: 'template' }
   | { mode: 'zip'; zipBase64: string }
   | {
-      mode: 'github';
-      provider: 'github';
-      config: VscGitHubRemoteConfig;
+      mode: 'git';
+      provider: 'git';
+      config: VscGitRemoteConfigDraft;
       authRef?: string;
     };
 
@@ -99,7 +99,7 @@ export function LightExtensionCreateSourceSelector(props: LightExtensionCreateSo
       if (mode === 'zip') {
         resetZip();
       }
-      if (mode === 'github') {
+      if (mode === 'git') {
         resetGit();
       }
       modeRef.current = nextMode;
@@ -134,8 +134,8 @@ export function LightExtensionCreateSourceSelector(props: LightExtensionCreateSo
   );
 
   const handleGitSourceChange = useCallback(
-    (source: LightExtensionGitHubSourceValue | undefined) => {
-      onChange?.(source ? { mode: 'github', ...source } : undefined);
+    (source: LightExtensionGitSourceValue | undefined) => {
+      onChange?.(source ? { mode: 'git', ...source } : undefined);
     },
     [onChange],
   );
@@ -152,7 +152,7 @@ export function LightExtensionCreateSourceSelector(props: LightExtensionCreateSo
           options={[
             { label: t('Template'), value: 'template' },
             { label: t('ZIP file'), value: 'zip' },
-            { label: t('GitHub source'), value: 'github' },
+            { label: t('Git source'), value: 'git' },
           ]}
           value={mode}
         />
@@ -184,7 +184,7 @@ export function LightExtensionCreateSourceSelector(props: LightExtensionCreateSo
         </Form.Item>
       ) : null}
 
-      {mode === 'github' ? (
+      {mode === 'git' ? (
         <LightExtensionGitSourceFields
           disabled={disabled}
           loadEnvironmentVariables={loadEnvironmentVariables}

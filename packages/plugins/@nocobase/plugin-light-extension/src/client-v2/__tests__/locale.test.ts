@@ -14,8 +14,8 @@ import zhCN from '../../locale/zh-CN.json';
 
 const REQUIRED_VSC_LOCALE_KEYS = [
   'Sync code',
-  'GitHub source',
-  'GitHub credential',
+  'Git source',
+  'Git credential',
   'Select a Secret variable',
   'Test connection',
   'Pull from Git',
@@ -27,7 +27,7 @@ const REQUIRED_VSC_LOCALE_KEYS = [
   'Diverged',
   'Initial sync needs a clear source',
   'The configured credential is unavailable',
-  'GitHub authentication failed',
+  'Git authentication failed',
   'The sync provider is unavailable',
   'You do not have permission to perform this sync operation',
   'Actions',

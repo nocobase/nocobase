@@ -52,7 +52,7 @@ import LightExtensionCreateSourceSelector, {
 } from '../components/LightExtensionCreateSourceSelector';
 import LightExtensionGitSourceFields, {
   createEmptyLightExtensionGitSourceDraft,
-  type LightExtensionGitHubSourceValue,
+  type LightExtensionGitSourceValue,
   type LightExtensionGitSourceDraft,
 } from '../components/LightExtensionGitSourceFields';
 import LightExtensionSyncDrawer from '../components/LightExtensionSyncDrawer';
@@ -334,7 +334,7 @@ function LightExtensionListPageInner() {
         description: values.description?.trim() || null,
       };
       const repo =
-        createSource.mode === 'github'
+        createSource.mode === 'git'
           ? (
               await createFromGitRequest({
                 ...metadata,
@@ -360,8 +360,8 @@ function LightExtensionListPageInner() {
       setNotice({
         type: 'success',
         message:
-          createSource.mode === 'github'
-            ? t('Repository created from GitHub and compiled')
+          createSource.mode === 'git'
+            ? t('Repository created from Git and compiled')
             : createSource.mode === 'zip'
               ? t('Repository imported and compiled')
               : t('Repository created and compiled'),
@@ -923,7 +923,7 @@ function LightExtensionSyncConfigurationPanel({ repoId, onConfigured }: LightExt
   const t = useT();
   const sync = useLightExtensionSync();
   const [draft, setDraft] = useState<LightExtensionGitSourceDraft>(createEmptyLightExtensionGitSourceDraft);
-  const [source, setSource] = useState<LightExtensionGitHubSourceValue>();
+  const [source, setSource] = useState<LightExtensionGitSourceValue>();
   const [request, setRequest] = useState<SyncConfigurationRequest>();
   const [feedback, setFeedback] = useState<Notice | null>(null);
   const disabled = Boolean(request);

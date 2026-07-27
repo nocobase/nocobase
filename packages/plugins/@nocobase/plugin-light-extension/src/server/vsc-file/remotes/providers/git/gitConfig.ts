@@ -63,33 +63,41 @@ export function parseGitRemoteCredential(input: unknown, transport: VscGitRemote
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw credentialInvalid('Git remote credential must be a JSON object', 'invalid-credential-shape');
   }
+  const credential = value as Record<string, unknown>;
 
-  if (value.kind === 'https') {
-    assertExactKeys(value, ['kind', 'username', 'password']);
+  if (credential.kind === 'https') {
+    assertExactKeys(credential, ['kind', 'username', 'password']);
     if (transport !== 'https') {
       throw credentialInvalid('Git remote credential does not match the transport', 'credential-kind-mismatch');
     }
     return {
       kind: 'https',
-      username: requireCredentialString(value.username, 'username'),
-      password: requireCredentialString(value.password, 'password'),
+      username: requireCredentialString(credential.username, 'username'),
+      password: requireCredentialString(credential.password, 'password'),
     };
   }
 
-  if (value.kind === 'ssh') {
-    assertExactKeys(value, ['kind', 'privateKey', 'passphrase', 'knownHosts'], ['passphrase']);
+  if (credential.kind === 'ssh') {
+    assertExactKeys(credential, ['kind', 'privateKey', 'passphrase', 'knownHosts'], ['passphrase']);
     if (transport !== 'ssh') {
       throw credentialInvalid('Git remote credential does not match the transport', 'credential-kind-mismatch');
     }
-    const passphrase = value.passphrase;
-    if (passphrase !== undefined && typeof passphrase !== 'string') {
+    const passphrase = credential.passphrase;
+    if (passphrase === undefined) {
+      return {
+        kind: 'ssh',
+        privateKey: requireCredentialString(credential.privateKey, 'private-key'),
+        knownHosts: requireCredentialString(credential.knownHosts, 'known-hosts'),
+      };
+    }
+    if (typeof passphrase !== 'string') {
       throw credentialInvalid('Git remote credential passphrase must be a string', 'invalid-passphrase');
     }
     return {
       kind: 'ssh',
-      privateKey: requireCredentialString(value.privateKey, 'private-key'),
-      ...(passphrase === undefined ? {} : { passphrase }),
-      knownHosts: requireCredentialString(value.knownHosts, 'known-hosts'),
+      privateKey: requireCredentialString(credential.privateKey, 'private-key'),
+      passphrase,
+      knownHosts: requireCredentialString(credential.knownHosts, 'known-hosts'),
     };
   }
 

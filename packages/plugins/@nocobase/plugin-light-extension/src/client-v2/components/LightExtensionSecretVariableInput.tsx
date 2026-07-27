@@ -172,7 +172,7 @@ export function LightExtensionCredentialInput(props: LightExtensionCredentialInp
         allowClear
         aria-describedby={errorMessage ? validationMessageId : undefined}
         aria-invalid={errorMessage ? true : undefined}
-        aria-label={ariaLabel || t('GitHub credential')}
+        aria-label={ariaLabel || t('Git credential')}
         disabled={disabled}
         notFoundContent={loadState === 'loading' ? <Spin size="small" /> : null}
         onChange={(nextValue) => onChange?.(nextValue || '')}

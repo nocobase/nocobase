@@ -8,6 +8,12 @@
  */
 
 import type { Database } from '@nocobase/database';
+import { spawn } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import {
   RemoteSyncAdapterRegistry,
   RemoteSyncError,
@@ -16,8 +22,9 @@ import {
 } from '../vsc-file';
 import { vi } from 'vitest';
 
-import { GitHubRemoteAdapter } from '../vsc-file/remotes/providers/github/GitHubRemoteAdapter';
-import type { GitHubApi } from '../vsc-file/remotes/providers/github/githubTypes';
+import type { GitCommandRequest, GitCommandResult } from '../vsc-file/remotes/providers/git/GitCommandRunner';
+import { GitRemoteAdapter } from '../vsc-file/remotes/providers/git/GitRemoteAdapter';
+import type { GitCommandExecutor } from '../vsc-file/remotes/providers/git/GitRepositoryWorkspace';
 import { RemoteCredentialResolver } from '../vsc-file/remotes/security/RemoteCredentialResolver';
 import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
 import {
@@ -29,23 +36,26 @@ import {
 
 describe('light extension Git sync integration', () => {
   let fixture: GitSyncAcceptanceFixture;
+  let temporaryDirectories: string[];
 
   beforeEach(async () => {
+    temporaryDirectories = [];
     fixture = await createGitSyncAcceptanceFixture();
   });
 
   afterEach(async () => {
     vi.restoreAllMocks();
+    await Promise.all(temporaryDirectories.map((directory) => rm(directory, { force: true, recursive: true })));
     await fixture?.close();
   });
 
   it('atomically creates credentialed and public Git sources with compiled entries, mappings, and jobs', async () => {
-    const credentialedResult = await fixture.createFromRemote('Credentialed Git Source', '{{ $env.GITHUB_SYNC }}');
+    const credentialedResult = await fixture.createFromRemote('Credentialed Git Source', '{{ $env.GIT_SYNC }}');
     const publicResult = await fixture.createFromRemote('Public Git Source');
 
     expect(fixture.validateCredential).toHaveBeenCalledTimes(2);
-    expect(fixture.validateCredential).toHaveBeenNthCalledWith(1, '{{ $env.GITHUB_SYNC }}');
-    expect(fixture.validateCredential).toHaveBeenNthCalledWith(2, '{{ $env.GITHUB_SYNC }}');
+    expect(fixture.validateCredential).toHaveBeenNthCalledWith(1, '{{ $env.GIT_SYNC }}');
+    expect(fixture.validateCredential).toHaveBeenNthCalledWith(2, '{{ $env.GIT_SYNC }}');
     for (const result of [credentialedResult, publicResult]) {
       const internal = await fixture.repoService.getInternalRepo(result.repo.id);
       const remote = await fixture.runtime.getRemote(internal.vscRepoId, 'origin');
@@ -71,15 +81,23 @@ describe('light extension Git sync integration', () => {
   });
 
   it('rejects anonymous private-source creation and succeeds only after resolving the referenced secret', async () => {
-    const credential = 'github_pat_private_source_01234567890123456789';
-    const authRef = '{{ $env.PRIVATE_GITHUB }}';
-    const api = createPrivateGitHubApi(credential);
+    const credential = 'git-private-source-password';
+    const authRef = '{{ $env.PRIVATE_GIT }}';
+    const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'git-sync-integration-'));
+    temporaryDirectories.push(temporaryDirectory);
+    const remoteDirectory = path.join(temporaryDirectory, 'remote.git');
+    await seedGitRemote(remoteDirectory);
+    const runner = new CredentialGatedLocalGitRunner(new Map([[gitSyncRemoteConfig.url, remoteDirectory]]), credential);
     const credentialResolver = new RemoteCredentialResolver({
-      db: createSecretDatabase({ PRIVATE_GITHUB: 'secret' }),
-      environment: { getVariables: () => ({ PRIVATE_GITHUB: credential }) },
+      db: createSecretDatabase({ PRIVATE_GIT: 'secret' }),
+      environment: {
+        getVariables: () => ({
+          PRIVATE_GIT: JSON.stringify({ kind: 'https', username: 'git-user', password: credential }),
+        }),
+      },
     });
     const registry = new RemoteSyncAdapterRegistry();
-    registry.register(new GitHubRemoteAdapter({ api, credentialResolver }));
+    registry.register(new GitRemoteAdapter({ runner, credentialResolver, temporaryDirectory }));
     const permissionHooks = new VscPermissionHookRegistry();
     permissionHooks.register(fixture.permissionService.createVscPermissionHook());
     const runtime = new RemoteSyncRuntimeService(fixture.app.db, {
@@ -99,22 +117,18 @@ describe('light extension Git sync integration', () => {
     await expect(
       service.create({
         name: 'Anonymous Private Source',
-        provider: 'github',
+        provider: 'git',
         config: gitSyncRemoteConfig,
         authRef: null,
       }),
     ).rejects.toMatchObject({ code: 'AUTH_FAILED' });
     await expect(persistenceCounts()).resolves.toEqual(countsBefore);
-    expect(vi.mocked(api.getRepository).mock.calls[0]?.at(-1)).toBeNull();
-    vi.mocked(api.getRepository).mockClear();
-    vi.mocked(api.getRef).mockClear();
-    vi.mocked(api.getCommit).mockClear();
-    vi.mocked(api.getTree).mockClear();
-    vi.mocked(api.getBlob).mockClear();
+    expect(runner.requests[0]?.credential).toBeNull();
+    runner.requests.length = 0;
 
     const created = await service.create({
       name: 'Authenticated Private Source',
-      provider: 'github',
+      provider: 'git',
       config: gitSyncRemoteConfig,
       authRef,
     });
@@ -122,18 +136,18 @@ describe('light extension Git sync integration', () => {
     expect(created).toMatchObject({
       repo: { healthStatus: 'ready' },
       remote: { authRef },
-      revision: 'private-commit',
+      revision: expect.stringMatching(/^[0-9a-f]{40}$/u),
       plan: { state: 'in-sync' },
     });
-    for (const call of [
-      ...vi.mocked(api.getRepository).mock.calls,
-      ...vi.mocked(api.getRef).mock.calls,
-      ...vi.mocked(api.getCommit).mock.calls,
-      ...vi.mocked(api.getTree).mock.calls,
-      ...vi.mocked(api.getBlob).mock.calls,
-    ]) {
-      expect(call.at(-1)).toBe(credential);
-    }
+    expect(runner.requests).not.toHaveLength(0);
+    const remoteRequests = runner.requests.filter((request) => request.remoteUrl);
+    expect(remoteRequests).not.toHaveLength(0);
+    expect(remoteRequests.every((request) => request.credential?.kind === 'https')).toBe(true);
+    expect(
+      remoteRequests.every(
+        (request) => request.credential?.kind === 'https' && request.credential.password === credential,
+      ),
+    ).toBe(true);
 
     async function persistenceCounts() {
       return {
@@ -218,7 +232,7 @@ describe('light extension Git sync integration', () => {
     const remote = await fixture.runtime.configureRemote({
       repoId: internal.vscRepoId,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: gitSyncRemoteConfig,
       authRef: null,
     });
@@ -234,61 +248,78 @@ describe('light extension Git sync integration', () => {
   });
 });
 
-function createPrivateGitHubApi(expectedCredential: string): GitHubApi {
-  const files = new Map(validGitSyncFiles().map((file, index) => [`blob-${index}`, file]));
-  const requireCredential = (credential: string | null) => {
-    if (credential !== expectedCredential) {
-      throw new RemoteSyncError('AUTH_FAILED', 'Private GitHub repository authentication failed', {
-        details: { provider: 'github', reasonCode: 'private-repository-auth-required' },
+const execFileAsync = promisify(execFile);
+
+class CredentialGatedLocalGitRunner implements GitCommandExecutor {
+  readonly requests: GitCommandRequest[] = [];
+
+  constructor(
+    private readonly remotes: ReadonlyMap<string, string>,
+    private readonly expectedPassword: string,
+  ) {}
+
+  async run(request: GitCommandRequest): Promise<GitCommandResult> {
+    this.requests.push(request);
+    if (
+      request.remoteUrl &&
+      (request.credential?.kind !== 'https' || request.credential.password !== this.expectedPassword)
+    ) {
+      throw new RemoteSyncError('AUTH_FAILED', 'Private Git repository authentication failed', {
+        details: { provider: 'git', reasonCode: 'private-repository-auth-required' },
       });
     }
-  };
-  return {
-    getRepository: vi.fn(async (_owner, _repository, credential) => {
-      requireCredential(credential);
-      return { default_branch: 'main', private: true, archived: false };
-    }),
-    getRef: vi.fn(async (_owner, _repository, _branch, credential) => {
-      requireCredential(credential);
-      return { ref: 'refs/heads/main', object: { type: 'commit', sha: 'private-commit' } };
-    }),
-    getCommit: vi.fn(async (_owner, _repository, _sha, credential) => {
-      requireCredential(credential);
-      return { sha: 'private-commit', tree: { sha: 'private-tree' } };
-    }),
-    getTree: vi.fn(async (_owner, _repository, _sha, _recursive, credential) => {
-      requireCredential(credential);
-      return {
-        sha: 'private-tree',
-        truncated: false,
-        tree: [...files].map(([sha, file]) => ({
-          path: file.path,
-          mode: '100644',
-          type: 'blob' as const,
-          sha,
-          size: Buffer.byteLength(file.content),
-        })),
-      };
-    }),
-    getBlob: vi.fn(async (_owner, _repository, sha, credential) => {
-      requireCredential(credential);
-      const file = files.get(sha);
-      if (!file) {
-        throw new Error(`Unknown private blob ${sha}`);
-      }
-      return {
-        sha,
-        content: Buffer.from(file.content).toString('base64'),
-        encoding: 'base64',
-        size: Buffer.byteLength(file.content),
-      };
-    }),
-    createBlob: vi.fn(async () => ({ sha: 'unused-blob' })),
-    createTree: vi.fn(async () => ({ sha: 'unused-tree' })),
-    createCommit: vi.fn(async () => ({ sha: 'unused-commit' })),
-    updateRef: vi.fn(async () => undefined),
-    createRef: vi.fn(async () => undefined),
-  };
+    return runGitProcess(
+      request.args.map((argument) => this.remotes.get(argument) || argument),
+      request,
+    );
+  }
+}
+
+function runGitProcess(args: readonly string[], request: GitCommandRequest): Promise<GitCommandResult> {
+  const startedAt = Date.now();
+  return new Promise((resolve, reject) => {
+    const child = spawn('git', [...args], {
+      cwd: request.cwd,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', ...request.environment },
+      stdio: 'pipe',
+    });
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
+    child.stdout.on('data', (chunk: Buffer) => stdout.push(chunk));
+    child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk));
+    child.on('error', reject);
+    child.on('close', (exitCode) => {
+      resolve({
+        exitCode: exitCode ?? -1,
+        stdout: Buffer.concat(stdout),
+        stderr: Buffer.concat(stderr),
+        durationMs: Date.now() - startedAt,
+      });
+    });
+    child.stdin.end(request.stdin);
+  });
+}
+
+async function seedGitRemote(remoteDirectory: string): Promise<void> {
+  const workingDirectory = `${remoteDirectory}-working`;
+  await git(['init', '--bare', remoteDirectory]);
+  await git(['init', workingDirectory]);
+  await git(['-C', workingDirectory, 'config', 'user.name', 'Test']);
+  await git(['-C', workingDirectory, 'config', 'user.email', 'test@example.com']);
+  for (const file of validGitSyncFiles()) {
+    const targetPath = path.join(workingDirectory, file.path);
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, file.content);
+  }
+  await git(['-C', workingDirectory, 'add', '.']);
+  await git(['-C', workingDirectory, 'commit', '-m', 'seed']);
+  await git(['-C', workingDirectory, 'branch', '-M', 'main']);
+  await git(['-C', workingDirectory, 'push', remoteDirectory, 'main']);
+  await git(['--git-dir', remoteDirectory, 'symbolic-ref', 'HEAD', 'refs/heads/main']);
+}
+
+function git(args: readonly string[]) {
+  return execFileAsync('git', [...args], { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 });
 }
 
 function createSecretDatabase(records: Record<string, string>): Database {

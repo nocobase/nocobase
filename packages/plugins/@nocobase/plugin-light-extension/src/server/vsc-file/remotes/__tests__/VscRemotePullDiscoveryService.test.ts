@@ -27,10 +27,10 @@ import { VscRemotePullDiscoveryService } from '../VscRemotePullDiscoveryService'
 import { loadVscSnapshot } from '../VscRemotePushService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('VscRemotePullDiscoveryService', () => {
@@ -135,7 +135,7 @@ describe('VscRemotePullDiscoveryService', () => {
     const remote = await remoteStore.create({
       repoId: created.repository.id,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });
@@ -492,7 +492,7 @@ describe('VscRemotePullDiscoveryService', () => {
     const remote = await remoteStore.create({
       repoId: created.repository.id,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });

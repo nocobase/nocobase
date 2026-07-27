@@ -312,18 +312,15 @@ async function configureSyncSource(
   const authRef = typeof input.authRef === 'undefined' ? saved?.authRef ?? null : requireNullableAuthRef(input.authRef);
   return runSyncAudit(services, ctx, repo.id, 'syncConfigure', async () => {
     const runtime = services.getRemoteSyncRuntime();
-    const normalizedConfig = runtime.normalizeConfig(provider, requireRecord(input.config, 'config'));
-    const tested = normalizedConfig.branch
-      ? null
-      : await runtime.testTarget({ provider, config: normalizedConfig, authRef });
-    const remote = await services.getRemoteSyncRuntime().configureRemote({
+    const tested = await runtime.testTarget({ provider, config: requireRecord(input.config, 'config'), authRef });
+    const remote = await runtime.configureRemote({
       repoId: repo.vscRepoId,
       name: remoteName,
       provider,
-      config: tested?.config ?? normalizedConfig,
+      config: tested.config,
       authRef,
     });
-    const revision = tested?.snapshot.revision ?? (await runtime.getLatestMappedRevision(remote.id));
+    const revision = tested.snapshot.revision;
     return {
       result: {
         repoId: repo.id,
@@ -688,7 +685,7 @@ function requireRepoId(input: ResourceActionInput): string {
 }
 
 function requireProvider(value: unknown): VscRemoteProvider {
-  if (value !== 'github') {
+  if (value !== 'git') {
     throw invalidInput('provider is invalid');
   }
   return value;

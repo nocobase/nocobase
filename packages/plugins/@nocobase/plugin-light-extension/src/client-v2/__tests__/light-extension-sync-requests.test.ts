@@ -20,8 +20,8 @@ describe('light-extension sync requests', () => {
       'configure',
       {
         repoId: 'repo-1',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: gitConfig(),
         authRef: '{{ $env.GITHUB_SYNC }}',
       },
     ],
@@ -52,8 +52,8 @@ describe('light-extension sync requests', () => {
       'createFromGit',
       {
         name: 'sales',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: '', subdirectory: 'sales' },
+        provider: 'git',
+        config: { ...gitConfig(), branch: null, subdirectory: 'sales' },
         authRef: '{{ $env.GITHUB_SYNC }}',
       },
     ],
@@ -77,8 +77,8 @@ describe('light-extension sync requests', () => {
     const api: ApiClientLike = { request };
     const rawCredentialInput = {
       repoId: 'repo-1',
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+      provider: 'git',
+      config: gitConfig(),
       token: 'not-allowed',
     } as unknown as LightExtensionSyncConfigureInput;
 
@@ -94,12 +94,9 @@ describe('light-extension sync requests', () => {
     await expect(
       requestLightExtensionSync(api, 'configure', {
         repoId: 'repo-1',
-        provider: 'github',
+        provider: 'git',
         config: {
-          owner: 'nocobase',
-          repository: 'extensions',
-          branch: 'main',
-          subdirectory: null,
+          ...gitConfig(),
           private_key: 'not-allowed',
         },
         authRef: '{{ $env.GITHUB_SYNC }}',
@@ -108,24 +105,24 @@ describe('light-extension sync requests', () => {
     await expect(
       requestLightExtensionSync(api, 'configure', {
         repoId: 'repo-1',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: gitConfig(),
         githubToken: 'not-allowed',
       } as unknown as LightExtensionSyncConfigureInput),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     await expect(
       requestLightExtensionSync(api, 'configure', {
         repoId: 'repo-1',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: gitConfig(),
         authRef: 'github_pat_test_direct_123',
       }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     await expect(
       requestLightExtensionSync(api, 'configure', {
         repoId: 'repo-1',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: gitConfig(),
         authRef: 'Bearer {{ $env.GITHUB_SYNC }}',
       }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
@@ -155,3 +152,12 @@ describe('light-extension sync requests', () => {
     expect(request).not.toHaveBeenCalled();
   });
 });
+
+function gitConfig() {
+  return {
+    url: 'https://git.example.com/nocobase/extensions.git',
+    branch: 'main',
+    subdirectory: null,
+    transport: 'https' as const,
+  };
+}

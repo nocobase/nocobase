@@ -52,8 +52,13 @@ describe('vsc-file remote collections', () => {
       values: {
         repoId: repository.get('id'),
         name: 'origin',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/nocobase/extensions.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
       },
     });
     const remoteId = remote.get('id') as string;
@@ -108,8 +113,13 @@ describe('vsc-file remote collections', () => {
     const remoteValues = {
       repoId: repository.get('id'),
       name: 'origin',
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+      provider: 'git',
+      config: {
+        url: 'https://git.example.com/nocobase/extensions.git',
+        branch: 'main',
+        subdirectory: null,
+        transport: 'https',
+      },
     };
     const remote = await db.getRepository('vscFileRemotes').create({ values: remoteValues });
 

@@ -27,10 +27,10 @@ import { DeterministicRemoteAdapter } from '../../remotes/testing/DeterministicR
 import { loadVscSnapshot } from '../../remotes/VscRemotePushService';
 
 export const acceptanceRemoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 export interface RemoteSyncAcceptanceFixture {
@@ -102,7 +102,7 @@ export async function createRemoteSyncAcceptanceFixture(
       const remote = await remoteStore.create({
         repoId: created.repository.id,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: acceptanceRemoteConfig,
         authRef: validatedAuthRef,
       });

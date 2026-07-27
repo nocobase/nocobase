@@ -47,8 +47,13 @@ const operationResult: LightExtensionSyncOperationResult = {
     headCommitId: 'local-2',
   },
   source: {
-    provider: 'github',
-    config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+    provider: 'git',
+    config: {
+      url: 'https://git.example.com/nocobase/extensions.git',
+      branch: 'main',
+      subdirectory: null,
+      transport: 'https',
+    },
     status: 'active',
     remoteTargetVersion: 1,
     revision: 'remote-2',
@@ -228,8 +233,13 @@ describe('useLightExtensionSync', () => {
     await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
     await act(async () => {
       await result.current.createFromGit({
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/nocobase/extensions.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
         name: 'sales',
       });
     });

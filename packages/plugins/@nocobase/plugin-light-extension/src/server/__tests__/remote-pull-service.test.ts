@@ -34,10 +34,10 @@ import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensio
 import { ReferenceService } from '../services/ReferenceService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('LightExtensionRemotePullService', () => {
@@ -279,7 +279,7 @@ describe('LightExtensionRemotePullService', () => {
     const remote = await remoteStore.create({
       repoId: internal.vscRepoId,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });

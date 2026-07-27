@@ -38,7 +38,7 @@ function renderSelector(props: {
 }
 
 describe('LightExtensionCreateSourceSelector', () => {
-  it('defaults to template and emits mutually exclusive template, ZIP, and GitHub sources', async () => {
+  it('defaults to template and emits mutually exclusive template, ZIP, and Git sources', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     renderSelector({ onChange, readZipFile: async () => 'zip-source-base64' });
@@ -54,19 +54,22 @@ describe('LightExtensionCreateSourceSelector', () => {
     await user.upload(fileInput, new File(['zip'], 'source.zip', { type: 'application/zip' }));
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith({ mode: 'zip', zipBase64: 'zip-source-base64' }));
 
-    await user.click(screen.getByText('GitHub source'));
+    await user.click(screen.getByText('Git source'));
     expect(screen.queryByText('source.zip')).not.toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/nocobase/example.git',
+    );
 
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith({
-        mode: 'github',
-        provider: 'github',
+        mode: 'git',
+        provider: 'git',
         config: {
-          owner: 'nocobase',
-          repository: 'example',
-          branch: '',
+          url: 'https://git.example.com/nocobase/example.git',
+          branch: null,
           subdirectory: null,
+          transport: 'https',
         },
       }),
     );
@@ -101,21 +104,21 @@ describe('LightExtensionCreateSourceSelector', () => {
     expect(screen.queryByText('broken.zip')).not.toBeInTheDocument();
   });
 
-  it('clears GitHub draft and validation state after switching away', async () => {
+  it('clears Git draft and validation state after switching away', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     renderSelector({ onChange });
 
-    await user.click(screen.getByText('GitHub source'));
-    const repositoryInput = screen.getByRole('textbox', { name: 'GitHub repository' });
-    await user.type(repositoryInput, 'https://example.com/owner/repository');
+    await user.click(screen.getByText('Git source'));
+    const repositoryInput = screen.getByRole('textbox', { name: 'Git repository URL' });
+    await user.type(repositoryInput, 'file:///tmp/repository.git');
     await user.tab();
-    expect(await screen.findByText('GitHub repository locator is invalid')).toBeInTheDocument();
+    expect(await screen.findByText('Git repository URL is invalid')).toBeInTheDocument();
 
     await user.click(screen.getByText('Template'));
-    await user.click(screen.getByText('GitHub source'));
-    expect(screen.getByRole('textbox', { name: 'GitHub repository' })).toHaveValue('');
-    expect(screen.queryByText('GitHub repository locator is invalid')).not.toBeInTheDocument();
+    await user.click(screen.getByText('Git source'));
+    expect(screen.getByRole('textbox', { name: 'Git repository URL' })).toHaveValue('');
+    expect(screen.queryByText('Git repository URL is invalid')).not.toBeInTheDocument();
   });
 
   it('ignores a ZIP read that finishes after leaving ZIP mode', async () => {

@@ -54,7 +54,7 @@ describe('LightExtensionCredentialInput', () => {
     const onValidationChange = vi.fn();
     renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
 
-    const input = screen.getByRole('combobox', { name: 'GitHub credential' });
+    const input = screen.getByRole('combobox', { name: 'Git credential' });
     await user.click(input);
 
     expect(await screen.findByText('SYNC_SECRET')).toBeInTheDocument();
@@ -74,13 +74,11 @@ describe('LightExtensionCredentialInput', () => {
     const onValidationChange = vi.fn();
     renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
 
-    const input = screen.getByRole('combobox', { name: 'GitHub credential' });
-    await user.type(input, 'github_pat_test_direct_123');
+    const input = screen.getByRole('combobox', { name: 'Git credential' });
+    await user.type(input, 'direct-secret-value');
     await user.keyboard('{Enter}');
 
-    expect(onValidationChange).not.toHaveBeenCalledWith(
-      expect.objectContaining({ authRef: 'github_pat_test_direct_123' }),
-    );
+    expect(onValidationChange).not.toHaveBeenCalledWith(expect.objectContaining({ authRef: 'direct-secret-value' }));
   });
 
   it('rejects ordinary variables and missing Secrets supplied by existing drafts', async () => {
@@ -116,7 +114,7 @@ describe('LightExtensionCredentialInput', () => {
     );
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Failed to load secret variables');
-    const expressionInput = screen.getByRole('combobox', { name: 'GitHub credential' });
+    const expressionInput = screen.getByRole('combobox', { name: 'Git credential' });
     expect(expressionInput).toHaveAttribute('aria-invalid', 'true');
     expect(expressionInput).toHaveAttribute('aria-describedby', alert.id);
   });
@@ -137,7 +135,7 @@ describe('LightExtensionCredentialInput', () => {
       valid: false,
       reason: 'invalid-expression',
     });
-    expect(validateLightExtensionCredential('github_pat_test_direct_123', candidates)).toEqual({
+    expect(validateLightExtensionCredential('direct-secret-value', candidates)).toEqual({
       valid: false,
       reason: 'invalid-expression',
     });

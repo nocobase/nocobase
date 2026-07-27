@@ -22,7 +22,7 @@ function createInput(overrides: PlannerOverrides = {}): VscRemotePlannerInput {
   const input: VscRemotePlannerInput = {
     configured: true,
     remoteId: 'remote_origin',
-    provider: 'github',
+    provider: 'git',
     remoteTargetVersion: 1,
     direction: 'bidirectional',
     capabilities: { canPull: true, canPush: true },

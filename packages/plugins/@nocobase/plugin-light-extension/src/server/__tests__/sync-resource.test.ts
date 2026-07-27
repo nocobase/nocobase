@@ -42,8 +42,8 @@ const remote: VscFileRemoteRecord = {
   id: 'vscrmt_demo',
   repoId: repo.vscRepoId,
   name: 'origin',
-  provider: 'github',
-  config: { owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null },
+  provider: 'git',
+  config: { url: 'https://git.example.com/nocobase/demo.git', branch: 'main', subdirectory: null, transport: 'https' },
   authRef: '{{ $env.GITHUB_TOKEN }}',
   status: 'active',
   version: 1,
@@ -61,7 +61,7 @@ describe('lightExtensionSync resource', () => {
     expect(ctx.body).toEqual({
       repoId: repo.id,
       source: {
-        provider: 'github',
+        provider: 'git',
         config: remote.config,
         status: 'active',
         remoteTargetVersion: 1,
@@ -88,7 +88,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: remote.config,
         authRef: directToken,
       },
@@ -121,7 +121,7 @@ describe('lightExtensionSync resource', () => {
     const ctx = await runAction(
       fixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config, authRef: remote.authRef },
+      { repoId: repo.id, provider: 'git', config: remote.config, authRef: remote.authRef },
       ['manageSyncSource'],
     );
 
@@ -159,7 +159,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: remote.config,
         token: 'ghp_secret',
       },
@@ -170,6 +170,24 @@ describe('lightExtensionSync resource', () => {
     expect(ctx.body).toMatchObject({ errors: [{ code: 'LIGHT_EXTENSION_INVALID_INPUT' }] });
     expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
     expect(JSON.stringify(ctx.body)).not.toContain('ghp_secret');
+  });
+
+  it('rejects the removed legacy provider before calling the runtime', async () => {
+    const fixture = createFixture();
+    const ctx = await runAction(
+      fixture,
+      'configure',
+      {
+        repoId: repo.id,
+        provider: 'git' + 'hub',
+        config: remote.config,
+      },
+      ['manageSyncSource'],
+    );
+
+    expect(ctx.status).toBe(400);
+    expect(ctx.body).toMatchObject({ errors: [{ code: 'LIGHT_EXTENSION_INVALID_INPUT' }] });
+    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
   });
 
   it('keeps manage, Pull, Push, OR permissions, and repository scope separate', async () => {
@@ -190,7 +208,7 @@ describe('lightExtensionSync resource', () => {
 
   it.each([
     ['get', { repoId: repo.id }, 'manageSyncSource'],
-    ['configure', { repoId: repo.id, provider: 'github', config: remote.config, authRef: null }, 'manageSyncSource'],
+    ['configure', { repoId: repo.id, provider: 'git', config: remote.config, authRef: null }, 'manageSyncSource'],
     ['disconnect', { repoId: repo.id }, 'manageSyncSource'],
     ['testConnection', { repoId: repo.id }, 'manageSyncSource'],
     ['plan', { repoId: repo.id }, 'pullFromSyncSource'],
@@ -252,7 +270,7 @@ describe('lightExtensionSync resource', () => {
       expect.objectContaining({
         repoId: repo.id,
         action: 'syncCreateFromGit',
-        provider: 'github',
+        provider: 'git',
         remoteRevision: 'rev_remote',
         fileCount: 1,
       }),
@@ -289,20 +307,23 @@ describe('lightExtensionSync resource', () => {
     expect(rejectedFixture.runtime.fetchTarget).not.toHaveBeenCalled();
   });
 
-  it.each([{ token: 'ghp_secret' }, { vscRepoId: repo.vscRepoId }, { remoteId: remote.id }])(
-    'rejects forbidden createFromGit input before remote access',
-    async (forbidden) => {
-      const fixture = createFixture();
-      const ctx = await runAction(fixture, 'createFromGit', { ...createFromGitInput(), ...forbidden }, [
-        'create',
-        'manageSyncSource',
-        'pullFromSyncSource',
-      ]);
+  it.each([
+    { token: 'ghp_secret' },
+    { vscRepoId: repo.vscRepoId },
+    { remoteId: remote.id },
+    { zipBase64: 'not-allowed' },
+    { initialFiles: [] },
+  ])('rejects forbidden createFromGit input before remote access', async (forbidden) => {
+    const fixture = createFixture();
+    const ctx = await runAction(fixture, 'createFromGit', { ...createFromGitInput(), ...forbidden }, [
+      'create',
+      'manageSyncSource',
+      'pullFromSyncSource',
+    ]);
 
-      expect(ctx.status).toBe(400);
-      expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
-    },
-  );
+    expect(ctx.status).toBe(400);
+    expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
+  });
 
   it('rejects unknown provider config fields before resolving the remote credential', async () => {
     const fixture = createFixture();
@@ -327,7 +348,7 @@ describe('lightExtensionSync resource', () => {
 
   it.each([
     ['get', { repoId: repo.id }],
-    ['configure', { repoId: repo.id, provider: 'github', config: remote.config }],
+    ['configure', { repoId: repo.id, provider: 'git', config: remote.config }],
     ['disconnect', { repoId: repo.id }],
     ['testConnection', { repoId: repo.id }],
     ['plan', { repoId: repo.id }],
@@ -354,7 +375,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: { ...remote.config, branch: '' },
       },
       ['manageSyncSource'],
@@ -376,7 +397,7 @@ describe('lightExtensionSync resource', () => {
     expect(JSON.stringify(ctx.body)).not.toContain('GITHUB_TOKEN');
   });
 
-  it('allows public GitHub Pull with the saved null authRef and keeps internal handles out of the response', async () => {
+  it('allows public Git Pull with the saved null authRef and keeps internal handles out of the response', async () => {
     const fixture = createFixture({ remote: { ...remote, authRef: null } });
     const ctx = await runAction(fixture, 'pull', executionInput(), ['pullFromSyncSource']);
 
@@ -395,7 +416,7 @@ describe('lightExtensionSync resource', () => {
     const query = await runAction(
       queryFixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config },
+      { repoId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
       { authRef: token },
@@ -408,7 +429,7 @@ describe('lightExtensionSync resource', () => {
     const header = await runAction(
       headerFixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config },
+      { repoId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
       {},
@@ -422,7 +443,7 @@ describe('lightExtensionSync resource', () => {
     const path = await runAction(
       pathFixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config },
+      { repoId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
       {},
@@ -441,7 +462,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: { ...remote.config, nested: [{ authRef: token }] },
       },
       ['manageSyncSource'],
@@ -521,7 +542,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     configureRemote: vi.fn(async () => configuredRemote),
     disconnectRemote: vi.fn(async () => undefined),
     testTarget: vi.fn(),
-    fetchTarget: vi.fn(async () => ({ provider: 'github', config: configuredRemote.config, snapshot })),
+    fetchTarget: vi.fn(async () => ({ provider: 'git', config: configuredRemote.config, snapshot })),
     establishInitialBaseline: vi.fn(async () => ({
       remote: configuredRemote,
       job: {
@@ -541,7 +562,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     getPullCoordinator: vi.fn(() => pullCoordinator),
   } as unknown as RemoteSyncRuntime & Record<string, ReturnType<typeof vi.fn>>;
   vi.mocked(runtime.testTarget).mockResolvedValue({
-    provider: 'github',
+    provider: 'git',
     config: configuredRemote.config,
     snapshot: {
       revision: 'rev_remote',
@@ -650,7 +671,7 @@ function executionInput() {
 
 function createFromGitInput() {
   return {
-    provider: 'github',
+    provider: 'git',
     config: remote.config,
     authRef: remote.authRef,
     name: 'demo',

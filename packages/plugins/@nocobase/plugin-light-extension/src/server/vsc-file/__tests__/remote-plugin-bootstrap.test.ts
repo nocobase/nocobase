@@ -27,7 +27,7 @@ import { VscFileServerModule } from '../plugin';
 import PluginLightExtensionServer from '../../plugin';
 
 describe('vsc-file remote runtime bootstrap', () => {
-  it('reloads the GitHub adapter identity-safely and unregisters the runtime on disable', async () => {
+  it('reloads the Git adapter identity-safely and unregisters the runtime on disable', async () => {
     const registeredAuditActions: Array<{ name: string }> = [];
     const app = {
       db: {} as Database,
@@ -43,13 +43,18 @@ describe('vsc-file remote runtime bootstrap', () => {
     await module.load();
     const firstRuntime = module.getRemoteSyncRuntime();
     expect(
-      firstRuntime.normalizeConfig('github', {
-        owner: 'nocobase',
-        repository: 'demo',
+      firstRuntime.normalizeConfig('git', {
+        url: 'https://git.example.com/nocobase/demo.git',
         branch: 'main',
         subdirectory: null,
+        transport: 'https',
       }),
-    ).toEqual({ owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null });
+    ).toEqual({
+      url: 'https://git.example.com/nocobase/demo.git',
+      branch: 'main',
+      subdirectory: null,
+      transport: 'https',
+    });
     await module.load();
     expect(module.getRemoteSyncRuntime()).not.toBe(firstRuntime);
     for (const actionName of remoteSyncAuditActionNames) {
@@ -315,8 +320,8 @@ describe('vsc-file remote runtime bootstrap', () => {
       const configured = await runtime.configureRemote({
         repoId: repository.repository.id,
         name: 'origin',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'demo', branch: '', subdirectory: null },
+        provider: 'git',
+        config: { url: 'https://git.example.com/nocobase/demo.git', branch: '', subdirectory: null },
         authRef: null,
       });
 
@@ -334,7 +339,7 @@ describe('vsc-file remote runtime bootstrap', () => {
         runtime.configureRemote({
           repoId: repository.repository.id,
           name: 'origin',
-          provider: 'github',
+          provider: 'git',
           config: configured.config,
           authRef: null,
         }),
@@ -368,8 +373,8 @@ describe('vsc-file remote runtime bootstrap', () => {
         permissionHooks: new VscPermissionHookRegistry(),
       });
       const fetched = await runtime.fetchTarget({
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'demo', branch: '', subdirectory: null },
+        provider: 'git',
+        config: { url: 'https://git.example.com/nocobase/demo.git', branch: '', subdirectory: null },
         authRef: null,
       });
 

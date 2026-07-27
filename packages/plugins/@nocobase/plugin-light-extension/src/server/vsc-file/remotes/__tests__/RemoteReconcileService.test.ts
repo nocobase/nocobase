@@ -26,10 +26,10 @@ import { DeterministicRemoteAdapter } from '../testing/DeterministicRemoteAdapte
 import { loadVscSnapshot } from '../VscRemotePushService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('RemoteReconcileService', () => {
@@ -174,7 +174,7 @@ describe('RemoteReconcileService', () => {
     const fetchSpy = vi.spyOn(adapter, 'fetchSnapshot').mockImplementation(async (target) => {
       if (target.config.repository === 'scan-failure') {
         throw new RemoteSyncError('REMOTE_UNAVAILABLE', 'Provider unavailable', {
-          details: { provider: 'github', operation: 'fetch', reasonCode: 'provider-unavailable' },
+          details: { provider: 'git', operation: 'fetch', reasonCode: 'provider-unavailable' },
         });
       }
       return fetch(target);
@@ -296,7 +296,7 @@ describe('RemoteReconcileService', () => {
     const remote = await remoteStore.create({
       repoId: created.repository.id,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: { ...remoteConfig, repository: name },
       authRef: null,
     });

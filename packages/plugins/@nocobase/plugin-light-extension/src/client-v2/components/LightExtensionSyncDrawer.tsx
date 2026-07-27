@@ -334,7 +334,7 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
             {loadState === 'ready' && plan?.state === 'unconfigured' ? (
               <>
                 <Alert
-                  description={t('Connect this light extension to a GitHub repository to sync its code.')}
+                  description={t('Connect this light extension to a Git repository to sync its code.')}
                   message={t('Sync source is not configured')}
                   role="alert"
                   showIcon
@@ -352,10 +352,9 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
             {loadState === 'ready' && source && plan ? (
               <>
                 <Descriptions bordered column={1} size="small">
-                  <Descriptions.Item label={t('Provider')}>GitHub</Descriptions.Item>
-                  <Descriptions.Item label={t('Repository')}>
-                    {source.config.owner}/{source.config.repository}
-                  </Descriptions.Item>
+                  <Descriptions.Item label={t('Provider')}>Git</Descriptions.Item>
+                  <Descriptions.Item label={t('Git repository URL')}>{source.config.url}</Descriptions.Item>
+                  <Descriptions.Item label={t('Transport')}>{source.config.transport.toUpperCase()}</Descriptions.Item>
                   <Descriptions.Item label={t('Branch')}>
                     {source.config.branch || t('Default branch')}
                   </Descriptions.Item>
@@ -439,7 +438,7 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
         </Spin>
       </Drawer>
       <Modal
-        aria-label={t('Push changes to GitHub?')}
+        aria-label={t('Push changes to Git?')}
         cancelText={t('Cancel')}
         confirmLoading={currentRepoOperation === 'push'}
         okText={t('Push to Git')}
@@ -450,9 +449,11 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
             confirmation.repoId === repo.id &&
             confirmation.planFingerprint === syncData?.plan.fingerprint,
         )}
-        title={t('Push changes to GitHub?')}
+        title={t('Push changes to Git?')}
       >
-        <Typography.Paragraph>{t('This will modify the remote branch and will not force push.')}</Typography.Paragraph>
+        <Typography.Paragraph>
+          {t('This will update the remote branch only if its revision has not changed.')}
+        </Typography.Paragraph>
       </Modal>
     </>
   );
@@ -463,7 +464,7 @@ function getStatusContent(plan: LightExtensionSyncPlan, t: ReturnType<typeof use
     return {
       message: t('Initial sync needs a clear source'),
       description: t(
-        'Local and remote content differ. Create from GitHub instead, or configure an empty branch or subdirectory before syncing.',
+        'Local and remote content differ. Create from Git instead, or configure an empty branch or subdirectory before syncing.',
       ),
       type: 'warning',
     };
@@ -473,7 +474,7 @@ function getStatusContent(plan: LightExtensionSyncPlan, t: ReturnType<typeof use
     return { message: t('In sync'), description: t('Local and remote code match.'), type: 'success' };
   }
   if (plan.state === 'local-ahead') {
-    return { message: t('Local changes'), description: t('Local code can be pushed to GitHub.'), type: 'info' };
+    return { message: t('Local changes'), description: t('Local code can be pushed to Git.'), type: 'info' };
   }
   if (plan.state === 'remote-ahead') {
     return {
@@ -499,7 +500,7 @@ function getStatusContent(plan: LightExtensionSyncPlan, t: ReturnType<typeof use
   }
   return {
     message: t('Sync source is not configured'),
-    description: t('Connect this light extension to a GitHub repository to sync its code.'),
+    description: t('Connect this light extension to a Git repository to sync its code.'),
     type: 'info',
   };
 }

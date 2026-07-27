@@ -41,7 +41,7 @@ describe('light extension Git sync permissions acceptance', () => {
       const ctx = await runAction(
         'createFromGit',
         {
-          provider: 'github',
+          provider: 'git',
           config: gitSyncRemoteConfig,
           authRef: '{{ $env.GITHUB_SYNC }}',
           name: 'Denied Git Source',
@@ -147,7 +147,7 @@ describe('light extension Git sync permissions acceptance', () => {
     const plan = await fixture.createPullInput(created.repo.id);
     const values =
       action === 'configure'
-        ? { repoId: created.repo.id, provider: 'github', config: gitSyncRemoteConfig }
+        ? { repoId: created.repo.id, provider: 'git', config: gitSyncRemoteConfig }
         : action === 'pull' || action === 'push'
           ? {
               repoId: created.repo.id,

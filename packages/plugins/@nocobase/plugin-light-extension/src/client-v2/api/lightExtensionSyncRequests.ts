@@ -77,7 +77,7 @@ const actionFields: Record<LightExtensionSyncActionName, ReadonlySet<string>> = 
   ]),
   createFromGit: new Set(['provider', 'config', 'name', 'title', 'description', 'authRef']),
 };
-const configFields = new Set(['owner', 'repository', 'branch', 'subdirectory']);
+const configFields = new Set(['url', 'branch', 'subdirectory', 'transport']);
 
 export class LightExtensionSyncRequestInputError extends Error {
   readonly code = 'LIGHT_EXTENSION_SYNC_INVALID_CLIENT_INPUT';
@@ -220,7 +220,7 @@ function validateAuthRef(action: LightExtensionSyncActionName, record: Record<st
 }
 
 function validateProvider(value: unknown): void {
-  if (value !== 'github') {
+  if (value !== 'git') {
     throw new LightExtensionSyncRequestInputError();
   }
 }
@@ -228,11 +228,15 @@ function validateProvider(value: unknown): void {
 function validateConfig(value: unknown): void {
   const config = requireRecord(value);
   assertOnlyFields(config, configFields);
-  requireTrimmedString(config.owner, false);
-  requireTrimmedString(config.repository, false);
-  requireTrimmedString(config.branch, true);
-  if (config.subdirectory !== null) {
+  requireTrimmedString(config.url, false);
+  if (config.branch !== undefined && config.branch !== null) {
+    requireTrimmedString(config.branch, true);
+  }
+  if (config.subdirectory !== undefined && config.subdirectory !== null) {
     requireTrimmedString(config.subdirectory, true);
+  }
+  if (config.transport !== undefined && config.transport !== 'https' && config.transport !== 'ssh') {
+    throw new LightExtensionSyncRequestInputError();
   }
 }
 

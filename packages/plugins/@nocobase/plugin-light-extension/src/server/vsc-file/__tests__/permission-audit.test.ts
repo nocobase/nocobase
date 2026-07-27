@@ -277,8 +277,13 @@ describe('vsc-file permission hooks and audit registration', () => {
     const remote = await new RemoteStore(app.db).create({
       repoId: repository.id,
       name: 'origin',
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null },
+      provider: 'git',
+      config: {
+        url: 'https://git.example.com/nocobase/demo.git',
+        branch: 'main',
+        subdirectory: null,
+        transport: 'https',
+      },
       authRef: null,
     });
     await new SyncJobStore(app.db).createOrGet({

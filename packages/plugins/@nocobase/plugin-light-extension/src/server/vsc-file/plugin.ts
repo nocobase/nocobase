@@ -17,7 +17,7 @@ import { createRemoteSyncAuditActions, createRemoteSyncAuditEmitter } from './re
 import { RemoteSyncAdapterRegistry } from './remotes/RemoteSyncAdapterRegistry';
 import type { RemoteSyncRuntime } from './remotes/RemoteSyncRuntime';
 import { RemoteSyncRuntimeService } from './remotes/RemoteSyncRuntimeService';
-import { GitHubRemoteAdapter } from './remotes/providers/github';
+import { GitCommandRunner, GitRemoteAdapter } from './remotes/providers/git';
 import { RemoteCredentialResolver } from './remotes/security/RemoteCredentialResolver';
 import { createRemoteInternalResources } from './remotes/resource';
 import type { VscPermissionHook } from './permissions';
@@ -41,7 +41,7 @@ export class VscFileServerModule {
 
   private remoteSyncRuntime?: RemoteSyncRuntimeService;
 
-  private unregisterGitHubAdapter?: () => void;
+  private unregisterGitAdapter?: () => void;
 
   private remoteRecoveryPromise?: Promise<void>;
 
@@ -110,14 +110,15 @@ export class VscFileServerModule {
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
     this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));
-    this.unregisterGitHubAdapter?.();
+    this.unregisterGitAdapter?.();
     const credentialResolver = new RemoteCredentialResolver({
       db: this.db,
       environment: this.app.environment,
     });
-    this.unregisterGitHubAdapter = this.remoteAdapters.register(
-      new GitHubRemoteAdapter({
+    this.unregisterGitAdapter = this.remoteAdapters.register(
+      new GitRemoteAdapter({
         credentialResolver,
+        runner: new GitCommandRunner(),
       }),
     );
     this.remoteSyncRuntime = new RemoteSyncRuntimeService(this.db, {
@@ -146,8 +147,8 @@ export class VscFileServerModule {
   }
 
   private unregisterRemoteRuntime() {
-    this.unregisterGitHubAdapter?.();
-    this.unregisterGitHubAdapter = undefined;
+    this.unregisterGitAdapter?.();
+    this.unregisterGitAdapter = undefined;
     this.remoteSyncRuntime = undefined;
   }
 

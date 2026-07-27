@@ -49,8 +49,8 @@ type FlowContextWithApi = {
 
 const errorTranslationKeys: Partial<Record<LightExtensionErrorCode, string>> = {
   LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE: 'The configured credential is unavailable',
-  LIGHT_EXTENSION_SYNC_AUTH_FAILED: 'GitHub authentication failed',
-  LIGHT_EXTENSION_SYNC_RATE_LIMITED: 'GitHub API rate limit reached. Try again later or configure a GitHub token.',
+  LIGHT_EXTENSION_SYNC_AUTH_FAILED: 'Git authentication failed',
+  LIGHT_EXTENSION_SYNC_RATE_LIMITED: 'The Git remote is temporarily unavailable. Try again later.',
   LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE: 'The sync provider is unavailable',
   LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER: 'The sync provider is unsupported',
   LIGHT_EXTENSION_SYNC_REMOTE_NOT_FOUND: 'The remote repository or path was not found',

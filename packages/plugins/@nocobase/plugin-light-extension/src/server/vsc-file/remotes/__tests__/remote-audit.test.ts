@@ -20,7 +20,7 @@ describe('remote sync audit sanitizer', () => {
         params: {
           values: {
             remoteId: 'remote-1',
-            provider: 'github',
+            provider: 'git',
             authRef: token,
             arbitrary: { nestedToken: token },
           },

@@ -31,10 +31,10 @@ import { DeterministicRemoteAdapter } from '../testing/DeterministicRemoteAdapte
 import { VscRemotePushService, loadVscSnapshot } from '../VscRemotePushService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('VscRemotePushService', () => {
@@ -289,7 +289,7 @@ describe('VscRemotePushService', () => {
     adapter.setFailure(
       'fetch',
       new RemoteSyncError('REMOTE_UNAVAILABLE', 'Safe provider failure', {
-        details: { provider: 'github', operation: 'fetch', reasonCode: 'provider-unavailable' },
+        details: { provider: 'git', operation: 'fetch', reasonCode: 'provider-unavailable' },
       }),
     );
 
@@ -322,7 +322,7 @@ describe('VscRemotePushService', () => {
     const remote = await remoteStore.create({
       repoId: created.repository.id,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: await validAuthRef(authRef),
     });

@@ -60,7 +60,7 @@ describe('remote sync server recovery acceptance', () => {
       runtime.configureRemote({
         repoId: setup.repoId,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: { ...setup.remote.config, branch: 'next' },
         authRef: null,
       }),
