@@ -10,19 +10,24 @@
 import type { Database } from '@nocobase/database';
 import { isVscError } from '../vsc-file/public-api';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
+import { uid } from '@nocobase/utils';
 
 import { LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
-  LightExtensionCreateRepoInput,
+  LightExtensionCreateJobAcceptedResult,
   LightExtensionInspectSourceArchiveResult,
   LightExtensionRepoLifecycleStatus,
   LightExtensionTreeEntryInput,
   LightExtensionUpdateRepoInput,
 } from '../../shared/types';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
+import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
+import { LightExtensionCreateJobRunner } from '../services/LightExtensionCreateJobRunner';
+import { LightExtensionCreateJobStore, toCreateJobSummary } from '../services/LightExtensionCreateJobStore';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
+import { LIGHT_EXTENSION_VALIDATION_LIMITS } from '../services/LightExtensionValidator';
 import { isStrictUtf8Text, parseLightExtensionSourceArchive } from '../services/LightExtensionSourceArchive';
 import { toLightExtensionSourceError } from '../services/errorContract';
 import { createTypedResourceAction, getServiceContext, toRecord, type ResourceActionInput } from './resourceAction';
@@ -50,10 +55,14 @@ interface LightExtensionRepoActionServices {
   db: Database;
   repoService: LightExtensionRepoService;
   runtimeCompileService: LightExtensionRuntimeCompileService;
+  createJobStore: LightExtensionCreateJobStore;
+  createJobRunner: LightExtensionCreateJobRunner;
+  applicationName: string;
+  auditService: LightExtensionAuditService;
 }
 
 const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceActionRunner> = {
-  create: (services, input, currentUser) => createRepoAndCompileInitialSource(services, input, currentUser),
+  create: (services, input, currentUser) => enqueueRepoCreation(services, input, currentUser),
   list: (services, _input, currentUser) => services.repoService.listRepos(currentUser),
   get: (services, input, currentUser) => services.repoService.getRepo(requireRepoId(input), currentUser),
   updateMetadata: (services, input, currentUser) =>
@@ -87,11 +96,19 @@ export function createLightExtensionReposResource(
   db: Database,
   repoService: LightExtensionRepoService,
   runtimeCompileService: LightExtensionRuntimeCompileService,
+  createJobStore: LightExtensionCreateJobStore,
+  createJobRunner: LightExtensionCreateJobRunner,
+  applicationName: string,
+  auditService: LightExtensionAuditService,
 ): ResourceOptions {
   const services = {
     db,
     repoService,
     runtimeCompileService,
+    createJobStore,
+    createJobRunner,
+    applicationName,
+    auditService,
   };
   return {
     name: 'lightExtensionRepos',
@@ -99,7 +116,7 @@ export function createLightExtensionReposResource(
     actions: Object.fromEntries(
       lightExtensionRepoActionNames.map((actionName) => [
         actionName,
-        createLightExtensionRepoAction(services, resourceActionRunners[actionName]),
+        createLightExtensionRepoAction(services, actionName, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionRepoActionName, HandlerType>,
   };
@@ -107,6 +124,7 @@ export function createLightExtensionReposResource(
 
 function createLightExtensionRepoAction(
   services: LightExtensionRepoActionServices,
+  actionName: LightExtensionRepoActionName,
   run: ResourceActionRunner,
 ): HandlerType {
   return createTypedResourceAction({
@@ -115,39 +133,52 @@ function createLightExtensionRepoAction(
     getServiceContext,
     transformError: (error, input) =>
       isVscError(error) ? toLightExtensionSourceError(error, getOptionalRepoId(input)) : error,
+    getHttpStatus: () => (actionName === 'create' ? 202 : undefined),
   });
 }
 
-async function createRepoAndCompileInitialSource(
+async function enqueueRepoCreation(
   services: LightExtensionRepoActionServices,
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
-) {
-  const createInput = await normalizeCreateInput(input, services.repoService);
-  return services.db.sequelize.transaction(async (transaction) => {
-    const transactionContext = {
-      ...currentUser,
+): Promise<LightExtensionCreateJobAcceptedResult> {
+  assertOnlyCreateKeys(input);
+  const createInput = normalizeCreateJobInput(input);
+  const metadata = services.repoService.normalizeCreateMetadata(createInput);
+  const targetRepoId = `ler_${uid()}`;
+  const job = await services.db.sequelize.transaction(async (transaction) => {
+    await services.repoService.assertCreateNameAvailable(metadata.name, metadata.normalizedName, transaction);
+    return services.createJobStore.enqueue(
+      {
+        applicationName: services.applicationName,
+        targetRepoId,
+        name: metadata.name,
+        normalizedName: metadata.normalizedName,
+        title: metadata.title,
+        description: metadata.description,
+        sourceType: createInput.sourceType,
+        payload: createInput.payload,
+        actorUserId: currentUser.actorUserId,
+        requestId: currentUser.requestId,
+      },
       transaction,
-    };
-    const repo = await services.repoService.createRepo(createInput, transactionContext);
-    if (!repo.headCommitId) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_SOURCE_ERROR',
-        'Light extension initial source commit is missing',
-        {
-          details: {
-            repoId: repo.id,
-          },
-        },
-      );
-    }
-
-    const compile = await services.runtimeCompileService.compileCurrentRuntime(repo.id, repo.headCommitId, {
-      ...transactionContext,
-      requestSource: currentUser.requestSource || 'light-extension-create',
-    });
-    return compile.repo;
+    );
   });
+  services.createJobRunner.scheduleWake(job.id);
+  try {
+    await services.auditService.recordCreateJobEvent({
+      jobId: job.id,
+      targetRepoId: job.targetRepoId,
+      sourceType: job.sourceType,
+      action: 'createJobEnqueue',
+      result: 'success',
+      requestId: job.requestId,
+      actorUserId: job.actorUserId,
+    });
+  } catch {
+    // A durable creation job must not depend on audit persistence availability.
+  }
+  return toCreateJobSummary(job);
 }
 
 async function inspectSourceArchive(
@@ -176,26 +207,60 @@ async function inspectSourceArchive(
   return { files };
 }
 
-async function normalizeCreateInput(
-  input: ResourceActionInput,
-  repoService: LightExtensionRepoService,
-): Promise<LightExtensionCreateRepoInput> {
+function normalizeCreateJobInput(input: ResourceActionInput): {
+  sourceType: 'template' | 'zip';
+  name: string;
+  title?: string | null;
+  description?: string | null;
+  payload:
+    | { sourceType: 'template'; message: string; initialFiles?: LightExtensionTreeEntryInput[] }
+    | { sourceType: 'zip'; message: string; zipBase64: string };
+} {
   const zipBase64 = optionalString(input, 'zipBase64');
   const suppliedInitialFiles = optionalArray(input, 'initialFiles', normalizeTreeEntryInput);
-  const initialFiles = zipBase64
-    ? await parseLightExtensionSourceArchive(zipBase64, repoService.getValidator())
-    : suppliedInitialFiles;
-
-  assertTextSourceFiles(initialFiles || []);
+  if (Object.hasOwn(input, 'zipBase64') && !zipBase64) {
+    throw invalidInput('zipBase64 is required when supplied');
+  }
+  if (zipBase64 && suppliedInitialFiles) {
+    throw invalidInput('zipBase64 and initialFiles cannot be used together');
+  }
+  if (zipBase64) {
+    assertLightweightZipInput(zipBase64);
+  }
+  assertTextSourceFiles(suppliedInitialFiles || []);
+  const message =
+    optionalString(input, 'message') ||
+    (zipBase64 ? 'Import light extension source' : 'Initial light extension source');
   return {
     name: requireString(input, 'name'),
     title: optionalNullableString(input, 'title'),
     description: optionalNullableString(input, 'description'),
-    ...(initialFiles ? { initialFiles } : {}),
-    message:
-      optionalString(input, 'message') ||
-      (zipBase64 ? 'Import light extension source' : 'Initial light extension source'),
+    sourceType: zipBase64 ? 'zip' : 'template',
+    payload: zipBase64
+      ? { sourceType: 'zip', zipBase64, message }
+      : {
+          sourceType: 'template',
+          message,
+          ...(suppliedInitialFiles ? { initialFiles: suppliedInitialFiles } : {}),
+        },
   };
+}
+
+function assertOnlyCreateKeys(input: ResourceActionInput): void {
+  const allowed = new Set(['name', 'title', 'description', 'zipBase64', 'initialFiles', 'message']);
+  if (Object.keys(input).some((key) => typeof input[key] !== 'undefined' && !allowed.has(key))) {
+    throw invalidInput('Request contains unsupported fields');
+  }
+}
+
+function assertLightweightZipInput(zipBase64: string): void {
+  if (!zipBase64 || zipBase64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/u.test(zipBase64)) {
+    throw invalidInput('zipBase64 must be valid base64');
+  }
+  const compressedBytes = Buffer.from(zipBase64, 'base64').byteLength;
+  if (compressedBytes > LIGHT_EXTENSION_VALIDATION_LIMITS.maxZipBytes) {
+    throw invalidInput('Source ZIP exceeds the compressed size limit');
+  }
 }
 
 function normalizeUpdateInput(input: ResourceActionInput): LightExtensionUpdateRepoInput {

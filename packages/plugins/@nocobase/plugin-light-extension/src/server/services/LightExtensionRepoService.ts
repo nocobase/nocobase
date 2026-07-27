@@ -319,6 +319,16 @@ export class LightExtensionRepoService {
     };
   }
 
+  async assertCreateNameAvailable(name: string, normalizedName: string, transaction?: Transaction): Promise<void> {
+    if (transaction) {
+      await this.assertRepoNameAvailable(name, normalizedName, transaction);
+      return;
+    }
+    await this.db.sequelize.transaction(async (currentTransaction) => {
+      await this.assertRepoNameAvailable(name, normalizedName, currentTransaction);
+    });
+  }
+
   private assertValidInitialFiles(
     files: LightExtensionTreeEntryInput[] | undefined,
     allowRemovedGenericRunJSSource = false,
@@ -464,6 +474,13 @@ export class LightExtensionRepoService {
     }
     await this.claimOrAssertApplicationOwnership(record, ctx.transaction);
     return internalRepoFromModel(record);
+  }
+
+  async findInternalRepoById(
+    repoId: string,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionRepoInternalRecord | null> {
+    return this.findInternalRepo(repoId, ctx);
   }
 
   async changeLifecycle(

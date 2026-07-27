@@ -54,6 +54,24 @@ describe('plugin-light-extension collections', () => {
       'healthStatus',
       'headCommitId',
     ]);
+    expectCollectionFields('lightExtensionCreateJobs', [
+      'id',
+      'applicationName',
+      'targetRepoId',
+      'name',
+      'normalizedName',
+      'sourceType',
+      'status',
+      'payload',
+      'reservationKey',
+      'claimToken',
+      'leaseOwner',
+      'leaseExpiresAt',
+      'attempt',
+      'maxAttempts',
+      'actorUserId',
+      'requestId',
+    ]);
     expectCollectionFields('lightExtensionEntries', [
       'id',
       'repoId',
@@ -176,6 +194,12 @@ describe('plugin-light-extension collections', () => {
       'le_ref_status_idx',
       'le_ref_owner_kind_idx',
       'le_ref_kind_status_idx',
+    ]);
+    await expectIndexNames('lightExtensionCreateJobs', [
+      'le_cjob_reservation_uq',
+      'le_cjob_claim_idx',
+      'le_cjob_actor_idx',
+      'le_cjob_finished_idx',
     ]);
 
     expect(indexUtf8Bytes('lightExtensionEntries', ['repoId', 'target', 'kind', 'entryName'])).toBeLessThanOrEqual(

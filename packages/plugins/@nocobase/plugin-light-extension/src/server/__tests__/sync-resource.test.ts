@@ -52,6 +52,35 @@ const remote: VscFileRemoteRecord = {
   lastErrorCode: null,
 };
 
+const createJob = {
+  id: 'lecj_git_demo',
+  applicationName: 'main',
+  targetRepoId: 'ler_git_target',
+  name: 'demo',
+  normalizedName: 'demo',
+  title: 'Demo',
+  description: 'Remote demo',
+  sourceType: 'git' as const,
+  status: 'pending' as const,
+  payload: { sourceType: 'git', provider: 'git' },
+  resultRepoId: null,
+  errorCode: null,
+  errorMessage: null,
+  reservationKey: 'sha256:reservation',
+  claimToken: null,
+  leaseOwner: null,
+  leaseExpiresAt: null,
+  heartbeatAt: null,
+  attempt: 0,
+  maxAttempts: 3,
+  actorUserId: null,
+  requestId: null,
+  startedAt: null,
+  finishedAt: null,
+  createdAt: '2026-07-27T00:00:00.000Z',
+  updatedAt: '2026-07-27T00:00:00.000Z',
+};
+
 describe('lightExtensionSync resource', () => {
   it('returns a deeply frozen safe DTO and masks the saved auth reference', async () => {
     const fixture = createFixture();
@@ -240,7 +269,7 @@ describe('lightExtensionSync resource', () => {
     },
   );
 
-  it('allows createFromGit only with all permissions and returns no credential or internal identifiers', async () => {
+  it('enqueues createFromGit with all permissions and returns 202 without remote access', async () => {
     const fixture = createFixture();
     const ctx = await runAction(
       fixture,
@@ -252,31 +281,31 @@ describe('lightExtensionSync resource', () => {
       { headers: { 'x-csrf-token': 'csrf-token' } },
     );
 
-    expect(ctx.status).toBeUndefined();
-    expect(fixture.runtime.fetchTarget).toHaveBeenCalledWith(
-      expect.objectContaining({ authRef: remote.authRef, config: remote.config }),
+    expect(ctx.status).toBe(202);
+    expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
+    expect(fixture.runtime.establishInitialBaseline).not.toHaveBeenCalled();
+    expect(fixture.createJobStore.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceType: 'git',
+        payload: expect.objectContaining({ authRef: remote.authRef, provider: 'git' }),
+      }),
+      expect.anything(),
     );
-    expect(fixture.runtime.establishInitialBaseline).toHaveBeenCalled();
+    expect(fixture.createJobRunner.scheduleWake).toHaveBeenCalledWith(createJob.id);
     expect(ctx.body).toMatchObject({
-      repo: { id: repo.id },
-      source: { revision: 'rev_remote', authRefDisplay: '********' },
-      plan: { state: 'in-sync' },
+      id: createJob.id,
+      targetRepoId: createJob.targetRepoId,
+      sourceType: 'git',
+      status: 'pending',
     });
     const serialized = JSON.stringify(ctx.body);
     expect(serialized).not.toContain('GITHUB_TOKEN');
     expect(serialized).not.toContain(repo.vscRepoId);
     expect(serialized).not.toContain(remote.id);
-    expect(fixture.auditService.recordSyncEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: repo.id,
-        action: 'syncCreateFromGit',
-        provider: 'git',
-        remoteRevision: 'rev_remote',
-        fileCount: 1,
-      }),
+    expect(fixture.auditService.recordSyncEvent).not.toHaveBeenCalled();
+    expect(fixture.auditService.recordCreateJobEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'createJobEnqueue', jobId: createJob.id, sourceType: 'git' }),
     );
-    expect(JSON.stringify(fixture.auditService.recordSyncEvent.mock.calls)).not.toContain('secret-source');
-    expect(JSON.stringify(fixture.auditService.recordSyncEvent.mock.calls)).not.toContain('GITHUB_TOKEN');
   });
 
   it('ignores an undefined framework filterByTk while rejecting a supplied createFromGit filterByTk', async () => {
@@ -290,8 +319,8 @@ describe('lightExtensionSync resource', () => {
       { filterByTk: undefined },
     );
 
-    expect(allowed.status).toBeUndefined();
-    expect(allowedFixture.runtime.fetchTarget).toHaveBeenCalledTimes(1);
+    expect(allowed.status).toBe(202);
+    expect(allowedFixture.createJobStore.enqueue).toHaveBeenCalledTimes(1);
 
     const rejectedFixture = createFixture();
     const rejected = await runAction(
@@ -305,6 +334,7 @@ describe('lightExtensionSync resource', () => {
 
     expect(rejected.status).toBe(400);
     expect(rejectedFixture.runtime.fetchTarget).not.toHaveBeenCalled();
+    expect(rejectedFixture.createJobStore.enqueue).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -573,6 +603,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
   });
   const auditService = {
     recordSyncEvent: vi.fn(async () => undefined),
+    recordCreateJobEvent: vi.fn(async () => undefined),
   };
   const repoService = {
     getInternalRepo: vi.fn(async () => repo),
@@ -589,6 +620,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
       ...input,
       normalizedName: input.name,
     })),
+    assertCreateNameAvailable: vi.fn(async () => undefined),
     getValidator: vi.fn(() => ({ validateInitialFiles: vi.fn(() => []) })),
   };
   const db = {
@@ -604,6 +636,12 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
   const permissionService = {
     assertActionAllowed: vi.fn(async () => undefined),
     createInternalVscRequestContext: vi.fn(() => ({})),
+  };
+  const createJobStore = {
+    enqueue: vi.fn(async () => createJob),
+  };
+  const createJobRunner = {
+    scheduleWake: vi.fn(),
   };
   const resource = createLightExtensionSyncResource({
     db,
@@ -626,8 +664,11 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
       }),
     },
     getRemoteSyncRuntime: () => runtime,
+    createJobStore,
+    createJobRunner,
+    applicationName: 'main',
   });
-  return { resource, runtime, auditService, repoService, pullCoordinator };
+  return { resource, runtime, auditService, repoService, pullCoordinator, createJobStore, createJobRunner };
 }
 
 async function runAction(

@@ -786,7 +786,7 @@ export interface LightExtensionSyncCreateFromGitInput extends LightExtensionSync
   authRef?: string;
 }
 
-export type LightExtensionSyncCreateFromGitResult = LightExtensionSyncOperationResult;
+export type LightExtensionSyncCreateFromGitResult = LightExtensionCreateJobAcceptedResult;
 
 export interface LightExtensionSyncActionContract {
   get: {

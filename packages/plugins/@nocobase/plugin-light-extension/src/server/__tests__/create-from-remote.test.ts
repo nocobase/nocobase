@@ -100,14 +100,18 @@ describe('LightExtensionCreateFromRemoteService', () => {
   it('atomically creates compiled source, a fixed remote target, mapping, succeeded job, and in-sync baseline', async () => {
     const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
     const publishPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'publishPreparedInitialWorkspace');
-    const result = await service.create({
-      name: 'Remote Sales KPI',
-      title: 'Remote Sales KPI',
-      description: 'Imported from Git',
-      provider: 'git',
-      config: remoteConfig,
-      authRef: '{{ $env.GIT_SYNC }}',
-    });
+    const result = await service.create(
+      {
+        name: 'Remote Sales KPI',
+        title: 'Remote Sales KPI',
+        description: 'Imported from Git',
+        provider: 'git',
+        config: remoteConfig,
+        authRef: '{{ $env.GIT_SYNC }}',
+      },
+      {},
+      { targetRepoId: 'ler_durable_target' },
+    );
     const internalRepo = await repoService.getInternalRepo(result.repo.id);
     const remote = await runtime.getRemote(internalRepo.vscRepoId, 'origin');
     const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: result.repo.id } });
@@ -120,7 +124,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
     expect(publishPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(result).toMatchObject({
-      repo: { healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
+      repo: { id: 'ler_durable_target', healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
       remote: { config: { branch: 'main' }, authRef: '{{ $env.GITHUB_SYNC }}' },
       plan: { state: 'in-sync', action: 'noop' },
       revision: 'remote-initial',

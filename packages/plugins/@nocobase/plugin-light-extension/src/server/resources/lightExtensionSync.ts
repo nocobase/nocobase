@@ -16,7 +16,7 @@ import type {
   VscRemoteSyncPlan,
 } from '../vsc-file/public-api';
 import { RemoteSyncError } from '../vsc-file/public-api';
-import { randomUUID } from 'crypto';
+import { uid } from '@nocobase/utils';
 
 import type { LightExtensionAclAction } from '../../constants';
 import { LightExtensionError, isLightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
@@ -31,12 +31,14 @@ import type {
   LightExtensionSyncTestConnectionResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
+import { LightExtensionCreateJobRunner } from '../services/LightExtensionCreateJobRunner';
+import { LightExtensionCreateJobStore, toCreateJobSummary } from '../services/LightExtensionCreateJobStore';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionRemotePullService } from '../services/LightExtensionRemotePullService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
+import { normalizeGitRemoteConfigDraft } from '../vsc-file/remotes/providers/git/gitConfig';
 import {
   createTypedResourceAction,
   getServiceContext,
@@ -70,6 +72,9 @@ interface SyncActionServices {
   repoService: LightExtensionRepoService;
   runtimeCompileService: LightExtensionRuntimeCompileService;
   getRemoteSyncRuntime: () => RemoteSyncRuntime;
+  createJobStore: LightExtensionCreateJobStore;
+  createJobRunner: LightExtensionCreateJobRunner;
+  applicationName: string;
 }
 
 type SyncActionRunner = (
@@ -157,6 +162,7 @@ function createSyncAction(
       return deepFreeze(await run(currentServices, input, ctx));
     },
     transformError: (error) => normalizeSyncError(error),
+    getHttpStatus: () => (actionName === 'createFromGit' ? 202 : undefined),
   });
   return async (ctx, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
@@ -238,51 +244,48 @@ async function createFromGit(
   input: ResourceActionInput,
   ctx: LightExtensionServiceContext,
 ): Promise<LightExtensionSyncCreateFromGitResult> {
-  const requestId = ctx.requestId || `syncCreateFromGit:${randomUUID()}`;
-  let provider: VscRemoteProvider | undefined;
-  try {
-    provider = requireProvider(input.provider);
-    const authRef = typeof input.authRef === 'undefined' ? null : requireNullableAuthRef(input.authRef);
-    const createService = new LightExtensionCreateFromRemoteService(
-      services.db,
-      services.auditService,
-      services.repoService,
-      services.runtimeCompileService,
-      services.getRemoteSyncRuntime,
-    );
-    const created = await createService.create(
+  const provider = requireProvider(input.provider);
+  const authRef = typeof input.authRef === 'undefined' ? null : requireNullableAuthRef(input.authRef);
+  const config = normalizeGitRemoteConfigDraft(requireRecord(input.config, 'config'));
+  const metadata = services.repoService.normalizeCreateMetadata({
+    name: requireString(input.name, 'name'),
+    title: optionalNullableString(input.title, 'title'),
+    description: optionalNullableString(input.description, 'description'),
+  });
+  const targetRepoId = `ler_${uid()}`;
+  const job = await services.db.sequelize.transaction(async (transaction) => {
+    await services.repoService.assertCreateNameAvailable(metadata.name, metadata.normalizedName, transaction);
+    return services.createJobStore.enqueue(
       {
-        provider,
-        config: requireRecord(input.config, 'config'),
-        authRef,
-        name: requireString(input.name, 'name'),
-        title: optionalNullableString(input.title, 'title'),
-        description: optionalNullableString(input.description, 'description'),
-      },
-      { ...ctx, requestId },
-    );
-    return {
-      repo: created.repo,
-      source: toSourceSummary(created.remote, created.revision),
-      plan: created.plan,
-    };
-  } catch (error) {
-    const safeError = normalizeSyncError(error);
-    try {
-      await services.auditService.recordSyncEvent({
-        action: 'syncCreateFromGit',
-        result: 'blocked',
-        requestId,
+        applicationName: services.applicationName,
+        targetRepoId,
+        name: metadata.name,
+        normalizedName: metadata.normalizedName,
+        title: metadata.title,
+        description: metadata.description,
+        sourceType: 'git',
+        payload: { sourceType: 'git', provider, config: { ...config }, authRef },
         actorUserId: ctx.actorUserId,
-        provider,
-        reasonCode: isLightExtensionError(safeError) ? safeError.code : 'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE',
-        message: 'syncCreateFromGit failed',
-      });
-    } catch {
-      // The safe create error contract must not depend on audit persistence availability.
-    }
-    throw safeError;
+        requestId: ctx.requestId,
+      },
+      transaction,
+    );
+  });
+  services.createJobRunner.scheduleWake(job.id);
+  try {
+    await services.auditService.recordCreateJobEvent({
+      jobId: job.id,
+      targetRepoId: job.targetRepoId,
+      sourceType: job.sourceType,
+      action: 'createJobEnqueue',
+      result: 'success',
+      requestId: job.requestId,
+      actorUserId: job.actorUserId,
+    });
+  } catch {
+    // A durable creation job must not depend on audit persistence availability.
   }
+  return toCreateJobSummary(job);
 }
 
 async function getSyncSource(

@@ -36,6 +36,10 @@ import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } f
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
 import {
+  createLightExtensionCreateJobsResource,
+  lightExtensionCreateJobActionNames,
+} from './resources/lightExtensionCreateJobs';
+import {
   createLightExtensionSyncResource,
   lightExtensionSyncActionNames,
   sanitizeUnsafeLightExtensionSyncTransport,
@@ -53,6 +57,10 @@ import { createLightExtensionsResource, lightExtensionActionNames } from './reso
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
+import { LightExtensionCreateFromRemoteService } from './services/LightExtensionCreateFromRemoteService';
+import { LightExtensionCreateJobExecutor } from './services/LightExtensionCreateJobExecutor';
+import { LightExtensionCreateJobRunner } from './services/LightExtensionCreateJobRunner';
+import { LightExtensionCreateJobStore } from './services/LightExtensionCreateJobStore';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -164,6 +172,16 @@ export class PluginLightExtensionServer extends Plugin {
 
   private compileShutdownListener?: () => Promise<void>;
 
+  private createJobStore?: LightExtensionCreateJobStore;
+
+  private createJobExecutor?: LightExtensionCreateJobExecutor;
+
+  private createJobRunner?: LightExtensionCreateJobRunner;
+
+  private createJobStartListener?: () => Promise<void>;
+
+  private createJobStopListener?: () => Promise<void>;
+
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.requireVscFileServerModule().registerPermissionHook(hook);
   }
@@ -225,6 +243,7 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
 
+    await this.shutdownCreateJobRunner();
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     const vscFileServerModule = this.requireVscFileServerModule();
@@ -285,6 +304,30 @@ export class PluginLightExtensionServer extends Plugin {
         validator: this.validator,
       },
     );
+    this.createJobStore = new LightExtensionCreateJobStore(db);
+    const createFromRemoteService = new LightExtensionCreateFromRemoteService(
+      db,
+      this.auditService,
+      this.repoService,
+      this.runtimeCompileService,
+      () => vscFileServerModule.getRemoteSyncRuntime(),
+    );
+    this.createJobExecutor = new LightExtensionCreateJobExecutor(
+      db,
+      this.repoService,
+      this.runtimeCompileService,
+      createFromRemoteService,
+    );
+    this.createJobRunner = new LightExtensionCreateJobRunner(
+      this.createJobStore,
+      this.createJobExecutor,
+      {
+        applicationName: this.app.name,
+        eventQueue: this.app.eventQueue,
+        logger: this.app.logger,
+      },
+      this.auditService,
+    );
     this.repoService.useReferenceService(this.referenceService);
     this.repoService.useRemoteSyncLifecycleGate({
       assertRepositoryIdle: (repoId, transaction) =>
@@ -319,7 +362,15 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionReferencesResource(this.referenceService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionReposResource(db, this.repoService, this.runtimeCompileService),
+      createLightExtensionReposResource(
+        db,
+        this.repoService,
+        this.runtimeCompileService,
+        this.createJobStore,
+        this.createJobRunner,
+        this.app.name,
+        this.auditService,
+      ),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionFilesResource(this.fileService, this.runtimeCompileService),
@@ -338,6 +389,18 @@ export class PluginLightExtensionServer extends Plugin {
         repoService: this.repoService,
         runtimeCompileService: this.runtimeCompileService,
         getRemoteSyncRuntime: () => vscFileServerModule.getRemoteSyncRuntime(),
+        createJobStore: this.createJobStore,
+        createJobRunner: this.createJobRunner,
+        applicationName: this.app.name,
+      }),
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionCreateJobsResource({
+        store: this.createJobStore,
+        runner: this.createJobRunner,
+        permissionService: this.permissionService,
+        applicationName: this.app.name,
+        auditService: this.auditService,
       }),
     );
     this.registerCapabilitiesHttpRoute();
@@ -348,10 +411,12 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerAclActions();
     this.registerVscPermissionHook();
     this.registerRemotePullRecoveryListener();
+    this.registerCreateJobLifecycleListeners();
     this.registerCompileShutdownListener();
   }
 
   async afterDisable() {
+    await this.shutdownCreateJobRunner();
     await this.shutdownCompileInfrastructure();
     this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
@@ -360,10 +425,12 @@ export class PluginLightExtensionServer extends Plugin {
   }
 
   async afterEnable() {
+    await this.startCreateJobRunner();
     await this.runRemoteRecovery();
   }
 
   async remove() {
+    await this.shutdownCreateJobRunner();
     this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
@@ -422,10 +489,64 @@ export class PluginLightExtensionServer extends Plugin {
     }
   }
 
+  private registerCreateJobLifecycleListeners() {
+    this.removeCreateJobLifecycleListeners();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    this.createJobStartListener = async () => {
+      await this.startCreateJobRunner();
+    };
+    this.createJobStopListener = async () => {
+      await this.shutdownCreateJobRunner();
+    };
+    app.on('afterStart', this.createJobStartListener);
+    app.on('beforeStop', this.createJobStopListener);
+  }
+
+  private removeCreateJobLifecycleListeners() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    for (const [eventName, listener] of [
+      ['afterStart', this.createJobStartListener],
+      ['beforeStop', this.createJobStopListener],
+    ] as const) {
+      if (!listener) {
+        continue;
+      }
+      if (app.off) {
+        app.off(eventName, listener);
+      } else {
+        app.removeListener?.(eventName, listener);
+      }
+    }
+    this.createJobStartListener = undefined;
+    this.createJobStopListener = undefined;
+  }
+
+  private async startCreateJobRunner(): Promise<void> {
+    if (!this.db?.hasCollection?.('lightExtensionCreateJobs')) {
+      return;
+    }
+    await this.createJobRunner?.start();
+  }
+
+  private async shutdownCreateJobRunner(): Promise<void> {
+    this.removeCreateJobLifecycleListeners();
+    const runner = this.createJobRunner;
+    this.createJobRunner = undefined;
+    this.createJobExecutor = undefined;
+    this.createJobStore = undefined;
+    if (runner) {
+      await runner.stop();
+    }
+  }
+
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
+    app.acl?.allow?.('lightExtensionCreateJobs', [...lightExtensionCreateJobActionNames], 'loggedIn');
     this.registerSyncAcl(app);
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
@@ -434,6 +555,7 @@ export class PluginLightExtensionServer extends Plugin {
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
+        ...lightExtensionCreateJobActionNames.map((action) => `lightExtensionCreateJobs:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
