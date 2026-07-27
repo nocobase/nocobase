@@ -36,7 +36,7 @@ export function PublicAccessCheckbox({ checked, onChange, disabled, t }: PublicA
       <Tooltip
         title={description}
         placement="topRight"
-        autoAdjustOverflow={{ adjustX: true, adjustY: true }}
+        autoAdjustOverflow={{ adjustX: 1, adjustY: 1 }}
         styles={{ root: { maxWidth: `min(320px, calc(100vw - ${token.margin * 2}px))` } }}
       >
         <QuestionCircleOutlined
