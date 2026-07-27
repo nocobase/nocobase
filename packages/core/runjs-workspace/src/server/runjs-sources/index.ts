@@ -9,6 +9,7 @@
 
 export * from './RunJSSourceAdapterRegistry';
 export * from './RunJSSourceAuthoringInspectorRegistry';
+export * from './RunJSAuthoringCapabilityRegistry';
 export * from './canonicalCompileFiles';
 export * from './lazyCompiler';
 export {

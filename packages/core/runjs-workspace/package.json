@@ -16,6 +16,9 @@
       ],
       "shared": [
         "./lib/shared/index.d.ts"
+      ],
+      "swagger": [
+        "./lib/swagger/index.d.ts"
       ]
     }
   },
@@ -45,6 +48,11 @@
       "types": "./lib/shared/index.d.ts",
       "import": "./lib/shared/index.js",
       "require": "./lib/shared/index.js"
+    },
+    "./swagger": {
+      "types": "./lib/swagger/index.d.ts",
+      "import": "./lib/swagger/index.js",
+      "require": "./lib/swagger/index.js"
     },
     "./package.json": "./package.json"
   },

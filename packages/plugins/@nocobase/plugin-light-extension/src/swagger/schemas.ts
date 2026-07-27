@@ -37,7 +37,7 @@ export const lightExtensionSchemas = {
       },
       content: {
         type: 'string',
-        description: 'Complete UTF-8 source content for this preview file.',
+        description: 'Complete UTF-8 source content for this workspace file.',
       },
       language: {
         type: 'string',
@@ -749,6 +749,307 @@ export const lightExtensionSchemas = {
       },
     },
   },
+  LightExtensionMoveSourceOriginBinding: {
+    type: 'object',
+    required: ['type', 'repoId', 'entryId', 'kind'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['light-extension-entry'],
+      },
+      repoId: {
+        type: 'string',
+      },
+      entryId: {
+        type: 'string',
+      },
+      kind: {
+        $ref: '#/components/schemas/LightExtensionKind',
+      },
+    },
+    additionalProperties: false,
+  },
+  LightExtensionMoveSourceDestination: {
+    oneOf: [
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['default'],
+            description: 'Use the application default light-extension repository, creating it when necessary.',
+          },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['type', 'repoId'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['existing'],
+          },
+          repoId: {
+            type: 'string',
+            description: 'Existing destination repository id.',
+          },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['type', 'name'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['new'],
+          },
+          name: {
+            type: 'string',
+            description: 'Unique slug for the new destination repository.',
+          },
+          title: nullableString,
+          description: nullableString,
+        },
+        additionalProperties: false,
+      },
+    ],
+    description: 'Destination selection: application default, an existing repository, or a new repository.',
+  },
+  LightExtensionMoveSourceRequest: {
+    type: 'object',
+    required: [
+      'locator',
+      'expectedOwnerFingerprint',
+      'sourceRepoId',
+      'sourceHeadCommitId',
+      'entryPath',
+      'version',
+      'files',
+      'destination',
+      'entryName',
+    ],
+    properties: {
+      idempotencyKey: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 255,
+        description: 'Optional retry key. Reusing it with a different request returns an idempotency conflict.',
+      },
+      locator: {
+        $ref: '#/components/schemas/RunJSSourceLocator',
+      },
+      expectedOwnerFingerprint: {
+        type: 'string',
+        minLength: 1,
+        description: 'Owner fingerprint returned by the latest RunJS workspace open operation.',
+      },
+      sourceRepoId: {
+        type: 'string',
+        minLength: 1,
+        description: 'RunJS workspace repository id returned by open/openLatest.',
+      },
+      sourceHeadCommitId: {
+        type: 'string',
+        nullable: true,
+        description: 'Exact RunJS workspace Head commit, or null when the workspace has no Head.',
+      },
+      entryPath: {
+        type: 'string',
+        minLength: 1,
+        description: 'Canonical entry path in the supplied RunJS workspace.',
+      },
+      version: {
+        type: 'string',
+        minLength: 1,
+        description: 'RunJS source version from the opened workspace.',
+      },
+      files: {
+        type: 'array',
+        minItems: 1,
+        description: 'Complete RunJS source workspace, including every file reachable from the entry.',
+        items: {
+          $ref: '#/components/schemas/LightExtensionWorkspaceFile',
+        },
+      },
+      originBinding: {
+        $ref: '#/components/schemas/LightExtensionMoveSourceOriginBinding',
+      },
+      destination: {
+        $ref: '#/components/schemas/LightExtensionMoveSourceDestination',
+      },
+      entryName: {
+        type: 'string',
+        minLength: 1,
+        description: 'Lowercase slug for the destination Entry.',
+      },
+      entryTitle: nullableString,
+    },
+    additionalProperties: false,
+  },
+  LightExtensionMoveSourceResult: {
+    type: 'object',
+    required: ['repo', 'entry', 'binding', 'ownerFingerprint'],
+    properties: {
+      repo: {
+        $ref: '#/components/schemas/LightExtensionRepo',
+      },
+      entry: {
+        $ref: '#/components/schemas/LightExtensionEntry',
+      },
+      binding: {
+        $ref: '#/components/schemas/LightExtensionSourceBinding',
+      },
+      ownerFingerprint: {
+        type: 'string',
+      },
+    },
+  },
+  LightExtensionMoveToInlineRequest: {
+    type: 'object',
+    required: ['locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'],
+    properties: {
+      locator: {
+        $ref: '#/components/schemas/RunJSSourceLocator',
+      },
+      repoId: {
+        type: 'string',
+        minLength: 1,
+      },
+      entryId: {
+        type: 'string',
+        minLength: 1,
+      },
+      entryPath: {
+        type: 'string',
+        minLength: 1,
+        description: 'Canonical Entry path for the bound source.',
+      },
+      kind: {
+        $ref: '#/components/schemas/LightExtensionKind',
+      },
+      version: {
+        type: 'string',
+        minLength: 1,
+        description: 'Compiled Entry source version being moved inline.',
+      },
+      files: {
+        type: 'array',
+        minItems: 1,
+        description: 'Complete source files reachable from the Entry.',
+        items: {
+          $ref: '#/components/schemas/LightExtensionWorkspaceFile',
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  LightExtensionMoveToInlineResult: {
+    type: 'object',
+    required: ['runJSRepoId', 'commitId', 'ownerFingerprint', 'code', 'version', 'entryPath', 'sourceRef'],
+    properties: {
+      runJSRepoId: {
+        type: 'string',
+      },
+      commitId: {
+        type: 'string',
+      },
+      ownerFingerprint: {
+        type: 'string',
+      },
+      code: {
+        type: 'string',
+      },
+      version: {
+        type: 'string',
+      },
+      entryPath: {
+        type: 'string',
+      },
+      filesHash: {
+        type: 'string',
+      },
+      sourceRef: {
+        type: 'object',
+        required: ['type', 'repoId', 'commitId', 'entry'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['vsc-file'],
+          },
+          repoId: {
+            type: 'string',
+          },
+          commitId: {
+            type: 'string',
+          },
+          entry: {
+            type: 'string',
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  LightExtensionSelectableEntry: {
+    type: 'object',
+    required: [
+      'id',
+      'repoId',
+      'kind',
+      'entryName',
+      'entryPath',
+      'title',
+      'category',
+      'settingsSchema',
+      'settingsSchemaHash',
+      'settingsDefaultsHash',
+      'runtimeCodeHash',
+      'runtimeAvailable',
+    ],
+    properties: {
+      id: {
+        type: 'string',
+        description: 'Stable Entry id used as sourceBinding.entryId.',
+      },
+      repoId: {
+        type: 'string',
+        description: 'Stable Repository id used as sourceBinding.repoId.',
+      },
+      repoName: nullableString,
+      repoTitle: nullableString,
+      kind: {
+        $ref: '#/components/schemas/LightExtensionKind',
+      },
+      entryName: {
+        type: 'string',
+      },
+      entryPath: {
+        type: 'string',
+      },
+      title: nullableString,
+      category: nullableString,
+      settingsSchema: {
+        type: 'object',
+        nullable: true,
+        additionalProperties: true,
+      },
+      settingsSchemaHash: nullableString,
+      settingsDefaultsHash: nullableString,
+      artifactHash: {
+        type: 'string',
+      },
+      runtimeCodeHash: {
+        type: 'string',
+      },
+      runtimeAvailable: {
+        type: 'boolean',
+        enum: [true],
+      },
+    },
+  },
   LightExtensionRepoEnvelope: {
     type: 'object',
     required: ['data'],
@@ -824,6 +1125,36 @@ export const lightExtensionSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/LightExtensionSaveSourceResult',
+      },
+    },
+  },
+  LightExtensionMoveSourceEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/LightExtensionMoveSourceResult',
+      },
+    },
+  },
+  LightExtensionMoveToInlineEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/LightExtensionMoveToInlineResult',
+      },
+    },
+  },
+  LightExtensionSelectableEntryListEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        items: {
+          $ref: '#/components/schemas/LightExtensionSelectableEntry',
+        },
       },
     },
   },

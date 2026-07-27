@@ -35,8 +35,11 @@ function dereferenceLocalSchema(value: any, schemas: Record<string, any>, seen =
 }
 
 describe('flowSurfaces swagger', () => {
-  it('should keep exported swagger paths aligned with public flowSurfaces actions only', () => {
-    const expectedPaths = FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`).sort();
+  it('should keep exported swagger paths aligned with public Flow Surfaces and Core RunJS actions', () => {
+    const expectedPaths = [
+      ...FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`),
+      '/runJSSources:capabilities',
+    ].sort();
     const actualPaths = Object.keys(swaggerDocument.paths).sort();
 
     expect(swaggerDocument.openapi).toBe('3.0.2');
@@ -54,6 +57,11 @@ describe('flowSurfaces swagger', () => {
       expect(pathItem[expectedMethod]).toBeTruthy();
       expect(Object.keys(pathItem)).toEqual([expectedMethod]);
     }
+
+    expect(swaggerDocument.paths['/runJSSources:capabilities'].post.responses[200].content).toHaveProperty(
+      'application/json',
+    );
+    expect(swaggerDocument.components.schemas.RunJSAuthoringCapabilities).toBeTruthy();
   });
 
   it('should expose recursive tree schemas, flattened mutate schema and representative request examples', () => {

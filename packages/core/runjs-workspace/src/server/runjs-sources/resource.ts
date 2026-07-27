@@ -57,6 +57,8 @@ import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '..
 import { VscFileService, type PulledFile, type VscServiceContext } from '../services/VscFileService';
 import type { RunJSSourceAuthoringInspectorRegistry } from './RunJSSourceAuthoringInspectorRegistry';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
+import type { RunJSAuthoringCapabilityRegistry } from './RunJSAuthoringCapabilityRegistry';
+import { createRunJSAuthoringCapabilities } from '../../shared/authoring-contract';
 import { canonicalizeRunJSCompileFile } from './canonicalCompileFiles';
 import { compileRunJSSourceWorkspace } from './lazyCompiler';
 import { buildRunJSWorkspaceSettingsHashes, parseRunJSWorkspaceSettingsDescriptor } from './settingsDescriptor';
@@ -109,6 +111,7 @@ export type RunJSWorkspaceBootstrapPort = (
 ) => Promise<RunJSWorkspaceBootstrapResult>;
 
 export const runJSSourceActionNames = [
+  'capabilities',
   'open',
   'openLatest',
   'restoreFromCode',
@@ -122,6 +125,7 @@ export const runJSSourceActionNames = [
 ] as const;
 
 type RunJSSourceActionName = (typeof runJSSourceActionNames)[number];
+type RunJSSourceWorkspaceActionName = Exclude<RunJSSourceActionName, 'capabilities'>;
 
 type ResourceActionInput = Record<string, unknown>;
 
@@ -161,7 +165,7 @@ type RunJSSourceActionRunner = (
   ctx: RunJSSourceResourceContext,
 ) => Promise<unknown>;
 
-const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
+const actionRunners: Record<RunJSSourceWorkspaceActionName, RunJSSourceActionRunner> = {
   open: async (db, registry, permissionHooks, _authoringInspectors, input, ctx): Promise<RunJSSourceOpenResult> => {
     return openRunJSWorkspace(db, registry, permissionHooks, input, ctx, {
       assertHeadOwnerFingerprint: true,
@@ -2404,16 +2408,34 @@ export function createRunJSSourcesResource(
   registry: RunJSSourceAdapterRegistry,
   permissionHooks?: VscPermissionHookRegistry,
   authoringInspectors?: RunJSSourceAuthoringInspectorRegistry,
+  authoringCapabilities?: RunJSAuthoringCapabilityRegistry,
 ): ResourceOptions {
-  return {
-    name: 'runJSSources',
-    only: [...runJSSourceActionNames],
-    actions: Object.fromEntries(
-      runJSSourceActionNames.map((actionName) => [
+  const sourceActions = Object.fromEntries(
+    runJSSourceActionNames
+      .filter(
+        (actionName): actionName is Exclude<RunJSSourceActionName, 'capabilities'> => actionName !== 'capabilities',
+      )
+      .map((actionName) => [
         actionName,
         createRunJSSourceAction(db, registry, permissionHooks, authoringInspectors, actionRunners[actionName]),
       ]),
-    ) as Record<RunJSSourceActionName, HandlerType>,
+  );
+  return {
+    name: 'runJSSources',
+    only: [...runJSSourceActionNames],
+    actions: {
+      capabilities: createRunJSAuthoringCapabilitiesAction(authoringCapabilities),
+      ...sourceActions,
+    } as Record<RunJSSourceActionName, HandlerType>,
+  };
+}
+
+function createRunJSAuthoringCapabilitiesAction(registry?: RunJSAuthoringCapabilityRegistry): HandlerType {
+  return async (ctx: Context, next) => {
+    const resourceCtx = ctx as RunJSSourceResourceContext;
+    resourceCtx.withoutDataWrapping = true;
+    resourceCtx.body = createRunJSAuthoringCapabilities(registry?.getExternalization());
+    await next();
   };
 }
 

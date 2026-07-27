@@ -21,9 +21,11 @@ import {
   inspectRunJSSourceCode,
   RunJSSourceAdapterRegistry,
   RunJSSourceAuthoringInspectorRegistry,
+  RunJSAuthoringCapabilityRegistry,
   runJSSourceActionNames,
 } from './runjs-sources';
 import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../shared/runjs-source-types';
+import type { RunJSExternalizationCapabilityContribution } from '../shared/authoring-contract';
 
 const RUNJS_WORKSPACE_SERVER_MODULE = Symbol.for('@nocobase/runjs-workspace/server-module');
 
@@ -39,6 +41,8 @@ export class RunJSWorkspaceServerModule {
   private readonly runJSSourceAdapters = new RunJSSourceAdapterRegistry();
 
   private readonly runJSSourceAuthoringInspectors = new RunJSSourceAuthoringInspectorRegistry();
+
+  private readonly runJSAuthoringCapabilities = new RunJSAuthoringCapabilityRegistry();
 
   private loaded = false;
 
@@ -81,6 +85,14 @@ export class RunJSWorkspaceServerModule {
     return this.runJSSourceAuthoringInspectors;
   }
 
+  registerRunJSExternalizationCapability(contribution: RunJSExternalizationCapabilityContribution): () => void {
+    return this.runJSAuthoringCapabilities.registerExternalization(contribution);
+  }
+
+  getRunJSAuthoringCapabilityRegistry(): RunJSAuthoringCapabilityRegistry {
+    return this.runJSAuthoringCapabilities;
+  }
+
   async beforeLoad(): Promise<void> {
     if (this.db.hasCollection('vscFileRepositories')) {
       return;
@@ -103,6 +115,7 @@ export class RunJSWorkspaceServerModule {
         this.runJSSourceAdapters,
         this.permissionHooks,
         this.runJSSourceAuthoringInspectors,
+        this.runJSAuthoringCapabilities,
       ),
     );
     this.app.acl.allow('vscFile', [...vscFileActionNames], 'allowConfigure');

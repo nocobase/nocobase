@@ -26,6 +26,7 @@ import { resolve } from 'path';
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
 import { LightExtensionError } from '../shared/errors';
 import { registerLightExtensionDomainAvailabilityGuard } from './domainAvailability';
+import { lightExtensionExternalizationCapabilities } from './externalizationCapabilities';
 import { lightExtensionEntryV1SchemaFileContent } from './lightExtensionEntrySchema';
 import {
   createLightExtensionCapabilitiesResource,
@@ -157,6 +158,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private unregisterVscPermissionHook?: () => void;
 
+  private unregisterExternalizationCapability?: () => void;
+
   private remotePullRecoveryListener?: () => Promise<void>;
 
   private remotePullRecoveryPromise?: Promise<void>;
@@ -230,8 +233,10 @@ export class PluginLightExtensionServer extends Plugin {
 
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
+    this.unregisterExternalizationCapabilityWhenNeeded();
     const workspaceModule = this.requireRunJSWorkspaceServerModule();
     await workspaceModule.load();
+    this.registerExternalizationCapability(workspaceModule);
     const remoteSyncModule = this.requireRemoteSyncModule();
     await remoteSyncModule.load();
     this.domainAvailable = true;
@@ -350,6 +355,7 @@ export class PluginLightExtensionServer extends Plugin {
 
   async afterDisable() {
     this.domainAvailable = false;
+    this.unregisterExternalizationCapabilityWhenNeeded();
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
@@ -358,11 +364,13 @@ export class PluginLightExtensionServer extends Plugin {
 
   async afterEnable() {
     this.domainAvailable = true;
+    this.registerExternalizationCapability(this.requireRunJSWorkspaceServerModule());
     await this.runRemoteRecovery();
   }
 
   async remove() {
     this.domainAvailable = false;
+    this.unregisterExternalizationCapabilityWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     await this.remoteSyncModule?.remove();
@@ -394,6 +402,18 @@ export class PluginLightExtensionServer extends Plugin {
       );
     }
     return this.remoteSyncModule;
+  }
+
+  private registerExternalizationCapability(workspaceModule: RunJSWorkspaceServerModule) {
+    this.unregisterExternalizationCapabilityWhenNeeded();
+    this.unregisterExternalizationCapability = workspaceModule.registerRunJSExternalizationCapability(
+      lightExtensionExternalizationCapabilities,
+    );
+  }
+
+  private unregisterExternalizationCapabilityWhenNeeded() {
+    this.unregisterExternalizationCapability?.();
+    this.unregisterExternalizationCapability = undefined;
   }
 
   private registerCompileShutdownListener() {

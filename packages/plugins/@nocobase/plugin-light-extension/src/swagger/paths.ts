@@ -107,6 +107,45 @@ export const lightExtensionPaths = {
       },
     },
   },
+  '/lightExtensionEntries:listSelectable': {
+    post: {
+      tags: ['lightExtensionEntries'],
+      summary: 'List reusable light-extension entries',
+      description: [
+        'List compiled Entries that can be bound directly to a compatible RunJS Host.',
+        'The root business payload accepts optional repoId and kind filters; do not wrap it in values. Use --body-file when filters are supplied from a JSON document. Each result includes the stable repoId, Entry id, kind, name, and path needed to write a source binding.',
+      ].join('\n\n'),
+      requestBody: {
+        required: false,
+        description: 'Optional root business payload consumed directly by lightExtensionEntries:listSelectable.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                repoId: {
+                  type: 'string',
+                  description: 'Return selectable Entries from this Repository only.',
+                },
+                kind: {
+                  $ref: '#/components/schemas/LightExtensionKind',
+                },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Selectable Entry binding identities.',
+          content: jsonContent('LightExtensionSelectableEntryListEnvelope'),
+        },
+        400: errorResponse('The Repository or kind filter is invalid.'),
+        403: errorResponse('The current user cannot list reusable light-extension Entries.'),
+      },
+    },
+  },
   '/lightExtensionReferences:readReferences': {
     post: {
       tags: ['lightExtensionReferences'],
@@ -373,6 +412,71 @@ export const lightExtensionPaths = {
             'The targeted entry or every whole-workspace entry was rejected. Inspect diagnostics before retrying.',
           content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
         },
+      },
+    },
+  },
+  '/lightExtensions:moveSource': {
+    post: {
+      tags: ['lightExtensions'],
+      summary: 'Move an inline RunJS workspace to a light extension',
+      description: [
+        'Atomically compile and externalize a complete inline RunJS workspace into a Light Extension Entry, then bind its Host to that Entry.',
+        'Pass the root business payload directly and use --body-file for multi-file source. destination supports default, existing, and new Repository variants. idempotencyKey can make retries stable. HTTP 409 reports stale owner/source Head, Entry, Repository, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance Repository or Host state.',
+      ].join('\n\n'),
+      requestBody: {
+        required: true,
+        description: 'Root business payload consumed directly by lightExtensions:moveSource; do not wrap it in values.',
+        content: jsonContent('LightExtensionMoveSourceRequest'),
+      },
+      responses: {
+        200: {
+          description: 'Source was committed, compiled, and atomically bound to the Host.',
+          content: jsonContent('LightExtensionMoveSourceEnvelope'),
+        },
+        400: errorResponse('The locator, workspace, destination, Entry identity, or idempotency key is invalid.'),
+        403: errorResponse('The current user cannot write the RunJS Host or the selected Light Extension Repository.'),
+        404: errorResponse(
+          'The RunJS Host, source Repository, destination Repository, origin Entry, or created Entry was not found.',
+        ),
+        409: errorResponse(
+          'The owner fingerprint or source Head is stale, or a Repository, Entry, binding, operation, or idempotency conflict prevents the move. No persistent state is advanced.',
+        ),
+        422: errorResponse(
+          'The complete destination workspace failed validation or compilation. No persistent state is advanced.',
+        ),
+      },
+    },
+  },
+  '/lightExtensions:moveToInline': {
+    post: {
+      tags: ['lightExtensions'],
+      summary: 'Move a Light Extension Entry workspace back inline',
+      description: [
+        'Compile and relocate a complete reachable Light Extension Entry workspace into its bound RunJS Host, then remove that Host binding.',
+        'Pass the root business payload directly and use --body-file for multi-file source. This action does not accept an idempotency key. HTTP 409 reports stale binding, Repository, source, or owner state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
+      ].join('\n\n'),
+      requestBody: {
+        required: true,
+        description:
+          'Root business payload consumed directly by lightExtensions:moveToInline; do not wrap it in values.',
+        content: jsonContent('LightExtensionMoveToInlineRequest'),
+      },
+      responses: {
+        200: {
+          description: 'Reachable source files were committed to RunJS and the Host was atomically moved inline.',
+          content: jsonContent('LightExtensionMoveToInlineEnvelope'),
+        },
+        400: errorResponse('The locator, Entry binding identity, version, or reachable source workspace is invalid.'),
+        403: errorResponse('The current user cannot read the Entry or write the bound RunJS Host.'),
+        404: errorResponse(
+          'The bound RunJS Host, Repository, Entry, source commit, or required source file was not found.',
+        ),
+        409: errorResponse(
+          'The binding, owner, Repository, Entry, or source state changed before the move completed. No persistent state is advanced.',
+        ),
+        422: errorResponse(
+          'The relocated inline workspace failed validation or compilation. No persistent state is advanced.',
+        ),
       },
     },
   },

@@ -8,6 +8,7 @@
  */
 
 export * from './constants';
+export * from './authoring-contract';
 export * from './errors';
 export * from './hash';
 export * from './path-normalize';

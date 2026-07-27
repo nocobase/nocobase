@@ -11,6 +11,7 @@ import type { Context } from '@nocobase/actions';
 import { describe, expect, it, vi } from 'vitest';
 
 import { LightExtensionError } from '../../shared/errors';
+import swaggerDocument from '../../swagger';
 import { createLightExtensionsResource } from '../resources/lightExtensions';
 import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
 import type { MoveSourceService } from '../services/MoveSourceService';
@@ -38,6 +39,51 @@ const binding = {
 const entryPath = 'src/client/js-blocks/sales/index.tsx';
 
 describe('move-to-inline resource', () => {
+  it('keeps the public move request schemas aligned with the normalized resource inputs', () => {
+    const moveSourceRequest = swaggerDocument.components.schemas.LightExtensionMoveSourceRequest;
+    const moveToInlineRequest = swaggerDocument.components.schemas.LightExtensionMoveToInlineRequest;
+
+    expect(moveSourceRequest.required).toEqual([
+      'locator',
+      'expectedOwnerFingerprint',
+      'sourceRepoId',
+      'sourceHeadCommitId',
+      'entryPath',
+      'version',
+      'files',
+      'destination',
+      'entryName',
+    ]);
+    expect(Object.keys(moveSourceRequest.properties).sort()).toEqual(
+      [
+        'idempotencyKey',
+        'locator',
+        'expectedOwnerFingerprint',
+        'sourceRepoId',
+        'sourceHeadCommitId',
+        'entryPath',
+        'version',
+        'files',
+        'originBinding',
+        'destination',
+        'entryName',
+        'entryTitle',
+      ].sort(),
+    );
+    expect(moveToInlineRequest.required).toEqual([
+      'locator',
+      'repoId',
+      'entryId',
+      'entryPath',
+      'kind',
+      'version',
+      'files',
+    ]);
+    expect(Object.keys(moveToInlineRequest.properties).sort()).toEqual(
+      ['locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'].sort(),
+    );
+  });
+
   it.each([
     { destination: { type: 'default' } },
     { destination: { type: 'existing', repoId: 'ler_existing' } },

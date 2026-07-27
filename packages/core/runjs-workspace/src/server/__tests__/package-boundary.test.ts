@@ -23,7 +23,15 @@ describe('@nocobase/runjs-workspace package boundary', () => {
 
     expect(packageJson.name).toBe('@nocobase/runjs-workspace');
     expect(packageJson.displayName).toBeUndefined();
-    expect(Object.keys(packageJson.exports).sort()).toEqual(['.', './package.json', './server', './shared']);
+    expect(Object.keys(packageJson.exports).sort()).toEqual([
+      '.',
+      './client',
+      './client-v2',
+      './package.json',
+      './server',
+      './shared',
+      './swagger',
+    ]);
   });
 
   it('does not depend on plugin lifecycle or Light Extension domain implementations', () => {
