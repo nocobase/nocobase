@@ -15,6 +15,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { pipeline } from 'stream/promises';
 import * as tar from 'tar';
 import { createGunzip } from 'zlib';
@@ -51,52 +52,19 @@ const MAIN_APP_NAME = 'main';
 const UNION_ROLE_KEY = '__union__';
 const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
 const MULTI_PORTAL_MANIFEST_SYNC_MESSAGE_TYPE = 'multi-portal:app-manifest-changed';
-const DEFAULT_PORTAL_TEMPLATE_PACKAGE = '@nocobase/portal-template-default';
+const DEFAULT_INIT_DEVELOPMENT_MODE = 'no-code';
+const DEFAULT_INIT_PORTAL_NAME = 'admin';
+const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
 const PORTAL_PUBLIC_DIR_MODE = 0o755;
 const PORTAL_PUBLIC_FILE_MODE = 0o644;
-const DEFAULT_ADMIN_MULTI_PORTAL_UID = '__default_admin__';
-const DEFAULT_ADMIN_VIBE_CODING_MULTI_PORTAL_UID = '__default_admin_vibe_coding__';
-const DEFAULT_MOBILE_MULTI_PORTAL_UID = '__default_mobile__';
+const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
+const DEFAULT_MULTI_PORTAL_UID = '__default_portal__';
 const MULTI_PORTAL_SLUG_PATTERN = /^[a-z0-9_-]+$/;
-const DEFAULT_MULTI_PORTALS = [
-  {
-    uid: DEFAULT_ADMIN_MULTI_PORTAL_UID,
-    title: 'Admin',
-    icon: 'DesktopOutlined',
-    developmentMode: 'no-code',
-    routeName: 'admin',
-    routePath: '/admin',
-    authCheck: true,
-    enabled: true,
-    uiLayoutUid: 'admin-layout-model',
-  },
-  {
-    uid: DEFAULT_ADMIN_VIBE_CODING_MULTI_PORTAL_UID,
-    title: 'Admin',
-    icon: 'DesktopOutlined',
-    developmentMode: 'vibe-coding',
-    routeName: 'admin',
-    routePath: '/admin',
-    authCheck: true,
-    enabled: true,
-    uiLayoutUid: 'admin-layout-model',
-  },
-  {
-    uid: DEFAULT_MOBILE_MULTI_PORTAL_UID,
-    title: 'Mobile',
-    icon: 'MobileOutlined',
-    developmentMode: 'no-code',
-    routeName: 'mobile',
-    routePath: '/mobile',
-    authCheck: true,
-    enabled: true,
-    uiLayoutUid: 'mobile-layout-model',
-  },
-] as const;
-const DEFAULT_MULTI_PORTAL_UIDS = DEFAULT_MULTI_PORTALS.map((portal) => portal.uid);
+const INIT_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
+const DEFAULT_MULTI_PORTAL_UIDS = [DEFAULT_MULTI_PORTAL_UID] as const;
 const DEFAULT_MULTI_PORTAL_UID_SET = new Set<string>(DEFAULT_MULTI_PORTAL_UIDS);
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
@@ -143,7 +111,18 @@ type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
 };
-type DefaultMultiPortalRecord = (typeof DEFAULT_MULTI_PORTALS)[number];
+type InitDevelopmentMode = (typeof INIT_DEVELOPMENT_MODES)[number];
+type DefaultMultiPortalRecord = {
+  uid: string;
+  title: string;
+  icon: string;
+  developmentMode: InitDevelopmentMode;
+  routeName: string;
+  routePath: string;
+  authCheck: boolean;
+  enabled: boolean;
+  uiLayoutUid: string;
+};
 type AppPortalManifestItem = {
   uid: string;
   title: string;
@@ -176,6 +155,7 @@ type PortalStorageCommandOptions = {
   cwd: string;
   env: NodeJS.ProcessEnv;
   logPath: string;
+  timeoutMs?: number;
 };
 type PortalStorageCommandError = Error & {
   code?: string | number | null;
@@ -193,6 +173,10 @@ type MultiPortalDeployContext = ResourcerContext & {
     file?: UploadedFile;
     body?: Record<string, unknown>;
   };
+};
+type ResolvedPortalTemplate = {
+  dir: string;
+  cleanup?: () => Promise<void>;
 };
 
 function getRecordField(record: unknown, field: string) {
@@ -225,6 +209,54 @@ async function pathExists(filePath: string): Promise<boolean> {
 
 function trimString(value: unknown) {
   return String(value ?? '').trim();
+}
+
+function isInitDevelopmentMode(value: string): value is InitDevelopmentMode {
+  return (INIT_DEVELOPMENT_MODES as readonly string[]).includes(value);
+}
+
+function getInitDevelopmentMode() {
+  const developmentMode = trimString(process.env.INIT_DEVELOPMENT_MODE) || DEFAULT_INIT_DEVELOPMENT_MODE;
+  if (!isInitDevelopmentMode(developmentMode)) {
+    throw new Error('INIT_DEVELOPMENT_MODE must be either "no-code" or "vibe-coding".');
+  }
+  return developmentMode;
+}
+
+function getInitPortalName() {
+  const portalName = trimString(process.env.INIT_PORTAL_NAME) || DEFAULT_INIT_PORTAL_NAME;
+  if (!MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
+    throw new Error('INIT_PORTAL_NAME can only contain lowercase letters, numbers, hyphens, and underscores.');
+  }
+  return portalName;
+}
+
+function getInitPortalTemplate() {
+  return trimString(process.env.INIT_PORTAL_TEMPLATE) || DEFAULT_INIT_PORTAL_TEMPLATE;
+}
+
+function formatInitPortalTitle(portalName: string) {
+  const title = portalName
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((segment) => `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`)
+    .join(' ');
+  return title || portalName;
+}
+
+function getDefaultMultiPortalRecord(): DefaultMultiPortalRecord {
+  const routeName = getInitPortalName();
+  return {
+    uid: DEFAULT_MULTI_PORTAL_UID,
+    title: formatInitPortalTitle(routeName),
+    icon: 'DesktopOutlined',
+    developmentMode: getInitDevelopmentMode(),
+    routeName,
+    routePath: `/${routeName}`,
+    authCheck: true,
+    enabled: true,
+    uiLayoutUid: 'admin-layout-model',
+  };
 }
 
 function isValidPortalDeploySegment(value: string) {
@@ -343,12 +375,121 @@ function formatPortalStorageCommand(command: string, args: string[]) {
   return [command, ...args].join(' ');
 }
 
-function resolveDefaultPortalTemplateDir(): string {
-  try {
-    return path.dirname(require.resolve(`${DEFAULT_PORTAL_TEMPLATE_PACKAGE}/package.json`));
-  } catch {
-    throw new Error(`Default Portal template package "${DEFAULT_PORTAL_TEMPLATE_PACKAGE}" is not installed.`);
+function getLocalPortalTemplatePath(templateSource: string): string | null {
+  if (templateSource.startsWith('file://')) {
+    try {
+      return fileURLToPath(templateSource);
+    } catch {
+      return null;
+    }
   }
+  if (path.isAbsolute(templateSource) || templateSource.startsWith('./') || templateSource.startsWith('../')) {
+    return path.resolve(templateSource);
+  }
+  return null;
+}
+
+async function resolveLocalPortalTemplate(templateSource: string): Promise<ResolvedPortalTemplate | null> {
+  const localPath = getLocalPortalTemplatePath(templateSource);
+  if (!localPath) {
+    return null;
+  }
+
+  let stat: fs.Stats;
+  try {
+    stat = await fs.promises.stat(localPath);
+  } catch {
+    throw new Error(`Portal template "${templateSource}" is invalid: local directory does not exist.`);
+  }
+  if (!stat.isDirectory()) {
+    throw new Error(`Portal template "${templateSource}" is invalid: expected a directory.`);
+  }
+  if (!(await pathExists(path.join(localPath, 'package.json')))) {
+    throw new Error(`Portal template "${templateSource}" is invalid: package.json is missing.`);
+  }
+  return { dir: localPath };
+}
+
+function resolveInstalledPortalTemplatePackage(templatePackage: string): ResolvedPortalTemplate | null {
+  try {
+    return { dir: path.dirname(require.resolve(`${templatePackage}/package.json`)) };
+  } catch {
+    return null;
+  }
+}
+
+async function resolvePackedPortalTemplateTarball(packRoot: string, templatePackage: string): Promise<string> {
+  const entries = await fs.promises.readdir(packRoot, { withFileTypes: true });
+  const tarballs = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.tgz'))
+    .map((entry) => path.join(packRoot, entry.name))
+    .sort();
+
+  if (tarballs.length === 1) {
+    return tarballs[0];
+  }
+  if (!tarballs.length) {
+    throw new Error(`npm pack did not produce a local tarball for ${templatePackage}.`);
+  }
+  throw new Error(`npm pack produced multiple tarballs for ${templatePackage}.`);
+}
+
+async function downloadPortalTemplatePackage(
+  templatePackage: string,
+  logPath: string,
+): Promise<ResolvedPortalTemplate> {
+  const packRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-pack-'));
+  const extractRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-template-extract-'));
+  let cleanupPackRoot = true;
+  let cleanupExtractRoot = true;
+
+  try {
+    await runPortalStorageCommandOnce('npm', ['pack', '--silent', templatePackage], {
+      cwd: packRoot,
+      env: getPortalStorageCommandEnv(),
+      logPath,
+      timeoutMs: PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS,
+    });
+    const tarballPath = await resolvePackedPortalTemplateTarball(packRoot, templatePackage);
+    await pipeline(fs.createReadStream(tarballPath), createGunzip(), tar.extract({ cwd: extractRoot, strip: 1 }));
+    if (!(await pathExists(path.join(extractRoot, 'package.json')))) {
+      throw new Error(`Portal template package "${templatePackage}" is invalid: package.json is missing.`);
+    }
+
+    cleanupPackRoot = false;
+    cleanupExtractRoot = false;
+    return {
+      dir: extractRoot,
+      cleanup: async () => {
+        await fs.promises.rm(packRoot, { recursive: true, force: true });
+        await fs.promises.rm(extractRoot, { recursive: true, force: true });
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to download portal template package "${templatePackage}" with npm pack. ${message}`);
+  } finally {
+    if (cleanupPackRoot) {
+      await fs.promises.rm(packRoot, { recursive: true, force: true });
+    }
+    if (cleanupExtractRoot) {
+      await fs.promises.rm(extractRoot, { recursive: true, force: true });
+    }
+  }
+}
+
+async function resolvePortalTemplate(templateSource: string, logPath: string): Promise<ResolvedPortalTemplate> {
+  const localTemplate = await resolveLocalPortalTemplate(templateSource);
+  if (localTemplate) {
+    return localTemplate;
+  }
+
+  const installedTemplate = resolveInstalledPortalTemplatePackage(templateSource);
+  if (installedTemplate) {
+    return installedTemplate;
+  }
+
+  return downloadPortalTemplatePackage(templateSource, logPath);
 }
 
 async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
@@ -392,6 +533,12 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
     env: options.env,
     shell: false,
   });
+  let timeout: NodeJS.Timeout | undefined;
+  if (options.timeoutMs && options.timeoutMs > 0) {
+    timeout = setTimeout(() => {
+      subprocess.kill?.('SIGTERM');
+    }, options.timeoutMs);
+  }
 
   subprocess.stdout?.pipe(logStream, { end: false });
   subprocess.stderr?.pipe(logStream, { end: false });
@@ -401,6 +548,9 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
     result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
       subprocess.once('error', reject);
       subprocess.once('close', (code, signal) => {
+        if (timeout) {
+          clearTimeout(timeout);
+        }
         resolve({ code, signal });
       });
     });
@@ -415,6 +565,9 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
       });
     });
   } catch (error) {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
     logStream.end();
     await appendPortalStorageLog(options.logPath, `Command failed to start: ${command}`);
     throw error;
@@ -426,6 +579,16 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
       result.signal ?? ''
     }`,
   );
+
+  if (result.signal) {
+    const error = new Error(
+      `Command failed with signal ${result.signal}: ${formatPortalStorageCommand(command, args)}`,
+    ) as PortalStorageCommandError;
+    error.code = result.code;
+    error.signal = result.signal;
+    error.cmd = formatPortalStorageCommand(command, args);
+    throw error;
+  }
 
   if (result.code && result.code !== 0) {
     const error = new Error(
@@ -728,8 +891,8 @@ function isDefaultMultiPortalUid(uid: unknown): uid is string {
   return typeof uid === 'string' && DEFAULT_MULTI_PORTAL_UID_SET.has(uid);
 }
 
-function getDefaultMultiPortalRecord(uid: unknown): DefaultMultiPortalRecord | undefined {
-  return DEFAULT_MULTI_PORTALS.find((portal) => portal.uid === uid);
+function getDefaultMultiPortalRecordForUid(uid: unknown): DefaultMultiPortalRecord | undefined {
+  return isDefaultMultiPortalUid(uid) ? getDefaultMultiPortalRecord() : undefined;
 }
 
 function getDefaultMultiPortalUiLayoutUid(portal: DefaultMultiPortalRecord) {
@@ -914,42 +1077,41 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
 
 async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOptions) {
   const repository = db.getRepository('multiPortals');
-  for (const defaultPortal of DEFAULT_MULTI_PORTALS) {
-    const existing = await repository.findOne({
-      filterByTk: defaultPortal.uid,
-      fields: ['uid', 'title', 'icon', 'developmentMode', 'routeName', 'routePath', 'authCheck', 'uiLayoutUid'],
+  const defaultPortal = getDefaultMultiPortalRecord();
+  const existing = await repository.findOne({
+    filterByTk: defaultPortal.uid,
+    fields: ['uid', 'title', 'icon', 'developmentMode', 'routeName', 'routePath', 'authCheck', 'uiLayoutUid'],
+    transaction: options?.transaction,
+  });
+
+  if (!existing) {
+    await repository.create({
+      values: defaultPortal,
       transaction: options?.transaction,
     });
+    return;
+  }
 
-    if (!existing) {
-      await repository.create({
-        values: defaultPortal,
-        transaction: options?.transaction,
-      });
-      continue;
-    }
-
-    const protectedValues = {
-      uid: defaultPortal.uid,
-      developmentMode: defaultPortal.developmentMode ?? null,
-      routeName: defaultPortal.routeName,
-      routePath: defaultPortal.routePath,
-      authCheck: defaultPortal.authCheck,
-      uiLayoutUid: getDefaultMultiPortalUiLayoutUid(defaultPortal),
-    };
-    const shouldRepair = Object.entries(protectedValues).some(([field, value]) => existing.get(field) !== value);
-    if (shouldRepair) {
-      await repository.update({
-        filterByTk: defaultPortal.uid,
-        values: protectedValues,
-        transaction: options?.transaction,
-      });
-    }
+  const protectedValues = {
+    uid: defaultPortal.uid,
+    developmentMode: defaultPortal.developmentMode ?? null,
+    routeName: defaultPortal.routeName,
+    routePath: defaultPortal.routePath,
+    authCheck: defaultPortal.authCheck,
+    uiLayoutUid: getDefaultMultiPortalUiLayoutUid(defaultPortal),
+  };
+  const shouldRepair = Object.entries(protectedValues).some(([field, value]) => existing.get(field) !== value);
+  if (shouldRepair) {
+    await repository.update({
+      filterByTk: defaultPortal.uid,
+      values: protectedValues,
+      transaction: options?.transaction,
+    });
   }
 }
 
 async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () => Promise<void>) {
-  const defaultPortal = getDefaultMultiPortalRecord(ctx.action?.params.filterByTk);
+  const defaultPortal = getDefaultMultiPortalRecordForUid(ctx.action?.params.filterByTk);
   if (!defaultPortal) {
     await next();
     return;
@@ -1795,9 +1957,14 @@ export class PluginMultiPortalServer extends Plugin {
     return Promise.allSettled(tasks).then(() => undefined);
   }
 
-  private schedulePortalTemplateCopyAndBuild(item: MultiPortalStorageItem, templateDir: string, portalDir: string) {
+  private async schedulePortalTemplateCopyAndBuild(
+    item: MultiPortalStorageItem,
+    template: ResolvedPortalTemplate,
+    portalDir: string,
+  ) {
     const taskKey = this.getPortalStorageTaskKey(item);
     if (this.portalStorageTaskKeys.has(taskKey)) {
+      await template.cleanup?.();
       return;
     }
 
@@ -1810,8 +1977,11 @@ export class PluginMultiPortalServer extends Plugin {
           `Portal storage create task started for ${item.appName}/${item.portalName}.`,
         );
         if (!(await pathExists(portalDir))) {
-          await appendPortalStorageLog(logPath, `Copying default portal template from ${templateDir} to ${portalDir}.`);
-          await copyPortalTemplate(templateDir, portalDir);
+          await appendPortalStorageLog(
+            logPath,
+            `Copying default portal template from ${template.dir} to ${portalDir}.`,
+          );
+          await copyPortalTemplate(template.dir, portalDir);
           await appendPortalStorageLog(logPath, `Default portal template copied to ${portalDir}.`);
         }
 
@@ -1829,6 +1999,7 @@ export class PluginMultiPortalServer extends Plugin {
         );
         this.warnPortalStorageSyncFailed(error);
       } finally {
+        await template.cleanup?.();
         this.portalStorageTaskKeys.delete(taskKey);
         this.portalStorageTasks.delete(taskKey);
       }
@@ -1838,12 +2009,12 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   private async ensurePortalStorageItem(item: MultiPortalStorageItem) {
-    const templateDir = resolveDefaultPortalTemplateDir();
     const portalDir = storagePathJoin('portals', item.appName, item.portalName);
     const portalIndex = path.join(portalDir, 'dist', 'index.html');
 
     if (!(await pathExists(portalDir))) {
-      this.schedulePortalTemplateCopyAndBuild(item, templateDir, portalDir);
+      const template = await resolvePortalTemplate(getInitPortalTemplate(), getPortalStorageLogPath(item));
+      await this.schedulePortalTemplateCopyAndBuild(item, template, portalDir);
       return;
     }
 

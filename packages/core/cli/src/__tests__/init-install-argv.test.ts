@@ -172,7 +172,7 @@ test('buildInstallArgv forwards vibe-coding portal init options for new installs
       dbDialect: 'postgres',
       developmentMode: 'vibe-coding',
       portalName: 'admin',
-      portalTemplate: 'git@github.com:nocobase/admin-starter.git',
+      portalTemplate: '@nocobase/portal-template-default',
     },
     {
       yes: true,
@@ -184,7 +184,7 @@ test('buildInstallArgv forwards vibe-coding portal init options for new installs
   expect(argv).toContain('--portal-name');
   expect(argv).toContain('admin');
   expect(argv).toContain('--portal-template');
-  expect(argv).toContain('git@github.com:nocobase/admin-starter.git');
+  expect(argv).toContain('@nocobase/portal-template-default');
 });
 
 test('buildInstallArgv forwards hook script for new installs', () => {

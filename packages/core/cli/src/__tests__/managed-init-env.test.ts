@@ -20,7 +20,7 @@ test('buildInitAppEnvVarsFromConfig includes initial development mode and portal
       rootNickname: 'Super Admin',
       developmentMode: 'vibe-coding',
       portalName: 'admin',
-      portalTemplate: 'git@github.com:nocobase/admin-starter.git',
+      portalTemplate: '@nocobase/portal-template-default',
     }),
   ).toEqual({
     INIT_APP_LANG: 'en-US',
@@ -30,7 +30,7 @@ test('buildInitAppEnvVarsFromConfig includes initial development mode and portal
     INIT_ROOT_NICKNAME: 'Super Admin',
     INIT_DEVELOPMENT_MODE: 'vibe-coding',
     INIT_PORTAL_NAME: 'admin',
-    INIT_PORTAL_TEMPLATE: 'git@github.com:nocobase/admin-starter.git',
+    INIT_PORTAL_TEMPLATE: '@nocobase/portal-template-default',
   });
 });
 

@@ -32,7 +32,6 @@ import {
 } from '../../lib/app-managed-resources.js';
 import { clearEnvRootSetup, getEnv, upsertEnv } from '../../lib/auth-store.js';
 import { buildInitAppEnvVarsFromConfig, isPreparedSetupState } from '../../lib/managed-init-env.js';
-import { prepareInitialPortalTemplate } from '../../lib/portal-template.js';
 import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { readManagedRuntimeEnvValues } from '../../lib/managed-env-file.js';
 import { run } from '../../lib/run-npm.js';
@@ -257,23 +256,6 @@ async function finalizePreparedEnv(envName: string): Promise<void> {
   });
 }
 
-async function prepareInitialPortalForRuntime(
-  runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
-  verbose?: boolean,
-): Promise<void> {
-  await prepareInitialPortalTemplate({
-    developmentMode: runtime.env.config?.developmentMode,
-    portalName: runtime.env.config?.portalName,
-    portalTemplate: runtime.env.config?.portalTemplate,
-    npmRegistry: runtime.env.config?.npmRegistry,
-    storagePath: runtime.env.storagePath || runtime.env.config?.storagePath,
-    verbose,
-    onStartTask: startTask,
-    onSucceedTask: succeedTask,
-    onFailTask: failTask,
-  });
-}
-
 export default class AppStart extends Command {
   static override hidden = false;
   static override description =
@@ -346,7 +328,7 @@ export default class AppStart extends Command {
 
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
     const runtime = await resolveManagedAppRuntime(requestedEnv);
-    const preparedInitEnvVars = buildInitAppEnvVarsFromConfig(runtime?.env.config, { includePortal: false });
+    const preparedInitEnvVars = buildInitAppEnvVarsFromConfig(runtime?.env.config);
     const isPreparedEnv = isPreparedSetupState(runtime?.env.config?.setupState);
     const hookCommand = resolveHookCommand(flags['hook-command']);
     const hookPhase = resolveAppStartHookPhase({
@@ -440,9 +422,6 @@ export default class AppStart extends Command {
             phase: hookPhase,
             command: hookCommand,
           });
-        }
-        if (isPreparedEnv) {
-          await prepareInitialPortalForRuntime(runtime, flags.verbose);
         }
         await recreateSavedDockerApp(runtime, {
           initEnvVars: isPreparedEnv ? preparedInitEnvVars : undefined,
@@ -613,9 +592,6 @@ export default class AppStart extends Command {
           phase: hookPhase,
           command: hookCommand,
         });
-      }
-      if (isPreparedEnv) {
-        await prepareInitialPortalForRuntime(runtime, flags.verbose);
       }
       await runLocalNocoBaseCommand(runtime, npmArgs, {
         env: startEnv,

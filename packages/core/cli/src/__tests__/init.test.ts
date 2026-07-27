@@ -2448,7 +2448,7 @@ test('nb init --yes uses the built-in portal template when no config default is 
       | string[]
       | undefined;
     expect(installArgv).toEqual(
-      expect.arrayContaining(['--portal-template', 'git@github.com:nocobase/admin-starter.git']),
+      expect.arrayContaining(['--portal-template', '@nocobase/portal-template-default']),
     );
   } finally {
     process.argv = originalArgv;

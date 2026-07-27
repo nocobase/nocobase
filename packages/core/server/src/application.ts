@@ -69,7 +69,6 @@ import { dataTemplate } from './middlewares/data-template';
 import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { initializePortalFromEnv } from './portal-init';
 import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
 import { SyncMessageManager } from './sync-message-manager';
 
@@ -1070,9 +1069,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug('emit afterInstall', { method: 'install' });
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
-
-    this.setMaintainingMessage('initialize portal...');
-    await initializePortalFromEnv({ appName: this.name });
 
     if (this._maintainingStatusBeforeCommand?.error) {
       return;

@@ -68,7 +68,6 @@ import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
-import { prepareInitialPortalTemplate } from '../lib/portal-template.js';
 import {
   buildHookContext,
   persistHookScript,
@@ -107,7 +106,7 @@ const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
 const DEFAULT_INSTALL_DEVELOPMENT_MODE = 'no-code';
 const DEFAULT_INSTALL_PORTAL_NAME = 'admin';
-const DEFAULT_INSTALL_PORTAL_TEMPLATE = 'git@github.com:nocobase/admin-starter.git';
+const DEFAULT_INSTALL_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const INSTALL_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
 
 function toOptionalPromptString(value: unknown): string | undefined {
@@ -2460,7 +2459,6 @@ export default class Install extends Command {
         appResults: params.appResults,
         rootResults: params.rootResults,
       },
-      { includePortal: false },
     );
     const containerPort = resolveDockerImageContainerPort(imageRef);
     const args = [
@@ -2865,7 +2863,6 @@ export default class Install extends Command {
           appResults: params.appResults,
           rootResults: params.rootResults,
         },
-        { includePortal: false },
       ),
     };
     setOptionalEnvVar(env, 'APP_PUBLIC_PATH', Install.toOptionalPromptString(params.appResults.appPublicPath));
@@ -3131,24 +3128,6 @@ export default class Install extends Command {
       argv.push('--verbose');
     }
     return argv;
-  }
-
-  private async prepareInitialPortalIfNeeded(params: {
-    envName: string;
-    appResults: Record<string, PromptValue>;
-    verbose?: boolean;
-  }): Promise<void> {
-    await prepareInitialPortalTemplate({
-      developmentMode: Install.toOptionalPromptString(params.appResults.developmentMode),
-      portalName: Install.toOptionalPromptString(params.appResults.portalName),
-      portalTemplate: Install.toOptionalPromptString(params.appResults.portalTemplate),
-      npmRegistry: Install.toOptionalPromptString(params.appResults.npmRegistry),
-      storagePath: Install.resolveAbsoluteStoragePath(params.envName, params.appResults),
-      verbose: params.verbose,
-      onStartTask: (message) => this.logStage(message),
-      onSucceedTask: (message) => printInfo(message),
-      onFailTask: (message) => printWarning(message),
-    });
   }
 
   private async runInstallHookIfNeeded(params: {
@@ -3574,14 +3553,6 @@ export default class Install extends Command {
         dbResults,
         rootResults,
         envAddResults,
-      });
-    }
-
-    if (shouldStartApp) {
-      await this.prepareInitialPortalIfNeeded({
-        envName,
-        appResults,
-        verbose: parsed.verbose,
       });
     }
 

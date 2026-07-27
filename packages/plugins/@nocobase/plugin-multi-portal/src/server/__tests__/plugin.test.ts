@@ -36,16 +36,25 @@ const spawnMock = vi.hoisted(() => {
 
     process.nextTick(() => {
       const isBuildCommand = command === 'yarn' && args[0] === 'build:html';
+      const isNpmPackCommand = command === 'npm' && args[0] === 'pack';
       subprocess.stdout.write(`${command} ${args.join(' ')} stdout\n`);
       subprocess.stderr.write(`${command} ${args.join(' ')} stderr\n`);
       subprocess.stdout.end();
       subprocess.stderr.end();
-      if (isBuildCommand && options.cwd) {
-        const distDir = pathSync.join(options.cwd, 'dist');
-        fsSync.mkdirSync(distDir, { recursive: true });
-        fsSync.writeFileSync(pathSync.join(distDir, 'index.html'), options.env?.NOCOBASE_PORTAL_BASE || '');
+      if (isNpmPackCommand && options.cwd && process.env.TEST_PORTAL_TEMPLATE_TARBALL) {
+        fsSync.copyFileSync(
+          process.env.TEST_PORTAL_TEMPLATE_TARBALL,
+          pathSync.join(options.cwd, pathSync.basename(process.env.TEST_PORTAL_TEMPLATE_TARBALL)),
+        );
       }
-      subprocess.emit('close', 0, null);
+      if (isBuildCommand && options.cwd) {
+        if (process.env.TEST_PORTAL_BUILD_FAIL !== 'true') {
+          const distDir = pathSync.join(options.cwd, 'dist');
+          fsSync.mkdirSync(distDir, { recursive: true });
+          fsSync.writeFileSync(pathSync.join(distDir, 'index.html'), options.env?.NOCOBASE_PORTAL_BASE || '');
+        }
+      }
+      subprocess.emit('close', isBuildCommand && process.env.TEST_PORTAL_BUILD_FAIL === 'true' ? 1 : 0, null);
     });
 
     return subprocess;
@@ -131,6 +140,9 @@ const originalApiBaseUrl = process.env.API_BASE_URL;
 const originalNocobaseApiUrl = process.env.NOCOBASE_API_URL;
 const originalNodeOptions = process.env.NODE_OPTIONS;
 const originalStoragePath = process.env.STORAGE_PATH;
+const originalInitDevelopmentMode = process.env.INIT_DEVELOPMENT_MODE;
+const originalInitPortalName = process.env.INIT_PORTAL_NAME;
+const originalInitPortalTemplate = process.env.INIT_PORTAL_TEMPLATE;
 
 interface RouteResponseItem {
   title?: string;
@@ -186,6 +198,31 @@ async function createPortalDistArchive(rootDir: string, files: Record<string, st
   return archivePath;
 }
 
+async function createPortalTemplate(rootDir: string, files: Record<string, string> = {}) {
+  const templateDir = path.join(rootDir, `template-${Date.now()}-${Math.random().toString().slice(2)}`);
+  await mkdir(templateDir, { recursive: true });
+  await writeFile(path.join(templateDir, 'package.json'), '{"name":"portal-template"}\n', 'utf-8');
+  for (const [fileName, content] of Object.entries(files)) {
+    await mkdir(path.dirname(path.join(templateDir, fileName)), { recursive: true });
+    await writeFile(path.join(templateDir, fileName), content, 'utf-8');
+  }
+  return templateDir;
+}
+
+async function createPortalTemplateTarball(rootDir: string, templateDir: string) {
+  const archivePath = path.join(rootDir, `portal-template-${Date.now()}-${Math.random().toString().slice(2)}.tgz`);
+  await tar.create(
+    {
+      cwd: templateDir,
+      file: archivePath,
+      gzip: true,
+      prefix: 'package/',
+    },
+    await readdir(templateDir),
+  );
+  return archivePath;
+}
+
 async function waitForPath(filePath: string, timeoutMs = 5000) {
   const deadline = Date.now() + timeoutMs;
   let lastError: unknown;
@@ -199,6 +236,23 @@ async function waitForPath(filePath: string, timeoutMs = 5000) {
     }
   }
   throw lastError instanceof Error ? lastError : new Error(`Timed out waiting for ${filePath}`);
+}
+
+async function waitForFileContent(filePath: string, expected: string, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  let content = '';
+  while (Date.now() < deadline) {
+    try {
+      content = await readFile(filePath, 'utf-8');
+      if (content.includes(expected)) {
+        return content;
+      }
+    } catch {
+      // keep polling until the async portal storage task writes the log
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error(`Timed out waiting for ${filePath} to contain ${expected}. Last content: ${content}`);
 }
 
 describe('plugin-multi-portal server', () => {
@@ -252,6 +306,23 @@ describe('plugin-multi-portal server', () => {
     } else {
       process.env.NODE_OPTIONS = originalNodeOptions;
     }
+    if (originalInitDevelopmentMode === undefined) {
+      delete process.env.INIT_DEVELOPMENT_MODE;
+    } else {
+      process.env.INIT_DEVELOPMENT_MODE = originalInitDevelopmentMode;
+    }
+    if (originalInitPortalName === undefined) {
+      delete process.env.INIT_PORTAL_NAME;
+    } else {
+      process.env.INIT_PORTAL_NAME = originalInitPortalName;
+    }
+    if (originalInitPortalTemplate === undefined) {
+      delete process.env.INIT_PORTAL_TEMPLATE;
+    } else {
+      process.env.INIT_PORTAL_TEMPLATE = originalInitPortalTemplate;
+    }
+    delete process.env.TEST_PORTAL_TEMPLATE_TARBALL;
+    delete process.env.TEST_PORTAL_BUILD_FAIL;
   });
 
   it('should load with UI Layout without adding core dependencies', async () => {
@@ -418,7 +489,7 @@ describe('plugin-multi-portal server', () => {
     expect(persistedInvalidLayoutPortal?.get('uiLayout')).toBeFalsy();
   });
 
-  it('should initialize default portals with development modes', async () => {
+  it('should initialize one default portal from environment variables', async () => {
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
@@ -429,42 +500,199 @@ describe('plugin-multi-portal server', () => {
     await plugin.install();
     const response = await app.agent().resource('multiPortals').list();
     const portals = response.body.data as Array<Record<string, unknown>>;
-    const noCodeAdminPortal = await app.db.getRepository('multiPortals').findOne({
-      filterByTk: '__default_admin__',
-      fields: ['uid', 'uiLayoutUid'],
-    });
-    const vibeCodingAdminPortal = await app.db.getRepository('multiPortals').findOne({
-      filterByTk: '__default_admin_vibe_coding__',
+    const defaultPortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_portal__',
       fields: ['uid', 'uiLayoutUid'],
     });
 
     expect(response.status).toBe(200);
-    expect(noCodeAdminPortal?.get('uiLayoutUid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
-    expect(vibeCodingAdminPortal?.get('uiLayoutUid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
-    expect(portals).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          uid: '__default_admin__',
-          title: 'Admin',
-          developmentMode: 'no-code',
-          routeName: 'admin',
-          routePath: '/admin',
+    expect(defaultPortal?.get('uiLayoutUid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
+    expect(portals).toEqual([
+      expect.objectContaining({
+        uid: '__default_portal__',
+        title: 'Admin',
+        developmentMode: 'no-code',
+        routeName: 'admin',
+        routePath: '/admin',
+      }),
+    ]);
+  });
+
+  it('should apply INIT_PORTAL_NAME to the default portal', async () => {
+    process.env.INIT_PORTAL_NAME = 'workspace_home';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
+    const defaultPortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_portal__',
+    });
+
+    expect(defaultPortal?.get('title')).toBe('Workspace Home');
+    expect(defaultPortal?.get('routeName')).toBe('workspace_home');
+    expect(defaultPortal?.get('routePath')).toBe('/workspace_home');
+  });
+
+  it('should initialize a vibe-coding default portal with the init template', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_PORTAL_NAME = 'workspace';
+    process.env.INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
+
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'workspace');
+    const defaultPortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_portal__',
+    });
+
+    expect(defaultPortal?.get('developmentMode')).toBe('vibe-coding');
+    expect(defaultPortal?.get('routeName')).toBe('workspace');
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/workspace/');
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+        env: expect.objectContaining({
+          NOCOBASE_PORTAL_BASE: '/console/x/workspace/',
         }),
-        expect.objectContaining({
-          uid: '__default_admin_vibe_coding__',
-          title: 'Admin',
-          developmentMode: 'vibe-coding',
-          routeName: 'admin',
-          routePath: '/admin',
-        }),
-        expect.objectContaining({
-          uid: '__default_mobile__',
-          title: 'Mobile',
-          developmentMode: 'no-code',
-          routeName: 'mobile',
-          routePath: '/mobile',
-        }),
-      ]),
+      }),
+    );
+  });
+
+  it('should initialize a vibe-coding default portal from a local init template', async () => {
+    const templateDir = await createPortalTemplate(storagePath as string, {
+      'src/index.tsx': 'export default null;\n',
+      '.git/config': '[core]\n',
+      'node_modules/stale/index.js': 'module.exports = null;\n',
+      '.DS_Store': '',
+      '._shadow': '',
+    });
+    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_PORTAL_NAME = 'workspace';
+    process.env.INIT_PORTAL_TEMPLATE = templateDir;
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
+
+    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await expect(access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, '.git'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, '._shadow'))).rejects.toThrow();
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+      }),
+    );
+  });
+
+  it('should download npm package init templates with npm pack when not installed locally', async () => {
+    const templateDir = await createPortalTemplate(storagePath as string, {
+      'src/index.tsx': 'export default null;\n',
+    });
+    process.env.TEST_PORTAL_TEMPLATE_TARBALL = await createPortalTemplateTarball(storagePath as string, templateDir);
+    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_PORTAL_NAME = 'workspace';
+    process.env.INIT_PORTAL_TEMPLATE = '@nocobase/missing-portal-template';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await plugin.install();
+
+    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    expect(spawnMock).toHaveBeenNthCalledWith(
+      1,
+      'npm',
+      ['pack', '--silent', '@nocobase/missing-portal-template'],
+      expect.objectContaining({
+        cwd: expect.any(String),
+      }),
+    );
+    expect(spawnMock).toHaveBeenNthCalledWith(
+      2,
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+      }),
+    );
+  });
+
+  it('should not fail plugin install when the init portal build fails', async () => {
+    const templateDir = await createPortalTemplate(storagePath as string, {
+      'src/index.tsx': 'export default null;\n',
+    });
+    process.env.TEST_PORTAL_BUILD_FAIL = 'true';
+    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_PORTAL_NAME = 'workspace';
+    process.env.INIT_PORTAL_TEMPLATE = templateDir;
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await expect(plugin.install()).resolves.toBeUndefined();
+
+    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
+    await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(
+      waitForFileContent(
+        path.join(storagePath as string, 'logs', 'portals', app.name || 'main', 'workspace.log'),
+        'Portal storage create task failed for',
+      ),
+    ).resolves.toContain('Portal storage create task failed for');
+  });
+
+  it('should reject invalid init environment variables', async () => {
+    process.env.INIT_DEVELOPMENT_MODE = 'invalid';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    await expect(plugin.install()).rejects.toThrow('INIT_DEVELOPMENT_MODE must be either "no-code" or "vibe-coding".');
+
+    process.env.INIT_DEVELOPMENT_MODE = 'no-code';
+    process.env.INIT_PORTAL_NAME = 'Admin';
+    await expect(plugin.install()).rejects.toThrow(
+      'INIT_PORTAL_NAME can only contain lowercase letters, numbers, hyphens, and underscores.',
     );
   });
 
@@ -478,20 +706,20 @@ describe('plugin-multi-portal server', () => {
     const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
     await plugin.install();
     const response = await app.agent().resource('multiPortals').destroy({
-      filterByTk: '__default_mobile__',
+      filterByTk: '__default_portal__',
     });
-    const mobilePortal = await app.db.getRepository('multiPortals').findOne({
-      filterByTk: '__default_mobile__',
+    const defaultPortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_portal__',
     });
     const listResponse = await app.agent().resource('multiPortals').list();
     const portals = listResponse.body.data as Array<Record<string, unknown>>;
 
     expect(response.status).toBe(200);
-    expect(mobilePortal).toBeNull();
+    expect(defaultPortal).toBeNull();
     expect(portals).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          uid: '__default_mobile__',
+          uid: '__default_portal__',
         }),
       ]),
     );
@@ -510,19 +738,19 @@ describe('plugin-multi-portal server', () => {
       .agent()
       .resource('multiPortals')
       .update({
-        filterByTk: '__default_mobile__',
+        filterByTk: '__default_portal__',
         values: {
           enabled: false,
-          routeName: 'changed-mobile',
+          routeName: 'changed-admin',
         },
       });
-    const mobilePortal = await app.db.getRepository('multiPortals').findOne({
-      filterByTk: '__default_mobile__',
+    const defaultPortal = await app.db.getRepository('multiPortals').findOne({
+      filterByTk: '__default_portal__',
     });
 
     expect(response.status).toBe(200);
-    expect(mobilePortal?.get('enabled')).toBe(false);
-    expect(mobilePortal?.get('routeName')).toBe('mobile');
+    expect(defaultPortal?.get('enabled')).toBe(false);
+    expect(defaultPortal?.get('routeName')).toBe('admin');
   });
 
   it('should publish custom enabled portal manifest through app supervisor', async () => {
