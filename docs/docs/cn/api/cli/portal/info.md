@@ -47,7 +47,7 @@ nb portal info customer --json-output
 
 `--json-output` 更适合脚本和 agent 链路继续消费。如果只是人工查看，默认表格或文本输出通常更直观。
 
-文本输出会显示名称、访问 URL、开发模式、本地路径、启用状态和本地同步状态。`--json-output` 输出的字段包括 `name`、`url`、`developmentMode`、`localPath`、`enabled`、`sourceStorage` 和 `localSynced`。
+文本输出会显示名称、访问 URL、Portal 类型、本地路径、启用状态和本地同步状态。`--json-output` 输出的字段包括 `name`、`url`、`portalType`、`localPath`、`enabled`、`sourceStorage` 和 `localSynced`。
 
 可以传入 Portal 的 `routeName` 或 `uid` 查询。
 

@@ -101,7 +101,7 @@ export default class PortalList extends Command {
         [
           portalListText('table.name', undefined, 'Name'),
           portalListText('table.url', undefined, 'URL'),
-          portalListText('table.developmentMode', undefined, 'Development mode'),
+          portalListText('table.portalType', undefined, 'Portal type'),
           portalListText('table.sourceStorage', undefined, 'Source storage'),
           portalListText('table.path', undefined, 'Local path'),
           portalListText('table.enabled', undefined, 'Enabled'),
@@ -110,7 +110,7 @@ export default class PortalList extends Command {
         outputItems.map((item) => [
           item.name,
           item.url,
-          item.developmentMode,
+          item.portalType,
           item.sourceStorage,
           item.localPath,
           formatBoolean(item.enabled),

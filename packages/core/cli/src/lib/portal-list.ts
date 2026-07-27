@@ -36,7 +36,7 @@ export type PortalListItem = {
   uid: string;
   routeName: string;
   routePath: string;
-  developmentMode: string;
+  portalType: string;
   enabled: boolean;
   sourceStorage: string;
   gitRepo: string;
@@ -52,7 +52,7 @@ export type PortalListItem = {
 export type PortalOutputItem = {
   name: string;
   url: string;
-  developmentMode: string;
+  portalType: string;
   localPath: string;
   enabled: boolean;
   sourceStorage: string;
@@ -192,7 +192,7 @@ export function toPortalOutputItem(item: PortalListItem): PortalOutputItem {
   return {
     name: item.routeName,
     url: item.portalUrl,
-    developmentMode: item.developmentMode,
+    portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
     enabled: item.enabled,
     sourceStorage: item.sourceStorage,
@@ -256,19 +256,19 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
       const uid = readRecordString(record, 'uid');
       const routeName = readRecordString(record, 'routeName') || uid;
       const routePath = readRecordString(record, 'routePath') || `/${routeName}`;
-      const developmentMode = readRecordString(record, 'developmentMode');
+      const portalType = readRecordString(record, 'portalType');
       const enabled = readRecordBoolean(record, 'enabled');
       const options = readRecordObject(record, 'options');
       const git = readRecordObject(options, 'git');
       const sourceStorage = trimValue(options.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
-      const isAi = developmentMode === 'ai';
+      const isAi = portalType === 'ai';
       const portalDir = isAi ? path.join(storagePath, 'portals', app, routeName) : '';
 
       return {
         uid,
         routeName,
         routePath,
-        developmentMode,
+        portalType,
         enabled,
         sourceStorage,
         gitRepo: trimValue(git.repo) || readRecordString(record, 'gitRepo'),

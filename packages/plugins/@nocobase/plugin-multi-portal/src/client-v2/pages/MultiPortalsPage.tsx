@@ -32,7 +32,7 @@ export type MultiPortalRecord = MultiPortalFormValues & {
 export type MultiPortalFormValues = {
   title: string;
   uid: string;
-  developmentMode: string;
+  portalType: string;
   routeName: string;
   routePath: string;
   uiLayoutUid?: string | null;
@@ -125,11 +125,11 @@ export async function deleteMultiPortals(args: {
   args.onDeleted();
 }
 
-const DEFAULT_DEVELOPMENT_MODE = 'no-code';
-const DEVELOPMENT_MODE_VALUES = ['no-code', 'ai'] as const;
+const DEFAULT_PORTAL_TYPE = 'no-code';
+const PORTAL_TYPE_VALUES = ['no-code', 'ai'] as const;
 
-const defaultFormValues: Pick<MultiPortalFormValues, 'developmentMode' | 'enabled'> = {
-  developmentMode: DEFAULT_DEVELOPMENT_MODE,
+const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'enabled'> = {
+  portalType: DEFAULT_PORTAL_TYPE,
   enabled: true,
 };
 
@@ -181,12 +181,12 @@ function normalizeOptionalString(value?: string | null) {
   return trimmed || null;
 }
 
-function normalizeDevelopmentMode(value?: string | null) {
+function normalizePortalType(value?: string | null) {
   const trimmed = normalizeOptionalString(value);
-  if (trimmed && DEVELOPMENT_MODE_VALUES.some((item) => item === trimmed)) {
+  if (trimmed && PORTAL_TYPE_VALUES.some((item) => item === trimmed)) {
     return trimmed;
   }
-  return DEFAULT_DEVELOPMENT_MODE;
+  return DEFAULT_PORTAL_TYPE;
 }
 
 function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): MultiPortalFormValues {
@@ -199,7 +199,7 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
     ...values,
     title: values.title.trim(),
     uid: values.uid.trim(),
-    developmentMode: normalizeDevelopmentMode(values.developmentMode),
+    portalType: normalizePortalType(values.portalType),
     routeName,
     routePath: getMultiPortalRoutePathFromSlug(routeName),
     icon: normalizeMultiPortalIcon(values.icon),
@@ -234,7 +234,7 @@ function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
   return {
     title: record.title,
     uid: record.uid,
-    developmentMode: normalizeDevelopmentMode(record.developmentMode),
+    portalType: normalizePortalType(record.portalType),
     routeName: record.routeName,
     routePath: record.routePath,
     uiLayoutUid: record.uiLayoutUid || record.uiLayout?.uid || '',
@@ -364,7 +364,7 @@ const MultiPortalsPage: React.FC = () => {
         dataIndex: 'routePath',
         ellipsis: true,
         render: (_value, record) => {
-          const href = getMultiPortalRouteUrl(ctx.app, record.routePath, record.developmentMode);
+          const href = getMultiPortalRouteUrl(ctx.app, record.routePath, record.portalType);
           return (
             <Button type="link" href={href} target="_blank" rel="noopener noreferrer" style={actionLinkButtonStyle}>
               {href}
@@ -403,7 +403,7 @@ const MultiPortalsPage: React.FC = () => {
           <Space size="small">
             <Button
               type="link"
-              href={getMultiPortalRouteUrl(ctx.app, record.routePath, record.developmentMode)}
+              href={getMultiPortalRouteUrl(ctx.app, record.routePath, record.portalType)}
               target="_blank"
               rel="noopener noreferrer"
               style={actionLinkButtonStyle}
@@ -582,14 +582,14 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           <Input disabled={record?.defaultPortal} />
         </Form.Item>
         <Form.Item
-          name="developmentMode"
-          label={t('Development mode')}
-          htmlFor="multi-portal-development-mode-no-code"
+          name="portalType"
+          label={t('Portal type')}
+          htmlFor="multi-portal-portal-type-no-code"
           rules={[{ required: true, message: t('The field value is required') }]}
         >
           <Radio.Group disabled={record?.defaultPortal}>
             <Space direction="vertical">
-              <Radio id="multi-portal-development-mode-no-code" value="no-code">
+              <Radio id="multi-portal-portal-type-no-code" value="no-code">
                 <span>{t('Human-led development')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
                   {t('Build your application using configuration and low-code tools, with AI as your assistant.')}
@@ -607,11 +607,11 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         <Form.Item
           name="uiLayoutUid"
           label={t('Layout')}
-          dependencies={['developmentMode']}
+          dependencies={['portalType']}
           rules={[
             {
               validator: (_, value?: string | null) => {
-                if (form.getFieldValue('developmentMode') !== 'ai' && !value) {
+                if (form.getFieldValue('portalType') !== 'ai' && !value) {
                   return Promise.reject(new Error(t('The field value is required')));
                 }
                 return Promise.resolve();

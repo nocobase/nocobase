@@ -170,7 +170,7 @@ test('buildInstallArgv forwards AI portal init options for new installs', () => 
       version: 'beta',
       builtinDb: true,
       dbDialect: 'postgres',
-      developmentMode: 'ai',
+      portalType: 'ai',
       portalName: 'admin',
       portalTemplate: '@nocobase/portal-template-default',
     },
@@ -179,7 +179,7 @@ test('buildInstallArgv forwards AI portal init options for new installs', () => 
     },
   );
 
-  expect(argv).toContain('--development-mode');
+  expect(argv).toContain('--portal-type');
   expect(argv).toContain('ai');
   expect(argv).toContain('--portal-name');
   expect(argv).toContain('admin');

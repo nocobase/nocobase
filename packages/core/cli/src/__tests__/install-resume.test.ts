@@ -264,7 +264,7 @@ test('install delegates portal initialization to app startup', async () => {
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      developmentMode: 'ai',
+      portalType: 'ai',
       portalName: 'admin',
       portalTemplate: '/tmp/portal-template',
     },

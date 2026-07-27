@@ -30,7 +30,7 @@ export function formatPortalInfo(item: PortalListItem): string {
   return [
     `${portalInfoText('fields.name', undefined, 'Name')}: ${outputItem.name}`,
     `${portalInfoText('fields.url', undefined, 'URL')}: ${outputItem.url}`,
-    `${portalInfoText('fields.developmentMode', undefined, 'Development mode')}: ${outputItem.developmentMode}`,
+    `${portalInfoText('fields.portalType', undefined, 'Portal type')}: ${outputItem.portalType}`,
     `${portalInfoText('fields.path', undefined, 'Local path')}: ${outputItem.localPath}`,
     `${portalInfoText('fields.enabled', undefined, 'Enabled')}: ${formatBoolean(outputItem.enabled)}`,
     `${portalInfoText('fields.localSynced', undefined, 'Local synced')}: ${formatBoolean(outputItem.localSynced)}`,

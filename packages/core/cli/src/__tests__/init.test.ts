@@ -215,12 +215,12 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     key: 'commands.init.webUi.downloadAppFiles.title',
   });
   expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
-    developmentMode: expect.objectContaining({ variant: 'radio' }),
+    portalType: expect.objectContaining({ variant: 'radio' }),
   });
   expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalName');
   expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalTemplate');
   expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
-    key: 'commands.init.webUi.developmentMode.title',
+    key: 'commands.init.webUi.portalType.title',
   });
   expect(webUiOptions?.stages[5]?.catalog).toMatchObject({
     dbPassword: expect.any(Object),
@@ -2336,7 +2336,7 @@ test('nb init --yes uses the configured default portal template as a yes initial
     '--db-dialect=mysql',
     '--db-underscored',
     '--auth-type=basic',
-    '--development-mode',
+    '--portal-type',
     'ai',
   ];
 
@@ -2358,7 +2358,7 @@ test('nb init --yes uses the configured default portal template as a yes initial
           'db-dialect': 'mysql',
           'db-underscored': true,
           'auth-type': 'basic',
-          'development-mode': 'ai',
+          'portal-type': 'ai',
         },
       })),
       config: { runCommand },
@@ -2410,7 +2410,7 @@ test('nb init --yes uses the built-in portal template when no config default is 
     '--db-dialect=mysql',
     '--db-underscored',
     '--auth-type=basic',
-    '--development-mode',
+    '--portal-type',
     'ai',
   ];
 
@@ -2431,7 +2431,7 @@ test('nb init --yes uses the built-in portal template when no config default is 
           'db-dialect': 'mysql',
           'db-underscored': true,
           'auth-type': 'basic',
-          'development-mode': 'ai',
+          'portal-type': 'ai',
         },
       })),
       config: { runCommand },

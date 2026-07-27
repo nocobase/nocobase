@@ -120,7 +120,7 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
 const portalValues: MultiPortalFormValues = {
   title: 'Customer portal',
   uid: 'customer-portal',
-  developmentMode: 'no-code',
+  portalType: 'no-code',
   routeName: 'customer-portal',
   routePath: '/customer-portal',
   uiLayoutUid: 'mobile-layout-model',
@@ -234,7 +234,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS['Edit portal']).toBe('Edit portal');
     expect(enUS['Delete portal']).toBe('Delete portal');
     expect(enUS.Desktop).toBe('Desktop');
-    expect(enUS['Development mode']).toBe('Development mode');
+    expect(enUS['Portal type']).toBe('Portal type');
     expect(enUS['Human-led development']).toBe('Human-led development');
     expect(enUS['AI-led development']).toBe('AI-led development');
     expect(enUS.Icon).toBe('Icon');
@@ -258,7 +258,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Edit portal']).toBe('编辑工作区');
     expect(zhCN['Delete portal']).toBe('删除工作区');
     expect(zhCN.Desktop).toBe('桌面端');
-    expect(zhCN['Development mode']).toBe('开发模式');
+    expect(zhCN['Portal type']).toBe('Portal 类型');
     expect(zhCN['Human-led development']).toBe('人主导开发');
     expect(zhCN['AI-led development']).toBe('AI 主导开发');
     expect(zhCN.Icon).toBe('图标');
@@ -311,7 +311,7 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Developer portal',
               uid: 'developer-portal',
-              developmentMode: 'ai',
+              portalType: 'ai',
               routeName: 'developer-portal',
               routePath: '/developer-portal',
               uiLayoutUid: null,
@@ -561,7 +561,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).queryByLabelText('UID')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Access path')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Portal slug')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Development mode')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Portal type')).toBeInTheDocument();
     expect(within(dialog).getByRole('radio', { name: /Human-led development/ })).toBeChecked();
     expect(within(dialog).getByRole('radio', { name: /AI-led development/ })).not.toBeChecked();
     expect(within(dialog).getByLabelText('Layout')).toBeInTheDocument();
@@ -731,14 +731,14 @@ describe('plugin-multi-portal settings page', () => {
           routePath: '/admin',
           uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
-          developmentMode: 'no-code',
+          portalType: 'no-code',
           enabled: true,
         },
       });
     });
   });
 
-  it('should submit explicit route name and development mode when creating a portal', async () => {
+  it('should submit explicit route name and portal type when creating a portal', async () => {
     const resource = makeResource();
     const { container, dialog, user } = await openCreatePortalForm(resource);
 
@@ -751,7 +751,7 @@ describe('plugin-multi-portal settings page', () => {
     await waitFor(() => {
       expect(resource.create).toHaveBeenCalledWith({
         values: expect.objectContaining({
-          developmentMode: 'ai',
+          portalType: 'ai',
           routeName: 'developer-portal',
           routePath: '/developer-portal',
           title: 'Developer portal',
@@ -802,7 +802,7 @@ describe('plugin-multi-portal settings page', () => {
           routePath,
           uiLayoutUid: 'mobile-layout-model',
           icon: null,
-          developmentMode: 'no-code',
+          portalType: 'no-code',
           enabled: true,
         },
       });
@@ -880,7 +880,7 @@ describe('plugin-multi-portal settings page', () => {
         values: {
           title: 'Customer portal',
           uid: 'customer-portal',
-          developmentMode: 'no-code',
+          portalType: 'no-code',
           routeName: 'customer-portal',
           routePath: '/customer-portal',
           uiLayoutUid: 'mobile-layout-model',
@@ -1015,7 +1015,7 @@ describe('plugin-multi-portal settings page', () => {
           routePath: '/customer-portal',
           uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
-          developmentMode: 'no-code',
+          portalType: 'no-code',
           enabled: false,
         },
       });
@@ -1078,7 +1078,7 @@ describe('plugin-multi-portal settings page', () => {
           routePath: '/admin',
           uiLayoutUid: 'mobile-layout-model',
           icon: null,
-          developmentMode: 'no-code',
+          portalType: 'no-code',
           enabled: false,
         },
       });

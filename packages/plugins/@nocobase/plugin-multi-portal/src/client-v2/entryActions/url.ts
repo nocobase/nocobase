@@ -113,7 +113,7 @@ export function getPortalEntryUrl(
   }
 
   if (isCurrentApp && !ssoEnabled) {
-    return getMultiPortalRouteUrl(app, portal.routePath, portal.developmentMode);
+    return getMultiPortalRouteUrl(app, portal.routePath, portal.portalType);
   }
 
   const path = ssoEnabled

@@ -25,14 +25,14 @@ vi.mock('../lib/portal-list.js', () => ({
   toPortalOutputItem: (item: {
     routeName: string;
     portalUrl: string;
-    developmentMode: string;
+    portalType: string;
     portalDir: string;
     enabled: boolean;
     localSynced: boolean | null;
   }) => ({
     name: item.routeName,
     url: item.portalUrl,
-    developmentMode: item.developmentMode,
+    portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
     enabled: item.enabled,
     localSynced: item.localSynced,
@@ -88,7 +88,7 @@ test('portal info prints AI portal details', async () => {
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'ai',
+        portalType: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -116,7 +116,7 @@ test('portal info prints AI portal details', async () => {
       [
         'Name: customer',
         'URL: http://localhost:56187/x/customer/',
-        'Development mode: ai',
+        'Portal type: ai',
         'Local path: /Users/chen/test6/remote1/source/storage/portals/main/customer',
         'Enabled: yes',
         'Local synced: yes',
@@ -147,7 +147,7 @@ test('portal info leaves local fields empty for no-code portals', async () => {
         uid: 'admin',
         routeName: 'admin',
         routePath: '/admin',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         enabled: true,
         portalUrl: 'http://localhost:56187/v/admin',
         portalDir: '',
@@ -164,7 +164,7 @@ test('portal info leaves local fields empty for no-code portals', async () => {
       [
         'Name: admin',
         'URL: http://localhost:56187/v/admin',
-        'Development mode: no-code',
+        'Portal type: no-code',
         'Local path: ',
         'Enabled: yes',
         'Local synced: ',
@@ -195,7 +195,7 @@ test('portal info prints JSON output when requested', async () => {
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'ai',
+        portalType: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -210,7 +210,7 @@ test('portal info prints JSON output when requested', async () => {
   expect(JSON.parse(command.log.mock.calls[0][0])).toEqual({
     name: 'customer',
     url: 'http://localhost:56187/x/customer/',
-    developmentMode: 'ai',
+    portalType: 'ai',
     localPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
     enabled: true,
     localSynced: true,

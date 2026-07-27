@@ -104,10 +104,10 @@ const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
-const DEFAULT_INSTALL_DEVELOPMENT_MODE = 'no-code';
+const DEFAULT_INSTALL_PORTAL_TYPE = 'no-code';
 const DEFAULT_INSTALL_PORTAL_NAME = 'admin';
 const DEFAULT_INSTALL_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
-const INSTALL_DEVELOPMENT_MODES = ['no-code', 'ai'] as const;
+const INSTALL_PORTAL_TYPES = ['no-code', 'ai'] as const;
 
 function toOptionalPromptString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -257,7 +257,7 @@ function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
 }
 
 function isAiMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
-  return String(values.developmentMode ?? DEFAULT_INSTALL_DEVELOPMENT_MODE).trim() === 'ai';
+  return String(values.portalType ?? DEFAULT_INSTALL_PORTAL_TYPE).trim() === 'ai';
 }
 
 function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
@@ -435,7 +435,7 @@ type InstallParsedFlags = {
   'app-port'?: string;
   'storage-path'?: string;
   'app-public-path'?: string;
-  'development-mode'?: string;
+  'portal-type'?: string;
   'portal-name'?: string;
   'portal-template'?: string;
   'root-username'?: string;
@@ -646,15 +646,15 @@ export default class Install extends Command {
     'app-public-path': Flags.string({
       description: 'Public path for the local app, for example / or /console/',
     }),
-    'development-mode': Flags.string({
-      description: 'Initial development mode for the installed app',
-      options: [...INSTALL_DEVELOPMENT_MODES],
+    'portal-type': Flags.string({
+      description: 'Initial portal type for the installed app',
+      options: [...INSTALL_PORTAL_TYPES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial portal name when --development-mode ai is used',
+      description: 'Initial portal name when --portal-type ai is used',
     }),
     'portal-template': Flags.string({
-      description: 'Initial portal template npm package or local path when --development-mode ai is used',
+      description: 'Initial portal template npm package or local path when --portal-type ai is used',
     }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
@@ -767,23 +767,23 @@ export default class Install extends Command {
         yesInitialValue: '/',
         validate: validateAppPublicPath,
       },
-      developmentMode: {
+      portalType: {
         type: 'select',
-        message: installText('prompts.developmentMode.message'),
+        message: installText('prompts.portalType.message'),
         options: [
           {
             value: 'no-code',
-            label: installText('prompts.developmentMode.noCodeLabel'),
-            hint: installText('prompts.developmentMode.noCodeHint'),
+            label: installText('prompts.portalType.noCodeLabel'),
+            hint: installText('prompts.portalType.noCodeHint'),
           },
           {
             value: 'ai',
-            label: installText('prompts.developmentMode.aiLabel'),
-            hint: installText('prompts.developmentMode.aiHint'),
+            label: installText('prompts.portalType.aiLabel'),
+            hint: installText('prompts.portalType.aiHint'),
           },
         ],
-        initialValue: DEFAULT_INSTALL_DEVELOPMENT_MODE,
-        yesInitialValue: DEFAULT_INSTALL_DEVELOPMENT_MODE,
+        initialValue: DEFAULT_INSTALL_PORTAL_TYPE,
+        yesInitialValue: DEFAULT_INSTALL_PORTAL_TYPE,
         required: true,
       },
       portalName: {
@@ -1090,10 +1090,10 @@ export default class Install extends Command {
       }
     }
 
-    if (flags['development-mode'] !== undefined) {
-      const v = String(flags['development-mode'] ?? '').trim();
+    if (flags['portal-type'] !== undefined) {
+      const v = String(flags['portal-type'] ?? '').trim();
       if (v) {
-        preset.developmentMode = v;
+        preset.portalType = v;
       }
     }
 
@@ -1211,7 +1211,7 @@ export default class Install extends Command {
       'appPort',
       'storagePath',
       'appPublicPath',
-      'developmentMode',
+      'portalType',
       'portalName',
       'portalTemplate',
     ]);
@@ -1537,7 +1537,7 @@ export default class Install extends Command {
     const rootPassword = Install.toOptionalPromptString(config.rootPassword);
     const rootNickname = Install.toOptionalPromptString(config.rootNickname);
     const lang = Install.toOptionalPromptString(config.lang);
-    const developmentMode = Install.toOptionalPromptString(config.developmentMode);
+    const portalType = Install.toOptionalPromptString(config.portalType);
     const portalName = Install.toOptionalPromptString(config.portalName);
     const portalTemplate = Install.toOptionalPromptString(config.portalTemplate);
     const auth = config.auth as { type?: string; accessToken?: string } | undefined;
@@ -1550,7 +1550,7 @@ export default class Install extends Command {
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
-      ...(developmentMode ? { developmentMode } : {}),
+      ...(portalType ? { portalType } : {}),
       ...(portalName ? { portalName } : {}),
       ...(portalTemplate ? { portalTemplate } : {}),
       ...(hookScript ? { hookScript } : {}),
@@ -1991,7 +1991,7 @@ export default class Install extends Command {
         rootEmail: String(params.rootResults.rootEmail ?? ''),
         rootPassword: String(params.rootResults.rootPassword ?? ''),
         rootNickname: String(params.rootResults.rootNickname ?? ''),
-        developmentMode: String(params.appResults.developmentMode ?? ''),
+        portalType: String(params.appResults.portalType ?? ''),
         portalName: String(params.appResults.portalName ?? ''),
         portalTemplate: String(params.appResults.portalTemplate ?? ''),
       },
@@ -3200,7 +3200,7 @@ export default class Install extends Command {
     const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
     const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
-    const developmentMode = Install.toOptionalPromptString(params.appResults.developmentMode);
+    const portalType = Install.toOptionalPromptString(params.appResults.portalType);
     const portalName = Install.toOptionalPromptString(params.appResults.portalName);
     const portalTemplate = Install.toOptionalPromptString(params.appResults.portalTemplate);
     const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : undefined;
@@ -3238,7 +3238,7 @@ export default class Install extends Command {
       ...(appPublicPath ? { appPublicPath } : {}),
       ...(envFile ? { envFile } : {}),
       lang: params.appResults.lang,
-      developmentMode,
+      portalType,
       portalName,
       portalTemplate,
       appKey: params.appResults.appKey,

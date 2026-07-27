@@ -18,14 +18,14 @@ export type MultiPortalAppLike = {
   getRouteUrl?: (pathname: string) => string;
 };
 
-export type MultiPortalDevelopmentMode = 'no-code' | 'ai';
+export type MultiPortalType = 'no-code' | 'ai';
 
-const DEFAULT_DEVELOPMENT_MODE: MultiPortalDevelopmentMode = 'no-code';
-const PORTAL_ROUTE_PREFIX_BY_DEVELOPMENT_MODE: Record<MultiPortalDevelopmentMode, string> = {
+const DEFAULT_PORTAL_TYPE: MultiPortalType = 'no-code';
+const PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE: Record<MultiPortalType, string> = {
   'no-code': '/v',
   ai: '/x',
 };
-const PORTAL_ROUTE_PREFIXES = Object.values(PORTAL_ROUTE_PREFIX_BY_DEVELOPMENT_MODE);
+const PORTAL_ROUTE_PREFIXES = Object.values(PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE);
 
 const normalizeRootPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -52,17 +52,17 @@ const joinRoutePath = (basePath: string | undefined, pathname: string) => {
   return `${base}${path}`;
 };
 
-function normalizeDevelopmentMode(value?: string | null): MultiPortalDevelopmentMode {
-  return value === 'ai' ? 'ai' : DEFAULT_DEVELOPMENT_MODE;
+function normalizePortalType(value?: string | null): MultiPortalType {
+  return value === 'ai' ? 'ai' : DEFAULT_PORTAL_TYPE;
 }
 
-function getPortalRoutePrefix(developmentMode?: string | null) {
-  return PORTAL_ROUTE_PREFIX_BY_DEVELOPMENT_MODE[normalizeDevelopmentMode(developmentMode)];
+function getPortalRoutePrefix(portalType?: string | null) {
+  return PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE[normalizePortalType(portalType)];
 }
 
-function getDevelopmentModeBasePath(basePath: string | undefined, developmentMode?: string | null) {
+function getPortalTypeBasePath(basePath: string | undefined, portalType?: string | null) {
   const base = normalizeBasePath(basePath);
-  const portalRoutePrefix = getPortalRoutePrefix(developmentMode);
+  const portalRoutePrefix = getPortalRoutePrefix(portalType);
   if (!base) {
     return portalRoutePrefix;
   }
@@ -87,15 +87,15 @@ function stripBasePath(pathname: string, basePath: string | undefined) {
   return path;
 }
 
-function getAlternativeDevelopmentMode(developmentMode?: string | null): MultiPortalDevelopmentMode {
-  return normalizeDevelopmentMode(developmentMode) === 'ai' ? 'no-code' : 'ai';
+function getAlternativePortalType(portalType?: string | null): MultiPortalType {
+  return normalizePortalType(portalType) === 'ai' ? 'no-code' : 'ai';
 }
 
-function normalizePortalRoutePath(routePath: string, basePath: string | undefined, developmentMode?: string | null) {
+function normalizePortalRoutePath(routePath: string, basePath: string | undefined, portalType?: string | null) {
   let path = normalizeRootPath(routePath);
   for (const base of [
-    getDevelopmentModeBasePath(basePath, developmentMode),
-    getDevelopmentModeBasePath(basePath, getAlternativeDevelopmentMode(developmentMode)),
+    getPortalTypeBasePath(basePath, portalType),
+    getPortalTypeBasePath(basePath, getAlternativePortalType(portalType)),
     ...PORTAL_ROUTE_PREFIXES,
   ]) {
     path = stripBasePath(path, base);
@@ -126,7 +126,7 @@ function getBasePathFromRouteUrl(routeUrl: string, routePath: string) {
 export function getMultiPortalRouteUrl(
   app: MultiPortalAppLike | undefined,
   routePath: string,
-  developmentMode?: string | null,
+  portalType?: string | null,
 ) {
   const normalizedRoutePath = routePath.trim();
   if (isAbsoluteUrl(normalizedRoutePath)) {
@@ -144,8 +144,8 @@ export function getMultiPortalRouteUrl(
         })
       : basename;
     return joinRoutePath(
-      getDevelopmentModeBasePath(basePath, developmentMode),
-      normalizePortalRoutePath(normalizedRoutePath, basePath, developmentMode),
+      getPortalTypeBasePath(basePath, portalType),
+      normalizePortalRoutePath(normalizedRoutePath, basePath, portalType),
     );
   }
 
@@ -154,8 +154,8 @@ export function getMultiPortalRouteUrl(
     const routeUrlBasePath = getBasePathFromRouteUrl(routeUrl, normalizedRoutePath);
     if (routeUrlBasePath !== undefined) {
       return joinRoutePath(
-        getDevelopmentModeBasePath(routeUrlBasePath, developmentMode),
-        normalizePortalRoutePath(normalizedRoutePath, routeUrlBasePath, developmentMode),
+        getPortalTypeBasePath(routeUrlBasePath, portalType),
+        normalizePortalRoutePath(normalizedRoutePath, routeUrlBasePath, portalType),
       );
     }
     return normalizeRootPath(routeUrl);
@@ -163,7 +163,7 @@ export function getMultiPortalRouteUrl(
 
   const publicPath = app?.getPublicPath?.();
   return joinRoutePath(
-    getDevelopmentModeBasePath(publicPath, developmentMode),
-    normalizePortalRoutePath(normalizedRoutePath, publicPath, developmentMode),
+    getPortalTypeBasePath(publicPath, portalType),
+    normalizePortalRoutePath(normalizedRoutePath, publicPath, portalType),
   );
 }

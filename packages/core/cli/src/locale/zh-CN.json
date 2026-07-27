@@ -253,7 +253,7 @@
       "table": {
         "name": "名称",
         "url": "访问 URL",
-        "developmentMode": "开发模式",
+        "portalType": "Portal 类型",
         "path": "本地路径",
         "enabled": "启用",
         "localSynced": "本地已同步"
@@ -268,7 +268,7 @@
       "fields": {
         "name": "名称",
         "url": "访问 URL",
-        "developmentMode": "开发模式",
+        "portalType": "Portal 类型",
         "path": "本地路径",
         "enabled": "启用",
         "localSynced": "本地已同步"
@@ -485,8 +485,8 @@
           "message": "应用子路径（例如 /nocobase/）",
           "placeholder": "/ 或 /nocobase/"
         },
-        "developmentMode": {
-          "message": "谁来主导开发？",
+        "portalType": {
+          "message": "Portal 类型",
           "noCodeLabel": "人主导开发",
           "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
           "aiLabel": "AI 主导开发",
@@ -600,8 +600,8 @@
         "skipDownload": {
           "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
         },
-        "developmentMode": {
-          "message": "谁来主导开发？",
+        "portalType": {
+          "message": "Portal 类型",
           "noCodeLabel": "人主导开发",
           "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
           "aiLabel": "AI 主导开发",
@@ -636,9 +636,9 @@
           "title": "应用来源和版本",
           "description": "选择应用的获取方式，以及要使用的来源和版本。"
         },
-        "developmentMode": {
-          "title": "开发方式",
-          "description": "选择适合你的应用开发方式。"
+        "portalType": {
+          "title": "Portal 类型",
+          "description": "选择应用的 Portal 类型。"
         },
         "configureDatabase": {
           "title": "配置数据库",

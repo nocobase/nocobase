@@ -99,7 +99,7 @@ const DEFAULT_MOBILE_UI_LAYOUT = {
 const MULTI_PORTAL_RUNTIME_FIELDS = [
   'uid',
   'title',
-  'developmentMode',
+  'portalType',
   'routeName',
   'routePath',
   'authCheck',
@@ -110,7 +110,7 @@ const MULTI_PORTAL_ACCESSIBLE_FIELDS = [
   'uid',
   'title',
   'icon',
-  'developmentMode',
+  'portalType',
   'routeName',
   'routePath',
   'authCheck',
@@ -140,7 +140,7 @@ const originalApiBaseUrl = process.env.API_BASE_URL;
 const originalNocobaseApiUrl = process.env.NOCOBASE_API_URL;
 const originalNodeOptions = process.env.NODE_OPTIONS;
 const originalStoragePath = process.env.STORAGE_PATH;
-const originalInitDevelopmentMode = process.env.INIT_DEVELOPMENT_MODE;
+const originalInitPortalType = process.env.INIT_PORTAL_TYPE;
 const originalInitPortalName = process.env.INIT_PORTAL_NAME;
 const originalInitPortalTemplate = process.env.INIT_PORTAL_TEMPLATE;
 
@@ -306,10 +306,10 @@ describe('plugin-multi-portal server', () => {
     } else {
       process.env.NODE_OPTIONS = originalNodeOptions;
     }
-    if (originalInitDevelopmentMode === undefined) {
-      delete process.env.INIT_DEVELOPMENT_MODE;
+    if (originalInitPortalType === undefined) {
+      delete process.env.INIT_PORTAL_TYPE;
     } else {
-      process.env.INIT_DEVELOPMENT_MODE = originalInitDevelopmentMode;
+      process.env.INIT_PORTAL_TYPE = originalInitPortalType;
     }
     if (originalInitPortalName === undefined) {
       delete process.env.INIT_PORTAL_NAME;
@@ -511,7 +511,7 @@ describe('plugin-multi-portal server', () => {
       expect.objectContaining({
         uid: '__default_portal__',
         title: 'Admin',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'admin',
         routePath: '/admin',
       }),
@@ -539,7 +539,7 @@ describe('plugin-multi-portal server', () => {
 
   it('should initialize an AI default portal with the init template', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
-    process.env.INIT_DEVELOPMENT_MODE = 'ai';
+    process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
     app = await createMockServer({
@@ -558,7 +558,7 @@ describe('plugin-multi-portal server', () => {
       filterByTk: '__default_portal__',
     });
 
-    expect(defaultPortal?.get('developmentMode')).toBe('ai');
+    expect(defaultPortal?.get('portalType')).toBe('ai');
     expect(defaultPortal?.get('routeName')).toBe('workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/workspace/');
@@ -582,7 +582,7 @@ describe('plugin-multi-portal server', () => {
       '.DS_Store': '',
       '._shadow': '',
     });
-    process.env.INIT_DEVELOPMENT_MODE = 'ai';
+    process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = templateDir;
     app = await createMockServer({
@@ -617,7 +617,7 @@ describe('plugin-multi-portal server', () => {
       'src/index.tsx': 'export default null;\n',
     });
     process.env.TEST_PORTAL_TEMPLATE_TARBALL = await createPortalTemplateTarball(storagePath as string, templateDir);
-    process.env.INIT_DEVELOPMENT_MODE = 'ai';
+    process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = '@nocobase/missing-portal-template';
     app = await createMockServer({
@@ -655,7 +655,7 @@ describe('plugin-multi-portal server', () => {
       'src/index.tsx': 'export default null;\n',
     });
     process.env.TEST_PORTAL_BUILD_FAIL = 'true';
-    process.env.INIT_DEVELOPMENT_MODE = 'ai';
+    process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = templateDir;
     app = await createMockServer({
@@ -679,7 +679,7 @@ describe('plugin-multi-portal server', () => {
   });
 
   it('should reject invalid init environment variables', async () => {
-    process.env.INIT_DEVELOPMENT_MODE = 'invalid';
+    process.env.INIT_PORTAL_TYPE = 'invalid';
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
@@ -687,9 +687,9 @@ describe('plugin-multi-portal server', () => {
     await app.db.sync();
 
     const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
-    await expect(plugin.install()).rejects.toThrow('INIT_DEVELOPMENT_MODE must be either "no-code" or "ai".');
+    await expect(plugin.install()).rejects.toThrow('INIT_PORTAL_TYPE must be either "no-code" or "ai".');
 
-    process.env.INIT_DEVELOPMENT_MODE = 'no-code';
+    process.env.INIT_PORTAL_TYPE = 'no-code';
     process.env.INIT_PORTAL_NAME = 'Admin';
     await expect(plugin.install()).rejects.toThrow(
       'INIT_PORTAL_NAME can only contain lowercase letters, numbers, hyphens, and underscores.',
@@ -765,7 +765,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'manifest-customer-portal',
         title: 'Customer portal',
         icon: 'appstoreoutlined',
-        developmentMode: 'ai',
+        portalType: 'ai',
         routeName: 'manifestCustomerPortal',
         routePath: '/customer-portal',
         authCheck: true,
@@ -791,7 +791,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'manifest-customer-portal',
         title: 'Customer portal',
         icon: 'appstoreoutlined',
-        developmentMode: 'ai',
+        portalType: 'ai',
         routePath: '/customer-portal',
         layout: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
       },
@@ -823,7 +823,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'storage-template-portal',
         title: 'Storage template portal',
-        developmentMode: 'ai',
+        portalType: 'ai',
         routeName: 'storageTemplatePortal',
         routePath: '/storage-template-portal',
         authCheck: true,
@@ -870,7 +870,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'storage-no-code-portal',
         title: 'Storage no-code portal',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'storageNoCodePortal',
         routePath: '/storage-no-code-portal',
         authCheck: true,
@@ -910,7 +910,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'skip-template-portal',
         title: 'Skip template portal',
-        developmentMode: 'ai',
+        portalType: 'ai',
         routeName: 'skip-template-portal',
         routePath: '/skip-template-portal',
         authCheck: true,
@@ -950,7 +950,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'first-or-create-skip-template-portal',
         title: 'First or create skip template portal',
-        developmentMode: 'ai',
+        portalType: 'ai',
         routeName: 'first-or-create-skip-template-portal',
         routePath: '/first-or-create-skip-template-portal',
         authCheck: true,
@@ -982,7 +982,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'preserve-title-portal',
         title: 'Custom portal title',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'preserve-title-portal',
         routePath: '/preserve-title-portal',
         authCheck: true,
@@ -994,7 +994,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'fill-empty-title-portal',
         title: '',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'fill-empty-title-portal',
         routePath: '/fill-empty-title-portal',
         authCheck: true,
@@ -1014,7 +1014,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'preserve-title-portal',
         title: 'Generated portal title',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'preserve-title-portal',
         routePath: '/preserve-title-portal',
         authCheck: true,
@@ -1027,7 +1027,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'fill-empty-title-portal',
         title: 'Filled portal title',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'fill-empty-title-portal',
         routePath: '/fill-empty-title-portal',
         authCheck: true,
@@ -3164,7 +3164,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'desktop-runtime-portal',
         title: 'Desktop runtime portal',
         icon: 'desktopoutlined',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         routeName: 'desktopRuntimePortal',
         routePath: '/desktop-runtime-portal',
         authCheck: true,
@@ -3177,7 +3177,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'mobile-runtime-portal',
         title: 'Mobile runtime portal',
         icon: 'mobileoutlined',
-        developmentMode: 'ai',
+        portalType: 'ai',
         routeName: 'mobileRuntimePortal',
         routePath: '/mobile-runtime-portal',
         authCheck: false,
@@ -3233,7 +3233,7 @@ describe('plugin-multi-portal server', () => {
     }
     expect(portals[0]).toMatchObject({
       title: 'Desktop runtime portal',
-      developmentMode: 'no-code',
+      portalType: 'no-code',
       routeName: 'desktopRuntimePortal',
       routePath: '/desktop-runtime-portal',
       uiLayout: {
@@ -3242,7 +3242,7 @@ describe('plugin-multi-portal server', () => {
     });
     expect(portals[1]).toMatchObject({
       title: 'Mobile runtime portal',
-      developmentMode: 'ai',
+      portalType: 'ai',
       routeName: 'mobileRuntimePortal',
       routePath: '/mobile-runtime-portal',
       authCheck: false,
@@ -3315,7 +3315,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'accessible-beta-portal',
         title: 'Accessible beta portal',
         icon: null,
-        developmentMode: 'ai',
+        portalType: 'ai',
         routeName: 'accessibleBetaPortal',
         routePath: '/accessible-beta-portal',
         authCheck: false,
@@ -3457,7 +3457,7 @@ describe('plugin-multi-portal server', () => {
     expect(rootPortals[1]).toMatchObject({
       uid: 'accessible-beta-portal',
       icon: null,
-      developmentMode: 'ai',
+      portalType: 'ai',
       authCheck: false,
       uiLayout: {
         layoutType: DEFAULT_MOBILE_UI_LAYOUT.layoutType,

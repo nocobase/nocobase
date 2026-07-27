@@ -359,7 +359,7 @@ describe('PluginMultiPortalClientV2', () => {
   it('should render AI portal cards with the x route prefix', async () => {
     await renderMultiPortalBlock([
       makeAccessiblePortal({
-        developmentMode: 'ai',
+        portalType: 'ai',
       }),
     ]);
 

@@ -32,7 +32,7 @@ export type AppPortalItem = {
   appName: string;
   title?: string | null;
   icon?: string | null;
-  developmentMode?: string | null;
+  portalType?: string | null;
   routePath: string;
   layout?: string | null;
   defaultPortal?: boolean;

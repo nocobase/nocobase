@@ -20,7 +20,7 @@ type MultiPortalAccessibleRecord = {
   uid: string;
   title?: string | null;
   icon?: string | null;
-  developmentMode?: string | null;
+  portalType?: string | null;
   routeName?: string;
   routePath: string;
   authCheck?: boolean;
@@ -220,7 +220,7 @@ function MultiPortalBlockContent(props: { model: MultiPortalBlockModel }) {
         return (
           <a
             key={record.uid}
-            href={getMultiPortalRouteUrl(app, record.routePath, record.developmentMode)}
+            href={getMultiPortalRouteUrl(app, record.routePath, record.portalType)}
             target="_blank"
             rel="noopener noreferrer"
             data-testid="multi-portal-block-card"

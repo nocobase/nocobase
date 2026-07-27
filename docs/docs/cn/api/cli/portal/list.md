@@ -46,9 +46,9 @@ nb portal list --json-output
 
 如果列表里存在远端记录但本地没有工作区，可以使用 [`nb portal pull`](./pull.md) 拉取源码。如果本地工作区已经存在但需要重新生成，可以根据情况使用 [`nb portal create --force`](./create.md) 或 [`nb portal pull --force`](./pull.md)。
 
-列表会显示名称、访问 URL、开发模式、source storage、本地路径、启用状态和本地同步状态。只有 `developmentMode` 为 `ai` 的 Portal 才会检查本地工作区；其他类型的 Portal，本地同步状态为空。
+列表会显示名称、访问 URL、Portal 类型、source storage、本地路径、启用状态和本地同步状态。只有 `portalType` 为 `ai` 的 Portal 才会检查本地工作区；其他类型的 Portal，本地同步状态为空。
 
-`--json-output` 输出的字段包括 `name`、`url`、`developmentMode`、`localPath`、`enabled`、`sourceStorage` 和 `localSynced`。
+`--json-output` 输出的字段包括 `name`、`url`、`portalType`、`localPath`、`enabled`、`sourceStorage` 和 `localSynced`。
 
 ## 相关命令
 

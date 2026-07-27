@@ -77,7 +77,7 @@ describe('getPortalEntryUrl', () => {
         currentSubApp,
         {
           ...portal,
-          developmentMode: 'ai',
+          portalType: 'ai',
         },
         {
           name: 'alpha',

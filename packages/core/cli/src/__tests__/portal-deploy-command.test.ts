@@ -32,14 +32,14 @@ vi.mock('../lib/portal-list.js', () => ({
   toPortalOutputItem: (item: {
     routeName: string;
     portalUrl: string;
-    developmentMode: string;
+    portalType: string;
     portalDir: string;
     enabled: boolean;
     localSynced: boolean | null;
   }) => ({
     name: item.routeName,
     url: item.portalUrl,
-    developmentMode: item.developmentMode,
+    portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
     enabled: item.enabled,
     localSynced: item.localSynced,
@@ -92,7 +92,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
         uid: 'cba',
         routeName: 'cba',
         routePath: '/cba',
-        developmentMode: 'ai',
+        portalType: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/cba/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
@@ -147,7 +147,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
       [
         'Name: cba',
         'URL: http://localhost:56187/x/cba/',
-        'Development mode: ai',
+        'Portal type: ai',
         'Local path: /Users/chen/test6/remote1/source/storage/portals/main/cba',
         'Enabled: yes',
         'Local synced: yes',

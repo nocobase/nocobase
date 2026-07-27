@@ -253,7 +253,7 @@
       "table": {
         "name": "Name",
         "url": "URL",
-        "developmentMode": "Development mode",
+        "portalType": "Portal type",
         "path": "Local path",
         "enabled": "Enabled",
         "localSynced": "Local synced"
@@ -268,7 +268,7 @@
       "fields": {
         "name": "Name",
         "url": "URL",
-        "developmentMode": "Development mode",
+        "portalType": "Portal type",
         "path": "Local path",
         "enabled": "Enabled",
         "localSynced": "Local synced"
@@ -485,8 +485,8 @@
           "message": "App subpath (for example, /nocobase/)",
           "placeholder": "/ or /nocobase/"
         },
-        "developmentMode": {
-          "message": "Who will lead development?",
+        "portalType": {
+          "message": "Portal type",
           "noCodeLabel": "Human-led development",
           "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
           "aiLabel": "AI-led development",
@@ -600,8 +600,8 @@
         "skipDownload": {
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         },
-        "developmentMode": {
-          "message": "Who will lead development?",
+        "portalType": {
+          "message": "Portal type",
           "noCodeLabel": "Human-led development",
           "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
           "aiLabel": "AI-led development",
@@ -636,9 +636,9 @@
           "title": "App source and version",
           "description": "Choose how to get the app and which source and version to use."
         },
-        "developmentMode": {
-          "title": "Development approach",
-          "description": "Choose the development approach for your application."
+        "portalType": {
+          "title": "Portal type",
+          "description": "Choose the portal type for your application."
         },
         "configureDatabase": {
           "title": "Configure the database",

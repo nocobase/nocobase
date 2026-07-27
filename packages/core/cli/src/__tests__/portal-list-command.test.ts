@@ -26,14 +26,14 @@ vi.mock('../lib/portal-list.js', () => ({
   toPortalOutputItem: (item: {
     routeName: string;
     portalUrl: string;
-    developmentMode: string;
+    portalType: string;
     portalDir: string;
     enabled: boolean;
     localSynced: boolean | null;
   }) => ({
     name: item.routeName,
     url: item.portalUrl,
-    developmentMode: item.developmentMode,
+    portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
     enabled: item.enabled,
     localSynced: item.localSynced,
@@ -75,7 +75,7 @@ test('portal list resolves the current env name and prints local sync status', a
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'ai',
+        portalType: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -85,7 +85,7 @@ test('portal list resolves the current env name and prints local sync status', a
         uid: 'partner',
         routeName: 'partner',
         routePath: '/partner',
-        developmentMode: 'ai',
+        portalType: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/partner/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/partner',
@@ -95,7 +95,7 @@ test('portal list resolves the current env name and prints local sync status', a
         uid: 'admin',
         routeName: 'admin',
         routePath: '/admin',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         enabled: true,
         portalUrl: 'http://localhost:56187/v/admin',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/admin',
@@ -137,7 +137,7 @@ test('portal list resolves the current env name and prints local sync status', a
   expect(log.mock.calls[0][0]).toContain('Name');
   expect(log.mock.calls[0][0]).not.toContain('Title');
   expect(log.mock.calls[0][0]).toContain('URL');
-  expect(log.mock.calls[0][0]).toContain('Development mode');
+  expect(log.mock.calls[0][0]).toContain('Portal type');
   expect(log.mock.calls[0][0]).toContain('Local path');
   expect(log.mock.calls[0][0]).toContain('Local synced');
   expect(log.mock.calls[0][0]).toContain('customer');
@@ -221,7 +221,7 @@ test('portal list prints JSON output when requested', async () => {
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'ai',
+        portalType: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -231,7 +231,7 @@ test('portal list prints JSON output when requested', async () => {
         uid: 'admin',
         routeName: 'admin',
         routePath: '/admin',
-        developmentMode: 'no-code',
+        portalType: 'no-code',
         enabled: false,
         portalUrl: '',
         portalDir: '',
@@ -264,7 +264,7 @@ test('portal list prints JSON output when requested', async () => {
     {
       name: 'customer',
       url: 'http://localhost:56187/x/customer/',
-      developmentMode: 'ai',
+      portalType: 'ai',
       localPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
       enabled: true,
       localSynced: true,
@@ -272,7 +272,7 @@ test('portal list prints JSON output when requested', async () => {
     {
       name: 'admin',
       url: '',
-      developmentMode: 'no-code',
+      portalType: 'no-code',
       localPath: '',
       enabled: false,
       localSynced: null,

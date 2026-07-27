@@ -27,7 +27,7 @@ import {
 const MULTI_PORTAL_RUNTIME_FIELDS = [
   'uid',
   'title',
-  'developmentMode',
+  'portalType',
   'routeName',
   'routePath',
   'authCheck',
@@ -38,7 +38,7 @@ const MULTI_PORTAL_ACCESSIBLE_FIELDS = [
   'uid',
   'title',
   'icon',
-  'developmentMode',
+  'portalType',
   'routeName',
   'routePath',
   'authCheck',
@@ -52,7 +52,7 @@ const MAIN_APP_NAME = 'main';
 const UNION_ROLE_KEY = '__union__';
 const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
 const MULTI_PORTAL_MANIFEST_SYNC_MESSAGE_TYPE = 'multi-portal:app-manifest-changed';
-const DEFAULT_INIT_DEVELOPMENT_MODE = 'no-code';
+const DEFAULT_INIT_PORTAL_TYPE = 'no-code';
 const DEFAULT_INIT_PORTAL_NAME = 'admin';
 const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
@@ -63,7 +63,7 @@ const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
 const DEFAULT_MULTI_PORTAL_UID = '__default_portal__';
 const MULTI_PORTAL_SLUG_PATTERN = /^[a-z0-9_-]+$/;
-const INIT_DEVELOPMENT_MODES = ['no-code', 'ai'] as const;
+const INIT_PORTAL_TYPES = ['no-code', 'ai'] as const;
 const DEFAULT_MULTI_PORTAL_UIDS = [DEFAULT_MULTI_PORTAL_UID] as const;
 const DEFAULT_MULTI_PORTAL_UID_SET = new Set<string>(DEFAULT_MULTI_PORTAL_UIDS);
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
@@ -111,12 +111,12 @@ type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
 };
-type InitDevelopmentMode = (typeof INIT_DEVELOPMENT_MODES)[number];
+type InitPortalType = (typeof INIT_PORTAL_TYPES)[number];
 type DefaultMultiPortalRecord = {
   uid: string;
   title: string;
   icon: string;
-  developmentMode: InitDevelopmentMode;
+  portalType: InitPortalType;
   routeName: string;
   routePath: string;
   authCheck: boolean;
@@ -127,7 +127,7 @@ type AppPortalManifestItem = {
   uid: string;
   title: string;
   icon?: string | null;
-  developmentMode?: string | null;
+  portalType?: string | null;
   routePath: string;
   layout: string | null;
 };
@@ -211,16 +211,16 @@ function trimString(value: unknown) {
   return String(value ?? '').trim();
 }
 
-function isInitDevelopmentMode(value: string): value is InitDevelopmentMode {
-  return (INIT_DEVELOPMENT_MODES as readonly string[]).includes(value);
+function isInitPortalType(value: string): value is InitPortalType {
+  return (INIT_PORTAL_TYPES as readonly string[]).includes(value);
 }
 
-function getInitDevelopmentMode() {
-  const developmentMode = trimString(process.env.INIT_DEVELOPMENT_MODE) || DEFAULT_INIT_DEVELOPMENT_MODE;
-  if (!isInitDevelopmentMode(developmentMode)) {
-    throw new Error('INIT_DEVELOPMENT_MODE must be either "no-code" or "ai".');
+function getInitPortalType() {
+  const portalType = trimString(process.env.INIT_PORTAL_TYPE) || DEFAULT_INIT_PORTAL_TYPE;
+  if (!isInitPortalType(portalType)) {
+    throw new Error('INIT_PORTAL_TYPE must be either "no-code" or "ai".');
   }
-  return developmentMode;
+  return portalType;
 }
 
 function getInitPortalName() {
@@ -250,7 +250,7 @@ function getDefaultMultiPortalRecord(): DefaultMultiPortalRecord {
     uid: DEFAULT_MULTI_PORTAL_UID,
     title: formatInitPortalTitle(routeName),
     icon: 'DesktopOutlined',
-    developmentMode: getInitDevelopmentMode(),
+    portalType: getInitPortalType(),
     routeName,
     routePath: `/${routeName}`,
     authCheck: true,
@@ -1080,7 +1080,7 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
   const defaultPortal = getDefaultMultiPortalRecord();
   const existing = await repository.findOne({
     filterByTk: defaultPortal.uid,
-    fields: ['uid', 'title', 'icon', 'developmentMode', 'routeName', 'routePath', 'authCheck', 'uiLayoutUid'],
+    fields: ['uid', 'title', 'icon', 'portalType', 'routeName', 'routePath', 'authCheck', 'uiLayoutUid'],
     transaction: options?.transaction,
   });
 
@@ -1094,7 +1094,7 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
 
   const protectedValues = {
     uid: defaultPortal.uid,
-    developmentMode: defaultPortal.developmentMode ?? null,
+    portalType: defaultPortal.portalType ?? null,
     routeName: defaultPortal.routeName,
     routePath: defaultPortal.routePath,
     authCheck: defaultPortal.authCheck,
@@ -1121,7 +1121,7 @@ async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () =
   const rawValues = isRecordLike(params?.values) ? params.values : {};
   const values: Record<string, unknown> = {
     uid: defaultPortal.uid,
-    developmentMode: defaultPortal.developmentMode ?? null,
+    portalType: defaultPortal.portalType ?? null,
     routeName: defaultPortal.routeName,
     routePath: defaultPortal.routePath,
     authCheck: defaultPortal.authCheck,
@@ -1897,8 +1897,8 @@ export class PluginMultiPortalServer extends Plugin {
     const record = multiPortal as ModelWithPrevious;
     const readField = (field: string) =>
       previous && typeof record.previous === 'function' ? record.previous(field) : getRecordField(record, field);
-    const developmentMode = readField('developmentMode');
-    if (developmentMode !== 'ai') {
+    const portalType = readField('portalType');
+    if (portalType !== 'ai') {
       return null;
     }
 
@@ -2074,7 +2074,7 @@ export class PluginMultiPortalServer extends Plugin {
 
     const multiPortal = await this.db.getRepository('multiPortals').findOne({
       filterByTk,
-      fields: ['uid', 'developmentMode', 'routeName', 'enabled'],
+      fields: ['uid', 'portalType', 'routeName', 'enabled'],
     });
     const item = multiPortal ? this.getMultiPortalStorageItem(multiPortal) : null;
     if (!item) {
@@ -2240,7 +2240,7 @@ export class PluginMultiPortalServer extends Plugin {
         uid,
         title,
         icon: typeof portal.icon === 'string' ? portal.icon : null,
-        developmentMode: typeof portal.developmentMode === 'string' ? portal.developmentMode : null,
+        portalType: typeof portal.portalType === 'string' ? portal.portalType : null,
         routePath: String(portal.routePath || ''),
         layout: typeof uiLayout?.layoutType === 'string' ? uiLayout.layoutType : null,
       };
@@ -2263,7 +2263,7 @@ export class PluginMultiPortalServer extends Plugin {
   ): Promise<AppPortalManifestItem | null> {
     const uid = getRecordField(multiPortal, 'uid');
     const title = getRecordField(multiPortal, 'title');
-    const developmentMode = getRecordField(multiPortal, 'developmentMode');
+    const portalType = getRecordField(multiPortal, 'portalType');
     const routePath = getRecordField(multiPortal, 'routePath');
     const enabled = getRecordField(multiPortal, 'enabled');
 
@@ -2292,7 +2292,7 @@ export class PluginMultiPortalServer extends Plugin {
       uid,
       title,
       icon: typeof icon === 'string' ? icon : null,
-      developmentMode: typeof developmentMode === 'string' ? developmentMode : null,
+      portalType: typeof portalType === 'string' ? portalType : null,
       routePath,
       layout: typeof layoutType === 'string' ? layoutType : null,
     };
@@ -2367,9 +2367,9 @@ export class PluginMultiPortalServer extends Plugin {
   private async reconcilePortalStorage(options?: DatabaseHookOptions) {
     const records = await this.db.getRepository('multiPortals').find({
       filter: {
-        developmentMode: 'ai',
+        portalType: 'ai',
       },
-      fields: ['uid', 'developmentMode', 'routeName', 'enabled'],
+      fields: ['uid', 'portalType', 'routeName', 'enabled'],
       transaction: options?.transaction,
     });
     for (const record of records) {

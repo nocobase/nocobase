@@ -39,7 +39,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'dbSchema',
   'dbTablePrefix',
   'lang',
-  'developmentMode',
+  'portalType',
   'portalName',
   'portalTemplate',
   'rootUsername',
