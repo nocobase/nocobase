@@ -114,6 +114,7 @@
   "Failed to load entries": "Failed to load entries",
   "No light extension entries": "No light extension entries",
   "Failed to load history": "Failed to load history",
+  "Failed to load creation jobs": "Failed to load creation jobs",
   "Failed to load repositories": "Failed to load repositories",
   "Failed to read source ZIP": "Failed to read source ZIP",
   "Failed to load source": "Failed to load source",

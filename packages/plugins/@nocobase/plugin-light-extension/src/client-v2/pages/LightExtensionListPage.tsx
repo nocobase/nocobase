@@ -195,6 +195,7 @@ function LightExtensionListPageInner() {
   const { createFromGit: createFromGitRequest } = useLightExtensionSync();
   const {
     jobs: createJobs,
+    error: createJobsError,
     addAcceptedJob,
     refresh: refreshCreateJobs,
     retry: retryCreateJob,
@@ -930,6 +931,14 @@ function LightExtensionListPageInner() {
 
   return (
     <Card variant="borderless">
+      {createJobsError ? (
+        <Alert
+          message={t('Failed to load creation jobs')}
+          showIcon
+          style={{ marginBottom: token.margin }}
+          type="error"
+        />
+      ) : null}
       {notice ? (
         <Alert
           closable

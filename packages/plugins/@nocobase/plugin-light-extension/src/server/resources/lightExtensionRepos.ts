@@ -247,7 +247,16 @@ function normalizeCreateJobInput(input: ResourceActionInput): {
 }
 
 function assertOnlyCreateKeys(input: ResourceActionInput): void {
-  const allowed = new Set(['name', 'title', 'description', 'zipBase64', 'initialFiles', 'message']);
+  const allowed = new Set([
+    'resourceName',
+    'actionName',
+    'name',
+    'title',
+    'description',
+    'zipBase64',
+    'initialFiles',
+    'message',
+  ]);
   if (Object.keys(input).some((key) => typeof input[key] !== 'undefined' && !allowed.has(key))) {
     throw invalidInput('Request contains unsupported fields');
   }

@@ -25,6 +25,7 @@ type FlowContextWithApi = {
 export interface UseLightExtensionCreateJobsResult {
   jobs: LightExtensionCreateJobSummary[];
   loading: boolean;
+  error: Error | null;
   addAcceptedJob(job: LightExtensionCreateJobSummary): void;
   refresh(): Promise<void>;
   retry(jobId: string): Promise<LightExtensionCreateJobSummary>;
@@ -37,7 +38,9 @@ export function useLightExtensionCreateJobs(): UseLightExtensionCreateJobsResult
   const ctx = useFlowContext() as FlowContextWithApi;
   const [jobs, setJobs] = useState<LightExtensionCreateJobSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const mountedRef = useRef(false);
+  const locallyAcceptedJobIdsRef = useRef(new Set<string>());
   const refreshingRef = useRef<Promise<void> | null>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
 
@@ -47,10 +50,26 @@ export function useLightExtensionCreateJobs(): UseLightExtensionCreateJobsResult
     }
     const controller = new AbortController();
     requestControllerRef.current = controller;
+    const locallyAcceptedAtRequestStart = new Set(locallyAcceptedJobIdsRef.current);
     const request = async () => {
-      const result = await listLightExtensionCreateJobs(ctx.api, controller.signal);
-      if (!controller.signal.aborted && mountedRef.current) {
-        setJobs((current) => mergeCreationJobs(current, result.jobs));
+      try {
+        const result = await listLightExtensionCreateJobs(ctx.api, controller.signal);
+        if (!controller.signal.aborted && mountedRef.current) {
+          setJobs((current) =>
+            reconcileCreationJobs(
+              current,
+              result.jobs,
+              locallyAcceptedJobIdsRef.current,
+              locallyAcceptedAtRequestStart,
+            ),
+          );
+          setError(null);
+        }
+      } catch (requestError) {
+        if (!controller.signal.aborted && mountedRef.current) {
+          setError(new Error('Light extension creation job request failed'));
+        }
+        throw requestError;
       }
     };
     const pending = request();
@@ -73,7 +92,7 @@ export function useLightExtensionCreateJobs(): UseLightExtensionCreateJobsResult
       try {
         await refresh();
       } catch {
-        // The page owns user-visible loading errors; polling will retry after a locally accepted job is added.
+        // The hook exposes a safe error and keeps polling until the authoritative job list becomes available.
       } finally {
         if (mountedRef.current) {
           setLoading(false);
@@ -91,16 +110,17 @@ export function useLightExtensionCreateJobs(): UseLightExtensionCreateJobsResult
 
   const hasActiveJobs = jobs.some((job) => job.status === 'pending' || job.status === 'running');
   useEffect(() => {
-    if (!hasActiveJobs) {
+    if (!hasActiveJobs && !error) {
       return;
     }
     const timer = setInterval(() => {
       refresh().catch(() => undefined);
     }, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [hasActiveJobs, refresh]);
+  }, [error, hasActiveJobs, refresh]);
 
   const addAcceptedJob = useCallback((job: LightExtensionCreateJobSummary) => {
+    locallyAcceptedJobIdsRef.current.add(job.id);
     setJobs((current) => mergeCreationJobs(current, [job]));
   }, []);
 
@@ -119,6 +139,7 @@ export function useLightExtensionCreateJobs(): UseLightExtensionCreateJobsResult
     async (jobId: string) => {
       await dismissLightExtensionCreateJob(ctx.api, jobId);
       if (mountedRef.current) {
+        locallyAcceptedJobIdsRef.current.delete(jobId);
         setJobs((current) => current.filter((job) => job.id !== jobId));
       }
     },
@@ -126,9 +147,35 @@ export function useLightExtensionCreateJobs(): UseLightExtensionCreateJobsResult
   );
 
   return useMemo(
-    () => ({ jobs, loading, addAcceptedJob, refresh, retry, dismiss }),
-    [addAcceptedJob, dismiss, jobs, loading, refresh, retry],
+    () => ({ jobs, loading, error, addAcceptedJob, refresh, retry, dismiss }),
+    [addAcceptedJob, dismiss, error, jobs, loading, refresh, retry],
   );
+}
+
+export function reconcileCreationJobs(
+  current: LightExtensionCreateJobSummary[],
+  incoming: LightExtensionCreateJobSummary[],
+  locallyAcceptedJobIds: Set<string>,
+  locallyAcceptedAtRequestStart: ReadonlySet<string>,
+): LightExtensionCreateJobSummary[] {
+  const incomingIds = new Set(incoming.map((job) => job.id));
+  const next = incoming.map((job) => {
+    if (!locallyAcceptedJobIds.has(job.id)) {
+      return job;
+    }
+    locallyAcceptedJobIds.delete(job.id);
+    const local = current.find((candidate) => candidate.id === job.id);
+    return local ? mergeCreationJobs([local], [job])[0] : job;
+  });
+  for (const jobId of locallyAcceptedAtRequestStart) {
+    locallyAcceptedJobIds.delete(jobId);
+  }
+  for (const job of current) {
+    if (locallyAcceptedJobIds.has(job.id) && !incomingIds.has(job.id)) {
+      next.push(job);
+    }
+  }
+  return next.sort((left, right) => getTimestamp(right.updatedAt) - getTimestamp(left.updatedAt));
 }
 
 export function mergeCreationJobs(

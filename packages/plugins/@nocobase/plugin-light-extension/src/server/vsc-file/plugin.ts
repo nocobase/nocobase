@@ -17,7 +17,12 @@ import { createRemoteSyncAuditActions, createRemoteSyncAuditEmitter } from './re
 import { RemoteSyncAdapterRegistry } from './remotes/RemoteSyncAdapterRegistry';
 import type { RemoteSyncRuntime } from './remotes/RemoteSyncRuntime';
 import { RemoteSyncRuntimeService } from './remotes/RemoteSyncRuntimeService';
-import { GitCommandRunner, GitRemoteAdapter } from './remotes/providers/git';
+import {
+  cleanupGitWorkspaceOrphans,
+  GitCommandRunner,
+  GitCredentialMaterializer,
+  GitRemoteAdapter,
+} from './remotes/providers/git';
 import { RemoteCredentialResolver } from './remotes/security/RemoteCredentialResolver';
 import { createRemoteInternalResources } from './remotes/resource';
 import type { VscPermissionHook } from './permissions';
@@ -29,6 +34,8 @@ import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../../shared/vsc-file/runjs-source-types';
 
 export class VscFileServerModule {
+  private static readonly gitTemporaryResourceTtlMs = 24 * 60 * 60 * 1000;
+
   private unregisterSourceCodeInspector?: () => void;
 
   private readonly permissionHooks = createPermissionHookRegistry();
@@ -115,10 +122,21 @@ export class VscFileServerModule {
       db: this.db,
       environment: this.app.environment,
     });
+    const gitCredentialMaterializer = new GitCredentialMaterializer();
+    const [credentialCleanup, workspaceCleanup] = await Promise.allSettled([
+      gitCredentialMaterializer.cleanupOrphans(VscFileServerModule.gitTemporaryResourceTtlMs),
+      cleanupGitWorkspaceOrphans(VscFileServerModule.gitTemporaryResourceTtlMs),
+    ]);
+    if (credentialCleanup.status === 'rejected') {
+      this.app.logger.warn('Git credential temporary directory cleanup failed');
+    }
+    if (workspaceCleanup.status === 'rejected') {
+      this.app.logger.warn('Git workspace temporary directory cleanup failed');
+    }
     this.unregisterGitAdapter = this.remoteAdapters.register(
       new GitRemoteAdapter({
         credentialResolver,
-        runner: new GitCommandRunner(),
+        runner: new GitCommandRunner({ materializer: gitCredentialMaterializer }),
       }),
     );
     this.remoteSyncRuntime = new RemoteSyncRuntimeService(this.db, {

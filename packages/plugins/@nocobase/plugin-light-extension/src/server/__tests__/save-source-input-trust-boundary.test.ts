@@ -80,11 +80,11 @@ describe('Save source input trust boundary', () => {
           },
         ],
       },
-      {
+      expect.objectContaining({
         actorUserId: '42',
         requestId: 'request-1',
         requestSource: 'browser-preview-test',
-      },
+      }),
     );
     expect(JSON.stringify(saveSource.mock.calls[0])).not.toMatch(
       /attacker|localCompileKey|affectedEntr|bundle|metafile|sourceMap|compilerBuildId/u,

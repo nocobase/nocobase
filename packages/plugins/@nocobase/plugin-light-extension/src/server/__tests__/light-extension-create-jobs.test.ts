@@ -55,7 +55,13 @@ describe('light extension durable creation jobs', () => {
     );
     const handler = resource.actions?.create as HandlerType;
     const ctx = {
-      action: { params: { values: { name: 'Demo' } } },
+      action: {
+        params: {
+          resourceName: 'lightExtensionRepos',
+          actionName: 'create',
+          values: { name: 'Demo' },
+        },
+      },
       auth: { user: { id: 7 } },
       request: { headers: { 'x-request-id': 'request-1' } },
     };

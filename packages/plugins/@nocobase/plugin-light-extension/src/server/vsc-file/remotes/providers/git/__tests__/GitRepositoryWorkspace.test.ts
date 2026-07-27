@@ -10,7 +10,7 @@
 import { spawn } from 'node:child_process';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { access, chmod, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, rm, symlink, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -21,12 +21,13 @@ import { RemoteSyncError } from '../../../RemoteSyncAdapter';
 import type { GitCommandRequest, GitCommandResult } from '../GitCommandRunner';
 import {
   GitRepositoryWorkspace,
+  cleanupGitWorkspaceOrphans,
   gitWorkspaceTemporaryDirectoryPrefix,
   parseBatchOutput,
   parseGitTreeOutput,
   type GitCommandExecutor,
 } from '../GitRepositoryWorkspace';
-import { normalizeGitSnapshotLimits } from '../gitSnapshotPolicy';
+import { normalizeGitSnapshotLimits, selectGitSnapshotEntries } from '../gitSnapshotPolicy';
 
 const execFileAsync = promisify(execFile);
 const remoteUrl = 'https://git.test/team/project.git';
@@ -194,11 +195,33 @@ describe('GitRepositoryWorkspace', () => {
     ).toEqual([]);
   });
 
+  it('cleans only expired Git workspace orphan directories', async () => {
+    const oldWorkspace = path.join(temporaryDirectory, `${gitWorkspaceTemporaryDirectoryPrefix}old`);
+    const recentWorkspace = path.join(temporaryDirectory, `${gitWorkspaceTemporaryDirectoryPrefix}recent`);
+    const unrelated = path.join(temporaryDirectory, 'unrelated');
+    await Promise.all([mkdir(oldWorkspace), mkdir(recentWorkspace), mkdir(unrelated)]);
+    const now = Date.now();
+    await utimes(oldWorkspace, new Date(now - 10_000), new Date(now - 10_000));
+
+    await expect(cleanupGitWorkspaceOrphans(5_000, temporaryDirectory, now)).resolves.toBe(1);
+    await expect(access(oldWorkspace)).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(access(recentWorkspace)).resolves.toBeUndefined();
+    await expect(access(unrelated)).resolves.toBeUndefined();
+  });
+
   it('parses NUL-delimited tree output without splitting tabs or newlines in paths', () => {
     const output = Buffer.from(`100644 blob ${'a'.repeat(40)} 3\todd\tname\n.ts\0`, 'utf8');
     expect(parseGitTreeOutput(output, true)).toEqual([
       { mode: '100644', type: 'blob', oid: 'a'.repeat(40), size: 3, path: 'odd\tname\n.ts' },
     ]);
+  });
+
+  it('rejects SHA-256 object IDs because the workspace uses SHA-1 repositories', () => {
+    const output = Buffer.from(`100644 blob ${'a'.repeat(64)} 3\tfile.ts\0`, 'utf8');
+    expect(captureError(() => selectGitSnapshotEntries(parseGitTreeOutput(output, true), null))).toMatchObject({
+      code: 'UNSAFE_CONTENT',
+      details: { reasonCode: 'invalid-tree-entry' },
+    });
   });
 
   it('rejects malformed cat-file batch framing and trailing data', () => {

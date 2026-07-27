@@ -33,7 +33,7 @@ import { ReferenceService } from '../services/ReferenceService';
 
 const remoteConfig = {
   url: 'https://git.example.com/nocobase/extensions.git',
-  branch: '',
+  branch: 'main',
   subdirectory: null,
   transport: 'https',
 };
@@ -125,7 +125,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     expect(publishPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(result).toMatchObject({
       repo: { id: 'ler_durable_target', healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
-      remote: { config: { branch: 'main' }, authRef: '{{ $env.GITHUB_SYNC }}' },
+      remote: { config: { branch: 'main' }, authRef: '{{ $env.GIT_SYNC }}' },
       plan: { state: 'in-sync', action: 'noop' },
       revision: 'remote-initial',
       fileCount: 2,

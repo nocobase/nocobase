@@ -18,7 +18,7 @@ export default defineCollection({
     {
       name: 'le_cjob_reservation_uq',
       unique: true,
-      fields: ['reservationKey'],
+      fields: ['applicationName', 'reservationKey'],
     },
     {
       name: 'le_cjob_claim_idx',

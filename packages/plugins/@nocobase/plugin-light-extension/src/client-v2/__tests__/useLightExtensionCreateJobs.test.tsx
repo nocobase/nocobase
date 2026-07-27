@@ -11,7 +11,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionCreateJobSummary } from '../../shared/types';
-import { mergeCreationJobs, useLightExtensionCreateJobs } from '../hooks/useLightExtensionCreateJobs';
+import {
+  mergeCreationJobs,
+  reconcileCreationJobs,
+  useLightExtensionCreateJobs,
+} from '../hooks/useLightExtensionCreateJobs';
 
 const mocks = vi.hoisted(() => ({
   api: { request: vi.fn() },
@@ -35,6 +39,53 @@ describe('useLightExtensionCreateJobs', () => {
     const older = createJob({ updatedAt: '2026-07-27T00:00:01.000Z', status: 'pending' });
 
     expect(mergeCreationJobs([newer], [older])).toEqual([newer]);
+  });
+
+  it('removes an accepted job omitted by the first authoritative request started after acceptance', () => {
+    const local = createJob({ updatedAt: '2026-07-27T00:00:02.000Z' });
+    const accepted = new Set([local.id]);
+    const acceptedAtRequestStart = new Set(accepted);
+
+    expect(reconcileCreationJobs([local], [], accepted, acceptedAtRequestStart)).toEqual([]);
+    expect(accepted).toEqual(new Set());
+  });
+
+  it('retains a job accepted during an already-running authoritative request', () => {
+    const local = createJob({ updatedAt: '2026-07-27T00:00:02.000Z' });
+    const accepted = new Set([local.id]);
+
+    expect(reconcileCreationJobs([local], [], accepted, new Set())).toEqual([local]);
+    expect(accepted).toEqual(new Set([local.id]));
+  });
+
+  it('removes a retained job when a later authoritative request still omits it', () => {
+    const local = createJob({ updatedAt: '2026-07-27T00:00:02.000Z' });
+    const accepted = new Set([local.id]);
+
+    expect(reconcileCreationJobs([local], [], accepted, new Set())).toEqual([local]);
+    expect(reconcileCreationJobs([local], [], accepted, new Set(accepted))).toEqual([]);
+    expect(accepted).toEqual(new Set());
+  });
+
+  it('reports an initial list failure and retries even without a locally active job', async () => {
+    vi.useFakeTimers();
+    mocks.api.request
+      .mockRejectedValueOnce(new Error('unsafe transport details'))
+      .mockResolvedValueOnce({ data: { data: { jobs: [] } } });
+    const { result } = renderHook(() => useLightExtensionCreateJobs());
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error?.message).toBe('Light extension creation job request failed');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2500);
+    });
+    expect(mocks.api.request).toHaveBeenCalledTimes(2);
+    expect(result.current.error).toBeNull();
   });
 
   it('polls only while active, prevents overlapping list requests, and stops after failure', async () => {

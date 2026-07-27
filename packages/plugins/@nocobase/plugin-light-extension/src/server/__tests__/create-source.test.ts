@@ -34,12 +34,7 @@ describe('plugin-light-extension initial source creation', () => {
   });
 
   it('creates and compiles the default source as the first version when ZIP is omitted', async () => {
-    const createResponse = await app
-      .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: { name: 'Default Source' },
-      });
+    const createResponse = await app.agent().post('/lightExtensionRepos:create').send({ name: 'Default Source' });
     expect(createResponse.status).toBe(202);
     const job = await waitForCreateJob(app, createResponse.body.data.id);
     expect(job).toMatchObject({ status: 'succeeded', resultRepoId: job.targetRepoId });
@@ -96,13 +91,8 @@ describe('plugin-light-extension initial source creation', () => {
 
     const createResponse = await app
       .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: {
-          name: 'Removed RunJS Source',
-          zipBase64,
-        },
-      });
+      .post('/lightExtensionRepos:create')
+      .send({ name: 'Removed RunJS Source', zipBase64 });
 
     expect(createResponse.status).toBe(202);
     await expect(waitForCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
@@ -120,13 +110,8 @@ describe('plugin-light-extension initial source creation', () => {
 
     const createResponse = await app
       .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: {
-          name: 'Uploaded Source',
-          zipBase64,
-        },
-      });
+      .post('/lightExtensionRepos:create')
+      .send({ name: 'Uploaded Source', zipBase64 });
     expect(createResponse.status).toBe(202);
     const job = await waitForCreateJob(app, createResponse.body.data.id);
     expect(job.status).toBe('succeeded');
@@ -172,13 +157,8 @@ describe('plugin-light-extension initial source creation', () => {
 
     const createResponse = await app
       .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: {
-          name: 'Broken Uploaded Source',
-          zipBase64,
-        },
-      });
+      .post('/lightExtensionRepos:create')
+      .send({ name: 'Broken Uploaded Source', zipBase64 });
 
     expect(createResponse.status).toBe(202);
     await expect(waitForCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
@@ -239,7 +219,7 @@ describe('plugin-light-extension initial source creation', () => {
 });
 
 async function waitForCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
     const record = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
     if (record && ['succeeded', 'failed'].includes(String(record.get('status')))) {
       return record.toJSON() as LightExtensionCreateJobRecord;

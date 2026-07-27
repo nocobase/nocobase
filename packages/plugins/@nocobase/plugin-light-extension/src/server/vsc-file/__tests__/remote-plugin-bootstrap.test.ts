@@ -21,6 +21,7 @@ import { RemoteSyncRuntimeService } from '../remotes/RemoteSyncRuntimeService';
 import { SyncJobStore } from '../remotes/SyncJobStore';
 import { lightExtensionSyncAuditActionNames, remoteSyncAuditActionNames } from '../remotes/audit';
 import { DeterministicRemoteAdapter } from '../remotes/testing/DeterministicRemoteAdapter';
+import { normalizeGitRemoteConfigDraft } from '../remotes/providers/git/gitConfig';
 import { VscPermissionHookRegistry } from '../permissions';
 import { VscFileService } from '../services/VscFileService';
 import { VscFileServerModule } from '../plugin';
@@ -306,11 +307,13 @@ describe('vsc-file remote runtime bootstrap', () => {
         name: 'source',
       });
       const adapterRegistry = new RemoteSyncAdapterRegistry();
-      adapterRegistry.register(
-        new DeterministicRemoteAdapter({
-          initialMetadata: { branch: 'main' },
-        }),
-      );
+      const adapter = new DeterministicRemoteAdapter({
+        initialMetadata: { branch: 'main' },
+      });
+      Object.assign(adapter, {
+        resolveConfigDraft: async (input: unknown) => ({ ...normalizeGitRemoteConfigDraft(input), branch: 'main' }),
+      });
+      adapterRegistry.register(adapter);
       const runtime = new RemoteSyncRuntimeService(app.db, {
         adapterRegistry,
         credentialResolver: { validate: vi.fn() },
@@ -321,7 +324,12 @@ describe('vsc-file remote runtime bootstrap', () => {
         repoId: repository.repository.id,
         name: 'origin',
         provider: 'git',
-        config: { url: 'https://git.example.com/nocobase/demo.git', branch: '', subdirectory: null },
+        config: {
+          url: 'https://git.example.com/nocobase/demo.git',
+          branch: '',
+          subdirectory: null,
+          transport: 'https',
+        },
         authRef: null,
       });
 
@@ -360,13 +368,15 @@ describe('vsc-file remote runtime bootstrap', () => {
         initialFiles,
       });
       const adapterRegistry = new RemoteSyncAdapterRegistry();
-      adapterRegistry.register(
-        new DeterministicRemoteAdapter({
-          initialFiles,
-          initialRevision: 'remote-initial',
-          initialMetadata: { branch: 'main' },
-        }),
-      );
+      const adapter = new DeterministicRemoteAdapter({
+        initialFiles,
+        initialRevision: 'remote-initial',
+        initialMetadata: { branch: 'main' },
+      });
+      Object.assign(adapter, {
+        resolveConfigDraft: async (input: unknown) => ({ ...normalizeGitRemoteConfigDraft(input), branch: 'main' }),
+      });
+      adapterRegistry.register(adapter);
       const runtime = new RemoteSyncRuntimeService(app.db, {
         adapterRegistry,
         credentialResolver: { validate: vi.fn() },
@@ -374,7 +384,12 @@ describe('vsc-file remote runtime bootstrap', () => {
       });
       const fetched = await runtime.fetchTarget({
         provider: 'git',
-        config: { url: 'https://git.example.com/nocobase/demo.git', branch: '', subdirectory: null },
+        config: {
+          url: 'https://git.example.com/nocobase/demo.git',
+          branch: '',
+          subdirectory: null,
+          transport: 'https',
+        },
         authRef: null,
       });
 

@@ -213,6 +213,15 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
         if (current.revision === null) {
           throw unsafeProviderResponse('Git tree comparison state is invalid', 'invalid-tree-comparison');
         }
+        const observed = await this.probeBranch(
+          context.config.url,
+          context.config.transport,
+          context.credential,
+          context.config.branch,
+        );
+        if (observed.revision !== current.revision) {
+          throw remoteChanged(current.revision, observed.revision, 'head-mismatch');
+        }
         return {
           revision: current.revision,
           contentHash,
@@ -302,7 +311,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     }
     const lines = decodeLines(result.stdout);
     const symbolic = lines.filter((line) => line.startsWith('ref: refs/heads/') && line.endsWith('\tHEAD'));
-    const heads = lines.filter((line) => /^[0-9a-f]{40}(?:[0-9a-f]{24})?\tHEAD$/u.test(line));
+    const heads = lines.filter((line) => /^[0-9a-f]{40}\tHEAD$/u.test(line));
     if (lines.length !== 2 || symbolic.length !== 1 || heads.length !== 1) {
       throw new RemoteSyncError('CONFIG_INVALID', 'Git default branch is unavailable', {
         details: { provider: 'git', reasonCode: 'default-branch-unavailable' },
@@ -437,7 +446,7 @@ function createMetadata(
 }
 
 function requireGitOid(value: string, field: string): string {
-  if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u.test(value)) {
+  if (!/^[0-9a-f]{40}$/u.test(value)) {
     throw unsafeProviderResponse(`Git ${field} object ID is invalid`, `invalid-${field}-oid`);
   }
   return value;

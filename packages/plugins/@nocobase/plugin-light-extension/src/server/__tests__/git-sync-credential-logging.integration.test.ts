@@ -13,6 +13,7 @@ import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 import PluginLightExtensionServer from '../plugin';
+import type { LightExtensionCreateJobRecord } from '../../shared/types';
 import { gitSyncRemoteConfig, validGitSyncFiles } from './helpers/gitSyncAcceptance';
 
 describe('light extension Git credential logging integration', () => {
@@ -52,8 +53,11 @@ describe('light extension Git credential logging integration', () => {
         config: gitSyncRemoteConfig,
         name: 'Credential logging integration',
       });
-      expect(createResponse.status).toBe(200);
-      const repoId = requireString(toRecord(responseData(createResponse.body).repo).id, 'repo id');
+      expect(createResponse.status).toBe(202);
+      const createJobId = requireString(responseData(createResponse.body).id, 'creation job id');
+      const createJob = await waitForCreateJob(app, createJobId);
+      expect(createJob.status).toBe('succeeded');
+      const repoId = requireString(createJob.resultRepoId, 'repo id');
 
       fetchSnapshot.mockResolvedValue(nextSnapshot);
       const planResponse = await agent.post('/lightExtensionSync:plan').send({ repoId });
@@ -210,6 +214,17 @@ function createSnapshot(revision: string, label: string): VscRemoteSnapshot {
     files,
     metadata: { branch: 'main' },
   };
+}
+
+async function waitForCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const record = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (record && ['succeeded', 'failed'].includes(String(record.get('status')))) {
+      return record.toJSON() as LightExtensionCreateJobRecord;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Creation job ${jobId} did not finish`);
 }
 
 function responseData(body: unknown): Record<string, unknown> {

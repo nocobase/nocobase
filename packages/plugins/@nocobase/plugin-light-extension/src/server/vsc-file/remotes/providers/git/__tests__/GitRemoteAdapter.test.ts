@@ -243,6 +243,33 @@ describe('GitRemoteAdapter', () => {
     expect(runner.requests.filter((request) => request.args[0] === 'push')).toHaveLength(pushesBefore);
   });
 
+  it('rejects a no-op publish when the branch advances before the final probe', async () => {
+    const current = await adapter.fetchSnapshot(target(config));
+    const expected = current.revision as string;
+    let competingRevision: string | null = null;
+    const racingRunner = new LocalGitRunner(new Map([[remoteUrl, remoteDirectory]]), async (request) => {
+      if (request.args[0] === 'ls-remote' && competingRevision === null) {
+        competingRevision = await createCompetingCommit(remoteDirectory, expected, 'no-op competitor');
+      }
+    });
+
+    await expect(
+      createAdapter(racingRunner, temporaryDirectory).publishSnapshot(
+        target(config, 'https-secret'),
+        current,
+        expected,
+      ),
+    ).rejects.toMatchObject({
+      code: 'REMOTE_CHANGED',
+      details: {
+        reasonCode: 'head-mismatch',
+        expectedRemoteRevision: expected,
+        currentRemoteRevision: expect.stringMatching(/^[0-9a-f]{40}$/u),
+      },
+    });
+    expect(competingRevision).toMatch(/^[0-9a-f]{40}$/u);
+  });
+
   it('publishes mode-only changes even though the frozen content hash excludes modes', async () => {
     const current = await adapter.fetchSnapshot(target(config));
     const files = current.files.map((file) => (file.path === 'outside.txt' ? { ...file, mode: '100644' } : file));

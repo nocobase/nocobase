@@ -57,6 +57,10 @@ export interface ClaimLightExtensionCreateJobInput {
   leaseDurationMs: number;
 }
 
+export type ClaimedLightExtensionCreateJob = LightExtensionCreateJobRecord & {
+  recoveryOnly: boolean;
+};
+
 export type LightExtensionCreateJobStoreClock = () => Date;
 export type LightExtensionCreateJobClaimTokenFactory = () => string;
 
@@ -140,7 +144,7 @@ export class LightExtensionCreateJobStore {
   async claimPendingOrExpired(
     applicationName: string,
     input: ClaimLightExtensionCreateJobInput,
-  ): Promise<LightExtensionCreateJobRecord | null> {
+  ): Promise<ClaimedLightExtensionCreateJob | null> {
     validateLeaseDuration(input.leaseDurationMs);
     const candidates = await this.db.getRepository('lightExtensionCreateJobs').find({
       filter: {
@@ -221,6 +225,24 @@ export class LightExtensionCreateJobStore {
     });
   }
 
+  async requeue(jobId: string, claimToken: string): Promise<LightExtensionCreateJobRecord> {
+    return this.updateClaimed(jobId, claimToken, async (record, transaction) => {
+      await record.update(
+        {
+          status: 'pending',
+          errorCode: null,
+          errorMessage: null,
+          claimToken: null,
+          leaseOwner: null,
+          leaseExpiresAt: null,
+          heartbeatAt: this.clock(),
+          finishedAt: null,
+        },
+        { transaction },
+      );
+    });
+  }
+
   async retry(jobId: string, applicationName: string, actorUserId: string): Promise<LightExtensionCreateJobRecord> {
     return this.withLockedJob(jobId, async (record, transaction) => {
       assertJobOwner(record, applicationName, actorUserId);
@@ -282,7 +304,7 @@ export class LightExtensionCreateJobStore {
   private async claim(
     jobId: string,
     input: ClaimLightExtensionCreateJobInput,
-  ): Promise<LightExtensionCreateJobRecord | null> {
+  ): Promise<ClaimedLightExtensionCreateJob | null> {
     return this.withLockedJob(jobId, async (record, transaction) => {
       const job = createJobFromModel(record);
       const now = this.clock();
@@ -290,7 +312,8 @@ export class LightExtensionCreateJobStore {
       if (job.status !== 'pending' && !(job.status === 'running' && expired)) {
         return null;
       }
-      if (job.attempt >= job.maxAttempts) {
+      const recoveryOnly = job.status === 'running' && expired && job.attempt >= job.maxAttempts;
+      if (job.attempt >= job.maxAttempts && !recoveryOnly) {
         await record.update(
           {
             status: 'failed',
@@ -315,13 +338,13 @@ export class LightExtensionCreateJobStore {
           leaseOwner: input.leaseOwner,
           leaseExpiresAt: new Date(now.getTime() + input.leaseDurationMs),
           heartbeatAt: now,
-          attempt: job.attempt + 1,
+          attempt: recoveryOnly ? job.attempt : job.attempt + 1,
           startedAt: record.get('startedAt') || now,
           finishedAt: null,
         },
         { transaction },
       );
-      return createJobFromModel(record);
+      return { ...createJobFromModel(record), recoveryOnly };
     });
   }
 

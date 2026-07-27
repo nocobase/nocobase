@@ -172,7 +172,7 @@ describe('RemoteReconcileService', () => {
     const second = await preparePendingJob('scan-success');
     const fetch = adapter.fetchSnapshot.bind(adapter);
     const fetchSpy = vi.spyOn(adapter, 'fetchSnapshot').mockImplementation(async (target) => {
-      if (target.config.repository === 'scan-failure') {
+      if (target.config.url === 'https://git.example.com/nocobase/scan-failure.git') {
         throw new RemoteSyncError('REMOTE_UNAVAILABLE', 'Provider unavailable', {
           details: { provider: 'git', operation: 'fetch', reasonCode: 'provider-unavailable' },
         });
@@ -297,7 +297,7 @@ describe('RemoteReconcileService', () => {
       repoId: created.repository.id,
       name: 'origin',
       provider: 'git',
-      config: { ...remoteConfig, repository: name },
+      config: { ...remoteConfig, url: `https://git.example.com/nocobase/${name}.git` },
       authRef: null,
     });
     return { repoId: created.repository.id, commitId: created.initialCommit.id, remote };

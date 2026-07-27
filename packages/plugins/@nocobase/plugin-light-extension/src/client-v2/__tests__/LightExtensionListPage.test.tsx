@@ -48,6 +48,7 @@ const mocks = vi.hoisted(() => ({
   },
   createJobs: {
     initialJobs: [] as LightExtensionCreateJobSummary[],
+    error: null as Error | null,
     addAcceptedJob: vi.fn(),
     refresh: vi.fn(async () => undefined),
     retry: vi.fn(),
@@ -93,6 +94,7 @@ vi.mock('../hooks/useLightExtensionCreateJobs', async () => {
       return {
         jobs,
         loading: false,
+        error: mocks.createJobs.error,
         addAcceptedJob: (job) => {
           mocks.createJobs.addAcceptedJob(job);
           setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
@@ -234,6 +236,7 @@ describe('LightExtensionListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.createJobs.initialJobs = [];
+    mocks.createJobs.error = null;
     mocks.api.listRepos.mockResolvedValue([]);
     mocks.api.createRepo.mockResolvedValue({
       id: 'lecj_browser_smoke',
@@ -319,6 +322,15 @@ describe('LightExtensionListPage', () => {
         authRefDisplay: null,
       },
     });
+  });
+
+  it('shows a safe error when creation jobs cannot be loaded', async () => {
+    mocks.createJobs.error = new Error('Light extension creation job request failed');
+
+    renderListPage();
+
+    expect(await screen.findByText('Failed to load creation jobs')).toBeInTheDocument();
+    expect(screen.queryByText('Light extension creation job request failed')).not.toBeInTheDocument();
   });
 
   it('opens the create dialog from the query parameter', async () => {

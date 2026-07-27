@@ -171,7 +171,7 @@ function validateTreeEntry(entry: GitTreeEntry): void {
     typeof entry.mode !== 'string' ||
     typeof entry.type !== 'string' ||
     typeof entry.oid !== 'string' ||
-    !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u.test(entry.oid)
+    !/^[0-9a-f]{40}$/u.test(entry.oid)
   ) {
     throw unsafeContent('Git tree entry is invalid', 'invalid-tree-entry');
   }

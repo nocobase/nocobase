@@ -28,9 +28,9 @@ ENV NB_SKIP_STARTUP_UPDATE=1
 
 RUN set -eux; \
   apt-get update; \
-  apt-get install -y --no-install-recommends git openssh-client; \
+  apt-get install -y --no-install-recommends ca-certificates git openssh-client; \
   if [ "${INSTALL_NGINX}" = "1" ]; then \
-    apt-get install -y --no-install-recommends ca-certificates gnupg wget; \
+    apt-get install -y --no-install-recommends gnupg wget; \
     wget -qO /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
     gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
     printf '%s\n' \

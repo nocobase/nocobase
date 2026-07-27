@@ -25,7 +25,7 @@ export class LightExtensionCreateJobExecutor {
     private readonly createFromRemoteService: LightExtensionCreateFromRemoteService,
   ) {}
 
-  async execute(job: LightExtensionCreateJobRecord): Promise<string> {
+  async execute(job: LightExtensionCreateJobRecord, options: { recoveryOnly?: boolean } = {}): Promise<string> {
     const existing = await this.repoService.findInternalRepoById(job.targetRepoId);
     if (existing) {
       if (existing.healthStatus === 'ready') {
@@ -34,6 +34,13 @@ export class LightExtensionCreateJobExecutor {
       throw new LightExtensionError(
         'LIGHT_EXTENSION_SOURCE_ERROR',
         'Existing light extension repository is not ready',
+        { details: { repoId: job.targetRepoId } },
+      );
+    }
+    if (options.recoveryOnly) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Light extension creation attempts were exhausted before the target repository became ready',
         { details: { repoId: job.targetRepoId } },
       );
     }

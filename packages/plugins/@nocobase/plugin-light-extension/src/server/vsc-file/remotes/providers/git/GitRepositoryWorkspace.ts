@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { chmod, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { TextDecoder } from 'node:util';
@@ -28,6 +28,47 @@ import {
 } from './gitSnapshotPolicy';
 
 export const gitWorkspaceTemporaryDirectoryPrefix = 'nocobase-git-workspace-';
+
+export async function cleanupGitWorkspaceOrphans(
+  ttlMs: number,
+  temporaryDirectory = os.tmpdir(),
+  now = Date.now(),
+): Promise<number> {
+  if (!Number.isFinite(ttlMs) || ttlMs < 0) {
+    throw new TypeError('Git workspace temporary directory TTL must be a non-negative finite number');
+  }
+
+  let entries;
+  try {
+    entries = await readdir(temporaryDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (isNodeErrorWithCode(error, 'ENOENT')) {
+      return 0;
+    }
+    throw error;
+  }
+
+  let removed = 0;
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !entry.name.startsWith(gitWorkspaceTemporaryDirectoryPrefix)) {
+      continue;
+    }
+    const directory = path.join(temporaryDirectory, entry.name);
+    try {
+      const metadata = await stat(directory);
+      if (now - metadata.mtimeMs <= ttlMs) {
+        continue;
+      }
+      await rm(directory, { force: true, recursive: true });
+      removed += 1;
+    } catch (error) {
+      if (!isNodeErrorWithCode(error, 'ENOENT')) {
+        throw error;
+      }
+    }
+  }
+  return removed;
+}
 
 export interface GitCommandExecutor {
   run(request: GitCommandRequest): Promise<GitCommandResult>;
@@ -388,7 +429,7 @@ function parseSingleOid(output: Buffer, field: string): string {
 }
 
 function requireGitOid(value: string, field: string): string {
-  if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u.test(value)) {
+  if (!/^[0-9a-f]{40}$/u.test(value)) {
     throw unsafeContent(`Git ${field} object ID is invalid`, `invalid-${field}-oid`);
   }
   return value;
@@ -429,4 +470,8 @@ function unsafeContent(message: string, reasonCode: string): RemoteSyncError {
   return new RemoteSyncError('UNSAFE_CONTENT', message, {
     details: { provider: 'git', reasonCode },
   });
+}
+
+function isNodeErrorWithCode(error: unknown, code: string): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && error.code === code;
 }
