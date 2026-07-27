@@ -263,7 +263,81 @@ The synchronization ACL actions are scoped independently:
 
 Repository configuration, disconnect, archive, and delete are rejected with `LIGHT_EXTENSION_SYNC_BUSY` while a remote job is `pending`, `running`, or `finalize-pending`. Push and Pull also require the exact Head, remote revision, remote-target version, and plan fingerprint returned by the latest Plan.
 
-GitHub credentials are optional for public Pull discovery. Private Pull and all Push operations require a complete `{{ $env.NAME }}` reference to an existing Variables and secrets record with `type=secret`. Raw credential values are never stored in light-extension configuration or returned to clients.
+Push uses the expected remote revision and an explicit lease. If the remote branch changes after Plan, the operation stops instead of overwriting another contributor's commit; pull or plan again before retrying.
+
+## Git Remote Configuration
+
+The single remote provider is `git`. GitHub, GitLab, Gitea, Bitbucket, Azure DevOps, and self-hosted standard Git services are handled as ordinary Git URLs rather than platform-specific providers. NocoBase acts only as a Git client; it does not require or deploy a Git server.
+
+Git Remote supports one branch and an optional subdirectory over standard HTTPS, standard `ssh://`, or scp-like SSH URLs such as `git@git.example.com:team/project.git`. The following public HTTPS configuration needs no credential:
+
+```json
+{
+  "provider": "git",
+  "config": {
+    "url": "https://git.example.com/team/project.git",
+    "branch": "main",
+    "subdirectory": "extensions/demo",
+    "transport": "https"
+  },
+  "authRef": null
+}
+```
+
+Private HTTPS and all authenticated operations use a complete `{{ $env.NAME }}` reference to a Variables and secrets record with `type=secret` whose value is structured JSON. The remote record stores only the `authRef`, never the JSON secret itself. An HTTPS secret value has this shape:
+
+```json
+{
+  "kind": "https",
+  "username": "oauth2",
+  "password": "token-or-password"
+}
+```
+
+Never put an HTTPS password or token in the remote URL. An SSH secret value has this shape:
+
+```json
+{
+  "kind": "ssh",
+  "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
+  "passphrase": "",
+  "knownHosts": "git.example.com ssh-ed25519 AAAA..."
+}
+```
+
+The configured transport and secret `kind` must match. `knownHosts` is required for SSH and must come from a trusted administrator or hosting provider after the host fingerprint is verified independently. Do not disable strict host-key checking, and do not treat unverified `ssh-keyscan` output as a trust source. API responses, logs, and audit records do not return the secret value.
+
+The following inputs and repository features are outside the product boundary:
+
+- `file://`, local paths, `git://`, `ext::`, and custom remote helpers.
+- Submodules/gitlinks, Git LFS pointer content, symlinks, binary files, and invalid UTF-8.
+- Repository hooks, checkout filters, and repository scripts.
+- Pull/merge requests, Git history management, webhooks, and OAuth flows.
+
+Light Extension uses source snapshots and never checks out or executes repository content. The Git configuration was not formally released with the former development-only `github` provider shape. That data is not compatible and must be configured again as `provider: git`.
+
+### Outbound network policy
+
+Git Remote reuses `SERVER_REQUEST_WHITELIST` as its outbound host policy. When the variable is not configured, the platform keeps its current behavior: it allows the target and warns for addresses that may pose an SSRF risk. When configured, only matching hosts or CIDR ranges are allowed. SSH targets are checked against the same policy by hostname, while the separate `knownHosts` value verifies the SSH host key.
+
+### Non-Docker deployments
+
+Official NocoBase runtime images include compatible Git and OpenSSH clients. Other images and non-Docker installations must provide both executables in the NocoBase service user's `PATH`; verify the deployment with:
+
+```bash
+git --version
+ssh -V
+```
+
+If Git is unavailable, only the Git provider is disabled; the rest of Light Extension continues to work. If the SSH client is unavailable, HTTPS still works and only SSH transport is unavailable.
+
+## Asynchronous Repository Creation
+
+Template, ZIP, and Git creation are accepted as durable background jobs. `lightExtensionRepos:create` handles template or ZIP input, and `lightExtensionSync:createFromGit` handles Git Remote input; both return HTTP 202 with a safe creation Job summary.
+
+`lightExtensionCreateJobs:list`, `lightExtensionCreateJobs:retry`, and `lightExtensionCreateJobs:dismiss` are the only public Job facade. A Job has one of four states: `pending`, `running`, `succeeded`, or `failed`. Accepted means only that the request was recorded. Only `succeeded` means that the repository, source, compiled artifacts, and runtime are ready.
+
+The UI closes the creation dialog after acceptance and shows the in-progress item in the repository table. On success it refreshes the real repository and notifies the user; on failure it offers retry or removal. The API does not promise percentage progress, and its summaries never expose source payloads, secrets, internal claims, or leases.
 
 ## Compatibility and Rollout
 
