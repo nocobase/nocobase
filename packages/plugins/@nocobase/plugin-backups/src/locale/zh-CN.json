@@ -41,6 +41,7 @@
   "Required if application database schema is different with the backup": "仅应用数据库 Schema{{currentDbSchemaTips}} 与备份不一致时需要填写",
   "Restore": "还原",
   "Restore backup from local": "从本地备份还原",
+  "Restore failed": "还原失败",
   "Restore password": "还原密码",
   "Run automatic backup on the cron schedule": "根据 Cron 运行自动备份",
   "Settings": "设置",
