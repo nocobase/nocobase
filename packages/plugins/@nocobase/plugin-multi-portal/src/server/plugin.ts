@@ -625,11 +625,13 @@ function shouldPackPortalSourceEntry(entryName: string) {
     .some((segment) => segment.startsWith('._') || ['.git', 'node_modules', 'dist', '.DS_Store'].includes(segment));
 }
 
-function validatePortalSourceTarEntry(entryPath: string, entry: PortalDeployTarEntry) {
+function validatePortalSourceTarEntry(entryPath: string, entry: unknown) {
   if (path.isAbsolute(entryPath) || entryPath.split(/[\\/]+/).includes('..')) {
     return false;
   }
-  if (entry.type === 'SymbolicLink' || entry.type === 'Link' || typeof entry.linkpath === 'string') {
+  const entryType = isPortalDeployTarEntry(entry) ? entry.type : undefined;
+  const linkpath = isPortalDeployTarEntry(entry) ? entry.linkpath : undefined;
+  if (entryType === 'SymbolicLink' || entryType === 'Link' || typeof linkpath === 'string') {
     return false;
   }
   return shouldPackPortalSourceEntry(entryPath);

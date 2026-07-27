@@ -58,6 +58,38 @@ type UiLayoutOptionRecord = {
   uid: string;
 };
 
+function getRecordProperty(value: unknown, key: string): unknown {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  return (value as Record<string, unknown>)[key];
+}
+
+function getStringMessage(value: unknown): string | undefined {
+  return typeof value === 'string' && value ? value : undefined;
+}
+
+function getErrorMessage(error: unknown): string | undefined {
+  const response = getRecordProperty(error, 'response');
+  const data = getRecordProperty(response, 'data');
+  const errors = getRecordProperty(data, 'errors');
+  if (Array.isArray(errors)) {
+    const message = errors
+      .map((item) => getStringMessage(getRecordProperty(item, 'message')))
+      .filter((item): item is string => Boolean(item))
+      .join('\n');
+    if (message) {
+      return message;
+    }
+  }
+
+  return (
+    getStringMessage(getRecordProperty(getRecordProperty(data, 'error'), 'message')) ||
+    getStringMessage(getRecordProperty(data, 'message')) ||
+    getStringMessage(getRecordProperty(error, 'message'))
+  );
+}
+
 export type MultiPortalResource = {
   create: (params: { values: MultiPortalFormValues }) => Promise<unknown>;
   update: (params: { filterByTk: MultiPortalPrimaryKey; values: MultiPortalFormValues }) => Promise<unknown>;
