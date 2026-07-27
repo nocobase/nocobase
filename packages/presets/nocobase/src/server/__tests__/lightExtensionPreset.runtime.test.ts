@@ -15,6 +15,20 @@ const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
 
 type RunJSLocator = Record<string, unknown>;
 
+interface ExternalizedWorkspaceSnapshot {
+  binding: {
+    type: 'light-extension-entry';
+    repoId: string;
+    entryId: string;
+    kind: string;
+  };
+  domainCounts: Record<string, number>;
+  locator: RunJSLocator;
+  repoHeadCommitId: string | null;
+  vscCommitCount: number;
+  vscRepoId: string;
+}
+
 async function getLightExtensionRecord(app: MockServer) {
   return await app.db.getRepository('applicationPlugins').findOne({
     filter: {
@@ -33,7 +47,12 @@ async function getRootAgent(app: MockServer) {
   return await app.agent().login(rootUser);
 }
 
-async function expectInlineJSPageWorkspaceReady(app: MockServer, suffix: string, lightExtensionDomainLoaded = true) {
+async function expectInlineJSPageWorkspaceReady(
+  app: MockServer,
+  suffix: string,
+  lightExtensionDomainLoaded = true,
+  expectedLightExtensionRepoCount = 0,
+) {
   const agent = await getRootAgent(app);
   const pageResponse = await agent.resource('flowSurfaces').createPage({
     values: {
@@ -90,7 +109,7 @@ async function expectInlineJSPageWorkspaceReady(app: MockServer, suffix: string,
 
   const lightExtensionRepos = app.db.getRepository('lightExtensionRepos');
   if (lightExtensionDomainLoaded) {
-    expect(await lightExtensionRepos?.count()).toBe(0);
+    expect(await lightExtensionRepos?.count()).toBe(expectedLightExtensionRepoCount);
   } else {
     expect(lightExtensionRepos).toBeUndefined();
   }
@@ -103,6 +122,123 @@ async function expectLightExtensionUnavailable(app: MockServer) {
   expect(response.body.errors[0]).toMatchObject({
     code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
     status: 503,
+  });
+}
+
+async function externalizeInlineJSPage(app: MockServer, suffix: string): Promise<ExternalizedWorkspaceSnapshot> {
+  const agent = await getRootAgent(app);
+  const pageResponse = await agent.resource('flowSurfaces').createPage({
+    values: {
+      pageType: 'js-page',
+      idempotencyKey: `preset-external-js-page-${suffix}`,
+      title: `Preset External JS Page ${suffix}`,
+      icon: 'CodeOutlined',
+    },
+  });
+  expect(pageResponse.status).toBe(200);
+
+  const locator = pageResponse.body.data.runJSLocator as RunJSLocator;
+  const openResponse = await agent.resource('runJSSources').open({ values: { locator } });
+  expect(openResponse.status).toBe(200);
+  const opened = openResponse.body.data;
+  const files = opened.files.map((file: { path: string; content?: string; language?: string; mode?: string }) => {
+    expect(typeof file.content).toBe('string');
+    return {
+      path: file.path,
+      content: file.content,
+      language: file.language,
+      mode: file.mode,
+    };
+  });
+  const moveResponse = await agent.resource('lightExtensions').moveSource({
+    values: {
+      idempotencyKey: `preset-externalize-${suffix}`,
+      locator: opened.locator,
+      expectedOwnerFingerprint: opened.ownerFingerprint,
+      sourceRepoId: opened.repository.repoId,
+      sourceHeadCommitId: opened.repository.headCommitId,
+      entryPath: 'src/client/index.tsx',
+      version: opened.source.runtimeVersion,
+      files,
+      destination: { type: 'default' },
+      entryName: `preset-${suffix}`,
+      entryTitle: `Preset external entry ${suffix}`,
+    },
+  });
+  expect(moveResponse.status).toBe(200);
+  const moved = moveResponse.body.data;
+  const binding = {
+    type: 'light-extension-entry' as const,
+    repoId: String(moved.binding.repoId),
+    entryId: String(moved.binding.entryId),
+    kind: String(moved.binding.kind),
+  };
+  const repoRecord = await app.db.getRepository('lightExtensionRepos').findOne({
+    filterByTk: binding.repoId,
+  });
+  expect(repoRecord).toBeTruthy();
+  const vscRepoId = String(repoRecord?.get('vscRepoId'));
+
+  return {
+    binding,
+    domainCounts: await readLightExtensionDomainCounts(app),
+    locator,
+    repoHeadCommitId: String(repoRecord?.get('headCommitId') || '') || null,
+    vscCommitCount: await app.db.getRepository('vscFileCommits').count({ filter: { repoId: vscRepoId } }),
+    vscRepoId,
+  };
+}
+
+async function readLightExtensionDomainCounts(app: MockServer): Promise<Record<string, number>> {
+  const collectionNames = [
+    'lightExtensionRepos',
+    'lightExtensionEntries',
+    'lightExtensionReferences',
+    'lightExtensionRuntimeArtifacts',
+    'lightExtensionMoveOperations',
+  ];
+  return Object.fromEntries(
+    await Promise.all(
+      collectionNames.map(async (collectionName) => [
+        collectionName,
+        await app.db.getRepository(collectionName).count(),
+      ]),
+    ),
+  );
+}
+
+async function expectExternalizedWorkspaceRestored(app: MockServer, snapshot: ExternalizedWorkspaceSnapshot) {
+  expect(await readLightExtensionDomainCounts(app)).toEqual(snapshot.domainCounts);
+  const repoRecord = await app.db.getRepository('lightExtensionRepos').findOne({
+    filterByTk: snapshot.binding.repoId,
+  });
+  expect(repoRecord).toBeTruthy();
+  expect(repoRecord?.get('vscRepoId')).toBe(snapshot.vscRepoId);
+  expect(repoRecord?.get('headCommitId')).toBe(snapshot.repoHeadCommitId);
+  expect(
+    await app.db.getRepository('lightExtensionEntries').count({
+      filter: { id: snapshot.binding.entryId, repoId: snapshot.binding.repoId },
+    }),
+  ).toBe(1);
+  expect(
+    await app.db.getRepository('lightExtensionReferences').count({
+      filter: { entryId: snapshot.binding.entryId, repoId: snapshot.binding.repoId },
+    }),
+  ).toBe(1);
+  expect(await app.db.getRepository('vscFileCommits').count({ filter: { repoId: snapshot.vscRepoId } })).toBe(
+    snapshot.vscCommitCount,
+  );
+
+  const agent = await getRootAgent(app);
+  const readbackResponse = await agent.get(
+    `/flowSurfaces:get?uid=${encodeURIComponent(String(snapshot.locator.modelUid))}`,
+  );
+  expect(readbackResponse.status, JSON.stringify(readbackResponse.body)).toBe(200);
+  const tree = readbackResponse.body.data.tree;
+  const flowKey = String(snapshot.locator.flowKey);
+  expect(tree.stepParams[flowKey].runJs).toMatchObject({
+    sourceMode: 'light-extension',
+    sourceBinding: snapshot.binding,
   });
 }
 
@@ -149,12 +285,19 @@ describe('Light Extension preset runtime', () => {
     expect(upgradedRecord?.get('enabled')).toBe(true);
     expect(upgradedRecord?.get('builtIn')).toBe(true);
     await expectInlineJSPageWorkspaceReady(app, 'upgrade');
+    const externalizedWorkspace = await externalizeInlineJSPage(app, 'reload');
 
     await app.pm.disable(LIGHT_EXTENSION_NAME);
     await expectLightExtensionUnavailable(app);
     await expectInlineJSPageWorkspaceReady(app, 'light-extension-disabled', false);
 
     await app.pm.enable(LIGHT_EXTENSION_NAME);
-    await expectInlineJSPageWorkspaceReady(app, 'light-extension-reenabled');
+    await expectInlineJSPageWorkspaceReady(
+      app,
+      'light-extension-reenabled',
+      true,
+      externalizedWorkspace.domainCounts.lightExtensionRepos,
+    );
+    await expectExternalizedWorkspaceRestored(app, externalizedWorkspace);
   }, 120000);
 });
