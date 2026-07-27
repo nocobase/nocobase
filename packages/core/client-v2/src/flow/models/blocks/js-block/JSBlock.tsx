@@ -11,7 +11,6 @@ import { observable } from '@formily/reactive';
 import { Alert, Spin } from 'antd';
 import {
   ElementProxy,
-  FlowCancelSaveException,
   FlowExitAllException,
   FlowExitException,
   resetRunJSRuntimeElement,
@@ -29,41 +28,22 @@ import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
   shouldHideRunJSSourceMenu,
-  type RunJSSourceSettings,
 } from '../../../components/runjs-source';
 import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
 import {
   createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
-  getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
-  normalizeLightExtensionSourceSettingsForBinding,
+  createLightExtensionSourcePlumbing,
+  INLINE_SOURCE_MODE,
+  isRecord,
   normalizeLightExtensionRuntimeError,
-  rememberLightExtensionBindingSettings,
+  normalizeLightExtensionSourceMode,
   resolveEffectiveRunJSSettings,
-  resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
-  setCanonicalLightExtensionSetting,
-  setCanonicalLightExtensionSource,
-  showPendingLightExtensionRequiredSettings,
   type RuntimeErrorInfo,
 } from '../../utils/runjsSourceRuntimeCommon';
 
 const NAMESPACE = 'client';
-const INLINE_SOURCE_MODE = 'inline';
-const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
-
-type JSBlockSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
-type JSBlockSourceModeParams = {
-  sourceMode?: string;
-  sourceBinding?: unknown;
-  settings?: unknown;
-};
-type JSBlockLightExtensionSourceBinding = {
-  repoId?: unknown;
-  repoTitle?: unknown;
-  entryId?: unknown;
-  entryTitle?: unknown;
-  entryName?: unknown;
-};
+const JS_BLOCK_OWNER_KIND = 'flowModel.blockSettings';
 
 type JSBlockRuntimeError = RuntimeErrorInfo;
 
@@ -116,25 +96,6 @@ const getPageHeader = (root: HTMLElement) => {
     (page.querySelector('.pageHeaderCss') as HTMLElement | null)
   );
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function cloneJsonValue<T>(value: T): T {
-  if (value === undefined) {
-    return value;
-  }
-  try {
-    return JSON.parse(JSON.stringify(value)) as T;
-  } catch {
-    return value;
-  }
-}
-
-function toNonEmptyString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
 
 function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
   return normalizeLightExtensionRuntimeError(error, {
@@ -471,30 +432,20 @@ export class JSBlockModel extends BlockModel {
   }
 }
 
-function normalizeJSBlockSourceMode(value: unknown): JSBlockSourceMode {
-  return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
-}
+const jsBlockSource = createLightExtensionSourcePlumbing<JSBlockModel>({
+  flowKey: 'jsSettings',
+  stepKey: 'runJs',
+  ownerKind: JS_BLOCK_OWNER_KIND,
+  getOwnerLocator: (model) => ({ modelUid: model.uid }),
+  afterParamsSave: refreshJSBlockAfterSettingsSave,
+});
 
 function getRunJsStepParams(model: JSBlockModel): Record<string, unknown> {
-  const params = model.getStepParams('jsSettings', 'runJs');
-  return isRecord(params) ? { ...params } : {};
+  return jsBlockSource.getRunJsStepParams(model);
 }
 
 async function getLightExtensionSettingsDescriptor(model: JSBlockModel, params: Record<string, unknown>) {
-  return getSharedLightExtensionSettingsDescriptor({
-    modelUid: model.uid,
-    ownerKind: 'flowModel.blockSettings',
-    ownerLocator: { modelUid: model.uid },
-    params,
-    sourceLocator: {
-      kind: 'flowModel.step',
-      modelUid: model.uid,
-      flowKey: 'jsSettings',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-      versionPath: ['version'],
-    },
-  });
+  return jsBlockSource.getSettingsDescriptor(model, params);
 }
 
 async function getLightExtensionRuntimeSettingSteps(
@@ -509,107 +460,16 @@ async function getLightExtensionRuntimeSettingSteps(
     descriptor,
     settings: isRecord(params.settings) ? params.settings : {},
     component: JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-    syncValue: (ctx, fieldName, value) => setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value),
+    syncValue: jsBlockSource.syncSetting,
     afterParamsSave: refreshJSBlockAfterSettingsSave,
   });
 }
 
-function resolveLightExtensionRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
-  return isRecord(params.settings) ? cloneJsonValue(params.settings) : {};
-}
-
-function getLightExtensionStoredBindingTitle(binding: unknown): string | undefined {
-  if (!isRecord(binding)) {
-    return undefined;
-  }
-
-  const sourceBinding = binding as JSBlockLightExtensionSourceBinding;
-  return (
-    toNonEmptyString(sourceBinding.entryTitle) ||
-    toNonEmptyString(sourceBinding.entryName) ||
-    toNonEmptyString(sourceBinding.repoTitle)
-  );
-}
-
-function getLightExtensionFallbackBindingTitle(binding: unknown): string | undefined {
-  if (!isRecord(binding)) {
-    return undefined;
-  }
-
-  const sourceBinding = binding as JSBlockLightExtensionSourceBinding;
-  return toNonEmptyString(sourceBinding.entryId) || toNonEmptyString(sourceBinding.repoId);
-}
-
-async function resolveLightExtensionBindingTitle(ctx: { model: JSBlockModel }, params: Record<string, unknown>) {
-  return resolveSharedLightExtensionBindingTitle({
-    modelUid: ctx.model.uid,
-    ownerKind: 'flowModel.blockSettings',
-    ownerLocator: { modelUid: ctx.model.uid },
-    params,
-  });
-}
-
-async function getRunJsEditorTitle(ctx: { model: JSBlockModel }): Promise<string> {
-  const t = ctx.model.context.t.bind(ctx.model.context);
-  const params = getRunJsStepParams(ctx.model);
-  const baseTitle = t('Write JavaScript');
-  if (normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
-    return baseTitle;
-  }
-
-  const sourceTitle =
-    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
-    (await resolveLightExtensionBindingTitle(ctx, params)) ||
-    getLightExtensionFallbackBindingTitle(params.sourceBinding);
-  return sourceTitle
-    ? `${baseTitle} (${t('Light extension')}: ${sourceTitle})`
-    : `${baseTitle} (${t('Light extension')})`;
-}
-
-function getSourceModeDefaultParams(ctx: FlowSettingsContext<JSBlockModel>): JSBlockSourceModeParams {
-  const runJs = getRunJsStepParams(ctx.model);
-  return {
-    sourceMode: normalizeJSBlockSourceMode(runJs.sourceMode),
-    sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
-    settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
-  };
-}
-
-async function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, params: JSBlockSourceModeParams) {
-  const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
-  const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
-  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
-    ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
-    throw new FlowCancelSaveException('Light extension source binding is required.');
-  }
-  const currentRunJs = getRunJsStepParams(ctx.model);
-  const descriptor =
-    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
-      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
-      : null;
-  const normalized = normalizeLightExtensionSourceSettingsForBinding({
-    currentRunJs,
-    nextSourceMode: sourceMode,
-    nextSourceBinding: sourceBinding,
-    nextSettings: params.settings,
-    descriptor,
-  });
-  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', {
-    sourceMode,
-    sourceBinding,
-    settings: normalized.settings,
-  });
-  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
-}
+const resolveLightExtensionRuntimeSettings = jsBlockSource.getRuntimeSettings;
 
 async function refreshJSBlockAfterSettingsSave(ctx: FlowSettingsContext<JSBlockModel>) {
   ctx.model.invalidateFlowCache('beforeRender', true);
   await ctx.model.rerender();
-}
-
-async function refreshJSBlockAfterSourceSave(ctx: FlowSettingsContext<JSBlockModel>) {
-  await refreshJSBlockAfterSettingsSave(ctx);
-  await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
 }
 
 JSBlockModel.define({
@@ -638,9 +498,9 @@ JSBlockModel.registerFlow({
         kind: 'js-block',
       }),
       useRawParams: true,
-      defaultParams: getSourceModeDefaultParams,
-      beforeParamsSave: syncSourceModeToRunJs,
-      afterParamsSave: refreshJSBlockAfterSourceSave,
+      defaultParams: jsBlockSource.getSourceDefaultParams,
+      beforeParamsSave: jsBlockSource.beforeParamsSave,
+      afterParamsSave: jsBlockSource.afterSourceParamsSave,
     },
     runJs: {
       title: tExpr('Write JavaScript'),
@@ -681,7 +541,7 @@ JSBlockModel.registerFlow({
         },
       },
       uiMode: async (ctx: FlowRuntimeContext<JSBlockModel>) =>
-        createRunJSEditorEmbedUIMode(await getRunJsEditorTitle(ctx)),
+        createRunJSEditorEmbedUIMode(await jsBlockSource.getEditorTitle(ctx.model)),
       defaultParams(ctx) {
         return {
           version: 'v2',
@@ -752,7 +612,7 @@ ctx.render(\`
       async handler(ctx, params) {
         const model = ctx.model as JSBlockModel;
         // Inline blocks resolve locally and never showed a loading state before light-extension existed
-        const handlerSourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+        const handlerSourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
         const runId = model.beginRuntimeRun(handlerSourceMode !== INLINE_SOURCE_MODE);
         const inlineRunJs = resolveRunJsParams(ctx, params);
 
@@ -771,7 +631,7 @@ ctx.render(\`
               },
             });
             const storedSettings = resolveLightExtensionRuntimeSettings(params || {});
-            const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+            const sourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
             const descriptor =
               sourceMode === INLINE_SOURCE_MODE ? await getLightExtensionSettingsDescriptor(model, params || {}) : null;
             const runtimeSettings = descriptor

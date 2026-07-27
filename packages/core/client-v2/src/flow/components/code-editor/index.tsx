@@ -25,9 +25,7 @@ import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../flow-compat';
 import { createRunJSCompletionSource, type RunJSImportModuleCompletion } from './runjsCompletionSource';
-import { filterRunJSCompletionsForTypeScriptAutoImports } from './runjsCompletions';
 import { inferRunJSScenesFromContext, mergeRunJSScenes } from './resolveScenes';
-import type { CodeEditorTypeScriptProject } from './typescriptProject';
 import type { CodeEditorJsonSchema } from './jsonLanguageService';
 
 export interface CodeEditorProps {
@@ -42,7 +40,6 @@ export interface CodeEditorProps {
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
   moduleImportCompletions?: RunJSImportModuleCompletion[];
-  typescriptProject?: CodeEditorTypeScriptProject;
   version?: string; // runjs 版本（默认 v1）
   name?: string;
   language?: string;
@@ -64,8 +61,6 @@ export interface CodeEditorFullscreenControl {
 export * from './types';
 export * from './extension';
 export * from './runjsDiagnostics';
-export * from './typescriptProject';
-export * from './typescriptLibraryRegistry';
 export type { CodeEditorJsonSchema } from './jsonLanguageService';
 export type { RunJSImportModuleCompletion } from './runjsCompletionSource';
 
@@ -81,7 +76,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   wrapperStyle,
   extraCompletions,
   moduleImportCompletions,
-  typescriptProject,
   version = 'v1',
   name,
   language,
@@ -95,8 +89,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   fullscreenControl,
 }) => {
   const viewRef = useRef<EditorView | null>(null);
-  const typescriptProjectRef = useRef<CodeEditorTypeScriptProject | undefined>();
-  typescriptProjectRef.current = typescriptProject;
   const internalFullscreen = useFullscreenOverlay();
   const isFullscreen = fullscreenControl?.isFullscreen ?? internalFullscreen.isFullscreen;
   const toggleFullscreen = fullscreenControl?.toggleFullscreen ?? internalFullscreen.toggleFullscreen;
@@ -147,16 +139,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const finalExtra = useMemo(() => {
     const arr: Completion[] = [];
     if (Array.isArray(dynamicCompletions)) {
-      arr.push(
-        ...filterRunJSCompletionsForTypeScriptAutoImports(
-          dynamicCompletions,
-          typescriptProject?.rewriteBuiltInAutoImports === true,
-        ),
-      );
+      arr.push(...dynamicCompletions);
     }
     if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
-  }, [extraCompletions, dynamicCompletions, typescriptProject?.rewriteBuiltInAutoImports]);
+  }, [extraCompletions, dynamicCompletions]);
 
   const completionSource = useMemo(() => {
     return createRunJSCompletionSource({
@@ -283,7 +270,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         readonly={readonly}
         enableLinter={enableLinter}
         completionSource={completionSource}
-        typescriptProjectRef={typescriptProject ? typescriptProjectRef : undefined}
         language={language}
         jsonSchema={jsonSchema}
         viewRef={viewRef}

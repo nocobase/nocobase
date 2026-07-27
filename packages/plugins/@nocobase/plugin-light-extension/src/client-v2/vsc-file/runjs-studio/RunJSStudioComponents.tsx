@@ -61,7 +61,6 @@ import type {
 import type { PendingDirtyAction } from './studioInternalTypes';
 import {
   buildFileTreeRows,
-  buildRunJSTypeScriptProject,
   canCreateRunJSFileInFolder,
   collectRunJSWorkspaceFolders,
   defaultRunJSSourceRoot,
@@ -880,11 +879,7 @@ export function CodeTab(props: {
     onRunPreview,
     openPaths,
     previewing,
-    projectRevision,
     readOnly,
-    runJSModelUse,
-    runJSGlobalContextType,
-    workspaceTypeScriptContextResolver,
     savedFiles,
     scene,
     showRunButton = true,
@@ -899,20 +894,6 @@ export function CodeTab(props: {
     .map((path) => workspaceFiles.find((file) => file.path === path))
     .filter((file): file is RunJSWorkspaceFile => Boolean(file));
   const moduleImportCompletions = useRunJSImportModuleCompletions(workspaceFiles, activeFile?.path);
-  const workspaceTypeScriptContext = useMemo(
-    () => (activeFile ? workspaceTypeScriptContextResolver?.(activeFile.path, workspaceFiles) : undefined),
-    [activeFile, workspaceFiles, workspaceTypeScriptContextResolver],
-  );
-  const typescriptProject = useMemo(
-    () =>
-      buildRunJSTypeScriptProject(workspaceFiles, activeFile, {
-        declarationFiles: workspaceTypeScriptContext?.declarationFiles,
-        globalContextType: workspaceTypeScriptContext?.globalContextType || runJSGlobalContextType,
-        modelUse: runJSModelUse,
-        projectRevision,
-      }),
-    [activeFile, projectRevision, runJSGlobalContextType, runJSModelUse, workspaceFiles, workspaceTypeScriptContext],
-  );
   const jsonSchema = useMemo(
     () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),
     [activeFile, jsonSchemaResolver, workspaceFiles],
@@ -1041,7 +1022,6 @@ export function CodeTab(props: {
         scene={scene}
         showLogs={false}
         toolbarLeftExtra={fileTabsContent}
-        typescriptProject={typescriptProject}
         value={activeFile.content}
         version={version}
         fullscreenControl={fullscreenControl}
