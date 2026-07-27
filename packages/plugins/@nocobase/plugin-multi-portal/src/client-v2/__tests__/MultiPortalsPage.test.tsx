@@ -14,7 +14,6 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MultiPortalsPage, {
   createMultiPortal,
-  PortalLogsViewer,
   type MultiPortalFormValues,
   type MultiPortalResource,
 } from '../pages/MultiPortalsPage';
@@ -146,14 +145,6 @@ function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortal
     create: vi.fn().mockResolvedValue(undefined),
     update: vi.fn().mockResolvedValue(undefined),
     destroy: vi.fn().mockResolvedValue(undefined),
-    getLog: vi.fn().mockResolvedValue({
-      data: {
-        data: {
-          content: 'portal build log',
-          path: 'logs/portals/main/developer-portal.log',
-        },
-      },
-    }),
     list: vi.fn().mockResolvedValue({
       data: {
         data: [],
@@ -248,10 +239,6 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS['Delete portal']).toBe('Delete portal');
     expect(enUS.Desktop).toBe('Desktop');
     expect(enUS['Development mode']).toBe('Development mode');
-    expect(enUS.Logs).toBe('Logs');
-    expect(enUS['Portal logs']).toBe('Portal logs');
-    expect(enUS['No logs yet']).toBe('No logs yet');
-    expect(enUS['Failed to load portal logs']).toBe('Failed to load portal logs');
     expect(enUS['Human-led development']).toBe('Human-led development');
     expect(enUS['AI-led development']).toBe('AI-led development');
     expect(enUS.Icon).toBe('Icon');
@@ -276,10 +263,6 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Delete portal']).toBe('删除工作区');
     expect(zhCN.Desktop).toBe('桌面端');
     expect(zhCN['Development mode']).toBe('开发模式');
-    expect(zhCN.Logs).toBe('日志');
-    expect(zhCN['Portal logs']).toBe('工作区日志');
-    expect(zhCN['No logs yet']).toBe('暂无日志');
-    expect(zhCN['Failed to load portal logs']).toBe('加载工作区日志失败');
     expect(zhCN['Human-led development']).toBe('人主导开发');
     expect(zhCN['AI-led development']).toBe('AI 主导开发');
     expect(zhCN.Icon).toBe('图标');
@@ -401,13 +384,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ })).not.toHaveClass(
       'ant-btn-dangerous',
     );
-    expect(screen.getAllByRole('button', { name: /Logs/ })).toHaveLength(1);
-    const logsButton = screen.getByRole('button', { name: /Logs/ });
-    await user.click(logsButton);
-    expect(multiPortalsResource.getLog).toHaveBeenCalledWith({ filterByTk: 'developer-portal' });
-    expect(await screen.findByText('Portal logs')).toBeInTheDocument();
-    expect(screen.getByText('logs/portals/main/developer-portal.log')).toBeInTheDocument();
-    expect(screen.getByText('portal build log')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Logs/ })).not.toBeInTheDocument();
     await user.click(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
@@ -477,65 +454,6 @@ describe('plugin-multi-portal settings page', () => {
     await user.click(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
-  });
-
-  it('should poll portal logs while the dialog is open', async () => {
-    const getLog = vi
-      .fn()
-      .mockResolvedValueOnce({
-        data: {
-          data: {
-            content: 'first log',
-            path: 'logs/portals/main/developer-portal.log',
-          },
-        },
-      })
-      .mockResolvedValue({
-        data: {
-          data: {
-            content: 'first log\nsecond log',
-            path: 'logs/portals/main/developer-portal.log',
-          },
-        },
-      });
-    const resource = makeResource({
-      getLog,
-    });
-
-    render(
-      <AntdApp>
-        <PortalLogsViewer portalUid="developer-portal" resource={resource} pollingInterval={10} />
-      </AntdApp>,
-    );
-
-    expect(await screen.findByText('first log')).toBeInTheDocument();
-    await waitFor(() => expect(getLog).toHaveBeenCalledTimes(2));
-    expect(screen.getByText(/second log/)).toBeInTheDocument();
-  });
-
-  it('should render ansi colored portal logs without showing control codes', async () => {
-    const getLog = vi.fn().mockResolvedValue({
-      data: {
-        data: {
-          content: '[36mvite v6.4.3 \u001b[32mbuilding for production...\u001b[39m\n\u001b[33mwarning\u001b[39m',
-          path: 'logs/portals/main/developer-portal.log',
-        },
-      },
-    });
-    const resource = makeResource({
-      getLog,
-    });
-
-    render(
-      <AntdApp>
-        <PortalLogsViewer portalUid="developer-portal" resource={resource} pollingInterval={100000} />
-      </AntdApp>,
-    );
-
-    expect(await screen.findByText('building for production...')).toBeInTheDocument();
-    expect(document.body).toHaveTextContent('vite v6.4.3 building for production...');
-    expect(document.body).not.toHaveTextContent('[36m');
-    expect(document.body.textContent).not.toContain('\u001b');
   });
 
   it('should not warn about refs when opening the create form icon field', async () => {

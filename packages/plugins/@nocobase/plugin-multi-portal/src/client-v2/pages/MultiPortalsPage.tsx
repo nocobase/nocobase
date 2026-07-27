@@ -11,9 +11,9 @@ import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { DrawerFormLayout, IconPicker, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Alert, App, Button, Card, Flex, Form, Input, Radio, Select, Space, Switch, Tag, theme } from 'antd';
+import { App, Button, Card, Flex, Form, Input, Radio, Select, Space, Switch, Tag, theme } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getPortalEntryActionStore } from '../entryActions/portalEntryActionStore';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
@@ -51,13 +51,6 @@ type MultiPortalListBody = {
     pageSize?: number;
   };
 };
-type MultiPortalLogBody = {
-  content?: string;
-  path?: string;
-};
-type MultiPortalLogResponseBody = {
-  data?: MultiPortalLogBody;
-};
 
 type UiLayoutOptionRecord = {
   layoutType?: string;
@@ -69,7 +62,6 @@ export type MultiPortalResource = {
   create: (params: { values: MultiPortalFormValues }) => Promise<unknown>;
   update: (params: { filterByTk: MultiPortalPrimaryKey; values: MultiPortalFormValues }) => Promise<unknown>;
   destroy: (params: { filterByTk: MultiPortalPrimaryKey | MultiPortalPrimaryKey[] }) => Promise<unknown>;
-  getLog: (params: { filterByTk: MultiPortalPrimaryKey }) => Promise<{ data?: MultiPortalLogResponseBody }>;
   list: (params: Record<string, unknown>) => Promise<{ data?: MultiPortalListBody }>;
 };
 
@@ -103,8 +95,6 @@ export async function deleteMultiPortals(args: {
 
 const DEFAULT_DEVELOPMENT_MODE = 'no-code';
 const DEVELOPMENT_MODE_VALUES = ['no-code', 'vibe-coding'] as const;
-const PORTAL_LOG_POLLING_INTERVAL = 1000;
-const ansiSgrPattern = new RegExp(`(?:${String.fromCharCode(27)}\\[[0-9;]*m|\\[[0-9;]+m)`, 'g');
 
 const defaultFormValues: Pick<MultiPortalFormValues, 'developmentMode' | 'enabled'> = {
   developmentMode: DEFAULT_DEVELOPMENT_MODE,
@@ -228,262 +218,6 @@ function withDefaultPortalFlag(record: MultiPortalRecord): MultiPortalRecord {
   };
 }
 
-function getErrorMessage(error: unknown) {
-  const apiError = error as
-    | {
-        response?: {
-          data?: {
-            errors?: Array<{ message?: unknown }>;
-            message?: unknown;
-          };
-        };
-        message?: unknown;
-      }
-    | undefined;
-  const responseMessage = apiError?.response?.data?.errors?.find((item) => typeof item.message === 'string')?.message;
-  if (typeof responseMessage === 'string' && responseMessage) {
-    return responseMessage;
-  }
-  const dataMessage = apiError?.response?.data?.message;
-  if (typeof dataMessage === 'string' && dataMessage) {
-    return dataMessage;
-  }
-  const errorMessage = apiError?.message;
-  if (typeof errorMessage === 'string' && errorMessage) {
-    return errorMessage;
-  }
-  if (typeof error === 'string' && error) {
-    return error;
-  }
-  return undefined;
-}
-
-type AnsiLogPalette = {
-  black: string;
-  blue: string;
-  cyan: string;
-  green: string;
-  magenta: string;
-  red: string;
-  white: string;
-  yellow: string;
-};
-
-type AnsiLogStyleState = Pick<React.CSSProperties, 'color' | 'fontWeight' | 'opacity'>;
-
-function getAnsiLogTokenCodes(token: string) {
-  const tokenBody = token.startsWith('\u001b[') ? token.slice(2, -1) : token.slice(1, -1);
-  if (!tokenBody) {
-    return [0];
-  }
-  return tokenBody
-    .split(';')
-    .map((part) => Number(part))
-    .filter((code) => Number.isFinite(code));
-}
-
-function getAnsiLogColor(code: number, palette: AnsiLogPalette) {
-  switch (code) {
-    case 30:
-    case 90:
-      return palette.black;
-    case 31:
-    case 91:
-      return palette.red;
-    case 32:
-    case 92:
-      return palette.green;
-    case 33:
-    case 93:
-      return palette.yellow;
-    case 34:
-    case 94:
-      return palette.blue;
-    case 35:
-    case 95:
-      return palette.magenta;
-    case 36:
-    case 96:
-      return palette.cyan;
-    case 37:
-    case 97:
-      return palette.white;
-    default:
-      return undefined;
-  }
-}
-
-function getNextAnsiLogStyleState(
-  state: AnsiLogStyleState,
-  codes: number[],
-  palette: AnsiLogPalette,
-): AnsiLogStyleState {
-  return codes.reduce<AnsiLogStyleState>((nextState, code) => {
-    if (code === 0) {
-      return {};
-    }
-    if (code === 1) {
-      return {
-        ...nextState,
-        fontWeight: 600,
-      };
-    }
-    if (code === 2) {
-      return {
-        ...nextState,
-        opacity: 0.72,
-      };
-    }
-    if (code === 22) {
-      const restState = { ...nextState };
-      delete restState.fontWeight;
-      delete restState.opacity;
-      return restState;
-    }
-    if (code === 39) {
-      const restState = { ...nextState };
-      delete restState.color;
-      return restState;
-    }
-    const color = getAnsiLogColor(code, palette);
-    if (color) {
-      return {
-        ...nextState,
-        color,
-      };
-    }
-    return nextState;
-  }, state);
-}
-
-export function renderAnsiLogContent(content: string, palette: AnsiLogPalette): React.ReactNode[] {
-  const nodes: React.ReactNode[] = [];
-  let styleState: AnsiLogStyleState = {};
-  let currentIndex = 0;
-
-  content.replace(ansiSgrPattern, (token, offset: number) => {
-    if (offset > currentIndex) {
-      const text = content.slice(currentIndex, offset);
-      nodes.push(
-        Object.keys(styleState).length > 0 ? (
-          <span key={`ansi-log-${nodes.length}`} style={styleState}>
-            {text}
-          </span>
-        ) : (
-          text
-        ),
-      );
-    }
-
-    styleState = getNextAnsiLogStyleState(styleState, getAnsiLogTokenCodes(token), palette);
-    currentIndex = offset + token.length;
-    return token;
-  });
-
-  if (currentIndex < content.length) {
-    const text = content.slice(currentIndex);
-    nodes.push(
-      Object.keys(styleState).length > 0 ? (
-        <span key={`ansi-log-${nodes.length}`} style={styleState}>
-          {text}
-        </span>
-      ) : (
-        text
-      ),
-    );
-  }
-
-  return nodes;
-}
-
-export function PortalLogsViewer(props: {
-  portalUid: MultiPortalPrimaryKey;
-  resource: MultiPortalResource;
-  pollingInterval?: number;
-}) {
-  const { pollingInterval = PORTAL_LOG_POLLING_INTERVAL, portalUid, resource } = props;
-  const t = useT();
-  const { token } = theme.useToken();
-  const logRef = useRef<HTMLPreElement>(null);
-  const logRequest = useRequest(
-    async () => {
-      const response = await resource.getLog({ filterByTk: portalUid });
-      return response.data?.data ?? {};
-    },
-    {
-      pollingInterval,
-      pollingWhenHidden: false,
-    },
-  );
-  const log = logRequest.data;
-  const content = log?.content || t('No logs yet');
-  const logContent = useMemo(
-    () =>
-      renderAnsiLogContent(content, {
-        black: token.colorTextTertiary,
-        blue: token.colorInfo,
-        cyan: token.cyan6,
-        green: token.colorSuccess,
-        magenta: token.magenta6,
-        red: token.colorError,
-        white: token.colorText,
-        yellow: token.colorWarning,
-      }),
-    [
-      content,
-      token.colorError,
-      token.colorInfo,
-      token.colorSuccess,
-      token.colorText,
-      token.colorTextTertiary,
-      token.colorWarning,
-      token.cyan6,
-      token.magenta6,
-    ],
-  );
-
-  useEffect(() => {
-    const logElement = logRef.current;
-    if (logElement) {
-      logElement.scrollTop = logElement.scrollHeight;
-    }
-  }, [content]);
-
-  return (
-    <div>
-      {logRequest.error && (
-        <Alert
-          type="warning"
-          showIcon
-          message={getErrorMessage(logRequest.error) || t('Failed to load portal logs')}
-          style={{ marginBottom: token.marginSM }}
-        />
-      )}
-      {log?.path && <div style={{ marginBottom: token.marginSM }}>{log.path}</div>}
-      <pre
-        ref={logRef}
-        aria-busy={logRequest.loading}
-        aria-live="polite"
-        style={{
-          background: token.colorFillQuaternary,
-          borderRadius: token.borderRadiusSM,
-          color: token.colorText,
-          fontFamily: token.fontFamilyCode,
-          fontSize: token.fontSizeSM,
-          lineHeight: token.lineHeightSM,
-          margin: 0,
-          maxHeight: '60vh',
-          overflow: 'auto',
-          padding: token.paddingSM,
-          whiteSpace: 'pre',
-        }}
-      >
-        {logContent}
-      </pre>
-    </div>
-  );
-}
-
 const MultiPortalsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -590,17 +324,6 @@ const MultiPortalsPage: React.FC = () => {
     [message, refreshPortals, resource, t],
   );
 
-  const handleViewLog = useCallback(
-    (record: MultiPortalRecord) => {
-      modal.info({
-        title: t('Portal logs'),
-        width: 800,
-        content: <PortalLogsViewer portalUid={record.uid} resource={resource} />,
-      });
-    },
-    [modal, resource, t],
-  );
-
   const columns = useMemo<ColumnsType<MultiPortalRecord>>(
     () => [
       { title: t('Title'), dataIndex: 'title', ellipsis: true },
@@ -655,11 +378,6 @@ const MultiPortalsPage: React.FC = () => {
             >
               {t('View')}
             </Button>
-            {record.developmentMode === 'vibe-coding' && (
-              <Button type="link" style={actionLinkButtonStyle} onClick={() => handleViewLog(record)}>
-                {t('Logs')}
-              </Button>
-            )}
             <Button type="link" style={actionLinkButtonStyle} onClick={() => openFormDrawer(record)}>
               {t('Edit')}
             </Button>
@@ -670,7 +388,7 @@ const MultiPortalsPage: React.FC = () => {
         ),
       },
     ],
-    [ctx.app, handleDelete, handleToggleEnabled, handleViewLog, openFormDrawer, t, updatingEnabledRowKeys],
+    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],
   );
 
   const handleTableChange = useCallback<NonNullable<TableProps<MultiPortalRecord>['onChange']>>(
