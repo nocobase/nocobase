@@ -812,39 +812,36 @@ describe('flowSurfaces backend authoring localized compiler', () => {
   });
 
   it('should aggregate localized unsupported field host and empty defaultFilter errors', async () => {
-    const response = await rootAgent.resource('flowSurfaces').compose({
-      values: {
-        target: { uid: 'missing-target-never-resolved' },
-        blocks: [
-          {
-            key: 'badTable',
-            type: 'table',
-            collection: 'employees',
-            fields: ['nickname'],
-            fieldGroups: [
-              {
-                title: 'Unsupported',
-                fields: ['nickname'],
-              },
-            ],
-            fieldsLayout: {
-              rows: [['nickname']],
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      blocks: [
+        {
+          key: 'badTable',
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          fieldGroups: [
+            {
+              title: 'Unsupported',
+              fields: ['nickname'],
             },
-            defaultFilter: {
-              logic: '$and',
-              items: [],
-            },
-            settings: {
-              sort: ['-createdAt'],
-              sorting: [{ field: 'createdAt', direction: 'asc' }],
-            },
+          ],
+          fieldsLayout: {
+            rows: [['nickname']],
           },
-        ],
-      },
+          defaultFilter: {
+            logic: '$and',
+            items: [],
+          },
+          settings: {
+            sort: ['-createdAt'],
+            sorting: [{ field: 'createdAt', direction: 'asc' }],
+          },
+        },
+      ],
     });
 
-    expect(response.status).toBe(400);
-    assertAggregateRuleIds(response, [
+    assertAuthoringErrors(errors, [
       'fieldGroups-host-unsupported',
       'fieldsLayout-host-unsupported',
       'defaultFilter-explicit-empty',
@@ -855,7 +852,11 @@ describe('flowSurfaces backend authoring localized compiler', () => {
 
 function assertAggregateRuleIds(response: any, ruleIds: string[]) {
   expect(response.body?.errors).toEqual(expect.any(Array));
-  for (const error of response.body.errors) {
+  assertAuthoringErrors(response.body.errors, ruleIds);
+}
+
+function assertAuthoringErrors(errors: any[], ruleIds: string[]) {
+  for (const error of errors) {
     expectStructuredError(error, {
       status: 400,
       type: 'bad_request',
@@ -863,7 +864,7 @@ function assertAggregateRuleIds(response: any, ruleIds: string[]) {
     expect(error.path).toEqual(expect.any(String));
     expect(error.ruleId).toEqual(expect.any(String));
   }
-  expect(response.body.errors.map((error: any) => error.ruleId)).toEqual(expect.arrayContaining(ruleIds));
+  expect(errors.map((error: any) => error.ruleId)).toEqual(expect.arrayContaining(ruleIds));
 }
 
 function employeeDefaultFilter() {
