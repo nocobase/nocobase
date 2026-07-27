@@ -9,7 +9,7 @@
 
 import { stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
-import type { RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler';
+import type { RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler/build-identity';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
 import { createRequire } from 'node:module';
 import { posix as pathPosix } from 'path';
@@ -114,7 +114,7 @@ const requireCompiler = createRequire(__filename);
 
 function getRunJSCompilerBuildIdentity(): RunJSCompilerBuildIdentity {
   return (
-    requireCompiler('@nocobase/runjs/compiler') as {
+    requireCompiler('@nocobase/runjs/compiler/build-identity') as {
       RUNJS_COMPILER_BUILD_IDENTITY: RunJSCompilerBuildIdentity;
     }
   ).RUNJS_COMPILER_BUILD_IDENTITY;
