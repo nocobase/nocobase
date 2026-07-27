@@ -1,6 +1,6 @@
 ---
 title: "nb portal config"
-description: "nb portal config command reference: update source storage and Git source configuration for a Portal workspace."
+description: "nb portal config command reference: update source storage and Git source configuration for a Portal."
 keywords: "nb portal config,NocoBase CLI,Portal"
 ---
 

@@ -19,7 +19,7 @@ const portalPushText = (key: string, values?: Record<string, unknown>, fallback?
   translateCli(`commands.portalPush.${key}`, values, { fallback });
 
 export default class PortalPush extends Command {
-  static override summary = 'Push local Portal source changes to source storage';
+  static override summary = 'Push local portal source changes to source storage';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -95,8 +95,8 @@ export default class PortalPush extends Command {
         'messages.pushed',
         { portal: result.portal, sourceRevision: result.sourceRevision ?? '' },
         result.sourceRevision
-          ? `Pushed Portal source "${result.portal}" (${result.sourceRevision}).`
-          : `Pushed Portal source "${result.portal}".`,
+          ? `Pushed portal source "${result.portal}" (${result.sourceRevision}).`
+          : `Pushed portal source "${result.portal}".`,
       ),
     );
   }

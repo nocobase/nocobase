@@ -29,7 +29,7 @@ async function ensureDestroyConfirmed(options: { command: Command; portal: strin
       portalDestroyText(
         'errors.confirmationRequired',
         undefined,
-        'Refusing to destroy a Portal in non-interactive mode without --yes.',
+        'Refusing to destroy a portal in non-interactive mode without --yes.',
       ),
     );
   }
@@ -40,7 +40,7 @@ async function ensureDestroyConfirmed(options: { command: Command; portal: strin
         message: portalDestroyText(
           'prompts.confirm',
           { portal: options.portal },
-          `Destroy Portal "${options.portal}" and delete its storage directory?`,
+          `Destroy portal "${options.portal}" and delete its storage directory?`,
         ),
         default: false,
       }),
@@ -51,7 +51,7 @@ async function ensureDestroyConfirmed(options: { command: Command; portal: strin
 }
 
 export default class PortalDestroy extends Command {
-  static override summary = 'Destroy a Portal record and its local workspace';
+  static override summary = 'Destroy a portal record and local files';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer --yes',
@@ -77,7 +77,7 @@ export default class PortalDestroy extends Command {
       default: false,
     }),
     force: Flags.boolean({
-      description: 'Ignore missing Portal records or workspace directories',
+      description: 'Ignore missing portal records or local files',
       default: false,
     }),
   };
@@ -143,7 +143,7 @@ export default class PortalDestroy extends Command {
       portalDestroyText(
         'messages.workspace',
         { dir: result.portalDir, status: result.workspaceDeleted ? 'deleted' : 'missing' },
-        `Workspace: ${result.workspaceDeleted ? 'deleted' : 'missing'} (${result.portalDir})`,
+        `Portal files: ${result.workspaceDeleted ? 'deleted' : 'missing'} (${result.portalDir})`,
       ),
     );
   }

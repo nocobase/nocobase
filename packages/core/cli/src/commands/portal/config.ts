@@ -19,7 +19,7 @@ const portalConfigureText = (key: string, values?: Record<string, unknown>, fall
   translateCli(`commands.portalConfigure.${key}`, values, { fallback });
 
 export default class PortalConfig extends Command {
-  static override summary = 'Update Portal source configuration';
+  static override summary = 'Update portal source configuration';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer --source-storage nocobase',
@@ -45,7 +45,7 @@ export default class PortalConfig extends Command {
       default: false,
     }),
     'source-storage': Flags.string({
-      description: 'Where Portal source code is managed',
+      description: 'Where portal source code is managed',
       options: ['nocobase', 'git'],
     }),
     'git-repo': Flags.string({
@@ -55,7 +55,7 @@ export default class PortalConfig extends Command {
       description: 'Git branch used when --source-storage=git',
     }),
     'git-path': Flags.string({
-      description: 'Directory inside the Git repository for this Portal; defaults to the portal slug',
+      description: 'Directory inside the Git repository for this portal; defaults to the portal slug',
     }),
   };
 
@@ -106,11 +106,11 @@ export default class PortalConfig extends Command {
     );
     printInfo(
       result.remoteSynced
-        ? portalConfigureText('messages.remoteSynced', undefined, 'Remote Portal record: synced')
+        ? portalConfigureText('messages.remoteSynced', undefined, 'Remote portal record: synced')
         : portalConfigureText(
             'messages.remoteSkipped',
             undefined,
-            'Remote Portal record: not found; local config only',
+            'Remote portal record: not found; local config only',
           ),
     );
   }

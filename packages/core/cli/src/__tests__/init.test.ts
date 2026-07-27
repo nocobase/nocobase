@@ -215,9 +215,9 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     key: 'commands.init.webUi.downloadAppFiles.title',
   });
   expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
+    portalName: expect.objectContaining({ type: 'text' }),
     portalType: expect.objectContaining({ variant: 'radio' }),
   });
-  expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalName');
   expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalTemplate');
   expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.portalType.title',
@@ -528,6 +528,8 @@ test('nb init forwards download options to nb install for a new app flow', async
         './storage/demoapp',
         '--app-public-path',
         '/console/',
+        '--portal-name',
+        'admin',
         '--source',
         'git',
         '--version',
@@ -1802,6 +1804,8 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
       './nocobase',
       '--storage-path',
       './storage/local5',
+      '--portal-name',
+      'admin',
       '--force',
     ],
   ]);

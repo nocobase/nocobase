@@ -87,7 +87,7 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
       portalDevText(
         'errors.sshUnsupported',
         undefined,
-        'Cannot start a Portal workspace in dev mode for ssh envs in the first version.',
+        'Cannot start a portal in dev mode for ssh envs in the first version.',
       ),
     );
   }
@@ -101,7 +101,7 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
       portalDevText(
         'errors.workspaceMissing',
         { portalDir, portal },
-        `Portal workspace does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` first.`,
+        `Portal does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` first.`,
       ),
     );
   }
@@ -110,7 +110,7 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
     portalDevText(
       'errors.packageJsonMissing',
       { portalDir },
-      `Portal workspace is invalid: package.json is missing in ${portalDir}.`,
+      `Portal is invalid: package.json is missing in ${portalDir}.`,
     ),
   );
 

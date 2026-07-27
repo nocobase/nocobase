@@ -21,7 +21,7 @@ const portalDeployText = (key: string, values?: Record<string, unknown>, fallbac
   translateCli(`commands.portalDeploy.${key}`, values, { fallback });
 
 export default class PortalDeploy extends Command {
-  static override summary = 'Build and deploy a Portal workspace';
+  static override summary = 'Build and deploy a portal';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',

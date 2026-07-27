@@ -1,12 +1,12 @@
 ---
 title: "nb portal create"
-description: "nb portal create command reference: create a local Portal workspace from a template and create or update the Portal record."
+description: "nb portal create command reference: create a local portal from a template and create or update the portal record."
 keywords: "nb portal create,NocoBase CLI,Portal"
 ---
 
 # nb portal create
 
-Create a local Portal workspace from a template and create or update the Portal record
+Create a local portal from a template and create or update the portal record
 
 ## Usage
 
@@ -24,10 +24,10 @@ nb portal create <portal> [flags]
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
 | `--title` | string | Portal display title. |
 | `--force` | boolean | Delete the existing workspace and recreate it. |
-| `--source-storage` | `nocobase` \| `git` | Where Portal source code is managed. Default: `nocobase`. |
+| `--source-storage` | `nocobase` \| `git` | Where portal source code is managed. Default: `nocobase`. |
 | `--git-repo` | string | Git repository URL used with `--source-storage=git`. |
 | `--git-branch` | string | Git branch used with `--source-storage=git`. |
-| `--git-path` | string | Directory inside the Git repository; defaults to the Portal slug. |
+| `--git-path` | string | Directory inside the Git repository; defaults to the portal slug. |
 
 ## Examples
 

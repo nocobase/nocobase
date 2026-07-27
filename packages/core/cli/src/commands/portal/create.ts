@@ -20,7 +20,7 @@ const portalCreateText = (key: string, values?: Record<string, unknown>, fallbac
   translateCli(`commands.portalCreate.${key}`, values, { fallback });
 
 export default class PortalCreate extends Command {
-  static override summary = 'Create a local Portal workspace from a template';
+  static override summary = 'Create a local portal from a template';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -54,11 +54,11 @@ export default class PortalCreate extends Command {
       description: 'Portal display title; defaults to a title generated from the portal slug',
     }),
     force: Flags.boolean({
-      description: 'Delete the existing Portal workspace and recreate it',
+      description: 'Delete the existing portal and recreate it',
       default: false,
     }),
     'source-storage': Flags.string({
-      description: 'Where Portal source code is managed',
+      description: 'Where portal source code is managed',
       options: ['nocobase', 'git'],
       default: 'nocobase',
     }),
@@ -69,7 +69,7 @@ export default class PortalCreate extends Command {
       description: 'Git branch used when --source-storage=git',
     }),
     'git-path': Flags.string({
-      description: 'Directory inside the Git repository for this Portal; defaults to the portal slug',
+      description: 'Directory inside the Git repository for this portal; defaults to the portal slug',
     }),
   };
 

@@ -1,6 +1,6 @@
 ---
 title: "nb portal deploy"
-description: "nb portal deploy command reference: build and deploy a Portal workspace."
+description: "nb portal deploy command reference: build and deploy a Portal."
 keywords: "nb portal deploy,NocoBase CLI,Portal"
 ---
 

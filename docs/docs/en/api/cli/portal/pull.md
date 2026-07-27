@@ -1,12 +1,12 @@
 ---
 title: "nb portal pull"
-description: "nb portal pull command reference: pull Portal source into the local workspace."
+description: "nb portal pull command reference: pull portal source into the local workspace."
 keywords: "nb portal pull,NocoBase CLI,Portal"
 ---
 
 # nb portal pull
 
-Pull Portal source from source storage into the local workspace
+Pull portal source from source storage into the local workspace
 
 ## Usage
 

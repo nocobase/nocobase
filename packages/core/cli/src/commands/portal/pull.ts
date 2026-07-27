@@ -19,7 +19,7 @@ const portalPullText = (key: string, values?: Record<string, unknown>, fallback?
   translateCli(`commands.portalPull.${key}`, values, { fallback });
 
 export default class PortalPull extends Command {
-  static override summary = 'Pull Portal source into the local workspace';
+  static override summary = 'Pull portal source into local files';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -46,11 +46,11 @@ export default class PortalPull extends Command {
       default: false,
     }),
     force: Flags.boolean({
-      description: 'Delete the existing local workspace and pull it again',
+      description: 'Delete the existing local files and pull them again',
       default: false,
     }),
     install: Flags.boolean({
-      description: 'Run pnpm install after pulling the Portal source',
+      description: 'Run pnpm install after pulling the portal source',
       default: true,
       allowNo: true,
     }),
@@ -101,7 +101,7 @@ export default class PortalPull extends Command {
       portalPullText(
         'messages.pulled',
         { portal: result.portal, portalDir: result.portalDir },
-        `Pulled Portal source "${result.portal}" into ${result.portalDir}.`,
+        `Pulled portal source "${result.portal}" into ${result.portalDir}.`,
       ),
     );
   }

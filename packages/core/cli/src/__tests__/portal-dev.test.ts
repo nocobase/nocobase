@@ -133,7 +133,7 @@ test('updates env files and starts portal dev without building or syncing record
   );
 });
 
-test('fails when portal workspace is missing', async () => {
+test('fails when Portal is missing', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-dev-storage-');
 
   await expect(
@@ -142,7 +142,7 @@ test('fails when portal workspace is missing', async () => {
       env: createEnv({ storagePath }),
       runCommand: vi.fn(),
     }),
-  ).rejects.toThrow(/Portal workspace does not exist/);
+  ).rejects.toThrow(/Portal does not exist/);
 });
 
 test('fails when package.json is missing', async () => {

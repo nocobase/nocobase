@@ -19,7 +19,7 @@ const portalDevText = (key: string, values?: Record<string, unknown>, fallback?:
   translateCli(`commands.portalDev.${key}`, values, { fallback });
 
 export default class PortalDev extends Command {
-  static override summary = 'Start a Portal workspace in development mode';
+  static override summary = 'Start a portal in development mode';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -77,7 +77,7 @@ export default class PortalDev extends Command {
       env,
       onStart: (result) => {
         printInfo(
-          portalDevText('messages.starting', { portal: result.portal }, `Starting Portal "${result.portal}"...`),
+          portalDevText('messages.starting', { portal: result.portal }, `Starting portal "${result.portal}"...`),
         );
         printInfo(portalDevText('messages.mode', { mode: result.mode }, `Mode: ${result.mode}`));
         printInfo(portalDevText('messages.app', { app: result.app }, `App: ${result.app}`));

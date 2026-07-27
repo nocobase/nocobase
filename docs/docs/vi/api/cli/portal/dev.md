@@ -1,6 +1,6 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev command reference: start a Portal workspace in development mode."
+description: "nb portal dev command reference: start a Portal in development mode."
 keywords: "nb portal dev,NocoBase CLI,Portal"
 ---
 

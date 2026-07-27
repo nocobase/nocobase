@@ -87,7 +87,7 @@ test('portal dev resolves the current env name before starting dev', async () =>
     env,
   });
   expect(mocks.printInfo.mock.calls).toEqual([
-    ['Starting Portal "cba"...'],
+    ['Starting portal "cba"...'],
     ['Mode: http'],
     ['App: main'],
     ['Base: /x/cba/'],

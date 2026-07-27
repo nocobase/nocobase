@@ -80,7 +80,7 @@ function assertPortalDirIsInsideParent(parentDir: string, portalDir: string): vo
       portalDestroyText(
         'errors.outsideParent',
         { parentDir, portalDir },
-        `Refusing to delete a Portal workspace outside ${parentDir}: ${portalDir}`,
+        `Refusing to delete a portal outside ${parentDir}: ${portalDir}`,
       ),
     );
   }
@@ -135,7 +135,7 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
       portalDestroyText(
         'errors.unsupportedEnvKind',
         { kind: mode },
-        `Cannot destroy a Portal workspace for ${mode} envs in the first version.`,
+        `Cannot destroy a portal for ${mode} envs in the first version.`,
       ),
     );
   }
@@ -149,7 +149,7 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
       portalDestroyText(
         'errors.workspaceMissing',
         { portalDir, portal },
-        `Portal workspace does not exist: ${portalDir}\nPass --force to ignore missing local files.`,
+        `Portal does not exist: ${portalDir}\nPass --force to ignore missing local files.`,
       ),
     );
   }

@@ -107,7 +107,7 @@ describe('PluginMultiPortalClientV2', () => {
     expect(packageJson.description).toBe(
       'Provides multi-portal management with separate layouts and menus for different entry points.',
     );
-    expect(packageJson['description.zh-CN']).toBe('提供多工作区管理能力，可为不同访问入口配置独立布局和菜单。');
+    expect(packageJson['description.zh-CN']).toBe('提供多 Portal 管理能力，可为不同访问入口配置独立布局和菜单。');
   });
 
   it('should depend on the stable plugin-ui-layout client-v2 package entry', () => {

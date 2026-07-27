@@ -179,7 +179,7 @@ function assertPortalDirIsInsideParent(parentDir: string, portalDir: string): vo
       portalCreateText(
         'errors.outsideParent',
         { parentDir, portalDir },
-        `Refusing to modify a Portal workspace outside ${parentDir}: ${portalDir}`,
+        `Refusing to modify a portal outside ${parentDir}: ${portalDir}`,
       ),
     );
   }
@@ -282,7 +282,7 @@ async function downloadNpmTemplatePackage(params: {
         portalCreateText(
           'errors.templateExtractFailed',
           { source: params.source, details: message },
-          `Failed to extract Portal template "${params.source}": ${message}`,
+          `Failed to extract portal template "${params.source}": ${message}`,
         ),
       );
     }
@@ -314,7 +314,7 @@ async function downloadNpmTemplatePackage(params: {
       portalCreateText(
         'errors.templateDownloadFailed',
         { source: params.source, details },
-        `Failed to download Portal template "${params.source}" with npm pack. ${details}`,
+        `Failed to download portal template "${params.source}" with npm pack. ${details}`,
       ),
     );
   } finally {
@@ -399,7 +399,7 @@ export function validatePortalSlug(value: string): string {
       portalCreateText(
         'errors.invalidPortalName',
         { value },
-        `Invalid Portal name "${value}". Use lowercase letters, numbers, underscores, or hyphens, ` +
+        `Invalid portal identifier "${value}". Use lowercase letters, numbers, underscores, or hyphens, ` +
           'and start with a lowercase letter or number.',
       ),
     );
@@ -455,7 +455,7 @@ function validatePortalAppName(value: string): string {
       portalCreateText(
         'errors.invalidPortalAppName',
         { value },
-        `Invalid Portal app name "${value}" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, ` +
+        `Invalid portal app name "${value}" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, ` +
           'and start with a letter or number.',
       ),
     );
@@ -478,7 +478,7 @@ export function resolvePortalAppFromApiBaseUrl(apiBaseUrl: string, appPublicPath
       portalCreateText(
         'errors.missingApiBaseUrl',
         undefined,
-        'Cannot create a Portal workspace because the selected env has no apiBaseUrl.',
+        'Cannot create a portal because the selected env has no apiBaseUrl.',
       ),
     );
   }
@@ -518,7 +518,7 @@ export function buildPortalBasePath(params: { app: string; appPublicPath: string
 export function resolvePortalStoragePath(env: PortalCreateEnvLike): string {
   if (env.kind === 'ssh') {
     throw new Error(
-      portalCreateText('errors.sshUnsupported', undefined, 'Cannot create a Portal workspace for ssh envs in the first version.'),
+      portalCreateText('errors.sshUnsupported', undefined, 'Cannot create a portal for ssh envs in the first version.'),
     );
   }
 
@@ -573,7 +573,7 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
       portalCreateText(
         'errors.workspaceExists',
         { portalDir },
-        `Portal workspace already exists: ${portalDir}\nPass --force to delete it and create a new workspace.`,
+        `Portal already exists: ${portalDir}\nPass --force to delete it and create a new portal.`,
       ),
     );
   }

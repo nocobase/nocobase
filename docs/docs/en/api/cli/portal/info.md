@@ -1,12 +1,12 @@
 ---
 title: "nb portal info"
-description: "nb portal info command reference: show Portal record and local workspace details."
+description: "nb portal info command reference: show portal record and local workspace details."
 keywords: "nb portal info,NocoBase CLI,Portal"
 ---
 
 # nb portal info
 
-Show details for the specified Portal record and local workspace
+Show details for the specified portal record and local workspace
 
 ## Usage
 
@@ -21,7 +21,7 @@ nb portal info <portal> [flags]
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
-| `--json-output`, `-j` | boolean | Print Portal details as JSON. |
+| `--json-output`, `-j` | boolean | Print portal details as JSON. |
 
 ## Examples
 

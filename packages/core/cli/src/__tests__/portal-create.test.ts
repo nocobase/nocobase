@@ -109,7 +109,7 @@ test('validates Portal slugs and generates default titles', () => {
     '-customer',
     '_customer',
   ]) {
-    expect(() => validatePortalSlug(invalid)).toThrow(/Invalid Portal name/);
+    expect(() => validatePortalSlug(invalid)).toThrow(/Invalid portal identifier/);
   }
 });
 
@@ -139,7 +139,7 @@ test('resolves app and public path from apiBaseUrl', () => {
     appPublicPath: '/admin/',
   });
   expect(() => resolvePortalAppFromApiBaseUrl('http://localhost:13000/api/__app/customer%2Fcrm')).toThrow(
-    /Invalid Portal app name/,
+    /Invalid portal app name/,
   );
 });
 
@@ -158,7 +158,7 @@ test('builds Portal base paths for main app and sub apps', () => {
   );
 });
 
-test('creates a Portal workspace from a local template', async () => {
+test('creates a portal from a local template', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
   const runCommand = vi.fn().mockResolvedValue(undefined);
@@ -302,7 +302,7 @@ test('fails when the target directory exists without force', async () => {
       env: createEnv({ storagePath }),
       runCommand: vi.fn().mockResolvedValue(undefined),
     }),
-  ).rejects.toThrow(/Portal workspace already exists/);
+  ).rejects.toThrow(/Portal already exists/);
 });
 
 test('fails before resolving the template when the target directory exists without force', async () => {
@@ -318,7 +318,7 @@ test('fails before resolving the template when the target directory exists witho
       env: createEnv({ storagePath }),
       runCommand: vi.fn().mockResolvedValue(undefined),
     }),
-  ).rejects.toThrow(/Portal workspace already exists/);
+  ).rejects.toThrow(/Portal already exists/);
   expect(await fsp.readFile(path.join(portalDir, 'old.txt'), 'utf-8')).toBe('old');
 });
 

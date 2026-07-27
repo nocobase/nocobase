@@ -1,6 +1,6 @@
 ---
 title: "nb portal create"
-description: "nb portal create command reference: create a local Portal workspace from a template and create or update the Portal record."
+description: "nb portal create command reference: create a local Portal from a template and create or update the Portal record."
 keywords: "nb portal create,NocoBase CLI,Portal"
 ---
 

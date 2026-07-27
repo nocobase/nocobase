@@ -497,7 +497,6 @@ Prompt modes:
       placeholder: DEFAULT_INIT_PORTAL_NAME,
       initialValue: DEFAULT_INIT_PORTAL_NAME,
       yesInitialValue: DEFAULT_INIT_PORTAL_NAME,
-      hidden: (values) => !isAiMode(values),
       required: true,
     }),
     portalTemplate: installNewOnly({
@@ -607,7 +606,7 @@ Prompt modes:
       options: [...INIT_PORTAL_TYPES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial portal name when --portal-type ai is used',
+      description: 'Initial portal identifier',
     }),
     'portal-template': Flags.string({
       description: 'Initial portal template npm package or local path when --portal-type ai is used',
@@ -1089,6 +1088,7 @@ Prompt modes:
         sectionTitle: initText('webUi.portalType.title'),
         sectionDescription: initText('webUi.portalType.description'),
         catalog: {
+          portalName: c.portalName,
           portalType: c.portalType,
         } satisfies PromptsCatalog,
       },
@@ -1944,11 +1944,10 @@ Prompt modes:
     }
     const portalType = normalizeConnectionString(normalized.portalType) || DEFAULT_INIT_PORTAL_TYPE;
     normalized.portalType = portalType;
+    normalized.portalName = normalizeConnectionString(normalized.portalName) || DEFAULT_INIT_PORTAL_NAME;
     if (portalType === 'ai') {
-      normalized.portalName = normalizeConnectionString(normalized.portalName) || DEFAULT_INIT_PORTAL_NAME;
       normalized.portalTemplate = normalizeConnectionString(normalized.portalTemplate);
     } else {
-      delete normalized.portalName;
       delete normalized.portalTemplate;
     }
     delete normalized.installApiBaseUrl;

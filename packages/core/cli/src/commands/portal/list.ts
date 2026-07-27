@@ -26,7 +26,7 @@ function formatBoolean(value: boolean | null): string {
 }
 
 export default class PortalList extends Command {
-  static override summary = 'List Portal records and local workspace sync status';
+  static override summary = 'List portal records and local sync status';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -47,7 +47,7 @@ export default class PortalList extends Command {
     'json-output': Flags.boolean({
       char: 'j',
       aliases: ['json'],
-      description: 'Print Portal records as JSON',
+      description: 'Print portal records as JSON',
       default: false,
     }),
   };
@@ -92,7 +92,7 @@ export default class PortalList extends Command {
     }
 
     if (!outputItems.length) {
-      printInfo(portalListText('messages.empty', undefined, 'No Portal records found.'));
+      printInfo(portalListText('messages.empty', undefined, 'No portal records found.'));
       return;
     }
 

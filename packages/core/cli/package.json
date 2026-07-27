@@ -72,7 +72,7 @@
         "description": "Create and restore NocoBase backups."
       },
       "portal": {
-        "description": "Manage Portal workspaces."
+        "description": "Manage portals."
       },
       "skills": {
         "description": "Inspect or synchronize NocoBase AI coding skills for the current workspace."

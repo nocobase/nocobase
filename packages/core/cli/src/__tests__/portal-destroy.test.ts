@@ -192,7 +192,7 @@ test('fails before deleting the record when workspace is missing without force',
       env: createEnv({ storagePath }),
       apiRequest,
     }),
-  ).rejects.toThrow(/Portal workspace does not exist/);
+  ).rejects.toThrow(/Portal does not exist/);
 
   expect(apiRequest).not.toHaveBeenCalled();
 });

@@ -119,7 +119,7 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
       portalConfigureText(
         'errors.noChanges',
         undefined,
-        'No Portal configuration changes were provided. Pass --source-storage or a --git-* flag.',
+        'No portal configuration changes were provided. Pass --source-storage or a --git-* flag.',
       ),
     );
   }
@@ -135,7 +135,7 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
       portalConfigureText(
         'errors.workspaceMissing',
         { portalDir, portal },
-        `Portal workspace does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` or \`nb portal pull ${portal}\` first.`,
+        `Portal does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` or \`nb portal pull ${portal}\` first.`,
       ),
     );
   }

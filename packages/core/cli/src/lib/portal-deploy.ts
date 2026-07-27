@@ -307,7 +307,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       portalDeployText(
         'errors.workspaceMissing',
         { portalDir, portal },
-        `Portal workspace does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` first.`,
+        `Portal does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` first.`,
       ),
     );
   }
@@ -316,7 +316,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     portalDeployText(
       'errors.packageJsonMissing',
       { portalDir },
-      `Portal workspace is invalid: package.json is missing in ${portalDir}.`,
+      `Portal is invalid: package.json is missing in ${portalDir}.`,
     ),
   );
   const portalConfig = await readPortalConfig(portalDir);
@@ -379,7 +379,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       portalDeployText(
         'errors.unsupportedEnvKind',
         { kind: options.env.kind },
-        `Cannot deploy a Portal workspace for ${options.env.kind} envs in the first version.`,
+        `Cannot deploy a portal for ${options.env.kind} envs in the first version.`,
       ),
     );
   }

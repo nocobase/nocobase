@@ -19,7 +19,7 @@ const portalInfoText = (key: string, values?: Record<string, unknown>, fallback?
   translateCli(`commands.portalInfo.${key}`, values, { fallback });
 
 export default class PortalInfo extends Command {
-  static override summary = 'Show Portal record and local workspace details';
+  static override summary = 'Show portal record and local file details';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -47,7 +47,7 @@ export default class PortalInfo extends Command {
     'json-output': Flags.boolean({
       char: 'j',
       aliases: ['json'],
-      description: 'Print Portal details as JSON',
+      description: 'Print portal details as JSON',
       default: false,
     }),
   };

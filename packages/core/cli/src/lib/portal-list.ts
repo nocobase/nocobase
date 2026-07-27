@@ -240,7 +240,7 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
       portalListText(
         'errors.unsupportedEnvKind',
         { kind: mode },
-        `Cannot list Portal workspaces for ${mode} envs in the first version.`,
+        `Cannot list portals for ${mode} envs in the first version.`,
       ),
     );
   }

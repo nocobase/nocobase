@@ -651,7 +651,7 @@ export default class Install extends Command {
       options: [...INSTALL_PORTAL_TYPES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial portal name when --portal-type ai is used',
+      description: 'Initial portal identifier',
     }),
     'portal-template': Flags.string({
       description: 'Initial portal template npm package or local path when --portal-type ai is used',
@@ -792,7 +792,6 @@ export default class Install extends Command {
         placeholder: DEFAULT_INSTALL_PORTAL_NAME,
         initialValue: DEFAULT_INSTALL_PORTAL_NAME,
         yesInitialValue: DEFAULT_INSTALL_PORTAL_NAME,
-        hidden: (values) => !isAiMode(values),
         required: true,
       },
       portalTemplate: {

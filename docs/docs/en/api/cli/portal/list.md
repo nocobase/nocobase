@@ -1,12 +1,12 @@
 ---
 title: "nb portal list"
-description: "nb portal list command reference: list Portal records and local workspace sync status."
+description: "nb portal list command reference: list portal records and local workspace sync status."
 keywords: "nb portal list,NocoBase CLI,Portal"
 ---
 
 # nb portal list
 
-List Portal records and local workspace sync status
+List portal records and local workspace sync status
 
 ## Usage
 
@@ -20,7 +20,7 @@ nb portal list [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
-| `--json-output`, `-j` | boolean | Print Portal records as JSON. |
+| `--json-output`, `-j` | boolean | Print portal records as JSON. |
 
 ## Examples
 
@@ -32,7 +32,7 @@ nb portal list --json-output
 
 ## Notes
 
-The list shows name, URL, portal type, source storage, local path, enabled status, and local sync status. Only `ai` portals have local workspace sync checks; other Portal types show an empty sync status.
+The list shows name, URL, portal type, source storage, local path, enabled status, and local sync status. Only `ai` portals have local workspace sync checks; other portal types show an empty sync status.
 
 ## Related Commands
 

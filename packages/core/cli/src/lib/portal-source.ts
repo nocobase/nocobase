@@ -218,7 +218,7 @@ async function replacePortalSourceFromArchive(params: {
       portalSourceText(
         'errors.workspaceExists',
         { portalDir: params.portalDir },
-        `Portal workspace already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
+        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
       ),
     );
   }
@@ -253,7 +253,7 @@ async function replacePortalSourceFromDirectory(params: {
       portalSourceText(
         'errors.workspaceExists',
         { portalDir: params.portalDir },
-        `Portal workspace already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
+        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
       ),
     );
   }
@@ -340,7 +340,7 @@ async function resolvePortalSourceContext(options: PortalSourceOptions): Promise
       portalSourceText(
         'errors.unsupportedEnvKind',
         { kind: mode },
-        `Cannot sync Portal source for ${mode} envs in the first version.`,
+        `Cannot sync portal source for ${mode} envs in the first version.`,
       ),
     );
   }
@@ -540,7 +540,7 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
       portalSourceText(
         'errors.unsupportedSourceStorage',
         { sourceStorage: sourceContext.sourceStorage },
-        `Unsupported Portal source storage: ${sourceContext.sourceStorage}`,
+        `Unsupported portal source storage: ${sourceContext.sourceStorage}`,
       ),
     );
   }
@@ -610,7 +610,7 @@ export async function pushPortalSource(options: PortalSourceOptions): Promise<Po
       portalSourceText(
         'errors.workspaceMissing',
         { portalDir: context.portalDir, portal: context.portal },
-        `Portal workspace does not exist: ${context.portalDir}\nRun \`nb portal create ${context.portal}\` first.`,
+        `Portal does not exist: ${context.portalDir}\nRun \`nb portal create ${context.portal}\` first.`,
       ),
     );
   }
@@ -645,7 +645,7 @@ export async function pushPortalSource(options: PortalSourceOptions): Promise<Po
       portalSourceText(
         'errors.unsupportedSourceStorage',
         { sourceStorage: sourceContext.sourceStorage },
-        `Unsupported Portal source storage: ${sourceContext.sourceStorage}`,
+        `Unsupported portal source storage: ${sourceContext.sourceStorage}`,
       ),
     );
   }

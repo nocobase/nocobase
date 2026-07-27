@@ -1,14 +1,14 @@
 ---
 title: "nb portal"
-description: "nb portal command reference: manage Portal workspaces, including configuration, creation, development, source sync, deployment, and deletion."
+description: "nb portal command reference: manage portals, including configuration, creation, development, source sync, deployment, and deletion."
 keywords: "nb portal,NocoBase CLI,Portal,workspace,source storage,deploy"
 ---
 
 # nb portal
 
-`nb portal` manages Portal workspaces. A Portal can have its own frontend source, entry path, and deployment output; this command group connects the Portal record in NocoBase with the local workspace and source storage.
+`nb portal` manages portals. A portal can have its own frontend source, entry path, and deployment output; this command group connects the portal record in NocoBase with the local workspace and source storage.
 
-A typical flow is to create a local workspace, start development mode, push source changes to source storage, and then build and deploy. If you are taking over an existing Portal, pull it locally first.
+A typical flow is to create a local workspace, start development mode, push source changes to source storage, and then build and deploy. If you are taking over an existing portal, pull it locally first.
 
 ## Usage
 
@@ -20,19 +20,19 @@ nb portal <command>
 
 | Command | Description |
 | --- | --- |
-| [`nb portal config`](./config.md) | Update the local Portal workspace source configuration and sync it to the remote Portal record when possible |
-| [`nb portal create`](./create.md) | Create a local Portal workspace from a template and create or update the Portal record |
-| [`nb portal deploy`](./deploy.md) | Build and deploy the specified Portal workspace |
-| [`nb portal destroy`](./destroy.md) | Delete the Portal record and local workspace |
-| [`nb portal dev`](./dev.md) | Start development mode for the specified Portal workspace |
-| [`nb portal info`](./info.md) | Show details for the specified Portal record and local workspace |
-| [`nb portal list`](./list.md) | List Portal records and local workspace sync status |
-| [`nb portal pull`](./pull.md) | Pull Portal source from source storage into the local workspace |
-| [`nb portal push`](./push.md) | Push local Portal source changes to source storage |
+| [`nb portal config`](./config.md) | Update the local portal source configuration and sync it to the remote portal record when possible |
+| [`nb portal create`](./create.md) | Create a local portal from a template and create or update the portal record |
+| [`nb portal deploy`](./deploy.md) | Build and deploy the specified portal |
+| [`nb portal destroy`](./destroy.md) | Delete the portal record and local workspace |
+| [`nb portal dev`](./dev.md) | Start development mode for the specified portal |
+| [`nb portal info`](./info.md) | Show details for the specified portal record and local workspace |
+| [`nb portal list`](./list.md) | List portal records and local workspace sync status |
+| [`nb portal pull`](./pull.md) | Pull portal source from source storage into the local workspace |
+| [`nb portal push`](./push.md) | Push local portal source changes to source storage |
 
 ## Typical Flow
 
-Create a Portal named `customer`:
+Create a portal named `customer`:
 
 ```bash
 nb portal create customer -e dev --yes
@@ -58,7 +58,7 @@ nb portal push customer -e dev --yes --message "Update customer portal"
 nb portal deploy customer -e dev --yes
 ```
 
-Take over an existing Portal:
+Take over an existing portal:
 
 ```bash
 nb portal list -e dev --yes
@@ -75,14 +75,14 @@ nb portal push customer -e dev --yes --message "Move customer portal source to G
 
 ## source storage
 
-When creating a Portal, choose where the source code is managed:
+When creating a portal, choose where the source code is managed:
 
 | Mode | Description |
 | --- | --- |
 | `nocobase` | Default mode. Source code is managed by NocoBase source storage. |
 | `git` | Source code is stored in a Git repository, configured with `--git-repo`, `--git-branch`, and `--git-path`. |
 
-For quick creation and development, the default `nocobase` storage is usually enough. Use `git` when the Portal source should be reviewed, versioned, or built through an existing team workflow.
+For quick creation and development, the default `nocobase` storage is usually enough. Use `git` when the portal source should be reviewed, versioned, or built through an existing team workflow.
 
 Source configuration is written to `portal.config.json` in the local workspace. `create`, `pull`, and `config` maintain this file; `push` and `deploy` read it to sync source or deployment output.
 
@@ -96,11 +96,11 @@ Source configuration is written to `portal.config.json` in the local workspace. 
 | `docker` | The workspace is shared with the app through a Docker volume. With default `nocobase` storage, `pull`/`push` usually do not need extra sync. |
 | `http` | Source and deployment output are synced through APIs. `pull` downloads a source archive, and `push` uploads one. |
 
-`ssh` envs do not support Portal workspace management in the current version.
+`ssh` envs do not support portal management in the current version.
 
 ## Local Workspace Path
 
-Portal workspaces are stored under the selected env storage:
+Portals are stored under the selected env storage:
 
 ```text
 <storagePath>/portals/<app>/<portal>

@@ -10,7 +10,7 @@
 import { Command, loadHelpClass } from '@oclif/core';
 
 export default class Portal extends Command {
-  static override summary = 'Manage Portal workspaces';
+  static override summary = 'Manage portals';
 
   async run(): Promise<void> {
     await this.parse(Portal);

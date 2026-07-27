@@ -195,7 +195,7 @@ test('portal list prints an empty message when no portals exist', async () => {
   await PortalList.prototype.run.call(command);
 
   expect(log).not.toHaveBeenCalled();
-  expect(mocks.printInfo.mock.calls).toEqual([['No Portal records found.']]);
+  expect(mocks.printInfo.mock.calls).toEqual([['No portal records found.']]);
 });
 
 test('portal list prints JSON output when requested', async () => {

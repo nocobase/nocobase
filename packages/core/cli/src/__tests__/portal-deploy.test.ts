@@ -375,7 +375,7 @@ test('fails when workspace is missing', async () => {
       env: createEnv({ storagePath }),
       runCommand: vi.fn(),
     }),
-  ).rejects.toThrow(/Portal workspace does not exist/);
+  ).rejects.toThrow(/Portal does not exist/);
 });
 
 test('fails when build does not produce dist index', async () => {

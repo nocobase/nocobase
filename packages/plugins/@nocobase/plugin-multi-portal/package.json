@@ -9,9 +9,9 @@
     "editionLevel": 3
   },
   "displayName": "Portal manager",
-  "displayName.zh-CN": "工作区管理",
+  "displayName.zh-CN": "Portal 管理",
   "description": "Provides multi-portal management with separate layouts and menus for different entry points.",
-  "description.zh-CN": "提供多工作区管理能力，可为不同访问入口配置独立布局和菜单。",
+  "description.zh-CN": "提供多 Portal 管理能力，可为不同访问入口配置独立布局和菜单。",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@nocobase/plugin-ui-layout": "2.2.0-alpha.9",

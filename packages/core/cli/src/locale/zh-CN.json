@@ -180,12 +180,12 @@
         "templateMissingPackageJson": "Portal 模板 \"{{source}}\" 无效：缺少 package.json。",
         "npmPackNoTarball": "npm pack 没有为 {{source}} 生成本地 tarball。",
         "npmPackMultipleTarballs": "npm pack 为 {{source}} 生成了多个 tarball。",
-        "invalidPortalName": "Portal 名称 \"{{value}}\" 无效。请使用小写字母、数字、下划线或连字符，并以小写字母或数字开头。",
+        "invalidPortalName": "Portal 标识 \"{{value}}\" 无效。请使用小写字母、数字、下划线或连字符，并以小写字母或数字开头。",
         "invalidPortalAppName": "从 apiBaseUrl 解析出的 Portal app 名称 \"{{value}}\" 无效。请使用字母、数字、下划线或连字符，并以字母或数字开头。",
-        "missingApiBaseUrl": "无法创建 Portal workspace，因为当前 env 没有 apiBaseUrl。",
-        "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal workspace：{{portalDir}}",
-        "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal workspace。",
-        "workspaceExists": "Portal workspace 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。"
+        "missingApiBaseUrl": "无法创建 Portal，因为当前 env 没有 apiBaseUrl。",
+        "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
+        "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal。",
+        "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。"
       },
       "messages": {
         "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
@@ -210,7 +210,7 @@
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
         "noChanges": "没有提供 Portal 配置变更。请传入 --source-storage 或 --git-* 参数。",
-        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}` 或 `nb portal pull {{portal}}`。"
+        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}` 或 `nb portal pull {{portal}}`。"
       },
       "messages": {
         "updated": "Portal \"{{portal}}\" 配置已更新：{{portalDir}}/portal.config.json。",
@@ -222,10 +222,10 @@
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
-        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
-        "packageJsonMissing": "Portal workspace 无效：{{portalDir}} 中缺少 package.json。",
+        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
+        "packageJsonMissing": "Portal 无效：{{portalDir}} 中缺少 package.json。",
         "distMissing": "Portal build 没有生成 {{distDir}}/index.html。",
-        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 部署 Portal workspace。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 部署 Portal。",
         "uploadFailed": "Portal dist 上传失败，状态码 {{status}}\n{{details}}",
         "recordSyncFailed": "Portal 记录同步失败，状态码 {{status}}\n{{details}}"
       },
@@ -244,7 +244,7 @@
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
-        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 列出 Portal workspace。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 列出 Portal。",
         "listFailed": "Portal 列表获取失败，状态码 {{status}}\n{{details}}"
       },
       "messages": {
@@ -279,9 +279,9 @@
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
         "confirmationRequired": "非交互模式下拒绝删除 Portal。请追加 --yes 后重试。",
-        "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal workspace：{{portalDir}}",
-        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n如需忽略本地文件缺失，请追加 --force。",
-        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal workspace。",
+        "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal：{{portalDir}}",
+        "workspaceMissing": "Portal 不存在：{{portalDir}}\n如需忽略本地文件缺失，请追加 --force。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal。",
         "recordDestroyFailed": "Portal 记录删除失败，状态码 {{status}}\n{{details}}"
       },
       "prompts": {
@@ -293,16 +293,16 @@
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
         "record": "记录：{{status}}",
-        "workspace": "Workspace：{{status}}（{{dir}}）"
+        "workspace": "Portal：{{status}}（{{dir}}）"
       }
     },
     "portalDev": {
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
-        "workspaceMissing": "Portal workspace 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
-        "packageJsonMissing": "Portal workspace 无效：{{portalDir}} 中缺少 package.json。",
-        "sshUnsupported": "第一版暂不支持为 ssh env 启动 Portal workspace 开发服务。"
+        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
+        "packageJsonMissing": "Portal 无效：{{portalDir}} 中缺少 package.json。",
+        "sshUnsupported": "第一版暂不支持为 ssh env 启动 Portal 开发服务。"
       },
       "messages": {
         "starting": "正在启动 Portal \"{{portal}}\"...",
@@ -487,13 +487,13 @@
         },
         "portalType": {
           "message": "Portal 类型",
-          "noCodeLabel": "人主导开发",
-          "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
-          "aiLabel": "AI 主导开发",
-          "aiHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
+          "noCodeLabel": "无代码 Portal",
+          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<标识>",
+          "aiLabel": "AI Portal",
+          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<标识>"
         },
         "portalName": {
-          "message": "初始化 Portal 名称",
+          "message": "Portal 标识",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -602,13 +602,13 @@
         },
         "portalType": {
           "message": "Portal 类型",
-          "noCodeLabel": "人主导开发",
-          "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
-          "aiLabel": "AI 主导开发",
-          "aiHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
+          "noCodeLabel": "无代码 Portal",
+          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<标识>",
+          "aiLabel": "AI Portal",
+          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<标识>"
         },
         "portalName": {
-          "message": "初始化 Portal 名称",
+          "message": "Portal 标识",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -637,8 +637,8 @@
           "description": "选择应用的获取方式，以及要使用的来源和版本。"
         },
         "portalType": {
-          "title": "Portal 类型",
-          "description": "选择应用的 Portal 类型。"
+          "title": "配置 Portal",
+          "description": "设置默认 Portal 的标识和类型。"
         },
         "configureDatabase": {
           "title": "配置数据库",

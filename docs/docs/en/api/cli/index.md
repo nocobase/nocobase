@@ -1,6 +1,6 @@
 ---
 title: 'NocoBase CLI'
-description: 'NocoBase CLI (`nb` command) reference: initialization, backup and restore, configuration, environment management, app runtime, Portal, source code, database, plugins, commercial license, API, CLI self-update, and Skills management.'
+description: 'NocoBase CLI (`nb` command) reference: initialization, backup and restore, configuration, environment management, app runtime, portal, source code, database, plugins, commercial license, API, CLI self-update, and Skills management.'
 keywords: 'NocoBase CLI,nb,command line,command reference,backup,restore,environment management,Portal,plugin management,commercial license,API'
 ---
 
@@ -39,7 +39,7 @@ The following command groups are shown in `nb --help`:
 | [`nb env`](./env/index.md)           | Manage NocoBase project environments, the current env, status, details, and runtime commands. |
 | [`nb license`](./license/index.md)   | Manage commercial licenses and licensed plugins.                                              |
 | [`nb plugin`](./plugin/index.md)     | Manage plugins in the selected NocoBase env.                                                  |
-| [`nb portal`](./portal/index.md)     | Manage Portal workspaces: configure, create, develop, sync source, deploy, and destroy.                       |
+| [`nb portal`](./portal/index.md)     | Manage portals: configure, create, develop, sync source, deploy, and destroy.                       |
 | [`nb scaffold`](./scaffold/index.md) | Generate scaffolding for NocoBase plugin development.                                         |
 | [`nb self`](./self/index.md)         | Check or update NocoBase CLI itself.                                                          |
 | [`nb session`](./session/index.md)   | Configure `NB_SESSION_ID` so the current env is isolated by shell or agent runtime.           |
@@ -130,7 +130,7 @@ nb license status -e app1
 nb license plugins list -e app1
 ```
 
-Create and develop a Portal:
+Create and develop a portal:
 
 ```bash
 nb portal create customer -e app1 --yes

@@ -156,7 +156,7 @@ function getMultiPortalRouteNameFormatError(routeName?: string) {
     return undefined;
   }
   if (!portalSlugPattern.test(trimmed)) {
-    return 'Portal slug can only contain lowercase letters, numbers, hyphens, and underscores';
+    return 'Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores';
   }
   return undefined;
 }
@@ -372,7 +372,7 @@ const MultiPortalsPage: React.FC = () => {
           );
         },
       },
-      { title: t('Portal slug'), dataIndex: 'routeName', ellipsis: true },
+      { title: t('Portal identifier'), dataIndex: 'routeName', ellipsis: true },
       {
         title: t('Layout'),
         dataIndex: 'uiLayoutUid',
@@ -568,7 +568,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         </Form.Item>
         <Form.Item
           name="routeName"
-          label={t('Portal slug')}
+          label={t('Portal identifier')}
           rules={[
             { required: true, whitespace: true, message: t('The field value is required') },
             {
@@ -590,15 +590,15 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           <Radio.Group disabled={record?.defaultPortal}>
             <Space direction="vertical">
               <Radio id="multi-portal-portal-type-no-code" value="no-code">
-                <span>{t('Human-led development')}</span>
+                <span>{t('No-code portal')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                  {t('Build your application using configuration and low-code tools, with AI as your assistant.')}
+                  {t('Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>')}
                 </div>
               </Radio>
               <Radio value="ai">
-                <span>{t('AI-led development')}</span>
+                <span>{t('AI portal')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                  {t('You describe what you need, and AI writes the code and builds the application for you.')}
+                  {t('Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>')}
                 </div>
               </Radio>
             </Space>

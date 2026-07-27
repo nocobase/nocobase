@@ -96,11 +96,11 @@ Source configuration is written to `portal.config.json` in the local workspace. 
 | `docker` | The workspace is shared with the app through a Docker volume. With default `nocobase` storage, `pull`/`push` usually do not need extra sync. |
 | `http` | Source and deployment output are synced through APIs. `pull` downloads a source archive, and `push` uploads one. |
 
-`ssh` envs do not support Portal workspace management in the current version.
+`ssh` envs do not support Portal management in the current version.
 
 ## Local Workspace Path
 
-Portal workspaces are stored under the selected env storage:
+Portals are stored under the selected env storage:
 
 ```text
 <storagePath>/portals/<app>/<portal>

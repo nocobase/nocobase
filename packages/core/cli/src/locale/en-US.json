@@ -175,17 +175,17 @@
         "templateInvalidDirectory": "Portal template \"{{source}}\" is invalid: expected a directory.",
         "localTemplateMissing": "Portal template directory does not exist: {{source}}",
         "templateUnresolved": "Portal template \"{{source}}\" could not be resolved. {{details}}",
-        "templateDownloadFailed": "Failed to download Portal template \"{{source}}\" with npm pack. {{details}}",
-        "templateExtractFailed": "Failed to extract Portal template \"{{source}}\": {{details}}",
+        "templateDownloadFailed": "Failed to download portal template \"{{source}}\" with npm pack. {{details}}",
+        "templateExtractFailed": "Failed to extract portal template \"{{source}}\": {{details}}",
         "templateMissingPackageJson": "Portal template \"{{source}}\" is invalid: package.json is missing.",
         "npmPackNoTarball": "npm pack did not produce a local tarball for {{source}}.",
         "npmPackMultipleTarballs": "npm pack produced multiple tarballs for {{source}}.",
-        "invalidPortalName": "Invalid Portal name \"{{value}}\". Use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.",
-        "invalidPortalAppName": "Invalid Portal app name \"{{value}}\" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, and start with a letter or number.",
-        "missingApiBaseUrl": "Cannot create a Portal workspace because the selected env has no apiBaseUrl.",
-        "outsideParent": "Refusing to modify a Portal workspace outside {{parentDir}}: {{portalDir}}",
-        "sshUnsupported": "Cannot create a Portal workspace for ssh envs in the first version.",
-        "workspaceExists": "Portal workspace already exists: {{portalDir}}\nPass --force to delete it and create a new workspace."
+        "invalidPortalName": "Invalid portal identifier \"{{value}}\". Use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.",
+        "invalidPortalAppName": "Invalid portal app name \"{{value}}\" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, and start with a letter or number.",
+        "missingApiBaseUrl": "Cannot create a portal because the selected env has no apiBaseUrl.",
+        "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
+        "sshUnsupported": "Cannot create a portal for ssh envs in the first version.",
+        "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal."
       },
       "messages": {
         "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
@@ -209,23 +209,23 @@
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "noChanges": "No Portal configuration changes were provided. Pass --source-storage or a --git-* flag.",
-        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` or `nb portal pull {{portal}}` first."
+        "noChanges": "No portal configuration changes were provided. Pass --source-storage or a --git-* flag.",
+        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` or `nb portal pull {{portal}}` first."
       },
       "messages": {
         "updated": "Portal \"{{portal}}\" configuration updated at {{portalDir}}/portal.config.json.",
-        "remoteSynced": "Remote Portal record: synced",
-        "remoteSkipped": "Remote Portal record: not found; local config only"
+        "remoteSynced": "Remote portal record: synced",
+        "remoteSkipped": "Remote portal record: not found; local config only"
       }
     },
     "portalDeploy": {
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
-        "packageJsonMissing": "Portal workspace is invalid: package.json is missing in {{portalDir}}.",
+        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
+        "packageJsonMissing": "Portal is invalid: package.json is missing in {{portalDir}}.",
         "distMissing": "Portal build did not produce {{distDir}}/index.html.",
-        "unsupportedEnvKind": "Cannot deploy a Portal workspace for {{kind}} envs in the first version.",
+        "unsupportedEnvKind": "Cannot deploy a portal for {{kind}} envs in the first version.",
         "uploadFailed": "Portal dist upload failed with status {{status}}\n{{details}}",
         "recordSyncFailed": "Portal record sync failed with status {{status}}\n{{details}}"
       },
@@ -244,11 +244,11 @@
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "unsupportedEnvKind": "Cannot list Portal workspaces for {{kind}} envs in the first version.",
+        "unsupportedEnvKind": "Cannot list portals for {{kind}} envs in the first version.",
         "listFailed": "Portal list failed with status {{status}}\n{{details}}"
       },
       "messages": {
-        "empty": "No Portal records found."
+        "empty": "No portal records found."
       },
       "table": {
         "name": "Name",
@@ -278,14 +278,14 @@
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "confirmationRequired": "Refusing to destroy a Portal in non-interactive mode without --yes.",
-        "outsideParent": "Refusing to delete a Portal workspace outside {{parentDir}}: {{portalDir}}",
-        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nPass --force to ignore missing local files.",
-        "unsupportedEnvKind": "Cannot destroy a Portal workspace for {{kind}} envs in the first version.",
+        "confirmationRequired": "Refusing to destroy a portal in non-interactive mode without --yes.",
+        "outsideParent": "Refusing to delete a portal outside {{parentDir}}: {{portalDir}}",
+        "workspaceMissing": "Portal does not exist: {{portalDir}}\nPass --force to ignore missing local files.",
+        "unsupportedEnvKind": "Cannot destroy a portal for {{kind}} envs in the first version.",
         "recordDestroyFailed": "Portal record destroy failed with status {{status}}\n{{details}}"
       },
       "prompts": {
-        "confirm": "Destroy Portal \"{{portal}}\" and delete its storage directory?"
+        "confirm": "Destroy portal \"{{portal}}\" and delete its storage directory?"
       },
       "messages": {
         "destroyed": "Portal \"{{portal}}\" destroyed.",
@@ -293,19 +293,19 @@
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
         "record": "Record: {{status}}",
-        "workspace": "Workspace: {{status}} ({{dir}})"
+        "workspace": "Portal files: {{status}} ({{dir}})"
       }
     },
     "portalDev": {
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
-        "packageJsonMissing": "Portal workspace is invalid: package.json is missing in {{portalDir}}.",
-        "sshUnsupported": "Cannot start a Portal workspace in dev mode for ssh envs in the first version."
+        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
+        "packageJsonMissing": "Portal is invalid: package.json is missing in {{portalDir}}.",
+        "sshUnsupported": "Cannot start a portal in dev mode for ssh envs in the first version."
       },
       "messages": {
-        "starting": "Starting Portal \"{{portal}}\"...",
+        "starting": "Starting portal \"{{portal}}\"...",
         "mode": "Mode: {{mode}}",
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
@@ -487,13 +487,13 @@
         },
         "portalType": {
           "message": "Portal type",
-          "noCodeLabel": "Human-led development",
-          "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
-          "aiLabel": "AI-led development",
-          "aiHint": "You describe what you need, and AI writes the code and builds the application for you."
+          "noCodeLabel": "No-code portal",
+          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>",
+          "aiLabel": "AI portal",
+          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>"
         },
         "portalName": {
-          "message": "Initial portal name",
+          "message": "Portal identifier",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -602,13 +602,13 @@
         },
         "portalType": {
           "message": "Portal type",
-          "noCodeLabel": "Human-led development",
-          "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
-          "aiLabel": "AI-led development",
-          "aiHint": "You describe what you need, and AI writes the code and builds the application for you."
+          "noCodeLabel": "No-code portal",
+          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>",
+          "aiLabel": "AI portal",
+          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>"
         },
         "portalName": {
-          "message": "Initial portal name",
+          "message": "Portal identifier",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -637,8 +637,8 @@
           "description": "Choose how to get the app and which source and version to use."
         },
         "portalType": {
-          "title": "Portal type",
-          "description": "Choose the portal type for your application."
+          "title": "Configure portal",
+          "description": "Set the default portal identifier and type."
         },
         "configureDatabase": {
           "title": "Configure the database",

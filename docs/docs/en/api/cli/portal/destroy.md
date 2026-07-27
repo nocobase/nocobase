@@ -1,12 +1,12 @@
 ---
 title: "nb portal destroy"
-description: "nb portal destroy command reference: delete a Portal record and its local workspace."
+description: "nb portal destroy command reference: delete a portal record and its local workspace."
 keywords: "nb portal destroy,NocoBase CLI,Portal"
 ---
 
 # nb portal destroy
 
-Delete the Portal record and local workspace
+Delete the portal record and local workspace
 
 ## Usage
 
@@ -21,7 +21,7 @@ nb portal destroy <portal> [flags]
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip confirmation prompts. |
-| `--force` | boolean | Ignore missing Portal records or workspace directories. |
+| `--force` | boolean | Ignore missing portal records or workspace directories. |
 
 ## Examples
 
@@ -33,7 +33,7 @@ nb portal destroy customer --force --yes
 
 ## Notes
 
-This command affects both the remote Portal record and the local workspace. In non-interactive mode, pass `--yes`. Use `--force` to ignore missing records or local files.
+This command affects both the remote portal record and the local workspace. In non-interactive mode, pass `--yes`. Use `--force` to ignore missing records or local files.
 
 ## Related Commands
 

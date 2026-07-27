@@ -109,9 +109,9 @@ export interface EnvConfigEntry {
   lang?: string;
   /** Initial portal type (INIT_PORTAL_TYPE). */
   portalType?: string;
-  /** Initial Portal name (INIT_PORTAL_NAME). */
+  /** Initial portal name (INIT_PORTAL_NAME). */
   portalName?: string;
-  /** Initial Portal template npm package or local path (INIT_PORTAL_TEMPLATE). */
+  /** Initial portal template npm package or local path (INIT_PORTAL_TEMPLATE). */
   portalTemplate?: string;
   rootUsername?: string;
   rootEmail?: string;
