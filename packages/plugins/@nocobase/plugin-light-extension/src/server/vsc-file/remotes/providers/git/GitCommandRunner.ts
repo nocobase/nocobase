@@ -24,6 +24,7 @@ const defaultLimits: GitCommandLimits = {
   maxStdinBytes: 12 * 1024 * 1024,
 };
 const catFileStdoutLimit = 12 * 1024 * 1024;
+const lsTreeStdoutLimit = 8 * 1024 * 1024;
 const allowedCommands = new Set([
   'cat-file',
   'commit-tree',
@@ -339,7 +340,12 @@ export class GitCommandRunner {
   }
 
   private getLimitsForCommand(command: string): GitCommandLimits {
-    const commandDefaults = command === 'cat-file' ? { maxStdoutBytes: catFileStdoutLimit } : undefined;
+    const commandDefaults =
+      command === 'cat-file'
+        ? { maxStdoutBytes: catFileStdoutLimit }
+        : command === 'ls-tree'
+          ? { maxStdoutBytes: lsTreeStdoutLimit }
+          : undefined;
     return mergeAndValidateLimits(
       mergeAndValidateLimits(mergeAndValidateLimits(defaultLimits, commandDefaults), this.limitOverrides),
       this.commandLimits[command],
