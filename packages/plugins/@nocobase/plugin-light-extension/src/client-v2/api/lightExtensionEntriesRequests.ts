@@ -28,6 +28,7 @@ export type ApiRequestOptions = {
   method?: string;
   data?: unknown;
   skipNotify?: boolean;
+  signal?: AbortSignal;
 };
 
 export type ApiClientLike = {

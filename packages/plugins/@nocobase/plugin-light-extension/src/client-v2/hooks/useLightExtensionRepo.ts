@@ -15,6 +15,7 @@ import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionChangeLifecycleInput,
   LightExtensionCommitRecord,
+  LightExtensionCreateJobAcceptedResult,
   LightExtensionCreateRepoInput,
   LightExtensionFileChange,
   LightExtensionInspectSourceArchiveInput,
@@ -90,7 +91,7 @@ export interface LightExtensionSaveSourceInput {
 
 export interface UseLightExtensionRepoResult {
   listRepos(): Promise<LightExtensionRepoRecord[]>;
-  createRepo(input: LightExtensionCreateRepoInput): Promise<LightExtensionRepoRecord>;
+  createRepo(input: LightExtensionCreateRepoInput): Promise<LightExtensionCreateJobAcceptedResult>;
   getRepo(repoId: string): Promise<LightExtensionRepoRecord>;
   updateRepo(input: LightExtensionUpdateRepoInput): Promise<LightExtensionRepoRecord>;
   changeLifecycle(input: LightExtensionChangeLifecycleInput): Promise<LightExtensionRepoRecord>;
@@ -142,7 +143,7 @@ type OperationInputMap = {
 
 type OperationResultMap = {
   listRepos: LightExtensionRepoRecord[];
-  createRepo: LightExtensionRepoRecord;
+  createRepo: LightExtensionCreateJobAcceptedResult;
   getRepo: LightExtensionRepoRecord;
   updateRepo: LightExtensionRepoRecord;
   changeLifecycle: LightExtensionRepoRecord;
@@ -196,12 +197,8 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
 
   const listRepos = useCallback(() => requestOperation('listRepos', undefined), [requestOperation]);
   const createRepo = useCallback(
-    async (input: LightExtensionCreateRepoInput) => {
-      const result = await requestOperation('createRepo', input);
-      invalidateLightExtensionRuntimeCache(ctx.api, result.id);
-      return result;
-    },
-    [ctx.api, requestOperation],
+    (input: LightExtensionCreateRepoInput) => requestOperation('createRepo', input),
+    [requestOperation],
   );
   const getRepo = useCallback((repoId: string) => requestOperation('getRepo', { repoId }), [requestOperation]);
   const updateRepo = useCallback(

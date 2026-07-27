@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { createMockClient, type CompiledFilter } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import userEvent from '@testing-library/user-event';
@@ -16,6 +16,8 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
+import type { UseLightExtensionCreateJobsResult } from '../hooks/useLightExtensionCreateJobs';
+import type { LightExtensionCreateJobSummary } from '../../shared/types';
 import { LightExtensionSyncHookError, type UseLightExtensionSyncResult } from '../hooks/useLightExtensionSync';
 import LightExtensionListPage, {
   LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
@@ -44,6 +46,14 @@ const mocks = vi.hoisted(() => ({
     push: vi.fn(),
     createFromGit: vi.fn(),
   },
+  createJobs: {
+    initialJobs: [] as LightExtensionCreateJobSummary[],
+    addAcceptedJob: vi.fn(),
+    refresh: vi.fn(async () => undefined),
+    retry: vi.fn(),
+    dismiss: vi.fn(),
+    update: vi.fn(),
+  },
 }));
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -69,6 +79,36 @@ vi.mock('../hooks/useLightExtensionSync', async (importOriginal) => {
   return {
     ...actual,
     useLightExtensionSync: () => mocks.sync as unknown as UseLightExtensionSyncResult,
+  };
+});
+
+vi.mock('../hooks/useLightExtensionCreateJobs', async () => {
+  const React = await import('react');
+  return {
+    useLightExtensionCreateJobs: (): UseLightExtensionCreateJobsResult => {
+      const [jobs, setJobs] = React.useState<UseLightExtensionCreateJobsResult['jobs']>(mocks.createJobs.initialJobs);
+      React.useEffect(() => {
+        mocks.createJobs.update.mockImplementation((nextJobs: LightExtensionCreateJobSummary[]) => setJobs(nextJobs));
+      }, []);
+      return {
+        jobs,
+        loading: false,
+        addAcceptedJob: (job) => {
+          mocks.createJobs.addAcceptedJob(job);
+          setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+        },
+        refresh: mocks.createJobs.refresh,
+        retry: async (jobId) => {
+          const job = await mocks.createJobs.retry(jobId);
+          setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+          return job;
+        },
+        dismiss: async (jobId) => {
+          await mocks.createJobs.dismiss(jobId);
+          setJobs((current) => current.filter((job) => job.id !== jobId));
+        },
+      };
+    },
   };
 });
 
@@ -193,16 +233,25 @@ function LocationSearch() {
 describe('LightExtensionListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.createJobs.initialJobs = [];
     mocks.api.listRepos.mockResolvedValue([]);
     mocks.api.createRepo.mockResolvedValue({
-      id: 'ler_browser_smoke',
+      id: 'lecj_browser_smoke',
+      targetRepoId: 'ler_browser_smoke',
       name: 'browser-smoke',
-      normalizedName: 'browser-smoke',
       title: 'Browser smoke',
       description: null,
-      lifecycleStatus: 'enabled',
-      healthStatus: 'pending',
-      headCommitId: null,
+      sourceType: 'template',
+      status: 'pending',
+      resultRepoId: null,
+      errorCode: null,
+      errorMessage: null,
+      canRetry: false,
+      canDismiss: false,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     });
     mocks.api.listCommits.mockResolvedValue([]);
     mocks.api.pull.mockResolvedValue({
@@ -233,26 +282,22 @@ describe('LightExtensionListPage', () => {
       headCommitId: null,
     });
     mocks.sync.createFromGit.mockResolvedValue({
-      repo: {
-        id: 'ler_git',
-        name: 'git-smoke',
-        normalizedName: 'git-smoke',
-        title: 'Git smoke',
-        description: null,
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: 'git-head',
-      },
-      source: {
-        provider: 'git',
-        config: gitConfig(),
-        status: 'active',
-        remoteTargetVersion: 1,
-        revision: 'git-head',
-        credentialConfigured: false,
-        authRefDisplay: null,
-      },
-      plan: {},
+      id: 'lecj_git',
+      targetRepoId: 'ler_git',
+      name: 'git-smoke',
+      title: 'Git smoke',
+      description: null,
+      sourceType: 'git',
+      status: 'pending',
+      resultRepoId: null,
+      errorCode: null,
+      errorMessage: null,
+      canRetry: false,
+      canDismiss: false,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     });
     mocks.sync.testConnection.mockResolvedValue({
       ok: true,
@@ -293,19 +338,29 @@ describe('LightExtensionListPage', () => {
       }),
     );
     expect(mocks.api.createRepo.mock.calls[0][0]).not.toHaveProperty('zipBase64');
-    expect(await screen.findByText('Repository created and compiled')).toBeInTheDocument();
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
+    expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
   });
 
   it('uploads an optional source ZIP through the combined create dialog', async () => {
     mocks.api.createRepo.mockResolvedValueOnce({
-      id: 'ler_imported',
+      id: 'lecj_imported',
+      targetRepoId: 'ler_imported',
       name: 'imported-smoke',
-      normalizedName: 'imported-smoke',
       title: 'Imported smoke',
       description: null,
-      lifecycleStatus: 'enabled',
-      healthStatus: 'pending',
-      headCommitId: 'commit-import',
+      sourceType: 'zip',
+      status: 'pending',
+      resultRepoId: null,
+      errorCode: null,
+      errorMessage: null,
+      canRetry: false,
+      canDismiss: false,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     });
     renderListPage();
 
@@ -330,7 +385,8 @@ describe('LightExtensionListPage', () => {
         zipBase64: 'emlwLXNvdXJjZQ==',
       }),
     );
-    expect(await screen.findByText('Repository imported and compiled')).toBeInTheDocument();
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
   });
 
   it('creates from Git with an exclusive safe source payload and updates the URL', async () => {
@@ -362,7 +418,8 @@ describe('LightExtensionListPage', () => {
     expect(mocks.sync.createFromGit.mock.calls[0][0]).not.toHaveProperty('zipBase64');
     expect(mocks.api.createRepo).not.toHaveBeenCalled();
     expect(await screen.findByText('Git smoke')).toBeInTheDocument();
-    expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_git');
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('repoId=ler_git');
   });
 
   it('keeps Git create configuration in the modal when the request fails', async () => {
@@ -405,6 +462,81 @@ describe('LightExtensionListPage', () => {
 
     expect(await screen.findByText('The Git remote is temporarily unavailable. Try again later.')).toBeInTheDocument();
     expect(screen.queryByText('LIGHT_EXTENSION_SYNC_RATE_LIMITED')).not.toBeInTheDocument();
+  });
+
+  it('refreshes the ready repository and notifies once after an observed creation succeeds', async () => {
+    const pending = createJobSummary();
+    mocks.createJobs.initialJobs = [pending];
+    mocks.api.listRepos.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: pending.targetRepoId,
+        name: pending.name,
+        normalizedName: pending.name,
+        title: pending.title,
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: 'commit-ready',
+      },
+    ]);
+    renderListPage();
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([
+        createJobSummary({
+          status: 'succeeded',
+          resultRepoId: pending.targetRepoId,
+          finishedAt: '2026-07-27T00:00:02.000Z',
+          updatedAt: '2026-07-27T00:00:02.000Z',
+        }),
+      ]);
+    });
+
+    await waitFor(() => expect(mocks.api.listRepos).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Creation succeeded: Demo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit code' })).toBeInTheDocument();
+    expect(screen.queryByText('Creating')).not.toBeInTheDocument();
+    await act(async () => {
+      mocks.createJobs.update([
+        createJobSummary({
+          status: 'succeeded',
+          resultRepoId: pending.targetRepoId,
+          finishedAt: '2026-07-27T00:00:02.000Z',
+          updatedAt: '2026-07-27T00:00:02.000Z',
+        }),
+      ]);
+    });
+    expect(mocks.api.listRepos).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries a failed creation and dismisses it after confirmation', async () => {
+    const failed = createJobSummary({
+      status: 'failed',
+      errorCode: 'LIGHT_EXTENSION_CREATE_FAILED',
+      errorMessage: 'Safe failure',
+      canRetry: true,
+      canDismiss: true,
+    });
+    mocks.createJobs.initialJobs = [failed];
+    mocks.createJobs.retry.mockResolvedValue(
+      createJobSummary({ status: 'pending', updatedAt: '2026-07-27T00:00:02.000Z' }),
+    );
+    renderListPage();
+
+    expect(await screen.findByText('Safe failure')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry creation Demo' }));
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(mocks.createJobs.retry).toHaveBeenCalledWith(failed.id);
+
+    await act(async () => {
+      mocks.createJobs.update([failed]);
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Remove failed creation Demo' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Remove failed creation?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove failed creation' }));
+    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
+    expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -825,6 +957,28 @@ describe('LightExtensionListPage', () => {
     await waitFor(() => expect(screen.queryByText('sales-widgets')).not.toBeInTheDocument());
   });
 });
+
+function createJobSummary(overrides: Partial<LightExtensionCreateJobSummary> = {}): LightExtensionCreateJobSummary {
+  return {
+    id: 'lecj_demo',
+    targetRepoId: 'ler_demo',
+    name: 'demo',
+    title: 'Demo',
+    description: null,
+    sourceType: 'template',
+    status: 'pending',
+    resultRepoId: null,
+    errorCode: null,
+    errorMessage: null,
+    canRetry: false,
+    canDismiss: false,
+    startedAt: null,
+    finishedAt: null,
+    createdAt: '2026-07-27T00:00:00.000Z',
+    updatedAt: '2026-07-27T00:00:01.000Z',
+    ...overrides,
+  };
+}
 
 function gitConfig() {
   return {

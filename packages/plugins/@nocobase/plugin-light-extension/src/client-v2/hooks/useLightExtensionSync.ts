@@ -149,13 +149,8 @@ export function useLightExtensionSync(): UseLightExtensionSyncResult {
   );
   const push = useCallback((input: LightExtensionSyncPushInput) => requestOperation('push', input), [requestOperation]);
   const createFromGit = useCallback(
-    async (input: LightExtensionSyncCreateFromGitInput) => {
-      const result = await requestOperation('createFromGit', input);
-      invalidateLightExtensionSettingsDescriptorCache(ctx.api, result.repo.id);
-      invalidateLightExtensionRuntimeCache(ctx.api, result.repo.id);
-      return result;
-    },
-    [ctx.api, requestOperation],
+    (input: LightExtensionSyncCreateFromGitInput) => requestOperation('createFromGit', input),
+    [requestOperation],
   );
 
   return useMemo(

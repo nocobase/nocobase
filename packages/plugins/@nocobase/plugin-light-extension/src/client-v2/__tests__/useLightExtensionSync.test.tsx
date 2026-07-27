@@ -178,7 +178,7 @@ describe('useLightExtensionSync', () => {
     expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
   });
 
-  it('invalidates descriptor, runtime, and catalog caches after createFromGit succeeds', async () => {
+  it('does not invalidate final repository caches when createFromGit is only accepted', async () => {
     let catalogVersion = 0;
     mocks.request.mockImplementation((options: { url: string }) => {
       if (options.url === 'lightExtensionEntries:listSelectable') {
@@ -244,8 +244,10 @@ describe('useLightExtensionSync', () => {
       });
     });
 
-    expect(descriptorCache.get({ repoId: 'repo-1', entryId: 'entry-1', kind: 'js-block' })).toBeUndefined();
-    expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledWith('repo-1');
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
+    expect(descriptorCache.get({ repoId: 'repo-1', entryId: 'entry-1', kind: 'js-block' })).toMatchObject({
+      entryId: 'entry-1',
+    });
+    expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
   });
 });

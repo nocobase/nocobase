@@ -429,5 +429,19 @@
   "deleted": "deleted",
   "modified": "modified",
   "renamed": "renamed",
-  "unchanged": "unchanged"
+  "unchanged": "unchanged",
+  "Creating": "Creating",
+  "Creation succeeded": "Creation succeeded",
+  "Creation succeeded: {{name}}": "Creation succeeded: {{name}}",
+  "Creation failed": "Creation failed",
+  "Creation failed: {{name}}": "Creation failed: {{name}}",
+  "Retry creation": "Retry creation",
+  "Remove failed creation": "Remove failed creation",
+  "Remove failed creation?": "Remove failed creation?",
+  "Failed to retry creation": "Failed to retry creation",
+  "Failed to remove failed creation": "Failed to remove failed creation",
+  "Light extension creation failed": "Light extension creation failed",
+  "This removes the failed task and releases its name. It does not delete an existing repository.": "This removes the failed task and releases its name. It does not delete an existing repository.",
+  "Creation task": "Creation task",
+  "Select": "Select"
 }
