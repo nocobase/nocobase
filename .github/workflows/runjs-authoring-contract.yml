@@ -1,0 +1,102 @@
+name: RunJS authoring contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - improve-runjs-modules
+    paths:
+      - 'packages/core/runjs-workspace/**'
+      - 'packages/core/cli/**'
+      - 'packages/plugins/@nocobase/plugin-flow-engine/**'
+      - 'packages/plugins/@nocobase/plugin-light-extension/**'
+      - 'packages/presets/nocobase/**'
+      - '.github/workflows/runjs-authoring-contract.yml'
+  pull_request:
+    paths:
+      - 'packages/core/runjs-workspace/**'
+      - 'packages/core/cli/**'
+      - 'packages/plugins/@nocobase/plugin-flow-engine/**'
+      - 'packages/plugins/@nocobase/plugin-light-extension/**'
+      - 'packages/presets/nocobase/**'
+      - '.github/workflows/runjs-authoring-contract.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runjs-authoring-contract-cross-repo:
+    name: RunJS authoring contract cross-repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout NocoBase
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout Skills contract branch
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/skills
+          ref: improve-runjs-modules
+          path: .cross-repo/skills
+          persist-credentials: false
+
+      - name: Record exact checkout SHAs
+        shell: bash
+        run: |
+          set -euo pipefail
+          nocobase_sha="$(git rev-parse HEAD)"
+          skills_sha="$(git -C .cross-repo/skills rev-parse HEAD)"
+          echo "NocoBase SHA: $nocobase_sha"
+          echo "Skills SHA: $skills_sha"
+          {
+            echo '### RunJS authoring contract checkouts'
+            echo "- NocoBase: \`$nocobase_sha\`"
+            echo "- Skills: \`$skills_sha\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install NocoBase dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn add sqlite3 --no-save -W
+
+      - name: Run server contracts sequentially
+        env:
+          DB_DIALECT: sqlite
+          DB_STORAGE: /tmp/runjs-authoring-contract.sqlite
+          LOGGER_LEVEL: error
+        run: |
+          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.test.ts --run
+          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source-resource.test.ts --run
+          yarn test:server packages/core/runjs-workspace/src/server/__tests__/authoring-capabilities.test.ts --run
+          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/authoring-capabilities.test.ts --run
+          yarn test:server packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/flow-surfaces.runjs-workspace-hosts.test.ts --run
+          yarn test:server packages/presets/nocobase/src/server/__tests__/lightExtensionPreset.runtime.test.ts --run
+
+      - name: Run Swagger, client, and CLI contracts
+        run: |
+          yarn test packages/core/runjs-workspace/src/swagger/__tests__/swagger.test.ts --run
+          yarn test:client packages/core/runjs-workspace/src/client-v2/__tests__ --run
+          yarn test:client packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/plugin.test.tsx --run
+          yarn test packages/core/cli/src/__tests__/light-extension-runtime-commands.test.ts --run
+
+      - name: Run Skills contracts
+        run: npm --prefix .cross-repo/skills/skills/nocobase-ui-builder/runtime test
+
+      - name: Verify cross-repository product contract
+        env:
+          NOCOBASE_REPO: ${{ github.workspace }}
+        run: npm --prefix .cross-repo/skills/skills/nocobase-ui-builder/runtime run test:product-contract
