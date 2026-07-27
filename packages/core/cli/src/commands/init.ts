@@ -606,7 +606,7 @@ Prompt modes:
       options: [...INIT_PORTAL_TYPES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial portal identifier',
+      description: 'Initial portal name',
     }),
     'portal-template': Flags.string({
       description: 'Initial portal template npm package or local path when --portal-type ai is used',

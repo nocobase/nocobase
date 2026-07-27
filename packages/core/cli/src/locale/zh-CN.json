@@ -180,7 +180,7 @@
         "templateMissingPackageJson": "Portal 模板 \"{{source}}\" 无效：缺少 package.json。",
         "npmPackNoTarball": "npm pack 没有为 {{source}} 生成本地 tarball。",
         "npmPackMultipleTarballs": "npm pack 为 {{source}} 生成了多个 tarball。",
-        "invalidPortalName": "Portal 标识 \"{{value}}\" 无效。请使用小写字母、数字、下划线或连字符，并以小写字母或数字开头。",
+        "invalidPortalName": "Portal 名称 \"{{value}}\" 无效。请使用小写字母、数字、下划线或连字符，并以小写字母或数字开头。",
         "invalidPortalAppName": "从 apiBaseUrl 解析出的 Portal app 名称 \"{{value}}\" 无效。请使用字母、数字、下划线或连字符，并以字母或数字开头。",
         "missingApiBaseUrl": "无法创建 Portal，因为当前 env 没有 apiBaseUrl。",
         "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
@@ -488,12 +488,12 @@
         "portalType": {
           "message": "Portal 类型",
           "noCodeLabel": "无代码 Portal",
-          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<标识>",
+          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>",
           "aiLabel": "AI Portal",
-          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<标识>"
+          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>"
         },
         "portalName": {
-          "message": "Portal 标识",
+          "message": "Portal 名称",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -603,12 +603,12 @@
         "portalType": {
           "message": "Portal 类型",
           "noCodeLabel": "无代码 Portal",
-          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<标识>",
+          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>",
           "aiLabel": "AI Portal",
-          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<标识>"
+          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>"
         },
         "portalName": {
-          "message": "Portal 标识",
+          "message": "Portal 名称",
           "placeholder": "admin"
         },
         "portalTemplate": {

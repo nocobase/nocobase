@@ -1066,7 +1066,7 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
     return;
   }
   if (!MULTI_PORTAL_SLUG_PATTERN.test(slug)) {
-    ctx.throw(400, 'Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores');
+    ctx.throw(400, 'Portal name can only contain lowercase letters, numbers, hyphens, and underscores');
     return;
   }
 

@@ -240,15 +240,15 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS.Icon).toBe('Icon');
     expect(enUS.Mobile).toBe('Mobile');
     expect(enUS['Multi-portal']).toBe('Portal manager');
-    expect(enUS['Portal identifier']).toBe('Portal identifier');
-    expect(enUS['Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
-      'Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores',
+    expect(enUS['Portal name']).toBe('Portal name');
+    expect(enUS['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
+      'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
     );
-    expect(enUS['Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>']).toBe(
-      'Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>',
+    expect(enUS['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
+      'Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>',
     );
-    expect(enUS['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>']).toBe(
-      'Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>',
+    expect(enUS['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>']).toBe(
+      'Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>',
     );
     expect(enUS['The corresponding portal directory will also be deleted.']).toBe(
       'The corresponding portal directory will also be deleted.',
@@ -269,15 +269,15 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Failed to load portals']).toBe('加载 Portal 失败');
     expect(zhCN['Portal']).toBe('Portal');
     expect(zhCN['New portals are allowed to be accessed by default']).toBe('新建 Portal 默认允许访问');
-    expect(zhCN['Portal identifier']).toBe('Portal 标识');
-    expect(zhCN['Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
-      'Portal 标识只能包含小写英文字母、数字、连字符和下划线',
+    expect(zhCN['Portal name']).toBe('Portal 名称');
+    expect(zhCN['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
+      'Portal 名称只能包含小写英文字母、数字、连字符和下划线',
     );
-    expect(zhCN['Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>']).toBe(
-      '通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<标识>',
+    expect(zhCN['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
+      '通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>',
     );
-    expect(zhCN['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>']).toBe(
-      '通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<标识>',
+    expect(zhCN['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>']).toBe(
+      '通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>',
     );
     expect(zhCN['When disabled, this portal will not be registered or accessible.']).toBe(
       '关闭后，该 Portal 将不会注册，也无法访问。',
@@ -354,7 +354,7 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Customer portal')).toBeInTheDocument();
     expect(screen.queryByText('UID')).not.toBeInTheDocument();
-    expect(screen.getByText('Portal identifier')).toBeInTheDocument();
+    expect(screen.getByText('Portal name')).toBeInTheDocument();
     expect(screen.getByText('customer-portal')).toBeInTheDocument();
     const noCodeAccessPathLink = screen.getByRole('link', { name: '/v/customer-portal' });
     expect(noCodeAccessPathLink).toHaveAttribute('href', '/v/customer-portal');
@@ -560,7 +560,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).getByLabelText('Title')).toBeInTheDocument();
     expect(within(dialog).queryByLabelText('UID')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Access path')).not.toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Portal identifier')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Portal name')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Portal type')).toBeInTheDocument();
     expect(within(dialog).getByRole('radio', { name: /No-code portal/ })).toBeChecked();
     expect(within(dialog).getByRole('radio', { name: /AI portal/ })).not.toBeChecked();
@@ -620,7 +620,7 @@ describe('plugin-multi-portal settings page', () => {
     await user.click(screen.getByText('Mobile'));
 
     await user.type(within(dialog).getByLabelText('Title'), 'Mobile portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), 'mobile-portal');
+    await user.type(within(dialog).getByLabelText('Portal name'), 'mobile-portal');
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
@@ -653,7 +653,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(await within(dialog).findByText('Desktop')).toBeInTheDocument();
 
     await user.type(within(dialog).getByLabelText('Title'), 'Desktop portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), 'desktop-portal');
+    await user.type(within(dialog).getByLabelText('Portal name'), 'desktop-portal');
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
@@ -668,7 +668,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should derive access path from portal identifier when creating a portal', async () => {
+  it('should derive access path from portal name when creating a portal', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource();
@@ -715,7 +715,7 @@ describe('plugin-multi-portal settings page', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
     await user.type(within(dialog).getByLabelText('Title'), 'Admin portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), ' admin ');
+    await user.type(within(dialog).getByLabelText('Portal name'), ' admin ');
     await user.type(within(dialog).getByLabelText('Icon'), 'homeoutlined');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
@@ -743,7 +743,7 @@ describe('plugin-multi-portal settings page', () => {
     const { container, dialog, user } = await openCreatePortalForm(resource);
 
     await user.type(within(dialog).getByLabelText('Title'), 'Developer portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), 'developer-portal');
+    await user.type(within(dialog).getByLabelText('Portal name'), 'developer-portal');
     await user.click(within(dialog).getByRole('radio', { name: /AI portal/ }));
     await selectMobileLayout(container, user);
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
@@ -761,19 +761,19 @@ describe('plugin-multi-portal settings page', () => {
   });
 
   it.each([['中文'], ['foo bar'], ['foo.bar'], ['Foo'], ['foo/bar']])(
-    'should reject unsafe portal identifier %s before submitting',
+    'should reject unsafe portal name %s before submitting',
     async (portalSlug) => {
       const resource = makeResource();
       const { container, dialog, user } = await openCreatePortalForm(resource);
 
       await user.type(within(dialog).getByLabelText('Title'), 'Bad portal');
-      await user.type(within(dialog).getByLabelText('Portal identifier'), portalSlug);
+      await user.type(within(dialog).getByLabelText('Portal name'), portalSlug);
       await selectMobileLayout(container, user);
       await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
       expect(
         await within(dialog).findByText(
-          'Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores',
+          'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
         ),
       ).toBeInTheDocument();
       expect(resource.create).not.toHaveBeenCalled();
@@ -784,12 +784,12 @@ describe('plugin-multi-portal settings page', () => {
     ['portal', '/portal'],
     ['sales-mobile', '/sales-mobile'],
     ['sales_mobile', '/sales_mobile'],
-  ])('should accept URL-safe portal identifier %s', async (routeName, routePath) => {
+  ])('should accept URL-safe portal name %s', async (routeName, routePath) => {
     const resource = makeResource();
     const { container, dialog, user } = await openCreatePortalForm(resource);
 
     await user.type(within(dialog).getByLabelText('Title'), 'Valid portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), routeName);
+    await user.type(within(dialog).getByLabelText('Portal name'), routeName);
     await selectMobileLayout(container, user);
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
@@ -1148,7 +1148,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByLabelText('Portal identifier')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Portal name')).toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
   });
 
@@ -1217,7 +1217,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).getByLabelText('Layout')).toBeDisabled();
   });
 
-  it('should reject portal identifiers with dots before submitting', async () => {
+  it('should reject portal names with dots before submitting', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource();
@@ -1264,7 +1264,7 @@ describe('plugin-multi-portal settings page', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
     await user.type(within(dialog).getByLabelText('Title'), 'Bad portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), 'foo.bar');
+    await user.type(within(dialog).getByLabelText('Portal name'), 'foo.bar');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
     await user.click(await screen.findByText('Mobile layout'));
@@ -1272,7 +1272,7 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(
       await within(dialog).findByText(
-        'Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores',
+        'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
       ),
     ).toBeInTheDocument();
     expect(resource.create).not.toHaveBeenCalled();
@@ -1334,7 +1334,7 @@ describe('plugin-multi-portal settings page', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
     await user.type(within(dialog).getByLabelText('Title'), 'Duplicate portal');
-    await user.type(within(dialog).getByLabelText('Portal identifier'), 'duplicate-portal');
+    await user.type(within(dialog).getByLabelText('Portal name'), 'duplicate-portal');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
     await user.click(await screen.findByText('Mobile layout'));
@@ -1344,7 +1344,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByRole('dialog', { name: 'Add portal' })).toBeInTheDocument();
   });
 
-  it('should reject invalid portal identifier before submitting', async () => {
+  it('should reject invalid portal name before submitting', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource({
@@ -1403,14 +1403,14 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    const portalSlugInput = within(dialog).getByLabelText('Portal identifier');
+    const portalSlugInput = within(dialog).getByLabelText('Portal name');
     await user.clear(portalSlugInput);
     await user.type(portalSlugInput, 'Customer');
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     expect(
       await within(dialog).findByText(
-        'Portal identifier can only contain lowercase letters, numbers, hyphens, and underscores',
+        'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
       ),
     ).toBeInTheDocument();
     expect(resource.update).not.toHaveBeenCalled();

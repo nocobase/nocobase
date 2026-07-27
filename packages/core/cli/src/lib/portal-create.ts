@@ -399,7 +399,7 @@ export function validatePortalSlug(value: string): string {
       portalCreateText(
         'errors.invalidPortalName',
         { value },
-        `Invalid portal identifier "${value}". Use lowercase letters, numbers, underscores, or hyphens, ` +
+        `Invalid portal name "${value}". Use lowercase letters, numbers, underscores, or hyphens, ` +
           'and start with a lowercase letter or number.',
       ),
     );

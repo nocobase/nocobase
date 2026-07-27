@@ -109,7 +109,7 @@ test('validates Portal slugs and generates default titles', () => {
     '-customer',
     '_customer',
   ]) {
-    expect(() => validatePortalSlug(invalid)).toThrow(/Invalid portal identifier/);
+    expect(() => validatePortalSlug(invalid)).toThrow(/Invalid portal name/);
   }
 });
 

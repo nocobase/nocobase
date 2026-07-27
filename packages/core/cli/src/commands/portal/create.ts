@@ -32,7 +32,7 @@ export default class PortalCreate extends Command {
   static override args = {
     portal: Args.string({
       required: true,
-      description: 'Portal name/slug',
+      description: 'Portal name',
     }),
   };
 

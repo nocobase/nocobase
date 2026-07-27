@@ -180,7 +180,7 @@
         "templateMissingPackageJson": "Portal template \"{{source}}\" is invalid: package.json is missing.",
         "npmPackNoTarball": "npm pack did not produce a local tarball for {{source}}.",
         "npmPackMultipleTarballs": "npm pack produced multiple tarballs for {{source}}.",
-        "invalidPortalName": "Invalid portal identifier \"{{value}}\". Use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.",
+        "invalidPortalName": "Invalid portal name \"{{value}}\". Use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.",
         "invalidPortalAppName": "Invalid portal app name \"{{value}}\" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, and start with a letter or number.",
         "missingApiBaseUrl": "Cannot create a portal because the selected env has no apiBaseUrl.",
         "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
@@ -488,12 +488,12 @@
         "portalType": {
           "message": "Portal type",
           "noCodeLabel": "No-code portal",
-          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>",
+          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>",
           "aiLabel": "AI portal",
-          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>"
+          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>"
         },
         "portalName": {
-          "message": "Portal identifier",
+          "message": "Portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -603,12 +603,12 @@
         "portalType": {
           "message": "Portal type",
           "noCodeLabel": "No-code portal",
-          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<slug>",
+          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>",
           "aiLabel": "AI portal",
-          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<slug>"
+          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>"
         },
         "portalName": {
-          "message": "Portal identifier",
+          "message": "Portal name",
           "placeholder": "admin"
         },
         "portalTemplate": {
@@ -638,7 +638,7 @@
         },
         "portalType": {
           "title": "Configure portal",
-          "description": "Set the default portal identifier and type."
+          "description": "Set the default portal name and type."
         },
         "configureDatabase": {
           "title": "Configure the database",
