@@ -80,7 +80,9 @@ export class PluginWorkflowCCServer extends Plugin {
           transaction: options.transaction,
         })
       : [];
-    const workflowKeyMap = new Map(workflows.map((workflow) => [workflow.id, workflow.key as string]));
+    const workflowKeyMap = new Map<number, string>(
+      workflows.map((workflow) => [workflow.id as number, workflow.key as string]),
+    );
     const statsMap = new Map<string, TaskStatsRow>();
     for (const row of allCounts) {
       const userId = row.userId;
