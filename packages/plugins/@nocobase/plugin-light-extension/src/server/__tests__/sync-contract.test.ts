@@ -14,6 +14,11 @@ import {
   mapRemoteSyncErrorToLightExtension,
 } from '../../shared/errors';
 import type {
+  LightExtensionCreateJobActionName,
+  LightExtensionCreateJobRecord,
+  LightExtensionCreateJobSummary,
+  LightExtensionCreateJobStatus,
+  LightExtensionCreateSourceType,
   LightExtensionSyncConfigureInput,
   LightExtensionSyncCreateFromGitInput,
   LightExtensionSyncDisconnectInput,
@@ -37,14 +42,14 @@ type HasAuthRef<T> = 'authRef' extends keyof T ? true : false;
 
 describe('light-extension remote sync facade contract', () => {
   const config = {
-    owner: 'nocobase',
-    repository: 'light-extensions',
+    url: 'https://git.example.com/nocobase/light-extensions.git',
     branch: 'main',
     subdirectory: 'extensions/sales',
+    transport: 'https' as const,
   };
 
   const source: LightExtensionSyncSourceSummary = {
-    provider: 'github',
+    provider: 'git',
     config,
     status: 'active',
     remoteTargetVersion: 3,
@@ -134,16 +139,16 @@ describe('light-extension remote sync facade contract', () => {
       get: { repoId: 'ler_sales' } satisfies LightExtensionSyncGetInput,
       configure: {
         repoId: 'ler_sales',
-        provider: 'github',
+        provider: 'git',
         config,
-        authRef: '{{ $env.GITHUB_SYNC_SECRET }}',
+        authRef: '{{ $env.GIT_SYNC_SECRET }}',
       } satisfies LightExtensionSyncConfigureInput,
       disconnect: { repoId: 'ler_sales' } satisfies LightExtensionSyncDisconnectInput,
       testConnection: {
         repoId: 'ler_sales',
-        provider: 'github',
+        provider: 'git',
         config,
-        authRef: '{{ $env.GITHUB_SYNC_SECRET }}',
+        authRef: '{{ $env.GIT_SYNC_SECRET }}',
       } satisfies LightExtensionSyncTestConnectionInput,
       plan: { repoId: 'ler_sales' } satisfies LightExtensionSyncPlanInput,
       pull: {
@@ -164,9 +169,9 @@ describe('light-extension remote sync facade contract', () => {
         name: 'sales',
         title: 'Sales',
         description: 'Sales light extensions',
-        provider: 'github',
+        provider: 'git',
         config,
-        authRef: '{{ $env.GITHUB_SYNC_SECRET }}',
+        authRef: '{{ $env.GIT_SYNC_SECRET }}',
       } satisfies LightExtensionSyncCreateFromGitInput,
     };
 
@@ -264,6 +269,80 @@ describe('light-extension remote sync facade contract', () => {
     );
   });
 
+  it('freezes the durable creation job states, sources, actions, and safe summary boundary', () => {
+    const statuses: LightExtensionCreateJobStatus[] = ['pending', 'running', 'succeeded', 'failed'];
+    const sourceTypes: LightExtensionCreateSourceType[] = ['template', 'zip', 'git'];
+    const actions: LightExtensionCreateJobActionName[] = ['list', 'retry', 'dismiss'];
+    const record: LightExtensionCreateJobRecord = {
+      id: 'job-1',
+      applicationName: 'main',
+      targetRepoId: 'repo-1',
+      name: 'sales',
+      normalizedName: 'sales',
+      title: 'Sales',
+      description: null,
+      sourceType: 'git',
+      status: 'pending',
+      payload: { authRef: '{{ $env.GIT_SYNC_SECRET }}' },
+      resultRepoId: null,
+      errorCode: null,
+      errorMessage: null,
+      reservationKey: 'main:sales',
+      claimToken: null,
+      leaseOwner: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      attempt: 0,
+      maxAttempts: 3,
+      actorUserId: 'user-1',
+      requestId: 'request-1',
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
+    };
+    const summary: LightExtensionCreateJobSummary = {
+      id: record.id,
+      targetRepoId: record.targetRepoId,
+      name: record.name,
+      title: record.title,
+      description: record.description,
+      sourceType: record.sourceType,
+      status: record.status,
+      resultRepoId: record.resultRepoId,
+      errorCode: record.errorCode,
+      errorMessage: record.errorMessage,
+      canRetry: false,
+      canDismiss: false,
+      startedAt: record.startedAt,
+      finishedAt: record.finishedAt,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
+    const internalFieldContract: {
+      payload: 'payload' extends keyof LightExtensionCreateJobSummary ? true : false;
+      reservationKey: 'reservationKey' extends keyof LightExtensionCreateJobSummary ? true : false;
+      claimToken: 'claimToken' extends keyof LightExtensionCreateJobSummary ? true : false;
+      actorUserId: 'actorUserId' extends keyof LightExtensionCreateJobSummary ? true : false;
+    } = {
+      payload: false,
+      reservationKey: false,
+      claimToken: false,
+      actorUserId: false,
+    };
+
+    expect(statuses).toEqual(['pending', 'running', 'succeeded', 'failed']);
+    expect(sourceTypes).toEqual(['template', 'zip', 'git']);
+    expect(actions).toEqual(['list', 'retry', 'dismiss']);
+    expect(internalFieldContract).toEqual({
+      payload: false,
+      reservationKey: false,
+      claimToken: false,
+      actorUserId: false,
+    });
+    expect(JSON.stringify(summary)).not.toMatch(/payload|authRef|reservation|claim|lease|actor|requestId/iu);
+  });
+
   it('maps provider-neutral errors to stable facade codes and statuses', () => {
     const expected = {
       UNSUPPORTED_PROVIDER: ['LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER', 422],
@@ -304,7 +383,7 @@ describe('light-extension remote sync facade contract', () => {
       code: 'RATE_LIMITED',
       message: 'Provider request is rate limited',
       details: {
-        provider: 'github',
+        provider: 'git',
         retryAfterSeconds: 60,
         token: 'raw-secret',
         config: { owner: 'nocobase' },
@@ -317,7 +396,7 @@ describe('light-extension remote sync facade contract', () => {
 
     expect(error.details).toEqual({
       sourceCode: 'RATE_LIMITED',
-      provider: 'github',
+      provider: 'git',
       retryAfterSeconds: 60,
     });
     expect(serialized).not.toMatch(/raw-secret|raw-provider|authorization|"(?:request|response|cause|config|token)"/iu);

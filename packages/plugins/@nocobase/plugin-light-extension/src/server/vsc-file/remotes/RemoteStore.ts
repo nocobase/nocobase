@@ -16,7 +16,8 @@ import type {
   VscRemoteNormalizedConfig,
   VscRemoteProvider,
 } from '../../../shared/vsc-file/remote-sync-types';
-import { normalizeGitHubRemoteConfig, RemoteSyncError } from './RemoteSyncAdapter';
+import { normalizeGitRemoteConfig } from './providers/git/gitConfig';
+import { RemoteSyncError } from './RemoteSyncAdapter';
 import { serializeVscRemoteAuthRef, type VscRemoteAuthRef } from './credentialRef';
 
 const blockingJobStatuses = ['pending', 'running', 'finalize-pending'] as const;
@@ -333,8 +334,8 @@ function validateNormalizedConfig(
 ): VscRemoteNormalizedConfig {
   assertNoSensitiveConfigKeys(config);
 
-  if (provider === 'github') {
-    return normalizeGitHubRemoteConfig(config);
+  if (provider === 'git') {
+    return normalizeGitRemoteConfig(config);
   }
 
   throw new RemoteSyncError('UNSUPPORTED_PROVIDER', `Unsupported remote provider "${provider}"`);
@@ -366,10 +367,10 @@ function serializeNullableAuthRef(authRef: VscRemoteAuthRef | null): string | nu
 
 function sameConfig(left: VscRemoteNormalizedConfig, right: VscRemoteNormalizedConfig): boolean {
   return (
-    left.owner === right.owner &&
-    left.repository === right.repository &&
+    left.url === right.url &&
     left.branch === right.branch &&
-    left.subdirectory === right.subdirectory
+    left.subdirectory === right.subdirectory &&
+    left.transport === right.transport
   );
 }
 

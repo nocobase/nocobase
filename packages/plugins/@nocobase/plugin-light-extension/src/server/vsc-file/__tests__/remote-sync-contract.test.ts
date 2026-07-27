@@ -16,7 +16,8 @@ import type {
   VscFileSyncJobRecord,
   VscRemoteSnapshot,
 } from '../index';
-import { normalizeGitHubRemoteConfig, RemoteSyncError } from '../remotes/RemoteSyncAdapter';
+import { normalizeGitRemoteConfig } from '../remotes/providers/git/gitConfig';
+import { RemoteSyncError } from '../remotes/RemoteSyncAdapter';
 import { computeRemoteSnapshotContentHash } from '../remotes/snapshot';
 
 const snapshotFiles = [
@@ -55,10 +56,10 @@ describe('remote sync contract', () => {
 
   it('keeps credential values, database objects, and domain services out of adapter capabilities', () => {
     const adapter = {
-      provider: 'github',
-      title: 'GitHub',
+      provider: 'git',
+      title: 'Git',
       capabilities: { probe: true, fetch: true, publish: true, readOnly: false },
-      normalizeConfig: normalizeGitHubRemoteConfig,
+      normalizeConfig: normalizeGitRemoteConfig,
       async probe() {
         return { revision: null, metadata: {} };
       },
@@ -70,13 +71,13 @@ describe('remote sync contract', () => {
       },
     } satisfies RemoteSyncAdapter;
 
-    expect(adapter.provider).toBe('github');
+    expect(adapter.provider).toBe('git');
     expect(JSON.stringify(adapter.capabilities)).not.toMatch(/credential|database|transaction/i);
   });
 
   it('creates safe provider errors without retaining the original error chain', () => {
     const error = new RemoteSyncError('AUTH_FAILED', 'Provider authentication failed', {
-      details: { provider: 'github', reasonCode: 'authentication-failed' },
+      details: { provider: 'git', reasonCode: 'authentication-failed' },
     });
     expect(error).toMatchObject({ code: 'AUTH_FAILED', status: 422 });
     expect(Object.hasOwn(error, 'cause')).toBe(false);
@@ -88,9 +89,14 @@ describe('remote sync contract', () => {
       id: 'remote-1',
       repoId: 'repo-1',
       name: 'origin',
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
-      authRef: '{{ $env.GITHUB_SYNC }}',
+      provider: 'git',
+      config: {
+        url: 'https://git.example.com/nocobase/extensions.git',
+        branch: 'main',
+        subdirectory: null,
+        transport: 'https',
+      },
+      authRef: '{{ $env.GIT_SYNC }}',
       status: 'active',
       version: 1,
       lastCheckedAt: null,
