@@ -11,7 +11,7 @@ import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { ActionModel as ConfiguredActionModel } from '../../models/base/ActionModel';
 import { ActionModel } from '../../models/base/ActionModelCore';
-import { actionLinkageRules, linkageSetActionProps } from '../linkageRules';
+import { actionLinkageRules, linkageSetActionProps, updateLinkageRules } from '../linkageRules';
 
 class TestActionModel extends ActionModel {}
 
@@ -111,5 +111,24 @@ describe('action linkage rules on action forks', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(fork.getProps()).toMatchObject({ title: 'Updated', disabled: true });
+  });
+
+  it('creates a new rules value when disabling a linkage rule', () => {
+    const rules = [
+      {
+        key: 'disable-edit',
+        title: 'Linkage rule',
+        enable: true,
+        condition: { logic: '$and', items: [] },
+        actions: [],
+      },
+    ];
+    const nextRules = updateLinkageRules(rules, (next) => {
+      next[0].enable = false;
+    });
+
+    expect(nextRules).toEqual([expect.objectContaining({ key: 'disable-edit', enable: false })]);
+    expect(nextRules).not.toBe(rules);
+    expect(rules[0].enable).toBe(true);
   });
 });
