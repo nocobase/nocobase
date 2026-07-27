@@ -9,34 +9,17 @@
 
 import type { Database } from '@nocobase/database';
 import type { Application } from '@nocobase/server';
-import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
-import { resolve } from 'path';
+import type { VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 
-import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
 import { createRemoteSyncAuditActions, createRemoteSyncAuditEmitter } from './remotes/audit';
 import { RemoteSyncAdapterRegistry } from './remotes/RemoteSyncAdapterRegistry';
 import type { RemoteSyncRuntime } from './remotes/RemoteSyncRuntime';
 import { RemoteSyncRuntimeService } from './remotes/RemoteSyncRuntimeService';
 import { GitHubRemoteAdapter } from './remotes/providers/github';
-import { RemoteCredentialResolver } from './remotes/security/RemoteCredentialResolver';
 import { createRemoteInternalResources } from './remotes/resource';
-import type { VscPermissionHook } from './permissions';
-import { createRunJSSourcePermissionHook, VscPermissionHookRegistry } from './permissions';
-import { RunJSSourceAuthoringInspectorRegistry } from './runjs-sources/RunJSSourceAuthoringInspectorRegistry';
-import { RunJSSourceAdapterRegistry, createRunJSSourcesResource, runJSSourceActionNames } from './runjs-sources';
-import { inspectRunJSSourceCode } from './runjs-sources/lazyCompiler';
-import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
-import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../../shared/vsc-file/runjs-source-types';
+import { RemoteCredentialResolver } from './remotes/security/RemoteCredentialResolver';
 
-export class VscFileServerModule {
-  private unregisterSourceCodeInspector?: () => void;
-
-  private readonly permissionHooks = createPermissionHookRegistry();
-
-  private readonly runJSSourceAdapters = new RunJSSourceAdapterRegistry();
-
-  private readonly runJSSourceAuthoringInspectors = new RunJSSourceAuthoringInspectorRegistry();
-
+export class LightExtensionRemoteSyncModule {
   private readonly remoteAdapters = new RemoteSyncAdapterRegistry();
 
   private remoteSyncRuntime?: RemoteSyncRuntimeService;
@@ -48,26 +31,11 @@ export class VscFileServerModule {
   constructor(
     private readonly app: Application,
     private readonly db: Database,
+    private readonly permissionHooks: VscPermissionHookRegistry,
   ) {}
 
-  registerPermissionHook(hook: VscPermissionHook): () => void {
-    return this.permissionHooks.register(hook);
-  }
-
-  getPermissionHookRegistry(): VscPermissionHookRegistry {
-    return this.permissionHooks;
-  }
-
-  registerRunJSSourceAdapter(adapter: RunJSSourceAdapter): () => void {
-    return this.runJSSourceAdapters.register(adapter);
-  }
-
-  getRunJSSourceAdapterRegistry(): RunJSSourceAdapterRegistry {
-    return this.runJSSourceAdapters;
-  }
-
-  getRunJSSourceAuthoringInspectorRegistry(): RunJSSourceAuthoringInspectorRegistry {
-    return this.runJSSourceAuthoringInspectors;
+  isBoundTo(db: Database): boolean {
+    return this.db === db;
   }
 
   getRemoteSyncRuntime(): RemoteSyncRuntime {
@@ -77,39 +45,10 @@ export class VscFileServerModule {
     return this.remoteSyncRuntime;
   }
 
-  registerRunJSSourceAuthoringInspector(inspector: RunJSSourceAuthoringInspector): () => void {
-    return this.runJSSourceAuthoringInspectors.register(inspector);
-  }
-
-  async beforeLoad() {
-    if (this.db.hasCollection('vscFileRepositories')) {
-      return;
-    }
-
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
-  }
-
-  async load() {
-    this.unregisterSourceCodeInspector?.();
-    this.unregisterSourceCodeInspector = runJSSourceCodeInspectorRegistry.register(inspectRunJSSourceCode);
-    this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
-    this.app.resourceManager.define(
-      createRunJSSourcesResource(
-        this.db,
-        this.runJSSourceAdapters,
-        this.permissionHooks,
-        this.runJSSourceAuthoringInspectors,
-      ),
-    );
+  async load(): Promise<void> {
     for (const resource of createRemoteInternalResources()) {
       this.app.resourceManager.define(resource);
     }
-    this.app.acl.allow('vscFile', [...vscFileActionNames], 'allowConfigure');
-    this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
-    this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
-    this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));
     this.unregisterGitHubAdapter?.();
     const credentialResolver = new RemoteCredentialResolver({
       db: this.db,
@@ -129,23 +68,19 @@ export class VscFileServerModule {
     this.app.auditManager.registerActions(createRemoteSyncAuditActions());
   }
 
-  async afterEnable() {
+  async afterEnable(): Promise<void> {
     await this.runRemoteRecovery();
   }
 
-  async afterDisable() {
-    this.unregisterSourceCodeInspector?.();
-    this.unregisterSourceCodeInspector = undefined;
+  async afterDisable(): Promise<void> {
     this.unregisterRemoteRuntime();
   }
 
-  async remove() {
-    this.unregisterSourceCodeInspector?.();
-    this.unregisterSourceCodeInspector = undefined;
+  async remove(): Promise<void> {
     this.unregisterRemoteRuntime();
   }
 
-  private unregisterRemoteRuntime() {
+  private unregisterRemoteRuntime(): void {
     this.unregisterGitHubAdapter?.();
     this.unregisterGitHubAdapter = undefined;
     this.remoteSyncRuntime = undefined;
@@ -167,10 +102,7 @@ export class VscFileServerModule {
   }
 }
 
-function createPermissionHookRegistry(): VscPermissionHookRegistry {
-  const registry = new VscPermissionHookRegistry();
-  registry.register(createRunJSSourcePermissionHook());
-  return registry;
-}
+/** @deprecated Import RunJSWorkspaceServerModule from @nocobase/runjs-workspace/server. */
+export { RunJSWorkspaceServerModule as VscFileServerModule } from '@nocobase/runjs-workspace/server';
 
-export default VscFileServerModule;
+export default LightExtensionRemoteSyncModule;

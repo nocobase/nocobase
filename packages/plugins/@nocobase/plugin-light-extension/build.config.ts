@@ -24,6 +24,11 @@ const sourceDependencies = [
     declarationChecks: [{ path: 'lib/server.d.ts', includes: 'buildRunJSFilesHash' }],
   },
   {
+    packageName: '@nocobase/runjs-workspace',
+    exportKeys: ['.', './server', './shared'],
+    declarationChecks: [],
+  },
+  {
     packageName: '@nocobase/client-v2',
     exportKeys: ['.'],
     declarationChecks: [

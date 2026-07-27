@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './public-api';
-export * from './config';
-export * from './services/VscFileMetrics';
-export * from './services/TreeService';
+export * from '@nocobase/runjs-workspace/server';
+export * from './remotes';
+export * from './plugin';
 export { default } from './plugin';

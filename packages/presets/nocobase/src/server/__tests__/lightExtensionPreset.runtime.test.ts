@@ -33,7 +33,7 @@ async function getRootAgent(app: MockServer) {
   return await app.agent().login(rootUser);
 }
 
-async function expectInlineJSPageWorkspaceReady(app: MockServer, suffix: string) {
+async function expectInlineJSPageWorkspaceReady(app: MockServer, suffix: string, lightExtensionDomainLoaded = true) {
   const agent = await getRootAgent(app);
   const pageResponse = await agent.resource('flowSurfaces').createPage({
     values: {
@@ -61,7 +61,49 @@ async function expectInlineJSPageWorkspaceReady(app: MockServer, suffix: string)
       expect.objectContaining({ path: '.nocobase/runjs-source.json' }),
     ]),
   );
-  expect(await app.db.getRepository('lightExtensionRepos').count()).toBe(0);
+
+  const saveResponse = await agent.resource('runJSSources').saveChanges({
+    values: {
+      locator,
+      repoId: openResponse.body.data.repository.id,
+      baseCommitId: openResponse.body.data.repository.headCommitId,
+      baseOwnerFingerprint: openResponse.body.data.ownerFingerprint,
+      message: `Verify preset Workspace lifecycle ${suffix}`,
+      changes: [
+        {
+          operation: 'upsert',
+          path: `src/client/preset-lifecycle-${suffix}.ts`,
+          expectedBlobHash: null,
+          content: `export const presetLifecycle = ${JSON.stringify(suffix)};`,
+        },
+      ],
+    },
+  });
+  expect(saveResponse.status).toBe(200);
+
+  const latestResponse = await agent.resource('runJSSources').openLatest({ values: { locator } });
+  expect(latestResponse.status).toBe(200);
+  expect(latestResponse.body.data.repository.headCommitId).toBe(saveResponse.body.data.commit.id);
+  expect(latestResponse.body.data.files).toEqual(
+    expect.arrayContaining([expect.objectContaining({ path: `src/client/preset-lifecycle-${suffix}.ts` })]),
+  );
+
+  const lightExtensionRepos = app.db.getRepository('lightExtensionRepos');
+  if (lightExtensionDomainLoaded) {
+    expect(await lightExtensionRepos?.count()).toBe(0);
+  } else {
+    expect(lightExtensionRepos).toBeUndefined();
+  }
+}
+
+async function expectLightExtensionUnavailable(app: MockServer) {
+  const agent = await getRootAgent(app);
+  const response = await agent.resource('lightExtensionRepos').list();
+  expect(response.status).toBe(503);
+  expect(response.body.errors[0]).toMatchObject({
+    code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+    status: 503,
+  });
 }
 
 describe('Light Extension preset runtime', () => {
@@ -107,5 +149,12 @@ describe('Light Extension preset runtime', () => {
     expect(upgradedRecord?.get('enabled')).toBe(true);
     expect(upgradedRecord?.get('builtIn')).toBe(true);
     await expectInlineJSPageWorkspaceReady(app, 'upgrade');
+
+    await app.pm.disable(LIGHT_EXTENSION_NAME);
+    await expectLightExtensionUnavailable(app);
+    await expectInlineJSPageWorkspaceReady(app, 'light-extension-disabled', false);
+
+    await app.pm.enable(LIGHT_EXTENSION_NAME);
+    await expectInlineJSPageWorkspaceReady(app, 'light-extension-reenabled');
   }, 120000);
 });

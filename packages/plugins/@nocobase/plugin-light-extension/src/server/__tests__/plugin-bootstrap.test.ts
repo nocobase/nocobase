@@ -10,6 +10,7 @@
 import type { Application } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs/server';
+import { getOrCreateRunJSWorkspaceServerModule } from '@nocobase/runjs-workspace/server';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -99,6 +100,7 @@ describe('plugin-light-extension bootstrap', () => {
       name: 'light-extension',
       packageName: NAMESPACE,
     });
+    getOrCreateRunJSWorkspaceServerModule(app, app.db);
     await plugin.load();
     expect(afterStartListeners).toHaveLength(1);
     await plugin.load();
@@ -151,6 +153,7 @@ describe('plugin-light-extension bootstrap', () => {
       name: 'light-extension',
       packageName: NAMESPACE,
     });
+    getOrCreateRunJSWorkspaceServerModule(app, app.db);
     const infrastructure = () =>
       plugin as unknown as {
         compileWorkerPool?: LightExtensionCompileWorkerPool;

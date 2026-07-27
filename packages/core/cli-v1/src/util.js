@@ -357,6 +357,10 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
     }
+    if (packageJsonName === '@nocobase/runjs-workspace') {
+      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
+      paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
+    }
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');

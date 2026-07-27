@@ -38,7 +38,18 @@ const binding = {
 const entryPath = 'src/client/js-blocks/sales/index.tsx';
 
 describe('move-to-inline resource', () => {
-  it('normalizes moveSource input and request context', async () => {
+  it.each([
+    { destination: { type: 'default' } },
+    { destination: { type: 'existing', repoId: 'ler_existing' } },
+    {
+      destination: {
+        type: 'new',
+        name: 'sales-tools',
+        title: 'Sales tools',
+        description: 'Shared sales extensions',
+      },
+    },
+  ])('normalizes moveSource $destination.type destination and request context', async ({ destination }) => {
     const moveSource = vi.fn(async () => ({ repo: { id: 'ler_default' }, ownerFingerprint: 'owner_after' }));
     const resource = createLightExtensionsResource(
       {} as LightExtensionCompilePreviewService,
@@ -57,7 +68,7 @@ describe('move-to-inline resource', () => {
             entryPath: 'src/client/index.tsx',
             version: 'v2',
             files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
-            destination: { type: 'existing', repoId: 'ler_default' },
+            destination,
             entryName: 'sales-page',
           },
         },
@@ -72,7 +83,7 @@ describe('move-to-inline resource', () => {
     expect(moveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey: 'externalize-sales-page-v1',
-        destination: { type: 'existing', repoId: 'ler_default' },
+        destination,
         entryName: 'sales-page',
         files: [expect.objectContaining({ path: 'src/client/index.tsx', content: 'ctx.render(null);' })],
       }),

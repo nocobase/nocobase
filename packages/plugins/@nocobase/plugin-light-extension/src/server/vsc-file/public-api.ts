@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './permissions';
-export * from './runjs-sources';
-export * from './services/CanonicalCandidateService';
-export * from './services/VscFileService';
+export * from '@nocobase/runjs-workspace/server';
 export * from './remotes';
 export * from './remotes/credentialRef';
 export * from './remotes/snapshot';
