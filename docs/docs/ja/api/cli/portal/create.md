@@ -1,0 +1,48 @@
+---
+title: "nb portal create"
+description: "nb portal create command reference: create a local Portal workspace from a template and create or update the Portal record."
+keywords: "nb portal create,NocoBase CLI,Portal"
+---
+
+# nb portal create
+
+テンプレートからローカル Portal ワークスペースを作成し、Portal レコードを作成または更新します
+
+## 使い方
+
+```bash
+nb portal create <portal> [flags]
+```
+
+## パラメーター
+
+| パラメーター | 型 | 説明 |
+| --- | --- | --- |
+| `<portal>` | string | Portal name or slug. |
+| `--template` | string | Template package, local path, or `file://` URL. Default: `@nocobase/portal-template-default`. |
+| `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
+| `--yes`, `-y` | boolean | Skip cross-env confirmation. |
+| `--title` | string | Portal display title. |
+| `--force` | boolean | Delete the existing workspace and recreate it. |
+| `--source-storage` | `nocobase` \| `git` | Where Portal source code is managed. Default: `nocobase`. |
+| `--git-repo` | string | Git repository URL used with `--source-storage=git`. |
+| `--git-branch` | string | Git branch used with `--source-storage=git`. |
+| `--git-path` | string | Directory inside the Git repository; defaults to the Portal slug. |
+
+## 例
+
+```bash
+nb portal create customer
+nb portal create customer --template @nocobase/portal-template-default
+nb portal create customer --env dev --yes
+nb portal create customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+```
+
+## 補足
+
+The command writes `.env`, `.env.local`, and `portal.config.json`. If the template contains `package.json`, it runs `pnpm install`. Portal names must use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.
+
+## 関連コマンド
+
+- [`nb portal`](./index.md)
+- [`nb env`](../env/index.md)

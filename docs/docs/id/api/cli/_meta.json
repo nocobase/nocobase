@@ -329,6 +329,59 @@
   },
   {
     "type": "custom-link",
+    "label": "nb portal",
+    "link": "/api/cli/portal/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb portal config",
+        "link": "/api/cli/portal/config"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal create",
+        "link": "/api/cli/portal/create"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal deploy",
+        "link": "/api/cli/portal/deploy"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal destroy",
+        "link": "/api/cli/portal/destroy"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal dev",
+        "link": "/api/cli/portal/dev"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal info",
+        "link": "/api/cli/portal/info"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal list",
+        "link": "/api/cli/portal/list"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal pull",
+        "link": "/api/cli/portal/pull"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal push",
+        "link": "/api/cli/portal/push"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
     "label": "nb proxy",
     "link": "/api/cli/proxy/",
     "items": [
