@@ -33,7 +33,7 @@ import { run } from './run-npm.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const DEFAULT_PORTAL_APP_NAME = 'main';
-const TEMPLATE_COPY_EXCLUDED_NAMES = new Set(['.git', 'node_modules', '.DS_Store', 'dist']);
+const TEMPLATE_COPY_EXCLUDED_NAMES = new Set(['.git', 'node_modules', '.DS_Store']);
 const NPM_PACK_TIMEOUT_MS = 30_000;
 
 type TemplateSourceType = 'local' | 'package';

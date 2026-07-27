@@ -187,7 +187,7 @@ test('creates a Portal workspace from a local template', async () => {
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.git'))).rejects.toThrow();
   await expect(fsp.access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-  await expect(fsp.access(path.join(portalDir, 'dist'))).rejects.toThrow();
+  await expect(fsp.access(path.join(portalDir, 'dist', 'index.js'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
   await expect(fsp.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 
