@@ -24,7 +24,6 @@ import { EditorView, keymap, placeholder as cmPlaceholder, tooltips } from '@cod
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
-import { useTypeScriptWorkerOwner } from '../TypeScriptWorkerOwnerProvider';
 import {
   createJsonCompletionSource,
   createJsonHoverTooltip,
@@ -33,13 +32,6 @@ import {
   type CodeEditorJsonSchemaRef,
 } from '../jsonLanguageService';
 import { createJavaScriptLinter } from '../linter';
-import {
-  createTypeScriptCompletionSource,
-  createTypeScriptHoverTooltip,
-  createTypeScriptProjectLinter,
-  createTypeScriptProjectSession,
-  type CodeEditorTypeScriptProjectRef,
-} from '../typescriptProject';
 import { resolveTooltipParent } from './tooltipParent';
 
 const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
@@ -134,7 +126,6 @@ export const EditorCore: React.FC<{
   knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
-  typescriptProjectRef?: CodeEditorTypeScriptProjectRef;
   language?: string;
   jsonSchema?: CodeEditorJsonSchema;
   viewRef: React.MutableRefObject<EditorView | null>;
@@ -150,19 +141,16 @@ export const EditorCore: React.FC<{
   knownCtxMemberRoots,
   extraCompletions,
   completionSource,
-  typescriptProjectRef,
   language,
   jsonSchema,
   viewRef,
 }) => {
-  const typeScriptWorkerOwner = useTypeScriptWorkerOwner();
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
   const readonlyRef = useRef(readonly);
   const completionSourceRef = useRef(completionSource);
   const extraCompletionsRef = useRef(extraCompletions);
   const jsonSchemaRef = useRef<CodeEditorJsonSchema | undefined>(jsonSchema) as CodeEditorJsonSchemaRef;
-  const stableTypeScriptProjectRef = useRef(typescriptProjectRef?.current);
   const readonlyCompartment = useMemo(() => new Compartment(), []);
   const languageCompartment = useMemo(() => new Compartment(), []);
   const completionCompartment = useMemo(() => new Compartment(), []);
@@ -171,16 +159,10 @@ export const EditorCore: React.FC<{
   const placeholderCompartment = useMemo(() => new Compartment(), []);
   const themeCompartment = useMemo(() => new Compartment(), []);
   const editorThemeCompartment = useMemo(() => new Compartment(), []);
-  const typeScriptExtensionsRef = useRef<{
-    completionSource: CompletionSource;
-    hover: Extension;
-    linter: Extension;
-  } | null>(null);
 
   completionSourceRef.current = completionSource;
   extraCompletionsRef.current = extraCompletions;
   jsonSchemaRef.current = jsonSchema;
-  stableTypeScriptProjectRef.current = typescriptProjectRef?.current;
   readonlyRef.current = readonly;
 
   const dynamicCompletionSource = useMemo<CompletionSource>(() => {
@@ -218,22 +200,6 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const typeScriptProjectSession = createTypeScriptProjectSession({ workerOwner: typeScriptWorkerOwner });
-    const typeScriptExtensions = {
-      completionSource: createTypeScriptCompletionSource({
-        projectRef: stableTypeScriptProjectRef,
-        session: typeScriptProjectSession,
-      }),
-      hover: createTypeScriptHoverTooltip({
-        projectRef: stableTypeScriptProjectRef,
-        session: typeScriptProjectSession,
-      }),
-      linter: createTypeScriptProjectLinter({
-        projectRef: stableTypeScriptProjectRef,
-        session: typeScriptProjectSession,
-      }),
-    };
-    typeScriptExtensionsRef.current = typeScriptExtensions;
     const jsonLanguage = isJsonLanguage(language);
     const view = new EditorView({
       doc: value || '',
@@ -246,12 +212,7 @@ export const EditorCore: React.FC<{
           autocompletion({
             override: jsonLanguage
               ? [jsonCompletionSource]
-              : [
-                  createHtmlCompletion(),
-                  createJsxCompletion(),
-                  dynamicCompletionSource,
-                  typeScriptExtensions.completionSource,
-                ],
+              : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource],
             closeOnBlur: false,
             activateOnTyping: true,
             interactionDelay: 0,
@@ -261,15 +222,10 @@ export const EditorCore: React.FC<{
           jsonLanguage
             ? [lintGutter(), jsonLinter]
             : enableLinter
-              ? [
-                  lintGutter(),
-                  stableTypeScriptProjectRef.current
-                    ? typeScriptExtensions.linter
-                    : createJavaScriptLinter({ knownCtxMemberRoots }),
-                ]
+              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
               : [],
         ),
-        hoverCompartment.of(jsonLanguage ? jsonHover : typeScriptExtensions.hover),
+        hoverCompartment.of(jsonLanguage ? jsonHover : []),
         placeholderCompartment.of(placeholder ? cmPlaceholder(placeholder) : []),
         themeCompartment.of(theme === 'dark' ? oneDark : []),
         editorThemeCompartment.of(createEditorTheme(height, minHeight)),
@@ -277,10 +233,6 @@ export const EditorCore: React.FC<{
           parent: resolveTooltipParent(editorRef.current),
         }),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            const project = stableTypeScriptProjectRef.current;
-            if (project) project.documentRevision = (project.documentRevision || 0) + 1;
-          }
           if (update.docChanged && !readonlyRef.current) {
             const newValue = update.state.doc.toString();
             try {
@@ -301,8 +253,6 @@ export const EditorCore: React.FC<{
       } catch (_) {
         // EditorView.destroy is best-effort during host teardown.
       }
-      typeScriptProjectSession.dispose();
-      typeScriptExtensionsRef.current = null;
       viewRef.current = null;
     };
     // Dynamic editor behavior is updated through compartments below.
@@ -311,8 +261,7 @@ export const EditorCore: React.FC<{
 
   useEffect(() => {
     const view = viewRef.current;
-    const typeScriptExtensions = typeScriptExtensionsRef.current;
-    if (!view || !typeScriptExtensions) {
+    if (!view) {
       return;
     }
 
@@ -325,12 +274,7 @@ export const EditorCore: React.FC<{
           autocompletion({
             override: jsonLanguage
               ? [jsonCompletionSource]
-              : [
-                  createHtmlCompletion(),
-                  createJsxCompletion(),
-                  dynamicCompletionSource,
-                  typeScriptExtensions.completionSource,
-                ],
+              : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource],
             closeOnBlur: false,
             activateOnTyping: true,
             interactionDelay: 0,
@@ -340,15 +284,10 @@ export const EditorCore: React.FC<{
           jsonLanguage
             ? [lintGutter(), jsonLinter]
             : enableLinter
-              ? [
-                  lintGutter(),
-                  stableTypeScriptProjectRef.current
-                    ? typeScriptExtensions.linter
-                    : createJavaScriptLinter({ knownCtxMemberRoots }),
-                ]
+              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
               : [],
         ),
-        hoverCompartment.reconfigure(jsonLanguage ? jsonHover : typeScriptExtensions.hover),
+        hoverCompartment.reconfigure(jsonLanguage ? jsonHover : []),
         placeholderCompartment.reconfigure(placeholder ? cmPlaceholder(placeholder) : []),
         themeCompartment.reconfigure(theme === 'dark' ? oneDark : []),
         editorThemeCompartment.reconfigure(createEditorTheme(height, minHeight)),
@@ -375,7 +314,6 @@ export const EditorCore: React.FC<{
     readonlyCompartment,
     theme,
     themeCompartment,
-    typescriptProjectRef,
     viewRef,
   ]);
 

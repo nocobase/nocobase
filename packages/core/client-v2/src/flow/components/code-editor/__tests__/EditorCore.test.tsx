@@ -90,69 +90,6 @@ describe('EditorCore', () => {
     expect(document.activeElement).toBe(content);
   });
 
-  it.each([undefined, 'json'])('does not create a TypeScript Worker for plain %s input', async (language) => {
-    const worker = vi.fn();
-    vi.stubGlobal('Worker', worker);
-    vi.stubGlobal('__NOCOBASE_RUNJS_TYPESCRIPT_WORKER__', true);
-    try {
-      const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
-      const { unmount } = render(<EditorCore language={language} value="" viewRef={viewRef} />);
-      const view = viewRef.current;
-      if (!view) throw new Error('EditorView was not initialized');
-
-      view.dispatch({ changes: { from: 0, insert: language === 'json' ? '{' : 'const value = 1;' } });
-      startCompletion(view);
-      await Promise.resolve();
-
-      expect(worker).not.toHaveBeenCalled();
-      unmount();
-      expect(worker).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('uses a fresh TypeScript session after StrictMode effect replay', async () => {
-    const value = 'ctx.notARealMember;';
-    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
-    const typescriptProjectRef = {
-      current: {
-        currentFilePath: 'main.ts',
-        files: [{ content: value, path: 'main.ts' }],
-      },
-    };
-    render(
-      <React.StrictMode>
-        <EditorCore enableLinter typescriptProjectRef={typescriptProjectRef} value={value} viewRef={viewRef} />
-      </React.StrictMode>,
-    );
-    const view = viewRef.current;
-    if (!view) throw new Error('EditorView was not initialized');
-
-    await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0), { timeout: 15_000 });
-  });
-
-  it('advances the TypeScript document revision for user and external document changes', () => {
-    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
-    const project = {
-      currentFilePath: 'main.ts',
-      documentRevision: 0,
-      files: [{ content: 'const value = 1;', path: 'main.ts' }],
-    };
-    const typescriptProjectRef = { current: project };
-    const { rerender } = render(
-      <EditorCore typescriptProjectRef={typescriptProjectRef} value="const value = 1;" viewRef={viewRef} />,
-    );
-    const view = viewRef.current;
-    if (!view) throw new Error('EditorView was not initialized');
-
-    view.dispatch({ changes: { from: 14, to: 15, insert: '2' } });
-    expect(project.documentRevision).toBe(1);
-
-    rerender(<EditorCore typescriptProjectRef={typescriptProjectRef} value="const value = 3;" viewRef={viewRef} />);
-    expect(project.documentRevision).toBe(2);
-  });
-
   it('uses the JSON parser and preserves unsaved text, focus, and selection when the Schema changes', () => {
     const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
     const firstSchema = {

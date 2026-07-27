@@ -91,8 +91,8 @@ jobs:
           DB_STORAGE: /tmp/runjs-authoring-contract.sqlite
           LOGGER_LEVEL: error
         run: |
-          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.test.ts --run
-          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source-resource.test.ts --run
+          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.integration.test.ts --run
+          yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.unit.test.ts --run
           yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/repo-service.test.ts --run
           yarn test:server packages/core/runjs-workspace/src/server/__tests__ --run
           yarn test:server packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/runjs-sources.unit.test.ts --run

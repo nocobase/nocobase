@@ -165,7 +165,7 @@ async function externalizeInlineJSPage(app: MockServer, suffix: string): Promise
       entryTitle: `Preset external entry ${suffix}`,
     },
   });
-  expect(moveResponse.status).toBe(200);
+  expect(moveResponse.status, JSON.stringify(moveResponse.body)).toBe(200);
   const moved = moveResponse.body.data;
   const binding = {
     type: 'light-extension-entry' as const,

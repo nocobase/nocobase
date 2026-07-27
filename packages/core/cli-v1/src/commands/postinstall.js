@@ -8,19 +8,16 @@
  */
 
 const { Command } = require('commander');
-const { run, isDev, hasCorePackages, isPackageValid, generatePlaywrightPath, generatePlugins } = require('../util');
+const { run, isDev, isPackageValid, generatePlaywrightPath, generatePlugins } = require('../util');
 const { dirname, resolve } = require('path');
 const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
 const { syncPluginSymlinks } = require('@nocobase/utils/plugin-symlink');
 
 function runPatchPackage() {
-  if (!existsSync(resolve(process.cwd(), 'patches'))) {
-    return;
-  }
   // run yarn patch-package
   // console.log('patching third party packages...');
-  return run('yarn', ['patch-package'], {
+  run('yarn', ['patch-package'], {
     stdio: 'pipe',
   });
 }
@@ -58,16 +55,13 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--skip-umi')
     .action(async (options) => {
-      await runPatchPackage();
+      runPatchPackage();
       writeToExclude();
       generatePlugins();
       generatePlaywrightPath(true);
       await syncPluginSymlinks();
       if (!isDev()) {
         return;
-      }
-      if (hasCorePackages()) {
-        await run('yarn', ['workspace', '@nocobase/runjs', 'generate']);
       }
       const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {

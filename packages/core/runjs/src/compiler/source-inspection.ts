@@ -20,18 +20,13 @@ import {
   type RunJSTypeScriptLibSource,
 } from '../typescript-environment';
 import { buildRunJSTypeScriptContextDeclaration, RUNJS_TYPESCRIPT_CONTEXT_PATH } from '../typescript-project';
-import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
-import {
-  getDefaultNodeRunJSTypeLibraryRegistry,
-  loadNodeRunJSTypeLibraryFilesWithContracts,
-  type NodeRunJSTypeLibraryRegistry,
-} from './node-type-library';
 import type {
   RunJSTypeDependencyContract,
   RunJSTypeDependencyGraph,
   RunJSUnresolvedDependency,
 } from './dependency-collector';
 import { RunJSTypeScriptProject, type RunJSTypeScriptProjectFile } from './typescript-project';
+import { RUNJS_BUILTIN_MODULES } from './portable';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'ctx',
@@ -131,8 +126,6 @@ export interface InspectRunJSSourceWorkspaceInput {
   locator?: RunJSSourceLocator;
   legacy?: RunJSSourceAuthoringLegacyInfo;
   additionalAllowedGlobals?: Iterable<string>;
-  typeLibraryIds?: readonly string[];
-  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
 }
 
 export interface InspectRunJSSourceCodeInput {
@@ -140,8 +133,6 @@ export interface InspectRunJSSourceCodeInput {
   path: string;
   surfaceStyle: RunJSSurfaceStyle;
   additionalAllowedGlobals?: Iterable<string>;
-  typeLibraryIds?: readonly string[];
-  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
 }
 
 export interface RunJSSourceWorkspaceInspectorDebugState {
@@ -254,8 +245,6 @@ export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJ
     entry: compilerPath,
     surfaceStyle: input.surfaceStyle,
     additionalAllowedGlobals: input.additionalAllowedGlobals,
-    typeLibraryIds: input.typeLibraryIds,
-    typeLibraryRegistry: input.typeLibraryRegistry,
   }).map((diagnostic) => ({
     ...diagnostic,
     path: input.path,
@@ -342,23 +331,6 @@ function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): Prep
   virtualFiles.set(RUNJS_TYPESCRIPT_CONTEXT_PATH, contextDeclaration);
   rootNames.add(RUNJS_TYPESCRIPT_CONTEXT_PATH);
 
-  const registry = input.typeLibraryRegistry || getDefaultNodeRunJSTypeLibraryRegistry();
-  const usageRequests = collectRunJSTypeLibraryUsage(ts, {
-    files: Array.from(sourceFiles, ([path, content]) => ({ path, content })),
-    libraries: registry.getUsageDefinitions(),
-  });
-  const typeLibraryFiles = loadNodeRunJSTypeLibraryFilesWithContracts(usageRequests, {
-    registry,
-    typeLibraryIds: input.typeLibraryIds,
-  });
-  for (const file of typeLibraryFiles.rootFiles) {
-    virtualFiles.set(file.path, file.content);
-    rootNames.add(file.path);
-  }
-  for (const file of typeLibraryFiles.dependencyFiles) {
-    virtualFiles.set(file.path, file.content);
-  }
-
   const sourceVirtualPaths = [...sourceFiles.keys()].map(toVirtualPath).sort();
   const sourceVirtualPathSet = new Set(sourceVirtualPaths);
   const structureFiles = [...virtualFiles]
@@ -390,12 +362,10 @@ function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): Prep
           }),
         ),
       },
-      ...typeLibraryFiles.contracts,
     ],
     structureFingerprint: sha256Hex(
       stableSerialize({
         files: structureFiles,
-        typeLibraryIds: [...new Set(input.typeLibraryIds || [])].sort(),
       }),
     ),
   };
@@ -418,6 +388,9 @@ function typeScriptDiagnosticsToRunJS(
     }
     const location = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
     const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+    if (diagnostic.code === 2307 && isRunJSBuiltInModuleDiagnostic(message)) {
+      continue;
+    }
     const identifier = unknownNameDiagnosticCodes.has(diagnostic.code)
       ? findIdentifierAt(diagnostic.file, diagnostic.start)
       : undefined;
@@ -439,6 +412,11 @@ function typeScriptDiagnosticsToRunJS(
   }
 
   return diagnostics;
+}
+
+function isRunJSBuiltInModuleDiagnostic(message: string): boolean {
+  const match = message.match(/^Cannot find module '([^']+)'/u);
+  return Boolean(match && Object.prototype.hasOwnProperty.call(RUNJS_BUILTIN_MODULES, match[1]));
 }
 
 function collectSurfaceContractDiagnostics(

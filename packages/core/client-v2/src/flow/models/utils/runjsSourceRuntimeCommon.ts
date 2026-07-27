@@ -81,6 +81,15 @@ type RuntimeErrorLabels = {
 
 type SourceStepHooks = Pick<StepDefinition, 'defaultParams' | 'beforeParamsSave' | 'afterParamsSave'>;
 
+type LightExtensionSourcePlumbingOptions<TModel extends FlowModel> = {
+  flowKey: string;
+  stepKey: string;
+  ownerKind: string;
+  getOwnerLocator: (model: TModel) => Record<string, unknown>;
+  getSourceLocator?: (model: TModel) => RunJSSourceLocator;
+  afterParamsSave: (ctx: FlowSettingsContext<TModel>) => Promise<void>;
+};
+
 type PendingLightExtensionBindingSettings = {
   entryId: string;
   missingRequiredPaths: string[];
@@ -163,6 +172,99 @@ export class LightExtensionSettingsConditionRuntimeError extends Error {
 
 export function normalizeLightExtensionSourceMode(value: unknown): LightExtensionSourceMode {
   return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
+}
+
+export function createLightExtensionSourcePlumbing<TModel extends FlowModel>(
+  options: LightExtensionSourcePlumbingOptions<TModel>,
+) {
+  const getRunJsStepParams = (model: TModel): Record<string, unknown> =>
+    cloneRecord(model.getStepParams(options.flowKey, options.stepKey));
+
+  const getSettingsDescriptor = (model: TModel, params: Record<string, unknown>) =>
+    getLightExtensionSettingsDescriptor({
+      modelUid: model.uid,
+      ownerKind: options.ownerKind,
+      ownerLocator: options.getOwnerLocator(model),
+      params,
+      sourceLocator: options.getSourceLocator?.(model) || {
+        kind: 'flowModel.step',
+        modelUid: model.uid,
+        flowKey: options.flowKey,
+        stepKey: options.stepKey,
+        paramPath: ['code'],
+        versionPath: ['version'],
+      },
+    });
+
+  const resolveBindingTitle = async (model: TModel, params: Record<string, unknown>) =>
+    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
+    (await resolveLightExtensionBindingTitle({
+      modelUid: model.uid,
+      ownerKind: options.ownerKind,
+      ownerLocator: options.getOwnerLocator(model),
+      params,
+    })) ||
+    getLightExtensionFallbackBindingTitle(params.sourceBinding);
+
+  return {
+    getRunJsStepParams,
+    getSettingsDescriptor,
+    getRuntimeSettings: (params: Record<string, unknown>): RunJSSourceSettings => cloneRecord(params.settings),
+    getSourceDefaultParams(ctx: FlowSettingsContext<TModel>): LightExtensionSourceModeParams {
+      const runJs = getRunJsStepParams(ctx.model);
+      return {
+        sourceMode: normalizeLightExtensionSourceMode(runJs.sourceMode),
+        sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
+        settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
+      };
+    },
+    async beforeParamsSave(ctx: FlowSettingsContext<TModel>, params: LightExtensionSourceModeParams) {
+      const sourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
+      const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
+      if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
+        ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
+        throw new FlowCancelSaveException('Light extension source binding is required.');
+      }
+      const descriptor =
+        sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+          ? await getSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
+          : null;
+      const normalized = normalizeLightExtensionSourceSettingsForBinding({
+        currentRunJs: getRunJsStepParams(ctx.model),
+        nextSourceMode: sourceMode,
+        nextSourceBinding: sourceBinding,
+        nextSettings: params.settings,
+        descriptor,
+      });
+      setCanonicalLightExtensionSource(ctx.model, options.flowKey, {
+        sourceMode,
+        sourceBinding,
+        settings: normalized.settings,
+      });
+      rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
+    },
+    async afterSourceParamsSave(ctx: FlowSettingsContext<TModel>) {
+      await options.afterParamsSave(ctx);
+      await showPendingLightExtensionRequiredSettings(ctx.model, options.flowKey);
+    },
+    afterParamsSave: options.afterParamsSave,
+    syncSetting(ctx: FlowSettingsContext<TModel>, fieldName: string, value: unknown) {
+      setCanonicalLightExtensionSetting(ctx.model, options.flowKey, fieldName, value);
+    },
+    resolveBindingTitle,
+    async getEditorTitle(model: TModel): Promise<string> {
+      const translate = getModelTranslator(model);
+      const params = getRunJsStepParams(model);
+      const baseTitle = translate('Write JavaScript');
+      if (normalizeLightExtensionSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
+        return baseTitle;
+      }
+      const sourceTitle = await resolveBindingTitle(model, params);
+      return sourceTitle
+        ? `${baseTitle} (${translate('Light extension')}: ${sourceTitle})`
+        : `${baseTitle} (${translate('Light extension')})`;
+    },
+  };
 }
 
 export function createRuntimeRunTracker() {

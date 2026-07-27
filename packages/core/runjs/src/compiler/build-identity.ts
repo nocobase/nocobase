@@ -12,12 +12,6 @@ import ts from 'typescript';
 
 import { stableSerialize } from '..';
 import { sha256Hex } from '../server';
-import { RUNJS_TYPESCRIPT_DOM_TYPE_ONLY_BRIDGE_DECLARATION } from '../generated/dom-type-only-bridge';
-import {
-  RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
-  RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
-} from '../typescript-project';
-import { buildDefaultNodeRunJSTypeLibraryFingerprint } from './node-type-library';
 import {
   RUNJS_BUILTIN_MODULES,
   RUNJS_PORTABLE_COMPILER_CONTRACT_VERSION,
@@ -28,7 +22,6 @@ export const RUNJS_COMPILER_CONTRACT_VERSION = 'runjs.compiler.v1';
 export const RUNJS_COMPILER_ENTRY_ADAPTER_CONTRACT_VERSION = 'runjs.entry-adapter.v1';
 export const RUNJS_COMPILER_SOURCE_MAP_CONTRACT_VERSION = 'runjs.source-map.v1';
 export const RUNJS_COMPILER_SOURCE_INSPECTION_POLICY_VERSION = 'runjs.source-inspection.v1';
-export const RUNJS_TYPESCRIPT_TYPE_LIBRARY_CONTRACT_VERSION = 'runjs.typescript-type-library.v1';
 
 export interface RunJSCompilerBuildIdentityComponents {
   compilerContract: string;
@@ -39,7 +32,6 @@ export interface RunJSCompilerBuildIdentityComponents {
   importResolutionFingerprint: string;
   esbuildVersion: string;
   typescriptVersion: string;
-  typeLibraryFingerprint: string;
 }
 
 export interface RunJSCompilerBuildIdentity {
@@ -61,15 +53,6 @@ export const RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS: Readonly<RunJSCompilerBui
   ),
   esbuildVersion,
   typescriptVersion: ts.version,
-  typeLibraryFingerprint: sha256Hex(
-    stableSerialize({
-      contract: RUNJS_TYPESCRIPT_TYPE_LIBRARY_CONTRACT_VERSION,
-      nodeTypeLibraries: buildDefaultNodeRunJSTypeLibraryFingerprint(),
-      domTypeOnlyBridge: sha256Hex(RUNJS_TYPESCRIPT_DOM_TYPE_ONLY_BRIDGE_DECLARATION),
-      reactBridge: sha256Hex(RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION),
-      reactDOMBridge: sha256Hex(RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION),
-    }),
-  ),
 });
 
 export function buildRunJSCompilerBuildIdentity(

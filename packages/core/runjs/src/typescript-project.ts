@@ -12,22 +12,6 @@ import type { CompilerOptions } from 'typescript';
 type TypeScriptModule = typeof import('typescript');
 
 export const RUNJS_TYPESCRIPT_CONTEXT_PATH = '/__runjs__/runjs-env.d.ts';
-export const RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH = '/__runjs__/type-packs/react-bridge.d.ts';
-export const RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION = `
-type RunJSOfficialReactModule = typeof import('react');
-interface RunJSReactLibrary extends RunJSOfficialReactModule {}
-`;
-export const RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH = '/__runjs__/type-packs/react-dom-client-bridge.d.ts';
-export const RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION = `
-type RunJSOfficialReactDOMClientModule = typeof import('react-dom/client');
-interface RunJSReactDOMLibrary extends RunJSOfficialReactDOMClientModule {
-  readonly __nbRunjsInternalShim?: true;
-  createRoot(
-    container: import('react-dom/client').Container | RunJSSafeElement,
-    options?: import('react-dom/client').RootOptions,
-  ): import('react-dom/client').Root;
-}
-`;
 
 export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): CompilerOptions {
   return {
@@ -169,15 +153,20 @@ interface RunJSSQL {
 interface RunJSURLSearchParams {
   readonly [name: string]: string | string[] | undefined;
 }
-interface RunJSReactLibrary {}
-interface RunJSReactDOMLibrary {}
-interface RunJSDayjsLibrary {}
-interface RunJSLodashLibrary {}
-interface RunJSMathLibrary {}
-interface RunJSFormulaLibrary {}
-interface RunJSAntdLibrary {}
+interface RunJSPermissiveLibrary {
+  readonly [name: string]: RunJSPermissiveLibrary;
+  (...args: unknown[]): RunJSPermissiveLibrary;
+  new (...args: unknown[]): RunJSPermissiveLibrary;
+}
+interface RunJSReactLibrary extends RunJSPermissiveLibrary {}
+interface RunJSReactDOMLibrary extends RunJSPermissiveLibrary {}
+interface RunJSDayjsLibrary extends RunJSPermissiveLibrary {}
+interface RunJSLodashLibrary extends RunJSPermissiveLibrary {}
+interface RunJSMathLibrary extends RunJSPermissiveLibrary {}
+interface RunJSFormulaLibrary extends RunJSPermissiveLibrary {}
+interface RunJSAntdLibrary extends RunJSPermissiveLibrary {}
 interface RunJSAntd extends RunJSAntdLibrary {}
-interface RunJSAntdIconsLibrary {}
+interface RunJSAntdIconsLibrary extends RunJSPermissiveLibrary {}
 interface RunJSAntdIcons extends RunJSAntdIconsLibrary {}
 interface RunJSLibraries {
   React: RunJSReactLibrary;
@@ -208,9 +197,9 @@ interface RunJSExecutionResult<T = unknown> {
   readonly error?: unknown;
   readonly timeout?: boolean;
 }
-type RunJSSafeElement = RunJSDOM.HTMLElement & {
-  readonly __el: HTMLElement;
-};
+interface RunJSSafeElement extends RunJSUnknownObject {
+  readonly __el: unknown;
+}
 interface RunJSContext {
   logger: RunJSLogger;
   api: RunJSApi;

@@ -9,7 +9,6 @@
 
 import {
   ElementProxy,
-  FlowCancelSaveException,
   resetRunJSRuntimeElement,
   type FlowModel,
   type FlowRuntimeContext,
@@ -25,39 +24,26 @@ import {
   getRunJSModelUse,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
-  type RunJSSourceSettings,
 } from '../../components/runjs-source';
 import {
-  cloneJsonValue,
-  cloneRecord,
   createLightExtensionRunJsUISchema,
   createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
+  createLightExtensionSourcePlumbing,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
   createRuntimeRunTracker,
-  getLightExtensionFallbackBindingTitle,
-  getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
-  getLightExtensionStoredBindingTitle,
-  getModelTranslator,
   getRecordProperty,
   getStringProperty,
   INLINE_SOURCE_MODE,
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceSettingsForBinding,
   normalizeLightExtensionSourceMode,
-  rememberLightExtensionBindingSettings,
-  resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
-  setCanonicalLightExtensionSetting,
-  setCanonicalLightExtensionSource,
-  showPendingLightExtensionRequiredSettings,
   stableSerialize,
   stableSerializeWithCircular,
   toNonEmptyString,
   type LightExtensionSourceMode,
-  type LightExtensionSourceModeParams,
   type RuntimeErrorInfo,
 } from '../utils/runjsSourceRuntimeCommon';
 import {
@@ -71,8 +57,6 @@ export const JS_ITEM_OWNER_KIND = 'flowModel.itemSettings';
 export type JSItemSourceMode = LightExtensionSourceMode;
 
 type JSItemRunJSValue = RunJSValue;
-
-type JSItemSourceModeParams = LightExtensionSourceModeParams;
 
 type JSItemRuntimeError = RuntimeErrorInfo;
 
@@ -101,6 +85,14 @@ type JSItemRuntimeContext = FlowRuntimeContext<JSItemRuntimeModel> & {
   runjs: (code: string, globals?: Record<string, unknown>, options?: { version: string }) => Promise<unknown>;
 };
 
+const jsItemSource = createLightExtensionSourcePlumbing<JSItemRuntimeModel>({
+  flowKey: 'jsSettings',
+  stepKey: 'runJs',
+  ownerKind: JS_ITEM_OWNER_KIND,
+  getOwnerLocator: buildJSItemOwnerLocator,
+  afterParamsSave: refreshJSItemAfterSettingsSave,
+});
+
 type JSItemEventHandler = (...args: unknown[]) => unknown;
 
 type JSItemRuntimeErrorState = {
@@ -128,8 +120,7 @@ export function normalizeJSItemSourceMode(value: unknown): JSItemSourceMode {
 }
 
 export function getJSItemRunJsStepParams(model: JSItemRuntimeModel): Record<string, unknown> {
-  const params = model.getStepParams('jsSettings', 'runJs');
-  return isRecord(params) ? { ...params } : {};
+  return jsItemSource.getRunJsStepParams(model);
 }
 
 export function getJSItemSourceSignature(model: JSItemRuntimeModel, inlineCode?: string): string {
@@ -176,8 +167,8 @@ export function createJSItemSourceModeStep(): StepDefinition {
     createMenuUIMode: createRunJSSourceCascadeMenuUIMode,
     hooks: {
       defaultParams: getJSItemSourceDefaultParams,
-      beforeParamsSave: syncJSItemSourceToRunJs,
-      afterParamsSave: refreshJSItemAfterSourceSave,
+      beforeParamsSave: jsItemSource.beforeParamsSave,
+      afterParamsSave: jsItemSource.afterSourceParamsSave,
     },
   });
 }
@@ -188,8 +179,8 @@ export function createJSItemSourceBindingStep(): StepDefinition {
     component: JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
     hooks: {
       defaultParams: getJSItemSourceDefaultParams,
-      beforeParamsSave: syncJSItemSourceToRunJs,
-      afterParamsSave: refreshJSItemAfterSourceSave,
+      beforeParamsSave: jsItemSource.beforeParamsSave,
+      afterParamsSave: jsItemSource.afterSourceParamsSave,
     },
   });
 }
@@ -208,20 +199,7 @@ export async function createJSItemEmbeddedEditorUIMode(ctx: { model: JSItemRunti
 }
 
 export async function getJSItemRunJsEditorTitle(ctx: { model: JSItemRuntimeModel }): Promise<string> {
-  const translate = getModelTranslator(ctx.model);
-  const params = getJSItemRunJsStepParams(ctx.model);
-  const baseTitle = translate('Write JavaScript');
-  if (normalizeJSItemSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
-    return baseTitle;
-  }
-
-  const sourceTitle =
-    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
-    (await resolveLightExtensionBindingTitle(ctx, params)) ||
-    getLightExtensionFallbackBindingTitle(params.sourceBinding);
-  return sourceTitle
-    ? `${baseTitle} (${translate('Light extension')}: ${sourceTitle})`
-    : `${baseTitle} (${translate('Light extension')})`;
+  return jsItemSource.getEditorTitle(ctx.model);
 }
 
 export async function getJSItemRuntimeFlowSettingSteps(
@@ -377,40 +355,8 @@ export function buildJSItemOwnerLocator(model: JSItemRuntimeModel): Record<strin
   };
 }
 
-function getJSItemSourceDefaultParams(ctx: FlowSettingsContext<JSItemRuntimeModel>): JSItemSourceModeParams {
-  const runJs = getJSItemRunJsStepParams(ctx.model);
-  return {
-    sourceMode: normalizeJSItemSourceMode(runJs.sourceMode),
-    sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
-    settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
-  };
-}
-
-async function syncJSItemSourceToRunJs(ctx: FlowSettingsContext<JSItemRuntimeModel>, params: JSItemSourceModeParams) {
-  const sourceMode = normalizeJSItemSourceMode(params?.sourceMode);
-  const sourceBinding = isRecord(params.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
-  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
-    ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
-    throw new FlowCancelSaveException('Light extension source binding is required.');
-  }
-  const currentRunJs = getJSItemRunJsStepParams(ctx.model);
-  const descriptor =
-    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
-      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
-      : null;
-  const normalized = normalizeLightExtensionSourceSettingsForBinding({
-    currentRunJs,
-    nextSourceMode: sourceMode,
-    nextSourceBinding: sourceBinding,
-    nextSettings: params.settings,
-    descriptor,
-  });
-  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', {
-    sourceMode,
-    sourceBinding,
-    settings: normalized.settings,
-  });
-  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
+function getJSItemSourceDefaultParams(ctx: FlowSettingsContext<JSItemRuntimeModel>) {
+  return jsItemSource.getSourceDefaultParams(ctx);
 }
 
 async function refreshJSItemAfterSettingsSave(ctx: FlowSettingsContext<JSItemRuntimeModel>) {
@@ -418,26 +364,8 @@ async function refreshJSItemAfterSettingsSave(ctx: FlowSettingsContext<JSItemRun
   await ctx.model.rerender();
 }
 
-async function refreshJSItemAfterSourceSave(ctx: FlowSettingsContext<JSItemRuntimeModel>) {
-  await refreshJSItemAfterSettingsSave(ctx);
-  await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
-}
-
 async function getLightExtensionSettingsDescriptor(model: JSItemRuntimeModel, params: Record<string, unknown>) {
-  return getSharedLightExtensionSettingsDescriptor({
-    modelUid: model.uid,
-    ownerKind: JS_ITEM_OWNER_KIND,
-    ownerLocator: buildJSItemOwnerLocator(model),
-    params,
-    sourceLocator: {
-      kind: 'flowModel.step',
-      modelUid: model.uid,
-      flowKey: 'jsSettings',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-      versionPath: ['version'],
-    },
-  });
+  return jsItemSource.getSettingsDescriptor(model, params);
 }
 
 function syncLightExtensionSettingToRunJs(
@@ -445,21 +373,10 @@ function syncLightExtensionSettingToRunJs(
   fieldName: string,
   value: unknown,
 ) {
-  setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value);
+  jsItemSource.syncSetting(ctx, fieldName, value);
 }
 
-function getJSItemRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
-  return cloneRecord(params.settings);
-}
-
-async function resolveLightExtensionBindingTitle(ctx: { model: JSItemRuntimeModel }, params: Record<string, unknown>) {
-  return resolveSharedLightExtensionBindingTitle({
-    modelUid: ctx.model.uid,
-    ownerKind: JS_ITEM_OWNER_KIND,
-    ownerLocator: buildJSItemOwnerLocator(ctx.model),
-    params,
-  });
-}
+const getJSItemRuntimeSettings = jsItemSource.getRuntimeSettings;
 
 function normalizeRuntimeError(error: unknown): JSItemRuntimeError {
   return normalizeLightExtensionRuntimeError(error, {
