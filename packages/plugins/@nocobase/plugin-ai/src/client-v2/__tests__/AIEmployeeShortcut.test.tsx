@@ -16,7 +16,12 @@ import { AIEmployeeShortcut } from '../ai-employees/AIEmployeeShortcut';
 const triggerTask = vi.fn().mockResolvedValue(undefined);
 const clear = vi.fn();
 const addContextItems = vi.fn();
+const addExistingConversationContextItems = vi.fn();
 const syncContextAttachments = vi.fn();
+let currentConversation: string | undefined;
+const chatFor = vi.fn((sessionId?: string) => ({
+  addContextItems: sessionId ? addExistingConversationContextItems : addContextItems,
+}));
 
 const employee: AIEmployee = {
   username: 'atlas',
@@ -80,25 +85,30 @@ vi.mock('../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 }));
 
 vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
-  useChat: () => ({
-    addContextItems,
+  useChat: (sessionId?: string) => ({
+    addContextItems: sessionId ? addExistingConversationContextItems : addContextItems,
+    for: chatFor,
   }),
 }));
 
 vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
   useChatConversationsStore: {
     use: {
-      currentConversation: () => undefined,
+      currentConversation: () => currentConversation,
     },
+    getState: () => ({ currentConversation }),
   },
 }));
 
 describe('AIEmployeeShortcut', () => {
   beforeEach(() => {
-    triggerTask.mockClear();
+    triggerTask.mockReset().mockResolvedValue(undefined);
     clear.mockClear();
     addContextItems.mockClear();
+    addExistingConversationContextItems.mockClear();
     syncContextAttachments.mockClear();
+    chatFor.mockClear();
+    currentConversation = undefined;
   });
 
   it('triggers a popover task like v1 without inheriting shortcut auto=false', async () => {
@@ -142,5 +152,27 @@ describe('AIEmployeeShortcut', () => {
     expect(syncContextAttachments).toHaveBeenCalledWith(workContext);
     expect(clear).toHaveBeenCalledWith(undefined, undefined);
     expect(addContextItems.mock.invocationCallOrder[0]).toBeLessThan(clear.mock.invocationCallOrder[0]);
+  });
+
+  it('syncs shortcut context to the new draft when replacing an existing conversation', async () => {
+    const task: Task = { title: 'Analyze record' };
+    const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
+    currentConversation = 'session-1';
+    triggerTask.mockImplementation(async () => {
+      currentConversation = undefined;
+    });
+
+    const { container } = render(<AIEmployeeShortcut aiEmployee={employee} tasks={[task]} context={{ workContext }} />);
+
+    const shortcut = container.querySelector('.ant-avatar');
+    expect(shortcut).toBeTruthy();
+    fireEvent.click(shortcut);
+
+    await waitFor(() => {
+      expect(chatFor).toHaveBeenCalledWith(undefined);
+    });
+    expect(addContextItems).toHaveBeenCalledWith(workContext);
+    expect(addExistingConversationContextItems).not.toHaveBeenCalled();
+    expect(syncContextAttachments).toHaveBeenCalledWith(workContext);
   });
 });
