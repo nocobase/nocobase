@@ -37,18 +37,21 @@ const repositoryRoot = path.resolve(__dirname, '../../../..');
 
 export default defineConfig({
   beforeBuild: async (log) => {
-    const outdatedDependencies = sourceDependencies.filter((dependency) => !hasRequiredBuiltOutput(dependency));
+    const buildDeclarations = !process.argv.includes('--no-dts') && !process.argv.includes('--only-tar');
+    const outdatedDependencies = sourceDependencies.filter(
+      (dependency) => !hasRequiredBuiltOutput(dependency, buildDeclarations),
+    );
     if (!outdatedDependencies.length) {
       return;
     }
 
     const packageNames = outdatedDependencies.map((dependency) => dependency.packageName);
     log(`building source dependencies: ${packageNames.join(', ')}`);
-    await buildSourceDependencies(packageNames);
+    await buildSourceDependencies(packageNames, buildDeclarations);
   },
 });
 
-function hasRequiredBuiltOutput(dependency: (typeof sourceDependencies)[number]): boolean {
+function hasRequiredBuiltOutput(dependency: (typeof sourceDependencies)[number], buildDeclarations: boolean): boolean {
   try {
     const packageJsonPath = require.resolve(`${dependency.packageName}/package.json`, { paths: [__dirname] });
     const packageJson: unknown = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -58,15 +61,20 @@ function hasRequiredBuiltOutput(dependency: (typeof sourceDependencies)[number])
     const packageRoot = path.dirname(packageJsonPath);
     const outputPaths = new Set<string>();
     dependency.exportKeys.forEach((exportKey) => collectOutputPaths(packageJson.exports[exportKey], outputPaths));
-    const resolvedOutputPaths = [...outputPaths].map((outputPath) => path.resolve(packageRoot, outputPath));
+    const resolvedOutputPaths = [...outputPaths]
+      .map((outputPath) => path.resolve(packageRoot, outputPath))
+      .filter((outputPath) => buildDeclarations || !/\.d\.[cm]?ts$/.test(outputPath));
     if (!resolvedOutputPaths.length || resolvedOutputPaths.some((outputPath) => !fs.existsSync(outputPath))) {
       return false;
     }
 
-    return dependency.declarationChecks.every((check) => {
-      const declarationPath = path.resolve(packageRoot, check.path);
-      return fs.existsSync(declarationPath) && fs.readFileSync(declarationPath, 'utf8').includes(check.includes);
-    });
+    return (
+      !buildDeclarations ||
+      dependency.declarationChecks.every((check) => {
+        const declarationPath = path.resolve(packageRoot, check.path);
+        return fs.existsSync(declarationPath) && fs.readFileSync(declarationPath, 'utf8').includes(check.includes);
+      })
+    );
   } catch {
     return false;
   }
@@ -90,9 +98,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-async function buildSourceDependencies(packageNames: readonly string[]): Promise<void> {
+async function buildSourceDependencies(packageNames: readonly string[], buildDeclarations: boolean): Promise<void> {
   await new Promise<void>((resolve, reject) => {
-    const child = spawn('yarn', ['build', ...packageNames], {
+    const buildArgs = ['build', ...packageNames];
+    if (!buildDeclarations) {
+      buildArgs.push('--no-dts');
+    }
+    const child = spawn('yarn', buildArgs, {
       cwd: repositoryRoot,
       shell: process.platform === 'win32',
       stdio: 'inherit',
