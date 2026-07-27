@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizePath } from '../../../shared/vsc-file/path-normalize';
+import { normalizePath } from '../../shared/path-normalize';
 import {
   defaultRunJSEntryPath,
   defaultRunJSSourceRoot,
@@ -16,8 +16,8 @@ import {
   runJSManifestPath,
   validateRunJSWorkspacePathValue,
   type RunJSWorkspacePathValidationReason,
-} from '../../../shared/vsc-file/runjs-workspace-path';
-import type { VscFileChange } from '../../../shared/vsc-file/types';
+} from '../../shared/runjs-workspace-path';
+import type { VscFileChange } from '../../shared/types';
 import type {
   RunJSChangeSummary,
   RunJSLineDiffRow,

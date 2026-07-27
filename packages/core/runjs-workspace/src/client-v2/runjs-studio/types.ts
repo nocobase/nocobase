@@ -19,15 +19,10 @@ import type {
   RunJSSourceSaveResult,
   RunJSSourceWorkspaceFile,
   RunJSSurfaceStyle,
-} from '../../../shared/vsc-file/runjs-source-contracts';
-export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../../shared/vsc-file/runjs-source-contracts';
-export type { RunJSSourceLocator } from '../../../shared/vsc-file/runjs-source-contracts';
-import type {
-  VscCommitRecord,
-  VscFileChange,
-  VscRepositoryIdentity,
-  VscRepositoryRecord,
-} from '../../../shared/vsc-file/types';
+} from '../../shared/runjs-source-contracts';
+export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../shared/runjs-source-contracts';
+export type { RunJSSourceLocator } from '../../shared/runjs-source-contracts';
+import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from '../../shared/types';
 
 export interface RunJSWorkspaceFile {
   path: string;

@@ -9,10 +9,7 @@
 
 import type { RunJSSettingsDescriptorProvider, RunJSSettingsDescriptorProviderInput } from '@nocobase/client-v2';
 
-import type { LightExtensionDiagnostic } from '../../shared/types';
-import type { RunJSSourceOpenResult } from '../../shared/vsc-file/runjs-source-contracts';
-import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import { unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
+import type { RunJSSourceOpenResult, RunJSWorkspaceDiagnostic } from '../shared/runjs-source-contracts';
 
 const INLINE_SOURCE_MODE = 'inline';
 
@@ -28,13 +25,23 @@ type ResourceResponse<T> = {
   };
 };
 
-export function createInlineLightExtensionSettingsDescriptorProvider(
-  api: ApiClientLike,
+export type RunJSWorkspaceApiRequestOptions = {
+  url: string;
+  method?: string;
+  data?: unknown;
+};
+
+export type RunJSWorkspaceApiClientLike = {
+  request: <TResponse>(options: RunJSWorkspaceApiRequestOptions) => Promise<TResponse>;
+};
+
+export function createInlineRunJSWorkspaceSettingsDescriptorProvider(
+  api: RunJSWorkspaceApiClientLike,
 ): RunJSSettingsDescriptorProvider {
   return {
-    key: '@nocobase/plugin-light-extension/inline-settings-descriptor',
+    key: '@nocobase/runjs-workspace/inline-settings-descriptor',
     priority: 100,
-    canHandle: isInlineLightExtensionSettingsDescriptorInput,
+    canHandle: isInlineRunJSWorkspaceSettingsDescriptorInput,
     async getSettingsDescriptor(input) {
       const sourceRef = toInlineRunJSSourceRef(input.sourceRef);
       if (!sourceRef || input.locator?.kind !== 'flowModel.step') {
@@ -72,7 +79,7 @@ export function createInlineLightExtensionSettingsDescriptorProvider(
         (diagnostic) => diagnostic.code !== 'entry_descriptor_missing',
       );
       if (blockingDiagnostics.length > 0) {
-        throw new InlineRunJSSettingsDescriptorError(descriptor.descriptorPath, blockingDiagnostics);
+        throw new InlineRunJSWorkspaceSettingsDescriptorError(descriptor.descriptorPath, blockingDiagnostics);
       }
       if (!descriptor.entryId) {
         return undefined;
@@ -88,20 +95,20 @@ export function createInlineLightExtensionSettingsDescriptorProvider(
   };
 }
 
-class InlineRunJSSettingsDescriptorError extends Error {
-  readonly code = 'LIGHT_EXTENSION_SETTINGS_INVALID';
+export class InlineRunJSWorkspaceSettingsDescriptorError extends Error {
+  readonly code = 'RUNJS_WORKSPACE_SETTINGS_INVALID';
   readonly status = 422;
   readonly paths: string[];
   readonly details: {
     reasonCode: 'settings_invalid';
     descriptorPath: string;
-    diagnostics: LightExtensionDiagnostic[];
+    diagnostics: RunJSWorkspaceDiagnostic[];
     issues: Array<{ path: string; code: string; message: string }>;
   };
 
-  constructor(descriptorPath: string, diagnostics: LightExtensionDiagnostic[]) {
+  constructor(descriptorPath: string, diagnostics: RunJSWorkspaceDiagnostic[]) {
     super(diagnostics[0]?.message || 'Inline RunJS settings descriptor is invalid');
-    this.name = 'InlineRunJSSettingsDescriptorError';
+    this.name = 'InlineRunJSWorkspaceSettingsDescriptorError';
     this.paths = Array.from(new Set(diagnostics.map((diagnostic) => diagnostic.path).filter(isNonEmptyString)));
     this.details = {
       reasonCode: 'settings_invalid',
@@ -116,7 +123,7 @@ class InlineRunJSSettingsDescriptorError extends Error {
   }
 }
 
-function isInlineLightExtensionSettingsDescriptorInput(input: RunJSSettingsDescriptorProviderInput): boolean {
+function isInlineRunJSWorkspaceSettingsDescriptorInput(input: RunJSSettingsDescriptorProviderInput): boolean {
   return (
     input.sourceMode === INLINE_SOURCE_MODE &&
     input.locator?.kind === 'flowModel.step' &&
@@ -149,4 +156,12 @@ function isNonEmptyString(value: string | undefined): value is string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function unwrapResourceResponse<T>(response: ResourceResponse<T>): T {
+  const value = response?.data?.data;
+  if (value === undefined) {
+    throw new Error('RunJS workspace response is missing resource data');
+  }
+  return value;
 }

@@ -229,6 +229,23 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceMoveTabRequest.required).toEqual(['sourceUid', 'targetUid']);
     expectStringProperties('FlowSurfaceAddPopupTabResult', ['popupPageUid', 'popupTabUid', 'popupGridUid']);
     expectUndefinedProperties('FlowSurfaceAddPopupTabResult', ['tabUid', 'gridUid']);
+    expect(schemas.FlowSurfaceRunJSLocator.properties.flowKey.enum).toEqual(['jsSettings', 'clickSettings']);
+    for (const schemaName of [
+      'FlowSurfaceGetTreeNode',
+      'FlowSurfaceAddBlockResult',
+      'FlowSurfaceAddFieldResult',
+      'FlowSurfaceAddActionResult',
+      'FlowSurfaceComposeBlockResult',
+      'FlowSurfaceComposeFieldResult',
+      'FlowSurfaceComposeActionResult',
+    ]) {
+      expect(schemas[schemaName].properties).toMatchObject({
+        runJSLocator: { $ref: '#/components/schemas/FlowSurfaceRunJSLocator' },
+        workspaceStatus: { type: 'string', enum: ['ready', 'pending', 'error'] },
+        workspaceRetryable: { type: 'boolean' },
+        workspaceError: { $ref: '#/components/schemas/FlowSurfaceRunJSWorkspaceError' },
+      });
+    }
     expect(schemas.FlowSurfaceErrorResponse.example).toMatchObject({
       errors: [
         {

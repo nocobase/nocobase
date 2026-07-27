@@ -16,6 +16,8 @@ import {
   type LegacyRunJSEditorProviderRenderProps,
 } from '@nocobase/client';
 import React from 'react';
+import { installRunJSWorkspaceLegacyClient, legacyRunJSStudioProvider } from '@nocobase/runjs-workspace/client';
+import { runJSStudioProvider } from '@nocobase/runjs-workspace/client-v2';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
@@ -30,8 +32,6 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
-import { runJSStudioProvider } from '../../client-v2/vsc-file/public-api';
-import { legacyRunJSStudioProvider } from '../vsc-file/runjs-studio/LegacyRunJSStudioProvider';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {
@@ -51,6 +51,7 @@ function createLegacyApplication() {
 }
 
 async function loadLegacyPlugins(app: Application) {
+  installRunJSWorkspaceLegacyClient(app.apiClient);
   const lightExtension = new PluginLightExtensionClient({ name: 'light-extension', packageName: NAMESPACE }, app);
 
   await lightExtension.afterAdd();
@@ -91,7 +92,7 @@ describe('legacy Light Extension runtime integration', () => {
     expect(RunJSEditorRegistry.getProviders()).toContainEqual(runJSStudioProvider);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/plugin-vsc-file/legacy-runjs-studio',
+      '@nocobase/runjs-workspace/legacy-runjs-studio',
     ]);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
@@ -115,7 +116,7 @@ describe('legacy Light Extension runtime integration', () => {
       RunJSEditorRegistry.getProviders().filter((provider) => provider.key === 'light-extension-runjs-value'),
     ).toHaveLength(1);
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/plugin-vsc-file/legacy-runjs-studio',
+      '@nocobase/runjs-workspace/legacy-runjs-studio',
     ]);
   });
 
@@ -167,7 +168,7 @@ describe('legacy Light Extension runtime integration', () => {
     const lightExtension = await loadLegacyPlugins(app);
     const studioProvider = LegacyRunJSEditorRegistry.getProvider(stepProps);
 
-    expect(studioProvider?.key).toBe('@nocobase/plugin-vsc-file/legacy-runjs-studio');
+    expect(studioProvider?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
     const studio = render(
       <ApplicationContext.Provider value={app}>{studioProvider?.renderEditor(stepProps)}</ApplicationContext.Provider>,
@@ -177,10 +178,10 @@ describe('legacy Light Extension runtime integration', () => {
 
     lightExtension.dispose();
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)).toBeNull();
-    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(0);
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
     studio.unmount();
     render(<>{LegacyRunJSEditorRegistry.getProvider(workflowProps)?.renderEditor(workflowProps)}</>);
     expect(screen.getByText('Workflow inline editor')).toBeVisible();
@@ -188,19 +189,19 @@ describe('legacy Light Extension runtime integration', () => {
     await lightExtension.load();
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
       'workflow-inline',
-      '@nocobase/plugin-vsc-file/legacy-runjs-studio',
+      '@nocobase/runjs-workspace/legacy-runjs-studio',
     ]);
     expect(
       RunJSEditorRegistry.getProviders().filter(
-        (provider) => provider.key === '@nocobase/plugin-vsc-file/runjs-studio',
+        (provider) => provider.key === '@nocobase/runjs-workspace/runjs-studio',
       ),
     ).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/plugin-vsc-file/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
 
     lightExtension.dispose();
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)).toBeNull();
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
   });
 });

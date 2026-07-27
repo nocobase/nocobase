@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import type { RunJSSourceHistoryItem } from '../types';
+import type { RunJSSourceHistoryItem } from '../runjs-studio/types';
 import {
   buildLineDiff,
   buildWorkspaceSnapshotKey,
@@ -17,7 +17,7 @@ import {
   mergeHistoryItems,
   mergeRunJSWorkspaceFiles,
   normalizeWorkspaceFiles,
-} from '../workspaceUtils';
+} from '../runjs-studio/workspaceUtils';
 
 function createHistoryItem(id: string, seq: number, message: string): RunJSSourceHistoryItem {
   return {

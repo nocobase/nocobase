@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import './settings-descriptor-cache.cases';
-import './settings-descriptor-mutation-invalidation.cases';
+export { tExpr as runJSWorkspaceTExpr, useT as useRunJSWorkspaceT } from './locale';
+export * from './plugin';
+export * from './runjs-studio/contract';
+export * from './runjs-studio/LegacyRunJSStudioProvider';

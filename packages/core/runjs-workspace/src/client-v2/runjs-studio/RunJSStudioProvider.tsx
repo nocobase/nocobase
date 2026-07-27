@@ -14,7 +14,7 @@ import type { RunJSSourceLocator } from './types';
 import { useRunJSStudioController } from './useRunJSStudioController';
 
 export const runJSStudioProvider: RunJSEditorProvider = {
-  key: '@nocobase/plugin-vsc-file/runjs-studio',
+  key: '@nocobase/runjs-workspace/runjs-studio',
   canHandle: (props) => (props.sourceLocator ?? props.locator)?.kind === 'flowModel.step',
   renderEditor: (props) => <RunJSStudioEditorEntry {...props} />,
 };

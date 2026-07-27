@@ -59,6 +59,7 @@ describe('flow-engine RunJS source registration', () => {
     { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSColumnModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'FormJSFieldItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
     { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },

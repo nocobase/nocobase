@@ -21,9 +21,9 @@ import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { commitHistoryDefaultLimit } from '../../../shared/vsc-file/constants';
-import { createWorkspaceAuthoringSurface } from '../../workspace/authoring/createWorkspaceAuthoringSurface';
-import { hashWorkspaceAuthoringValue, type WorkspaceAuthoringFile } from '../../workspace/authoring/workspaceSnapshot';
+import { commitHistoryDefaultLimit } from '../../shared/constants';
+import { createWorkspaceAuthoringSurface } from '../workspace/authoring/createWorkspaceAuthoringSurface';
+import { hashWorkspaceAuthoringValue, type WorkspaceAuthoringFile } from '../workspace/authoring/workspaceSnapshot';
 import type { RunJSCompileDiagnostic } from './types';
 import { useT } from '../locale';
 import {

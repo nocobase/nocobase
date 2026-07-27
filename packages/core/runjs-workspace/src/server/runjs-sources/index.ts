@@ -15,5 +15,11 @@ export {
   assertRunJSCompileInputLimits,
   createFlowSurfaceRunJSWorkspaceBootstrapPort,
   createRunJSSourcesResource,
+  RUNJS_WORKSPACE_HOSTS,
   runJSSourceActionNames,
+  type RunJSWorkspaceBootstrapInput,
+  type RunJSWorkspaceBootstrapPort,
+  type RunJSWorkspaceBootstrapResult,
+  type RunJSWorkspaceHostKind,
+  type RunJSWorkspaceModelUse,
 } from './resource';

@@ -12,7 +12,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { runJSStudioProvider } from '../RunJSStudioProvider';
+import { runJSStudioProvider } from '../runjs-studio/RunJSStudioProvider';
 
 const mocks = vi.hoisted(() => {
   const authoringSurfaces = new Map<string, CodeAuthoringSurface>();
@@ -39,7 +39,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('../../../../shared/vsc-file/path-normalize', () => ({
+vi.mock('../../shared/path-normalize', () => ({
   normalizePath: (path: string) => String(path || '').replace(/\\/g, '/'),
 }));
 
@@ -88,7 +88,7 @@ vi.mock('@nocobase/client-v2', () => ({
   },
 }));
 
-vi.mock('../../locale', () => ({ useT: () => mocks.t }));
+vi.mock('../locale', () => ({ useT: () => mocks.t }));
 
 const locator = {
   kind: 'flowModel.step',

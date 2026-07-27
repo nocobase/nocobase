@@ -9,8 +9,10 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import { createInlineLightExtensionSettingsDescriptorProvider } from '../resolvers/InlineLightExtensionSettingsDescriptorProvider';
+import {
+  createInlineRunJSWorkspaceSettingsDescriptorProvider,
+  type RunJSWorkspaceApiClientLike,
+} from '../InlineRunJSWorkspaceSettingsDescriptorProvider';
 
 const locator = {
   kind: 'flowModel.step' as const,
@@ -21,7 +23,7 @@ const locator = {
   versionPath: ['version'],
 };
 
-describe('inline light extension settings descriptor provider', () => {
+describe('inline RunJS workspace settings descriptor provider', () => {
   it('consumes the server-canonical settings descriptor from the current RunJS workspace', async () => {
     const request = vi.fn(async () => ({
       data: {
@@ -50,7 +52,7 @@ describe('inline light extension settings descriptor provider', () => {
         },
       },
     }));
-    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+    const provider = createInlineRunJSWorkspaceSettingsDescriptorProvider({ request } as RunJSWorkspaceApiClientLike);
 
     await expect(
       provider.getSettingsDescriptor({
@@ -110,7 +112,7 @@ describe('inline light extension settings descriptor provider', () => {
         },
       },
     }));
-    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+    const provider = createInlineRunJSWorkspaceSettingsDescriptorProvider({ request } as RunJSWorkspaceApiClientLike);
 
     await expect(
       provider.getSettingsDescriptor({
@@ -140,7 +142,7 @@ describe('inline light extension settings descriptor provider', () => {
         },
       },
     }));
-    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+    const provider = createInlineRunJSWorkspaceSettingsDescriptorProvider({ request } as RunJSWorkspaceApiClientLike);
 
     await expect(
       provider.getSettingsDescriptor({
@@ -181,8 +183,8 @@ describe('inline light extension settings descriptor provider', () => {
           },
         },
       })),
-    } as ApiClientLike;
-    const provider = createInlineLightExtensionSettingsDescriptorProvider(api);
+    } as RunJSWorkspaceApiClientLike;
+    const provider = createInlineRunJSWorkspaceSettingsDescriptorProvider(api);
 
     await expect(
       provider.getSettingsDescriptor({
@@ -191,7 +193,7 @@ describe('inline light extension settings descriptor provider', () => {
         locator,
       }),
     ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      code: 'RUNJS_WORKSPACE_SETTINGS_INVALID',
       status: 422,
       paths: ['src/client/entry.json'],
       details: {
@@ -220,7 +222,7 @@ describe('inline light extension settings descriptor provider', () => {
         },
       },
     }));
-    const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
+    const provider = createInlineRunJSWorkspaceSettingsDescriptorProvider({ request } as RunJSWorkspaceApiClientLike);
 
     await expect(
       provider.getSettingsDescriptor({

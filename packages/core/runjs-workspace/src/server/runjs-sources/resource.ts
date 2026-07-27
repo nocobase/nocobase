@@ -64,9 +64,30 @@ import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler
 
 const inlineRunJSEntryDescriptorPath = 'src/client/entry.json';
 const emptyRunJSRenderSource = 'ctx.render(null);';
+const emptyRunJSActionSource = 'return;';
+
+export const RUNJS_WORKSPACE_HOSTS = {
+  JSPageModel: 'js-page',
+  JSBlockModel: 'js-block',
+  JSFieldModel: 'js-field',
+  JSEditableFieldModel: 'js-editable-field',
+  JSColumnModel: 'js-column',
+  JSItemModel: 'js-item',
+  FormJSFieldItemModel: 'form-js-field-item',
+  JSItemActionModel: 'js-item-action',
+  JSActionModel: 'js-action',
+  JSRecordActionModel: 'js-record-action',
+  JSCollectionActionModel: 'js-collection-action',
+  JSFormActionModel: 'js-form-action',
+  FilterFormJSActionModel: 'filter-form-js-action',
+} as const;
+
+export type RunJSWorkspaceModelUse = keyof typeof RUNJS_WORKSPACE_HOSTS;
+export type RunJSWorkspaceHostKind = (typeof RUNJS_WORKSPACE_HOSTS)[RunJSWorkspaceModelUse];
 
 export interface RunJSWorkspaceBootstrapInput {
-  hostKind: 'js-page' | 'js-block';
+  hostKind: RunJSWorkspaceHostKind;
+  modelUse: RunJSWorkspaceModelUse;
   locator: unknown;
   transaction: Transaction;
   authoringContext: Partial<
@@ -864,7 +885,7 @@ async function bootstrapFlowSurfaceRunJSWorkspace(
 
   await adapter.assertCanWrite({ locator, ctx: adapterCtx });
   const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
-  assertBootstrapHostMatches(input.hostKind, legacy);
+  assertBootstrapHostMatches(input, legacy);
   await assertCurrentOwnerFingerprint(adapter, locator, adapterCtx, legacy.ownerFingerprint);
 
   const repositoryIdentity = buildRunJSSourceRepositoryIdentity(locator);
@@ -993,17 +1014,19 @@ function createBootstrapAdapterContext(input: RunJSWorkspaceBootstrapInput): Run
 }
 
 function assertBootstrapHostMatches(
-  hostKind: RunJSWorkspaceBootstrapInput['hostKind'],
+  input: Pick<RunJSWorkspaceBootstrapInput, 'hostKind' | 'modelUse'>,
   legacy: RunJSLegacySource,
 ): void {
-  const expectedModelUse = hostKind === 'js-page' ? 'JSPageModel' : 'JSBlockModel';
-  if (legacy.metadata?.modelUse === expectedModelUse) {
+  const expectedHostKind = RUNJS_WORKSPACE_HOSTS[input.modelUse];
+  if (input.hostKind === expectedHostKind && legacy.metadata?.modelUse === input.modelUse) {
     return;
   }
 
-  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS workspace bootstrap expected ${expectedModelUse}`, {
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS workspace bootstrap expected ${input.modelUse}`, {
     details: {
-      hostKind,
+      hostKind: input.hostKind,
+      expectedHostKind,
+      expectedModelUse: input.modelUse,
       modelUse: legacy.metadata?.modelUse,
     },
   });
@@ -1014,7 +1037,11 @@ function buildRunJSBootstrapInitialFiles(
   locator: RunJSSourceSaveInput['locator'],
   legacy: RunJSLegacySource,
 ): VscTreeEntryInput[] {
-  const source = legacy.code.trim() ? legacy.code : emptyRunJSRenderSource;
+  const source = legacy.code.trim()
+    ? legacy.code
+    : legacy.surfaceStyle === 'action'
+      ? emptyRunJSActionSource
+      : emptyRunJSRenderSource;
   return [
     {
       path: defaultRunJSEntryPath,

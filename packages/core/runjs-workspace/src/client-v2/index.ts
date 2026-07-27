@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RunJSEditorRegistry } from '@nocobase/client-v2';
-
-import { runJSStudioProvider } from './runjs-studio';
-
-export function installRunJSStudioClientV2() {
-  return RunJSEditorRegistry.registerProvider({ ...runJSStudioProvider });
-}
+export * from './InlineRunJSWorkspaceSettingsDescriptorProvider';
+export { tExpr as runJSWorkspaceTExpr, useT as useRunJSWorkspaceT } from './locale';
+export * from './plugin';
+export * from './runjs-studio';
+export * from './workspace/authoring';

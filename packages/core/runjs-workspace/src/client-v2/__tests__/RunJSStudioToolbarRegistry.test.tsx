@@ -10,7 +10,7 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { RunJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '../RunJSStudioToolbarRegistry';
+import { RunJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '../runjs-studio/RunJSStudioToolbarRegistry';
 
 const context = {
   locator: {
@@ -47,9 +47,9 @@ describe('RunJSStudioToolbarRegistry', () => {
 
   it('shares the toolbar registry across separately loaded client bundles', async () => {
     vi.resetModules();
-    const firstBundle = await import('../RunJSStudioToolbarRegistry');
+    const firstBundle = await import('../runjs-studio/RunJSStudioToolbarRegistry');
     vi.resetModules();
-    const secondBundle = await import('../RunJSStudioToolbarRegistry');
+    const secondBundle = await import('../runjs-studio/RunJSStudioToolbarRegistry');
 
     expect(secondBundle.runJSStudioToolbarRegistry).toBe(firstBundle.runJSStudioToolbarRegistry);
   });

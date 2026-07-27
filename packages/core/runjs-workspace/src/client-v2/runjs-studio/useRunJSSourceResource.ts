@@ -10,7 +10,7 @@
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { VscErrorCode, VscErrorDetails } from '../../../shared/vsc-file/errors';
+import type { VscErrorCode, VscErrorDetails } from '../../shared/errors';
 import { useT } from '../locale';
 import type { RunJSSourceActionInput, RunJSSourceActionName, RunJSSourceActionResult } from './types';
 

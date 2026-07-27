@@ -17,7 +17,7 @@ import { FlowContextProvider, type FlowContext, type RunJSValue } from '@nocobas
 import type { RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
 import React from 'react';
 
-import { runJSStudioProvider } from '../../../client-v2/vsc-file/runjs-studio';
+import { runJSStudioProvider } from '../../client-v2/runjs-studio';
 import { useT } from '../locale';
 
 type LegacyFlowContext = {
@@ -29,7 +29,7 @@ type LegacyRunJSStudioEditorProps = LegacyRunJSEditorProviderRenderProps & {
 };
 
 export const legacyRunJSStudioProvider: LegacyRunJSEditorProvider = {
-  key: '@nocobase/plugin-vsc-file/legacy-runjs-studio',
+  key: '@nocobase/runjs-workspace/legacy-runjs-studio',
   canHandle: (props) => {
     const studioProps = props as LegacyRunJSStudioEditorProps;
     return (studioProps.sourceLocator ?? studioProps.locator)?.kind === 'flowModel.step';

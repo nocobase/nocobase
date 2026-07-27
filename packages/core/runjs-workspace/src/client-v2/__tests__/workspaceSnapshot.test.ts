@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildWorkspaceAuthoringTreeSnapshot } from '../workspaceSnapshot';
+import { buildWorkspaceAuthoringTreeSnapshot } from '../workspace/authoring/workspaceSnapshot';
 
 describe('workspace authoring snapshot', () => {
   it('normalizes and sorts the same tree to the same revision', () => {

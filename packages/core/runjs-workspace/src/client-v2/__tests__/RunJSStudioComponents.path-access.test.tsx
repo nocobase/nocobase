@@ -11,7 +11,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { FilesPanel } from '../RunJSStudioComponents';
+import { FilesPanel } from '../runjs-studio/RunJSStudioComponents';
 
 describe('FilesPanel path access', () => {
   it('hides the internal RunJS manifest from the file tree', () => {

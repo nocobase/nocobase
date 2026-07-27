@@ -8,14 +8,19 @@
  */
 import { LegacyRunJSEditorRegistry } from './runjs-studio/contract';
 import { legacyRunJSStudioProvider } from './runjs-studio/LegacyRunJSStudioProvider';
-import { installRunJSStudioClientV2 } from '../../client-v2/vsc-file/plugin';
+import { installRunJSStudioClientV2, installRunJSWorkspaceClientV2 } from '../client-v2/plugin';
+import type { RunJSWorkspaceApiClientLike } from '../client-v2/InlineRunJSWorkspaceSettingsDescriptorProvider';
 
-export function installLegacyRunJSStudioClient() {
-  const disposeClientV2 = installRunJSStudioClientV2();
+export function installLegacyRunJSStudioClient(api?: RunJSWorkspaceApiClientLike): () => void {
+  const disposeClientV2 = api ? installRunJSWorkspaceClientV2(api) : installRunJSStudioClientV2();
   const disposeLegacy = LegacyRunJSEditorRegistry.registerProvider(legacyRunJSStudioProvider);
 
   return () => {
     disposeLegacy();
     disposeClientV2();
   };
+}
+
+export function installRunJSWorkspaceLegacyClient(api: RunJSWorkspaceApiClientLike): () => void {
+  return installLegacyRunJSStudioClient(api);
 }

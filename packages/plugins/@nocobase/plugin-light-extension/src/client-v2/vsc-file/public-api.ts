@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './runjs-studio';
-export { useT as useVscFileT } from './locale';
+export * from '@nocobase/runjs-workspace/client-v2';
+export { useRunJSWorkspaceT as useVscFileT } from '@nocobase/runjs-workspace/client-v2';

@@ -10,9 +10,9 @@
 import type { CodeAuthoringDiagnostic, CodeAuthoringSnapshot } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createWorkspaceAuthoringSurface } from '../createWorkspaceAuthoringSurface';
-import { WorkspaceAuthoringError } from '../workspaceChanges';
-import type { WorkspaceAuthoringFile } from '../workspaceSnapshot';
+import { createWorkspaceAuthoringSurface } from '../workspace/authoring/createWorkspaceAuthoringSurface';
+import { WorkspaceAuthoringError } from '../workspace/authoring/workspaceChanges';
+import type { WorkspaceAuthoringFile } from '../workspace/authoring/workspaceSnapshot';
 
 function createHarness() {
   let sourceFiles: WorkspaceAuthoringFile[] = [

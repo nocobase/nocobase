@@ -10,6 +10,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockClient } from '../../MockApplication';
+import { RunJSEditorRegistry } from '../components/runjs-studio';
+import { RunJSSettingsDescriptorProviderRegistry } from '../components/runjs-source';
 import { PluginFlowEngine } from '../index';
 
 const { detectedDeviceType } = vi.hoisted(() => ({
@@ -28,7 +30,30 @@ describe('PluginFlowEngine', () => {
   });
 
   afterEach(() => {
+    RunJSEditorRegistry.clear();
+    RunJSSettingsDescriptorProviderRegistry.clear();
     vi.restoreAllMocks();
+  });
+
+  it('keeps the RunJS workspace client available across reload and dispose cycles', async () => {
+    const app = createMockClient();
+    const plugin = new PluginFlowEngine({}, app);
+
+    await plugin.load();
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
+      '@nocobase/runjs-workspace/runjs-studio',
+    ]);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toEqual([
+      '@nocobase/runjs-workspace/inline-settings-descriptor',
+    ]);
+
+    plugin.dispose();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+
+    await plugin.load();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
   });
 
   it('does not re-register actions when the same app loads twice', async () => {

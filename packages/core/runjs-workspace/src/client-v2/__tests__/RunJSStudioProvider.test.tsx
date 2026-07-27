@@ -11,11 +11,11 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { runJSStudioProvider } from '../RunJSStudioProvider';
-import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
-import type { RunJSSourceActionInput } from '../types';
-import { runJSSourceActionNames } from '../useRunJSSourceResource';
-import { runJSManifestPath } from '../workspaceUtils';
+import { runJSStudioProvider } from '../runjs-studio/RunJSStudioProvider';
+import { runJSStudioToolbarRegistry } from '../runjs-studio/RunJSStudioToolbarRegistry';
+import type { RunJSSourceActionInput } from '../runjs-studio/types';
+import { runJSSourceActionNames } from '../runjs-studio/useRunJSSourceResource';
+import { runJSManifestPath } from '../runjs-studio/workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
   authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../../../shared/vsc-file/path-normalize', () => ({
+vi.mock('../../shared/path-normalize', () => ({
   normalizePath: (path: string) => String(path || '').replace(/\\/g, '/'),
 }));
 
@@ -148,7 +148,7 @@ vi.mock('@nocobase/client-v2', () => ({
   },
 }));
 
-vi.mock('../../locale', () => ({
+vi.mock('../locale', () => ({
   useT: () => (key: string) => key,
 }));
 

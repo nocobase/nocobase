@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildWorkspaceSnapshotKey } from '../workspaceUtils';
+import { buildWorkspaceSnapshotKey } from '../runjs-studio/workspaceUtils';
 
 const files = [{ content: 'x'.repeat(10 * 1024 * 1024), path: 'src/client/index.tsx', revision: 1 }];
 

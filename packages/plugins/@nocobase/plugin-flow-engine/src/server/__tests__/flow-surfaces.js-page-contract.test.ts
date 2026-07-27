@@ -175,6 +175,7 @@ describe('flowSurfaces JS page contract', () => {
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
           hostKind: 'js-page',
+          modelUse: 'JSPageModel',
           locator: created.runJSLocator,
           transaction: expect.anything(),
           authoringContext: expect.objectContaining({
@@ -411,6 +412,7 @@ describe('flowSurfaces JS page contract', () => {
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
           hostKind: 'js-block',
+          modelUse: 'JSBlockModel',
           locator: block.runJSLocator,
           transaction: expect.anything(),
         }),

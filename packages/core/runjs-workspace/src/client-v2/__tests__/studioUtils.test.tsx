@@ -9,9 +9,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildRunJSImportModuleCompletionSignature, buildRunJSTypeScriptProject } from '../studioUtils';
-import type { RunJSWorkspaceFile } from '../types';
-import { runJSManifestPath } from '../workspaceUtils';
+import { buildRunJSImportModuleCompletionSignature, buildRunJSTypeScriptProject } from '../runjs-studio/studioUtils';
+import type { RunJSWorkspaceFile } from '../runjs-studio/types';
+import { runJSManifestPath } from '../runjs-studio/workspaceUtils';
 
 function workspaceFile(path: string, content = ''): RunJSWorkspaceFile {
   return { content, path };

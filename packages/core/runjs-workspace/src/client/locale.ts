@@ -8,7 +8,8 @@
  */
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../../constants';
+
+const NAMESPACE = 'client';
 
 export function useT() {
   const engine = useFlowEngine({ throwError: false });
