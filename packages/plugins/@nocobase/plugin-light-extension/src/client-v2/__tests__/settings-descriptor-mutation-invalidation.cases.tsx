@@ -105,12 +105,15 @@ describe('settings descriptor mutation invalidation', () => {
     expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
   });
 
-  it('reloads the selectable catalog after every repo or entry mutation succeeds', async () => {
+  it('reloads the selectable catalog after completed mutations but not accepted creation', async () => {
     let catalogVersion = 0;
     mocks.request.mockImplementation((options: { url: string }) => {
       if (options.url === 'lightExtensionEntries:listSelectable') {
         catalogVersion += 1;
         return Promise.resolve(resourceResponse([{ ...createSelectableEntry(), id: `entry-${catalogVersion}` }]));
+      }
+      if (options.url === 'lightExtensionRepos:create') {
+        return Promise.resolve(resourceResponse(createAcceptedJob()));
       }
       return Promise.resolve(resourceResponse({ id: 'repo_sales' }));
     });
@@ -121,17 +124,17 @@ describe('settings descriptor mutation invalidation', () => {
     await act(async () => {
       await result.current.createRepo({ name: 'sales' });
     });
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
 
     await act(async () => {
       await result.current.updateRepo({ repoId: 'repo_sales', title: 'Sales tools' });
     });
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-3' }]);
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
 
     await act(async () => {
       await result.current.changeLifecycle({ repoId: 'repo_sales', lifecycleStatus: 'disabled' });
     });
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-4' }]);
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-3' }]);
 
     await act(async () => {
       await result.current.saveSource({
@@ -141,12 +144,12 @@ describe('settings descriptor mutation invalidation', () => {
         files: [],
       });
     });
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-5' }]);
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-4' }]);
 
     await act(async () => {
       await result.current.deleteRepo('repo_sales');
     });
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-6' }]);
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-5' }]);
   });
 });
 
@@ -173,6 +176,27 @@ function createSelectableEntry() {
     settingsDefaultsHash: 'defaults-v1',
     runtimeCodeHash: 'runtime-v1',
     runtimeAvailable: true,
+  } as const;
+}
+
+function createAcceptedJob() {
+  return {
+    id: 'lecj_sales',
+    targetRepoId: 'repo_sales',
+    name: 'sales',
+    title: null,
+    description: null,
+    sourceType: 'template',
+    status: 'pending',
+    resultRepoId: null,
+    errorCode: null,
+    errorMessage: null,
+    canRetry: false,
+    canDismiss: false,
+    startedAt: null,
+    finishedAt: null,
+    createdAt: '2026-07-27T00:00:00.000Z',
+    updatedAt: '2026-07-27T00:00:00.000Z',
   } as const;
 }
 
