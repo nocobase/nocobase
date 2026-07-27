@@ -23,6 +23,7 @@ import {
 } from './portal-create.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
+import { mergePortalConfigIntoOptions, readPortalConfig, type PortalConfig } from './portal-config.js';
 import { run } from './run-npm.js';
 
 type RunOptions = {
@@ -251,27 +252,32 @@ async function uploadPortalDist(params: {
 
 async function syncMultiPortalRecord(params: {
   portal: string;
+  config?: PortalConfig;
   envName?: string;
   cliVersion?: string;
   apiRequest?: ApiRequest;
 }): Promise<void> {
   const apiRequest = params.apiRequest ?? executeApiRequest;
+  const body: Record<string, unknown> = {
+    uid: params.portal,
+    title: titleFromPortalSlug(params.portal),
+    developmentMode: 'vibe-coding',
+    routeName: params.portal,
+    routePath: `/${params.portal}`,
+    authCheck: true,
+    enabled: true,
+    uiLayoutUid: DEFAULT_PORTAL_UI_LAYOUT_UID,
+    skipCreatePortalDirectory: true,
+  };
+  if (params.config) {
+    body.options = mergePortalConfigIntoOptions(params.config);
+  }
   const response = await apiRequest({
     cliVersion: params.cliVersion ?? '',
     envName: params.envName,
     flags: {
       filterKeys: ['uid'],
-      body: JSON.stringify({
-        uid: params.portal,
-        title: titleFromPortalSlug(params.portal),
-        developmentMode: 'vibe-coding',
-        routeName: params.portal,
-        routePath: `/${params.portal}`,
-        authCheck: true,
-        enabled: true,
-        uiLayoutUid: DEFAULT_PORTAL_UI_LAYOUT_UID,
-        skipCreatePortalDirectory: true,
-      }),
+      body: JSON.stringify(body),
     },
     operation: FIRST_OR_CREATE_PORTAL_OPERATION,
   });
@@ -313,6 +319,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       `Portal workspace is invalid: package.json is missing in ${portalDir}.`,
     ),
   );
+  const portalConfig = await readPortalConfig(portalDir);
 
   await updatePortalEnvFiles({
     portalDir,
@@ -349,6 +356,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   if (options.env.kind === 'local' || options.env.kind === 'docker') {
     await syncMultiPortalRecord({
       portal,
+      config: portalConfig,
       envName: options.envName,
       cliVersion: options.cliVersion,
       apiRequest: options.apiRequest,
@@ -394,6 +402,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
 
   await syncMultiPortalRecord({
     portal,
+    config: portalConfig,
     envName: options.envName,
     cliVersion: options.cliVersion,
     apiRequest: options.apiRequest,

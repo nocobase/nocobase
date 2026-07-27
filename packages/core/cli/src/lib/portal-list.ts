@@ -38,6 +38,12 @@ export type PortalListItem = {
   routePath: string;
   developmentMode: string;
   enabled: boolean;
+  sourceStorage: string;
+  gitRepo: string;
+  gitBranch: string;
+  gitPath: string;
+  sourceRevision: string;
+  options: Record<string, unknown>;
   portalUrl: string;
   portalDir: string;
   localSynced: boolean | null;
@@ -49,6 +55,7 @@ export type PortalOutputItem = {
   developmentMode: string;
   localPath: string;
   enabled: boolean;
+  sourceStorage: string;
   localSynced: boolean | null;
 };
 
@@ -91,6 +98,14 @@ function readRecordString(record: Record<string, unknown>, key: string): string 
 
 function readRecordBoolean(record: Record<string, unknown>, key: string): boolean {
   return record[key] === true;
+}
+
+function readRecordObject(record: Record<string, unknown>, key: string): Record<string, unknown> {
+  const value = record[key];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }
 
 function readListData(data: unknown): Array<Record<string, unknown>> {
@@ -180,6 +195,7 @@ export function toPortalOutputItem(item: PortalListItem): PortalOutputItem {
     developmentMode: item.developmentMode,
     localPath: item.localSynced === true ? item.portalDir : '',
     enabled: item.enabled,
+    sourceStorage: item.sourceStorage,
     localSynced: item.localSynced,
   };
 }
@@ -242,6 +258,9 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
       const routePath = readRecordString(record, 'routePath') || `/${routeName}`;
       const developmentMode = readRecordString(record, 'developmentMode');
       const enabled = readRecordBoolean(record, 'enabled');
+      const options = readRecordObject(record, 'options');
+      const git = readRecordObject(options, 'git');
+      const sourceStorage = trimValue(options.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
       const isVibeCoding = developmentMode === 'vibe-coding';
       const portalDir = isVibeCoding ? path.join(storagePath, 'portals', app, routeName) : '';
 
@@ -251,6 +270,12 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
         routePath,
         developmentMode,
         enabled,
+        sourceStorage,
+        gitRepo: trimValue(git.repo) || readRecordString(record, 'gitRepo'),
+        gitBranch: trimValue(git.branch) || readRecordString(record, 'gitBranch'),
+        gitPath: trimValue(git.path) || readRecordString(record, 'gitPath'),
+        sourceRevision: trimValue(options.sourceRevision) || readRecordString(record, 'sourceRevision'),
+        options,
         portalUrl: enabled
           ? buildPortalAccessUrl(
               apiBaseUrl,

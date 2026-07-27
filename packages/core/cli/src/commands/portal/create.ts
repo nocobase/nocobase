@@ -26,6 +26,7 @@ export default class PortalCreate extends Command {
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --template @nocobase/portal-template-default',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git',
   ];
 
   static override args = {
@@ -55,6 +56,20 @@ export default class PortalCreate extends Command {
     force: Flags.boolean({
       description: 'Delete the existing Portal workspace and recreate it',
       default: false,
+    }),
+    'source-storage': Flags.string({
+      description: 'Where Portal source code is managed',
+      options: ['nocobase', 'git'],
+      default: 'nocobase',
+    }),
+    'git-repo': Flags.string({
+      description: 'Git repository URL used when --source-storage=git',
+    }),
+    'git-branch': Flags.string({
+      description: 'Git branch used when --source-storage=git',
+    }),
+    'git-path': Flags.string({
+      description: 'Directory inside the Git repository for this Portal; defaults to the portal slug',
     }),
   };
 
@@ -92,7 +107,13 @@ export default class PortalCreate extends Command {
       title: flags.title,
       template: flags.template,
       env,
+      envName: flags.env,
+      cliVersion: String(this.config.pjson.version ?? '').trim(),
       force: flags.force,
+      sourceStorage: flags['source-storage'] as 'nocobase' | 'git',
+      gitRepo: flags['git-repo'],
+      gitBranch: flags['git-branch'],
+      gitPath: flags['git-path'],
       onSkipInstall: (message) => printInfo(message),
     });
 
@@ -105,5 +126,12 @@ export default class PortalCreate extends Command {
     );
     printInfo(portalCreateText('messages.app', { app: result.app }, `App: ${result.app}`));
     printInfo(portalCreateText('messages.base', { base: result.portalBase }, `Base: ${result.portalBase}`));
+    printInfo(
+      portalCreateText(
+        'messages.sourceStorage',
+        { sourceStorage: result.sourceStorage },
+        `Source storage: ${result.sourceStorage}`,
+      ),
+    );
   }
 }

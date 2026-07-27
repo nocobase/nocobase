@@ -198,24 +198,9 @@ test('creates a Portal workspace from a local template', async () => {
     'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n' +
       'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
   );
-  const portalConfig = JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')) as Record<
-    string,
-    unknown
-  >;
-  expect(portalConfig).toMatchObject({
-    schemaVersion: 1,
-    app: 'crm',
-    name: 'customer',
-    title: 'Customer',
-    basePath: '/console/x/apps/crm/customer/',
-    apiBaseUrl: 'http://localhost:13000/console/api/__app/crm',
-    template: {
-      type: 'local',
-      source: templatePath,
-    },
-    createdBy: 'nb portal create',
+  expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
+    sourceStorage: 'nocobase',
   });
-  expect(new Date(String(portalConfig.createdAt)).toISOString()).toBe(portalConfig.createdAt);
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),
@@ -288,11 +273,8 @@ test('downloads npm package templates with npm pack when not installed locally',
 
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
-  expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toMatchObject({
-    template: {
-      type: 'package',
-      source: '@nocobase/missing-portal-template',
-    },
+  expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
+    sourceStorage: 'nocobase',
   });
   expect(runCommand).toHaveBeenNthCalledWith(
     2,

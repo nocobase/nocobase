@@ -107,6 +107,8 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:firstOrCreate',
   'multiPortals:destroy',
   'multiPortals:deploy',
+  'multiPortals:pullSource',
+  'multiPortals:pushSource',
 ];
 
 type PortalDeployTarEntry = {
@@ -305,7 +307,10 @@ function createPortalDeployUploadMiddleware() {
   }).single('file');
 
   return async (ctx: ResourcerContext, next: () => Promise<void>) => {
-    if (ctx.action.resourceName !== 'multiPortals' || ctx.action.actionName !== 'deploy') {
+    if (
+      ctx.action.resourceName !== 'multiPortals' ||
+      (ctx.action.actionName !== 'deploy' && ctx.action.actionName !== 'pushSource')
+    ) {
       await next();
       return;
     }
@@ -347,7 +352,7 @@ function resolveDefaultPortalTemplateDir(): string {
 }
 
 async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
-  const ignoredSegments = new Set(['.git', 'node_modules']);
+  const ignoredSegments = new Set(['.git', 'node_modules', 'dist', '.DS_Store']);
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,
@@ -355,7 +360,7 @@ async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise
       !path
         .relative(sourceDir, source)
         .split(path.sep)
-        .some((segment) => ignoredSegments.has(segment)),
+        .some((segment) => segment.startsWith('._') || ignoredSegments.has(segment)),
   });
 }
 
@@ -607,6 +612,109 @@ async function replacePortalDistFromArchive(params: {
       });
     }
     throw error;
+  } finally {
+    await fs.promises.rm(params.filePath, { force: true });
+    await fs.promises.rm(uploadDir, { recursive: true, force: true });
+    await fs.promises.rm(tarPath, { force: true });
+  }
+}
+
+function shouldPackPortalSourceEntry(entryName: string) {
+  return !entryName
+    .split('/')
+    .some((segment) => segment.startsWith('._') || ['.git', 'node_modules', 'dist', '.DS_Store'].includes(segment));
+}
+
+function validatePortalSourceTarEntry(entryPath: string, entry: PortalDeployTarEntry) {
+  if (path.isAbsolute(entryPath) || entryPath.split(/[\\/]+/).includes('..')) {
+    return false;
+  }
+  if (entry.type === 'SymbolicLink' || entry.type === 'Link' || typeof entry.linkpath === 'string') {
+    return false;
+  }
+  return shouldPackPortalSourceEntry(entryPath);
+}
+
+async function packPortalSource(params: { appName: string; portalName: string }): Promise<string> {
+  const portalDir = storagePathJoin('portals', params.appName, params.portalName);
+  if (!(await pathExists(portalDir))) {
+    throw new Error('Portal source directory does not exist.');
+  }
+
+  const archivePath = path.join(
+    os.tmpdir(),
+    `nocobase-portal-source-${Date.now()}-${Math.random().toString().slice(2)}.tar.gz`,
+  );
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(
+      'tar',
+      [
+        '-czf',
+        archivePath,
+        '--exclude=.git',
+        '--exclude=node_modules',
+        '--exclude=dist',
+        '--exclude=.DS_Store',
+        '--exclude=._*',
+        '-C',
+        portalDir,
+        '.',
+      ],
+      {
+        stdio: ['ignore', 'ignore', 'pipe'],
+      },
+    );
+    let stderr = '';
+    child.stderr?.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`tar exited with code ${code}${stderr ? `: ${stderr.trim()}` : ''}`));
+    });
+  });
+  return archivePath;
+}
+
+async function replacePortalSourceFromArchive(params: {
+  filePath: string;
+  appName: string;
+  portalName: string;
+}): Promise<string> {
+  const portalDir = storagePathJoin('portals', params.appName, params.portalName);
+  const tarPath = path.join(
+    os.tmpdir(),
+    `nocobase-portal-source-${Date.now()}-${Math.random().toString().slice(2)}.tar`,
+  );
+  const uploadDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-source-upload-'));
+
+  try {
+    await pipeline(fs.createReadStream(params.filePath), createGunzip(), fs.createWriteStream(tarPath));
+    await tar.extract({
+      file: tarPath,
+      cwd: uploadDir,
+      strict: true,
+      filter: validatePortalSourceTarEntry,
+    });
+
+    await fs.promises.mkdir(portalDir, { recursive: true });
+    const existingEntries = await fs.promises.readdir(portalDir).catch(() => []);
+    await Promise.all(
+      existingEntries
+        .filter((entry) => shouldPackPortalSourceEntry(entry))
+        .map((entry) => fs.promises.rm(path.join(portalDir, entry), { recursive: true, force: true })),
+    );
+
+    const sourceEntries = await fs.promises.readdir(uploadDir);
+    await Promise.all(
+      sourceEntries.map((entry) => fs.promises.rename(path.join(uploadDir, entry), path.join(portalDir, entry))),
+    );
+
+    return path.relative(storagePathJoin(), portalDir);
   } finally {
     await fs.promises.rm(params.filePath, { force: true });
     await fs.promises.rm(uploadDir, { recursive: true, force: true });
@@ -1854,6 +1962,90 @@ export class PluginMultiPortalServer extends Plugin {
     }
   }
 
+  private async pullPortalSource(ctx: ResourcerContext, next: () => Promise<void>) {
+    const appName = normalizePortalStorageName(ctx.action.params.values?.app || MAIN_APP_NAME) || MAIN_APP_NAME;
+    const portalName = normalizePortalStorageName(ctx.action.params.values?.portal);
+
+    try {
+      if (!isValidPortalDeploySegment(appName)) {
+        throw new Error('Invalid app');
+      }
+      if (!portalName || !isValidPortalDeploySegment(portalName)) {
+        throw new Error('Invalid portal');
+      }
+
+      const archivePath = await packPortalSource({ appName, portalName });
+      ctx.attachment(`${portalName}-source.tar.gz`);
+      ctx.body = fs.createReadStream(archivePath);
+      ctx.res.once('finish', () => {
+        fs.promises.rm(archivePath, { force: true });
+      });
+      await next();
+    } catch (error) {
+      ctx.throw(400, error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  private async pushPortalSource(ctx: ResourcerContext, next: () => Promise<void>) {
+    const sourceCtx = ctx as MultiPortalDeployContext;
+    const appName = normalizePortalStorageName(sourceCtx.request.body?.app || MAIN_APP_NAME) || MAIN_APP_NAME;
+    const portalName = normalizePortalStorageName(sourceCtx.request.body?.portal);
+    const filePath = trimString(sourceCtx.request.file?.path);
+
+    try {
+      if (!isValidPortalDeploySegment(appName)) {
+        throw new Error('Invalid app');
+      }
+      if (!portalName || !isValidPortalDeploySegment(portalName)) {
+        throw new Error('Invalid portal');
+      }
+      if (!filePath || !(await pathExists(filePath))) {
+        throw new Error('file is required');
+      }
+
+      const sourcePath = await replacePortalSourceFromArchive({
+        filePath,
+        appName,
+        portalName,
+      });
+      const sourceRevision = new Date().toISOString();
+      const repository = this.db.getRepository('multiPortals');
+      const multiPortal = await repository.findOne({
+        filterByTk: portalName,
+        fields: ['uid', 'options'],
+      });
+      const currentOptions = multiPortal ? getRecordField(multiPortal, 'options') : undefined;
+      const options =
+        currentOptions && typeof currentOptions === 'object' && !Array.isArray(currentOptions)
+          ? { ...(currentOptions as Record<string, unknown>) }
+          : {};
+      await this.db.getRepository('multiPortals').update({
+        filterByTk: portalName,
+        values: {
+          options: {
+            ...options,
+            sourceStorage: 'nocobase',
+            sourceRevision,
+            sourceUpdatedAt: sourceRevision,
+          },
+        },
+      });
+      ctx.body = {
+        status: 'ok',
+        app: appName,
+        portal: portalName,
+        sourcePath,
+        sourceRevision,
+      };
+      await next();
+    } catch (error) {
+      if (filePath) {
+        await fs.promises.rm(filePath, { force: true });
+      }
+      ctx.throw(400, error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async listAppPortalManifest(options?: DatabaseHookOptions): Promise<AppPortalManifestItem[]> {
     const records = await this.db.getRepository('multiPortals').find({
       filter: withCustomMultiPortalFilter({
@@ -2120,6 +2312,12 @@ export class PluginMultiPortalServer extends Plugin {
     this.app.resourceManager.registerActionHandler('multiPortals:listAccessible', listAccessibleMultiPortals);
     this.app.resourceManager.registerActionHandler('multiPortals:deploy', async (ctx, next) => {
       await this.deployPortalDist(ctx, next);
+    });
+    this.app.resourceManager.registerActionHandler('multiPortals:pullSource', async (ctx, next) => {
+      await this.pullPortalSource(ctx, next);
+    });
+    this.app.resourceManager.registerActionHandler('multiPortals:pushSource', async (ctx, next) => {
+      await this.pushPortalSource(ctx, next);
     });
     this.app.resourceManager.registerActionHandler('multiPortals:getLog', async (ctx, next) => {
       await this.getMultiPortalLog(ctx, next);

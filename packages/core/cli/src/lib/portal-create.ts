@@ -17,10 +17,18 @@ import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
 import * as tar from 'tar';
 import { appendAppPublicPath, resolveAppPublicPath } from './app-public-path.js';
+import { executeApiRequest, type RequestOperation } from './api-client.js';
 import type { Env } from './auth-store.js';
 import { resolveEnvRelativePath } from './cli-home.js';
 import { translateCli } from './cli-locale.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import {
+  buildPortalConfig,
+  mergePortalConfigIntoOptions,
+  writePortalConfig,
+  type PortalConfig,
+  type PortalSourceStorage,
+} from './portal-config.js';
 import { run } from './run-npm.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
@@ -42,6 +50,7 @@ type RunOptions = {
 };
 
 type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
+type ApiRequest = typeof executeApiRequest;
 const portalCreateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalCreate.${key}`, values, { fallback });
 
@@ -54,8 +63,15 @@ export type PortalCreateOptions = {
   title?: string;
   template?: string;
   env: PortalCreateEnvLike;
+  envName?: string;
+  cliVersion?: string;
   force?: boolean;
+  sourceStorage?: PortalSourceStorage;
+  gitRepo?: string;
+  gitBranch?: string;
+  gitPath?: string;
   runCommand?: RunCommand;
+  apiRequest?: ApiRequest;
   onSkipInstall?: (message: string) => void;
 };
 
@@ -71,21 +87,6 @@ export type ResolvedPortalTemplate = {
   cleanup?: () => Promise<void>;
 };
 
-export type PortalConfig = {
-  schemaVersion: 1;
-  app: string;
-  name: string;
-  title: string;
-  basePath: string;
-  apiBaseUrl: string;
-  template: {
-    type: TemplateSourceType;
-    source: string;
-  };
-  createdBy: 'nb portal create';
-  createdAt: string;
-};
-
 export type PortalCreateResult = {
   portalDir: string;
   app: string;
@@ -95,6 +96,23 @@ export type PortalCreateResult = {
   portalBase: string;
   template: ResolvedPortalTemplate;
   installSkipped: boolean;
+  sourceStorage: PortalSourceStorage;
+};
+
+const FIRST_OR_CREATE_PORTAL_OPERATION: RequestOperation = {
+  method: 'POST',
+  pathTemplate: '/multiPortals:firstOrCreate',
+  hasBody: true,
+  bodyRequired: true,
+  parameters: [
+    {
+      name: 'filterKeys[]',
+      flagName: 'filterKeys',
+      in: 'query',
+      required: true,
+      isArray: true,
+    },
+  ],
 };
 
 function trimValue(value: unknown): string {
@@ -389,6 +407,47 @@ export function validatePortalSlug(value: string): string {
   return portal;
 }
 
+async function syncMultiPortalRecord(params: {
+  portal: string;
+  title: string;
+  config: PortalConfig;
+  envName?: string;
+  cliVersion?: string;
+  apiRequest?: ApiRequest;
+}): Promise<void> {
+  const apiRequest = params.apiRequest ?? executeApiRequest;
+  const response = await apiRequest({
+    cliVersion: params.cliVersion ?? '',
+    envName: params.envName,
+    flags: {
+      filterKeys: ['uid'],
+      body: JSON.stringify({
+        uid: params.portal,
+        title: params.title,
+        developmentMode: 'vibe-coding',
+        routeName: params.portal,
+        routePath: `/${params.portal}`,
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: 'admin-layout-model',
+        skipCreatePortalDirectory: true,
+        options: mergePortalConfigIntoOptions(params.config),
+      }),
+    },
+    operation: FIRST_OR_CREATE_PORTAL_OPERATION,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      portalCreateText(
+        'errors.recordSyncFailed',
+        { status: response.status, details: JSON.stringify(response.data, null, 2) },
+        `Portal record sync failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`,
+      ),
+    );
+  }
+}
+
 function validatePortalAppName(value: string): string {
   const app = trimValue(value);
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(app)) {
@@ -492,6 +551,13 @@ export function resolvePortalStoragePath(env: PortalCreateEnvLike): string {
 export async function createPortalWorkspace(options: PortalCreateOptions): Promise<PortalCreateResult> {
   const portal = validatePortalSlug(options.portal);
   const title = trimValue(options.title) || titleFromPortalSlug(portal);
+  const portalConfig = buildPortalConfig({
+    portal,
+    sourceStorage: options.sourceStorage,
+    gitRepo: options.gitRepo,
+    gitBranch: options.gitBranch,
+    gitPath: options.gitPath,
+  });
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
@@ -532,21 +598,7 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
       [`NOCOBASE_API_URL=${apiBaseUrl}`, `NOCOBASE_PORTAL_BASE=${portalBase}`].join('\n') + '\n',
       'utf-8',
     );
-    const portalConfig: PortalConfig = {
-      schemaVersion: 1,
-      app,
-      name: portal,
-      title,
-      basePath: portalBase,
-      apiBaseUrl,
-      template: {
-        type: template.type,
-        source: template.source,
-      },
-      createdBy: 'nb portal create',
-      createdAt: new Date().toISOString(),
-    };
-    await writeFile(path.join(tempDir, 'portal.config.json'), `${JSON.stringify(portalConfig, null, 2)}\n`, 'utf-8');
+    await writePortalConfig(tempDir, portalConfig);
 
     if (targetExists) {
       await rm(portalDir, { recursive: true, force: true });
@@ -574,6 +626,17 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
       );
     }
 
+    if (options.apiRequest || options.cliVersion !== undefined || options.envName !== undefined) {
+      await syncMultiPortalRecord({
+        portal,
+        title,
+        config: portalConfig,
+        envName: options.envName,
+        cliVersion: options.cliVersion,
+        apiRequest: options.apiRequest,
+      });
+    }
+
     return {
       portalDir,
       app,
@@ -583,6 +646,7 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
       portalBase,
       template,
       installSkipped: !hasPackageJson,
+      sourceStorage: portalConfig.sourceStorage,
     };
   } finally {
     if (shouldCleanupTempDir) {

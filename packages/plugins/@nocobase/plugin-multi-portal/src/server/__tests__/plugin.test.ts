@@ -117,6 +117,8 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:firstOrCreate',
   'multiPortals:destroy',
   'multiPortals:deploy',
+  'multiPortals:pullSource',
+  'multiPortals:pushSource',
 ];
 const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = [
   'roles.multiPortals:*',

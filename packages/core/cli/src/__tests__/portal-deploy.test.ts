@@ -65,6 +65,7 @@ async function preparePortalWorkspace(params: {
   const portalDir = path.join(params.storagePath, 'portals', app, portal);
   await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"portal"}\n');
+  await fsp.writeFile(path.join(portalDir, 'portal.config.json'), '{\n  "sourceStorage": "nocobase"\n}\n');
   if (params.envContent !== undefined) {
     await fsp.writeFile(path.join(portalDir, '.env'), params.envContent);
   }
@@ -107,6 +108,9 @@ function expectPortalRecordFirstOrCreate(options: RequestOptions, portal = 'cust
       enabled: true,
       uiLayoutUid: 'admin-layout-model',
       skipCreatePortalDirectory: true,
+      options: {
+        sourceStorage: 'nocobase',
+      },
     }),
   );
 }

@@ -191,7 +191,31 @@
         "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
         "created": "Portal \"{{portal}}\" created at {{portalDir}}.",
         "app": "App: {{app}}",
-        "base": "Base: {{base}}"
+        "base": "Base: {{base}}",
+        "sourceStorage": "Source storage: {{sourceStorage}}"
+      }
+    },
+    "portalConfig": {
+      "errors": {
+        "invalidSourceStorage": "Invalid source storage \"{{value}}\". Use \"nocobase\" or \"git\".",
+        "invalidGitPath": "--git-path must be a relative path inside the Git repository.",
+        "gitOptionsForNocobaseStorage": "--git-repo, --git-branch, and --git-path can only be used with --source-storage git.",
+        "gitRepoRequired": "--git-repo is required when --source-storage is git.",
+        "gitRepoInvalid": "--git-repo must be a full Git remote URL.",
+        "updateFailed": "Portal config update failed with status {{status}}\n{{details}}"
+      }
+    },
+    "portalConfigure": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "noChanges": "No Portal configuration changes were provided. Pass --source-storage or a --git-* flag.",
+        "workspaceMissing": "Portal workspace does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` or `nb portal pull {{portal}}` first."
+      },
+      "messages": {
+        "updated": "Portal \"{{portal}}\" configuration updated at {{portalDir}}/portal.config.json.",
+        "remoteSynced": "Remote Portal record: synced",
+        "remoteSkipped": "Remote Portal record: not found; local config only"
       }
     },
     "portalDeploy": {

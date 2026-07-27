@@ -68,6 +68,12 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'options',
+      type: 'json',
+      defaultValue: {},
+      allowNull: true,
+    },
+    {
       name: 'uiLayoutUid',
       type: 'string',
       allowNull: true,
