@@ -311,7 +311,7 @@ export default class Processor {
     }
   }
 
-  public resolveRerun(options: ProcessorRerunOptions = {}) {
+  private resolveRerun(options: ProcessorRerunOptions = {}) {
     const node = this.getRerunNode(options.nodeId);
     const targetJob = this.jobsMapByNodeKey[node.key];
 

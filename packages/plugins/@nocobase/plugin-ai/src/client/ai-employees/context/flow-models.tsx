@@ -66,6 +66,11 @@ const getRelationFieldPrompt = (collectionField: FormItemModel['collectionField'
   }[1]", and never return only a primitive id.`;
 };
 
+const getFormItemDisplayTitle = (model: FormItemModel) => {
+  const label = (model.props as { label?: unknown })?.label;
+  return typeof label === 'string' ? label : model.collectionField.title;
+};
+
 const toSimplifyForm = (model: FormBlockModel) => {
   const result: {
     uid: string;
@@ -83,8 +88,8 @@ const toSimplifyForm = (model: FormBlockModel) => {
       const collectionField = model.collectionField;
       result.fields.push({
         name: collectionField.name,
+        title: getFormItemDisplayTitle(model),
         type: collectionField.type,
-        // title: collectionField.title,
         enum: collectionField.enum,
         readonly: collectionField.readonly,
         defaultValue: collectionField.defaultValue,
@@ -146,7 +151,7 @@ const toSimplifyComponentTree = async (model: FlowModel) => {
       name: collectionField.name,
       type: collectionField.type,
       dataType: collectionField.dataType,
-      title: collectionField.title,
+      title: getFormItemDisplayTitle(model),
       enum: collectionField.enum,
       defaultValue: collectionField.defaultValue,
     };

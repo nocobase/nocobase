@@ -15,11 +15,13 @@ export default class ExecutionModel extends Model {
   declare static readonly database: Database;
 
   declare id: number;
+  declare workflowId: number;
   declare title: string;
   declare context: any;
   declare status: number;
   declare reason?: string | null;
   declare dispatched: boolean;
+  declare manually?: boolean | null;
   declare parentExecutionId?: number | null;
   declare stack?: Array<number | string>;
   declare startedAt?: Date | null;
