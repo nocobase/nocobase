@@ -66,6 +66,39 @@ describe('TableColumnModel sorter settings', () => {
     expect(setProps).toHaveBeenCalledWith('editable', false);
   });
 
+  it('checks record update scope and field permission before enabling quick edit', () => {
+    const can = vi.fn(() => false);
+    const model = {
+      props: { editable: true },
+      collectionField: { name: 'title' },
+      context: {
+        skipAclCheck: false,
+        acl: { can },
+        blockModel: {
+          collection: {
+            dataSourceKey: 'main',
+            name: 'posts',
+            getFilterByTK: () => 2,
+          },
+          resource: {
+            getResourceName: () => 'posts',
+            getMeta: () => ({ update: [1] }),
+          },
+        },
+      },
+    };
+
+    expect(TableColumnModel.prototype.canQuickEdit.call(model, { id: 2 })).toBe(false);
+    expect(can).toHaveBeenCalledWith({
+      dataSourceKey: 'main',
+      resourceName: 'posts',
+      actionName: 'update',
+      recordPkValue: 2,
+      allowedActions: { update: [1] },
+      fields: ['title'],
+    });
+  });
+
   it('hides sortable setting for association fields', async () => {
     const engine = new FlowEngine();
     const model = new TableColumnModel({ uid: 'table-column-association-sorter', flowEngine: engine } as any);
