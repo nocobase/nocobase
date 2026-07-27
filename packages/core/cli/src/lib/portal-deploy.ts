@@ -261,7 +261,7 @@ async function syncMultiPortalRecord(params: {
   const body: Record<string, unknown> = {
     uid: params.portal,
     title: titleFromPortalSlug(params.portal),
-    developmentMode: 'vibe-coding',
+    developmentMode: 'ai',
     routeName: params.portal,
     routePath: `/${params.portal}`,
     authCheck: true,

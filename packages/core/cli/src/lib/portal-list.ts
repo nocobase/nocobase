@@ -261,8 +261,8 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
       const options = readRecordObject(record, 'options');
       const git = readRecordObject(options, 'git');
       const sourceStorage = trimValue(options.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
-      const isVibeCoding = developmentMode === 'vibe-coding';
-      const portalDir = isVibeCoding ? path.join(storagePath, 'portals', app, routeName) : '';
+      const isAi = developmentMode === 'ai';
+      const portalDir = isAi ? path.join(storagePath, 'portals', app, routeName) : '';
 
       return {
         uid,
@@ -279,13 +279,13 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
         portalUrl: enabled
           ? buildPortalAccessUrl(
               apiBaseUrl,
-              isVibeCoding
+              isAi
                 ? buildPortalBasePath({ app, appPublicPath, portal: routeName })
                 : buildNoCodePortalBasePath({ appPublicPath, routePath }),
             )
           : '',
         portalDir,
-        localSynced: isVibeCoding ? await pathExists(portalDir) : null,
+        localSynced: isAi ? await pathExists(portalDir) : null,
       };
     }),
   );

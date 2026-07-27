@@ -2337,7 +2337,7 @@ test('nb init --yes uses the configured default portal template as a yes initial
     '--db-underscored',
     '--auth-type=basic',
     '--development-mode',
-    'vibe-coding',
+    'ai',
   ];
 
   try {
@@ -2358,7 +2358,7 @@ test('nb init --yes uses the configured default portal template as a yes initial
           'db-dialect': 'mysql',
           'db-underscored': true,
           'auth-type': 'basic',
-          'development-mode': 'vibe-coding',
+          'development-mode': 'ai',
         },
       })),
       config: { runCommand },
@@ -2411,7 +2411,7 @@ test('nb init --yes uses the built-in portal template when no config default is 
     '--db-underscored',
     '--auth-type=basic',
     '--development-mode',
-    'vibe-coding',
+    'ai',
   ];
 
   try {
@@ -2431,7 +2431,7 @@ test('nb init --yes uses the built-in portal template when no config default is 
           'db-dialect': 'mysql',
           'db-underscored': true,
           'auth-type': 'basic',
-          'development-mode': 'vibe-coding',
+          'development-mode': 'ai',
         },
       })),
       config: { runCommand },

@@ -71,13 +71,13 @@ describe('getPortalEntryUrl', () => {
     ).toBe('/v/workspace');
   });
 
-  it('builds current app vibe-coding portal entries with the x route prefix', () => {
+  it('builds current app AI portal entries with the x route prefix', () => {
     expect(
       getPortalEntryUrl(
         currentSubApp,
         {
           ...portal,
-          developmentMode: 'vibe-coding',
+          developmentMode: 'ai',
         },
         {
           name: 'alpha',

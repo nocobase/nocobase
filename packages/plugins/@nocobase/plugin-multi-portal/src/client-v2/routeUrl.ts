@@ -18,12 +18,12 @@ export type MultiPortalAppLike = {
   getRouteUrl?: (pathname: string) => string;
 };
 
-export type MultiPortalDevelopmentMode = 'no-code' | 'vibe-coding';
+export type MultiPortalDevelopmentMode = 'no-code' | 'ai';
 
 const DEFAULT_DEVELOPMENT_MODE: MultiPortalDevelopmentMode = 'no-code';
 const PORTAL_ROUTE_PREFIX_BY_DEVELOPMENT_MODE: Record<MultiPortalDevelopmentMode, string> = {
   'no-code': '/v',
-  'vibe-coding': '/x',
+  ai: '/x',
 };
 const PORTAL_ROUTE_PREFIXES = Object.values(PORTAL_ROUTE_PREFIX_BY_DEVELOPMENT_MODE);
 
@@ -53,7 +53,7 @@ const joinRoutePath = (basePath: string | undefined, pathname: string) => {
 };
 
 function normalizeDevelopmentMode(value?: string | null): MultiPortalDevelopmentMode {
-  return value === 'vibe-coding' ? 'vibe-coding' : DEFAULT_DEVELOPMENT_MODE;
+  return value === 'ai' ? 'ai' : DEFAULT_DEVELOPMENT_MODE;
 }
 
 function getPortalRoutePrefix(developmentMode?: string | null) {
@@ -88,7 +88,7 @@ function stripBasePath(pathname: string, basePath: string | undefined) {
 }
 
 function getAlternativeDevelopmentMode(developmentMode?: string | null): MultiPortalDevelopmentMode {
-  return normalizeDevelopmentMode(developmentMode) === 'vibe-coding' ? 'no-code' : 'vibe-coding';
+  return normalizeDevelopmentMode(developmentMode) === 'ai' ? 'no-code' : 'ai';
 }
 
 function normalizePortalRoutePath(routePath: string, basePath: string | undefined, developmentMode?: string | null) {

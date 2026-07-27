@@ -489,8 +489,8 @@
           "message": "Who will lead development?",
           "noCodeLabel": "Human-led development",
           "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
-          "vibeCodingLabel": "AI-led development",
-          "vibeCodingHint": "You describe what you need, and AI writes the code and builds the application for you."
+          "aiLabel": "AI-led development",
+          "aiHint": "You describe what you need, and AI writes the code and builds the application for you."
         },
         "portalName": {
           "message": "Initial portal name",
@@ -604,8 +604,8 @@
           "message": "Who will lead development?",
           "noCodeLabel": "Human-led development",
           "noCodeHint": "Build your application using configuration and low-code tools, with AI as your assistant.",
-          "vibeCodingLabel": "AI-led development",
-          "vibeCodingHint": "You describe what you need, and AI writes the code and builds the application for you."
+          "aiLabel": "AI-led development",
+          "aiHint": "You describe what you need, and AI writes the code and builds the application for you."
         },
         "portalName": {
           "message": "Initial portal name",

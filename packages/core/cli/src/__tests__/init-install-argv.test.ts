@@ -148,7 +148,7 @@ test('buildInstallArgv forwards app public path for new installs', () => {
   expect(argv).toContain('/console/');
 });
 
-test('buildInstallArgv forwards vibe-coding portal init options for new installs', () => {
+test('buildInstallArgv forwards AI portal init options for new installs', () => {
   const buildInstallArgv = (
     Init.prototype as unknown as {
       buildInstallArgv: (
@@ -170,7 +170,7 @@ test('buildInstallArgv forwards vibe-coding portal init options for new installs
       version: 'beta',
       builtinDb: true,
       dbDialect: 'postgres',
-      developmentMode: 'vibe-coding',
+      developmentMode: 'ai',
       portalName: 'admin',
       portalTemplate: '@nocobase/portal-template-default',
     },
@@ -180,7 +180,7 @@ test('buildInstallArgv forwards vibe-coding portal init options for new installs
   );
 
   expect(argv).toContain('--development-mode');
-  expect(argv).toContain('vibe-coding');
+  expect(argv).toContain('ai');
   expect(argv).toContain('--portal-name');
   expect(argv).toContain('admin');
   expect(argv).toContain('--portal-template');

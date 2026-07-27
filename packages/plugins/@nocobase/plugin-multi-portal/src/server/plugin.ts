@@ -63,7 +63,7 @@ const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
 const DEFAULT_MULTI_PORTAL_UID = '__default_portal__';
 const MULTI_PORTAL_SLUG_PATTERN = /^[a-z0-9_-]+$/;
-const INIT_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
+const INIT_DEVELOPMENT_MODES = ['no-code', 'ai'] as const;
 const DEFAULT_MULTI_PORTAL_UIDS = [DEFAULT_MULTI_PORTAL_UID] as const;
 const DEFAULT_MULTI_PORTAL_UID_SET = new Set<string>(DEFAULT_MULTI_PORTAL_UIDS);
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
@@ -218,7 +218,7 @@ function isInitDevelopmentMode(value: string): value is InitDevelopmentMode {
 function getInitDevelopmentMode() {
   const developmentMode = trimString(process.env.INIT_DEVELOPMENT_MODE) || DEFAULT_INIT_DEVELOPMENT_MODE;
   if (!isInitDevelopmentMode(developmentMode)) {
-    throw new Error('INIT_DEVELOPMENT_MODE must be either "no-code" or "vibe-coding".');
+    throw new Error('INIT_DEVELOPMENT_MODE must be either "no-code" or "ai".');
   }
   return developmentMode;
 }
@@ -1898,7 +1898,7 @@ export class PluginMultiPortalServer extends Plugin {
     const readField = (field: string) =>
       previous && typeof record.previous === 'function' ? record.previous(field) : getRecordField(record, field);
     const developmentMode = readField('developmentMode');
-    if (developmentMode !== 'vibe-coding') {
+    if (developmentMode !== 'ai') {
       return null;
     }
 
@@ -2078,7 +2078,7 @@ export class PluginMultiPortalServer extends Plugin {
     });
     const item = multiPortal ? this.getMultiPortalStorageItem(multiPortal) : null;
     if (!item) {
-      ctx.throw(404, 'Portal log is only available for vibe-coding portals');
+      ctx.throw(404, 'Portal log is only available for AI portals');
       return;
     }
 
@@ -2367,7 +2367,7 @@ export class PluginMultiPortalServer extends Plugin {
   private async reconcilePortalStorage(options?: DatabaseHookOptions) {
     const records = await this.db.getRepository('multiPortals').find({
       filter: {
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
       },
       fields: ['uid', 'developmentMode', 'routeName', 'enabled'],
       transaction: options?.transaction,

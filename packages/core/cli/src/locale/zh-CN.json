@@ -489,8 +489,8 @@
           "message": "谁来主导开发？",
           "noCodeLabel": "人主导开发",
           "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
-          "vibeCodingLabel": "AI 主导开发",
-          "vibeCodingHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
+          "aiLabel": "AI 主导开发",
+          "aiHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
         },
         "portalName": {
           "message": "初始化 Portal 名称",
@@ -604,8 +604,8 @@
           "message": "谁来主导开发？",
           "noCodeLabel": "人主导开发",
           "noCodeHint": "通过配置和低代码的方式构建应用，AI 作为你的助手提供支持。",
-          "vibeCodingLabel": "AI 主导开发",
-          "vibeCodingHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
+          "aiLabel": "AI 主导开发",
+          "aiHint": "你描述自己的需求，AI 将为你编写代码并构建应用。"
         },
         "portalName": {
           "message": "初始化 Portal 名称",

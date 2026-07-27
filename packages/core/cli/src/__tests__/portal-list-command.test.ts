@@ -75,7 +75,7 @@ test('portal list resolves the current env name and prints local sync status', a
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -85,7 +85,7 @@ test('portal list resolves the current env name and prints local sync status', a
         uid: 'partner',
         routeName: 'partner',
         routePath: '/partner',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/partner/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/partner',
@@ -143,7 +143,7 @@ test('portal list resolves the current env name and prints local sync status', a
   expect(log.mock.calls[0][0]).toContain('customer');
   expect(log.mock.calls[0][0]).toContain('partner');
   expect(log.mock.calls[0][0]).toContain('admin');
-  expect(log.mock.calls[0][0]).toContain('vibe-coding');
+  expect(log.mock.calls[0][0]).toContain('ai');
   expect(log.mock.calls[0][0]).toContain('no-code');
   expect(log.mock.calls[0][0]).toContain('http://localhost:56187/x/customer/');
   expect(log.mock.calls[0][0]).toContain('http://localhost:56187/v/admin');
@@ -221,7 +221,7 @@ test('portal list prints JSON output when requested', async () => {
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -264,7 +264,7 @@ test('portal list prints JSON output when requested', async () => {
     {
       name: 'customer',
       url: 'http://localhost:56187/x/customer/',
-      developmentMode: 'vibe-coding',
+      developmentMode: 'ai',
       localPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
       enabled: true,
       localSynced: true,

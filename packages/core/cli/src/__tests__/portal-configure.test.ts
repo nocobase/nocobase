@@ -60,7 +60,7 @@ test('updates local Portal config and syncs remote options when the remote recor
               uid: 'customer',
               routeName: 'customer',
               routePath: '/customer',
-              developmentMode: 'vibe-coding',
+              developmentMode: 'ai',
               enabled: true,
               options: {
                 sourceRevision: 'rev0',

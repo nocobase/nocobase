@@ -107,7 +107,7 @@ const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
 const DEFAULT_INSTALL_DEVELOPMENT_MODE = 'no-code';
 const DEFAULT_INSTALL_PORTAL_NAME = 'admin';
 const DEFAULT_INSTALL_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
-const INSTALL_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
+const INSTALL_DEVELOPMENT_MODES = ['no-code', 'ai'] as const;
 
 function toOptionalPromptString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -256,8 +256,8 @@ function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
   return String(value ?? '').trim() === 'kingbase' ? 'kingbase' : DEFAULT_INSTALL_DB_DATABASE;
 }
 
-function isVibeCodingMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
-  return String(values.developmentMode ?? DEFAULT_INSTALL_DEVELOPMENT_MODE).trim() === 'vibe-coding';
+function isAiMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return String(values.developmentMode ?? DEFAULT_INSTALL_DEVELOPMENT_MODE).trim() === 'ai';
 }
 
 function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
@@ -651,10 +651,10 @@ export default class Install extends Command {
       options: [...INSTALL_DEVELOPMENT_MODES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial portal name when --development-mode vibe-coding is used',
+      description: 'Initial portal name when --development-mode ai is used',
     }),
     'portal-template': Flags.string({
-      description: 'Initial portal template Git URL or local path when --development-mode vibe-coding is used',
+      description: 'Initial portal template npm package or local path when --development-mode ai is used',
     }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
@@ -777,9 +777,9 @@ export default class Install extends Command {
             hint: installText('prompts.developmentMode.noCodeHint'),
           },
           {
-            value: 'vibe-coding',
-            label: installText('prompts.developmentMode.vibeCodingLabel'),
-            hint: installText('prompts.developmentMode.vibeCodingHint'),
+            value: 'ai',
+            label: installText('prompts.developmentMode.aiLabel'),
+            hint: installText('prompts.developmentMode.aiHint'),
           },
         ],
         initialValue: DEFAULT_INSTALL_DEVELOPMENT_MODE,
@@ -792,7 +792,7 @@ export default class Install extends Command {
         placeholder: DEFAULT_INSTALL_PORTAL_NAME,
         initialValue: DEFAULT_INSTALL_PORTAL_NAME,
         yesInitialValue: DEFAULT_INSTALL_PORTAL_NAME,
-        hidden: (values) => !isVibeCodingMode(values),
+        hidden: (values) => !isAiMode(values),
         required: true,
       },
       portalTemplate: {
@@ -800,7 +800,7 @@ export default class Install extends Command {
         message: installText('prompts.portalTemplate.message'),
         placeholder: DEFAULT_INSTALL_PORTAL_TEMPLATE,
         yesInitialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
-        hidden: (values) => !isVibeCodingMode(values),
+        hidden: (values) => !isAiMode(values),
         required: true,
       },
     };

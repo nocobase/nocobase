@@ -85,7 +85,7 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
-test('lists portal records with local workspace sync status for vibe-coding portals', async () => {
+test('lists portal records with local workspace sync status for AI portals', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-list-storage-');
   const customerDir = await preparePortalWorkspace({
     storagePath,
@@ -102,7 +102,7 @@ test('lists portal records with local workspace sync status for vibe-coding port
           title: 'Customer',
           routeName: 'customer',
           routePath: '/customer',
-          developmentMode: 'vibe-coding',
+          developmentMode: 'ai',
           enabled: true,
         },
         {
@@ -137,7 +137,7 @@ test('lists portal records with local workspace sync status for vibe-coding port
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         sourceStorage: 'nocobase',
         gitRepo: '',
@@ -195,7 +195,7 @@ test('http list uses env source storage when no local storagePath is configured'
             title: 'Customer',
             routeName: 'customer',
             routePath: '/customer',
-            developmentMode: 'vibe-coding',
+            developmentMode: 'ai',
             enabled: true,
           },
         ],
@@ -243,7 +243,7 @@ test('lists no-code portal records without local workspace fields', async () => 
     data: {
       data: [
         {
-          uid: '__default_admin__',
+          uid: '__default_portal__',
           title: 'Admin',
           routeName: 'admin',
           routePath: '/admin',
@@ -288,7 +288,7 @@ test('does not include a URL for disabled portal records', async () => {
           title: 'Customer',
           routeName: 'customer',
           routePath: '/customer',
-          developmentMode: 'vibe-coding',
+          developmentMode: 'ai',
           enabled: false,
         },
       ],

@@ -126,7 +126,7 @@ export async function deleteMultiPortals(args: {
 }
 
 const DEFAULT_DEVELOPMENT_MODE = 'no-code';
-const DEVELOPMENT_MODE_VALUES = ['no-code', 'vibe-coding'] as const;
+const DEVELOPMENT_MODE_VALUES = ['no-code', 'ai'] as const;
 
 const defaultFormValues: Pick<MultiPortalFormValues, 'developmentMode' | 'enabled'> = {
   developmentMode: DEFAULT_DEVELOPMENT_MODE,
@@ -137,7 +137,7 @@ const actionLinkButtonStyle: React.CSSProperties = {
   paddingInline: 0,
 };
 
-const DEFAULT_PORTAL_UIDS = new Set(['__default_admin__', '__default_admin_vibe_coding__', '__default_mobile__']);
+const DEFAULT_PORTAL_UIDS = new Set(['__default_portal__']);
 const portalSlugPattern = /^[a-z0-9_-]+$/;
 
 const IconPickerFormControl = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof IconPicker>>(
@@ -595,7 +595,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
                   {t('Build your application using configuration and low-code tools, with AI as your assistant.')}
                 </div>
               </Radio>
-              <Radio value="vibe-coding">
+              <Radio value="ai">
                 <span>{t('AI-led development')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
                   {t('You describe what you need, and AI writes the code and builds the application for you.')}
@@ -611,7 +611,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           rules={[
             {
               validator: (_, value?: string | null) => {
-                if (form.getFieldValue('developmentMode') !== 'vibe-coding' && !value) {
+                if (form.getFieldValue('developmentMode') !== 'ai' && !value) {
                   return Promise.reject(new Error(t('The field value is required')));
                 }
                 return Promise.resolve();

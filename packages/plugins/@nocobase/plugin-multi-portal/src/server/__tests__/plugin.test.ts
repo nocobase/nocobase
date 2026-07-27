@@ -537,9 +537,9 @@ describe('plugin-multi-portal server', () => {
     expect(defaultPortal?.get('routePath')).toBe('/workspace_home');
   });
 
-  it('should initialize a vibe-coding default portal with the init template', async () => {
+  it('should initialize an AI default portal with the init template', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
-    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_DEVELOPMENT_MODE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
     app = await createMockServer({
@@ -558,7 +558,7 @@ describe('plugin-multi-portal server', () => {
       filterByTk: '__default_portal__',
     });
 
-    expect(defaultPortal?.get('developmentMode')).toBe('vibe-coding');
+    expect(defaultPortal?.get('developmentMode')).toBe('ai');
     expect(defaultPortal?.get('routeName')).toBe('workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/workspace/');
@@ -574,7 +574,7 @@ describe('plugin-multi-portal server', () => {
     );
   });
 
-  it('should initialize a vibe-coding default portal from a local init template', async () => {
+  it('should initialize an AI default portal from a local init template', async () => {
     const templateDir = await createPortalTemplate(storagePath as string, {
       'src/index.tsx': 'export default null;\n',
       '.git/config': '[core]\n',
@@ -582,7 +582,7 @@ describe('plugin-multi-portal server', () => {
       '.DS_Store': '',
       '._shadow': '',
     });
-    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_DEVELOPMENT_MODE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = templateDir;
     app = await createMockServer({
@@ -617,7 +617,7 @@ describe('plugin-multi-portal server', () => {
       'src/index.tsx': 'export default null;\n',
     });
     process.env.TEST_PORTAL_TEMPLATE_TARBALL = await createPortalTemplateTarball(storagePath as string, templateDir);
-    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_DEVELOPMENT_MODE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = '@nocobase/missing-portal-template';
     app = await createMockServer({
@@ -655,7 +655,7 @@ describe('plugin-multi-portal server', () => {
       'src/index.tsx': 'export default null;\n',
     });
     process.env.TEST_PORTAL_BUILD_FAIL = 'true';
-    process.env.INIT_DEVELOPMENT_MODE = 'vibe-coding';
+    process.env.INIT_DEVELOPMENT_MODE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = templateDir;
     app = await createMockServer({
@@ -687,7 +687,7 @@ describe('plugin-multi-portal server', () => {
     await app.db.sync();
 
     const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
-    await expect(plugin.install()).rejects.toThrow('INIT_DEVELOPMENT_MODE must be either "no-code" or "vibe-coding".');
+    await expect(plugin.install()).rejects.toThrow('INIT_DEVELOPMENT_MODE must be either "no-code" or "ai".');
 
     process.env.INIT_DEVELOPMENT_MODE = 'no-code';
     process.env.INIT_PORTAL_NAME = 'Admin';
@@ -765,7 +765,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'manifest-customer-portal',
         title: 'Customer portal',
         icon: 'appstoreoutlined',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: 'manifestCustomerPortal',
         routePath: '/customer-portal',
         authCheck: true,
@@ -791,7 +791,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'manifest-customer-portal',
         title: 'Customer portal',
         icon: 'appstoreoutlined',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routePath: '/customer-portal',
         layout: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
       },
@@ -809,7 +809,7 @@ describe('plugin-multi-portal server', () => {
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([]);
   });
 
-  it('should prepare a storage portal from the default template for vibe-coding multi-portals', async () => {
+  it('should prepare a storage portal from the default template for AI multi-portals', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/api';
     process.env.NODE_OPTIONS = '--preserve-symlinks --max_old_space_size=4096 --preserve-symlinks-main';
@@ -823,7 +823,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'storage-template-portal',
         title: 'Storage template portal',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: 'storageTemplatePortal',
         routePath: '/storage-template-portal',
         authCheck: true,
@@ -910,7 +910,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'skip-template-portal',
         title: 'Skip template portal',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: 'skip-template-portal',
         routePath: '/skip-template-portal',
         authCheck: true,
@@ -950,7 +950,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'first-or-create-skip-template-portal',
         title: 'First or create skip template portal',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: 'first-or-create-skip-template-portal',
         routePath: '/first-or-create-skip-template-portal',
         authCheck: true,
@@ -3177,7 +3177,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'mobile-runtime-portal',
         title: 'Mobile runtime portal',
         icon: 'mobileoutlined',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: 'mobileRuntimePortal',
         routePath: '/mobile-runtime-portal',
         authCheck: false,
@@ -3242,7 +3242,7 @@ describe('plugin-multi-portal server', () => {
     });
     expect(portals[1]).toMatchObject({
       title: 'Mobile runtime portal',
-      developmentMode: 'vibe-coding',
+      developmentMode: 'ai',
       routeName: 'mobileRuntimePortal',
       routePath: '/mobile-runtime-portal',
       authCheck: false,
@@ -3315,7 +3315,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'accessible-beta-portal',
         title: 'Accessible beta portal',
         icon: null,
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: 'accessibleBetaPortal',
         routePath: '/accessible-beta-portal',
         authCheck: false,
@@ -3457,7 +3457,7 @@ describe('plugin-multi-portal server', () => {
     expect(rootPortals[1]).toMatchObject({
       uid: 'accessible-beta-portal',
       icon: null,
-      developmentMode: 'vibe-coding',
+      developmentMode: 'ai',
       authCheck: false,
       uiLayout: {
         layoutType: DEFAULT_MOBILE_UI_LAYOUT.layoutType,

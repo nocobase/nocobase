@@ -32,7 +32,7 @@ nb portal list --json-output
 
 ## Ghi chú
 
-The list shows name, URL, development mode, source storage, local path, enabled status, and local sync status. Only `vibe-coding` Portals have local workspace sync checks; other Portal types show an empty sync status.
+The list shows name, URL, development mode, source storage, local path, enabled status, and local sync status. Only `ai` portals have local workspace sync checks; other Portal types show an empty sync status.
 
 ## Lệnh liên quan
 

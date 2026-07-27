@@ -18,7 +18,7 @@ test('buildInitAppEnvVarsFromConfig includes initial development mode and portal
       rootEmail: 'admin@nocobase.com',
       rootPassword: 'admin123',
       rootNickname: 'Super Admin',
-      developmentMode: 'vibe-coding',
+      developmentMode: 'ai',
       portalName: 'admin',
       portalTemplate: '@nocobase/portal-template-default',
     }),
@@ -28,7 +28,7 @@ test('buildInitAppEnvVarsFromConfig includes initial development mode and portal
     INIT_ROOT_EMAIL: 'admin@nocobase.com',
     INIT_ROOT_PASSWORD: 'admin123',
     INIT_ROOT_NICKNAME: 'Super Admin',
-    INIT_DEVELOPMENT_MODE: 'vibe-coding',
+    INIT_DEVELOPMENT_MODE: 'ai',
     INIT_PORTAL_NAME: 'admin',
     INIT_PORTAL_TEMPLATE: '@nocobase/portal-template-default',
   });
@@ -40,7 +40,7 @@ test('buildInitAppEnvVarsFromConfig can omit portal init settings', () => {
       {
         lang: 'en-US',
         rootUsername: 'nocobase',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         portalName: 'admin',
         portalTemplate: '/tmp/portal-template',
       },

@@ -92,7 +92,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
         uid: 'cba',
         routeName: 'cba',
         routePath: '/cba',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/cba/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
@@ -147,7 +147,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
       [
         'Name: cba',
         'URL: http://localhost:56187/x/cba/',
-        'Development mode: vibe-coding',
+        'Development mode: ai',
         'Local path: /Users/chen/test6/remote1/source/storage/portals/main/cba',
         'Enabled: yes',
         'Local synced: yes',

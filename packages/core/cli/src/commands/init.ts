@@ -54,7 +54,7 @@ const DEFAULT_INIT_PORTAL_NAME = 'admin';
 const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const INIT_SETUP_MODES = ['install-new', 'manage-local', 'connect-remote'] as const;
-const INIT_DEVELOPMENT_MODES = ['no-code', 'vibe-coding'] as const;
+const INIT_DEVELOPMENT_MODES = ['no-code', 'ai'] as const;
 type InitSetupMode = (typeof INIT_SETUP_MODES)[number];
 const INIT_ENV_ADD_FLAG_NAMES = [
   'locale',
@@ -111,8 +111,8 @@ function isInstallLikeSetupMode(values: PromptCatalogValues | Record<string, unk
   return !isRemoteSetupMode(values);
 }
 
-function isVibeCodingMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
-  return String(values.developmentMode ?? DEFAULT_INIT_DEVELOPMENT_MODE).trim() === 'vibe-coding';
+function isAiMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return String(values.developmentMode ?? DEFAULT_INIT_DEVELOPMENT_MODE).trim() === 'ai';
 }
 
 function remoteConnectionOnly<T extends PromptBlock>(def: T): T {
@@ -482,9 +482,9 @@ Prompt modes:
           hint: initText('prompts.developmentMode.noCodeHint'),
         },
         {
-          value: 'vibe-coding',
-          label: initText('prompts.developmentMode.vibeCodingLabel'),
-          hint: initText('prompts.developmentMode.vibeCodingHint'),
+          value: 'ai',
+          label: initText('prompts.developmentMode.aiLabel'),
+          hint: initText('prompts.developmentMode.aiHint'),
         },
       ],
       initialValue: DEFAULT_INIT_DEVELOPMENT_MODE,
@@ -497,7 +497,7 @@ Prompt modes:
       placeholder: DEFAULT_INIT_PORTAL_NAME,
       initialValue: DEFAULT_INIT_PORTAL_NAME,
       yesInitialValue: DEFAULT_INIT_PORTAL_NAME,
-      hidden: (values) => !isVibeCodingMode(values),
+      hidden: (values) => !isAiMode(values),
       required: true,
     }),
     portalTemplate: installNewOnly({
@@ -505,7 +505,7 @@ Prompt modes:
       message: initText('prompts.portalTemplate.message'),
       placeholder: DEFAULT_INIT_PORTAL_TEMPLATE,
       yesInitialValue: DEFAULT_INIT_PORTAL_TEMPLATE,
-      hidden: (values) => !isVibeCodingMode(values),
+      hidden: (values) => !isAiMode(values),
       required: true,
     }),
     dbDialect: installLikeOnly(Install.dbPrompts.dbDialect),
@@ -603,14 +603,14 @@ Prompt modes:
       options: [...INIT_SETUP_MODES],
     }),
     'development-mode': Flags.string({
-      description: 'Initial development mode: no-code or vibe-coding',
+      description: 'Initial development mode: no-code or ai',
       options: [...INIT_DEVELOPMENT_MODES],
     }),
     'portal-name': Flags.string({
-      description: 'Initial portal name when --development-mode vibe-coding is used',
+      description: 'Initial portal name when --development-mode ai is used',
     }),
     'portal-template': Flags.string({
-      description: 'Initial portal template Git URL or local path when --development-mode vibe-coding is used',
+      description: 'Initial portal template npm package or local path when --development-mode ai is used',
     }),
     ui: Flags.boolean({
       description: 'Open the guided setup flow in a local browser form (not valid with --yes)',
@@ -1944,7 +1944,7 @@ Prompt modes:
     }
     const developmentMode = normalizeConnectionString(normalized.developmentMode) || DEFAULT_INIT_DEVELOPMENT_MODE;
     normalized.developmentMode = developmentMode;
-    if (developmentMode === 'vibe-coding') {
+    if (developmentMode === 'ai') {
       normalized.portalName = normalizeConnectionString(normalized.portalName) || DEFAULT_INIT_PORTAL_NAME;
       normalized.portalTemplate = normalizeConnectionString(normalized.portalTemplate);
     } else {

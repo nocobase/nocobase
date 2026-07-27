@@ -66,7 +66,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-test('portal info prints vibe-coding portal details', async () => {
+test('portal info prints AI portal details', async () => {
   const { default: PortalInfo } = await import('../commands/portal/info.js');
   const env = {
     name: 'remote1',
@@ -88,7 +88,7 @@ test('portal info prints vibe-coding portal details', async () => {
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -116,7 +116,7 @@ test('portal info prints vibe-coding portal details', async () => {
       [
         'Name: customer',
         'URL: http://localhost:56187/x/customer/',
-        'Development mode: vibe-coding',
+        'Development mode: ai',
         'Local path: /Users/chen/test6/remote1/source/storage/portals/main/customer',
         'Enabled: yes',
         'Local synced: yes',
@@ -195,7 +195,7 @@ test('portal info prints JSON output when requested', async () => {
         uid: 'customer',
         routeName: 'customer',
         routePath: '/customer',
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         enabled: true,
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
@@ -210,7 +210,7 @@ test('portal info prints JSON output when requested', async () => {
   expect(JSON.parse(command.log.mock.calls[0][0])).toEqual({
     name: 'customer',
     url: 'http://localhost:56187/x/customer/',
-    developmentMode: 'vibe-coding',
+    developmentMode: 'ai',
     localPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
     enabled: true,
     localSynced: true,

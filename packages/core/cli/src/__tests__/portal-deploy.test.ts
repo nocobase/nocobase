@@ -101,7 +101,7 @@ function expectPortalRecordFirstOrCreate(options: RequestOptions, portal = 'cust
     expect.objectContaining({
       uid: portal,
       title: portal === 'customer' ? 'Customer' : expect.any(String),
-      developmentMode: 'vibe-coding',
+      developmentMode: 'ai',
       routeName: portal,
       routePath: `/${portal}`,
       authCheck: true,

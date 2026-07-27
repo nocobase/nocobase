@@ -223,14 +223,10 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(getMultiPortalRouteUrl(app, '/customer-portal')).toBe('/nocobase/v/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/customer-portal', 'no-code')).toBe('/nocobase/v/customer-portal');
-    expect(getMultiPortalRouteUrl(app, '/customer-portal', 'vibe-coding')).toBe('/nocobase/x/customer-portal');
+    expect(getMultiPortalRouteUrl(app, '/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal')).toBe('/nocobase/v/customer-portal');
-    expect(getMultiPortalRouteUrl(app, '/nocobase/x/customer-portal', 'vibe-coding')).toBe(
-      '/nocobase/x/customer-portal',
-    );
-    expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal', 'vibe-coding')).toBe(
-      '/nocobase/x/customer-portal',
-    );
+    expect(getMultiPortalRouteUrl(app, '/nocobase/x/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
+    expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
   });
 
   it('should keep portal wording user-facing translations consistent', () => {
@@ -315,7 +311,7 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Developer portal',
               uid: 'developer-portal',
-              developmentMode: 'vibe-coding',
+              developmentMode: 'ai',
               routeName: 'developer-portal',
               routePath: '/developer-portal',
               uiLayoutUid: null,
@@ -364,10 +360,10 @@ describe('plugin-multi-portal settings page', () => {
     expect(noCodeAccessPathLink).toHaveAttribute('href', '/v/customer-portal');
     expect(noCodeAccessPathLink).toHaveAttribute('target', '_blank');
     expect(noCodeAccessPathLink).toHaveAttribute('rel', 'noopener noreferrer');
-    const vibeCodingAccessPathLink = screen.getByRole('link', { name: '/x/developer-portal' });
-    expect(vibeCodingAccessPathLink).toHaveAttribute('href', '/x/developer-portal');
-    expect(vibeCodingAccessPathLink).toHaveAttribute('target', '_blank');
-    expect(vibeCodingAccessPathLink).toHaveAttribute('rel', 'noopener noreferrer');
+    const aiAccessPathLink = screen.getByRole('link', { name: '/x/developer-portal' });
+    expect(aiAccessPathLink).toHaveAttribute('href', '/x/developer-portal');
+    expect(aiAccessPathLink).toHaveAttribute('target', '_blank');
+    expect(aiAccessPathLink).toHaveAttribute('rel', 'noopener noreferrer');
     const toolbar = container.querySelector('.ant-flex');
     expect(within(toolbar as HTMLElement).getByRole('button', { name: /Delete/ })).not.toHaveClass('ant-btn-dangerous');
     expect(screen.getByText('Access path')).toBeInTheDocument();
@@ -408,7 +404,7 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               title: 'Admin',
-              uid: '__default_admin__',
+              uid: '__default_portal__',
               routeName: 'admin',
               routePath: '/admin',
               uiLayout: {
@@ -755,7 +751,7 @@ describe('plugin-multi-portal settings page', () => {
     await waitFor(() => {
       expect(resource.create).toHaveBeenCalledWith({
         values: expect.objectContaining({
-          developmentMode: 'vibe-coding',
+          developmentMode: 'ai',
           routeName: 'developer-portal',
           routePath: '/developer-portal',
           title: 'Developer portal',
@@ -1035,7 +1031,7 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               title: 'Admin',
-              uid: '__default_admin__',
+              uid: '__default_portal__',
               routeName: 'admin',
               routePath: '/admin',
               uiLayout: {
@@ -1074,10 +1070,10 @@ describe('plugin-multi-portal settings page', () => {
 
     await waitFor(() => {
       expect(resource.update).toHaveBeenCalledWith({
-        filterByTk: '__default_admin__',
+        filterByTk: '__default_portal__',
         values: {
           title: 'Admin',
-          uid: '__default_admin__',
+          uid: '__default_portal__',
           routeName: 'admin',
           routePath: '/admin',
           uiLayoutUid: 'mobile-layout-model',
@@ -1099,7 +1095,7 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               title: 'Admin',
-              uid: '__default_admin__',
+              uid: '__default_portal__',
               routeName: 'admin',
               routePath: '/admin',
               uiLayout: {

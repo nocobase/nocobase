@@ -424,7 +424,7 @@ async function syncMultiPortalRecord(params: {
       body: JSON.stringify({
         uid: params.portal,
         title: params.title,
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
         routeName: params.portal,
         routePath: `/${params.portal}`,
         authCheck: true,

@@ -356,10 +356,10 @@ describe('PluginMultiPortalClientV2', () => {
     expect((app.apiMock.history.get[0] as Record<string, unknown>).skipNotify).toBe(true);
   });
 
-  it('should render vibe-coding portal cards with the x route prefix', async () => {
+  it('should render AI portal cards with the x route prefix', async () => {
     await renderMultiPortalBlock([
       makeAccessiblePortal({
-        developmentMode: 'vibe-coding',
+        developmentMode: 'ai',
       }),
     ]);
 
