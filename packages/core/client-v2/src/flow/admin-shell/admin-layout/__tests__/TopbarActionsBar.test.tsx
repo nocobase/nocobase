@@ -191,7 +191,7 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/sales/p1');
 
     const link = screen.getByRole('link', { name: 'System settings' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/admin/settings/system-settings');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/system-settings');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
@@ -216,7 +216,7 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/sales/p1');
 
     const link = screen.getByRole('link', { name: 'Plugin manager' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/admin/settings/plugin-manager');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/plugin-manager');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
@@ -241,13 +241,13 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/crm-amd/ekeisumx1zu');
 
     const link = screen.getByRole('link', { name: 'System settings' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/apps/a_9xlild35jir/admin/settings/system-settings');
+    expect(link).toHaveAttribute('href', '/nocobase/apps/a_9xlild35jir/settings/system-settings');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
   });
 
-  it('should keep regular admin settings as SPA links inside admin runtime', () => {
+  it('should open regular admin settings in the standalone SPA from admin runtime', () => {
     const items = getTopbarPluginSettingsItems({
       canManagePlugins: false,
       t: (key) => key,
@@ -266,11 +266,12 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/admin/settings/routes');
 
     const link = screen.getByRole('link', { name: 'Routes' });
-    expect(link).toHaveAttribute('href', '/admin/settings/routes');
-    expect(link).not.toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/routes');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
-  it('should keep sub-app admin settings in the current window inside sub-app admin runtime', () => {
+  it('should open sub-app settings in the standalone SPA from sub-app admin runtime', () => {
     const items = getTopbarPluginSettingsItems({
       canManagePlugins: false,
       t: (key) => key,
@@ -289,8 +290,9 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/admin/settings/routes');
 
     const link = screen.getByRole('link', { name: 'Routes' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/apps/a_9xlild35jir/admin/settings/routes');
-    expect(link).not.toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('href', '/nocobase/apps/a_9xlild35jir/settings/routes');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
   it('should not treat admin-like paths as admin runtime', () => {
@@ -312,11 +314,11 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/admin2/foo');
 
     const link = screen.getByRole('link', { name: 'System settings' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/admin/settings/system-settings');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/system-settings');
     expect(link).toHaveAttribute('target', '_blank');
   });
 
-  it('should not duplicate the basename when building new-tab settings hrefs', () => {
+  it('should remove the modern basename when building standalone settings hrefs', () => {
     const items = getTopbarPluginSettingsItems({
       canManagePlugins: false,
       t: (key) => key,
@@ -335,7 +337,30 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/sales/p1');
 
     const link = screen.getByRole('link', { name: 'System settings' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/admin/settings/system-settings');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/system-settings');
+  });
+
+  it('should preserve the new sub-app scope in standalone settings hrefs', () => {
+    const items = getTopbarPluginSettingsItems({
+      canManagePlugins: false,
+      t: (key) => key,
+      settings: [
+        {
+          key: 'system-settings',
+          name: 'system-settings',
+          title: 'System settings',
+          path: '/admin/settings/system-settings',
+          icon: null,
+          componentLoader: async () => null,
+        },
+      ] as any,
+    });
+
+    renderSettingsLabel((items as any[])[0].label, '/_app/a_new/admin/settings/system-settings');
+
+    const link = screen.getByRole('link', { name: 'System settings' });
+    expect(link).toHaveAttribute('href', '/nocobase/_app/a_new/settings/system-settings');
+    expect(link).toHaveAttribute('target', '_blank');
   });
 
   it('should keep external settings opening in a new tab', () => {

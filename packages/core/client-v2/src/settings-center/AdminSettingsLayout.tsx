@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
-import { ADMIN_SETTINGS_PATH, type PluginSettingsPageType } from '../PluginSettingsManager';
+import type { PluginSettingsPageType } from '../PluginSettingsManager';
 import { useApp } from '../hooks/useApp';
 import { AdminSettingsLayoutModel } from './AdminSettingsLayoutModel';
 import {
@@ -122,6 +122,8 @@ export const InternalAdminSettingsLayout = () => {
     return (currentVisibleTopLevelSetting?.children || []).filter((item) => !item.hidden) as PluginSettingsPageType[];
   }, [currentVisibleTopLevelSetting?.children]);
   const shouldShowTabs = currentVisibleTabs.length > 1 && currentVisibleTopLevelSetting?.showTabs !== false;
+  const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
+  const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
 
   useEffect(() => {
     const nextTitle =
@@ -158,9 +160,9 @@ export const InternalAdminSettingsLayout = () => {
   }, [normalSettings, pluginManagerSetting, snippets, t]);
 
   const shouldRedirectToDefault =
-    location.pathname === ADMIN_SETTINGS_PATH ||
-    location.pathname === ADMIN_SETTINGS_PATH.replace(/\/$/, '') ||
-    location.pathname === `${ADMIN_SETTINGS_PATH}index`;
+    location.pathname === settingsRootPath ||
+    location.pathname === settingsRootPathWithoutTrailingSlash ||
+    location.pathname === `${settingsRootPath}index`;
 
   if (shouldRedirectToDefault && defaultSettingsPath) {
     return <Navigate replace to={defaultSettingsPath} />;

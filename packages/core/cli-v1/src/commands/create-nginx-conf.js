@@ -11,6 +11,10 @@ const { resolve, posix } = require('path');
 const { storagePathJoin, resolvePublicPath, resolveV2PublicPath, normalizeModernClientPrefix } = require('../util');
 const { readFileSync, writeFileSync } = require('fs');
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  *
  * @param {Command} cli
@@ -24,6 +28,8 @@ module.exports = (cli) => {
     const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
     const appPublicPathWithoutTrailingSlash = appPublicPath.replace(/\/$/, '');
     const v2PublicPathWithoutTrailingSlash = v2PublicPath.replace(/\/$/, '');
+    const settingsAssetsPath = `${appPublicPath}settings/assets/`;
+    const settingsDocumentPattern = `^${escapeRegExp(appPublicPath)}(?:settings|(?:apps|_app)/[^/]+/settings)(?:/|$)`;
     const file = resolve(__dirname, '../../nocobase.conf.tpl');
     const data = readFileSync(file, 'utf-8');
     let otherLocation = '';
@@ -64,6 +70,8 @@ module.exports = (cli) => {
       .replace(/\{\{distPath\}\}/g, distPath)
       .replace(/\{\{v2PublicPath\}\}/g, v2PublicPath)
       .replace(/\{\{v2PublicPathNoTrailingSlash\}\}/g, v2PublicPathWithoutTrailingSlash)
+      .replace(/\{\{settingsAssetsPath\}\}/g, settingsAssetsPath)
+      .replace(/\{\{settingsDocumentPattern\}\}/g, settingsDocumentPattern)
       .replace(/\{\{apiPort\}\}/g, process.env.APP_PORT)
       .replace(/\{\{otherLocation\}\}/g, otherLocation);
     const targetFile = storagePathJoin('nocobase.conf');

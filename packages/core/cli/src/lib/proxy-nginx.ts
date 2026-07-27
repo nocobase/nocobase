@@ -209,6 +209,7 @@ async function writeResolvedNginxProxyBundle(
     writeFile(bundle.appConfigPath, nextAppConfigContent, 'utf8'),
     writeFile(bundle.indexV1Path, bundle.indexV1Content, 'utf8'),
     writeFile(bundle.indexV2Path, bundle.indexV2Content, 'utf8'),
+    writeFile(bundle.indexSettingsPath, bundle.indexSettingsContent, 'utf8'),
     writeFile(bundle.mainConfigPath, bundle.mainConfigContent, 'utf8'),
     syncEnvProxyNginxSnippets(),
   ]);

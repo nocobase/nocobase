@@ -60,6 +60,7 @@ export function VerifierSelect(props: VerifierSelectProps) {
   const { t } = useVerificationTranslation();
   const compileT = useT();
   const ctx = useFlowContext();
+  const verificationSettingsPath = ctx.app.pluginSettingsManager.getRoutePath('verification');
 
   const cacheKey = useMemo(() => `@nocobase/plugin-verification:verifiers:listByScene:${scene}`, [scene]);
 
@@ -92,7 +93,7 @@ export function VerifierSelect(props: VerifierSelectProps) {
         <Typography.Text type="secondary">
           {t('The following types of verifiers are available:')} {availableTypeNames.join(', ')}
           {'. '}
-          {t('Go to')} <Link to="/admin/settings/verification">{t('create verifiers')}</Link>
+          {t('Go to')} <Link to={verificationSettingsPath}>{t('create verifiers')}</Link>
         </Typography.Text>
       )}
     </>

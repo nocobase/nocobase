@@ -12,7 +12,7 @@ import React, { createContext, type FC, useContext, useEffect, useMemo, useRef, 
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import type { Application } from '../Application';
-import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
+import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToV2Signin } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import {
@@ -23,7 +23,9 @@ import {
 } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
+import type { PluginClass } from '../PluginManager';
 import { AdminSettingsLayoutModel } from '../settings-center';
+import { SettingsDocumentRedirect } from '../settings-app/SettingsDocumentRedirect';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
 export type CurrentUserState = {
@@ -181,6 +183,19 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
   return <>{children}</>;
 };
 
+function redirectUnauthenticatedRoute(
+  app: Application,
+  location: { pathname: string; search?: string; hash?: string },
+  navigate: ReturnType<typeof useNavigate>,
+) {
+  const redirectPath = getCurrentV2RedirectPath(app, location);
+  if (app.pluginSettingsManager.getRoutePath('') === '/settings/') {
+    redirectToV2Signin(app, redirectPath);
+    return;
+  }
+  navigate(`/signin?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
+}
+
 const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp<Application>();
   const location = useLocation();
@@ -234,9 +249,7 @@ const CurrentUserProvider: FC = ({ children }) => {
         if (user?.id == null) {
           // 用 react-router navigate (虚拟跳转)而不是 location.replace, 这样如果有其他响应拦截器已经发起了 window.location.href 整页跳转(例如 2FA 插件接收到服务端 302 重定向), 真实跳转可以胜出 navigate, 不会被这里的 signin 重定向覆盖。
           setState({ loading: true, authStatus: 'unauthenticated', error: null });
-          navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
-            replace: true,
-          });
+          redirectUnauthenticatedRoute(app, locationRef.current, navigate);
           return;
         }
 
@@ -277,9 +290,7 @@ const CurrentUserProvider: FC = ({ children }) => {
         const isAuthError = errorLike?.response?.status === 401 || errorLike?.status === 401;
         if (isAuthError) {
           setState({ loading: true, authStatus: 'unauthenticated', error: null });
-          navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
-            replace: true,
-          });
+          redirectUnauthenticatedRoute(app, locationRef.current, navigate);
           return;
         }
         setState({
@@ -353,41 +364,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       layoutModelClass: 'AdminLayoutModel',
     });
 
-    this.app.pluginSettingsManager.addMenuItem({
-      key: 'plugin-manager',
-      title: this.app.i18n.t('Plugin manager'),
-      icon: 'ApiOutlined',
-      aclSnippet: 'pm',
-      sort: -200,
-    });
-    this.app.pluginSettingsManager.addPageTabItem({
-      menuKey: 'plugin-manager',
-      key: 'index',
-      title: this.app.i18n.t('Plugin manager'),
-      componentLoader: () => import('../settings-center/plugin-manager'),
-      aclSnippet: 'pm',
-      sort: -200,
-    });
-    this.app.pluginSettingsManager.addMenuItem({
-      key: 'system-settings',
-      title: this.app.i18n.t('System settings'),
-      icon: 'SettingOutlined',
-      aclSnippet: 'pm.system-settings.system-settings',
-    });
-    this.app.pluginSettingsManager.addPageTabItem({
-      menuKey: 'system-settings',
-      key: 'index',
-      title: this.app.i18n.t('System settings'),
-      componentLoader: () => import('../settings-center/SystemSettingsPage'),
-      aclSnippet: 'pm.system-settings.system-settings',
-    });
-    // Parent menu for security-related plugin settings (password policy, locked users, etc.). Registered here in the buildin plugin so any pro plugin can attach page tabs to `menuKey: 'security'` without each one re-registering the same parent.
-    this.app.pluginSettingsManager.addMenuItem({
-      key: 'security',
-      title: this.app.i18n.t('Security'),
-      icon: 'SafetyOutlined',
-      aclSnippet: 'pm.security',
-    });
+    registerDefaultSettings(this.app);
   }
 
   addRoutes() {
@@ -403,7 +380,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
 
     this.router.add('admin.settings', {
       path: '/admin/settings',
-      componentLoader: () => import('../settings-center/AdminSettingsLayout'),
+      Component: SettingsDocumentRedirect,
     });
     this.router.add('admin.settings.route-empty', {
       path: '*',
@@ -416,6 +393,79 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
   async addPlugins() {
     await this.app.pm.add(PluginFlowEngine);
     await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
+  }
+}
+
+function registerDefaultSettings(app: Application) {
+  app.pluginSettingsManager.addMenuItem({
+    key: 'plugin-manager',
+    title: app.i18n.t('Plugin manager'),
+    icon: 'ApiOutlined',
+    aclSnippet: 'pm',
+    sort: -200,
+  });
+  app.pluginSettingsManager.addPageTabItem({
+    menuKey: 'plugin-manager',
+    key: 'index',
+    title: app.i18n.t('Plugin manager'),
+    componentLoader: () => import('../settings-center/plugin-manager'),
+    aclSnippet: 'pm',
+    sort: -200,
+  });
+  app.pluginSettingsManager.addMenuItem({
+    key: 'system-settings',
+    title: app.i18n.t('System settings'),
+    icon: 'SettingOutlined',
+    aclSnippet: 'pm.system-settings.system-settings',
+  });
+  app.pluginSettingsManager.addPageTabItem({
+    menuKey: 'system-settings',
+    key: 'index',
+    title: app.i18n.t('System settings'),
+    componentLoader: () => import('../settings-center/SystemSettingsPage'),
+    aclSnippet: 'pm.system-settings.system-settings',
+  });
+  // Parent menu for security-related plugin settings (password policy, locked users, etc.). Registered here in the buildin plugin so any pro plugin can attach page tabs to `menuKey: 'security'` without each one re-registering the same parent.
+  app.pluginSettingsManager.addMenuItem({
+    key: 'security',
+    title: app.i18n.t('Security'),
+    icon: 'SafetyOutlined',
+    aclSnippet: 'pm.security',
+  });
+}
+
+/**
+ * Internal built-in runtime for the standalone Client V2 settings entry.
+ * It intentionally shares the existing plugin lane and runtime providers but
+ * does not register the Admin Layout.
+ */
+export class SettingsBuildInPlugin extends Plugin<any, Application> {
+  async afterAdd() {
+    await this.app.pm.add(PluginFlowEngine);
+    await this.app.pm.add(LocalePlugin as unknown as PluginClass, { name: 'builtin-locale' });
+  }
+
+  async load() {
+    this.app.use(CurrentUserProvider);
+    this.app.use(DataSourceBootstrapProvider);
+    this.app.flowEngine.registerModels({ AdminSettingsLayoutModel });
+
+    this.router.add('settings', {
+      path: '/settings',
+      authCheck: true,
+      componentLoader: () => import('../settings-center/AdminSettingsLayout'),
+    });
+    this.router.add('settingsDetails', {
+      path: '/settings',
+      authCheck: true,
+      Component: Outlet,
+    });
+    this.router.add('settings.route-empty', {
+      path: '*',
+      Component: Outlet,
+    });
+
+    registerDefaultSettings(this.app);
   }
 }
 

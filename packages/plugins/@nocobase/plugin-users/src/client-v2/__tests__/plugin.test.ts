@@ -13,12 +13,18 @@ import PluginUsersClientV2 from '../plugin';
 
 describe('plugin-users client-v2', () => {
   const originalLocation = globalThis.window.location;
+  const originalModernClientPrefix = window.__nocobase_modern_client_prefix__;
 
   afterEach(() => {
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
       value: originalLocation,
     });
+    if (originalModernClientPrefix === undefined) {
+      delete window.__nocobase_modern_client_prefix__;
+    } else {
+      window.__nocobase_modern_client_prefix__ = originalModernClientPrefix;
+    }
     vi.restoreAllMocks();
   });
 
@@ -191,6 +197,38 @@ describe('plugin-users client-v2', () => {
 
     expect(replace).toHaveBeenCalledWith(
       '/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel',
+    );
+  });
+
+  it('should return a standalone Settings runtime to the existing v2 signin document', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        pathname: '/nocobase/settings/workflow',
+        search: '?tab=list',
+        hash: '#recent',
+        replace,
+      },
+    });
+    window.__nocobase_modern_client_prefix__ = 'v';
+    const app = createMockClient({ publicPath: '/nocobase/' });
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+    const getRoutePath = app.pluginSettingsManager.getRoutePath.bind(app.pluginSettingsManager);
+    vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
+      return name === '' ? '/settings/' : getRoutePath(name);
+    });
+
+    await app.flowEngine.getModelClassAsync('SignOutItemModel');
+    const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
+    app.apiClient.auth.signOut = vi.fn().mockResolvedValue({ data: { data: {} } });
+
+    await model.onClick();
+
+    expect(replace).toHaveBeenCalledWith(
+      '/nocobase/v/signin?redirect=%2Fnocobase%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
     );
   });
 });

@@ -48,6 +48,48 @@ function buildAppDevForwardArgs(argv = process.argv) {
   return ['app-dev', ...argv.slice(3)];
 }
 
+function resolveSettingsDevPort(appPort) {
+  return Number(appPort) + 3;
+}
+
+function normalizePublicPath(value) {
+  let normalized = value || '/';
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`;
+  }
+  if (!normalized.endsWith('/')) {
+    normalized = `${normalized}/`;
+  }
+  return normalized.replace(/\/{2,}/g, '/');
+}
+
+function createSettingsDevProcessOptions({
+  appPackageRoot,
+  appPort,
+  settingsPort,
+  browserPort,
+  appPublicPath,
+  processEnv = process.env,
+}) {
+  const settingsHmrPath = `${normalizePublicPath(appPublicPath)}settings/__rspack_hmr`;
+  return {
+    command: 'rsbuild',
+    args: ['dev', '--config', `${appPackageRoot}/client-settings/rsbuild.config.ts`],
+    runOptions: {
+      prefix: 'client-settings',
+      color: 'yellow',
+      env: {
+        ...processEnv,
+        APP_PORT: `${appPort}`,
+        APP_SETTINGS_PORT: `${settingsPort}`,
+        NODE_ENV: 'development',
+        RSPACK_HMR_CLIENT_PORT: `${browserPort}`,
+        RSPACK_HMR_PATH: settingsHmrPath,
+      },
+    },
+  };
+}
+
 function resolveDevRuntimeMode(opts = {}) {
   const appClientEntryMode = opts.appClientEntryMode || resolveAppClientEntryMode();
   const useModernOnlyEntryMode = appClientEntryMode === 'modern-only';
@@ -57,6 +99,7 @@ function resolveDevRuntimeMode(opts = {}) {
   const shouldRunClientV2 = clientV2Only || useModernOnlyEntryMode || forceClient || !forceServer;
   const shouldRunClient = !clientV2Only && !useModernOnlyEntryMode && (forceClient || !forceServer);
   const shouldRunServer = !clientV2Only && (forceServer || !forceClient || useModernOnlyEntryMode);
+  const shouldRunSettings = shouldRunClientV2;
 
   return {
     appClientEntryMode,
@@ -64,6 +107,7 @@ function resolveDevRuntimeMode(opts = {}) {
     shouldRunClientV2,
     shouldRunClient,
     shouldRunServer,
+    shouldRunSettings,
   };
 }
 
@@ -123,13 +167,18 @@ module.exports = (cli) => {
       let clientPort = APP_PORT;
       let serverPort;
       let clientV2Port = APP_PORT;
+      let settingsPort = resolveSettingsDevPort(APP_PORT);
 
       nodeCheck();
       await postCheck(opts);
 
-      const { useModernOnlyEntryMode, shouldRunClientV2, shouldRunClient, shouldRunServer } = resolveDevRuntimeMode(
-        opts,
-      );
+      const {
+        useModernOnlyEntryMode,
+        shouldRunClientV2,
+        shouldRunClient,
+        shouldRunServer,
+        shouldRunSettings,
+      } = resolveDevRuntimeMode(opts);
       const shouldRunClientWithRsbuild = shouldRunClient && !!rsbuild;
 
       if (shouldRunServer && server) {
@@ -150,8 +199,15 @@ module.exports = (cli) => {
         clientV2Port = APP_PORT;
       }
 
+      if (shouldRunSettings) {
+        settingsPort = await getPortPromise({
+          port: resolveSettingsDevPort(APP_PORT),
+        });
+      }
+
       let subprocessClient;
       let subprocessClientV2;
+      let subprocessSettings;
 
       const runDevClientV2 = () => {
         console.log('starting client-v2', 1 * clientV2Port);
@@ -164,6 +220,7 @@ module.exports = (cli) => {
             env: {
               ...process.env,
               APP_V2_PORT: `${clientV2Port}`,
+              APP_SETTINGS_PORT: `${settingsPort}`,
               NODE_ENV: 'development',
               RSPACK_HMR_CLIENT_PORT: `${clientV2Only ? clientV2Port : clientPort}`,
               API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
@@ -181,8 +238,34 @@ module.exports = (cli) => {
         );
       };
 
+      const runDevSettings = () => {
+        console.log('starting client-settings', 1 * settingsPort);
+        const { command, args, runOptions } = createSettingsDevProcessOptions({
+          appPackageRoot: APP_PACKAGE_ROOT,
+          appPort: APP_PORT,
+          settingsPort,
+          browserPort: clientV2Only ? clientV2Port : clientPort,
+          appPublicPath: process.env.APP_PUBLIC_PATH,
+          processEnv: {
+            ...process.env,
+            API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+            API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+            API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+            API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
+            WS_PATH: process.env.WS_PATH,
+            ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+            ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+            PROXY_TARGET_URL:
+              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+          },
+        });
+        subprocessSettings = runWithPrefix(command, args, runOptions);
+      };
+
       if (clientV2Only) {
         runDevClientV2();
+        runDevSettings();
         return;
       }
 
@@ -203,6 +286,7 @@ module.exports = (cli) => {
             APP_PORT: `${clientPort}`,
             APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
             APP_V2_PORT: `${clientV2Port}`,
+            APP_SETTINGS_PORT: `${settingsPort}`,
             NODE_ENV: 'development',
             RSPACK_HMR_CLIENT_PORT: `${clientPort}`,
             API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
@@ -254,6 +338,9 @@ module.exports = (cli) => {
           }
           if (shouldRunClientV2) {
             await restartSubprocess(subprocessClientV2, clientV2Port, runDevClientV2);
+          }
+          if (shouldRunSettings) {
+            await restartSubprocess(subprocessSettings, settingsPort, runDevSettings);
           }
           await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
         }, 500);
@@ -324,11 +411,17 @@ module.exports = (cli) => {
       if (shouldRunClientV2) {
         runDevClientV2();
       }
+
+      if (shouldRunSettings) {
+        runDevSettings();
+      }
     });
 };
 
 module.exports._test = {
   buildAppDevForwardArgs,
+  createSettingsDevProcessOptions,
   forwardDevToAppDev,
   resolveDevRuntimeMode,
+  resolveSettingsDevPort,
 };

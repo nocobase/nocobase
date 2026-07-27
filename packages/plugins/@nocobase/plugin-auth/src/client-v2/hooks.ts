@@ -9,7 +9,35 @@
 
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useApp } from '@nocobase/client-v2';
+import { normalizeV2RedirectPath, useApp } from '@nocobase/client-v2';
+
+function normalizePathname(pathname: string) {
+  const value = `/${String(pathname || '/').trim()}`.replace(/\/{2,}/g, '/');
+  const normalized = new URL(value, window.location.origin).pathname;
+  return normalized === '/' ? normalized : normalized.replace(/\/+$/, '');
+}
+
+function getSettingsScope(pathname?: string) {
+  return /\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(normalizePathname(pathname || '/'))?.[0] || '';
+}
+
+function isStandaloneSettingsRedirect(
+  app: { getPublicPath: () => string; router: { getBasename?: () => string | undefined } },
+  target: string,
+) {
+  if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {
+    return false;
+  }
+  const basename = app.router.getBasename?.();
+  const appScope = getSettingsScope(basename);
+  const publicPathSegments = normalizePathname(app.getPublicPath()).split('/');
+  publicPathSegments.pop();
+  const rootPublicPath = normalizePathname(publicPathSegments.join('/') || '/').replace(/\/+$/, '');
+  const settingsBasePath = `${rootPublicPath}${appScope}/settings` || '/settings';
+  const targetPathname = normalizePathname(target.split(/[?#]/)[0]);
+
+  return targetPathname === settingsBasePath || targetPathname.startsWith(`${settingsBasePath}/`);
+}
 
 /**
  * 把 `?redirect=` 上带 modern client basename 的目标(例如 `/nocobase/v/admin`)规约成
@@ -39,10 +67,14 @@ export function useRedirect(next = '/admin') {
 
   return useCallback(() => {
     const redirect = searchParams.get('redirect');
-    const target = redirect || next;
+    const target = redirect ? normalizeV2RedirectPath(app, redirect, next) : next;
+    if (redirect && isStandaloneSettingsRedirect(app, target)) {
+      window.location.replace(target);
+      return;
+    }
     const basename = app.router.getBasename?.();
     navigate(stripV2Basename(target, basename), { replace: true });
-  }, [app.router, navigate, next, searchParams]);
+  }, [app, navigate, next, searchParams]);
 }
 
 export function useDocumentTitle(title: string) {

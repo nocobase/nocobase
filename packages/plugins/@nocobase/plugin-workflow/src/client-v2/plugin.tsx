@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client-v2';
+import { Plugin, stripModernClientPrefix, useApp } from '@nocobase/client-v2';
 import { Registry } from '@nocobase/utils/client';
-import type { ReactNode } from 'react';
+import React, { type ReactNode, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { NAMESPACE } from './locale';
 import {
   WORKFLOW_CANVAS_ROUTE_NAME,
@@ -89,6 +90,21 @@ export type WorkflowNoticeProviderObject = {
 export type WorkflowNoticeProvider = WorkflowNoticeProviderFunction | WorkflowNoticeProviderObject;
 
 const tpl = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
+
+function LegacyWorkflowSettingsRedirect() {
+  const app = useApp();
+  const location = useLocation();
+  const appScope = /\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(location.pathname)?.[0] || '';
+  const rootPublicPath = stripModernClientPrefix(app.getPublicPath()).replace(/\/+$/, '');
+  const routePath = location.pathname.replace(/^.*?\/admin\/workflow(?=\/|$)/, '/settings/workflow');
+  const targetPath = `${rootPublicPath}${appScope}${routePath}${location.search}${location.hash}`;
+
+  useEffect(() => {
+    window.location.replace(targetPath);
+  }, [targetPath]);
+
+  return app.renderComponent('AppSpin');
+}
 
 /** Core instruction groups, in v1 display order. */
 const coreInstructionGroups: InstructionGroup[] = [
@@ -326,21 +342,25 @@ export class PluginWorkflowClientV2 extends Plugin {
     });
   }
 
-  // The canvas page is registered directly under `admin` (not `admin.settings`), so it renders in the admin content
-  // area without the settings left menu — mirroring v1's `router.add('admin.workflow.workflows.id', ...)`.
   private registerCanvasRoute() {
     this.app.router.add(WORKFLOW_CANVAS_ROUTE_NAME, {
       path: WORKFLOW_CANVAS_ROUTE_PATH,
       componentLoader: () => import('./pages/WorkflowCanvasPage'),
     });
+    this.app.router.add('admin.workflow.workflows.id', {
+      path: '/admin/workflow/workflows/:id',
+      Component: LegacyWorkflowSettingsRedirect,
+    });
   }
 
-  // The execution detail page, a sibling of the canvas under the same `admin.workflow` namespace — mirrors v1's
-  // `admin.workflow.executions.id`.
   private registerExecutionRoute() {
     this.app.router.add(WORKFLOW_EXECUTION_ROUTE_NAME, {
       path: WORKFLOW_EXECUTION_ROUTE_PATH,
       componentLoader: () => import('./pages/ExecutionViewPage'),
+    });
+    this.app.router.add('admin.workflow.executions.id', {
+      path: '/admin/workflow/executions/:id',
+      Component: LegacyWorkflowSettingsRedirect,
     });
   }
 

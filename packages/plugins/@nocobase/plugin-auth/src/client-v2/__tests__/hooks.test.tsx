@@ -13,8 +13,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { useRedirect, useSignIn } from '../hooks';
 
 const navigateMock = vi.fn();
+const originalLocation = window.location;
 const mockState = vi.hoisted(() => ({
   basename: undefined as string | undefined,
+  publicPath: '/nocobase/v2/',
   signIn: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
   request: vi.fn().mockResolvedValue({ data: {} }) as ReturnType<typeof vi.fn>,
 }));
@@ -27,20 +29,29 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-vi.mock('@nocobase/client-v2', () => ({
-  useApp: () => ({
-    router: { getBasename: () => mockState.basename },
-    apiClient: {
-      auth: { signIn: (...args: unknown[]) => mockState.signIn(...args) },
-      request: (...args: unknown[]) => mockState.request(...args),
-    },
-  }),
-}));
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+  return {
+    ...actual,
+    useApp: () => ({
+      router: { getBasename: () => mockState.basename },
+      getPublicPath: () => mockState.publicPath,
+      apiClient: {
+        auth: { signIn: (...args: unknown[]) => mockState.signIn(...args) },
+        request: (...args: unknown[]) => mockState.request(...args),
+      },
+    }),
+  };
+});
 
 describe('plugin-auth client-v2 useRedirect', () => {
   beforeEach(() => {
     navigateMock.mockReset();
     mockState.basename = undefined;
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
   });
 
   function wrap(initialEntries: string[]) {
@@ -102,6 +113,43 @@ describe('plugin-auth client-v2 useRedirect', () => {
     });
     result.current();
 
+    expect(navigateMock).toHaveBeenCalledWith('/admin', { replace: true });
+  });
+
+  it('should use document navigation for a standalone settings redirect', () => {
+    mockState.basename = '/nocobase/v2';
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const { result } = renderHook(() => useRedirect('/admin'), {
+      wrapper: wrap(['/signin?redirect=%2Fnocobase%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent']),
+    });
+
+    result.current();
+
+    expect(replace).toHaveBeenCalledWith('/nocobase/settings/workflow?tab=list#recent');
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '/nocobase/apps/test-app/settings/../../../apps/other-app/settings',
+    '/nocobase/apps/test-app/settings/%2e%2e/%2E%2e/%2e%2e/apps/other-app/settings',
+  ])('should reject a settings document redirect that resolves outside the current sub-app: %s', (target) => {
+    mockState.basename = '/nocobase/v2/apps/test-app';
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const { result } = renderHook(() => useRedirect('/admin'), {
+      wrapper: wrap([`/signin?redirect=${encodeURIComponent(target)}`]),
+    });
+
+    result.current();
+
+    expect(replace).not.toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith('/admin', { replace: true });
   });
 });

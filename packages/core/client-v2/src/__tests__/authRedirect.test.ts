@@ -17,12 +17,18 @@ import {
 
 describe('auth redirect helpers', () => {
   const originalLocation = globalThis.window.location;
+  const originalModernClientPrefix = window.__nocobase_modern_client_prefix__;
 
   afterEach(() => {
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
       value: originalLocation,
     });
+    if (originalModernClientPrefix === undefined) {
+      delete window.__nocobase_modern_client_prefix__;
+    } else {
+      window.__nocobase_modern_client_prefix__ = originalModernClientPrefix;
+    }
     vi.restoreAllMocks();
   });
 
@@ -84,6 +90,37 @@ describe('auth redirect helpers', () => {
     expect(buildV2SigninHref(app, '/v2/admin/7vu4c2sdk6h')).toBe('/v2/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
   });
 
+  it('should keep validated standalone settings redirects outside the v2 basename', () => {
+    const app = {
+      getPublicPath: () => '/nocobase/v2/',
+      router: {
+        getBasename: () => '/nocobase/v2',
+      },
+    } as any;
+
+    expect(normalizeV2RedirectPath(app, '/nocobase/settings/workflow?tab=list#recent')).toBe(
+      '/nocobase/settings/workflow?tab=list#recent',
+    );
+  });
+
+  it('should build the existing v2 signin URL for a standalone settings app', () => {
+    const app = {
+      name: 'main',
+      getPublicPath: () => '/nocobase/',
+      router: {
+        getBasename: () => '/nocobase',
+      },
+      pluginSettingsManager: {
+        getRoutePath: () => '/settings/',
+      },
+    } as any;
+    window.__nocobase_modern_client_prefix__ = 'v2';
+
+    expect(buildV2SigninHref(app, '/nocobase/settings/workflow?tab=list#recent')).toBe(
+      '/nocobase/v2/signin?redirect=%2Fnocobase%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
+    );
+  });
+
   it('should redirect with window.location.replace by default', () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
@@ -134,6 +171,36 @@ describe('auth redirect helpers', () => {
   });
 
   describe('v2 sub-app context (router basename contains /apps/<id>/)', () => {
+    it('should keep only the current sub-app standalone settings redirect', () => {
+      const app = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: {
+          getBasename: () => '/nocobase/v2/apps/test-app/',
+        },
+      } as any;
+
+      expect(normalizeV2RedirectPath(app, '/nocobase/apps/test-app/settings/workflow')).toBe(
+        '/nocobase/apps/test-app/settings/workflow',
+      );
+      expect(normalizeV2RedirectPath(app, '/nocobase/apps/other-app/settings/workflow')).toBe(
+        '/nocobase/v2/apps/test-app/admin/',
+      );
+    });
+
+    it.each([
+      '/nocobase/apps/test-app/settings/../../../apps/other-app/settings',
+      '/nocobase/apps/test-app/settings/%2e%2e/%2E%2e/%2e%2e/apps/other-app/settings',
+    ])('should reject a standalone settings redirect that resolves outside the current sub-app: %s', (target) => {
+      const app = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: {
+          getBasename: () => '/nocobase/v2/apps/test-app/',
+        },
+      } as any;
+
+      expect(normalizeV2RedirectPath(app, target)).toBe('/nocobase/v2/apps/test-app/admin/');
+    });
+
     it('should normalize signin redirect fallback under the current sub-app basename', () => {
       const app = {
         getPublicPath: () => '/v/',
