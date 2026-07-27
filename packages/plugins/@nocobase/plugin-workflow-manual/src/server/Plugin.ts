@@ -16,18 +16,22 @@ import * as jobActions from './actions';
 import ManualInstruction from './ManualInstruction';
 import { TASK_TYPE_MANUAL, TASK_STATUS } from '../common/constants';
 
+type GroupedTaskCount = {
+  userId: number;
+  workflowId: number;
+  count: number | string;
+};
+
 export default class extends Plugin {
-  private getWorkflowKeyFromIncluded(row: Model) {
-    const workflow = row.get('workflow') as Model | undefined;
-    return workflow?.get('key') as string | undefined;
-  }
-
-  private aggregateRows(rows: Model[], type: 'pending' | 'all') {
-    const statsMap = new Map<string, TaskStatsRow>();
-
+  private mergeTaskCounts(
+    statsMap: Map<string, TaskStatsRow>,
+    rows: GroupedTaskCount[],
+    workflowKeyMap: Map<number, string>,
+    field: 'pending' | 'all',
+  ) {
     for (const row of rows) {
-      const userId = row.get('userId') as number | undefined;
-      const workflowKey = this.getWorkflowKeyFromIncluded(row);
+      const userId = row.userId;
+      const workflowKey = workflowKeyMap.get(row.workflowId);
       if (!userId || !workflowKey) {
         continue;
       }
@@ -39,25 +43,8 @@ export default class extends Plugin {
         pending: 0,
         all: 0,
       };
-      stats[type] += 1;
+      stats[field] += Number(row.count) || 0;
       statsMap.set(key, stats);
-    }
-
-    return statsMap;
-  }
-
-  private mergeStatsMaps(target: Map<string, TaskStatsRow>, source: Map<string, TaskStatsRow>) {
-    for (const [key, stats] of source.entries()) {
-      const existed = target.get(key) ?? {
-        userId: stats.userId,
-        workflowKey: stats.workflowKey,
-        type: TASK_TYPE_MANUAL,
-        pending: 0,
-        all: 0,
-      };
-      existed.pending += stats.pending;
-      existed.all += stats.all;
-      target.set(key, existed);
     }
   }
 
@@ -86,30 +73,18 @@ export default class extends Plugin {
       where.workflowId = workflowIds;
     }
 
-    const allRows = await WorkflowManualTaskModel.findAll({
-      attributes: ['userId', 'workflowId'],
+    const allCounts = (await WorkflowManualTaskModel.count({
       where,
-      include: [
-        {
-          association: 'workflow',
-          attributes: ['key'],
-          required: true,
-        },
-      ],
+      col: 'id',
+      group: ['userId', 'workflowId'],
       transaction: options.transaction,
-    });
-    const pendingRows = await WorkflowManualTaskModel.findAll({
-      attributes: ['userId', 'workflowId'],
+    })) as unknown as GroupedTaskCount[];
+    const pendingCounts = (await WorkflowManualTaskModel.count({
       where: {
         ...where,
         status: TASK_STATUS.PENDING,
       },
       include: [
-        {
-          association: 'workflow',
-          attributes: ['key'],
-          required: true,
-        },
         {
           association: 'execution',
           attributes: [],
@@ -119,10 +94,22 @@ export default class extends Plugin {
           required: true,
         },
       ],
+      col: 'id',
+      group: ['userId', 'workflowId'],
       transaction: options.transaction,
-    });
-    const statsMap = this.aggregateRows(allRows, 'all');
-    this.mergeStatsMaps(statsMap, this.aggregateRows(pendingRows, 'pending'));
+    })) as unknown as GroupedTaskCount[];
+    const workflowIds = Array.from(new Set([...allCounts, ...pendingCounts].map((row) => row.workflowId)));
+    const workflows = workflowIds.length
+      ? await this.db.getRepository('workflows').find({
+          filter: { id: workflowIds },
+          fields: ['id', 'key'],
+          transaction: options.transaction,
+        })
+      : [];
+    const workflowKeyMap = new Map(workflows.map((workflow) => [workflow.id, workflow.key as string]));
+    const statsMap = new Map<string, TaskStatsRow>();
+    this.mergeTaskCounts(statsMap, allCounts, workflowKeyMap, 'all');
+    this.mergeTaskCounts(statsMap, pendingCounts, workflowKeyMap, 'pending');
 
     return Array.from(statsMap.values());
   }

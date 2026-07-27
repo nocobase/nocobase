@@ -15,12 +15,13 @@ import CCInstruction from './CCInstruction';
 import { TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { initActions } from './actions';
 
-export class PluginWorkflowCCServer extends Plugin {
-  private getWorkflowKeyFromIncluded(row: Model) {
-    const workflow = row.get('workflow') as Model | undefined;
-    return workflow?.get('key') as string | undefined;
-  }
+type GroupedTaskCount = {
+  userId: number;
+  workflowId: number;
+  count: number | string;
+};
 
+export class PluginWorkflowCCServer extends Plugin {
   private async getWorkflowKeyById(workflowId: number, transaction?: Transaction) {
     const WorkflowRepo = this.db.getRepository('workflows');
     const workflow = await WorkflowRepo.findOne({
@@ -56,22 +57,34 @@ export class PluginWorkflowCCServer extends Plugin {
       where.workflowId = workflowIds;
     }
 
-    const rows = await CCModel.findAll({
-      attributes: ['userId', 'workflowId', 'status'],
+    const allCounts = (await CCModel.count({
       where,
-      include: [
-        {
-          association: 'workflow',
-          attributes: ['key'],
-          required: true,
-        },
-      ],
+      col: 'id',
+      group: ['userId', 'workflowId'],
       transaction: options.transaction,
-    });
+    })) as unknown as GroupedTaskCount[];
+    const pendingCounts = (await CCModel.count({
+      where: {
+        ...where,
+        status: TASK_STATUS.UNREAD,
+      },
+      col: 'id',
+      group: ['userId', 'workflowId'],
+      transaction: options.transaction,
+    })) as unknown as GroupedTaskCount[];
+    const workflowIds = Array.from(new Set([...allCounts, ...pendingCounts].map((row) => row.workflowId)));
+    const workflows = workflowIds.length
+      ? await this.db.getRepository('workflows').find({
+          filter: { id: workflowIds },
+          fields: ['id', 'key'],
+          transaction: options.transaction,
+        })
+      : [];
+    const workflowKeyMap = new Map(workflows.map((workflow) => [workflow.id, workflow.key as string]));
     const statsMap = new Map<string, TaskStatsRow>();
-    for (const row of rows) {
-      const userId = row.get('userId') as number | undefined;
-      const workflowKey = this.getWorkflowKeyFromIncluded(row);
+    for (const row of allCounts) {
+      const userId = row.userId;
+      const workflowKey = workflowKeyMap.get(row.workflowId);
       if (!userId || !workflowKey) {
         continue;
       }
@@ -83,10 +96,24 @@ export class PluginWorkflowCCServer extends Plugin {
         pending: 0,
         all: 0,
       };
-      stats.all += 1;
-      if (row.get('status') === TASK_STATUS.UNREAD) {
-        stats.pending += 1;
+      stats.all += Number(row.count) || 0;
+      statsMap.set(key, stats);
+    }
+    for (const row of pendingCounts) {
+      const userId = row.userId;
+      const workflowKey = workflowKeyMap.get(row.workflowId);
+      if (!userId || !workflowKey) {
+        continue;
       }
+      const key = `${userId}\0${workflowKey}`;
+      const stats = statsMap.get(key) ?? {
+        userId,
+        workflowKey,
+        type: TASK_TYPE_CC,
+        pending: 0,
+        all: 0,
+      };
+      stats.pending += Number(row.count) || 0;
       statsMap.set(key, stats);
     }
 

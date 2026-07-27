@@ -17,6 +17,6 @@ export default class extends Migration {
 
   async up() {
     const workflowPlugin = this.pm.get(WorkflowPlugin) as WorkflowPlugin;
-    await workflowPlugin.repairTaskStats({ types: [TASK_TYPE_CC] });
+    await workflowPlugin.repairTaskStats({ types: [TASK_TYPE_CC], silent: true });
   }
 }

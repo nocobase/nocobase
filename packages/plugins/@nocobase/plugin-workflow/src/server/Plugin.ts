@@ -10,7 +10,7 @@
 import path from 'path';
 
 import { Snowflake } from 'nodejs-snowflake';
-import { Transactionable } from 'sequelize';
+import { col, fn, Transactionable } from 'sequelize';
 import type { Sequelize } from 'sequelize';
 import { LRUCache } from 'lru-cache';
 
@@ -62,6 +62,7 @@ export type RepairTaskStatsOptions = {
   workflowKeys?: string[];
   types?: string[];
   transaction?: Transaction;
+  silent?: boolean;
 };
 export type TaskStatsProvider = {
   collectTaskStats: (
@@ -811,6 +812,7 @@ export default class PluginWorkflowServer extends Plugin {
   public async repairTaskStats(options: RepairTaskStatsOptions = {}) {
     const run = async (transaction: Transaction) => {
       const repository = this.db.getRepository('userWorkflowTaskStats');
+      const TaskStatsModel = this.db.getModel('userWorkflowTaskStats');
       const filter = this.buildTaskStatsFilter(options);
       const existedRows = await repository.find({
         filter,
@@ -853,8 +855,12 @@ export default class PluginWorkflowServer extends Plugin {
         transaction,
       });
 
-      for (const row of rows) {
-        await this.upsertTaskStatsRow(row, transaction);
+      const batchSize = 1000;
+      for (let offset = 0; offset < rows.length; offset += batchSize) {
+        await TaskStatsModel.bulkCreate(rows.slice(offset, offset + batchSize), {
+          returning: false,
+          transaction,
+        });
       }
 
       const typePairs = new Set<string>();
@@ -877,15 +883,97 @@ export default class PluginWorkflowServer extends Plugin {
         workflowPairs.add(`${row.userId}\0${row.workflowKey}`);
       }
 
-      for (const pair of typePairs) {
-        const [userId, type] = pair.split('\0');
-        await this.refreshUserWorkflowTaskTypeStats(Number(userId), type, { transaction });
+      const affectedUserIds = Array.from(typePairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedTypes = Array.from(typePairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
+      const categorizedRows = typePairs.size
+        ? ((await TaskStatsModel.findAll({
+            attributes: ['userId', 'type', [fn('SUM', col('pending')), 'pending'], [fn('SUM', col('all')), 'all']],
+            where: {
+              userId: Array.from(new Set(affectedUserIds)),
+              type: Array.from(new Set(affectedTypes)),
+            },
+            group: ['userId', 'type'],
+            raw: true,
+            transaction,
+          })) as unknown as Array<TaskStatsRow>)
+        : [];
+      const categorizedMap = new Map(
+        categorizedRows.map((row) => [
+          `${row.userId}\0${row.type}`,
+          this.normalizeTaskStats({ pending: row.pending, all: row.all }),
+        ]),
+      );
+      const categorizedValues = Array.from(typePairs, (pair) => {
+        const separatorIndex = pair.indexOf('\0');
+        return {
+          userId: Number(pair.slice(0, separatorIndex)),
+          type: pair.slice(separatorIndex + 1),
+          stats: categorizedMap.get(pair) ?? { pending: 0, all: 0 },
+        };
+      });
+      const categorizedUserIds = Array.from(new Set(affectedUserIds));
+      const categorizedTypes = Array.from(new Set(affectedTypes));
+      if (categorizedUserIds.length && categorizedTypes.length) {
+        await this.db.getRepository('userWorkflowTasks').destroy({
+          filter: {
+            userId: categorizedUserIds,
+            type: categorizedTypes,
+          },
+          transaction,
+        });
+      }
+      const UserTasksModel = this.db.getModel('userWorkflowTasks');
+      for (let offset = 0; offset < categorizedValues.length; offset += batchSize) {
+        await UserTasksModel.bulkCreate(categorizedValues.slice(offset, offset + batchSize), {
+          returning: false,
+          transaction,
+        });
       }
 
+      if (options.silent) {
+        return;
+      }
+
+      for (const value of categorizedValues) {
+        if (!value.userId) {
+          continue;
+        }
+        this.app.emit('ws:sendToUser', {
+          userId: value.userId,
+          message: { type: 'workflow:tasks:updated', payload: value },
+        });
+      }
+
+      const affectedWorkflowUserIds = Array.from(workflowPairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedWorkflowKeys = Array.from(workflowPairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
+      const workflowRows = workflowPairs.size
+        ? ((await TaskStatsModel.findAll({
+            attributes: [
+              'userId',
+              'workflowKey',
+              [fn('SUM', col('pending')), 'pending'],
+              [fn('SUM', col('all')), 'all'],
+            ],
+            where: {
+              userId: Array.from(new Set(affectedWorkflowUserIds)),
+              workflowKey: Array.from(new Set(affectedWorkflowKeys)),
+            },
+            group: ['userId', 'workflowKey'],
+            raw: true,
+            transaction,
+          })) as unknown as Array<Omit<TaskStatsRow, 'type'>>)
+        : [];
+      const workflowMap = new Map(
+        workflowRows.map((row) => [
+          `${row.userId}\0${row.workflowKey}`,
+          this.normalizeTaskStats({ pending: row.pending, all: row.all }),
+        ]),
+      );
       for (const pair of workflowPairs) {
-        const [userId, workflowKey] = pair.split('\0');
-        const stats = await this.refreshUserWorkflowTaskWorkflowStats(Number(userId), workflowKey, { transaction });
-        this.sendTaskWorkflowStatsUpdated(Number(userId), workflowKey, stats);
+        const separatorIndex = pair.indexOf('\0');
+        const userId = Number(pair.slice(0, separatorIndex));
+        const workflowKey = pair.slice(separatorIndex + 1);
+        this.sendTaskWorkflowStatsUpdated(userId, workflowKey, workflowMap.get(pair) ?? { pending: 0, all: 0 });
       }
     };
 

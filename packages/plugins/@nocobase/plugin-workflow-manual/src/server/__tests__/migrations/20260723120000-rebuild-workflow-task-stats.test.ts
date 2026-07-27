@@ -40,11 +40,15 @@ describe('20260723120000-rebuild-workflow-task-stats', () => {
       await app.db.getRepository('userWorkflowTaskStats').destroy({
         filter: { type: TASK_TYPE_MANUAL },
       });
-      await app.db.getRepository('userWorkflowTasks').destroy({
-        filter: { type: TASK_TYPE_MANUAL },
+      const legacyStats = await app.db.getRepository('userWorkflowTasks').findOne({
+        filter: { userId: user.id, type: TASK_TYPE_MANUAL },
       });
+      await legacyStats.update({ stats: { pending: 99, all: 99 } });
+      const messages = [];
+      app.on('ws:sendToUser', (message) => messages.push(message));
 
       const migration = new Migration({ db: app.db, app } as never);
+      await migration.up();
       await migration.up();
 
       const workflowStats = await app.db.getRepository('userWorkflowTaskStats').findOne({
@@ -69,6 +73,7 @@ describe('20260723120000-rebuild-workflow-task-stats', () => {
         pending: 1,
         all: 1,
       });
+      expect(messages).toHaveLength(0);
     } finally {
       await app.destroy();
     }
