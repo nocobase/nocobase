@@ -52,9 +52,7 @@
   },
   "resolutions": {
     "@ant-design/icons": "^5.6.1",
-    "@codemirror/language": "6.11.2",
     "@formily/antd-v5": "1.2.3",
-    "@lezer/common": "1.2.3",
     "@rushstack/ts-command-line": "4.23.7",
     "@rspack/core": "1.7.8",
     "@types/react": "18.3.18",
