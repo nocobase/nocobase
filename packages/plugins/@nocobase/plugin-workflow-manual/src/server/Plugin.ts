@@ -106,7 +106,9 @@ export default class extends Plugin {
           transaction: options.transaction,
         })
       : [];
-    const workflowKeyMap = new Map(workflows.map((workflow) => [workflow.id, workflow.key as string]));
+    const workflowKeyMap = new Map<number, string>(
+      workflows.map((workflow) => [workflow.id as number, workflow.key as string]),
+    );
     const statsMap = new Map<string, TaskStatsRow>();
     this.mergeTaskCounts(statsMap, allCounts, workflowKeyMap, 'all');
     this.mergeTaskCounts(statsMap, pendingCounts, workflowKeyMap, 'pending');
