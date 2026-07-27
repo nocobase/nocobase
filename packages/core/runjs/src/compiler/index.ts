@@ -136,8 +136,6 @@ interface RunJSEsbuildMessageDetail {
   runjsDiagnostic: RunJSCompileDiagnostic;
 }
 
-type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
-
 const sourceNamespace = 'runjs-source';
 const launcherNamespace = 'runjs-launcher';
 const launcherPath = '__runjs_launcher__.js';
@@ -147,9 +145,6 @@ const commonJSRequireHosts = new Set(['globalThis', 'global', 'window', 'module'
 const runtimeVersionDefault = 'v2';
 const runJSSourceURLPrefix = 'nocobase-runjs://bundle/';
 const jsRunnerGeneratedCodeLineOffset = 2;
-const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkflowSyntaxCheck() {})
-  .constructor as AsyncFunctionConstructor;
-
 export async function compileRunJSSourceWorkspace(
   input: CompileRunJSSourceWorkspaceInput,
 ): Promise<CompileRunJSSourceWorkspaceResult> {
@@ -204,7 +199,6 @@ export async function compileRunJSSourceWorkspace(
   if (!hasErrorDiagnostic(diagnostics) && bundled) {
     code = appendRunJSSourceURL(bundled.code, sourceURL);
     sourceMap = JSON.stringify(bundled.sourceMap);
-    collectRuntimeSyntaxDiagnostics(code, entryPath, diagnostics);
   }
 
   if (!hasErrorDiagnostic(diagnostics) && input.inspectAuthoring) {
@@ -1041,20 +1035,6 @@ function filesafeDiagnosticPath(path: string, fallbackPath: string): string {
     return fallbackPath;
   }
   return path;
-}
-
-function collectRuntimeSyntaxDiagnostics(code: string, entryPath: string, diagnostics: RunJSCompileDiagnostic[]): void {
-  try {
-    new asyncFunctionConstructor(code);
-  } catch (error) {
-    const message = error instanceof Error && error.message ? error.message : 'Invalid JavaScript syntax';
-    diagnostics.push({
-      severity: 'error',
-      code: 'RUNJS_COMPILE_FAILED',
-      path: entryPath,
-      message: `RunJS artifact has invalid syntax: ${message}`,
-    });
-  }
 }
 
 function loaderForPath(path: string): Loader {

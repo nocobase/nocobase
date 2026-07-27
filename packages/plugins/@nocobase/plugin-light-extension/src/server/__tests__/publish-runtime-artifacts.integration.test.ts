@@ -12,14 +12,12 @@ import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@n
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
+import { createCompileJob } from './helpers/compilerTestHarness';
 import {
   createLightExtensionCompileInfrastructureFailure,
-  LIGHT_EXTENSION_AUTHORING_SURFACES,
-  LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   type LightExtensionCompileJob,
   type LightExtensionCompileSuccessResult,
 } from '../services/LightExtensionCompileContract';
-import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 import {
   PublishCompiledEntriesService,
   type CompiledEntriesPublishStore,
@@ -171,48 +169,6 @@ class MockPublishStore implements CompiledEntriesPublishStore {
     this.runInTransactionCalls += 1;
     return callback(this.transaction);
   }
-}
-
-function createCompileJob(ordinal: number): LightExtensionCompileJob {
-  const entryName = `entry-${ordinal}`;
-  const entryPath = `src/client/js-blocks/${entryName}/index.tsx`;
-  const content = `ctx.render(<div>${ordinal}</div>);\n`;
-  const sourceFiles = [
-    {
-      path: entryPath,
-      content,
-      blobHash: sha256Hex(content),
-      language: 'tsx',
-      mode: '100644',
-    },
-  ];
-  const key = buildLightExtensionCompileKey({
-    entry: {
-      target: 'client',
-      kind: 'js-block',
-      entryPath,
-      descriptorPath: `src/client/js-blocks/${entryName}/entry.json`,
-    },
-    files: sourceFiles,
-  });
-  return {
-    jobId: `job-${ordinal}`,
-    requestId: `request-${ordinal}`,
-    correlationId: 'batch-1',
-    repoId: 'repo-1',
-    entryId: `entry-id-${ordinal}`,
-    entryName,
-    ordinal,
-    compileKey: key.compileKey,
-    filesHash: key.filesHash,
-    kind: 'js-block',
-    entryPath,
-    runtimeVersion: 'v2',
-    surface: structuredClone(LIGHT_EXTENSION_AUTHORING_SURFACES['js-block']),
-    compilerBuildIdentity: structuredClone(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY),
-    inputManifest: key.inputManifest,
-    files: sourceFiles,
-  };
 }
 
 function createSuccessResult(job: LightExtensionCompileJob): LightExtensionCompileSuccessResult {
