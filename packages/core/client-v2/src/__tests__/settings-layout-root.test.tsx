@@ -7,13 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ACLRolesCheckProvider } from '../acl';
 import { Plugin } from '../Plugin';
 import { SettingsApplication } from '../settings-app/SettingsApplication';
 import { SettingsBuildInPlugin } from '../settings-app/SettingsBuildInPlugin';
+
+class TestAclPlugin extends Plugin {
+  async load() {
+    this.app.use(ACLRolesCheckProvider);
+  }
+}
 
 class StandaloneSettingsPlugin extends Plugin {
   async load() {
@@ -24,6 +31,22 @@ class StandaloneSettingsPlugin extends Plugin {
       title: 'Standalone',
       Component: () => <div>Standalone settings page</div>,
       sort: -1000,
+    });
+  }
+}
+
+class PrimarySettingsPlugin extends Plugin {
+  async load() {
+    this.pluginSettingsManager.addMenuItem({
+      key: 'portal-manager',
+      title: 'Portal manager',
+      sort: -300,
+    });
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'portal-manager',
+      key: 'index',
+      title: 'Portal manager',
+      Component: () => <div>Portal manager page</div>,
     });
   }
 }
@@ -64,6 +87,43 @@ describe('standalone settings layout root', () => {
     await waitFor(() => {
       expect(app.router.state.location.pathname).toBe('/settings/system-settings');
     });
+  });
+
+  it('groups negative-sort settings above plugin-manager', async () => {
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, PrimarySettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/portal-manager'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').reply(200, {
+      data: { role: 'root', snippets: ['pm'] },
+    });
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('Portal manager page')).toBeInTheDocument();
+
+    const portalManagerItem = screen.getByRole('menuitem', { name: 'Portal manager' });
+    const pluginManagerItem = screen.getByRole('menuitem', { name: /Plugin manager$/ });
+    const menu = portalManagerItem.closest('ul');
+    const menuChildren = Array.from(menu?.children || []);
+    const portalManagerIndex = menuChildren.indexOf(portalManagerItem);
+    const pluginManagerIndex = menuChildren.indexOf(pluginManagerItem);
+    const firstDividerIndex = menuChildren.findIndex((item) => item.classList.contains('ant-menu-item-divider'));
+
+    expect(portalManagerIndex).toBeLessThan(pluginManagerIndex);
+    expect(pluginManagerIndex).toBeLessThan(firstDividerIndex);
   });
 
   it('uses document navigation to the existing v2 signin page when unauthenticated', async () => {

@@ -50,6 +50,7 @@ export class PluginMultiPortalClientV2 extends Plugin {
       icon: 'PartitionOutlined',
       aclSnippet: 'pm.multi-portal',
       showTabs: true,
+      sort: -300,
     });
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'multi-portal',

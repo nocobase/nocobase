@@ -257,6 +257,7 @@ describe('PluginMultiPortalClientV2', () => {
       icon: 'PartitionOutlined',
       aclSnippet: 'pm.multi-portal',
       showTabs: true,
+      sort: -300,
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledTimes(1);
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
