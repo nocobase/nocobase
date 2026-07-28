@@ -580,7 +580,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
       return publicRepo;
     }),
     lockInternalRepoForUpdate: vi.fn(async () => repo),
-    createRepo: vi.fn(async () => {
+    createRepoForCompositeUseCase: vi.fn(async () => {
       const { vscRepoId: _vscRepoId, ...publicRepo } = repo;
       return publicRepo;
     }),

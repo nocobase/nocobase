@@ -83,7 +83,7 @@ Both directions support `flowModel.step` owners for JS Block, JS Page, JS Field/
 
 ## Workspace ZIP safety
 
-ZIP export packages the current working copy, including unsaved editor content. Entry-scoped export includes only writable paths.
+Repository workspace ZIP export packages the current working copy, including unsaved editor content. Entry-scoped export includes only writable paths. Inline RunJS workspace export packages the repository Head, or the legacy inline source when no repository exists, so it does not include unsaved editor changes.
 
 ZIP import is inspected before editor state changes. Inspection rejects traversal, absolute paths, symlinks, duplicate paths, invalid UTF-8, excessive file counts or byte sizes, and unsafe compression ratios. It is read-only and never creates a commit, changes Head, compiles artifacts, or saves automatically.
 

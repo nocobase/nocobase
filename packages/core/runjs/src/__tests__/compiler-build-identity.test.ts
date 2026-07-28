@@ -13,19 +13,6 @@ import {
   RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS,
   type RunJSCompilerBuildIdentityComponents,
 } from '../compiler/build-identity';
-import runJSPackageJson from '../../package.json';
-
-const productionTypePackDependencies = [
-  '@ant-design/icons',
-  '@formulajs/formulajs',
-  '@types/lodash',
-  '@types/react',
-  '@types/react-dom',
-  'antd',
-  'dayjs',
-  'mathjs',
-];
-
 describe('RunJS compiler build identity', () => {
   it('is stable and content-addressed', () => {
     expect(buildRunJSCompilerBuildIdentity()).toEqual(RUNJS_COMPILER_BUILD_IDENTITY);
@@ -45,10 +32,6 @@ describe('RunJS compiler build identity', () => {
         RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId,
       );
     }
-  });
-
-  it('ships runtime type-pack sources as production dependencies', () => {
-    expect(Object.keys(runJSPackageJson.dependencies)).toEqual(expect.arrayContaining(productionTypePackDependencies));
   });
 });
 

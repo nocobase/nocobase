@@ -1358,7 +1358,6 @@ describe('move to inline integration', () => {
             expect.objectContaining({ path: 'src/shared/used.ts' }),
           ]),
         }),
-        expect.any(Object),
       );
       expect(JSON.stringify(compileEntry.mock.calls)).not.toContain('src/shared/unused.ts');
       expect(preparePush).toHaveBeenCalledWith(
