@@ -54,15 +54,11 @@ export default class extends Plugin {
     transaction?: Transaction;
   }): Promise<TaskStatsRow[]> {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
-    const WorkflowManualTaskCollection = this.db.getCollection('workflowManualTasks');
     const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
-    const qualifiedColumn = (name: string) =>
-      this.db.sequelize.literal(
-        `${this.db.quoteIdentifier(WorkflowManualTaskModel.name)}.${WorkflowManualTaskCollection.getRealFieldName(
-          name,
-          true,
-        )}`,
-      );
+    const qualifiedColumn = (name: string) => {
+      const fieldName = WorkflowManualTaskModel.getAttributes()[name].field ?? name;
+      return this.db.sequelize.col(`${WorkflowManualTaskModel.name}.${fieldName}`);
+    };
     const group = ['userId', 'workflowId'].map((name) => qualifiedColumn(name));
     const countColumn = qualifiedColumn('id');
     const where: Record<string, unknown> = {};
