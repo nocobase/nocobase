@@ -152,11 +152,6 @@
       },
       {
         "type": "custom-link",
-        "label": "向量存储",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "知识库",
         "items": [
           {
