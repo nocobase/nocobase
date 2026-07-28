@@ -76,7 +76,6 @@ vi.mock('../workspace/lightExtensionWorkspaceArchive', () => ({
 
 vi.mock('../vsc-file/public-api', () => {
   return {
-    buildLineDiff: () => [],
     inferLanguageFromPath: (path: string) => {
       const extension = path.split('.').pop();
       return extension === 'ts' || extension === 'tsx' ? 'typescript' : extension || 'text';
@@ -181,7 +180,6 @@ vi.mock('../vsc-file/public-api', () => {
       scene,
       showRunButton,
       previewing,
-      projectRevision,
       readOnly,
       toolbarActions,
       workspaceFiles,
@@ -192,7 +190,6 @@ vi.mock('../vsc-file/public-api', () => {
       scene?: string;
       showRunButton?: boolean;
       previewing?: boolean;
-      projectRevision: number;
       readOnly?: boolean;
       toolbarActions?: React.ReactNode;
       workspaceFiles: Array<{ content: string; path: string }>;
@@ -202,7 +199,6 @@ vi.mock('../vsc-file/public-api', () => {
         data-scene={scene || ''}
         data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
-        data-project-revision={projectRevision}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -406,14 +402,9 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-scene', '');
-    const initialProjectRevision = Number(screen.getByTestId('runjs-code-tab').getAttribute('data-project-revision'));
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'export default function SalesKpi() { return "ok"; }\n' },
     });
-    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
-      'data-project-revision',
-      String(initialProjectRevision + 1),
-    );
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await confirmSaveVersion('Update sales KPI');
 

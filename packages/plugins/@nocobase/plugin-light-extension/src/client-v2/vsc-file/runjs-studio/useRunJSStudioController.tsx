@@ -94,7 +94,6 @@ import {
   useRunJSSourceResource,
 } from './useRunJSSourceResource';
 import {
-  buildLineDiff,
   buildWorkspaceDraftToken,
   buildWorkspaceChanges,
   buildWorkspaceSnapshotChanges,
@@ -413,7 +412,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [entryPath, setEntryPath] = useState(defaultEntryPath);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState('code');
   const [filesCollapsed, setFilesCollapsed] = useState(true);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [consoleEntries, setConsoleEntries] = useState<RunJSConsoleEntry[]>([]);
@@ -425,7 +423,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [saveDiagnostics, setSaveDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnosticsOpen, setSaveDiagnosticsOpen] = useState(false);
   const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
-  const [selectedDiffPath, setSelectedDiffPath] = useState<string | undefined>();
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
@@ -466,7 +463,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const workspaceEditingDisabled = workspaceReadOnly;
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
   const saveSummary = summarizeWorkspaceChanges(baseFiles, files);
-  const showDiff = activeTab === 'diff';
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const historyItems = workspace?.history?.items || [];
   const baseVersion = formatVersion(workspace?.repository?.headSeq);
@@ -478,10 +474,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           repositoryIdentity: workspace.repositoryIdentity,
         })}`
       : undefined;
-  const lineDiffRows = useMemo(
-    () => buildLineDiff(baseFiles, files, selectedDiffPath, false),
-    [baseFiles, files, selectedDiffPath],
-  );
 
   useLayoutEffect(() => {
     if (embedded) {
@@ -541,12 +533,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       }
     };
   }, [exportDownload?.url]);
-
-  useEffect(() => {
-    if (showDiff && activePath) {
-      setSelectedDiffPath(activePath);
-    }
-  }, [activePath, showDiff]);
 
   const appendConsole = useCallback((entry: Omit<RunJSConsoleEntry, 'id'>) => {
     consoleSeqRef.current += 1;
@@ -708,7 +694,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setEntryPath(defaultEntryPath);
     setActivePath(undefined);
     setOpenPaths([]);
-    setActiveTab('code');
     setConsoleEntries([]);
     setSaveOpen(false);
     setVersionMessage('');
@@ -718,7 +703,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setSaveDiagnostics([]);
     setSaveDiagnosticsOpen(false);
     setPreviewArtifact(null);
-    setSelectedDiffPath(undefined);
     setNotice(null);
     setHistoryLoading(false);
     setHistoryLoadingMore(false);
@@ -784,7 +768,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         files: nextCurrentFiles,
         openPaths: [nextActivePath],
       }));
-      setSelectedDiffPath(undefined);
       setPreviewDiagnostics([]);
       setPreviewArtifact(null);
       setRestoreCommit(null);
@@ -954,7 +937,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     activeRenderErrorReporterDisposerRef.current = null;
     clearConsole();
     setActionError(null);
-    setActiveTab('code');
     setPreviewing(true);
     setPreviewDiagnostics([]);
     const requestDraftToken = draftTokenRef.current;
@@ -1392,7 +1374,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         files: nextFiles,
         openPaths: nextActivePath ? [nextActivePath] : [],
       }));
-      setActiveTab('code');
       setNotice({ type: 'info', message: `${t('Restored from')} ${formatVersion(commit.seq)}` });
       appendConsole({
         level: 'info',
@@ -1837,7 +1818,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         files: nextFiles,
         openPaths: nextActivePath ? [nextActivePath] : [],
       }));
-      setActiveTab('code');
       const importedVersion = result.manifest.runtimeVersion;
       if (importedVersion && importedVersion !== value.version) {
         onChange?.({ ...value, version: importedVersion });
@@ -1947,16 +1927,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
   };
 
-  const toggleDiff = () => {
-    if (showDiff) {
-      setActiveTab('code');
-      return;
-    }
-
-    setSelectedDiffPath(activePath || entryPath);
-    setActiveTab('diff');
-  };
-
   const studioSize = resolveStudioSize(props.height, props.minHeight);
   const editorStyle: React.CSSProperties = {
     background: '#fff',
@@ -2025,7 +1995,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
             files: nextFiles,
           };
         });
-        setActiveTab('code');
       },
       getActivePath: () => activePathRef.current,
       getPathAccess: (path, changeType) => {
@@ -2342,7 +2311,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onLoadMore={loadMoreHistory}
                         onRefresh={refreshHistory}
                         onSelect={setRestoreCommit}
-                        onViewChanges={toggleDiff}
                         t={t}
                       />
                     </div>
@@ -2364,8 +2332,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         activePath={activePath}
                         authoringSurfaceId={authoringSurfaceId}
                         busy={previewing}
-                        diffRows={lineDiffRows}
-                        isDiff={showDiff}
                         jsonSchemaResolver={props.workspaceJsonSchemaResolver}
                         filesCollapsed={filesCollapsed}
                         fullscreenControl={{
@@ -2374,7 +2340,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         }}
                         onChange={updateActiveFileContent}
                         onCloseFile={closeOpenFile}
-                        onDiffToggle={toggleDiff}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
                         onRunPreview={runPreview}
@@ -2400,7 +2365,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                       onJump={(entry) => {
                         if (entry.path) {
                           openFilePath(entry.path);
-                          setActiveTab('code');
                         }
                       }}
                       onResize={setConsoleHeight}
@@ -2479,7 +2443,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         onJump={(diagnostic) => {
           if (!diagnostic.path) return;
           openFilePath(diagnostic.path);
-          setActiveTab('code');
           setSaveDiagnosticsOpen(false);
         }}
         open={saveDiagnosticsOpen}

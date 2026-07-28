@@ -587,7 +587,6 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Import workspace' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();
@@ -1317,27 +1316,6 @@ describe('runJSStudioProvider', () => {
       code: 'ctx.render("main");',
       version: 'v2',
     });
-  });
-
-  it('toggles the editor area into a diff against the saved file', async () => {
-    renderEditor();
-    const editor = (await screen.findByLabelText('Edit file content')) as HTMLTextAreaElement;
-
-    fireEvent.change(editor, { target: { value: 'return 2;' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Diff' }));
-
-    const diffOutput = screen.getByLabelText('Diff output');
-    expect(within(diffOutput).getByText('Saved')).toBeTruthy();
-    expect(within(diffOutput).getByText('Base')).toBeTruthy();
-    expect(within(diffOutput).getByText('Current editor')).toBeTruthy();
-    expect(within(diffOutput).getByText('Unsaved changes')).toBeTruthy();
-    expect(within(diffOutput).getByText('return 1;')).toBeTruthy();
-    expect(within(diffOutput).getByText('return 2;')).toBeTruthy();
-    expect(screen.queryByLabelText('Edit file content')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Back to editor' })).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Diff' }));
-    expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toBe('return 2;');
   });
 
   it('shows authoritative Save diagnostics without closing the version dialog', async () => {

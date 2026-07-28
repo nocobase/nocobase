@@ -21,7 +21,6 @@ import type { RunJSSourceFileChange } from '../../../shared/vsc-file/runjs-sourc
 import type { VscFileChange } from '../../../shared/vsc-file/types';
 import type {
   RunJSChangeSummary,
-  RunJSLineDiffRow,
   RunJSPathValidationResult,
   RunJSSourceHistoryItem,
   RunJSWorkspaceFile,
@@ -202,79 +201,6 @@ export function summarizeWorkspaceChanges(
     additions,
     deletions,
   };
-}
-
-export function buildLineDiff(
-  baseFiles: RunJSWorkspaceFile[],
-  nextFiles: RunJSWorkspaceFile[],
-  path: string | undefined,
-  ignoreWhitespace: boolean,
-): RunJSLineDiffRow[] {
-  if (!path) {
-    return [];
-  }
-
-  const base = normalizeWorkspaceFiles(baseFiles).find((file) => file.path === path)?.content || '';
-  const next = normalizeWorkspaceFiles(nextFiles).find((file) => file.path === path)?.content || '';
-  const baseLines = splitLines(base);
-  const nextLines = splitLines(next);
-  const maxLength = Math.max(baseLines.length, nextLines.length);
-  const rows: RunJSLineDiffRow[] = [];
-
-  for (let index = 0; index < maxLength; index += 1) {
-    const oldLine = baseLines[index];
-    const newLine = nextLines[index];
-    const comparableOld = ignoreWhitespace ? oldLine?.trim() : oldLine;
-    const comparableNew = ignoreWhitespace ? newLine?.trim() : newLine;
-
-    if (oldLine === undefined && newLine !== undefined) {
-      rows.push({
-        key: `insert:${index}`,
-        type: 'insert',
-        content: newLine,
-        newLineNumber: index + 1,
-      });
-      continue;
-    }
-
-    if (oldLine !== undefined && newLine === undefined) {
-      rows.push({
-        key: `delete:${index}`,
-        type: 'delete',
-        content: oldLine,
-        oldLineNumber: index + 1,
-      });
-      continue;
-    }
-
-    if (comparableOld !== comparableNew && oldLine !== undefined && newLine !== undefined) {
-      rows.push({
-        key: `delete:${index}`,
-        type: 'delete',
-        content: oldLine,
-        oldLineNumber: index + 1,
-      });
-      rows.push({
-        key: `insert:${index}`,
-        type: 'insert',
-        content: newLine,
-        newLineNumber: index + 1,
-      });
-      continue;
-    }
-
-    if (oldLine !== undefined) {
-      rows.push({
-        key: `context:${index}`,
-        type: 'context',
-        content: oldLine,
-        oldLineNumber: index + 1,
-        newLineNumber: index + 1,
-      });
-    }
-  }
-
-  return rows;
 }
 
 export function mergeHistoryItems(

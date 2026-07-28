@@ -10,7 +10,6 @@
 import {
   CloseOutlined,
   DeleteOutlined,
-  DiffOutlined,
   DownloadOutlined,
   DownOutlined,
   EditOutlined,
@@ -27,32 +26,12 @@ import {
   CopyOutlined,
 } from '@ant-design/icons';
 import { CodeEditor, type CodeEditorFullscreenControl, type CodeEditorJsonSchema } from '@nocobase/client-v2';
-import {
-  Alert,
-  Button,
-  Empty,
-  Input,
-  List,
-  Modal,
-  Popconfirm,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-  message,
-  theme,
-} from 'antd';
+import { Alert, Button, Empty, Input, List, Modal, Popconfirm, Space, Tooltip, Typography, message, theme } from 'antd';
 import type { InputRef } from 'antd/es/input';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RunJSCompileDiagnostic } from './types';
-import type {
-  RunJSChangeSummary,
-  RunJSConsoleEntry,
-  RunJSLineDiffRow,
-  RunJSSourceHistoryItem,
-  RunJSWorkspaceFile,
-} from './types';
+import type { RunJSChangeSummary, RunJSConsoleEntry, RunJSSourceHistoryItem, RunJSWorkspaceFile } from './types';
 import type { PendingDirtyAction } from './studioInternalTypes';
 import {
   buildFileTreeRows,
@@ -830,13 +809,9 @@ export function CodeTab(props: {
   activePath?: string;
   authoringSurfaceId?: string;
   busy?: boolean;
-  diffRows: RunJSLineDiffRow[];
-  emptyDiffDescription?: string;
   filesCollapsed: boolean;
-  isDiff: boolean;
   onChange: (content: string) => void;
   onCloseFile: (path: string) => void;
-  onDiffToggle: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
   onRunPreview?: () => void;
@@ -858,13 +833,9 @@ export function CodeTab(props: {
     activePath,
     authoringSurfaceId,
     busy = false,
-    diffRows,
-    emptyDiffDescription,
     filesCollapsed,
-    isDiff,
     onChange,
     onCloseFile,
-    onDiffToggle,
     onFilesCollapsedChange,
     onOpenFile,
     onRunPreview,
@@ -929,63 +900,16 @@ export function CodeTab(props: {
       </div>
     </div>
   );
-  // Order: text actions first (Run), then icon actions (Diff + move/source toolbar contributions).
-  // Keeps Snippets/Run text buttons contiguous and icon buttons (Diff, Move to …) grouped after them.
-  const runAndDiffActions = (
+  const runActions = (
     <Space size={8}>
-      <Space.Compact>
-        {showRunButton ? (
-          <Button disabled={isDiff || !onRunPreview || busy} loading={previewing} onClick={onRunPreview} size="small">
-            {t('Run')}
-          </Button>
-        ) : null}
-        <Tooltip title={t('Diff')}>
-          <Button
-            aria-label={t('Diff')}
-            icon={<DiffOutlined />}
-            onClick={onDiffToggle}
-            size="small"
-            type={isDiff ? 'primary' : 'default'}
-          />
-        </Tooltip>
-      </Space.Compact>
+      {showRunButton ? (
+        <Button disabled={!onRunPreview || busy} loading={previewing} onClick={onRunPreview} size="small">
+          {t('Run')}
+        </Button>
+      ) : null}
       {toolbarActions}
     </Space>
   );
-
-  if (isDiff) {
-    return (
-      <section
-        aria-label={t('Code')}
-        style={{
-          border: '1px solid #d9d9d9',
-          borderRadius: 6,
-          display: 'flex',
-          flex: 1,
-          flexDirection: 'column',
-          height: '100%',
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            alignItems: 'center',
-            borderBottom: '1px solid #d9d9d9',
-            display: 'flex',
-            gap: 8,
-            justifyContent: 'space-between',
-            minWidth: 0,
-            padding: 8,
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>{fileTabsContent}</div>
-          {runAndDiffActions}
-        </div>
-        <SideBySideDiffView emptyDescription={emptyDiffDescription} rows={diffRows} t={t} />
-      </section>
-    );
-  }
 
   return (
     <section
@@ -1005,15 +929,15 @@ export function CodeTab(props: {
         authoringSurfaceId={authoringSurfaceId}
         enableLinter={isScriptFile}
         height="100%"
-        language={isDiff ? 'diff' : editorLanguage}
+        language={editorLanguage}
         jsonSchema={jsonSchema}
         minHeight={0}
         moduleImportCompletions={moduleImportCompletions}
         name={activeFile.path}
-        onChange={isDiff ? undefined : onChange}
+        onChange={onChange}
         placeholder={t('Edit file content')}
-        readonly={readOnly || isDiff}
-        runButton={runAndDiffActions}
+        readonly={readOnly}
+        runButton={runActions}
         scene={scene}
         showLogs={false}
         toolbarLeftExtra={fileTabsContent}
@@ -1189,199 +1113,6 @@ function OpenFileTabs(props: {
   );
 }
 
-type SideBySideDiffRow = {
-  key: string;
-  type: 'context' | 'delete' | 'insert' | 'change';
-  oldLineNumber?: number;
-  newLineNumber?: number;
-  oldContent?: string;
-  newContent?: string;
-};
-
-function buildSideBySideDiffRows(rows: RunJSLineDiffRow[]): SideBySideDiffRow[] {
-  const result: SideBySideDiffRow[] = [];
-
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index];
-    const next = rows[index + 1];
-
-    if (
-      row.type === 'delete' &&
-      next?.type === 'insert' &&
-      row.oldLineNumber !== undefined &&
-      row.oldLineNumber === next.newLineNumber
-    ) {
-      result.push({
-        key: `${row.key}:${next.key}`,
-        type: 'change',
-        oldLineNumber: row.oldLineNumber,
-        newLineNumber: next.newLineNumber,
-        oldContent: row.content,
-        newContent: next.content,
-      });
-      index += 1;
-      continue;
-    }
-
-    if (row.type === 'context') {
-      result.push({
-        key: row.key,
-        type: 'context',
-        oldLineNumber: row.oldLineNumber,
-        newLineNumber: row.newLineNumber,
-        oldContent: row.content,
-        newContent: row.content,
-      });
-      continue;
-    }
-
-    if (row.type === 'delete') {
-      result.push({
-        key: row.key,
-        type: 'delete',
-        oldLineNumber: row.oldLineNumber,
-        oldContent: row.content,
-      });
-      continue;
-    }
-
-    result.push({
-      key: row.key,
-      type: 'insert',
-      newLineNumber: row.newLineNumber,
-      newContent: row.content,
-    });
-  }
-
-  return result;
-}
-
-function DiffCodeLine(props: {
-  content?: string;
-  lineNumber?: number;
-  tone: 'neutral' | 'delete' | 'insert' | 'blank';
-}) {
-  const { content = '', lineNumber, tone } = props;
-  const background =
-    tone === 'delete' ? '#fff1f0' : tone === 'insert' ? '#f6ffed' : tone === 'blank' ? '#fafafa' : '#fff';
-  const borderColor = tone === 'delete' ? '#ffccc7' : tone === 'insert' ? '#b7eb8f' : 'transparent';
-
-  return (
-    <div
-      style={{
-        background,
-        borderLeft: `3px solid ${borderColor}`,
-        display: 'grid',
-        gridTemplateColumns: '48px minmax(0, 1fr)',
-        minHeight: 22,
-      }}
-    >
-      <span
-        style={{
-          color: '#8c8c8c',
-          padding: '2px 8px',
-          textAlign: 'right',
-          userSelect: 'none',
-        }}
-      >
-        {lineNumber ?? ''}
-      </span>
-      <code
-        style={{
-          color: tone === 'blank' ? '#bfbfbf' : '#262626',
-          display: 'block',
-          fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
-          padding: '2px 8px',
-          whiteSpace: 'pre',
-        }}
-      >
-        {content || ' '}
-      </code>
-    </div>
-  );
-}
-
-function SideBySideDiffView(props: {
-  emptyDescription?: string;
-  rows: RunJSLineDiffRow[];
-  t: (key: string) => string;
-}) {
-  const { emptyDescription, rows, t } = props;
-  const sideBySideRows = buildSideBySideDiffRows(rows);
-  const hasChanges = rows.some((row) => row.type !== 'context');
-
-  return (
-    <div
-      aria-label={t('Diff output')}
-      style={{
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        minHeight: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          background: '#fafafa',
-          borderBottom: '1px solid #f0f0f0',
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-        }}
-      >
-        <div style={{ borderRight: '1px solid #f0f0f0', padding: '8px 12px' }}>
-          <Space>
-            <Typography.Text strong>{t('Saved')}</Typography.Text>
-            <Tag>{t('Base')}</Tag>
-          </Space>
-        </div>
-        <div style={{ padding: '8px 12px' }}>
-          <Space>
-            <Typography.Text strong>{t('Current editor')}</Typography.Text>
-            <Tag color="gold">{t('Unsaved changes')}</Tag>
-          </Space>
-        </div>
-      </div>
-      {!hasChanges ? (
-        <div style={{ padding: 24 }}>
-          <Empty description={emptyDescription || t('No changes between current editor and saved version')} />
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            flex: 1,
-            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-            minHeight: 0,
-            overflow: 'auto',
-          }}
-        >
-          <div style={{ borderRight: '1px solid #f0f0f0', minWidth: 0 }}>
-            {sideBySideRows.map((row) => (
-              <DiffCodeLine
-                content={row.oldContent}
-                key={`${row.key}:old`}
-                lineNumber={row.oldLineNumber}
-                tone={row.type === 'insert' ? 'blank' : row.type === 'context' ? 'neutral' : 'delete'}
-              />
-            ))}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            {sideBySideRows.map((row) => (
-              <DiffCodeLine
-                content={row.newContent}
-                key={`${row.key}:new`}
-                lineNumber={row.newLineNumber}
-                tone={row.type === 'delete' ? 'blank' : row.type === 'context' ? 'neutral' : 'insert'}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function VersionHistoryDock(props: {
   baseVersion: string;
   collapsed: boolean;
@@ -1395,7 +1126,6 @@ export function VersionHistoryDock(props: {
   onLoadMore: () => void;
   onRefresh: () => void;
   onSelect: (commit: RunJSSourceHistoryItem) => void;
-  onViewChanges: () => void;
   restoreDisabled?: boolean;
   restoreDisabledReason?: string;
   t: (key: string) => string;
@@ -1413,7 +1143,6 @@ export function VersionHistoryDock(props: {
     onLoadMore,
     onRefresh,
     onSelect,
-    onViewChanges,
     restoreDisabled = false,
     restoreDisabledReason,
     t,
@@ -1468,9 +1197,6 @@ export function VersionHistoryDock(props: {
                 <Typography.Text type="secondary">
                   {t('Unsaved changes')} · {`${t('Based on')} ${baseVersion}`}
                 </Typography.Text>
-                <Button onClick={onViewChanges} size="small" type="link">
-                  {t('View diff')}
-                </Button>
               </Space>
             </div>
           ) : null}

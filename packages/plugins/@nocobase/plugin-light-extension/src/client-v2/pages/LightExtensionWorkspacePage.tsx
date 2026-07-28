@@ -26,7 +26,6 @@ import {
   RestoreVersionModal,
   SaveVersionModal,
   VersionHistoryDock,
-  buildLineDiff,
   inferLanguageFromPath,
   mergeHistoryItems,
   summarizeWorkspaceChanges,
@@ -180,7 +179,6 @@ function LightExtensionWorkspacePage({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [historyNextBeforeSeq, setHistoryNextBeforeSeq] = useState<number | null>(null);
-  const [isDiff, setIsDiff] = useState(false);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -266,7 +264,6 @@ function LightExtensionWorkspacePage({
           setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
         }
         setDiagnostics([]);
-        setIsDiff(false);
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
       } finally {
@@ -294,10 +291,6 @@ function LightExtensionWorkspacePage({
   const filesForSave = files;
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
-  const diffRows = useMemo(
-    () => buildLineDiff(baseFiles, filesForSave, activePath, false),
-    [activePath, baseFiles, filesForSave],
-  );
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
   const canWrite = Boolean(repo && repo.lifecycleStatus !== 'archived');
   const hasBlockedDirtyChanges = dirtyChanges.some(
@@ -337,7 +330,6 @@ function LightExtensionWorkspacePage({
 
     setActivePath(path);
     setOpenPaths((current) => (current.includes(path) ? current : [...current, path]));
-    setIsDiff(false);
   }, []);
 
   const closeOpenFile = useCallback(
@@ -621,7 +613,6 @@ function LightExtensionWorkspacePage({
       setFolders(collectWorkspaceFolders(nextFiles));
       setActivePath(nextActivePath);
       setOpenPaths(nextActivePath ? [nextActivePath] : []);
-      setIsDiff(false);
       setNotice({ type: 'info', message: `${t('Restored from')} v${commit.seq}` });
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to restore version') });
@@ -855,7 +846,6 @@ function LightExtensionWorkspacePage({
           }
           return nextOpenPaths;
         });
-        setIsDiff(false);
       },
       getActivePath: () => authoringActivePathRef.current,
       getPathAccess: (path) => {
@@ -1063,7 +1053,6 @@ function LightExtensionWorkspacePage({
         setActivePath(nextActivePath);
         setOpenPaths(nextActivePath ? [nextActivePath] : []);
         setDiagnostics([]);
-        setIsDiff(false);
         message.success(t('ZIP imported. Save to create a new version.'));
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to import ZIP') });
@@ -1228,7 +1217,6 @@ function LightExtensionWorkspacePage({
                       onLoadMore={loadMoreHistory}
                       onRefresh={refreshHistory}
                       onSelect={setRestoreCommit}
-                      onViewChanges={() => setIsDiff(true)}
                       t={studioT}
                     />
                   </div>
@@ -1258,18 +1246,14 @@ function LightExtensionWorkspacePage({
                         activePath={activePath}
                         authoringSurfaceId={authoringSurfaceId}
                         busy={previewing}
-                        diffRows={diffRows}
-                        emptyDiffDescription={t('No changes between current editor and saved source')}
                         filesCollapsed={filesCollapsed}
                         fullscreenControl={{
                           isFullscreen: workspaceFullscreen.isFullscreen,
                           toggleFullscreen: workspaceFullscreen.toggleFullscreen,
                         }}
-                        isDiff={isDiff}
                         jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
                         onChange={updateActiveFile}
                         onCloseFile={closeOpenFile}
-                        onDiffToggle={() => setIsDiff((current) => !current)}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
                         onRunPreview={canPreview ? runPreview : undefined}
@@ -1284,7 +1268,6 @@ function LightExtensionWorkspacePage({
                             <Tooltip title={t('Move to inline code')}>
                               <Button
                                 aria-label={t('Move to inline code')}
-                                disabled={isDiff}
                                 icon={<ImportOutlined />}
                                 loading={movingToInline}
                                 onClick={confirmMoveToInline}

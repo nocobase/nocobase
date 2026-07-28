@@ -149,14 +149,6 @@ export interface RunJSConsoleEntry {
   column?: number;
 }
 
-export interface RunJSLineDiffRow {
-  key: string;
-  type: 'context' | 'delete' | 'insert';
-  content: string;
-  oldLineNumber?: number;
-  newLineNumber?: number;
-}
-
 export interface RunJSChangeSummary {
   files: number;
   additions: number;

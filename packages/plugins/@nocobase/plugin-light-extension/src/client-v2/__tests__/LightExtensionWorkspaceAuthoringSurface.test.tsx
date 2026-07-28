@@ -68,7 +68,6 @@ vi.mock('@nocobase/client-v2', async () => {
 vi.mock('../components/DiagnosticsPanel', () => ({ default: () => null }));
 
 vi.mock('../vsc-file/public-api', () => ({
-  buildLineDiff: () => [],
   inferLanguageFromPath: (path: string) => {
     if (path.endsWith('.tsx')) return 'typescriptreact';
     if (path.endsWith('.ts')) return 'typescript';

@@ -11,7 +11,6 @@ import { describe, expect, it } from 'vitest';
 
 import type { RunJSSourceHistoryItem } from '../types';
 import {
-  buildLineDiff,
   buildWorkspaceDraftToken,
   buildWorkspaceChanges,
   buildWorkspaceSnapshotChanges,
@@ -142,21 +141,6 @@ describe('workspaceUtils', () => {
       custom: true,
       folders: ['src/empty'],
     });
-  });
-
-  it('builds line diff rows for changed content', () => {
-    expect(
-      buildLineDiff(
-        [{ path: 'src/index.ts', content: 'const value = 1;\n' }],
-        [{ path: 'src/index.ts', content: 'const value = 2;\n' }],
-        'src/index.ts',
-        false,
-      ),
-    ).toEqual([
-      { key: 'delete:0', type: 'delete', content: 'const value = 1;', oldLineNumber: 1 },
-      { key: 'insert:0', type: 'insert', content: 'const value = 2;', newLineNumber: 1 },
-      { key: 'context:1', type: 'context', content: '', oldLineNumber: 2, newLineNumber: 2 },
-    ]);
   });
 
   it('merges history pages without duplicating commits', () => {
