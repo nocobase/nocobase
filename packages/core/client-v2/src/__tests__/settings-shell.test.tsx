@@ -8,6 +8,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
+import { ConfigProvider } from 'antd';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsShell } from '../settings-app/SettingsShell';
@@ -61,5 +62,17 @@ describe('SettingsShell', () => {
     expect(screen.getByText('settings content')).toBeInTheDocument();
     expect(screen.queryByTestId('plugin-settings-button')).not.toBeInTheDocument();
     expect(screen.queryByTestId('notifications-button')).not.toBeInTheDocument();
+  });
+
+  it('uses the Ant Design primary color for the header background', () => {
+    render(
+      <ConfigProvider theme={{ token: { colorPrimary: '#123456' } }}>
+        <SettingsShell>
+          <div>settings content</div>
+        </SettingsShell>
+      </ConfigProvider>,
+    );
+
+    expect(screen.getByRole('banner')).toHaveStyle({ background: '#123456' });
   });
 });

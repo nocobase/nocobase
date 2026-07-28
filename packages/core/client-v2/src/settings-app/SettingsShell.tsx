@@ -17,7 +17,6 @@ import {
   type UserCenterTopbarActionModel,
 } from '../flow/models/topbar/UserCenterTopbarActionModel';
 import { useApp } from '../hooks/useApp';
-import type { CustomToken } from '../theme';
 
 const rootStyle: React.CSSProperties = {
   height: '100vh',
@@ -51,7 +50,6 @@ const embedContainerStyle: React.CSSProperties = {
 export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
   const { token } = antdTheme.useToken();
-  const customToken = token as CustomToken;
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -65,7 +63,7 @@ export const SettingsShell: FC = ({ children }) => {
     <Layout style={rootStyle}>
       <Layout.Header
         style={{
-          background: customToken.colorBgHeader,
+          background: token.colorPrimary,
           height: 46,
           lineHeight: '46px',
           paddingInline: token.paddingLG,
