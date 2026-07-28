@@ -27,9 +27,11 @@ export const AuthProvider: React.FC = (props) => {
 
       params.delete('token');
       const newSearch = params.toString();
+      // 避免清 token 时停在空白 /
+      const pathname = location.pathname === '/' ? '/admin' : location.pathname;
       navigate(
         {
-          pathname: location.pathname,
+          pathname,
           search: newSearch ? `?${newSearch}` : '',
         },
         { replace: true },
