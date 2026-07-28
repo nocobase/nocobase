@@ -36,14 +36,27 @@ describe('settings dev proxy', () => {
     expect(isSettingsDevPath(pathname, '/nocobase/')).toBe(expected);
   });
 
+  it.each([
+    ['/settings', '/', '/settings/'],
+    ['/settings?from=admin', '/', '/settings/?from=admin'],
+    ['/apps/demo/settings', '/', '/settings/'],
+    ['/_app/demo/settings?from=admin', '/', '/settings/?from=admin'],
+    ['/nocobase/settings', '/nocobase/', '/nocobase/settings/'],
+    ['/nocobase/apps/demo/settings?from=admin', '/nocobase/', '/nocobase/settings/?from=admin'],
+    ['/nocobase/_app/demo/settings#portal', '/nocobase/', '/nocobase/settings/#portal'],
+  ])('normalizes a Settings root to the dev-server base: %s', (pathname, publicPath, expected) => {
+    expect(rewriteSettingsDevProxyPath(pathname, publicPath)).toBe(expected);
+  });
+
   it('rewrites application-scoped documents to the Settings dev-server base', () => {
     expect(rewriteSettingsDevProxyPath('/apps/demo/settings/workflow/workflows/1?tab=nodes', '/')).toBe(
       '/settings/workflow/workflows/1?tab=nodes',
     );
-    expect(rewriteSettingsDevProxyPath('/_app/demo/settings?from=admin', '/')).toBe('/settings?from=admin');
     expect(rewriteSettingsDevProxyPath('/nocobase/apps/demo/settings/a#hash', '/nocobase/')).toBe(
       '/nocobase/settings/a#hash',
     );
+    expect(rewriteSettingsDevProxyPath('/settings/assets/index.js', '/')).toBe('/settings/assets/index.js');
+    expect(rewriteSettingsDevProxyPath('/settings/__rspack_hmr', '/')).toBe('/settings/__rspack_hmr');
   });
 
   it('creates a websocket-capable proxy for the Settings port', () => {

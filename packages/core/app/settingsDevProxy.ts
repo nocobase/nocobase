@@ -34,8 +34,12 @@ export function isSettingsDevPath(url: string, appPublicPath: string) {
 
 export function rewriteSettingsDevProxyPath(url: string, appPublicPath: string) {
   const publicPath = normalizePublicPath(appPublicPath);
+  const settingsRoot = `${publicPath}settings`;
   const scopedSettingsPrefix = new RegExp(`^${escapeRegExp(publicPath)}(?:apps|_app)/[^/]+/settings(?=/|[?#]|$)`);
-  return url.replace(scopedSettingsPrefix, `${publicPath}settings`);
+  const rewrittenUrl = url.replace(scopedSettingsPrefix, settingsRoot);
+  const settingsRootWithoutTrailingSlash = new RegExp(`^${escapeRegExp(settingsRoot)}(?=[?#]|$)`);
+
+  return rewrittenUrl.replace(settingsRootWithoutTrailingSlash, `${settingsRoot}/`);
 }
 
 export function createSettingsDevProxyOptions(appPublicPath: string, settingsPort: number) {
