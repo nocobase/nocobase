@@ -152,11 +152,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Векторное хранилище",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "База знаний",
         "items": [
           {

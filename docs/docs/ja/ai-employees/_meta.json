@@ -152,11 +152,6 @@
       },
       {
         "type": "custom-link",
-        "label": "ベクトルストレージ",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "ナレッジベース",
         "items": [
           {

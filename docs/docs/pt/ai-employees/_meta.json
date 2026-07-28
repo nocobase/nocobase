@@ -152,11 +152,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Armazenamento vetorial",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Base de conhecimento",
         "items": [
           {

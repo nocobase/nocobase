@@ -152,11 +152,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Vektorspeicher",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Wissensdatenbank",
         "items": [
           {

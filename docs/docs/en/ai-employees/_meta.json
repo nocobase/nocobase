@@ -152,11 +152,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Vector Store",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Knowledge Base",
         "items": [
           {
