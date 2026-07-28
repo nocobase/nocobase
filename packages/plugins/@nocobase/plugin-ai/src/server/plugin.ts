@@ -306,6 +306,12 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiTools', 'list', 'loggedIn');
     this.app.acl.allow('aiSkills', 'list', 'loggedIn');
 
+    this.app.acl.addFixedParams('aiFiles', 'get', () => ({
+      filter: {
+        createdById: '{{ ctx.state.currentUser.id }}',
+      },
+    }));
+
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {
       workflowSnippet.actions.push('ai:listModels');
