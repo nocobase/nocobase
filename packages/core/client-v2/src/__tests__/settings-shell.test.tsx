@@ -12,6 +12,7 @@ import { ConfigProvider } from 'antd';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsShell } from '../settings-app/SettingsShell';
+import type { ThemeConfig } from '../theme';
 
 const userCenterModel = { uid: 'settings-user-center' };
 const createModel = vi.fn(() => userCenterModel);
@@ -64,15 +65,24 @@ describe('SettingsShell', () => {
     expect(screen.queryByTestId('notifications-button')).not.toBeInTheDocument();
   });
 
-  it('uses the Ant Design primary color for the header background', () => {
+  it('keeps the designated header color when the shared header token uses its dark fallback', () => {
     render(
-      <ConfigProvider theme={{ token: { colorPrimary: '#123456' } }}>
+      <ConfigProvider
+        theme={
+          {
+            token: {
+              colorBgHeader: '#001529',
+              colorPrimary: '#1777FF',
+            },
+          } as ThemeConfig
+        }
+      >
         <SettingsShell>
           <div>settings content</div>
         </SettingsShell>
       </ConfigProvider>,
     );
 
-    expect(screen.getByRole('banner')).toHaveStyle({ background: '#123456' });
+    expect(screen.getByRole('banner')).toHaveStyle({ background: '#176CE1' });
   });
 });

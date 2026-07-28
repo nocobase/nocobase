@@ -8,7 +8,7 @@
  */
 
 import { FlowModelRenderer } from '@nocobase/flow-engine';
-import { Layout, theme as antdTheme } from 'antd';
+import { ConfigProvider, Layout, theme as antdTheme, type ThemeConfig } from 'antd';
 import React, { type FC } from 'react';
 import { HelpLite } from '../flow/admin-shell/admin-layout/HelpLite';
 import { NocoBaseLogo } from '../flow/admin-shell/admin-layout/NocoBaseLogo';
@@ -17,6 +17,14 @@ import {
   type UserCenterTopbarActionModel,
 } from '../flow/models/topbar/UserCenterTopbarActionModel';
 import { useApp } from '../hooks/useApp';
+
+const settingsShellTheme: ThemeConfig = {
+  components: {
+    Layout: {
+      headerBg: '#176CE1',
+    },
+  },
+};
 
 const rootStyle: React.CSSProperties = {
   height: '100vh',
@@ -60,25 +68,26 @@ export const SettingsShell: FC = ({ children }) => {
     : null;
 
   return (
-    <Layout style={rootStyle}>
-      <Layout.Header
-        style={{
-          background: token.colorPrimary,
-          height: 46,
-          lineHeight: '46px',
-          paddingInline: token.paddingLG,
-        }}
-      >
-        <div style={headerContentStyle}>
-          <NocoBaseLogo />
-          <div style={actionsStyle}>
-            <HelpLite />
-            {userCenter ? <FlowModelRenderer model={userCenter} /> : null}
+    <ConfigProvider theme={settingsShellTheme}>
+      <Layout style={rootStyle}>
+        <Layout.Header
+          style={{
+            height: 46,
+            lineHeight: '46px',
+            paddingInline: token.paddingLG,
+          }}
+        >
+          <div style={headerContentStyle}>
+            <NocoBaseLogo />
+            <div style={actionsStyle}>
+              <HelpLite />
+              {userCenter ? <FlowModelRenderer model={userCenter} /> : null}
+            </div>
           </div>
-        </div>
-      </Layout.Header>
-      <Layout.Content style={contentStyle}>{children}</Layout.Content>
-      <div id="nocobase-embed-container" style={embedContainerStyle} />
-    </Layout>
+        </Layout.Header>
+        <Layout.Content style={contentStyle}>{children}</Layout.Content>
+        <div id="nocobase-embed-container" style={embedContainerStyle} />
+      </Layout>
+    </ConfigProvider>
   );
 };
