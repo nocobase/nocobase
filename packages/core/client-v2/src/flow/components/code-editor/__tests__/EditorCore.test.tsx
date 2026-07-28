@@ -15,8 +15,8 @@ import {
   type CompletionSource,
 } from '@codemirror/autocomplete';
 import { syntaxTree } from '@codemirror/language';
-import { diagnosticCount } from '@codemirror/lint';
-import { Transaction } from '@codemirror/state';
+import { diagnosticCount, forceLinting } from '@codemirror/lint';
+import { EditorState, Transaction } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -24,6 +24,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CodeEditor } from '..';
 import { EditorCore } from '../core/EditorCore';
+
+function hasParserError(state: EditorState): boolean {
+  let hasError = false;
+  syntaxTree(state).iterate({
+    enter: (node) => {
+      hasError ||= node.type.isError;
+    },
+  });
+  return hasError;
+}
 
 describe('EditorCore', () => {
   const jsonCompletionSchema = {
@@ -129,7 +139,7 @@ describe('EditorCore', () => {
     expect(document.activeElement).toBe(originalContent);
   });
 
-  it('keeps editor identity and selection when switching active file content and language', () => {
+  it('keeps editor identity, selection, and parser dialect when switching active files', () => {
     const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
     const { container, rerender } = render(
       <EditorCore language="json" value={'{\n  "key": "demo"\n}'} viewRef={viewRef} />,
@@ -142,13 +152,57 @@ describe('EditorCore', () => {
     originalView?.dispatch({ selection: { anchor: 4, head: 9 } });
     originalContent?.focus();
 
-    rerender(<EditorCore language="typescript" value={'const active = true;\n'} viewRef={viewRef} />);
+    rerender(<EditorCore language="typescript" value={'const active: boolean = true;\n'} viewRef={viewRef} />);
 
     expect(viewRef.current).toBe(originalView);
-    expect(viewRef.current?.state.doc.toString()).toBe('const active = true;\n');
+    expect(viewRef.current?.state.doc.toString()).toBe('const active: boolean = true;\n');
     expect(viewRef.current?.state.selection.main).toMatchObject({ anchor: 4, head: 9 });
     expect(syntaxTree(viewRef.current?.state || originalView.state).topNode.name).not.toBe('JsonText');
+    expect(hasParserError(viewRef.current?.state || originalView.state)).toBe(false);
+
+    rerender(
+      <EditorCore
+        language="tsx"
+        value={'const View = ({ title }: { title: string }) => <h1>{title}</h1>;\n'}
+        viewRef={viewRef}
+      />,
+    );
+
+    expect(viewRef.current).toBe(originalView);
+    expect(viewRef.current?.state.selection.main).toMatchObject({ anchor: 4, head: 9 });
+    expect(hasParserError(viewRef.current?.state || originalView.state)).toBe(false);
     expect(document.activeElement).toBe(originalContent);
+  });
+
+  it.each([
+    ['typescript', 'const count: number = 1;'],
+    ['tsx', 'const View = ({ title }: { title: string }) => <h1>{title}</h1>;'],
+  ])('parses %s without TypeScript false-positive diagnostics', async (language, value) => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    render(<EditorCore enableLinter language={language} value={value} viewRef={viewRef} />);
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    forceLinting(view);
+    await Promise.resolve();
+
+    expect(hasParserError(view.state)).toBe(false);
+    expect(diagnosticCount(view.state)).toBe(0);
+  });
+
+  it('still reports JavaScript syntax errors', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    render(<EditorCore enableLinter language="javascript" value="const broken = ;" viewRef={viewRef} />);
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    forceLinting(view);
+
+    await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0));
   });
 
   it('wires JSON Schema validation into CodeMirror', async () => {
@@ -174,6 +228,48 @@ describe('EditorCore', () => {
     }
 
     await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0));
+  });
+
+  it('renders and clears authoritative external diagnostics', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const value = `const App = () => <div />;\nsdfsdf();`;
+    const { rerender } = render(
+      <EditorCore
+        diagnostics={[
+          {
+            column: 1,
+            line: 2,
+            message: "Cannot find name 'sdfsdf'.",
+            severity: 'error',
+            source: 'runjs-compiler',
+          },
+        ]}
+        enableLinter
+        fileName="src/client/index.tsx"
+        language="typescript"
+        value={value}
+        viewRef={viewRef}
+      />,
+    );
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    await waitFor(() => expect(diagnosticCount(view.state)).toBe(1));
+
+    rerender(
+      <EditorCore
+        diagnostics={[]}
+        enableLinter
+        fileName="src/client/index.tsx"
+        language="typescript"
+        value={value}
+        viewRef={viewRef}
+      />,
+    );
+
+    await waitFor(() => expect(diagnosticCount(view.state)).toBe(0));
   });
 
   it('filters JSON Schema completions by the typed property name', async () => {

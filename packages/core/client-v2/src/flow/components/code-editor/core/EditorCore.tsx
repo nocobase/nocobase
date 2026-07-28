@@ -32,6 +32,7 @@ import {
   type CodeEditorJsonSchemaRef,
 } from '../jsonLanguageService';
 import { createJavaScriptLinter } from '../linter';
+import type { CodeEditorDiagnostic } from '../types';
 import { resolveTooltipParent } from './tooltipParent';
 
 const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
@@ -41,8 +42,58 @@ const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
 
 const tabCompletionKeymap = Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletionOrKeepPending }]));
 
-function isJsonLanguage(language: string | undefined): boolean {
-  return language?.trim().toLowerCase() === 'json';
+function createLanguageConfig(
+  language: string | undefined,
+  fileName: string | undefined,
+): {
+  extension: Extension;
+  isJson: boolean;
+} {
+  const normalizedLanguage = language?.trim().toLowerCase();
+  const normalizedFileName = fileName?.trim().toLowerCase();
+  const isTypeScriptFile = normalizedFileName?.endsWith('.ts') === true;
+  const isTypeScriptReactFile = normalizedFileName?.endsWith('.tsx') === true;
+
+  switch (normalizedLanguage) {
+    case 'json':
+      return { extension: json(), isJson: true };
+    case 'typescript':
+    case 'ts':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: isTypeScriptReactFile, typescript: true }),
+        isJson: false,
+      };
+    case 'tsx':
+    case 'typescriptreact':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: true }),
+        isJson: false,
+      };
+    case 'jsx':
+    case 'javascriptreact':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
+    case 'javascript':
+    case 'js':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
+    default:
+      if (isTypeScriptFile || isTypeScriptReactFile) {
+        return {
+          extension: javascriptWithHtmlTemplates({ jsx: isTypeScriptReactFile, typescript: true }),
+          isJson: false,
+        };
+      }
+      return {
+        // Preserve the existing JSX-compatible JavaScript behavior for omitted and unknown languages.
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
+  }
 }
 
 function createEditorTheme(height: string | number, minHeight: string | number | undefined): Extension {
@@ -123,6 +174,8 @@ export const EditorCore: React.FC<{
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  diagnostics?: CodeEditorDiagnostic[];
+  fileName?: string;
   knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
@@ -138,6 +191,8 @@ export const EditorCore: React.FC<{
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  diagnostics,
+  fileName,
   knownCtxMemberRoots,
   extraCompletions,
   completionSource,
@@ -200,14 +255,15 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const jsonLanguage = isJsonLanguage(language);
+    const languageConfig = createLanguageConfig(language, fileName);
+    const jsonLanguage = languageConfig.isJson;
     const view = new EditorView({
       doc: value || '',
       extensions: [
         basicSetup,
         tabCompletionKeymap,
         readonlyCompartment.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
-        languageCompartment.of(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        languageCompartment.of(languageConfig.extension),
         completionCompartment.of(
           autocompletion({
             override: jsonLanguage
@@ -222,7 +278,15 @@ export const EditorCore: React.FC<{
           jsonLanguage
             ? [lintGutter(), jsonLinter]
             : enableLinter
-              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
               : [],
         ),
         hoverCompartment.of(jsonLanguage ? jsonHover : []),
@@ -265,11 +329,12 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const jsonLanguage = isJsonLanguage(language);
+    const languageConfig = createLanguageConfig(language, fileName);
+    const jsonLanguage = languageConfig.isJson;
     view.dispatch({
       effects: [
         readonlyCompartment.reconfigure([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
-        languageCompartment.reconfigure(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        languageCompartment.reconfigure(languageConfig.extension),
         completionCompartment.reconfigure(
           autocompletion({
             override: jsonLanguage
@@ -284,7 +349,15 @@ export const EditorCore: React.FC<{
           jsonLanguage
             ? [lintGutter(), jsonLinter]
             : enableLinter
-              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
               : [],
         ),
         hoverCompartment.reconfigure(jsonLanguage ? jsonHover : []),
@@ -296,8 +369,10 @@ export const EditorCore: React.FC<{
   }, [
     completionCompartment,
     dynamicCompletionSource,
+    diagnostics,
     editorThemeCompartment,
     enableLinter,
+    fileName,
     height,
     hoverCompartment,
     jsonCompletionSource,
@@ -319,10 +394,10 @@ export const EditorCore: React.FC<{
 
   useEffect(() => {
     const view = viewRef.current;
-    if (view && isJsonLanguage(language)) {
+    if (view && (createLanguageConfig(language, fileName).isJson || enableLinter)) {
       forceLinting(view);
     }
-  }, [jsonSchema, language, viewRef]);
+  }, [diagnostics, enableLinter, fileName, jsonSchema, language, viewRef]);
 
   useEffect(() => {
     const view = viewRef.current;

@@ -160,8 +160,7 @@ function LightExtensionWorkspacePage({
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
-  const [files, setFilesState] = useState<WorkspaceFile[]>([]);
-  const [projectRevision, setProjectRevision] = useState(0);
+  const [files, setFiles] = useState<WorkspaceFile[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
@@ -204,10 +203,6 @@ function LightExtensionWorkspacePage({
   const authoringBlockedDirtyPathsRef = useRef<Set<string>>(new Set());
   const authoringWorkspaceWritableRef = useRef(false);
   const authoringWorkspaceScopeRef = useRef(workspaceScope);
-  const setFiles = useCallback((nextFiles: React.SetStateAction<WorkspaceFile[]>) => {
-    setFilesState(nextFiles);
-    setProjectRevision((current) => current + 1);
-  }, []);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -1280,9 +1275,7 @@ function LightExtensionWorkspacePage({
                         onRunPreview={canPreview ? runPreview : undefined}
                         openPaths={openPaths}
                         previewing={previewing}
-                        projectRevision={projectRevision}
                         readOnly={activeFileReadOnly}
-                        runJSGlobalContextType={activeEntryContext.globalContextType}
                         savedFiles={baseFiles}
                         showRunButton={canPreview}
                         t={studioT}

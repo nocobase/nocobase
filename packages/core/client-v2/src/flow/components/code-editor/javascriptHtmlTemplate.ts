@@ -41,9 +41,8 @@ export function getTemplateHtmlRanges(node: SyntaxNode): TemplateHtmlRange[] {
   return ranges.filter((range) => range.to > range.from);
 }
 
-export function javascriptWithHtmlTemplates(): LanguageSupport {
-  // Enable JSX in JavaScript language so editor can parse/render JSX syntax
-  const baseJavascript = javascript({ jsx: true });
+export function javascriptWithHtmlTemplates(dialect: { jsx: boolean; typescript: boolean }): LanguageSupport {
+  const baseJavascript = javascript(dialect);
   const htmlSupport = html();
 
   const mixedLanguage = (baseJavascript.language as unknown as LRLanguage).configure({

@@ -58,6 +58,7 @@ function createSurface(snapshotId: string, content = 'export const value = 1;'):
       snapshotId,
       diagnostics: [],
       stale: false,
+      validationPassed: true,
     })),
   };
 }
@@ -151,6 +152,7 @@ describe('workspace authoring frontend tools', () => {
       snapshotId: 'snapshot-1',
       diagnostics: [{ message: 'TypeScript error', severity: 'error' }],
       stale: false,
+      validationPassed: false,
     });
     await expect(
       executeFrontendTool[1].invoke?.(app as never, {

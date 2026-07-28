@@ -247,6 +247,7 @@ describe('workspace authoring changes', () => {
     );
     await expect(harness.surface.validateDraft()).resolves.toMatchObject({
       stale: false,
+      validationPassed: false,
       diagnostics: [expect.objectContaining({ path: 'src/index.ts' })],
     });
   });

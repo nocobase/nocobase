@@ -38,11 +38,6 @@
       "import": "./lib/compiler/portable.js",
       "require": "./lib/compiler/portable.js"
     },
-    "./client-v2": {
-      "types": "./lib/client-v2/index.d.ts",
-      "import": "./lib/client-v2/index.js",
-      "require": "./lib/client-v2/index.js"
-    },
     "./settings": {
       "types": "./lib/settings/index.d.ts",
       "import": "./lib/settings/index.js",

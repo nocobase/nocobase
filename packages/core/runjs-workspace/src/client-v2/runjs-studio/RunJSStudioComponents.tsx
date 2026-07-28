@@ -28,9 +28,9 @@ import {
 } from '@ant-design/icons';
 import {
   CodeEditor,
+  type CodeEditorDiagnostic,
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
-  type RunJSWorkspaceTypeScriptContextResolver,
 } from '@nocobase/client-v2';
 import {
   Alert,
@@ -836,6 +836,7 @@ export function CodeTab(props: {
   authoringSurfaceId?: string;
   busy?: boolean;
   diffRows: RunJSLineDiffRow[];
+  diagnostics?: RunJSCompileDiagnostic[];
   emptyDiffDescription?: string;
   filesCollapsed: boolean;
   isDiff: boolean;
@@ -847,11 +848,7 @@ export function CodeTab(props: {
   onRunPreview?: () => void;
   openPaths: string[];
   previewing?: boolean;
-  projectRevision: number;
   readOnly: boolean;
-  runJSModelUse?: string;
-  runJSGlobalContextType?: string;
-  workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
   showRunButton?: boolean;
@@ -868,6 +865,7 @@ export function CodeTab(props: {
     authoringSurfaceId,
     busy = false,
     diffRows,
+    diagnostics,
     emptyDiffDescription,
     filesCollapsed,
     isDiff,
@@ -898,10 +896,27 @@ export function CodeTab(props: {
     () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),
     [activeFile, jsonSchemaResolver, workspaceFiles],
   );
+  const activeFileDiagnostics = useMemo<CodeEditorDiagnostic[]>(
+    () =>
+      (diagnostics || [])
+        .filter((diagnostic) => diagnostic.path === activeFile?.path)
+        .map((diagnostic) => ({
+          column: diagnostic.column,
+          line: diagnostic.line,
+          message: diagnostic.message,
+          severity: diagnostic.severity || 'info',
+          source: 'runjs-compiler',
+        })),
+    [activeFile?.path, diagnostics],
+  );
 
   if (!activeFile) {
     return <Empty description={t('Select a file')} />;
   }
+
+  const languageFromPath = inferLanguageFromPath(activeFile.path);
+  const isScriptFile = isRunJSTypeScriptProjectFile(activeFile.path);
+  const editorLanguage = isScriptFile ? languageFromPath : activeFile.language || languageFromPath;
 
   const fileTabsContent = (
     <div
@@ -1008,9 +1023,10 @@ export function CodeTab(props: {
     >
       <CodeEditor
         authoringSurfaceId={authoringSurfaceId}
-        enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
+        diagnostics={activeFileDiagnostics}
+        enableLinter={isScriptFile}
         height="100%"
-        language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
+        language={isDiff ? 'diff' : editorLanguage}
         jsonSchema={jsonSchema}
         minHeight={0}
         moduleImportCompletions={moduleImportCompletions}
