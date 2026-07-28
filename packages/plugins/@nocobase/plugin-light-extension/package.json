@@ -28,9 +28,7 @@
       "import": "./server.js",
       "require": "./server.js"
     },
-    "./package.json": "./package.json",
-    "./dist/*": "./dist/*",
-    "./src/*": "./src/*"
+    "./package.json": "./package.json"
   },
   "homepage": "https://docs.nocobase.com",
   "homepage.zh-CN": "https://docs-cn.nocobase.com",

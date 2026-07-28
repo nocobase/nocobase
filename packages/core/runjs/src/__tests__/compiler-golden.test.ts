@@ -598,7 +598,7 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     );
   });
 
-  it('accepts complete browser APIs through window while keeping bare globals restricted', async () => {
+  it('accepts browser APIs through the runtime window proxy while keeping bare globals restricted', async () => {
     const windowResult = await compileRunJSSourceWorkspace({
       files: [
         {
@@ -624,9 +624,8 @@ window.location.assign('/demo');
     expect(bareGlobalResult.artifact.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-typescript',
-          message: expect.stringContaining("'File' only refers to a type"),
-          details: expect.objectContaining({ tsCode: 2693 }),
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'File'"),
         }),
       ]),
     );

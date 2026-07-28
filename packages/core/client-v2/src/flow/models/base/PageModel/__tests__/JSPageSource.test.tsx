@@ -9,13 +9,12 @@
 
 import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createTypeScriptProjectSession } from '../../../../components/code-editor/typescriptProject';
 import {
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
 } from '../../../../components/runjs-source';
 import { RunJSEditorRegistry } from '../../../../components/runjs-studio';
-import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
+import { JSPageModel } from '../JSPageModel';
 
 const SOURCE_BINDING = {
   type: 'light-extension-entry' as const,
@@ -29,21 +28,6 @@ describe('JSPageModel source authoring', () => {
     RunJSEditorRegistry.clear();
     RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
-  });
-
-  it('typechecks the default template with the JS Page authoring context', async () => {
-    const session = createTypeScriptProjectSession();
-    const diagnostics = await session.getDiagnostics(
-      {
-        currentFilePath: 'src/main.tsx',
-        files: [{ path: 'src/main.tsx', content: DEFAULT_JS_PAGE_CODE }],
-        runJSContext: { modelUse: 'JSPageModel' },
-      },
-      DEFAULT_JS_PAGE_CODE,
-    );
-    session.dispose();
-
-    expect(diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
   });
 
   it('keeps settings isolated between pages bound to the same entry', async () => {

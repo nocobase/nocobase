@@ -11,6 +11,8 @@ import type { Application } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs/server';
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { vi } from 'vitest';
 
 import { NAMESPACE } from '../../constants';
@@ -26,6 +28,7 @@ import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension bootstrap', () => {
   it('keeps the RunJS compiler unloaded until the first compile', () => {
+    const serverEntryUrl = pathToFileURL(path.resolve(__dirname, '../index.ts')).href;
     expect(() =>
       execFileSync(
         process.execPath,
@@ -37,7 +40,7 @@ describe('plugin-light-extension bootstrap', () => {
           `
             import { createRequire } from 'node:module';
             const require = createRequire(import.meta.url);
-            await import('@nocobase/plugin-light-extension/server');
+            await import(${JSON.stringify(serverEntryUrl)});
             const loaded = Object.keys(require.cache).some((file) =>
               /\\/packages\\/core\\/runjs\\/(?:src|lib)\\/compiler\\/index\\.[cm]?[jt]s$/u.test(file),
             );

@@ -8,11 +8,7 @@
  */
 
 import { FileTextOutlined } from '@ant-design/icons';
-import type {
-  CodeEditorTypeScriptProject,
-  DiagnoseRunJSResult,
-  RunJSImportModuleCompletion,
-} from '@nocobase/client-v2';
+import type { DiagnoseRunJSResult, RunJSImportModuleCompletion } from '@nocobase/client-v2';
 import React, { useRef } from 'react';
 
 import type { RunJSCompileDiagnostic } from './types';
@@ -32,10 +28,6 @@ import {
 } from './workspaceUtils';
 import type { WorkspaceLoadResult } from './studioInternalTypes';
 import { clientRunJSWorkspaceAdapter } from './workspaceAdapter';
-
-type RunJSTypeScriptProject = CodeEditorTypeScriptProject & {
-  ignoredDiagnosticCodes?: number[];
-};
 
 export const defaultEntryPath = clientRunJSWorkspaceAdapter.defaultEntryPath;
 export const defaultRunJSSourceRoot = clientRunJSWorkspaceAdapter.sourceRoot;
@@ -572,55 +564,6 @@ export function useRunJSImportModuleCompletions(
 
 export function isRunJSTypeScriptProjectFile(path: string): boolean {
   return /\.(?:[cm]?[jt]sx?|d\.ts)$/i.test(path);
-}
-
-function isRunJSTypeScriptWorkspaceFile(path: string): boolean {
-  return isRunJSTypeScriptProjectFile(path) || path.endsWith('.json');
-}
-
-export function buildRunJSTypeScriptProject(
-  files: RunJSWorkspaceFile[],
-  activeFile?: RunJSWorkspaceFile,
-  context: {
-    declarationFiles?: RunJSWorkspaceFile[];
-    globalContextType?: string;
-    modelUse?: string;
-    projectRevision?: number;
-  } = {},
-): RunJSTypeScriptProject | undefined {
-  if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
-    return undefined;
-  }
-
-  return {
-    currentFilePath: activeFile.path,
-    forbidTypeScriptSuppressionDirectives: true,
-    ignoredDiagnosticCodes: [1108],
-    rewriteBuiltInAutoImports: true,
-    suppressUnknownTypeDiagnostics: true,
-    typeLibraryIds: ['react'],
-    projectRevision: context.projectRevision,
-    files: files
-      .filter((file) => file.path !== runJSManifestPath)
-      .filter((file) => isRunJSTypeScriptWorkspaceFile(file.path))
-      .map((file) => ({
-        content: file.content,
-        path: file.path,
-        revision: file.revision,
-      })),
-    ...(context.declarationFiles?.length
-      ? {
-          declarationFiles: context.declarationFiles.map((file) => ({
-            content: file.content,
-            path: file.path,
-            revision: file.revision,
-          })),
-        }
-      : {}),
-    ...(context.modelUse || context.globalContextType
-      ? { runJSContext: { modelUse: context.modelUse, globalContextType: context.globalContextType } }
-      : {}),
-  };
 }
 
 export function appendDiagnostics(

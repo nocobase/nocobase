@@ -7,7 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
+import enUS from '../../locale/en-US.json';
+import zhCN from '../../locale/zh-CN.json';
 import {
+  JSActionLightExtensionSourceField,
+  JSFieldLightExtensionSourceField,
+  JSItemLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
+} from '../components/JSBlockLightExtensionSourceField';
+import PluginLightExtensionClientV2 from '../plugin';
+import { type RunJSStudioToolbarContext, runJSStudioToolbarRegistry } from '../vsc-file/public-api';
+import {
+  clearActionGroupMenuItemProviders,
+  clearBlockGridSelectSceneAddBlockProviders,
+  clearFieldMenuItemProviders,
   createMockClient,
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
@@ -21,27 +35,63 @@ import {
   JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JSPageSourceModeField,
   PluginFlowEngine,
-  clearActionGroupMenuItemProviders,
-  clearBlockGridSelectSceneAddBlockProviders,
-  clearFieldMenuItemProviders,
-} from '@nocobase/client-v2';
-import {
   RunJSEditorRegistry,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
-import { afterEach, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
-import {
-  JSActionLightExtensionSourceField,
-  JSFieldLightExtensionSourceField,
-  JSItemLightExtensionSourceField,
-  JSPageLightExtensionSourceField,
-} from '../components/JSBlockLightExtensionSourceField';
-import PluginLightExtensionClientV2 from '../plugin';
-import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '../vsc-file/public-api';
+// Consolidated from locale.test.ts.
+const REQUIRED_VSC_LOCALE_KEYS = [
+  'Sync code',
+  'GitHub source',
+  'GitHub credential',
+  'Select a Secret variable',
+  'Test connection',
+  'Pull from Git',
+  'Push to Git',
+  'Disconnect',
+  'In sync',
+  'Local changes',
+  'Remote changes',
+  'Diverged',
+  'Initial sync needs a clear source',
+  'The configured credential is unavailable',
+  'GitHub authentication failed',
+  'The sync provider is unavailable',
+  'You do not have permission to perform this sync operation',
+  'Actions',
+  'Cancel',
+  'Copy code',
+  'Create',
+  'Failed to load history',
+  'Failed to restore version',
+  'File already exists',
+  'Folder already exists',
+  'Folder is not empty',
+  'Import',
+  'Import workspace',
+  'Invalid file path',
+  'Retry',
+  'Save',
+  'Restored from',
+] as const;
 
+describe('plugin-light-extension client-v2 locale entries', () => {
+  it('keeps English and Chinese keys aligned and retains required VSC entries', () => {
+    expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
+    expect(Object.keys(enUS)).toEqual(expect.arrayContaining([...REQUIRED_VSC_LOCALE_KEYS]));
+    expect(Object.keys(zhCN)).toEqual(expect.arrayContaining([...REQUIRED_VSC_LOCALE_KEYS]));
+  });
+
+  it('keeps the Light Extension wording for conflicting VSC locale entries', () => {
+    expect(zhCN['Folder is not empty']).toBe('文件夹不为空');
+    expect(zhCN['Invalid file path']).toBe('无效文件路径');
+    expect(zhCN['Restored from']).toBe('已从版本恢复');
+  });
+});
+
+// Consolidated from plugin.test.tsx.
 describe('PluginLightExtensionClientV2', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();

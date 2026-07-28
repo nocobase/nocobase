@@ -17,6 +17,7 @@ import React from 'react';
 import { RunJSSettingsDescriptorProviderRegistry, RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import {
   createLightExtensionSettingStep,
+  createLightExtensionSourcePlumbing,
   createRuntimeRunTracker,
   getLightExtensionSettingsDescriptor,
   normalizeLightExtensionRuntimeError,
@@ -75,6 +76,68 @@ describe('runjsSourceRuntimeCommon', () => {
     expect(tracker.isCurrent(secondModel, secondRun)).toBe(false);
   });
 
+  it('owns the shared source defaults, descriptor, title, and save plumbing', async () => {
+    const sourceBinding = { entryId: 'entry_1', repoId: 'repo_1' };
+    const getSettingsDescriptor = vi.fn(async () => ({
+      entryId: 'entry_1',
+      schema: null,
+      defaults: {},
+      settingsSchemaHash: null,
+    }));
+    const getBindingTitle = vi.fn(async () => 'Shared entry');
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: async () => ({ code: 'return true;' }),
+      getSettingsDescriptor,
+      getBindingTitle,
+    });
+
+    let runJs: Record<string, unknown> = { sourceMode: 'legacy', code: 'return false;', settings: { stale: true } };
+    const model = {
+      uid: 'model_1',
+      context: { t: (key: string) => key },
+      getStepParams: () => runJs,
+      setStepParams: (_flowKey: string, params: { runJs: Record<string, unknown> }) => {
+        runJs = params.runJs;
+      },
+    } as unknown as FlowModel;
+    const afterParamsSave = vi.fn(async () => undefined);
+    const plumbing = createLightExtensionSourcePlumbing({
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      ownerKind: 'flowModel.blockSettings',
+      getOwnerLocator: (owner) => ({ modelUid: owner.uid }),
+      afterParamsSave,
+    });
+    const ctx = { model } as never;
+
+    expect(plumbing.getSourceDefaultParams(ctx)).toEqual({
+      sourceMode: 'inline',
+      sourceBinding: undefined,
+      settings: { stale: true },
+    });
+
+    await plumbing.beforeParamsSave(ctx, { sourceMode: 'light-extension', sourceBinding, settings: {} });
+
+    expect(runJs).toMatchObject({
+      sourceMode: 'light-extension',
+      sourceBinding,
+      settings: {},
+      code: 'return false;',
+    });
+    expect(getSettingsDescriptor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceBinding,
+        context: expect.objectContaining({ ownerKind: 'flowModel.blockSettings' }),
+      }),
+    );
+    await expect(plumbing.getEditorTitle(model)).resolves.toBe('Write JavaScript (Light extension: Shared entry)');
+    expect(getBindingTitle).toHaveBeenCalledOnce();
+
+    await plumbing.afterSourceParamsSave(ctx);
+    expect(afterParamsSave).toHaveBeenCalledOnce();
+  });
+
   it('uses the step title without repeating it in the rendered FormItem', () => {
     const [, step] = createLightExtensionSettingStep<FlowModel>({
       entryId: 'entry_display',
@@ -105,6 +168,7 @@ describe('runjsSourceRuntimeCommon', () => {
       },
     });
     const form = createForm({ values: { value: { color: 'blue' } } });
+    const uiSchema = typeof step.uiSchema === 'function' ? {} : step.uiSchema;
 
     render(
       React.createElement(
@@ -113,7 +177,7 @@ describe('runjsSourceRuntimeCommon', () => {
         React.createElement(SchemaField, {
           schema: {
             type: 'object',
-            properties: step.uiSchema,
+            properties: uiSchema,
           },
         }),
       ),
@@ -145,7 +209,8 @@ describe('runjsSourceRuntimeCommon', () => {
     });
 
     expect(step.uiMode).toEqual({ type: 'switch', key: 'value' });
-    expect(step.defaultParams?.({} as never)).toEqual({ value: true });
+    const defaultParams = step.defaultParams;
+    expect(typeof defaultParams === 'function' ? defaultParams({} as never) : defaultParams).toEqual({ value: true });
   });
 
   it('renders collection settings as an inline searchable select with all visible collections', async () => {

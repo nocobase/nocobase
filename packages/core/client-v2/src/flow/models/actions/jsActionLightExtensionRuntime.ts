@@ -8,7 +8,6 @@
  */
 
 import {
-  FlowCancelSaveException,
   FlowExitAllException,
   FlowExitException,
   type FlowModel,
@@ -24,34 +23,22 @@ import {
   getRunJSModelUse,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
-  type RunJSSourceSettings,
 } from '../../components/runjs-source';
 import {
-  cloneJsonValue,
-  cloneRecord,
   createLightExtensionRunJsUISchema,
   createRunJSEditorEmbedUIMode,
   createLightExtensionSettingSteps,
+  createLightExtensionSourcePlumbing,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
   createRuntimeRunTracker,
-  getLightExtensionFallbackBindingTitle,
-  getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
-  getLightExtensionStoredBindingTitle,
-  getModelTranslator,
   getRecordProperty,
   INLINE_SOURCE_MODE,
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceSettingsForBinding,
   normalizeLightExtensionSourceMode,
-  rememberLightExtensionBindingSettings,
-  setCanonicalLightExtensionSetting,
-  setCanonicalLightExtensionSource,
-  showPendingLightExtensionRequiredSettings,
   type LightExtensionSourceMode,
-  type LightExtensionSourceModeParams,
   type RuntimeErrorInfo,
 } from '../utils/runjsSourceRuntimeCommon';
 import {
@@ -65,8 +52,6 @@ export const JS_ACTION_OWNER_KIND = 'flowModel.actionSettings';
 export type JSActionSourceMode = LightExtensionSourceMode;
 
 type JSActionRunJSValue = RunJSValue;
-
-type JSActionSourceModeParams = LightExtensionSourceModeParams;
 
 type JSActionRuntimeError = RuntimeErrorInfo;
 
@@ -86,14 +71,20 @@ type JSActionRuntimeContext = FlowRuntimeContext<JSActionRuntimeModel> & {
 };
 
 const jsActionRuntimeRunTracker = createRuntimeRunTracker();
+const jsActionSource = createLightExtensionSourcePlumbing<JSActionRuntimeModel>({
+  flowKey: 'clickSettings',
+  stepKey: 'runJs',
+  ownerKind: JS_ACTION_OWNER_KIND,
+  getOwnerLocator: buildJSActionOwnerLocator,
+  afterParamsSave: refreshJSActionAfterSettingsSave,
+});
 
 export function normalizeJSActionSourceMode(value: unknown): JSActionSourceMode {
   return normalizeLightExtensionSourceMode(value);
 }
 
 export function getJSActionRunJsStepParams(model: JSActionRuntimeModel): Record<string, unknown> {
-  const params = model.getStepParams('clickSettings', 'runJs');
-  return isRecord(params) ? { ...params } : {};
+  return jsActionSource.getRunJsStepParams(model);
 }
 
 export function beginJSActionRuntimeRun(model: JSActionRuntimeModel): number {
@@ -111,8 +102,8 @@ export function createJSActionSourceModeStep(): StepDefinition {
     createMenuUIMode: createRunJSSourceCascadeMenuUIMode,
     hooks: {
       defaultParams: getJSActionSourceDefaultParams,
-      beforeParamsSave: syncJSActionSourceToRunJs,
-      afterParamsSave: refreshJSActionAfterSourceSave,
+      beforeParamsSave: jsActionSource.beforeParamsSave,
+      afterParamsSave: jsActionSource.afterSourceParamsSave,
     },
   });
 }
@@ -123,8 +114,8 @@ export function createJSActionSourceBindingStep(): StepDefinition {
     component: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
     hooks: {
       defaultParams: getJSActionSourceDefaultParams,
-      beforeParamsSave: syncJSActionSourceToRunJs,
-      afterParamsSave: refreshJSActionAfterSourceSave,
+      beforeParamsSave: jsActionSource.beforeParamsSave,
+      afterParamsSave: jsActionSource.afterSourceParamsSave,
     },
   });
 }
@@ -139,8 +130,8 @@ export function createJSActionRunJsUISchema(options: { minHeight?: string } = {}
   });
 }
 
-export function createJSActionEmbeddedEditorUIMode(ctx: { model: JSActionRuntimeModel }) {
-  return createRunJSEditorEmbedUIMode(getJSActionRunJsEditorTitle(ctx));
+export async function createJSActionEmbeddedEditorUIMode(ctx: { model: JSActionRuntimeModel }) {
+  return createRunJSEditorEmbedUIMode(await jsActionSource.getEditorTitle(ctx.model));
 }
 
 export async function getJSActionRuntimeFlowSettingSteps(
@@ -246,43 +237,8 @@ export function buildJSActionOwnerLocator(model: JSActionRuntimeModel): Record<s
   };
 }
 
-function getJSActionSourceDefaultParams(ctx: FlowSettingsContext<JSActionRuntimeModel>): JSActionSourceModeParams {
-  const runJs = getJSActionRunJsStepParams(ctx.model);
-  return {
-    sourceMode: normalizeJSActionSourceMode(runJs.sourceMode),
-    sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
-    settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
-  };
-}
-
-async function syncJSActionSourceToRunJs(
-  ctx: FlowSettingsContext<JSActionRuntimeModel>,
-  params: JSActionSourceModeParams,
-) {
-  const sourceMode = normalizeJSActionSourceMode(params?.sourceMode);
-  const sourceBinding = isRecord(params.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
-  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
-    ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
-    throw new FlowCancelSaveException('Light extension source binding is required.');
-  }
-  const currentRunJs = getJSActionRunJsStepParams(ctx.model);
-  const descriptor =
-    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
-      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
-      : null;
-  const normalized = normalizeLightExtensionSourceSettingsForBinding({
-    currentRunJs,
-    nextSourceMode: sourceMode,
-    nextSourceBinding: sourceBinding,
-    nextSettings: params.settings,
-    descriptor,
-  });
-  setCanonicalLightExtensionSource(ctx.model, 'clickSettings', {
-    sourceMode,
-    sourceBinding,
-    settings: normalized.settings,
-  });
-  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
+function getJSActionSourceDefaultParams(ctx: FlowSettingsContext<JSActionRuntimeModel>) {
+  return jsActionSource.getSourceDefaultParams(ctx);
 }
 
 async function refreshJSActionAfterSettingsSave(ctx: FlowSettingsContext<JSActionRuntimeModel>) {
@@ -290,26 +246,8 @@ async function refreshJSActionAfterSettingsSave(ctx: FlowSettingsContext<JSActio
   await ctx.model.rerender();
 }
 
-async function refreshJSActionAfterSourceSave(ctx: FlowSettingsContext<JSActionRuntimeModel>) {
-  await refreshJSActionAfterSettingsSave(ctx);
-  await showPendingLightExtensionRequiredSettings(ctx.model, 'clickSettings');
-}
-
 async function getLightExtensionSettingsDescriptor(model: JSActionRuntimeModel, params: Record<string, unknown>) {
-  return getSharedLightExtensionSettingsDescriptor({
-    modelUid: model.uid,
-    ownerKind: JS_ACTION_OWNER_KIND,
-    ownerLocator: buildJSActionOwnerLocator(model),
-    params,
-    sourceLocator: {
-      kind: 'flowModel.step',
-      modelUid: model.uid,
-      flowKey: 'clickSettings',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-      versionPath: ['version'],
-    },
-  });
+  return jsActionSource.getSettingsDescriptor(model, params);
 }
 
 function syncLightExtensionSettingToRunJs(
@@ -317,28 +255,10 @@ function syncLightExtensionSettingToRunJs(
   fieldName: string,
   value: unknown,
 ) {
-  setCanonicalLightExtensionSetting(ctx.model, 'clickSettings', fieldName, value);
+  jsActionSource.syncSetting(ctx, fieldName, value);
 }
 
-function getJSActionRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
-  return cloneRecord(params.settings);
-}
-
-function getJSActionRunJsEditorTitle(ctx: { model: JSActionRuntimeModel }): string {
-  const translate = getModelTranslator(ctx.model);
-  const params = getJSActionRunJsStepParams(ctx.model);
-  const baseTitle = translate('Write JavaScript');
-  if (normalizeJSActionSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
-    return baseTitle;
-  }
-
-  const sourceTitle =
-    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
-    getLightExtensionFallbackBindingTitle(params.sourceBinding);
-  return sourceTitle
-    ? `${baseTitle} (${translate('Light extension')}: ${sourceTitle})`
-    : `${baseTitle} (${translate('Light extension')})`;
-}
+const getJSActionRuntimeSettings = jsActionSource.getRuntimeSettings;
 
 function showJSActionRuntimeError(ctx: JSActionRuntimeContext, error: unknown) {
   const normalized = normalizeRuntimeError(error);
