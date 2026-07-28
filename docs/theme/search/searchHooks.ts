@@ -96,17 +96,113 @@ export function getSectionOf(
     : undefined;
 }
 
+/** 合并后的正文预览最多展示几个片段。再多卡片会长到喧宾夺主。 */
+const MAX_MERGED_STATEMENTS = 3;
+
+/** 合并正文片段时的分隔符。 */
+const STATEMENT_SEPARATOR = ' … ';
+
+function isContentMatch(
+  item: DefaultMatchResultItem,
+): item is Extract<DefaultMatchResultItem, { type: 'content' }> {
+  return item.type === 'content';
+}
+
+/**
+ * 把同一页面的多条正文命中合并成一条，片段之间用 `…` 连接。
+ *
+ * 高亮位置是相对 statement 的偏移量，拼接后必须整体右移各自片段在结果串里的起点，否则高亮会错位。
+ */
+function mergeContentMatches(
+  matches: Extract<DefaultMatchResultItem, { type: 'content' }>[],
+): DefaultMatchResultItem {
+  const [first] = matches;
+  if (matches.length === 1) {
+    return first;
+  }
+
+  const kept = matches.slice(0, MAX_MERGED_STATEMENTS);
+  const statements: string[] = [];
+  const highlightInfoList: { start: number; length: number }[] = [];
+  let offset = 0;
+
+  for (const match of kept) {
+    const statement = match.statement.trim();
+    if (!statement) {
+      continue;
+    }
+    if (statements.length > 0) {
+      offset += STATEMENT_SEPARATOR.length;
+    }
+    for (const highlight of match.highlightInfoList) {
+      // trim() 掉的前导空白也要从偏移里扣掉。
+      const trimmedPrefix = match.statement.length - match.statement.trimStart().length;
+      highlightInfoList.push({
+        start: highlight.start - trimmedPrefix + offset,
+        length: highlight.length,
+      });
+    }
+    statements.push(statement);
+    offset += statement.length;
+  }
+
+  return {
+    ...first,
+    statement: statements.join(STATEMENT_SEPARATOR),
+    highlightInfoList,
+  };
+}
+
 /** 去重 + 打标 + 排序。抽成纯函数，方便脱离 rspress 运行时验证。 */
 export function organizeSearchResult(
   items: DefaultMatchResultItem[],
   query: string,
 ): SectionedMatchResultItem[] {
+  // 同一页面的多条正文命中先合并成一条，多个片段进同一条预览。
+  // 用不带锚点的路由做 key：正文片段的锚点是按所在小节推出来的，同一页不同段落锚点可能不同。
+  const contentByPage = new Map<
+    string,
+    Extract<DefaultMatchResultItem, { type: 'content' }>[]
+  >();
+  for (const item of items) {
+    if (!isContentMatch(item)) {
+      continue;
+    }
+    const pageKey = item.link.split('#')[0];
+    const group = contentByPage.get(pageKey);
+    if (group) {
+      group.push(item);
+    } else {
+      contentByPage.set(pageKey, [item]);
+    }
+  }
+
+  const mergedContent = new Map<string, DefaultMatchResultItem>();
+  for (const [pageKey, matches] of contentByPage) {
+    mergedContent.set(pageKey, mergeContentMatches(matches));
+  }
+
+  const seenContentPage = new Set<string>();
+  const deduped: DefaultMatchResultItem[] = [];
+  for (const item of items) {
+    if (!isContentMatch(item)) {
+      deduped.push(item);
+      continue;
+    }
+    const pageKey = item.link.split('#')[0];
+    if (seenContentPage.has(pageKey)) {
+      continue;
+    }
+    seenContentPage.add(pageKey);
+    deduped.push(mergedContent.get(pageKey) ?? item);
+  }
+
   const bestByLink = new Map<
     string,
     { item: DefaultMatchResultItem; index: number }
   >();
 
-  items.forEach((item, index) => {
+  deduped.forEach((item, index) => {
     const existing = bestByLink.get(item.link);
     if (!existing || TYPE_RANK[item.type] < TYPE_RANK[existing.item.type]) {
       // 命中同一个链接时保留更「标题级」的那条，但沿用首次出现的位置，避免把相关性靠前的结果推后。

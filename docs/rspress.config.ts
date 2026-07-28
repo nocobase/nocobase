@@ -12,6 +12,7 @@ import {
   crossRefCanonicalMap,
 } from './plugins/pluginCrossRef';
 import { pluginSearchSections } from './plugins/pluginSearchSections';
+import { pluginSearchIndex } from './plugins/pluginSearchIndex';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -282,6 +283,7 @@ export default defineConfig({
     pluginRemoveGenerator(),
     pluginCrossRefSidebar(),
     pluginSearchSections(),
+    pluginSearchIndex(),
     sitemap(),
   ],
   search: {
