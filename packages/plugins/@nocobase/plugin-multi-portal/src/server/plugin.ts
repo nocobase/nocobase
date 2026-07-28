@@ -284,11 +284,6 @@ function joinPortalStoragePublicPath(publicPath: string, pathname: string) {
   return `${normalizedPublicPath.replace(/\/$/, '')}/${normalizedPathname}`.replace(/^\/{2,}/, '/');
 }
 
-function getPortalStorageBasePath(routePath: string) {
-  const portalPath = `/${PORTAL_CLIENT_PREFIX}${normalizePortalStoragePath(routePath, '').replace(/\/+$/, '')}/`;
-  return resolvePortalStoragePublicPath(joinPortalStoragePublicPath(process.env.APP_PUBLIC_PATH || '/', portalPath));
-}
-
 function isAbsoluteUrl(value: string) {
   return /^[a-z][a-z\d+\-.]*:\/\//i.test(value) || value.startsWith('//');
 }
@@ -605,7 +600,7 @@ async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorag
   const logPath = getPortalStorageLogPath(item);
   const buildEnv = getPortalStorageCommandEnv({
     NOCOBASE_API_URL: getPortalStorageApiUrl(),
-    NOCOBASE_PORTAL_BASE: getPortalStorageBasePath(item.portalName),
+    NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
   });
   await appendPortalStorageLog(logPath, `Building portal ${item.appName}/${item.portalName}.`);
   await appendPortalStorageLog(

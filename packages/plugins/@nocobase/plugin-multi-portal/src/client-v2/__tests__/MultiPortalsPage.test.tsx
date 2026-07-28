@@ -229,6 +229,25 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
   });
 
+  it('should build sub-app portal hrefs from the app-scoped basename', () => {
+    const app = {
+      router: {
+        getBasename: () => '/nocobase/v/apps/a_q7xx6p75d0e',
+      },
+      getRouteUrl: (pathname: string) => `/nocobase/v/apps/a_q7xx6p75d0e${pathname}`,
+      getPublicPath: () => '/nocobase/v/apps/a_q7xx6p75d0e/',
+    };
+
+    expect(getMultiPortalRouteUrl(app, '/admin', 'no-code')).toBe('/nocobase/v/apps/a_q7xx6p75d0e/admin');
+    expect(getMultiPortalRouteUrl(app, '/test', 'ai')).toBe('/nocobase/x/apps/a_q7xx6p75d0e/test');
+    expect(getMultiPortalRouteUrl(app, '/nocobase/v/apps/a_q7xx6p75d0e/v/admin', 'no-code')).toBe(
+      '/nocobase/v/apps/a_q7xx6p75d0e/admin',
+    );
+    expect(getMultiPortalRouteUrl(app, '/nocobase/v/apps/a_q7xx6p75d0e/x/test', 'ai')).toBe(
+      '/nocobase/x/apps/a_q7xx6p75d0e/test',
+    );
+  });
+
   it('should keep portal wording user-facing translations consistent', () => {
     expect(enUS['Add portal']).toBe('Add portal');
     expect(enUS['Edit portal']).toBe('Edit portal');

@@ -66,6 +66,13 @@ function getPortalTypeBasePath(basePath: string | undefined, portalType?: string
   if (!base) {
     return portalRoutePrefix;
   }
+
+  const portalAppBaseMatch = base.match(/^(.*)\/(?:v|x)\/apps\/([^/]+)$/);
+  if (portalAppBaseMatch) {
+    const publicPath = portalAppBaseMatch[1] || '';
+    return `${publicPath}${portalRoutePrefix}/apps/${portalAppBaseMatch[2]}`;
+  }
+
   if (PORTAL_ROUTE_PREFIXES.some((prefix) => base.endsWith(prefix))) {
     return base.replace(/\/(?:v|x)$/, portalRoutePrefix);
   }

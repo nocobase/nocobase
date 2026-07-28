@@ -894,6 +894,47 @@ describe('plugin-multi-portal server', () => {
     await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
   });
 
+  it('should build storage portal HTML with the sub-app portal base path', async () => {
+    process.env.APP_PUBLIC_PATH = '/nocobase/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    (app as MockServer & { name: string }).name = 'a_q7xx6p75d0e';
+    await app.db.sync();
+
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'sub-app-storage-template-portal',
+        title: 'Sub-app storage template portal',
+        portalType: 'ai',
+        routeName: 'test',
+        routePath: '/test',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const portalDir = path.join(storagePath as string, 'portals', 'a_q7xx6p75d0e', 'test');
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+      '/nocobase/x/apps/a_q7xx6p75d0e/test/',
+    );
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+        env: expect.objectContaining({
+          NOCOBASE_API_URL: '/nocobase/api',
+          NOCOBASE_PORTAL_BASE: '/nocobase/x/apps/a_q7xx6p75d0e/test/',
+        }),
+      }),
+    );
+  });
+
   it('should skip preparing the storage portal directory when requested by multiPortals:create', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     app = await createMultiPortalAclMockServer();
