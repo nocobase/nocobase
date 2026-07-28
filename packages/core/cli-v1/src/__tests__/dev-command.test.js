@@ -14,8 +14,17 @@ const { buildAppDevForwardArgs, forwardDevToAppDev, resolveDevRuntimeMode } = re
 describe('cli-v1 dev command', () => {
   test('buildAppDevForwardArgs rewrites dev argv to app-dev while preserving extra args', () => {
     expect(
-      buildAppDevForwardArgs(['node', 'nocobase-v1', 'dev', '--rsbuild', '--port', '13000', '--inspect=9229']),
-    ).toEqual(['app-dev', '--rsbuild', '--port', '13000', '--inspect=9229']);
+      buildAppDevForwardArgs([
+        'node',
+        'nocobase-v1',
+        'dev',
+        '--rsbuild',
+        '--quickstart',
+        '--port',
+        '13000',
+        '--inspect=9229',
+      ]),
+    ).toEqual(['app-dev', '--rsbuild', '--quickstart', '--port', '13000', '--inspect=9229']);
   });
 
   test('forwardDevToAppDev delegates to nocobase-v1 app-dev for create-app projects', async () => {

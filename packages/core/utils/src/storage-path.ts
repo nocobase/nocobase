@@ -9,6 +9,14 @@
 
 import path from 'path';
 
+function resolveDefaultStorageRoot(): string {
+  if (path.basename(process.cwd()) === 'source') {
+    return path.resolve(process.cwd(), '..', 'storage');
+  }
+
+  return path.resolve(process.cwd(), 'storage');
+}
+
 /**
  * Absolute path to the application storage root (same rules as CLI `resolveStorageRoot` in `cli-v1/src/util.js`).
  */
@@ -17,7 +25,7 @@ export function resolveStorageRoot(): string {
   if (raw) {
     return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
   }
-  return path.resolve(process.cwd(), 'storage');
+  return resolveDefaultStorageRoot();
 }
 
 /**

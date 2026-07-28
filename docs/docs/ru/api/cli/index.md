@@ -1,7 +1,7 @@
 ---
 title: 'NocoBase CLI'
-description: 'Справочник по NocoBase CLI (команда nb): инициализация, резервное копирование и восстановление, конфигурация, управление окружением, среда выполнения приложения, исходный код, база данных, плагины, коммерческая лицензия, API, самообновление CLI и управление навыками.'
-keywords: 'NocoBase CLI,nb,командная строка,справочник команд,резервное копирование,восстановление,управление окружением,управление плагинами,коммерческая лицензия,API'
+description: 'Справочник по NocoBase CLI (команда nb): инициализация, резервное копирование и восстановление, конфигурация, управление окружением, среда выполнения приложения, Portal, исходный код, база данных, плагины, коммерческая лицензия, API, самообновление CLI и управление навыками.'
+keywords: 'NocoBase CLI,nb,командная строка,справочник команд,резервное копирование,восстановление,управление окружением,Portal,управление плагинами,коммерческая лицензия,API'
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ nb [command]
 | [`nb env`](./env/index.md)           | Управлять окружениями проекта NocoBase, текущим окружением, состоянием, сведениями и командами среды выполнения.   |
 | [`nb license`](./license/index.md)   | Управлять коммерческой лицензией и лицензируемыми плагинами.                                                        |
 | [`nb plugin`](./plugin/index.md)     | Управлять плагинами выбранного окружения NocoBase.                                                                  |
+| [`nb portal`](./portal/index.md)     | Управлять рабочими пространствами Portal: настраивать, создавать, разрабатывать, синхронизировать исходный код, развёртывать и удалять. |
 | [`nb scaffold`](./scaffold/index.md) | Генерировать шаблоны для разработки плагинов NocoBase.                                                              |
 | [`nb self`](./self/index.md)         | Проверять или обновлять сам NocoBase CLI.                                                                           |
 | [`nb session`](./session/index.md)   | Настраивать `NB_SESSION_ID`, чтобы текущее окружение изолировалось по оболочке или среде выполнения агента.         |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## Примеры
@@ -125,6 +128,15 @@ nb config get docker.network
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+Создать и разрабатывать Portal:
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 Создание и загрузка резервной копии:

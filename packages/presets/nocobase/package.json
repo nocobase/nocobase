@@ -71,6 +71,7 @@
     "@nocobase/plugin-mobile": "2.2.0-alpha.9",
     "@nocobase/plugin-multi-app-manager": "2.2.0-alpha.9",
     "@nocobase/plugin-multi-keyword-filter": "2.2.0-alpha.9",
+    "@nocobase/plugin-multi-portal": "2.2.0-alpha.9",
     "@nocobase/plugin-notification-email": "2.2.0-alpha.9",
     "@nocobase/plugin-notification-in-app-message": "2.2.0-alpha.9",
     "@nocobase/plugin-notification-manager": "2.2.0-alpha.9",
@@ -105,6 +106,7 @@
     "@nocobase/plugin-workflow-response-message": "2.2.0-alpha.9",
     "@nocobase/plugin-workflow-sql": "2.2.0-alpha.9",
     "@nocobase/plugin-workflow-variable": "2.2.0-alpha.9",
+    "@nocobase/portal-template-default": "^1.0.0",
     "@nocobase/server": "2.2.0-alpha.9",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"

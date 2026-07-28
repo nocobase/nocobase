@@ -117,6 +117,7 @@ export default defineConfig(({ command }) => {
     `${resolvedAppPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`,
     `/${modernClientPrefix}/`,
   );
+  const portalBasePath = ensurePublicPath(`${resolvedAppPublicPath.replace(/\/$/, '')}/x/`, '/x/');
   const clientPort = toNumber(process.env.APP_PORT, 13001);
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;
@@ -251,6 +252,12 @@ export default defineConfig(({ command }) => {
           pathRewrite: {
             [`^${v2BasePath}`]: v2BasePath,
           },
+          xfwd: true,
+        },
+        [portalBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
           xfwd: true,
         },
       },

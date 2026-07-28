@@ -1,7 +1,7 @@
 ---
 title: 'NocoBase CLI'
-description: 'NocoBase CLI (`nb`-Befehl) Referenz: Initialisierung, Backup und Wiederherstellung, Konfiguration, Umgebungsverwaltung, App-Laufzeit, Quellcode, Datenbank, Plugins, kommerzielle Lizenz, API, CLI-Selbstaktualisierung und Skills-Verwaltung.'
-keywords: 'NocoBase CLI,nb,Kommandozeile,Befehlsreferenz,Backup,Wiederherstellung,Umgebungsverwaltung,Plugin-Verwaltung,kommerzielle Lizenz,API'
+description: 'NocoBase CLI (`nb`-Befehl) Referenz: Initialisierung, Backup und Wiederherstellung, Konfiguration, Umgebungsverwaltung, App-Laufzeit, Portal, Quellcode, Datenbank, Plugins, kommerzielle Lizenz, API, CLI-Selbstaktualisierung und Skills-Verwaltung.'
+keywords: 'NocoBase CLI,nb,Kommandozeile,Befehlsreferenz,Backup,Wiederherstellung,Umgebungsverwaltung,Portal,Plugin-Verwaltung,kommerzielle Lizenz,API'
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ Die folgenden Befehlsgruppen werden in `nb --help` angezeigt:
 | [`nb env`](./env/index.md)           | Verwaltet NocoBase-Projektumgebungen, die aktuelle env, Status, Details und Laufzeitbefehle.                  |
 | [`nb license`](./license/index.md)   | Verwaltet kommerzielle Lizenzen und lizenzierte Plugins.                                                      |
 | [`nb plugin`](./plugin/index.md)     | Verwaltet Plugins der ausgewählten NocoBase-env.                                                              |
+| [`nb portal`](./portal/index.md)     | Verwaltet Portal-Workspaces: konfigurieren, erstellen, entwickeln, Quellcode synchronisieren, deployen und löschen. |
 | [`nb scaffold`](./scaffold/index.md) | Erzeugt Scaffolding für die NocoBase-Plugin-Entwicklung.                                                      |
 | [`nb self`](./self/index.md)         | Prüft oder aktualisiert die NocoBase CLI selbst.                                                              |
 | [`nb session`](./session/index.md)   | Konfiguriert `NB_SESSION_ID`, damit die current env pro Shell oder agent runtime isoliert wird.               |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## Beispiele
@@ -125,6 +128,15 @@ Status der kommerziellen Lizenz anzeigen:
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+Ein Portal erstellen und entwickeln:
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 Ein Backup erstellen und herunterladen:

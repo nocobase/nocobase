@@ -91,6 +91,46 @@ test('executeRawApiRequest preserves custom headers and adds the CLI request sou
   expect(requestHeaders?.get('content-type')).toBe('application/json');
 });
 
+test('executeApiRequest sends bracketed array query parameters with raw JSON body', async () => {
+  let requestUrl = '';
+  let requestBody: BodyInit | null | undefined;
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    requestUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    requestBody = init?.body;
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  await executeApiRequest({
+    cliVersion: '2.1.0-beta.37',
+    flags: {
+      body: JSON.stringify({ uid: 'customer' }),
+      filterKeys: ['uid'],
+    },
+    operation: {
+      method: 'post',
+      pathTemplate: '/multiPortals:firstOrCreate',
+      hasBody: true,
+      bodyRequired: true,
+      parameters: [
+        {
+          name: 'filterKeys[]',
+          flagName: 'filterKeys',
+          in: 'query',
+          required: true,
+          isArray: true,
+        },
+      ],
+    },
+  });
+
+  expect(requestUrl).toBe('http://localhost:13000/api/multiPortals:firstOrCreate?filterKeys%5B%5D=uid');
+  expect(requestBody).toBe(JSON.stringify({ uid: 'customer' }));
+});
+
 test('executeApiRequest preserves authorization across same-url http to https redirects', async () => {
   const calls: Array<{ url: string; auth: string | null; redirect?: RequestRedirect }> = [];
 

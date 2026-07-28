@@ -6,12 +6,12 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
+    "@nocobase/utils": "2.2.0-beta.15",
     "minimatch": "^5.1.1"
   },
   "peerDependencies": {
     "@nocobase/database": "2.x",
-    "@nocobase/resourcer": "2.x",
-    "@nocobase/utils": "2.x"
+    "@nocobase/resourcer": "2.x"
   },
   "repository": {
     "type": "git",
