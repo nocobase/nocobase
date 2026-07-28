@@ -95,11 +95,10 @@ import {
 } from './useRunJSSourceResource';
 import {
   buildLineDiff,
+  buildWorkspaceDraftToken,
   buildWorkspaceChanges,
   buildWorkspaceSnapshotChanges,
-  buildWorkspaceSnapshotKey,
-  ensureManifestFolders,
-  ensureManifestEntry,
+  ensureWorkspaceManifest,
   formatVersion,
   hasWorkspaceChanges,
   inferLanguageFromPath,
@@ -355,6 +354,13 @@ function collectAuthoringVirtualFiles(
   return Array.from(declarations.values());
 }
 
+interface WorkspaceDraftState {
+  activePath?: string;
+  entryPath: string;
+  files: RunJSWorkspaceFile[];
+  openPaths: string[];
+}
+
 export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const {
     t: hostT,
@@ -382,12 +388,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const historyRequestSeqRef = useRef(0);
   const consoleSeqRef = useRef(0);
   const fileRevisionSeqRef = useRef(0);
-  const operationSequenceRef = useRef(0);
-  const projectRevisionRef = useRef(0);
-  const workspaceGenerationRef = useRef(0);
-  const latestWorkspaceSnapshotRef = useRef('');
+  const draftRevisionRef = useRef(0);
+  const workspaceSessionRef = useRef(0);
+  const draftTokenRef = useRef(buildWorkspaceDraftToken(0, 0, value.version));
   const activeRenderErrorReporterDisposerRef = useRef<(() => void) | null>(null);
-  const previousActivePathRef = useRef<string>();
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const studioRootRef = useRef<HTMLDivElement>(null);
@@ -400,7 +404,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const openSaveModalRef = useRef<() => Promise<boolean>>(async () => false);
   const confirmedCloseRef = useRef(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
-  const [projectRevision, setProjectRevision] = useState(0);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
   const [actionError, setActionError] = useState<ActionErrorState | null>(null);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
@@ -463,13 +466,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const workspaceEditingDisabled = workspaceReadOnly;
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
   const saveSummary = summarizeWorkspaceChanges(baseFiles, files);
-  const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version, {
-    locatorKey,
-    operationSequence: operationSequenceRef.current,
-    projectRevision,
-    repoId: workspace?.repository.repoId,
-    workspaceGeneration: workspaceGenerationRef.current,
-  });
   const showDiff = activeTab === 'diff';
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const historyItems = workspace?.history?.items || [];
@@ -584,38 +580,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     [],
   );
 
-  const syncWorkspaceSnapshotRef = useCallback(
-    (nextFiles: RunJSWorkspaceFile[], nextEntryPath: string, repoId = workspace?.repository.repoId) => {
-      projectRevisionRef.current += 1;
-      operationSequenceRef.current += 1;
-      setProjectRevision(projectRevisionRef.current);
-      latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(nextFiles, nextEntryPath, value.version, {
-        locatorKey,
-        operationSequence: operationSequenceRef.current,
-        projectRevision: projectRevisionRef.current,
-        repoId,
-        workspaceGeneration: workspaceGenerationRef.current,
-      });
-    },
-    [locatorKey, value.version, workspace?.repository.repoId],
-  );
-
-  const beginWorkspaceOperation = useCallback(
-    (requestFiles: RunJSWorkspaceFile[], requestEntryPath: string, repoId = workspace?.repository.repoId) => {
-      operationSequenceRef.current += 1;
-      const token = buildWorkspaceSnapshotKey(requestFiles, requestEntryPath, value.version, {
-        locatorKey,
-        operationSequence: operationSequenceRef.current,
-        projectRevision: projectRevisionRef.current,
-        repoId,
-        workspaceGeneration: workspaceGenerationRef.current,
-      });
-      latestWorkspaceSnapshotRef.current = token;
-      return token;
-    },
-    [locatorKey, value.version, workspace?.repository.repoId],
-  );
-
   const clearConsole = useCallback(() => {
     setConsoleEntries([]);
   }, []);
@@ -629,6 +593,47 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setSaveDiagnostics([]);
     setSaveDiagnosticsOpen(false);
   }, []);
+
+  const applyWorkspaceMutation = useCallback(
+    (mutate: (current: WorkspaceDraftState) => WorkspaceDraftState): WorkspaceDraftState => {
+      const current = {
+        activePath: activePathRef.current,
+        entryPath: entryPathRef.current,
+        files: filesRef.current,
+        openPaths: openPathsRef.current,
+      };
+      const proposed = mutate(current);
+      const nextFiles = withWorkspaceFileRevisions(current.files, proposed.files, () => ++fileRevisionSeqRef.current);
+      const paths = new Set(nextFiles.map((file) => file.path));
+      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, proposed.entryPath);
+      const nextActivePath =
+        (proposed.activePath && paths.has(proposed.activePath) ? proposed.activePath : undefined) ||
+        (paths.has(nextEntryPath) ? nextEntryPath : nextFiles[0]?.path);
+      const nextOpenPaths = proposed.openPaths.filter((path) => paths.has(path));
+      if (nextActivePath && !nextOpenPaths.includes(nextActivePath)) {
+        nextOpenPaths.push(nextActivePath);
+      }
+      const next = { activePath: nextActivePath, entryPath: nextEntryPath, files: nextFiles, openPaths: nextOpenPaths };
+
+      draftRevisionRef.current += 1;
+      draftTokenRef.current = buildWorkspaceDraftToken(
+        draftRevisionRef.current,
+        workspaceSessionRef.current,
+        valueVersionRef.current,
+      );
+      filesRef.current = nextFiles;
+      entryPathRef.current = nextEntryPath;
+      activePathRef.current = nextActivePath;
+      openPathsRef.current = nextOpenPaths;
+      invalidatePreview();
+      setFiles(nextFiles);
+      setEntryPath(nextEntryPath);
+      setActivePath(nextActivePath);
+      setOpenPaths(nextOpenPaths);
+      return next;
+    },
+    [invalidatePreview],
+  );
 
   const rememberDialogTrigger = useCallback(() => {
     if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
@@ -684,11 +689,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     activeRenderErrorReporterDisposerRef.current = null;
     requestSeqRef.current += 1;
     historyRequestSeqRef.current += 1;
-    latestWorkspaceSnapshotRef.current = '';
-    workspaceGenerationRef.current += 1;
-    projectRevisionRef.current += 1;
-    operationSequenceRef.current += 1;
-    setProjectRevision(projectRevisionRef.current);
+    workspaceSessionRef.current += 1;
+    draftRevisionRef.current = 0;
+    draftTokenRef.current = buildWorkspaceDraftToken(0, workspaceSessionRef.current, valueVersionRef.current);
     const embeddedSaveRequest = embeddedSaveRequestRef.current;
     embeddedSaveRequestRef.current = null;
     embeddedSavePromiseRef.current = null;
@@ -735,16 +738,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     resetWorkspaceState();
   }, [locatorKey, resetWorkspaceState]);
 
-  useEffect(() => {
-    latestWorkspaceSnapshotRef.current = currentPreviewSnapshotKey;
-  }, [currentPreviewSnapshotKey]);
-
-  useEffect(() => {
-    if (!workspace || previousActivePathRef.current === activePath) return;
-    previousActivePathRef.current = activePath;
-    syncWorkspaceSnapshotRef(files, entryPath);
-  }, [activePath, entryPath, files, syncWorkspaceSnapshotRef, workspace]);
-
   const openFilePath = useCallback((path: string | undefined) => {
     if (!path) {
       return;
@@ -768,18 +761,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     [activePath, files],
   );
 
-  const replaceOpenFilePath = useCallback((fromPath: string, toPath: string) => {
-    setActivePath((current) => (current === fromPath ? toPath : current));
-    setOpenPaths((current) => {
-      const next = current.map((path) => (path === fromPath ? toPath : path));
-      return next.includes(toPath) ? Array.from(new Set(next)) : next;
-    });
-  }, []);
-
   const applyWorkspaceLoadResult = useCallback(
     (loaded: WorkspaceLoadResult) => {
-      workspaceGenerationRef.current += 1;
-      const nextCurrentFiles = withWorkspaceFileRevisions([], loaded.currentFiles, () => ++fileRevisionSeqRef.current);
+      workspaceSessionRef.current += 1;
+      const nextCurrentFiles = normalizeWorkspaceFiles(loaded.currentFiles);
       const nextActivePath =
         nextCurrentFiles.find((file) => file.path === loaded.entryPath)?.path ||
         nextCurrentFiles[0]?.path ||
@@ -793,11 +778,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setHistoryNextBeforeSeq(getNextHistoryCursor(loaded.opened.history.items, commitHistoryDefaultLimit));
       setBaseFiles(loaded.baseFiles);
       setSavedFiles(nextCurrentFiles);
-      setFiles(nextCurrentFiles);
-      setEntryPath(loaded.entryPath);
-      syncWorkspaceSnapshotRef(nextCurrentFiles, loaded.entryPath, loaded.opened.repository.repoId);
-      setActivePath(nextActivePath);
-      setOpenPaths([nextActivePath]);
+      applyWorkspaceMutation(() => ({
+        activePath: nextActivePath,
+        entryPath: loaded.entryPath,
+        files: nextCurrentFiles,
+        openPaths: [nextActivePath],
+      }));
       setSelectedDiffPath(undefined);
       setPreviewDiagnostics([]);
       setPreviewArtifact(null);
@@ -805,7 +791,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setRestoringVersion(false);
       setActionError(null);
     },
-    [syncWorkspaceSnapshotRef],
+    [applyWorkspaceMutation],
   );
 
   const loadWorkspace = useCallback(async (): Promise<WorkspaceLoadResult | null> => {
@@ -971,11 +957,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setActiveTab('code');
     setPreviewing(true);
     setPreviewDiagnostics([]);
-    const requestSnapshotKey = beginWorkspaceOperation(
-      currentWorkspace.currentFiles,
-      currentWorkspace.entryPath,
-      requestRepoId,
-    );
+    const requestDraftToken = draftTokenRef.current;
     try {
       const result = await runJSSourceRequest('compilePreview', {
         locator: requestLocator,
@@ -985,14 +967,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         entryPath: currentWorkspace.entryPath,
         version: value.version,
       });
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+      if (draftTokenRef.current !== requestDraftToken) {
         return;
       }
       setPreviewDiagnostics(result.artifact.diagnostics);
       setPreviewArtifact({
         code: result.artifact.code,
         version: result.artifact.version,
-        snapshotKey: requestSnapshotKey,
+        snapshotKey: requestDraftToken,
       });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
@@ -1008,7 +990,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
             const runCompletedMessage = t('Run completed');
             const runFailedMessage = t('Run failed');
             const disposeReporter = registerRunJSRenderErrorReporter(previewModel, (error, info) => {
-              if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return;
+              if (draftTokenRef.current !== requestDraftToken) return;
               const key = getRunJSRenderErrorKey(error, info);
               if (renderErrorState.keys.has(key)) return;
               renderErrorState.keys.add(key);
@@ -1027,7 +1009,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
             code: result.artifact.code,
             version: result.artifact.version,
           });
-          if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+          if (draftTokenRef.current !== requestDraftToken) {
             return;
           }
           renderErrorState.settled = true;
@@ -1037,7 +1019,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
             sourceMap: result.artifact.sourceMap,
             version: result.artifact.version,
           });
-          if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+          if (draftTokenRef.current !== requestDraftToken) {
             return;
           }
           appendRunDiagnostics(runDiagnostics, appendConsole);
@@ -1049,14 +1031,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         message: hasCompileError ? t('Compile failed') : hasRuntimeError ? t('Run failed') : t('Run completed'),
       });
     } catch (error) {
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return;
+      if (draftTokenRef.current !== requestDraftToken) return;
       reportActionError(error, t('Run failed'), runPreview);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Run failed')),
       });
     } finally {
-      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
+      if (draftTokenRef.current === requestDraftToken) {
         setPreviewing(false);
       }
     }
@@ -1118,12 +1100,12 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setActionError(null);
     const requestFiles = normalizeWorkspaceFiles(files);
     const requestEntryPath = entryPath;
-    const requestSnapshotKey = beginWorkspaceOperation(requestFiles, requestEntryPath);
+    const requestDraftToken = draftTokenRef.current;
     const requestLocator = props.locator;
     const requestRepoId = workspace.repository.repoId;
     const requestBaseCommitId = workspace.repository.headCommitId;
     const requestBaseOwnerFingerprint = workspace.ownerFingerprint;
-    const requestGeneration = workspaceGenerationRef.current;
+    const requestSession = workspaceSessionRef.current;
     const requestVersionMessage = versionMessage.trim();
     try {
       let result: RunJSSourceSaveResult;
@@ -1142,10 +1124,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         if (!(error instanceof RunJSSourceRequestError) || error.code !== 'BASE_COMMIT_OUTDATED') {
           throw error;
         }
-        if (workspaceGenerationRef.current !== requestGeneration) return;
+        if (workspaceSessionRef.current !== requestSession) return;
 
         const latest = await runJSSourceRequest('openLatest', { locator: requestLocator });
-        if (workspaceGenerationRef.current !== requestGeneration) return;
+        if (workspaceSessionRef.current !== requestSession) return;
         const latestFiles = normalizeWorkspaceFiles(latest.files);
         const merged = mergeRunJSWorkspaceFiles(baseFiles, requestFiles, latestFiles);
         if (merged.conflictPaths.length) {
@@ -1172,15 +1154,15 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           version: value.version,
         });
       }
-      if (workspaceGenerationRef.current !== requestGeneration) return;
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+      if (workspaceSessionRef.current !== requestSession) return;
+      if (draftTokenRef.current !== requestDraftToken) {
         const savedVersion = await runJSSourceRequest('getVersion', {
           locator: requestLocator,
           repoId: requestRepoId,
           commitId: result.commit.id,
           includeFiles: true,
         });
-        if (workspaceGenerationRef.current !== requestGeneration) return;
+        if (workspaceSessionRef.current !== requestSession) return;
         const savedFiles = normalizeWorkspaceFiles(savedVersion.files);
         setWorkspace((current) =>
           current?.repository.repoId === requestRepoId
@@ -1240,7 +1222,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         }
       }
     } catch (error) {
-      if (workspaceGenerationRef.current !== requestGeneration) return;
+      if (workspaceSessionRef.current !== requestSession) return;
       const diagnostics = getRunJSSourceCompileDiagnostics(error);
       if (diagnostics.length) {
         setPreviewDiagnostics(diagnostics);
@@ -1255,7 +1237,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         message: formatVscComponentError(error, t('Save failed')),
       });
     } finally {
-      if (workspaceGenerationRef.current === requestGeneration) setSaving(false);
+      if (workspaceSessionRef.current === requestSession) setSaving(false);
     }
   };
 
@@ -1382,7 +1364,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     if (!workspace || !props.locator || workspaceEditingDisabled) {
       return;
     }
-    const restoreSnapshotKey = beginWorkspaceOperation(files, entryPath, workspace.repository.repoId);
+    const restoreDraftToken = draftTokenRef.current;
+    const restoreSession = workspaceSessionRef.current;
 
     setRestoringVersion(true);
     setActionError(null);
@@ -1393,37 +1376,37 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         commitId: commit.id,
         includeFiles: true,
       });
-      if (latestWorkspaceSnapshotRef.current !== restoreSnapshotKey) {
+      if (workspaceSessionRef.current !== restoreSession || draftTokenRef.current !== restoreDraftToken) {
         appendConsole({
           level: 'warn',
           message: t('Restore skipped because local edits changed'),
         });
         return;
       }
-      const nextFiles = withWorkspaceFileRevisions(files, result.files, () => ++fileRevisionSeqRef.current);
+      const nextFiles = normalizeWorkspaceFiles(result.files);
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
       const nextActivePath = nextFiles.find((file) => file.path === nextEntryPath)?.path || nextFiles[0]?.path;
-      setFiles(nextFiles);
-      setEntryPath(nextEntryPath);
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setActivePath(nextActivePath);
-      setOpenPaths(nextActivePath ? [nextActivePath] : []);
+      applyWorkspaceMutation(() => ({
+        activePath: nextActivePath,
+        entryPath: nextEntryPath,
+        files: nextFiles,
+        openPaths: nextActivePath ? [nextActivePath] : [],
+      }));
       setActiveTab('code');
-      invalidatePreview();
       setNotice({ type: 'info', message: `${t('Restored from')} ${formatVersion(commit.seq)}` });
       appendConsole({
         level: 'info',
         message: `${t('Restored from')} ${formatVersion(commit.seq)}`,
       });
     } catch (error) {
-      if (latestWorkspaceSnapshotRef.current !== restoreSnapshotKey) return;
+      if (workspaceSessionRef.current !== restoreSession || draftTokenRef.current !== restoreDraftToken) return;
       reportActionError(error, t('Failed to restore version'), () => loadVersionIntoEditor(commit));
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to restore version')),
       });
     } finally {
-      if (latestWorkspaceSnapshotRef.current === restoreSnapshotKey) setRestoringVersion(false);
+      if (workspaceSessionRef.current === restoreSession) setRestoringVersion(false);
     }
   };
 
@@ -1443,24 +1426,20 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
 
     const nextPath = buildNewFilePath(files, parentPath);
-    invalidatePreview();
-    setFiles((current) => {
-      const nextFiles = upsertWorkspaceFile(current, {
+    applyWorkspaceMutation((current) => {
+      const nextFiles = upsertWorkspaceFile(current.files, {
         path: nextPath,
         content: '',
         language: inferLanguageFromPath(nextPath),
       });
-      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-      const syncedFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestEntry(nextFiles, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(syncedFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return syncedFiles;
+      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, current.entryPath);
+      return {
+        activePath: nextPath,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(nextFiles, { createIfMissing: true, entryPath: nextEntryPath }),
+        openPaths: current.openPaths.includes(nextPath) ? current.openPaths : [...current.openPaths, nextPath],
+      };
     });
-    openFilePath(nextPath);
     return nextPath;
   };
 
@@ -1470,17 +1449,17 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
 
     const nextPath = buildNewFolderPath(files, parentPath);
-    invalidatePreview();
-    setFiles((current) => {
-      const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestFolders(current, [...collectRunJSWorkspaceFolders(current), nextPath], nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return nextFiles;
+    applyWorkspaceMutation((current) => {
+      const nextEntryPath = resolveWorkspaceEntryPath(current.files, current.entryPath);
+      return {
+        ...current,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(current.files, {
+          createIfMissing: true,
+          entryPath: nextEntryPath,
+          folders: [...collectRunJSWorkspaceFolders(current.files), nextPath],
+        }),
+      };
     });
     return nextPath;
   };
@@ -1506,21 +1485,16 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return true;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
-      const renamed = replaceWorkspaceFilePath(current, path, normalizedNextPath);
-      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestEntry(renamed, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return nextFiles;
+    applyWorkspaceMutation((current) => {
+      const renamed = replaceWorkspaceFilePath(current.files, path, normalizedNextPath);
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, current.entryPath);
+      return {
+        activePath: current.activePath === path ? normalizedNextPath : current.activePath,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(renamed, { createIfMissing: true, entryPath: nextEntryPath }),
+        openPaths: current.openPaths.map((openPath) => (openPath === path ? normalizedNextPath : openPath)),
+      };
     });
-    replaceOpenFilePath(path, normalizedNextPath);
-    openFilePath(normalizedNextPath);
     return true;
   };
 
@@ -1546,27 +1520,28 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return false;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
-      const renamed = current.map((file) => ({
+    applyWorkspaceMutation((current) => {
+      const renamed = current.files.map((file) => ({
         ...file,
         path: replaceRunJSPathPrefix(file.path, path, normalizedNextPath),
       }));
-      const nextFolders = collectRunJSWorkspaceFolders(current).map((folder) =>
+      const nextFolders = collectRunJSWorkspaceFolders(current.files).map((folder) =>
         replaceRunJSPathPrefix(folder, path, normalizedNextPath),
       );
-      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestFolders(ensureManifestEntry(renamed, nextEntryPath, true), nextFolders, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return nextFiles;
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, current.entryPath);
+      return {
+        activePath: current.activePath
+          ? replaceRunJSPathPrefix(current.activePath, path, normalizedNextPath)
+          : undefined,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(renamed, {
+          createIfMissing: true,
+          entryPath: nextEntryPath,
+          folders: nextFolders,
+        }),
+        openPaths: current.openPaths.map((openPath) => replaceRunJSPathPrefix(openPath, path, normalizedNextPath)),
+      };
     });
-    setOpenPaths((current) => current.map((openPath) => replaceRunJSPathPrefix(openPath, path, normalizedNextPath)));
-    setActivePath((current) => (current ? replaceRunJSPathPrefix(current, path, normalizedNextPath) : current));
     return true;
   };
 
@@ -1580,18 +1555,18 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return false;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
-      const nextFolders = collectRunJSWorkspaceFolders(current).filter((folder) => folder !== path);
-      const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestFolders(current, nextFolders, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return nextFiles;
+    applyWorkspaceMutation((current) => {
+      const nextFolders = collectRunJSWorkspaceFolders(current.files).filter((folder) => folder !== path);
+      const nextEntryPath = resolveWorkspaceEntryPath(current.files, current.entryPath);
+      return {
+        ...current,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(current.files, {
+          createIfMissing: true,
+          entryPath: nextEntryPath,
+          folders: nextFolders,
+        }),
+      };
     });
     return true;
   };
@@ -1616,21 +1591,16 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
-      const renamed = replaceWorkspaceFilePath(current, path, nextPath);
-      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestEntry(renamed, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return nextFiles;
+    applyWorkspaceMutation((current) => {
+      const renamed = replaceWorkspaceFilePath(current.files, path, nextPath);
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, current.entryPath);
+      return {
+        activePath: current.activePath === path ? nextPath : current.activePath,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(renamed, { createIfMissing: true, entryPath: nextEntryPath }),
+        openPaths: current.openPaths.map((openPath) => (openPath === path ? nextPath : openPath)),
+      };
     });
-    replaceOpenFilePath(path, nextPath);
-    openFilePath(nextPath);
   };
 
   const moveFolderToFolder = (path: string, folderPath: string) => {
@@ -1670,10 +1640,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
+    applyWorkspaceMutation((current) => {
       const renamed = normalizeWorkspaceFiles(
-        current.map((file) => {
+        current.files.map((file) => {
           if (!isRunJSPathInsideFolder(file.path, path)) {
             return file;
           }
@@ -1686,23 +1655,21 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           };
         }),
       );
-      const nextFolders = collectRunJSWorkspaceFolders(current).map((folder) =>
+      const nextFolders = collectRunJSWorkspaceFolders(current.files).map((folder) =>
         isRunJSPathInsideFolder(folder, path) ? replaceRunJSPathPrefix(folder, path, nextPath) : folder,
       );
-      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        isRunJSPathInsideFolder(runJSManifestPath, path)
-          ? renamed
-          : ensureManifestFolders(ensureManifestEntry(renamed, nextEntryPath, true), nextFolders, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      return nextFiles;
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, current.entryPath);
+      return {
+        activePath: current.activePath ? replaceRunJSPathPrefix(current.activePath, path, nextPath) : undefined,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(renamed, {
+          createIfMissing: true,
+          entryPath: nextEntryPath,
+          folders: nextFolders,
+        }),
+        openPaths: current.openPaths.map((openPath) => replaceRunJSPathPrefix(openPath, path, nextPath)),
+      };
     });
-    setOpenPaths((current) => current.map((openPath) => replaceRunJSPathPrefix(openPath, path, nextPath)));
-    setActivePath((current) => (current ? replaceRunJSPathPrefix(current, path, nextPath) : current));
   };
 
   const deleteFile = (path: string | undefined = activePath) => {
@@ -1710,24 +1677,15 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
-      const nextFiles = removeWorkspaceFile(current, path);
-      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-      const syncedFiles = withWorkspaceFileRevisions(
-        current,
-        ensureManifestEntry(nextFiles, nextEntryPath, true),
-        () => ++fileRevisionSeqRef.current,
-      );
-      const nextActivePath = syncedFiles.find((file) => file.path === nextEntryPath)?.path || syncedFiles[0]?.path;
-      syncWorkspaceSnapshotRef(syncedFiles, nextEntryPath);
-      setEntryPath(nextEntryPath);
-      setActivePath((currentPath) => (currentPath === path ? nextActivePath : currentPath));
-      setOpenPaths((paths) => {
-        const nextPaths = paths.filter((openPath) => openPath !== path);
-        return nextPaths.length ? nextPaths : nextActivePath ? [nextActivePath] : [];
-      });
-      return syncedFiles;
+    applyWorkspaceMutation((current) => {
+      const nextFiles = removeWorkspaceFile(current.files, path);
+      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, current.entryPath);
+      return {
+        activePath: current.activePath === path ? undefined : current.activePath,
+        entryPath: nextEntryPath,
+        files: ensureWorkspaceManifest(nextFiles, { createIfMissing: true, entryPath: nextEntryPath }),
+        openPaths: current.openPaths.filter((openPath) => openPath !== path),
+      };
     });
   };
 
@@ -1736,23 +1694,16 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       return;
     }
 
-    invalidatePreview();
-    setFiles((current) => {
-      const nextFiles = withWorkspaceFileRevisions(
-        current,
-        updateWorkspaceFile(current, activePath, (file) => ({
-          ...file,
-          content,
-        })),
-        () => ++fileRevisionSeqRef.current,
-      );
-      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-      if (nextEntryPath !== entryPath) {
-        setEntryPath(nextEntryPath);
-      }
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-
-      return nextFiles;
+    applyWorkspaceMutation((current) => {
+      const nextFiles = updateWorkspaceFile(current.files, activePath, (file) => ({
+        ...file,
+        content,
+      }));
+      return {
+        ...current,
+        entryPath: resolveWorkspaceEntryPath(nextFiles, current.entryPath),
+        files: nextFiles,
+      };
     });
   };
 
@@ -1863,30 +1814,30 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
 
     setActionError(null);
+    const importSession = workspaceSessionRef.current;
     try {
       const zipBase64 = await readFileAsDataUrl(file);
       const result = await runJSSourceRequest('importZip', {
         locator: props.locator,
         zipBase64,
       });
-      const nextFiles = withWorkspaceFileRevisions(
-        files,
-        result.files.map((importedFile) => ({
-          ...importedFile,
-          managed: importedFile.path === runJSManifestPath,
-        })),
-        () => ++fileRevisionSeqRef.current,
-      );
+      if (workspaceSessionRef.current !== importSession) {
+        return;
+      }
+      const nextFiles = result.files.map((importedFile) => ({
+        ...importedFile,
+        managed: importedFile.path === runJSManifestPath,
+      }));
       const nextEntryPath = result.entryPath;
       const nextActivePath =
         nextFiles.find((importedFile) => importedFile.path === nextEntryPath)?.path || nextFiles[0]?.path;
-      setFiles(nextFiles);
-      setEntryPath(nextEntryPath);
-      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-      setActivePath(nextActivePath);
-      setOpenPaths(nextActivePath ? [nextActivePath] : []);
+      applyWorkspaceMutation(() => ({
+        activePath: nextActivePath,
+        entryPath: nextEntryPath,
+        files: nextFiles,
+        openPaths: nextActivePath ? [nextActivePath] : [],
+      }));
       setActiveTab('code');
-      invalidatePreview();
       const importedVersion = result.manifest.runtimeVersion;
       if (importedVersion && importedVersion !== value.version) {
         onChange?.({ ...value, version: importedVersion });
@@ -1962,8 +1913,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
   const discardLocalAndContinue = async () => {
     hasUnsavedLocalChangesRef.current = false;
-    setFiles(savedFiles);
-    syncWorkspaceSnapshotRef(savedFiles, resolveWorkspaceEntryPath(savedFiles, entryPath));
+    applyWorkspaceMutation((current) => ({
+      ...current,
+      entryPath: resolveWorkspaceEntryPath(savedFiles, current.entryPath),
+      files: savedFiles,
+    }));
     setCloseConfirmOpen(false);
     if (pendingDirtyAction === 'refresh') {
       await loadWorkspace();
@@ -2063,31 +2017,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       getVirtualFiles: () =>
         collectAuthoringVirtualFiles(filesRef.current, workspaceTypeScriptContextResolverRef.current),
       commitSourceFiles: (nextSourceFiles) => {
-        const nextFiles = toRunJSWorkspaceFiles(nextSourceFiles);
-        const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPathRef.current);
-        const nextPaths = new Set(nextFiles.map((file) => file.path));
-        const nextActivePath =
-          (activePathRef.current && nextPaths.has(activePathRef.current) ? activePathRef.current : undefined) ||
-          (nextPaths.has(nextEntryPath) ? nextEntryPath : nextFiles[0]?.path);
-        const nextOpenPaths = openPathsRef.current.filter((path) => nextPaths.has(path));
-        if (nextActivePath && !nextOpenPaths.includes(nextActivePath)) {
-          nextOpenPaths.push(nextActivePath);
-        }
-
-        filesRef.current = nextFiles;
-        entryPathRef.current = nextEntryPath;
-        activePathRef.current = nextActivePath;
-        openPathsRef.current = nextOpenPaths;
-        latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(
-          nextFiles,
-          nextEntryPath,
-          valueVersionRef.current,
-        );
-        invalidatePreview();
-        setFiles(nextFiles);
-        setEntryPath(nextEntryPath);
-        setActivePath(nextActivePath);
-        setOpenPaths(nextOpenPaths);
+        applyWorkspaceMutation((current) => {
+          const nextFiles = toRunJSWorkspaceFiles(nextSourceFiles);
+          return {
+            ...current,
+            entryPath: resolveWorkspaceEntryPath(nextFiles, current.entryPath),
+            files: nextFiles,
+          };
+        });
         setActiveTab('code');
       },
       getActivePath: () => activePathRef.current,
@@ -2159,7 +2096,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     });
 
     return app.aiManager.authoringSurfaces.register(surface);
-  }, [app, authoringSurfaceId, disabled, invalidatePreview, readOnly]);
+  }, [app, applyWorkspaceMutation, authoringSurfaceId, disabled, readOnly]);
 
   useEffect(() => {
     if (!embedded || !onEmbeddedEditorControllerChange) {

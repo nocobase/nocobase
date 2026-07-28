@@ -44,7 +44,7 @@ export interface LightExtensionServiceContext {
   state?: Record<string, unknown>;
   timezone?: string;
   transaction?: Transaction;
-  /** @internal */
+  /** @internal Keeps legacy generic RunJS files inert during remote import; direct authoring remains rejected. */
   allowRemovedGenericRunJSSource?: boolean;
 }
 
@@ -785,6 +785,7 @@ export class LightExtensionRepoService {
   }
 
   private async claimLegacyApplicationRepos(transaction: Transaction): Promise<void> {
+    // Repositories created before application scoping are claimed on first scoped access; removal requires a data migration.
     await this.db.getModel<Model>('lightExtensionRepos').update(
       { applicationName: this.requireApplicationName() },
       {
@@ -799,6 +800,7 @@ export class LightExtensionRepoService {
     if (applicationName === this.requireApplicationName()) {
       return;
     }
+    // Null and empty values are persisted legacy ownership states, not an unowned-repository shortcut.
     if (applicationName === null || typeof applicationName === 'undefined' || applicationName === '') {
       await record.update({ applicationName: this.requireApplicationName() }, { transaction });
       return;

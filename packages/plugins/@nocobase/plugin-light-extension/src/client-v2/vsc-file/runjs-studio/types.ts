@@ -8,7 +8,6 @@
  */
 
 import type {
-  RunJSLegacySource,
   RunJSRuntimeArtifact,
   RunJSSourceKind,
   RunJSSourceInitialSource,
@@ -16,20 +15,14 @@ import type {
   RunJSSourceImportZipResult,
   RunJSSourceLocator,
   RunJSSourceOpenResult,
+  RunJSSourceRepositoryRecord,
   RunJSSourceSaveChangesInput,
   RunJSSourceSaveInput,
   RunJSSourceSaveResult,
-  RunJSSourceWorkspaceFile,
-  RunJSSurfaceStyle,
 } from '../../../shared/vsc-file/runjs-source-contracts';
 export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../../shared/vsc-file/runjs-source-contracts';
 export type { RunJSSourceLocator } from '../../../shared/vsc-file/runjs-source-contracts';
-import type {
-  VscCommitRecord,
-  VscFileChange,
-  VscRepositoryIdentity,
-  VscRepositoryRecord,
-} from '../../../shared/vsc-file/types';
+import type { VscCommitRecord, VscFileChange } from '../../../shared/vsc-file/types';
 
 export interface RunJSWorkspaceFile {
   path: string;
@@ -42,40 +35,9 @@ export interface RunJSWorkspaceFile {
   revision?: number;
 }
 
-export interface RunJSSourceRepositoryRecord extends VscRepositoryRecord {
-  repoId: string;
-}
-
-export interface RunJSSourceInfo {
-  label: string;
-  kind: RunJSSourceKind;
-  surfaceStyle: RunJSSurfaceStyle;
-  runtimeVersion: string;
-  language: RunJSLegacySource['language'];
-  ownerFingerprint: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface RunJSSourcePermissions {
-  canRead: boolean;
-  canWrite: boolean;
-  canSave: boolean;
-}
-
 export type RunJSSourceHistoryItem = VscCommitRecord;
 
-export interface RunJSSourceHistoryState {
-  items: RunJSSourceHistoryItem[];
-}
-
-export interface RunJSSourceOpenWorkspaceResult extends RunJSSourceOpenResult {
-  repositoryIdentity: VscRepositoryIdentity;
-  repository: RunJSSourceRepositoryRecord;
-  source: RunJSSourceInfo;
-  files: RunJSSourceWorkspaceFile[];
-  permissions: RunJSSourcePermissions;
-  history: RunJSSourceHistoryState;
-}
+export type RunJSSourceOpenWorkspaceResult = RunJSSourceOpenResult;
 
 export interface RunJSSourceCompilePreviewInput {
   locator: RunJSSourceLocator;

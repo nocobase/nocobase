@@ -142,7 +142,7 @@ const openResult = {
   history: { items: [] },
 };
 
-function renderEditor() {
+function renderEditor(extraProps: Record<string, unknown> = {}) {
   return render(
     <>
       {runJSStudioProvider.renderEditor({
@@ -159,9 +159,18 @@ function renderEditor() {
             },
           ],
         }),
+        ...extraProps,
       })}
     </>,
   );
+}
+
+function deferred<T>() {
+  let resolveDeferred!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolveDeferred = resolve;
+  });
+  return { promise, resolve: resolveDeferred };
 }
 
 async function getSurface() {
@@ -284,5 +293,67 @@ describe('RunJS Studio authoring surface', () => {
     await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
 
     rendered.unmount();
+  });
+
+  it('ignores a pending Preview after AI Apply changes the draft', async () => {
+    const preview = deferred<unknown>();
+    const onPreview = vi.fn();
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({ data: { data: openResult } });
+      }
+      if (url === 'runJSSources:compilePreview') {
+        return preview.promise;
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+    renderEditor({ onPreview });
+    const surface = await getSurface();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Run' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:compilePreview' })),
+    );
+
+    const snapshot = await surface.getSnapshot();
+    const entry = snapshot.files.find((file) => file.path === 'src/client/index.tsx');
+    const plan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [
+        {
+          type: 'update',
+          path: 'src/client/index.tsx',
+          baseHash: entry?.hash || '',
+          content: 'return 3;',
+        },
+      ],
+    });
+    await act(async () => {
+      await surface.applyPreparedChanges(plan.planId);
+    });
+
+    preview.resolve({
+      data: {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          artifact: {
+            code: 'return 1;',
+            version: 'v2',
+            sourceMap: null,
+            diagnostics: [],
+            filesHash: 'stale-files-hash',
+            entryPath: 'src/client/index.tsx',
+          },
+        },
+      },
+    });
+    await act(async () => {
+      await preview.promise;
+      await Promise.resolve();
+    });
+
+    expect(onPreview).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue('return 3;');
   });
 });

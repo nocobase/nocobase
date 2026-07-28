@@ -209,6 +209,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
       artifact: compiled.artifact,
     };
   },
+  // Published snapshot compatibility alias; both Save actions share writeRunJSSource and its single transaction.
   save: async (db, registry, permissionHooks, authoringInspectors, input, ctx): Promise<RunJSSourceSaveResult> => {
     const saveInput = normalizeSaveInput(input);
     return writeRunJSSource(db, registry, permissionHooks, authoringInspectors, ctx, {

@@ -808,6 +808,77 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;');
   });
 
+  it('ignores a save response after switching to another locator', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) throw new Error('Default request mock is unavailable');
+    const pendingSave = deferred<unknown>();
+    const onPersistedChange = vi.fn();
+    const nextLocator = { ...locator, modelUid: 'fm_2' };
+    const nextOpenResult = {
+      ...openResult,
+      locator: nextLocator,
+      repository: { ...repository, id: 'repo-2', repoId: 'repo-2' },
+      files: [{ ...openResult.files[0], content: 'return next;' }],
+      legacy: { ...openResult.legacy, code: 'return next;' },
+    };
+    mocks.request.mockImplementation((request: { data?: { locator?: { modelUid?: string } }; url: string }) => {
+      if (request.url === 'runJSSources:saveChanges') return pendingSave.promise;
+      if (request.url === 'runJSSources:open' && request.data?.locator?.modelUid === nextLocator.modelUid) {
+        return Promise.resolve({ data: { data: nextOpenResult } });
+      }
+      return defaultRequest(request);
+    });
+    let controller:
+      | { dirty: boolean; requestSave: () => Promise<'cancelled' | 'saved' | 'unchanged'>; saving: boolean }
+      | undefined;
+    const onEmbeddedEditorControllerChange = (next: typeof controller | null) => {
+      if (next) controller = next;
+    };
+    const rendered = renderEditor(vi.fn(), {
+      editorChrome: 'embedded',
+      onEmbeddedEditorControllerChange,
+      onPersistedChange,
+    });
+
+    const editor = await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    await waitFor(() => expect(controller?.dirty).toBe(true));
+    const saveResult = controller?.requestSave();
+    if (!saveResult) throw new Error('Embedded save controller was not registered');
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Save old workspace' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(controller?.saving).toBe(true));
+
+    rendered.rerender(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return next;', version: 'v2' },
+          onChange: vi.fn(),
+          onEmbeddedEditorControllerChange,
+          onPersistedChange,
+          locator: nextLocator,
+          editorChrome: 'embedded',
+          scene: 'block',
+        })}
+      </>,
+    );
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;'));
+
+    const saveResponse = await defaultRequest({ url: 'runJSSources:saveChanges' });
+    await act(async () => {
+      pendingSave.resolve(saveResponse);
+      await pendingSave.promise;
+      await Promise.resolve();
+    });
+
+    await expect(saveResult).resolves.toBe('cancelled');
+    expect(onPersistedChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Edit file content' })).toHaveValue('return next;');
+  });
+
   it('keeps an embedded save pending when newer local edits exist', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');

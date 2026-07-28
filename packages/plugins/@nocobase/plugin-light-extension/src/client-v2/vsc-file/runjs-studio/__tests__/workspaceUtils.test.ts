@@ -12,9 +12,10 @@ import { describe, expect, it } from 'vitest';
 import type { RunJSSourceHistoryItem } from '../types';
 import {
   buildLineDiff,
+  buildWorkspaceDraftToken,
   buildWorkspaceChanges,
   buildWorkspaceSnapshotChanges,
-  buildWorkspaceSnapshotKey,
+  ensureWorkspaceManifest,
   inferLanguageFromPath,
   mergeHistoryItems,
   mergeRunJSWorkspaceFiles,
@@ -114,10 +115,33 @@ describe('workspaceUtils', () => {
     ]);
   });
 
-  it('keeps content-sensitive snapshot keys for callers without revision state', () => {
-    expect(buildWorkspaceSnapshotKey([{ path: 'src/index.ts', content: 'one' }], 'src/index.ts', 'v2')).not.toBe(
-      buildWorkspaceSnapshotKey([{ path: 'src/index.ts', content: 'two' }], 'src/index.ts', 'v2'),
+  it('keeps draft identity separate from workspace content and server state', () => {
+    expect(buildWorkspaceDraftToken(4, 2, 'v2')).toBe(
+      JSON.stringify({ draftRevision: 4, runtimeVersion: 'v2', workspaceSession: 2 }),
     );
+  });
+
+  it('updates manifest entry and folders through one normalization boundary', () => {
+    const files = ensureWorkspaceManifest(
+      [
+        {
+          path: '.nocobase/runjs-source.json',
+          content: '{"entry":"src/old.ts","runtimeVersion":"v2","custom":true}',
+          mode: '100644',
+        },
+        { path: 'src/index.ts', content: 'return true;' },
+      ],
+      { createIfMissing: true, entryPath: 'src/index.ts', folders: ['src/empty', 'src/empty'] },
+    );
+    const manifest = files.find((file) => file.path === '.nocobase/runjs-source.json');
+
+    expect(manifest).toMatchObject({ mode: '100644', language: 'json' });
+    expect(JSON.parse(manifest?.content || '')).toEqual({
+      entry: 'src/index.ts',
+      runtimeVersion: 'v2',
+      custom: true,
+      folders: ['src/empty'],
+    });
   });
 
   it('builds line diff rows for changed content', () => {

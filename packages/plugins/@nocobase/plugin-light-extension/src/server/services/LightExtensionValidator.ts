@@ -167,6 +167,7 @@ export class LightExtensionValidator {
   validateSyncBatch(input: {
     files: LightExtensionSourceFileInput[];
     existingPaths?: Iterable<string>;
+    /** Keeps legacy generic RunJS files inert during remote import; direct authoring remains rejected. */
     allowRemovedGenericRunJSSource?: boolean;
   }): LightExtensionDiagnostic[] {
     const diagnostics: LightExtensionDiagnostic[] = [];
@@ -249,6 +250,7 @@ export class LightExtensionValidator {
 
   validateInitialFiles(input: {
     files: LightExtensionSourceFileInput[];
+    /** Keeps legacy generic RunJS files inert during remote import; direct authoring remains rejected. */
     allowRemovedGenericRunJSSource?: boolean;
   }): LightExtensionDiagnostic[] {
     const writeDiagnostics = this.validateSyncBatch(input);

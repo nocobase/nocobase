@@ -411,13 +411,12 @@ export function upsertWorkspaceFile(files: RunJSWorkspaceFile[], file: RunJSWork
   return normalizeWorkspaceFiles([...files.filter((item) => item.path !== file.path), file]);
 }
 
-export function ensureManifestEntry(
+export function ensureWorkspaceManifest(
   files: RunJSWorkspaceFile[],
-  entryPath: string,
-  createIfMissing: boolean,
+  options: { createIfMissing: boolean; entryPath: string; folders?: string[] },
 ): RunJSWorkspaceFile[] {
   const manifest = files.find((file) => file.path === runJSManifestPath);
-  if (!manifest && !createIfMissing) {
+  if (!manifest && !options.createIfMissing) {
     return files;
   }
 
@@ -433,41 +432,10 @@ export function ensureManifestEntry(
     }
   }
 
-  nextManifest.entry = entryPath;
-
-  return upsertWorkspaceFile(files, {
-    path: runJSManifestPath,
-    content: `${JSON.stringify(nextManifest, null, 2)}\n`,
-    language: 'json',
-    mode: manifest?.mode,
-  });
-}
-
-export function ensureManifestFolders(
-  files: RunJSWorkspaceFile[],
-  folders: string[],
-  entryPath: string,
-  createIfMissing: boolean,
-): RunJSWorkspaceFile[] {
-  const manifest = files.find((file) => file.path === runJSManifestPath);
-  if (!manifest && !createIfMissing) {
-    return files;
+  nextManifest.entry = options.entryPath;
+  if (options.folders) {
+    nextManifest.folders = normalizeRunJSWorkspaceFolders(options.folders);
   }
-
-  let nextManifest: Record<string, unknown> = {};
-  if (manifest?.content) {
-    try {
-      const parsed = JSON.parse(manifest.content);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        nextManifest = parsed as Record<string, unknown>;
-      }
-    } catch (_) {
-      nextManifest = {};
-    }
-  }
-
-  nextManifest.entry = entryPath;
-  nextManifest.folders = normalizeRunJSWorkspaceFolders(folders);
 
   return upsertWorkspaceFile(files, {
     path: runJSManifestPath,
@@ -520,34 +488,15 @@ export function formatVersion(seq?: number | null): string {
   return typeof seq === 'number' ? `v${seq}` : 'v-';
 }
 
-export function buildWorkspaceSnapshotKey(
-  files: RunJSWorkspaceFile[],
-  entryPath: string,
-  version: string | undefined,
-  state?: {
-    locatorKey: string;
-    operationSequence: number;
-    projectRevision: number;
-    repoId?: string;
-    workspaceGeneration: number;
-  },
+export function buildWorkspaceDraftToken(
+  draftRevision: number,
+  workspaceSession: number,
+  runtimeVersion?: string,
 ): string {
   return JSON.stringify({
-    entryPath,
-    locatorKey: state?.locatorKey || '',
-    operationSequence: state?.operationSequence || 0,
-    projectRevision: state?.projectRevision || 0,
-    repoId: state?.repoId || '',
-    version: version || '',
-    workspaceGeneration: state?.workspaceGeneration || 0,
-    files: state
-      ? undefined
-      : normalizeWorkspaceFiles(files).map((file) => ({
-          path: file.path,
-          content: file.content,
-          language: file.language || '',
-          mode: file.mode || '',
-        })),
+    draftRevision,
+    runtimeVersion: runtimeVersion || '',
+    workspaceSession,
   });
 }
 

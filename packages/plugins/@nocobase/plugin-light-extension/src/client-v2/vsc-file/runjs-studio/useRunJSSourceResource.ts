@@ -32,7 +32,9 @@ export const runJSSourceActionNames = [
   'getVersion',
 ] as const;
 
-export type RunJSSourceLoadingState = Partial<Record<RunJSSourceActionName, boolean>>;
+const runJSSourceLoadingActionNames = ['restoreFromCode', 'exportZip'] as const;
+
+type RunJSSourceLoadingActionName = (typeof runJSSourceLoadingActionNames)[number];
 
 export interface RunJSSourceRequestErrorOptions {
   action: RunJSSourceActionName;
@@ -77,12 +79,11 @@ export function getRunJSSourceCompileDiagnostics(error: unknown): RunJSCompileDi
 }
 
 export interface UseRunJSSourceResourceResult {
-  loading: RunJSSourceLoadingState;
   request<TAction extends RunJSSourceActionName>(
     action: TAction,
     input: RunJSSourceActionInput<TAction>,
   ): Promise<RunJSSourceActionResult<TAction>>;
-  isLoading(action: RunJSSourceActionName): boolean;
+  isLoading(action: RunJSSourceLoadingActionName): boolean;
 }
 
 type TFunction = (key: string) => string;
@@ -96,13 +97,7 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
   const t = useT();
   const api = ctx?.api;
   const tRef = useRef(t);
-  const [loadingCounts, setLoadingCounts] = useState<Partial<Record<RunJSSourceActionName, number>>>({});
-
-  const loading = useMemo<RunJSSourceLoadingState>(() => {
-    return Object.fromEntries(
-      runJSSourceActionNames.map((action) => [action, Boolean(loadingCounts[action])]),
-    ) as RunJSSourceLoadingState;
-  }, [loadingCounts]);
+  const [loadingCounts, setLoadingCounts] = useState<Partial<Record<RunJSSourceLoadingActionName, number>>>({});
 
   useEffect(() => {
     tRef.current = t;
@@ -113,10 +108,13 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
       action: TAction,
       input: RunJSSourceActionInput<TAction>,
     ): Promise<RunJSSourceActionResult<TAction>> => {
-      setLoadingCounts((current) => ({
-        ...current,
-        [action]: (current[action] || 0) + 1,
-      }));
+      const loadingAction = runJSSourceLoadingActionNames.find((candidate) => candidate === action);
+      if (loadingAction) {
+        setLoadingCounts((current) => ({
+          ...current,
+          [loadingAction]: (current[loadingAction] || 0) + 1,
+        }));
+      }
 
       try {
         if (!api) {
@@ -141,18 +139,20 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
       } catch (error) {
         throw normalizeRunJSSourceError(action, error, tRef.current);
       } finally {
-        setLoadingCounts((current) => {
-          const nextCount = Math.max((current[action] || 0) - 1, 0);
-          const next = { ...current };
+        if (loadingAction) {
+          setLoadingCounts((current) => {
+            const nextCount = Math.max((current[loadingAction] || 0) - 1, 0);
+            const next = { ...current };
 
-          if (nextCount) {
-            next[action] = nextCount;
-          } else {
-            delete next[action];
-          }
+            if (nextCount) {
+              next[loadingAction] = nextCount;
+            } else {
+              delete next[loadingAction];
+            }
 
-          return next;
-        });
+            return next;
+          });
+        }
       }
     },
     [api],
@@ -160,11 +160,10 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
 
   return useMemo<UseRunJSSourceResourceResult>(
     () => ({
-      loading,
       request,
-      isLoading: (action) => Boolean(loading[action]),
+      isLoading: (action) => Boolean(loadingCounts[action]),
     }),
-    [loading, request],
+    [loadingCounts, request],
   );
 }
 
