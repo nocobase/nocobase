@@ -56,4 +56,41 @@ describe('skillToolBindingMiddleware', () => {
     expect(handler).toHaveBeenCalledOnce();
     expect(result.tools).toEqual([{ name: 'getSkill' }, webSearchTool, googleSearchTool]);
   });
+
+  it('should block context-conflicting tools even when a loaded skill activates them', async () => {
+    const middleware = skillToolBindingMiddleware(
+      {
+        getActivatedSkillToolNames: vi.fn().mockResolvedValue(new Set(['readJSCode', 'executeFrontendTool'])),
+      } as any,
+      {
+        baseToolNames: ['executeFrontendTool'],
+        blockedToolNames: ['readJSCode'],
+      },
+    );
+
+    const handler = vi.fn(async (request) => request);
+    const result = await middleware.wrapModelCall(
+      {
+        tools: [{ name: 'readJSCode' }, { name: 'executeFrontendTool' }],
+      } as any,
+      handler,
+    );
+
+    expect(result.tools.map((tool) => tool.name)).toEqual(['executeFrontendTool']);
+
+    const toolHandler = vi.fn();
+    const toolResult = await middleware.wrapToolCall(
+      {
+        toolCall: { id: 'tool-call-1', name: 'readJSCode', args: {} },
+      } as any,
+      toolHandler,
+    );
+
+    expect(toolHandler).not.toHaveBeenCalled();
+    expect(toolResult).toMatchObject({
+      name: 'readJSCode',
+      status: 'error',
+      content: 'Tool unavailable.',
+    });
+  });
 });

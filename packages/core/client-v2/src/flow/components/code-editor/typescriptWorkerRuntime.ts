@@ -11,6 +11,7 @@ import {
   buildRunJSTypeScriptContextDeclaration,
   collectRunJSTypeLibraryUsage,
   createRunJSTypeScriptCompilerOptions,
+  formatRunJSTypeScriptDiagnosticMessage,
   RUNJS_TYPESCRIPT_ENVIRONMENT_LIBRARY_NAME,
   RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
   selectRunJSTypeLibraryRequests,
@@ -451,7 +452,10 @@ function diagnosticsToDto(
       return {
         code: diagnostic.code,
         from,
-        message: ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+        message: formatRunJSTypeScriptDiagnosticMessage(
+          diagnostic.code,
+          ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+        ),
         severity: diagnosticSeverity(ts, diagnostic),
         source: 'TypeScript',
         to: from + Math.max(1, diagnostic.length || 1),

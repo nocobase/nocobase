@@ -11,8 +11,13 @@ import type { Completion, CompletionResult } from '@codemirror/autocomplete';
 import type { Diagnostic } from '@codemirror/lint';
 import {
   buildRunJSTypeScriptContextDeclaration,
+  collectRunJSForbiddenTypeScriptDirectives,
   collectRunJSTypeLibraryUsage,
   createRunJSTypeScriptCompilerOptions,
+  formatRunJSForbiddenTypeScriptDirectiveMessage,
+  formatRunJSTypeScriptDiagnosticMessage,
+  isRunJSUnknownTypeDiagnosticMessage,
+  RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
   type RunJSTypeLibraryPack,
   RUNJS_TYPESCRIPT_CONTEXT_PATH,
 } from '@nocobase/runjs/client-v2';
@@ -696,7 +701,7 @@ function diagnosticsToCodeMirror(
       return {
         code: diagnostic.code,
         from,
-        message: flattenDiagnosticMessage(ts, diagnostic),
+        message: formatRunJSTypeScriptDiagnosticMessage(diagnostic.code, flattenDiagnosticMessage(ts, diagnostic)),
         severity: diagnosticCategoryToSeverity(ts, diagnostic),
         source: 'TypeScript',
         to: from + length,
@@ -708,12 +713,34 @@ function filterIgnoredDiagnostics(
   project: CodeEditorTypeScriptProject,
   diagnostics: CodeEditorTypeScriptDiagnostic[],
 ): CodeEditorTypeScriptDiagnostic[] {
-  if (!project.ignoredDiagnosticCodes?.length) {
-    return diagnostics;
-  }
-
   const ignoredCodes = new Set(project.ignoredDiagnosticCodes);
-  return diagnostics.filter((diagnostic) => !ignoredCodes.has(diagnostic.code));
+  return diagnostics.filter(
+    (diagnostic) =>
+      !ignoredCodes.has(diagnostic.code) &&
+      !(project.suppressUnknownTypeDiagnostics && isRunJSUnknownTypeDiagnosticMessage(diagnostic.message)),
+  );
+}
+
+function getTypeScriptDirectiveDiagnostics(
+  project: CodeEditorTypeScriptProject,
+  currentFileContent?: string,
+): CodeEditorTypeScriptDiagnostic[] {
+  if (!project.forbidTypeScriptSuppressionDirectives) {
+    return [];
+  }
+  const currentFilePath = normalizeProjectPath(project.currentFilePath);
+  const source =
+    currentFileContent ??
+    project.files.find((file) => normalizeProjectPath(file.path) === currentFilePath)?.content ??
+    '';
+  return collectRunJSForbiddenTypeScriptDirectives(source).map((occurrence) => ({
+    code: RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
+    from: occurrence.from,
+    message: formatRunJSForbiddenTypeScriptDirectiveMessage(occurrence.directive),
+    severity: 'error',
+    source: 'TypeScript',
+    to: occurrence.to,
+  }));
 }
 
 async function getSyntacticDiagnosticsWithoutTypeLibraries(
@@ -792,15 +819,21 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
         request.stateChanged,
       );
       if (!service || !this.isCurrentRequest('diagnostics', request)) return [];
-      const diagnostics = filterIgnoredDiagnostics(project, getDiagnosticsFromService(service));
+      const diagnostics = [
+        ...filterIgnoredDiagnostics(project, getDiagnosticsFromService(service)),
+        ...getTypeScriptDirectiveDiagnostics(project, currentFileContent),
+      ];
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     } catch (error) {
       if (this.disposed) return [];
       this.reportInternalError(project, error);
-      const diagnostics = filterIgnoredDiagnostics(
-        project,
-        await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent),
-      );
+      const diagnostics = [
+        ...filterIgnoredDiagnostics(
+          project,
+          await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent),
+        ),
+        ...getTypeScriptDirectiveDiagnostics(project, currentFileContent),
+      ];
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     } finally {
       this.finishRequest();

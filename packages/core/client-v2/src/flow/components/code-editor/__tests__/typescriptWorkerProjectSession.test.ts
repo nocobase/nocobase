@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
+import {
+  RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
+  RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
+  type RunJSTypeLibraryPack,
+} from '@nocobase/runjs/client-v2';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -484,6 +488,67 @@ void element; void button;
         code,
       ),
     ).toEqual([]);
+  });
+
+  it('suppresses unknown type diagnostics in the worker-backed editor project', async () => {
+    const code = `
+const response = await ctx.api.request({ url: 'users:list' });
+response?.data?.data;
+`;
+    const session = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
+    const currentProject = {
+      ...project(code),
+      suppressUnknownTypeDiagnostics: true,
+    };
+
+    expect(await session.getDiagnostics(currentProject, code)).toEqual([]);
+
+    const unknownLiteralCode = `const record = { status: 'unknown' as const }; record.missing;`;
+    expect(
+      await session.getDiagnostics(
+        { ...currentProject, files: [{ path: currentProject.currentFilePath, content: unknownLiteralCode }] },
+        unknownLiteralCode,
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ code: 2339 })]));
+  });
+
+  it('reports forbidden TypeScript suppression directives in the worker-backed editor project', async () => {
+    const code = `// @ts-nocheck\nconst count: number = 'wrong';`;
+    const session = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
+    const currentProject = {
+      ...project(code),
+      forbidTypeScriptSuppressionDirectives: true,
+    };
+
+    expect(await session.getDiagnostics(currentProject, code)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
+          from: 3,
+          message: expect.stringContaining('@ts-nocheck'),
+          to: 14,
+        }),
+      ]),
+    );
+  });
+
+  it('reports React UMD global usage as an error in the worker-backed editor project', async () => {
+    const code = `React.useState(0);`;
+    const session = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
+    const currentProject = {
+      ...project(code),
+      typeLibraryIds: ['react'],
+    };
+
+    expect(await session.getDiagnostics(currentProject, code)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 2686,
+          message: expect.stringContaining('ctx.libs.React'),
+          severity: 'error',
+        }),
+      ]),
+    );
   });
 
   it('rewrites built-in worker auto imports to ctx.libs declarations when enabled', async () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
+import { RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE, type RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -389,6 +389,95 @@ describe('CodeEditor TypeScript project', () => {
     };
 
     expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual([]);
+  });
+
+  it('suppresses diagnostics caused by unknown RunJS values without hiding other type errors', async () => {
+    const unknownCode = `
+const response = await ctx.api.request({ url: 'users:list' });
+response?.data?.data;
+`;
+    const unknownProject: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      files: [{ path: 'src/main.ts', content: unknownCode }],
+      suppressUnknownTypeDiagnostics: true,
+    };
+
+    expect(await getTypeScriptProjectDiagnostics(unknownProject, unknownCode)).toEqual([]);
+
+    const invalidCode = `const count: number = 'wrong';`;
+    expect(
+      await getTypeScriptProjectDiagnostics(
+        { ...unknownProject, files: [{ path: 'src/main.ts', content: invalidCode }] },
+        invalidCode,
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ code: 2322 })]));
+
+    const unknownLiteralCode = `const record = { status: 'unknown' as const }; record.missing;`;
+    expect(
+      await getTypeScriptProjectDiagnostics(
+        { ...unknownProject, files: [{ path: 'src/main.ts', content: unknownLiteralCode }] },
+        unknownLiteralCode,
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ code: 2339 })]));
+  });
+
+  it('reports forbidden TypeScript suppression directives even when ts-nocheck hides semantic diagnostics', async () => {
+    const code = `// @ts-nocheck\nconst count: number = 'wrong';`;
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      files: [{ path: 'src/main.ts', content: code }],
+      forbidTypeScriptSuppressionDirectives: true,
+    };
+
+    expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
+          from: 3,
+          message: expect.stringContaining('@ts-nocheck'),
+          to: 14,
+        }),
+      ]),
+    );
+  });
+
+  it('keeps real inferred union member errors visible under the RunJS editor policy', async () => {
+    const code = `
+const columns = [
+  { key: 'name', title: 'Name' },
+  { key: 'roles', title: 'Roles', render: () => null },
+] as const;
+columns.map((column) => column.render);
+`;
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ path: 'src/main.tsx', content: code }],
+      forbidTypeScriptSuppressionDirectives: true,
+      suppressUnknownTypeDiagnostics: true,
+    };
+
+    expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 2339, message: expect.stringContaining('render') })]),
+    );
+  });
+
+  it('reports React UMD global usage as an error and points to ctx.libs.React', async () => {
+    const code = `React.useState(0);`;
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ path: 'src/main.tsx', content: code }],
+      typeLibraryIds: ['react'],
+    };
+
+    expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 2686,
+          message: expect.stringContaining('ctx.libs.React'),
+          severity: 'error',
+        }),
+      ]),
+    );
   });
 
   it('provides RunJS ctx completions and reports unknown ctx members', async () => {

@@ -28,7 +28,9 @@ export interface CodeEditorTypeScriptProject {
   currentFilePath: string;
   files: CodeEditorTypeScriptFile[];
   declarationFiles?: CodeEditorTypeScriptFile[];
+  forbidTypeScriptSuppressionDirectives?: boolean;
   ignoredDiagnosticCodes?: number[];
+  suppressUnknownTypeDiagnostics?: boolean;
   typeLibraryIds?: string[];
   typeLibraryRegistry?: RunJSTypeLibraryRegistry;
   compilerOptions?: Partial<import('typescript').CompilerOptions>;

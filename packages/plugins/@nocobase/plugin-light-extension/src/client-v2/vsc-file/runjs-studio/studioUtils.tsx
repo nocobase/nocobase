@@ -594,8 +594,10 @@ export function buildRunJSTypeScriptProject(
 
   return {
     currentFilePath: activeFile.path,
+    forbidTypeScriptSuppressionDirectives: true,
     ignoredDiagnosticCodes: [1108],
     rewriteBuiltInAutoImports: true,
+    suppressUnknownTypeDiagnostics: true,
     typeLibraryIds: ['react'],
     projectRevision: context.projectRevision,
     files: files
@@ -640,7 +642,15 @@ export function appendRunDiagnostics(
   result: DiagnoseRunJSResult,
   appendConsole: (entry: Omit<RunJSConsoleEntry, 'id'>) => void,
 ) {
+  const capturedRenderErrorMessages = new Set(
+    (result.issues || [])
+      .filter((issue) => issue.type === 'runtime' && issue.ruleId === 'render-error')
+      .map((issue) => issue.message),
+  );
   for (const log of result.logs || []) {
+    if (log.level === 'error' && capturedRenderErrorMessages.has(log.message)) {
+      continue;
+    }
     appendConsole({
       level: log.level,
       message: log.message,

@@ -40,6 +40,37 @@ export const runJSTypeScriptFinalDiagnosticMatrix: readonly RunJSTypeScriptFinal
     expectedDiagnostics: [{ tsCode: 2322, messageIncludes: ['string', 'number'] }],
   },
   {
+    id: 'unknown-api-response-allowed',
+    path: 'src/main.ts',
+    source: `const response = await ctx.api.request({ url: 'users:list' }); response?.data?.data;`,
+    expectedDiagnostics: [],
+  },
+  {
+    id: 'unknown-string-literal-object-invalid-member',
+    path: 'src/main.ts',
+    source: `const record = { status: 'unknown' as const }; record.missing;`,
+    expectedDiagnostics: [{ tsCode: 2339, messageIncludes: ['missing', 'does not exist'] }],
+  },
+  {
+    id: 'react-umd-global-value-forbidden',
+    path: 'src/main.tsx',
+    source: `React.useState(0);`,
+    typeLibraryIds: ['react'],
+    expectedDiagnostics: [{ tsCode: 2686, messageIncludes: ['React', 'UMD global', 'ctx.libs.React'] }],
+  },
+  {
+    id: 'inferred-column-union-invalid-member',
+    path: 'src/main.tsx',
+    source: `
+const columns = [
+  { key: 'name', title: 'Name' },
+  { key: 'roles', title: 'Roles', render: () => null },
+] as const;
+columns.map((column) => column.render);
+`,
+    expectedDiagnostics: [{ tsCode: 2339, messageIncludes: ['render', 'does not exist'] }],
+  },
+  {
     id: 'react-valid-hooks-and-jsx',
     path: 'src/main.tsx',
     source: `

@@ -17,7 +17,15 @@ import {
   type RunJSTypeScriptFinalMatrixCase,
 } from './fixtures/runjs-typescript-final-matrix';
 
-const compilerGateCaseIds = new Set(['ordinary-valid', 'ordinary-invalid-assignment', 'react-valid-hooks-and-jsx']);
+const compilerGateCaseIds = new Set([
+  'ordinary-valid',
+  'ordinary-invalid-assignment',
+  'unknown-api-response-allowed',
+  'unknown-string-literal-object-invalid-member',
+  'react-umd-global-value-forbidden',
+  'inferred-column-union-invalid-member',
+  'react-valid-hooks-and-jsx',
+]);
 
 function createMatrixRegistry(): NodeRunJSTypeLibraryRegistry {
   const registry = createNodeRunJSTypeLibraryRegistry();
@@ -105,6 +113,93 @@ function escapeRegExp(value: string): string {
 }
 
 describe('RunJS final shared TypeScript diagnostic matrix', () => {
+  it.each(['@ts-nocheck', '@ts-ignore', '@ts-expect-error'])('rejects the %s suppression directive', (directive) => {
+    const registry = createMatrixRegistry();
+    try {
+      const diagnostics = inspect(
+        {
+          id: directive,
+          path: 'src/main.ts',
+          source: `// ${directive}\nconst count: number = 'wrong';`,
+          expectedDiagnostics: [],
+        },
+        registry,
+      );
+
+      expect(diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            column: 4,
+            line: 1,
+            ruleId: 'runjs-typescript-directive-forbidden',
+            message: expect.stringContaining(directive),
+          }),
+        ]),
+      );
+    } finally {
+      registry.dispose();
+    }
+  });
+
+  it('does not treat directive-like text inside a string as a suppression directive', () => {
+    const registry = createMatrixRegistry();
+    try {
+      const diagnostics = inspect(
+        {
+          id: 'directive-text-in-string',
+          path: 'src/main.ts',
+          source: `
+const helpText = '// @ts-nocheck';
+const templateHelp = \`/* @ts-ignore */\`;
+void helpText;
+void templateHelp;
+`,
+          expectedDiagnostics: [],
+        },
+        registry,
+      );
+      expect(diagnostics).toEqual([]);
+    } finally {
+      registry.dispose();
+    }
+  });
+
+  it('detects suppression directives inside template expressions', () => {
+    const registry = createMatrixRegistry();
+    try {
+      const diagnostics = inspect(
+        {
+          id: 'directive-in-template-expression',
+          path: 'src/main.ts',
+          source: `const label = \`${'${'}
+// @ts-ignore
+missingName
+}\`; void label;`,
+          expectedDiagnostics: [],
+        },
+        registry,
+      );
+      expect(diagnostics).toEqual(
+        expect.arrayContaining([expect.objectContaining({ ruleId: 'runjs-typescript-directive-forbidden' })]),
+      );
+    } finally {
+      registry.dispose();
+    }
+  });
+
+  it('prevents ts-nocheck from bypassing the compiler gate', async () => {
+    const result = await compileRunJSSourceWorkspace({
+      entry: 'src/main.ts',
+      files: [{ content: `// @ts-nocheck\nconst count: number = 'wrong';`, path: 'src/main.ts' }],
+      surfaceStyle: 'action',
+    });
+
+    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(result.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ruleId: 'runjs-typescript-directive-forbidden' })]),
+    );
+  });
+
   it.each(runJSTypeScriptFinalDiagnosticMatrix)('matches Node source inspection for $id', (caseDefinition) => {
     const registry = createMatrixRegistry();
     try {
@@ -122,6 +217,7 @@ describe('RunJS final shared TypeScript diagnostic matrix', () => {
         files: [{ content: caseDefinition.source, path: caseDefinition.path }],
         legacy: legacy(caseDefinition),
         surfaceStyle: 'action',
+        typeLibraryIds: caseDefinition.typeLibraryIds,
       });
 
       expectDiagnosticCore(result.artifact.diagnostics, caseDefinition.expectedDiagnostics);

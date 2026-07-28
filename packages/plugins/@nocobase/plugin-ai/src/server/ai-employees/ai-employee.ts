@@ -26,6 +26,8 @@ import {
   toolCallSanitizerMiddleware,
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
+  hasWorkspaceValidationTools,
+  workspaceValidationMiddleware,
   workflowHistoryMiddleware,
 } from './middleware';
 import { listSystemTools, SkillsEntry, SYSTEM_TOOLS, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
@@ -49,6 +51,7 @@ import {
 } from '../attachments';
 import { EXECUTE_FRONTEND_TOOL_NAME, LOAD_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import {
+  getBlockedFrontendToolNames,
   listCurrentFrontendTools,
   prepareToolsForFrontendConversation,
   shouldAutoExecuteFrontendTool,
@@ -1600,14 +1603,25 @@ If information is missing, clearly state it in the summary.</Important>`;
   }) {
     const { providerName, provider, llmService, model, tools, baseToolNames, messageId, agentThread } = options;
     const inWorkflow = await this.isInWorkflow();
+    const frontendTools = await listCurrentFrontendTools(this.ctx, this.sessionId);
+    const workspaceValidation = hasWorkspaceValidationTools(frontendTools)
+      ? [
+          workspaceValidationMiddleware({
+            frontendTools,
+            translate: (key) => this.ctx.t(key, { ns: '@nocobase/plugin-ai' }),
+          }),
+        ]
+      : [];
     return [
       skillToolBindingMiddleware(this, {
         baseToolNames: Array.from(baseToolNames.values()),
+        blockedToolNames: getBlockedFrontendToolNames(frontendTools),
       }),
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
       ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
       conversationMiddleware(this, { providerName, provider, llmService, model, messageId, agentThread }),
+      ...workspaceValidation,
       toolCallSanitizerMiddleware({ logger: this.logger }),
     ];
   }

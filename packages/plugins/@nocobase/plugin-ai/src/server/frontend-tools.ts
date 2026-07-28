@@ -31,6 +31,16 @@ type FrontendToolResultInput = {
   result: unknown;
 };
 
+const legacyCodeEditorToolNames = ['readJSCode', 'writeJSCode', 'patchJSCode', 'lintAndTestJS'] as const;
+const workspaceAuthoringToolNames = new Set([
+  'workspaceDescribe',
+  'workspaceReadFiles',
+  'workspaceSearch',
+  'workspacePrepareChanges',
+  'workspaceApplyPreparedChanges',
+  'workspaceValidateDraft',
+]);
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
@@ -135,6 +145,11 @@ export const shouldAutoExecuteFrontendTool = (tools: FrontendToolManifest[], arg
   return tools.find((tool) => tool.id === args.toolId)?.permission === 'ALLOW';
 };
 
+export const getBlockedFrontendToolNames = (frontendTools: FrontendToolManifest[]): string[] => {
+  const hasWorkspaceAuthoringTools = frontendTools.some((tool) => workspaceAuthoringToolNames.has(tool.name));
+  return hasWorkspaceAuthoringTools ? [...legacyCodeEditorToolNames] : [];
+};
+
 export const prepareToolsForFrontendConversation = <T extends { definition: { name: string; description: string } }>(
   tools: T[],
   frontendTools: FrontendToolManifest[],
@@ -145,10 +160,12 @@ export const prepareToolsForFrontendConversation = <T extends { definition: { na
     );
   }
 
+  const blockedToolNames = new Set(getBlockedFrontendToolNames(frontendTools));
+  const availableTools = tools.filter((tool) => !blockedToolNames.has(tool.definition.name));
   const catalog = frontendTools.map(({ id, name, title, description }) => ({ id, name, title, description }));
   const toolIds = frontendTools.map((tool) => tool.id) as [string, ...string[]];
   const toolIdSchema = z.enum(toolIds).describe(`Use an exact tool id from this catalog: ${JSON.stringify(catalog)}`);
-  return tools.map((tool) => {
+  return availableTools.map((tool) => {
     if (tool.definition.name !== LOAD_FRONTEND_TOOL_NAME && tool.definition.name !== EXECUTE_FRONTEND_TOOL_NAME) {
       return tool;
     }

@@ -8,7 +8,14 @@
  */
 
 import type { Completion, CompletionResult } from '@codemirror/autocomplete';
-import { RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID, type RunJSTypeLibraryRequest } from '@nocobase/runjs/client-v2';
+import {
+  collectRunJSForbiddenTypeScriptDirectives,
+  formatRunJSForbiddenTypeScriptDirectiveMessage,
+  isRunJSUnknownTypeDiagnosticMessage,
+  RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
+  RUNJS_TYPESCRIPT_ENVIRONMENT_PACK_ID,
+  type RunJSTypeLibraryRequest,
+} from '@nocobase/runjs/client-v2';
 
 import type { TypeScriptWorkerOwner, TypeScriptWorkerOwnerResource } from './sharedTypeScriptWorkerOwner';
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
@@ -664,11 +671,30 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       });
       if (!this.isCurrentResponse('diagnostics', requestId, response) || response.kind !== 'diagnostics-result')
         return [];
-      if (!project.ignoredDiagnosticCodes?.length) {
-        return response.result;
-      }
       const ignoredCodes = new Set(project.ignoredDiagnosticCodes);
-      return response.result.filter((diagnostic) => !ignoredCodes.has(diagnostic.code));
+      const diagnostics = response.result.filter(
+        (diagnostic) =>
+          !ignoredCodes.has(diagnostic.code) &&
+          !(project.suppressUnknownTypeDiagnostics && isRunJSUnknownTypeDiagnosticMessage(diagnostic.message)),
+      );
+      if (!project.forbidTypeScriptSuppressionDirectives) {
+        return diagnostics;
+      }
+      const source =
+        currentFileContent ??
+        project.files.find((file) => normalizePath(file.path) === normalizePath(project.currentFilePath))?.content ??
+        '';
+      return [
+        ...diagnostics,
+        ...collectRunJSForbiddenTypeScriptDirectives(source).map((occurrence) => ({
+          code: RUNJS_TYPESCRIPT_DIRECTIVE_DIAGNOSTIC_CODE,
+          from: occurrence.from,
+          message: formatRunJSForbiddenTypeScriptDirectiveMessage(occurrence.directive),
+          severity: 'error' as const,
+          source: 'TypeScript' as const,
+          to: occurrence.to,
+        })),
+      ];
     } catch (error: unknown) {
       return (await this.useFallback(project, error))?.getDiagnostics(project, currentFileContent) ?? [];
     } finally {

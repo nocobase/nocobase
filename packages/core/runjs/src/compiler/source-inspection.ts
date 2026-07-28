@@ -19,7 +19,14 @@ import {
   type RunJSTypeScriptEnvironmentFile,
   type RunJSTypeScriptLibSource,
 } from '../typescript-environment';
-import { buildRunJSTypeScriptContextDeclaration, RUNJS_TYPESCRIPT_CONTEXT_PATH } from '../typescript-project';
+import {
+  buildRunJSTypeScriptContextDeclaration,
+  collectRunJSForbiddenTypeScriptDirectives,
+  formatRunJSForbiddenTypeScriptDirectiveMessage,
+  formatRunJSTypeScriptDiagnosticMessage,
+  isRunJSUnknownTypeDiagnosticMessage,
+  RUNJS_TYPESCRIPT_CONTEXT_PATH,
+} from '../typescript-project';
 import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
 import {
   getDefaultNodeRunJSTypeLibraryRegistry,
@@ -198,6 +205,7 @@ export class RunJSSourceWorkspaceInspector {
       this.project.getDiagnostics(programSourcePaths),
       prepared.sourceFiles,
     );
+    diagnostics.push(...collectTypeScriptDirectiveDiagnostics(prepared.sourceFiles));
     const entryPath = normalizePath(input.entry);
     const entry = prepared.sourceFiles.get(entryPath);
     if (entry) {
@@ -245,6 +253,25 @@ export class RunJSSourceWorkspaceInspector {
       throw new Error('RunJS source workspace inspector has been disposed.');
     }
   }
+}
+
+function collectTypeScriptDirectiveDiagnostics(sourceFiles: Map<string, string>): RunJSCompileDiagnostic[] {
+  const diagnostics: RunJSCompileDiagnostic[] = [];
+  for (const [path, source] of sourceFiles) {
+    for (const occurrence of collectRunJSForbiddenTypeScriptDirectives(source)) {
+      diagnostics.push({
+        code: 'RUNJS_COMPILE_FAILED',
+        column: occurrence.column,
+        details: { directive: occurrence.directive },
+        line: occurrence.line,
+        message: formatRunJSForbiddenTypeScriptDirectiveMessage(occurrence.directive),
+        path,
+        ruleId: 'runjs-typescript-directive-forbidden',
+        severity: 'error',
+      });
+    }
+  }
+  return diagnostics;
 }
 
 export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJSCompileDiagnostic[] {
@@ -417,7 +444,13 @@ function typeScriptDiagnosticsToRunJS(
       continue;
     }
     const location = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+    const message = formatRunJSTypeScriptDiagnosticMessage(
+      diagnostic.code,
+      ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+    );
+    if (isRunJSUnknownTypeDiagnosticMessage(message)) {
+      continue;
+    }
     const identifier = unknownNameDiagnosticCodes.has(diagnostic.code)
       ? findIdentifierAt(diagnostic.file, diagnostic.start)
       : undefined;

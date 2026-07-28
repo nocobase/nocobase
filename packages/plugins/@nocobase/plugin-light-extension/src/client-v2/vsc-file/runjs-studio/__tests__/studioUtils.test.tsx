@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { buildRunJSImportModuleCompletionSignature, buildRunJSTypeScriptProject } from '../studioUtils';
+import {
+  appendRunDiagnostics,
+  buildRunJSImportModuleCompletionSignature,
+  buildRunJSTypeScriptProject,
+} from '../studioUtils';
 import type { RunJSWorkspaceFile } from '../types';
 import { runJSManifestPath } from '../workspaceUtils';
 
@@ -58,8 +62,10 @@ describe('buildRunJSTypeScriptProject', () => {
 
     expect(buildRunJSTypeScriptProject(files, activeFile)).toEqual({
       currentFilePath: 'src/main.tsx',
+      forbidTypeScriptSuppressionDirectives: true,
       ignoredDiagnosticCodes: [1108],
       rewriteBuiltInAutoImports: true,
+      suppressUnknownTypeDiagnostics: true,
       typeLibraryIds: ['react'],
       files: [
         { content: activeFile.content, path: activeFile.path },
@@ -82,14 +88,40 @@ describe('buildRunJSTypeScriptProject', () => {
     ).toEqual({
       currentFilePath: 'src/main.ts',
       declarationFiles: [{ content: 'type CustomRunJSContext = RunJSContext;', path: 'types/context.d.ts' }],
+      forbidTypeScriptSuppressionDirectives: true,
       ignoredDiagnosticCodes: [1108],
       rewriteBuiltInAutoImports: true,
+      suppressUnknownTypeDiagnostics: true,
       typeLibraryIds: ['react'],
       files: [{ content: 'ctx.model;', path: 'src/main.ts' }],
       runJSContext: {
         globalContextType: 'CustomRunJSContext',
         modelUse: 'JSFieldModel',
       },
+    });
+  });
+});
+
+describe('appendRunDiagnostics', () => {
+  it('shows a captured render error once in the Studio console', () => {
+    const appendConsole = vi.fn();
+
+    appendRunDiagnostics(
+      {
+        execution: { finished: true, started: true, timeout: false },
+        issues: [{ type: 'runtime', ruleId: 'render-error', message: 'rawData.some is not a function' }],
+        logs: [{ level: 'error', message: 'rawData.some is not a function' }],
+      },
+      appendConsole,
+    );
+
+    expect(appendConsole).toHaveBeenCalledTimes(1);
+    expect(appendConsole).toHaveBeenCalledWith({
+      column: undefined,
+      level: 'error',
+      line: undefined,
+      message: 'rawData.some is not a function',
+      path: undefined,
     });
   });
 });
