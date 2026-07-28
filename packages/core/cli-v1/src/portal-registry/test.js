@@ -12,7 +12,8 @@ const fs = require('fs-extra');
 const http = require('http');
 const path = require('path');
 const { buildPortalRegistries } = require('./build');
-const { preparePortalRegistryWorkspace, runPortalPnpm } = require('./workspace');
+const { discoverPortalRegistries } = require('./config');
+const { PORTAL_TEMPLATE_GIT_URL, PORTAL_TEMPLATE_REF, runPortalPnpm } = require('./workspace');
 
 async function run(command, args, options = {}) {
   return execa(command, args, {
@@ -86,26 +87,27 @@ async function startRegistryServer(registryItemPaths) {
 
 async function testPortalRegistries(options = {}) {
   const cwd = path.resolve(options.cwd || process.cwd());
-  const buildResult = await buildPortalRegistries({ cwd });
+  const registries = await discoverPortalRegistries({ cwd });
+  const buildResult = await buildPortalRegistries({ cwd, registries });
   if (buildResult.itemCount === 0) {
     return buildResult;
   }
-
-  const workspace = await preparePortalRegistryWorkspace({ cwd });
 
   const testParent = path.resolve(cwd, 'storage');
   await fs.ensureDir(testParent);
   const testRoot = await fs.mkdtemp(path.resolve(testParent, '.portal-registry-test-'));
   let registryServer;
   try {
-    await run('git', ['clone', '--no-hardlinks', workspace.workspacePath, testRoot], { cwd });
+    await run('git', ['clone', '--branch', PORTAL_TEMPLATE_REF, '--depth', '1', PORTAL_TEMPLATE_GIT_URL, testRoot], {
+      cwd,
+    });
     await runPortalPnpm(['install', '--frozen-lockfile', '--reporter=silent'], { cwd: testRoot });
 
-    for (const registry of workspace.registries) {
+    for (const registry of registries) {
       await fs.remove(path.resolve(testRoot, registry.config.target));
     }
 
-    registryServer = await startRegistryServer(getBuiltRegistryItemPaths(workspace.registries));
+    registryServer = await startRegistryServer(getBuiltRegistryItemPaths(registries));
     const componentsPath = path.resolve(testRoot, 'components.json');
     const components = await fs.readJson(componentsPath);
     components.registries = {
@@ -114,7 +116,7 @@ async function testPortalRegistries(options = {}) {
     };
     await fs.writeJson(componentsPath, components, { spaces: 2 });
 
-    const rootItems = getRootRegistryItems(workspace.registries);
+    const rootItems = getRootRegistryItems(registries);
     if (rootItems.length === 0) {
       throw new Error('Portal Registry test could not find any top-level items to install');
     }

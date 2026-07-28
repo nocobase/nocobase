@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
-const { discoverPortalRegistries, selectPortalRegistryEntries } = require('./config');
+const { discoverPortalRegistryPackages, selectPortalRegistryEntries } = require('./config');
 
 const REGISTRY_SCHEMA = 'https://ui.shadcn.com/schema/registry.json';
 const MANIFEST_SCHEMA_VERSION = 1;
@@ -128,11 +128,42 @@ async function writePluginOutputs(registries, builtOutputPath) {
   }
 }
 
+function isPathInside(parentPath, candidatePath) {
+  const relativePath = path.relative(path.resolve(parentPath), path.resolve(candidatePath));
+  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+}
+
+async function cleanStalePluginOutputs({ cwd, plugins, registries }) {
+  const registryPluginPaths = new Set(registries.map((registry) => path.resolve(registry.plugin.resolvedPath)));
+  const editableRoots = [
+    path.resolve(cwd, 'packages/plugins'),
+    path.resolve(cwd, 'packages/pro-plugins'),
+    path.resolve(cwd, 'storage/plugins'),
+  ];
+
+  for (const plugin of plugins) {
+    const pluginPath = path.resolve(plugin.resolvedPath);
+    if (registryPluginPaths.has(pluginPath) || !editableRoots.some((root) => isPathInside(root, pluginPath))) {
+      continue;
+    }
+    await fs.remove(path.resolve(pluginPath, 'dist/portal-registry'));
+  }
+}
+
 async function buildPortalRegistries(options = {}) {
   const cwd = path.resolve(options.cwd || process.cwd());
-  const registries = options.registries
-    ? selectPortalRegistryEntries(options.registries, options.packageSelectors, cwd)
-    : await discoverPortalRegistries({ cwd, packageSelectors: options.packageSelectors });
+  let plugins;
+  let registries;
+  if (options.registries) {
+    registries = selectPortalRegistryEntries(options.registries, options.packageSelectors, cwd);
+    plugins = registries.map((registry) => registry.plugin);
+  } else {
+    const discovery = await discoverPortalRegistryPackages({ cwd, packageSelectors: options.packageSelectors });
+    plugins = discovery.plugins;
+    registries = discovery.registries;
+  }
+
+  await cleanStalePluginOutputs({ cwd, plugins, registries });
   if (registries.length === 0) {
     return { pluginCount: 0, itemCount: 0 };
   }

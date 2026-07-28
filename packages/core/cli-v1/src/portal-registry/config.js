@@ -254,7 +254,7 @@ function selectPortalRegistryEntries(entries, packageSelectors = [], cwd = proce
   });
 }
 
-async function discoverPortalRegistries(options = {}) {
+async function discoverPortalRegistryPackages(options = {}) {
   const cwd = path.resolve(options.cwd || process.cwd());
   const plugins = await discoverPluginPackages({
     cwd,
@@ -274,6 +274,11 @@ async function discoverPortalRegistries(options = {}) {
   validateRegistrySet(registries, {
     allowMissingDependencies: Array.isArray(options.packageSelectors) && options.packageSelectors.length > 0,
   });
+  return { plugins: selectedPlugins, registries };
+}
+
+async function discoverPortalRegistries(options = {}) {
+  const { registries } = await discoverPortalRegistryPackages(options);
   return registries;
 }
 
@@ -281,6 +286,7 @@ module.exports = {
   PORTAL_REGISTRY_CONFIG,
   PORTAL_REGISTRY_DIR,
   assertSafeRelativePath,
+  discoverPortalRegistryPackages,
   discoverPortalRegistries,
   isIncluded,
   loadPluginPortalRegistry,

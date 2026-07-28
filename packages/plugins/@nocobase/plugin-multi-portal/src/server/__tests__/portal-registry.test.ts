@@ -50,15 +50,13 @@ describe('Portal Registry actions', () => {
     } as unknown as ResourcerActionContext;
   }
 
-  function createHandlers(items = new Map([[item.name, item]])) {
-    return createPortalRegistryActionHandlers({} as Application, async () => items);
-  }
-
   it('serves raw Registry documents with cache validation', async () => {
+    const collectItems = vi.fn(async () => new Map([[item.name, item]]));
+    const handlers = createPortalRegistryActionHandlers({} as Application, collectItems);
     const listContext = createContext();
     const listNext = vi.fn();
 
-    await createHandlers().list(listContext, listNext);
+    await handlers.list(listContext, listNext);
 
     expect(listContext.withoutDataWrapping).toBe(true);
     expect(listContext.type).toBe('application/json');
@@ -77,7 +75,7 @@ describe('Portal Registry actions', () => {
 
     const itemContext = createContext('example');
     const itemNext = vi.fn();
-    await createHandlers().get(itemContext, itemNext);
+    await handlers.get(itemContext, itemNext);
 
     expect(itemContext.withoutDataWrapping).toBe(true);
     expect(itemContext.body).toEqual({ name: 'example', type: 'registry:block', files: [] });
@@ -87,17 +85,19 @@ describe('Portal Registry actions', () => {
     const etag = `"${item.digest}"`;
     const cachedContext = createContext('example', etag);
 
-    await createHandlers().get(cachedContext, vi.fn());
+    await handlers.get(cachedContext, vi.fn());
 
     expect(cachedContext.status).toBe(304);
     expect(cachedContext.body).toBeUndefined();
+    expect(collectItems).toHaveBeenCalledOnce();
   });
 
   it('rejects invalid and missing Registry item names', async () => {
     const invalidContext = createContext('../example');
     const missingContext = createContext('missing');
 
-    await expect(createHandlers().get(invalidContext, vi.fn())).rejects.toMatchObject({ status: 400 });
-    await expect(createHandlers().get(missingContext, vi.fn())).rejects.toMatchObject({ status: 404 });
+    const handlers = createPortalRegistryActionHandlers({} as Application, async () => new Map([[item.name, item]]));
+    await expect(handlers.get(invalidContext, vi.fn())).rejects.toMatchObject({ status: 400 });
+    await expect(handlers.get(missingContext, vi.fn())).rejects.toMatchObject({ status: 404 });
   });
 });

@@ -20,9 +20,20 @@ export function createPortalRegistryActionHandlers(
   app: Application,
   collectItems: PortalRegistryCollector = collectEnabledPortalRegistryItems,
 ): { list: HandlerType; get: HandlerType } {
+  let itemsPromise: Promise<Map<string, ExposedPortalRegistryItem>> | undefined;
+  const getItems = () => {
+    if (!itemsPromise) {
+      itemsPromise = collectItems(app).catch((error) => {
+        itemsPromise = undefined;
+        throw error;
+      });
+    }
+    return itemsPromise;
+  };
+
   return {
     list: async (ctx, next) => {
-      const items = await collectItems(app);
+      const items = await getItems();
       ctx.withoutDataWrapping = true;
       ctx.type = 'application/json';
       ctx.set('Cache-Control', 'no-cache');
@@ -41,7 +52,7 @@ export function createPortalRegistryActionHandlers(
         return;
       }
 
-      const items = await collectItems(app);
+      const items = await getItems();
       const item = items.get(name);
       if (!item) {
         ctx.throw(404, 'Portal Registry item not found');

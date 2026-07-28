@@ -68,11 +68,8 @@ async function runPortalPnpm(args, options = {}) {
   });
 }
 
-async function ensurePortalTemplateDependencies(workspacePath) {
-  const pnpmModulesManifest = path.resolve(workspacePath, 'node_modules/.modules.yaml');
-  if (!(await fs.pathExists(pnpmModulesManifest))) {
-    await runPortalPnpm(['install', '--frozen-lockfile'], { cwd: workspacePath });
-  }
+async function installPortalTemplateDependencies(workspacePath) {
+  await runPortalPnpm(['install', '--frozen-lockfile'], { cwd: workspacePath });
 }
 
 function createPortalEnvironment(environment = process.env) {
@@ -261,7 +258,7 @@ async function startPortalRegistryDevelopment(options = {}) {
   const sourceWatcher = watchPortalRegistrySources(workspace.registries, workspace.workspacePath);
 
   try {
-    await ensurePortalTemplateDependencies(workspace.workspacePath);
+    await installPortalTemplateDependencies(workspace.workspacePath);
   } catch (error) {
     await sourceWatcher.close();
     throw error;
@@ -302,11 +299,11 @@ module.exports = {
   WORKSPACE_MARKER,
   copyPortalRegistrySource,
   createPortalEnvironment,
-  ensurePortalTemplateDependencies,
   ensurePortalTemplate,
   getNocoBaseDevelopmentEnvironment,
   getPortalPnpmEnvironment,
   getUnmanagedWorkspaceChanges,
+  installPortalTemplateDependencies,
   preparePortalRegistryWorkspace,
   readWorkspaceMarker,
   removeManagedEntries,

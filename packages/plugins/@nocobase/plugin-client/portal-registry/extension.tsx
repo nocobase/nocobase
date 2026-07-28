@@ -1,4 +1,4 @@
-import type { AppExtension } from "@/app/extension";
+import type { AppExtension } from "../../app/extension";
 import { Layers3 } from "lucide-react";
 import { lazy } from "react";
 import { Route } from "react-router";

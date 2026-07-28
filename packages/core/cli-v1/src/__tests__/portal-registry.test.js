@@ -231,6 +231,17 @@ describe('portal Registry', () => {
     });
     expect(coreBuild).toEqual({ pluginCount: 0, itemCount: 0 });
     expect(buildCalls).toBe(callsBeforeCoreBuild);
+
+    await fs.remove(path.resolve(first.pluginRoot, 'portal-registry'));
+    const callsBeforeStaleCleanup = buildCalls;
+    const staleCleanupBuild = await buildPortalRegistries({
+      cwd: root,
+      packageSelectors: ['@nocobase/plugin-first'],
+      runShadcnBuild,
+    });
+    expect(staleCleanupBuild).toEqual({ pluginCount: 0, itemCount: 0 });
+    await expect(fs.pathExists(path.resolve(first.pluginRoot, 'dist/portal-registry'))).resolves.toBe(false);
+    expect(buildCalls).toBe(callsBeforeStaleCleanup);
   });
 
   test('installs only top-level items in the clean Template test', () => {
