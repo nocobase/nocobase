@@ -1926,7 +1926,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       content: (
         <Space direction="vertical" size={4}>
           <Typography.Text>
-            {t('Importing will replace the current workspace and save it as a new version immediately.')}
+            {t('Importing will replace the current local draft. Nothing will be saved until you click Save.')}
           </Typography.Text>
           <Typography.Text>{t('Unsaved editor changes will be discarded.')}</Typography.Text>
         </Space>
@@ -1952,29 +1952,35 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       const zipBase64 = await readFileAsDataUrl(file);
       const result = await runJSSourceRequest('importZip', {
         locator: props.locator,
-        repoId: workspace.repository.repoId,
-        baseCommitId: workspace.repository.headCommitId,
-        baseOwnerFingerprint: workspace.ownerFingerprint,
-        message: 'Import RunJS workspace',
         zipBase64,
       });
+      const nextFiles = withWorkspaceFileRevisions(
+        files,
+        result.files.map((importedFile) => ({
+          ...importedFile,
+          managed: importedFile.path === runJSManifestPath,
+        })),
+        () => ++fileRevisionSeqRef.current,
+      );
+      const nextEntryPath = result.entryPath;
+      const nextActivePath =
+        nextFiles.find((importedFile) => importedFile.path === nextEntryPath)?.path || nextFiles[0]?.path;
+      setFiles(nextFiles);
+      setEntryPath(nextEntryPath);
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setActivePath(nextActivePath);
+      setOpenPaths(nextActivePath ? [nextActivePath] : []);
+      setActiveTab('code');
+      invalidatePreview();
+      const importedVersion = result.manifest.runtimeVersion;
+      if (importedVersion && importedVersion !== value.version) {
+        onChange?.({ ...value, version: importedVersion });
+      }
       appendConsole({
         level: 'info',
-        message: t('Workspace imported'),
+        message: t('Workspace imported as a local draft'),
       });
-      setPreviewDiagnostics(result.artifact.diagnostics);
-      const loaded = await loadWorkspace();
-      (onPersistedChange || onChange)?.(
-        withSavedSourceRef(
-          {
-            ...value,
-            code: loaded?.opened.legacy.code || value.code,
-            version: loaded?.opened.legacy.version || value.version,
-          },
-          result,
-          props.locator,
-        ),
-      );
+      setNotice({ type: 'info', message: t('Workspace imported as a local draft') });
     } catch (error) {
       reportActionError(error, t('Import failed'), requestImportWorkspace);
       appendConsole({

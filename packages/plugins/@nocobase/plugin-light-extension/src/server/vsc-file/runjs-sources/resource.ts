@@ -35,6 +35,8 @@ import {
   normalizeRunJSSourceLocator,
   type RunJSLegacySource,
   type RunJSSourceInitialSource,
+  type RunJSSourceImportZipInput,
+  type RunJSSourceImportZipResult,
   type RunJSSourceAdapterContext,
   type RunJSSourceAuthoringLegacyInfo,
   type RunJSSourceAuthoringInspector,
@@ -272,41 +274,35 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
     });
   },
   importZip: async (
-    db,
+    _db,
     registry,
-    permissionHooks,
-    authoringInspectors,
+    _permissionHooks,
+    _authoringInspectors,
     input,
     ctx,
   ): Promise<RunJSSourceImportZipResult> => {
     const importInput = normalizeImportZipInput(input);
-
-    const importedFiles = await readRunJSWorkspaceZip(importInput.zipBase64);
-    const manifest = readRunJSWorkspaceManifest(importedFiles);
-    const result = (await actionRunners.save(
-      db,
-      registry,
-      permissionHooks,
-      authoringInspectors,
-      {
-        locator: importInput.locator,
-        repoId: importInput.repoId,
-        baseCommitId: importInput.baseCommitId,
-        baseOwnerFingerprint: importInput.baseOwnerFingerprint,
-        message: importInput.message,
-        files: importedFiles,
-        entryPath: importInput.entryPath || manifest.entryPath,
-        version: importInput.version || manifest.version,
-      },
-      ctx,
-    )) as RunJSSourceSaveResult;
+    const adapter = registry.require(importInput.locator.kind);
+    await adapter.assertCanWrite({ locator: importInput.locator, ctx: createAdapterContext(ctx) });
+    const files = await readRunJSWorkspaceZip(importInput.zipBase64);
+    const manifest = readRunJSWorkspaceManifest(files);
 
     return {
-      ...result,
-      import: {
-        fileCount: importedFiles.length,
-        filesHash: result.artifact.filesHash,
+      locator: importInput.locator,
+      locatorKind: importInput.locator.kind,
+      files: files.map((file) => ({
+        path: file.path,
+        content: typeof file.content === 'string' ? file.content : '',
+        ...(file.language ? { language: file.language } : {}),
+        ...(file.mode ? { mode: file.mode } : {}),
+      })),
+      manifest: {
+        entryPath: manifest.entryPath || null,
+        runtimeVersion: manifest.version || null,
       },
+      entryPath: selectEntryPath(files, manifest.entryPath),
+      fileCount: files.length,
+      diagnostics: [],
     };
   },
   listHistory: async (
@@ -897,17 +893,6 @@ interface RunJSSourceExportZipInput {
   commitId?: string;
 }
 
-interface RunJSSourceImportZipInput {
-  locator: RunJSSourceLocatorInput;
-  repoId?: string;
-  baseCommitId: string | null;
-  baseOwnerFingerprint: string;
-  message: string;
-  zipBase64: string;
-  entryPath?: string;
-  version?: string;
-}
-
 interface RunJSSourceHistoryInput extends RunJSSourceRepoInput {
   limit?: number;
   beforeSeq?: number;
@@ -999,13 +984,6 @@ interface SaveCompileFile {
   size?: number;
   language?: string;
   mode?: string;
-}
-
-interface RunJSSourceImportZipResult extends RunJSSourceSaveResult {
-  import: {
-    fileCount: number;
-    filesHash: string;
-  };
 }
 
 async function createRunJSWorkspaceZip(files: PulledFile[]): Promise<Buffer> {
@@ -2328,13 +2306,7 @@ function normalizeExportZipInput(input: ResourceActionInput): RunJSSourceExportZ
 function normalizeImportZipInput(input: ResourceActionInput): RunJSSourceImportZipInput {
   return {
     locator: normalizeRunJSSourceLocator(input.locator),
-    repoId: optionalString(input, 'repoId'),
-    baseCommitId: requireNullableString(input, 'baseCommitId'),
-    baseOwnerFingerprint: requireString(input, 'baseOwnerFingerprint'),
-    message: requireCommitMessage(input.message || 'Import RunJS workspace'),
     zipBase64: requireString(input, 'zipBase64'),
-    entryPath: optionalRunJSWorkspacePath(input, 'entryPath'),
-    version: optionalString(input, 'version'),
   };
 }
 

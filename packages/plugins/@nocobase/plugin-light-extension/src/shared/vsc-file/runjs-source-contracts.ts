@@ -141,3 +141,26 @@ export interface RunJSSourceSaveChangesInput {
   entryPath?: string;
   version?: string;
 }
+
+export interface RunJSSourceImportZipInput {
+  locator: RunJSSourceLocator;
+  zipBase64: string;
+}
+
+export interface RunJSSourceImportZipResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  files: Array<{
+    path: string;
+    content: string;
+    language?: string;
+    mode?: string;
+  }>;
+  manifest: {
+    entryPath: string | null;
+    runtimeVersion: string | null;
+  };
+  entryPath: string;
+  fileCount: number;
+  diagnostics: LightExtensionDiagnostic[];
+}

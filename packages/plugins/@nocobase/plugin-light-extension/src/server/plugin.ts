@@ -118,6 +118,13 @@ type LightExtensionRouteContext = {
   };
 };
 
+type ResourceAlias = {
+  method: 'GET' | 'POST';
+  tag: string;
+  resolveResourcePath: (path: string, resourcePrefix?: string) => string | null;
+  prepare?: (ctx: LightExtensionRouteContext) => void;
+};
+
 const DOCUMENTED_CAPABILITIES_ROUTE = '/light-extensions/capabilities';
 const DOCUMENTED_COMPILE_PREVIEW_ROUTE = /^\/light-extensions\/([^/]+)\/compile-preview$/;
 const DOCUMENTED_RUNTIME_RESOLVE_ROUTE = '/light-extension-runtime/resolve';
@@ -341,11 +348,39 @@ export class PluginLightExtensionServer extends Plugin {
         getRemoteSyncRuntime: () => vscFileServerModule.getRemoteSyncRuntime(),
       }),
     );
-    this.registerCapabilitiesHttpRoute();
+    this.registerResourceAlias({
+      method: 'GET',
+      tag: 'light-extension-capabilities',
+      resolveResourcePath: (path, prefix) =>
+        path === getDocumentedCapabilitiesPath(prefix) ? getCapabilitiesResourcePath(prefix) : null,
+      prepare: (ctx) => {
+        ctx.state ||= {};
+        ctx.state.lightExtensionCapabilitiesAlias = true;
+      },
+    });
     this.registerEntrySchemaHttpRoute();
-    this.registerCompilePreviewHttpRoute();
-    this.registerRuntimeResolveHttpRoute();
-    this.registerRuntimeArtifactHttpRoute();
+    this.registerResourceAlias({
+      method: 'POST',
+      tag: 'light-extension-compile-preview',
+      resolveResourcePath: (path, prefix) => {
+        const repoId = getDocumentedCompilePreviewRepoId(path, prefix);
+        return repoId ? getCompilePreviewResourcePath(repoId, prefix) : null;
+      },
+    });
+    this.registerResourceAlias({
+      method: 'POST',
+      tag: 'light-extension-runtime-resolve',
+      resolveResourcePath: (path, prefix) =>
+        path === getDocumentedRuntimeResolvePath(prefix) ? getRuntimeResolveResourcePath(prefix) : null,
+    });
+    this.registerResourceAlias({
+      method: 'GET',
+      tag: 'light-extension-runtime-artifact',
+      resolveResourcePath: (path, prefix) => {
+        const artifactHash = getDocumentedRuntimeArtifactHash(path, prefix);
+        return artifactHash ? getRuntimeArtifactResourcePath(artifactHash, prefix) : null;
+      },
+    });
     this.registerAclActions();
     this.registerVscPermissionHook();
     this.registerRemotePullRecoveryListener();
@@ -476,17 +511,21 @@ export class PluginLightExtensionServer extends Plugin {
     }
   }
 
-  private registerCompilePreviewHttpRoute() {
+  private registerResourceAlias(alias: ResourceAlias) {
     const app = this.app as unknown as AppWithPluginEvents;
     app.use?.(
       async (ctx, next) => {
-        const repoId = getDocumentedCompilePreviewRepoId(ctx.path, app.resourceManager?.options?.prefix);
-        if (ctx.method !== 'POST' || !repoId) {
+        if (ctx.method !== alias.method) {
+          await next();
+          return;
+        }
+        const resourcePath = alias.resolveResourcePath(ctx.path, app.resourceManager?.options?.prefix);
+        if (!resourcePath) {
           await next();
           return;
         }
 
-        const resourcePath = getCompilePreviewResourcePath(repoId, app.resourceManager?.options?.prefix);
+        alias.prepare?.(ctx);
         const originalPath = ctx.path;
         const originalRequestPath = ctx.request?.path;
         try {
@@ -497,117 +536,13 @@ export class PluginLightExtensionServer extends Plugin {
           await next();
         } finally {
           ctx.path = originalPath;
-          if (ctx.request && originalRequestPath) {
+          if (ctx.request && typeof originalRequestPath === 'string') {
             ctx.request.path = originalRequestPath;
           }
         }
       },
       {
-        tag: 'light-extension-compile-preview',
-        before: 'dataSource',
-      },
-    );
-  }
-
-  private registerRuntimeResolveHttpRoute() {
-    const app = this.app as unknown as AppWithPluginEvents;
-    app.use?.(
-      async (ctx, next) => {
-        if (
-          ctx.method !== 'POST' ||
-          ctx.path !== getDocumentedRuntimeResolvePath(app.resourceManager?.options?.prefix)
-        ) {
-          await next();
-          return;
-        }
-
-        const resourcePath = getRuntimeResolveResourcePath(app.resourceManager?.options?.prefix);
-        const originalPath = ctx.path;
-        const originalRequestPath = ctx.request?.path;
-        try {
-          ctx.path = resourcePath;
-          if (ctx.request) {
-            ctx.request.path = resourcePath;
-          }
-          await next();
-        } finally {
-          ctx.path = originalPath;
-          if (ctx.request && originalRequestPath) {
-            ctx.request.path = originalRequestPath;
-          }
-        }
-      },
-      {
-        tag: 'light-extension-runtime-resolve',
-        before: 'dataSource',
-      },
-    );
-  }
-
-  private registerRuntimeArtifactHttpRoute() {
-    const app = this.app as unknown as AppWithPluginEvents;
-    app.use?.(
-      async (ctx, next) => {
-        const artifactHash = getDocumentedRuntimeArtifactHash(ctx.path, app.resourceManager?.options?.prefix);
-        if (ctx.method !== 'GET' || !artifactHash) {
-          await next();
-          return;
-        }
-
-        const resourcePath = getRuntimeArtifactResourcePath(artifactHash, app.resourceManager?.options?.prefix);
-        const originalPath = ctx.path;
-        const originalRequestPath = ctx.request?.path;
-        try {
-          ctx.path = resourcePath;
-          if (ctx.request) {
-            ctx.request.path = resourcePath;
-          }
-          await next();
-        } finally {
-          ctx.path = originalPath;
-          if (ctx.request && originalRequestPath) {
-            ctx.request.path = originalRequestPath;
-          }
-        }
-      },
-      {
-        tag: 'light-extension-runtime-artifact',
-        before: 'dataSource',
-      },
-    );
-  }
-
-  private registerCapabilitiesHttpRoute() {
-    const app = this.app as unknown as AppWithPluginEvents;
-    app.use?.(
-      async (ctx, next) => {
-        if (ctx.method !== 'GET' || ctx.path !== getDocumentedCapabilitiesPath(app.resourceManager?.options?.prefix)) {
-          await next();
-          return;
-        }
-
-        if (!ctx.state) {
-          ctx.state = {};
-        }
-        ctx.state.lightExtensionCapabilitiesAlias = true;
-        const resourcePath = getCapabilitiesResourcePath(app.resourceManager?.options?.prefix);
-        const originalPath = ctx.path;
-        const originalRequestPath = ctx.request?.path;
-        try {
-          ctx.path = resourcePath;
-          if (ctx.request) {
-            ctx.request.path = resourcePath;
-          }
-          await next();
-        } finally {
-          ctx.path = originalPath;
-          if (ctx.request && originalRequestPath) {
-            ctx.request.path = originalRequestPath;
-          }
-        }
-      },
-      {
-        tag: 'light-extension-capabilities',
+        tag: alias.tag,
         before: 'dataSource',
       },
     );

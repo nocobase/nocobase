@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runJSStudioProvider } from '../RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
-import type { RunJSSourceActionInput } from '../types';
+import type { RunJSSourceActionInput, RunJSSourceLocator } from '../types';
 import { runJSSourceActionNames } from '../useRunJSSourceResource';
 import { runJSManifestPath } from '../workspaceUtils';
 
@@ -164,7 +164,7 @@ const locator = {
   flowKey: 'settings',
   stepKey: 'runjs',
   paramPath: ['code'],
-} as const;
+} satisfies RunJSSourceLocator;
 
 const repository = {
   id: 'repo-1',
@@ -366,6 +366,36 @@ describe('runJSStudioProvider', () => {
               writeResult: {
                 ownerFingerprint: 'owner-fingerprint-2',
               },
+            },
+          },
+        });
+      }
+
+      if (url === 'runJSSources:importZip') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              files: [
+                {
+                  path: runJSManifestPath,
+                  content: '{"entry":"src/main.tsx","runtimeVersion":"v3"}\n',
+                  language: 'json',
+                },
+                {
+                  path: 'src/main.tsx',
+                  content: 'ctx.render("Imported draft");',
+                  language: 'typescript',
+                },
+              ],
+              manifest: {
+                entryPath: 'src/main.tsx',
+                runtimeVersion: 'v3',
+              },
+              entryPath: 'src/main.tsx',
+              fileCount: 2,
+              diagnostics: [],
             },
           },
         });
@@ -585,6 +615,52 @@ describe('runJSStudioProvider', () => {
     const historyPanel = screen.getByLabelText('Version history');
     expect(within(historyPanel).queryByText('Click to restore')).toBeNull();
     expect(screen.getByText(/07-02/)).toBeTruthy();
+  });
+
+  it('replaces the local draft from ZIP inspection without saving', async () => {
+    const onChange = vi.fn();
+    renderEditor(onChange);
+
+    const editor = await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.change(editor, { target: { value: 'return dirty;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    fireEvent.click(
+      within(screen.getByLabelText('File resource manager')).getByRole('button', { name: 'Import workspace' }),
+    );
+
+    expect(
+      await screen.findByText(
+        'Importing will replace the current local draft. Nothing will be saved until you click Save.',
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    const importInput = screen
+      .getAllByLabelText('Import workspace')
+      .find((element) => element instanceof HTMLInputElement);
+    if (!importInput) {
+      throw new Error('Import input not found');
+    }
+    fireEvent.change(importInput, {
+      target: { files: [new File(['draft'], 'draft.zip', { type: 'application/zip' })] },
+    });
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:importZip',
+          data: {
+            locator,
+            zipBase64: expect.stringContaining('base64,'),
+          },
+        }),
+      );
+    });
+    expect(await screen.findByRole('textbox', { name: 'Edit file content' })).toHaveValue(
+      'ctx.render("Imported draft");',
+    );
+    expect(screen.getByText('Workspace imported as a local draft')).toBeTruthy();
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ version: 'v3' }));
+    expect(mocks.request.mock.calls.some(([request]) => request.url === 'runJSSources:save')).toBe(false);
   });
 
   it('falls through to the next editor when opening Studio fails', async () => {

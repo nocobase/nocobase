@@ -94,14 +94,14 @@ function createArtifact(): Record<string, unknown> {
 function createModel(values: Record<string, unknown>): Model {
   return { get: (key: string) => values[key] } as unknown as Model;
 }
-type RouteMiddleware = (
-  ctx: {
-    path: string;
-    method: string;
-    request?: { path: string };
-  },
-  next: () => Promise<void>,
-) => Promise<void>;
+type RouteContext = {
+  path: string;
+  method: string;
+  request: { path: string };
+  state?: { lightExtensionCapabilitiesAlias?: boolean };
+};
+
+type RouteMiddleware = (ctx: RouteContext, next: () => Promise<void>) => Promise<void>;
 
 describe('plugin-light-extension runtime resolve API', () => {
   it('normalizes resource input and passes request context to the service', async () => {
@@ -146,6 +146,31 @@ describe('plugin-light-extension runtime resolve API', () => {
 
   it.each(['/api', '/foo/api'])('registers documented route aliases under %s', async (prefix) => {
     const routes = await loadRoutes(prefix);
+    const capabilitiesPath = `${prefix}/light-extensions/capabilities`;
+    const capabilitiesCtx = createRouteContext('GET', capabilitiesPath);
+    let routedCapabilitiesPath = '';
+
+    await routes.get('light-extension-capabilities')?.(capabilitiesCtx, async () => {
+      routedCapabilitiesPath = capabilitiesCtx.path;
+      expect(capabilitiesCtx.state?.lightExtensionCapabilitiesAlias).toBe(true);
+    });
+
+    expect(routedCapabilitiesPath).toBe(`${prefix}/lightExtensionCapabilities:get`);
+    expect(capabilitiesCtx.path).toBe(capabilitiesPath);
+    expect(capabilitiesCtx.request.path).toBe(capabilitiesPath);
+
+    const compilePath = `${prefix}/light-extensions/repo%201/compile-preview`;
+    const compileCtx = createRouteContext('POST', compilePath);
+    let routedCompilePath = '';
+
+    await routes.get('light-extension-compile-preview')?.(compileCtx, async () => {
+      routedCompilePath = compileCtx.path;
+    });
+
+    expect(routedCompilePath).toBe(`${prefix}/lightExtensions:compilePreview/repo%201`);
+    expect(compileCtx.path).toBe(compilePath);
+    expect(compileCtx.request.path).toBe(compilePath);
+
     const runtimePath = `${prefix}/light-extension-runtime/resolve`;
     const runtimeCtx = createRouteContext('POST', runtimePath);
     let routedRuntimePath = '';
@@ -172,21 +197,9 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(artifactCtx.request.path).toBe(artifactPath);
   });
 
-  it('registers the compile-preview alias and ignores malformed encoded repo IDs', async () => {
+  it('ignores malformed encoded alias parameters', async () => {
     const routes = await loadRoutes('/api');
     const route = routes.get('light-extension-compile-preview');
-    const compilePath = '/api/light-extensions/repo%201/compile-preview';
-    const compileCtx = createRouteContext('POST', compilePath);
-    let routedPath = '';
-
-    await route?.(compileCtx, async () => {
-      routedPath = compileCtx.path;
-    });
-
-    expect(routedPath).toBe('/api/lightExtensions:compilePreview/repo%201');
-    expect(compileCtx.path).toBe(compilePath);
-    expect(compileCtx.request.path).toBe(compilePath);
-
     const malformedPath = '/api/light-extensions/%E0%A4%A/compile-preview';
     const malformedCtx = createRouteContext('POST', malformedPath);
     let nextPath = '';
@@ -197,6 +210,62 @@ describe('plugin-light-extension runtime resolve API', () => {
 
     expect(nextPath).toBe(malformedPath);
     expect(malformedCtx.request.path).toBe(malformedPath);
+  });
+
+  it('restores every alias path when downstream middleware throws', async () => {
+    const routes = await loadRoutes('/api');
+    const cases = [
+      ['light-extension-capabilities', 'GET', '/api/light-extensions/capabilities'],
+      ['light-extension-compile-preview', 'POST', '/api/light-extensions/repo%201/compile-preview'],
+      ['light-extension-runtime-resolve', 'POST', '/api/light-extension-runtime/resolve'],
+      ['light-extension-runtime-artifact', 'GET', `/api/light-extension-runtime/artifacts/${artifactHash}`],
+    ] as const;
+
+    for (const [tag, method, path] of cases) {
+      const ctx = createRouteContext(method, path);
+      const route = routes.get(tag);
+      expect(route).toBeDefined();
+      if (!route) {
+        throw new Error(`Missing alias route ${tag}`);
+      }
+      await expect(
+        route(ctx, async () => {
+          throw new Error('downstream failed');
+        }),
+      ).rejects.toThrow('downstream failed');
+      expect(ctx.path).toBe(path);
+      expect(ctx.request.path).toBe(path);
+    }
+  });
+
+  it('matches each alias method and path exactly', async () => {
+    const routes = await loadRoutes('/api');
+    const cases = [
+      ['light-extension-capabilities', 'POST', '/api/light-extensions/capabilities'],
+      ['light-extension-compile-preview', 'GET', '/api/light-extensions/repo-1/compile-preview'],
+      ['light-extension-runtime-resolve', 'GET', '/api/light-extension-runtime/resolve'],
+      ['light-extension-runtime-artifact', 'POST', `/api/light-extension-runtime/artifacts/${artifactHash}`],
+      ['light-extension-capabilities', 'GET', '/api/light-extensions/capabilities/'],
+      ['light-extension-compile-preview', 'POST', '/api/light-extensions/repo-1/compile-preview/'],
+      ['light-extension-runtime-resolve', 'POST', '/api/light-extension-runtime/resolve/'],
+      ['light-extension-runtime-artifact', 'GET', '/api/light-extension-runtime/artifacts/'],
+    ] as const;
+
+    for (const [tag, method, path] of cases) {
+      const ctx = createRouteContext(method, path);
+      const route = routes.get(tag);
+      if (!route) {
+        throw new Error(`Missing alias route ${tag}`);
+      }
+      let downstreamPath = '';
+      await route(ctx, async () => {
+        downstreamPath = ctx.path;
+      });
+      expect(downstreamPath).toBe(path);
+      expect(ctx.path).toBe(path);
+      expect(ctx.request.path).toBe(path);
+      expect(ctx.state?.lightExtensionCapabilitiesAlias).toBeUndefined();
+    }
   });
 });
 
@@ -232,7 +301,7 @@ async function loadRoutes(prefix: string): Promise<Map<string, RouteMiddleware>>
   return routes;
 }
 
-function createRouteContext(method: string, path: string) {
+function createRouteContext(method: string, path: string): RouteContext {
   return { method, path, request: { path } };
 }
 

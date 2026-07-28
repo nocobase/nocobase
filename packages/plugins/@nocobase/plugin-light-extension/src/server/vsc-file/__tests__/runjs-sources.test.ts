@@ -1620,7 +1620,7 @@ describe('runJSSources resource', () => {
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
   });
 
-  it('imports a ZIP snapshot as the current head version and exposes sync/export APIs', async () => {
+  it('inspects a ZIP snapshot without changing Head, commits, or runtime', async () => {
     const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_import_export');
 
@@ -1638,6 +1638,7 @@ describe('runJSSources resource', () => {
         locator,
       },
     });
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
     const zipBase64 = await createWorkspaceZipBase64({
       [runJSManifestPath]: `${JSON.stringify(
         {
@@ -1657,51 +1658,40 @@ describe('runJSSources resource', () => {
     const imported = await agent.resource('runJSSources').importZip({
       values: {
         locator,
-        repoId: opened.body.data.repository.id,
-        baseCommitId: opened.body.data.repository.headCommitId,
-        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
-        message: 'Import RunJS workspace',
         zipBase64,
       },
     });
 
     expect(imported.status).toBe(200);
-    expect(imported.body.data.import).toMatchObject({
+    expect(imported.body.data).toMatchObject({
+      locator,
+      locatorKind: 'flowModel.step',
       fileCount: 3,
-      filesHash: imported.body.data.artifact.filesHash,
-    });
-    expect(imported.body.data.artifact.entryPath).toBe('src/client/index.tsx');
-    expect(runtimeArtifacts).toHaveLength(1);
-    expect(runtimeArtifacts[0]).toMatchObject({
       entryPath: 'src/client/index.tsx',
-      version: 'v3',
-    });
-    expect(runtimeArtifacts[0].code).toContain('333');
-
-    const importedVersion = await agent.resource('runJSSources').getVersion({
-      values: {
-        locator,
-        repoId: opened.body.data.repository.id,
-        commitId: imported.body.data.commit.id,
-        includeFiles: true,
+      manifest: {
+        entryPath: 'src/client/index.tsx',
+        runtimeVersion: 'v3',
       },
+      diagnostics: [],
     });
-    const importedManifest = importedVersion.body.data.files.find(
-      (file: { path: string }) => file.path === runJSManifestPath,
-    );
+    const importedManifest = imported.body.data.files.find((file: { path: string }) => file.path === runJSManifestPath);
     expect(importedManifest.content).toContain('"folders"');
     expect(importedManifest.content).toContain('src/client/widgets');
-
-    const exported = await agent.resource('runJSSources').exportZip({
-      values: {
-        locator,
-        repoId: opened.body.data.repository.id,
-      },
+    expect(imported.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/helper.ts',
+          content: 'export const abc = 333;\n',
+        }),
+      ]),
+    );
+    expect(runtimeArtifacts).toHaveLength(0);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.body.data.repository).toMatchObject({
+      headCommitId: opened.body.data.repository.headCommitId,
+      headSeq: opened.body.data.repository.headSeq,
     });
-
-    expect(exported.status).toBe(200);
-    expect(String(exported.headers['content-type'])).toContain('application/zip');
-    expect(String(exported.headers['content-disposition'])).toContain('Import-export.zip');
   });
 
   it('honors a manifest entry outside the fixed src/client index when importing old workspaces', async () => {
@@ -1739,22 +1729,50 @@ describe('runJSSources resource', () => {
     const imported = await agent.resource('runJSSources').importZip({
       values: {
         locator,
-        repoId: opened.body.data.repository.id,
-        baseCommitId: opened.body.data.repository.headCommitId,
-        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
-        message: 'Import legacy RunJS workspace',
         zipBase64,
       },
     });
 
     expect(imported.status).toBe(200);
-    expect(imported.body.data.artifact.entryPath).toBe('src/main.tsx');
-    expect(runtimeArtifacts).toHaveLength(1);
-    expect(runtimeArtifacts[0]).toMatchObject({
+    expect(imported.body.data).toMatchObject({
       entryPath: 'src/main.tsx',
-      version: 'v2',
+      manifest: {
+        entryPath: 'src/main.tsx',
+        runtimeVersion: 'v2',
+      },
     });
-    expect(runtimeArtifacts[0].code).toContain('main');
+    expect(runtimeArtifacts).toHaveLength(0);
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.body.data.repository.headCommitId).toBe(opened.body.data.repository.headCommitId);
+  });
+
+  it('keeps ZIP draft import behind the source write permission boundary', async () => {
+    const locator = createLocator('fm_import_permission');
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {
+        throw new VscError('PERMISSION_DENIED', 'RunJS source is read only');
+      },
+      getFingerprint: () => 'owner:fm_import_permission:v1',
+      readLegacy: () => {
+        throw new Error('ZIP draft import must not read runtime source');
+      },
+      writeRuntime: () => {
+        throw new Error('ZIP draft import must not write runtime source');
+      },
+    });
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    const zipBase64 = await createWorkspaceZipBase64({
+      [runJSManifestPath]: '{"entry":"src/client/index.tsx","runtimeVersion":"v2"}\n',
+      'src/client/index.tsx': 'ctx.render("draft");\n',
+    });
+
+    const response = await agent.resource('runJSSources').importZip({ values: { locator, zipBase64 } });
+
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0]).toMatchObject({ code: 'PERMISSION_DENIED' });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
   });
 
   it('rejects a supplied repository that does not belong to the RunJS source locator', async () => {

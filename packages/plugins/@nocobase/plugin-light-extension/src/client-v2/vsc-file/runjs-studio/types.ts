@@ -12,6 +12,8 @@ import type {
   RunJSRuntimeArtifact,
   RunJSSourceKind,
   RunJSSourceInitialSource,
+  RunJSSourceImportZipInput,
+  RunJSSourceImportZipResult,
   RunJSSourceLocator,
   RunJSSourceOpenResult,
   RunJSSourceSaveChangesInput,
@@ -125,24 +127,6 @@ export interface RunJSSourceExportZipInput {
   locator: RunJSSourceLocator;
   repoId?: string;
   commitId?: string;
-}
-
-export interface RunJSSourceImportZipInput {
-  locator: RunJSSourceLocator;
-  repoId?: string;
-  baseCommitId: string | null;
-  baseOwnerFingerprint: string;
-  message: string;
-  zipBase64: string;
-  entryPath?: string;
-  version?: string;
-}
-
-export interface RunJSSourceImportZipResult extends RunJSSourceSaveResult {
-  import: {
-    fileCount: number;
-    filesHash: string;
-  };
 }
 
 export interface RunJSSourceRequestMap {
