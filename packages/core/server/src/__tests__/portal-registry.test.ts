@@ -48,7 +48,7 @@ describe('Portal Registry server', () => {
     const item = {
       name: 'example',
       type: 'registry:block',
-      files: [],
+      files: [{ path: 'source/example.ts', type: 'registry:file', target: 'src/extensions/example/example.ts' }],
     };
     const itemContent = `${JSON.stringify(item, null, 2)}\n`;
     await fs.writeFile(path.resolve(registryRoot, 'example.json'), itemContent);
@@ -76,6 +76,7 @@ describe('Portal Registry server', () => {
     const disabledItems = await collectEnabledPortalRegistryItems(createApp(false), { resolvePackagePath });
 
     expect([...enabledItems.keys()]).toEqual(['example']);
+    expect(enabledItems.get('example')?.targets).toEqual(['src/extensions/example/example.ts']);
     expect(disabledItems.size).toBe(0);
   });
 

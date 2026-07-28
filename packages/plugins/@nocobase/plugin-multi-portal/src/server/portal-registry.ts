@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { collectEnabledPortalRegistryItems, type Application, type ExposedPortalRegistryItem } from '@nocobase/server';
 import type { HandlerType } from '@nocobase/resourcer';
 
 const REGISTRY_INDEX_SCHEMA = 'https://ui.shadcn.com/schema/registry.json';
+const REGISTRY_ITEM_SCHEMA = 'https://ui.shadcn.com/schema/registry-item.json';
 const REGISTRY_ITEM_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+const ALL_REGISTRY_ITEM_NAME = 'all';
 
 type PortalRegistryCollector = (app: Application) => Promise<Map<string, ExposedPortalRegistryItem>>;
 
@@ -53,6 +56,36 @@ export function createPortalRegistryActionHandlers(
       }
 
       const items = await getItems();
+      if (name === ALL_REGISTRY_ITEM_NAME) {
+        const sortedItems = [...items.values()].sort((left, right) => left.name.localeCompare(right.name));
+        const dependencies = sortedItems.map((item) => `@nocobase/${item.name}`);
+        const digest = createHash('sha256')
+          .update(sortedItems.map((item) => `${item.name}:${item.digest}`).join('\n'))
+          .digest('hex');
+        const etag = `"sha256:${digest}"`;
+
+        ctx.withoutDataWrapping = true;
+        ctx.type = 'application/json';
+        ctx.set('Cache-Control', 'no-cache');
+        ctx.set('ETag', etag);
+        if (ctx.get('If-None-Match') === etag) {
+          ctx.status = 304;
+          await next();
+          return;
+        }
+
+        ctx.body = {
+          $schema: REGISTRY_ITEM_SCHEMA,
+          name: ALL_REGISTRY_ITEM_NAME,
+          type: 'registry:lib',
+          title: 'All enabled NocoBase Portal Registries',
+          registryDependencies: dependencies,
+          files: [],
+        };
+        await next();
+        return;
+      }
+
       const item = items.get(name);
       if (!item) {
         ctx.throw(404, 'Portal Registry item not found');

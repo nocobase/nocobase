@@ -15,6 +15,7 @@ const { discoverPluginPackages } = require('@nocobase/utils/plugin-package');
 const PORTAL_REGISTRY_DIR = 'portal-registry';
 const PORTAL_REGISTRY_CONFIG = 'registry.config.json';
 const REGISTRY_ITEM_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+const RESERVED_REGISTRY_ITEM_NAMES = new Set(['all']);
 const REGISTRY_ITEM_TYPES = new Set([
   'registry:block',
   'registry:component',
@@ -102,6 +103,9 @@ async function loadPluginPortalRegistry(plugin) {
     }
     if (typeof item.name !== 'string' || !REGISTRY_ITEM_NAME_PATTERN.test(item.name)) {
       throw new Error(`${itemLabel} has an invalid name: ${item.name}`);
+    }
+    if (RESERVED_REGISTRY_ITEM_NAMES.has(item.name)) {
+      throw new Error(`${itemLabel} uses reserved name: ${item.name}`);
     }
     if (!REGISTRY_ITEM_TYPES.has(item.type)) {
       throw new Error(`${plugin.packageName} item ${item.name} has an unsupported type: ${item.type}`);

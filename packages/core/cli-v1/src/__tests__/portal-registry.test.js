@@ -149,6 +149,12 @@ describe('portal Registry', () => {
       items: [{ name: 'unsafe', type: 'registry:block', include: ['components'] }],
     });
     await expect(loadPluginPortalRegistry(first.plugin)).rejects.toThrow('Unsafe @nocobase/plugin-first target');
+
+    await fs.writeJson(path.resolve(first.pluginRoot, 'portal-registry/registry.config.json'), {
+      target: 'src/extensions/first',
+      items: [{ name: 'all', type: 'registry:block', include: ['components'] }],
+    });
+    await expect(loadPluginPortalRegistry(first.plugin)).rejects.toThrow('uses reserved name: all');
   });
 
   test('builds package-owned output and honors package, path, glob, and core-only selectors', async () => {

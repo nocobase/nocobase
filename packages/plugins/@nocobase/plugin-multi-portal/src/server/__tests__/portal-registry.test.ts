@@ -31,6 +31,7 @@ describe('Portal Registry actions', () => {
       packageName: '@nocobase/plugin-example',
       packageVersion: '2.2.0-test.1',
       filePath,
+      targets: [],
     };
   });
 
@@ -67,6 +68,7 @@ describe('Portal Registry actions', () => {
           name: 'example',
           packageName: '@nocobase/plugin-example',
           packageVersion: '2.2.0-test.1',
+          targets: [],
         },
       ],
     });
@@ -99,5 +101,30 @@ describe('Portal Registry actions', () => {
     const handlers = createPortalRegistryActionHandlers({} as Application, async () => new Map([[item.name, item]]));
     await expect(handlers.get(invalidContext, vi.fn())).rejects.toMatchObject({ status: 400 });
     await expect(handlers.get(missingContext, vi.fn())).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('serves a virtual all item for every enabled Registry item', async () => {
+    const second = { ...item, name: 'second', digest: `sha256:${'b'.repeat(64)}` };
+    const handlers = createPortalRegistryActionHandlers(
+      {} as Application,
+      async () =>
+        new Map([
+          [second.name, second],
+          [item.name, item],
+        ]),
+    );
+    const context = createContext('all');
+
+    await handlers.get(context, vi.fn());
+
+    expect(context.body).toEqual({
+      $schema: 'https://ui.shadcn.com/schema/registry-item.json',
+      name: 'all',
+      type: 'registry:lib',
+      title: 'All enabled NocoBase Portal Registries',
+      registryDependencies: ['@nocobase/example', '@nocobase/second'],
+      files: [],
+    });
+    expect(context.set).toHaveBeenCalledWith('ETag', expect.stringMatching(/^"sha256:[a-f0-9]{64}"$/));
   });
 });

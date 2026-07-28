@@ -35,6 +35,7 @@ export interface ExposedPortalRegistryItem extends PortalRegistryManifestItem {
   packageName: string;
   packageVersion: string;
   filePath: string;
+  targets: string[];
 }
 
 interface CollectPortalRegistryOptions {
@@ -43,6 +44,39 @@ interface CollectPortalRegistryOptions {
 
 function isSafeManifestFile(file: string, itemName: string) {
   return file === `${itemName}.json` && !path.isAbsolute(file) && !file.includes('..') && !file.includes('\\');
+}
+
+function readRegistryItemTargets(content: Buffer, packageName: string, itemName: string) {
+  let document: unknown;
+  try {
+    document = JSON.parse(content.toString('utf8')) as unknown;
+  } catch {
+    throw new Error(`Invalid Portal Registry item in plugin ${packageName}: ${itemName}`);
+  }
+  const files =
+    document && typeof document === 'object' && !Array.isArray(document)
+      ? (document as { files?: unknown }).files
+      : undefined;
+  if (!Array.isArray(files)) {
+    throw new Error(`Invalid Portal Registry item in plugin ${packageName}: ${itemName}`);
+  }
+  const targets = files.map((file) =>
+    file && typeof file === 'object' && !Array.isArray(file) ? (file as { target?: unknown }).target : undefined,
+  );
+  if (
+    targets.some(
+      (target) =>
+        typeof target !== 'string' ||
+        !target.startsWith('src/') ||
+        path.posix.isAbsolute(target) ||
+        target.split('/').includes('..') ||
+        target.includes('\\') ||
+        target.includes('\0'),
+    )
+  ) {
+    throw new Error(`Invalid Portal Registry item targets in plugin ${packageName}: ${itemName}`);
+  }
+  return targets as string[];
 }
 
 export function createPortalRegistryDigest(content: Buffer | string) {
@@ -82,11 +116,13 @@ async function readPluginPortalRegistry(packageName: string, pluginRoot: string)
     if (createPortalRegistryDigest(content) !== item.digest) {
       throw new Error(`Portal Registry item digest mismatch for ${packageName}:${item.name}`);
     }
+    const targets = readRegistryItemTargets(content, packageName, item.name);
     items.push({
       ...item,
       packageName,
       packageVersion: manifest.packageVersion,
       filePath,
+      targets,
     });
   }
   return items;
