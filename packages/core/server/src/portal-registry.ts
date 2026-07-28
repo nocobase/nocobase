@@ -95,8 +95,11 @@ async function readPluginPortalRegistry(packageName: string, pluginRoot: string)
   if (
     manifest.schemaVersion !== 1 ||
     manifest.packageName !== packageName ||
-    manifest.packageVersion !== packageJson.version ||
+    typeof manifest.packageVersion !== 'string' ||
+    !manifest.packageVersion ||
     packageJson.name !== packageName ||
+    typeof packageJson.version !== 'string' ||
+    !packageJson.version ||
     !Array.isArray(manifest.items)
   ) {
     throw new Error(`Invalid Portal Registry manifest for plugin ${packageName}`);
@@ -120,7 +123,7 @@ async function readPluginPortalRegistry(packageName: string, pluginRoot: string)
     items.push({
       ...item,
       packageName,
-      packageVersion: manifest.packageVersion,
+      packageVersion: packageJson.version,
       filePath,
       targets,
     });
