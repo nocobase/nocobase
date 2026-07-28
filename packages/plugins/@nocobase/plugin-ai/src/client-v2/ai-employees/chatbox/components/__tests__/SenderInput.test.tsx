@@ -214,4 +214,23 @@ describe('Sender input state', () => {
     );
     expect(mocks.runtime.chatSenderModel.setSenderValue).toHaveBeenCalledWith('');
   });
+
+  it('does not submit whitespace-only input', () => {
+    const { getByTestId } = render(
+      <Sender
+        showContextSelector={false}
+        showUpload={false}
+        showWebSearch={false}
+        showEmployeeSelect={false}
+        showModelSelect={false}
+      />,
+    );
+    const input = getByTestId('sender-input') as HTMLTextAreaElement;
+
+    fireEvent.change(input, { target: { value: '   \n\t' } });
+    fireEvent.click(getByTestId('sender-submit'));
+
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.runtime.chatSenderModel.setSenderValue).not.toHaveBeenCalledWith('');
+  });
 });

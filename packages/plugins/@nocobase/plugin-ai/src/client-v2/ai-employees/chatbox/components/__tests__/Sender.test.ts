@@ -73,6 +73,17 @@ describe('Sender options helpers', () => {
     });
   });
 
+  it('does not build a payload for whitespace-only content', () => {
+    expect(
+      buildSenderSendOptions({
+        content: '   \n\t',
+        currentEmployee: employee,
+        defaultUserMessage: 'Hello',
+        contextItems: [context('manual-1')],
+      }),
+    ).toBeNull();
+  });
+
   it('does not build payload without an employee or sendable content', () => {
     expect(
       buildSenderSendOptions({
