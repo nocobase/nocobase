@@ -176,6 +176,48 @@ describe('EditorCore', () => {
     await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0));
   });
 
+  it('renders and clears authoritative external diagnostics', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const value = `const App = () => <div />;\nsdfsdf();`;
+    const { rerender } = render(
+      <EditorCore
+        diagnostics={[
+          {
+            column: 1,
+            line: 2,
+            message: "Cannot find name 'sdfsdf'.",
+            severity: 'error',
+            source: 'runjs-compiler',
+          },
+        ]}
+        enableLinter
+        fileName="src/client/index.tsx"
+        language="typescript"
+        value={value}
+        viewRef={viewRef}
+      />,
+    );
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    await waitFor(() => expect(diagnosticCount(view.state)).toBe(1));
+
+    rerender(
+      <EditorCore
+        diagnostics={[]}
+        enableLinter
+        fileName="src/client/index.tsx"
+        language="typescript"
+        value={value}
+        viewRef={viewRef}
+      />,
+    );
+
+    await waitFor(() => expect(diagnosticCount(view.state)).toBe(0));
+  });
+
   it('filters JSON Schema completions by the typed property name', async () => {
     const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
     const value = '{"settingsSchema":{"en"}}';

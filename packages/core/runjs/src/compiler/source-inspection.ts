@@ -20,13 +20,12 @@ import {
   type RunJSTypeScriptLibSource,
 } from '../typescript-environment';
 import {
-  buildRunJSTypeScriptContextDeclaration,
   collectRunJSForbiddenTypeScriptDirectives,
   formatRunJSForbiddenTypeScriptDirectiveMessage,
   formatRunJSTypeScriptDiagnosticMessage,
-  isRunJSUnknownTypeDiagnosticMessage,
-  RUNJS_TYPESCRIPT_CONTEXT_PATH,
-} from '../typescript-project';
+  shouldKeepRunJSTypeScriptDiagnostic,
+} from '../typescript-diagnostic-policy';
+import { buildRunJSTypeScriptContextDeclaration, RUNJS_TYPESCRIPT_CONTEXT_PATH } from '../typescript-project';
 import type {
   RunJSTypeDependencyContract,
   RunJSTypeDependencyGraph,
@@ -249,7 +248,7 @@ export class RunJSSourceWorkspaceInspector {
 function collectTypeScriptDirectiveDiagnostics(sourceFiles: Map<string, string>): RunJSCompileDiagnostic[] {
   const diagnostics: RunJSCompileDiagnostic[] = [];
   for (const [path, source] of sourceFiles) {
-    for (const occurrence of collectRunJSForbiddenTypeScriptDirectives(source)) {
+    for (const occurrence of collectRunJSForbiddenTypeScriptDirectives(ts, source)) {
       diagnostics.push({
         code: 'RUNJS_COMPILE_FAILED',
         column: occurrence.column,
@@ -415,11 +414,12 @@ function typeScriptDiagnosticsToRunJS(
     }
     const location = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
     const message = formatRunJSTypeScriptDiagnosticMessage(
+      'runjs-authoring',
       diagnostic.code,
       ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
     );
     if (
-      isRunJSUnknownTypeDiagnosticMessage(message) ||
+      !shouldKeepRunJSTypeScriptDiagnostic('runjs-authoring', diagnostic.code, message) ||
       (diagnostic.code === 2307 && isRunJSBuiltInModuleDiagnostic(message))
     ) {
       continue;

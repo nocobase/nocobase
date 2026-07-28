@@ -106,6 +106,7 @@ export interface CodeAuthoringValidationResult {
   snapshotId: string;
   diagnostics: CodeAuthoringDiagnostic[];
   stale: boolean;
+  validationPassed: boolean;
 }
 
 export interface CodeAuthoringSearchOptions {

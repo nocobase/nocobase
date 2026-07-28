@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import {
   CodeEditor,
+  type CodeEditorDiagnostic,
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
   type RunJSWorkspaceTypeScriptContextResolver,
@@ -836,6 +837,7 @@ export function CodeTab(props: {
   authoringSurfaceId?: string;
   busy?: boolean;
   diffRows: RunJSLineDiffRow[];
+  diagnostics?: RunJSCompileDiagnostic[];
   emptyDiffDescription?: string;
   filesCollapsed: boolean;
   isDiff: boolean;
@@ -868,6 +870,7 @@ export function CodeTab(props: {
     authoringSurfaceId,
     busy = false,
     diffRows,
+    diagnostics,
     emptyDiffDescription,
     filesCollapsed,
     isDiff,
@@ -897,6 +900,19 @@ export function CodeTab(props: {
   const jsonSchema = useMemo(
     () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),
     [activeFile, jsonSchemaResolver, workspaceFiles],
+  );
+  const activeFileDiagnostics = useMemo<CodeEditorDiagnostic[]>(
+    () =>
+      (diagnostics || [])
+        .filter((diagnostic) => diagnostic.path === activeFile?.path)
+        .map((diagnostic) => ({
+          column: diagnostic.column,
+          line: diagnostic.line,
+          message: diagnostic.message,
+          severity: diagnostic.severity || 'info',
+          source: 'runjs-compiler',
+        })),
+    [activeFile?.path, diagnostics],
   );
 
   if (!activeFile) {
@@ -1008,6 +1024,7 @@ export function CodeTab(props: {
     >
       <CodeEditor
         authoringSurfaceId={authoringSurfaceId}
+        diagnostics={activeFileDiagnostics}
         enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
         height="100%"
         language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}

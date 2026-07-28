@@ -45,6 +45,26 @@ describe('javascriptWithHtmlTemplates', () => {
     expect(node?.name).toBe('VariableName');
   });
 
+  it('uses the TypeScript grammar for type-only imports and declarations', () => {
+    const support = javascriptWithHtmlTemplates({ typescript: true });
+    const state = EditorState.create({
+      doc: `import { type User } from './types';\ntype Result = { user: User };\nconst value = {} as Result;`,
+      extensions: [support],
+    });
+    const tree = ensureSyntaxTree(state, state.doc.length, 1_000);
+    let hasSyntaxError = false;
+
+    tree?.iterate({
+      enter(node) {
+        if (node.type.isError) {
+          hasSyntaxError = true;
+        }
+      },
+    });
+
+    expect(hasSyntaxError).toBe(false);
+  });
+
   it('defers to html completions inside template literals', async () => {
     const support = javascriptWithHtmlTemplates();
     const state = EditorState.create({

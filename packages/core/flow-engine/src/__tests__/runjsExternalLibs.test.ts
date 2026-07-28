@@ -20,8 +20,8 @@ vi.mock('../utils/runjsModuleLoader', async (importOriginal) => {
 });
 
 import { runjsImportAsync } from '../utils/runjsModuleLoader';
-import { FlowEngine, FlowRunJSContext } from '..';
-import { externalReactRender, registerRunJSRenderErrorReporter } from '../runjsLibs';
+import { FlowEngine, FlowRunJSContext, subscribeRunJSRenderDiagnostics } from '..';
+import { externalReactRender } from '../runjsLibs';
 
 function newEngine(): FlowEngine {
   const engine = new FlowEngine();
@@ -261,9 +261,11 @@ describe('RunJS external libs', () => {
     };
     const reportRenderError = vi.fn();
     const flowEngine = {};
-    const settingsModel = { uid: 'customer-list', flowEngine };
     const runtimeFork = { uid: 'customer-list', flowEngine };
-    const unregister = registerRunJSRenderErrorReporter(settingsModel, reportRenderError);
+    const unregister = subscribeRunJSRenderDiagnostics(
+      { kind: 'flow-model', flowEngine, modelUid: 'customer-list' },
+      reportRenderError,
+    );
     const internalAntd = {};
     const ctx: any = {
       React: fakeReact,
@@ -291,10 +293,67 @@ describe('RunJS external libs', () => {
     const info = { componentStack: '\n at BrokenCustomerList' };
     boundary.componentDidCatch(error, info);
 
-    expect(reportRenderError).toHaveBeenCalledWith(error, info);
+    expect(reportRenderError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'render-error',
+        message: 'rawData.some is not a function',
+        error,
+        componentStack: info.componentStack,
+      }),
+    );
 
     unregister();
     boundary.componentDidCatch(new TypeError('another render error'), info);
     expect(reportRenderError).toHaveBeenCalledTimes(1);
+  });
+
+  it('should share context subscriptions across transparent proxies and isolate listener failures', () => {
+    class FakeComponent {
+      props: any;
+
+      constructor(props: any) {
+        this.props = props;
+      }
+    }
+
+    const fakeReact = {
+      Component: FakeComponent,
+      createElement: (type: any, props: any, ...children: any[]) => ({ type, props: { ...props, children } }),
+    };
+    const contextTarget: any = {
+      React: fakeReact,
+      ReactDOM: { __nbRunjsInternalShim: true },
+      antd: {},
+      logger: { error: vi.fn() },
+    };
+    const contextProxy = new Proxy(contextTarget, {});
+    const listener = vi.fn();
+    const disposeThrowing = subscribeRunJSRenderDiagnostics({ kind: 'context', context: contextProxy }, () => {
+      throw new Error('listener failed');
+    });
+    const disposeListener = subscribeRunJSRenderDiagnostics({ kind: 'context', context: contextProxy }, listener);
+    const root = { render: vi.fn(), unmount: vi.fn() };
+
+    externalReactRender({
+      ctx: contextTarget,
+      entry: { root },
+      vnode: { type: 'BrokenView' },
+      containerEl: document.createElement('div'),
+      rootMap: new WeakMap(),
+      unmountContainerRoot: vi.fn(),
+      internalReact: fakeReact,
+      internalAntd: contextTarget.antd,
+    });
+    const boundaryVNode = root.render.mock.calls[0][0];
+    const boundary = new boundaryVNode.type(boundaryVNode.props);
+    boundary.componentDidCatch(new Error('render failed'), { componentStack: '\n at BrokenView' });
+
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ message: 'render failed' }));
+    expect(contextTarget.logger.error).not.toHaveBeenCalled();
+
+    disposeThrowing();
+    disposeListener();
+    boundary.componentDidCatch(new Error('fallback render error'));
+    expect(contextTarget.logger.error).toHaveBeenCalledWith('fallback render error');
   });
 });

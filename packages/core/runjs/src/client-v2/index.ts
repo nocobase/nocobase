@@ -8,4 +8,5 @@
  */
 
 export * from '../typescript-environment';
+export * from '../typescript-diagnostic-policy';
 export * from '../typescript-project';

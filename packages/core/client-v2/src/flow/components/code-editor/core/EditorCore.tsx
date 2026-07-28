@@ -32,6 +32,7 @@ import {
   type CodeEditorJsonSchemaRef,
 } from '../jsonLanguageService';
 import { createJavaScriptLinter } from '../linter';
+import type { CodeEditorDiagnostic } from '../types';
 import { resolveTooltipParent } from './tooltipParent';
 
 const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
@@ -43,6 +44,19 @@ const tabCompletionKeymap = Prec.highest(keymap.of([{ key: 'Tab', run: acceptCom
 
 function isJsonLanguage(language: string | undefined): boolean {
   return language?.trim().toLowerCase() === 'json';
+}
+
+function isTypeScriptLanguage(language: string | undefined, fileName: string | undefined): boolean {
+  const normalized = language?.trim().toLowerCase();
+  const normalizedFileName = fileName?.trim().toLowerCase();
+  return (
+    normalizedFileName?.endsWith('.ts') === true ||
+    normalizedFileName?.endsWith('.tsx') === true ||
+    normalized === 'ts' ||
+    normalized === 'tsx' ||
+    normalized === 'typescript' ||
+    normalized === 'typescriptreact'
+  );
 }
 
 function createEditorTheme(height: string | number, minHeight: string | number | undefined): Extension {
@@ -123,6 +137,8 @@ export const EditorCore: React.FC<{
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  diagnostics?: CodeEditorDiagnostic[];
+  fileName?: string;
   knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
@@ -138,6 +154,8 @@ export const EditorCore: React.FC<{
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  diagnostics,
+  fileName,
   knownCtxMemberRoots,
   extraCompletions,
   completionSource,
@@ -207,7 +225,9 @@ export const EditorCore: React.FC<{
         basicSetup,
         tabCompletionKeymap,
         readonlyCompartment.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
-        languageCompartment.of(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        languageCompartment.of(
+          jsonLanguage ? json() : javascriptWithHtmlTemplates({ typescript: isTypeScriptLanguage(language, fileName) }),
+        ),
         completionCompartment.of(
           autocompletion({
             override: jsonLanguage
@@ -222,7 +242,15 @@ export const EditorCore: React.FC<{
           jsonLanguage
             ? [lintGutter(), jsonLinter]
             : enableLinter
-              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
               : [],
         ),
         hoverCompartment.of(jsonLanguage ? jsonHover : []),
@@ -269,7 +297,9 @@ export const EditorCore: React.FC<{
     view.dispatch({
       effects: [
         readonlyCompartment.reconfigure([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
-        languageCompartment.reconfigure(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        languageCompartment.reconfigure(
+          jsonLanguage ? json() : javascriptWithHtmlTemplates({ typescript: isTypeScriptLanguage(language, fileName) }),
+        ),
         completionCompartment.reconfigure(
           autocompletion({
             override: jsonLanguage
@@ -284,7 +314,15 @@ export const EditorCore: React.FC<{
           jsonLanguage
             ? [lintGutter(), jsonLinter]
             : enableLinter
-              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
               : [],
         ),
         hoverCompartment.reconfigure(jsonLanguage ? jsonHover : []),
@@ -296,8 +334,10 @@ export const EditorCore: React.FC<{
   }, [
     completionCompartment,
     dynamicCompletionSource,
+    diagnostics,
     editorThemeCompartment,
     enableLinter,
+    fileName,
     height,
     hoverCompartment,
     jsonCompletionSource,
@@ -319,10 +359,10 @@ export const EditorCore: React.FC<{
 
   useEffect(() => {
     const view = viewRef.current;
-    if (view && isJsonLanguage(language)) {
+    if (view && (isJsonLanguage(language) || enableLinter)) {
       forceLinting(view);
     }
-  }, [jsonSchema, language, viewRef]);
+  }, [diagnostics, enableLinter, jsonSchema, language, viewRef]);
 
   useEffect(() => {
     const view = viewRef.current;
