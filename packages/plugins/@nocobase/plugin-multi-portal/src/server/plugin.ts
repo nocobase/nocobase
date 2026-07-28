@@ -288,26 +288,49 @@ function isAbsoluteUrl(value: string) {
   return /^[a-z][a-z\d+\-.]*:\/\//i.test(value) || value.startsWith('//');
 }
 
-function getPortalStorageApiUrl() {
+function appendPortalStorageSubAppApiUrl(apiUrl: string, appName: string) {
+  if (appName === MAIN_APP_NAME) {
+    return apiUrl;
+  }
+
+  const subAppApiPath = `/__app/${encodeURIComponent(appName)}`;
+  const subAppApiPathPattern = new RegExp(`/__app/${appName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?$`);
+  if (subAppApiPathPattern.test(apiUrl)) {
+    return apiUrl;
+  }
+
+  if (isAbsoluteUrl(apiUrl)) {
+    const url = new URL(apiUrl.startsWith('//') ? `http:${apiUrl}` : apiUrl);
+    if (!subAppApiPathPattern.test(url.pathname)) {
+      url.pathname = `${url.pathname.replace(/\/+$/, '')}${subAppApiPath}`;
+    }
+    const value = url.toString();
+    return apiUrl.startsWith('//') ? value.replace(/^http:/, '') : value;
+  }
+
+  return `${apiUrl.replace(/\/+$/, '')}${subAppApiPath}`;
+}
+
+function getPortalStorageApiUrl(appName: string) {
   const configuredApiUrl = trimString(
     process.env.NOCOBASE_API_URL || process.env.API_BASE_URL || process.env.API_BASE_PATH,
   );
   const apiUrl = configuredApiUrl || '/api';
   if (isAbsoluteUrl(apiUrl)) {
-    return apiUrl;
+    return appendPortalStorageSubAppApiUrl(apiUrl, appName);
   }
 
   const normalizedApiPath = normalizePortalStoragePath(apiUrl, 'api');
   const appPublicPath = resolvePortalStoragePublicPath(process.env.APP_PUBLIC_PATH || '/');
   if (appPublicPath === '/' || normalizedApiPath === appPublicPath.slice(0, -1)) {
-    return normalizedApiPath;
+    return appendPortalStorageSubAppApiUrl(normalizedApiPath, appName);
   }
 
   if (normalizedApiPath.startsWith(appPublicPath)) {
-    return normalizedApiPath;
+    return appendPortalStorageSubAppApiUrl(normalizedApiPath, appName);
   }
 
-  return joinPortalStoragePublicPath(appPublicPath, normalizedApiPath);
+  return appendPortalStorageSubAppApiUrl(joinPortalStoragePublicPath(appPublicPath, normalizedApiPath), appName);
 }
 
 function getPortalDeployBasePath(appName: string, portalName: string) {
@@ -599,7 +622,7 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
 async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorageItem): Promise<void> {
   const logPath = getPortalStorageLogPath(item);
   const buildEnv = getPortalStorageCommandEnv({
-    NOCOBASE_API_URL: getPortalStorageApiUrl(),
+    NOCOBASE_API_URL: getPortalStorageApiUrl(item.appName),
     NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
   });
   await appendPortalStorageLog(logPath, `Building portal ${item.appName}/${item.portalName}.`);

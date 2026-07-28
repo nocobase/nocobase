@@ -928,7 +928,7 @@ describe('plugin-multi-portal server', () => {
       expect.objectContaining({
         cwd: portalDir,
         env: expect.objectContaining({
-          NOCOBASE_API_URL: '/nocobase/api',
+          NOCOBASE_API_URL: '/nocobase/api/__app/a_q7xx6p75d0e',
           NOCOBASE_PORTAL_BASE: '/nocobase/x/apps/a_q7xx6p75d0e/test/',
         }),
       }),
