@@ -18,6 +18,7 @@ import {
 } from '../frontend-tools';
 import loadFrontendTool from '../../ai/tools/loadFrontendTool';
 import executeFrontendTool from '../../ai/tools/executeFrontendTool';
+import { WORKSPACE_AUTHORING_TOOL_NAMES } from '../../common/workspace-authoring';
 
 const frontendTool = {
   id: 'block-1:refresh_dashboard',
@@ -48,6 +49,19 @@ const workspaceApplyTool = {
     additionalProperties: false,
   },
 };
+
+const workspaceTools = Object.values(WORKSPACE_AUTHORING_TOOL_NAMES).map((name) =>
+  name === workspaceApplyTool.name
+    ? workspaceApplyTool
+    : {
+        id: `workspace-1:${name}`,
+        blockUid: 'workspace-1',
+        name,
+        description: `${name} tool.`,
+        permission: 'ALLOW' as const,
+        inputSchema: { type: 'object' },
+      },
+);
 
 describe('frontend tools', () => {
   it('keeps the generic executor allowed while concrete tools control automatic execution', () => {
@@ -159,19 +173,20 @@ describe('frontend tools', () => {
       { definition: { name: 'executeFrontendTool', description: 'Execute a frontend tool.' } },
     ];
 
-    const prepared = prepareToolsForFrontendConversation(tools, [workspaceApplyTool]);
+    const prepared = prepareToolsForFrontendConversation(tools, workspaceTools);
 
     expect(prepared.map((tool) => tool.definition.name)).toEqual([
       'getSkill',
       'loadFrontendTool',
       'executeFrontendTool',
     ]);
-    expect(getBlockedFrontendToolNames([workspaceApplyTool])).toEqual([
+    expect(getBlockedFrontendToolNames(workspaceTools)).toEqual([
       'readJSCode',
       'writeJSCode',
       'patchJSCode',
       'lintAndTestJS',
     ]);
+    expect(getBlockedFrontendToolNames([workspaceApplyTool])).toEqual([]);
     expect(getBlockedFrontendToolNames([frontendTool])).toEqual([]);
   });
 

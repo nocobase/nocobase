@@ -15,6 +15,7 @@ import {
   type FrontendToolManifest,
   isFrontendToolManifest,
 } from '../common/frontend-tools';
+import { LEGACY_CODE_EDITOR_TOOL_NAMES, resolveWorkspaceAuthoringToolSets } from '../common/workspace-authoring';
 import type { WorkContext } from './types/ai-message.type';
 
 type MessageLike = {
@@ -30,16 +31,6 @@ type FrontendToolResultInput = {
   id: string;
   result: unknown;
 };
-
-const legacyCodeEditorToolNames = ['readJSCode', 'writeJSCode', 'patchJSCode', 'lintAndTestJS'] as const;
-const workspaceAuthoringToolNames = new Set([
-  'workspaceDescribe',
-  'workspaceReadFiles',
-  'workspaceSearch',
-  'workspacePrepareChanges',
-  'workspaceApplyPreparedChanges',
-  'workspaceValidateDraft',
-]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
@@ -146,8 +137,7 @@ export const shouldAutoExecuteFrontendTool = (tools: FrontendToolManifest[], arg
 };
 
 export const getBlockedFrontendToolNames = (frontendTools: FrontendToolManifest[]): string[] => {
-  const hasWorkspaceAuthoringTools = frontendTools.some((tool) => workspaceAuthoringToolNames.has(tool.name));
-  return hasWorkspaceAuthoringTools ? [...legacyCodeEditorToolNames] : [];
+  return resolveWorkspaceAuthoringToolSets(frontendTools).size > 0 ? [...LEGACY_CODE_EDITOR_TOOL_NAMES] : [];
 };
 
 export const prepareToolsForFrontendConversation = <T extends { definition: { name: string; description: string } }>(

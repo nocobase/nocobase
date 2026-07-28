@@ -67,6 +67,53 @@ export interface RunJSTypeScriptEnvironmentFile {
 }
 
 export const RUNJS_TYPESCRIPT_ES_LIB_PATH = '/__runjs__/lib.es2020.d.ts';
+export const RUNJS_TYPESCRIPT_REACT_NAMESPACE_PATH = '/__runjs__/react-types.d.ts';
+
+const runJSTypeScriptReactNamespaceDeclaration = `
+export = React;
+export as namespace React;
+
+declare namespace React {
+  type Key = string | number;
+  type ReactText = string | number;
+  type ReactNode = unknown;
+  type ComponentType<P = Record<string, unknown>> =
+    | ((props: P) => ReactNode)
+    | (new (props: P) => unknown);
+  type FC<P = Record<string, unknown>> = (props: P) => ReactNode;
+  type PropsWithChildren<P = unknown> = P & { children?: ReactNode };
+  type SetStateAction<S> = S | ((previousState: S) => S);
+  type Dispatch<A> = (value: A) => void;
+  type CSSProperties = Record<string, string | number | undefined>;
+
+  interface ReactElement<P = unknown, T = unknown> {
+    readonly type: T;
+    readonly props: P;
+    readonly key: Key | null;
+  }
+
+  interface RefObject<T> {
+    readonly current: T | null;
+  }
+
+  interface MutableRefObject<T> {
+    current: T;
+  }
+
+  interface SyntheticEvent<T = unknown> {
+    readonly currentTarget: T;
+    readonly target: unknown;
+    preventDefault(): void;
+    stopPropagation(): void;
+  }
+
+  interface ChangeEvent<T = unknown> extends SyntheticEvent<T> {}
+  interface MouseEvent<T = unknown> extends SyntheticEvent<T> {}
+  interface KeyboardEvent<T = unknown> extends SyntheticEvent<T> {
+    readonly key: string;
+  }
+}
+`;
 
 const libReferenceDirective = /^\/\/\/\s*<reference\b[^>]*\/>\s*$/gmu;
 
@@ -153,6 +200,10 @@ export function buildRunJSTypeScriptEnvironmentFiles(
     {
       path: RUNJS_TYPESCRIPT_ES_LIB_PATH,
       content: esDeclaration,
+    },
+    {
+      path: RUNJS_TYPESCRIPT_REACT_NAMESPACE_PATH,
+      content: runJSTypeScriptReactNamespaceDeclaration,
     },
   ];
 }

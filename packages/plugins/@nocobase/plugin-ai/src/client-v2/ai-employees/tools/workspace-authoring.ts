@@ -15,18 +15,10 @@ import type {
 } from '@nocobase/client-v2';
 
 import type { FrontendToolInvokeResult, FrontendToolManifest } from '../../../common/frontend-tools';
+import { WORKSPACE_AUTHORING_TOOL_NAMES, type WorkspaceAuthoringToolName } from '../../../common/workspace-authoring';
 
-export const WORKSPACE_AUTHORING_TOOL_NAMES = {
-  describe: 'workspaceDescribe',
-  readFiles: 'workspaceReadFiles',
-  search: 'workspaceSearch',
-  prepareChanges: 'workspacePrepareChanges',
-  applyPreparedChanges: 'workspaceApplyPreparedChanges',
-  validateDraft: 'workspaceValidateDraft',
-} as const;
-
-export type WorkspaceAuthoringToolName =
-  (typeof WORKSPACE_AUTHORING_TOOL_NAMES)[keyof typeof WORKSPACE_AUTHORING_TOOL_NAMES];
+export { WORKSPACE_AUTHORING_TOOL_NAMES } from '../../../common/workspace-authoring';
+export type { WorkspaceAuthoringToolName } from '../../../common/workspace-authoring';
 
 type WorkspaceAuthoringApplication = {
   aiManager: {
@@ -240,13 +232,8 @@ async function invokeWorkspaceTool(surface: CodeAuthoringSurface, toolName: Work
       return surface.prepareChanges(requirePrepareInput(args));
     case WORKSPACE_AUTHORING_TOOL_NAMES.applyPreparedChanges:
       return surface.applyPreparedChanges(requireStringProperty(args, 'planId'));
-    case WORKSPACE_AUTHORING_TOOL_NAMES.validateDraft: {
-      const result = await surface.validateDraft();
-      return {
-        ...result,
-        validationPassed: !result.stale && result.diagnostics.every((diagnostic) => diagnostic.severity !== 'error'),
-      };
-    }
+    case WORKSPACE_AUTHORING_TOOL_NAMES.validateDraft:
+      return surface.validateDraft();
   }
 }
 
