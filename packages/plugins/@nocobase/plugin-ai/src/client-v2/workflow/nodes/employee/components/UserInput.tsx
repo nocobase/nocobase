@@ -22,6 +22,7 @@ type CollectionFieldLike = {
   isForeignKey?: boolean;
   name?: string;
   target?: string;
+  type?: string;
 };
 
 type UserInputProps = {
@@ -43,7 +44,7 @@ function isWorkflowVariable(value?: UserInputValue) {
 }
 
 function isUserKeyField(field: CollectionFieldLike) {
-  if (field.isForeignKey) {
+  if (field.isForeignKey || field.type === 'context') {
     return field.target === 'users';
   }
   return field.collectionName === 'users' && field.name === 'id';

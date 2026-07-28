@@ -126,10 +126,11 @@ export const AIEmployeeShortcut: React.FC<{
           targetChatBox.syncContextItems(shortcutContext);
           return;
         }
-        chat.addContextItems(shortcutContext);
+        const activeConversation = resolvedRuntime.chatConversationModel.currentConversation;
+        chat.for(activeConversation).addContextItems(shortcutContext);
         syncContextAttachments(shortcutContext);
       },
-      [chat, getShortcutContext, syncContextAttachments],
+      [chat, getShortcutContext, resolvedRuntime.chatConversationModel, syncContextAttachments],
     );
 
     const showChatBoxNotFound = useCallback(

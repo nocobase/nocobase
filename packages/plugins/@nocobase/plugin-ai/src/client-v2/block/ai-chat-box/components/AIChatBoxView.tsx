@@ -283,7 +283,7 @@ export const AIChatBoxView: React.FC = observer(() => {
         if (!items.length) {
           return;
         }
-        chat.addContextItems(items);
+        chat.for(runtime.chatConversationModel.currentConversation).addContextItems(items);
         syncContextAttachments(items);
       },
     });

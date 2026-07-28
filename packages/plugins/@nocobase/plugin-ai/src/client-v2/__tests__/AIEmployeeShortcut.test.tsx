@@ -24,9 +24,13 @@ import { AIEmployeeButtonModel } from '../models/ai-employees';
 const triggerTask = vi.fn().mockResolvedValue(undefined);
 const clear = vi.fn();
 const addContextItems = vi.fn();
+const addExistingConversationContextItems = vi.fn();
 const syncContextAttachments = vi.fn();
 const messageError = vi.fn();
 const actionRuntimes: ChatBoxRuntime[] = [];
+const chatFor = vi.fn((sessionId?: string) => ({
+  addContextItems: sessionId ? addExistingConversationContextItems : addContextItems,
+}));
 
 const employee: AIEmployee = {
   username: 'atlas',
@@ -105,19 +109,22 @@ vi.mock('../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 }));
 
 vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
-  useChat: () => ({
-    addContextItems,
+  useChat: (sessionId?: string) => ({
+    addContextItems: sessionId ? addExistingConversationContextItems : addContextItems,
+    for: chatFor,
   }),
 }));
 
 describe('AIEmployeeShortcut', () => {
   beforeEach(() => {
-    triggerTask.mockClear();
+    triggerTask.mockReset().mockResolvedValue(undefined);
     clear.mockClear();
     addContextItems.mockClear();
+    addExistingConversationContextItems.mockClear();
     syncContextAttachments.mockClear();
     messageError.mockClear();
     actionRuntimes.length = 0;
+    chatFor.mockClear();
     clearMountedChatBoxes();
     getGlobalChatBoxRuntime().chatConversationModel.setCurrentConversation(undefined);
   });
@@ -295,5 +302,30 @@ describe('AIEmployeeShortcut', () => {
       expect(messageError).toHaveBeenCalledWith('AI chat box not found:missing-chat-box');
     });
     expect(triggerTask).not.toHaveBeenCalled();
+  });
+
+  it('syncs shortcut context to the new draft when replacing an existing conversation', async () => {
+    const task: Task = { title: 'Analyze record' };
+    const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
+    const runtime = getGlobalChatBoxRuntime();
+    runtime.chatConversationModel.setCurrentConversation('session-1');
+    triggerTask.mockImplementation(async () => {
+      runtime.chatConversationModel.setCurrentConversation(undefined);
+    });
+
+    const { container } = render(
+      <AIEmployeeShortcut aiEmployee={employee} tasks={[task]} context={{ workContext }} runtime={runtime} />,
+    );
+
+    const shortcut = container.querySelector('.ant-avatar');
+    expect(shortcut).toBeTruthy();
+    fireEvent.click(shortcut);
+
+    await waitFor(() => {
+      expect(chatFor).toHaveBeenCalledWith(undefined);
+    });
+    expect(addContextItems).toHaveBeenCalledWith(workContext);
+    expect(addExistingConversationContextItems).not.toHaveBeenCalled();
+    expect(syncContextAttachments).toHaveBeenCalledWith(workContext);
   });
 });

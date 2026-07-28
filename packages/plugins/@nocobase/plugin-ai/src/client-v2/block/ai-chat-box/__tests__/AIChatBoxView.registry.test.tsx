@@ -45,6 +45,7 @@ const mocks = vi.hoisted(() => ({
   clear: vi.fn(),
   triggerTask: vi.fn().mockResolvedValue(undefined),
   refreshConversations: vi.fn(),
+  chatFor: vi.fn(),
   addContextItems: vi.fn(),
   syncContextAttachments: vi.fn(),
   flowModelRendererProps: [] as FlowModelRendererProps[],
@@ -110,6 +111,12 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
   useChat: () => ({
     addContextItems: mocks.addContextItems,
+    for: (sessionId?: string) => {
+      mocks.chatFor(sessionId);
+      return {
+        addContextItems: mocks.addContextItems,
+      };
+    },
   }),
 }));
 
@@ -171,6 +178,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.eventBus.removeEventListener.mockClear();
     mocks.refreshConversations.mockClear();
     mocks.runtime.chatConversationModel.setConversationRead.mockClear();
+    mocks.chatFor.mockClear();
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
     mocks.renderActions.mockClear();
@@ -178,6 +186,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.renderConfigureItems.mockClear();
     mocks.flowModelRendererProps = [];
     mocks.runtime.getScope = undefined;
+    mocks.runtime.chatConversationModel.currentConversation = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
   });
@@ -199,7 +208,9 @@ describe('AIChatBoxView mounted registry', () => {
     expect(mocks.triggerTask).toHaveBeenCalledWith({
       aiEmployee: { username: 'sales' },
     });
+    mocks.runtime.chatConversationModel.currentConversation = 'session-2';
     entry?.syncContextItems([{ type: 'flow-model', uid: 'block-1' }]);
+    expect(mocks.chatFor).toHaveBeenCalledWith('session-2');
     expect(mocks.addContextItems).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.syncContextAttachments).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
 

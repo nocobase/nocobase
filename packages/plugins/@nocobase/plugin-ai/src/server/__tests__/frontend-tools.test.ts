@@ -13,7 +13,6 @@ import {
   extractFrontendToolManifests,
   findCurrentFrontendTool,
   prepareToolsForFrontendConversation,
-  resolveFlowModelWorkContext,
   shouldAutoExecuteFrontendTool,
 } from '../frontend-tools';
 import loadFrontendTool from '../../ai/tools/loadFrontendTool';
@@ -59,7 +58,8 @@ describe('frontend tools', () => {
     expect(prepared).toHaveLength(3);
     expect(prepared[1].definition.description).toContain('frontendToolCatalog');
     expect(prepared[1].definition.description).toContain(frontendTool.id);
-    expect(prepared[1].definition.description).toContain('Do not ask the user for a separate confirmation');
+    expect(prepared[1].definition.description).not.toContain('permission');
+    expect(prepared[1].definition.description).not.toContain('approval');
     expect(prepared[1].definition.schema.safeParse({ toolId: frontendTool.id }).success).toBe(true);
     expect(prepared[1].definition.schema.safeParse({ toolId: 'block-1' }).success).toBe(false);
     expect(prepared[1].definition.schema.safeParse({ toolId: '__catalog__' }).success).toBe(false);
@@ -69,7 +69,7 @@ describe('frontend tools', () => {
     expect(prepared[2].definition.schema.safeParse({ toolId: '__catalog__', args: {} }).success).toBe(false);
   });
 
-  it('extracts valid manifests but keeps tool metadata out of work context content', async () => {
+  it('extracts valid manifests from work context', () => {
     const workContext = {
       type: 'flow-model',
       uid: 'block-1',
@@ -78,13 +78,6 @@ describe('frontend tools', () => {
     };
 
     expect(extractFrontendToolManifests([workContext])).toEqual([frontendTool]);
-    const resolved = await resolveFlowModelWorkContext({} as Context, workContext);
-
-    expect(resolved).toContain('dashboard context');
-    expect(resolved).not.toContain('frontendToolCatalog');
-    expect(resolved).not.toContain(frontendTool.id);
-    expect(resolved).not.toContain('inputSchema');
-    expect(resolved).not.toContain('"force"');
   });
 
   it('binds the first frontend tool context to the conversation and reuses it for later messages', async () => {
@@ -190,8 +183,6 @@ describe('frontend tools', () => {
         title: frontendTool.title,
         description: frontendTool.description,
         inputSchema: frontendTool.inputSchema,
-        instructions:
-          'Tool permission is enforced by the runtime. Do not ask the user for a separate confirmation in chat. Call executeFrontendTool directly; when approval is required, the UI will pause and show the Allow use action before execution.',
       },
     });
     await expect(

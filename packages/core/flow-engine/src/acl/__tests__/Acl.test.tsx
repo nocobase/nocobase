@@ -71,6 +71,76 @@ describe('ACL', () => {
     expect(notOk).toBe(false);
   });
 
+  it('checks record update scope before field permission', () => {
+    const payload = {
+      data: {
+        allowAll: false,
+        actionAlias: {},
+        resources: ['posts'],
+        actions: { 'posts:update': { whitelist: ['title'] } },
+        strategy: { actions: [] },
+      },
+    };
+    const engine = makeEngine(payload);
+    const acl = new ACL(engine);
+    acl.setData(payload.data);
+
+    const options = {
+      dataSourceKey: 'main',
+      resourceName: 'posts',
+      actionName: 'update',
+      allowedActions: {
+        update: [1],
+      },
+    };
+
+    expect(acl.can({ ...options, recordPkValue: 1, fields: ['title'] })).toBe(true);
+    expect(acl.can({ ...options, recordPkValue: 2, fields: ['title'] })).toBe(false);
+    expect(acl.can({ ...options, recordPkValue: 1, fields: ['body'] })).toBe(false);
+    expect(acl.can({ ...options, recordPkValue: 0, fields: ['title'] })).toBe(false);
+    expect(
+      acl.can({
+        dataSourceKey: 'main',
+        resourceName: 'posts',
+        actionName: 'update',
+        fields: ['title'],
+      }),
+    ).toBe(true);
+  });
+
+  it('allows every field when a scoped action has no field restriction', () => {
+    const payload = {
+      data: {
+        allowAll: false,
+        actionAlias: {},
+        resources: ['posts'],
+        actions: {
+          'posts:update': {
+            filter: { createdById: '{{ ctx.state.currentUser.id }}' },
+          },
+        },
+        strategy: { actions: [] },
+      },
+    };
+    const engine = makeEngine(payload);
+    const acl = new ACL(engine);
+    acl.setData(payload.data);
+
+    const options = {
+      dataSourceKey: 'main',
+      resourceName: 'posts',
+      actionName: 'update',
+      allowedActions: {
+        update: [1],
+      },
+      fields: ['title'],
+    };
+
+    expect(acl.can({ ...options, recordPkValue: 1 })).toBe(true);
+    expect(acl.can({ ...options, recordPkValue: 2 })).toBe(false);
+    expect(acl.can({ ...options, allowedActions: undefined, recordPkValue: undefined })).toBe(false);
+  });
+
   it('reloads permissions when auth token changes', async () => {
     const payload1 = {
       data: {

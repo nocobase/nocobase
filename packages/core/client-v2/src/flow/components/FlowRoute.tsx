@@ -8,8 +8,11 @@
  */
 
 import { type FlowEngine, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
+import { Button, Result } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { getModernClientPrefix, stripModernClientPrefix } from '../../authRedirect';
 import { useApp } from '../../hooks/useApp';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../flow-compat';
 import {
@@ -28,6 +31,7 @@ type FlowRouteGuardState = {
   pending: boolean;
   allowBridge: boolean;
   notFound: boolean;
+  legacyPageUnsupported?: boolean;
 };
 
 export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
@@ -171,6 +175,53 @@ const BridgeFlowRoute = ({
   });
 
   return <div ref={layoutContentRef} />;
+};
+
+type RouteLocation = {
+  pathname: string;
+  search: string;
+  hash: string;
+};
+
+const getLegacyPageHref = (app: { getPublicPath: () => string }, location: RouteLocation) => {
+  const modernPublicPath = app.getPublicPath();
+  const browserLocationMatchesPublicPath = window.location.pathname.startsWith(modernPublicPath);
+  const currentLocation = browserLocationMatchesPublicPath ? window.location : location;
+  const pathWithinModernClient = currentLocation.pathname.startsWith(modernPublicPath)
+    ? currentLocation.pathname.slice(modernPublicPath.length)
+    : currentLocation.pathname.replace(/^\/+/, '');
+  return `${stripModernClientPrefix(modernPublicPath)}${pathWithinModernClient}${currentLocation.search}${
+    currentLocation.hash
+  }`;
+};
+
+const LegacyPageUnsupported = ({
+  app,
+  location,
+}: {
+  app: { getPublicPath: () => string };
+  location: RouteLocation;
+}) => {
+  const { t } = useTranslation();
+  const modernClientPath = `/${getModernClientPrefix()}/`;
+  const withModernClientPath = (message: string) => message.replaceAll('{{modernClientPath}}', modernClientPath);
+
+  return (
+    <Result
+      status="warning"
+      title={withModernClientPath(t('This page is not supported in the {{modernClientPath}} branch'))}
+      subTitle={withModernClientPath(
+        t(
+          'The {{modernClientPath}} branch only supports new pages. This page is a legacy page. Please open it from the original entry.',
+        ),
+      )}
+      extra={
+        <Button href={getLegacyPageHref(app, location)} type="primary">
+          {t('Open from the original entry')}
+        </Button>
+      }
+    />
+  );
 };
 
 /**
@@ -355,7 +406,13 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
 
         if (target.reason === 'unsupportedV2Runtime') {
           if (active && requestId === requestIdRef.current) {
-            setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
+            setGuardState({
+              pageUid,
+              pending: false,
+              allowBridge: false,
+              notFound: false,
+              legacyPageUnsupported: true,
+            });
           }
           return;
         }
@@ -392,6 +449,10 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       return <AppNotFound />;
     }
 
+    if (guardState.legacyPageUnsupported) {
+      return <LegacyPageUnsupported app={app} location={location} />;
+    }
+
     if (!guardState.allowBridge) {
       return null;
     }
@@ -399,11 +460,14 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     return <BridgeFlowRoute pageUid={pageUid} active={active} getLayoutModel={getLayoutModel} />;
   }, [
     active,
+    app,
     getLayoutModel,
     guardState.allowBridge,
+    guardState.legacyPageUnsupported,
     guardState.notFound,
     guardState.pageUid,
     guardState.pending,
+    location,
     pageUid,
   ]);
 

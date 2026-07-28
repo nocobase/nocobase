@@ -30,9 +30,13 @@ export {
   NameField,
   ParanoidField,
   PathField,
+  PublicAccessField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
+  UseOriginalUrlRadio,
 } from './components';
+export type { UseOriginalUrlFieldProps, UseOriginalUrlRadioProps } from './components/UseOriginalUrlField';
 export type { DefaultFieldProps } from './components/DefaultField';
 export type { PathFieldProps } from './components/PathField';
 export { CardUpload, UploadFieldModel } from './models/UploadFieldModel';
