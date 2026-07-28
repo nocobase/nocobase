@@ -297,6 +297,7 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
+    this.app.acl.allow('aiFiles', 'get', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
     this.app.acl.allow('ai', 'listAllEnabledModels', 'loggedIn');
 
