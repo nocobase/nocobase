@@ -47,6 +47,8 @@ export interface LinkageFilterItemValue {
 export interface LinkageFilterItemProps {
   /** 条件值对象（响应式） */
   value: LinkageFilterItemValue;
+  /** 受控模式下回传新的条件值；未提供时保持原有的响应式对象修改行为 */
+  onChange?: (value: LinkageFilterItemValue) => void;
   model: FlowModel;
   /** 向变量树额外注入节点（置于根部） */
   extraMetaTree?: MetaTreeNode[];
@@ -230,7 +232,7 @@ export async function enhanceMetaTreeWithFilterableChildren(
  * LinkageFilterItem：左/右均为可变量输入，适用于联动规则等“前端逻辑”场景
  */
 export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((props) => {
-  const { value, model, extraMetaTree, maxAssociationFieldDepth } = props;
+  const { value, onChange, model, extraMetaTree, maxAssociationFieldDepth } = props;
   const ctx = useFlowViewContext();
   const t = model.translate;
   const { path: leftPath, operator: selectedOperator, value: rightOperandValue } = value || {};
@@ -282,6 +284,17 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     }));
   }, [operatorMetadataList, t]);
 
+  const updateValue = useCallback(
+    (patch: Partial<LinkageFilterItemValue>) => {
+      if (onChange) {
+        onChange({ ...value, ...patch });
+        return;
+      }
+      Object.assign(value, patch);
+    },
+    [onChange, value],
+  );
+
   useEffect(() => {
     // 仅当有可用操作符列表时才做校验/回填，避免在列表未就绪时覆盖已保存的值
     if (operatorMetadataList.length === 0) return;
@@ -289,13 +302,14 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     if (!selectedOperator) {
       if (shouldDefaultOperatorRef.current) {
         const fallback = operatorMetadataList.find((op) => op.selected) || operatorMetadataList[0];
-        value.operator = fallback?.value || '';
+        const patch: Partial<LinkageFilterItemValue> = {
+          operator: fallback?.value || '',
+          noValue: !!fallback?.noValue,
+        };
         if (fallback?.noValue) {
-          value.value = true;
-          value.noValue = true;
-        } else {
-          value.noValue = false;
+          patch.value = true;
         }
+        updateValue(patch);
         shouldDefaultOperatorRef.current = false;
       }
       return;
@@ -304,15 +318,16 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     const exists = operatorMetadataList.some((op) => op.value === selectedOperator);
     if (!exists) {
       const fallback = operatorMetadataList.find((op) => op.selected) || operatorMetadataList[0];
-      value.operator = fallback?.value || '';
+      const patch: Partial<LinkageFilterItemValue> = {
+        operator: fallback?.value || '',
+        noValue: !!fallback?.noValue,
+      };
       if (fallback?.noValue) {
-        value.value = true;
-        value.noValue = true;
-      } else {
-        value.noValue = false;
+        patch.value = true;
       }
+      updateValue(patch);
     }
-  }, [operatorMetadataList, selectedOperator, value]);
+  }, [operatorMetadataList, selectedOperator, updateValue]);
 
   // 合并 schema：优先使用字段 uiSchema（如果能拿到），右值还会叠加操作符 schema（如有）
   const currentOperatorMeta = useMemo(
@@ -449,12 +464,12 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       const prevPath = value.path || '';
       const nextPath = variableValue || '';
       const changed = nextPath !== prevPath;
-      value.path = nextPath;
+      const patch: Partial<LinkageFilterItemValue> = { path: nextPath };
       // 仅当此前已有选择（prevPath 非空）且新旧不同，才清空中间与右侧
       // 避免“初次回填/恢复”时误清空已保存的 operator/value
       if (changed && prevPath) {
-        value.operator = '';
-        value.value = '';
+        patch.operator = '';
+        patch.value = '';
         shouldDefaultOperatorRef.current = true;
       }
       // 首次选择（prevPath 为空），且没有已保存 operator 时，默认选择第一个
@@ -462,30 +477,32 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
         shouldDefaultOperatorRef.current = true;
       }
       if (metaNode) setLeftFieldMeta(metaNode);
+      updateValue(patch);
     },
-    [value],
+    [updateValue, value.operator, value.path],
   );
 
   const handleOperatorChange = useCallback(
     (operatorValue: string) => {
       const previousOperator = value.operator;
-      value.operator = operatorValue;
+      const patch: Partial<LinkageFilterItemValue> = { operator: operatorValue };
       const selectedOperatorMeta = operatorMetadataList.find((o) => o.value === operatorValue);
       if (selectedOperatorMeta?.noValue) {
-        value.value = true;
-        value.noValue = true;
+        patch.value = true;
+        patch.noValue = true;
       } else {
         if (
           KEYWORD_OPERATOR_VALUES.has(previousOperator) &&
           !KEYWORD_OPERATOR_VALUES.has(operatorValue) &&
           Array.isArray(value.value)
         ) {
-          value.value = value.value.join('\n');
+          patch.value = value.value.join('\n');
         }
-        value.noValue = false;
+        patch.noValue = false;
       }
+      updateValue(patch);
     },
-    [value, operatorMetadataList],
+    [operatorMetadataList, updateValue, value.operator, value.value],
   );
 
   return (
@@ -519,7 +536,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       {!operatorMetadataList.find((o) => o.value === selectedOperator)?.noValue && (
         <VariableInput
           value={rightOperandValue}
-          onChange={(v) => (value.value = v)}
+          onChange={(v) => updateValue({ value: v })}
           metaTree={rightMetaTreeGetter}
           converters={rightSideConverters}
           showValueComponent

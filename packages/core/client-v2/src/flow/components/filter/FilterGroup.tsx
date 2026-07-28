@@ -13,10 +13,10 @@ import { useTranslation } from 'react-i18next';
 import React, { FC, ReactNode } from 'react';
 import { observer } from '@nocobase/flow-engine';
 
-const itemKeyMap = new WeakMap<Record<string, any>, string>();
+const itemKeyMap = new WeakMap<object, string>();
 let itemKeyCounter = 0;
 
-const getFilterItemKey = (item: Record<string, any>) => {
+const getFilterItemKey = (item: object) => {
   let key = itemKeyMap.get(item);
   if (!key) {
     itemKeyCounter += 1;
@@ -24,6 +24,13 @@ const getFilterItemKey = (item: Record<string, any>) => {
     itemKeyMap.set(item, key);
   }
   return key;
+};
+
+const preserveFilterItemKey = (source: object, target: object) => {
+  const key = itemKeyMap.get(source);
+  if (key) {
+    itemKeyMap.set(target, key);
+  }
 };
 
 /**
@@ -34,7 +41,9 @@ interface FilterItemProps {
     path: string;
     operator: string;
     value: string;
+    noValue?: boolean;
   };
+  onChange?: (value: FilterItemProps['value']) => void;
 }
 
 /**
@@ -51,6 +60,8 @@ interface FilterGroupProps {
   /** 移除当前组的回调 */
   onRemove?: () => void;
   onChange?: (value: any) => void;
+  /** 通过 onChange 返回新对象，不修改传入的 value */
+  immutable?: boolean;
 }
 
 /**
@@ -92,19 +103,34 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
       showBorder = false,
       onRemove,
       onChange,
+      immutable = false,
       closeIcon = <CloseCircleOutlined style={{ color: token.colorIcon }} />,
     } = props;
     const { t } = useTranslation();
 
-    // 确保 value 有正确的默认结构
-    if (!value.logic) {
-      value.logic = '$and';
-    }
-    if (!Array.isArray(value.items)) {
-      value.items = [];
+    // 非受控模式维持原有的响应式对象初始化行为；不可变模式只使用归一化后的局部值。
+    if (!immutable) {
+      if (!value.logic) {
+        value.logic = '$and';
+      }
+      if (!Array.isArray(value.items)) {
+        value.items = [];
+      }
     }
 
-    const { logic, items } = value;
+    const logic = value.logic || '$and';
+    const items = Array.isArray(value.items) ? value.items : [];
+
+    const updateValue = (updater: (nextValue: FilterGroupProps['value']) => void) => {
+      if (immutable) {
+        const nextValue = { ...value, logic, items: [...items] };
+        updater(nextValue);
+        onChange?.(nextValue);
+        return;
+      }
+      updater(value);
+      onChange?.(value);
+    };
 
     const style: React.CSSProperties = showBorder
       ? {
@@ -120,30 +146,34 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         };
 
     const handleLogicChange = (newLogic: '$and' | '$or') => {
-      value.logic = newLogic;
-      onChange?.(value);
+      updateValue((nextValue) => {
+        nextValue.logic = newLogic;
+      });
     };
 
     const handleAddCondition = () => {
-      items.push({
-        path: '',
-        operator: '',
-        value: '',
+      updateValue((nextValue) => {
+        nextValue.items.push({
+          path: '',
+          operator: '',
+          value: '',
+        });
       });
-      onChange?.(value);
     };
 
     const handleAddConditionGroup = () => {
-      items.push({
-        logic: '$and',
-        items: [],
+      updateValue((nextValue) => {
+        nextValue.items.push({
+          logic: '$and',
+          items: [],
+        });
       });
-      onChange?.(value);
     };
 
     const handleRemoveItem = (index: number) => {
-      items.splice(index, 1);
-      onChange?.(value);
+      updateValue((nextValue) => {
+        nextValue.items.splice(index, 1);
+      });
     };
 
     const isConditionItem = (item: any) => {
@@ -201,10 +231,13 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   value={item}
                   FilterItem={FilterItem}
                   showBorder={true}
+                  immutable={immutable}
                   onRemove={() => handleRemoveItem(index)}
                   onChange={(v) => {
-                    items[index] = v;
-                    onChange?.(value);
+                    updateValue((nextValue) => {
+                      preserveFilterItemKey(items[index], v);
+                      nextValue.items[index] = v;
+                    });
                   }}
                 />
               );
@@ -217,7 +250,15 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                     style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}
                   >
                     <Space style={{ flex: 1, minWidth: 0 }}>
-                      <FilterItem value={item} />
+                      <FilterItem
+                        value={item}
+                        onChange={(nextItem) => {
+                          updateValue((nextValue) => {
+                            preserveFilterItemKey(item, nextItem);
+                            nextValue.items[index] = nextItem;
+                          });
+                        }}
+                      />
                       <button
                         type="button"
                         aria-label="icon-close"

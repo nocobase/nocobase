@@ -506,6 +506,15 @@ describe('ForkFlowModel', () => {
     });
   });
 
+  // ==================== PERSISTENCE ====================
+  describe('Persistence', () => {
+    test('should expose the master model as the persistence target', () => {
+      const fork = new ForkFlowModel(mockMaster, { disabled: true });
+
+      expect(fork.getMaster()).toBe(mockMaster);
+    });
+  });
+
   // ==================== CONTEXT AND SHARED STATE ====================
   describe('Context and Shared State', () => {
     let fork: ForkFlowModel;

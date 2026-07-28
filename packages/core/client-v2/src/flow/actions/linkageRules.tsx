@@ -1681,14 +1681,27 @@ const LinkageRulesUI = observer(
             </div>
             <div style={{ paddingLeft: 12 }}>
               <FilterGroup
-                value={_.cloneDeep(rule.condition)}
+                value={rule.condition}
+                immutable
                 onChange={(condition) => {
                   updateRules((nextRules) => {
                     nextRules[index].condition = condition;
                   });
                 }}
                 FilterItem={(props) => (
-                  <LinkageFilterItem model={ctx.model} value={props.value} maxAssociationFieldDepth={2} />
+                  <LinkageFilterItem
+                    model={ctx.model}
+                    value={props.value}
+                    onChange={(nextValue) =>
+                      props.onChange?.({
+                        path: nextValue.path || '',
+                        operator: nextValue.operator,
+                        value: nextValue.value,
+                        noValue: nextValue.noValue,
+                      })
+                    }
+                    maxAssociationFieldDepth={2}
+                  />
                 )}
               />
             </div>
@@ -2462,6 +2475,63 @@ export const blockLinkageRules = defineAction({
   },
 });
 
+type ActionLinkageModel = FlowModel & {
+  isFork?: boolean;
+  getMaster?: () => FlowModel;
+  localProps?: Record<string, unknown>;
+  defaultProps?: Record<string, unknown>;
+  __originalProps?: Record<string, unknown>;
+};
+
+const controlsActionDisabledState = (value: unknown) => {
+  const rules = (value as { value?: unknown })?.value;
+  if (!Array.isArray(rules)) return false;
+
+  return rules.some((rule) => {
+    if (!rule || typeof rule !== 'object') return false;
+    const actions = (rule as { actions?: unknown }).actions;
+    if (!Array.isArray(actions)) return false;
+    return actions.some((action) => {
+      if (!action || typeof action !== 'object') return false;
+      const actionValue = action as { name?: unknown; params?: { value?: unknown } };
+      return (
+        actionValue.name === 'linkageSetActionProps' &&
+        (actionValue.params?.value === 'disabled' || actionValue.params?.value === 'enabled')
+      );
+    });
+  });
+};
+
+const maskHistoricalActionDisabledState = (model: ActionLinkageModel, params: unknown) => {
+  if (model.isFork !== true || typeof model.getMaster !== 'function') return;
+
+  const persistentModel = model.getMaster() as ActionLinkageModel;
+  const persistentProps = persistentModel.getProps();
+  const hasHistoricalRowForkSignature =
+    typeof persistentProps.className === 'string' &&
+    persistentProps.className.split(/\s+/).includes('nb-table-row-action-button');
+  if (
+    persistentProps.disabled !== true ||
+    !hasHistoricalRowForkSignature ||
+    persistentModel.defaultProps?.disabled === true
+  ) {
+    return;
+  }
+  if (model.localProps && Object.prototype.hasOwnProperty.call(model.localProps, 'disabled')) return;
+
+  const rules = (params as { value?: unknown })?.value;
+  const hasPersistedEmptyRules =
+    model.getStepParams('buttonSettings', 'linkageRules') !== undefined && Array.isArray(rules) && rules.length === 0;
+  if (!controlsActionDisabledState(params) && !hasPersistedEmptyRules) return;
+
+  if (model.__originalProps && Object.prototype.hasOwnProperty.call(model.__originalProps, 'disabled')) {
+    model.__originalProps.disabled = undefined;
+  }
+  // Historical versions could serialize a row fork's runtime disabled state into the master model.
+  // Mask it only on this fork; persistence remains untouched because its original source is ambiguous.
+  model.setProps('disabled', undefined);
+};
+
 export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
   title: tExpr('Linkage rules'),
@@ -2483,6 +2553,8 @@ export const actionLinkageRules = defineAction({
   },
   useRawParams: true,
   handler: async (ctx, params) => {
+    const model = ctx.model as ActionLinkageModel;
+    maskHistoricalActionDisabledState(model, params);
     ensureFormValueDrivenLinkageRefresh(ctx, params, 'actionLinkageRules');
     const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
     return commonLinkageRulesHandler(ctx, resolved);

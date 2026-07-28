@@ -28,11 +28,19 @@ interface TestFilterItemProps {
     path: string;
     operator: string;
     value: string;
+    noValue?: boolean;
   };
+  onChange?: (value: TestFilterItemProps['value']) => void;
 }
 
 const DummyFilterItem: React.FC<TestFilterItemProps> = ({ value }) => (
   <div data-testid="dummy-filter-item">{value.path}</div>
+);
+
+const EditableFilterItem: React.FC<TestFilterItemProps> = ({ value, onChange }) => (
+  <button type="button" onClick={() => onChange?.({ ...value, path: 'updated' })}>
+    update condition
+  </button>
 );
 
 afterEach(() => {
@@ -139,5 +147,40 @@ describe('FilterGroup closeIcon', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(value.items[0].items).toHaveLength(1);
+  });
+
+  it('propagates controlled condition item changes through onChange', () => {
+    const initialValue = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$eq', value: 'old' }],
+    };
+    const onChange = vi.fn();
+
+    const ControlledFilterGroup = () => {
+      const [value, setValue] = React.useState(initialValue);
+      return (
+        <FilterGroup
+          value={value}
+          FilterItem={EditableFilterItem}
+          onChange={(nextValue) => {
+            onChange(nextValue);
+            setValue(nextValue);
+          }}
+          immutable
+        />
+      );
+    };
+
+    renderWithProviders(<ControlledFilterGroup />);
+    const editButton = screen.getByText('update condition');
+    editButton.focus();
+    fireEvent.click(editButton);
+
+    expect(onChange).toHaveBeenCalledWith({
+      logic: '$and',
+      items: [{ path: 'updated', operator: '$eq', value: 'old' }],
+    });
+    expect(initialValue.items).toEqual([{ path: 'name', operator: '$eq', value: 'old' }]);
+    expect(screen.getByText('update condition')).toHaveFocus();
   });
 });

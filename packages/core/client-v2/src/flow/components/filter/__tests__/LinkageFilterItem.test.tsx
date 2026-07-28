@@ -402,4 +402,67 @@ describe('LinkageFilterItem', () => {
       expect(value.value).toBe('alpha\nbeta');
     });
   });
+
+  it('emits controlled path, operator, and operand changes without mutating the input value', async () => {
+    const initialValue = { path: '', operator: '', value: '' };
+    const onChange = vi.fn();
+    const { model } = createModel();
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': 'Input',
+        'x-filter-operators': [
+          { value: '$eq', label: 'is', selected: true, schema: { 'x-component': 'Input' } },
+          { value: '$ne', label: 'is not', schema: { 'x-component': 'Input' } },
+        ],
+      },
+      paths: ['collection', 'name'],
+      name: 'name',
+      title: 'Name',
+      type: 'string',
+    };
+
+    const ControlledLinkageFilterItem = () => {
+      const [value, setValue] = React.useState(initialValue);
+      return (
+        <>
+          <span data-testid="controlled-value">{JSON.stringify(value)}</span>
+          <LinkageFilterItem
+            value={value}
+            model={model}
+            onChange={(nextValue) => {
+              onChange(nextValue);
+              setValue(nextValue);
+            }}
+          />
+        </>
+      );
+    };
+
+    const view = render(<ControlledLinkageFilterItem />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('controlled-value')).toHaveTextContent(
+        JSON.stringify({ path: 'name', operator: '$eq', value: '', noValue: false }),
+      );
+    });
+
+    fireEvent.mouseDown(view.container.querySelector('.ant-select-selector') as Element);
+    fireEvent.click(await screen.findByText('is not'));
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'name', operator: '$ne', value: '', noValue: false }),
+      );
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Enter value'), { target: { value: 'Alice' } });
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'name', operator: '$ne', value: 'Alice', noValue: false }),
+      );
+    });
+    expect(initialValue).toEqual({ path: '', operator: '', value: '' });
+  });
 });

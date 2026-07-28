@@ -215,6 +215,13 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   /**
+   * Return the persistent model that owns this fork's shared configuration.
+   */
+  getMaster(): TMaster {
+    return this.master;
+  }
+
+  /**
    * render 依旧使用 master 的方法，但合并后的 props 需要透传
    */
   render() {
