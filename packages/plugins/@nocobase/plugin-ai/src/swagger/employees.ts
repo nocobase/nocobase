@@ -15,8 +15,6 @@ export const employeePaths = {
       operationId: 'aiEmployees:list',
       tags: ['aiEmployees'],
       summary: 'List AI employees',
-      description:
-        'Use the filter parameter to select read-only metadata such as category. Deprecated employees are excluded.',
       parameters: listParameters,
       responses: withErrorResponses(
         okResponse({
@@ -101,7 +99,6 @@ export const employeePaths = {
       operationId: 'aiEmployees:destroy',
       tags: ['aiEmployees'],
       summary: 'Delete an AI employee',
-      description: 'Read the employee first and do not delete records whose builtIn field is true.',
       parameters: [filterByTkParameter],
       responses: withErrorResponses(okResponse()),
     },

@@ -282,7 +282,7 @@
           "aiKnowledgeBase": {
             "name": "kb",
             "segments": ["kb"],
-            "description": "Manage knowledge bases and explicit retrieval tests.",
+            "description": "Manage knowledge bases and retrieval tests.",
             "topLevel": true,
             "operations": {
               "includes": [
@@ -298,7 +298,7 @@
           },
           "aiKnowledgeBaseDocs": {
             "name": "documents",
-            "description": "Manage knowledge base documents and explicit vectorization.",
+            "description": "Manage knowledge base documents and vectorization.",
             "topLevel": false,
             "operations": {
               "includes": [

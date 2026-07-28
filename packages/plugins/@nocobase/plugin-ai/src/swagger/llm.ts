@@ -39,7 +39,7 @@ export const llmPaths = {
     post: {
       operationId: 'ai:listProviderModels',
       tags: ['ai'],
-      summary: 'Discover models with unsaved provider settings',
+      summary: 'List models available from an LLM provider',
       requestBody: {
         required: true,
         content: jsonContent({
@@ -60,7 +60,7 @@ export const llmPaths = {
     post: {
       operationId: 'ai:testFlight',
       tags: ['ai'],
-      summary: 'Test unsaved LLM provider settings',
+      summary: 'Validate an LLM provider configuration',
       requestBody: {
         required: true,
         content: jsonContent({
@@ -78,7 +78,7 @@ export const llmPaths = {
     get: {
       operationId: 'ai:listModels',
       tags: ['ai'],
-      summary: 'List models for a saved LLM service',
+      summary: 'List models available for an LLM service',
       parameters: [
         {
           name: 'llmService',
@@ -104,7 +104,7 @@ export const llmPaths = {
     get: {
       operationId: 'ai:listLLMServices',
       tags: ['ai'],
-      summary: 'List enabled LLM services without provider secrets',
+      summary: 'List enabled LLM services',
       parameters: [
         {
           name: 'filter',
