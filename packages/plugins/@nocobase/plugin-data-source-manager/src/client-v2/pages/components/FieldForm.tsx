@@ -706,6 +706,9 @@ const configureSelectControlPolicies: Record<string, Partial<ConfigureSelectCont
     autoSelectFirstOption: true,
     showSearch: true,
   },
+  TargetKey: {
+    showSearch: true,
+  },
 };
 
 export function resolveConfigureSelectControlBehavior(

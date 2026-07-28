@@ -45,6 +45,10 @@ describe('resolveConfigureSelectControlBehavior', () => {
       showSearch: true,
     });
   });
+
+  it('enables search for target key fields', () => {
+    expect(resolveConfigureSelectControlBehavior('targetKey', 'TargetKey').showSearch).toBe(true);
+  });
 });
 
 describe('filterConfigureSelectOption', () => {
