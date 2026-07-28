@@ -976,7 +976,8 @@ function registerWorkspaceCompilerBridgeTests() {
           files: [
             {
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
-              content: "import { title } from './labels';\nctx.render(<div>{title}</div>);\n",
+              content:
+                "import type { Settings } from 'light-extension:settings/client/js-block/sales-kpi';\nimport { title } from './labels';\nctx.render(<div>{String((ctx.settings as Settings).title || title)}</div>);\n",
             },
             {
               path: 'src/client/js-blocks/sales-kpi/labels.ts',
@@ -1011,6 +1012,7 @@ function registerWorkspaceCompilerBridgeTests() {
       await executeArtifact(result.artifact.code, {
         libs: {},
         React,
+        settings: {},
         render: (value: unknown) => rendered.push(value),
       });
       expect(rendered).toEqual([{ type: 'div', props: null, child: 'Sales KPI' }]);

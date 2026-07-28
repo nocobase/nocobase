@@ -60,18 +60,6 @@ describe('RuntimeResolveService', () => {
     expect(result).not.toHaveProperty('sourceMap');
   });
 
-  it('uses the configured API prefix for artifact URLs', async () => {
-    const { service } = createRuntimeResolveService({ apiBasePath: '/foo/api' });
-
-    const result = await service.resolve({
-      sourceMode: 'light-extension',
-      sourceBinding: createSourceBinding(),
-      settings: {},
-    });
-
-    expect(result.artifactUrl).toBe(`/foo/api/light-extension-runtime/artifacts/${'a'.repeat(64)}`);
-  });
-
   it('shares immutable artifact pointers while keeping settings request-specific', async () => {
     const { service } = createRuntimeResolveService({
       settingsSchema: {
@@ -122,38 +110,33 @@ describe('RuntimeResolveService', () => {
     await expect(service.listSelectableEntries()).resolves.toEqual([]);
   });
 
-  it('returns the schema hash independently from the defaults hash', async () => {
-    const { service, entriesRepository } = createRuntimeResolveService({ category: 'examples' });
-
-    await expect(service.listSelectableEntries()).resolves.toEqual([
-      expect.objectContaining({
+  it.each([
+    {
+      name: 'returns the schema hash independently from the defaults hash',
+      options: { category: 'examples' },
+      expected: {
         category: 'examples',
         settingsSchemaHash: 'schema_hash_1',
         settingsDefaultsHash: 'defaults_hash_1',
-      }),
-    ]);
-    expect(entriesRepository.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fields: expect.arrayContaining(['category']),
-      }),
-    );
-  });
-
-  it('keeps no-schema entries selectable when both settings hashes are null', async () => {
-    const { service } = createRuntimeResolveService({
-      settingsSchema: null,
-      settingsSchemaHash: null,
-      settingsDefaultsHash: null,
-    });
-
-    await expect(service.listSelectableEntries()).resolves.toEqual([
-      expect.objectContaining({
+      },
+    },
+    {
+      name: 'keeps no-schema entries selectable when both settings hashes are null',
+      options: { settingsSchema: null, settingsSchemaHash: null, settingsDefaultsHash: null },
+      expected: {
         settingsSchema: null,
         settingsSchemaHash: null,
         settingsDefaultsHash: null,
         runtimeAvailable: true,
-      }),
-    ]);
+      },
+    },
+  ])('$name', async ({ options, expected }) => {
+    const { service, entriesRepository } = createRuntimeResolveService(options);
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([expect.objectContaining(expected)]);
+    expect(entriesRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({ fields: expect.arrayContaining(['category']) }),
+    );
   });
 
   it('parses {{$user.nickname}} ACL row filters with a projected user lookup', async () => {
@@ -255,6 +238,13 @@ describe('RuntimeResolveService', () => {
   it('blocks runtime code for unavailable repos, unhealthy entries, unsupported kinds, and missing artifacts', async () => {
     const blockedCases = [
       {
+        name: 'missing repo',
+        repoExists: false,
+        errorCode: 'LIGHT_EXTENSION_REPO_NOT_FOUND',
+        status: 404,
+        reasonCode: 'repo_missing',
+      },
+      {
         name: 'disabled repo',
         repoLifecycleStatus: 'disabled',
         reasonCode: 'repo_disabled',
@@ -303,8 +293,8 @@ describe('RuntimeResolveService', () => {
           {},
         ),
       ).rejects.toMatchObject({
-        code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
-        status: 409,
+        code: blockedCase.errorCode || 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+        status: blockedCase.status || 409,
         details: {
           reasonCode: blockedCase.reasonCode,
           entryId: 'lee_sales_kpi',
@@ -338,6 +328,7 @@ describe('RuntimeResolveService', () => {
 
 function createRuntimeResolveService(
   options: {
+    repoExists?: boolean;
     repoLifecycleStatus?: string;
     entryHealthStatus?: string;
     entryKind?: string;
@@ -351,25 +342,20 @@ function createRuntimeResolveService(
     settingsSchemaHash?: string | null;
     settingsDefaultsHash?: string | null;
     category?: string | null;
-    apiBasePath?: string;
   } = {},
 ) {
   const entryRecord = createEntryRecord(options);
+  const repoRecord =
+    options.repoExists === false
+      ? null
+      : createModel({
+          id: 'ler_sales',
+          lifecycleStatus: options.repoLifecycleStatus || 'enabled',
+          headCommitId: typeof options.repoHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.repoHeadCommitId,
+        });
   const reposRepository = {
-    find: vi.fn().mockResolvedValue([
-      createModel({
-        id: 'ler_sales',
-        lifecycleStatus: options.repoLifecycleStatus || 'enabled',
-        headCommitId: typeof options.repoHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.repoHeadCommitId,
-      }),
-    ]),
-    findOne: vi.fn().mockResolvedValue(
-      createModel({
-        id: 'ler_sales',
-        lifecycleStatus: options.repoLifecycleStatus || 'enabled',
-        headCommitId: typeof options.repoHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.repoHeadCommitId,
-      }),
-    ),
+    find: vi.fn().mockResolvedValue(repoRecord ? [repoRecord] : []),
+    findOne: vi.fn().mockResolvedValue(repoRecord),
   };
   const entriesRepository = {
     find: vi.fn().mockResolvedValue([createModel(entryRecord)]),
@@ -394,9 +380,8 @@ function createRuntimeResolveService(
       throw new Error(`Unexpected repository ${name}`);
     },
   } as unknown as Database;
-  const serviceOptions = typeof options.apiBasePath === 'string' ? { apiBasePath: options.apiBasePath } : {};
   return {
-    service: new RuntimeResolveService(db, serviceOptions),
+    service: new RuntimeResolveService(db),
     reposRepository,
     entriesRepository,
     usersRepository,

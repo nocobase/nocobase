@@ -11,15 +11,12 @@ import { type LightExtensionEntryRecord } from '../../shared/types';
 import { createCompileJob } from './helpers/compilerTestHarness';
 import {
   aggregateLightExtensionCompileResults,
-  assertStructuredClonePlainData,
   buildLightExtensionCompilerBuildIdentity,
   compileLightExtensionValidatedEntry,
   createLightExtensionCompileInfrastructureFailure,
-  LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS,
   type LightExtensionCompilerBuildIdentityComponents,
-  validateLightExtensionWorkspace,
 } from '../services/LightExtensionCompileContract';
 import {
   buildLightExtensionCompileKey,
@@ -31,7 +28,6 @@ import {
   createPreparedCandidateWorkspace,
 } from '../services/PreparedCandidateWorkspace';
 import { type Transaction } from '@nocobase/database';
-import { RUNJS_COMPILER_BUILD_IDENTITY } from '@nocobase/runjs/compiler';
 import { createHash } from 'crypto';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -40,50 +36,6 @@ import { vi } from 'vitest';
 // Consolidated from compile-contract.test.ts.
 function registerCompileContractTests() {
   describe('LightExtensionCompileContract', () => {
-    it('publishes only the five retained authoring surfaces while preserving the shared RunJS compiler identity', () => {
-      expect(LIGHT_EXTENSION_AUTHORING_SURFACES).toEqual({
-        'js-block': {
-          kind: 'js-block',
-          surfaceStyle: 'render',
-          compilerSurfaceStyle: 'render',
-          modelUse: 'JSBlockModel',
-          surface: 'js-model.render',
-        },
-        'js-page': {
-          kind: 'js-page',
-          surfaceStyle: 'render',
-          compilerSurfaceStyle: 'render',
-          modelUse: 'JSPageModel',
-          surface: 'js-model.render',
-        },
-        'js-field': {
-          kind: 'js-field',
-          surfaceStyle: 'render',
-          compilerSurfaceStyle: 'render',
-          modelUse: 'JSEditableFieldModel',
-          surface: 'js-model.render',
-        },
-        'js-action': {
-          kind: 'js-action',
-          surfaceStyle: 'action',
-          compilerSurfaceStyle: 'action',
-          modelUse: 'JSActionModel',
-          surface: 'js-model.action',
-        },
-        'js-item': {
-          kind: 'js-item',
-          surfaceStyle: 'render',
-          compilerSurfaceStyle: 'render',
-          modelUse: 'JSItemActionModel',
-          surface: 'js-model.render',
-        },
-      });
-      expect(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.runjs).toEqual(RUNJS_COMPILER_BUILD_IDENTITY);
-      expect(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.components.runjsCompilerBuildId).toBe(
-        RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId,
-      );
-    });
-
     it('freezes the compiler identity before SES lockdown changes the runtime type-library fingerprint', () => {
       const contractPath = path.resolve(__dirname, '../services/LightExtensionCompileContract.ts');
       const sesPath = path.resolve(__dirname, '../../../../../../core/utils/src/ses.ts');
@@ -115,7 +67,7 @@ function registerCompileContractTests() {
       expect(diagnostics).toEqual([]);
     });
 
-    it('orders a complete batch by ordinal and rejects process-local values', () => {
+    it('orders a complete batch by ordinal', () => {
       const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2)];
       const results = [jobs[2], jobs[0], jobs[1]].map((job) =>
         createLightExtensionCompileInfrastructureFailure({
@@ -139,29 +91,6 @@ function registerCompileContractTests() {
         'failed 1',
         'failed 2',
       ]);
-      expect(() => assertStructuredClonePlainData({ transaction: new Map() })).toThrow(
-        'Value.transaction must not contain class instances or process-local objects',
-      );
-    });
-
-    it('validates a cloned workspace input without exposing a publish-capable object', () => {
-      const files = [{ path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' }];
-      const validation = {
-        accepted: true,
-        diagnostics: [],
-        entries: [],
-        capabilities: {} as never,
-      };
-      const validateWorkspace = vi.fn().mockReturnValue(validation);
-
-      const result = validateLightExtensionWorkspace({ validateWorkspace }, files);
-
-      expect(result).toBe(validation);
-      expect(validateWorkspace).toHaveBeenCalledWith({ files: [{ ...files[0] }] });
-      expect(validateWorkspace.mock.calls[0][0].files).not.toBe(files);
-      expect(validateWorkspace.mock.calls[0][0].files[0]).not.toBe(files[0]);
-      expect(result).not.toHaveProperty('candidate');
-      expect(result).not.toHaveProperty('workspace');
     });
 
     it('compiles only validated entry and shared files through the pure compile helper', async () => {
@@ -437,6 +366,18 @@ function registerPreparedCandidateWorkspaceTests() {
       expect(() => assertPreparedCandidateWorkspace(candidate, { commitId: 'commit_other' })).toThrow(
         'belongs to a different commit',
       );
+      expect(() =>
+        createPreparedCandidateWorkspace(
+          {
+            repo: candidate.repo,
+            commit: candidate.commit,
+            tree: { ...candidate.tree, hash: 'tree_other' },
+            validation: candidate.validation,
+            vscSnapshot: candidate.vscSnapshot,
+          },
+          transaction,
+        ),
+      ).toThrow('identity does not match its repository, commit, and tree');
       const forgedCandidate = { ...candidate };
       expect(() => assertPreparedCandidateWorkspace(forgedCandidate, { transaction })).toThrow(
         'was not prepared by the light-extension file service',

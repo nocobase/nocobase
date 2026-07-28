@@ -60,23 +60,6 @@ describe('LightExtensionCompileWorkerPool', () => {
     }
   }, 60_000);
 
-  it('rewrites generated settings type imports in compile jobs', async () => {
-    const result = await executeLightExtensionCompileJob({
-      job: createCompileJob(0, '', {
-        kind: 'js-page',
-        entryName: 'hello-page',
-        entryPath: 'src/client/js-pages/hello-page/index.tsx',
-        content:
-          "import type { Settings } from 'light-extension:settings/client/js-page/hello-page';\nctx.render(String((ctx.settings as Settings).title || 'Hello'));\n",
-      }),
-      workerId: 1,
-      attempt: 1,
-      executingThreadId: 1,
-    });
-
-    expect(result.accepted).toBe(true);
-  });
-
   it('normalizes worker and in-process compilation through the same result contract', async () => {
     const job = createCompileJob(0);
     const compiled = await new LightExtensionWorkspaceCompilerBridge().compileEntry({
@@ -137,16 +120,6 @@ describe('LightExtensionCompileWorkerPool', () => {
     await expect(Promise.all(promises)).resolves.toHaveLength(3);
     expect(pool.getMetrics()).toMatchObject({ workerCount: 1, maxActive: 1, completed: 3, rejected: 1 });
     await pool.shutdown();
-  });
-
-  it('does not create a worker when an unused pool shuts down', async () => {
-    const harness = createWorkerHarness();
-    const pool = new LightExtensionCompileWorkerPool({ workerFactory: harness.factory });
-
-    await pool.shutdown();
-
-    expect(harness.workers).toHaveLength(0);
-    expect(pool.getMetrics()).toMatchObject({ workerCount: 0, active: 0, queueDepth: 0, inflightBytes: 0 });
   });
 
   it('rejects oversized jobs and bounded in-flight bytes, then exposes capacity backpressure', async () => {

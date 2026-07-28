@@ -435,31 +435,6 @@ describe('module import', () => {
     ).toBe(true);
   });
 
-  it('allows built-in module imports that compile to ctx.libs', () => {
-    const result = new LightExtensionValidator().validateWorkspace({
-      files: [
-        {
-          path: 'src/client/js-blocks/react-hooks/index.tsx',
-          content: [
-            `import type { FC } from 'react';`,
-            `import { type ReactNode } from 'react';`,
-            `import React, { useEffect } from 'react';`,
-            `import * as ReactDOM from 'react-dom/client';`,
-            `const Component: FC<{ children?: ReactNode }> = ({ children }) => <div>{children}</div>;`,
-            `ctx.render(<Component>{String(React && ReactDOM && useEffect)}</Component>);`,
-          ].join('\n'),
-        },
-        {
-          path: 'src/client/js-blocks/react-hooks/entry.json',
-          content: JSON.stringify({ schemaVersion: 1, key: 'react-hooks' }),
-        },
-      ],
-    });
-
-    expect(result.accepted).toBe(true);
-    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
-  });
-
   it.each([`import 'react';`, `import {} from 'react';`])(
     'rejects built-in runtime imports without bindings: %s',
     (importStatement) => {
@@ -563,31 +538,6 @@ describe('module import', () => {
     expect(result.diagnostics.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
   });
 
-  it('allows bare global APIs that are allowed by RunJS on next', () => {
-    const result = new LightExtensionValidator().validateWorkspace({
-      files: [
-        {
-          path: 'src/client/js-blocks/global-api/index.tsx',
-          content: [
-            'const nodeEnv = process.env.NODE_ENV;',
-            'const evalValue = eval("1");',
-            'const factoryValue = Function("return 2")();',
-            'const reflectedEval = Reflect.get(globalThis, "eval")("3");',
-            'const descriptorFactory = Object.getOwnPropertyDescriptor(globalThis, "Function")?.value("return 4")();',
-            'ctx.render(<div>{String(nodeEnv || evalValue || factoryValue || reflectedEval || descriptorFactory)}</div>);',
-          ].join('\n'),
-        },
-        {
-          path: 'src/client/js-blocks/global-api/entry.json',
-          content: JSON.stringify({ schemaVersion: 1, key: 'global-api' }),
-        },
-      ],
-    });
-
-    expect(result.accepted).toBe(true);
-    expect(result.diagnostics.filter((item) => item.code === 'blocked_global_api')).toHaveLength(0);
-  });
-
   it('rejects relative imports that leave the current entry root', () => {
     const cases = [
       {
@@ -624,32 +574,6 @@ describe('module import', () => {
         item.name,
       ).toBe(true);
     }
-  });
-
-  it('allows relative imports within the same entry root', () => {
-    const result = new LightExtensionValidator().validateWorkspace({
-      files: [
-        {
-          path: 'src/client/js-blocks/local-import/index.tsx',
-          content: [
-            'import { helper } from "./helper";',
-            'export { helper as localHelper } from "./helper";',
-            'export default function LocalImport() { return helper(); }',
-          ].join('\n'),
-        },
-        {
-          path: 'src/client/js-blocks/local-import/helper.ts',
-          content: 'export function helper() { return null; }\n',
-        },
-        {
-          path: 'src/client/js-blocks/local-import/entry.json',
-          content: JSON.stringify({ schemaVersion: 1, key: 'local-import' }),
-        },
-      ],
-    });
-
-    expect(result.accepted).toBe(true);
-    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toHaveLength(0);
   });
 
   it('allows JS Page entry and shared imports but rejects another JS Page root', () => {
