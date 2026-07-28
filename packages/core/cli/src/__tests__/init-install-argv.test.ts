@@ -148,6 +148,45 @@ test('buildInstallArgv forwards app public path for new installs', () => {
   expect(argv).toContain('/console/');
 });
 
+test('buildInstallArgv forwards AI portal init options for new installs', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      setupMode: 'install-new',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appPath: './app7593/',
+      source: 'docker',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      portalType: 'ai',
+      portalName: 'admin',
+      portalTemplate: '@nocobase/portal-template-default',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--portal-type');
+  expect(argv).toContain('ai');
+  expect(argv).toContain('--portal-name');
+  expect(argv).toContain('admin');
+  expect(argv).toContain('--portal-template');
+  expect(argv).toContain('@nocobase/portal-template-default');
+});
+
 test('buildInstallArgv forwards hook script for new installs', () => {
   const buildInstallArgv = (
     Init.prototype as unknown as {

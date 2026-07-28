@@ -1,7 +1,7 @@
 ---
 title: 'NocoBase CLI'
-description: 'Tài liệu tham khảo NocoBase CLI (lệnh nb): khởi tạo, sao lưu và khôi phục, cấu hình, quản lý môi trường, chạy ứng dụng, mã nguồn, cơ sở dữ liệu, plugin, giấy phép thương mại, API, tự cập nhật CLI và quản lý Skills.'
-keywords: 'NocoBase CLI,nb,dòng lệnh,tài liệu lệnh,sao lưu,khôi phục,quản lý môi trường,quản lý plugin,giấy phép thương mại,API'
+description: 'Tài liệu tham khảo NocoBase CLI (lệnh nb): khởi tạo, sao lưu và khôi phục, cấu hình, quản lý môi trường, chạy ứng dụng, Portal, mã nguồn, cơ sở dữ liệu, plugin, giấy phép thương mại, API, tự cập nhật CLI và quản lý Skills.'
+keywords: 'NocoBase CLI,nb,dòng lệnh,tài liệu lệnh,sao lưu,khôi phục,quản lý môi trường,Portal,quản lý plugin,giấy phép thương mại,API'
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ Bản thân lệnh gốc chủ yếu dùng để hiển thị trợ giúp và ph
 | [`nb env`](./env/index.md)           | Quản lý môi trường dự án NocoBase, env hiện tại, trạng thái, chi tiết và các lệnh runtime.  |
 | [`nb license`](./license/index.md)   | Quản lý giấy phép thương mại và các plugin được cấp phép.                                   |
 | [`nb plugin`](./plugin/index.md)     | Quản lý các plugin của env NocoBase đã chọn.                                                |
+| [`nb portal`](./portal/index.md)     | Quản lý workspace Portal: cấu hình, tạo, phát triển, đồng bộ mã nguồn, triển khai và xóa. |
 | [`nb scaffold`](./scaffold/index.md) | Tạo scaffold phát triển plugin NocoBase.                                                    |
 | [`nb self`](./self/index.md)         | Kiểm tra hoặc cập nhật chính NocoBase CLI.                                                  |
 | [`nb session`](./session/index.md)   | Cấu hình `NB_SESSION_ID` để current env được tách biệt theo shell hoặc agent runtime.       |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## Ví dụ
@@ -125,6 +128,15 @@ Xem trạng thái giấy phép thương mại:
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+Tạo và phát triển một Portal:
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 Tạo và tải xuống bản sao lưu:

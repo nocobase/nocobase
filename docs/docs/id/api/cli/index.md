@@ -1,7 +1,7 @@
 ---
 title: 'NocoBase CLI'
-description: 'Referensi NocoBase CLI (perintah nb): inisialisasi, pencadangan dan pemulihan, konfigurasi, manajemen lingkungan, menjalankan aplikasi, kode sumber, basis data, plugin, lisensi komersial, API, pembaruan mandiri CLI, dan manajemen Skills.'
-keywords: 'NocoBase CLI,nb,baris perintah,referensi perintah,pencadangan,pemulihan,manajemen lingkungan,manajemen plugin,lisensi komersial,API'
+description: 'Referensi NocoBase CLI (perintah nb): inisialisasi, pencadangan dan pemulihan, konfigurasi, manajemen lingkungan, menjalankan aplikasi, Portal, kode sumber, basis data, plugin, lisensi komersial, API, pembaruan mandiri CLI, dan manajemen Skills.'
+keywords: 'NocoBase CLI,nb,baris perintah,referensi perintah,pencadangan,pemulihan,manajemen lingkungan,Portal,manajemen plugin,lisensi komersial,API'
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ Perintah root sendiri terutama digunakan untuk menampilkan bantuan dan meneruska
 | [`nb env`](./env/index.md)           | Mengelola lingkungan proyek NocoBase, env saat ini, status, detail, dan perintah runtime.        |
 | [`nb license`](./license/index.md)   | Mengelola lisensi komersial dan plugin berlisensi.                                               |
 | [`nb plugin`](./plugin/index.md)     | Mengelola plugin dari env NocoBase yang dipilih.                                                 |
+| [`nb portal`](./portal/index.md)     | Mengelola workspace Portal: konfigurasi, membuat, pengembangan, sinkronisasi source, deployment, dan penghapusan. |
 | [`nb scaffold`](./scaffold/index.md) | Menghasilkan scaffold pengembangan plugin NocoBase.                                              |
 | [`nb self`](./self/index.md)         | Memeriksa atau memperbarui NocoBase CLI itu sendiri.                                             |
 | [`nb session`](./session/index.md)   | Mengonfigurasi `NB_SESSION_ID` agar current env terisolasi berdasarkan shell atau agent runtime. |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## Contoh
@@ -125,6 +128,15 @@ Melihat status lisensi komersial:
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+Membuat dan mengembangkan Portal:
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 Membuat dan mengunduh cadangan:

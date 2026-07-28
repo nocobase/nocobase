@@ -32,9 +32,12 @@ import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { getStorageUploadSecurityHeaders } from './static-file-security';
 import {
+  DEFAULT_PORTAL_APP_NAME,
   injectRuntimeScript,
   MODERN_CLIENT_DIST_DIR,
+  PORTAL_CLIENT_PREFIX,
   normalizeModernClientPrefix,
+  normalizePortalAppName,
   resolvePublicPath,
   resolveSettingsPublicPath,
   resolveV2PublicPath,
@@ -74,6 +77,12 @@ interface StartHttpServerOptions {
 
 interface RunOptions {
   mainAppOptions: ApplicationOptions;
+}
+
+interface PortalMatch {
+  appName: string;
+  portalName: string;
+  publicPath: string;
 }
 
 export interface AppSelectorMiddlewareContext {
@@ -225,6 +234,8 @@ export class Gateway extends EventEmitter {
         const appName = qs.parse(parsedUrl.query)?.__appName as string | null;
         const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
         const appPathPrefix = `${apiBasePath}/__app/`;
+        const appPublicPath = resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
+        const portalAppsPathPrefix = `${appPublicPath.replace(/\/$/, '')}/${PORTAL_CLIENT_PREFIX}/apps/`;
 
         if (req.headers['x-app']) {
           ctx.resolvedAppName = req.headers['x-app'] as string;
@@ -232,6 +243,15 @@ export class Gateway extends EventEmitter {
 
         if (appName) {
           ctx.resolvedAppName = appName;
+        }
+
+        if (parsedUrl.pathname?.startsWith(portalAppsPathPrefix)) {
+          const restPath = parsedUrl.pathname.slice(portalAppsPathPrefix.length);
+          const [pathAppName] = restPath.split('/');
+
+          if (pathAppName) {
+            ctx.resolvedAppName = normalizePortalAppName(pathAppName);
+          }
         }
 
         if (parsedUrl.pathname?.startsWith(appPathPrefix)) {
@@ -444,6 +464,77 @@ export class Gateway extends EventEmitter {
     }
 
     return null;
+  }
+
+  private getPortalRootPublicPath() {
+    return `${this.getAppPublicPath().replace(/\/$/, '')}/${PORTAL_CLIENT_PREFIX}/`;
+  }
+
+  private getPortalAppPublicPath(appName: string) {
+    if (appName === DEFAULT_PORTAL_APP_NAME) {
+      return this.getPortalRootPublicPath();
+    }
+    return `${this.getPortalRootPublicPath()}apps/${normalizePortalAppName(appName)}/`;
+  }
+
+  private getPortalMatch(pathname: string): PortalMatch | null {
+    const portalRootPublicPath = this.getPortalRootPublicPath();
+    if (!pathname.startsWith(portalRootPublicPath)) {
+      return null;
+    }
+
+    let appName = DEFAULT_PORTAL_APP_NAME;
+    let publicRoot = portalRootPublicPath;
+    let restPath = pathname.slice(portalRootPublicPath.length).replace(/^\/+/, '');
+    const [firstSegment, secondSegment, ...remainingSegments] = restPath.split('/');
+
+    if (firstSegment === 'apps') {
+      if (!secondSegment || !/^[A-Za-z0-9_-]+$/.test(secondSegment)) {
+        return null;
+      }
+      appName = normalizePortalAppName(secondSegment);
+      publicRoot = this.getPortalAppPublicPath(appName);
+      if (!pathname.startsWith(publicRoot)) {
+        return null;
+      }
+      restPath = remainingSegments.join('/').replace(/^\/+/, '');
+    }
+
+    const [portalName] = restPath.split('/');
+    if (!portalName || !/^[A-Za-z0-9_-]+$/.test(portalName)) {
+      return null;
+    }
+
+    return {
+      appName,
+      portalName,
+      publicPath: `${publicRoot}${portalName}/`,
+    };
+  }
+
+  private isPortalIndexRequest(pathname: string, portalPublicPath: string) {
+    if (
+      pathname === portalPublicPath ||
+      pathname === portalPublicPath.slice(0, -1) ||
+      pathname === `${portalPublicPath}index.html`
+    ) {
+      return true;
+    }
+    return !extname(pathname);
+  }
+
+  private getPortalDistRoot(portalMatch: PortalMatch) {
+    const scopedRoot = storagePathJoin('portals', portalMatch.appName, portalMatch.portalName, 'dist');
+    if (portalMatch.appName !== DEFAULT_PORTAL_APP_NAME) {
+      return scopedRoot;
+    }
+
+    const legacyRoot = storagePathJoin('portals', portalMatch.portalName, 'dist');
+    if (!fs.existsSync(resolve(scopedRoot, 'index.html')) && fs.existsSync(resolve(legacyRoot, 'index.html'))) {
+      return legacyRoot;
+    }
+
+    return scopedRoot;
   }
 
   private isV2Request(pathname: string) {
@@ -726,6 +817,51 @@ export class Gateway extends EventEmitter {
         return handler(req, res, {
           public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
         });
+      }
+
+      const portalMatch = this.getPortalMatch(pathname);
+      if (portalMatch) {
+        if (handleApp !== 'main' && handleApp !== portalMatch.appName) {
+          const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+          if (isProxy) {
+            return;
+          }
+        }
+
+        if (!pathname.startsWith(portalMatch.publicPath)) {
+          res.statusCode = 302;
+          res.setHeader('Location', `${portalMatch.publicPath}${search || ''}`);
+          res.end();
+          return;
+        }
+
+        const portalDistRoot = this.getPortalDistRoot(portalMatch);
+        const portalIndex = resolve(portalDistRoot, 'index.html');
+        if (!fs.existsSync(portalIndex)) {
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+
+        if (this.isPortalIndexRequest(pathname, portalMatch.publicPath)) {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(fs.readFileSync(portalIndex, 'utf-8'));
+          return;
+        }
+
+        req.url = req.url.substring(portalMatch.publicPath.length - 1);
+        await compress(req, res);
+        return handler(req, res, {
+          public: portalDistRoot,
+          directoryListing: false,
+        });
+      }
+
+      const portalRootPublicPath = this.getPortalRootPublicPath();
+      if (pathname === portalRootPublicPath.slice(0, -1) || pathname.startsWith(portalRootPublicPath)) {
+        res.statusCode = 404;
+        res.end();
+        return;
       }
 
       if (this.isV2Request(pathname)) {

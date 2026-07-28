@@ -37,6 +37,7 @@ const SETTINGS_CLIENT_PREFIX = 'settings';
 const DEFAULT_API_CLIENT_STORAGE_PREFIX = 'NOCOBASE_';
 const DEFAULT_API_CLIENT_STORAGE_TYPE = 'localStorage';
 const DEFAULT_ESM_CDN_BASE_URL = 'https://esm.sh';
+const PORTAL_CLIENT_PREFIX = 'x';
 const LOCAL_APP_PACKAGE_JSON_PATH = 'node_modules/@nocobase/app/package.json';
 const MANAGED_PROXY_BLOCK_BEGIN = '# BEGIN NocoBase proxy';
 const MANAGED_PROXY_BLOCK_END = '# END NocoBase proxy';
@@ -795,6 +796,7 @@ type EnvProxyNginxRenderContext = {
   modernClientPrefix: string;
   proxyHost: string;
   snippetsDir: string;
+  storageDir: string;
   uploadsDir: string;
   v2PublicPath: string;
   wsPath: string;
@@ -864,6 +866,8 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
         ]
       : []),
     '',
+    buildNginxPortalLocationBlock(context),
+    '',
     `    location = ${apiBasePathNoTrailingSlash} {`,
     `        return 308 ${context.apiBasePath}$is_args$args;`,
     '    }',
@@ -903,10 +907,72 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     `    location ${context.appPublicPath} {`,
     `        alias ${context.publicDir}/;`,
     `        try_files $uri /index-v1.html =404;`,
-        `        include ${context.snippetsDir}/spa-location.conf;`,
+    `        include ${context.snippetsDir}/spa-location.conf;`,
     '    }',
     ...(rootRedirectBlock ? ['', rootRedirectBlock] : []),
     `    ${MANAGED_NGINX_CONFIG_BLOCK_END}`,
+  ].join('\n');
+}
+
+function buildNginxPortalRootPublicPath(appPublicPath: string): string {
+  return appPublicPath === DEFAULT_APP_PUBLIC_PATH
+    ? `/${PORTAL_CLIENT_PREFIX}/`
+    : `${trimTrailingSlash(appPublicPath)}/${PORTAL_CLIENT_PREFIX}/`;
+}
+
+function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): string {
+  const portalBasePath = trimTrailingSlash(buildNginxPortalRootPublicPath(context.appPublicPath));
+  const portalBasePathPattern = escapeRegExp(portalBasePath);
+
+  return [
+    `    location ^~ ${portalBasePath}/apps/ {`,
+    '        absolute_redirect off;',
+    '',
+    `        if ($uri ~ ^${portalBasePathPattern}/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {`,
+    `            return 308 ${portalBasePath}/apps/$subapp/$portal/$is_args$args;`,
+    '        }',
+    '',
+    `        if ($uri !~ ^${portalBasePathPattern}/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {`,
+    '            return 404;',
+    '        }',
+    '',
+    `        root ${context.storageDir};`,
+    '',
+    '        if ($portal_path = "") {',
+    '            rewrite ^ /portals/$subapp/$portal/dist/index.html break;',
+    '        }',
+    '',
+    '        try_files',
+    '            /portals/$subapp/$portal/dist/$portal_path',
+    '            /portals/$subapp/$portal/dist/$portal_path/',
+    '            /portals/$subapp/$portal/dist/index.html',
+    '            =404;',
+    '    }',
+    '',
+    `    location ^~ ${portalBasePath}/ {`,
+    '        absolute_redirect off;',
+    '',
+    `        if ($uri ~ ^${portalBasePathPattern}/(?<portal>[A-Za-z0-9_-]+)$) {`,
+    `            return 308 ${portalBasePath}/$portal/$is_args$args;`,
+    '        }',
+    '',
+    `        if ($uri !~ ^${portalBasePathPattern}/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {`,
+    '            return 404;',
+    '        }',
+    '',
+    `        root ${context.storageDir};`,
+    '',
+    '        if ($portal_path = "") {',
+    '            rewrite ^ /portals/main/$portal/dist/index.html break;',
+    '        }',
+    '',
+    '        try_files',
+    '            /portals/main/$portal/dist/$portal_path',
+    '            /portals/main/$portal/dist/$portal_path/',
+    '            /portals/main/$portal/dist/index.html',
+    '            =404;',
+    '    }',
+    '',
   ].join('\n');
 }
 
@@ -955,6 +1021,7 @@ async function buildEnvProxyNginxRenderContext(
   const mappedPublicDir = await mapProxyPathFromCliRoot(publicDir, options);
   const mappedSnippetsDir = await mapProxyPathFromCliRoot(snippetsDir, options);
   const mappedDistRootDir = await mapProxyPathFromCliRoot(distRootDir, options);
+  const mappedStorageDir = await mapProxyPathFromCliRoot(source.storagePath, options);
   const mappedUploadsDir = await mapProxyPathFromCliRoot(uploadsDir, options);
   const v2PublicPath = `${source.settings.appPublicPath.replace(/\/$/, '')}/${source.settings.modernClientPrefix}/`;
 
@@ -985,6 +1052,7 @@ async function buildEnvProxyNginxRenderContext(
     modernClientPrefix: source.settings.modernClientPrefix,
     proxyHost,
     snippetsDir: mappedSnippetsDir,
+    storageDir: mappedStorageDir,
     uploadsDir: mappedUploadsDir,
     v2PublicPath,
     wsPath: source.settings.wsPath,
