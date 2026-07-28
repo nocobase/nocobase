@@ -524,14 +524,7 @@ describe('plugin-light-extension references service', () => {
     expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
       resolvedStatus: 'runtime_missing',
     });
-    expect(recordReferenceEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        details: expect.objectContaining({
-          mode: 'repo',
-          reason: 'source_published',
-        }),
-      }),
-    );
+    expect(recordReferenceEvent).not.toHaveBeenCalled();
   });
 
   it('refreshes references with the owner current settings instead of schema defaults', async () => {
@@ -590,17 +583,7 @@ describe('plugin-light-extension references service', () => {
     expect(repositories.lightExtensionRepos.findOne).not.toHaveBeenCalled();
     expect(repositories.lightExtensionEntries.find).not.toHaveBeenCalled();
     expect(repositories.flowModels.findModelById).not.toHaveBeenCalled();
-    expect(recordReferenceEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        details: expect.objectContaining({
-          mode: 'skip',
-          reason: 'reference_fingerprint_unchanged',
-          targetEntryCount: 0,
-          referenceCount: 0,
-          changed: 0,
-        }),
-      }),
-    );
+    expect(recordReferenceEvent).not.toHaveBeenCalled();
   });
 
   it('refreshes only target entry references with one repo load, one entry load, and one owner-root load', async () => {
@@ -652,19 +635,6 @@ describe('plugin-light-extension references service', () => {
     expect(repositories.lightExtensionRepos.findOne).toHaveBeenCalledTimes(1);
     expect(repositories.lightExtensionEntries.find).toHaveBeenCalledTimes(1);
     expect(repositories.flowModels.findModelById).toHaveBeenCalledTimes(1);
-    expect(recordReferenceEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        details: expect.objectContaining({
-          mode: 'entries',
-          reason: 'entry_reference_fingerprint_changed',
-          targetEntryCount: 1,
-          referenceCount: 2,
-          changed: 2,
-          statusCounts: {
-            runtime_missing: 2,
-          },
-        }),
-      }),
-    );
+    expect(recordReferenceEvent).not.toHaveBeenCalled();
   });
 });

@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runJSStudioProvider } from '../RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
 import type { RunJSSourceActionInput, RunJSSourceLocator } from '../types';
-import { runJSSourceActionNames } from '../useRunJSSourceResource';
+import { RunJSSourceRequestError, runJSSourceActionNames } from '../useRunJSSourceResource';
 import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => {
@@ -245,6 +245,7 @@ const openResult = {
     {
       path: 'src/client/index.tsx',
       content: 'return 1;',
+      blobHash: 'a'.repeat(64),
       language: 'typescript',
       mode: '100644',
     },
@@ -339,7 +340,7 @@ describe('runJSStudioProvider', () => {
         });
       }
 
-      if (url === 'runJSSources:save') {
+      if (url === 'runJSSources:saveChanges') {
         return Promise.resolve({
           data: {
             data: {
@@ -444,7 +445,7 @@ describe('runJSStudioProvider', () => {
     });
   });
 
-  it('exposes the typed incremental save action without changing the Studio save route', () => {
+  it('exposes the typed incremental save action used by Studio', () => {
     const input: RunJSSourceActionInput<'saveChanges'> = {
       locator,
       repoId: repository.id,
@@ -660,7 +661,7 @@ describe('runJSStudioProvider', () => {
     );
     expect(screen.getByText('Workspace imported as a local draft')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ version: 'v3' }));
-    expect(mocks.request.mock.calls.some(([request]) => request.url === 'runJSSources:save')).toBe(false);
+    expect(mocks.request.mock.calls.some(([request]) => request.url === 'runJSSources:saveChanges')).toBe(false);
   });
 
   it('falls through to the next editor when opening Studio fails', async () => {
@@ -810,11 +811,30 @@ describe('runJSStudioProvider', () => {
   it('keeps an embedded save pending when newer local edits exist', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) throw new Error('Default request mock is unavailable');
-    const saveResponse = await defaultRequest({ url: 'runJSSources:save' });
+    const saveResponse = await defaultRequest({ url: 'runJSSources:saveChanges' });
     const pendingSave = deferred<unknown>();
     let saveRequestCount = 0;
     mocks.request.mockImplementation((request) => {
-      if (request.url !== 'runJSSources:save') return defaultRequest(request);
+      if (request.url === 'runJSSources:getVersion') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository: { ...repository, headCommitId: 'commit-2', headSeq: 2 },
+              commit: { id: 'commit-2' },
+              files: [
+                {
+                  ...openResult.files[0],
+                  blobHash: 'b'.repeat(64),
+                  content: 'return 2;',
+                },
+              ],
+            },
+          },
+        });
+      }
+      if (request.url !== 'runJSSources:saveChanges') return defaultRequest(request);
       saveRequestCount += 1;
       return saveRequestCount === 1 ? pendingSave.promise : defaultRequest(request);
     });
@@ -862,14 +882,18 @@ describe('runJSStudioProvider', () => {
     await waitFor(() => {
       const saveRequests = mocks.request.mock.calls
         .map(([request]) => request as { url: string; data?: Record<string, unknown> })
-        .filter((request) => request.url === 'runJSSources:save');
+        .filter((request) => request.url === 'runJSSources:saveChanges');
       expect(saveRequests).toHaveLength(2);
       expect(saveRequests[1]?.data).toEqual(
         expect.objectContaining({
           baseCommitId: 'commit-2',
           baseOwnerFingerprint: 'owner-fingerprint-2',
-          files: expect.arrayContaining([
-            expect.objectContaining({ path: 'src/client/index.tsx', content: 'return 3;' }),
+          changes: expect.arrayContaining([
+            expect.objectContaining({
+              path: 'src/client/index.tsx',
+              content: 'return 3;',
+              expectedBlobHash: 'b'.repeat(64),
+            }),
           ]),
         }),
       );
@@ -998,7 +1022,9 @@ describe('runJSStudioProvider', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
+    const diagnosticsOutput = await screen.findByTestId('runjs-save-diagnostics', undefined, { timeout: 1000 });
+    const dialog = diagnosticsOutput.closest('[role="dialog"]');
+    if (!dialog) throw new Error('Save diagnostics dialog is unavailable');
     const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
     expect(diagnostics.textContent).toContain('[error] src/client/index.tsx (RUNJS_ENTRY_NOT_FOUND)');
     expect(diagnostics.textContent).toContain('RunJS entry file under src/client was not found');
@@ -1243,49 +1269,31 @@ describe('runJSStudioProvider', () => {
     expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toBe('return 2;');
   });
 
-  it('shows compile diagnostics instead of the version message dialog when Save preflight fails', async () => {
-    mocks.request.mockImplementation(({ url }: { url: string }) => {
-      if (url === 'runJSSources:open') {
-        return Promise.resolve({
-          data: {
-            data: openResult,
+  it('shows authoritative Save diagnostics without closing the version dialog', async () => {
+    const defaultRequest = mocks.request.getMockImplementation();
+    if (!defaultRequest) throw new Error('Default request mock is unavailable');
+    const compileFailure = new RunJSSourceRequestError({
+      action: 'saveChanges',
+      code: 'RUNJS_COMPILE_FAILED',
+      message: 'Compile failed',
+      rawMessage: 'RunJS source could not be compiled',
+      status: 422,
+      details: {
+        diagnostics: [
+          {
+            severity: 'error',
+            message: "';' expected",
+            path: 'src/client/index.tsx',
+            line: 1,
+            column: 8,
+            code: 'TS1005',
           },
-        });
-      }
-
-      if (url === 'runJSSources:compilePreview') {
-        return Promise.resolve({
-          data: {
-            data: {
-              locator,
-              locatorKind: 'flowModel.step',
-              artifact: {
-                code: 'return ;',
-                version: 'v2',
-                sourceMap: previewSourceMap,
-                diagnostics: [
-                  {
-                    severity: 'error',
-                    message: "';' expected",
-                    path: 'src/client/index.tsx',
-                    line: 1,
-                    column: 8,
-                    code: 'TS1005',
-                  },
-                ],
-                filesHash: 'files-hash-error',
-                entryPath: 'src/client/index.tsx',
-              },
-            },
-          },
-        });
-      }
-
-      return Promise.resolve({
-        data: {
-          data: {},
-        },
-      });
+        ],
+      },
+    });
+    mocks.request.mockImplementation((request) => {
+      if (request.url === 'runJSSources:saveChanges') throw compileFailure;
+      return defaultRequest(request);
     });
 
     renderEditor();
@@ -1293,15 +1301,24 @@ describe('runJSStudioProvider', () => {
 
     fireEvent.change(editor, { target: { value: 'return ;' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const saveDialog = await screen.findByRole('dialog', { name: 'Save version' });
+    const versionMessage = within(saveDialog).getByRole('textbox', { name: 'Version message' });
+    fireEvent.change(versionMessage, { target: { value: 'Keep invalid draft' } });
+    expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
+      0,
+    );
+    fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save' }));
 
-    const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
-    expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
-    expect(within(dialog).getByText('Compile failed')).toBeTruthy();
-    expect(within(dialog).getByText(/\[error\] src\/client\/index\.tsx:1:8 \(TS1005\) ';' expected/)).toBeTruthy();
-    expect(within(dialog).getByRole('button', { name: 'Copy technical details' })).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole('button', { name: /src\/client\/index\.tsx:1:8/ }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save failed' })).toBeNull());
-    expect(screen.getByLabelText('Edit file content')).toBeTruthy();
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:saveChanges',
+        }),
+      );
+    });
+    expect(await within(saveDialog).findByText('Compile failed')).toBeTruthy();
+    expect(within(saveDialog).getByText(/\[error\] src\/client\/index\.tsx:1:8 \(TS1005\) ';' expected/)).toBeTruthy();
+    expect(within(saveDialog).getByRole('textbox', { name: 'Version message' })).toHaveValue('Keep invalid draft');
   });
 
   it('requires a version message before saving a version', async () => {
@@ -1311,7 +1328,7 @@ describe('runJSStudioProvider', () => {
     }
     let saved = false;
     mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
-      if (options.url === 'runJSSources:save') {
+      if (options.url === 'runJSSources:saveChanges') {
         saved = true;
         return defaultRequest(options);
       }
@@ -1362,7 +1379,7 @@ describe('runJSStudioProvider', () => {
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'runJSSources:save',
+          url: 'runJSSources:saveChanges',
           data: expect.objectContaining({
             message: 'Update code',
           }),
@@ -1371,10 +1388,17 @@ describe('runJSStudioProvider', () => {
     });
     const saveRequest = mocks.request.mock.calls
       .map(([request]) => request as { url: string; data?: Record<string, unknown> })
-      .find((request) => request.url === 'runJSSources:save');
+      .find((request) => request.url === 'runJSSources:saveChanges');
     expect(saveRequest?.data).toMatchObject({
       baseCommitId: 'commit-1',
       baseOwnerFingerprint: 'owner-fingerprint-1',
+      changes: [
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          content: 'return 2;',
+          expectedBlobHash: 'a'.repeat(64),
+        }),
+      ],
     });
     expect(onPersistedChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1389,7 +1413,7 @@ describe('runJSStudioProvider', () => {
       }),
     );
     expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
-      1,
+      0,
     );
     expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();
@@ -1402,7 +1426,7 @@ describe('runJSStudioProvider', () => {
     }
     let saved = false;
     mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
-      if (options.url === 'runJSSources:save') {
+      if (options.url === 'runJSSources:saveChanges') {
         saved = true;
         return defaultRequest(options);
       }
@@ -1428,14 +1452,14 @@ describe('runJSStudioProvider', () => {
     expect(mocks.closeView).not.toHaveBeenCalled();
   });
 
-  it('opens latest, three-way merges, recompiles, and saves with fresh CAS after a stale Head', async () => {
+  it('opens latest, three-way merges, and saves a fresh delta after a stale Head', async () => {
     const defaultRequest = mocks.request.getMockImplementation();
     if (!defaultRequest) {
       throw new Error('Expected the default request mock implementation');
     }
     let saveCount = 0;
     mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
-      if (options.url === 'runJSSources:save' && saveCount++ === 0) {
+      if (options.url === 'runJSSources:saveChanges' && saveCount++ === 0) {
         return Promise.reject({
           response: {
             status: 409,
@@ -1487,7 +1511,9 @@ describe('runJSStudioProvider', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
-      expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:save')).toHaveLength(2);
+      expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:saveChanges')).toHaveLength(
+        2,
+      );
     });
     const requests = mocks.request.mock.calls.map(
       ([request]) => request as { url: string; data?: Record<string, unknown> },
@@ -1496,9 +1522,9 @@ describe('runJSStudioProvider', () => {
     const recoveryPreviewIndex = requests.findIndex(
       (request, index) => index > openLatestIndex && request.url === 'runJSSources:compilePreview',
     );
-    const saveRequests = requests.filter((request) => request.url === 'runJSSources:save');
+    const saveRequests = requests.filter((request) => request.url === 'runJSSources:saveChanges');
     expect(openLatestIndex).toBeGreaterThan(-1);
-    expect(recoveryPreviewIndex).toBeGreaterThan(openLatestIndex);
+    expect(recoveryPreviewIndex).toBe(-1);
     expect(saveRequests[0].data).toMatchObject({
       baseCommitId: 'commit-1',
       baseOwnerFingerprint: 'owner-fingerprint-1',
@@ -1506,10 +1532,13 @@ describe('runJSStudioProvider', () => {
     expect(saveRequests[1].data).toMatchObject({
       baseCommitId: 'commit-remote',
       baseOwnerFingerprint: 'owner-fingerprint-1',
-      files: expect.arrayContaining([
-        expect.objectContaining({ path: 'src/client/index.tsx', content: 'return 2;' }),
-        expect.objectContaining({ path: 'src/client/remote-helper.ts', content: 'export const remote = true;' }),
-      ]),
+      changes: [
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          content: 'return 2;',
+          expectedBlobHash: 'a'.repeat(64),
+        }),
+      ],
     });
   });
 
@@ -1584,7 +1613,7 @@ describe('runJSStudioProvider', () => {
     await waitFor(() => {
       const saveRequest = mocks.request.mock.calls
         .map(([request]) => request as { url: string; data?: Record<string, unknown> })
-        .find((request) => request.url === 'runJSSources:save');
+        .find((request) => request.url === 'runJSSources:saveChanges');
       expect(saveRequest?.data).toMatchObject({
         baseCommitId: 'commit-1',
         baseOwnerFingerprint: 'owner-fingerprint-1',

@@ -86,7 +86,7 @@ describe('plugin-light-extension repo service', () => {
       },
       sort: ['createdAt'],
     });
-    expect(logs.map((log) => log.get('action'))).toEqual(expect.arrayContaining(['repoCreate', 'sourceCreate']));
+    expect(logs.map((log) => log.get('action'))).toEqual(['repoCreate']);
     expect(JSON.stringify(logs.map((log) => log.toJSON()))).not.toContain('secret README content');
   });
 
@@ -234,14 +234,13 @@ describe('plugin-light-extension repo service', () => {
       await app.db.getRepository('lightExtensionLogs').count({
         filter: {
           repoId: repo.id,
-          action: 'sourceCreate',
         },
       }),
     ).toBe(1);
 
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);
-    const fileService = new LightExtensionFileService(app.db, auditService, permissionService, service);
+    const fileService = new LightExtensionFileService(app.db, permissionService, service);
     const pull = await fileService.pull({ repoId: repo.id, includeContent: 'all' });
     expect(pull.files?.map((file) => file.path).sort()).toEqual(
       DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => file.path).sort(),
@@ -370,7 +369,7 @@ describe('plugin-light-extension repo service', () => {
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);
     const repoService = new LightExtensionRepoService(app.db, auditService, permissionService);
-    const fileService = new LightExtensionFileService(app.db, auditService, permissionService, repoService);
+    const fileService = new LightExtensionFileService(app.db, permissionService, repoService);
     const repo = await repoService.createRepo({ name: 'Source Lifecycle' }, { requestId: 'req_source_create' });
     await fileService.push(
       {

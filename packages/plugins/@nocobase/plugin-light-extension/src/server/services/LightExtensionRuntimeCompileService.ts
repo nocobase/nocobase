@@ -19,7 +19,7 @@ import {
   LIGHT_EXTENSION_SUPPORTED_KINDS,
   type LightExtensionKind,
 } from '../../constants';
-import { LightExtensionError } from '../../shared/errors';
+import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRecord,
@@ -177,11 +177,6 @@ export class LightExtensionRuntimeCompileService {
     input: LightExtensionSaveSourceInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionSaveSourceResult> {
-    const deferredRejectedPushAudits: Array<() => Promise<void>> = [];
-    const operationContext: LightExtensionServiceContext = {
-      ...ctx,
-      deferredRejectedPushAudits,
-    };
     if (ctx.transaction) {
       throw new LightExtensionError(
         'LIGHT_EXTENSION_SOURCE_ERROR',
@@ -189,15 +184,18 @@ export class LightExtensionRuntimeCompileService {
       );
     }
     try {
-      const prepared = await this.prepareSaveSource(input, operationContext);
+      const prepared = await this.prepareSaveSource(input, ctx);
       for (let attempt = 0; ; attempt += 1) {
         try {
-          return await this.db.sequelize.transaction((transaction) =>
-            this.publishPreparedSave(prepared, {
-              ...operationContext,
+          return await this.db.sequelize.transaction(async (transaction) => {
+            const transactionContext = {
+              ...ctx,
               transaction,
-            }),
-          );
+            };
+            const result = await this.publishPreparedSave(prepared, transactionContext);
+            await this.recordSaveSuccessAudit(result.repo.id, prepared.compileResults, transactionContext);
+            return result;
+          });
         } catch (error) {
           if (this.db.sequelize.getDialect() !== 'sqlite' || !isSqliteBusyError(error) || attempt >= 2) {
             throw error;
@@ -206,9 +204,7 @@ export class LightExtensionRuntimeCompileService {
         }
       }
     } catch (error) {
-      for (const recordRejectedPush of deferredRejectedPushAudits) {
-        await recordRejectedPush();
-      }
+      await this.recordSaveFailureAudit(input.repoId, ctx, error);
       throw error;
     }
   }
@@ -321,7 +317,6 @@ export class LightExtensionRuntimeCompileService {
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
-      await this.recordRuntimeCompileAudit(repoId, compilePreparation.results, ctx, false);
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
@@ -384,7 +379,6 @@ export class LightExtensionRuntimeCompileService {
       transaction,
     });
     await this.referenceService?.refreshReferencesForRepo(candidate.repo.id, ctx, 'source_published');
-    await this.recordRuntimeCompileAudit(candidate.repo.id, prepared.compileResults, ctx, true);
     const [repo, entryModels] = await Promise.all([
       this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: candidate.repo.id, transaction }),
       this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: candidate.repo.id }, transaction }),
@@ -449,7 +443,6 @@ export class LightExtensionRuntimeCompileService {
       transaction,
     });
     await this.referenceService?.refreshReferencesForRepo(prepared.repoId, ctx, 'source_published');
-    await this.recordRuntimeCompileAudit(prepared.repoId, prepared.compileResults, ctx, true);
     const [updatedRepo, entryModels] = await Promise.all([
       this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: prepared.repoId, transaction }),
       this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: prepared.repoId }, transaction }),
@@ -480,54 +473,74 @@ export class LightExtensionRuntimeCompileService {
     }
   }
 
-  private async recordRuntimeCompileAudit(
+  private async recordSaveSuccessAudit(
     repoId: string,
     results: readonly LightExtensionCompileResult[],
     ctx: LightExtensionServiceContext,
-    accepted: boolean,
   ): Promise<void> {
     if (!this.auditService) {
       return;
     }
     const diagnostics = sortDiagnostics(results.flatMap((result) => result.diagnostics));
     const entry = results.length === 1 ? results[0] : undefined;
-    const failedResult = results.find((result): result is LightExtensionCompileFailureResult => !result.accepted);
-    const failureCode = failedResult?.failureCode;
+    await this.auditService.recordCompileEvent({
+      repoId,
+      entryId: entry?.entryId,
+      target: 'client',
+      kind: entry?.kind,
+      name: entry?.entryName,
+      action: 'runtimeCompile',
+      result: 'success',
+      requestId: entry?.requestId || ctx.requestId || randomUUID(),
+      actorUserId: ctx.actorUserId,
+      entryPath: entry?.entryPath,
+      runtimeVersion: entry?.inputManifest.runtimeVersion,
+      diagnosticCount: diagnostics.length,
+      errorCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length,
+      warningCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'warning').length,
+      diagnostics,
+      message: 'Light extension workspace compiled',
+      details: {
+        requestSource: ctx.requestSource,
+        entryCount: results.length,
+        entries: results.map((result) => ({
+          entryId: result.entryId,
+          entryName: result.entryName,
+          kind: result.kind,
+          accepted: result.accepted,
+        })),
+      },
+      transaction: ctx.transaction,
+    });
+  }
+
+  private async recordSaveFailureAudit(
+    repoId: string,
+    ctx: LightExtensionServiceContext,
+    error: unknown,
+  ): Promise<void> {
+    if (!this.auditService) {
+      return;
+    }
     try {
       await this.auditService.recordCompileEvent({
         repoId,
-        entryId: entry?.entryId,
         target: 'client',
-        kind: entry?.kind,
-        name: entry?.entryName,
         action: 'runtimeCompile',
-        result: accepted ? 'success' : 'blocked',
-        requestId: entry?.requestId || ctx.requestId || randomUUID(),
+        result: 'blocked',
+        requestId: ctx.requestId || randomUUID(),
         actorUserId: ctx.actorUserId,
-        entryPath: entry?.entryPath,
-        runtimeVersion: entry?.inputManifest.runtimeVersion,
-        diagnosticCount: diagnostics.length,
-        errorCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length,
-        warningCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'warning').length,
-        diagnostics,
-        message: accepted ? 'Light extension workspace compiled' : 'Light extension workspace compile rejected',
-        reasonCode: accepted ? undefined : classifyCompileFailure(failureCode),
+        diagnosticCount: 0,
+        errorCount: 0,
+        warningCount: 0,
+        message: 'Light extension save rejected',
+        reasonCode: isLightExtensionError(error) ? error.code : 'save_failed',
         details: {
-          failureCode,
           requestSource: ctx.requestSource,
-          entryCount: results.length,
-          entries: results.map((result) => ({
-            entryId: result.entryId,
-            entryName: result.entryName,
-            kind: result.kind,
-            accepted: result.accepted,
-            failureCode: 'failureCode' in result ? result.failureCode : undefined,
-          })),
         },
-        transaction: ctx.transaction,
       });
     } catch {
-      // Compile results must not depend on audit persistence availability.
+      // The original Save failure must not depend on audit persistence availability.
     }
   }
 
@@ -730,7 +743,6 @@ export class LightExtensionRuntimeCompileService {
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
-      await this.recordRuntimeCompileAudit(repoId, compilePreparation.results, ctx, false);
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
@@ -750,7 +762,6 @@ export class LightExtensionRuntimeCompileService {
       ctx.transaction,
     );
     const compiledEntryIds = new Set(compilePreparation.compiledEntryIds);
-    await this.recordRuntimeCompileAudit(repoId, successfulResults, ctx, true);
     const compileEntries = successfulResults.map((result) =>
       toSuccessfulCompileEntryResult(result, compiledEntryIds.has(result.entryId)),
     );
@@ -793,17 +804,6 @@ function isSqliteBusyError(error: unknown): boolean {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function classifyCompileFailure(failureCode?: string): string {
-  if (
-    failureCode === 'RUNJS_IMPORT_NOT_ALLOWED' ||
-    failureCode === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED' ||
-    failureCode === 'RUNJS_IMPORT_NOT_FOUND'
-  ) {
-    return 'unsafe_import_denied';
-  }
-  return failureCode === 'LIGHT_EXTENSION_COMPILE_DENIED' ? 'compile_denied' : 'compile_failed';
 }
 
 function createCompileJob(

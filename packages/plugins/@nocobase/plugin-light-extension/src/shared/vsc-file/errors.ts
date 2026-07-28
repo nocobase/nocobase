@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { RunJSCompileDiagnostic } from './runjs-source-contracts';
+
 export const vscErrorCodes = [
   'REPO_NOT_FOUND',
   'REPO_ARCHIVED',
@@ -41,6 +43,10 @@ export type VscErrorCode = (typeof vscErrorCodes)[number];
 
 export type VscErrorDetails = Record<string, unknown>;
 
+export interface RunJSCompileFailedDetails extends VscErrorDetails {
+  diagnostics: RunJSCompileDiagnostic[];
+}
+
 export interface VscErrorOptions {
   details?: VscErrorDetails;
   status?: number;
@@ -66,7 +72,7 @@ const defaultStatusByCode: Record<VscErrorCode, number> = {
   RUNJS_SOURCE_READONLY: 403,
   RUNJS_SOURCE_OWNER_OUTDATED: 409,
   RUNJS_FILE_CONFLICT: 409,
-  RUNJS_COMPILE_FAILED: 400,
+  RUNJS_COMPILE_FAILED: 422,
   RUNJS_ENTRY_NOT_FOUND: 400,
   RUNJS_IMPORT_NOT_ALLOWED: 400,
   RUNJS_IMPORT_NOT_FOUND: 400,

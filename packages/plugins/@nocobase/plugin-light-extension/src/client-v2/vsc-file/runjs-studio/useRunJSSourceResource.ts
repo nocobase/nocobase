@@ -12,7 +12,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { VscErrorCode, VscErrorDetails } from '../../../shared/vsc-file/errors';
 import { useT } from '../locale';
-import type { RunJSSourceActionInput, RunJSSourceActionName, RunJSSourceActionResult } from './types';
+import type {
+  RunJSCompileDiagnostic,
+  RunJSSourceActionInput,
+  RunJSSourceActionName,
+  RunJSSourceActionResult,
+} from './types';
 
 export const runJSSourceActionNames = [
   'open',
@@ -58,6 +63,17 @@ export class RunJSSourceRequestError extends Error {
     this.rawMessage = options.rawMessage;
     this.details = options.details;
   }
+}
+
+export function getRunJSSourceCompileDiagnostics(error: unknown): RunJSCompileDiagnostic[] {
+  if (!(error instanceof RunJSSourceRequestError) || error.code !== 'RUNJS_COMPILE_FAILED') {
+    return [];
+  }
+
+  const diagnostics = error.details?.diagnostics;
+  return Array.isArray(diagnostics)
+    ? diagnostics.map(toRunJSCompileDiagnostic).filter((diagnostic) => diagnostic !== null)
+    : [];
 }
 
 export interface UseRunJSSourceResourceResult {
@@ -157,6 +173,10 @@ function normalizeRunJSSourceError(
   error: unknown,
   t: TFunction,
 ): RunJSSourceRequestError {
+  if (error instanceof RunJSSourceRequestError) {
+    return error;
+  }
+
   const response = getRecordProperty(error, 'response');
   const responseData = response ? response.data : undefined;
   const serverError = getFirstServerError(responseData) || getFirstServerError(error);
@@ -172,6 +192,26 @@ function normalizeRunJSSourceError(
     rawMessage,
     details: toRecord(serverError?.details) || undefined,
   });
+}
+
+function toRunJSCompileDiagnostic(value: unknown): RunJSCompileDiagnostic | null {
+  const diagnostic = toRecord(value);
+  const message = toNonEmptyString(diagnostic?.message);
+  if (!diagnostic || !message) {
+    return null;
+  }
+
+  const severity = diagnostic.severity;
+  return {
+    message,
+    ...(severity === 'error' || severity === 'warning' || severity === 'info' ? { severity } : {}),
+    ...(toNonEmptyString(diagnostic.code) ? { code: toNonEmptyString(diagnostic.code) } : {}),
+    ...(toNonEmptyString(diagnostic.ruleId) ? { ruleId: toNonEmptyString(diagnostic.ruleId) } : {}),
+    ...(toNonEmptyString(diagnostic.path) ? { path: toNonEmptyString(diagnostic.path) } : {}),
+    ...(toNumber(diagnostic.line) !== undefined ? { line: toNumber(diagnostic.line) } : {}),
+    ...(toNumber(diagnostic.column) !== undefined ? { column: toNumber(diagnostic.column) } : {}),
+    ...(toRecord(diagnostic.details) ? { details: toRecord(diagnostic.details) } : {}),
+  };
 }
 
 export function formatRunJSSourceRequestErrorMessage(

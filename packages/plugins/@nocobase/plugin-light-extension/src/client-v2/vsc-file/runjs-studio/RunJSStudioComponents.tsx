@@ -1705,6 +1705,7 @@ export function ConsolePanel(props: {
 }
 
 export function SaveVersionModal(props: {
+  diagnostics?: RunJSCompileDiagnostic[];
   loading: boolean;
   onAfterClose: () => void;
   onCancel: () => void;
@@ -1717,6 +1718,7 @@ export function SaveVersionModal(props: {
   versionMessage: string;
 }) {
   const {
+    diagnostics = [],
     loading,
     onAfterClose,
     onCancel,
@@ -1756,6 +1758,18 @@ export function SaveVersionModal(props: {
         <Typography.Text strong>{t('Changes')}</Typography.Text>
         <Typography.Text>{formatChangeSummary(summary, t)}</Typography.Text>
         {summary.files === 0 ? <Alert message={t('No changes to save')} showIcon type="info" /> : null}
+        {diagnostics.length ? (
+          <>
+            <Alert message={t('Compile failed')} role="alert" showIcon type="error" />
+            <pre
+              aria-label={t('Compile diagnostics')}
+              data-testid="runjs-save-diagnostics"
+              style={{ margin: 0, maxHeight: 240, overflow: 'auto', whiteSpace: 'pre-wrap' }}
+            >
+              {formatCompileDiagnostics(diagnostics)}
+            </pre>
+          </>
+        ) : null}
         <Input
           aria-label={t('Version message')}
           maxLength={200}

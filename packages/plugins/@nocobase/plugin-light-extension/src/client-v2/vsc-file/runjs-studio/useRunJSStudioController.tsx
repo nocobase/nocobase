@@ -89,12 +89,14 @@ import {
 } from './studioUtils';
 import {
   formatRunJSSourceRequestTechnicalDetails,
+  getRunJSSourceCompileDiagnostics,
   RunJSSourceRequestError,
   useRunJSSourceResource,
 } from './useRunJSSourceResource';
 import {
   buildLineDiff,
   buildWorkspaceChanges,
+  buildWorkspaceSnapshotChanges,
   buildWorkspaceSnapshotKey,
   ensureManifestFolders,
   ensureManifestEntry,
@@ -979,7 +981,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         locator: requestLocator,
         repoId: requestRepoId,
         baseCommitId: requestBaseCommitId,
-        files: buildWorkspaceChanges([], currentWorkspace.currentFiles),
+        files: buildWorkspaceSnapshotChanges(currentWorkspace.currentFiles),
         entryPath: currentWorkspace.entryPath,
         version: value.version,
       });
@@ -1082,52 +1084,33 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     rememberDialogTrigger();
     setVersionMessage('');
     setActionError(null);
+    setSaveDiagnostics([]);
 
     if (saveSummary.files === 0) {
       message.info(t('No changes to save'));
       return false;
     }
 
-    const requestFiles = normalizeWorkspaceFiles(files);
-    const requestEntryPath = entryPath;
-    const requestSnapshotKey = beginWorkspaceOperation(requestFiles, requestEntryPath);
-    try {
-      const compiled = await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
-      if (!compiled) {
-        return false;
-      }
-
-      setSaveOpen(true);
-      return true;
-    } catch (error) {
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) return false;
-      reportActionError(error, t('Save failed'), openSaveModal);
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Save failed')),
-      });
+    const workspaceDiagnostics = validateRunJSWorkspaceForSave(files, entryPath, t);
+    if (hasCompileErrorDiagnostics(workspaceDiagnostics)) {
+      setPreviewDiagnostics(workspaceDiagnostics);
+      appendDiagnostics(workspaceDiagnostics, appendConsole);
+      setSaveDiagnostics(workspaceDiagnostics);
+      setSaveDiagnosticsOpen(true);
       return false;
     }
+
+    setSaveOpen(true);
+    return true;
   };
   openSaveModalRef.current = openSaveModal;
-
-  const showSaveDiagnostics = useCallback((diagnostics: RunJSCompileDiagnostic[]) => {
-    setSaveDiagnostics(diagnostics);
-    setSaveDiagnosticsOpen(true);
-    setSaveOpen(false);
-  }, []);
 
   const save = async () => {
     if (!workspace || !props.locator || workspaceEditingDisabled) {
       return;
     }
 
-    if (hasCompileErrorDiagnostics(previewDiagnostics)) {
-      showSaveDiagnostics(previewDiagnostics);
-      return;
-    }
-
-    if (!canSaveVersion(versionMessage, saveSummary, previewDiagnostics, workspaceEditingDisabled)) {
+    if (!canSaveVersion(versionMessage, saveSummary, workspaceEditingDisabled)) {
       return;
     }
 
@@ -1135,7 +1118,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setActionError(null);
     const requestFiles = normalizeWorkspaceFiles(files);
     const requestEntryPath = entryPath;
-    const requestSnapshotKey = currentPreviewSnapshotKey;
+    const requestSnapshotKey = beginWorkspaceOperation(requestFiles, requestEntryPath);
     const requestLocator = props.locator;
     const requestRepoId = workspace.repository.repoId;
     const requestBaseCommitId = workspace.repository.headCommitId;
@@ -1143,28 +1126,17 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     const requestGeneration = workspaceGenerationRef.current;
     const requestVersionMessage = versionMessage.trim();
     try {
-      const compiled =
-        previewArtifact &&
-        previewArtifact.snapshotKey === requestSnapshotKey &&
-        previewDiagnostics.every((diagnostic) => diagnostic.severity !== 'error')
-          ? previewArtifact
-          : await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
-      if (!compiled) {
-        return;
-      }
-
-      let persistedFiles = requestFiles;
       let result: RunJSSourceSaveResult;
       try {
-        result = await runJSSourceRequest('save', {
+        result = await runJSSourceRequest('saveChanges', {
           locator: requestLocator,
           repoId: requestRepoId,
           baseCommitId: requestBaseCommitId,
           baseOwnerFingerprint: requestBaseOwnerFingerprint,
           message: requestVersionMessage,
-          files: buildWorkspaceChanges([], requestFiles),
+          changes: buildWorkspaceChanges(baseFiles, requestFiles),
           entryPath: requestEntryPath,
-          version: compiled.version,
+          version: value.version,
         });
       } catch (error) {
         if (!(error instanceof RunJSSourceRequestError) || error.code !== 'BASE_COMMIT_OUTDATED') {
@@ -1174,7 +1146,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
         const latest = await runJSSourceRequest('openLatest', { locator: requestLocator });
         if (workspaceGenerationRef.current !== requestGeneration) return;
-        const merged = mergeRunJSWorkspaceFiles(baseFiles, requestFiles, latest.files);
+        const latestFiles = normalizeWorkspaceFiles(latest.files);
+        const merged = mergeRunJSWorkspaceFiles(baseFiles, requestFiles, latestFiles);
         if (merged.conflictPaths.length) {
           throw new Error(
             `${t('RunJS workspace has conflicting changes. Resolve them and save again.')} ${merged.conflictPaths.join(
@@ -1188,36 +1161,27 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
         const recoveredFiles = merged.files;
         const recoveredEntryPath = resolveWorkspaceEntryPath(recoveredFiles, requestEntryPath);
-        const preview = await runJSSourceRequest('compilePreview', {
-          locator: requestLocator,
-          repoId: latest.repository.repoId,
-          baseCommitId: latest.repository.headCommitId,
-          files: buildWorkspaceChanges([], recoveredFiles),
-          entryPath: recoveredEntryPath,
-          version: value.version,
-        });
-        if (workspaceGenerationRef.current !== requestGeneration) return;
-        setPreviewDiagnostics(preview.artifact.diagnostics);
-        appendDiagnostics(preview.artifact.diagnostics, appendConsole);
-        if (hasCompileErrorDiagnostics(preview.artifact.diagnostics)) {
-          showSaveDiagnostics(preview.artifact.diagnostics);
-          finishEmbeddedSaveRequest('cancelled');
-          return;
-        }
-        persistedFiles = recoveredFiles;
-        result = await runJSSourceRequest('save', {
+        result = await runJSSourceRequest('saveChanges', {
           locator: requestLocator,
           repoId: latest.repository.repoId,
           baseCommitId: latest.repository.headCommitId,
           baseOwnerFingerprint: latest.ownerFingerprint,
           message: requestVersionMessage,
-          files: buildWorkspaceChanges([], recoveredFiles),
+          changes: buildWorkspaceChanges(latestFiles, recoveredFiles),
           entryPath: recoveredEntryPath,
-          version: preview.artifact.version,
+          version: value.version,
         });
       }
       if (workspaceGenerationRef.current !== requestGeneration) return;
       if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+        const savedVersion = await runJSSourceRequest('getVersion', {
+          locator: requestLocator,
+          repoId: requestRepoId,
+          commitId: result.commit.id,
+          includeFiles: true,
+        });
+        if (workspaceGenerationRef.current !== requestGeneration) return;
+        const savedFiles = normalizeWorkspaceFiles(savedVersion.files);
         setWorkspace((current) =>
           current?.repository.repoId === requestRepoId
             ? {
@@ -1235,8 +1199,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
               }
             : current,
         );
-        setBaseFiles(persistedFiles);
-        setSavedFiles(persistedFiles);
+        setBaseFiles(savedFiles);
+        setSavedFiles(savedFiles);
         appendConsole({
           level: 'info',
           message: t('Saved successfully; newer local changes remain unsaved'),
@@ -1277,6 +1241,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       }
     } catch (error) {
       if (workspaceGenerationRef.current !== requestGeneration) return;
+      const diagnostics = getRunJSSourceCompileDiagnostics(error);
+      if (diagnostics.length) {
+        setPreviewDiagnostics(diagnostics);
+        appendDiagnostics(diagnostics, appendConsole);
+        setSaveDiagnostics(diagnostics);
+        return;
+      }
       failEmbeddedSaveRequest(error);
       reportActionError(error, t('Save failed'), save);
       appendConsole({
@@ -1285,62 +1256,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       });
     } finally {
       if (workspaceGenerationRef.current === requestGeneration) setSaving(false);
-    }
-  };
-
-  const compileForSave = async (
-    requestFiles = files,
-    requestEntryPath = entryPath,
-    requestSnapshotKey = currentPreviewSnapshotKey,
-  ): Promise<PreviewArtifactState | null> => {
-    if (!workspace || !props.locator) {
-      return null;
-    }
-
-    const requestLocator = props.locator;
-    const requestRepoId = workspace.repository.repoId;
-    const requestBaseCommitId = workspace.repository.headCommitId;
-
-    const workspaceDiagnostics = validateRunJSWorkspaceForSave(requestFiles, requestEntryPath, t);
-    if (hasCompileErrorDiagnostics(workspaceDiagnostics)) {
-      setPreviewDiagnostics(workspaceDiagnostics);
-      appendDiagnostics(workspaceDiagnostics, appendConsole);
-      showSaveDiagnostics(workspaceDiagnostics);
-      return null;
-    }
-
-    setPreviewing(true);
-    try {
-      const result = await runJSSourceRequest('compilePreview', {
-        locator: requestLocator,
-        repoId: requestRepoId,
-        baseCommitId: requestBaseCommitId,
-        files: buildWorkspaceChanges([], requestFiles),
-        entryPath: requestEntryPath,
-        version: value.version,
-      });
-      if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
-        return null;
-      }
-      setPreviewDiagnostics(result.artifact.diagnostics);
-      appendDiagnostics(result.artifact.diagnostics, appendConsole);
-
-      if (hasCompileErrorDiagnostics(result.artifact.diagnostics)) {
-        showSaveDiagnostics(result.artifact.diagnostics);
-        return null;
-      }
-
-      const compiled = {
-        code: result.artifact.code,
-        version: result.artifact.version,
-        snapshotKey: requestSnapshotKey,
-      };
-      setPreviewArtifact(compiled);
-      return compiled;
-    } finally {
-      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
-        setPreviewing(false);
-      }
     }
   };
 
@@ -2223,7 +2138,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           locator,
           repoId: currentWorkspace.repository.repoId,
           baseCommitId: currentWorkspace.repository.headCommitId,
-          files: buildWorkspaceChanges([], requestFiles),
+          files: buildWorkspaceSnapshotChanges(requestFiles),
           entryPath: requestEntryPath,
           version: valueVersionRef.current,
         });
@@ -2605,6 +2520,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       ) : null}
 
       <SaveVersionModal
+        diagnostics={saveDiagnostics}
         loading={previewing || saving}
         onAfterClose={restoreDialogFocus}
         onCancel={() => {
@@ -2621,15 +2537,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       />
 
       <SaveDiagnosticsModal
-        diagnostics={saveDiagnostics.length > 0 ? saveDiagnostics : previewDiagnostics}
-        onCancel={() => {
-          setSaveDiagnosticsOpen(false);
-          finishEmbeddedSaveRequest('cancelled');
-        }}
+        diagnostics={saveDiagnostics}
+        onCancel={() => setSaveDiagnosticsOpen(false)}
         onJump={(diagnostic) => {
-          if (!diagnostic.path) {
-            return;
-          }
+          if (!diagnostic.path) return;
           openFilePath(diagnostic.path);
           setActiveTab('code');
           setSaveDiagnosticsOpen(false);

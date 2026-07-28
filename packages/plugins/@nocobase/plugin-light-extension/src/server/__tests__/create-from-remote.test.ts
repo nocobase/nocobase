@@ -58,7 +58,6 @@ describe('LightExtensionCreateFromRemoteService', () => {
     repoService = new LightExtensionRepoService(app.db, auditService, permissionService, permissionHooks, validator);
     const fileService = new LightExtensionFileService(
       app.db,
-      auditService,
       permissionService,
       repoService,
       permissionHooks,
@@ -100,14 +99,17 @@ describe('LightExtensionCreateFromRemoteService', () => {
   it('atomically creates compiled source, a fixed remote target, mapping, succeeded job, and in-sync baseline', async () => {
     const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
     const publishPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'publishPreparedInitialWorkspace');
-    const result = await service.create({
-      name: 'Remote Sales KPI',
-      title: 'Remote Sales KPI',
-      description: 'Imported from GitHub',
-      provider: 'github',
-      config: remoteConfig,
-      authRef: '{{ $env.GITHUB_SYNC }}',
-    });
+    const result = await service.create(
+      {
+        name: 'Remote Sales KPI',
+        title: 'Remote Sales KPI',
+        description: 'Imported from GitHub',
+        provider: 'github',
+        config: remoteConfig,
+        authRef: '{{ $env.GITHUB_SYNC }}',
+      },
+      { requestId: 'req_create_from_git_main_audit' },
+    );
     const internalRepo = await repoService.getInternalRepo(result.repo.id);
     const remote = await runtime.getRemote(internalRepo.vscRepoId, 'origin');
     const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: result.repo.id } });
@@ -115,6 +117,9 @@ describe('LightExtensionCreateFromRemoteService', () => {
       filter: { remoteId: remote?.id },
     });
     const job = await app.db.getRepository('vscFileSyncJobs').findOne({ filter: { remoteId: remote?.id } });
+    const auditLogs = await app.db.getRepository('lightExtensionLogs').find({
+      filter: { repoId: result.repo.id, requestId: 'req_create_from_git_main_audit' },
+    });
 
     expect(validateCredential).toHaveBeenCalledWith('{{ $env.GITHUB_SYNC }}');
     expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
@@ -142,6 +147,8 @@ describe('LightExtensionCreateFromRemoteService', () => {
       resultRemoteRevision: 'remote-initial',
     });
     expect(remote).toMatchObject({ lastSyncedAt: expect.any(String) });
+    expect(auditLogs.map((log) => log.get('action'))).toEqual(['syncCreateFromGit']);
+    expect(JSON.stringify(auditLogs.map((log) => log.toJSON()))).not.toContain('GITHUB_SYNC');
   });
 
   it('preserves removed generic RunJS files as inert remote source', async () => {

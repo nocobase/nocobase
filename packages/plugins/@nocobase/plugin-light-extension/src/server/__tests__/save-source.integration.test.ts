@@ -46,14 +46,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     permissionService = new LightExtensionPermissionService(auditService);
     validator = new LightExtensionValidator();
     repoService = new LightExtensionRepoService(app.db, auditService, permissionService, undefined, validator);
-    fileService = new LightExtensionFileService(
-      app.db,
-      auditService,
-      permissionService,
-      repoService,
-      undefined,
-      validator,
-    );
+    fileService = new LightExtensionFileService(app.db, permissionService, repoService, undefined, validator);
     entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     compilerBridge = new LightExtensionWorkspaceCompilerBridge();
     runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge, {
@@ -68,10 +61,13 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
   const saveCurrentSource = async (input: Omit<LightExtensionSaveSourceInput, 'expectedHeadCommitId'>) => {
     const currentRepo = await repoService.getRepo(input.repoId);
-    return runtimeCompileService.saveSource({
-      ...input,
-      expectedHeadCommitId: currentRepo.headCommitId,
-    });
+    return runtimeCompileService.saveSource(
+      {
+        ...input,
+        expectedHeadCommitId: currentRepo.headCommitId,
+      },
+      { requestId: `save:${input.message}` },
+    );
   };
 
   it('saves source, compiles ready entries, and resolves runtime from the entry current artifact', async () => {
@@ -91,6 +87,12 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         action: 'runtimeCompile',
       },
     });
+    const saveLogs = await app.db.getRepository('lightExtensionLogs').find({
+      filter: {
+        repoId: repo.id,
+        requestId: 'save:save source runtime',
+      },
+    });
     const runtime = await runtimeResolveService.resolve({
       sourceMode: 'light-extension',
       sourceBinding: {
@@ -108,6 +110,8 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(result.compile.status).toBe('success');
     expect(result.diagnostics).toEqual([]);
     expect(compileLogs).toHaveLength(1);
+    expect(saveLogs.map((log) => log.get('action'))).toEqual(['runtimeCompile']);
+    expect(JSON.stringify(saveLogs.map((log) => log.toJSON()))).not.toContain('Sales KPI');
     expect(entry?.get('compiledCommitId')).toBe(result.commit.id);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
       version: 'v2',

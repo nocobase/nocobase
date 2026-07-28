@@ -470,11 +470,8 @@ export class ReferenceService {
       return emptyReferenceRefreshResult('skip', 'repo_id_missing');
     }
     const normalizedPlan = normalizeReferenceRefreshScope(input.plan);
-    const requestId = ctx.requestId || randomUUID();
     if (normalizedPlan.mode === 'skip') {
-      const result = emptyReferenceRefreshResult('skip', normalizedPlan.reason);
-      await this.recordReferenceRefreshAudit(normalizedRepoId, result, requestId, ctx);
-      return result;
+      return emptyReferenceRefreshResult('skip', normalizedPlan.reason);
     }
 
     const targetEntryIds = normalizedPlan.mode === 'entries' ? normalizedPlan.entryIds : [];
@@ -547,7 +544,6 @@ export class ReferenceService {
       changed,
       statusCounts,
     };
-    await this.recordReferenceRefreshAudit(normalizedRepoId, result, requestId, ctx);
     return result;
   }
 
@@ -919,32 +915,14 @@ export class ReferenceService {
         transaction: input.ctx.transaction,
       });
     }
-
-    await this.recordReferenceAuditBestEffort({
-      repoId: input.repoId,
-      entryId: input.entryId,
-      action: 'referenceUpsert',
-      result: 'success',
-      requestId: input.requestId,
-      actorUserId: input.ctx.actorUserId,
-      ownerKind: input.ownerLocator.kind,
-      ownerLocatorHash: input.ownerLocatorHash,
-      resolvedStatus: input.resolvedStatus,
-      settingsHash: input.settingsHash,
-      message: 'Light extension reference upserted',
-      details: {
-        trigger: input.action,
-      },
-      transaction: input.ctx.transaction,
-    });
   }
 
   private async removeStaleReferencesForOwner(
     ownerLocatorHash: string,
     repoId: string,
     entryId: string,
-    action: ReferenceSyncAction,
-    requestId: string,
+    _action: ReferenceSyncAction,
+    _requestId: string,
     ctx: ReferenceServiceContext,
     scopeRepoId?: string,
   ): Promise<number> {
@@ -979,30 +957,14 @@ export class ReferenceService {
         transaction: ctx.transaction,
       });
       removed += 1;
-      await this.recordReferenceAuditBestEffort({
-        repoId: normalizeString(reference.get('repoId')),
-        entryId: normalizeString(reference.get('entryId')),
-        action: 'referenceRemove',
-        result: 'success',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        ownerKind: normalizeOwnerKind(reference.get('ownerKind')),
-        ownerLocatorHash,
-        reasonCode: 'binding_changed',
-        message: 'Stale light extension reference removed for owner',
-        details: {
-          trigger: action,
-        },
-        transaction: ctx.transaction,
-      });
     }
     return removed;
   }
 
   private async removeReferencesForOwner(
     ownerLocatorHash: string,
-    action: ReferenceSyncAction,
-    requestId: string,
+    _action: ReferenceSyncAction,
+    _requestId: string,
     ctx: ReferenceServiceContext,
     options: { repoId?: string; reasonCode?: string } = {},
   ): Promise<number> {
@@ -1029,22 +991,6 @@ export class ReferenceService {
       }
       await this.db.getRepository('lightExtensionReferences').destroy({
         filterByTk: reference.get('id'),
-        transaction: ctx.transaction,
-      });
-      await this.recordReferenceAuditBestEffort({
-        repoId: normalizeString(reference.get('repoId')),
-        entryId: normalizeString(reference.get('entryId')),
-        action: 'referenceRemove',
-        result: 'success',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        ownerKind: normalizeOwnerKind(reference.get('ownerKind')),
-        ownerLocatorHash,
-        reasonCode: options.reasonCode || 'source_mode_inline',
-        message: 'Light extension reference removed for inline source',
-        details: {
-          trigger: action,
-        },
         transaction: ctx.transaction,
       });
     }
@@ -1156,22 +1102,6 @@ export class ReferenceService {
       );
       summary.ownerMissing += 1;
       incrementStatus(summary, 'owner_missing');
-      await this.recordReferenceAuditBestEffort({
-        repoId: normalizeString(reference.get('repoId')),
-        entryId: normalizeString(reference.get('entryId')),
-        action: 'referenceOwnerMissing',
-        result: 'success',
-        requestId: input.requestId,
-        actorUserId: ctx.actorUserId,
-        ownerKind: normalizeOwnerKind(reference.get('ownerKind')),
-        ownerLocatorHash,
-        resolvedStatus: 'owner_missing',
-        message: 'Light extension reference owner is missing',
-        details: {
-          trigger: input.action,
-        },
-        transaction: ctx.transaction,
-      });
     }
     summary.items.push(...(ctx.dryRunItems || []));
     return summaryToResult(summary, Boolean(ctx.dryRun));
@@ -1475,32 +1405,6 @@ export class ReferenceService {
       }
       throw error;
     }
-  }
-
-  private async recordReferenceRefreshAudit(
-    repoId: string,
-    refresh: ReferenceRefreshResult,
-    requestId: string,
-    ctx: ReferenceServiceContext,
-  ): Promise<void> {
-    await this.recordReferenceAuditBestEffort({
-      repoId,
-      action: 'referenceRebuild',
-      result: 'success',
-      requestId,
-      actorUserId: ctx.actorUserId,
-      referenceCount: refresh.referenceCount,
-      message: 'Light extension reference statuses refreshed for repo',
-      details: {
-        mode: refresh.mode,
-        reason: refresh.reason,
-        targetEntryCount: refresh.targetEntryCount,
-        referenceCount: refresh.referenceCount,
-        changed: refresh.changed,
-        statusCounts: refresh.statusCounts,
-      },
-      transaction: ctx.transaction,
-    });
   }
 
   private async recordReferenceConflict(

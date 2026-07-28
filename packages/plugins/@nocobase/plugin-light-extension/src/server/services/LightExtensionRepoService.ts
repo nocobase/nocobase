@@ -45,10 +45,6 @@ export interface LightExtensionServiceContext {
   timezone?: string;
   transaction?: Transaction;
   /** @internal */
-  deferredRejectedPushAudits?: Array<() => Promise<void>>;
-  /** @internal */
-  deferSuccessfulCompileAudit?: boolean;
-  /** @internal */
   allowRemovedGenericRunJSSource?: boolean;
 }
 
@@ -113,6 +109,24 @@ export class LightExtensionRepoService {
     ctx: LightExtensionServiceContext = {},
     options: LightExtensionCreateRepoOptions = {},
   ): Promise<LightExtensionRepoRecord> {
+    return this.createRepoInternal(input, ctx, options, true);
+  }
+
+  /** @internal Composite use cases own their single main audit record. */
+  async createRepoForCompositeUseCase(
+    input: LightExtensionCreateRepoInput,
+    ctx: LightExtensionServiceContext = {},
+    options: LightExtensionCreateRepoOptions = {},
+  ): Promise<LightExtensionRepoRecord> {
+    return this.createRepoInternal(input, ctx, options, false);
+  }
+
+  private async createRepoInternal(
+    input: LightExtensionCreateRepoInput,
+    ctx: LightExtensionServiceContext,
+    options: LightExtensionCreateRepoOptions,
+    recordMainAudit: boolean,
+  ): Promise<LightExtensionRepoRecord> {
     const requestId = getRequestId(ctx);
     const metadata = this.normalizeCreateMetadata(input);
     const repoId = options.repoId || `ler_${uid()}`;
@@ -163,33 +177,20 @@ export class LightExtensionRepoService {
       );
       const repo = repoFromModel(record);
 
-      await this.auditService.recordLifecycleEvent({
-        repoId: repo.id,
-        action: 'repoCreate',
-        result: 'success',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        toStatus: repo.lifecycleStatus,
-        message: 'Light extension repository created',
-        details: {
-          name: repo.name,
-          normalizedName: repo.normalizedName,
-          headCommitId: repo.headCommitId,
-        },
-        transaction,
-      });
-
-      if (vscResult.initialCommit) {
-        await this.auditService.recordFileWrite({
+      if (recordMainAudit) {
+        await this.auditService.recordLifecycleEvent({
           repoId: repo.id,
-          action: 'sourceCreate',
+          action: 'repoCreate',
           result: 'success',
           requestId,
           actorUserId: ctx.actorUserId,
-          baseCommitId: null,
-          commitId: vscResult.initialCommit.id,
-          message: 'Initial light extension source committed',
-          files: summarizeTreeEntries(initialFiles),
+          toStatus: repo.lifecycleStatus,
+          message: 'Light extension repository created',
+          details: {
+            name: repo.name,
+            normalizedName: repo.normalizedName,
+            headCommitId: repo.headCommitId,
+          },
           transaction,
         });
       }
@@ -1046,15 +1047,6 @@ function assertLifecycleStatus(value: string, label: string): asserts value is L
   if (!(LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES as readonly string[]).includes(value)) {
     throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', `Invalid ${label}`);
   }
-}
-
-function summarizeTreeEntries(files: LightExtensionTreeEntryInput[]) {
-  return files.map((file) => ({
-    path: file.path,
-    operation: 'upsert',
-    size: file.size ?? file.content?.length,
-    language: file.language,
-  }));
 }
 
 function normalizeRecordDate(value: unknown): string | null {

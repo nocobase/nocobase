@@ -283,6 +283,8 @@ describe('MoveSourceService', () => {
   );
 
   it('creates a new repository with a compiled JS Page entry before binding it', async () => {
+    const transaction = { id: 'tx_create' } as unknown as Transaction;
+    const recordLifecycleEvent = vi.fn(async () => undefined);
     let reservedRepoId = '';
     const createdRepo = { ...repo, name: 'sales-tools', normalizedName: 'sales-tools' };
     const createdEntry = {
@@ -315,11 +317,10 @@ describe('MoveSourceService', () => {
     const service = new MoveSourceService(
       {
         sequelize: {
-          transaction: (run: (transaction: Transaction) => Promise<unknown>) =>
-            run({ id: 'tx_create' } as unknown as Transaction),
+          transaction: (run: (transaction: Transaction) => Promise<unknown>) => run(transaction),
         },
       } as unknown as Database,
-      { createRepo, assertApplicationOwnership: vi.fn() } as never,
+      { createRepoForCompositeUseCase: createRepo, assertApplicationOwnership: vi.fn() } as never,
       {} as never,
       {
         listEntries: vi.fn(async () => {
@@ -350,6 +351,7 @@ describe('MoveSourceService', () => {
       'main',
       { assertCurrent: vi.fn() },
     );
+    service.useAuditService({ recordLifecycleEvent } as never);
 
     const result = await service.moveSource(
       {
@@ -363,7 +365,7 @@ describe('MoveSourceService', () => {
         destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
         entryName: 'sales-kpi',
       },
-      { adapterContext: {} },
+      { adapterContext: {}, requestId: 'req_move_source' },
     );
 
     const createInput = createRepo.mock.calls[0][0];
@@ -396,6 +398,21 @@ describe('MoveSourceService', () => {
       entryId: createdEntry.id,
       entryPath: createdEntry.entryPath,
       kind: 'js-page',
+    });
+    expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
+    expect(recordLifecycleEvent).toHaveBeenCalledWith({
+      repoId: reservedRepoId,
+      action: 'moveSource',
+      result: 'success',
+      requestId: 'req_move_source',
+      actorUserId: undefined,
+      message: 'RunJS source moved to a light extension',
+      details: {
+        destinationType: 'new',
+        entryId: createdEntry.id,
+        kind: 'js-page',
+      },
+      transaction,
     });
   });
 
@@ -953,7 +970,7 @@ function createFailFastService(modelUse = 'JSBlockModel') {
   }));
   const service = new MoveSourceService(
     { sequelize: { transaction } } as unknown as Database,
-    { createRepo, assertApplicationOwnership: vi.fn() } as never,
+    { createRepoForCompositeUseCase: createRepo, assertApplicationOwnership: vi.fn() } as never,
     { pull } as never,
     { getEntry, listEntries } as never,
     { prepareSaveSource, publishPreparedSave, compileCurrentRuntime } as never,

@@ -44,6 +44,7 @@ import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService } from './LightExtensionRepoService';
+import type { LightExtensionAuditService } from './LightExtensionAuditService';
 import {
   LightExtensionRuntimeCompileService,
   type LightExtensionPreparedInitialWorkspace,
@@ -155,6 +156,8 @@ type ExternalBindingAdapter = RunJSSourceAdapter & {
 };
 
 export class MoveSourceService {
+  private auditService?: LightExtensionAuditService;
+
   constructor(
     private readonly db: Database,
     private readonly repoService: LightExtensionRepoService,
@@ -168,6 +171,10 @@ export class MoveSourceService {
       db,
     ),
   ) {}
+
+  useAuditService(auditService: LightExtensionAuditService): void {
+    this.auditService = auditService;
+  }
 
   async moveSource(
     input: LightExtensionMoveSourceInput,
@@ -295,6 +302,7 @@ export class MoveSourceService {
     );
     return this.db.sequelize.transaction(async (transaction) => {
       const result = await this.publishExistingMove(input, ctx, adapter, kind, entryKey, prepared, transaction);
+      await this.recordMoveSuccessAudit(input, result, ctx, transaction);
       await this.completeMoveOperation(operation, result, transaction);
       return result;
     });
@@ -574,8 +582,34 @@ export class MoveSourceService {
         prepared,
         transaction,
       );
+      await this.recordMoveSuccessAudit(input, result, ctx, transaction);
       await this.completeMoveOperation(operation, result, transaction);
       return result;
+    });
+  }
+
+  private async recordMoveSuccessAudit(
+    input: LightExtensionMoveSourceInput,
+    result: LightExtensionMoveSourceResult,
+    ctx: MoveSourceServiceContext,
+    transaction: Transaction,
+  ): Promise<void> {
+    if (!this.auditService) {
+      return;
+    }
+    await this.auditService.recordLifecycleEvent({
+      repoId: result.repo.id,
+      action: 'moveSource',
+      result: 'success',
+      requestId: ctx.requestId || randomUUID(),
+      actorUserId: ctx.actorUserId,
+      message: 'RunJS source moved to a light extension',
+      details: {
+        destinationType: input.destination.type,
+        entryId: result.entry.id,
+        kind: result.entry.kind,
+      },
+      transaction,
     });
   }
 
@@ -607,7 +641,7 @@ export class MoveSourceService {
       );
     }
 
-    const repo = await this.repoService.createRepo(
+    const repo = await this.repoService.createRepoForCompositeUseCase(
       {
         name: input.destination.name,
         title: input.destination.title,

@@ -40,7 +40,7 @@ export interface LightExtensionRawResourceDeniedPayload {
 
 export interface LightExtensionLifecycleAuditInput {
   repoId: string;
-  action: 'repoCreate' | 'repoUpdate' | 'repoLifecycleChange' | 'repoDelete';
+  action: 'repoCreate' | 'repoUpdate' | 'repoLifecycleChange' | 'repoDelete' | 'moveSource';
   result: 'success' | 'blocked';
   requestId: string;
   actorUserId?: string | null;
@@ -48,26 +48,6 @@ export interface LightExtensionLifecycleAuditInput {
   toStatus?: string | null;
   message: string;
   reasonCode?: string;
-  details?: Record<string, unknown>;
-  transaction?: Transaction;
-}
-
-export interface LightExtensionFileWriteAuditInput {
-  repoId: string;
-  action: 'sourceCreate' | 'sourcePush';
-  result: 'success' | 'blocked';
-  requestId: string;
-  actorUserId?: string | null;
-  baseCommitId?: string | null;
-  commitId?: string | null;
-  message: string;
-  reasonCode?: string;
-  files: Array<{
-    path: string;
-    operation?: string;
-    size?: number;
-    language?: string;
-  }>;
   details?: Record<string, unknown>;
   transaction?: Transaction;
 }
@@ -191,37 +171,6 @@ export class LightExtensionAuditService {
     });
   }
 
-  async recordFileWrite(input: LightExtensionFileWriteAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
-      values: {
-        repoId: input.repoId,
-        level: input.result === 'blocked' ? 'warn' : 'info',
-        action: input.action,
-        result: input.result,
-        requestId: input.requestId,
-        actorUserId: input.actorUserId || undefined,
-        reasonCode: sanitizeText(input.reasonCode),
-        message: sanitizeText(input.message),
-        details: compactObject({
-          baseCommitId: sanitizeText(input.baseCommitId),
-          commitId: sanitizeText(input.commitId),
-          fileCount: input.files.length,
-          files: input.files.map((file) =>
-            compactObject({
-              path: sanitizeText(file.path),
-              operation: sanitizeText(file.operation),
-              size: file.size,
-              language: sanitizeText(file.language),
-            }),
-          ),
-          ...(input.details ? sanitizeReferenceAuditDetails(input.details) : {}),
-        }),
-        createdAt: new Date(),
-      },
-      transaction: input.transaction,
-    });
-  }
-
   async recordCompileEvent(input: LightExtensionCompileAuditInput): Promise<void> {
     await this.db.getRepository('lightExtensionLogs').create({
       values: {
@@ -238,7 +187,7 @@ export class LightExtensionAuditService {
         reasonCode: sanitizeText(input.reasonCode),
         message: sanitizeText(input.message),
         details: compactObject({
-          entryPath: sanitizeText(input.entryPath),
+          entryPathHash: hashAuditText(input.entryPath),
           surfaceStyle: sanitizeText(input.surfaceStyle),
           runtimeVersion: sanitizeText(input.runtimeVersion),
           diagnosticCount: input.diagnosticCount,
@@ -389,7 +338,7 @@ function summarizeDiagnostics(diagnostics: LightExtensionDiagnostic[]): Array<Re
       compactObject({
         code: sanitizeText(item.code),
         severity: sanitizeText(item.severity),
-        path: sanitizeText(item.path),
+        pathHash: hashAuditText(item.path),
         kind: sanitizeText(item.kind),
         entryName: sanitizeText(item.entryName),
         line: item.line,
@@ -402,7 +351,9 @@ function sanitizeDetails(input: Record<string, unknown>): Record<string, unknown
   return Object.fromEntries(
     Object.entries(input)
       .filter(([, value]) => typeof value !== 'undefined')
-      .map(([key, value]) => [key, sanitizeDetailValue(value)]),
+      .map(([key, value]) =>
+        isSensitiveAuditDetailKey(key) ? [`${key}AuditHash`, hashAuditValue(value)] : [key, sanitizeDetailValue(value)],
+      ),
   );
 }
 
@@ -442,18 +393,28 @@ function sanitizeReferenceAuditDetailValue(value: unknown): unknown {
 }
 
 function isReferenceSensitiveDetailKey(key: string): boolean {
-  return [
-    'binding',
-    'code',
-    'modelUid',
-    'ownerLocator',
-    'resolvedSettings',
-    'settings',
-    'settingsDefaults',
-    'settingsSchema',
-    'sourceBinding',
-    'token',
-  ].includes(key);
+  return (
+    isSensitiveAuditDetailKey(key) ||
+    [
+      'binding',
+      'modelUid',
+      'ownerLocator',
+      'resolvedSettings',
+      'settings',
+      'settingsDefaults',
+      'settingsSchema',
+      'sourceBinding',
+    ].includes(key)
+  );
+}
+
+function isSensitiveAuditDetailKey(key: string): boolean {
+  return /(?:code|content|credential|env|password|path|secret|sourceMap|token)$/i.test(key);
+}
+
+function hashAuditText(value: unknown): string | undefined {
+  const text = sanitizeText(value);
+  return text ? hashAuditValue(text) : undefined;
 }
 
 function hashAuditValue(value: unknown): string {

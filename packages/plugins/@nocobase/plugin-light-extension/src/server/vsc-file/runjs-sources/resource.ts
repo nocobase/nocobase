@@ -19,7 +19,7 @@ import JSZip, { type JSZipObject } from 'jszip';
 import type { Readable } from 'stream';
 
 import type { LightExtensionDiagnostic } from '../../../shared/types';
-import { VscError, isVscError } from '../../../shared/vsc-file/errors';
+import { VscError, isVscError, type RunJSCompileFailedDetails } from '../../../shared/vsc-file/errors';
 import { sha256Hex } from '../../../shared/vsc-file/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../../shared/vsc-file/path';
 import {
@@ -2094,10 +2094,10 @@ function assertRunJSCompileSucceeded(result: CompileRunJSSourceWorkspaceResult):
     return;
   }
 
-  throw new VscError(result.failureCode || 'RUNJS_COMPILE_FAILED', 'RunJS source could not be compiled', {
+  throw new VscError('RUNJS_COMPILE_FAILED', 'RunJS source could not be compiled', {
     details: {
       diagnostics: errorDiagnostics,
-    },
+    } satisfies RunJSCompileFailedDetails,
   });
 }
 

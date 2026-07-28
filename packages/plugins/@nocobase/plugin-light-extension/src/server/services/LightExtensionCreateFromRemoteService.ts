@@ -82,7 +82,7 @@ export class LightExtensionCreateFromRemoteService {
         requestSource: ctx.requestSource || 'light-extension-create-from-git',
         allowRemovedGenericRunJSSource: true,
       };
-      const repo = await this.repoService.createRepo(
+      const repo = await this.repoService.createRepoForCompositeUseCase(
         {
           name: metadata.name,
           title: metadata.title,

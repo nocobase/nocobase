@@ -12,6 +12,8 @@ import { describe, expect, it } from 'vitest';
 import type { RunJSSourceHistoryItem } from '../types';
 import {
   buildLineDiff,
+  buildWorkspaceChanges,
+  buildWorkspaceSnapshotChanges,
   buildWorkspaceSnapshotKey,
   inferLanguageFromPath,
   mergeHistoryItems,
@@ -58,6 +60,57 @@ describe('workspaceUtils', () => {
         path: 'src/new.ts',
         content: 'export const created = true;',
       }),
+    ]);
+  });
+
+  it('builds a minimal delta with persisted blob guards', () => {
+    const baseFiles = [
+      { path: '.nocobase/runjs-source.json', content: '{"entry":"src/client/index.tsx"}', blobHash: 'manifest' },
+      { path: 'src/client/delete.ts', content: 'delete me', blobHash: 'delete' },
+      { path: 'src/client/index.tsx', content: 'return 1;', blobHash: 'index' },
+      { path: 'src/client/unchanged.ts', content: 'same', blobHash: 'unchanged' },
+    ];
+    const nextFiles = [
+      { path: '.nocobase/runjs-source.json', content: '{"entry":"src/client/new.ts"}' },
+      { path: 'src/client/index.tsx', content: 'return 2;' },
+      { path: 'src/client/new.ts', content: 'export const created = true;' },
+      { path: 'src/client/unchanged.ts', content: 'same' },
+    ];
+
+    expect(buildWorkspaceChanges(baseFiles, nextFiles)).toEqual([
+      {
+        path: 'src/client/delete.ts',
+        operation: 'delete',
+        expectedBlobHash: 'delete',
+      },
+      {
+        path: 'src/client/index.tsx',
+        operation: 'upsert',
+        expectedBlobHash: 'index',
+        content: 'return 2;',
+        language: 'tsx',
+        mode: undefined,
+      },
+      {
+        path: 'src/client/new.ts',
+        operation: 'upsert',
+        expectedBlobHash: null,
+        content: 'export const created = true;',
+        language: 'typescript',
+        mode: undefined,
+      },
+    ]);
+  });
+
+  it('keeps unchanged files in compile preview snapshots', () => {
+    expect(
+      buildWorkspaceSnapshotChanges([
+        { path: 'src/client/index.tsx', content: 'import "./helper";' },
+        { path: 'src/client/helper.ts', content: 'export const helper = true;' },
+      ]),
+    ).toEqual([
+      expect.objectContaining({ path: 'src/client/helper.ts', operation: 'upsert' }),
+      expect.objectContaining({ path: 'src/client/index.tsx', operation: 'upsert' }),
     ]);
   });
 

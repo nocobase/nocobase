@@ -60,14 +60,7 @@ describe('LightExtensionRemotePullService', () => {
     permissionHooks.register(permissionService.createVscPermissionHook());
     const validator = new LightExtensionValidator();
     repoService = new LightExtensionRepoService(app.db, auditService, permissionService, permissionHooks, validator);
-    fileService = new LightExtensionFileService(
-      app.db,
-      auditService,
-      permissionService,
-      repoService,
-      permissionHooks,
-      validator,
-    );
+    fileService = new LightExtensionFileService(app.db, permissionService, repoService, permissionHooks, validator);
     const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     const compilerBridge = new LightExtensionWorkspaceCompilerBridge();
     runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);

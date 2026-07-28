@@ -928,8 +928,19 @@ describe('runJSSources resource', () => {
         ],
       },
     });
-    expect(compileFailure.status).toBe(400);
-    expect(compileFailure.body.errors[0]).toMatchObject({ code: 'RUNJS_IMPORT_NOT_FOUND' });
+    expect(compileFailure.status).toBe(422);
+    expect(compileFailure.body.errors[0]).toMatchObject({
+      code: 'RUNJS_COMPILE_FAILED',
+      status: 422,
+      details: {
+        diagnostics: [
+          expect.objectContaining({
+            code: 'RUNJS_IMPORT_NOT_FOUND',
+            severity: 'error',
+          }),
+        ],
+      },
+    });
 
     const oversized = await agent.resource('runJSSources').saveChanges({
       values: {

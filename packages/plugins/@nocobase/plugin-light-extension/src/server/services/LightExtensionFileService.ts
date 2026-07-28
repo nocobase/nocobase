@@ -16,13 +16,13 @@ import type {
   VscRefName,
   VscRemoteSnapshot,
 } from '../vsc-file/public-api';
-import { computeRemoteSnapshotContentHash, isVscError } from '../vsc-file/public-api';
+import { computeRemoteSnapshotContentHash } from '../vsc-file/public-api';
 import { VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
 import type { LightExtensionAclAction } from '../../constants';
-import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCommitRecord,
   LightExtensionFileChange,
@@ -33,7 +33,6 @@ import type {
   LightExtensionPushInput,
   LightExtensionPushResult,
 } from '../../shared/types';
-import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { validateLightExtensionWorkspace } from './LightExtensionCompileContract';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import { createPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
@@ -93,7 +92,6 @@ export interface LightExtensionPreparedSourceSnapshot {
 interface PrepareSourceCandidateOptions {
   allowCompleteSnapshot?: boolean;
   commitMetadata?: Record<string, string>;
-  recordRejectedPush?: boolean;
 }
 
 const preparedSourceCandidateBrand = Symbol('light-extension-prepared-source-candidate');
@@ -117,13 +115,12 @@ export class LightExtensionFileService {
 
   constructor(
     private readonly db: Database,
-    private readonly auditService: LightExtensionAuditService,
     private readonly permissionService: LightExtensionPermissionService,
-    repoService?: LightExtensionRepoService,
+    repoService: LightExtensionRepoService,
     permissionHooks?: VscPermissionHookRegistry,
     private readonly validator = new LightExtensionValidator(),
   ) {
-    this.repoService = repoService || new LightExtensionRepoService(db, auditService, permissionService);
+    this.repoService = repoService;
     this.useVscPermissionHookRegistry(
       permissionHooks || createLocalLightExtensionPermissionRegistry(permissionService),
     );
@@ -267,7 +264,6 @@ export class LightExtensionFileService {
             remoteId: input.remoteId || '',
             remoteRevision: input.snapshot.revision || '',
           },
-          recordRejectedPush: false,
         },
       );
       return {
@@ -278,7 +274,6 @@ export class LightExtensionFileService {
         changed: true,
       };
     } catch (error) {
-      await this.recordRejectedSnapshotReplace(input, ctx, requestId, error);
       throw normalizeVscBridgeError(error, input.repoId);
     }
   }
@@ -361,14 +356,6 @@ export class LightExtensionFileService {
       this.preparedSourceCandidates.add(prepared);
       return prepared;
     } catch (error) {
-      if (options.recordRejectedPush !== false) {
-        const recordRejectedPush = () => this.recordRejectedPush(input, ctx, requestId, error);
-        if (ctx.deferredRejectedPushAudits) {
-          ctx.deferredRejectedPushAudits.push(recordRejectedPush);
-        } else {
-          await recordRejectedPush();
-        }
-      }
       throw normalizeVscBridgeError(error, input.repoId);
     }
   }
@@ -442,19 +429,6 @@ export class LightExtensionFileService {
       },
       transaction,
     );
-    await this.auditService.recordFileWrite({
-      repoId: repo.id,
-      action: 'sourcePush',
-      result: 'success',
-      requestId: prepared.requestId,
-      actorUserId: ctx.actorUserId,
-      baseCommitId: prepared.expectedHeadCommitId,
-      commitId: result.commit.id,
-      message: 'Light extension source files committed',
-      files: prepared.files.map(summarizeFileChange),
-      details: { treeHash: result.tree.hash },
-      transaction,
-    });
     return candidate;
   }
 
@@ -540,31 +514,9 @@ export class LightExtensionFileService {
           transaction,
         );
 
-        await this.auditService.recordFileWrite({
-          repoId: repo.id,
-          action: 'sourcePush',
-          result: 'success',
-          requestId,
-          actorUserId: ctx.actorUserId,
-          baseCommitId: repo.headCommitId,
-          commitId: result.commit.id,
-          message: 'Light extension source files committed',
-          files: input.files.map(summarizeFileChange),
-          details: {
-            treeHash: result.tree.hash,
-          },
-          transaction,
-        });
-
         return candidate;
       });
     } catch (error) {
-      const recordRejectedPush = () => this.recordRejectedPush(input, ctx, requestId, error);
-      if (ctx.deferredRejectedPushAudits) {
-        ctx.deferredRejectedPushAudits.push(recordRejectedPush);
-      } else {
-        await recordRejectedPush();
-      }
       throw normalizeVscBridgeError(error, input.repoId);
     }
   }
@@ -760,76 +712,6 @@ export class LightExtensionFileService {
 
     return this.db.sequelize.transaction(run);
   }
-
-  private async recordRejectedPush(
-    input: LightExtensionPushInput,
-    ctx: LightExtensionServiceContext,
-    requestId: string,
-    error: unknown,
-  ): Promise<void> {
-    try {
-      if (!(await this.repoExists(input.repoId))) {
-        return;
-      }
-      await this.auditService.recordFileWrite({
-        repoId: input.repoId,
-        action: 'sourcePush',
-        result: 'blocked',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        commitId: null,
-        reasonCode: getErrorCode(error),
-        message: 'Light extension source file write rejected',
-        files: input.files.map(summarizeFileChange),
-      });
-    } catch {
-      // Rejected write audits must not mask the original write failure.
-    }
-  }
-
-  private async recordRejectedSnapshotReplace(
-    input: LightExtensionReplaceSourceSnapshotInput,
-    ctx: LightExtensionServiceContext,
-    requestId: string,
-    error: unknown,
-  ): Promise<void> {
-    try {
-      if (!(await this.repoExists(input.repoId))) {
-        return;
-      }
-      await this.auditService.recordFileWrite({
-        repoId: input.repoId,
-        action: 'sourcePush',
-        result: 'blocked',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        commitId: null,
-        reasonCode: getErrorCode(error),
-        message: 'Light extension remote source snapshot replacement rejected',
-        files: input.snapshot.files.map((file) => ({
-          path: file.path,
-          operation: 'upsert',
-          size: Buffer.byteLength(file.content, 'utf8'),
-          language: file.language,
-        })),
-        details: {
-          remoteId: input.remoteId,
-          remoteRevision: input.snapshot.revision,
-          source: 'remote-pull',
-        },
-      });
-    } catch {
-      // Rejected remote snapshot audits must not mask the original write failure.
-    }
-  }
-
-  private async repoExists(repoId: string): Promise<boolean> {
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
-      filterByTk: repoId,
-    });
-
-    return Boolean(repo);
-  }
 }
 
 function assertRepoNotArchived(repo: LightExtensionRepoInternalRecord, actionLabel: string) {
@@ -949,15 +831,6 @@ function normalizeLightExtensionFilePath(path: string): string {
   return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
 }
 
-function summarizeFileChange(file: LightExtensionFileChange) {
-  return {
-    path: file.path,
-    operation: file.operation || 'upsert',
-    size: file.size ?? file.content?.length,
-    language: file.language,
-  };
-}
-
 function toPublicCommit(commit: VscCommitRecord, lightExtensionRepoId: string): LightExtensionCommitRecord {
   return {
     ...commit,
@@ -975,18 +848,6 @@ function buildSourceCommitMetadata(
     requestId,
     requestSource: ctx.requestSource || 'internal',
   };
-}
-
-function getErrorCode(error: unknown): string {
-  if (isLightExtensionError(error) || isVscError(error)) {
-    return error.code;
-  }
-
-  if (error instanceof Error) {
-    return error.name;
-  }
-
-  return 'unknown_error';
 }
 
 function createLocalLightExtensionPermissionRegistry(

@@ -177,6 +177,7 @@ describe('plugin-light-extension reference rebuild audit', () => {
         }),
       }),
     );
+    expect(recordReferenceEvent).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(recordReferenceEvent.mock.calls)).not.toContain('secret-rebuild-value');
   });
 
@@ -220,6 +221,10 @@ describe('plugin-light-extension reference rebuild audit', () => {
         ownerLocatorHash: expect.stringMatching(/^sha256:/),
       }),
     );
+    expect(recordReferenceEvent.mock.calls.map(([event]) => event.action)).toEqual([
+      'referenceConflict',
+      'referenceRebuild',
+    ]);
     expect(JSON.stringify(recordReferenceEvent.mock.calls)).not.toContain('secret-settings-value');
     expect(JSON.stringify(recordReferenceEvent.mock.calls)).not.toContain('flow_invalid_settings');
     expect(JSON.stringify(recordReferenceEvent.mock.calls)).toContain('modelUidHash');
@@ -286,6 +291,48 @@ describe('plugin-light-extension reference rebuild audit', () => {
       nested: {
         settingsSchemaAuditHash: expect.stringMatching(/^sha256:/),
       },
+    });
+  });
+
+  it('hashes compile paths and secret details before persisting logs', async () => {
+    const lightExtensionLogs = createRepository();
+    const auditService = new LightExtensionAuditService({
+      getRepository: vi.fn(() => lightExtensionLogs),
+    } as never);
+
+    await auditService.recordCompileEvent({
+      action: 'runtimeCompile',
+      result: 'blocked',
+      requestId: 'req_compile_audit_redaction',
+      message: 'compile failed',
+      entryPath: 'src/private/credential.ts',
+      diagnosticCount: 1,
+      errorCount: 1,
+      warningCount: 0,
+      diagnostics: [
+        {
+          code: 'TS1005',
+          severity: 'error',
+          message: 'invalid source',
+          path: 'src/private/credential.ts',
+        },
+      ],
+      details: {
+        credential: 'secret-credential-value',
+        nested: { env: 'secret-env-value' },
+      },
+    });
+
+    const persisted = lightExtensionLogs.records[0].toJSON();
+    const serialized = JSON.stringify(persisted);
+    expect(serialized).not.toContain('src/private/credential.ts');
+    expect(serialized).not.toContain('secret-credential-value');
+    expect(serialized).not.toContain('secret-env-value');
+    expect(persisted.details).toMatchObject({
+      entryPathHash: expect.stringMatching(/^sha256:/),
+      diagnostics: [{ pathHash: expect.stringMatching(/^sha256:/) }],
+      credentialAuditHash: expect.stringMatching(/^sha256:/),
+      nested: { envAuditHash: expect.stringMatching(/^sha256:/) },
     });
   });
 

@@ -701,20 +701,9 @@ export function downloadRunJSWorkspaceBlob(value: Blob, fileName: string): boole
   return true;
 }
 
-export function canSaveVersion(
-  versionMessage: string,
-  summary: RunJSChangeSummary,
-  diagnostics: RunJSCompileDiagnostic[],
-  readOnly: boolean,
-): boolean {
+export function canSaveVersion(versionMessage: string, summary: RunJSChangeSummary, readOnly: boolean): boolean {
   const length = versionMessage.trim().length;
-  return (
-    !readOnly &&
-    summary.files > 0 &&
-    length >= 3 &&
-    length <= 200 &&
-    diagnostics.every((item) => item.severity !== 'error')
-  );
+  return !readOnly && summary.files > 0 && length >= 3 && length <= 200;
 }
 
 export function hasCompileErrorDiagnostics(diagnostics: RunJSCompileDiagnostic[]): boolean {

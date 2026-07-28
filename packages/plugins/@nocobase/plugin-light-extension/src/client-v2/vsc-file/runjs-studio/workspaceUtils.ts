@@ -17,6 +17,7 @@ import {
   validateRunJSWorkspacePathValue,
   type RunJSWorkspacePathValidationReason,
 } from '../../../shared/vsc-file/runjs-workspace-path';
+import type { RunJSSourceFileChange } from '../../../shared/vsc-file/runjs-source-contracts';
 import type { VscFileChange } from '../../../shared/vsc-file/types';
 import type {
   RunJSChangeSummary,
@@ -59,15 +60,20 @@ export function normalizeWorkspaceFiles(files: RunJSWorkspaceFileInput[]): RunJS
 export function buildWorkspaceChanges(
   baseFiles: RunJSWorkspaceFile[],
   nextFiles: RunJSWorkspaceFile[],
-): VscFileChange[] {
+): RunJSSourceFileChange[] {
   const baseByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
   const nextByPath = new Map(normalizeWorkspaceFiles(nextFiles).map((file) => [file.path, file]));
-  const changes: VscFileChange[] = [];
+  const changes: RunJSSourceFileChange[] = [];
 
   for (const file of nextByPath.values()) {
+    const base = baseByPath.get(file.path);
+    if (file.path === runJSManifestPath || sameWorkspaceFile(base, file)) {
+      continue;
+    }
     changes.push({
       path: file.path,
       operation: 'upsert',
+      expectedBlobHash: base?.blobHash || null,
       content: file.content,
       language: file.language || inferLanguageFromPath(file.path),
       mode: file.mode,
@@ -75,15 +81,26 @@ export function buildWorkspaceChanges(
   }
 
   for (const path of baseByPath.keys()) {
-    if (!nextByPath.has(path)) {
+    if (path !== runJSManifestPath && !nextByPath.has(path)) {
       changes.push({
         path,
         operation: 'delete',
+        expectedBlobHash: baseByPath.get(path)?.blobHash || null,
       });
     }
   }
 
   return changes.sort((left, right) => compareRunJSPaths(left.path, right.path));
+}
+
+export function buildWorkspaceSnapshotChanges(files: RunJSWorkspaceFile[]): VscFileChange[] {
+  return normalizeWorkspaceFiles(files).map((file) => ({
+    path: file.path,
+    operation: 'upsert',
+    content: file.content,
+    language: file.language || inferLanguageFromPath(file.path),
+    mode: file.mode,
+  }));
 }
 
 export function hasWorkspaceChanges(baseFiles: RunJSWorkspaceFile[], nextFiles: RunJSWorkspaceFile[]): boolean {

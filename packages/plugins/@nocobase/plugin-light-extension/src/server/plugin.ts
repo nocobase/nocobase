@@ -263,7 +263,6 @@ export class PluginLightExtensionServer extends Plugin {
     );
     this.fileService = new LightExtensionFileService(
       db,
-      this.auditService,
       this.permissionService,
       this.repoService,
       sharedVscPermissionHooks,
@@ -309,6 +308,7 @@ export class PluginLightExtensionServer extends Plugin {
       () => vscFileServerModule.getRunJSSourceAdapterRegistry(),
       this.app.name,
     );
+    this.moveSourceService.useAuditService(this.auditService);
     this.moveToInlineService = new MoveToInlineService(
       db,
       this.entryService,

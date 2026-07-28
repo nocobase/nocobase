@@ -385,7 +385,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);
     const repoService = new LightExtensionRepoService(app.db, auditService, permissionService);
-    const fileService = new LightExtensionFileService(app.db, auditService, permissionService, repoService);
+    const fileService = new LightExtensionFileService(app.db, permissionService, repoService);
     const repo = await repoService.createRepo({ name: 'Direct Sanitized Source Error' });
     const repoRecord = await app.db.getRepository('lightExtensionRepos').findOne({
       filterByTk: repo.id,
@@ -557,18 +557,17 @@ describe('plugin-light-extension file service resource bridge', () => {
     const rejectedWriteLog = await app.db.getRepository('lightExtensionLogs').findOne({
       filter: {
         repoId: repo.id,
-        action: 'sourcePush',
+        action: 'runtimeCompile',
         result: 'blocked',
       },
     });
     const serializedRejectedWriteLog = JSON.stringify(rejectedWriteLog?.toJSON());
 
     expect(rejectedWriteLog?.get('reasonCode')).toBe('LIGHT_EXTENSION_REPO_ARCHIVED');
-    expect(serializedRejectedWriteLog).toContain('README.md');
     expect(serializedRejectedWriteLog).not.toContain('# Should fail');
   });
 
-  it('records file write audit summaries without storing source content in logs', async () => {
+  it('records one Save audit without storing source content in logs', async () => {
     const createResponse = await agent.resource('lightExtensionRepos').create({
       values: {
         name: 'Audit Source',
@@ -594,13 +593,12 @@ describe('plugin-light-extension file service resource bridge', () => {
     const log = await app.db.getRepository('lightExtensionLogs').findOne({
       filter: {
         repoId: repo.id,
-        action: 'sourcePush',
+        action: 'runtimeCompile',
       },
     });
     const serializedLog = JSON.stringify(log?.toJSON());
 
     expect(log).toBeTruthy();
-    expect(serializedLog).toContain('README.md');
     expect(serializedLog).not.toContain('do-not-log-this-secret-source');
   });
 
@@ -889,14 +887,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repoService = new LightExtensionRepoService(app.db, auditService, permissionService, undefined, validator);
-    const fileService = new LightExtensionFileService(
-      app.db,
-      auditService,
-      permissionService,
-      repoService,
-      undefined,
-      validator,
-    );
+    const fileService = new LightExtensionFileService(app.db, permissionService, repoService, undefined, validator);
     const repo = await repoService.createRepo({
       name: 'Cumulative Byte Limit Source',
       initialFiles: [
@@ -1192,7 +1183,6 @@ describe('LightExtensionFileService expected Head', () => {
       headCommitId: 'commit_2',
     };
     const lockInternalRepoForUpdate = vi.fn(async () => repo);
-    const recordFileWrite = vi.fn(async () => undefined);
     const db = {
       getRepository: vi.fn(() => ({ findOne: vi.fn(async () => ({ id: repo.id })) })),
     } as unknown as Database;
@@ -1202,7 +1192,6 @@ describe('LightExtensionFileService expected Head', () => {
     };
     const service = new LightExtensionFileService(
       db,
-      { recordFileWrite } as never,
       {} as never,
       repoService as never,
       new VscPermissionHookRegistry(),
@@ -1232,8 +1221,5 @@ describe('LightExtensionFileService expected Head', () => {
 
     expect(lockInternalRepoForUpdate).toHaveBeenCalledWith(repo.id, expect.objectContaining({ transaction }));
     expect(pullInternal).not.toHaveBeenCalled();
-    expect(recordFileWrite).toHaveBeenCalledWith(
-      expect.objectContaining({ result: 'blocked', reasonCode: 'LIGHT_EXTENSION_SOURCE_OUTDATED' }),
-    );
   });
 });
