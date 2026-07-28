@@ -125,7 +125,20 @@ function AIProviderRuntime({
     status: AIConfigurationStatus;
     error?: Error;
     modelError?: Error;
-  }>({ employees: [], models: [], status: "loading" });
+  }>(() =>
+    providedEmployees && providedModels
+      ? {
+          employees: providedEmployees,
+          models: providedModels.length
+            ? providedModels
+            : [UNCONFIGURED_MODEL],
+          status: "ready",
+          modelError: providedModels.length
+            ? undefined
+            : new Error("No enabled AI models were provided."),
+        }
+      : { employees: [], models: [], status: "loading" }
+  );
   const internalGlobalController = useAIChatController();
   const globalController = providedGlobalController ?? internalGlobalController;
 

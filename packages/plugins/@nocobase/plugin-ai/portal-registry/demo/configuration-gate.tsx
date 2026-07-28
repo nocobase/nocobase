@@ -65,7 +65,10 @@ const previewService: AIService = {
 
 export function AIConfigurationGate({ children }: { children: ReactNode }) {
   const { configurationStatus, hasEnabledModels, employees } = useAI();
-  const configured = configurationStatus === "ready" && hasEnabledModels;
+  const configured =
+    configurationStatus === "ready" &&
+    hasEnabledModels &&
+    employees.length > 0;
 
   if (configured) return children;
 
