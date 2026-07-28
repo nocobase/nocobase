@@ -62,6 +62,7 @@ async function createLocalRuntime(
     sourceV1PublicPath?: string;
     sourceV2PublicPath?: string;
     cdnBaseUrl?: string;
+    appClientEntryMode?: string;
   },
 ): Promise<Extract<ManagedAppRuntime, { kind: 'local' }>> {
   const version = '2.1.0-beta.44';
@@ -77,6 +78,7 @@ async function createLocalRuntime(
   const envLines = [
     `APP_PUBLIC_PATH=${appPublicPath}`,
     `APP_MODERN_CLIENT_PREFIX=${modernClientPrefix}`,
+    ...(options?.appClientEntryMode ? [`APP_CLIENT_ENTRY_MODE=${options.appClientEntryMode}`] : []),
     'API_BASE_PATH=/api/',
     'WS_PATH=/ws',
     ...(options?.cdnBaseUrl ? [`CDN_BASE_URL=${options.cdnBaseUrl}`] : []),
@@ -147,6 +149,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
     modernClientPrefix: 'admin',
     sourceV1PublicPath: '/nocobase/',
     sourceV2PublicPath: '/v/',
+    appClientEntryMode: 'modern-only',
   });
 
   const bundle = await buildEnvProxyNginxBundle(runtime, { scope: 'global' });
@@ -215,10 +218,12 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.mainConfigContent).toContain('include /workspace/.nocobase/proxy/nginx/*/app.conf;');
   expect(bundle.indexV1Content).toContain(`window['__webpack_public_path__'] = "/console/dist/2.1.0-beta.44/";`);
   expect(bundle.indexV1Content).toContain(`window['__nocobase_public_path__'] = "/console/";`);
+  expect(bundle.indexV1Content).toContain(`window['__nocobase_app_client_entry_mode__'] = "modern-only";`);
   expect(bundle.indexV1Content).toContain('src="/console/dist/2.1.0-beta.44/browser-checker.js?v=1"');
   expect(bundle.indexV1Content).toContain('src="/console/dist/2.1.0-beta.44/assets/runtime.js"');
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/admin/";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_app_client_entry_mode__'] = "modern-only";`);
   expect(bundle.indexV2Content).toContain('src="/console/dist/2.1.0-beta.44/v/browser-checker.js?v=1"');
   expect(bundle.indexV2Content).toContain('src="/console/dist/2.1.0-beta.44/v/assets/runtime.js"');
 });
