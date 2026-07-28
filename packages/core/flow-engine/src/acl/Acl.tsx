@@ -16,7 +16,7 @@ interface CheckOptions {
   actionName: string;
   fields?: string[];
   recordPkValue?: string | number;
-  allowedActions: any[];
+  allowedActions?: Record<string, Array<string | number>>;
 }
 
 export class ACL {
@@ -147,6 +147,41 @@ export class ACL {
     }
     const allowed = whitelist.includes(fields[0]);
     return allowed;
+  }
+
+  can(options: CheckOptions): boolean {
+    const { allowAll } = this.data;
+    if (allowAll) {
+      return true;
+    }
+
+    const { actionName, allowedActions, recordPkValue } = options;
+    const hasRecordPkValue = recordPkValue !== undefined && recordPkValue !== null;
+    const recordPermission =
+      hasRecordPkValue && allowedActions ? this.verifyScope(actionName, recordPkValue, allowedActions) : null;
+    if (hasRecordPkValue && allowedActions && recordPermission !== true) {
+      return false;
+    }
+
+    const params = this.parseAction(options);
+    if (!params) {
+      return false;
+    }
+    if (!_.isEmpty(params.filter) && recordPermission !== true) {
+      return false;
+    }
+    if (!options.fields?.length) {
+      return true;
+    }
+
+    const allowedFields: string[] = []
+      .concat(params.whitelist || [])
+      .concat(params.fields || [])
+      .concat(params.appends || []);
+    if (!allowedFields.length) {
+      return true;
+    }
+    return options.fields.every((field) => allowedFields.includes(field));
   }
 
   async aclCheck(options: CheckOptions): Promise<boolean> {

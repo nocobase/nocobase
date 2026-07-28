@@ -109,7 +109,8 @@ export const AIEmployeeShortcut: React.FC<{
     if (!shortcutContext.length) {
       return;
     }
-    chat.addContextItems(shortcutContext);
+    const activeConversation = useChatConversationsStore.getState().currentConversation;
+    chat.for(activeConversation).addContextItems(shortcutContext);
     syncContextAttachments(shortcutContext);
   }, [chat, getShortcutContext, syncContextAttachments]);
 
