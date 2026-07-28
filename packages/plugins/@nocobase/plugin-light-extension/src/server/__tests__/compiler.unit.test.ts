@@ -188,7 +188,6 @@ function registerCompileContractTests() {
           runtimeVersion: 'v2',
           files,
         },
-        { requestId: 'request_example' },
       );
 
       expect(compileEntry).toHaveBeenCalledWith(
@@ -198,7 +197,6 @@ function registerCompileContractTests() {
           operation: 'compilePreview',
           files: [files[0], files[2]],
         }),
-        { requestId: 'request_example' },
       );
       expect(compileEntry.mock.calls[0][0].files[0]).not.toBe(files[0]);
     });

@@ -16,6 +16,7 @@ import {
   createLightExtensionCompileInfrastructureFailure,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  normalizeLightExtensionCompileResult,
   type LightExtensionCompileJob,
   type LightExtensionCompileResult,
 } from '../services/LightExtensionCompileContract';
@@ -31,6 +32,7 @@ import {
   type LightExtensionCompileWorkerRequest,
   type LightExtensionCompileWorkerResponse,
 } from '../services/LightExtensionCompileWorkerProtocol';
+import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
 describe('LightExtensionCompileWorkerPool', () => {
   it('runs actual compilation outside the main thread', async () => {
@@ -73,6 +75,41 @@ describe('LightExtensionCompileWorkerPool', () => {
     });
 
     expect(result.accepted).toBe(true);
+  });
+
+  it('normalizes worker and in-process compilation through the same result contract', async () => {
+    const job = createCompileJob(0);
+    const compiled = await new LightExtensionWorkspaceCompilerBridge().compileEntry({
+      repoId: job.repoId,
+      entryId: job.entryId,
+      kind: job.kind,
+      entryName: job.entryName,
+      entryPath: job.entryPath,
+      runtimeVersion: job.runtimeVersion,
+      files: job.files,
+    });
+    const inline = normalizeLightExtensionCompileResult(job, compiled, {
+      workerId: 0,
+      threadId: 0,
+      attempt: 1,
+      queueDurationMs: 0,
+      runDurationMs: 0,
+    });
+    const worker = await executeLightExtensionCompileJob({
+      job,
+      workerId: 1,
+      attempt: 1,
+      executingThreadId: 1,
+    });
+
+    expect(worker.accepted).toBe(true);
+    expect(inline.accepted).toBe(true);
+    if (worker.accepted && inline.accepted) {
+      expect(worker.artifact).toEqual(inline.artifact);
+      expect(worker.artifactHash).toBe(inline.artifactHash);
+      expect(worker.runtimeCodeHash).toBe(inline.runtimeCodeHash);
+      expect(worker.diagnostics).toEqual(inline.diagnostics);
+    }
   });
 
   it('uses one isolated worker and preserves bounded FIFO execution', async () => {

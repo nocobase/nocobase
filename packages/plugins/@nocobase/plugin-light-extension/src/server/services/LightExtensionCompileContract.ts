@@ -8,7 +8,7 @@
  */
 
 import { stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
-import { sha256Hex } from '@nocobase/runjs/server';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
 import type { RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler/build-identity';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
 import { createRequire } from 'node:module';
@@ -22,7 +22,6 @@ import {
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import type { CompileInputManifest } from './LightExtensionCompileKey';
-import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import type {
   LightExtensionWorkspaceCompileFileInput,
   LightExtensionWorkspaceCompileResult,
@@ -182,23 +181,19 @@ export interface LightExtensionValidatedCompileInput {
 export function compileLightExtensionValidatedEntry(
   compiler: Pick<LightExtensionWorkspaceCompilerBridge, 'compileEntry'>,
   input: LightExtensionValidatedCompileInput,
-  ctx: LightExtensionServiceContext,
 ): Promise<LightExtensionWorkspaceCompileResult> {
   const files = selectLightExtensionEntryCompileFiles(input.files, input.entry);
 
-  return compiler.compileEntry(
-    {
-      repoId: input.repoId,
-      entryId: input.entryId,
-      operation: input.operation,
-      kind: input.entry.kind,
-      entryName: input.entry.entryName,
-      entryPath: input.entry.entryPath,
-      runtimeVersion: input.runtimeVersion,
-      files,
-    },
-    ctx,
-  );
+  return compiler.compileEntry({
+    repoId: input.repoId,
+    entryId: input.entryId,
+    operation: input.operation,
+    kind: input.entry.kind,
+    entryName: input.entry.entryName,
+    entryPath: input.entry.entryPath,
+    runtimeVersion: input.runtimeVersion,
+    files,
+  });
 }
 
 export function selectLightExtensionEntryCompileFiles<T extends LightExtensionWorkspaceCompileFileInput>(
@@ -298,6 +293,58 @@ export interface LightExtensionCompileBatchAggregate {
 
 export interface LightExtensionCompileExecutor {
   submitWithBackpressure(job: LightExtensionCompileJob): Promise<LightExtensionCompileResult>;
+}
+
+export function normalizeLightExtensionCompileResult(
+  job: LightExtensionCompileJob,
+  compiled: LightExtensionWorkspaceCompileResult,
+  observation: LightExtensionCompileObservation,
+): LightExtensionCompileResult {
+  const identity = {
+    jobId: job.jobId,
+    requestId: job.requestId,
+    correlationId: job.correlationId,
+    repoId: job.repoId,
+    entryId: job.entryId,
+    entryName: job.entryName,
+    ordinal: job.ordinal,
+    compileKey: job.compileKey,
+    filesHash: job.filesHash,
+    kind: job.kind,
+    entryPath: job.entryPath,
+    compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
+    inputManifest: job.inputManifest,
+    diagnostics: compiled.diagnostics,
+    observation,
+  };
+  if (!compiled.accepted) {
+    return {
+      ...identity,
+      accepted: false,
+      failureCode: compiled.failureCode || 'RUNJS_COMPILE_FAILED',
+    };
+  }
+
+  const artifact = {
+    ...compiled.artifact,
+    metadata: {
+      ...compiled.artifact.metadata,
+      compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
+    },
+  };
+  return {
+    ...identity,
+    accepted: true,
+    artifact,
+    artifactHash: buildRunJSArtifactHash({
+      code: artifact.code,
+      sourceMap: artifact.sourceMap,
+      version: artifact.version,
+      entryPath: artifact.entryPath || job.entryPath,
+      runtimeContract: job.inputManifest.runtimeContract,
+    }),
+    runtimeCodeHash: buildRunJSRuntimeCodeHash(artifact.code),
+  };
 }
 
 export function assertLightExtensionCompileJob(job: LightExtensionCompileJob): void {

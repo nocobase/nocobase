@@ -7,13 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
-import { vi } from 'vitest';
-
 import { DEFAULT_LIGHT_EXTENSION_README, createDefaultLightExtensionTemplate } from '../../shared/default-template';
 import type { LightExtensionKind } from '../../shared/types';
-import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
@@ -76,12 +71,7 @@ describe('plugin-light-extension default source template', () => {
   });
 
   it('compiles every default example with the real compiler', async () => {
-    const auditService = new LightExtensionAuditService({} as Database);
-    vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
-    const bridge = new LightExtensionWorkspaceCompilerBridge(
-      auditService,
-      new LightExtensionPermissionService(auditService),
-    );
+    const bridge = new LightExtensionWorkspaceCompilerBridge();
     const files = createDefaultLightExtensionTemplate();
 
     for (const item of ENTRY_CASES) {

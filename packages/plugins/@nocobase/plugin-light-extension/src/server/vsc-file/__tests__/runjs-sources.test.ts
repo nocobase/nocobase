@@ -1466,6 +1466,81 @@ describe('runJSSources resource', () => {
     expect(writtenBaseOwnerFingerprint).toBe('owner:fm_owner_recovery:v2');
   });
 
+  it('restores current runtime code through the shared delta write path', async () => {
+    const locator = createLocator('fm_restore_runtime');
+    let code = 'ctx.render("legacy");';
+    let ownerFingerprint = 'owner:fm_restore_runtime:v1';
+    let writtenBaseOwnerFingerprint: string | undefined;
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Restore runtime',
+        code,
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: ({ artifact, baseOwnerFingerprint }) => {
+        writtenBaseOwnerFingerprint = baseOwnerFingerprint;
+        code = artifact.code;
+        ownerFingerprint = 'owner:fm_restore_runtime:written';
+        return { ownerFingerprint };
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Add helper before recovery',
+        files: [
+          { path: 'src/client/helper.ts', content: 'export const value = "saved";' },
+          {
+            path: 'src/client/index.tsx',
+            content: 'import { value } from "./helper";\nctx.render(value);',
+          },
+        ],
+      },
+    });
+    expect(saved.status).toBe(200);
+
+    code = 'ctx.render("changed outside Studio");';
+    ownerFingerprint = 'owner:fm_restore_runtime:external';
+    const restored = await agent.resource('runJSSources').restoreFromCode({ values: { locator } });
+
+    expect(restored.status).toBe(200);
+    expect(restored.body.data.repository).toMatchObject({
+      headSeq: 3,
+      headCommitId: expect.any(String),
+    });
+    expect(restored.body.data.files.map((file: { path: string }) => file.path)).toEqual([
+      runJSManifestPath,
+      'src/client/index.tsx',
+    ]);
+    expect(restored.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          content: 'ctx.render("changed outside Studio");',
+        }),
+      ]),
+    );
+    expect(restored.body.data.history.items[0]).toMatchObject({
+      message: 'Recover RunJS source from current code',
+      parentCommitId: saved.body.data.commit.id,
+    });
+    expect(writtenBaseOwnerFingerprint).toBe('owner:fm_restore_runtime:external');
+  });
+
   it('rejects owner changes that happen after the preflight fingerprint check', async () => {
     const locator = createLocator('fm_owner_race');
     const initialFingerprint = 'owner:fm_owner_race:v1';

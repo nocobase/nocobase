@@ -55,8 +55,10 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       validator,
     );
     entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
-    compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-    runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
+    compilerBridge = new LightExtensionWorkspaceCompilerBridge();
+    runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge, {
+      auditService,
+    });
     runtimeResolveService = new RuntimeResolveService(app.db);
   });
 
@@ -152,10 +154,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
 
     expect(compileEntrySpy).toHaveBeenCalledTimes(1);
-    expect(compileEntrySpy).toHaveBeenCalledWith(
-      expect.objectContaining({ entryName: 'dependent' }),
-      expect.any(Object),
-    );
+    expect(compileEntrySpy).toHaveBeenCalledWith(expect.objectContaining({ entryName: 'dependent' }));
     expect(updated.compile.status).toBe('success');
     expect(updated.compile.entries).toEqual([
       expect.objectContaining({ entryName: 'dependent', execution: 'compiled' }),
@@ -192,10 +191,14 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       filter: { repoId: repo.id },
       sort: ['entryName'],
     });
+    const compileLogs = await app.db.getRepository('lightExtensionLogs').find({
+      filter: { repoId: repo.id, action: 'runtimeCompile' },
+    });
 
     expect(updated.compile.entries).toHaveLength(2);
     expect(updated.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
     expect(afterEntries.every((entry) => entry.get('compiledCommitId') === updated.commit.id)).toBe(true);
+    expect(compileLogs).toHaveLength(2);
   });
 
   it('rebuilds missing or corrupt immutable artifacts and recompiles after a compiler build change', async () => {

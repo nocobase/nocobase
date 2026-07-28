@@ -65,7 +65,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
       validator,
     );
     const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
-    const compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
+    const compilerBridge = new LightExtensionWorkspaceCompilerBridge();
     runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
     const referenceService = new ReferenceService(app.db, auditService, permissionService);
     runtimeCompileService.useReferenceService(referenceService);

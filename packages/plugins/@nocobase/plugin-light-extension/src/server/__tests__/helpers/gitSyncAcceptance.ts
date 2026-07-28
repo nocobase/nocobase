@@ -85,7 +85,7 @@ export async function createGitSyncAcceptanceFixture(): Promise<GitSyncAcceptanc
     validator,
   );
   const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
-  const compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
+  const compilerBridge = new LightExtensionWorkspaceCompilerBridge();
   const runtimeCompileService = new LightExtensionRuntimeCompileService(
     app.db,
     fileService,

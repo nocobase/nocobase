@@ -44,6 +44,7 @@ import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   compileLightExtensionValidatedEntry,
+  normalizeLightExtensionCompileResult,
   selectLightExtensionEntryCompileFiles,
   validateLightExtensionWorkspace,
   type LightExtensionCompileExecutor,
@@ -53,6 +54,7 @@ import {
   type LightExtensionCompileSuccessResult,
   type LightExtensionCompilerBuildIdentity,
 } from './LightExtensionCompileContract';
+import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
@@ -90,6 +92,7 @@ interface PreparedCompileResults {
 }
 
 export interface LightExtensionRuntimeCompileServiceOptions {
+  auditService?: LightExtensionAuditService;
   compilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
   compileExecutor?: LightExtensionCompileExecutor;
   publishCompiledEntries?: PublishCompiledEntriesService;
@@ -141,6 +144,8 @@ export class LightExtensionRuntimeCompileService {
 
   private readonly validator: LightExtensionValidator;
 
+  private readonly auditService?: LightExtensionAuditService;
+
   constructor(
     private readonly db: Database,
     private readonly fileService: LightExtensionFileService,
@@ -150,6 +155,7 @@ export class LightExtensionRuntimeCompileService {
   ) {
     this.configuredCompilerBuildIdentity = options.compilerBuildIdentity;
     this.compileExecutor = options.compileExecutor;
+    this.auditService = options.auditService;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
     this.validator = options.validator || new LightExtensionValidator();
   }
@@ -315,6 +321,7 @@ export class LightExtensionRuntimeCompileService {
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
+      await this.recordRuntimeCompileAudit(repoId, compilePreparation.results, ctx, false);
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
@@ -377,11 +384,7 @@ export class LightExtensionRuntimeCompileService {
       transaction,
     });
     await this.referenceService?.refreshReferencesForRepo(candidate.repo.id, ctx, 'source_published');
-    const compiledEntryIds = new Set(prepared.compiledEntryIds);
-    await this.recordPublishedCompileAudits(
-      prepared.compileResults.filter((result) => compiledEntryIds.has(result.entryId)),
-      ctx,
-    );
+    await this.recordRuntimeCompileAudit(candidate.repo.id, prepared.compileResults, ctx, true);
     const [repo, entryModels] = await Promise.all([
       this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: candidate.repo.id, transaction }),
       this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: candidate.repo.id }, transaction }),
@@ -446,11 +449,7 @@ export class LightExtensionRuntimeCompileService {
       transaction,
     });
     await this.referenceService?.refreshReferencesForRepo(prepared.repoId, ctx, 'source_published');
-    const compiledEntryIds = new Set(prepared.compiledEntryIds);
-    await this.recordPublishedCompileAudits(
-      prepared.compileResults.filter((result) => compiledEntryIds.has(result.entryId)),
-      ctx,
-    );
+    await this.recordRuntimeCompileAudit(prepared.repoId, prepared.compileResults, ctx, true);
     const [updatedRepo, entryModels] = await Promise.all([
       this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: prepared.repoId, transaction }),
       this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: prepared.repoId }, transaction }),
@@ -481,26 +480,54 @@ export class LightExtensionRuntimeCompileService {
     }
   }
 
-  private async recordPublishedCompileAudits(
-    results: readonly LightExtensionCompileSuccessResult[],
+  private async recordRuntimeCompileAudit(
+    repoId: string,
+    results: readonly LightExtensionCompileResult[],
     ctx: LightExtensionServiceContext,
+    accepted: boolean,
   ): Promise<void> {
-    for (const result of results) {
-      await this.compilerBridge.recordPublishedRuntimeCompileAudit(
-        {
-          repoId: result.repoId,
-          entryId: result.entryId,
-          kind: result.kind,
-          entryName: result.entryName,
-          entryPath: result.entryPath,
-          runtimeVersion: result.artifact.version,
-          requestId: result.requestId,
-          diagnostics: result.diagnostics,
-          filesHash: result.artifact.filesHash,
-          artifactEntryPath: result.artifact.entryPath,
+    if (!this.auditService) {
+      return;
+    }
+    const diagnostics = sortDiagnostics(results.flatMap((result) => result.diagnostics));
+    const entry = results.length === 1 ? results[0] : undefined;
+    const failedResult = results.find((result): result is LightExtensionCompileFailureResult => !result.accepted);
+    const failureCode = failedResult?.failureCode;
+    try {
+      await this.auditService.recordCompileEvent({
+        repoId,
+        entryId: entry?.entryId,
+        target: 'client',
+        kind: entry?.kind,
+        name: entry?.entryName,
+        action: 'runtimeCompile',
+        result: accepted ? 'success' : 'blocked',
+        requestId: entry?.requestId || ctx.requestId || randomUUID(),
+        actorUserId: ctx.actorUserId,
+        entryPath: entry?.entryPath,
+        runtimeVersion: entry?.inputManifest.runtimeVersion,
+        diagnosticCount: diagnostics.length,
+        errorCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length,
+        warningCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'warning').length,
+        diagnostics,
+        message: accepted ? 'Light extension workspace compiled' : 'Light extension workspace compile rejected',
+        reasonCode: accepted ? undefined : classifyCompileFailure(failureCode),
+        details: {
+          failureCode,
+          requestSource: ctx.requestSource,
+          entryCount: results.length,
+          entries: results.map((result) => ({
+            entryId: result.entryId,
+            entryName: result.entryName,
+            kind: result.kind,
+            accepted: result.accepted,
+            failureCode: 'failureCode' in result ? result.failureCode : undefined,
+          })),
         },
-        ctx,
-      );
+        transaction: ctx.transaction,
+      });
+    } catch {
+      // Compile results must not depend on audit persistence availability.
     }
   }
 
@@ -536,13 +563,12 @@ export class LightExtensionRuntimeCompileService {
     if (compileExecutor) {
       compiledResults = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
     } else {
-      // The non-worker compatibility path is intentionally serial so database-backed compile audit hooks remain safe
-      // on SQLite. Production compile paths use the bounded isolated worker.
+      // The non-worker compatibility path is intentionally serial. Production compile paths use the bounded isolated worker.
       compiledResults = [];
       for (const { job, input } of compileJobs) {
         compiledResults.push(
           this.compilerBridge
-            ? await this.compileEntryWithoutWorker(job, input, ctx)
+            ? await this.compileEntryWithoutWorker(job, input)
             : await this.executeCompileJobWithoutWorker(job),
         );
       }
@@ -564,52 +590,27 @@ export class LightExtensionRuntimeCompileService {
   private async compileEntryWithoutWorker(
     job: LightExtensionCompileJob,
     input: PreparedEntryCompileInput,
-    ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionCompileResult> {
-    const compiled = await compileLightExtensionValidatedEntry(
-      this.compilerBridge,
-      {
-        repoId: job.repoId,
-        entryId: job.entryId,
-        operation: 'runtimeCompile',
-        entry: {
-          kind: job.kind,
-          entryName: job.entryName,
-          entryPath: job.entryPath,
-          descriptorPath: input.entry.descriptorPath,
-        },
-        runtimeVersion: job.runtimeVersion,
-        files: input.compileFiles,
+    const compiled = await compileLightExtensionValidatedEntry(this.compilerBridge, {
+      repoId: job.repoId,
+      entryId: job.entryId,
+      operation: 'runtimeCompile',
+      entry: {
+        kind: job.kind,
+        entryName: job.entryName,
+        entryPath: job.entryPath,
+        descriptorPath: input.entry.descriptorPath,
       },
-      {
-        ...ctx,
-        deferSuccessfulCompileAudit: true,
-      },
-    );
-    if (!compiled.accepted) {
-      return {
-        ...compileResultIdentity(job),
-        accepted: false,
-        diagnostics: compiled.diagnostics,
-        failureCode: compiled.failureCode || 'compile_failed',
-      };
-    }
-    const runtimeCodeHash = buildRunJSRuntimeCodeHash(compiled.artifact.code);
-    const artifactHash = buildRunJSArtifactHash({
-      code: compiled.artifact.code,
-      sourceMap: compiled.artifact.sourceMap,
-      version: compiled.artifact.version,
-      entryPath: compiled.artifact.entryPath || job.entryPath,
-      runtimeContract: job.inputManifest.runtimeContract,
+      runtimeVersion: job.runtimeVersion,
+      files: input.compileFiles,
     });
-    return {
-      ...compileResultIdentity(job),
-      accepted: true,
-      artifact: compiled.artifact,
-      artifactHash,
-      runtimeCodeHash,
-      diagnostics: compiled.diagnostics,
-    };
+    return normalizeLightExtensionCompileResult(job, compiled, {
+      workerId: 0,
+      threadId: 0,
+      attempt: 1,
+      queueDurationMs: 0,
+      runDurationMs: 0,
+    });
   }
 
   async compilePreparedCandidate(
@@ -729,6 +730,7 @@ export class LightExtensionRuntimeCompileService {
     ]);
     const failures = compilePreparation.results.filter((entry) => !entry.accepted);
     if (failures.length > 0) {
+      await this.recordRuntimeCompileAudit(repoId, compilePreparation.results, ctx, false);
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
@@ -748,10 +750,7 @@ export class LightExtensionRuntimeCompileService {
       ctx.transaction,
     );
     const compiledEntryIds = new Set(compilePreparation.compiledEntryIds);
-    await this.recordPublishedCompileAudits(
-      successfulResults.filter((result) => compiledEntryIds.has(result.entryId)),
-      ctx,
-    );
+    await this.recordRuntimeCompileAudit(repoId, successfulResults, ctx, true);
     const compileEntries = successfulResults.map((result) =>
       toSuccessfulCompileEntryResult(result, compiledEntryIds.has(result.entryId)),
     );
@@ -794,6 +793,17 @@ function isSqliteBusyError(error: unknown): boolean {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function classifyCompileFailure(failureCode?: string): string {
+  if (
+    failureCode === 'RUNJS_IMPORT_NOT_ALLOWED' ||
+    failureCode === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED' ||
+    failureCode === 'RUNJS_IMPORT_NOT_FOUND'
+  ) {
+    return 'unsafe_import_denied';
+  }
+  return failureCode === 'LIGHT_EXTENSION_COMPILE_DENIED' ? 'compile_denied' : 'compile_failed';
 }
 
 function createCompileJob(

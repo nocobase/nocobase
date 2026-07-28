@@ -243,7 +243,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
-    this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
+    this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge();
     const app = this.app as unknown as AppWithPluginEvents;
     const sharedVscPermissionHooks = vscFileServerModule.getPermissionHookRegistry();
     this.repoService = new LightExtensionRepoService(
@@ -281,6 +281,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.entryService,
       this.workspaceCompilerBridge,
       {
+        auditService: this.auditService,
         compileExecutor: this.compileWorkerPool,
         validator: this.validator,
       },

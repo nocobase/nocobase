@@ -189,19 +189,16 @@ export class MoveToInlineService {
     }
 
     const entryPath = relocateEntryPath(input.entryPath);
-    const compileResult = await this.workspaceCompilerBridge.compileEntry(
-      {
-        repoId: input.repoId,
-        entryId: input.entryId,
-        operation: 'runtimeCompile',
-        kind: input.kind,
-        entryName: entry.entryName,
-        entryPath,
-        runtimeVersion: input.version,
-        files: relocatedFiles,
-      },
-      serviceContext,
-    );
+    const compileResult = await this.workspaceCompilerBridge.compileEntry({
+      repoId: input.repoId,
+      entryId: input.entryId,
+      operation: 'runtimeCompile',
+      kind: input.kind,
+      entryName: entry.entryName,
+      entryPath,
+      runtimeVersion: input.version,
+      files: relocatedFiles,
+    });
     if (!compileResult.accepted) {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Inline source could not be compiled', {
         status: 422,

@@ -7,19 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Transaction } from '@nocobase/database';
 import { type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
 import { buildRunJSFilesHash } from '@nocobase/runjs/server';
-import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
-import { randomUUID } from 'crypto';
+import type { CompileRunJSSourceWorkspaceResult, RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
 import { createRequire } from 'node:module';
 import { posix as pathPosix } from 'path';
 import type { Expression, ImportDeclaration, SourceFile } from 'typescript';
 
 import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE, type LightExtensionKind } from '../../constants';
-import { isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
-import { LightExtensionAuditService } from './LightExtensionAuditService';
 import {
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
@@ -27,8 +23,6 @@ import {
   type LightExtensionAuthoringSurfaceSpec,
   type LightExtensionSurfaceStyle,
 } from './LightExtensionCompileContract';
-import { LightExtensionPermissionService } from './LightExtensionPermissionService';
-import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 
 const allowedCompileSdkImports = new Set([
@@ -71,53 +65,24 @@ export interface LightExtensionWorkspaceCompileResult {
   surface: LightExtensionAuthoringSurfaceSpec;
 }
 
-export interface LightExtensionPublishedRuntimeCompileAuditInput {
-  repoId: string;
-  entryId: string;
-  kind: LightExtensionKind;
-  entryName: string;
-  entryPath: string;
-  runtimeVersion: string;
-  requestId: string;
-  diagnostics: LightExtensionDiagnostic[];
-  filesHash?: string;
-  artifactEntryPath?: string;
+export interface LightExtensionWorkspaceCompileOptions {
+  sourceInspector?: RunJSSourceWorkspaceInspector;
 }
 
 export class LightExtensionWorkspaceCompilerBridge {
-  constructor(
-    private readonly auditService: LightExtensionAuditService,
-    private readonly permissionService: LightExtensionPermissionService,
-  ) {}
-
   getCompilerBuildIdentity(): LightExtensionCompilerBuildIdentity {
     return LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY;
   }
 
   async compileEntry(
     input: LightExtensionWorkspaceCompileInput,
-    ctx: LightExtensionServiceContext = {},
+    options: LightExtensionWorkspaceCompileOptions = {},
   ): Promise<LightExtensionWorkspaceCompileResult> {
-    const requestId = ctx.requestId || randomUUID();
     const surface = getSurfaceSpec(input.kind);
-
-    if (getCompileOperation(input) === 'compilePreview') {
-      try {
-        await this.permissionService.assertActionAllowed({
-          action: 'compilePreview',
-          ctx,
-        });
-      } catch (error) {
-        await this.recordPermissionDenied(input, ctx, requestId, error);
-        throw error;
-      }
-    }
 
     const preflightDiagnostics = this.validateCompileInput(input, surface);
     if (preflightDiagnostics.length > 0) {
-      const result = this.buildBlockedResult(input, surface, preflightDiagnostics, 'LIGHT_EXTENSION_COMPILE_DENIED');
-      await this.recordCompileAudit(input, ctx, requestId, result, 'compile_denied');
-      return result;
+      return this.buildBlockedResult(input, surface, preflightDiagnostics, 'LIGHT_EXTENSION_COMPILE_DENIED');
     }
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
     const runtimeFiles = filterCurrentEntryDescriptor(input);
@@ -139,45 +104,9 @@ export class LightExtensionWorkspaceCompilerBridge {
           surface: surface.surface,
         },
       },
+      sourceInspector: options.sourceInspector,
     });
-    const result = this.buildCompileResult(input, surface, compiled);
-    if (!result.accepted || !ctx.deferSuccessfulCompileAudit) {
-      await this.recordCompileAudit(input, ctx, requestId, result, classifyFailureReason(result, compiled.failureCode));
-    }
-    return result;
-  }
-
-  async recordPublishedRuntimeCompileAudit(
-    input: LightExtensionPublishedRuntimeCompileAuditInput,
-    ctx: LightExtensionServiceContext = {},
-  ): Promise<void> {
-    const surface = getSurfaceSpec(input.kind);
-    await this.recordCompileAudit(
-      {
-        repoId: input.repoId,
-        entryId: input.entryId,
-        operation: 'runtimeCompile',
-        kind: input.kind,
-        entryName: input.entryName,
-        entryPath: input.entryPath,
-        runtimeVersion: input.runtimeVersion,
-        files: [],
-      },
-      ctx,
-      input.requestId,
-      {
-        accepted: true,
-        artifact: {
-          code: '',
-          version: input.runtimeVersion,
-          diagnostics: input.diagnostics,
-          filesHash: input.filesHash,
-          entryPath: input.artifactEntryPath || input.entryPath,
-        },
-        diagnostics: input.diagnostics,
-        surface,
-      },
-    );
+    return this.buildCompileResult(input, surface, compiled);
   }
 
   private validateCompileInput(
@@ -277,75 +206,6 @@ export class LightExtensionWorkspaceCompilerBridge {
       surface,
     };
   }
-
-  private async recordPermissionDenied(
-    input: LightExtensionWorkspaceCompileInput,
-    ctx: LightExtensionServiceContext,
-    requestId: string,
-    error: unknown,
-  ): Promise<void> {
-    if (!isLightExtensionError(error)) {
-      return;
-    }
-
-    await this.recordCompileAudit(
-      input,
-      ctx,
-      requestId,
-      this.buildBlockedResult(input, getSurfaceSpec(input.kind), [], error.code),
-      'permission_denied',
-    );
-  }
-
-  private async recordCompileAudit(
-    input: LightExtensionWorkspaceCompileInput,
-    ctx: LightExtensionServiceContext,
-    requestId: string,
-    result: LightExtensionWorkspaceCompileResult,
-    reasonCode?: string,
-  ): Promise<void> {
-    try {
-      const errorCount = result.diagnostics.filter((item) => item.severity === 'error').length;
-      const warningCount = result.diagnostics.filter((item) => item.severity === 'warning').length;
-      await this.auditService.recordCompileEvent({
-        repoId: input.repoId,
-        entryId: input.entryId,
-        target: 'client',
-        kind: input.kind,
-        name: input.entryName || inferEntryName(input.entryPath),
-        action: getCompileOperation(input),
-        result: result.accepted ? 'success' : 'blocked',
-        requestId,
-        actorUserId: ctx.actorUserId,
-        entryPath: input.entryPath,
-        surfaceStyle: result.surface.surfaceStyle,
-        runtimeVersion: result.artifact.version,
-        diagnosticCount: result.diagnostics.length,
-        errorCount,
-        warningCount,
-        diagnostics: result.diagnostics,
-        message: result.accepted ? 'Light extension entry compiled' : 'Light extension entry compile rejected',
-        reasonCode: result.accepted ? undefined : reasonCode,
-        details: {
-          failureCode: result.failureCode,
-          filesHash: result.artifact.filesHash,
-          artifactEntryPath: result.artifact.entryPath,
-          requestSource: ctx.requestSource,
-          surface: result.surface.surface,
-          modelUse: result.surface.modelUse,
-        },
-        transaction: ctx.transaction as Transaction | undefined,
-      });
-    } catch {
-      // Compile diagnostics must not depend on audit persistence availability.
-    }
-  }
-}
-
-function getCompileOperation(
-  input: LightExtensionWorkspaceCompileInput,
-): NonNullable<LightExtensionWorkspaceCompileInput['operation']> {
-  return input.operation || 'compilePreview';
 }
 
 function getSurfaceSpec(kind: LightExtensionKind): LightExtensionAuthoringSurfaceSpec {
@@ -365,24 +225,6 @@ function toLightExtensionDiagnostic(input: RunJSCompileDiagnostic): LightExtensi
       ...(input.details || {}),
     },
   };
-}
-
-function classifyFailureReason(result: LightExtensionWorkspaceCompileResult, failureCode?: string): string | undefined {
-  if (result.accepted) {
-    return undefined;
-  }
-  if (
-    failureCode === 'RUNJS_IMPORT_NOT_ALLOWED' ||
-    failureCode === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED' ||
-    failureCode === 'RUNJS_IMPORT_NOT_FOUND'
-  ) {
-    return 'unsafe_import_denied';
-  }
-  if (result.failureCode === 'LIGHT_EXTENSION_COMPILE_DENIED') {
-    return 'compile_denied';
-  }
-
-  return 'compile_failed';
 }
 
 function inferRunJSLanguage(path: string): 'typescript' | 'javascript' | 'tsx' | 'jsx' {

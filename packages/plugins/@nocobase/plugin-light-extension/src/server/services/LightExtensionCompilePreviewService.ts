@@ -100,13 +100,8 @@ export class LightExtensionCompilePreviewService {
 
     if (hasErrorDiagnostic(workspaceDiagnostics)) {
       const sortedWorkspaceDiagnostics = sortDiagnostics(workspaceDiagnostics);
-      await this.recordPreviewValidationBlocked(input, previewContext, sortedWorkspaceDiagnostics, targets.length);
       const entries = targets.map((target) => buildWorkspaceBlockedEntryResult(target, sortedWorkspaceDiagnostics));
-      for (const entry of entries) {
-        await this.recordEntryValidationBlocked(entry, previewContext, 'validation_failed');
-      }
-
-      return {
+      const result = {
         repo: pull.repo,
         commitId: pull.commit?.id || null,
         accepted: false,
@@ -116,6 +111,8 @@ export class LightExtensionCompilePreviewService {
         ]),
         entries,
       };
+      await this.recordPreviewResult(input.repoId, previewContext, result, 'validation_failed');
+      return result;
     }
 
     const entries: LightExtensionCompilePreviewEntryResult[] = [];
@@ -123,21 +120,16 @@ export class LightExtensionCompilePreviewService {
       if (!target.validationEntry || hasErrorDiagnostic(target.diagnostics)) {
         const failed = buildSkippedEntryResult(target);
         entries.push(failed);
-        await this.recordEntryValidationBlocked(failed, previewContext, target.missingReason || 'validation_failed');
         continue;
       }
 
-      const compiled = await compileLightExtensionValidatedEntry(
-        this.compilerBridge,
-        {
-          repoId: input.repoId,
-          entryId: target.entryId,
-          operation: 'compilePreview',
-          entry: target.validationEntry,
-          files: pull.files || [],
-        },
-        previewContext,
-      );
+      const compiled = await compileLightExtensionValidatedEntry(this.compilerBridge, {
+        repoId: input.repoId,
+        entryId: target.entryId,
+        operation: 'compilePreview',
+        entry: target.validationEntry,
+        files: pull.files || [],
+      });
       entries.push({
         entryId: target.entryId,
         repoId: input.repoId,
@@ -160,13 +152,25 @@ export class LightExtensionCompilePreviewService {
       ...entries.flatMap((entry) => entry.diagnostics),
     ]);
 
-    return {
+    const result = {
       repo: pull.repo,
       commitId: pull.commit?.id || null,
       accepted: !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted),
       diagnostics,
       entries,
     };
+    const failedEntry = entries.find((entry) => !entry.accepted);
+    await this.recordPreviewResult(
+      input.repoId,
+      previewContext,
+      result,
+      result.accepted
+        ? undefined
+        : failedEntry?.failureCode
+          ? classifyPreviewFailure(failedEntry.failureCode)
+          : 'validation_failed',
+    );
+    return result;
   }
 
   async compileWorkspacePreview(
@@ -230,12 +234,14 @@ export class LightExtensionCompilePreviewService {
           kind: input.kind,
         } satisfies LightExtensionDiagnostic,
       ];
-      return {
+      const result = {
         accepted: false,
-        httpStatus: 422,
+        httpStatus: 422 as const,
         diagnostics,
         failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       };
+      await this.recordPreviewResult(input.repoId, previewContext, result, 'validation_failed');
+      return result;
     }
 
     const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
@@ -281,23 +287,20 @@ export class LightExtensionCompilePreviewService {
       };
     }
 
-    const compiled = await compileLightExtensionValidatedEntry(
-      this.compilerBridge,
-      {
-        repoId: input.repoId,
-        entryId: input.entryId,
-        operation: 'compilePreview',
-        entry: validationEntry,
-        runtimeVersion: input.runtimeVersion,
-        files: previewFiles,
-      },
-      previewContext,
-    );
+    const compiled = await compileLightExtensionValidatedEntry(this.compilerBridge, {
+      repoId: input.repoId,
+      entryId: input.entryId,
+      operation: 'compilePreview',
+      entry: validationEntry,
+      runtimeVersion: input.runtimeVersion,
+      files: previewFiles,
+    });
     const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
 
-    return {
-      accepted: compiled.accepted && !hasErrorDiagnostic(diagnostics),
-      httpStatus: compiled.accepted && !hasErrorDiagnostic(diagnostics) ? 200 : 422,
+    const accepted = compiled.accepted && !hasErrorDiagnostic(diagnostics);
+    const result = {
+      accepted,
+      httpStatus: accepted ? (200 as const) : (422 as const),
       diagnostics,
       failureCode: compiled.failureCode,
       artifact: compiled.accepted
@@ -312,6 +315,20 @@ export class LightExtensionCompilePreviewService {
           }
         : undefined,
     };
+    await this.recordPreviewResult(
+      input.repoId,
+      previewContext,
+      result,
+      accepted ? undefined : classifyPreviewFailure(compiled.failureCode),
+      {
+        entryId: input.entryId,
+        target: 'client',
+        kind: targetKind,
+        entryName: validationEntry.entryName,
+        entryPath: validationEntry.entryPath,
+      },
+    );
+    return result;
   }
 
   private async compileWholeWorkspacePreview(
@@ -350,18 +367,14 @@ export class LightExtensionCompilePreviewService {
       }
 
       const runtimeVersion = input.runtimeVersion || persistedEntry?.runtimeVersion || 'v2';
-      const compiled = await compileLightExtensionValidatedEntry(
-        this.compilerBridge,
-        {
-          repoId: input.repoId,
-          entryId,
-          operation: 'compilePreview',
-          entry: validationEntry,
-          runtimeVersion,
-          files,
-        },
-        ctx,
-      );
+      const compiled = await compileLightExtensionValidatedEntry(this.compilerBridge, {
+        repoId: input.repoId,
+        entryId,
+        operation: 'compilePreview',
+        entry: validationEntry,
+        runtimeVersion,
+        files,
+      });
       const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
       const accepted = compiled.accepted && !hasErrorDiagnostic(diagnostics);
       entries.push({
@@ -384,15 +397,22 @@ export class LightExtensionCompilePreviewService {
       ...entries.flatMap((entry) => entry.diagnostics),
     ]);
     const accepted = !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted);
-    return {
+    const result = {
       accepted,
-      httpStatus: accepted ? 200 : entries.some((entry) => entry.accepted) ? 207 : 422,
+      httpStatus: accepted ? (200 as const) : entries.some((entry) => entry.accepted) ? (207 as const) : (422 as const),
       diagnostics,
       entries,
       failureCode: accepted
         ? undefined
         : entries.find((entry) => !entry.accepted)?.failureCode || 'LIGHT_EXTENSION_VALIDATION_FAILED',
     };
+    await this.recordPreviewResult(
+      input.repoId,
+      ctx,
+      result,
+      accepted ? undefined : classifyPreviewFailure(result.failureCode),
+    );
+    return result;
   }
 
   private async listPersistedEntries(
@@ -438,46 +458,48 @@ export class LightExtensionCompilePreviewService {
     });
   }
 
-  private async recordPreviewValidationBlocked(
-    input: LightExtensionCompilePreviewInput,
+  private async recordPreviewResult(
+    repoId: string,
     ctx: LightExtensionServiceContext,
-    diagnostics: LightExtensionDiagnostic[],
-    entryCount: number,
+    result: Pick<LightExtensionWorkspacePreviewResult, 'accepted' | 'diagnostics'> & {
+      entries?: LightExtensionCompilePreviewEntryResult[];
+      failureCode?: string;
+    },
+    reasonCode?: string,
+    target?: {
+      entryId?: string | null;
+      target: string;
+      kind: string;
+      entryName: string;
+      entryPath: string;
+    },
   ): Promise<void> {
+    const entry = target || (result.entries?.length === 1 ? result.entries[0] : undefined);
     await this.recordCompileAuditBestEffort({
-      repoId: input.repoId,
+      repoId,
+      entryId: entry?.entryId,
+      target: entry?.target,
+      kind: entry?.kind,
+      name: entry?.entryName,
+      entryPath: entry?.entryPath || undefined,
       ctx,
-      result: 'blocked',
-      reasonCode: 'validation_failed',
-      diagnostics,
-      message: 'Light extension compile preview workspace validation failed',
-      details: {
-        requestSource: ctx.requestSource,
-        entryCount,
-        selectedEntryCount: input.entryIds?.length,
-      },
-    });
-  }
-
-  private async recordEntryValidationBlocked(
-    entry: LightExtensionCompilePreviewEntryResult,
-    ctx: LightExtensionServiceContext,
-    reasonCode: string,
-  ): Promise<void> {
-    await this.recordCompileAuditBestEffort({
-      repoId: entry.repoId,
-      entryId: entry.entryId,
-      target: entry.target,
-      kind: entry.kind,
-      name: entry.entryName,
-      entryPath: entry.entryPath || undefined,
-      ctx,
-      result: 'blocked',
+      result: result.accepted ? 'success' : 'blocked',
       reasonCode,
-      diagnostics: entry.diagnostics,
-      message: 'Light extension compile preview entry validation failed',
+      diagnostics: result.diagnostics,
+      message: result.accepted
+        ? 'Light extension workspace preview compiled'
+        : 'Light extension workspace preview rejected',
       details: {
         requestSource: ctx.requestSource,
+        failureCode: result.failureCode,
+        entryCount: result.entries?.length || (target ? 1 : 0),
+        entries: result.entries?.map((item) => ({
+          entryId: item.entryId,
+          entryName: item.entryName,
+          kind: item.kind,
+          accepted: item.accepted,
+          failureCode: item.failureCode,
+        })),
       },
     });
   }
@@ -708,4 +730,15 @@ function inferEntryName(path: string): string {
   const normalized = normalizeSourcePath(path);
   const segments = normalized.split('/');
   return segments.length >= 2 ? segments[segments.length - 2] : normalized;
+}
+
+function classifyPreviewFailure(failureCode?: string): string {
+  if (
+    failureCode === 'RUNJS_IMPORT_NOT_ALLOWED' ||
+    failureCode === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED' ||
+    failureCode === 'RUNJS_IMPORT_NOT_FOUND'
+  ) {
+    return 'unsafe_import_denied';
+  }
+  return failureCode === 'LIGHT_EXTENSION_COMPILE_DENIED' ? 'compile_denied' : 'compile_failed';
 }

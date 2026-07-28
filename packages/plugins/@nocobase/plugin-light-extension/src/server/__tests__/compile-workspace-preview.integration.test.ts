@@ -8,7 +8,6 @@
  */
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
-import { isLightExtensionError } from '../../shared/errors';
 import {
   type LightExtensionPulledFile,
   type LightExtensionRepoRecord,
@@ -22,7 +21,7 @@ import { LightExtensionFileService } from '../services/LightExtensionFileService
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 import { type Context } from '@nocobase/actions';
-import { type Database, type Model, type Transaction } from '@nocobase/database';
+import { type Database, type Model } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs/server';
 import { vi } from 'vitest';
 
@@ -100,18 +99,19 @@ function registerCompilePreviewTests() {
       );
       expect(entriesRepository.create).not.toHaveBeenCalled();
       expect(entriesRepository.update).not.toHaveBeenCalled();
+      expect(recordCompileEvent).toHaveBeenCalledTimes(1);
       expect(recordCompileEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           repoId: repo.id,
-          entryId: 'lee_sales_kpi',
-          result: 'success',
-        }),
-      );
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: repo.id,
-          entryId: 'lee_sales_trend',
           result: 'blocked',
+          reasonCode: 'unsafe_import_denied',
+          details: expect.objectContaining({
+            entryCount: 2,
+            entries: expect.arrayContaining([
+              expect.objectContaining({ entryId: 'lee_sales_kpi', accepted: true }),
+              expect.objectContaining({ entryId: 'lee_sales_trend', accepted: false }),
+            ]),
+          }),
         }),
       );
       expect(JSON.stringify(recordCompileEvent.mock.calls)).not.toContain('ctx.render(<div>{missing}</div>)');
@@ -643,6 +643,7 @@ function registerCompilePreviewTests() {
       const { db } = createDbStub([]);
       const fileService = createFileServiceStub(repo, validSalesKpiFiles());
       const { service, recordCompileEvent } = createPreviewService(db, fileService);
+      const can = vi.fn(() => null);
 
       await expect(
         service.compilePreview(
@@ -652,7 +653,7 @@ function registerCompilePreviewTests() {
           {
             requestId: 'req_compile_preview_denied',
             actorUserId: '2',
-            can: () => null,
+            can,
           },
         ),
       ).rejects.toMatchObject({
@@ -661,6 +662,8 @@ function registerCompilePreviewTests() {
       });
 
       expect(fileService.pull).not.toHaveBeenCalled();
+      expect(can).toHaveBeenCalledTimes(1);
+      expect(recordCompileEvent).toHaveBeenCalledTimes(1);
       expect(recordCompileEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           repoId: repo.id,
@@ -780,7 +783,7 @@ function registerCompilePreviewTests() {
     const auditService = new LightExtensionAuditService(db);
     const recordCompileEvent = vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
     const permissionService = new LightExtensionPermissionService(auditService);
-    const bridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
+    const bridge = new LightExtensionWorkspaceCompilerBridge();
     const service = new LightExtensionCompilePreviewService(
       db,
       auditService,
@@ -956,13 +959,9 @@ function registerWorkspaceCompilerBridgeTests() {
 
   describe('plugin-light-extension workspace compiler bridge', () => {
     let bridge: LightExtensionWorkspaceCompilerBridge;
-    let recordCompileEvent: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-      const auditService = new LightExtensionAuditService({} as Database);
-      recordCompileEvent = vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
-      const permissionService = new LightExtensionPermissionService(auditService);
-      bridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
+      bridge = new LightExtensionWorkspaceCompilerBridge();
     });
 
     it('compiles a js-block entry into the shared RunJS artifact contract', async () => {
@@ -1016,29 +1015,6 @@ function registerWorkspaceCompilerBridgeTests() {
       });
       expect(rendered).toEqual([{ type: 'div', props: null, child: 'Sales KPI' }]);
       expect(result.artifact.sourceMap).toBeTruthy();
-
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          result: 'success',
-          repoId: 'ler_sales',
-          entryId: 'lee_sales_kpi',
-          requestId: 'req_compile_success',
-        }),
-      );
-      expect(recordCompileEvent.mock.calls[0][0]).toMatchObject({
-        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        surfaceStyle: 'render',
-        diagnosticCount: 0,
-        errorCount: 0,
-        warningCount: 0,
-      });
-      expect(recordCompileEvent.mock.calls[0][0].details).toMatchObject({
-        artifactEntryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        filesHash: expect.any(String),
-        requestSource: 'unit-test',
-        surface: 'js-model.render',
-        modelUse: 'JSBlockModel',
-      });
     });
 
     it('compiles JS Page entries through the existing render artifact contract', async () => {
@@ -1100,65 +1076,23 @@ function registerWorkspaceCompilerBridgeTests() {
       expect(rendered).toEqual(['page-1:Orders']);
     });
 
-    it('defers a successful runtime compile audit until the result is published', async () => {
-      const result = await bridge.compileEntry(
-        {
-          repoId: 'ler_deferred_audit',
-          entryId: 'lee_deferred_audit',
-          operation: 'runtimeCompile',
-          kind: 'js-block',
-          entryName: 'deferred-audit',
-          entryPath: 'src/client/js-blocks/deferred-audit/index.tsx',
-          files: [
-            {
-              path: 'src/client/js-blocks/deferred-audit/index.tsx',
-              content: 'ctx.render(<div>Deferred audit</div>);\n',
-            },
-          ],
-        },
-        {
-          requestId: 'req_deferred_audit',
-          requestSource: 'save-source-prepare',
-          actorUserId: '1',
-          deferSuccessfulCompileAudit: true,
-        },
-      );
+    it('compiles without permission or audit dependencies', async () => {
+      const result = await bridge.compileEntry({
+        repoId: 'ler_deferred_audit',
+        entryId: 'lee_deferred_audit',
+        operation: 'runtimeCompile',
+        kind: 'js-block',
+        entryName: 'deferred-audit',
+        entryPath: 'src/client/js-blocks/deferred-audit/index.tsx',
+        files: [
+          {
+            path: 'src/client/js-blocks/deferred-audit/index.tsx',
+            content: 'ctx.render(<div>Deferred audit</div>);\n',
+          },
+        ],
+      });
 
       expect(result.accepted).toBe(true);
-      expect(recordCompileEvent).not.toHaveBeenCalled();
-
-      const transaction = {} as Transaction;
-      await bridge.recordPublishedRuntimeCompileAudit(
-        {
-          repoId: 'ler_deferred_audit',
-          entryId: 'lee_deferred_audit',
-          kind: 'js-block',
-          entryName: 'deferred-audit',
-          entryPath: 'src/client/js-blocks/deferred-audit/index.tsx',
-          runtimeVersion: result.artifact.version,
-          requestId: 'req_deferred_audit',
-          diagnostics: result.diagnostics,
-          filesHash: result.artifact.filesHash,
-          artifactEntryPath: result.artifact.entryPath,
-        },
-        {
-          requestSource: 'save-source-publish',
-          actorUserId: '1',
-          transaction,
-        },
-      );
-
-      expect(recordCompileEvent).toHaveBeenCalledTimes(1);
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'runtimeCompile',
-          result: 'success',
-          repoId: 'ler_deferred_audit',
-          entryId: 'lee_deferred_audit',
-          requestId: 'req_deferred_audit',
-          transaction,
-        }),
-      );
     });
 
     it('compiles shared helper imports and zero-runtime SDK helpers for light extension entries', async () => {
@@ -1480,15 +1414,6 @@ function registerWorkspaceCompilerBridgeTests() {
           compilerSurfaceStyle: 'render',
         }),
       });
-
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          result: 'success',
-          repoId: 'ler_sales',
-          entryId: 'lee_customer_menu',
-          requestId: 'req_compile_js_item',
-        }),
-      );
     });
 
     it('uses compiler-owned runtime global validation for js-block render surfaces', async () => {
@@ -1534,144 +1459,3 @@ function registerWorkspaceCompilerBridgeTests() {
   });
 }
 registerWorkspaceCompilerBridgeTests();
-
-// Consolidated from workspace-compiler-bridge-permissions.test.ts.
-function registerWorkspaceCompilerPermissionTests() {
-  describe('plugin-light-extension workspace compiler bridge permissions', () => {
-    let bridge: LightExtensionWorkspaceCompilerBridge;
-    let recordCompileEvent: ReturnType<typeof vi.fn>;
-
-    beforeEach(() => {
-      const auditService = new LightExtensionAuditService({} as Database);
-      recordCompileEvent = vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
-      const permissionService = new LightExtensionPermissionService(auditService);
-      bridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-    });
-
-    it('requires light-extension compilePreview permission when a request can-check is present', async () => {
-      const compile = bridge.compileEntry(
-        {
-          repoId: 'ler_denied',
-          kind: 'js-block',
-          entryName: 'secret-block',
-          entryPath: 'src/client/js-blocks/secret-block/index.tsx',
-          files: [
-            {
-              path: 'src/client/js-blocks/secret-block/index.tsx',
-              content: 'const token = "secret-code";\nctx.render(<div>{token}</div>);\n',
-            },
-            {
-              path: 'src/client/js-blocks/secret-block/settings.json',
-              content: '{"token":"secret-settings"}',
-            },
-          ],
-        },
-        {
-          requestId: 'req_compile_permission_denied',
-          actorUserId: '2',
-          can: () => null,
-        },
-      );
-
-      await expect(compile).rejects.toMatchObject({
-        code: 'LIGHT_EXTENSION_PERMISSION_DENIED',
-        status: 403,
-      });
-
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          result: 'blocked',
-          reasonCode: 'permission_denied',
-          actorUserId: '2',
-          requestId: 'req_compile_permission_denied',
-        }),
-      );
-      expect(JSON.stringify(recordCompileEvent.mock.calls[0][0])).not.toContain('secret-code');
-      expect(JSON.stringify(recordCompileEvent.mock.calls[0][0])).not.toContain('secret-settings');
-    });
-
-    it('allows compilePreview when the light-extension permission check succeeds', async () => {
-      const result = await bridge.compileEntry(
-        {
-          repoId: 'ler_allowed',
-          kind: 'js-block',
-          entryName: 'allowed-block',
-          entryPath: 'src/client/js-blocks/allowed-block/index.tsx',
-          files: [
-            {
-              path: 'src/client/js-blocks/allowed-block/index.tsx',
-              content: 'ctx.render(<div>ok</div>);\n',
-            },
-          ],
-        },
-        {
-          requestId: 'req_compile_permission_allowed',
-          can: (input) => (input.resource === 'lightExtension' && input.action === 'compilePreview' ? {} : null),
-        },
-      );
-
-      expect(result.accepted).toBe(true);
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'compilePreview',
-        }),
-      );
-    });
-
-    it('does not require compilePreview permission for runtime compilation and records the runtime operation', async () => {
-      const can = vi.fn(() => null);
-      const result = await bridge.compileEntry(
-        {
-          repoId: 'ler_runtime',
-          operation: 'runtimeCompile',
-          kind: 'js-block',
-          entryName: 'runtime-block',
-          entryPath: 'src/client/js-blocks/runtime-block/index.tsx',
-          files: [
-            {
-              path: 'src/client/js-blocks/runtime-block/index.tsx',
-              content: 'ctx.render(<div>runtime</div>);\n',
-            },
-          ],
-        },
-        {
-          requestId: 'req_runtime_compile',
-          can,
-        },
-      );
-
-      expect(result.accepted).toBe(true);
-      expect(can).not.toHaveBeenCalled();
-      expect(recordCompileEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'runtimeCompile',
-          result: 'success',
-          requestId: 'req_runtime_compile',
-        }),
-      );
-    });
-
-    it('keeps permission errors typed as light-extension errors', async () => {
-      try {
-        await bridge.compileEntry(
-          {
-            kind: 'js-block',
-            entryPath: 'src/client/js-blocks/typed-error/index.tsx',
-            files: [{ path: 'src/client/js-blocks/typed-error/index.tsx', content: 'ctx.render(null);\n' }],
-          },
-          {
-            can: () => false,
-          },
-        );
-        throw new Error('Expected compile permission to be denied');
-      } catch (error) {
-        expect(isLightExtensionError(error)).toBe(true);
-        expect(error).toMatchObject({
-          code: 'LIGHT_EXTENSION_PERMISSION_DENIED',
-          status: 403,
-        });
-      }
-    });
-  });
-}
-registerWorkspaceCompilerPermissionTests();
