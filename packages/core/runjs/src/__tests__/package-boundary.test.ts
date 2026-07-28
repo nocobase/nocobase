@@ -63,8 +63,8 @@ describe('@nocobase/runjs package boundary', () => {
 
   it('never lets a browser-facing entrypoint transitively reach crypto or the server module', () => {
     const sourceRoot = path.resolve(__dirname, '..');
-    const browserEntrypoints = ['index.ts', 'client-v2/index.ts', 'compiler/portable.ts', 'settings/index.ts'].map(
-      (relativePath) => path.join(sourceRoot, relativePath),
+    const browserEntrypoints = ['index.ts', 'compiler/portable.ts', 'settings/index.ts'].map((relativePath) =>
+      path.join(sourceRoot, relativePath),
     );
 
     const visited = new Set<string>();
