@@ -225,7 +225,7 @@ function normalizePortalType(value?: string | null) {
 
 function normalizePortalSourceStorage(value?: string | null): PortalSourceStorage {
   const trimmed = normalizeOptionalString(value);
-  if (trimmed && PORTAL_SOURCE_STORAGE_VALUES.some((item) => item === trimmed)) {
+  if (trimmed === 'nocobase' || trimmed === 'git') {
     return trimmed;
   }
   return DEFAULT_PORTAL_SOURCE_STORAGE;
