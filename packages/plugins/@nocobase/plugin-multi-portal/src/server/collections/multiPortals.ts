@@ -48,6 +48,7 @@ export default defineCollection({
     {
       name: 'portalName',
       type: 'string',
+      field: 'routeName',
       allowNull: false,
     },
     {
