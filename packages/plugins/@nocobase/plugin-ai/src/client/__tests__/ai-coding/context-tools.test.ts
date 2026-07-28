@@ -226,6 +226,42 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     expect(chatMessageModel.currentEditorRefUid).toBeNull();
   });
 
+  it('rejects a patch with a bare hunk header without mutating the editor', async () => {
+    let code = 'const label = "old";\nctx.render(label);\n';
+    const editorState = createEditorToolState('editor-bare-hunk-patch', {
+      read: () => code,
+      write: (nextCode: string) => {
+        code = nextCode;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    const app = {} as Parameters<NonNullable<(typeof patchJSCodeTool)[1]['invoke']>>[0];
+
+    const result = await patchJSCodeTool[1].invoke.call(editorState, app, {
+      patch: `@@
+-const label = "old";
++const label = "new";
+`,
+    });
+    const readResult = await readJSCodeTool[1].invoke.call(editorState, app, {});
+
+    expect(result.status).toBe('error');
+    expect(result.content.message).toContain('bare `@@` headers are not supported');
+    expect(code).toBe('const label = "old";\nctx.render(label);\n');
+    expect(readResult.content.version).toBe(0);
+  });
+
+  it('rejects a valid patch that produces no changes', () => {
+    const source = 'const label = "old";\n';
+    const patch = `@@ -1,1 +1,1 @@
+-const label = "old";
++const label = "old";
+`;
+
+    expect(() => applyUnifiedDiff(source, patch)).toThrow('Patch produced no changes');
+  });
+
   it('returns a structured error when writeJSCode receives invalid params', async () => {
     let code = 'const value = 1;';
     const editorState = createEditorToolState('editor-invalid-write', {

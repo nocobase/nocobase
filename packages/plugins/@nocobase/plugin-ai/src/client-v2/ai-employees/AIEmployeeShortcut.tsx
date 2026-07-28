@@ -126,7 +126,8 @@ export const AIEmployeeShortcut: React.FC<{
           targetChatBox.syncContextItems(shortcutContext);
           return;
         }
-        chat.for(resolvedRuntime.chatConversationModel.currentConversation).addContextItems(shortcutContext);
+        const activeConversation = resolvedRuntime.chatConversationModel.currentConversation;
+        chat.for(activeConversation).addContextItems(shortcutContext);
         syncContextAttachments(shortcutContext);
       },
       [chat, getShortcutContext, resolvedRuntime.chatConversationModel, syncContextAttachments],

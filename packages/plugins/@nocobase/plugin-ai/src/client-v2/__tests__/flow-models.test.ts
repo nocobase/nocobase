@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FormBlockModel, FormItemModel } from '@nocobase/client-v2';
 import type { FlowModel } from '@nocobase/flow-engine';
 import { FlowEngine, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
-import { FormItemModel } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowModelsContext } from '../ai-employees/context/flow-models';
 
@@ -133,25 +133,31 @@ const createFormItemModel = (collectionField: Record<string, unknown>, label?: s
   define('collectionField', collectionField);
   define('props', label === undefined ? {} : { label });
   define('_options', { uid: 'form-item', use: 'FormItemModel' });
+  define('subModels', {});
   define('uid', 'form-item');
   define('title', collectionField.title);
   define('use', 'FormItemModel');
   return item;
 };
 
-const createFormModel = (items: FormItemModel[], value: Record<string, unknown> = {}): FlowModel =>
-  ({
-    uid: 'form-block',
-    form: { getFieldsValue: vi.fn().mockReturnValue(value) },
-    subModels: { items },
-  }) as unknown as FlowModel;
+const createFormModel = (items: FormItemModel[], value: Record<string, unknown> = {}): FormBlockModel => {
+  const form = Object.create(FormBlockModel.prototype) as FormBlockModel;
+  const define = (key: string, propertyValue: unknown) =>
+    Object.defineProperty(form, key, { value: propertyValue, configurable: true });
+  define('uid', 'form-block');
+  define('title', 'Form block');
+  define('use', 'FormBlockModel');
+  define('form', { getFieldsValue: vi.fn().mockReturnValue(value) });
+  define('subModels', { items });
+  return form;
+};
 
 describe('FlowModelsContext form field titles', () => {
   it('prefers the custom form item label over the collection field title', async () => {
     const address = createFormItemModel({ name: 'address', type: 'text', title: '地址' }, '改善措施');
     const content = await parseContextContent(createFormModel([address]));
 
-    expect(content.fields).toEqual([expect.objectContaining({ name: 'address', title: '改善措施' })]);
+    expect(content.fields).toEqual([expect.objectContaining({ name: 'address', title: '改善措施', type: 'text' })]);
   });
 
   it('falls back to the collection field title when no custom label is set', async () => {
@@ -177,6 +183,7 @@ describe('FlowModelsContext form field titles', () => {
       uid: 'root',
       title: 'Root',
       use: 'SomeContainerModel',
+      props: {},
       subModels: { items: [address] },
     } as unknown as FlowModel;
     const content = await parseContextContent(root);

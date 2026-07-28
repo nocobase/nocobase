@@ -45,6 +45,7 @@ const mocks = vi.hoisted(() => ({
   clear: vi.fn(),
   triggerTask: vi.fn().mockResolvedValue(undefined),
   refreshConversations: vi.fn(),
+  chatFor: vi.fn(),
   addContextItems: vi.fn(),
   addContextItemsForSession: vi.fn(),
   syncContextAttachments: vi.fn(),
@@ -111,12 +112,15 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
 vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
   useChat: () => ({
     addContextItems: mocks.addContextItems,
-    for: (sessionId?: string) => ({
-      addContextItems: (items: unknown) => {
-        mocks.addContextItemsForSession(sessionId, items);
-        mocks.addContextItems(items);
-      },
-    }),
+    for: (sessionId?: string) => {
+      mocks.chatFor(sessionId);
+      return {
+        addContextItems: (items: unknown) => {
+          mocks.addContextItemsForSession(sessionId, items);
+          mocks.addContextItems(items);
+        },
+      };
+    },
   }),
 }));
 
@@ -178,6 +182,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.eventBus.removeEventListener.mockClear();
     mocks.refreshConversations.mockClear();
     mocks.runtime.chatConversationModel.setConversationRead.mockClear();
+    mocks.chatFor.mockClear();
     mocks.addContextItems.mockClear();
     mocks.addContextItemsForSession.mockClear();
     mocks.syncContextAttachments.mockClear();
@@ -186,6 +191,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.renderConfigureItems.mockClear();
     mocks.flowModelRendererProps = [];
     mocks.runtime.getScope = undefined;
+    mocks.runtime.chatConversationModel.currentConversation = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
     mocks.runtime.chatConversationModel.currentConversation = undefined;
@@ -210,6 +216,7 @@ describe('AIChatBoxView mounted registry', () => {
     });
     mocks.runtime.chatConversationModel.currentConversation = 'session-2';
     entry?.syncContextItems([{ type: 'flow-model', uid: 'block-1' }]);
+    expect(mocks.chatFor).toHaveBeenCalledWith('session-2');
     expect(mocks.addContextItems).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.addContextItemsForSession).toHaveBeenCalledWith('session-2', [{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.syncContextAttachments).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);

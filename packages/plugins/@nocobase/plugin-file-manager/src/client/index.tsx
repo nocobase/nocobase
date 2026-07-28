@@ -23,6 +23,7 @@ import { UploadActionModel } from '../client-v2/models/UploadActionModel';
 import { FilePreviewRenderer, getDownloadFileName, getFileUrl, isPdfFile } from './previewer/filePreviewTypes';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
+import { UseOriginalUrlRadio } from './UseOriginalUrlRadio';
 
 function AttachmentPdfPreviewer({ index, list, onSwitchIndex }) {
   const file = list[index];
@@ -116,6 +117,7 @@ export class PluginFileManagerClient extends Plugin {
 
     this.app.addComponents({
       FileSizeField,
+      UseOriginalUrlRadio,
     });
 
     this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel });

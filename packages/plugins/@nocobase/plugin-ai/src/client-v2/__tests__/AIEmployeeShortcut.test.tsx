@@ -123,7 +123,7 @@ vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
 
 describe('AIEmployeeShortcut', () => {
   beforeEach(() => {
-    triggerTask.mockClear();
+    triggerTask.mockReset().mockResolvedValue(undefined);
     clear.mockClear();
     addContextItems.mockClear();
     addContextItemsForSession.mockClear();
