@@ -19,6 +19,18 @@ import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
 
 type MultiPortalPrimaryKey = string;
+type PortalSourceStorage = 'nocobase' | 'git';
+
+type MultiPortalGitOptions = {
+  branch?: string;
+  path?: string;
+  repo?: string;
+};
+
+type MultiPortalOptions = {
+  git?: MultiPortalGitOptions;
+  sourceStorage?: PortalSourceStorage;
+};
 
 export type MultiPortalRecord = MultiPortalFormValues & {
   defaultPortal?: boolean;
@@ -38,10 +50,16 @@ export type MultiPortalFormValues = {
   uiLayoutUid?: string | null;
   icon?: string | null;
   enabled: boolean;
+  options?: MultiPortalOptions;
 };
 
 type MultiPortalFormDraftValues = Omit<MultiPortalFormValues, 'routePath'> &
-  Partial<Pick<MultiPortalFormValues, 'routePath'>>;
+  Partial<Pick<MultiPortalFormValues, 'routePath'>> & {
+    gitBranch?: string;
+    gitPath?: string;
+    gitRepo?: string;
+    sourceStorage?: PortalSourceStorage;
+  };
 
 type MultiPortalListBody = {
   data?: MultiPortalRecord[];
@@ -127,6 +145,10 @@ export async function deleteMultiPortals(args: {
 
 const DEFAULT_PORTAL_TYPE = 'no-code';
 const PORTAL_TYPE_VALUES = ['no-code', 'ai'] as const;
+const DEFAULT_PORTAL_SOURCE_STORAGE: PortalSourceStorage = 'nocobase';
+const PORTAL_SOURCE_STORAGE_VALUES = ['nocobase', 'git'] as const;
+const DEFAULT_PORTAL_GIT_BRANCH = 'main';
+const DEFAULT_PORTAL_GIT_PATH = '';
 
 const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'enabled'> = {
   portalType: DEFAULT_PORTAL_TYPE,
@@ -136,6 +158,18 @@ const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'enabled'> =
 const actionLinkButtonStyle: React.CSSProperties = {
   paddingInline: 0,
 };
+
+const describedRadioStyle: React.CSSProperties = {
+  alignItems: 'flex-start',
+};
+
+const describedRadioClassName = 'multi-portal-described-radio';
+const describedRadioCss = `
+.${describedRadioClassName} .ant-radio {
+  align-self: flex-start;
+  margin-top: 3px;
+}
+`;
 
 const DEFAULT_PORTAL_UIDS = new Set(['__default_portal__']);
 const portalSlugPattern = /^[a-z0-9_-]+$/;
@@ -189,6 +223,56 @@ function normalizePortalType(value?: string | null) {
   return DEFAULT_PORTAL_TYPE;
 }
 
+function normalizePortalSourceStorage(value?: string | null): PortalSourceStorage {
+  const trimmed = normalizeOptionalString(value);
+  if (trimmed && PORTAL_SOURCE_STORAGE_VALUES.some((item) => item === trimmed)) {
+    return trimmed;
+  }
+  return DEFAULT_PORTAL_SOURCE_STORAGE;
+}
+
+function normalizeMultiPortalOptions(options?: MultiPortalOptions | null): MultiPortalOptions | undefined {
+  if (!options || typeof options !== 'object') {
+    return undefined;
+  }
+
+  const sourceStorage = normalizePortalSourceStorage(options.sourceStorage);
+  if (sourceStorage !== 'git') {
+    return { ...options, sourceStorage };
+  }
+
+  return {
+    ...options,
+    sourceStorage,
+    git: {
+      ...options.git,
+      repo: normalizeOptionalString(options.git?.repo) || '',
+      branch: normalizeOptionalString(options.git?.branch) || DEFAULT_PORTAL_GIT_BRANCH,
+      path: normalizeOptionalString(options.git?.path) || DEFAULT_PORTAL_GIT_PATH,
+    },
+  };
+}
+
+function getSourceStorageOptionsFromDraft(values: MultiPortalFormDraftValues): MultiPortalOptions | undefined {
+  if (normalizePortalType(values.portalType) !== 'ai') {
+    return undefined;
+  }
+
+  const sourceStorage = normalizePortalSourceStorage(values.sourceStorage);
+  if (sourceStorage !== 'git') {
+    return { sourceStorage };
+  }
+
+  return {
+    sourceStorage,
+    git: {
+      repo: (values.gitRepo ?? '').trim(),
+      branch: normalizeOptionalString(values.gitBranch) || DEFAULT_PORTAL_GIT_BRANCH,
+      path: normalizeOptionalString(values.gitPath) || DEFAULT_PORTAL_GIT_PATH,
+    },
+  };
+}
+
 function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): MultiPortalFormValues {
   const routeName = values.routeName.trim();
   const routeNameError = getMultiPortalRouteNameFormatError(routeName);
@@ -203,6 +287,7 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
     routeName,
     routePath: getMultiPortalRoutePathFromSlug(routeName),
     icon: normalizeMultiPortalIcon(values.icon),
+    options: getSourceStorageOptionsFromDraft(values),
   };
 }
 
@@ -231,6 +316,7 @@ function getDefaultUiLayoutUid(items?: UiLayoutOptionRecord[]) {
 }
 
 function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
+  const options = normalizeMultiPortalOptions(record.options);
   return {
     title: record.title,
     uid: record.uid,
@@ -240,6 +326,19 @@ function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
     uiLayoutUid: record.uiLayoutUid || record.uiLayout?.uid || '',
     icon: record.icon ?? null,
     enabled: record.enabled,
+    ...(options ? { options } : {}),
+  };
+}
+
+function toFormDraftValues(record: MultiPortalRecord): MultiPortalFormDraftValues {
+  const values = toFormValues(record);
+  const options = values.options;
+  return {
+    ...values,
+    sourceStorage: normalizePortalSourceStorage(options?.sourceStorage),
+    gitRepo: options?.git?.repo || '',
+    gitBranch: options?.git?.branch || DEFAULT_PORTAL_GIT_BRANCH,
+    gitPath: options?.git?.path || DEFAULT_PORTAL_GIT_PATH,
   };
 }
 
@@ -506,10 +605,13 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(
     () =>
       record
-        ? toFormValues(record)
+        ? toFormDraftValues(record)
         : {
             ...defaultFormValues,
             uid: `portal-${randomId()}`,
+            sourceStorage: DEFAULT_PORTAL_SOURCE_STORAGE,
+            gitBranch: DEFAULT_PORTAL_GIT_BRANCH,
+            gitPath: DEFAULT_PORTAL_GIT_PATH,
           },
     [record],
   );
@@ -551,6 +653,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
+      <style>{describedRadioCss}</style>
       <Form form={form} layout="vertical" initialValues={initialValues}>
         <Form.Item
           name="title"
@@ -589,13 +692,18 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         >
           <Radio.Group disabled={record?.defaultPortal}>
             <Space direction="vertical">
-              <Radio id="multi-portal-portal-type-no-code" value="no-code">
+              <Radio
+                className={describedRadioClassName}
+                id="multi-portal-portal-type-no-code"
+                style={describedRadioStyle}
+                value="no-code"
+              >
                 <span>{t('No-code portal')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
                   {t('Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>')}
                 </div>
               </Radio>
-              <Radio value="ai">
+              <Radio className={describedRadioClassName} style={describedRadioStyle} value="ai">
                 <span>{t('AI portal')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
                   {t('Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>')}
@@ -603,6 +711,67 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
               </Radio>
             </Space>
           </Radio.Group>
+        </Form.Item>
+        <Form.Item noStyle shouldUpdate={(prev, next) => prev.portalType !== next.portalType}>
+          {({ getFieldValue }) =>
+            getFieldValue('portalType') === 'ai' ? (
+              <>
+                <Form.Item
+                  name="sourceStorage"
+                  label={t('Source storage')}
+                  htmlFor="multi-portal-source-storage-nocobase"
+                  rules={[{ required: true, message: t('The field value is required') }]}
+                >
+                  <Radio.Group>
+                    <Space direction="vertical">
+                      <Radio
+                        className={describedRadioClassName}
+                        id="multi-portal-source-storage-nocobase"
+                        style={describedRadioStyle}
+                        value="nocobase"
+                      >
+                        <span>{t('NocoBase')}</span>
+                        <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                          {t('Manage portal source code in NocoBase.')}
+                        </div>
+                      </Radio>
+                      <Radio className={describedRadioClassName} style={describedRadioStyle} value="git">
+                        <span>{t('Git')}</span>
+                        <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                          {t('Manage portal source code in a Git repository.')}
+                        </div>
+                      </Radio>
+                    </Space>
+                  </Radio.Group>
+                </Form.Item>
+                <Form.Item noStyle shouldUpdate={(prev, next) => prev.sourceStorage !== next.sourceStorage}>
+                  {({ getFieldValue: getStorageFieldValue }) =>
+                    getStorageFieldValue('sourceStorage') === 'git' ? (
+                      <>
+                        <Form.Item
+                          name="gitRepo"
+                          label={t('Git repository URL')}
+                          rules={[{ required: true, whitespace: true, message: t('The field value is required') }]}
+                        >
+                          <Input placeholder="git@github.com:nocobase/customer-portal.git" />
+                        </Form.Item>
+                        <Form.Item name="gitBranch" label={t('Git branch')}>
+                          <Input placeholder={DEFAULT_PORTAL_GIT_BRANCH} />
+                        </Form.Item>
+                        <Form.Item
+                          name="gitPath"
+                          label={t('Git path')}
+                          extra={t('Directory inside the Git repository for this portal. Leave empty for the root.')}
+                        >
+                          <Input placeholder={DEFAULT_PORTAL_GIT_PATH} />
+                        </Form.Item>
+                      </>
+                    ) : null
+                  }
+                </Form.Item>
+              </>
+            ) : null
+          }
         </Form.Item>
         <Form.Item
           name="uiLayoutUid"
