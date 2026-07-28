@@ -14,13 +14,15 @@ export const skillToolBindingMiddleware = (
   aiEmployee: AIEmployee,
   options: {
     baseToolNames: string[];
+    blockedToolNames?: string[];
   },
 ) => {
   const baseToolNames = new Set(options.baseToolNames ?? []);
+  const blockedToolNames = new Set(options.blockedToolNames ?? []);
 
   const getAllowedToolNames = async () => {
     const activatedSkillToolNames = await aiEmployee.getActivatedSkillToolNames();
-    return new Set([...baseToolNames, ...activatedSkillToolNames]);
+    return new Set([...baseToolNames, ...activatedSkillToolNames].filter((name) => !blockedToolNames.has(name)));
   };
 
   const getToolName = (tool: any) => {

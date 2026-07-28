@@ -18,7 +18,7 @@ export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): Comp
     allowJs: true,
     allowNonTsExtensions: true,
     allowSyntheticDefaultImports: true,
-    allowUmdGlobalAccess: true,
+    allowUmdGlobalAccess: false,
     checkJs: false,
     esModuleInterop: true,
     jsx: ts.JsxEmit.React,
@@ -34,6 +34,166 @@ export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): Comp
     target: ts.ScriptTarget.ES2020,
     types: [],
   };
+}
+
+export function isRunJSUnknownTypeDiagnosticMessage(message: string): boolean {
+  return /(?:^|\b)(?:type|of type) ['"]unknown['"]/.test(message);
+}
+
+export function formatRunJSTypeScriptDiagnosticMessage(code: number, message: string): string {
+  if (code === 2686 && /['"]React['"]/.test(message)) {
+    return "'React' refers to a UMD global and is not available in RunJS modules. Use 'ctx.libs.React' instead.";
+  }
+  return message;
+}
+
+export type RunJSForbiddenTypeScriptDirective = '@ts-expect-error' | '@ts-ignore' | '@ts-nocheck';
+
+export interface RunJSForbiddenTypeScriptDirectiveOccurrence {
+  column: number;
+  directive: RunJSForbiddenTypeScriptDirective;
+  from: number;
+  line: number;
+  to: number;
+}
+
+const forbiddenTypeScriptDirectivePattern = /@ts-(?:nocheck|ignore|expect-error)\b/gi;
+
+export function collectRunJSForbiddenTypeScriptDirectives(
+  source: string,
+): RunJSForbiddenTypeScriptDirectiveOccurrence[] {
+  const occurrences: RunJSForbiddenTypeScriptDirectiveOccurrence[] = [];
+  scanCodeForForbiddenTypeScriptDirectives(source, 0, occurrences);
+  return occurrences;
+}
+
+function scanCodeForForbiddenTypeScriptDirectives(
+  source: string,
+  start: number,
+  occurrences: RunJSForbiddenTypeScriptDirectiveOccurrence[],
+  stopAtTemplateExpressionEnd = false,
+): number {
+  let braceDepth = 0;
+  let index = start;
+
+  while (index < source.length) {
+    const character = source[index];
+    const nextCharacter = source[index + 1];
+
+    if (character === "'" || character === '"') {
+      index = skipQuotedText(source, index, character);
+      continue;
+    }
+
+    if (character === '`') {
+      index = scanTemplateForForbiddenTypeScriptDirectives(source, index, occurrences);
+      continue;
+    }
+
+    if (character === '/' && nextCharacter === '/') {
+      const commentEnd = source.indexOf('\n', index + 2);
+      collectForbiddenDirectivesInComment(source, index, commentEnd < 0 ? source.length : commentEnd, occurrences);
+      index = commentEnd < 0 ? source.length : commentEnd;
+      continue;
+    }
+
+    if (character === '/' && nextCharacter === '*') {
+      const closingIndex = source.indexOf('*/', index + 2);
+      const commentEnd = closingIndex < 0 ? source.length : closingIndex + 2;
+      collectForbiddenDirectivesInComment(source, index, commentEnd, occurrences);
+      index = commentEnd;
+      continue;
+    }
+
+    if (stopAtTemplateExpressionEnd) {
+      if (character === '{') {
+        braceDepth += 1;
+      } else if (character === '}') {
+        if (braceDepth === 0) {
+          return index + 1;
+        }
+        braceDepth -= 1;
+      }
+    }
+
+    index += 1;
+  }
+
+  return index;
+}
+
+function scanTemplateForForbiddenTypeScriptDirectives(
+  source: string,
+  start: number,
+  occurrences: RunJSForbiddenTypeScriptDirectiveOccurrence[],
+): number {
+  let index = start + 1;
+  while (index < source.length) {
+    if (source[index] === '\\') {
+      index += 2;
+      continue;
+    }
+    if (source[index] === '`') {
+      return index + 1;
+    }
+    if (source[index] === '$' && source[index + 1] === '{') {
+      index = scanCodeForForbiddenTypeScriptDirectives(source, index + 2, occurrences, true);
+      continue;
+    }
+    index += 1;
+  }
+  return source.length;
+}
+
+export function formatRunJSForbiddenTypeScriptDirectiveMessage(directive: RunJSForbiddenTypeScriptDirective): string {
+  return `${directive} is not allowed in RunJS source. Fix the TypeScript error instead of suppressing diagnostics.`;
+}
+
+function collectForbiddenDirectivesInComment(
+  source: string,
+  from: number,
+  to: number,
+  occurrences: RunJSForbiddenTypeScriptDirectiveOccurrence[],
+): void {
+  forbiddenTypeScriptDirectivePattern.lastIndex = from;
+  let match = forbiddenTypeScriptDirectivePattern.exec(source);
+  while (match && match.index < to) {
+    const location = getSourceLocation(source, match.index);
+    occurrences.push({
+      column: location.column,
+      directive: match[0].toLowerCase() as RunJSForbiddenTypeScriptDirective,
+      from: match.index,
+      line: location.line,
+      to: match.index + match[0].length,
+    });
+    match = forbiddenTypeScriptDirectivePattern.exec(source);
+  }
+}
+
+function skipQuotedText(source: string, start: number, quote: string): number {
+  let index = start + 1;
+  while (index < source.length) {
+    if (source[index] === '\\') {
+      index += 2;
+      continue;
+    }
+    if (source[index] === quote) {
+      return index + 1;
+    }
+    index += 1;
+  }
+  return source.length;
+}
+
+function getSourceLocation(source: string, position: number): { column: number; line: number } {
+  const lineStart = source.lastIndexOf('\n', position - 1) + 1;
+  let line = 1;
+  for (let index = 0; index < lineStart; index += 1) {
+    if (source[index] === '\n') {
+      line += 1;
+    }
+  }
+  return { column: position - lineStart + 1, line };
 }
 
 const runJSEnvDeclaration = `

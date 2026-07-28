@@ -22,6 +22,7 @@ import {
   FlowContext,
   prepareRunJsCode,
   RUNJS_ALLOWED_BARE_GLOBAL_NAMES,
+  RUNJS_RENDER_ERROR_REPORTER,
   shouldPreprocessRunJSTemplates,
 } from '@nocobase/flow-engine';
 
@@ -926,7 +927,18 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
   return issues;
 }
 
-function createLogCollectors(out: RunJSLog[]) {
+function getRuntimeErrorMessage(error: unknown, fallback = 'Unknown render error'): string {
+  const message =
+    error && typeof error === 'object'
+      ? (error as { message?: unknown }).message
+      : typeof error === 'string'
+        ? error
+        : '';
+  const normalized = safeToString(message || error).trim();
+  return normalized || fallback;
+}
+
+function createLogCollectors(out: RunJSLog[], onRenderError?: (error: unknown, info?: unknown) => void) {
   const push = (level: RunJSLog['level'], args: any[]) => {
     const msg = args
       .map((x) => safeToString(x))
@@ -951,8 +963,18 @@ function createLogCollectors(out: RunJSLog[]) {
     fatal: (...args: any[]) => push('error', args),
     child: () => loggerCapture,
   };
+  Object.defineProperty(loggerCapture, RUNJS_RENDER_ERROR_REPORTER, {
+    configurable: false,
+    enumerable: false,
+    value: (error: unknown, info?: unknown) => onRenderError?.(error, info),
+  });
 
   return { consoleCapture, loggerCapture };
+}
+
+async function settleRunJSRender(): Promise<void> {
+  await Promise.resolve();
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 function pickKeyRuntimeIssue(runtimeIssues: RunJSIssue[]): RunJSIssue | undefined {
@@ -961,6 +983,7 @@ function pickKeyRuntimeIssue(runtimeIssues: RunJSIssue[]): RunJSIssue | undefine
     timeout: 0,
     internal: 1,
     'preview-start-failed': 2,
+    'render-error': 3,
   };
   return [...runtimeIssues].sort((a, b) => {
     const pa = priority[String(a.ruleId || '')] ?? 10;
@@ -1138,6 +1161,8 @@ export async function diagnoseRunJS(
   const src = typeof code === 'string' ? code : String(code ?? '');
   const logs: RunJSLog[] = [];
   const issues: RunJSIssue[] = [];
+  const renderErrors: unknown[] = [];
+  const renderErrorKeys = new Set<string>();
   const version = options?.version;
   const debugSourceMap = parseRunJSDebugSourceMap(options?.sourceMap);
   const preprocessTemplates = shouldPreprocessRunJSTemplates({ version });
@@ -1153,7 +1178,20 @@ export async function diagnoseRunJS(
   try {
     execution.started = true;
 
-    const { consoleCapture, loggerCapture } = createLogCollectors(logs);
+    const { consoleCapture, loggerCapture } = createLogCollectors(logs, (error) => {
+      const message = getRuntimeErrorMessage(error);
+      const stack =
+        error && typeof error === 'object' && typeof (error as { stack?: unknown }).stack === 'string'
+          ? String((error as { stack: string }).stack)
+          : '';
+      const key = `${message}\n${stack}`;
+      if (renderErrorKeys.has(key)) {
+        return;
+      }
+      renderErrorKeys.add(key);
+      renderErrors.push(error);
+      logs.push({ level: 'error', message });
+    });
 
     const baseGlobals: Record<string, any> = { console: consoleCapture };
     if (typeof window !== 'undefined') {
@@ -1200,8 +1238,34 @@ export async function diagnoseRunJS(
     const runjsCtx = (runner as any).globals.ctx;
     runjsCtx.defineProperty('logger', { value: loggerCapture });
     const res = await runner.run(prepared);
+    if (!res?.timeout) {
+      await settleRunJSRender();
+    }
     execution.finished = true;
     execution.timeout = !!res?.timeout;
+
+    for (const captured of renderErrors) {
+      const rawStack =
+        captured && typeof captured === 'object' && typeof (captured as { stack?: unknown }).stack === 'string'
+          ? String((captured as { stack: string }).stack)
+          : '';
+      const mappedFrame = getFirstMappedRunJSStackFrame(rawStack, debugSourceMap);
+      issues.push({
+        type: 'runtime',
+        ruleId: 'render-error',
+        message: getRuntimeErrorMessage(captured),
+        sourcePath: mappedFrame?.source,
+        location: mappedFrame
+          ? {
+              start: {
+                line: mappedFrame.line,
+                column: mappedFrame.column,
+              },
+            }
+          : undefined,
+        stack: safeStack(captured, MAX_STACK_CHARS, debugSourceMap),
+      });
+    }
 
     if (!res?.success) {
       const err = res?.error;

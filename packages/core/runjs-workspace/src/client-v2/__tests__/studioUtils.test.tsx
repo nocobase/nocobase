@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { buildRunJSImportModuleCompletionSignature } from '../runjs-studio/studioUtils';
+import { appendRunDiagnostics, buildRunJSImportModuleCompletionSignature } from '../runjs-studio/studioUtils';
 import type { RunJSWorkspaceFile } from '../runjs-studio/types';
 
 function workspaceFile(path: string, content = ''): RunJSWorkspaceFile {
@@ -34,5 +34,29 @@ describe('buildRunJSImportModuleCompletionSignature', () => {
         'src/client/index.tsx',
       ),
     );
+  });
+});
+
+describe('appendRunDiagnostics', () => {
+  it('shows a captured render error once in the Studio console', () => {
+    const appendConsole = vi.fn();
+
+    appendRunDiagnostics(
+      {
+        execution: { finished: true, started: true, timeout: false },
+        issues: [{ type: 'runtime', ruleId: 'render-error', message: 'rawData.some is not a function' }],
+        logs: [{ level: 'error', message: 'rawData.some is not a function' }],
+      },
+      appendConsole,
+    );
+
+    expect(appendConsole).toHaveBeenCalledTimes(1);
+    expect(appendConsole).toHaveBeenCalledWith({
+      column: undefined,
+      level: 'error',
+      line: undefined,
+      message: 'rawData.some is not a function',
+      path: undefined,
+    });
   });
 });

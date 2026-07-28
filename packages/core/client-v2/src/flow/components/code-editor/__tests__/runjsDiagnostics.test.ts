@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { diagnoseRunJS, previewRunJS, MAX_MESSAGE_CHARS, formatRunJSPreviewMessage } from '../runjsDiagnostics';
-import { FlowContext, JSRunner } from '@nocobase/flow-engine';
+import { FlowContext, FlowEngine, JSRunner } from '@nocobase/flow-engine';
 
 describe('runjsDiagnostics', () => {
   const createTestCtx = () => {
@@ -91,6 +91,40 @@ ctx.render(<div />);
     const res = await diagnoseRunJS('ctx.render("ok");', ctx);
 
     expect(res.issues.some((i) => i.type === 'runtime')).toBe(false);
+  });
+
+  it('reports React render errors as runtime issues and captured error logs', async () => {
+    const engine = new FlowEngine();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      const res = await diagnoseRunJS(
+        `
+const { React } = ctx.libs;
+function BrokenCustomerList() {
+  const rawData = {};
+  rawData.some(() => true);
+  return React.createElement('div', null, 'ok');
+}
+ctx.render(React.createElement(BrokenCustomerList));
+`,
+        engine.context,
+      );
+
+      expect(res.issues).toContainEqual(
+        expect.objectContaining({
+          type: 'runtime',
+          ruleId: 'render-error',
+          message: expect.stringContaining('rawData.some is not a function'),
+        }),
+      );
+      expect(res.logs).toContainEqual({
+        level: 'error',
+        message: expect.stringContaining('rawData.some is not a function'),
+      });
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it('reports suspicious short ctx member call as a lint issue', async () => {

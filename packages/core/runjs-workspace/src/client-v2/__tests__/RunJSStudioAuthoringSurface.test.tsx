@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => {
     authoringSurfaces,
     request: vi.fn(),
     t: (key: string) => key,
+    unstableTranslation: false,
   };
 });
 
@@ -88,7 +89,9 @@ vi.mock('@nocobase/client-v2', () => ({
   },
 }));
 
-vi.mock('../locale', () => ({ useT: () => mocks.t }));
+vi.mock('../locale', () => ({
+  useT: () => (mocks.unstableTranslation ? (key: string) => key : mocks.t),
+}));
 
 const locator = {
   kind: 'flowModel.step',
@@ -173,6 +176,7 @@ async function getSurface() {
 describe('RunJS Studio authoring surface', () => {
   beforeEach(() => {
     mocks.authoringSurfaces.clear();
+    mocks.unstableTranslation = false;
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: { entryPath?: string } }) => {
       if (url === 'runJSSources:open') {
         return Promise.resolve({ data: { data: openResult } });
@@ -252,5 +256,33 @@ describe('RunJS Studio authoring surface', () => {
 
     rendered.unmount();
     expect(mocks.authoringSurfaces.size).toBe(0);
+  });
+
+  it('keeps the registered surface alive when the studio rerenders after applying a draft', async () => {
+    mocks.unstableTranslation = true;
+    const rendered = renderEditor();
+    const surface = await getSurface();
+    const snapshot = await surface.getSnapshot();
+    const entry = snapshot.files.find((file) => file.path === 'src/client/index.tsx');
+    const plan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: [
+        {
+          type: 'update',
+          path: 'src/client/index.tsx',
+          baseHash: entry?.hash || '',
+          content: 'return 2;',
+        },
+      ],
+    });
+
+    await act(async () => {
+      await surface.applyPreparedChanges(plan.planId);
+    });
+
+    await waitFor(() => expect(mocks.authoringSurfaces.get(surface.id)).toBe(surface));
+    await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
+
+    rendered.unmount();
   });
 });
