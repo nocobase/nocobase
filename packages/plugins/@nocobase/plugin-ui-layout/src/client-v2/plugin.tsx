@@ -49,21 +49,24 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
     });
     registerMobilePageModelResolution();
 
-    this.pluginSettingsManager.addMenuItem({
-      key: 'mobile',
-      title: this.t('Mobile') as unknown as string,
-      icon: 'MobileOutlined',
-      aclSnippet: 'pm.mobile',
-      link: getMobileSettingsLink(this.app),
-    });
+    const isStandaloneSettings = this.pluginSettingsManager.getRoutePath('') === '/settings/';
+    if (!isStandaloneSettings) {
+      this.pluginSettingsManager.addMenuItem({
+        key: 'mobile',
+        title: this.t('Mobile') as unknown as string,
+        icon: 'MobileOutlined',
+        aclSnippet: 'pm.mobile',
+        link: getMobileSettingsLink(this.app),
+      });
 
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'mobile',
-      key: 'index',
-      title: this.t('Mobile') as unknown as string,
-      aclSnippet: 'pm.mobile',
-      Component: MobileSettingsRedirect,
-    });
+      this.pluginSettingsManager.addPageTabItem({
+        menuKey: 'mobile',
+        key: 'index',
+        title: this.t('Mobile') as unknown as string,
+        aclSnippet: 'pm.mobile',
+        Component: MobileSettingsRedirect,
+      });
+    }
 
     this.pluginSettingsManager.addMenuItem({
       key: 'routes',

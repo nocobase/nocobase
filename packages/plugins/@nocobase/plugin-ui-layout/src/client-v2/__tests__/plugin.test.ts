@@ -11,47 +11,52 @@ import { createMockClient, type Application } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { UI_LAYOUT_TYPE_DESKTOP } from '../../constants';
 
+function createPluginApp(settingsRootPath = '/admin/settings/') {
+  return {
+    i18n: {
+      t: vi.fn((key: string) => key),
+    },
+    pluginSettingsManager: {
+      addMenuItem: vi.fn(),
+      addPageTabItem: vi.fn(),
+      setPluginSettingsLink: vi.fn(),
+      getRoutePath: vi.fn((name: string) => `${settingsRootPath}${name}`),
+    },
+    apiClient: {
+      request: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              uid: 'workspace-layout-model',
+              layoutType: UI_LAYOUT_TYPE_DESKTOP,
+              routeName: 'workspace',
+              routePath: '/workspace',
+              authCheck: true,
+              enabled: true,
+            },
+          ],
+        },
+      }),
+    },
+    getHref: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
+    layoutManager: {
+      hasLayout: vi.fn(() => false),
+      registerLayout: vi.fn(),
+    },
+    flowEngine: {
+      registerModelLoaders: vi.fn(),
+      registerActions: vi.fn(),
+      flowSettings: {
+        registerComponents: vi.fn(),
+      },
+    },
+  };
+}
+
 describe('PluginUiLayoutClientV2', () => {
   it('should register base layout settings and enabled layouts from the API', async () => {
     const { default: PluginUiLayoutClientV2 } = await import('../plugin');
-    const app = {
-      i18n: {
-        t: vi.fn((key: string) => key),
-      },
-      pluginSettingsManager: {
-        addMenuItem: vi.fn(),
-        addPageTabItem: vi.fn(),
-        setPluginSettingsLink: vi.fn(),
-      },
-      apiClient: {
-        request: vi.fn().mockResolvedValue({
-          data: {
-            data: [
-              {
-                uid: 'workspace-layout-model',
-                layoutType: UI_LAYOUT_TYPE_DESKTOP,
-                routeName: 'workspace',
-                routePath: '/workspace',
-                authCheck: true,
-                enabled: true,
-              },
-            ],
-          },
-        }),
-      },
-      getHref: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
-      layoutManager: {
-        hasLayout: vi.fn(() => false),
-        registerLayout: vi.fn(),
-      },
-      flowEngine: {
-        registerModelLoaders: vi.fn(),
-        registerActions: vi.fn(),
-        flowSettings: {
-          registerComponents: vi.fn(),
-        },
-      },
-    };
+    const app = createPluginApp();
     const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
 
     await plugin.load();
@@ -182,6 +187,20 @@ describe('PluginUiLayoutClientV2', () => {
       layoutModelClass: 'AdminLayoutModel',
       authCheck: true,
     });
+  });
+
+  it('should omit the Mobile shortcut from the standalone settings app', async () => {
+    const { default: PluginUiLayoutClientV2 } = await import('../plugin');
+    const app = createPluginApp('/settings/');
+    const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
+
+    await plugin.load();
+
+    expect(app.pluginSettingsManager.addMenuItem).not.toHaveBeenCalledWith(expect.objectContaining({ key: 'mobile' }));
+    expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({ menuKey: 'mobile' }),
+    );
+    expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith(expect.objectContaining({ key: 'routes' }));
   });
 
   it('should preserve the current sub-app path in the mobile settings link', async () => {
