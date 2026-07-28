@@ -58,6 +58,36 @@ describe('LightExtensionEntryService reconcile', () => {
     });
   });
 
+  it('keeps the entry and reference identity when a keyed entry moves directories', async () => {
+    const sourceEntry = createSourceEntry('stable-sales', {
+      entryPath: 'src/client/js-blocks/new-directory/index.tsx',
+      descriptorPath: 'src/client/js-blocks/new-directory/entry.json',
+    });
+    const fixture = createReconcileFixture([
+      createStoredEntry(sourceEntry, {
+        entryPath: 'src/client/js-blocks/old-directory/index.tsx',
+        descriptorPath: 'src/client/js-blocks/old-directory/entry.json',
+      }),
+    ]);
+
+    const result = await fixture.service.reconcileEntries('ler_sales', [sourceEntry], 'commit_1', fixture.transaction);
+
+    expect(fixture.repository.createMany).not.toHaveBeenCalled();
+    expect(result.entries[0]).toMatchObject({
+      id: 'lee_stable-sales',
+      entryPath: 'src/client/js-blocks/new-directory/index.tsx',
+      descriptorPath: 'src/client/js-blocks/new-directory/entry.json',
+    });
+    expect(result.metadataChangedEntries[0].after).toEqual(result.metadataChangedEntries[0].before);
+    expect(fixture.repository.records[0].update).toHaveBeenCalledWith(
+      {
+        entryPath: 'src/client/js-blocks/new-directory/index.tsx',
+        descriptorPath: 'src/client/js-blocks/new-directory/entry.json',
+      },
+      { transaction: fixture.transaction },
+    );
+  });
+
   it('classifies settings and display metadata changes while writing only changed fields', async () => {
     const sourceEntry = createSourceEntry('sales-kpi');
     const fixture = createReconcileFixture([createStoredEntry(sourceEntry)]);

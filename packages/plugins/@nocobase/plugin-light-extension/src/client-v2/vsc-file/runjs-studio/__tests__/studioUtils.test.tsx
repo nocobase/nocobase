@@ -7,56 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
-import { appendRunDiagnostics, buildRunJSImportModuleCompletionSignature } from '../studioUtils';
+import { useRunJSImportModuleCompletions } from '../studioUtils';
 import type { RunJSWorkspaceFile } from '../types';
 
 function workspaceFile(path: string, content = ''): RunJSWorkspaceFile {
   return { content, path };
 }
 
-describe('buildRunJSImportModuleCompletionSignature', () => {
-  it('uses file revisions when available and content as the compatibility fallback', () => {
-    expect(
-      buildRunJSImportModuleCompletionSignature([workspaceFile('src/client/helper.ts', 'one')], 'src/client/index.tsx'),
-    ).not.toBe(
-      buildRunJSImportModuleCompletionSignature([workspaceFile('src/client/helper.ts', 'two')], 'src/client/index.tsx'),
-    );
-    expect(
-      buildRunJSImportModuleCompletionSignature(
-        [{ ...workspaceFile('src/client/helper.ts', 'one'), revision: 1 }],
-        'src/client/index.tsx',
-      ),
-    ).toBe(
-      buildRunJSImportModuleCompletionSignature(
-        [{ ...workspaceFile('src/client/helper.ts', 'two'), revision: 1 }],
-        'src/client/index.tsx',
-      ),
-    );
-  });
-});
-
-describe('appendRunDiagnostics', () => {
-  it('shows a captured render error once in the Studio console', () => {
-    const appendConsole = vi.fn();
-
-    appendRunDiagnostics(
+describe('useRunJSImportModuleCompletions', () => {
+  it('refreshes imported exports when file content or revision changes', () => {
+    const { result, rerender } = renderHook(
+      ({ files }) => useRunJSImportModuleCompletions(files, 'src/client/index.tsx'),
       {
-        execution: { finished: true, started: true, timeout: false },
-        issues: [{ type: 'runtime', ruleId: 'render-error', message: 'rawData.some is not a function' }],
-        logs: [{ level: 'error', message: 'rawData.some is not a function' }],
+        initialProps: {
+          files: [workspaceFile('src/client/helper.ts', 'export const first = 1;')],
+        },
       },
-      appendConsole,
     );
 
-    expect(appendConsole).toHaveBeenCalledTimes(1);
-    expect(appendConsole).toHaveBeenCalledWith({
-      column: undefined,
-      level: 'error',
-      line: undefined,
-      message: 'rawData.some is not a function',
-      path: undefined,
+    expect(result.current[0].exports).toEqual(['first']);
+
+    rerender({ files: [workspaceFile('src/client/helper.ts', 'export const second = 2;')] });
+    expect(result.current[0].exports).toEqual(['second']);
+
+    rerender({
+      files: [{ ...workspaceFile('src/client/helper.ts', 'export const third = 3;'), revision: 2 }],
     });
+    expect(result.current[0].exports).toEqual(['third']);
   });
 });

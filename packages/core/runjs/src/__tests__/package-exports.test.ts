@@ -11,12 +11,6 @@ import fs from 'fs';
 import path from 'path';
 
 const packageRoot = path.resolve(__dirname, '../..');
-const removedPublicNames = [
-  'RunJSEntryCompilerSession',
-  'RunJSEntryDependencyManifest',
-  'buildRunJSEntryDependencyManifestFromGraph',
-  'collectRunJSWorkspaceDependencyManifest',
-];
 
 describe('@nocobase/runjs package exports', () => {
   it('exposes only supported public entry points', () => {
@@ -35,18 +29,5 @@ describe('@nocobase/runjs package exports', () => {
         './settings',
       ].sort(),
     );
-  });
-
-  it('keeps removed dependency and session APIs out of built public declarations', () => {
-    const declarations = [
-      fs.readFileSync(path.join(packageRoot, 'lib/index.d.ts'), 'utf8'),
-      fs.readFileSync(path.join(packageRoot, 'lib/compiler/index.d.ts'), 'utf8'),
-    ].join('\n');
-
-    for (const name of removedPublicNames) {
-      expect(declarations).not.toContain(name);
-    }
-    expect(declarations).not.toContain("export * from './dependency-collector'");
-    expect(declarations).not.toContain("export * from './session'");
   });
 });

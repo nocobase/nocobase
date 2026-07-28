@@ -13,8 +13,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runJSStudioProvider } from '../RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
-import type { RunJSSourceActionInput, RunJSSourceLocator } from '../types';
-import { RunJSSourceRequestError, runJSSourceActionNames } from '../useRunJSSourceResource';
+import type { RunJSSourceLocator } from '../types';
+import { RunJSSourceRequestError } from '../useRunJSSourceResource';
 import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => {
@@ -445,32 +445,6 @@ describe('runJSStudioProvider', () => {
     });
   });
 
-  it('exposes the typed incremental save action used by Studio', () => {
-    const input: RunJSSourceActionInput<'saveChanges'> = {
-      locator,
-      repoId: repository.id,
-      baseCommitId: repository.headCommitId,
-      baseOwnerFingerprint: openResult.ownerFingerprint,
-      message: 'Update one RunJS file',
-      changes: [
-        {
-          operation: 'upsert',
-          path: 'src/client/index.tsx',
-          expectedBlobHash: 'a'.repeat(64),
-          content: 'return 2;',
-        },
-      ],
-    };
-
-    expect(runJSSourceActionNames).toContain('saveChanges');
-    expect(input.changes).toEqual([
-      expect.objectContaining({
-        operation: 'upsert',
-        expectedBlobHash: 'a'.repeat(64),
-      }),
-    ]);
-  });
-
   it('handles only flow model step locators and prefers sourceLocator', () => {
     expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator })).toBe(true);
 
@@ -674,7 +648,7 @@ describe('runJSStudioProvider', () => {
     expect(screen.queryByText('Studio unavailable')).toBeNull();
   });
 
-  it('delegates save to the host without rendering or clearing a local footer in embedded mode', async () => {
+  it('reports dirty state through the embedded host controller', async () => {
     const onEmbeddedEditorControllerChange = vi.fn();
     renderEditor(vi.fn(), {
       editorChrome: 'embedded',
@@ -682,8 +656,6 @@ describe('runJSStudioProvider', () => {
     });
 
     expect(await screen.findByTestId('runjs-studio-workspace')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Edit file content' }), {
       target: { value: 'return 2;' },

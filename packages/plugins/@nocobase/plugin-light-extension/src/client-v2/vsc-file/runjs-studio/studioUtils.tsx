@@ -528,7 +528,7 @@ export function buildRunJSImportModuleCompletions(
     .sort((a, b) => a.specifier.localeCompare(b.specifier));
 }
 
-export function buildRunJSImportModuleCompletionSignature(files: RunJSWorkspaceFile[], activePath?: string): string {
+function buildRunJSImportModuleCompletionSignature(files: RunJSWorkspaceFile[], activePath?: string): string {
   if (!activePath) {
     return '';
   }

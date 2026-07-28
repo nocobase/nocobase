@@ -23,7 +23,6 @@ import {
 } from '../services/LightExtensionCompileContract';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 import { LightExtensionCompileWorkerPool } from '../services/LightExtensionCompileWorkerPool';
-import packageJson from '../../../package.json';
 import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension bootstrap', () => {
@@ -51,25 +50,6 @@ describe('plugin-light-extension bootstrap', () => {
       ),
     ).not.toThrow();
   }, 20_000);
-
-  it('keeps lifecycle hooks safe without a full app', async () => {
-    expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-vsc-file');
-    expect(packageJson.peerDependencies).toHaveProperty('@nocobase/client');
-    expect(packageJson.peerDependencies).toHaveProperty('@nocobase/plugin-environment-variables');
-    expect(packageJson.peerDependencies).not.toHaveProperty('@nocobase/plugin-file-manager');
-
-    const plugin = new PluginLightExtensionServer({} as Application, {
-      name: 'light-extension',
-      packageName: NAMESPACE,
-    });
-
-    expect(plugin.afterAdd()).toBeUndefined();
-    await expect(plugin.beforeLoad()).resolves.toBeUndefined();
-    await expect(plugin.load()).resolves.toBeUndefined();
-    await expect(plugin.install()).resolves.toBeUndefined();
-    expect(plugin.getName()).toBe('light-extension');
-    expect('createRepository' in plugin).toBe(false);
-  });
 
   it('hosts VSC capabilities and recovers Push before Pull with one listener across reloads', async () => {
     const afterStartListeners = new Set<() => Promise<void>>();

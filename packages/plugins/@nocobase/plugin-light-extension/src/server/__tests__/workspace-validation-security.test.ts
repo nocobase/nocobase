@@ -69,6 +69,30 @@ describe('path', () => {
     expect(result.diagnostics.filter((item) => item.code === 'path_extension_not_allowed')).toEqual([]);
   });
 
+  it('allows SDK types and helpers through a shared helper in a JS Field entry', () => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/shared/format.ts',
+          content:
+            'import type { LightExtensionSettingsContext } from "@nocobase/light-extension-sdk/shared";\nexport function formatValue(ctx: LightExtensionSettingsContext) { return String(ctx.settings ?? ""); }\n',
+        },
+        {
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content:
+            'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) { return formatValue(ctx); }\n',
+        },
+        {
+          path: 'src/client/js-fields/phone-link/entry.json',
+          content: '{"schemaVersion":1,"key":"phone-link"}',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+  });
+
   it('accepts JS Page entry modules without allowing page-specific assets', () => {
     const validator = new LightExtensionValidator();
     const accepted = validator.validateWorkspace({
@@ -462,6 +486,31 @@ describe('module import', () => {
       );
     },
   );
+
+  it('rejects empty runtime imports from SDK subpaths', () => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content:
+            'import {} from "@nocobase/light-extension-sdk/client";\nexport default function PhoneLink() { return null; }\n',
+        },
+        {
+          path: 'src/client/js-fields/phone-link/entry.json',
+          content: '{"schemaVersion":1,"key":"phone-link"}',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'import_not_allowed',
+        kind: 'js-field',
+        path: 'src/client/js-fields/phone-link/index.tsx',
+      }),
+    );
+  });
 
   it.each(['react/jsx-runtime', 'react-dom', 'dayjs/plugin/utc', 'lodash/get', '__proto__', 'constructor', 'toString'])(
     'rejects unsupported module specifier %s',

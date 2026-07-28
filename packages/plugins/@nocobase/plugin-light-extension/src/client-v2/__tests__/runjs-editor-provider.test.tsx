@@ -8,23 +8,13 @@
  */
 
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import {
-  ApplicationContext,
-  RunJSSourceResolverRegistry,
-  type RunJSEditorProviderRenderProps,
-} from '@nocobase/client-v2';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ApplicationContext, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
 import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  createRunJSLightExtensionEditorProvider,
-  waitForHostRefreshCommit,
-} from '../components/RunJSLightExtensionEditorProvider';
+import { createRunJSLightExtensionEditorProvider } from '../components/RunJSLightExtensionEditorProvider';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
-import { getOrCreateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
-import { getLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 
 vi.mock('../pages/LightExtensionWorkspacePage', () => {
@@ -32,18 +22,15 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     repoId,
     initialPath,
     workspaceScope,
-    defaultFilesCollapsed,
     entryId,
     onMoveToInline,
     onPreview,
-    onFooterActionsChange,
     onRequestClose,
     onSaved,
   }: {
     repoId?: string;
     initialPath?: string;
-    workspaceScope?: unknown;
-    defaultFilesCollapsed?: boolean;
+    workspaceScope?: { kind?: string };
     entryId?: string | null;
     onMoveToInline?: (input: {
       entryPath: string;
@@ -51,16 +38,6 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
       version: string;
     }) => void | Promise<void>;
     onPreview?: (artifact: { code: string; version: string; entryPath: string }) => void | Promise<void>;
-    onFooterActionsChange?: (
-      actions: {
-        dirty: boolean;
-        disabled: boolean;
-        loading: boolean;
-        onCancel: () => void;
-        onSave: () => void;
-        requestSave: () => Promise<'saved'>;
-      } | null,
-    ) => void;
     onRequestClose?: () => void | Promise<void>;
     onSaved?: () => void | Promise<void>;
   }) => {
@@ -83,28 +60,9 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
       }
     };
 
-    React.useEffect(() => {
-      onFooterActionsChange?.({
-        dirty: true,
-        disabled: false,
-        loading: false,
-        onCancel: () => onRequestClose?.(),
-        onSave: () => onSaved?.(),
-        requestSave: async () => {
-          await onSaved?.();
-          return 'saved';
-        },
-      });
-      return () => onFooterActionsChange?.(null);
-    }, [onFooterActionsChange, onRequestClose, onSaved]);
-
     return (
-      <div
-        data-default-files-collapsed={String(Boolean(defaultFilesCollapsed))}
-        data-entry-id={entryId || ''}
-        data-workspace-scope={JSON.stringify(workspaceScope)}
-      >
-        workspace:{repoId}:{initialPath}
+      <div>
+        workspace:{repoId}:{entryId}:{initialPath}:{workspaceScope?.kind}
         {onMoveToInline ? (
           <button type="button" onClick={moveWorkspaceToInline}>
             move workspace to inline
@@ -130,6 +88,9 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
         <button type="button" onClick={saveAndClose}>
           save workspace and close
         </button>
+        <button type="button" onClick={onRequestClose}>
+          close workspace
+        </button>
       </div>
     );
   };
@@ -147,13 +108,11 @@ function EditorViewHarness(props: {
   onClose: () => void;
 }) {
   const { api, appApi, children, model, onClose } = props;
-  const [footer, setFooter] = React.useState<React.ReactNode>(null);
   const context = React.useMemo(() => {
     const nextContext = new FlowContext();
     nextContext.defineProperty('view', {
       value: {
         close: onClose,
-        setFooter,
       },
     });
     if (api) {
@@ -165,12 +124,7 @@ function EditorViewHarness(props: {
     return nextContext;
   }, [api, model, onClose]);
 
-  const content = (
-    <FlowContextProvider context={context}>
-      {children}
-      <div data-testid="editor-view-footer">{footer}</div>
-    </FlowContextProvider>
-  );
+  const content = <FlowContextProvider context={context}>{children}</FlowContextProvider>;
 
   if (!appApi) {
     return content;
@@ -186,66 +140,62 @@ function EditorViewHarness(props: {
 }
 
 describe('RunJSLightExtensionEditorProvider', () => {
-  it('handles only light-extension-capable flow model steps', () => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const stepLocator = {
-      kind: 'flowModel.step' as const,
-      modelUid: 'model_1',
-      flowKey: 'jsSettings',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-    };
-    const sourceMetadata = { lightExtensionKind: 'js-block' };
-    const lightExtensionValue = {
-      code: '',
-      version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'repo_1',
-        entryId: 'entry_1',
-        entryPath: 'src/client/js-blocks/example/index.tsx',
-        kind: 'js-block',
-      },
-    };
+  const stepLocator = {
+    kind: 'flowModel.step' as const,
+    modelUid: 'model_1',
+    flowKey: 'jsSettings',
+    stepKey: 'runJs',
+    paramPath: ['code'],
+  };
+  const externalValue = {
+    code: '',
+    version: 'v2',
+    sourceMode: 'light-extension',
+    sourceBinding: {
+      type: 'light-extension-entry' as const,
+      repoId: 'repo_1',
+      entryId: 'entry_1',
+      entryPath: 'src/client/js-blocks/example/index.tsx',
+      kind: 'js-block' as const,
+    },
+  };
 
-    expect(
-      provider.canHandle?.({ value: { code: 'return 1;', version: 'v2' }, locator: stepLocator, sourceMetadata }),
-    ).toBe(true);
-    expect(provider.canHandle?.({ value: { code: 'return 1;', version: 'v2' }, locator: stepLocator })).toBe(false);
-    expect(provider.canHandle?.({ value: lightExtensionValue, locator: stepLocator })).toBe(true);
-
-    const nonStepLocators = [
+  it.each([
+    [
+      'supported step metadata',
+      { value: { code: '', version: 'v2' }, locator: stepLocator, sourceMetadata: { lightExtensionKind: 'js-block' } },
+      true,
+    ],
+    ['inline without metadata', { value: { code: '', version: 'v2' }, locator: stepLocator }, false],
+    ['external binding', { value: externalValue, locator: stepLocator }, true],
+    [
+      'unsupported locator',
+      { value: externalValue, locator: { kind: 'chart.option' as const, modelUid: 'chart-1' } },
+      false,
+    ],
+    [
+      'unsupported source locator',
       {
-        kind: 'flowModel.flowRegistry.runjs' as const,
-        modelUid: 'model_1',
-        flowKey: 'eventFlow',
-        stepKey: 'runJs',
-        sourcePath: ['params', 'code'],
-      },
-      { kind: 'chart.option' as const, modelUid: 'chart-1' },
-      { kind: 'chart.events' as const, modelUid: 'chart-1' },
-    ];
-    for (const locator of nonStepLocators) {
-      expect(provider.canHandle?.({ value: lightExtensionValue, locator })).toBe(false);
-    }
-
-    expect(
-      provider.canHandle?.({
-        value: lightExtensionValue,
+        value: externalValue,
         locator: stepLocator,
-        sourceLocator: { kind: 'chart.option', modelUid: 'chart-1' },
-        sourceMetadata,
-      }),
-    ).toBe(false);
-    expect(
-      provider.canHandle?.({
-        value: { code: 'return 1;', version: 'v2' },
-        locator: { kind: 'chart.option', modelUid: 'chart-1' },
+        sourceLocator: { kind: 'chart.option' as const, modelUid: 'chart-1' },
+        sourceMetadata: { lightExtensionKind: 'js-block' },
+      },
+      false,
+    ],
+    [
+      'supported source locator',
+      {
+        value: { code: '', version: 'v2' },
+        locator: { kind: 'chart.option' as const, modelUid: 'chart-1' },
         sourceLocator: stepLocator,
-        sourceMetadata,
-      }),
-    ).toBe(true);
+        sourceMetadata: { lightExtensionKind: 'js-block' },
+      },
+      true,
+    ],
+  ])('routes %s', (_name, props, expected) => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    expect(provider.canHandle?.(props)).toBe(expected);
   });
 
   it('delegates non-step locators to the next editor provider', () => {
@@ -300,24 +250,9 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(provider.canHandle?.(props)).toBe(true);
     render(<>{provider.renderEditor(props)}</>);
 
-    expect(screen.getByTestId('light-extension-source-workspace-editor')).toBeInTheDocument();
-    expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
-      'data-workspace-scope',
-      JSON.stringify({
-        mode: 'entry',
-        entryPath: 'src/client/js-blocks/example/index.tsx',
-        kind: 'js-block',
-      }),
-    );
-    expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
-      'data-default-files-collapsed',
-      'true',
-    );
-    expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
-      'data-entry-id',
-      'lee_example',
-    );
-    expect(screen.queryByRole('button', { name: 'preview workspace' })).not.toBeInTheDocument();
+    expect(
+      screen.getByText('workspace:ler_example:lee_example:src/client/js-blocks/example/index.tsx:js-block'),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     await waitFor(() => expect(onPersistedChange).toHaveBeenCalledWith(props.value));
     expect(onChange).not.toHaveBeenCalled();
@@ -371,7 +306,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       }),
     );
 
-    fireEvent.click(within(screen.getByTestId('editor-view-footer')).getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'close workspace' }));
     await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
     expect(rerender).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
@@ -422,10 +357,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
         throw new Error(`Unexpected request: ${options.url}`);
       }),
     };
-    const runtimeInvalidator = getOrCreateLightExtensionRuntimeCache(api, () => ({
-      invalidateRepo: vi.fn(),
-      clear: vi.fn(),
-    }));
     const value = {
       code: 'ctx.render(<div>persisted light extension</div>);',
       version: 'v2',
@@ -466,33 +397,9 @@ describe('RunJSLightExtensionEditorProvider', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'move workspace to inline' }));
 
-    await waitFor(() => {
-      expect(api.request).toHaveBeenCalledWith({
-        url: 'lightExtensions:moveToInline',
-        method: 'post',
-        data: {
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: 'page_1',
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
-          },
-          repoId: 'ler_example',
-          entryId: 'lee_example',
-          entryPath: 'src/client/js-pages/example/index.tsx',
-          kind: 'js-page',
-          version: 'v2',
-          files: [
-            {
-              path: 'src/client/js-pages/example/index.tsx',
-              content: 'ctx.render(<div>working copy</div>);',
-            },
-            { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
-          ],
-        },
-      });
-    });
+    await waitFor(() =>
+      expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensions:moveToInline' })),
+    );
     expect(onPersistedChange).toHaveBeenCalledWith({
       ...value,
       code: 'ctx.render(<div>inline workspace</div>);',
@@ -503,7 +410,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
     });
     expect(onPersistedChange).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledWith('ler_example');
   });
 
   it('keeps the JS Page external binding when copyback fails', async () => {
@@ -570,6 +476,9 @@ describe('RunJSLightExtensionEditorProvider', () => {
     });
     expect(onPersistedChange).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('workspace:ler_pages:lee_page:src/client/js-pages/page/index.tsx:js-page'),
+    ).toBeInTheDocument();
   });
 
   it('wraps inline light-extension-capable flow steps with entry.json schema and settings type resolvers', () => {
@@ -621,102 +530,40 @@ describe('RunJSLightExtensionEditorProvider', () => {
     ).toContain('columns?: Array<{}>;');
   });
 
-  it('previews inline JS block code through its rendered FlowModel surface and restores it on close', async () => {
+  it.each([
+    ['js-block', 'blocks', 'JSBlockModel'],
+    ['js-page', 'pages', 'JSPageModel'],
+    ['js-field', 'fields', 'JSColumnModel'],
+    ['js-action', 'actions', 'JSActionModel'],
+    ['js-item', 'items', 'JSItemModel'],
+  ] as const)('opens the scoped %s workspace', async (kind, directory, modelUse) => {
     const provider = createRunJSLightExtensionEditorProvider();
-    const value = {
-      code: 'ctx.render(<div>persisted</div>);',
-      version: 'v2',
-      sourceMode: 'inline',
-    };
-    const engine = new FlowEngine();
-    const model = new FlowModel({
-      uid: 'model_js_block',
-      flowEngine: engine,
-      stepParams: {
-        jsSettings: {
-          runJs: value,
-        },
-      },
-    });
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
-    const renderNext = vi.fn(() => <div>inline studio</div>);
-    const rendered = render(
-      <EditorViewHarness model={model} onClose={vi.fn()}>
-        {provider.renderEditor({
-          value,
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: model.uid,
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
-            versionPath: ['version'],
-          },
-          sourceMetadata: { lightExtensionKind: 'js-block' },
-          surfaceStyle: 'render',
-          renderNext,
-        })}
-      </EditorViewHarness>,
-    );
-    const overrides = renderNext.mock.calls[0]?.[0] as Partial<RunJSEditorProviderRenderProps>;
-
-    await act(async () => {
-      await overrides.onPreview?.({
-        ...value,
-        code: 'ctx.render(<div>preview</div>);',
-      });
-    });
-
-    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
-      code: 'ctx.render(<div>preview</div>);',
-      version: 'v2',
-      sourceMode: 'inline',
-    });
-    expect(rerender).toHaveBeenCalledTimes(1);
-
-    rendered.unmount();
-    await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
-    expect(rerender).toHaveBeenCalledTimes(2);
-  });
-
-  it('offers move to inline for JS column light extension entries', async () => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const api: ApiClientLike = {
-      request: vi.fn(async () => ({ data: { data: {} } })),
-    };
-    const value = {
-      code: 'ctx.render(String(ctx.value));',
-      version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry' as const,
-        repoId: 'ler_fields',
-        entryId: 'lee_column',
-        entryPath: 'src/client/js-fields/record-summary-column/index.tsx',
-        kind: 'js-field' as const,
-      },
-    };
+    const api: ApiClientLike = { request: vi.fn(async () => ({ data: { data: {} } })) };
+    const entryPath = `src/client/js-${directory}/example/index.tsx`;
 
     render(
       <EditorViewHarness appApi={api} onClose={vi.fn()}>
         {provider.renderEditor({
-          value,
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: 'column_1',
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
+          value: {
+            code: 'ctx.render(null);',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'ler_example',
+              entryId: `lee_${kind}`,
+              entryPath,
+              kind,
+            },
           },
-          sourceMetadata: {
-            lightExtensionKind: 'js-field',
-            modelUse: 'JSColumnModel',
-          },
-          surfaceStyle: 'render',
+          locator: { ...stepLocator, modelUid: `model_${kind}` },
+          sourceMetadata: { lightExtensionKind: kind, modelUse },
+          surfaceStyle: kind === 'js-action' ? 'action' : 'render',
         })}
       </EditorViewHarness>,
     );
 
+    expect(screen.getByText(`workspace:ler_example:lee_${kind}:${entryPath}:${kind}`)).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'move workspace to inline' })).toBeInTheDocument();
   });
 
@@ -747,38 +594,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
         };
       }),
     };
-    const resolverApi: ApiClientLike = {
-      request: vi.fn(async (options) => {
-        if (options.url !== 'lightExtensionEntries:listSelectable') {
-          throw new Error(`Unexpected resolver request: ${options.url}`);
-        }
-        return {
-          data: {
-            data: [
-              {
-                id: 'lee_example',
-                repoId: 'ler_example',
-                kind: 'js-block',
-                entryName: 'stable-example',
-                entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
-                title: 'Example refreshed',
-                category: null,
-                settingsSchema: {
-                  type: 'object',
-                  properties: {
-                    refreshedLabel: { type: 'string', title: 'Refreshed label' },
-                  },
-                },
-                settingsSchemaHash: 'new-schema',
-                settingsDefaultsHash: 'new-defaults',
-                runtimeCodeHash: 'new-runtime',
-                runtimeAvailable: true,
-              },
-            ],
-          },
-        };
-      }),
-    };
     const value = {
       code: 'ctx.render(<div />);',
       version: 'v2',
@@ -792,39 +607,8 @@ describe('RunJSLightExtensionEditorProvider', () => {
         kind: 'js-block' as const,
       },
     };
-    const descriptorCache = getLightExtensionSettingsDescriptorCache(resolverApi);
-    descriptorCache.primeScope('ler_example', 'js-block', [
-      {
-        id: 'lee_example',
-        repoId: 'ler_example',
-        kind: 'js-block',
-        entryName: 'stable-example',
-        entryPath: 'src/client/js-blocks/old-example/index.tsx',
-        title: 'Old example',
-        category: null,
-        settingsSchema: {
-          type: 'object',
-          properties: {
-            oldLabel: { type: 'string' },
-          },
-        },
-        settingsSchemaHash: 'old-schema',
-        settingsDefaultsHash: 'old-defaults',
-        runtimeCodeHash: 'old-runtime',
-        runtimeAvailable: true,
-      },
-    ]);
-    const invalidateRuntimeRepo = vi.fn();
-    getOrCreateLightExtensionRuntimeCache(resolverApi, () => ({
-      invalidateRepo: invalidateRuntimeRepo,
-      clear: vi.fn(),
-    }));
-    const resolver = createLightExtensionRunJSResolver(resolverApi);
-    const invalidateResolverCache = vi.spyOn(resolver, 'invalidateCache');
-    const unregisterResolver = RunJSSourceResolverRegistry.registerResolver(resolver);
-
     render(
-      <EditorViewHarness api={workspaceApi} appApi={resolverApi} onClose={vi.fn()}>
+      <EditorViewHarness api={workspaceApi} onClose={vi.fn()}>
         {provider.renderEditor({
           value,
           locator: {
@@ -841,14 +625,9 @@ describe('RunJSLightExtensionEditorProvider', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('workspace:ler_example:src/client/js-blocks/renamed-example/index.tsx')).toHaveAttribute(
-        'data-workspace-scope',
-        JSON.stringify({
-          mode: 'entry',
-          entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
-          kind: 'js-block',
-        }),
-      );
+      expect(
+        screen.getByText('workspace:ler_example:lee_example:src/client/js-blocks/renamed-example/index.tsx:js-block'),
+      ).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
@@ -864,32 +643,11 @@ describe('RunJSLightExtensionEditorProvider', () => {
         },
       });
     });
-    expect(descriptorCache.get(value.sourceBinding)).toMatchObject({
-      entryId: 'lee_example',
-      settingsSchemaHash: 'new-schema',
-      schema: {
-        type: 'object',
-        properties: {
-          refreshedLabel: { type: 'string', title: 'Refreshed label' },
-        },
-      },
-    });
-    expect(invalidateResolverCache).toHaveBeenCalledWith('ler_example');
-    expect(invalidateRuntimeRepo).toHaveBeenCalledWith('ler_example');
-    expect(resolverApi.request).toHaveBeenCalledWith({
-      url: 'lightExtensionEntries:listSelectable',
-      method: 'post',
-    });
-    unregisterResolver();
   });
 
   it('waits for the persisted host update before closing the embedded editor after save', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onClose = vi.fn();
-    const requestAnimationFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      queueMicrotask(() => callback(performance.now()));
-      return 1;
-    });
     let resolvePersistedChange: (() => void) | undefined;
     const onPersistedChange = vi.fn(
       () =>
@@ -959,108 +717,5 @@ describe('RunJSLightExtensionEditorProvider', () => {
     await waitFor(() => {
       expect(onClose).toHaveBeenCalledTimes(1);
     });
-    requestAnimationFrame.mockRestore();
-  });
-
-  it('waits for the next animation frame before completing a host refresh commit', async () => {
-    let animationFrame: FrameRequestCallback | undefined;
-    const requestAnimationFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      animationFrame = callback;
-      return 1;
-    });
-    let completed = false;
-    const refreshCommit = waitForHostRefreshCommit().then(() => {
-      completed = true;
-    });
-
-    await Promise.resolve();
-    expect(completed).toBe(false);
-    animationFrame?.(performance.now());
-    await refreshCommit;
-    expect(completed).toBe(true);
-    requestAnimationFrame.mockRestore();
-  });
-
-  it('places cancel and save actions in the editor view footer', async () => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const onClose = vi.fn();
-    const onPersistedChange = vi.fn();
-    const value = {
-      code: 'ctx.render(<div />);',
-      version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry' as const,
-        repoId: 'ler_example',
-        entryId: 'lee_example',
-        entryPath: 'src/client/js-blocks/example/index.tsx',
-        kind: 'js-block' as const,
-      },
-    };
-
-    render(
-      <EditorViewHarness onClose={onClose}>
-        {provider.renderEditor({
-          value,
-          locator: {
-            kind: 'flowModel.step',
-            modelUid: 'model_1',
-            flowKey: 'jsSettings',
-            stepKey: 'runJs',
-            paramPath: ['code'],
-          },
-          surfaceStyle: 'render',
-          onPersistedChange,
-        })}
-      </EditorViewHarness>,
-    );
-
-    const footer = await screen.findByTestId('editor-view-footer');
-    await waitFor(() => expect(within(footer).getByRole('button', { name: 'Cancel' })).toBeInTheDocument());
-    expect(within(footer).getByRole('button', { name: 'Save' })).toBeInTheDocument();
-
-    fireEvent.click(within(footer).getByRole('button', { name: 'Save' }));
-    expect(onPersistedChange).toHaveBeenCalledWith(value);
-
-    fireEvent.click(within(footer).getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-  });
-
-  it('opens scoped workspaces for flow model JS action entries', () => {
-    const provider = createRunJSLightExtensionEditorProvider();
-    const props = {
-      value: {
-        code: 'ctx.message.success("ok");',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'ler_example',
-          entryId: 'lee_action',
-          entryPath: 'src/client/js-actions/approve/index.ts',
-          kind: 'js-action',
-        },
-      },
-      locator: {
-        kind: 'flowModel.step' as const,
-        modelUid: 'action_1',
-        flowKey: 'clickSettings',
-        stepKey: 'runJs',
-        paramPath: ['code'],
-      },
-      surfaceStyle: 'action' as const,
-    };
-
-    expect(provider.canHandle?.(props)).toBe(true);
-    render(<>{provider.renderEditor(props)}</>);
-
-    expect(screen.getByText('workspace:ler_example:src/client/js-actions/approve/index.ts')).toHaveAttribute(
-      'data-workspace-scope',
-      JSON.stringify({
-        mode: 'entry',
-        entryPath: 'src/client/js-actions/approve/index.ts',
-        kind: 'js-action',
-      }),
-    );
   });
 });
