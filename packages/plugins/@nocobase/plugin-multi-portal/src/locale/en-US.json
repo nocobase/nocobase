@@ -113,5 +113,18 @@
   "URL field is required": "URL field is required",
   "Untitled": "Untitled",
   "Value": "Value",
-  "View {{route}}": "View {{route}}"
+  "View {{route}}": "View {{route}}",
+  "No-code": "No-code",
+  "AI": "AI",
+  "Default": "Default",
+  "No portals yet": "No portals yet",
+  "All applications built on this instance start from here.": "All applications built on this instance start from here.",
+  "Cover": "Cover",
+  "Upload cover": "Upload cover",
+  "Replace cover": "Replace cover",
+  "Remove cover": "Remove cover",
+  "Used as the cover placeholder when no cover is uploaded.": "Used as the cover placeholder when no cover is uploaded.",
+  "Used in the access path.": "Used in the access path.",
+  "Optional. Fill it in to import an existing repository — the title and name below are filled in for you. Leave it empty to manage the source code in NocoBase.": "Optional. Fill it in to import an existing repository — the title and name below are filled in for you. Leave it empty to manage the source code in NocoBase.",
+  "Shown on the portal card. A 16:9 image works best.": "Shown on the portal card. A 16:9 image works best."
 }

@@ -168,6 +168,24 @@ export const useACLContext = () => {
 };
 
 /**
+ * 读取当前角色的 snippets，且不要求调用方位于 `ACLRolesCheckProvider` 之内。
+ *
+ * 设置中心顶栏导航挂在 app 级 provider 上，位置比 `ACLRolesCheckProvider` 更外层，
+ * 这种情况下退回到 app context 上的 ACL observable store。
+ * 调用方需要用 `observer` 包裹，store 更新后才会重新渲染。
+ *
+ * @returns {string[]} 当前角色的 snippets
+ */
+export const useACLSnippets = (): string[] => {
+  const app = useApp();
+  const ctx = useACLContext();
+  const contextSnippets = ctx?.data?.data?.snippets;
+  const storeSnippets = (app.context.acl as ACLStore | undefined)?.data?.snippets;
+
+  return contextSnippets?.length ? contextSnippets : storeSnippets || [];
+};
+
+/**
  * 触发当前角色权限重新检查。
  */
 export const useRoleRecheck = () => {

@@ -13,6 +13,7 @@ import type { PluginSettingsPageType } from '../PluginSettingsManager';
 export const ADMIN_SETTINGS_LAYOUT_MODEL_UID = 'admin-settings-layout-model';
 export const PLUGIN_MANAGER_SETTING_NAME = 'plugin-manager';
 export const SYSTEM_SETTINGS_SETTING_NAME = 'system-settings';
+export const MULTI_PORTAL_SETTING_NAME = 'multi-portal';
 
 /**
  * 判断配置项是否拥有可直接渲染的页面。
@@ -218,7 +219,8 @@ export function findSettingsByName(
  * @returns {string | undefined} 默认跳转路径
  */
 export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType[] = []) {
-  const preferredNames = [SYSTEM_SETTINGS_SETTING_NAME, PLUGIN_MANAGER_SETTING_NAME];
+  // Portal 中心是设置中心的门面：登录后先落在应用入口，再往下走系统配置。
+  const preferredNames = [MULTI_PORTAL_SETTING_NAME, SYSTEM_SETTINGS_SETTING_NAME, PLUGIN_MANAGER_SETTING_NAME];
 
   for (const name of preferredNames) {
     const preferred = findSettingsByName(settings, name);
@@ -237,6 +239,64 @@ export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType
   }
 
   return findFirstInternalSettingsPage(settings)?.path;
+}
+
+/**
+ * 构造左侧栏的嵌套菜单。
+ *
+ * 与 `getMenuItems` 的差别：只有当某一级存在 **多个** 可见子项时才下钻成子菜单，
+ * 单子项（典型是只有一个 `index` tab 的配置）继续保持成叶子节点，
+ * 避免出现「点开一层只有一个同名项」的无意义嵌套。
+ *
+ * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
+ * @returns {any[]} antd Menu items
+ */
+export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] = []): any[] {
+  return settings
+    .filter((item) => !item.hidden)
+    .map((item) => {
+      const visibleChildren = (item.children || []).filter((child) => !child.hidden);
+      const children = visibleChildren.length > 1 ? getSidebarMenuItems(visibleChildren) : undefined;
+
+      return {
+        key: item.name,
+        label: item.label ?? item.title,
+        title: typeof item.title === 'string' ? item.title : undefined,
+        icon: item.icon,
+        children: children?.length ? children : undefined,
+      };
+    });
+}
+
+/**
+ * 找出左侧栏里应该展开的父级 key。
+ *
+ * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
+ * @param {string | undefined} activeName 当前命中的配置项名称
+ * @returns {string[]} 需要展开的 key
+ */
+export function getSidebarOpenKeys(settings: readonly PluginSettingsPageType[] = [], activeName?: string): string[] {
+  if (!activeName) {
+    return [];
+  }
+
+  const walk = (items: readonly PluginSettingsPageType[], trail: string[]): string[] | null => {
+    for (const item of items) {
+      if (item.name === activeName) {
+        return trail;
+      }
+      const visibleChildren = (item.children || []).filter((child) => !child.hidden);
+      if (visibleChildren.length > 1) {
+        const found = walk(visibleChildren, [...trail, item.name]);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+
+  return walk(settings, []) || [];
 }
 
 /**

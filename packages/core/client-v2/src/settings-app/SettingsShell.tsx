@@ -9,22 +9,16 @@
 
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 import { ConfigProvider, Layout, theme as antdTheme, type ThemeConfig } from 'antd';
-import React, { type FC } from 'react';
+import React, { useMemo, type FC } from 'react';
 import { HelpLite } from '../flow/admin-shell/admin-layout/HelpLite';
-import { NocoBaseLogo } from '../flow/admin-shell/admin-layout/NocoBaseLogo';
 import {
   USER_CENTER_ACTION_ID,
   type UserCenterTopbarActionModel,
 } from '../flow/models/topbar/UserCenterTopbarActionModel';
 import { useApp } from '../hooks/useApp';
-
-const settingsShellTheme: ThemeConfig = {
-  components: {
-    Layout: {
-      headerBg: '#176CE1',
-    },
-  },
-};
+import { SettingsBrand } from './SettingsBrand';
+import { SettingsGroupNav } from './SettingsGroupNav';
+import { buildSettingsNeutralTheme } from './settingsTheme';
 
 const rootStyle: React.CSSProperties = {
   height: '100vh',
@@ -35,6 +29,7 @@ const rootStyle: React.CSSProperties = {
 const headerContentStyle: React.CSSProperties = {
   alignItems: 'center',
   display: 'flex',
+  gap: 24,
   height: '100%',
   justifyContent: 'space-between',
 };
@@ -42,6 +37,7 @@ const headerContentStyle: React.CSSProperties = {
 const actionsStyle: React.CSSProperties = {
   alignItems: 'center',
   display: 'flex',
+  flexShrink: 0,
   height: '100%',
 };
 
@@ -58,6 +54,7 @@ const embedContainerStyle: React.CSSProperties = {
 export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
   const { token } = antdTheme.useToken();
+  const settingsShellTheme = useMemo<ThemeConfig>(() => buildSettingsNeutralTheme(token), [token]);
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -71,14 +68,21 @@ export const SettingsShell: FC = ({ children }) => {
     <ConfigProvider theme={settingsShellTheme}>
       <Layout style={rootStyle}>
         <Layout.Header
-          style={{
-            height: 46,
-            lineHeight: '46px',
-            paddingInline: token.paddingLG,
-          }}
+          style={
+            {
+              borderBottom: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+              height: 46,
+              lineHeight: '46px',
+              paddingInline: token.paddingLG,
+              // 顶栏子组件里有一部分直接读 CSS 变量而不是 antd token，一起覆盖掉。
+              '--colorTextHeaderMenu': token.colorText,
+              '--nb-topbar-action-color': token.colorText,
+            } as React.CSSProperties
+          }
         >
           <div style={headerContentStyle}>
-            <NocoBaseLogo />
+            <SettingsBrand />
+            <SettingsGroupNav />
             <div style={actionsStyle}>
               <HelpLite />
               {userCenter ? <FlowModelRenderer model={userCenter} /> : null}
