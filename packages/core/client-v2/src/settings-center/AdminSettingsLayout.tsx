@@ -113,7 +113,11 @@ export const InternalAdminSettingsLayout = () => {
     }
     return allVisibleSettings.find((item) => item.name === currentSetting.topLevelName) || null;
   }, [allVisibleSettings, currentSetting]);
-  const defaultSettingsPath = useMemo(() => getDefaultSettingsPath(allVisibleSettings), [allVisibleSettings]);
+  const defaultSettingsPath = useMemo(() => {
+    const preferredPrimarySettings = primarySettings.filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME);
+
+    return getDefaultSettingsPath(preferredPrimarySettings) || getDefaultSettingsPath(allVisibleSettings);
+  }, [allVisibleSettings, primarySettings]);
   const currentVisibleTabs = useMemo(() => {
     return (currentVisibleTopLevelSetting?.children || []).filter((item) => !item.hidden) as PluginSettingsPageType[];
   }, [currentVisibleTopLevelSetting?.children]);

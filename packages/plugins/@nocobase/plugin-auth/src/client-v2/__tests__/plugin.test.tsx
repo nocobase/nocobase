@@ -177,13 +177,13 @@ describe('plugin-auth client-v2', () => {
     vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
       return name === '' ? '/settings/' : getRoutePath(name);
     });
-    app.router.setBasename('/nocobase/apps/demo/');
+    app.router.setBasename('/nocobase/settings/apps/demo/');
     app.router.router = {
-      basename: '/nocobase/apps/demo/',
+      basename: '/nocobase/settings/apps/demo/',
       navigate: vi.fn(),
       state: {
         location: {
-          pathname: '/nocobase/apps/demo/settings/workflow',
+          pathname: '/nocobase/settings/apps/demo/settings/workflow',
           search: '?tab=list',
           hash: '#recent',
         },
@@ -199,7 +199,7 @@ describe('plugin-auth client-v2', () => {
     app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
 
     expect(replace).toHaveBeenCalledWith(
-      '/nocobase/apps/demo/settings/signin?redirect=%2Fnocobase%2Fapps%2Fdemo%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
+      '/nocobase/settings/apps/demo/settings/signin?redirect=%2Fnocobase%2Fsettings%2Fapps%2Fdemo%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
     );
   });
 

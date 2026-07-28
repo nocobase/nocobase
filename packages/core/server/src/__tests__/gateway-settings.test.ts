@@ -73,10 +73,10 @@ describe('gateway standalone settings client', () => {
     '/nocobase/settings/reset-password?resetToken=test-token',
     '/nocobase/settings/2fa?redirect=%2Fnocobase%2Fsettings%2Fworkflow',
     '/nocobase/settings/workflow',
-    '/nocobase/apps/analytics/settings/signin',
-    '/nocobase/apps/analytics/settings/workflow/workflows/42',
-    '/nocobase/_app/analytics/settings/reset-password?resetToken=test-token',
-    '/nocobase/_app/analytics/settings/ai/knowledge-base/detail/orders/documents',
+    '/nocobase/settings/apps/analytics/settings/signin',
+    '/nocobase/settings/apps/analytics/settings/workflow/workflows/42',
+    '/nocobase/settings/_app/analytics/settings/reset-password?resetToken=test-token',
+    '/nocobase/settings/_app/analytics/settings/ai/knowledge-base/detail/orders/documents',
   ])('serves the settings HTML for %s', async (requestPath) => {
     const response = await supertest.agent(gateway.getCallback()).get(requestPath);
 
@@ -97,7 +97,7 @@ describe('gateway standalone settings client', () => {
   it('injects the app public path and rewrites assets for public-path deployments', async () => {
     const response = await supertest
       .agent(gateway.getCallback())
-      .get('/nocobase/apps/analytics/settings/workflow?tab=executions');
+      .get('/nocobase/settings/apps/analytics/settings/workflow?tab=executions');
 
     expect(response.text).toContain(`window['__nocobase_public_path__'] = "/nocobase/";`);
     expect(response.text).toContain('src="/nocobase/settings/assets/runtime.js"');
@@ -122,10 +122,10 @@ describe('gateway standalone settings client', () => {
       '/nocobase/modern/admin/ai/knowledge-base/detail/orders/documents?tab=files',
       '/nocobase/settings/ai/knowledge-base/detail/orders/documents?tab=files',
     ],
-    ['/nocobase/modern/apps/analytics/admin/settings/workflow', '/nocobase/apps/analytics/settings/workflow'],
+    ['/nocobase/modern/apps/analytics/admin/settings/workflow', '/nocobase/settings/apps/analytics/settings/workflow'],
     [
       '/nocobase/modern/_app/analytics/admin/workflow/workflows/42',
-      '/nocobase/_app/analytics/settings/workflow/workflows/42',
+      '/nocobase/settings/_app/analytics/settings/workflow/workflows/42',
     ],
   ])('redirects the old v2 settings route %s to %s', async (requestPath, expectedLocation) => {
     const response = await supertest.agent(gateway.getCallback()).get(requestPath);
@@ -154,6 +154,8 @@ describe('gateway standalone settings client', () => {
     '/nocobase/admin/settings/workflow',
     '/nocobase/admin/workflow/workflows/42',
     '/nocobase/admin/settings/mail/oauth2?code=legacy-code',
+    '/nocobase/apps/analytics/settings/workflow',
+    '/nocobase/_app/analytics/settings/workflow',
   ])('keeps the v1 URL %s on the legacy HTML', async (requestPath) => {
     const response = await supertest.agent(gateway.getCallback()).get(requestPath);
 

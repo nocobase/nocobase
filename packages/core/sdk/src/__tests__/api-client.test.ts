@@ -151,8 +151,8 @@ describe('api-client', () => {
   test.each([
     ['https://example.com/settings/forgot-password?name=basic', 'https://example.com/settings'],
     [
-      'https://example.com/apps/demo/settings/forgot-password?name=basic',
-      'https://example.com/apps/demo/settings',
+      'https://example.com/settings/apps/demo/settings/forgot-password?name=basic',
+      'https://example.com/settings/apps/demo/settings',
     ],
   ])('lostPassword derives the reset link base from the standalone Settings route', async (href, baseURL) => {
     Object.defineProperty(globalThis.window, 'location', {

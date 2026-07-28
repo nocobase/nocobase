@@ -399,7 +399,7 @@ export class Gateway extends EventEmitter {
     if (!appPath) {
       return false;
     }
-    return /^\/settings(?:\/|$)/.test(appPath) || /^\/(?:apps|_app)\/[^/]+\/settings(?:\/|$)/.test(appPath);
+    return /^\/settings(?:\/|$)/.test(appPath);
   }
 
   private isSettingsIndexRequest(pathname: string) {
@@ -460,7 +460,9 @@ export class Gateway extends EventEmitter {
         continue;
       }
       const appPublicPath = this.getAppPublicPath().replace(/\/$/, '');
-      return `${appPublicPath}${appScope}${to}${legacyPath.slice(from.length)}`;
+      const targetPath =
+        from === '/admin/settings/mail/oauth2' ? `${appScope}${to}` : appScope ? `/settings${appScope}${to}` : to;
+      return `${appPublicPath}${targetPath}${legacyPath.slice(from.length)}`;
     }
 
     return null;

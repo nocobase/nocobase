@@ -9,6 +9,7 @@
 
 import { stripModernClientPrefix } from '../authRedirect';
 import type { BaseApplication } from '../BaseApplication';
+import { resolveSettingsAppScope, resolveSettingsDocumentPath } from './settingsDocumentPath';
 
 type SettingsRuntimeApp = Pick<BaseApplication<any>, 'name'> & {
   getPublicPath?: () => string;
@@ -41,17 +42,13 @@ function splitPathSuffix(pathLike: string) {
   };
 }
 
-function getAppScope(pathname?: string) {
-  return /\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(normalizePathname(pathname))?.[0] || '';
-}
-
 function getRuntimeAppScope(app: SettingsRuntimeApp, pathname: string) {
   const basename = app.router?.getBasename?.() || app.router?.basename;
   return (
-    getAppScope(pathname) ||
-    getAppScope(basename) ||
-    getAppScope(app.getPublicPath?.()) ||
-    (app.name && app.name !== 'main' ? `/apps/${app.name}` : '')
+    resolveSettingsAppScope(pathname) ||
+    resolveSettingsAppScope(basename) ||
+    resolveSettingsAppScope(app.getPublicPath?.()) ||
+    (app.name && app.name !== 'main' ? resolveSettingsAppScope(`/apps/${app.name}`) : '')
   );
 }
 
@@ -92,5 +89,5 @@ export function resolveStandaloneSettingsPath(app: SettingsRuntimeApp, pathLike:
     }
   }
 
-  return `${documentBasePath}${findMappedRoute(pathname)}${suffix}`;
+  return `${resolveSettingsDocumentPath(rootPublicPath, appScope, findMappedRoute(pathname))}${suffix}`;
 }

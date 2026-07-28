@@ -41,7 +41,9 @@ function isStandaloneSettingsRedirect(
     publicPathSegments.pop();
   }
   const rootPublicPath = normalizePathname(publicPathSegments.join('/') || '/').replace(/\/+$/, '');
-  const settingsBasePath = `${rootPublicPath}${appScope}/settings` || '/settings';
+  const settingsBasePath = appScope
+    ? `${rootPublicPath}/settings${appScope}/settings`
+    : `${rootPublicPath}/settings` || '/settings';
   const targetPathname = normalizePathname(target.split(/[?#]/)[0]);
 
   return targetPathname === settingsBasePath || targetPathname.startsWith(`${settingsBasePath}/`);

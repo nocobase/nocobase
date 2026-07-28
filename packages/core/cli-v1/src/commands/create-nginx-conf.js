@@ -29,7 +29,7 @@ module.exports = (cli) => {
     const appPublicPathWithoutTrailingSlash = appPublicPath.replace(/\/$/, '');
     const v2PublicPathWithoutTrailingSlash = v2PublicPath.replace(/\/$/, '');
     const settingsAssetsPath = `${appPublicPath}settings/assets/`;
-    const settingsDocumentPattern = `^${escapeRegExp(appPublicPath)}(?:settings|(?:apps|_app)/[^/]+/settings)(?:/|$)`;
+    const settingsDocumentPattern = `^${escapeRegExp(appPublicPath)}settings(?:/|$)`;
     const file = resolve(__dirname, '../../nocobase.conf.tpl');
     const data = readFileSync(file, 'utf-8');
     let otherLocation = '';

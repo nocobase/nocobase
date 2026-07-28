@@ -8,6 +8,11 @@
  */
 
 import type { BaseApplication } from './BaseApplication';
+import {
+  resolveSettingsAppScope,
+  resolveSettingsDocumentPath,
+  type SettingsAppScope,
+} from './settings-app/settingsDocumentPath';
 
 type AppLike = Pick<BaseApplication<any>, 'getPublicPath'> & {
   name?: string;
@@ -188,10 +193,6 @@ function isStandaloneSettingsApp(app: AppLike) {
   return app.pluginSettingsManager?.getRoutePath?.('') === '/settings/';
 }
 
-function getAppScope(pathname?: string) {
-  return /\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(normalizePathname(pathname))?.[0] || '';
-}
-
 function getSettingsRootPublicPath(app: AppLike) {
   const publicPath = normalizePublicPath(app.getPublicPath());
   if (isStandaloneSettingsApp(app)) {
@@ -203,16 +204,16 @@ function getSettingsRootPublicPath(app: AppLike) {
   return normalizePublicPath(segments.join('/') || '/');
 }
 
-function getSettingsAppScope(app: AppLike) {
+function getSettingsAppScope(app: AppLike): SettingsAppScope {
   return (
-    getAppScope(app.router?.getBasename?.()) ||
-    getAppScope(app.getPublicPath()) ||
-    (app.name && app.name !== 'main' ? `/apps/${app.name}` : '')
+    resolveSettingsAppScope(app.router?.getBasename?.()) ||
+    resolveSettingsAppScope(app.getPublicPath()) ||
+    (app.name && app.name !== 'main' ? resolveSettingsAppScope(`/apps/${app.name}`) : '')
   );
 }
 
 function getStandaloneSettingsBasePath(app: AppLike) {
-  return joinRootRelativePath(getSettingsRootPublicPath(app), `${getSettingsAppScope(app)}/settings`);
+  return resolveSettingsDocumentPath(getSettingsRootPublicPath(app), getSettingsAppScope(app), '/settings');
 }
 
 function isStandaloneSettingsTarget(app: AppLike, pathname: string) {
@@ -228,7 +229,7 @@ function isSettingsTargetForAnotherApp(app: AppLike, pathname: string) {
     rootPublicPath && normalizedPathname.startsWith(`${rootPublicPath}/`)
       ? normalizedPathname.slice(rootPublicPath.length)
       : normalizedPathname;
-  return /^\/(?:settings|(?:apps|_app)\/[^/]+\/settings)(?:\/|$)/.test(pathWithinRoot);
+  return /^\/settings(?:\/|$)/.test(pathWithinRoot);
 }
 
 function getV2SigninPath(app: AppLike) {

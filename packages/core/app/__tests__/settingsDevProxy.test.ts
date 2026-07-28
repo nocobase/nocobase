@@ -19,14 +19,16 @@ describe('settings dev proxy', () => {
     ['/settings/reset-password?resetToken=test-token', true],
     ['/settings/2fa?redirect=%2Fsettings%2Fworkflow', true],
     ['/settings/workflow/workflows/1?tab=nodes', true],
-    ['/apps/demo/settings/signin', true],
-    ['/apps/demo/settings', true],
-    ['/apps/demo/settings/workflow/workflows/1', true],
-    ['/_app/demo/settings/reset-password?resetToken=test-token', true],
-    ['/_app/demo/settings/ai/knowledge-base/detail/k1', true],
+    ['/settings/apps/demo/settings/signin', true],
+    ['/settings/apps/demo/settings', true],
+    ['/settings/apps/demo/settings/workflow/workflows/1', true],
+    ['/settings/_app/demo/settings/reset-password?resetToken=test-token', true],
+    ['/settings/_app/demo/settings/ai/knowledge-base/detail/k1', true],
     ['/nocobase/settings/assets/index.js', false],
     ['/admin/settings', false],
     ['/v/admin/settings', false],
+    ['/apps/demo/settings', false],
+    ['/_app/demo/settings', false],
     ['/apps/demo/admin/settings', false],
   ])('matches only standalone Settings paths: %s', (pathname, expected) => {
     expect(isSettingsDevPath(pathname, '/')).toBe(expected);
@@ -37,12 +39,13 @@ describe('settings dev proxy', () => {
     ['/nocobase/settings/signin', true],
     ['/nocobase/settings/2fa?redirect=%2Fnocobase%2Fsettings', true],
     ['/nocobase/settings/workflow/workflows/1', true],
-    ['/nocobase/apps/demo/settings/forgot-password', true],
-    ['/nocobase/apps/demo/settings', true],
-    ['/nocobase/_app/demo/settings/reset-password?resetToken=test-token', true],
-    ['/nocobase/_app/demo/settings/ai/knowledge-base/detail/k1', true],
+    ['/nocobase/settings/apps/demo/settings/forgot-password', true],
+    ['/nocobase/settings/apps/demo/settings', true],
+    ['/nocobase/settings/_app/demo/settings/reset-password?resetToken=test-token', true],
+    ['/nocobase/settings/_app/demo/settings/ai/knowledge-base/detail/k1', true],
     ['/settings', false],
     ['/nocobase/admin/settings', false],
+    ['/nocobase/apps/demo/settings', false],
   ])('honors APP_PUBLIC_PATH: %s', (pathname, expected) => {
     expect(isSettingsDevPath(pathname, '/nocobase/')).toBe(expected);
   });
@@ -50,21 +53,25 @@ describe('settings dev proxy', () => {
   it.each([
     ['/settings', '/', '/settings/'],
     ['/settings?from=admin', '/', '/settings/?from=admin'],
-    ['/apps/demo/settings', '/', '/settings/'],
-    ['/_app/demo/settings?from=admin', '/', '/settings/?from=admin'],
+    ['/settings/apps/demo/settings', '/', '/settings/apps/demo/settings'],
+    ['/settings/_app/demo/settings?from=admin', '/', '/settings/_app/demo/settings?from=admin'],
     ['/nocobase/settings', '/nocobase/', '/nocobase/settings/'],
-    ['/nocobase/apps/demo/settings?from=admin', '/nocobase/', '/nocobase/settings/?from=admin'],
-    ['/nocobase/_app/demo/settings#portal', '/nocobase/', '/nocobase/settings/#portal'],
+    [
+      '/nocobase/settings/apps/demo/settings?from=admin',
+      '/nocobase/',
+      '/nocobase/settings/apps/demo/settings?from=admin',
+    ],
+    ['/nocobase/settings/_app/demo/settings#portal', '/nocobase/', '/nocobase/settings/_app/demo/settings#portal'],
   ])('normalizes a Settings root to the dev-server base: %s', (pathname, publicPath, expected) => {
     expect(rewriteSettingsDevProxyPath(pathname, publicPath)).toBe(expected);
   });
 
-  it('rewrites application-scoped documents to the Settings dev-server base', () => {
-    expect(rewriteSettingsDevProxyPath('/apps/demo/settings/workflow/workflows/1?tab=nodes', '/')).toBe(
-      '/settings/workflow/workflows/1?tab=nodes',
+  it('preserves application-scoped documents for the Settings dev server', () => {
+    expect(rewriteSettingsDevProxyPath('/settings/apps/demo/settings/workflow/workflows/1?tab=nodes', '/')).toBe(
+      '/settings/apps/demo/settings/workflow/workflows/1?tab=nodes',
     );
-    expect(rewriteSettingsDevProxyPath('/nocobase/apps/demo/settings/a#hash', '/nocobase/')).toBe(
-      '/nocobase/settings/a#hash',
+    expect(rewriteSettingsDevProxyPath('/nocobase/settings/apps/demo/settings/a#hash', '/nocobase/')).toBe(
+      '/nocobase/settings/apps/demo/settings/a#hash',
     );
     expect(rewriteSettingsDevProxyPath('/settings/assets/index.js', '/')).toBe('/settings/assets/index.js');
     expect(rewriteSettingsDevProxyPath('/settings/__rspack_hmr', '/')).toBe('/settings/__rspack_hmr');
@@ -81,10 +88,13 @@ describe('settings dev proxy', () => {
     });
     expect(options.context?.('/nocobase/settings/__rspack_hmr')).toBe(true);
     expect(options.context?.('/nocobase/settings/signin')).toBe(true);
-    expect(options.context?.('/nocobase/apps/demo/settings/workflow')).toBe(true);
-    expect(options.context?.('/nocobase/apps/demo/settings/2fa')).toBe(true);
-    expect(options.context?.('/nocobase/_app/demo/settings/ai')).toBe(true);
+    expect(options.context?.('/nocobase/settings/apps/demo/settings/workflow')).toBe(true);
+    expect(options.context?.('/nocobase/settings/apps/demo/settings/2fa')).toBe(true);
+    expect(options.context?.('/nocobase/settings/_app/demo/settings/ai')).toBe(true);
+    expect(options.context?.('/nocobase/apps/demo/settings/workflow')).toBe(false);
     expect(options.context?.('/nocobase/admin/settings')).toBe(false);
-    expect(options.pathRewrite?.('/nocobase/apps/demo/settings/workflow')).toBe('/nocobase/settings/workflow');
+    expect(options.pathRewrite?.('/nocobase/settings/apps/demo/settings/workflow')).toBe(
+      '/nocobase/settings/apps/demo/settings/workflow',
+    );
   });
 });

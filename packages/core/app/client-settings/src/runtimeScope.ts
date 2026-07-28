@@ -7,6 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  resolveSettingsDocumentBasename,
+  type SettingsAppScope,
+} from '../../../client-v2/src/settings-app/settingsDocumentPath';
+
 function ensurePublicPath(value: string) {
   let normalized = value.trim() || '/';
   if (!normalized.startsWith('/')) {
@@ -24,7 +29,7 @@ export function resolveSettingsRuntimeScope(configuredPublicPath: string, pathna
   const relativePathname = normalizedPathname.startsWith(rootPublicPath)
     ? normalizedPathname.slice(rootPublicPath.length)
     : normalizedPathname.replace(/^\/+/, '');
-  const match = /^(apps|_app)\/([^/]+)(?:\/|$)/.exec(relativePathname);
+  const match = /^settings\/(apps|_app)\/([^/]+)(?:\/|$)/.exec(relativePathname);
 
   if (!match) {
     return {
@@ -35,9 +40,10 @@ export function resolveSettingsRuntimeScope(configuredPublicPath: string, pathna
   }
 
   const [, scope, appName] = match;
+  const appScope = `/${scope}/${appName}` as SettingsAppScope;
   return {
     appName,
-    basename: ensurePublicPath(`${rootPublicPath}${scope}/${appName}`),
+    basename: resolveSettingsDocumentBasename(rootPublicPath, appScope),
     rootPublicPath,
   };
 }

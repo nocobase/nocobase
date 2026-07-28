@@ -48,10 +48,10 @@ describe('standalone settings runtime paths', () => {
     const newApp = createApp('/nocobase/v/', '/nocobase/v/_app/demo');
 
     expect(resolveStandaloneSettingsPath(appsApp, '/nocobase/v/apps/demo/admin/settings/routes')).toBe(
-      '/nocobase/apps/demo/settings/routes',
+      '/nocobase/settings/apps/demo/settings/routes',
     );
     expect(resolveStandaloneSettingsPath(newApp, '/nocobase/v/_app/demo/admin/settings/routes')).toBe(
-      '/nocobase/_app/demo/settings/routes',
+      '/nocobase/settings/_app/demo/settings/routes',
     );
   });
 

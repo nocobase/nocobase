@@ -238,7 +238,7 @@ describe('plugin-users client-v2', () => {
       configurable: true,
       value: {
         ...originalLocation,
-        pathname: '/nocobase/apps/demo/settings/workflow',
+        pathname: '/nocobase/settings/apps/demo/settings/workflow',
         search: '?tab=list',
         hash: '#recent',
         replace,
@@ -251,7 +251,7 @@ describe('plugin-users client-v2', () => {
     vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
       return name === '' ? '/settings/' : getRoutePath(name);
     });
-    app.router.setBasename('/nocobase/apps/demo/');
+    app.router.setBasename('/nocobase/settings/apps/demo/');
 
     await app.flowEngine.getModelClassAsync('SignOutItemModel');
     const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
@@ -260,7 +260,7 @@ describe('plugin-users client-v2', () => {
     await model.onClick();
 
     expect(replace).toHaveBeenCalledWith(
-      '/nocobase/apps/demo/settings/signin?redirect=%2Fnocobase%2Fapps%2Fdemo%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
+      '/nocobase/settings/apps/demo/settings/signin?redirect=%2Fnocobase%2Fsettings%2Fapps%2Fdemo%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
     );
   });
 });

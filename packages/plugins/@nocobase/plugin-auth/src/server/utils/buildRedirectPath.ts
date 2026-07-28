@@ -109,9 +109,9 @@ function resolveSettingsSigninPrefix(appPublicPath: string, redirect?: string | 
   }
 
   const pathnameWithinPublicPath = pathname.slice(appPublicPath.length);
-  const scopedMatch = pathnameWithinPublicPath.match(/^\/((?:apps|_app)\/[^/]+)\/settings(?:\/|$)/);
+  const scopedMatch = pathnameWithinPublicPath.match(/^\/settings\/((?:apps|_app)\/[^/]+)\/settings(?:\/|$)/);
   if (scopedMatch) {
-    return `${appPublicPath}/${scopedMatch[1]}/settings`;
+    return `${appPublicPath}/settings/${scopedMatch[1]}/settings`;
   }
 
   return /^\/settings(?:\/|$)/.test(pathnameWithinPublicPath) ? `${appPublicPath}/settings` : null;

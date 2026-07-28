@@ -138,7 +138,7 @@ describe('plugin-auth client-v2 useRedirect', () => {
   });
 
   it('should use the current Settings root when no redirect param is present', () => {
-    mockState.basename = '/nocobase/apps/test-app';
+    mockState.basename = '/nocobase/settings/apps/test-app';
     mockState.publicPath = '/nocobase/';
     mockState.settingsRouteRoot = '/settings/';
     const replace = vi.fn();
@@ -152,13 +152,13 @@ describe('plugin-auth client-v2 useRedirect', () => {
 
     result.current();
 
-    expect(replace).toHaveBeenCalledWith('/nocobase/apps/test-app/settings/');
+    expect(replace).toHaveBeenCalledWith('/nocobase/settings/apps/test-app/settings/');
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it.each([
-    '/nocobase/apps/test-app/settings/../../../apps/other-app/settings',
-    '/nocobase/apps/test-app/settings/%2e%2e/%2E%2e/%2e%2e/apps/other-app/settings',
+    '/nocobase/settings/apps/test-app/settings/../../other-app/settings',
+    '/nocobase/settings/apps/test-app/settings/%2e%2e/%2E%2e/other-app/settings',
   ])('should reject a settings document redirect that resolves outside the current sub-app: %s', (target) => {
     mockState.basename = '/nocobase/v2/apps/test-app';
     const replace = vi.fn();
