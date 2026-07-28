@@ -54,7 +54,17 @@ export default class extends Plugin {
     transaction?: Transaction;
   }): Promise<TaskStatsRow[]> {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const WorkflowManualTaskCollection = this.db.getCollection('workflowManualTasks');
     const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
+    const qualifiedColumn = (name: string) =>
+      this.db.sequelize.literal(
+        `${this.db.quoteIdentifier(WorkflowManualTaskModel.name)}.${WorkflowManualTaskCollection.getRealFieldName(
+          name,
+          true,
+        )}`,
+      );
+    const group = ['userId', 'workflowId'].map((name) => qualifiedColumn(name));
+    const countColumn = qualifiedColumn('id');
     const where: Record<string, unknown> = {};
     if (options.userIds?.length) {
       where.userId = options.userIds;
@@ -73,13 +83,15 @@ export default class extends Plugin {
       where.workflowId = workflowIds;
     }
 
-    const allCounts = (await WorkflowManualTaskModel.count({
+    const allCounts = (await WorkflowManualTaskModel.findAll({
+      attributes: ['userId', 'workflowId', [this.db.sequelize.fn('COUNT', countColumn), 'count']],
       where,
-      col: 'id',
-      group: ['userId', 'workflowId'],
+      group,
+      raw: true,
       transaction: options.transaction,
     })) as unknown as GroupedTaskCount[];
-    const pendingCounts = (await WorkflowManualTaskModel.count({
+    const pendingCounts = (await WorkflowManualTaskModel.findAll({
+      attributes: ['userId', 'workflowId', [this.db.sequelize.fn('COUNT', countColumn), 'count']],
       where: {
         ...where,
         status: TASK_STATUS.PENDING,
@@ -94,8 +106,8 @@ export default class extends Plugin {
           required: true,
         },
       ],
-      col: 'id',
-      group: ['userId', 'workflowId'],
+      group,
+      raw: true,
       transaction: options.transaction,
     })) as unknown as GroupedTaskCount[];
     const workflowIds = Array.from(new Set([...allCounts, ...pendingCounts].map((row) => row.workflowId)));

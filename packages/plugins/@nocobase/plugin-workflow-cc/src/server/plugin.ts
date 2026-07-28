@@ -38,7 +38,14 @@ export class PluginWorkflowCCServer extends Plugin {
     transaction?: Transaction;
   }): Promise<TaskStatsRow[]> {
     const workflowPlugin = this.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
+    const CCCollection = this.db.getCollection('workflowCcTasks');
     const CCModel = this.db.getModel('workflowCcTasks');
+    const qualifiedColumn = (name: string) =>
+      this.db.sequelize.literal(
+        `${this.db.quoteIdentifier(CCModel.name)}.${CCCollection.getRealFieldName(name, true)}`,
+      );
+    const group = ['userId', 'workflowId'].map((name) => qualifiedColumn(name));
+    const countColumn = qualifiedColumn('id');
     const where: Record<string, unknown> = {};
     if (options.userIds?.length) {
       where.userId = options.userIds;
@@ -57,19 +64,21 @@ export class PluginWorkflowCCServer extends Plugin {
       where.workflowId = workflowIds;
     }
 
-    const allCounts = (await CCModel.count({
+    const allCounts = (await CCModel.findAll({
+      attributes: ['userId', 'workflowId', [this.db.sequelize.fn('COUNT', countColumn), 'count']],
       where,
-      col: 'id',
-      group: ['userId', 'workflowId'],
+      group,
+      raw: true,
       transaction: options.transaction,
     })) as unknown as GroupedTaskCount[];
-    const pendingCounts = (await CCModel.count({
+    const pendingCounts = (await CCModel.findAll({
+      attributes: ['userId', 'workflowId', [this.db.sequelize.fn('COUNT', countColumn), 'count']],
       where: {
         ...where,
         status: TASK_STATUS.UNREAD,
       },
-      col: 'id',
-      group: ['userId', 'workflowId'],
+      group,
+      raw: true,
       transaction: options.transaction,
     })) as unknown as GroupedTaskCount[];
     const workflowIds = Array.from(new Set([...allCounts, ...pendingCounts].map((row) => row.workflowId)));
