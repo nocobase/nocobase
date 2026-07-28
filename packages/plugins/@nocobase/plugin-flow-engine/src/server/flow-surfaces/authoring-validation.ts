@@ -5058,7 +5058,19 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       message: `flowSurfaces authoring ${path}.settings must be an object containing JS block instance settings`,
       details: withJsBlockRepairHint(),
     });
+    return;
   }
+  Object.keys(settings).forEach((key) => {
+    if (!JS_BLOCK_ALLOWED_SETTINGS_KEYS.has(key)) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.settings.${key}`,
+      ruleId: 'jsBlock-settings-unsupported-key',
+      message: `flowSurfaces authoring ${path}.settings.${key} is a reserved JS block option; use ${path}.${key}`,
+      details: withJsBlockRepairHint({ key }),
+    });
+  });
 }
 
 function hasJsBlockLightExtensionSourceInput(settings: any) {

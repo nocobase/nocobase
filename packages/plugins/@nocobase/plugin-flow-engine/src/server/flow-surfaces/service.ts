@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { BelongsToManyRepository, HasManyRepository, TargetKey } from '@nocobase/database';
+import { Transaction, type BelongsToManyRepository, type HasManyRepository, type TargetKey } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -490,6 +490,29 @@ import type {
   FlowSurfaceWriteTarget,
 } from './types';
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
+
+const SQLITE_TRANSACTION_BUSY_RETRY_LIMIT = 20;
+const SQLITE_TRANSACTION_BUSY_RETRY_DELAY_MS = 100;
+
+function isSqliteBusyError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    code?: unknown;
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return (
+    candidate.code === 'SQLITE_BUSY' ||
+    candidate.original?.code === 'SQLITE_BUSY' ||
+    candidate.parent?.code === 'SQLITE_BUSY'
+  );
+}
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
 
 const FLOW_SURFACE_CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
@@ -8534,17 +8557,8 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const composeValues = this.prepareComposeChartAssetSettings(values);
     const target = await this.prepareWriteTarget('compose', composeValues?.target, composeValues, options);
-    const resolvedTarget = await this.locator.resolve(target, options);
-    const targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction, {
-      persistCalendarPopupHosts: false,
-    });
-    if (isRouteBackedPageUse(targetNode?.use) && !supportsPageBlockAuthoring(targetNode.use)) {
-      throwJSPageOperationUnsupported('compose', targetNode.use);
-    }
     const authoringContext = await this.buildTargetAuthoringContext({
       target,
-      resolved: resolvedTarget,
-      targetNode,
       transaction: options.transaction,
     });
     await assertFlowSurfaceAuthoringPayload('compose', composeValues, {
@@ -8555,6 +8569,13 @@ export class FlowSurfacesService {
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
+    const resolvedTarget = await this.locator.resolve(target, options);
+    const targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction, {
+      persistCalendarPopupHosts: false,
+    });
+    if (isRouteBackedPageUse(targetNode?.use) && !supportsPageBlockAuthoring(targetNode.use)) {
+      throwJSPageOperationUnsupported('compose', targetNode.use);
+    }
     const popupTemplateAliasSession = options.popupTemplateAliasSession || this.createPopupTemplateAliasSession();
     const popupTemplateTreeCache: FlowSurfacePopupTemplateTreeCache = options.popupTemplateTreeCache || new Map();
     const runtimeOptions = {
@@ -18697,8 +18718,23 @@ export class FlowSurfacesService {
     };
   }
 
+  private async startTransaction() {
+    const isSqlite = this.db.sequelize.getDialect() === 'sqlite';
+    const transactionOptions = isSqlite ? { type: Transaction.TYPES.IMMEDIATE } : {};
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.db.sequelize.transaction(transactionOptions);
+      } catch (error) {
+        if (!isSqlite || !isSqliteBusyError(error) || attempt >= SQLITE_TRANSACTION_BUSY_RETRY_LIMIT) {
+          throw error;
+        }
+        await delay(SQLITE_TRANSACTION_BUSY_RETRY_DELAY_MS);
+      }
+    }
+  }
+
   async transaction<T>(callback: (transaction: any) => Promise<T>) {
-    const transaction = await this.db.sequelize.transaction();
+    const transaction = await this.startTransaction();
     const transactionState = transaction as typeof transaction & {
       id: string;
       finished?: string | null;
