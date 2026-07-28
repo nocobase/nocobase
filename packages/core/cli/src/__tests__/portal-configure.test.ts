@@ -58,7 +58,7 @@ test('updates local Portal config and syncs remote options when the remote recor
           data: [
             {
               uid: 'customer',
-              routeName: 'customer',
+              portalName: 'customer',
               routePath: '/customer',
               portalType: 'ai',
               enabled: true,
@@ -165,7 +165,7 @@ test('defaults Git path to the repository root', async () => {
         data: [
           {
             uid: 'customer',
-            routeName: 'customer',
+            portalName: 'customer',
             routePath: '/customer',
             portalType: 'ai',
             enabled: true,

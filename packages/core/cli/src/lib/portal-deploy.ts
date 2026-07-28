@@ -262,7 +262,7 @@ async function syncMultiPortalRecord(params: {
     uid: params.portal,
     title: titleFromPortalSlug(params.portal),
     portalType: 'ai',
-    routeName: params.portal,
+    portalName: params.portal,
     routePath: `/${params.portal}`,
     authCheck: true,
     enabled: true,
@@ -276,7 +276,7 @@ async function syncMultiPortalRecord(params: {
     cliVersion: params.cliVersion ?? '',
     envName: params.envName,
     flags: {
-      filterKeys: ['uid'],
+      filterKeys: ['portalName'],
       body: JSON.stringify(body),
     },
     operation: FIRST_OR_CREATE_PORTAL_OPERATION,

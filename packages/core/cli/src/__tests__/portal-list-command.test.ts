@@ -24,14 +24,14 @@ vi.mock('../lib/auth-store.js', () => ({
 vi.mock('../lib/portal-list.js', () => ({
   listPortalWorkspaces: mocks.listPortalWorkspaces,
   toPortalOutputItem: (item: {
-    routeName: string;
+    portalName: string;
     portalUrl: string;
     portalType: string;
     portalDir: string;
     enabled: boolean;
     localSynced: boolean | null;
   }) => ({
-    name: item.routeName,
+    name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
@@ -73,7 +73,7 @@ test('portal list resolves the current env name and prints local sync status', a
     items: [
       {
         uid: 'customer',
-        routeName: 'customer',
+        portalName: 'customer',
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
@@ -83,7 +83,7 @@ test('portal list resolves the current env name and prints local sync status', a
       },
       {
         uid: 'partner',
-        routeName: 'partner',
+        portalName: 'partner',
         routePath: '/partner',
         portalType: 'ai',
         enabled: true,
@@ -93,7 +93,7 @@ test('portal list resolves the current env name and prints local sync status', a
       },
       {
         uid: 'admin',
-        routeName: 'admin',
+        portalName: 'admin',
         routePath: '/admin',
         portalType: 'no-code',
         enabled: true,
@@ -219,7 +219,7 @@ test('portal list prints JSON output when requested', async () => {
     items: [
       {
         uid: 'customer',
-        routeName: 'customer',
+        portalName: 'customer',
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
@@ -229,7 +229,7 @@ test('portal list prints JSON output when requested', async () => {
       },
       {
         uid: 'admin',
-        routeName: 'admin',
+        portalName: 'admin',
         routePath: '/admin',
         portalType: 'no-code',
         enabled: false,

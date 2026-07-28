@@ -100,7 +100,7 @@ const MULTI_PORTAL_RUNTIME_FIELDS = [
   'uid',
   'title',
   'portalType',
-  'routeName',
+  'portalName',
   'routePath',
   'authCheck',
   'enabled',
@@ -111,7 +111,7 @@ const MULTI_PORTAL_ACCESSIBLE_FIELDS = [
   'title',
   'icon',
   'portalType',
-  'routeName',
+  'portalName',
   'routePath',
   'authCheck',
   'enabled',
@@ -363,7 +363,7 @@ describe('plugin-multi-portal server', () => {
       allowNull: true,
     });
     expect(collection.getField('icon')?.options.required).toBeUndefined();
-    expect(collection.getField('routeName')?.options).toMatchObject({
+    expect(collection.getField('portalName')?.options).toMatchObject({
       type: 'string',
       allowNull: false,
     });
@@ -414,7 +414,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'desktop-portal',
         title: 'Desktop portal',
         icon: 'desktopoutlined',
-        routeName: 'desktopPortal',
+        portalName: 'desktopPortal',
         routePath: '/desktop-portal',
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
@@ -424,7 +424,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'mobile-portal',
         title: 'Mobile portal',
         icon: 'mobileoutlined',
-        routeName: 'mobilePortal',
+        portalName: 'mobilePortal',
         routePath: '/mobile-portal',
         uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
       },
@@ -454,7 +454,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'api-portal',
         title: 'API portal',
-        routeName: 'api-portal',
+        portalName: 'api-portal',
         routePath: '/api-portal',
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
@@ -477,7 +477,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'invalid-layout-portal',
         title: 'Invalid layout portal',
-        routeName: 'invalidLayoutPortal',
+        portalName: 'invalidLayoutPortal',
         routePath: '/invalid-layout-portal',
         uiLayoutUid: 'missing-ui-layout',
       },
@@ -512,7 +512,7 @@ describe('plugin-multi-portal server', () => {
         uid: '__default_portal__',
         title: 'Admin',
         portalType: 'no-code',
-        routeName: 'admin',
+        portalName: 'admin',
         routePath: '/admin',
       }),
     ]);
@@ -533,7 +533,7 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(defaultPortal?.get('title')).toBe('Workspace Home');
-    expect(defaultPortal?.get('routeName')).toBe('workspace_home');
+    expect(defaultPortal?.get('portalName')).toBe('workspace_home');
     expect(defaultPortal?.get('routePath')).toBe('/workspace_home');
   });
 
@@ -546,11 +546,6 @@ describe('plugin-multi-portal server', () => {
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
-    await app.db.sync();
-    spawnMock.mockClear();
-
-    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
-    await plugin.install();
 
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'workspace');
@@ -559,7 +554,7 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(defaultPortal?.get('portalType')).toBe('ai');
-    expect(defaultPortal?.get('routeName')).toBe('workspace');
+    expect(defaultPortal?.get('portalName')).toBe('workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/workspace/');
     expect(spawnMock).toHaveBeenCalledWith(
@@ -589,11 +584,6 @@ describe('plugin-multi-portal server', () => {
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
-    await app.db.sync();
-    spawnMock.mockClear();
-
-    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
-    await plugin.install();
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
@@ -624,11 +614,6 @@ describe('plugin-multi-portal server', () => {
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
-    await app.db.sync();
-    spawnMock.mockClear();
-
-    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
-    await plugin.install();
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
@@ -662,10 +647,6 @@ describe('plugin-multi-portal server', () => {
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
-    await app.db.sync();
-
-    const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
-    await expect(plugin.install()).resolves.toBeUndefined();
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
@@ -679,14 +660,13 @@ describe('plugin-multi-portal server', () => {
   });
 
   it('should reject invalid init environment variables', async () => {
-    process.env.INIT_PORTAL_TYPE = 'invalid';
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
-    await app.db.sync();
 
     const plugin = app.pm.get('multi-portal') as { install: () => Promise<void> };
+    process.env.INIT_PORTAL_TYPE = 'invalid';
     await expect(plugin.install()).rejects.toThrow('INIT_PORTAL_TYPE must be either "no-code" or "ai".');
 
     process.env.INIT_PORTAL_TYPE = 'no-code';
@@ -741,7 +721,7 @@ describe('plugin-multi-portal server', () => {
         filterByTk: '__default_portal__',
         values: {
           enabled: false,
-          routeName: 'changed-admin',
+          portalName: 'changed-admin',
         },
       });
     const defaultPortal = await app.db.getRepository('multiPortals').findOne({
@@ -750,7 +730,7 @@ describe('plugin-multi-portal server', () => {
 
     expect(response.status).toBe(200);
     expect(defaultPortal?.get('enabled')).toBe(false);
-    expect(defaultPortal?.get('routeName')).toBe('admin');
+    expect(defaultPortal?.get('portalName')).toBe('admin');
   });
 
   it('should publish custom enabled portal manifest through app supervisor', async () => {
@@ -766,7 +746,7 @@ describe('plugin-multi-portal server', () => {
         title: 'Customer portal',
         icon: 'appstoreoutlined',
         portalType: 'ai',
-        routeName: 'manifestCustomerPortal',
+        portalName: 'manifestCustomerPortal',
         routePath: '/customer-portal',
         authCheck: true,
         enabled: true,
@@ -778,7 +758,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'manifest-disabled-portal',
         title: 'Disabled portal',
         icon: 'stopoutlined',
-        routeName: 'manifestDisabledPortal',
+        portalName: 'manifestDisabledPortal',
         routePath: '/disabled-portal',
         authCheck: true,
         enabled: false,
@@ -824,7 +804,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'storage-template-portal',
         title: 'Storage template portal',
         portalType: 'ai',
-        routeName: 'storageTemplatePortal',
+        portalName: 'storageTemplatePortal',
         routePath: '/storage-template-portal',
         authCheck: true,
         enabled: true,
@@ -871,7 +851,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'storage-no-code-portal',
         title: 'Storage no-code portal',
         portalType: 'no-code',
-        routeName: 'storageNoCodePortal',
+        portalName: 'storageNoCodePortal',
         routePath: '/storage-no-code-portal',
         authCheck: true,
         enabled: true,
@@ -901,7 +881,7 @@ describe('plugin-multi-portal server', () => {
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
-    (app as MockServer & { name: string }).name = 'a_q7xx6p75d0e';
+    app.options.name = 'a_q7xx6p75d0e';
     await app.db.sync();
 
     await app.db.getRepository('multiPortals').create({
@@ -909,7 +889,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'sub-app-storage-template-portal',
         title: 'Sub-app storage template portal',
         portalType: 'ai',
-        routeName: 'test',
+        portalName: 'test',
         routePath: '/test',
         authCheck: true,
         enabled: true,
@@ -952,7 +932,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'skip-template-portal',
         title: 'Skip template portal',
         portalType: 'ai',
-        routeName: 'skip-template-portal',
+        portalName: 'skip-template-portal',
         routePath: '/skip-template-portal',
         authCheck: true,
         enabled: true,
@@ -992,7 +972,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'first-or-create-skip-template-portal',
         title: 'First or create skip template portal',
         portalType: 'ai',
-        routeName: 'first-or-create-skip-template-portal',
+        portalName: 'first-or-create-skip-template-portal',
         routePath: '/first-or-create-skip-template-portal',
         authCheck: true,
         enabled: true,
@@ -1024,7 +1004,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'preserve-title-portal',
         title: 'Custom portal title',
         portalType: 'no-code',
-        routeName: 'preserve-title-portal',
+        portalName: 'preserve-title-portal',
         routePath: '/preserve-title-portal',
         authCheck: true,
         enabled: true,
@@ -1036,7 +1016,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'fill-empty-title-portal',
         title: '',
         portalType: 'no-code',
-        routeName: 'fill-empty-title-portal',
+        portalName: 'fill-empty-title-portal',
         routePath: '/fill-empty-title-portal',
         authCheck: true,
         enabled: true,
@@ -1056,7 +1036,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'preserve-title-portal',
         title: 'Generated portal title',
         portalType: 'no-code',
-        routeName: 'preserve-title-portal',
+        portalName: 'preserve-title-portal',
         routePath: '/preserve-title-portal',
         authCheck: true,
         enabled: true,
@@ -1069,7 +1049,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'fill-empty-title-portal',
         title: 'Filled portal title',
         portalType: 'no-code',
-        routeName: 'fill-empty-title-portal',
+        portalName: 'fill-empty-title-portal',
         routePath: '/fill-empty-title-portal',
         authCheck: true,
         enabled: true,
@@ -1219,7 +1199,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'manifest-api-portal',
         title: 'Manifest API portal',
         icon: 'appstoreoutlined',
-        routeName: 'manifest-api-portal',
+        portalName: 'manifest-api-portal',
         routePath: '/ignored-access-path',
         authCheck: true,
         enabled: true,
@@ -1256,7 +1236,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'conflicting-admin-portal',
         title: 'Conflicting admin portal',
-        routeName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
+        portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
         routePath: '/conflicting-admin-portal',
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
@@ -1269,7 +1249,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'valid-route-name-portal',
         title: 'Valid route name portal',
-        routeName: 'validRouteNamePortal',
+        portalName: 'validRouteNamePortal',
         routePath: '/valid-route-name-portal',
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
@@ -1278,7 +1258,7 @@ describe('plugin-multi-portal server', () => {
     const updateResponse = await agent.resource('multiPortals').update({
       filterByTk: 'valid-route-name-portal',
       values: {
-        routeName: DEFAULT_MOBILE_UI_LAYOUT.routeName,
+        portalName: DEFAULT_MOBILE_UI_LAYOUT.routeName,
       },
     });
     const persistedPortal = await repository.findOne({
@@ -1286,7 +1266,7 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(updateResponse.status).toBe(400);
-    expect(persistedPortal?.get('routeName')).toBe('validRouteNamePortal');
+    expect(persistedPortal?.get('portalName')).toBe('validRouteNamePortal');
   });
 
   it('should relate desktop routes to multi-portals explicitly', async () => {
@@ -1308,7 +1288,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'desktop-route-relation-portal',
         title: 'Desktop route relation portal',
-        routeName: 'desktopRouteRelationPortal',
+        portalName: 'desktopRouteRelationPortal',
         routePath: '/desktop-route-relation-portal',
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
@@ -1317,7 +1297,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'desktop-route-relation-other-portal',
         title: 'Desktop route relation other portal',
-        routeName: 'desktopRouteRelationOtherPortal',
+        portalName: 'desktopRouteRelationOtherPortal',
         routePath: '/desktop-route-relation-other-portal',
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
@@ -1448,7 +1428,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'default-policy-new-portal',
         title: 'Default policy new portal',
-        routeName: 'defaultPolicyNewPortal',
+        portalName: 'defaultPolicyNewPortal',
         routePath: '/default-policy-new-portal',
         authCheck: true,
         enabled: true,
@@ -1489,7 +1469,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'built-in-default-policy-portal',
         title: 'Built-in default policy portal',
-        routeName: 'builtInDefaultPolicyPortal',
+        portalName: 'builtInDefaultPolicyPortal',
         routePath: '/built-in-default-policy-portal',
         authCheck: true,
         enabled: true,
@@ -1587,7 +1567,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'route-target-portal',
         title: 'Route target portal',
-        routeName: 'routeTargetPortal',
+        portalName: 'routeTargetPortal',
         routePath: '/route-target-portal',
         authCheck: true,
         enabled: true,
@@ -1645,7 +1625,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'explicit-scope-portal',
         title: 'Explicit scope portal',
-        routeName: 'explicitScopePortal',
+        portalName: 'explicitScopePortal',
         routePath: '/explicit-scope-portal',
         authCheck: true,
         enabled: true,
@@ -1739,7 +1719,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'customer-portal-layout-param',
         title: 'Customer portal layout param',
-        routeName: 'customerPortalLayoutParam',
+        portalName: 'customerPortalLayoutParam',
         routePath: '/customer-portal-layout-param',
         authCheck: true,
         enabled: true,
@@ -1881,7 +1861,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'disabled-scope-portal',
         title: 'Disabled scope portal',
-        routeName: 'disabledScopePortal',
+        portalName: 'disabledScopePortal',
         routePath: '/disabled-scope-portal',
         authCheck: true,
         enabled: false,
@@ -2011,7 +1991,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
         title: 'Shadow admin layout portal',
-        routeName: 'shadowAdminLayoutPortal',
+        portalName: 'shadowAdminLayoutPortal',
         routePath: '/shadow-admin-layout-portal',
         authCheck: true,
         enabled: true,
@@ -2076,7 +2056,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'route-owner-portal',
         title: 'Route owner portal',
-        routeName: 'routeOwnerPortal',
+        portalName: 'routeOwnerPortal',
         routePath: '/route-owner-portal',
         authCheck: true,
         enabled: true,
@@ -2243,7 +2223,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'portal-link-route-owner',
         title: 'Portal link route owner',
-        routeName: 'portalLinkRouteOwner',
+        portalName: 'portalLinkRouteOwner',
         routePath: '/portal-link-route-owner',
         authCheck: true,
         enabled: true,
@@ -2392,7 +2372,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'route-default-policy-first-portal',
         title: 'Route default policy first portal',
-        routeName: 'routeDefaultPolicyFirstPortal',
+        portalName: 'routeDefaultPolicyFirstPortal',
         routePath: '/route-default-policy-first-portal',
         authCheck: true,
         enabled: true,
@@ -2403,7 +2383,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'route-default-policy-second-portal',
         title: 'Route default policy second portal',
-        routeName: 'routeDefaultPolicySecondPortal',
+        portalName: 'routeDefaultPolicySecondPortal',
         routePath: '/route-default-policy-second-portal',
         authCheck: true,
         enabled: true,
@@ -2539,7 +2519,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'default-grant-isolation-portal',
         title: 'Default grant isolation portal',
-        routeName: 'defaultGrantIsolationPortal',
+        portalName: 'defaultGrantIsolationPortal',
         routePath: '/default-grant-isolation-portal',
         authCheck: true,
         enabled: true,
@@ -2622,7 +2602,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'allowed-permission-portal',
         title: 'Allowed permission portal',
-        routeName: 'allowedPermissionPortal',
+        portalName: 'allowedPermissionPortal',
         routePath: '/allowed-permission-portal',
         authCheck: true,
         enabled: true,
@@ -2633,7 +2613,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'denied-permission-portal',
         title: 'Denied permission portal',
-        routeName: 'deniedPermissionPortal',
+        portalName: 'deniedPermissionPortal',
         routePath: '/denied-permission-portal',
         authCheck: true,
         enabled: true,
@@ -2730,7 +2710,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'route-permission-without-portal-access',
         title: 'Route permission without portal access',
-        routeName: 'routePermissionWithoutPortalAccess',
+        portalName: 'routePermissionWithoutPortalAccess',
         routePath: '/route-permission-without-portal-access',
         authCheck: true,
         enabled: true,
@@ -2817,7 +2797,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'first-shared-layout-portal',
         title: 'First shared layout portal',
-        routeName: 'firstSharedLayoutPortal',
+        portalName: 'firstSharedLayoutPortal',
         routePath: '/first-shared-layout-portal',
         authCheck: true,
         enabled: true,
@@ -2828,7 +2808,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'second-shared-layout-portal',
         title: 'Second shared layout portal',
-        routeName: 'secondSharedLayoutPortal',
+        portalName: 'secondSharedLayoutPortal',
         routePath: '/second-shared-layout-portal',
         authCheck: true,
         enabled: true,
@@ -2913,7 +2893,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'permission-isolation-portal',
         title: 'Permission isolation portal',
-        routeName: 'permissionIsolationPortal',
+        portalName: 'permissionIsolationPortal',
         routePath: '/permission-isolation-portal',
         authCheck: true,
         enabled: true,
@@ -3063,7 +3043,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'explicit-parent-chain-portal',
         title: 'Explicit parent chain portal',
-        routeName: 'explicitParentChainPortal',
+        portalName: 'explicitParentChainPortal',
         routePath: '/explicit-parent-chain-portal',
         authCheck: true,
         enabled: true,
@@ -3206,7 +3186,7 @@ describe('plugin-multi-portal server', () => {
         title: 'Desktop runtime portal',
         icon: 'desktopoutlined',
         portalType: 'no-code',
-        routeName: 'desktopRuntimePortal',
+        portalName: 'desktopRuntimePortal',
         routePath: '/desktop-runtime-portal',
         authCheck: true,
         enabled: true,
@@ -3219,7 +3199,7 @@ describe('plugin-multi-portal server', () => {
         title: 'Mobile runtime portal',
         icon: 'mobileoutlined',
         portalType: 'ai',
-        routeName: 'mobileRuntimePortal',
+        portalName: 'mobileRuntimePortal',
         routePath: '/mobile-runtime-portal',
         authCheck: false,
         enabled: true,
@@ -3230,7 +3210,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'disabled-runtime-portal',
         title: 'Disabled runtime portal',
-        routeName: 'disabledRuntimePortal',
+        portalName: 'disabledRuntimePortal',
         routePath: '/disabled-runtime-portal',
         authCheck: true,
         enabled: false,
@@ -3241,7 +3221,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'disabled-layout-runtime-portal',
         title: 'Disabled layout runtime portal',
-        routeName: 'disabledLayoutRuntimePortal',
+        portalName: 'disabledLayoutRuntimePortal',
         routePath: '/disabled-layout-runtime-portal',
         authCheck: true,
         enabled: true,
@@ -3275,7 +3255,7 @@ describe('plugin-multi-portal server', () => {
     expect(portals[0]).toMatchObject({
       title: 'Desktop runtime portal',
       portalType: 'no-code',
-      routeName: 'desktopRuntimePortal',
+      portalName: 'desktopRuntimePortal',
       routePath: '/desktop-runtime-portal',
       uiLayout: {
         layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
@@ -3284,7 +3264,7 @@ describe('plugin-multi-portal server', () => {
     expect(portals[1]).toMatchObject({
       title: 'Mobile runtime portal',
       portalType: 'ai',
-      routeName: 'mobileRuntimePortal',
+      portalName: 'mobileRuntimePortal',
       routePath: '/mobile-runtime-portal',
       authCheck: false,
       uiLayout: {
@@ -3344,7 +3324,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'accessible-alpha-portal',
         title: 'Accessible alpha portal',
         icon: 'appstoreoutlined',
-        routeName: 'accessibleAlphaPortal',
+        portalName: 'accessibleAlphaPortal',
         routePath: '/accessible-alpha-portal',
         authCheck: true,
         enabled: true,
@@ -3357,7 +3337,7 @@ describe('plugin-multi-portal server', () => {
         title: 'Accessible beta portal',
         icon: null,
         portalType: 'ai',
-        routeName: 'accessibleBetaPortal',
+        portalName: 'accessibleBetaPortal',
         routePath: '/accessible-beta-portal',
         authCheck: false,
         enabled: true,
@@ -3369,7 +3349,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'accessible-gamma-portal',
         title: 'Accessible gamma portal',
         icon: 'globaloutlined',
-        routeName: 'accessibleGammaPortal',
+        portalName: 'accessibleGammaPortal',
         routePath: '/accessible-gamma-portal',
         authCheck: true,
         enabled: true,
@@ -3381,7 +3361,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'accessible-disabled-portal',
         title: 'Accessible disabled portal',
         icon: 'stopoutlined',
-        routeName: 'accessibleDisabledPortal',
+        portalName: 'accessibleDisabledPortal',
         routePath: '/accessible-disabled-portal',
         authCheck: true,
         enabled: false,
@@ -3393,7 +3373,7 @@ describe('plugin-multi-portal server', () => {
         uid: 'accessible-disabled-layout-portal',
         title: 'Accessible disabled layout portal',
         icon: 'layoutoutlined',
-        routeName: 'accessibleDisabledLayoutPortal',
+        portalName: 'accessibleDisabledLayoutPortal',
         routePath: '/accessible-disabled-layout-portal',
         authCheck: true,
         enabled: true,
@@ -3529,7 +3509,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'management-denied-portal',
         title: 'Management denied portal',
-        routeName: 'managementDeniedPortal',
+        portalName: 'managementDeniedPortal',
         routePath: '/management-denied-portal',
         authCheck: true,
         enabled: true,
@@ -3584,7 +3564,7 @@ describe('plugin-multi-portal server', () => {
         values: {
           uid: 'management-no-snippet-portal',
           title: 'Management no snippet portal',
-          routeName: 'management-no-snippet-portal',
+          portalName: 'management-no-snippet-portal',
           routePath: '/management-no-snippet-portal',
           authCheck: true,
           enabled: true,
@@ -3602,7 +3582,7 @@ describe('plugin-multi-portal server', () => {
         values: {
           uid: 'management-no-snippet-first-or-create-portal',
           title: 'Management no snippet first or create portal',
-          routeName: 'management-no-snippet-first-or-create-portal',
+          portalName: 'management-no-snippet-first-or-create-portal',
           routePath: '/management-no-snippet-first-or-create-portal',
           authCheck: true,
           enabled: true,
@@ -3620,7 +3600,7 @@ describe('plugin-multi-portal server', () => {
       values: {
         uid: 'management-allowed-portal',
         title: 'Management allowed portal',
-        routeName: 'management-allowed-portal',
+        portalName: 'management-allowed-portal',
         authCheck: true,
         enabled: true,
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
@@ -3645,7 +3625,7 @@ describe('plugin-multi-portal server', () => {
         values: {
           uid: 'management-allowed-first-or-create-portal',
           title: 'Management allowed first or create portal',
-          routeName: 'management-allowed-first-or-create-portal',
+          portalName: 'management-allowed-first-or-create-portal',
           routePath: '/management-allowed-first-or-create-portal',
           authCheck: true,
           enabled: true,
@@ -3671,7 +3651,7 @@ describe('plugin-multi-portal server', () => {
         values: {
           uid: 'management-negated-portal',
           title: 'Management negated portal',
-          routeName: 'management-negated-portal',
+          portalName: 'management-negated-portal',
           routePath: '/management-negated-portal',
           authCheck: true,
           enabled: true,
@@ -3689,7 +3669,7 @@ describe('plugin-multi-portal server', () => {
         values: {
           uid: 'management-negated-first-or-create-portal',
           title: 'Management negated first or create portal',
-          routeName: 'management-negated-first-or-create-portal',
+          portalName: 'management-negated-first-or-create-portal',
           routePath: '/management-negated-first-or-create-portal',
           authCheck: true,
           enabled: true,

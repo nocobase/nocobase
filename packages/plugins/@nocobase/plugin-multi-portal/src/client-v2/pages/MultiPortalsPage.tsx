@@ -45,7 +45,7 @@ export type MultiPortalFormValues = {
   title: string;
   uid: string;
   portalType: string;
-  routeName: string;
+  portalName: string;
   routePath: string;
   uiLayoutUid?: string | null;
   icon?: string | null;
@@ -184,8 +184,8 @@ const IconPickerFormControl = React.forwardRef<HTMLDivElement, React.ComponentPr
 
 IconPickerFormControl.displayName = 'IconPickerFormControl';
 
-function getMultiPortalRouteNameFormatError(routeName?: string) {
-  const trimmed = routeName?.trim();
+function getMultiPortalNameFormatError(portalName?: string) {
+  const trimmed = portalName?.trim();
   if (!trimmed) {
     return undefined;
   }
@@ -274,18 +274,18 @@ function getSourceStorageOptionsFromDraft(values: MultiPortalFormDraftValues): M
 }
 
 function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): MultiPortalFormValues {
-  const routeName = values.routeName.trim();
-  const routeNameError = getMultiPortalRouteNameFormatError(routeName);
-  if (routeNameError) {
-    throw new Error(routeNameError);
+  const portalName = values.portalName.trim();
+  const portalNameError = getMultiPortalNameFormatError(portalName);
+  if (portalNameError) {
+    throw new Error(portalNameError);
   }
   return {
     ...values,
     title: values.title.trim(),
     uid: values.uid.trim(),
     portalType: normalizePortalType(values.portalType),
-    routeName,
-    routePath: getMultiPortalRoutePathFromSlug(routeName),
+    portalName,
+    routePath: getMultiPortalRoutePathFromSlug(portalName),
     icon: normalizeMultiPortalIcon(values.icon),
     options: getSourceStorageOptionsFromDraft(values),
   };
@@ -321,7 +321,7 @@ function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
     title: record.title,
     uid: record.uid,
     portalType: normalizePortalType(record.portalType),
-    routeName: record.routeName,
+    portalName: record.portalName,
     routePath: record.routePath,
     uiLayoutUid: record.uiLayoutUid || record.uiLayout?.uid || '',
     icon: record.icon ?? null,
@@ -471,7 +471,7 @@ const MultiPortalsPage: React.FC = () => {
           );
         },
       },
-      { title: t('Portal name'), dataIndex: 'routeName', ellipsis: true },
+      { title: t('Portal name'), dataIndex: 'portalName', ellipsis: true },
       {
         title: t('Layout'),
         dataIndex: 'uiLayoutUid',
@@ -670,13 +670,13 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           <Input />
         </Form.Item>
         <Form.Item
-          name="routeName"
+          name="portalName"
           label={t('Portal name')}
           rules={[
             { required: true, whitespace: true, message: t('The field value is required') },
             {
               validator: (_, value?: string) => {
-                const error = getMultiPortalRouteNameFormatError(value);
+                const error = getMultiPortalNameFormatError(value);
                 return error ? Promise.reject(new Error(t(error))) : Promise.resolve();
               },
             },

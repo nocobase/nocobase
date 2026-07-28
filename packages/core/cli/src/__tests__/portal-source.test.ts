@@ -54,7 +54,7 @@ function portalListData(sourceStorage = 'nocobase') {
       {
         uid: 'customer',
         title: 'Customer',
-        routeName: 'customer',
+        portalName: 'customer',
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
@@ -279,7 +279,7 @@ test('pull and push Git-managed source through the configured repository path', 
         {
           uid: 'customer',
           title: 'Customer',
-          routeName: 'customer',
+          portalName: 'customer',
           routePath: '/customer',
           portalType: 'ai',
           enabled: true,
@@ -360,7 +360,7 @@ test('push creates configured Git branch and uses repository root by default', a
           {
             uid: 'customer',
             title: 'Customer',
-            routeName: 'customer',
+            portalName: 'customer',
             routePath: '/customer',
             portalType: 'ai',
             enabled: true,

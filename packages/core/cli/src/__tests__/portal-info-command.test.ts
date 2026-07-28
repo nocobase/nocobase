@@ -23,14 +23,14 @@ vi.mock('../lib/auth-store.js', () => ({
 vi.mock('../lib/portal-list.js', () => ({
   listPortalWorkspaces: mocks.listPortalWorkspaces,
   toPortalOutputItem: (item: {
-    routeName: string;
+    portalName: string;
     portalUrl: string;
     portalType: string;
     portalDir: string;
     enabled: boolean;
     localSynced: boolean | null;
   }) => ({
-    name: item.routeName,
+    name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
@@ -86,7 +86,7 @@ test('portal info prints AI portal details', async () => {
     items: [
       {
         uid: 'customer',
-        routeName: 'customer',
+        portalName: 'customer',
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
@@ -145,7 +145,7 @@ test('portal info leaves local fields empty for no-code portals', async () => {
     items: [
       {
         uid: 'admin',
-        routeName: 'admin',
+        portalName: 'admin',
         routePath: '/admin',
         portalType: 'no-code',
         enabled: true,
@@ -193,7 +193,7 @@ test('portal info prints JSON output when requested', async () => {
     items: [
       {
         uid: 'customer',
-        routeName: 'customer',
+        portalName: 'customer',
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,

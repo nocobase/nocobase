@@ -21,7 +21,7 @@ type MultiPortalAccessibleRecord = {
   title?: string | null;
   icon?: string | null;
   portalType?: string | null;
-  routeName?: string;
+  portalName?: string;
   routePath: string;
   authCheck?: boolean;
   enabled?: boolean;

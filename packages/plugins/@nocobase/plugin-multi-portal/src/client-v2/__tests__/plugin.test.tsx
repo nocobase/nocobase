@@ -29,7 +29,7 @@ const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 const desktopPortal: MultiPortalRuntimeRecord = {
   uid: 'desktop-portal-model',
   title: 'Desktop portal',
-  routeName: 'portalDesktop',
+  portalName: 'portalDesktop',
   routePath: '/portal-desktop',
   authCheck: true,
   enabled: true,
@@ -53,7 +53,7 @@ function makeAccessiblePortal(overrides: Record<string, unknown> = {}) {
     uid: 'customer-portal',
     title: 'Customer portal',
     icon: 'HomeOutlined',
-    routeName: 'customerPortal',
+    portalName: 'customerPortal',
     routePath: '/customer-portal',
     authCheck: true,
     enabled: true,
@@ -161,7 +161,7 @@ describe('PluginMultiPortalClientV2', () => {
       toMultiPortalLayoutRegisterOptions({
         ...desktopPortal,
         uid: 'mobile-portal-model',
-        routeName: 'portalMobile',
+        portalName: 'portalMobile',
         routePath: '/portal-mobile',
         authCheck: false,
         uiLayout: {
@@ -188,7 +188,7 @@ describe('PluginMultiPortalClientV2', () => {
       ...desktopPortal,
       uid: 'mobile-portal-model',
       title: 'Mobile portal',
-      routeName: 'portalMobile',
+      portalName: 'portalMobile',
       routePath: '/portal-mobile',
       authCheck: false,
       uiLayout: {
@@ -336,7 +336,7 @@ describe('PluginMultiPortalClientV2', () => {
         uid: 'zeta-portal',
         title: '',
         icon: null,
-        routeName: 'zetaPortal',
+        portalName: 'zetaPortal',
         routePath: '/zeta-portal',
         enabled: false,
       }),
@@ -764,7 +764,7 @@ describe('PluginMultiPortalClientV2', () => {
         {
           ...desktopPortal,
           uid: 'disabled-portal-model',
-          routeName: 'disabledPortal',
+          portalName: 'disabledPortal',
           routePath: '/disabled-portal',
           enabled: false,
           uiLayout: {
@@ -788,7 +788,7 @@ describe('PluginMultiPortalClientV2', () => {
     expect(disabledMatches.some((match) => match.route.path === '/disabled-portal')).toBe(false);
   });
 
-  it('should not register a portal routeName that is already registered', async () => {
+  it('should not register a portalName that is already registered', async () => {
     const layoutManager = createLayoutManager({
       registeredRouteNames: ['portalDesktop'],
     });
@@ -840,19 +840,19 @@ describe('PluginMultiPortalClientV2', () => {
                 {
                   ...desktopPortal,
                   uid: 'admin-layout-model',
-                  routeName: 'existingPortal',
+                  portalName: 'existingPortal',
                   routePath: '/existing-portal',
                 },
                 {
                   ...desktopPortal,
                   uid: 'failed-portal-model',
-                  routeName: 'failedPortal',
+                  portalName: 'failedPortal',
                   routePath: '/failed-portal',
                 },
                 {
                   ...desktopPortal,
                   uid: 'customer-portal',
-                  routeName: 'customerPortal',
+                  portalName: 'customerPortal',
                   routePath: '/customer-portal',
                 },
               ],

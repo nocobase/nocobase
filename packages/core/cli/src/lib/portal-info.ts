@@ -21,7 +21,7 @@ function formatBoolean(value: boolean | null): string {
 }
 
 export function findPortalListItem(items: PortalListItem[], portal: string): PortalListItem | undefined {
-  return items.find((item) => item.routeName === portal || item.uid === portal);
+  return items.find((item) => item.portalName === portal || item.uid === portal);
 }
 
 export function formatPortalInfo(item: PortalListItem): string {

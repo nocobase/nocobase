@@ -121,7 +121,7 @@ const portalValues: MultiPortalFormValues = {
   title: 'Customer portal',
   uid: 'customer-portal',
   portalType: 'no-code',
-  routeName: 'customer-portal',
+  portalName: 'customer-portal',
   routePath: '/customer-portal',
   uiLayoutUid: 'mobile-layout-model',
   enabled: true,
@@ -355,7 +355,7 @@ describe('plugin-multi-portal settings page', () => {
               title: 'Developer portal',
               uid: 'developer-portal',
               portalType: 'ai',
-              routeName: 'developer-portal',
+              portalName: 'developer-portal',
               routePath: '/developer-portal',
               uiLayoutUid: null,
               uiLayout: null,
@@ -448,7 +448,7 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Admin',
               uid: '__default_portal__',
-              routeName: 'admin',
+              portalName: 'admin',
               routePath: '/admin',
               uiLayout: {
                 title: 'Desktop layout',
@@ -675,7 +675,7 @@ describe('plugin-multi-portal settings page', () => {
     await waitFor(() => {
       expect(resource.create).toHaveBeenCalledWith({
         values: expect.objectContaining({
-          routeName: 'mobile-portal',
+          portalName: 'mobile-portal',
           routePath: '/mobile-portal',
           title: 'Mobile portal',
           uiLayoutUid: 'mobile-layout-model',
@@ -708,7 +708,7 @@ describe('plugin-multi-portal settings page', () => {
     await waitFor(() => {
       expect(resource.create).toHaveBeenCalledWith({
         values: expect.objectContaining({
-          routeName: 'desktop-portal',
+          portalName: 'desktop-portal',
           routePath: '/desktop-portal',
           title: 'Desktop portal',
           uiLayoutUid: 'desktop-layout-model',
@@ -776,7 +776,7 @@ describe('plugin-multi-portal settings page', () => {
         values: {
           title: 'Admin portal',
           uid: 'portal-random-id',
-          routeName: 'admin',
+          portalName: 'admin',
           routePath: '/admin',
           uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
@@ -810,7 +810,7 @@ describe('plugin-multi-portal settings page', () => {
       expect(resource.create).toHaveBeenCalledWith({
         values: expect.objectContaining({
           portalType: 'ai',
-          routeName: 'developer-portal',
+          portalName: 'developer-portal',
           routePath: '/developer-portal',
           title: 'Developer portal',
           options: {
@@ -839,7 +839,7 @@ describe('plugin-multi-portal settings page', () => {
       expect(resource.create).toHaveBeenCalledWith({
         values: expect.objectContaining({
           portalType: 'ai',
-          routeName: 'git-portal',
+          portalName: 'git-portal',
           routePath: '/git-portal',
           title: 'Git portal',
           options: {
@@ -894,12 +894,12 @@ describe('plugin-multi-portal settings page', () => {
     ['portal', '/portal'],
     ['sales-mobile', '/sales-mobile'],
     ['sales_mobile', '/sales_mobile'],
-  ])('should accept URL-safe portal name %s', async (routeName, routePath) => {
+  ])('should accept URL-safe portal name %s', async (portalName, routePath) => {
     const resource = makeResource();
     const { container, dialog, user } = await openCreatePortalForm(resource);
 
     await user.type(within(dialog).getByLabelText('Title'), 'Valid portal');
-    await user.type(within(dialog).getByLabelText('Portal name'), routeName);
+    await user.type(within(dialog).getByLabelText('Portal name'), portalName);
     await selectMobileLayout(container, user);
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
@@ -908,7 +908,7 @@ describe('plugin-multi-portal settings page', () => {
         values: {
           title: 'Valid portal',
           uid: 'portal-random-id',
-          routeName,
+          portalName,
           routePath,
           uiLayoutUid: 'mobile-layout-model',
           icon: null,
@@ -991,7 +991,7 @@ describe('plugin-multi-portal settings page', () => {
           title: 'Customer portal',
           uid: 'customer-portal',
           portalType: 'no-code',
-          routeName: 'customer-portal',
+          portalName: 'customer-portal',
           routePath: '/customer-portal',
           uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
@@ -1214,7 +1214,7 @@ describe('plugin-multi-portal settings page', () => {
         values: {
           title: 'Customer portal',
           uid: 'customer-portal',
-          routeName: 'customer-portal',
+          portalName: 'customer-portal',
           routePath: '/customer-portal',
           uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
@@ -1301,7 +1301,7 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Admin',
               uid: '__default_portal__',
-              routeName: 'admin',
+              portalName: 'admin',
               routePath: '/admin',
               uiLayout: {
                 title: 'Desktop layout',
@@ -1343,7 +1343,7 @@ describe('plugin-multi-portal settings page', () => {
         values: {
           title: 'Admin',
           uid: '__default_portal__',
-          routeName: 'admin',
+          portalName: 'admin',
           routePath: '/admin',
           uiLayoutUid: 'mobile-layout-model',
           icon: null,
@@ -1365,7 +1365,7 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Admin',
               uid: '__default_portal__',
-              routeName: 'admin',
+              portalName: 'admin',
               routePath: '/admin',
               uiLayout: {
                 title: 'Desktop layout',

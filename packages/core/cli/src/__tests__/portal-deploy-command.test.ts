@@ -30,14 +30,14 @@ vi.mock('../lib/portal-deploy.js', () => ({
 vi.mock('../lib/portal-list.js', () => ({
   listPortalWorkspaces: mocks.listPortalWorkspaces,
   toPortalOutputItem: (item: {
-    routeName: string;
+    portalName: string;
     portalUrl: string;
     portalType: string;
     portalDir: string;
     enabled: boolean;
     localSynced: boolean | null;
   }) => ({
-    name: item.routeName,
+    name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
@@ -90,7 +90,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
     items: [
       {
         uid: 'cba',
-        routeName: 'cba',
+        portalName: 'cba',
         routePath: '/cba',
         portalType: 'ai',
         enabled: true,

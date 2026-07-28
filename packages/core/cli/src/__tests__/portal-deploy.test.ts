@@ -81,7 +81,7 @@ function expectPortalRecordFirstOrCreate(options: RequestOptions, portal = 'cust
   expect(options).toEqual(
     expect.objectContaining({
       flags: expect.objectContaining({
-        filterKeys: ['uid'],
+        filterKeys: ['portalName'],
       }),
       operation: expect.objectContaining({
         method: 'POST',
@@ -102,7 +102,7 @@ function expectPortalRecordFirstOrCreate(options: RequestOptions, portal = 'cust
       uid: portal,
       title: portal === 'customer' ? 'Customer' : expect.any(String),
       portalType: 'ai',
-      routeName: portal,
+      portalName: portal,
       routePath: `/${portal}`,
       authCheck: true,
       enabled: true,

@@ -15,7 +15,7 @@ export { getMultiPortalRouteScopeCacheKey };
 export type MultiPortalRuntimeRecord = {
   uid: string;
   title?: string;
-  routeName: string;
+  portalName: string;
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
@@ -73,7 +73,7 @@ export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRec
   }
 
   return {
-    routeName: record.routeName,
+    routeName: record.portalName,
     routePath: record.routePath,
     uid: record.uid,
     ...codeDefinedOptions,

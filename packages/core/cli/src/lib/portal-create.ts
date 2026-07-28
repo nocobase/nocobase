@@ -420,12 +420,12 @@ async function syncMultiPortalRecord(params: {
     cliVersion: params.cliVersion ?? '',
     envName: params.envName,
     flags: {
-      filterKeys: ['uid'],
+      filterKeys: ['portalName'],
       body: JSON.stringify({
         uid: params.portal,
         title: params.title,
         portalType: 'ai',
-        routeName: params.portal,
+        portalName: params.portal,
         routePath: `/${params.portal}`,
         authCheck: true,
         enabled: true,

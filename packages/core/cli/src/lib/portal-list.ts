@@ -34,7 +34,7 @@ export type PortalListOptions = {
 
 export type PortalListItem = {
   uid: string;
-  routeName: string;
+  portalName: string;
   routePath: string;
   portalType: string;
   enabled: boolean;
@@ -165,9 +165,19 @@ function stripBasePath(pathname: string, basePath: string): string {
   return pathValue;
 }
 
-function normalizeNoCodeRoutePath(routePath: string, appPublicPath: string): string {
+function normalizeNoCodeRoutePath(routePath: string, appPublicPath: string, app: string): string {
   let normalizedRoutePath = normalizeRootPath(routePath);
+  const basePaths =
+    app === 'main'
+      ? []
+      : [
+          appendAppPublicPath(appPublicPath, `v/apps/${app}`, { trailingSlash: false }),
+          appendAppPublicPath(appPublicPath, `x/apps/${app}`, { trailingSlash: false }),
+          `/v/apps/${app}`,
+          `/x/apps/${app}`,
+        ];
   for (const basePath of [
+    ...basePaths,
     appendAppPublicPath(appPublicPath, 'v', { trailingSlash: false }),
     appendAppPublicPath(appPublicPath, 'x', { trailingSlash: false }),
     '/v',
@@ -178,19 +188,23 @@ function normalizeNoCodeRoutePath(routePath: string, appPublicPath: string): str
   return normalizedRoutePath;
 }
 
-function buildNoCodePortalBasePath(params: { appPublicPath: string; routePath: string }): string {
+function buildNoCodePortalBasePath(params: { app: string; appPublicPath: string; routePath: string }): string {
   if (isAbsoluteUrl(params.routePath)) {
     return params.routePath;
   }
 
-  const normalizedRoutePath = normalizeNoCodeRoutePath(params.routePath, params.appPublicPath);
-  const segment = normalizedRoutePath === '/' ? 'v' : `v/${normalizedRoutePath.replace(/^\/+/, '')}`;
+  const normalizedRoutePath = normalizeNoCodeRoutePath(params.routePath, params.appPublicPath, params.app);
+  const routeSegment = normalizedRoutePath.replace(/^\/+/, '');
+  let segment = normalizedRoutePath === '/' ? 'v' : `v/${routeSegment}`;
+  if (params.app !== 'main') {
+    segment = normalizedRoutePath === '/' ? `v/apps/${params.app}` : `v/apps/${params.app}/${routeSegment}`;
+  }
   return appendAppPublicPath(params.appPublicPath, segment, { trailingSlash: normalizedRoutePath === '/' });
 }
 
 export function toPortalOutputItem(item: PortalListItem): PortalOutputItem {
   return {
-    name: item.routeName,
+    name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
     localPath: item.localSynced === true ? item.portalDir : '',
@@ -211,7 +225,7 @@ async function listMultiPortalRecords(params: {
     envName: params.envName,
     flags: {
       pageSize: 200,
-      sort: ['routeName'],
+      sort: ['portalName'],
     },
     operation: LIST_PORTALS_OPERATION,
   });
@@ -254,19 +268,19 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
   const items = await Promise.all(
     records.map(async (record) => {
       const uid = readRecordString(record, 'uid');
-      const routeName = readRecordString(record, 'routeName') || uid;
-      const routePath = readRecordString(record, 'routePath') || `/${routeName}`;
+      const portalName = readRecordString(record, 'portalName') || uid;
+      const routePath = readRecordString(record, 'routePath') || `/${portalName}`;
       const portalType = readRecordString(record, 'portalType');
       const enabled = readRecordBoolean(record, 'enabled');
       const options = readRecordObject(record, 'options');
       const git = readRecordObject(options, 'git');
       const sourceStorage = trimValue(options.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
       const isAi = portalType === 'ai';
-      const portalDir = isAi ? path.join(storagePath, 'portals', app, routeName) : '';
+      const portalDir = isAi ? path.join(storagePath, 'portals', app, portalName) : '';
 
       return {
         uid,
-        routeName,
+        portalName,
         routePath,
         portalType,
         enabled,
@@ -280,8 +294,8 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
           ? buildPortalAccessUrl(
               apiBaseUrl,
               isAi
-                ? buildPortalBasePath({ app, appPublicPath, portal: routeName })
-                : buildNoCodePortalBasePath({ appPublicPath, routePath }),
+                ? buildPortalBasePath({ app, appPublicPath, portal: portalName })
+                : buildNoCodePortalBasePath({ app, appPublicPath, routePath }),
             )
           : '',
         portalDir,

@@ -58,7 +58,7 @@ function expectPortalRecordList(options: RequestOptions) {
     expect.objectContaining({
       flags: {
         pageSize: 200,
-        sort: ['routeName'],
+        sort: ['portalName'],
       },
       operation: expect.objectContaining({
         method: 'GET',
@@ -100,7 +100,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
         {
           uid: 'customer',
           title: 'Customer',
-          routeName: 'customer',
+          portalName: 'customer',
           routePath: '/customer',
           portalType: 'ai',
           enabled: true,
@@ -108,7 +108,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
         {
           uid: 'partner',
           title: 'Partner',
-          routeName: 'partner',
+          portalName: 'partner',
           routePath: '/partner',
           portalType: 'no-code',
           enabled: false,
@@ -135,7 +135,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
     items: [
       {
         uid: 'customer',
-        routeName: 'customer',
+        portalName: 'customer',
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
@@ -151,7 +151,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
       },
       {
         uid: 'partner',
-        routeName: 'partner',
+        portalName: 'partner',
         routePath: '/partner',
         portalType: 'no-code',
         enabled: false,
@@ -193,7 +193,7 @@ test('http list uses env source storage when no local storagePath is configured'
           {
             uid: 'customer',
             title: 'Customer',
-            routeName: 'customer',
+            portalName: 'customer',
             routePath: '/customer',
             portalType: 'ai',
             enabled: true,
@@ -245,7 +245,7 @@ test('lists no-code portal records without local workspace fields', async () => 
         {
           uid: '__default_portal__',
           title: 'Admin',
-          routeName: 'admin',
+          portalName: 'admin',
           routePath: '/admin',
           portalType: 'no-code',
           enabled: true,
@@ -265,10 +265,66 @@ test('lists no-code portal records without local workspace fields', async () => 
   ).resolves.toMatchObject({
     items: [
       expect.objectContaining({
-        routeName: 'admin',
+        portalName: 'admin',
         portalType: 'no-code',
         enabled: true,
         portalUrl: 'http://localhost:13000/console/v/admin',
+        portalDir: '',
+        localSynced: null,
+      }),
+    ],
+  });
+});
+
+test('lists sub-app no-code portal records with app-scoped access URLs', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-list-storage-');
+  const apiRequest = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    data: {
+      data: [
+        {
+          uid: '__default_portal__',
+          title: 'Admin',
+          portalName: 'admin',
+          routePath: '/admin',
+          portalType: 'no-code',
+          enabled: true,
+        },
+        {
+          uid: 'legacy-admin',
+          title: 'Legacy Admin',
+          portalName: 'legacy-admin',
+          routePath: '/v/apps/test/admin',
+          portalType: 'no-code',
+          enabled: true,
+        },
+      ],
+    },
+  }));
+
+  await expect(
+    listPortalWorkspaces({
+      env: createEnv({
+        storagePath,
+        apiBaseUrl: 'http://localhost:56187/api/__app/test',
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'test',
+    items: [
+      expect.objectContaining({
+        portalName: 'admin',
+        portalType: 'no-code',
+        portalUrl: 'http://localhost:56187/v/apps/test/admin',
+        portalDir: '',
+        localSynced: null,
+      }),
+      expect.objectContaining({
+        portalName: 'legacy-admin',
+        portalType: 'no-code',
+        portalUrl: 'http://localhost:56187/v/apps/test/admin',
         portalDir: '',
         localSynced: null,
       }),
@@ -286,7 +342,7 @@ test('does not include a URL for disabled portal records', async () => {
         {
           uid: 'customer',
           title: 'Customer',
-          routeName: 'customer',
+          portalName: 'customer',
           routePath: '/customer',
           portalType: 'ai',
           enabled: false,
@@ -303,7 +359,7 @@ test('does not include a URL for disabled portal records', async () => {
   ).resolves.toMatchObject({
     items: [
       expect.objectContaining({
-        routeName: 'customer',
+        portalName: 'customer',
         enabled: false,
         portalUrl: '',
       }),

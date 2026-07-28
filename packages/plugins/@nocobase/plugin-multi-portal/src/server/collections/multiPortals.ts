@@ -18,7 +18,7 @@ export default defineCollection({
   indexes: [
     {
       type: 'UNIQUE',
-      fields: ['portalType', 'routeName'],
+      fields: ['portalName'],
     },
   ],
   fields: [
@@ -46,7 +46,7 @@ export default defineCollection({
       allowNull: true,
     },
     {
-      name: 'routeName',
+      name: 'portalName',
       type: 'string',
       allowNull: false,
     },

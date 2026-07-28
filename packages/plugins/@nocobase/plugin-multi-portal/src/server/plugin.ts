@@ -28,7 +28,7 @@ const MULTI_PORTAL_RUNTIME_FIELDS = [
   'uid',
   'title',
   'portalType',
-  'routeName',
+  'portalName',
   'routePath',
   'authCheck',
   'enabled',
@@ -39,7 +39,7 @@ const MULTI_PORTAL_ACCESSIBLE_FIELDS = [
   'title',
   'icon',
   'portalType',
-  'routeName',
+  'portalName',
   'routePath',
   'authCheck',
   'enabled',
@@ -117,7 +117,7 @@ type DefaultMultiPortalRecord = {
   title: string;
   icon: string;
   portalType: InitPortalType;
-  routeName: string;
+  portalName: string;
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
@@ -245,14 +245,14 @@ function formatInitPortalTitle(portalName: string) {
 }
 
 function getDefaultMultiPortalRecord(): DefaultMultiPortalRecord {
-  const routeName = getInitPortalName();
+  const portalName = getInitPortalName();
   return {
     uid: DEFAULT_MULTI_PORTAL_UID,
-    title: formatInitPortalTitle(routeName),
+    title: formatInitPortalTitle(portalName),
     icon: 'DesktopOutlined',
     portalType: getInitPortalType(),
-    routeName,
-    routePath: `/${routeName}`,
+    portalName,
+    routePath: `/${portalName}`,
     authCheck: true,
     enabled: true,
     uiLayoutUid: 'admin-layout-model',
@@ -1024,15 +1024,15 @@ function getCurrentRoles(ctx: ResourcerContext) {
   return typeof currentRole === 'string' && currentRole ? [currentRole] : [];
 }
 
-function getMultiPortalRouteNameFromValues(ctx: ResourcerContext) {
+function getMultiPortalNameFromValues(ctx: ResourcerContext) {
   const values = ctx.action?.params.values;
   if (!values || typeof values !== 'object' || Array.isArray(values)) {
     return;
   }
 
-  const routeName = (values as Record<string, unknown>).routeName;
-  if (typeof routeName === 'string' && routeName.trim()) {
-    return routeName;
+  const portalName = (values as Record<string, unknown>).portalName;
+  if (typeof portalName === 'string' && portalName.trim()) {
+    return portalName;
   }
 }
 
@@ -1068,17 +1068,17 @@ function shouldSkipCreatePortalDirectory(options?: DatabaseHookOptions) {
 
 async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () => Promise<void>) {
   const values = getMultiPortalWriteValues(ctx);
-  const routeName = values?.routeName;
-  if (routeName === undefined || routeName === null) {
+  const portalName = values?.portalName;
+  if (portalName === undefined || portalName === null) {
     await next();
     return;
   }
-  if (typeof routeName !== 'string') {
+  if (typeof portalName !== 'string') {
     await next();
     return;
   }
 
-  const slug = routeName.trim();
+  const slug = portalName.trim();
   if (!slug) {
     await next();
     return;
@@ -1088,7 +1088,7 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
     return;
   }
 
-  values.routeName = slug;
+  values.portalName = slug;
   values.routePath = `/${slug}`;
   await next();
 }
@@ -1098,7 +1098,7 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
   const defaultPortal = getDefaultMultiPortalRecord();
   const existing = await repository.findOne({
     filterByTk: defaultPortal.uid,
-    fields: ['uid', 'title', 'icon', 'portalType', 'routeName', 'routePath', 'authCheck', 'uiLayoutUid'],
+    fields: ['uid', 'title', 'icon', 'portalType', 'portalName', 'routePath', 'authCheck', 'uiLayoutUid'],
     transaction: options?.transaction,
   });
 
@@ -1113,7 +1113,7 @@ async function ensureDefaultMultiPortals(db: Database, options?: DatabaseHookOpt
   const protectedValues = {
     uid: defaultPortal.uid,
     portalType: defaultPortal.portalType ?? null,
-    routeName: defaultPortal.routeName,
+    portalName: defaultPortal.portalName,
     routePath: defaultPortal.routePath,
     authCheck: defaultPortal.authCheck,
     uiLayoutUid: getDefaultMultiPortalUiLayoutUid(defaultPortal),
@@ -1140,7 +1140,7 @@ async function protectDefaultMultiPortalUpdate(ctx: ResourcerContext, next: () =
   const values: Record<string, unknown> = {
     uid: defaultPortal.uid,
     portalType: defaultPortal.portalType ?? null,
-    routeName: defaultPortal.routeName,
+    portalName: defaultPortal.portalName,
     routePath: defaultPortal.routePath,
     authCheck: defaultPortal.authCheck,
     uiLayoutUid: getDefaultMultiPortalUiLayoutUid(defaultPortal),
@@ -1173,15 +1173,15 @@ async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () 
     return;
   }
 
-  const routeName = getMultiPortalRouteNameFromValues(ctx);
-  if (!routeName) {
+  const portalName = getMultiPortalNameFromValues(ctx);
+  if (!portalName) {
     await next();
     return;
   }
 
   const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
     filter: {
-      routeName,
+      routeName: portalName,
     },
     fields: ['uid'],
   });
@@ -1920,7 +1920,7 @@ export class PluginMultiPortalServer extends Plugin {
       return null;
     }
 
-    const portalName = normalizePortalStorageName(readField('routeName'));
+    const portalName = normalizePortalStorageName(readField('portalName'));
     if (!portalName || !isValidPortalStorageName(portalName)) {
       return null;
     }
@@ -2093,7 +2093,7 @@ export class PluginMultiPortalServer extends Plugin {
 
     const multiPortal = await this.db.getRepository('multiPortals').findOne({
       filterByTk,
-      fields: ['uid', 'portalType', 'routeName', 'enabled'],
+      fields: ['uid', 'portalType', 'portalName', 'enabled'],
     });
     const item = multiPortal ? this.getMultiPortalStorageItem(multiPortal) : null;
     if (!item) {
@@ -2388,7 +2388,7 @@ export class PluginMultiPortalServer extends Plugin {
       filter: {
         portalType: 'ai',
       },
-      fields: ['uid', 'portalType', 'routeName', 'enabled'],
+      fields: ['uid', 'portalType', 'portalName', 'enabled'],
       transaction: options?.transaction,
     });
     for (const record of records) {
