@@ -46,12 +46,24 @@ const actionsStyle: React.CSSProperties = {
   height: '100%',
 };
 
+const workspaceStyle: React.CSSProperties = {
+  display: 'flex',
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  overflow: 'hidden',
+};
+
 const contentStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
   minHeight: 0,
   overflow: 'hidden',
 };
 
 const embedContainerStyle: React.CSSProperties = {
+  flexShrink: 0,
+  height: '100%',
   position: 'relative',
   width: 'fit-content',
 };
@@ -96,8 +108,10 @@ export const SettingsShell: FC = ({ children }) => {
             </div>
           </div>
         </Layout.Header>
-        <Layout.Content style={contentStyle}>{children}</Layout.Content>
-        <div id="nocobase-embed-container" style={embedContainerStyle} />
+        <div style={workspaceStyle}>
+          <Layout.Content style={contentStyle}>{children}</Layout.Content>
+          <div id="nocobase-embed-container" style={embedContainerStyle} />
+        </div>
       </Layout>
     </ConfigProvider>
   );

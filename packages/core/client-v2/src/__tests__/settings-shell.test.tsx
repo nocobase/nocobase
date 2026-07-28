@@ -97,6 +97,58 @@ describe('SettingsShell', () => {
     expect(screen.getByRole('banner')).toHaveStyle({ background: '#176CE1' });
   });
 
+  it('places the settings content and embed container side by side below the header', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/settings/theme-editor']}>
+        <SettingsShell>
+          <div>settings content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    const header = screen.getByRole('banner');
+    const content = screen.getByRole('main');
+    const embedContainer = container.querySelector<HTMLElement>('#nocobase-embed-container');
+    const workspace = content.parentElement;
+
+    expect(embedContainer).not.toBeNull();
+    if (!embedContainer) {
+      throw new Error('Expected the Settings shell to render the global embed container');
+    }
+    expect(header.nextElementSibling).toBe(workspace);
+    expect(workspace).toHaveStyle({
+      display: 'flex',
+      flex: '1',
+      minWidth: '0',
+      minHeight: '0',
+      overflow: 'hidden',
+    });
+    expect(workspace?.children).toHaveLength(2);
+    expect(workspace?.firstElementChild).toBe(content);
+    expect(workspace?.lastElementChild).toBe(embedContainer);
+    expect(content).toHaveStyle({
+      flex: '1',
+      minWidth: '0',
+      minHeight: '0',
+      overflow: 'hidden',
+    });
+    expect(embedContainer).toHaveStyle({
+      flexShrink: '0',
+      height: '100%',
+      position: 'relative',
+    });
+
+    embedContainer.style.width = '33.3%';
+    embedContainer.style.maxWidth = '800px';
+    expect(workspace?.lastElementChild).toBe(embedContainer);
+    expect(embedContainer).toHaveStyle({ width: '33.3%', maxWidth: '800px' });
+
+    embedContainer.style.width = 'auto';
+    embedContainer.style.maxWidth = 'none';
+    expect(content).toHaveStyle({ flex: '1' });
+    expect(embedContainer).toHaveStyle({ width: 'auto', maxWidth: 'none' });
+  });
+
   it.each(['auth.signin', '2fa.verify'])('does not render the settings shell for %s', (routeId) => {
     matchRoutes.mockReturnValue([{ route: { id: routeId } }]);
 
