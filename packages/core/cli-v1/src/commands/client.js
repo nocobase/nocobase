@@ -11,7 +11,100 @@ const chalk = require('chalk');
 const fs = require('fs-extra');
 const { resolve } = require('path');
 const { discoverPluginPackages } = require('@nocobase/utils/plugin-package');
-const { storagePathJoin } = require('../util');
+const {
+  normalizeModernClientPrefix,
+  resolveAppClientEntryMode,
+  resolvePublicPath,
+  storagePathJoin,
+} = require('../util');
+
+function replaceRuntimeEnvPlaceholders(data, values) {
+  return data
+    .replace(/\{\{env.CDN_BASE_URL\}\}/g, values.CDN_BASE_URL)
+    .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, values.APP_PUBLIC_PATH)
+    .replace(/\{\{env.APP_MODERN_CLIENT_PREFIX\}\}/g, values.APP_MODERN_CLIENT_PREFIX)
+    .replace(/\{\{env.APP_CLIENT_ENTRY_MODE\}\}/g, values.APP_CLIENT_ENTRY_MODE)
+    .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, values.API_CLIENT_SHARE_TOKEN)
+    .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, values.API_CLIENT_STORAGE_TYPE)
+    .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, values.API_CLIENT_STORAGE_PREFIX)
+    .replace(/\{\{env.API_BASE_URL\}\}/g, values.API_BASE_URL)
+    .replace(/\{\{env.WS_URL\}\}/g, values.WS_URL)
+    .replace(/\{\{env.WS_PATH\}\}/g, values.WS_PATH)
+    .replace(/\{\{env.NOCOBASE_APP_DEV\}\}/g, values.NOCOBASE_APP_DEV)
+    .replace(/\{\{env.ESM_CDN_BASE_URL\}\}/g, values.ESM_CDN_BASE_URL)
+    .replace(/\{\{env.ESM_CDN_SUFFIX\}\}/g, values.ESM_CDN_SUFFIX);
+}
+
+function replaceRuntimeAssignment(data, key, value) {
+  const literal =
+    typeof value === 'boolean' ? String(value) : `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  const assignment = `window['${key}'] = ${literal};`;
+  const pattern = new RegExp(`window\\['${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'\\]\\s*=\\s*[^;]*;`);
+
+  return pattern.test(data) ? data.replace(pattern, assignment) : data;
+}
+
+function renderExtractedClientIndexHtml(target, version) {
+  const indexPath = resolve(target, 'index.html');
+  const tplPath = resolve(target, 'index.html.tpl');
+  if (!fs.existsSync(indexPath) && !fs.existsSync(tplPath)) {
+    return false;
+  }
+
+  const appPublicPath = resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
+  const cdnBaseUrl =
+    process.env.CDN_BASE_URL || `${appPublicPath.replace(/\/$/, '')}/dist/${version}/`.replace(/^\/\//, '/');
+  const values = {
+    CDN_BASE_URL: cdnBaseUrl,
+    APP_PUBLIC_PATH: appPublicPath,
+    APP_MODERN_CLIENT_PREFIX: normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX),
+    APP_CLIENT_ENTRY_MODE: resolveAppClientEntryMode(),
+    API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+    API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE || 'localStorage',
+    API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX || 'NOCOBASE_',
+    API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH || '/api/',
+    WS_URL: process.env.WEBSOCKET_URL || '',
+    WS_PATH: process.env.WS_PATH || '/ws',
+    NOCOBASE_APP_DEV: 'false',
+    ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+    ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+  };
+  const sourcePath = fs.existsSync(tplPath) ? tplPath : indexPath;
+  let data = replaceRuntimeEnvPlaceholders(fs.readFileSync(sourcePath, 'utf-8'), values)
+    .replace(/((?:src|href)=")(?:\.\/)?assets\//g, `$1${values.APP_PUBLIC_PATH}assets/`)
+    .replace(/((?:src|href)=")\/assets\//g, `$1${values.APP_PUBLIC_PATH}assets/`)
+    .replace('src="/umi.', `src="${values.APP_PUBLIC_PATH}umi.`)
+    .replace(/((?:src|href)="[^"]*?)\/{2,}(assets\/)/g, '$1/$2');
+
+  if (values.CDN_BASE_URL) {
+    const appBaseUrl = values.CDN_BASE_URL.replace(/\/+$/, '');
+    const publicPath = values.APP_PUBLIC_PATH.replace(/\/+$/, '');
+    data = data
+      .replace(new RegExp(`src="${publicPath}/`, 'g'), `src="${appBaseUrl}/`)
+      .replace(new RegExp(`href="${publicPath}/`, 'g'), `href="${appBaseUrl}/`);
+  }
+
+  data = replaceRuntimeAssignment(data, '__webpack_public_path__', values.CDN_BASE_URL);
+  data = replaceRuntimeAssignment(data, '__nocobase_public_path__', values.APP_PUBLIC_PATH);
+  data = replaceRuntimeAssignment(data, '__nocobase_modern_client_prefix__', values.APP_MODERN_CLIENT_PREFIX);
+  data = replaceRuntimeAssignment(data, '__nocobase_app_client_entry_mode__', values.APP_CLIENT_ENTRY_MODE);
+  data = replaceRuntimeAssignment(data, '__nocobase_api_base_url__', values.API_BASE_URL);
+  data = replaceRuntimeAssignment(data, '__nocobase_api_client_storage_prefix__', values.API_CLIENT_STORAGE_PREFIX);
+  data = replaceRuntimeAssignment(data, '__nocobase_api_client_storage_type__', values.API_CLIENT_STORAGE_TYPE);
+  data = replaceRuntimeAssignment(
+    data,
+    '__nocobase_api_client_share_token__',
+    /^true$/i.test(values.API_CLIENT_SHARE_TOKEN),
+  );
+  data = replaceRuntimeAssignment(data, '__nocobase_ws_url__', values.WS_URL);
+  data = replaceRuntimeAssignment(data, '__nocobase_ws_path__', values.WS_PATH);
+  data = replaceRuntimeAssignment(data, '__nocobase_app_dev__', false);
+  data = replaceRuntimeAssignment(data, '__esm_cdn_base_url__', values.ESM_CDN_BASE_URL);
+  data = replaceRuntimeAssignment(data, '__esm_cdn_suffix__', values.ESM_CDN_SUFFIX);
+
+  fs.writeFileSync(indexPath, data, 'utf-8');
+  return true;
+}
 
 /**
  * 复制主应用客户端文件
@@ -127,6 +220,7 @@ module.exports = (cli) => {
         nodeModulesPath: resolve(process.cwd(), 'node_modules'),
       });
       const copiedMainClient = await copyMainClient(mainClientSource, target);
+      const renderedMainIndex = copiedMainClient ? renderExtractedClientIndexHtml(target, version) : false;
       const copiedPluginBundles = await copyPluginClients(plugins, target);
       const activeVersionFile = await writeActiveVersion(version);
 
@@ -145,7 +239,7 @@ module.exports = (cli) => {
         chalk.green(
           `Extracted client assets ${version} to ${target} (main client: ${
             copiedMainClient ? 'yes' : 'no'
-          }, plugin bundles: ${copiedPluginBundles}).`,
+          }, rendered index: ${renderedMainIndex ? 'yes' : 'no'}, plugin bundles: ${copiedPluginBundles}).`,
         ),
       );
     });
@@ -198,3 +292,5 @@ module.exports = (cli) => {
       }
     });
 };
+
+module.exports.renderExtractedClientIndexHtml = renderExtractedClientIndexHtml;

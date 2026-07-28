@@ -33,6 +33,8 @@ const DEFAULT_API_BASE_PATH = '/api/';
 const DEFAULT_WS_PATH = '/ws';
 const DEFAULT_PLUGIN_STATICS_PATH = '/static/plugins/';
 const DEFAULT_MODERN_CLIENT_PREFIX = 'v';
+const DEFAULT_APP_CLIENT_ENTRY_MODE = 'legacy-default';
+const APP_CLIENT_ENTRY_MODES = new Set(['legacy-default', 'modern-default', 'modern-only']);
 const DEFAULT_API_CLIENT_STORAGE_PREFIX = 'NOCOBASE_';
 const DEFAULT_API_CLIENT_STORAGE_TYPE = 'localStorage';
 const DEFAULT_ESM_CDN_BASE_URL = 'https://esm.sh';
@@ -177,6 +179,7 @@ type ProxyEnvSettings = {
   wsPath: string;
   pluginStaticsPath: string;
   modernClientPrefix: string;
+  appClientEntryMode: string;
   cdnBaseUrl?: string;
   apiClientStoragePrefix: string;
   apiClientStorageType: string;
@@ -227,6 +230,11 @@ function normalizeModernClientPrefix(value?: string) {
     .trim()
     .replace(/^\/+|\/+$/g, '');
   return segment || DEFAULT_MODERN_CLIENT_PREFIX;
+}
+
+function normalizeAppClientEntryMode(value?: string) {
+  const normalized = String(value || '').trim();
+  return APP_CLIENT_ENTRY_MODES.has(normalized) ? normalized : DEFAULT_APP_CLIENT_ENTRY_MODE;
 }
 
 function normalizeApiBasePath(value = DEFAULT_API_BASE_PATH) {
@@ -500,6 +508,7 @@ export async function loadEnvProxySettings(
         { trailingSlash: true },
       ),
       modernClientPrefix: normalizeModernClientPrefix(envValues.APP_MODERN_CLIENT_PREFIX),
+      appClientEntryMode: normalizeAppClientEntryMode(envValues.APP_CLIENT_ENTRY_MODE),
       cdnBaseUrl:
         trimValue(options?.cdnBaseUrl) ??
         trimValue(runtime.env.envVars?.CDN_BASE_URL) ??
@@ -528,6 +537,7 @@ function createManualProxyEnvSettings(input: ManualEnvProxyNginxInput): ProxyEnv
       trailingSlash: true,
     }),
     modernClientPrefix: DEFAULT_MODERN_CLIENT_PREFIX,
+    appClientEntryMode: normalizeAppClientEntryMode(process.env.APP_CLIENT_ENTRY_MODE),
     cdnBaseUrl: trimValue(input.cdnBaseUrl),
     apiClientStoragePrefix: DEFAULT_API_CLIENT_STORAGE_PREFIX,
     apiClientStorageType: DEFAULT_API_CLIENT_STORAGE_TYPE,
@@ -782,6 +792,7 @@ type EnvProxyNginxRenderContext = {
   indexV1Path: string;
   indexV2Path: string;
   modernClientPrefix: string;
+  appClientEntryMode: string;
   proxyHost: string;
   snippetsDir: string;
   storageDir: string;
@@ -955,6 +966,7 @@ function buildNginxRuntimeConfig(context: EnvProxyNginxRenderContext, variant: '
     __webpack_public_path__: context.cdnBaseUrl,
     __nocobase_public_path__: variant === 'v1' ? context.appPublicPath : context.v2PublicPath,
     ...(variant === 'v2' ? { __nocobase_modern_client_prefix__: context.modernClientPrefix } : {}),
+    __nocobase_app_client_entry_mode__: context.appClientEntryMode,
     __nocobase_api_base_url__: context.apiBasePath,
     __nocobase_api_client_storage_prefix__: context.apiClientStoragePrefix,
     __nocobase_api_client_storage_type__: context.apiClientStorageType,
@@ -1012,6 +1024,7 @@ async function buildEnvProxyNginxRenderContext(
     indexV1Path: await mapProxyPathFromCliRoot(resolveEnvProxyNginxIndexOutputPath(source.envName, 'v1', { scope: options?.scope }), options),
     indexV2Path: await mapProxyPathFromCliRoot(resolveEnvProxyNginxIndexOutputPath(source.envName, 'v2', { scope: options?.scope }), options),
     modernClientPrefix: source.settings.modernClientPrefix,
+    appClientEntryMode: source.settings.appClientEntryMode,
     proxyHost,
     snippetsDir: mappedSnippetsDir,
     storageDir: mappedStorageDir,
