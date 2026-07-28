@@ -31,7 +31,6 @@ import {
   type CodeEditorDiagnostic,
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
-  type RunJSWorkspaceTypeScriptContextResolver,
 } from '@nocobase/client-v2';
 import {
   Alert,
@@ -849,11 +848,7 @@ export function CodeTab(props: {
   onRunPreview?: () => void;
   openPaths: string[];
   previewing?: boolean;
-  projectRevision: number;
   readOnly: boolean;
-  runJSModelUse?: string;
-  runJSGlobalContextType?: string;
-  workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
   showRunButton?: boolean;
@@ -918,6 +913,10 @@ export function CodeTab(props: {
   if (!activeFile) {
     return <Empty description={t('Select a file')} />;
   }
+
+  const languageFromPath = inferLanguageFromPath(activeFile.path);
+  const isScriptFile = isRunJSTypeScriptProjectFile(activeFile.path);
+  const editorLanguage = isScriptFile ? languageFromPath : activeFile.language || languageFromPath;
 
   const fileTabsContent = (
     <div
@@ -1025,9 +1024,9 @@ export function CodeTab(props: {
       <CodeEditor
         authoringSurfaceId={authoringSurfaceId}
         diagnostics={activeFileDiagnostics}
-        enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
+        enableLinter={isScriptFile}
         height="100%"
-        language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
+        language={isDiff ? 'diff' : editorLanguage}
         jsonSchema={jsonSchema}
         minHeight={0}
         moduleImportCompletions={moduleImportCompletions}

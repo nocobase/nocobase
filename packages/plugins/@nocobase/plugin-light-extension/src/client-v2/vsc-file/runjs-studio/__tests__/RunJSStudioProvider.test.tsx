@@ -1241,7 +1241,7 @@ describe('runJSStudioProvider', () => {
                 { path: 'src/client/index.js', content: 'ctx.render("js");', language: 'javascript' },
                 { path: 'src/client/index.ts', content: 'ctx.render("ts");', language: 'typescript' },
                 { path: 'src/client/index.jsx', content: 'ctx.render("jsx");', language: 'javascriptreact' },
-                { path: 'src/client/index.tsx', content: 'ctx.render("tsx");', language: 'typescriptreact' },
+                { path: 'src/client/index.tsx', content: 'ctx.render("tsx");', language: 'typescript' },
               ],
             },
           },
@@ -1278,6 +1278,7 @@ describe('runJSStudioProvider', () => {
     renderEditor(vi.fn(), { onPreview });
 
     await screen.findByLabelText('Edit file content');
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-language', 'tsx');
     fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
     await waitFor(() => {

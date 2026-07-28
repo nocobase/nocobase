@@ -429,8 +429,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   });
   const showDiff = activeTab === 'diff';
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
-  const runJSModelUse =
-    typeof workspace?.source.metadata?.modelUse === 'string' ? workspace.source.metadata.modelUse : undefined;
   const historyItems = workspace?.history?.items || [];
   const baseVersion = formatVersion(workspace?.repository?.headSeq);
   const authoringSurfaceId =
@@ -2478,16 +2476,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onRunPreview={runPreview}
                         openPaths={openPaths}
                         previewing={previewing}
-                        projectRevision={projectRevision}
                         readOnly={workspaceEditingDisabled}
-                        runJSModelUse={runJSModelUse}
                         savedFiles={savedFiles}
                         scene={scene}
                         t={t}
                         toolbarActions={toolbarActions}
                         version={value.version}
                         workspaceFiles={files}
-                        workspaceTypeScriptContextResolver={props.workspaceTypeScriptContextResolver}
                       />
                     </div>
 

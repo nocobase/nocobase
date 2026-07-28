@@ -41,9 +41,8 @@ export function getTemplateHtmlRanges(node: SyntaxNode): TemplateHtmlRange[] {
   return ranges.filter((range) => range.to > range.from);
 }
 
-export function javascriptWithHtmlTemplates(options?: { typescript?: boolean }): LanguageSupport {
-  // Enable JSX for RunJS files and switch the base grammar for .ts/.tsx files.
-  const baseJavascript = javascript({ jsx: true, typescript: options?.typescript === true });
+export function javascriptWithHtmlTemplates(dialect: { jsx: boolean; typescript: boolean }): LanguageSupport {
+  const baseJavascript = javascript(dialect);
   const htmlSupport = html();
 
   const mixedLanguage = (baseJavascript.language as unknown as LRLanguage).configure({
