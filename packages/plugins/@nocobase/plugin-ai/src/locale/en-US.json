@@ -514,6 +514,7 @@
   "Actions area": "Actions area",
   "Allowed AI employees": "Allowed AI employees",
   "Controls which chat boxes share conversations. The default value isolates this chat box.": "Controls which chat boxes share conversations. The default value isolates this chat box.",
+  "Scope can only contain letters, numbers, underscores, and hyphens.": "Scope can only contain letters, numbers, underscores, and hyphens.",
   "Basic settings": "Basic settings",
   "Card settings": "Card settings",
   "Chat content block": "Chat content block",

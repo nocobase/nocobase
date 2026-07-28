@@ -180,6 +180,12 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
                 ),
               },
               'x-component': 'Input',
+              'x-validator': (value?: string) => {
+                if (value && !/^[a-zA-Z0-9_-]+$/.test(value)) {
+                  return ctx.t('Scope can only contain letters, numbers, underscores, and hyphens.', { ns: NAMESPACE });
+                }
+                return '';
+              },
             },
             systemPrompt: {
               type: 'string',

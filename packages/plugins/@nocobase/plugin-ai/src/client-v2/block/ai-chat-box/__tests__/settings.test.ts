@@ -234,6 +234,11 @@ describe('AI chat box settings flow', () => {
       ],
     });
     expect(schema?.allowedModels?.['x-component-props']?.tagRender).toEqual(expect.any(Function));
+    const validateScope = schema?.scope?.['x-validator'] as ((value?: string) => string) | undefined;
+    expect(validateScope).toEqual(expect.any(Function));
+    expect(validateScope?.('')).toBe('');
+    expect(validateScope?.('shared_sales-1')).toBe('');
+    expect(validateScope?.('shared@sales')).toBe('Scope can only contain letters, numbers, underscores, and hyphens.');
 
     editStep?.handler?.(ctx, {
       scope: '',
@@ -305,6 +310,7 @@ describe('AI chat box settings flow', () => {
       'Edit chat box',
       'Scope',
       'Controls which chat boxes share conversations. The default value isolates this chat box.',
+      'Scope can only contain letters, numbers, underscores, and hyphens.',
       'Background',
       'Default user message',
       'Prefill the sender input when the chat box starts a new conversation.',
