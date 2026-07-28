@@ -112,6 +112,57 @@ describe('workspace authoring frontend tools', () => {
     expect(remountedSurface.read).toHaveBeenCalledWith(['src/index.ts']);
   });
 
+  it('keeps workspace descriptions non-authoritative and validation results explicit', async () => {
+    const surface = surfaces.get('workspace-1');
+    if (!surface) {
+      throw new Error('Expected workspace surface');
+    }
+    vi.mocked(surface.getSnapshot).mockResolvedValue({
+      ...(await surface.getSnapshot()),
+      diagnostics: [],
+    });
+
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspaceDescribe',
+        args: {},
+      }),
+    ).resolves.toMatchObject({
+      status: 'success',
+      content: {
+        cachedDiagnostics: [],
+        validationPassed: null,
+        validationRequired: true,
+      },
+    });
+
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspaceValidateDraft',
+        args: {},
+      }),
+    ).resolves.toMatchObject({
+      status: 'success',
+      content: { diagnostics: [], stale: false, validationPassed: true },
+    });
+
+    vi.mocked(surface.validateDraft).mockResolvedValue({
+      surfaceId: 'workspace-1',
+      snapshotId: 'snapshot-1',
+      diagnostics: [{ message: 'TypeScript error', severity: 'error' }],
+      stale: false,
+    });
+    await expect(
+      executeFrontendTool[1].invoke?.(app as never, {
+        toolId: 'workspace-1:workspaceValidateDraft',
+        args: {},
+      }),
+    ).resolves.toMatchObject({
+      status: 'success',
+      content: { validationPassed: false },
+    });
+  });
+
   it('returns a structured error when the surface is unavailable', async () => {
     surfaces.clear();
 

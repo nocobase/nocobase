@@ -374,7 +374,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     fireEvent.click(within(screen.getByTestId('editor-view-footer')).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
     expect(rerender).toHaveBeenCalledTimes(2);
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it('moves a JS Page workspace back to inline once while preserving settings and the new source snapshot', async () => {

@@ -21,7 +21,7 @@ vi.mock('../utils/runjsModuleLoader', async (importOriginal) => {
 
 import { runjsImportAsync } from '../utils/runjsModuleLoader';
 import { FlowEngine, FlowRunJSContext } from '..';
-import { externalReactRender } from '../runjsLibs';
+import { externalReactRender, registerRunJSRenderErrorReporter } from '../runjsLibs';
 
 function newEngine(): FlowEngine {
   const engine = new FlowEngine();
@@ -238,5 +238,63 @@ describe('RunJS external libs', () => {
       expect(String(e?.message || '')).toContain('await ctx.importAsync("react@19.2.4")');
       expect(e?.cause).toBe(original);
     }
+  });
+
+  it('should report ordinary React render errors to a subscriber registered for the same engine and model uid', () => {
+    class FakeComponent {
+      props: any;
+
+      constructor(props: any) {
+        this.props = props;
+      }
+    }
+
+    const fakeReact = {
+      Component: FakeComponent,
+      createElement: (type: any, props: any, ...children: any[]) => ({
+        type,
+        props: {
+          ...props,
+          children: children.length === 1 ? children[0] : children,
+        },
+      }),
+    };
+    const reportRenderError = vi.fn();
+    const flowEngine = {};
+    const settingsModel = { uid: 'customer-list', flowEngine };
+    const runtimeFork = { uid: 'customer-list', flowEngine };
+    const unregister = registerRunJSRenderErrorReporter(settingsModel, reportRenderError);
+    const internalAntd = {};
+    const ctx: any = {
+      React: fakeReact,
+      ReactDOM: { __nbRunjsInternalShim: true },
+      antd: internalAntd,
+      model: runtimeFork,
+    };
+    const root = { render: vi.fn(), unmount: vi.fn() };
+    const entry: any = { root };
+
+    externalReactRender({
+      ctx,
+      entry,
+      vnode: { type: 'BrokenCustomerList' },
+      containerEl: document.createElement('div'),
+      rootMap: new WeakMap(),
+      unmountContainerRoot: vi.fn(),
+      internalReact: fakeReact,
+      internalAntd,
+    });
+
+    const boundaryVNode = root.render.mock.calls[0][0];
+    const boundary = new boundaryVNode.type(boundaryVNode.props);
+    const error = new TypeError('rawData.some is not a function');
+    const info = { componentStack: '\n at BrokenCustomerList' };
+    boundary.componentDidCatch(error, info);
+
+    expect(reportRenderError).toHaveBeenCalledWith(error, info);
+
+    unregister();
+    boundary.componentDidCatch(new TypeError('another render error'), info);
+    expect(reportRenderError).toHaveBeenCalledTimes(1);
   });
 });

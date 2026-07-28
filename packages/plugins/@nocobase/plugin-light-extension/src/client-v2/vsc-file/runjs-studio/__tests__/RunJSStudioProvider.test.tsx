@@ -17,16 +17,24 @@ import type { RunJSSourceActionInput } from '../types';
 import { runJSSourceActionNames } from '../useRunJSSourceResource';
 import { runJSManifestPath } from '../workspaceUtils';
 
-const mocks = vi.hoisted(() => ({
-  authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
-  closeView: vi.fn(),
-  diagnoseRunJS: vi.fn(),
-  request: vi.fn(),
-  view: {} as {
-    beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
-    close?: () => boolean | void | Promise<boolean | void>;
-  },
-}));
+const mocks = vi.hoisted(() => {
+  const flowEngine = { getModel: vi.fn() };
+  const model = { uid: 'fm_1', flowEngine };
+  flowEngine.getModel.mockReturnValue(model);
+  return {
+    authoringSurfaces: new Map<string, { id: string; dispose?: () => void }>(),
+    closeView: vi.fn(),
+    diagnoseRunJS: vi.fn(),
+    flowEngine,
+    model,
+    renderErrorReporters: new Set<(error: unknown, info?: unknown) => void>(),
+    request: vi.fn(),
+    view: {} as {
+      beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
+      close?: () => boolean | void | Promise<boolean | void>;
+    },
+  };
+});
 
 vi.mock('../../../../shared/vsc-file/path-normalize', () => ({
   normalizePath: (path: string) => String(path || '').replace(/\\/g, '/'),
@@ -37,8 +45,14 @@ vi.mock('@nocobase/flow-engine', () => ({
     api: {
       request: mocks.request,
     },
+    engine: mocks.flowEngine,
+    model: mocks.model,
     view: mocks.view,
   }),
+  registerRunJSRenderErrorReporter: (_model: unknown, reporter: (error: unknown, info?: unknown) => void) => {
+    mocks.renderErrorReporters.add(reporter);
+    return () => mocks.renderErrorReporters.delete(reporter);
+  },
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -288,6 +302,7 @@ function deferred<T>() {
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
     mocks.authoringSurfaces.clear();
+    mocks.renderErrorReporters.clear();
     mocks.view.close = mocks.closeView;
     Reflect.deleteProperty(mocks.view, 'beforeClose');
     mocks.diagnoseRunJS.mockResolvedValue({
@@ -931,6 +946,27 @@ describe('runJSStudioProvider', () => {
     expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
   });
 
+  it('replaces a completed host preview with a failure when its React render error arrives later', async () => {
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+    expect(mocks.renderErrorReporters.size).toBe(1);
+    act(() => {
+      for (const reporter of mocks.renderErrorReporters) {
+        reporter(new TypeError('rawData.some is not a function'), { componentStack: '\n at CustomerList' });
+      }
+    });
+
+    expect(await screen.findByText(/\[error\] rawData\.some is not a function/)).toBeTruthy();
+    expect(await screen.findByText(/\[error\] Run failed/)).toBeTruthy();
+    expect(screen.queryByText(/\[info\] Run completed/)).toBeNull();
+    expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+  });
+
   it('runs the compiled artifact in the current Flow context without a host preview', async () => {
     mocks.diagnoseRunJS.mockResolvedValueOnce({
       execution: { finished: true, started: true, timeout: false },
@@ -949,6 +985,22 @@ describe('runJSStudioProvider', () => {
       }),
     );
     expect(await screen.findByText(/\[log\] hello!/)).toBeTruthy();
+  });
+
+  it('marks the run as failed when the runtime diagnostics contain a render error', async () => {
+    mocks.diagnoseRunJS.mockResolvedValueOnce({
+      execution: { finished: true, started: true, timeout: false },
+      issues: [{ type: 'runtime', ruleId: 'render-error', message: 'rawData.some is not a function' }],
+      logs: [{ level: 'error', message: 'rawData.some is not a function' }],
+    });
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    expect(await screen.findByText(/\[error\] rawData\.some is not a function/)).toBeTruthy();
+    expect(await screen.findByText(/\[error\] Run failed/)).toBeTruthy();
+    expect(screen.queryByText(/\[info\] Run completed/)).toBeNull();
   });
 
   it('resolves the fixed src/client index entry by extension priority', async () => {

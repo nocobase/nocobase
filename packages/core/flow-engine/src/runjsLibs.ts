@@ -25,6 +25,10 @@ const __runjsLibResolvedCache = new Map<string, unknown>();
 const __runjsLibPendingCache = new Map<string, Promise<unknown>>();
 const __runjsLibPendingByCtx = new WeakMap<FlowContext, Map<string, Promise<unknown>>>();
 const __runjsErrorBoundaryByReact = new WeakMap<any, any>();
+const __runjsRenderErrorReportersByEngine = new WeakMap<object, Map<string, Set<RunJSRenderErrorReporter>>>();
+
+export const RUNJS_RENDER_ERROR_REPORTER = Symbol.for('nocobase.runjs.render-error-reporter');
+export type RunJSRenderErrorReporter = (error: unknown, info?: unknown) => void;
 
 function __runjsGetPendingMapForCtx(ctx: FlowContext): Map<string, Promise<unknown>> {
   let m = __runjsLibPendingByCtx.get(ctx);
@@ -57,6 +61,58 @@ export function registerRunJSLib(
 
 function __runjsIsObject(val: unknown): val is Record<string, unknown> {
   return !!val && typeof val === 'object';
+}
+
+function __runjsGetRenderErrorTarget(model: unknown): { engine: object; uid: string } | null {
+  if (!__runjsIsObject(model)) return null;
+  const engine = model.flowEngine;
+  const uid = model.uid;
+  if (!engine || typeof engine !== 'object' || typeof uid !== 'string' || !uid) return null;
+  return { engine, uid };
+}
+
+export function registerRunJSRenderErrorReporter(model: unknown, reporter: RunJSRenderErrorReporter): () => void {
+  const target = __runjsGetRenderErrorTarget(model);
+  if (!target || typeof reporter !== 'function') return () => {};
+
+  let reportersByUid = __runjsRenderErrorReportersByEngine.get(target.engine);
+  if (!reportersByUid) {
+    reportersByUid = new Map();
+    __runjsRenderErrorReportersByEngine.set(target.engine, reportersByUid);
+  }
+  let reporters = reportersByUid.get(target.uid);
+  if (!reporters) {
+    reporters = new Set();
+    reportersByUid.set(target.uid, reporters);
+  }
+  reporters.add(reporter);
+
+  return () => {
+    const currentReportersByUid = __runjsRenderErrorReportersByEngine.get(target.engine);
+    const currentReporters = currentReportersByUid?.get(target.uid);
+    if (!currentReporters?.delete(reporter)) return;
+    if (currentReporters.size === 0) {
+      currentReportersByUid?.delete(target.uid);
+    }
+  };
+}
+
+function __runjsReportRenderError(model: unknown, error: unknown, info?: unknown): boolean {
+  const target = __runjsGetRenderErrorTarget(model);
+  if (!target) return false;
+  const reporters = __runjsRenderErrorReportersByEngine.get(target.engine)?.get(target.uid);
+  if (!reporters?.size) return false;
+
+  let reported = false;
+  for (const reporter of Array.from(reporters)) {
+    try {
+      reporter(error, info);
+      reported = true;
+    } catch (_) {
+      // Let the remaining reporters run; the regular logger remains the fallback when all reporters fail.
+    }
+  }
+  return reported;
 }
 
 function __runjsHasOwn(obj: unknown, key: string): obj is Record<string, unknown> {
@@ -380,19 +436,39 @@ function getRunjsErrorBoundary(ReactLike: any): any {
 
     state: { error?: any } = {};
 
-    componentDidCatch(error: any) {
+    componentDidCatch(error: any, info?: any) {
       try {
         const enhance = (this.props as any)?.enhanceReactError;
         const enhanced = typeof enhance === 'function' ? enhance(error) : error;
         const msg = String(enhanced?.message || '');
+        const model = (this.props as any)?.ctx?.model;
+        const logger = (this.props as any)?.ctx?.logger;
+        const modelRenderErrorReporter =
+          model && typeof model === 'object'
+            ? (model as Record<PropertyKey, unknown>)[RUNJS_RENDER_ERROR_REPORTER]
+            : undefined;
+        const loggerRenderErrorReporter =
+          logger && typeof logger === 'object'
+            ? (logger as Record<PropertyKey, unknown>)[RUNJS_RENDER_ERROR_REPORTER]
+            : undefined;
+        const renderErrorReporter =
+          typeof modelRenderErrorReporter === 'function' ? modelRenderErrorReporter : loggerRenderErrorReporter;
+        let reported = __runjsReportRenderError(model, enhanced, info);
+        if (!reported && typeof renderErrorReporter === 'function') {
+          try {
+            renderErrorReporter(enhanced, info);
+            reported = true;
+          } catch (_) {
+            // Fall back to the regular logger below.
+          }
+        }
+        if (!reported && logger && typeof logger.error === 'function') {
+          logger.error(msg || enhanced);
+        }
         if (msg && /\[RunJS Hint\]/.test(msg)) {
           // React 18/19 often logs the original error (or swallows it from caller of root.render).
           // Emit an extra, more actionable message for RunJS users.
           console.error(msg);
-          const logger = (this.props as any)?.ctx?.logger;
-          if (logger && typeof logger.error === 'function') {
-            logger.error(msg);
-          }
         }
       } catch (_) {
         // ignore

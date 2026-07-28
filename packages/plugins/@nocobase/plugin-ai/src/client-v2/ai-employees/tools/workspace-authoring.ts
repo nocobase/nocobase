@@ -94,7 +94,8 @@ const definitions: Array<Omit<FrontendToolManifest, 'id' | 'blockUid'>> = [
   {
     name: WORKSPACE_AUTHORING_TOOL_NAMES.describe,
     title: 'Describe workspace',
-    description: 'Describe the current code workspace, files, diagnostics, and snapshot id.',
+    description:
+      'Inspect the current code workspace, file list, cached editor diagnostics, and snapshot id. Start here. This tool does not validate the draft and must not be used to claim that compilation passed.',
     permission: 'ALLOW',
     inputSchema: noArgsSchema,
   },
@@ -157,7 +158,8 @@ const definitions: Array<Omit<FrontendToolManifest, 'id' | 'blockUid'>> = [
   {
     name: WORKSPACE_AUTHORING_TOOL_NAMES.validateDraft,
     title: 'Validate workspace draft',
-    description: 'Validate the complete current workspace draft without executing or saving it.',
+    description:
+      'Run authoritative TypeScript and workspace validation on the complete current draft without executing or saving it. Only claim compilation success when this tool returns validationPassed: true. TypeScript suppression directives such as @ts-nocheck, @ts-ignore, and @ts-expect-error are forbidden; fix the underlying error. Use when the user reports editor errors and after applying fixes.',
     permission: 'ALLOW',
     inputSchema: noArgsSchema,
   },
@@ -220,8 +222,16 @@ export async function executeWorkspaceAuthoringTool(
 
 async function invokeWorkspaceTool(surface: CodeAuthoringSurface, toolName: WorkspaceAuthoringToolName, args: unknown) {
   switch (toolName) {
-    case WORKSPACE_AUTHORING_TOOL_NAMES.describe:
-      return surface.getSnapshot();
+    case WORKSPACE_AUTHORING_TOOL_NAMES.describe: {
+      const snapshot = await surface.getSnapshot();
+      const { diagnostics, ...workspace } = snapshot;
+      return {
+        ...workspace,
+        cachedDiagnostics: diagnostics,
+        validationPassed: null,
+        validationRequired: true,
+      };
+    }
     case WORKSPACE_AUTHORING_TOOL_NAMES.readFiles:
       return limitReadFiles(surface.id, await surface.read(requirePaths(args)));
     case WORKSPACE_AUTHORING_TOOL_NAMES.search:
@@ -230,8 +240,13 @@ async function invokeWorkspaceTool(surface: CodeAuthoringSurface, toolName: Work
       return surface.prepareChanges(requirePrepareInput(args));
     case WORKSPACE_AUTHORING_TOOL_NAMES.applyPreparedChanges:
       return surface.applyPreparedChanges(requireStringProperty(args, 'planId'));
-    case WORKSPACE_AUTHORING_TOOL_NAMES.validateDraft:
-      return surface.validateDraft();
+    case WORKSPACE_AUTHORING_TOOL_NAMES.validateDraft: {
+      const result = await surface.validateDraft();
+      return {
+        ...result,
+        validationPassed: !result.stale && result.diagnostics.every((diagnostic) => diagnostic.severity !== 'error'),
+      };
+    }
   }
 }
 

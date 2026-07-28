@@ -12,6 +12,7 @@ import type { Context } from '@nocobase/actions';
 import {
   extractFrontendToolManifests,
   findCurrentFrontendTool,
+  getBlockedFrontendToolNames,
   prepareToolsForFrontendConversation,
   shouldAutoExecuteFrontendTool,
 } from '../frontend-tools';
@@ -145,6 +146,33 @@ describe('frontend tools', () => {
       prepared[2].definition.schema.safeParse({ toolId: frontendTool.id, args: { riskLevel: 'high' } }).success,
     ).toBe(true);
     expect(prepared[2].definition.schema.safeParse({ toolId: '__catalog__', args: {} }).success).toBe(false);
+  });
+
+  it('hides legacy single-file coding tools when a workspace authoring catalog is bound', () => {
+    const tools = [
+      { definition: { name: 'readJSCode', description: 'Read current editor code.' } },
+      { definition: { name: 'writeJSCode', description: 'Write current editor code.' } },
+      { definition: { name: 'patchJSCode', description: 'Patch current editor code.' } },
+      { definition: { name: 'lintAndTestJS', description: 'Lint current editor code.' } },
+      { definition: { name: 'getSkill', description: 'Load a skill.' } },
+      { definition: { name: 'loadFrontendTool', description: 'Load a frontend tool.' } },
+      { definition: { name: 'executeFrontendTool', description: 'Execute a frontend tool.' } },
+    ];
+
+    const prepared = prepareToolsForFrontendConversation(tools, [workspaceApplyTool]);
+
+    expect(prepared.map((tool) => tool.definition.name)).toEqual([
+      'getSkill',
+      'loadFrontendTool',
+      'executeFrontendTool',
+    ]);
+    expect(getBlockedFrontendToolNames([workspaceApplyTool])).toEqual([
+      'readJSCode',
+      'writeJSCode',
+      'patchJSCode',
+      'lintAndTestJS',
+    ]);
+    expect(getBlockedFrontendToolNames([frontendTool])).toEqual([]);
   });
 
   it('extracts valid manifests from work context', () => {
