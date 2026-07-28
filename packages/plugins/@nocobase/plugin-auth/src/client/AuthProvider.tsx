@@ -7,19 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useApp, useLocationSearch } from '@nocobase/client';
+import { useApp } from '@nocobase/client';
 import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const AuthProvider: React.FC = (props) => {
-  const searchString = useLocationSearch();
   const app = useApp();
-  const params = new URLSearchParams(searchString);
-  const authenticator = params.get('authenticator');
-  const token = params.get('token');
-  if (token) {
-    app.apiClient.auth.setToken(token);
-    app.apiClient.auth.setAuthenticator(authenticator);
-  }
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const authenticator = params.get('authenticator');
+    const token = params.get('token');
+
+    if (token) {
+      app.apiClient.auth.setToken(token);
+      app.apiClient.auth.setAuthenticator(authenticator);
+
+      params.delete('token');
+      const newSearch = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: newSearch ? `?${newSearch}` : '',
+        },
+        { replace: true },
+      );
+    }
+  }, [location.search, app, navigate, location.pathname]);
 
   return <>{props.children}</>;
 };
