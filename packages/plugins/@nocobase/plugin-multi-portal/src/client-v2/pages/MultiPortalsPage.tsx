@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getPortalEntryActionStore } from '../entryActions/portalEntryActionStore';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
+import PortalRoutesDrawer from './PortalRoutesDrawer';
 
 type MultiPortalPrimaryKey = string;
 type PortalSourceStorage = 'nocobase' | 'git';
@@ -408,6 +409,17 @@ const MultiPortalsPage: React.FC = () => {
     [ctx.viewer, refreshPortals, token.screenMD],
   );
 
+  const openRoutesDrawer = useCallback(
+    (record: MultiPortalRecord) => {
+      ctx.viewer.drawer({
+        width: '80%',
+        closable: true,
+        content: () => <PortalRoutesDrawer portal={record} />,
+      });
+    },
+    [ctx.viewer],
+  );
+
   const handleDelete = useCallback(
     (filterByTk: MultiPortalPrimaryKey | MultiPortalPrimaryKey[], options: { isBatch?: boolean } = {}) => {
       modal.confirm({
@@ -512,6 +524,16 @@ const MultiPortalsPage: React.FC = () => {
             <Button type="link" style={actionLinkButtonStyle} onClick={() => openFormDrawer(record)}>
               {t('Edit')}
             </Button>
+            {normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE ? (
+              <Button
+                disabled={!record.enabled}
+                type="link"
+                style={actionLinkButtonStyle}
+                onClick={() => openRoutesDrawer(record)}
+              >
+                {t('Routes')}
+              </Button>
+            ) : null}
             <Button type="link" style={actionLinkButtonStyle} onClick={() => handleDelete(record.uid)}>
               {t('Delete')}
             </Button>
@@ -519,7 +541,7 @@ const MultiPortalsPage: React.FC = () => {
         ),
       },
     ],
-    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],
+    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, openRoutesDrawer, t, updatingEnabledRowKeys],
   );
 
   const handleTableChange = useCallback<NonNullable<TableProps<MultiPortalRecord>['onChange']>>(

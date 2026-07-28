@@ -81,27 +81,16 @@ describe('PluginUiLayoutClientV2', () => {
       aclSnippet: 'pm.mobile',
       Component: expect.any(Function),
     });
-    expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
-      key: 'routes',
-      title: 'Routes',
-      icon: 'ApartmentOutlined',
-      aclSnippet: 'pm.routes',
-      showTabs: true,
-    });
-    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
-      menuKey: 'routes',
-      key: 'index',
-      title: 'Desktop routes',
-      aclSnippet: 'pm.routes',
-      componentLoader: expect.any(Function),
-    });
-    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
-      menuKey: 'routes',
-      key: 'mobile',
-      title: 'Mobile routes',
-      aclSnippet: 'pm.routes',
-      componentLoader: expect.any(Function),
-    });
+    expect(app.pluginSettingsManager.addMenuItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: 'routes',
+      }),
+    );
+    expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'routes',
+      }),
+    );
     expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
       expect.objectContaining({
         menuKey: 'ui-layout',
@@ -120,7 +109,7 @@ describe('PluginUiLayoutClientV2', () => {
         key: 'index',
       }),
     );
-    expect(app.pluginSettingsManager.setPluginSettingsLink).toHaveBeenCalledWith('ui-layout', 'routes');
+    expect(app.pluginSettingsManager.setPluginSettingsLink).not.toHaveBeenCalled();
     const settingsApp = createMockClient();
     for (const [menuItem] of app.pluginSettingsManager.addMenuItem.mock.calls) {
       settingsApp.pluginSettingsManager.addMenuItem(menuItem);
@@ -144,15 +133,9 @@ describe('PluginUiLayoutClientV2', () => {
     expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('mobile')).not.toBeNull();
     expect(settingsApp.pluginSettingsManager.get('mobile.index')).not.toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('routes')).toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('routes.index')).toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('routes.mobile')).toBeNull();
     settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.mobile']);
     expect(settingsApp.pluginSettingsManager.get('mobile')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('mobile.index')).toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('routes')).not.toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('routes.index')).not.toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('routes.mobile')).not.toBeNull();
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
       MobileLayoutModel: {
         loader: expect.any(Function),
@@ -189,7 +172,7 @@ describe('PluginUiLayoutClientV2', () => {
     });
   });
 
-  it('should omit the Mobile shortcut from the standalone settings app', async () => {
+  it('should omit the Mobile shortcut and Routes page from the standalone settings app', async () => {
     const { default: PluginUiLayoutClientV2 } = await import('../plugin');
     const app = createPluginApp('/settings/');
     const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
@@ -200,7 +183,10 @@ describe('PluginUiLayoutClientV2', () => {
     expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
       expect.objectContaining({ menuKey: 'mobile' }),
     );
-    expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith(expect.objectContaining({ key: 'routes' }));
+    expect(app.pluginSettingsManager.addMenuItem).not.toHaveBeenCalledWith(expect.objectContaining({ key: 'routes' }));
+    expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({ menuKey: 'routes' }),
+    );
   });
 
   it('should preserve the current sub-app path in the mobile settings link', async () => {

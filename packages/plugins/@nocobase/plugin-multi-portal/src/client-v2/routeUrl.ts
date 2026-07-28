@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getV2EffectiveBasePath } from '@nocobase/client-v2';
+import { getModernClientPrefix, getV2EffectiveBasePath } from '@nocobase/client-v2';
 
 export type MultiPortalAppLike = {
   router?: {
@@ -21,11 +21,8 @@ export type MultiPortalAppLike = {
 export type MultiPortalType = 'no-code' | 'ai';
 
 const DEFAULT_PORTAL_TYPE: MultiPortalType = 'no-code';
-const PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE: Record<MultiPortalType, string> = {
-  'no-code': '/v',
-  ai: '/x',
-};
-const PORTAL_ROUTE_PREFIXES = Object.values(PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE);
+const AI_PORTAL_ROUTE_PREFIX = '/x';
+const DEFAULT_MODERN_PORTAL_ROUTE_PREFIX = '/v';
 
 const normalizeRootPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -57,7 +54,13 @@ function normalizePortalType(value?: string | null): MultiPortalType {
 }
 
 function getPortalRoutePrefix(portalType?: string | null) {
-  return PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE[normalizePortalType(portalType)];
+  return normalizePortalType(portalType) === 'ai' ? AI_PORTAL_ROUTE_PREFIX : `/${getModernClientPrefix()}`;
+}
+
+function getPortalRoutePrefixes() {
+  return Array.from(
+    new Set([getPortalRoutePrefix(DEFAULT_PORTAL_TYPE), AI_PORTAL_ROUTE_PREFIX, DEFAULT_MODERN_PORTAL_ROUTE_PREFIX]),
+  );
 }
 
 function getPortalTypeBasePath(basePath: string | undefined, portalType?: string | null) {
@@ -67,14 +70,30 @@ function getPortalTypeBasePath(basePath: string | undefined, portalType?: string
     return portalRoutePrefix;
   }
 
-  const portalAppBaseMatch = base.match(/^(.*)\/(?:v|x)\/apps\/([^/]+)$/);
-  if (portalAppBaseMatch) {
-    const publicPath = portalAppBaseMatch[1] || '';
-    return `${publicPath}${portalRoutePrefix}/apps/${portalAppBaseMatch[2]}`;
+  const appScopeMatch = base.match(/^(.*)\/(apps|_app)\/([^/]+)$/);
+  if (appScopeMatch) {
+    let publicPath = appScopeMatch[1] || '';
+    for (const prefix of getPortalRoutePrefixes()) {
+      if (publicPath === prefix) {
+        publicPath = '';
+        break;
+      }
+      if (publicPath.endsWith(prefix)) {
+        publicPath = publicPath.slice(0, -prefix.length);
+        break;
+      }
+    }
+    const appScope = normalizePortalType(portalType) === 'ai' ? 'apps' : appScopeMatch[2];
+    return `${publicPath}${portalRoutePrefix}/${appScope}/${appScopeMatch[3]}`;
   }
 
-  if (PORTAL_ROUTE_PREFIXES.some((prefix) => base.endsWith(prefix))) {
-    return base.replace(/\/(?:v|x)$/, portalRoutePrefix);
+  for (const prefix of getPortalRoutePrefixes()) {
+    if (base === prefix) {
+      return portalRoutePrefix;
+    }
+    if (base.endsWith(prefix)) {
+      return `${base.slice(0, -prefix.length)}${portalRoutePrefix}`;
+    }
   }
   return `${base}${portalRoutePrefix}`;
 }
@@ -103,7 +122,7 @@ function normalizePortalRoutePath(routePath: string, basePath: string | undefine
   for (const base of [
     getPortalTypeBasePath(basePath, portalType),
     getPortalTypeBasePath(basePath, getAlternativePortalType(portalType)),
-    ...PORTAL_ROUTE_PREFIXES,
+    ...getPortalRoutePrefixes(),
   ]) {
     path = stripBasePath(path, base);
   }

@@ -128,6 +128,10 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:deploy',
   'multiPortals:pullSource',
   'multiPortals:pushSource',
+  'desktopRoutes:list',
+  'desktopRoutes:create',
+  'desktopRoutes:update',
+  'desktopRoutes:destroy',
 ];
 const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = [
   'roles.multiPortals:*',
@@ -2262,6 +2266,274 @@ describe('plugin-multi-portal server', () => {
     expect(portalRouteTitles).not.toContain('layout owned page');
   });
 
+  it('should detach scoped route owners and only destroy ownerless route trees', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portalRepository = app.db.getRepository('multiPortals');
+    const firstPortal = await portalRepository.create({
+      values: {
+        uid: 'scoped-destroy-first-portal',
+        title: 'Scoped destroy first portal',
+        portalName: 'scoped-destroy-first-portal',
+        routePath: '/scoped-destroy-first-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const secondPortal = await portalRepository.create({
+      values: {
+        uid: 'scoped-destroy-second-portal',
+        title: 'Scoped destroy second portal',
+        portalName: 'scoped-destroy-second-portal',
+        routePath: '/scoped-destroy-second-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const portalSharedTreeResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: firstPortal.get('uid'),
+      values: {
+        type: 'group',
+        title: 'Portal shared tree',
+        children: [
+          {
+            type: 'flowPage',
+            title: 'Portal shared child',
+            schemaUid: 'portal-shared-child',
+          },
+        ],
+      },
+    });
+    const portalOwnerlessTreeResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: firstPortal.get('uid'),
+      values: {
+        type: 'group',
+        title: 'Portal ownerless tree',
+        children: [
+          {
+            type: 'flowPage',
+            title: 'Portal ownerless child',
+            schemaUid: 'portal-ownerless-child',
+          },
+        ],
+      },
+    });
+    const layoutSharedTreeResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      values: {
+        type: 'group',
+        title: 'Layout shared tree',
+        children: [
+          {
+            type: 'flowPage',
+            title: 'Layout shared child',
+            schemaUid: 'layout-shared-child',
+          },
+        ],
+      },
+    });
+    const unscopedTreeResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: firstPortal.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'Unscoped destroy route',
+        schemaUid: 'unscoped-destroy-route',
+        uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+      },
+    });
+
+    const portalSharedChildBeforeDestroy = await app.db.getRepository('desktopRoutes').findOne({
+      filter: {
+        parentId: portalSharedTreeResponse.body.data.id,
+      },
+    });
+    const layoutSharedChildBeforeDestroy = await app.db.getRepository('desktopRoutes').findOne({
+      filter: {
+        parentId: layoutSharedTreeResponse.body.data.id,
+      },
+    });
+    const portalSharedChildId = portalSharedChildBeforeDestroy?.get('id');
+    const layoutSharedChildId = layoutSharedChildBeforeDestroy?.get('id');
+    expect(portalSharedChildId).toBeDefined();
+    expect(layoutSharedChildId).toBeDefined();
+    await app.db.getRepository('desktopRoutes.multiPortals', portalSharedChildId).add({
+      tk: secondPortal.get('uid'),
+    });
+    await app.db.getRepository('desktopRoutes.multiPortals', layoutSharedChildId).add({
+      tk: firstPortal.get('uid'),
+    });
+
+    const portalSharedDestroyResponse = await rootAgent.resource('desktopRoutes').destroy({
+      filterByTk: portalSharedTreeResponse.body.data.id,
+      portal: firstPortal.get('uid'),
+    });
+    const portalOwnerlessDestroyResponse = await rootAgent.resource('desktopRoutes').destroy({
+      filterByTk: portalOwnerlessTreeResponse.body.data.id,
+      portal: firstPortal.get('uid'),
+    });
+    const layoutSharedDestroyResponse = await rootAgent.resource('desktopRoutes').destroy({
+      filterByTk: layoutSharedTreeResponse.body.data.id,
+      layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+    });
+    const unscopedDestroyResponse = await rootAgent.resource('desktopRoutes').destroy({
+      filterByTk: unscopedTreeResponse.body.data.id,
+    });
+
+    expect(portalSharedDestroyResponse.status).toBe(200);
+    expect(portalOwnerlessDestroyResponse.status).toBe(200);
+    expect(layoutSharedDestroyResponse.status).toBe(200);
+    expect(unscopedDestroyResponse.status).toBe(200);
+
+    const [portalSharedParent, portalSharedChild, portalOwnerlessParent, layoutSharedParent, layoutSharedChild] =
+      await Promise.all([
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: portalSharedTreeResponse.body.data.id,
+          appends: ['multiPortals', 'uiLayouts'],
+        }),
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: portalSharedChildId,
+          appends: ['multiPortals', 'uiLayouts'],
+        }),
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: portalOwnerlessTreeResponse.body.data.id,
+        }),
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: layoutSharedTreeResponse.body.data.id,
+          appends: ['multiPortals', 'uiLayouts'],
+        }),
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: layoutSharedChildId,
+          appends: ['multiPortals', 'uiLayouts'],
+        }),
+      ]);
+    const unscopedRoute = await app.db.getRepository('desktopRoutes').findOne({
+      filterByTk: unscopedTreeResponse.body.data.id,
+    });
+
+    expect(portalSharedParent).toBeTruthy();
+    expect(portalSharedParent?.get('multiPortals')).toEqual([]);
+    expect(portalSharedChild?.get('multiPortals').map((portal) => portal.get('uid'))).toEqual([
+      secondPortal.get('uid'),
+    ]);
+    expect(portalOwnerlessParent).toBeNull();
+    expect(layoutSharedParent).toBeTruthy();
+    expect(layoutSharedParent?.get('uiLayouts')).toEqual([]);
+    expect(layoutSharedChild?.get('uiLayouts')).toEqual([]);
+    expect(layoutSharedChild?.get('multiPortals').map((portal) => portal.get('uid'))).toEqual([firstPortal.get('uid')]);
+    expect(unscopedRoute).toBeNull();
+  });
+
+  describe('scoped desktop route destroy safety', () => {
+    it('should reject explicitly invalid owner scopes while preserving unscoped destroy', async () => {
+      app = await createMultiPortalAclMockServer();
+
+      const rootUser = await app.db.getRepository('users').findOne({
+        filter: {
+          'roles.name': 'root',
+        },
+      });
+      const rootAgent = await app.agent().login(rootUser);
+      const createRoute = async (title: string) =>
+        rootAgent.resource('desktopRoutes').create({
+          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          values: {
+            type: 'flowPage',
+            title,
+            schemaUid: title.toLowerCase().replaceAll(' ', '-'),
+          },
+        });
+      const emptyPortalRoute = await createRoute('Empty portal scope route');
+      const emptyLayoutRoute = await createRoute('Empty layout scope route');
+      const unscopedRoute = await createRoute('Unscoped route');
+
+      const emptyPortalResponse = await rootAgent.resource('desktopRoutes').destroy({
+        filterByTk: emptyPortalRoute.body.data.id,
+        portal: '',
+      });
+      const emptyLayoutResponse = await rootAgent.resource('desktopRoutes').destroy({
+        filterByTk: emptyLayoutRoute.body.data.id,
+        layout: '',
+      });
+      const unscopedResponse = await rootAgent.resource('desktopRoutes').destroy({
+        filterByTk: unscopedRoute.body.data.id,
+      });
+
+      expect([emptyPortalResponse.status, emptyLayoutResponse.status, unscopedResponse.status]).toEqual([
+        400, 400, 200,
+      ]);
+      const [emptyPortalRecord, emptyLayoutRecord, unscopedRecord] = await Promise.all([
+        app.db.getRepository('desktopRoutes').findOne({ filterByTk: emptyPortalRoute.body.data.id }),
+        app.db.getRepository('desktopRoutes').findOne({ filterByTk: emptyLayoutRoute.body.data.id }),
+        app.db.getRepository('desktopRoutes').findOne({ filterByTk: unscopedRoute.body.data.id }),
+      ]);
+      expect(emptyPortalRecord).toBeTruthy();
+      expect(emptyLayoutRecord).toBeTruthy();
+      expect(unscopedRecord).toBeNull();
+    });
+
+    it('should roll back owner detachment when physical route deletion fails', async () => {
+      app = await createMultiPortalAclMockServer();
+
+      const portal = await app.db.getRepository('multiPortals').create({
+        values: {
+          uid: 'rollback-destroy-portal',
+          title: 'Rollback destroy portal',
+          portalName: 'rollback-destroy-portal',
+          routePath: '/rollback-destroy-portal',
+          authCheck: true,
+          enabled: true,
+          uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        },
+      });
+      const rootUser = await app.db.getRepository('users').findOne({
+        filter: {
+          'roles.name': 'root',
+        },
+      });
+      const rootAgent = await app.agent().login(rootUser);
+      const routeResponse = await rootAgent.resource('desktopRoutes').create({
+        portal: portal.get('uid'),
+        values: {
+          type: 'flowPage',
+          title: 'Rollback destroy route',
+          schemaUid: 'rollback-destroy-route',
+        },
+      });
+      const routeModel = app.db.getCollection('desktopRoutes').model;
+      const hookName = 'test-scoped-destroy-rollback';
+      routeModel.addHook('beforeDestroy', hookName, () => {
+        throw new Error('Injected route destroy failure');
+      });
+
+      let destroyResponse;
+      try {
+        destroyResponse = await rootAgent.resource('desktopRoutes').destroy({
+          filterByTk: routeResponse.body.data.id,
+          portal: portal.get('uid'),
+        });
+      } finally {
+        routeModel.removeHook('beforeDestroy', hookName);
+      }
+
+      expect(destroyResponse.status).toBe(500);
+      const routeAfterFailure = await app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: routeResponse.body.data.id,
+        appends: ['multiPortals'],
+      });
+      expect(routeAfterFailure).toBeTruthy();
+      expect(routeAfterFailure?.get('multiPortals').map((owner) => owner.get('uid'))).toEqual([portal.get('uid')]);
+    });
+  });
+
   it('should create portal-scoped link routes without leaking into the default layout', async () => {
     app = await createMultiPortalAclMockServer();
 
@@ -3537,6 +3809,7 @@ describe('plugin-multi-portal server', () => {
 
     const snippet = app.acl.snippetManager.snippets.get('pm.multi-portal');
     const roleSnippet = app.acl.snippetManager.snippets.get('pm.acl.roles');
+    const legacyRoutesSnippet = app.acl.snippetManager.snippets.get('pm.routes');
 
     expect(snippet).toBeDefined();
     expect(snippet?.actions.sort()).toEqual([...MULTI_PORTAL_MANAGEMENT_ACTIONS].sort());
@@ -3545,6 +3818,91 @@ describe('plugin-multi-portal server', () => {
     expect(snippet?.actions).not.toContain('rolesMultiPortalRoutePolicies:*');
     expect(roleSnippet).toBeDefined();
     expect(roleSnippet?.actions).toEqual(expect.arrayContaining(ROLE_MULTI_PORTAL_PERMISSION_ACTIONS));
+    expect(legacyRoutesSnippet?.actions).toEqual(['desktopRoutes:list']);
+  });
+
+  it('should allow route CRUD and shared route updates with the pm.multi-portal snippet', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'route-crud-manager-portal',
+        title: 'Route CRUD manager portal',
+        portalName: 'route-crud-manager-portal',
+        routePath: '/route-crud-manager-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const sharedPortal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'route-crud-shared-portal',
+        title: 'Route CRUD shared portal',
+        portalName: 'route-crud-shared-portal',
+        routePath: '/route-crud-shared-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'route-crud-manager',
+        snippets: ['pm.multi-portal'],
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: ['route-crud-manager'],
+      },
+    });
+    const agent = await app.agent().login(user);
+
+    const listResponse = await agent.resource('desktopRoutes').list({
+      filter: {
+        'multiPortals.uid': portal.get('uid'),
+      },
+    });
+    const createResponse = await agent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'Managed portal route',
+        schemaUid: 'managed-portal-route',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.multiPortals', createResponse.body.data.id).add({
+      tk: sharedPortal.get('uid'),
+    });
+    const updateResponse = await agent.resource('desktopRoutes').update({
+      filterByTk: createResponse.body.data.id,
+      portal: portal.get('uid'),
+      values: {
+        title: 'Updated managed portal route',
+      },
+    });
+    const sharedPortalListResponse = await agent.resource('desktopRoutes').list({
+      filter: {
+        'multiPortals.uid': sharedPortal.get('uid'),
+      },
+    });
+    const destroyResponse = await agent.resource('desktopRoutes').destroy({
+      filterByTk: createResponse.body.data.id,
+      portal: portal.get('uid'),
+    });
+
+    expect([listResponse.status, createResponse.status, updateResponse.status, destroyResponse.status]).toEqual([
+      200, 200, 200, 200,
+    ]);
+    expect(sharedPortalListResponse.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: createResponse.body.data.id,
+          title: 'Updated managed portal route',
+        }),
+      ]),
+    );
   });
 
   it('should keep multiPortals management actions behind plugin configuration snippets', async () => {

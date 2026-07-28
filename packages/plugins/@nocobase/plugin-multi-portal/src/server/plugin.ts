@@ -77,6 +77,10 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:deploy',
   'multiPortals:pullSource',
   'multiPortals:pushSource',
+  'desktopRoutes:list',
+  'desktopRoutes:create',
+  'desktopRoutes:update',
+  'desktopRoutes:destroy',
 ];
 
 type PortalDeployTarEntry = {
@@ -99,6 +103,12 @@ type DesktopRouteCreateValue = Record<string, unknown> & {
   uiLayouts?: unknown;
 };
 type DesktopRouteId = string | number;
+type DesktopRouteOwnerRelation = 'multiPortals' | 'uiLayouts';
+type DesktopRouteOwnerScope = {
+  filter: Record<string, string>;
+  relation: DesktopRouteOwnerRelation;
+  uid: string;
+};
 interface MultiPortalAccessContext {
   portalUid: string;
   uiLayoutUid: string;
@@ -1101,6 +1111,10 @@ function getExplicitRequestedLayoutUid(layout: unknown) {
   }
 }
 
+function hasActionParam(params: unknown, key: string) {
+  return isRecordLike(params) && Object.prototype.hasOwnProperty.call(params, key);
+}
+
 function getRequestedMultiPortalUid(ctx: ResourcerContext) {
   const portalUid = getExplicitRequestedLayoutUid(ctx.action?.params.portal);
   const layoutUid = getExplicitRequestedLayoutUid(ctx.action?.params.layout);
@@ -1295,7 +1309,10 @@ async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () 
   await next();
 }
 
-async function findRequestedMultiPortal(ctx: ResourcerContext): Promise<MultiPortalRequestResult> {
+async function findRequestedMultiPortal(
+  ctx: ResourcerContext,
+  transaction?: Transaction,
+): Promise<MultiPortalRequestResult> {
   const portalUid = getRequestedMultiPortalUid(ctx);
   if (portalUid === undefined) {
     return {
@@ -1323,6 +1340,7 @@ async function findRequestedMultiPortal(ctx: ResourcerContext): Promise<MultiPor
       uid: portalUid,
     },
     fields: ['uid', 'uiLayoutUid', 'enabled'],
+    transaction,
   });
 
   if (portal?.get('enabled') === true) {
@@ -1830,6 +1848,227 @@ async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () 
   }
 
   await next();
+}
+
+function normalizeDesktopRouteFilterByTk(filterByTk: unknown): DesktopRouteId[] {
+  const values = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
+  return uniqueDesktopRouteIds(
+    values.filter((value): value is DesktopRouteId => typeof value === 'string' || typeof value === 'number'),
+  );
+}
+
+async function getDesktopRouteDestroyOwnerScope(
+  ctx: ResourcerContext,
+  transaction: Transaction,
+): Promise<DesktopRouteOwnerScope | undefined> {
+  const hasPortalScope = hasActionParam(ctx.action?.params, 'portal');
+  const hasLayoutScope = hasActionParam(ctx.action?.params, 'layout');
+  const portalUid = getExplicitRequestedLayoutUid(ctx.action?.params.portal);
+  const layoutUid = getExplicitRequestedLayoutUid(ctx.action?.params.layout);
+  if (hasPortalScope && hasLayoutScope) {
+    ctx.throw(400, 'layout and portal cannot be used together');
+    return;
+  }
+
+  if (hasPortalScope) {
+    if (!portalUid) {
+      ctx.throw(400, 'Invalid portal scope');
+      return;
+    }
+    const portalRequest = await findRequestedMultiPortal(ctx, transaction);
+    if (!portalRequest.portal) {
+      ctx.throw(400, 'Invalid portal scope');
+      return;
+    }
+    return {
+      filter: getDesktopRoutePortalFilter(portalUid),
+      relation: 'multiPortals',
+      uid: portalUid,
+    };
+  }
+
+  if (!hasLayoutScope) {
+    return;
+  }
+  if (!layoutUid) {
+    ctx.throw(400, 'Invalid layout scope');
+    return;
+  }
+
+  const layout = await ctx.db.getRepository('uiLayouts').findOne({
+    fields: ['uid'],
+    filter: {
+      uid: layoutUid,
+    },
+    transaction,
+  });
+  if (!layout) {
+    ctx.throw(400, 'Invalid layout scope');
+    return;
+  }
+
+  return {
+    filter: {
+      'uiLayouts.uid': layoutUid,
+    },
+    relation: 'uiLayouts',
+    uid: layoutUid,
+  };
+}
+
+async function findScopedDesktopRouteDestroyRoots(
+  ctx: ResourcerContext,
+  scope: DesktopRouteOwnerScope,
+  transaction: Transaction,
+) {
+  const filterByTk = normalizeDesktopRouteFilterByTk(ctx.action?.params.filterByTk);
+  const actionFilter = isRecordLike(ctx.action?.params.filter) ? ctx.action?.params.filter : undefined;
+  if (!filterByTk.length && !actionFilter) {
+    return [];
+  }
+
+  const records = await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    filter: {
+      ...(actionFilter ?? {}),
+      ...scope.filter,
+      ...(filterByTk.length ? { id: filterByTk } : {}),
+    },
+    transaction,
+  });
+  return collectDesktopRouteIds(records);
+}
+
+async function findDesktopRouteSubtreeIds(ctx: ResourcerContext, rootId: DesktopRouteId, transaction: Transaction) {
+  const rootRoutes = await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    filter: {
+      id: rootId,
+    },
+    lock: transaction.LOCK.UPDATE,
+    transaction,
+  });
+  const routeIds = collectDesktopRouteIds(rootRoutes);
+  let parentIds = [...routeIds];
+
+  while (parentIds.length) {
+    const children = await ctx.db.getRepository('desktopRoutes').find({
+      fields: ['id'],
+      filter: {
+        parentId: parentIds,
+      },
+      lock: transaction.LOCK.UPDATE,
+      sort: ['id'],
+      transaction,
+    });
+    const childIds = collectDesktopRouteIds(children).filter((routeId) => !routeIds.includes(routeId));
+    routeIds.push(...childIds);
+    parentIds = childIds;
+  }
+
+  return routeIds;
+}
+
+function getDesktopRouteOwnerUids(route: unknown, relation: DesktopRouteOwnerRelation) {
+  const owners = getRecordField(route, relation);
+  if (!Array.isArray(owners)) {
+    return [];
+  }
+  return owners
+    .map((owner) => getRecordField(owner, 'uid'))
+    .filter((uid): uid is string => typeof uid === 'string' && !!uid);
+}
+
+async function desktopRouteTreeHasOtherOwners(
+  ctx: ResourcerContext,
+  routeIds: DesktopRouteId[],
+  scope: DesktopRouteOwnerScope,
+  transaction: Transaction,
+) {
+  const routes = await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    appends: ['multiPortals', 'uiLayouts'],
+    filter: {
+      id: routeIds,
+    },
+    transaction,
+  });
+
+  return routes.some((route) => {
+    const multiPortalUids = getDesktopRouteOwnerUids(route, 'multiPortals');
+    const uiLayoutUids = getDesktopRouteOwnerUids(route, 'uiLayouts');
+    if (scope.relation === 'multiPortals') {
+      return multiPortalUids.some((uid) => uid !== scope.uid) || uiLayoutUids.length > 0;
+    }
+    return uiLayoutUids.some((uid) => uid !== scope.uid) || multiPortalUids.length > 0;
+  });
+}
+
+async function detachDesktopRouteTreeOwner(
+  ctx: ResourcerContext,
+  routeIds: DesktopRouteId[],
+  scope: DesktopRouteOwnerScope,
+  transaction: Transaction,
+) {
+  for (const routeId of routeIds) {
+    await ctx.db.getRepository(`desktopRoutes.${scope.relation}`, routeId).remove({
+      tk: scope.uid,
+      transaction,
+    });
+  }
+}
+
+async function destroyScopedDesktopRoutes(ctx: ResourcerContext, next: () => Promise<void>) {
+  if (!hasActionParam(ctx.action?.params, 'portal') && !hasActionParam(ctx.action?.params, 'layout')) {
+    await next();
+    return;
+  }
+
+  const result = await ctx.db.sequelize.transaction(async (transaction) => {
+    const scope = await getDesktopRouteDestroyOwnerScope(ctx, transaction);
+    if (!scope) {
+      return true;
+    }
+
+    const rootIds = (await findScopedDesktopRouteDestroyRoots(ctx, scope, transaction)).sort((left, right) =>
+      String(left).localeCompare(String(right)),
+    );
+    const routeTrees: Array<{ rootId: DesktopRouteId; routeIds: DesktopRouteId[] }> = [];
+    for (const rootId of rootIds) {
+      routeTrees.push({
+        rootId,
+        routeIds: await findDesktopRouteSubtreeIds(ctx, rootId, transaction),
+      });
+    }
+    const rootRouteTrees = routeTrees.filter(
+      (routeTree, index) =>
+        !routeTrees.some(
+          (candidate, candidateIndex) => candidateIndex !== index && candidate.routeIds.includes(routeTree.rootId),
+        ),
+    );
+    const physicalDestroyRootIds: DesktopRouteId[] = [];
+
+    for (const routeTree of rootRouteTrees) {
+      const hasOtherOwners = await desktopRouteTreeHasOtherOwners(ctx, routeTree.routeIds, scope, transaction);
+      await detachDesktopRouteTreeOwner(ctx, routeTree.routeIds, scope, transaction);
+      if (!hasOtherOwners) {
+        physicalDestroyRootIds.push(routeTree.rootId);
+      }
+    }
+
+    if (!physicalDestroyRootIds.length) {
+      return true;
+    }
+
+    return ctx.db.getRepository('desktopRoutes').destroy({
+      context: ctx,
+      filterByTk: physicalDestroyRootIds.length === 1 ? physicalDestroyRootIds[0] : physicalDestroyRootIds,
+      transaction,
+    });
+  });
+
+  ctx.status = 200;
+  ctx.body = result;
 }
 
 async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promise<void>) {
@@ -2589,6 +2828,7 @@ export class PluginMultiPortalServer extends Plugin {
         after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
       },
     );
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:destroy', destroyScopedDesktopRoutes);
   }
 
   async load() {

@@ -209,6 +209,7 @@ async function selectMobileLayout(container: HTMLElement, user: ReturnType<typeo
 afterEach(() => {
   cleanup();
   flowContext.current = undefined;
+  window.__nocobase_modern_client_prefix__ = undefined;
 });
 
 describe('plugin-multi-portal settings page', () => {
@@ -245,6 +246,34 @@ describe('plugin-multi-portal settings page', () => {
     );
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/apps/a_q7xx6p75d0e/x/test', 'ai')).toBe(
       '/nocobase/x/apps/a_q7xx6p75d0e/test',
+    );
+  });
+
+  it.each(['apps', '_app'])('should build portal hrefs from the standalone Settings %s scope', (scope) => {
+    const app = {
+      router: {
+        getBasename: () => `/nocobase/${scope}/demo/`,
+      },
+      getPublicPath: () => '/nocobase/',
+    };
+
+    expect(getMultiPortalRouteUrl(app, '/customer-portal/dashboard', 'no-code')).toBe(
+      `/nocobase/v/${scope}/demo/customer-portal/dashboard`,
+    );
+    expect(getMultiPortalRouteUrl(app, '/developer-portal', 'ai')).toBe('/nocobase/x/apps/demo/developer-portal');
+  });
+
+  it('should honor a custom modern client prefix in standalone Settings portal hrefs', () => {
+    window.__nocobase_modern_client_prefix__ = 'modern';
+    const app = {
+      router: {
+        getBasename: () => '/nocobase/_app/demo/',
+      },
+      getPublicPath: () => '/nocobase/',
+    };
+
+    expect(getMultiPortalRouteUrl(app, '/customer-portal/dashboard', 'no-code')).toBe(
+      '/nocobase/modern/_app/demo/customer-portal/dashboard',
     );
   });
 
@@ -347,7 +376,9 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               uiLayout: {
+                layoutType: 'mobile',
                 title: 'Mobile layout',
+                uid: 'mobile-layout-model',
               },
             },
             {
@@ -359,6 +390,19 @@ describe('plugin-multi-portal settings page', () => {
               routePath: '/developer-portal',
               uiLayoutUid: null,
               uiLayout: null,
+            },
+            {
+              ...portalValues,
+              title: 'Disabled portal',
+              uid: 'disabled-portal',
+              portalName: 'disabled-portal',
+              routePath: '/disabled-portal',
+              enabled: false,
+              uiLayout: {
+                layoutType: 'desktop',
+                title: 'Desktop layout',
+                uid: 'desktop-layout-model',
+              },
             },
           ],
         },
@@ -413,9 +457,17 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /View/ })[0]).toHaveAttribute('href', '/v/customer-portal');
-    const actionCell = container.querySelector('tbody tr .ant-table-cell:last-child');
+    const customerPortalRow = screen.getByText('Customer portal').closest('tr') as HTMLElement;
+    const developerPortalRow = screen.getByText('Developer portal').closest('tr') as HTMLElement;
+    const disabledPortalRow = screen.getByText('Disabled portal').closest('tr') as HTMLElement;
+    const routesButton = within(customerPortalRow).getByRole('button', { name: 'Routes' });
+    expect(routesButton).toBeEnabled();
+    expect(within(developerPortalRow).queryByRole('button', { name: 'Routes' })).not.toBeInTheDocument();
+    expect(within(disabledPortalRow).getByRole('button', { name: 'Routes' })).toBeDisabled();
+
+    const actionCell = customerPortalRow.querySelector('.ant-table-cell:last-child');
     const actionButtons = actionCell?.querySelectorAll('.ant-btn-link') ?? [];
-    expect(actionButtons).toHaveLength(3);
+    expect(Array.from(actionButtons).map((button) => button.textContent)).toEqual(['View', 'Edit', 'Routes', 'Delete']);
     actionButtons.forEach((button) => {
       expect(button).toHaveStyle('padding-inline: 0');
     });
@@ -424,6 +476,14 @@ describe('plugin-multi-portal settings page', () => {
       'ant-btn-dangerous',
     );
     expect(screen.queryByRole('button', { name: /Logs/ })).not.toBeInTheDocument();
+    await user.click(routesButton);
+    expect(flowContext.current?.viewer.drawer).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        closable: true,
+        content: expect.any(Function),
+        width: '80%',
+      }),
+    );
     await user.click(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();

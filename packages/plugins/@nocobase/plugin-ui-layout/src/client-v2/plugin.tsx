@@ -68,34 +68,6 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       });
     }
 
-    this.pluginSettingsManager.addMenuItem({
-      key: 'routes',
-      title: this.t('Routes') as unknown as string,
-      icon: 'ApartmentOutlined',
-      aclSnippet: 'pm.routes',
-      showTabs: true,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'routes',
-      key: 'index',
-      title: this.t('Desktop routes') as unknown as string,
-      aclSnippet: 'pm.routes',
-      componentLoader: () => import('./pages/RoutesPage'),
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'routes',
-      key: 'mobile',
-      title: this.t('Mobile routes') as unknown as string,
-      aclSnippet: 'pm.routes',
-      componentLoader: async () => {
-        const module = await import('./pages/RoutesPage');
-        return { default: module.MobileRoutesPage };
-      },
-    });
-    this.pluginSettingsManager.setPluginSettingsLink('ui-layout', 'routes');
-
     registerLayoutAwareDesktopRoutesPermissionsTab(this.app, (key) => this.t(key));
 
     await registerUiLayoutsFromApi(this.app);
