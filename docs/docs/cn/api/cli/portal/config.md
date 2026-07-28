@@ -26,7 +26,7 @@ nb portal config <portal> [flags]
 | `--source-storage` | `nocobase` \| `git` | Portal 源码保存方式 |
 | `--git-repo` | string | 当 `--source-storage=git` 时使用的 Git 仓库 URL |
 | `--git-branch` | string | 当 `--source-storage=git` 时使用的 Git 分支 |
-| `--git-path` | string | Git 仓库内保存该 Portal 的目录，省略时使用 Portal slug |
+| `--git-path` | string | Git 仓库内保存该 Portal 的目录，省略时使用仓库根目录（`.`） |
 
 ## 示例
 
@@ -45,7 +45,7 @@ nb portal config customer --source-storage git --git-repo git@github.com:nocobas
 调整 Git 分支和目录：
 
 ```bash
-nb portal config customer --git-branch main --git-path customer
+nb portal config customer --git-branch main --git-path portals/customer
 ```
 
 在指定 env 中更新：

@@ -69,7 +69,7 @@ export default class PortalCreate extends Command {
       description: 'Git branch used when --source-storage=git',
     }),
     'git-path': Flags.string({
-      description: 'Directory inside the Git repository for this portal; defaults to the portal slug',
+      description: 'Directory inside the Git repository for this portal; defaults to the repository root',
     }),
   };
 

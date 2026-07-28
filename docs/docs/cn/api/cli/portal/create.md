@@ -29,7 +29,7 @@ nb portal create <portal> [flags]
 | `--source-storage` | `nocobase` \| `git` | Portal 源码保存方式，默认是 `nocobase` |
 | `--git-repo` | string | 当 `--source-storage=git` 时使用的 Git 仓库 URL |
 | `--git-branch` | string | 当 `--source-storage=git` 时使用的 Git 分支，省略时按配置默认值处理 |
-| `--git-path` | string | Git 仓库内保存该 Portal 的目录，省略时使用 Portal slug |
+| `--git-path` | string | Git 仓库内保存该 Portal 的目录，省略时使用仓库根目录（`.`） |
 
 ## 示例
 
@@ -67,7 +67,7 @@ nb portal create customer --source-storage git --git-repo git@github.com:nocobas
 
 Portal 名称必须使用小写字母、数字、下划线或连字符，并且以小写字母或数字开头。
 
-如果选择 `--source-storage=git`，必须同时传入完整的 `--git-repo`。`--git-branch` 省略时使用 `main`，`--git-path` 省略时使用 Portal slug。
+如果选择 `--source-storage=git`，必须同时传入完整的 `--git-repo`。`--git-branch` 省略时使用 `main`，`--git-path` 省略时使用仓库根目录（`.`）。
 
 ## 相关命令
 

@@ -24,7 +24,7 @@ export default class PortalConfig extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer --source-storage nocobase',
     '<%= config.bin %> <%= command.id %> customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git',
-    '<%= config.bin %> <%= command.id %> customer --git-branch main --git-path customer',
+    '<%= config.bin %> <%= command.id %> customer --git-branch main --git-path portals/customer',
   ];
 
   static override args = {
@@ -55,7 +55,7 @@ export default class PortalConfig extends Command {
       description: 'Git branch used when --source-storage=git',
     }),
     'git-path': Flags.string({
-      description: 'Directory inside the Git repository for this portal; defaults to the portal slug',
+      description: 'Directory inside the Git repository for this portal; defaults to the repository root',
     }),
   };
 

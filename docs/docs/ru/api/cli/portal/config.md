@@ -24,14 +24,14 @@ nb portal config <portal> [flags]
 | `--source-storage` | `nocobase` \| `git` | Where Portal source code is managed. |
 | `--git-repo` | string | Git repository URL used with `--source-storage=git`. |
 | `--git-branch` | string | Git branch used with `--source-storage=git`. |
-| `--git-path` | string | Directory inside the Git repository; defaults to the Portal slug. |
+| `--git-path` | string | Directory inside the Git repository; defaults to the repository root (`.`). |
 
 ## Примеры
 
 ```bash
 nb portal config customer --source-storage nocobase
 nb portal config customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
-nb portal config customer --git-branch main --git-path customer
+nb portal config customer --git-branch main --git-path portals/customer
 ```
 
 ## Примечания

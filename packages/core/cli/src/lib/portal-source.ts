@@ -18,6 +18,7 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalConfig,
   buildPortalConfigFromOptions,
+  DEFAULT_PORTAL_GIT_PATH,
   readPortalConfig,
   syncPortalConfigToRemote,
   writePortalConfig,
@@ -371,7 +372,7 @@ async function resolvePortalSourceContext(options: PortalSourceOptions): Promise
     sourceStorage: item.sourceStorage || 'nocobase',
     gitRepo: item.gitRepo,
     gitBranch: item.gitBranch || 'main',
-    gitPath: item.gitPath || portal,
+    gitPath: item.gitPath || DEFAULT_PORTAL_GIT_PATH,
     options: item.options,
   };
 }
@@ -396,7 +397,7 @@ function applyPortalConfigToContext(context: PortalSourceContext, config: Portal
     sourceStorage: config.sourceStorage,
     gitRepo: config.git?.repo ?? '',
     gitBranch: config.git?.branch ?? 'main',
-    gitPath: config.git?.path ?? context.portal,
+    gitPath: config.git?.path ?? DEFAULT_PORTAL_GIT_PATH,
   };
 }
 
@@ -417,8 +418,45 @@ function assertGitSourceConfig(context: PortalSourceContext): {
   return {
     repo: context.gitRepo,
     branch: context.gitBranch || 'main',
-    gitPath: context.gitPath || context.portal,
+    gitPath: context.gitPath || DEFAULT_PORTAL_GIT_PATH,
   };
+}
+
+function isGitRepositoryRootPath(gitPath: string): boolean {
+  return gitPath === DEFAULT_PORTAL_GIT_PATH;
+}
+
+async function copyPortalSourceToGitPath(params: {
+  portalDir: string;
+  repoDir: string;
+  gitPath: string;
+}): Promise<void> {
+  if (isGitRepositoryRootPath(params.gitPath)) {
+    const existingEntries = await readdir(params.repoDir);
+    await Promise.all(
+      existingEntries
+        .filter((entry) => entry !== '.git')
+        .map((entry) => rm(path.join(params.repoDir, entry), { recursive: true, force: true })),
+    );
+    const sourceEntries = (await readdir(params.portalDir)).filter(shouldPackPortalSourceEntry);
+    await Promise.all(
+      sourceEntries.map((entry) =>
+        cp(path.join(params.portalDir, entry), path.join(params.repoDir, entry), {
+          recursive: true,
+          filter: (source) => shouldPackPortalSourceEntry(path.relative(params.portalDir, source)),
+        }),
+      ),
+    );
+    return;
+  }
+
+  const targetDir = path.join(params.repoDir, params.gitPath);
+  await rm(targetDir, { recursive: true, force: true });
+  await mkdir(path.dirname(targetDir), { recursive: true });
+  await cp(params.portalDir, targetDir, {
+    recursive: true,
+    filter: (source) => shouldPackPortalSourceEntry(path.relative(params.portalDir, source)),
+  });
 }
 
 async function cloneGitSource(params: { repo: string; branch: string; cwd: string; createBranch?: boolean }): Promise<string> {
@@ -480,13 +518,12 @@ async function pushGitPortalSource(params: {
       repo: git.repo,
       branch: git.branch,
       cwd: tempDir,
+      createBranch: true,
     });
-    const targetDir = path.join(repoDir, git.gitPath);
-    await rm(targetDir, { recursive: true, force: true });
-    await mkdir(path.dirname(targetDir), { recursive: true });
-    await cp(params.context.portalDir, targetDir, {
-      recursive: true,
-      filter: (source) => shouldPackPortalSourceEntry(path.relative(params.context.portalDir, source)),
+    await copyPortalSourceToGitPath({
+      portalDir: params.context.portalDir,
+      repoDir,
+      gitPath: git.gitPath,
     });
     await runGit(['add', git.gitPath], repoDir);
     const status = await runGit(['status', '--porcelain', '--', git.gitPath], repoDir);

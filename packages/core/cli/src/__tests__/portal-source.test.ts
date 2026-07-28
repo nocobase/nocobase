@@ -330,3 +330,69 @@ test('pull and push Git-managed source through the configured repository path', 
     'export default "local";\n',
   );
 });
+
+test('push creates configured Git branch and uses repository root by default', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const remoteRepo = await makeTempDir('nocobase-cli-portal-git-empty-remote-');
+  const remoteRepoUrl = `file://${remoteRepo}`;
+  await runGit(['init', '--bare'], remoteRepo);
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "first push";\n');
+  await writePortalConfig(portalDir, {
+    sourceStorage: 'git',
+    git: {
+      repo: remoteRepoUrl,
+      branch: 'main',
+    },
+  });
+
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/multiPortals:update') {
+      return { ok: true, status: 200, data: { data: { uid: 'customer' } } };
+    }
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        data: [
+          {
+            uid: 'customer',
+            title: 'Customer',
+            routeName: 'customer',
+            routePath: '/customer',
+            portalType: 'ai',
+            enabled: true,
+            sourceStorage: 'git',
+            gitRepo: remoteRepoUrl,
+            gitBranch: 'main',
+            gitPath: '',
+          },
+        ],
+      },
+    };
+  });
+
+  await expect(
+    pushPortalSource({
+      portal: 'customer',
+      env: createEnv({ storagePath, kind: 'http' }),
+      message: 'Initial portal source',
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    sourceStorage: 'git',
+    changed: true,
+    sourceRevision: expect.any(String),
+  });
+
+  const heads = await runGit(['ls-remote', '--heads', remoteRepoUrl, 'main']);
+  expect(heads.stdout).toContain('refs/heads/main');
+
+  const verifyRepo = await makeTempDir('nocobase-cli-portal-git-empty-verify-');
+  await runGit(['clone', '--branch', 'main', remoteRepoUrl, verifyRepo]);
+  await expect(fsp.readFile(path.join(verifyRepo, 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+    'export default "first push";\n',
+  );
+});

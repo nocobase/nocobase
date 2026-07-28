@@ -36,6 +36,8 @@ export type BuildPortalConfigOptions = {
   existingConfig?: PortalConfig;
 };
 
+export const DEFAULT_PORTAL_GIT_PATH = '.';
+
 const portalConfigText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalConfig.${key}`, values, { fallback });
 
@@ -127,7 +129,7 @@ export function buildPortalConfig(options: BuildPortalConfigOptions): PortalConf
     git: {
       repo,
       branch: trimValue(options.gitBranch) || options.existingConfig?.git?.branch || 'main',
-      path: validateGitPath(options.gitPath ?? options.existingConfig?.git?.path ?? options.portal),
+      path: validateGitPath(trimValue(options.gitPath) || options.existingConfig?.git?.path || DEFAULT_PORTAL_GIT_PATH),
     },
   };
 }

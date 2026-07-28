@@ -27,7 +27,7 @@ nb portal create <portal> [flags]
 | `--source-storage` | `nocobase` \| `git` | Where Portal source code is managed. Default: `nocobase`. |
 | `--git-repo` | string | Git repository URL used with `--source-storage=git`. |
 | `--git-branch` | string | Git branch used with `--source-storage=git`. |
-| `--git-path` | string | Directory inside the Git repository; defaults to the Portal slug. |
+| `--git-path` | string | Directory inside the Git repository; defaults to the repository root (`.`). |
 
 ## Ví dụ
 
