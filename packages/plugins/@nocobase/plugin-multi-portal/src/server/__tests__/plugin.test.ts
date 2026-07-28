@@ -572,6 +572,8 @@ describe('plugin-multi-portal server', () => {
   it('should initialize an AI default portal from a local init template', async () => {
     const templateDir = await createPortalTemplate(storagePath as string, {
       'src/index.tsx': 'export default null;\n',
+      '.env': 'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/old/api\n',
+      '.env.local': 'LOCAL_ONLY=true\nNOCOBASE_PORTAL_BASE=/old/base/\n',
       '.git/config': '[core]\n',
       'node_modules/stale/index.js': 'module.exports = null;\n',
       '.DS_Store': '',
@@ -588,6 +590,15 @@ describe('plugin-multi-portal server', () => {
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBeUndefined();
+    await expect(readFile(path.join(portalDir, '.env'), 'utf-8')).resolves.toBe(
+      'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/workspace/\n',
+    );
+    await expect(readFile(path.join(portalDir, '.env.local'), 'utf-8')).resolves.toBe(
+      'LOCAL_ONLY=true\nNOCOBASE_PORTAL_BASE=/x/workspace/\nNOCOBASE_API_URL=/api\n',
+    );
+    await expect(readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
+      '{\n  "sourceStorage": "nocobase"\n}\n',
+    );
     await expect(access(path.join(portalDir, '.git'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
@@ -818,6 +829,15 @@ describe('plugin-multi-portal server', () => {
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'dist', 'favicon.ico'))).resolves.toBeUndefined();
+    await expect(readFile(path.join(portalDir, '.env'), 'utf-8')).resolves.toBe(
+      'NOCOBASE_API_URL=/console/api\nNOCOBASE_PORTAL_BASE=/console/x/storageTemplatePortal/\n',
+    );
+    await expect(readFile(path.join(portalDir, '.env.local'), 'utf-8')).resolves.toBe(
+      'NOCOBASE_API_URL=/console/api\nNOCOBASE_PORTAL_BASE=/console/x/storageTemplatePortal/\n',
+    );
+    await expect(readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
+      '{\n  "sourceStorage": "nocobase"\n}\n',
+    );
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
@@ -862,6 +882,32 @@ describe('plugin-multi-portal server', () => {
       filterByTk: 'storage-no-code-portal',
     });
     expect(noCodeLogResponse.status).toBe(404);
+
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'storage-git-portal',
+        title: 'Storage Git portal',
+        portalType: 'ai',
+        portalName: 'storageGitPortal',
+        routePath: '/storage-git-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        options: {
+          sourceStorage: 'git',
+          git: {
+            repo: 'git@github.com:nocobase/customer-portal.git',
+            branch: 'release',
+            path: 'portals/customer',
+          },
+        },
+      },
+    });
+    const gitPortalDir = path.join(storagePath as string, 'portals', appName, 'storageGitPortal');
+    await waitForPath(path.join(gitPortalDir, 'dist', 'index.html'));
+    await expect(readFile(path.join(gitPortalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
+      '{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "release",\n    "path": "portals/customer"\n  }\n}\n',
+    );
 
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 
