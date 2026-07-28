@@ -1487,8 +1487,12 @@ const LinkageRulesUI = observer(
     const t = ctx.model.translate.bind(ctx.model);
     const assignPriorityTip = t('Assignment takes precedence over form field assignment');
 
-    const updateRules = (updater: (nextRules: LinkageRule[]) => void) => {
-      onChange?.(updateLinkageRules(rules, updater));
+    const replaceRules = (updater: (nextRules: LinkageRule[]) => void) => {
+      if (onChange) {
+        onChange(updateLinkageRules(rules, updater));
+      } else {
+        updater(rules);
+      }
     };
 
     // 创建新规则的默认值
@@ -1502,59 +1506,51 @@ const LinkageRulesUI = observer(
 
     // 添加新规则
     const handleAddRule = () => {
-      updateRules((nextRules) => nextRules.push(createNewRule()));
+      rules.push(createNewRule());
     };
 
     // 删除规则
     const handleDeleteRule = (index: number) => {
-      updateRules((nextRules) => nextRules.splice(index, 1));
+      replaceRules((nextRules) => nextRules.splice(index, 1));
     };
 
     // 上移规则
     const handleMoveUp = (index: number) => {
       if (index > 0) {
-        updateRules((nextRules) => {
-          const rule = nextRules[index];
-          nextRules.splice(index, 1);
-          nextRules.splice(index - 1, 0, rule);
-        });
+        const rule = rules[index];
+        rules.splice(index, 1);
+        rules.splice(index - 1, 0, rule);
       }
     };
 
     // 下移规则
     const handleMoveDown = (index: number) => {
       if (index < rules.length - 1) {
-        updateRules((nextRules) => {
-          const rule = nextRules[index];
-          nextRules.splice(index, 1);
-          nextRules.splice(index + 1, 0, rule);
-        });
+        const rule = rules[index];
+        rules.splice(index, 1);
+        rules.splice(index + 1, 0, rule);
       }
     };
 
     // 复制规则
     const handleCopyRule = (index: number) => {
-      updateRules((nextRules) => {
-        const originalRule = nextRules[index];
-        const newRule: LinkageRule = {
-          ...originalRule,
-          key: uid(),
-          title: `${originalRule.title} (Copy)`,
-        };
-        nextRules.splice(index + 1, 0, newRule);
-      });
+      const originalRule = _.cloneDeep(rules[index]);
+      const newRule: LinkageRule = {
+        ...originalRule,
+        key: uid(),
+        title: `${originalRule.title} (Copy)`,
+      };
+      rules.splice(index + 1, 0, newRule);
     };
 
     // 更新规则标题
     const handleTitleChange = (index: number, title: string) => {
-      updateRules((nextRules) => {
-        nextRules[index].title = title;
-      });
+      rules[index].title = title;
     };
 
     // 切换规则启用状态
     const handleToggleEnable = (index: number, enable: boolean) => {
-      updateRules((nextRules) => {
+      replaceRules((nextRules) => {
         nextRules[index].enable = enable;
       });
     };
@@ -1566,27 +1562,22 @@ const LinkageRulesUI = observer(
 
     // 添加动作
     const handleAddAction = (ruleIndex: number, actionName: string) => {
-      updateRules((nextRules) => {
-        nextRules[ruleIndex].actions.push({
-          key: uid(),
-          name: actionName,
-          params: undefined,
-        });
-      });
+      const newAction = {
+        key: uid(),
+        name: actionName,
+        params: undefined,
+      };
+      rules[ruleIndex].actions.push(newAction);
     };
 
     // 删除动作
     const handleDeleteAction = (ruleIndex: number, actionIndex: number) => {
-      updateRules((nextRules) => {
-        nextRules[ruleIndex].actions.splice(actionIndex, 1);
-      });
+      rules[ruleIndex].actions.splice(actionIndex, 1);
     };
 
     // 更新动作的值
     const handleActionValueChange = (ruleIndex: number, actionIndex: number, value: any) => {
-      updateRules((nextRules) => {
-        nextRules[ruleIndex].actions[actionIndex].params = value;
-      });
+      rules[ruleIndex].actions[actionIndex].params = value;
     };
 
     // 生成折叠面板的自定义标题
@@ -1682,26 +1673,8 @@ const LinkageRulesUI = observer(
             <div style={{ paddingLeft: 12 }}>
               <FilterGroup
                 value={rule.condition}
-                immutable
-                onChange={(condition) => {
-                  updateRules((nextRules) => {
-                    nextRules[index].condition = condition;
-                  });
-                }}
                 FilterItem={(props) => (
-                  <LinkageFilterItem
-                    model={ctx.model}
-                    value={props.value}
-                    onChange={(nextValue) =>
-                      props.onChange?.({
-                        path: nextValue.path || '',
-                        operator: nextValue.operator,
-                        value: nextValue.value,
-                        noValue: nextValue.noValue,
-                      })
-                    }
-                    maxAssociationFieldDepth={2}
-                  />
+                  <LinkageFilterItem model={ctx.model} value={props.value} maxAssociationFieldDepth={2} />
                 )}
               />
             </div>
@@ -1788,7 +1761,7 @@ const LinkageRulesUI = observer(
                         <div>
                           {flowEngine.flowSettings.renderStepForm({
                             uiSchema: actionDef.uiSchema,
-                            initialValues: _.cloneDeep(action.params),
+                            initialValues: action.params,
                             flowEngine,
                             onFormValuesChange: (form: any) => handleActionValueChange(index, actionIndex, form.values),
                           })}
