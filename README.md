@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/nocobase-nocobase-badge.png)](https://mseep.ai/app/nocobase-nocobase)
+
 English | [简体中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md) | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
 
 https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
