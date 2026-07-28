@@ -38,12 +38,11 @@ export class PluginWorkflowCCServer extends Plugin {
     transaction?: Transaction;
   }): Promise<TaskStatsRow[]> {
     const workflowPlugin = this.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
-    const CCCollection = this.db.getCollection('workflowCcTasks');
     const CCModel = this.db.getModel('workflowCcTasks');
-    const qualifiedColumn = (name: string) =>
-      this.db.sequelize.literal(
-        `${this.db.quoteIdentifier(CCModel.name)}.${CCCollection.getRealFieldName(name, true)}`,
-      );
+    const qualifiedColumn = (name: string) => {
+      const fieldName = CCModel.getAttributes()[name].field ?? name;
+      return this.db.sequelize.col(`${CCModel.name}.${fieldName}`);
+    };
     const group = ['userId', 'workflowId'].map((name) => qualifiedColumn(name));
     const countColumn = qualifiedColumn('id');
     const where: Record<string, unknown> = {};
