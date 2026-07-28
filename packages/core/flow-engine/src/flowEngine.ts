@@ -15,6 +15,7 @@ import { FlowExecutor } from './executor/FlowExecutor';
 import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
+import { FORK_MODEL_MASTER } from './models/forkFlowModelSymbols';
 import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import { Emitter } from './emitter';
@@ -44,13 +45,13 @@ const getFlowEngineLoggerLevel = () => (process.env.NODE_ENV === 'production' ? 
 
 type ForkPersistenceModel = FlowModel & {
   isFork?: boolean;
-  getMaster?: () => FlowModel;
+  [FORK_MODEL_MASTER]?: () => FlowModel;
 };
 
 function getPersistentModel(model: FlowModel): FlowModel {
   const possibleFork = model as ForkPersistenceModel;
-  if (possibleFork.isFork === true && typeof possibleFork.getMaster === 'function') {
-    return possibleFork.getMaster();
+  if (possibleFork.isFork === true && typeof possibleFork[FORK_MODEL_MASTER] === 'function') {
+    return possibleFork[FORK_MODEL_MASTER]();
   }
   return model;
 }

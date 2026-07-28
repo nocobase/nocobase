@@ -12,6 +12,7 @@ import { FlowEngine } from '../../flowEngine';
 import type { FlowModelOptions, IModelComponentProps } from '../../types';
 import { FlowModel } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
+import { FORK_MODEL_MASTER } from '../forkFlowModelSymbols';
 import { uid } from 'uid/secure';
 
 // Helper functions
@@ -511,7 +512,18 @@ describe('ForkFlowModel', () => {
     test('should expose the master model as the persistence target', () => {
       const fork = new ForkFlowModel(mockMaster, { disabled: true });
 
-      expect(fork.getMaster()).toBe(mockMaster);
+      expect(fork[FORK_MODEL_MASTER]()).toBe(mockMaster);
+    });
+
+    test('should not shadow a master model method named getMaster', () => {
+      const getMaster = vi.fn(() => 'business-master');
+      Object.defineProperty(mockMaster, 'getMaster', { value: getMaster, configurable: true });
+      const fork = new ForkFlowModel(mockMaster);
+
+      const result = (fork as unknown as { getMaster: () => string }).getMaster();
+
+      expect(result).toBe('business-master');
+      expect(getMaster).toHaveBeenCalledOnce();
     });
   });
 

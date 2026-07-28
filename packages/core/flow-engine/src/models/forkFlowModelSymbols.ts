@@ -7,12 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './flowModel';
-export * from './forkFlowModel';
-export * from './forkFlowModelSymbols';
-
-export * from './CollectionFieldModel';
-export * from './DisplayItemModel';
-export * from './EditableItemModel';
-export * from './FilterableItemModel';
-//
+/** Internal access to a fork's persistence target without occupying a model method name. */
+export const FORK_MODEL_MASTER = Symbol('nocobase.flow-engine.fork-model-master');

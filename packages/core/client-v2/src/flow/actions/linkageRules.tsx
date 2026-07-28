@@ -14,6 +14,7 @@ import {
   FlowContext,
   FlowModel,
   FlowRuntimeContext,
+  FORK_MODEL_MASTER,
   useFlowContext,
   useFlowEngine,
   createSafeWindow,
@@ -2450,35 +2451,16 @@ export const blockLinkageRules = defineAction({
 
 type ActionLinkageModel = FlowModel & {
   isFork?: boolean;
-  getMaster?: () => FlowModel;
+  [FORK_MODEL_MASTER]?: () => FlowModel;
   localProps?: Record<string, unknown>;
   defaultProps?: Record<string, unknown>;
   __originalProps?: Record<string, unknown>;
 };
 
-const controlsActionDisabledState = (value: unknown) => {
-  const rules = (value as { value?: unknown })?.value;
-  if (!Array.isArray(rules)) return false;
+const maskHistoricalActionDisabledState = (model: ActionLinkageModel) => {
+  if (model.isFork !== true || typeof model[FORK_MODEL_MASTER] !== 'function') return;
 
-  return rules.some((rule) => {
-    if (!rule || typeof rule !== 'object') return false;
-    const actions = (rule as { actions?: unknown }).actions;
-    if (!Array.isArray(actions)) return false;
-    return actions.some((action) => {
-      if (!action || typeof action !== 'object') return false;
-      const actionValue = action as { name?: unknown; params?: { value?: unknown } };
-      return (
-        actionValue.name === 'linkageSetActionProps' &&
-        (actionValue.params?.value === 'disabled' || actionValue.params?.value === 'enabled')
-      );
-    });
-  });
-};
-
-const maskHistoricalActionDisabledState = (model: ActionLinkageModel, params: unknown) => {
-  if (model.isFork !== true || typeof model.getMaster !== 'function') return;
-
-  const persistentModel = model.getMaster() as ActionLinkageModel;
+  const persistentModel = model[FORK_MODEL_MASTER]() as ActionLinkageModel;
   const persistentProps = persistentModel.getProps();
   const hasHistoricalRowForkSignature =
     typeof persistentProps.className === 'string' &&
@@ -2492,10 +2474,10 @@ const maskHistoricalActionDisabledState = (model: ActionLinkageModel, params: un
   }
   if (model.localProps && Object.prototype.hasOwnProperty.call(model.localProps, 'disabled')) return;
 
-  const rules = (params as { value?: unknown })?.value;
-  const hasPersistedEmptyRules =
-    model.getStepParams('buttonSettings', 'linkageRules') !== undefined && Array.isArray(rules) && rules.length === 0;
-  if (!controlsActionDisabledState(params) && !hasPersistedEmptyRules) return;
+  // The current rules cannot reveal whether a disabled action was removed while other rules remained.
+  // Combined with the row-fork class signature above, a persisted linkage step is sufficient evidence of old pollution.
+  const hasPersistedLinkageRules = model.getStepParams('buttonSettings', 'linkageRules') !== undefined;
+  if (!hasPersistedLinkageRules) return;
 
   if (model.__originalProps && Object.prototype.hasOwnProperty.call(model.__originalProps, 'disabled')) {
     model.__originalProps.disabled = undefined;
@@ -2527,7 +2509,7 @@ export const actionLinkageRules = defineAction({
   useRawParams: true,
   handler: async (ctx, params) => {
     const model = ctx.model as ActionLinkageModel;
-    maskHistoricalActionDisabledState(model, params);
+    maskHistoricalActionDisabledState(model);
     ensureFormValueDrivenLinkageRefresh(ctx, params, 'actionLinkageRules');
     const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
     return commonLinkageRulesHandler(ctx, resolved);
