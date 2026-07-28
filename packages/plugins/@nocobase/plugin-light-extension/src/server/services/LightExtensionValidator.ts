@@ -19,6 +19,11 @@ import {
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
 } from '@nocobase/light-extension-sdk/schema';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
+import {
+  createRunJSWorkspaceDiagnostic as diagnostic,
+  getRunJSWorkspaceDiagnosticDetailsKey as stableDetailsKey,
+  RunJSWorkspaceSchemaValidator,
+} from '@nocobase/runjs-workspace/server';
 import { posix as pathPosix } from 'path';
 import {
   LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
@@ -32,9 +37,7 @@ import type {
   LightExtensionPulledFile,
   LightExtensionValidationLimits,
 } from '../../shared/types';
-import { diagnostic, stableDetailsKey } from './light-extension-validator/diagnostics';
 import { validateCodeFile } from './light-extension-validator/forbiddenRuntimeApi';
-import { LightExtensionSchemaValidator } from './light-extension-validator/schemaPolicy';
 import type {
   DiagnosticTarget,
   EntryBucket,
@@ -102,7 +105,7 @@ export interface LightExtensionWorkspaceValidationResult {
 export class LightExtensionValidator {
   private readonly capabilities: LightExtensionCapabilities;
 
-  private readonly schemaValidator: LightExtensionSchemaValidator;
+  private readonly schemaValidator: RunJSWorkspaceSchemaValidator;
 
   constructor(options: { limits?: Partial<LightExtensionValidationLimits> } = {}) {
     const limits = {
@@ -110,7 +113,7 @@ export class LightExtensionValidator {
       ...(options.limits || {}),
     };
     this.capabilities = buildCapabilities(limits);
-    this.schemaValidator = new LightExtensionSchemaValidator(this.capabilities);
+    this.schemaValidator = new RunJSWorkspaceSchemaValidator(this.capabilities);
   }
 
   getCapabilities(): LightExtensionCapabilities {

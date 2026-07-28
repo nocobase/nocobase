@@ -12,6 +12,7 @@ export * from './audit';
 export * from './config';
 export * from './module';
 export * from './permissions';
+export * from './resources/vscFile';
 export * from './runjs-sources';
 export * from './services/BlobService';
 export * from './services/CanonicalCandidateService';

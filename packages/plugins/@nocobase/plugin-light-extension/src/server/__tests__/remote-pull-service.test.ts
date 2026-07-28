@@ -8,7 +8,7 @@
  */
 
 import type { VscRemoteSnapshotFile } from '../vsc-file';
-import { VscPermissionHookRegistry } from '../vsc-file';
+import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -19,8 +19,6 @@ import { SyncStatePlanner } from '../vsc-file/remotes/SyncStatePlanner';
 import { DeterministicRemoteAdapter } from '../vsc-file/remotes/testing/DeterministicRemoteAdapter';
 import { VscRemotePullDiscoveryService } from '../vsc-file/remotes/VscRemotePullDiscoveryService';
 import { loadVscSnapshot } from '../vsc-file/remotes/VscRemotePushService';
-import { CommitService } from '../vsc-file/services/CommitService';
-import { TreeService } from '../vsc-file/services/TreeService';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';

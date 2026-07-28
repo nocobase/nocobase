@@ -11,7 +11,7 @@ import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 import { vi } from 'vitest';
 
-import { VscError } from '../../../shared/vsc-file/errors';
+import { VscError } from '../../shared/errors';
 import { BlobService } from '../services/BlobService';
 import { CommitService } from '../services/CommitService';
 import { RepositoryService } from '../services/RepositoryService';

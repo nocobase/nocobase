@@ -17,7 +17,7 @@ import {
   type LightExtensionKind,
 } from '../../../constants';
 import type { LightExtensionDiagnostic } from '../../../shared/types';
-import { diagnosticAt } from './diagnostics';
+import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs-workspace/server';
 import type { DiagnosticTarget } from './types';
 import { getEntryRootPath, normalizeSourcePath, sharedSourceRoot } from './workspacePolicy';
 

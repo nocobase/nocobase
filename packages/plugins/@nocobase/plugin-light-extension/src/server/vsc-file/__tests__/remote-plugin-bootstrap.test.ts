@@ -8,6 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import type { Application } from '@nocobase/server';
 import { createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
@@ -21,9 +22,7 @@ import { RemoteSyncRuntimeService } from '../remotes/RemoteSyncRuntimeService';
 import { SyncJobStore } from '../remotes/SyncJobStore';
 import { lightExtensionSyncAuditActionNames, remoteSyncAuditActionNames } from '../remotes/audit';
 import { DeterministicRemoteAdapter } from '../remotes/testing/DeterministicRemoteAdapter';
-import { VscPermissionHookRegistry } from '../permissions';
-import { VscFileService } from '../services/VscFileService';
-import { VscFileServerModule } from '../plugin';
+import { LightExtensionRemoteSyncModule } from '../plugin';
 import PluginLightExtensionServer from '../../plugin';
 
 describe('vsc-file remote runtime bootstrap', () => {
@@ -38,7 +37,7 @@ describe('vsc-file remote runtime bootstrap', () => {
         registerActions: vi.fn((actions: Array<{ name: string }>) => registeredAuditActions.push(...actions)),
       },
     } as unknown as Application;
-    const module = new VscFileServerModule(app, app.db);
+    const module = new LightExtensionRemoteSyncModule(app, app.db, new VscPermissionHookRegistry());
 
     await module.load();
     const firstRuntime = module.getRemoteSyncRuntime();

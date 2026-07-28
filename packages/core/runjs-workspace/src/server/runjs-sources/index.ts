@@ -13,6 +13,12 @@ export * from './RunJSAuthoringCapabilityRegistry';
 export * from './canonicalCompileFiles';
 export * from './lazyCompiler';
 export {
+  diagnostic as createRunJSWorkspaceDiagnostic,
+  diagnosticAt as createRunJSWorkspaceDiagnosticAt,
+  stableDetailsKey as getRunJSWorkspaceDiagnosticDetailsKey,
+} from './settings-validator/diagnostics';
+export { RunJSWorkspaceSchemaValidator } from './settings-validator/schemaPolicy';
+export {
   assertRunJSCompileInputLimits,
   createFlowSurfaceRunJSWorkspaceBootstrapPort,
   createRunJSSourcesResource,

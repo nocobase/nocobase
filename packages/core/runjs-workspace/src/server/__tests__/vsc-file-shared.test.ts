@@ -9,15 +9,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { RunJSSourceError } from '@nocobase/server';
-import { maxPathLength } from '../../../shared/vsc-file/constants';
-import { isVscError, VscError } from '../../../shared/vsc-file/errors';
-import { sha256Hex } from '../../../shared/vsc-file/hash';
-import { normalizePath, pathHash, pathLowerHash } from '../../../shared/vsc-file/path';
-import {
-  buildRunJSSourceRepositoryIdentity,
-  normalizeRunJSSourceLocator,
-} from '../../../shared/vsc-file/runjs-source-types';
-import { normalizeText } from '../../../shared/vsc-file/text';
+import { maxPathLength } from '../../shared/constants';
+import { isVscError, VscError } from '../../shared/errors';
+import { sha256Hex } from '../../shared/hash';
+import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
+import { buildRunJSSourceRepositoryIdentity, normalizeRunJSSourceLocator } from '../../shared/runjs-source-types';
+import { normalizeText } from '../../shared/text';
 
 describe('vsc-file shared utilities', () => {
   it('normalizes paths to POSIX separators without changing case', () => {

@@ -10,7 +10,7 @@
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 
-import { sha256Hex } from '../../../shared/vsc-file/hash';
+import { sha256Hex } from '../../shared/hash';
 import { VscFileService } from '../services/VscFileService';
 
 describe('vsc-file canonical candidate snapshot', () => {

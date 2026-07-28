@@ -8,12 +8,12 @@
  */
 
 import swaggerDocument from '../../swagger';
+import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
-import { runJSSourceActionNames } from '../vsc-file/runjs-sources';
 
 const publicActions = {
   lightExtensionRepos: ['list', 'get'],

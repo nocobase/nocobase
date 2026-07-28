@@ -8,7 +8,7 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import path from 'path';
+import { importRunJSWorkspaceCollections } from '@nocobase/runjs-workspace/server';
 
 import type { VscFileRemoteRecord, VscRemoteNormalizedConfig } from '../../../shared/vsc-file/remote-sync-types';
 import { ConflictStore } from '../remotes/ConflictStore';
@@ -30,9 +30,7 @@ describe('vsc-file remote stores', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({
-      directory: path.resolve(__dirname, '../collections'),
-    });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
   });
 

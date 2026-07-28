@@ -11,9 +11,9 @@ import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 import { vi } from 'vitest';
 
-import { commitHistoryDefaultLimit } from '../../../shared/vsc-file/constants';
-import { VscError } from '../../../shared/vsc-file/errors';
-import { sha256Hex } from '../../../shared/vsc-file/hash';
+import { commitHistoryDefaultLimit } from '../../shared/constants';
+import { VscError } from '../../shared/errors';
+import { sha256Hex } from '../../shared/hash';
 import { VscFileService } from '../services/VscFileService';
 
 describe('vsc-file repository and commit services', () => {

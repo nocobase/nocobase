@@ -11,8 +11,8 @@ import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 import { vi } from 'vitest';
 
-import { diffMaxFileSize } from '../../../shared/vsc-file/constants';
-import { sha256Hex } from '../../../shared/vsc-file/hash';
+import { diffMaxFileSize } from '../../shared/constants';
+import { sha256Hex } from '../../shared/hash';
 import { BlobService } from '../services/BlobService';
 import { DiffService, type FileDiffEntry, type FileDiffResult } from '../services/DiffService';
 import { VscFileService } from '../services/VscFileService';

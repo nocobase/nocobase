@@ -11,8 +11,8 @@ import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 import { UniqueConstraintError } from 'sequelize';
 
-import { VscError } from '../../../shared/vsc-file/errors';
-import { pathHash, pathLowerHash } from '../../../shared/vsc-file/path';
+import { VscError } from '../../shared/errors';
+import { pathHash, pathLowerHash } from '../../shared/path';
 import { BlobService } from '../services/BlobService';
 import { RepositoryService } from '../services/RepositoryService';
 import { TreeService } from '../services/TreeService';

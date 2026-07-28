@@ -8,7 +8,7 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import path from 'path';
+import { importRunJSWorkspaceCollections } from '@nocobase/runjs-workspace/server';
 import { UniqueConstraintError } from 'sequelize';
 
 describe('vsc-file remote collections', () => {
@@ -17,9 +17,7 @@ describe('vsc-file remote collections', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({
-      directory: path.resolve(__dirname, '../collections'),
-    });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
   });
 

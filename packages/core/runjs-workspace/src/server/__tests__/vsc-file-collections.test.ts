@@ -10,7 +10,7 @@
 import { Database, createMockDatabase } from '@nocobase/database';
 import type { Application } from '@nocobase/server';
 
-import { VscFileServerModule } from '../plugin';
+import { RunJSWorkspaceServerModule } from '../module';
 
 describe('vsc-file collections', () => {
   let db: Database;
@@ -18,7 +18,7 @@ describe('vsc-file collections', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await new VscFileServerModule({} as Application, db).beforeLoad();
+    await new RunJSWorkspaceServerModule({} as Application, db).beforeLoad();
     await db.sync();
   });
 

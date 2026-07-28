@@ -9,8 +9,8 @@
 
 import JSZip from 'jszip';
 
-import { maxFileSize, maxFilesPerRepo } from '../../../../shared/vsc-file/constants';
-import { readRunJSWorkspaceZip } from '../resource';
+import { maxFileSize, maxFilesPerRepo } from '../../shared/constants';
+import { readRunJSWorkspaceZip } from '../runjs-sources/resource';
 
 describe('RunJS workspace ZIP limits', () => {
   it('rejects a highly compressed entry before unbounded decompression', async () => {

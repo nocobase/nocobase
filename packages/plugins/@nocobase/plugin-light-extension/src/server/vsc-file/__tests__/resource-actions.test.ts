@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { vscFileActionNames } from '@nocobase/runjs-workspace/server';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginLightExtensionServer from '../../plugin';
-import { vscFileActionNames } from '../resources/vscFile';
 
 describe('vsc-file resource actions and ACL', () => {
   let app: MockServer;

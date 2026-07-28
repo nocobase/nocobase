@@ -18,9 +18,9 @@ import {
   maxFilesPerRepo,
   maxPathLength,
   maxRepoTextSize,
-} from '../../../shared/vsc-file/constants';
-import type { VscErrorCode } from '../../../shared/vsc-file/errors';
-import { sha256Hex } from '../../../shared/vsc-file/hash';
+} from '../../shared/constants';
+import type { VscErrorCode } from '../../shared/errors';
+import { sha256Hex } from '../../shared/hash';
 import { defaultVscFileLimits, vscFileServerDefaults } from '../config';
 import { VscFileService, type PushInput } from '../services/VscFileService';
 

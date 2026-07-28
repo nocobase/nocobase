@@ -97,9 +97,7 @@ export class RunJSWorkspaceServerModule {
     if (this.db.hasCollection('vscFileRepositories')) {
       return;
     }
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await importRunJSWorkspaceCollections(this.db);
   }
 
   async load(): Promise<void> {
@@ -133,6 +131,12 @@ export class RunJSWorkspaceServerModule {
   async remove(): Promise<void> {
     await this.afterDisable();
   }
+}
+
+export async function importRunJSWorkspaceCollections(db: Database): Promise<void> {
+  await db.import({
+    directory: resolve(__dirname, 'collections'),
+  });
 }
 
 export function getOrCreateRunJSWorkspaceServerModule(app: Application, db: Database): RunJSWorkspaceServerModule {
