@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nocobase.com/schemas/portal-registry-config.json",
+  "title": "NocoBase Portal Registry configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["target", "items"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri"
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^src/"
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    }
+  },
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "type", "include"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "type": {
+          "enum": [
+            "registry:block",
+            "registry:component",
+            "registry:hook",
+            "registry:lib",
+            "registry:page",
+            "registry:style",
+            "registry:theme"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "include": {
+          "$ref": "#/$defs/stringArray",
+          "minItems": 1
+        },
+        "dependencies": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "registryDependencies": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    }
+  }
+}

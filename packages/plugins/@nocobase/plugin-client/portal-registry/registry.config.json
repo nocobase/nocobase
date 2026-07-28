@@ -1,0 +1,20 @@
+{
+  "target": "src/extensions/nocobase-route-surfaces",
+  "items": [
+    {
+      "name": "route-surfaces",
+      "type": "registry:lib",
+      "title": "NocoBase Route Surfaces",
+      "description": "URL-backed drawer, dialog, and page containers with nested drawer stacking and a shared close lifecycle.",
+      "dependencies": [
+        "@base-ui/react@^1.6.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": ["alert-dialog", "badge", "button", "card", "input", "label", "select", "textarea"],
+      "docs": "Provides presentation containers plus an integrated Demo and Prompt generator. Route definitions, ACL guards, data fetching, and business content remain application-owned.",
+      "include": ["."]
+    }
+  ]
+}

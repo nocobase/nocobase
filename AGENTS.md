@@ -12,6 +12,14 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 - This repo has two client runtimes: legacy v1 (`src/client/`, `@nocobase/client`, `SchemaComponent`) and v2 (`src/client-v2/`, `@nocobase/client-v2`, `FlowEngine` / `FlowModel`). Confirm which runtime the file under edit belongs to before writing code. Import direction is one-way: v1 client may import from v2 (`@nocobase/client-v2`), but v2 client must never import from v1 (`@nocobase/client`).
 - Pro (not open source) plugins live in individual repositories under `packages/plugins` or `packages/pro-plugins` (for example, `@nocobase/plugin-workflow-approval`), but used not as submodules. When working on a pro plugin, clone its repo separately under `packages/plugins/` or `packages/pro-plugins/` and treat it as a standalone project with git.
 
+## Portal Registry Development
+
+- Portal Registry source belongs in each plugin's `portal-registry/` directory. Edit that plugin-owned source directly; files under `storage/portal-registry/src/extensions/` are generated preview mirrors and must not be edited.
+- Portal Registry targets the Portal Template and follows its React, shadcn Base UI, and pnpm toolchain. It never imports or uses Ant Design (`antd`) or NocoBase's Ant Design-based client UI components.
+- Reuse the Portal Template's existing shadcn Base UI components before adding new primitives. Registry items should commonly provide portable API adapters, hooks, reusable components, and a small Demo for user-facing behavior.
+- Update the owning `portal-registry/registry.config.json` whenever item files, targets, or Registry dependencies change.
+- Run `yarn portal-registry dev` from the NocoBase repository root for the NocoBase server, client-v2 configuration UI, and Portal Template preview. Validate changes with `yarn portal-registry build` and `yarn portal-registry test`.
+
 ## Code Style Rules
 
 - Do not use `void someAsyncCall()` style fire-and-forget invocation. Prefer direct invocation such as `someAsyncCall()` and structure surrounding code accordingly.
