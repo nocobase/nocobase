@@ -162,6 +162,7 @@ export class PluginAIServer extends Plugin {
     this.defineResources();
     this.registerMcpClientEvents();
     this.setPermissions();
+    this.registerAIFileAccessAuthorizer();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
@@ -297,7 +298,6 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
-    this.app.acl.allow('aiFiles', 'get', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
     this.app.acl.allow('ai', 'listAllEnabledModels', 'loggedIn');
 
@@ -306,12 +306,6 @@ export class PluginAIServer extends Plugin {
 
     this.app.acl.allow('aiTools', 'list', 'loggedIn');
     this.app.acl.allow('aiSkills', 'list', 'loggedIn');
-
-    this.app.acl.addFixedParams('aiFiles', 'get', () => ({
-      filter: {
-        createdById: '{{ ctx.state.currentUser.id }}',
-      },
-    }));
 
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {
@@ -402,6 +396,27 @@ export class PluginAIServer extends Plugin {
     return {
       aiContextDatasources: this.repository('aiContextDatasources'),
     };
+  }
+
+  private registerAIFileAccessAuthorizer() {
+    this.fileManager.registerFileAccessAuthorizer({
+      name: 'ai-files',
+      authorize: async (ctx, params) => {
+        const currentUserId = ctx.state.currentUser?.id;
+        if (params.dataSourceKey !== 'main' || params.collectionName !== 'aiFiles' || !currentUserId) {
+          return false;
+        }
+
+        const file = await ctx.db.getRepository('aiFiles').findOne({
+          filter: {
+            id: params.id,
+            createdById: currentUserId,
+          },
+          fields: ['id'],
+        });
+        return Boolean(file);
+      },
+    });
   }
 
   get fileManager(): PluginFileManagerServer {

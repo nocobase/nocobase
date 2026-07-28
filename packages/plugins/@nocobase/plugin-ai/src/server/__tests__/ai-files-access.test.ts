@@ -27,7 +27,7 @@ describe('aiFiles access', () => {
     await app.destroy();
   });
 
-  it('allows logged-in users to get only their own files', async () => {
+  it('allows logged-in users to preview only their own files', async () => {
     const users = app.db.getRepository('users');
     const owner = await users.create({
       values: {
@@ -51,24 +51,14 @@ describe('aiFiles access', () => {
         mimetype: 'image/png',
       },
     });
-    const fileId = createResponse.body.data.id;
+    const previewUrl = createResponse.body.data.preview;
+    const ownerPreviewResponse = await ownerAgent.get(previewUrl);
 
-    const ownerResponse = await ownerAgent.resource('aiFiles').get({
-      filterByTk: fileId,
-    });
-
-    expect(ownerResponse.statusCode).toBe(200);
-    expect(ownerResponse.body.data).toMatchObject({
-      id: fileId,
-      filename: 'preview.png',
-    });
+    expect(ownerPreviewResponse.statusCode).toBe(302);
 
     const otherAgent = await app.agent().login(otherUser.id);
-    const otherResponse = await otherAgent.resource('aiFiles').get({
-      filterByTk: fileId,
-    });
+    const otherPreviewResponse = await otherAgent.get(previewUrl);
 
-    expect(otherResponse.statusCode).toBe(200);
-    expect(otherResponse.body.data).toBeNull();
+    expect(otherPreviewResponse.statusCode).toBe(403);
   });
 });
