@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => {
     diagnoseRunJS: vi.fn(),
     flowEngine,
     model,
-    renderErrorReporters: new Set<(error: unknown, info?: unknown) => void>(),
+    renderErrorReporters: new Set<(diagnostic: { key: string; message: string }) => void>(),
     request: vi.fn(),
     view: {} as {
       beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
@@ -49,7 +49,10 @@ vi.mock('@nocobase/flow-engine', () => ({
     model: mocks.model,
     view: mocks.view,
   }),
-  registerRunJSRenderErrorReporter: (_model: unknown, reporter: (error: unknown, info?: unknown) => void) => {
+  subscribeRunJSRenderDiagnostics: (
+    _target: unknown,
+    reporter: (diagnostic: { key: string; message: string }) => void,
+  ) => {
     mocks.renderErrorReporters.add(reporter);
     return () => mocks.renderErrorReporters.delete(reporter);
   },
@@ -65,6 +68,7 @@ vi.mock('@nocobase/client-v2', () => ({
     toolbarLeftExtra,
     runButton,
     fullscreenControl,
+    diagnostics,
     enableLinter,
     language,
     jsonSchema,
@@ -77,12 +81,14 @@ vi.mock('@nocobase/client-v2', () => ({
     toolbarLeftExtra?: React.ReactNode;
     runButton?: React.ReactNode;
     fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
+    diagnostics?: Array<{ message: string }>;
     enableLinter?: boolean;
     language?: string;
     jsonSchema?: { uri?: string };
   }) => (
     <div
       data-authoring-surface-id={authoringSurfaceId}
+      data-diagnostic-messages={diagnostics?.map((diagnostic) => diagnostic.message).join('|')}
       data-enable-linter={String(Boolean(enableLinter))}
       data-json-schema-uri={jsonSchema?.uri}
       data-language={language}
@@ -1101,14 +1107,73 @@ describe('runJSStudioProvider', () => {
     expect(mocks.renderErrorReporters.size).toBe(1);
     act(() => {
       for (const reporter of mocks.renderErrorReporters) {
-        reporter(new TypeError('rawData.some is not a function'), { componentStack: '\n at CustomerList' });
+        reporter({
+          key: 'rawData.some is not a function\nstack\n at CustomerList',
+          message: 'rawData.some is not a function',
+        });
       }
     });
 
-    expect(await screen.findByText(/\[error\] rawData\.some is not a function/)).toBeTruthy();
-    expect(await screen.findByText(/\[error\] Run failed/)).toBeTruthy();
+    const errorEntry = await screen.findByText(/\[error\] rawData\.some is not a function/);
+    const failedEntry = await screen.findByText(/\[error\] Run failed/);
+    expect(errorEntry.compareDocumentPosition(failedEntry) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByText(/\[info\] Run completed/)).toBeNull();
     expect(mocks.diagnoseRunJS).not.toHaveBeenCalled();
+  });
+
+  it('invalidates an old render-error subscription after the draft changes', async () => {
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
+
+    const editor = await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+    const oldReporter = Array.from(mocks.renderErrorReporters)[0];
+    expect(oldReporter).toBeTypeOf('function');
+
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+
+    expect(mocks.renderErrorReporters.size).toBe(0);
+    act(() => {
+      oldReporter({ key: 'old-draft-error', message: 'old draft render error' });
+    });
+    expect(screen.queryByText(/old draft render error/)).toBeNull();
+    expect(screen.queryByText(/\[error\] Run failed/)).toBeNull();
+  });
+
+  it('ignores an old render-error subscription after a newer run starts', async () => {
+    const onPreview = vi.fn();
+    renderEditor(vi.fn(), { onPreview });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+    const oldReporter = Array.from(mocks.renderErrorReporters)[0];
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(2));
+    expect(mocks.renderErrorReporters.size).toBe(1);
+
+    act(() => {
+      oldReporter({ key: 'old-run-error', message: 'old run render error' });
+    });
+    expect(screen.queryByText(/old run render error/)).toBeNull();
+    expect(screen.queryByText(/\[error\] Run failed/)).toBeNull();
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+  });
+
+  it('unsubscribes from render diagnostics when the Studio unmounts', async () => {
+    const rendered = renderEditor(vi.fn(), { onPreview: vi.fn() });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    expect(await screen.findByText(/\[info\] Run completed/)).toBeTruthy();
+    expect(mocks.renderErrorReporters.size).toBe(1);
+
+    rendered.unmount();
+
+    expect(mocks.renderErrorReporters.size).toBe(0);
   });
 
   it('runs the compiled artifact in the current Flow context without a host preview', async () => {
@@ -1145,6 +1210,172 @@ describe('runJSStudioProvider', () => {
     expect(await screen.findByText(/\[error\] rawData\.some is not a function/)).toBeTruthy();
     expect(await screen.findByText(/\[error\] Run failed/)).toBeTruthy();
     expect(screen.queryByText(/\[info\] Run completed/)).toBeNull();
+  });
+
+  it('shows authoritative TypeScript diagnostics after draft changes without requiring Run', async () => {
+    mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({ data: { data: openResult } });
+      }
+      if (url === 'runJSSources:compilePreview') {
+        const code = getSubmittedMainContent(data);
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code,
+                version: 'v2',
+                sourceMap: previewSourceMap,
+                diagnostics: code.includes('sdfsdf')
+                  ? [
+                      {
+                        path: 'src/client/index.tsx',
+                        line: 1,
+                        column: 1,
+                        severity: 'error',
+                        message: "Cannot find name 'sdfsdf'.",
+                        ruleId: 'runjs-typescript',
+                      },
+                    ]
+                  : [],
+                filesHash: 'files-hash-live-diagnostics',
+                entryPath: 'src/client/index.tsx',
+              },
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+    renderEditor();
+
+    const editor = await screen.findByLabelText('Edit file content');
+    fireEvent.change(editor, { target: { value: 'sdfsdf();' } });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
+        'data-diagnostic-messages',
+        "Cannot find name 'sdfsdf'.",
+      ),
+    );
+    expect(
+      mocks.request.mock.calls.find(([request]) => request.url === 'runJSSources:compilePreview')?.[0].data.files,
+    ).toEqual([
+      expect.objectContaining({
+        path: 'src/client/index.tsx',
+        expectedBlobHash: 'a'.repeat(64),
+      }),
+    ]);
+    expect(screen.queryByText(/Compile failed/)).toBeNull();
+
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    await waitFor(() =>
+      expect(
+        mocks.request.mock.calls.some(
+          ([request]) =>
+            request.url === 'runJSSources:compilePreview' && getSubmittedMainContent(request.data) === 'return 2;',
+        ),
+      ).toBe(true),
+    );
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-diagnostic-messages', '');
+  });
+
+  it('does not restore diagnostics from an older draft request that finishes late', async () => {
+    const stalePreview = deferred<{ data: { data: Record<string, unknown> } }>();
+    mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({ data: { data: openResult } });
+      }
+      if (url === 'runJSSources:compilePreview') {
+        const code = getSubmittedMainContent(data);
+        if (code.includes('staleMissing')) {
+          return stalePreview.promise;
+        }
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code,
+                version: 'v2',
+                sourceMap: previewSourceMap,
+                diagnostics: code.includes('currentMissing')
+                  ? [
+                      {
+                        path: 'src/client/index.tsx',
+                        line: 1,
+                        column: 1,
+                        severity: 'error',
+                        message: "Cannot find name 'currentMissing'.",
+                      },
+                    ]
+                  : [],
+                filesHash: 'files-hash-current-diagnostics',
+                entryPath: 'src/client/index.tsx',
+              },
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+    renderEditor();
+
+    const editor = await screen.findByLabelText('Edit file content');
+    fireEvent.change(editor, { target: { value: 'staleMissing();' } });
+    await waitFor(() =>
+      expect(
+        mocks.request.mock.calls.some(
+          ([request]) =>
+            request.url === 'runJSSources:compilePreview' &&
+            getSubmittedMainContent(request.data) === 'staleMissing();',
+        ),
+      ).toBe(true),
+    );
+
+    fireEvent.change(editor, { target: { value: 'currentMissing();' } });
+    await waitFor(() =>
+      expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
+        'data-diagnostic-messages',
+        "Cannot find name 'currentMissing'.",
+      ),
+    );
+
+    await act(async () => {
+      stalePreview.resolve({
+        data: {
+          data: {
+            locator,
+            locatorKind: 'flowModel.step',
+            artifact: {
+              code: 'staleMissing();',
+              version: 'v2',
+              sourceMap: previewSourceMap,
+              diagnostics: [
+                {
+                  path: 'src/client/index.tsx',
+                  line: 1,
+                  column: 1,
+                  severity: 'error',
+                  message: "Cannot find name 'staleMissing'.",
+                },
+              ],
+              filesHash: 'files-hash-stale-diagnostics',
+              entryPath: 'src/client/index.tsx',
+            },
+          },
+        },
+      });
+      await stalePreview.promise;
+    });
+
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
+      'data-diagnostic-messages',
+      "Cannot find name 'currentMissing'.",
+    );
   });
 
   it('resolves the fixed src/client index entry by extension priority', async () => {

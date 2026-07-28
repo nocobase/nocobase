@@ -18,7 +18,7 @@ import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { createPortal } from 'react-dom';
 import { EditorCore } from './core/EditorCore';
-import type { EditorRef } from './types';
+import type { CodeEditorDiagnostic, EditorRef } from './types';
 import { RightExtra as RightExtraPanel } from './panels/RightExtra';
 import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
@@ -37,6 +37,7 @@ export interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  diagnostics?: CodeEditorDiagnostic[];
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
   moduleImportCompletions?: RunJSImportModuleCompletion[];
@@ -73,6 +74,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  diagnostics,
   wrapperStyle,
   extraCompletions,
   moduleImportCompletions,
@@ -261,6 +263,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       />
       <EditorCore
+        diagnostics={diagnostics}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
@@ -269,6 +272,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         theme={theme}
         readonly={readonly}
         enableLinter={enableLinter}
+        fileName={name}
         completionSource={completionSource}
         language={language}
         jsonSchema={jsonSchema}

@@ -598,6 +598,106 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     );
   });
 
+  it('applies the RunJS authoring diagnostic policy at the compiler gate', async () => {
+    const unknownValue = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: "const response = await ctx.api.request({ url: 'users:list' }); response?.data?.data;",
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    const invalidMember = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: "const record = { status: 'unknown' as const }; record.missing;" }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    const ordinaryTypeErrors = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content:
+            "const count: number = 'wrong'; const unknownValue: unknown = {}; const countFromUnknown: number = unknownValue; const value: { name: string } | { email: string } = Math.random() ? { name: 'A' } : { email: 'a@example.com' }; value.name;",
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    const reactGlobal = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.tsx', content: 'React.useState(0);' }],
+      entry: 'index.tsx',
+      surfaceStyle: 'action',
+    });
+    const reactTypeNamespace = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.tsx', content: 'const node: React.ReactNode = null; return node;' }],
+      entry: 'index.tsx',
+      surfaceStyle: 'action',
+    });
+    const suppression = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: "// @ts-nocheck\nconst count: number = 'wrong';" }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+
+    expect(unknownValue.failureCode).toBeUndefined();
+    expect(unknownValue.artifact.diagnostics).toEqual([]);
+    expect(invalidMember.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ message: expect.stringContaining('missing') })]),
+    );
+    expect(ordinaryTypeErrors.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.stringContaining("Type 'string' is not assignable to type 'number'"),
+        }),
+        expect.objectContaining({
+          message: expect.stringContaining("Type 'unknown' is not assignable to type 'number'"),
+        }),
+        expect.objectContaining({ message: expect.stringContaining("Property 'name' does not exist on type") }),
+      ]),
+    );
+    expect(reactGlobal.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ message: expect.stringContaining('ctx.libs.React') })]),
+    );
+    expect(reactTypeNamespace.artifact.diagnostics).toEqual([]);
+    expect(suppression.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(suppression.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ruleId: 'runjs-typescript-directive-forbidden' })]),
+    );
+  });
+
+  it('keeps runtime-injected libraries permissive for ordinary authoring patterns', async () => {
+    const result = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.tsx',
+          content: `
+const React = ctx.libs.React;
+const dayjs = ctx.libs.dayjs;
+const Card = ctx.libs.antd.Card;
+const state = React.useState(0);
+const [records, setRecords] = React.useState<Record<string, unknown>[]>([]);
+const load = React.useCallback(async (page: number) => page + records.length, [records]);
+React.useEffect(() => {
+  setRecords((current) => current);
+}, [load]);
+const total = React.useMemo(() => records.length, [records]);
+const dailyMap = {};
+const key = dayjs().format('YYYY-MM-DD');
+dailyMap[key] = state[0] + 1;
+ctx.render(<Card>{dailyMap[key] > 0 ? String(dailyMap[key] + total) : '-'}</Card>);
+`,
+        },
+      ],
+      entry: 'index.tsx',
+      surfaceStyle: 'render',
+    });
+
+    expect(result.failureCode).toBeUndefined();
+    expect(result.artifact.diagnostics).toEqual([]);
+  });
+
   it('accepts browser APIs through the runtime window proxy while keeping bare globals restricted', async () => {
     const windowResult = await compileRunJSSourceWorkspace({
       files: [

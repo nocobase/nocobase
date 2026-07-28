@@ -32,6 +32,7 @@ import {
   type CodeEditorJsonSchemaRef,
 } from '../jsonLanguageService';
 import { createJavaScriptLinter } from '../linter';
+import type { CodeEditorDiagnostic } from '../types';
 import { resolveTooltipParent } from './tooltipParent';
 
 const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
@@ -41,43 +42,56 @@ const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
 
 const tabCompletionKeymap = Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletionOrKeepPending }]));
 
-function createLanguageConfig(language: string | undefined): {
+function createLanguageConfig(
+  language: string | undefined,
+  fileName: string | undefined,
+): {
   extension: Extension;
   isJson: boolean;
-  usesJavaScriptLinter: boolean;
 } {
-  switch (language?.trim().toLowerCase()) {
+  const normalizedLanguage = language?.trim().toLowerCase();
+  const normalizedFileName = fileName?.trim().toLowerCase();
+  const isTypeScriptFile = normalizedFileName?.endsWith('.ts') === true;
+  const isTypeScriptReactFile = normalizedFileName?.endsWith('.tsx') === true;
+
+  switch (normalizedLanguage) {
     case 'json':
-      return { extension: json(), isJson: true, usesJavaScriptLinter: false };
+      return { extension: json(), isJson: true };
     case 'typescript':
     case 'ts':
       return {
-        extension: javascriptWithHtmlTemplates({ jsx: false, typescript: true }),
+        extension: javascriptWithHtmlTemplates({ jsx: isTypeScriptReactFile, typescript: true }),
         isJson: false,
-        usesJavaScriptLinter: false,
       };
     case 'tsx':
     case 'typescriptreact':
       return {
         extension: javascriptWithHtmlTemplates({ jsx: true, typescript: true }),
         isJson: false,
-        usesJavaScriptLinter: false,
       };
     case 'jsx':
     case 'javascriptreact':
       return {
         extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
         isJson: false,
-        usesJavaScriptLinter: true,
       };
     case 'javascript':
     case 'js':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
     default:
+      if (isTypeScriptFile || isTypeScriptReactFile) {
+        return {
+          extension: javascriptWithHtmlTemplates({ jsx: isTypeScriptReactFile, typescript: true }),
+          isJson: false,
+        };
+      }
       return {
         // Preserve the existing JSX-compatible JavaScript behavior for omitted and unknown languages.
         extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
         isJson: false,
-        usesJavaScriptLinter: true,
       };
   }
 }
@@ -160,6 +174,8 @@ export const EditorCore: React.FC<{
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  diagnostics?: CodeEditorDiagnostic[];
+  fileName?: string;
   knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
@@ -175,6 +191,8 @@ export const EditorCore: React.FC<{
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  diagnostics,
+  fileName,
   knownCtxMemberRoots,
   extraCompletions,
   completionSource,
@@ -237,7 +255,7 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const languageConfig = createLanguageConfig(language);
+    const languageConfig = createLanguageConfig(language, fileName);
     const jsonLanguage = languageConfig.isJson;
     const view = new EditorView({
       doc: value || '',
@@ -259,8 +277,16 @@ export const EditorCore: React.FC<{
         linterCompartment.of(
           jsonLanguage
             ? [lintGutter(), jsonLinter]
-            : enableLinter && languageConfig.usesJavaScriptLinter
-              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
+            : enableLinter
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
               : [],
         ),
         hoverCompartment.of(jsonLanguage ? jsonHover : []),
@@ -303,7 +329,7 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const languageConfig = createLanguageConfig(language);
+    const languageConfig = createLanguageConfig(language, fileName);
     const jsonLanguage = languageConfig.isJson;
     view.dispatch({
       effects: [
@@ -322,8 +348,16 @@ export const EditorCore: React.FC<{
         linterCompartment.reconfigure(
           jsonLanguage
             ? [lintGutter(), jsonLinter]
-            : enableLinter && languageConfig.usesJavaScriptLinter
-              ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
+            : enableLinter
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
               : [],
         ),
         hoverCompartment.reconfigure(jsonLanguage ? jsonHover : []),
@@ -335,8 +369,10 @@ export const EditorCore: React.FC<{
   }, [
     completionCompartment,
     dynamicCompletionSource,
+    diagnostics,
     editorThemeCompartment,
     enableLinter,
+    fileName,
     height,
     hoverCompartment,
     jsonCompletionSource,
@@ -358,10 +394,10 @@ export const EditorCore: React.FC<{
 
   useEffect(() => {
     const view = viewRef.current;
-    if (view && createLanguageConfig(language).isJson) {
+    if (view && (createLanguageConfig(language, fileName).isJson || enableLinter)) {
       forceLinting(view);
     }
-  }, [jsonSchema, language, viewRef]);
+  }, [diagnostics, enableLinter, fileName, jsonSchema, language, viewRef]);
 
   useEffect(() => {
     const view = viewRef.current;

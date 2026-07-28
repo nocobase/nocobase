@@ -22,8 +22,9 @@ import {
   FlowContext,
   prepareRunJsCode,
   RUNJS_ALLOWED_BARE_GLOBAL_NAMES,
-  RUNJS_RENDER_ERROR_REPORTER,
   shouldPreprocessRunJSTemplates,
+  subscribeRunJSRenderDiagnostics,
+  type RunJSRenderDiagnostic,
 } from '@nocobase/flow-engine';
 
 const acornWalkBase = {
@@ -927,18 +928,7 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
   return issues;
 }
 
-function getRuntimeErrorMessage(error: unknown, fallback = 'Unknown render error'): string {
-  const message =
-    error && typeof error === 'object'
-      ? (error as { message?: unknown }).message
-      : typeof error === 'string'
-        ? error
-        : '';
-  const normalized = safeToString(message || error).trim();
-  return normalized || fallback;
-}
-
-function createLogCollectors(out: RunJSLog[], onRenderError?: (error: unknown, info?: unknown) => void) {
+function createLogCollectors(out: RunJSLog[]) {
   const push = (level: RunJSLog['level'], args: any[]) => {
     const msg = args
       .map((x) => safeToString(x))
@@ -963,11 +953,6 @@ function createLogCollectors(out: RunJSLog[], onRenderError?: (error: unknown, i
     fatal: (...args: any[]) => push('error', args),
     child: () => loggerCapture,
   };
-  Object.defineProperty(loggerCapture, RUNJS_RENDER_ERROR_REPORTER, {
-    configurable: false,
-    enumerable: false,
-    value: (error: unknown, info?: unknown) => onRenderError?.(error, info),
-  });
 
   return { consoleCapture, loggerCapture };
 }
@@ -1161,8 +1146,9 @@ export async function diagnoseRunJS(
   const src = typeof code === 'string' ? code : String(code ?? '');
   const logs: RunJSLog[] = [];
   const issues: RunJSIssue[] = [];
-  const renderErrors: unknown[] = [];
+  const renderErrors: RunJSRenderDiagnostic[] = [];
   const renderErrorKeys = new Set<string>();
+  let disposeRenderDiagnostics = () => {};
   const version = options?.version;
   const debugSourceMap = parseRunJSDebugSourceMap(options?.sourceMap);
   const preprocessTemplates = shouldPreprocessRunJSTemplates({ version });
@@ -1178,20 +1164,7 @@ export async function diagnoseRunJS(
   try {
     execution.started = true;
 
-    const { consoleCapture, loggerCapture } = createLogCollectors(logs, (error) => {
-      const message = getRuntimeErrorMessage(error);
-      const stack =
-        error && typeof error === 'object' && typeof (error as { stack?: unknown }).stack === 'string'
-          ? String((error as { stack: string }).stack)
-          : '';
-      const key = `${message}\n${stack}`;
-      if (renderErrorKeys.has(key)) {
-        return;
-      }
-      renderErrorKeys.add(key);
-      renderErrors.push(error);
-      logs.push({ level: 'error', message });
-    });
+    const { consoleCapture, loggerCapture } = createLogCollectors(logs);
 
     const baseGlobals: Record<string, any> = { console: consoleCapture };
     if (typeof window !== 'undefined') {
@@ -1236,6 +1209,14 @@ export async function diagnoseRunJS(
     // Capture ctx.logger.* into preview logs (and make deprecation warnings visible).
     // NOTE: user code runs with the JSRunner global `ctx` (RunJSContext), not the runtime `ctx` passed in here.
     const runjsCtx = (runner as any).globals.ctx;
+    disposeRenderDiagnostics = subscribeRunJSRenderDiagnostics({ kind: 'context', context: runjsCtx }, (diagnostic) => {
+      if (renderErrorKeys.has(diagnostic.key)) {
+        return;
+      }
+      renderErrorKeys.add(diagnostic.key);
+      renderErrors.push(diagnostic);
+      logs.push({ level: 'error', message: diagnostic.message });
+    });
     runjsCtx.defineProperty('logger', { value: loggerCapture });
     const res = await runner.run(prepared);
     if (!res?.timeout) {
@@ -1245,15 +1226,12 @@ export async function diagnoseRunJS(
     execution.timeout = !!res?.timeout;
 
     for (const captured of renderErrors) {
-      const rawStack =
-        captured && typeof captured === 'object' && typeof (captured as { stack?: unknown }).stack === 'string'
-          ? String((captured as { stack: string }).stack)
-          : '';
+      const rawStack = captured.stack || '';
       const mappedFrame = getFirstMappedRunJSStackFrame(rawStack, debugSourceMap);
       issues.push({
         type: 'runtime',
         ruleId: 'render-error',
-        message: getRuntimeErrorMessage(captured),
+        message: captured.message,
         sourcePath: mappedFrame?.source,
         location: mappedFrame
           ? {
@@ -1263,7 +1241,7 @@ export async function diagnoseRunJS(
               },
             }
           : undefined,
-        stack: safeStack(captured, MAX_STACK_CHARS, debugSourceMap),
+        stack: safeStack(captured.error, MAX_STACK_CHARS, debugSourceMap),
       });
     }
 
@@ -1308,6 +1286,7 @@ export async function diagnoseRunJS(
       stack: safeStack(e, MAX_STACK_CHARS, debugSourceMap),
     });
   } finally {
+    disposeRenderDiagnostics();
     const endedAt =
       typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
     const dur = Math.max(0, endedAt - startedAt);

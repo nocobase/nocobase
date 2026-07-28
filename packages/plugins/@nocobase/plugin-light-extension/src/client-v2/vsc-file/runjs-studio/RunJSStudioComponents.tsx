@@ -25,7 +25,12 @@ import {
   UploadOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import { CodeEditor, type CodeEditorFullscreenControl, type CodeEditorJsonSchema } from '@nocobase/client-v2';
+import {
+  CodeEditor,
+  type CodeEditorDiagnostic,
+  type CodeEditorFullscreenControl,
+  type CodeEditorJsonSchema,
+} from '@nocobase/client-v2';
 import { Alert, Button, Empty, Input, List, Modal, Popconfirm, Space, Tooltip, Typography, message, theme } from 'antd';
 import type { InputRef } from 'antd/es/input';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -809,6 +814,7 @@ export function CodeTab(props: {
   activePath?: string;
   authoringSurfaceId?: string;
   busy?: boolean;
+  diagnostics?: RunJSCompileDiagnostic[];
   filesCollapsed: boolean;
   onChange: (content: string) => void;
   onCloseFile: (path: string) => void;
@@ -833,6 +839,7 @@ export function CodeTab(props: {
     activePath,
     authoringSurfaceId,
     busy = false,
+    diagnostics,
     filesCollapsed,
     onChange,
     onCloseFile,
@@ -859,6 +866,19 @@ export function CodeTab(props: {
   const jsonSchema = useMemo(
     () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),
     [activeFile, jsonSchemaResolver, workspaceFiles],
+  );
+  const activeFileDiagnostics = useMemo<CodeEditorDiagnostic[]>(
+    () =>
+      (diagnostics || [])
+        .filter((diagnostic) => diagnostic.path === activeFile?.path)
+        .map((diagnostic) => ({
+          column: diagnostic.column,
+          line: diagnostic.line,
+          message: diagnostic.message,
+          severity: diagnostic.severity || 'info',
+          source: 'runjs-compiler',
+        })),
+    [activeFile?.path, diagnostics],
   );
 
   if (!activeFile) {
@@ -927,6 +947,7 @@ export function CodeTab(props: {
     >
       <CodeEditor
         authoringSurfaceId={authoringSurfaceId}
+        diagnostics={activeFileDiagnostics}
         enableLinter={isScriptFile}
         height="100%"
         language={editorLanguage}

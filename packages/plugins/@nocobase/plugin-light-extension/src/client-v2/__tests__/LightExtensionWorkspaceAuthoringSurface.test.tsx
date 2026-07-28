@@ -253,7 +253,11 @@ describe('LightExtensionWorkspace authoring surface', () => {
     ]);
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
     expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
-    await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
+    await expect(surface.validateDraft()).resolves.toMatchObject({
+      stale: false,
+      diagnostics: [],
+      validationPassed: true,
+    });
     expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',

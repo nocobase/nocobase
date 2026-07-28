@@ -271,6 +271,9 @@ export function createWorkspaceAuthoringSurface(options: CreateWorkspaceAuthorin
       snapshotId: startedSnapshot.snapshotId,
       diagnostics: sanitizeDiagnostics(diagnostics, startedSnapshot),
       stale: currentSnapshot.snapshotId !== startedSnapshot.snapshotId,
+      validationPassed:
+        currentSnapshot.snapshotId === startedSnapshot.snapshotId &&
+        diagnostics.every((diagnostic) => diagnostic.severity !== 'error'),
     };
   };
 

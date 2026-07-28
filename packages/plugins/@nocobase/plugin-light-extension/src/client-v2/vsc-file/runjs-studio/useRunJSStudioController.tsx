@@ -16,14 +16,7 @@ import {
   type EmbeddedRunJSEditorSaveResult,
   type RunJSEditorProviderRenderProps,
 } from '@nocobase/client-v2';
-import {
-  registerRunJSRenderErrorReporter,
-  useFlowContext,
-  type FlowContext,
-  type FlowEngineContext,
-  type FlowModel,
-  type RunJSValue,
-} from '@nocobase/flow-engine';
+import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -93,6 +86,8 @@ import {
   RunJSSourceRequestError,
   useRunJSSourceResource,
 } from './useRunJSSourceResource';
+import { useLatestRef, useRunJSPreviewSession } from './useRunJSPreviewSession';
+import { useRunJSDraftDiagnostics } from './useRunJSDraftDiagnostics';
 import {
   buildWorkspaceDraftToken,
   buildWorkspaceChanges,
@@ -170,40 +165,6 @@ type RunJSStudioControllerProps = Omit<RunJSEditorProviderRenderProps, 'locator'
 };
 
 const REDACTED_RUNJS_WORKSPACE_PATH = '[redacted RunJS workspace path]';
-
-type RunJSPreviewFlowContext = FlowEngineContext & { model?: FlowModel };
-
-function resolveRunJSPreviewModel(
-  flowCtx: FlowEngineContext | null,
-  locator: RunJSSourceLocator,
-): FlowModel | undefined {
-  const contextModel = (flowCtx as RunJSPreviewFlowContext | null)?.model;
-  if (contextModel) {
-    return contextModel;
-  }
-  if (locator.kind !== 'flowModel.step') {
-    return undefined;
-  }
-  return flowCtx?.engine?.getModel(locator.modelUid);
-}
-
-function getRunJSRenderErrorMessage(error: unknown): string {
-  const message = error && typeof error === 'object' ? (error as { message?: unknown }).message : error;
-  const normalized = String(message || error || '').trim();
-  return normalized || 'Unknown render error';
-}
-
-function getRunJSRenderErrorKey(error: unknown, info?: unknown): string {
-  const stack =
-    error && typeof error === 'object' && typeof (error as { stack?: unknown }).stack === 'string'
-      ? String((error as { stack: string }).stack)
-      : '';
-  const componentStack =
-    info && typeof info === 'object' && typeof (info as { componentStack?: unknown }).componentStack === 'string'
-      ? String((info as { componentStack: string }).componentStack)
-      : '';
-  return `${getRunJSRenderErrorMessage(error)}\n${stack}\n${componentStack}`;
-}
 
 type RunJSWorkspacePathReference = {
   path: string;
@@ -375,8 +336,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   } = props;
   const pluginT = useT();
   const t = hostT || pluginT;
-  const tRef = useRef(t);
-  tRef.current = t;
+  const tRef = useLatestRef(t);
   const app = useApp();
   const resource = useRunJSSourceResource();
   const flowCtx = useFlowContext<FlowEngineContext | null>();
@@ -390,7 +350,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const draftRevisionRef = useRef(0);
   const workspaceSessionRef = useRef(0);
   const draftTokenRef = useRef(buildWorkspaceDraftToken(0, 0, value.version));
-  const activeRenderErrorReporterDisposerRef = useRef<(() => void) | null>(null);
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const studioRootRef = useRef<HTMLDivElement>(null);
@@ -474,6 +433,19 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           repositoryIdentity: workspace.repositoryIdentity,
         })}`
       : undefined;
+  useRunJSDraftDiagnostics({
+    baseCommitId: workspace?.repository.headCommitId,
+    baseFiles,
+    enabled: Boolean(workspace && props.locator && hasUnsavedLocalChanges),
+    entryPath,
+    files,
+    locator: props.locator,
+    onDiagnostics: setPreviewDiagnostics,
+    repoId: workspace?.repository.repoId,
+    request: runJSSourceRequest,
+    snapshotKey: draftTokenRef.current,
+    version: value.version,
+  });
 
   useLayoutEffect(() => {
     if (embedded) {
@@ -538,47 +510,41 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     consoleSeqRef.current += 1;
     const id = consoleSeqRef.current;
     setConsoleEntries((current) => [...current, { ...entry, id }]);
+    return id;
   }, []);
 
-  const appendLateRenderFailure = useCallback(
-    (message: string, runCompletedMessage: string, runFailedMessage: string) => {
-      consoleSeqRef.current += 1;
-      const errorEntry: RunJSConsoleEntry = { id: consoleSeqRef.current, level: 'error', message };
-      consoleSeqRef.current += 1;
-      const failedEntry: RunJSConsoleEntry = { id: consoleSeqRef.current, level: 'error', message: runFailedMessage };
+  const updateConsole = useCallback((id: number, entry: Omit<RunJSConsoleEntry, 'id'>) => {
+    setConsoleEntries((current) => {
+      const index = current.findIndex((currentEntry) => currentEntry.id === id);
+      if (index < 0) {
+        return current;
+      }
+      const next = [...current];
+      next.splice(index, 1);
+      next.push({ ...entry, id });
+      return next;
+    });
+  }, []);
 
-      setConsoleEntries((current) => {
-        const next = [...current];
-        for (let index = next.length - 1; index >= 0; index -= 1) {
-          const entry = next[index];
-          if (entry.level === 'info' && entry.message === runCompletedMessage) {
-            next.splice(index, 1);
-            break;
-          }
-        }
-        next.push(errorEntry);
-        if (!next.some((entry) => entry.level === 'error' && entry.message === runFailedMessage)) {
-          next.push(failedEntry);
-        }
-        return next;
-      });
-    },
-    [],
-  );
+  const isPreviewSnapshotCurrent = useCallback((snapshotKey: string) => draftTokenRef.current === snapshotKey, []);
+  const { cancel: cancelPreviewSession, start: startPreviewSession } = useRunJSPreviewSession({
+    appendConsole,
+    isSnapshotCurrent: isPreviewSnapshotCurrent,
+    updateConsole,
+  });
 
   const clearConsole = useCallback(() => {
     setConsoleEntries([]);
   }, []);
 
   const invalidatePreview = useCallback(() => {
-    activeRenderErrorReporterDisposerRef.current?.();
-    activeRenderErrorReporterDisposerRef.current = null;
+    cancelPreviewSession();
     setPreviewing(false);
     setPreviewArtifact(null);
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
     setSaveDiagnosticsOpen(false);
-  }, []);
+  }, [cancelPreviewSession]);
 
   const applyWorkspaceMutation = useCallback(
     (mutate: (current: WorkspaceDraftState) => WorkspaceDraftState): WorkspaceDraftState => {
@@ -671,8 +637,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   };
 
   const resetWorkspaceState = useCallback(() => {
-    activeRenderErrorReporterDisposerRef.current?.();
-    activeRenderErrorReporterDisposerRef.current = null;
+    cancelPreviewSession();
     requestSeqRef.current += 1;
     historyRequestSeqRef.current += 1;
     workspaceSessionRef.current += 1;
@@ -711,7 +676,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setRestoringVersion(false);
     setCloseConfirmOpen(false);
     setPendingDirtyAction('close');
-  }, []);
+  }, [cancelPreviewSession]);
 
   useEffect(() => {
     if (previousLocatorKeyRef.current === locatorKey) {
@@ -933,8 +898,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     const requestRepoId = currentWorkspace.opened.repository.repoId;
     const requestBaseCommitId = currentWorkspace.opened.repository.headCommitId;
 
-    activeRenderErrorReporterDisposerRef.current?.();
-    activeRenderErrorReporterDisposerRef.current = null;
+    cancelPreviewSession();
     clearConsole();
     setActionError(null);
     setPreviewing(true);
@@ -961,30 +925,16 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
       let hasRuntimeError = false;
+      let hostPreviewSession: ReturnType<typeof startPreviewSession> | undefined;
       if (!hasCompileError) {
         if (props.onPreview) {
-          const renderErrorState = {
-            keys: new Set<string>(),
-            settled: false,
-          };
-          const previewModel = resolveRunJSPreviewModel(flowCtx, requestLocator);
-          if (previewModel) {
-            const runCompletedMessage = t('Run completed');
-            const runFailedMessage = t('Run failed');
-            const disposeReporter = registerRunJSRenderErrorReporter(previewModel, (error, info) => {
-              if (draftTokenRef.current !== requestDraftToken) return;
-              const key = getRunJSRenderErrorKey(error, info);
-              if (renderErrorState.keys.has(key)) return;
-              renderErrorState.keys.add(key);
-              const message = getRunJSRenderErrorMessage(error);
-              if (renderErrorState.settled) {
-                appendLateRenderFailure(message, runCompletedMessage, runFailedMessage);
-              } else {
-                appendConsole({ level: 'error', message });
-              }
-            });
-            activeRenderErrorReporterDisposerRef.current = disposeReporter;
-          }
+          hostPreviewSession = startPreviewSession({
+            runFailedMessage: t('Run failed'),
+            snapshotKey: requestDraftToken,
+            target: flowCtx?.engine
+              ? { kind: 'flow-model', flowEngine: flowCtx.engine, modelUid: requestLocator.modelUid }
+              : undefined,
+          });
 
           await props.onPreview({
             ...value,
@@ -992,10 +942,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
             version: result.artifact.version,
           });
           if (draftTokenRef.current !== requestDraftToken) {
+            hostPreviewSession.cancel();
             return;
           }
-          renderErrorState.settled = true;
-          hasRuntimeError = renderErrorState.keys.size > 0;
+          hasRuntimeError = hostPreviewSession.hasRuntimeErrors();
         } else if (flowCtx) {
           const runDiagnostics = await diagnoseRunJS(result.artifact.code, flowCtx as unknown as FlowContext, {
             sourceMap: result.artifact.sourceMap,
@@ -1008,11 +958,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           hasRuntimeError = runDiagnostics.issues.some((issue) => issue.type === 'runtime');
         }
       }
-      appendConsole({
+      const statusEntryId = appendConsole({
         level: hasCompileError || hasRuntimeError ? 'error' : 'info',
         message: hasCompileError ? t('Compile failed') : hasRuntimeError ? t('Run failed') : t('Run completed'),
       });
+      hostPreviewSession?.finalize(statusEntryId);
     } catch (error) {
+      cancelPreviewSession();
       if (draftTokenRef.current !== requestDraftToken) return;
       reportActionError(error, t('Run failed'), runPreview);
       appendConsole({
@@ -2065,7 +2017,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     });
 
     return app.aiManager.authoringSurfaces.register(surface);
-  }, [app, applyWorkspaceMutation, authoringSurfaceId, disabled, readOnly]);
+  }, [app, applyWorkspaceMutation, authoringSurfaceId, disabled, readOnly, tRef]);
 
   useEffect(() => {
     if (!embedded || !onEmbeddedEditorControllerChange) {
@@ -2083,8 +2035,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
   useEffect(() => {
     return () => {
-      activeRenderErrorReporterDisposerRef.current?.();
-      activeRenderErrorReporterDisposerRef.current = null;
       const request = embeddedSaveRequestRef.current;
       embeddedSaveRequestRef.current = null;
       embeddedSavePromiseRef.current = null;
@@ -2332,6 +2282,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         activePath={activePath}
                         authoringSurfaceId={authoringSurfaceId}
                         busy={previewing}
+                        diagnostics={previewDiagnostics}
                         jsonSchemaResolver={props.workspaceJsonSchemaResolver}
                         filesCollapsed={filesCollapsed}
                         fullscreenControl={{

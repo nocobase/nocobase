@@ -257,7 +257,11 @@ describe('RunJS Studio authoring surface', () => {
       await surface.applyPreparedChanges(removeHelper.planId);
     });
 
-    await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
+    await expect(surface.validateDraft()).resolves.toMatchObject({
+      stale: false,
+      diagnostics: [],
+      validationPassed: true,
+    });
     expect(screen.getByLabelText('Edit file content')).toHaveValue(
       "import { helper } from './helper';\nreturn helper;",
     );
@@ -290,7 +294,11 @@ describe('RunJS Studio authoring surface', () => {
     });
 
     await waitFor(() => expect(mocks.authoringSurfaces.get(surface.id)).toBe(surface));
-    await expect(surface.validateDraft()).resolves.toMatchObject({ stale: false, diagnostics: [] });
+    await expect(surface.validateDraft()).resolves.toMatchObject({
+      stale: false,
+      diagnostics: [],
+      validationPassed: true,
+    });
 
     rendered.unmount();
   });
