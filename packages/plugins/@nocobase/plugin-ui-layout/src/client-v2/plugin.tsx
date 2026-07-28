@@ -9,21 +9,9 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { registerUiLayoutsFromApi } from './layoutRegistration';
 import { mobileOpenView } from './mobileOpenViewAction';
 import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 import { MobileMenuSettingsIconPicker } from './models/MobileMenuComponents';
-import { registerLayoutAwareDesktopRoutesPermissionsTab } from './permissions/layoutAwareDesktopRoutesPermissions';
-
-function MobileSettingsRedirect() {
-  return <Navigate replace to="/mobile" />;
-}
-
-function getMobileSettingsLink(app: Application) {
-  return app.getHref('/mobile');
-}
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
@@ -48,29 +36,6 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       MobileMenuSettingsIconPicker,
     });
     registerMobilePageModelResolution();
-
-    const isStandaloneSettings = this.pluginSettingsManager.getRoutePath('') === '/settings/';
-    if (!isStandaloneSettings) {
-      this.pluginSettingsManager.addMenuItem({
-        key: 'mobile',
-        title: this.t('Mobile') as unknown as string,
-        icon: 'MobileOutlined',
-        aclSnippet: 'pm.mobile',
-        link: getMobileSettingsLink(this.app),
-      });
-
-      this.pluginSettingsManager.addPageTabItem({
-        menuKey: 'mobile',
-        key: 'index',
-        title: this.t('Mobile') as unknown as string,
-        aclSnippet: 'pm.mobile',
-        Component: MobileSettingsRedirect,
-      });
-    }
-
-    registerLayoutAwareDesktopRoutesPermissionsTab(this.app, (key) => this.t(key));
-
-    await registerUiLayoutsFromApi(this.app);
   }
 }
 

@@ -166,7 +166,7 @@ afterEach(() => {
 });
 
 describe('PortalRoutesDrawer', () => {
-  it('loads one custom portal route tree with the portal owner scope', async () => {
+  it('loads one custom portal route tree with only the portal identity', async () => {
     const user = userEvent.setup();
     const { drawer, request } = renderPortalRoutes({
       title: 'Customer portal',
@@ -190,10 +190,8 @@ describe('PortalRoutesDrawer', () => {
       expect(request).toHaveBeenCalledWith({
         method: 'get',
         params: {
-          filter: {
-            'multiPortals.uid': 'customer-portal',
-          },
           paginate: false,
+          portal: 'customer-portal',
           sort: 'sort',
           tree: true,
         },
@@ -225,7 +223,7 @@ describe('PortalRoutesDrawer', () => {
     );
   });
 
-  it('loads the default portal route tree with the layout owner scope', async () => {
+  it('does not special-case the legacy default portal uid or send a layout owner', async () => {
     const { request } = renderPortalRoutes({
       title: 'Admin',
       uid: '__default_portal__',
@@ -243,19 +241,24 @@ describe('PortalRoutesDrawer', () => {
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
     await waitFor(() => {
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          params: expect.objectContaining({
-            filter: {
-              'uiLayouts.uid': 'admin-layout-model',
-            },
-          }),
-        }),
-      );
+      expect(request).toHaveBeenCalledWith({
+        method: 'get',
+        params: {
+          paginate: false,
+          portal: '__default_portal__',
+          sort: 'sort',
+          tree: true,
+        },
+        skipNotify: true,
+        url: '/desktopRoutes:list',
+      });
     });
+    const listRequest = request.mock.calls.find(([options]) => options.url === '/desktopRoutes:list')?.[0];
+    expect(listRequest?.params).not.toHaveProperty('filter');
+    expect(listRequest?.params).not.toHaveProperty('layout');
   });
 
-  it('uses the custom portal scope for create, update and destroy, and builds view URLs from the portal path', async () => {
+  it('uses the custom portal scope without refreshing the Settings global route repository', async () => {
     const { drawer, refreshAccessible } = renderPortalRoutes(
       {
         title: 'Customer portal',
@@ -382,10 +385,9 @@ describe('PortalRoutesDrawer', () => {
     });
   });
 
-  it('uses the default layout scope, filters v1 routes and refreshes the default menu after mutations', async () => {
-    const { refreshAccessible } = renderPortalRoutes(
+  it('uses the legacy uid as a normal portal identity without a global route refresh', async () => {
+    const { refreshAccessible, request } = renderPortalRoutes(
       {
-        defaultPortal: true,
         title: 'Admin',
         uid: '__default_portal__',
         portalType: 'no-code',
@@ -439,6 +441,15 @@ describe('PortalRoutesDrawer', () => {
     );
 
     const dashboardRow = await screen.findByRole('row', { name: /Dashboard/ });
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          params: expect.objectContaining({
+            portal: '__default_portal__',
+          }),
+        }),
+      );
+    });
     expect(screen.queryByText('Legacy v1 page')).not.toBeInTheDocument();
     expect(screen.queryByText('Hidden tab')).not.toBeInTheDocument();
     expect(within(dashboardRow).getByRole('link', { name: 'View Dashboard' })).toHaveAttribute(
@@ -451,10 +462,10 @@ describe('PortalRoutesDrawer', () => {
     await waitFor(() => {
       expect(desktopRoutesResource.update).toHaveBeenCalledWith({
         filterByTk: 1,
-        layout: 'admin-layout-model',
+        portal: '__default_portal__',
         values: { hideInMenu: true },
       });
-      expect(refreshAccessible).toHaveBeenCalled();
+      expect(refreshAccessible).not.toHaveBeenCalled();
     });
 
     const groupRow = screen.getByRole('row', { name: /Navigation group/ });
@@ -463,8 +474,9 @@ describe('PortalRoutesDrawer', () => {
     await waitFor(() => {
       expect(desktopRoutesResource.destroy).toHaveBeenCalledWith({
         filterByTk: 4,
-        layout: 'admin-layout-model',
+        portal: '__default_portal__',
       });
     });
+    expect(refreshAccessible).not.toHaveBeenCalled();
   });
 });

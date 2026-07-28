@@ -34,7 +34,6 @@ type MultiPortalOptions = {
 };
 
 export type MultiPortalRecord = MultiPortalFormValues & {
-  defaultPortal?: boolean;
   uiLayout?: {
     layoutType?: string;
     title?: string;
@@ -172,7 +171,6 @@ const describedRadioCss = `
 }
 `;
 
-const DEFAULT_PORTAL_UIDS = new Set(['__default_portal__']);
 const portalSlugPattern = /^[a-z0-9_-]+$/;
 
 const IconPickerFormControl = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof IconPicker>>(
@@ -343,13 +341,6 @@ function toFormDraftValues(record: MultiPortalRecord): MultiPortalFormDraftValue
   };
 }
 
-function withDefaultPortalFlag(record: MultiPortalRecord): MultiPortalRecord {
-  return {
-    ...record,
-    defaultPortal: DEFAULT_PORTAL_UIDS.has(record.uid),
-  };
-}
-
 const MultiPortalsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -370,7 +361,7 @@ const MultiPortalsPage: React.FC = () => {
   });
   const { data: listResp, loading } = listRequest;
   const records = useMemo(() => {
-    return Array.isArray(listResp?.data) ? listResp.data.map(withDefaultPortalFlag) : [];
+    return Array.isArray(listResp?.data) ? listResp.data : [];
   }, [listResp?.data]);
   const pagination = useMemo(() => {
     const meta = listResp?.meta;
@@ -704,7 +695,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             },
           ]}
         >
-          <Input disabled={record?.defaultPortal} />
+          <Input />
         </Form.Item>
         <Form.Item
           name="portalType"
@@ -712,7 +703,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           htmlFor="multi-portal-portal-type-no-code"
           rules={[{ required: true, message: t('The field value is required') }]}
         >
-          <Radio.Group disabled={record?.defaultPortal}>
+          <Radio.Group>
             <Space direction="vertical">
               <Radio
                 className={describedRadioClassName}
@@ -811,7 +802,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           ]}
         >
           <Select
-            disabled={!!record || record?.defaultPortal}
+            disabled={!!record}
             loading={layoutOptionsService.loading}
             options={layoutOptions}
             showSearch

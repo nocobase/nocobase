@@ -23,6 +23,7 @@ export type MultiPortalType = 'no-code' | 'ai';
 const DEFAULT_PORTAL_TYPE: MultiPortalType = 'no-code';
 const AI_PORTAL_ROUTE_PREFIX = '/x';
 const DEFAULT_MODERN_PORTAL_ROUTE_PREFIX = '/v';
+const SETTINGS_ROUTE_PREFIX = '/settings';
 
 const normalizeRootPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -73,7 +74,7 @@ function getPortalTypeBasePath(basePath: string | undefined, portalType?: string
   const appScopeMatch = base.match(/^(.*)\/(apps|_app)\/([^/]+)$/);
   if (appScopeMatch) {
     let publicPath = appScopeMatch[1] || '';
-    for (const prefix of getPortalRoutePrefixes()) {
+    for (const prefix of [...getPortalRoutePrefixes(), SETTINGS_ROUTE_PREFIX]) {
       if (publicPath === prefix) {
         publicPath = '';
         break;

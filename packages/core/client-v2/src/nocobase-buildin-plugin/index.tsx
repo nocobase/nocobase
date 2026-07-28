@@ -9,14 +9,13 @@
 
 import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import type { Application } from '../Application';
-import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToV2Signin } from '../authRedirect';
+import { getCurrentV2RedirectPath, redirectToV2Signin } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import {
-  ADMIN_LAYOUT_MODEL_UID,
   AdminLayoutMenuItemModel,
   AdminLayoutModel,
   AppSwitcherActionPanelModel,
@@ -321,19 +320,6 @@ const CurrentUserProvider: FC = ({ children }) => {
 
 CurrentUserProvider.displayName = 'CurrentUserProvider';
 
-const RootRedirect: FC = () => {
-  const app = useApp<Application>();
-  const hasToken = !!app?.apiClient?.auth?.token;
-  const targetPath = getDefaultV2AdminRedirectPath(app);
-
-  if (!hasToken) {
-    // 用 react-router <Navigate /> 而非 location.replace, 避免覆盖同时段其它响应拦截器触发的 window.location.href (例如 2FA 接收到服务端 302 时设置的整页跳转)。
-    return <Navigate replace to={`/signin?redirect=${encodeURIComponent(targetPath)}`} />;
-  }
-
-  return <Navigate replace to="/admin" />;
-};
-
 /**
  * client-v2 使用的内建插件集合。
  *
@@ -357,22 +343,11 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       AppSwitcherActionPanelModel,
       AdminSettingsLayoutModel,
     });
-    this.app.layoutManager.registerLayout({
-      routeName: 'admin',
-      routePath: '/admin',
-      uid: ADMIN_LAYOUT_MODEL_UID,
-      layoutModelClass: 'AdminLayoutModel',
-    });
 
     registerDefaultSettings(this.app);
   }
 
   addRoutes() {
-    this.router.add('root', {
-      path: '/',
-      element: <RootRedirect />,
-    });
-
     this.router.add('not-found', {
       path: '*',
       Component: AppNotFound,

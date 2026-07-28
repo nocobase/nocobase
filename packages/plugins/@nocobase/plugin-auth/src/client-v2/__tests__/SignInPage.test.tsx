@@ -56,7 +56,7 @@ describe('SignInPage', () => {
     mockApp.settingsRouteRoot = '/admin/settings/';
   });
 
-  it('normalizes empty redirect to the current v2 app admin path', () => {
+  it('normalizes empty redirect to the current v2 app root for dynamic Portal landing', () => {
     render(
       <MemoryRouter initialEntries={['/signin?redirect=']}>
         <SignInPage />
@@ -66,7 +66,7 @@ describe('SignInPage', () => {
     expect(navigateMock).toHaveBeenCalledWith(
       {
         pathname: '/signin',
-        search: '?redirect=%2Fv%2Fapps%2Fsub%2Fadmin%2F',
+        search: '?redirect=%2Fv%2Fapps%2Fsub',
       },
       { replace: true },
     );

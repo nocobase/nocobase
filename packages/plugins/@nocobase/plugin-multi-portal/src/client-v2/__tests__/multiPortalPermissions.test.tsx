@@ -113,6 +113,177 @@ describe('plugin-multi-portal route permissions', () => {
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
+  it('should use layout route permissions for a migrated layout-mode portal', async () => {
+    const resource = createMultiPortalPermissionResources({
+      portals: [
+        {
+          uid: 'admin-layout-model',
+          title: 'Desktop portal',
+          portalType: 'no-code',
+          routePermissionMode: 'layout',
+        },
+      ],
+      selectedPortalUids: [],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    const onRoleChange = vi.fn();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab
+          activeKey="multi-portals"
+          activeRole={{
+            name: 'portal-member',
+            title: 'Member',
+            allowNewMenu: false,
+          }}
+          onRoleChange={onRoleChange}
+        />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Managed by layout permissions')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Allow access to Desktop portal' })).not.toBeInTheDocument();
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: 'Configure routes permissions for Desktop portal' }));
+    });
+
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Configure routes permissions for Desktop portal',
+    });
+    const reportsRoute = within(drawer).getByRole('checkbox', { name: 'Allow access to Reports' });
+    const allowNewRoutes = within(drawer).getByRole('checkbox', {
+      name: 'New routes are allowed to be accessed by default',
+    });
+
+    await waitFor(() => {
+      expect(resource.layoutRoutePermissionList).toHaveBeenCalledWith({
+        paginate: false,
+        filter: {
+          id: [1, 2],
+        },
+      });
+    });
+    expect(resource.routePermissionList).not.toHaveBeenCalled();
+    expect(resource.routeDefaultPolicyList).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await user.click(reportsRoute);
+    });
+    await waitFor(() => {
+      expect(resource.layoutRoutePermissionAdd).toHaveBeenCalledWith({ values: [2] });
+    });
+    expect(resource.routePermissionCreate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await user.click(allowNewRoutes);
+    });
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenCalledWith({
+        filterByTk: 'portal-member',
+        values: {
+          allowNewMenu: true,
+        },
+      });
+    });
+    expect(onRoleChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'portal-member',
+        allowNewMenu: true,
+      }),
+    );
+    expect(resource.rolePortalAdd).not.toHaveBeenCalled();
+    expect(resource.rolePortalRemove).not.toHaveBeenCalled();
+  });
+
+  it('should only expose entry access permission for an AI portal', async () => {
+    const resource = createMultiPortalPermissionResources({
+      portals: [
+        {
+          uid: 'ai-workspace',
+          title: 'AI workspace',
+          portalType: 'ai',
+          routePermissionMode: 'portal',
+        },
+      ],
+      selectedPortalUids: [],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    const allowAccess = await screen.findByRole('checkbox', { name: 'Allow access to AI workspace' });
+    expect(
+      screen.queryByRole('button', { name: 'Configure routes permissions for AI workspace' }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      await user.click(allowAccess);
+    });
+
+    await waitFor(() => {
+      expect(resource.rolePortalAdd).toHaveBeenCalledWith({ values: ['ai-workspace'] });
+    });
+    expect(resource.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'desktopRoutes:listRolePermissionTargets',
+      }),
+    );
+    expect(resource.routePermissionList).not.toHaveBeenCalled();
+    expect(resource.routeDefaultPolicyList).not.toHaveBeenCalled();
+  });
+
+  it('should not expose route permissions for missing or unknown portal types', async () => {
+    const resource = createMultiPortalPermissionResources({
+      portals: [
+        {
+          uid: 'missing-type-workspace',
+          title: 'Missing type workspace',
+          portalType: null,
+          routePermissionMode: 'portal',
+        },
+        {
+          uid: 'unknown-type-workspace',
+          title: 'Unknown type workspace',
+          portalType: 'unknown',
+          routePermissionMode: 'portal',
+        },
+      ],
+      selectedPortalUids: [],
+      selectedRouteIds: [],
+    });
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Missing type workspace')).toBeInTheDocument();
+    expect(screen.getByText('Unknown type workspace')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Configure routes permissions for Missing type workspace' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Configure routes permissions for Unknown type workspace' }),
+    ).not.toBeInTheDocument();
+    expect(resource.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'desktopRoutes:listRolePermissionTargets',
+      }),
+    );
+  });
+
   it('should include hidden descendants when bulk granting visible portal routes', async () => {
     const resource = createMultiPortalPermissionResources({
       routes: [
@@ -402,9 +573,17 @@ type MultiPortalPermissionResourceOptions = {
   } | null;
   routeDefaultPolicyCreateError?: Error;
   routeDefaultPolicyUpdateError?: Error;
+  portals?: TestPortalRecord[];
   routes?: TestRouteRecord[];
   selectedPortalUids: string[];
   selectedRouteIds: number[];
+};
+
+type TestPortalRecord = {
+  uid: string;
+  title: string;
+  portalType?: string | null;
+  routePermissionMode: 'layout' | 'portal';
 };
 
 function createMultiPortalPermissionResources(options: MultiPortalPermissionResourceOptions) {
@@ -426,10 +605,12 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
             allowNewMenu: options.routeDefaultPolicy.allowNewMenu,
           }
         : undefined;
-  const portals = [
+  const portals = options.portals ?? [
     {
       uid: 'customer-portal',
       title: 'Customer portal',
+      portalType: 'no-code',
+      routePermissionMode: 'portal',
     },
   ];
   const routes = options.routes ?? [
@@ -471,6 +652,17 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
     values.forEach((uid) => selectedPortalUids.delete(uid));
   });
   const rolesUpdate = vi.fn(async () => undefined);
+  const layoutRoutePermissionList = vi.fn(async () => ({
+    data: {
+      data: Array.from(selectedRouteIds).map((id) => ({ id })),
+    },
+  }));
+  const layoutRoutePermissionAdd = vi.fn(async ({ values }: { values: number[] }) => {
+    values.forEach((id) => selectedRouteIds.add(id));
+  });
+  const layoutRoutePermissionRemove = vi.fn(async ({ values }: { values: number[] }) => {
+    values.forEach((id) => selectedRouteIds.delete(id));
+  });
   const routePermissionList = vi.fn(async () => ({
     data: {
       data: Array.from(selectedRouteIds).map((desktopRouteId) => ({
@@ -539,6 +731,13 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
         update: routeDefaultPolicyUpdate,
       };
     }
+    if (name === 'roles.desktopRoutes' && sourceId === 'portal-member') {
+      return {
+        add: layoutRoutePermissionAdd,
+        list: layoutRoutePermissionList,
+        remove: layoutRoutePermissionRemove,
+      };
+    }
     if (name === 'roles') {
       return {
         update: rolesUpdate,
@@ -558,6 +757,9 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
         success: messageSuccess,
       },
     },
+    layoutRoutePermissionAdd,
+    layoutRoutePermissionList,
+    layoutRoutePermissionRemove,
     messageSuccess,
     request,
     resource,

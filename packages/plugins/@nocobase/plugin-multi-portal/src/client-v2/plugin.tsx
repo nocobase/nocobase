@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import { RootLanding } from './RootLanding';
 import { registerPortalEntryActions } from './entryActions/registerPortalEntryActions';
 import { registerMultiPortalsFromApi } from './layoutRegistration';
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
@@ -63,7 +64,16 @@ export class PluginMultiPortalClientV2 extends Plugin {
     registerMultiPortalPermissionsTab(this.app, (key) => this.t(key));
     registerPortalEntryActions(this.app, (key) => String(this.t(key)));
 
+    if (this.pluginSettingsManager.getRoutePath?.('') === '/settings/') {
+      return;
+    }
+
     await registerMultiPortalsFromApi(this.app);
+    this.router.add('root', {
+      path: '/',
+      Component: RootLanding,
+      authCheck: true,
+    });
   }
 }
 

@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Model } from '@nocobase/database';
 import type { MockServer } from '@nocobase/test';
+import type { FlowSurfaceNavigationTarget } from '../flow-surfaces/navigation-targets';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { getData } from './flow-surfaces.contract.helpers';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -15,10 +17,12 @@ import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from '
 
 const ADMIN_LAYOUT_UID = 'admin-layout-model';
 const MOBILE_LAYOUT_UID = 'mobile-layout-model';
+const ADMIN_LAYOUT_PORTAL_UID = ADMIN_LAYOUT_UID;
 const DESKTOP_PORTAL_UID = 'flow-surfaces-desktop-portal';
 const SECOND_DESKTOP_PORTAL_UID = 'flow-surfaces-second-desktop-portal';
 const MOBILE_PORTAL_UID = 'flow-surfaces-mobile-portal';
 const DISABLED_PORTAL_UID = 'flow-surfaces-disabled-portal';
+const AI_PORTAL_UID = 'flow-surfaces-ai-portal';
 const PORTAL_ROLE_NAME = 'flow-surfaces-portal-author';
 
 function registerMultiPortalFixture(app: MockServer) {
@@ -31,10 +35,12 @@ function registerMultiPortalFixture(app: MockServer) {
       { name: 'uid', type: 'string', primaryKey: true, allowNull: false },
       { name: 'title', type: 'string', allowNull: false },
       { name: 'icon', type: 'string' },
-      { name: 'routeName', type: 'string', unique: true, allowNull: false },
+      { name: 'portalType', type: 'string', allowNull: false },
+      { name: 'portalName', field: 'routeName', type: 'string', unique: true, allowNull: false },
       { name: 'routePath', type: 'string', allowNull: false },
       { name: 'authCheck', type: 'boolean', defaultValue: true, allowNull: false },
       { name: 'enabled', type: 'boolean', defaultValue: true, allowNull: false },
+      { name: 'routePermissionMode', type: 'string', defaultValue: 'portal', allowNull: false },
       { name: 'uiLayoutUid', type: 'string', allowNull: false },
       {
         type: 'belongsTo',
@@ -208,45 +214,76 @@ describe('flowSurfaces Multi-portal integration', () => {
     service = new FlowSurfacesService(app.pm.get('flow-engine') as any);
 
     await createPortal(app, {
+      uid: ADMIN_LAYOUT_PORTAL_UID,
+      title: 'Desktop layout portal',
+      icon: 'DesktopOutlined',
+      portalType: 'no-code',
+      portalName: 'admin',
+      routePath: '/admin',
+      authCheck: true,
+      enabled: true,
+      routePermissionMode: 'layout',
+      uiLayoutUid: ADMIN_LAYOUT_UID,
+    });
+    await createPortal(app, {
       uid: DESKTOP_PORTAL_UID,
       title: 'Operations workspace',
       icon: 'DashboardOutlined',
-      routeName: 'flowSurfacesOperations',
+      portalType: 'no-code',
+      portalName: 'flowSurfacesOperations',
       routePath: '/flow-surfaces-operations',
       authCheck: true,
       enabled: true,
+      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
       uid: SECOND_DESKTOP_PORTAL_UID,
       title: 'Secondary workspace',
       icon: 'ProjectOutlined',
-      routeName: 'flowSurfacesSecondary',
+      portalType: 'no-code',
+      portalName: 'flowSurfacesSecondary',
       routePath: '/flow-surfaces-secondary',
       authCheck: true,
       enabled: true,
+      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
       uid: MOBILE_PORTAL_UID,
       title: 'Mobile workspace',
       icon: 'MobileOutlined',
-      routeName: 'flowSurfacesMobile',
+      portalType: 'no-code',
+      portalName: 'flowSurfacesMobile',
       routePath: '/flow-surfaces-mobile',
       authCheck: true,
       enabled: true,
+      routePermissionMode: 'portal',
       uiLayoutUid: MOBILE_LAYOUT_UID,
     });
     await createPortal(app, {
       uid: DISABLED_PORTAL_UID,
       title: 'Disabled workspace',
-      routeName: 'flowSurfacesDisabled',
+      portalType: 'no-code',
+      portalName: 'flowSurfacesDisabled',
       routePath: '/flow-surfaces-disabled',
       authCheck: true,
       enabled: false,
+      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
-
+    await createPortal(app, {
+      uid: AI_PORTAL_UID,
+      title: 'AI workspace',
+      icon: 'RobotOutlined',
+      portalType: 'ai',
+      portalName: 'flowSurfacesAi',
+      routePath: '/flow-surfaces-ai',
+      authCheck: true,
+      enabled: true,
+      routePermissionMode: 'portal',
+      uiLayoutUid: ADMIN_LAYOUT_UID,
+    });
     await app.db.getRepository('roles').create({
       values: {
         name: PORTAL_ROLE_NAME,
@@ -286,8 +323,15 @@ describe('flowSurfaces Multi-portal integration', () => {
     expect(targets.capabilities).toEqual({ multiPortal: true });
     expect(targets.targets).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ kind: 'layout', uid: ADMIN_LAYOUT_UID, default: true }),
+        expect.objectContaining({ kind: 'layout', uid: ADMIN_LAYOUT_UID }),
         expect.objectContaining({ kind: 'layout', uid: MOBILE_LAYOUT_UID, layoutType: 'mobile' }),
+        expect.objectContaining({
+          kind: 'portal',
+          uid: ADMIN_LAYOUT_PORTAL_UID,
+          portalUid: ADMIN_LAYOUT_PORTAL_UID,
+          layoutUid: ADMIN_LAYOUT_UID,
+          default: true,
+        }),
         expect.objectContaining({
           kind: 'portal',
           uid: DESKTOP_PORTAL_UID,
@@ -302,10 +346,139 @@ describe('flowSurfaces Multi-portal integration', () => {
         }),
       ]),
     );
+    expect(
+      targets.targets.find(
+        (target: FlowSurfaceNavigationTarget) => target.kind === 'layout' && target.uid === ADMIN_LAYOUT_UID,
+      )?.default,
+    ).toBe(undefined);
     expect(targets.targets.some((target: any) => target.uid === SECOND_DESKTOP_PORTAL_UID)).toBe(false);
     expect(targets.targets.some((target: any) => target.uid === DISABLED_PORTAL_UID)).toBe(false);
+    expect(targets.targets.some((target: FlowSurfaceNavigationTarget) => target.uid === AI_PORTAL_UID)).toBe(false);
     expect(targets.targets.some((target: any) => target.uid === '__default_admin__')).toBe(false);
     expect(targets.targets.some((target: any) => target.uid === '__default_mobile__')).toBe(false);
+  });
+
+  it('should create layout-mode portal routes through the backing layout permission model', async () => {
+    const groupTitle = `Layout-mode portal group ${Date.now()}`;
+    const pageTitle = `Layout-mode portal page ${Date.now()}`;
+    const created = getData(
+      await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: buildMarkdownBlueprint(ADMIN_LAYOUT_PORTAL_UID, groupTitle, pageTitle, 2),
+      }),
+    );
+    const groupRoute = await app.db.getRepository('desktopRoutes').findOne({
+      filter: { type: 'group', title: groupTitle },
+    });
+    const groupRouteId = groupRoute?.get('id');
+    const pageScope = await readRouteScope(app, created.surface.pageRoute.id);
+    const groupScope = await readRouteScope(app, groupRouteId);
+    const tabRoutes = pageScope.route?.get('children') || [];
+    const routeIds = [groupRouteId, created.surface.pageRoute.id, ...tabRoutes.map((tab: Model) => tab.get('id'))];
+
+    expect(groupScope.layoutUids).toEqual([ADMIN_LAYOUT_UID]);
+    expect(groupScope.portalUids).toEqual([]);
+    expect(pageScope.layoutUids).toEqual([ADMIN_LAYOUT_UID]);
+    expect(pageScope.portalUids).toEqual([]);
+    expect(tabRoutes).toHaveLength(2);
+    for (const tabRoute of tabRoutes) {
+      const tabScope = await readRouteScope(app, tabRoute.get('id'));
+      expect(tabScope.layoutUids).toEqual([ADMIN_LAYOUT_UID]);
+      expect(tabScope.portalUids).toEqual([]);
+    }
+
+    const standardPermissions = await app.db.getRepository('rolesDesktopRoutes').find({
+      filter: {
+        roleName: PORTAL_ROLE_NAME,
+        desktopRouteId: routeIds,
+      },
+    });
+    expect(standardPermissions).toHaveLength(routeIds.length);
+    const portalPermissions = await app.db.getRepository('rolesMultiPortalDesktopRoutes').find({
+      filter: {
+        multiPortalUid: ADMIN_LAYOUT_PORTAL_UID,
+        desktopRouteId: routeIds,
+      },
+    });
+    expect(portalPermissions).toHaveLength(0);
+
+    const roleCreated = await service.transaction((transaction) =>
+      service.createMenu(
+        {
+          type: 'group',
+          title: `Layout-mode role group ${Date.now()}`,
+          icon: 'AppstoreOutlined',
+          portalUid: ADMIN_LAYOUT_PORTAL_UID,
+        },
+        {
+          transaction,
+          currentRoles: [PORTAL_ROLE_NAME],
+        },
+      ),
+    );
+    expect((await readRouteScope(app, roleCreated.routeId)).layoutUids).toEqual([ADMIN_LAYOUT_UID]);
+    expect((await readRouteScope(app, roleCreated.routeId)).portalUids).toEqual([]);
+
+    const updated = getData(
+      await rootAgent.resource('flowSurfaces').updateMenu({
+        values: {
+          menuRouteId: groupRouteId,
+          portalUid: ADMIN_LAYOUT_PORTAL_UID,
+          title: `${groupTitle} updated`,
+        },
+      }),
+    );
+    expect(updated.routeId).toBe(groupRouteId);
+
+    const portalOnlyParent = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          type: 'group',
+          title: `Portal-only parent ${Date.now()}`,
+          icon: 'AppstoreOutlined',
+          portalUid: DESKTOP_PORTAL_UID,
+        },
+      }),
+    );
+    const mismatch = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        type: 'item',
+        title: `Layout-mode mismatch ${Date.now()}`,
+        icon: 'FileOutlined',
+        parentMenuRouteId: portalOnlyParent.routeId,
+        portalUid: ADMIN_LAYOUT_PORTAL_UID,
+      },
+    });
+    expect(mismatch.status).toBe(400);
+    expect(mismatch.body?.errors?.[0]?.ruleId).toBe('navigation-route-layout-mismatch');
+  });
+
+  it('should prefer the canonical Admin no-code portal for implicit route creation', async () => {
+    await app.db.getRepository('multiPortals').update({
+      filterByTk: ADMIN_LAYOUT_PORTAL_UID,
+      values: { routePermissionMode: 'portal' },
+    });
+    try {
+      const blueprint = buildMarkdownBlueprint(
+        ADMIN_LAYOUT_PORTAL_UID,
+        `Implicit Admin portal group ${Date.now()}`,
+        `Implicit Admin portal page ${Date.now()}`,
+      );
+      delete (blueprint.navigation as { portalUid?: string }).portalUid;
+      const created = getData(
+        await rootAgent.resource('flowSurfaces').applyBlueprint({
+          values: blueprint,
+        }),
+      );
+
+      const pageScope = await readRouteScope(app, created.surface.pageRoute.id);
+      expect(pageScope.portalUids).toEqual([ADMIN_LAYOUT_PORTAL_UID]);
+      expect(pageScope.layoutUids).toEqual([]);
+    } finally {
+      await app.db.getRepository('multiPortals').update({
+        filterByTk: ADMIN_LAYOUT_PORTAL_UID,
+        values: { routePermissionMode: 'layout' },
+      });
+    }
   });
 
   it('should create desktop portal group, page and tabs as portal-only routes with role grants', async () => {
@@ -538,6 +711,17 @@ describe('flowSurfaces Multi-portal integration', () => {
     expect(disabled.status).toBe(400);
     expect(disabled.body?.errors?.[0]?.ruleId).toBe('navigation-portal-disabled');
 
+    const aiPortal = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        type: 'group',
+        title: 'Unsupported AI portal group',
+        icon: 'AppstoreOutlined',
+        portalUid: AI_PORTAL_UID,
+      },
+    });
+    expect(aiPortal.status).toBe(400);
+    expect(aiPortal.body?.errors?.[0]?.ruleId).toBe('navigation-portal-type-unsupported');
+
     await expect(
       service.transaction((transaction) =>
         service.createMenu(
@@ -557,6 +741,38 @@ describe('flowSurfaces Multi-portal integration', () => {
       status: 403,
       options: expect.objectContaining({ ruleId: 'navigation-portal-forbidden' }),
     });
+  });
+
+  it('should reject implicit no-code route creation when only an AI portal is enabled', async () => {
+    const noCodePortals = await app.db.getRepository('multiPortals').find({
+      filter: { portalType: 'no-code' },
+      fields: ['uid', 'enabled'],
+    });
+    for (const portal of noCodePortals) {
+      await app.db.getRepository('multiPortals').update({
+        filterByTk: portal.get('uid'),
+        values: { enabled: false },
+      });
+    }
+
+    try {
+      const response = await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          type: 'group',
+          title: `AI-only implicit group ${Date.now()}`,
+          icon: 'AppstoreOutlined',
+        },
+      });
+      expect(response.status).toBe(400);
+      expect(response.body?.errors?.[0]?.ruleId).toBe('navigation-no-code-portal-not-found');
+    } finally {
+      for (const portal of noCodePortals) {
+        await app.db.getRepository('multiPortals').update({
+          filterByTk: portal.get('uid'),
+          values: { enabled: portal.get('enabled') },
+        });
+      }
+    }
   });
 
   it('should roll back route, portal relation and permission writes together', async () => {

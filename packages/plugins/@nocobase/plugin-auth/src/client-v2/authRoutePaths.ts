@@ -16,12 +16,15 @@ const authRouteFallbacks: Record<AuthRouteName, string> = {
   'auth.resetPassword': '/reset-password',
 };
 
-type AuthRouteApplication = {
-  router: {
-    get: (name: string) => { path?: string } | undefined;
-  };
+type PluginSettingsRouteApplication = {
   pluginSettingsManager: {
     getRoutePath: (name: string) => string;
+  };
+};
+
+type AuthRouteApplication = PluginSettingsRouteApplication & {
+  router: {
+    get: (name: string) => { path?: string } | undefined;
   };
 };
 
@@ -30,10 +33,10 @@ export function getAuthRoutePath(app: AuthRouteApplication, name: AuthRouteName)
   return typeof routePath === 'string' ? routePath : authRouteFallbacks[name];
 }
 
-export function isStandaloneSettingsApplication(app: AuthRouteApplication) {
+export function isStandaloneSettingsApplication(app: PluginSettingsRouteApplication) {
   return app.pluginSettingsManager.getRoutePath('') === '/settings/';
 }
 
-export function getDefaultAuthRedirectPath(app: AuthRouteApplication) {
-  return isStandaloneSettingsApplication(app) ? app.pluginSettingsManager.getRoutePath('') : '/admin/';
+export function getDefaultAuthRedirectPath(app: PluginSettingsRouteApplication) {
+  return isStandaloneSettingsApplication(app) ? app.pluginSettingsManager.getRoutePath('') : '/';
 }

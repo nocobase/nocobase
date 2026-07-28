@@ -18,6 +18,7 @@ import { useT } from '../locale';
 interface Role {
   name: string;
   title: string;
+  allowNewMenu?: boolean;
   allowNewMultiPortal?: boolean;
 }
 
@@ -30,6 +31,8 @@ interface PermissionTabProps {
 interface MultiPortalRecord {
   uid: string;
   title?: string;
+  portalType?: string | null;
+  routePermissionMode?: 'layout' | 'portal';
 }
 
 interface MultiPortalPayload {
@@ -84,7 +87,16 @@ interface RoleMultiPortalsResource {
 }
 
 interface RolesResource {
-  update: (params: { filterByTk: string; values: Pick<Role, 'allowNewMultiPortal'> }) => Promise<unknown>;
+  update: (params: {
+    filterByTk: string;
+    values: Partial<Pick<Role, 'allowNewMenu' | 'allowNewMultiPortal'>>;
+  }) => Promise<unknown>;
+}
+
+interface RoleDesktopRoutesResource {
+  list: (params?: Record<string, unknown>) => Promise<ResourceResponse>;
+  add: (params: { values: number[] }) => Promise<unknown>;
+  remove: (params: { values: number[] }) => Promise<unknown>;
 }
 
 interface RoleMultiPortalDesktopRoutesResource {
@@ -151,6 +163,17 @@ function toRoutePermissionData(responseData: unknown): MultiPortalRoutePermissio
   }
   const payload = responseData as { data?: MultiPortalRoutePermissionRecord[] };
   return Array.isArray(payload.data) ? payload.data : [];
+}
+
+function toLayoutRoutePermissionIds(responseData: unknown): number[] {
+  if (!responseData || typeof responseData !== 'object') {
+    return [];
+  }
+  const payload = responseData as { data?: Array<{ id?: number }> };
+  if (!Array.isArray(payload.data)) {
+    return [];
+  }
+  return payload.data.map((item) => item.id).filter((id): id is number => typeof id === 'number');
 }
 
 function toRoutePolicyData(responseData: unknown): MultiPortalRoutePolicyRecord | undefined {
@@ -304,6 +327,14 @@ function getRoutePermissionChanges(input: {
   };
 }
 
+function hasLayoutRoutePermissions(portal: MultiPortalRecord | undefined) {
+  return portal?.routePermissionMode === 'layout';
+}
+
+function supportsRoutePermissions(portal: MultiPortalRecord | undefined) {
+  return portal?.portalType === 'no-code';
+}
+
 export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
   const ctx = useFlowContext();
   const t = useT();
@@ -330,6 +361,11 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     () => ctx.api.resource('rolesMultiPortalRoutePolicies') as unknown as RoleMultiPortalRoutePoliciesResource,
     [ctx.api],
   );
+  const roleDesktopRoutesResource = useMemo(
+    () =>
+      role ? (ctx.api.resource('roles.desktopRoutes', role.name) as unknown as RoleDesktopRoutesResource) : undefined,
+    [ctx.api, role],
+  );
 
   const portalService = useRequest(
     async () => {
@@ -345,7 +381,6 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       refreshDeps: [active],
     },
   );
-
   const rolePortalService = useRequest(
     async () => {
       if (!roleMultiPortalsResource) {
@@ -371,12 +406,14 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     [portalService.data, selectedPortalUid],
   );
   const selectedPortalTitle = selectedPortal ? translateTitle(selectedPortal.title, t) : '';
+  const selectedPortalUsesLayoutPermissions = hasLayoutRoutePermissions(selectedPortal);
+  const selectedPortalSupportsRoutes = supportsRoutePermissions(selectedPortal);
   const drawerTitle = selectedPortal
     ? t('Configure routes permissions for {{portal}}', { portal: selectedPortalTitle })
     : t('Routes permissions');
   const routeService = useRequest(
     async () => {
-      if (!selectedPortalUid) {
+      if (!selectedPortalUid || !selectedPortalSupportsRoutes) {
         return [];
       }
       const response = await ctx.api.request<DesktopRoutePayload>({
@@ -390,8 +427,8 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       return toDesktopRoutePayload(response?.data).data ?? [];
     },
     {
-      ready: active && !!selectedPortalUid,
-      refreshDeps: [active, selectedPortalUid],
+      ready: active && !!selectedPortalUid && selectedPortalSupportsRoutes,
+      refreshDeps: [active, selectedPortalUid, selectedPortalSupportsRoutes],
     },
   );
   const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
@@ -418,8 +455,20 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       : t('No routes');
   const roleRoutePermissionService = useRequest(
     async () => {
-      if (!role || !selectedPortalUid) {
+      if (!role || !selectedPortalUid || !selectedPortalSupportsRoutes) {
         return [];
+      }
+      if (selectedPortalUsesLayoutPermissions) {
+        if (!roleDesktopRoutesResource) {
+          return [];
+        }
+        const response = await roleDesktopRoutesResource.list({
+          paginate: false,
+          filter: {
+            id: allRouteIds,
+          },
+        });
+        return toLayoutRoutePermissionIds(response?.data);
       }
       const response = await roleRoutePermissionsResource.list({
         paginate: false,
@@ -433,8 +482,15 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
         .filter((id): id is number => typeof id === 'number');
     },
     {
-      ready: active && !!role && !!selectedPortalUid,
-      refreshDeps: [active, role?.name, selectedPortalUid],
+      ready: active && !!role && !!selectedPortalUid && selectedPortalSupportsRoutes,
+      refreshDeps: [
+        active,
+        allRouteIds,
+        role?.name,
+        selectedPortalSupportsRoutes,
+        selectedPortalUid,
+        selectedPortalUsesLayoutPermissions,
+      ],
       onSuccess(data) {
         setSelectedRouteIds(data);
       },
@@ -442,7 +498,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
   );
   const roleRoutePolicyService = useRequest(
     async () => {
-      if (!role || !selectedPortalUid) {
+      if (!role || !selectedPortalUid || selectedPortalUsesLayoutPermissions || !selectedPortalSupportsRoutes) {
         return undefined;
       }
       const response = await roleRoutePoliciesResource.list({
@@ -455,8 +511,15 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       return toRoutePolicyData(response?.data);
     },
     {
-      ready: active && !!role && !!selectedPortalUid,
-      refreshDeps: [active, role?.name, selectedPortalUid],
+      ready:
+        active && !!role && !!selectedPortalUid && selectedPortalSupportsRoutes && !selectedPortalUsesLayoutPermissions,
+      refreshDeps: [
+        active,
+        role?.name,
+        selectedPortalSupportsRoutes,
+        selectedPortalUid,
+        selectedPortalUsesLayoutPermissions,
+      ],
       onSuccess(data) {
         setRouteDefaultPolicy(data);
         setRouteDefaultPolicyChecked(!!data?.allowNewMenu);
@@ -511,21 +574,23 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     await savePortalAccess(nextSelectedUids);
   });
 
-  const updateRoleDefaults = useMemoizedFn(async (values: Pick<Role, 'allowNewMultiPortal'>) => {
-    if (!role) {
-      return;
-    }
-    try {
-      await (ctx.api.resource('roles') as unknown as RolesResource).update({
-        filterByTk: role.name,
-        values,
-      });
-    } catch {
-      return;
-    }
-    props.onRoleChange?.({ ...role, ...values });
-    ctx.message.success(t('Saved successfully'));
-  });
+  const updateRoleDefaults = useMemoizedFn(
+    async (values: Partial<Pick<Role, 'allowNewMenu' | 'allowNewMultiPortal'>>) => {
+      if (!role) {
+        return;
+      }
+      try {
+        await (ctx.api.resource('roles') as unknown as RolesResource).update({
+          filterByTk: role.name,
+          values,
+        });
+      } catch {
+        return;
+      }
+      props.onRoleChange?.({ ...role, ...values });
+      ctx.message.success(t('Saved successfully'));
+    },
+  );
 
   const columns = useMemo<ColumnsType<MultiPortalRecord>>(
     () => [
@@ -538,6 +603,9 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
         dataIndex: 'accessible',
         title: t('Allow access'),
         render: (_, portal) => {
+          if (hasLayoutRoutePermissions(portal)) {
+            return <Typography.Text type="secondary">{t('Managed by layout permissions')}</Typography.Text>;
+          }
           const portalTitle = translateTitle(portal.title, t);
           return (
             <Checkbox
@@ -552,6 +620,9 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
         dataIndex: 'routePermissions',
         title: t('Routes permissions'),
         render: (_, portal) => {
+          if (!supportsRoutePermissions(portal)) {
+            return <Typography.Text type="secondary">-</Typography.Text>;
+          }
           const portalTitle = translateTitle(portal.title, t);
           return (
             <Button
@@ -569,7 +640,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
   );
 
   const applyRoutePermissionChanges = useMemoizedFn(async (nextSelectedRouteIds: number[]) => {
-    if (!role || !selectedPortalUid) {
+    if (!role || !selectedPortalUid || !selectedPortalSupportsRoutes) {
       return;
     }
 
@@ -580,7 +651,14 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     });
 
     try {
-      if (changes.remove.length) {
+      if (selectedPortalUsesLayoutPermissions && roleDesktopRoutesResource) {
+        if (changes.remove.length) {
+          await roleDesktopRoutesResource.remove({ values: changes.remove });
+        }
+        if (changes.add.length) {
+          await roleDesktopRoutesResource.add({ values: changes.add });
+        }
+      } else if (changes.remove.length) {
         await roleRoutePermissionsResource.destroy({
           filter: {
             roleName: role.name,
@@ -589,14 +667,16 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
           },
         });
       }
-      for (const desktopRouteId of changes.add) {
-        await roleRoutePermissionsResource.create({
-          values: {
-            roleName: role.name,
-            multiPortalUid: selectedPortalUid,
-            desktopRouteId,
-          },
-        });
+      if (!selectedPortalUsesLayoutPermissions) {
+        for (const desktopRouteId of changes.add) {
+          await roleRoutePermissionsResource.create({
+            values: {
+              roleName: role.name,
+              multiPortalUid: selectedPortalUid,
+              desktopRouteId,
+            },
+          });
+        }
       }
       await roleRoutePermissionService.refreshAsync();
       setSelectedRouteIds(nextSelectedRouteIds);
@@ -608,6 +688,11 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
 
   const updateRouteDefaultPolicy = useMemoizedFn(async (allowNewMenu: boolean) => {
     if (!role || !selectedPortalUid) {
+      return;
+    }
+
+    if (selectedPortalUsesLayoutPermissions) {
+      await updateRoleDefaults({ allowNewMenu });
       return;
     }
 
@@ -737,10 +822,10 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
         open={active && !!selectedPortal}
         onClose={() => setSelectedPortalUid(undefined)}
       >
-        {selectedPortal ? (
+        {selectedPortal && selectedPortalSupportsRoutes ? (
           <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
             <Checkbox
-              checked={routeDefaultPolicyChecked}
+              checked={selectedPortalUsesLayoutPermissions ? !!role.allowNewMenu : routeDefaultPolicyChecked}
               onChange={(event) => updateRouteDefaultPolicy(event.target.checked)}
             >
               {t('New routes are allowed to be accessed by default')}
@@ -754,7 +839,11 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
             />
             <Table<RoutePermissionRecord>
               rowKey="id"
-              loading={routeService.loading || roleRoutePermissionService.loading || roleRoutePolicyService.loading}
+              loading={
+                routeService.loading ||
+                roleRoutePermissionService.loading ||
+                (!selectedPortalUsesLayoutPermissions && roleRoutePolicyService.loading)
+              }
               pagination={false}
               expandable={{
                 defaultExpandAllRows: false,

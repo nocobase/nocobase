@@ -11,6 +11,7 @@ import { extendCollection } from '@nocobase/database';
 
 export default extendCollection({
   name: 'desktopRoutes',
+  repository: 'MultiPortalDesktopRouteRepository',
   fields: [
     {
       type: 'belongsToMany',

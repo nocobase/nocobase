@@ -69,6 +69,15 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'routePermissionMode',
+      type: 'string',
+      defaultValue: 'portal',
+      allowNull: false,
+      validate: {
+        isIn: [['layout', 'portal']],
+      },
+    },
+    {
       name: 'options',
       type: 'json',
       defaultValue: {},

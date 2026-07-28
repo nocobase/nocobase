@@ -249,18 +249,20 @@ describe('plugin-multi-portal settings page', () => {
     );
   });
 
-  it.each(['apps', '_app'])('should build portal hrefs from the standalone Settings %s scope', (scope) => {
+  it.each([
+    ['apps', 'no-code', '/customer-portal/dashboard', '/nocobase/v/apps/demo/customer-portal/dashboard'],
+    ['apps', 'ai', '/developer-portal', '/nocobase/x/apps/demo/developer-portal'],
+    ['_app', 'no-code', '/customer-portal/dashboard', '/nocobase/v/_app/demo/customer-portal/dashboard'],
+    ['_app', 'ai', '/developer-portal', '/nocobase/x/apps/demo/developer-portal'],
+  ])('should build %s Settings %s portal hrefs from the real runtime basename', (scope, portalType, path, expected) => {
     const app = {
       router: {
-        getBasename: () => `/nocobase/${scope}/demo/`,
+        getBasename: () => `/nocobase/settings/${scope}/demo/`,
       },
       getPublicPath: () => '/nocobase/',
     };
 
-    expect(getMultiPortalRouteUrl(app, '/customer-portal/dashboard', 'no-code')).toBe(
-      `/nocobase/v/${scope}/demo/customer-portal/dashboard`,
-    );
-    expect(getMultiPortalRouteUrl(app, '/developer-portal', 'ai')).toBe('/nocobase/x/apps/demo/developer-portal');
+    expect(getMultiPortalRouteUrl(app, path, portalType)).toBe(expected);
   });
 
   it('should honor a custom modern client prefix in standalone Settings portal hrefs', () => {
@@ -375,6 +377,7 @@ describe('plugin-multi-portal settings page', () => {
           data: [
             {
               ...portalValues,
+              routePermissionMode: 'layout',
               uiLayout: {
                 layoutType: 'mobile',
                 title: 'Mobile layout',
@@ -456,6 +459,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('Access path')).toBeInTheDocument();
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /mode/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /View/ })[0]).toHaveAttribute('href', '/v/customer-portal');
     const customerPortalRow = screen.getByText('Customer portal').closest('tr') as HTMLElement;
     const developerPortalRow = screen.getByText('Developer portal').closest('tr') as HTMLElement;
@@ -1351,7 +1355,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should allow toggling enabled for default portals from the table', async () => {
+  it('should treat the legacy default uid as a normal portal in the table', async () => {
     const user = userEvent.setup();
     const resource = makeResource({
       list: vi.fn().mockResolvedValue({
@@ -1414,7 +1418,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should allow toggling enabled for default portals from the edit form', async () => {
+  it('should not lock editable fields for the legacy default uid but should keep its layout immutable', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource({
@@ -1477,8 +1481,10 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByLabelText('Portal name')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Portal name')).not.toBeDisabled();
+    expect(within(dialog).getByLabelText('Portal type')).not.toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
+    expect(within(dialog).getByLabelText('Layout')).toBeDisabled();
   });
 
   it('should populate the layout field from the appended uiLayout relation when editing', async () => {

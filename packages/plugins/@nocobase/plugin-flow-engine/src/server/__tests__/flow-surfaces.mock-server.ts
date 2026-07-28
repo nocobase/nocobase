@@ -320,7 +320,7 @@ async function createFlowSurfacesDatabaseIsolation(
       ...(database || {}),
       database: databaseName,
       dialect,
-      username: getFlowSurfacesMySqlAdminUser(),
+      username: getFlowSurfacesMySqlAdminUser(database),
       password: getFlowSurfacesMySqlAdminPassword(database),
     },
     shouldCleanDbOnDestroy: true,
@@ -442,7 +442,7 @@ async function withFlowSurfacesMySqlConnection(
   const connectionOptions = {
     host: String(database?.host || process.env.DB_HOST || '127.0.0.1'),
     port: Number(database?.port || process.env.DB_PORT || 3306),
-    user: getFlowSurfacesMySqlAdminUser(),
+    user: getFlowSurfacesMySqlAdminUser(database),
     password: getFlowSurfacesMySqlAdminPassword(database),
   };
   const connection =
@@ -457,8 +457,8 @@ async function withFlowSurfacesMySqlConnection(
   }
 }
 
-function getFlowSurfacesMySqlAdminUser() {
-  return 'root';
+function getFlowSurfacesMySqlAdminUser(database: MockServerOptions['database'] | undefined) {
+  return String(database?.username || process.env.DB_USER || process.env.DB_USERNAME || 'root');
 }
 
 function getFlowSurfacesMySqlAdminPassword(database: MockServerOptions['database'] | undefined) {

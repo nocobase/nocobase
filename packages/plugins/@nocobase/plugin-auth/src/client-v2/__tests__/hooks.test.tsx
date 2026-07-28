@@ -204,6 +204,7 @@ describe('plugin-auth client-v2 useSignIn', () => {
     // Order matters: signIn → request → redirect/navigate.
     expect(mockState.signIn.mock.invocationCallOrder[0]).toBeLessThan(mockState.request.mock.invocationCallOrder[0]);
     expect(mockState.request.mock.invocationCallOrder[0]).toBeLessThan(navigateMock.mock.invocationCallOrder[0]);
+    expect(navigateMock).toHaveBeenCalledWith('/', { replace: true });
   });
 
   it('should swallow /auth:check rejection so redirect still runs', async () => {

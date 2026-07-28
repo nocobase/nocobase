@@ -52,18 +52,17 @@ type RouteFilterValues = {
   keyword?: string;
 };
 
-type DesktopRouteOwnerParams = {
-  layout?: string;
-  portal?: string;
+type DesktopRoutePortalParams = {
+  portal: string;
 };
 
 type DesktopRoutesResource = {
-  create: (params: DesktopRouteOwnerParams & { values: Partial<NocoBaseDesktopRoute> }) => Promise<unknown>;
+  create: (params: DesktopRoutePortalParams & { values: Partial<NocoBaseDesktopRoute> }) => Promise<unknown>;
   destroy: (
-    params: DesktopRouteOwnerParams & { filterByTk: Array<number | string> | number | string },
+    params: DesktopRoutePortalParams & { filterByTk: Array<number | string> | number | string },
   ) => Promise<unknown>;
   update: (
-    params: DesktopRouteOwnerParams & {
+    params: DesktopRoutePortalParams & {
       filterByTk: number | string;
       values: Partial<NocoBaseDesktopRoute>;
     },
@@ -81,24 +80,14 @@ type PortalRoutesFlowContext = {
     resource: (name: string) => DesktopRoutesResource;
   };
   app?: Parameters<typeof getMultiPortalRouteUrl>[0];
-  routeRepository?: {
-    refreshAccessible?: () => Promise<unknown>;
-  };
   viewer: {
     drawer: (options: { closable?: boolean; content: () => React.ReactNode; width?: number | string }) => unknown;
   };
 };
 
-type PortalRouteOwnerScope = {
-  filter: Record<string, string>;
-  params: DesktopRouteOwnerParams;
-};
-
 type RouteListPayload = {
   data?: NocoBaseDesktopRoute[];
 };
-
-const DEFAULT_PORTAL_UID = '__default_portal__';
 
 const actionLinkButtonStyle: React.CSSProperties = {
   paddingInline: 0,
@@ -113,29 +102,6 @@ const IconPickerFormControl = React.forwardRef<HTMLDivElement, React.ComponentPr
 );
 
 IconPickerFormControl.displayName = 'IconPickerFormControl';
-
-function getPortalRouteOwnerScope(portal: MultiPortalRecord): PortalRouteOwnerScope {
-  if (portal.defaultPortal || portal.uid === DEFAULT_PORTAL_UID) {
-    const layoutUid = portal.uiLayout?.uid || portal.uiLayoutUid || '';
-    return {
-      filter: {
-        'uiLayouts.uid': layoutUid,
-      },
-      params: {
-        layout: layoutUid,
-      },
-    };
-  }
-
-  return {
-    filter: {
-      'multiPortals.uid': portal.uid,
-    },
-    params: {
-      portal: portal.uid,
-    },
-  };
-}
 
 function toRoutePayload(responseData: unknown): RouteListPayload {
   if (!responseData || typeof responseData !== 'object') {
@@ -595,9 +561,8 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
   const [filterValues, setFilterValues] = useState<RouteFilterValues>({});
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes'), [ctx.api]);
-  const ownerScope = useMemo(() => getPortalRouteOwnerScope(portal), [portal]);
+  const portalUid = portal.uid;
   const mobile = portal.uiLayout?.layoutType === 'mobile';
-  const isDefaultPortal = portal.defaultPortal || portal.uid === DEFAULT_PORTAL_UID;
 
   React.useEffect(() => {
     tRef.current = t;
@@ -610,8 +575,8 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         url: '/desktopRoutes:list',
         method: 'get',
         params: {
-          filter: ownerScope.filter,
           paginate: false,
+          portal: portalUid,
           sort: 'sort',
           tree: true,
         },
@@ -625,7 +590,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
     } finally {
       setLoading(false);
     }
-  }, [ctx.api, message, ownerScope.filter]);
+  }, [ctx.api, message, portalUid]);
 
   React.useEffect(() => {
     loadRoutes().catch(() => undefined);
@@ -633,10 +598,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
 
   const refreshRoutesAfterMutation = useCallback(async () => {
     await loadRoutes();
-    if (isDefaultPortal) {
-      await ctx.routeRepository?.refreshAccessible?.();
-    }
-  }, [ctx.routeRepository, isDefaultPortal, loadRoutes]);
+  }, [loadRoutes]);
 
   const submitRoute = useCallback(
     async (params: {
@@ -649,8 +611,8 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         const shouldSyncTabVisibility =
           isPageRouteType(editingRoute.type) && editingRoute.enableTabs !== !!values.enableTabs;
         await desktopRoutesResource.update({
-          ...ownerScope.params,
           filterByTk: editingRoute.id,
+          portal: portalUid,
           values: normalizeRouteValues(values, editingRoute, { mobile }),
         });
         if (shouldSyncTabVisibility) {
@@ -659,8 +621,8 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
               continue;
             }
             await desktopRoutesResource.update({
-              ...ownerScope.params,
               filterByTk: childRoute.id,
+              portal: portalUid,
               values: { hidden: !values.enableTabs },
             });
           }
@@ -668,7 +630,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         message.success(t('Updated successfully'));
       } else {
         await desktopRoutesResource.create({
-          ...ownerScope.params,
+          portal: portalUid,
           values: {
             ...normalizeRouteValues(values, undefined, { mobile, withInitialPageTab: true }),
             ...(parentRoute?.id !== undefined ? { parentId: parentRoute.id } : {}),
@@ -678,7 +640,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
       }
       await refreshRoutesAfterMutation();
     },
-    [desktopRoutesResource, message, mobile, ownerScope.params, refreshRoutesAfterMutation, t],
+    [desktopRoutesResource, message, mobile, portalUid, refreshRoutesAfterMutation, t],
   );
 
   const openRouteEditor = useCallback(
@@ -707,13 +669,13 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
   const handleDelete = useCallback(
     async (filterByTk: Array<number | string> | number | string) => {
       await desktopRoutesResource.destroy({
-        ...ownerScope.params,
         filterByTk,
+        portal: portalUid,
       });
       message.success(t('Deleted successfully'));
       await refreshRoutesAfterMutation();
     },
-    [desktopRoutesResource, message, ownerScope.params, refreshRoutesAfterMutation, t],
+    [desktopRoutesResource, message, portalUid, refreshRoutesAfterMutation, t],
   );
 
   const selectedRouteIds = useMemo(
@@ -731,15 +693,15 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
     async (values: Partial<NocoBaseDesktopRoute>) => {
       for (const routeId of selectedRouteIds) {
         await desktopRoutesResource.update({
-          ...ownerScope.params,
           filterByTk: routeId,
+          portal: portalUid,
           values,
         });
       }
       message.success(t('Updated successfully'));
       await refreshRoutesAfterMutation();
     },
-    [desktopRoutesResource, message, ownerScope.params, refreshRoutesAfterMutation, selectedRouteIds, t],
+    [desktopRoutesResource, message, portalUid, refreshRoutesAfterMutation, selectedRouteIds, t],
   );
 
   const openDeleteConfirm = useCallback(
