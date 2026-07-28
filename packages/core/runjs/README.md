@@ -1,6 +1,6 @@
 # @nocobase/runjs
 
-`@nocobase/runjs` contains the shared RunJS data contracts, virtual-workspace compiler, TypeScript editor support, settings helpers, and server hashing utilities.
+`@nocobase/runjs` contains the shared RunJS data contracts, virtual-workspace compiler, settings helpers, and server hashing utilities.
 
 ## Public entries
 
@@ -10,11 +10,10 @@
 | `@nocobase/runjs/compiler` | Virtual-workspace compilation and source inspection |
 | `@nocobase/runjs/compiler/build-identity` | Compiler build identity without loading the compiler |
 | `@nocobase/runjs/compiler/portable` | Portable path, import-resolution, built-in module, and diagnostic contracts |
-| `@nocobase/runjs/client-v2` | Browser TypeScript environment and project support |
 | `@nocobase/runjs/settings` | Settings defaults, conditions, pruning, and Entry selection normalization |
 | `@nocobase/runjs/server` | SHA-256 helpers for files, runtime code, and immutable artifacts |
 
-The root entry stays dependency-light. Import compiler, client, settings, or server behavior from its explicit subpath.
+The root entry stays dependency-light. Import compiler, settings, or server behavior from its explicit subpath.
 
 ## Virtual-workspace compiler
 
@@ -33,7 +32,7 @@ Built-in packages are rewritten to the matching value supplied through `ctx.libs
 
 ## Editor and runtime context
 
-`@nocobase/runjs/client-v2` provides the small TypeScript environment used by the browser editor. Workspace documents remain isolated by path and version, and editor diagnostics use the same source contracts as server inspection.
+The client-v2 browser editor uses CodeMirror for lightweight syntax parsing and completion. Full TypeScript semantic diagnostics run on the server through the RunJS compiler during Check and Save. The TypeScript environment and project files remain compiler internals, not browser public APIs.
 
 The host owns the runtime `ctx` object and the values exposed through `ctx.libs`. RunJS source cannot access a package merely because its types or import name are known. Resource requests still use the current NocoBase user and ACL.
 
@@ -46,7 +45,7 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 ## Package boundaries
 
 - Root and portable entries do not import client packages
-- Client code imports `@nocobase/runjs/client-v2`, never server helpers
+- Browser client code uses the dependency-light root or settings entry and never imports compiler or server helpers
 - Server code imports `@nocobase/runjs/server` or compiler subpaths
 - `compiler/build-identity` remains safe for startup paths that must not initialize the compiler
 - Runtime values come from the host context; compile-time support never grants a capability

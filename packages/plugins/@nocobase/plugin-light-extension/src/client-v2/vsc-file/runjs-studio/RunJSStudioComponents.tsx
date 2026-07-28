@@ -26,12 +26,7 @@ import {
   UploadOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import {
-  CodeEditor,
-  type CodeEditorFullscreenControl,
-  type CodeEditorJsonSchema,
-  type RunJSWorkspaceTypeScriptContextResolver,
-} from '@nocobase/client-v2';
+import { CodeEditor, type CodeEditorFullscreenControl, type CodeEditorJsonSchema } from '@nocobase/client-v2';
 import {
   Alert,
   Button,
@@ -847,11 +842,7 @@ export function CodeTab(props: {
   onRunPreview?: () => void;
   openPaths: string[];
   previewing?: boolean;
-  projectRevision: number;
   readOnly: boolean;
-  runJSModelUse?: string;
-  runJSGlobalContextType?: string;
-  workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
   showRunButton?: boolean;
@@ -902,6 +893,10 @@ export function CodeTab(props: {
   if (!activeFile) {
     return <Empty description={t('Select a file')} />;
   }
+
+  const languageFromPath = inferLanguageFromPath(activeFile.path);
+  const isScriptFile = isRunJSTypeScriptProjectFile(activeFile.path);
+  const editorLanguage = isScriptFile ? languageFromPath : activeFile.language || languageFromPath;
 
   const fileTabsContent = (
     <div
@@ -1008,9 +1003,9 @@ export function CodeTab(props: {
     >
       <CodeEditor
         authoringSurfaceId={authoringSurfaceId}
-        enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
+        enableLinter={isScriptFile}
         height="100%"
-        language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
+        language={isDiff ? 'diff' : editorLanguage}
         jsonSchema={jsonSchema}
         minHeight={0}
         moduleImportCompletions={moduleImportCompletions}

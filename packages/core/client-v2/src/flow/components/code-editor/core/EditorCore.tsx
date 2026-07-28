@@ -41,8 +41,45 @@ const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
 
 const tabCompletionKeymap = Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletionOrKeepPending }]));
 
-function isJsonLanguage(language: string | undefined): boolean {
-  return language?.trim().toLowerCase() === 'json';
+function createLanguageConfig(language: string | undefined): {
+  extension: Extension;
+  isJson: boolean;
+  usesJavaScriptLinter: boolean;
+} {
+  switch (language?.trim().toLowerCase()) {
+    case 'json':
+      return { extension: json(), isJson: true, usesJavaScriptLinter: false };
+    case 'typescript':
+    case 'ts':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: false, typescript: true }),
+        isJson: false,
+        usesJavaScriptLinter: false,
+      };
+    case 'tsx':
+    case 'typescriptreact':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: true }),
+        isJson: false,
+        usesJavaScriptLinter: false,
+      };
+    case 'jsx':
+    case 'javascriptreact':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+        usesJavaScriptLinter: true,
+      };
+    case 'javascript':
+    case 'js':
+    default:
+      return {
+        // Preserve the existing JSX-compatible JavaScript behavior for omitted and unknown languages.
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+        usesJavaScriptLinter: true,
+      };
+  }
 }
 
 function createEditorTheme(height: string | number, minHeight: string | number | undefined): Extension {
@@ -200,14 +237,15 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const jsonLanguage = isJsonLanguage(language);
+    const languageConfig = createLanguageConfig(language);
+    const jsonLanguage = languageConfig.isJson;
     const view = new EditorView({
       doc: value || '',
       extensions: [
         basicSetup,
         tabCompletionKeymap,
         readonlyCompartment.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
-        languageCompartment.of(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        languageCompartment.of(languageConfig.extension),
         completionCompartment.of(
           autocompletion({
             override: jsonLanguage
@@ -221,7 +259,7 @@ export const EditorCore: React.FC<{
         linterCompartment.of(
           jsonLanguage
             ? [lintGutter(), jsonLinter]
-            : enableLinter
+            : enableLinter && languageConfig.usesJavaScriptLinter
               ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
               : [],
         ),
@@ -265,11 +303,12 @@ export const EditorCore: React.FC<{
       return;
     }
 
-    const jsonLanguage = isJsonLanguage(language);
+    const languageConfig = createLanguageConfig(language);
+    const jsonLanguage = languageConfig.isJson;
     view.dispatch({
       effects: [
         readonlyCompartment.reconfigure([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
-        languageCompartment.reconfigure(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        languageCompartment.reconfigure(languageConfig.extension),
         completionCompartment.reconfigure(
           autocompletion({
             override: jsonLanguage
@@ -283,7 +322,7 @@ export const EditorCore: React.FC<{
         linterCompartment.reconfigure(
           jsonLanguage
             ? [lintGutter(), jsonLinter]
-            : enableLinter
+            : enableLinter && languageConfig.usesJavaScriptLinter
               ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })]
               : [],
         ),
@@ -319,7 +358,7 @@ export const EditorCore: React.FC<{
 
   useEffect(() => {
     const view = viewRef.current;
-    if (view && isJsonLanguage(language)) {
+    if (view && createLanguageConfig(language).isJson) {
       forceLinting(view);
     }
   }, [jsonSchema, language, viewRef]);
