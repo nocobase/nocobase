@@ -427,6 +427,34 @@ describe('TopbarActionsBar', () => {
     vi.restoreAllMocks();
   });
 
+  it('should group plugin settings with Help and user center', () => {
+    render(
+      <TopbarActionsBar
+        actions={[
+          createAction({ uid: 'notification', actionId: 'notification' }),
+          createAction({ uid: 'plugin-settings', actionId: 'plugin-settings' }),
+          createAction({ uid: 'user-center', actionId: 'user-center' }),
+        ]}
+      />,
+    );
+
+    const notification = screen.getByTestId('flow-model-notification');
+    const pluginSettings = screen.getByTestId('flow-model-plugin-settings');
+    const help = screen.getByTestId('help-lite');
+    const userCenter = screen.getByTestId('flow-model-user-center');
+    const mainGroup = notification.closest('.nb-topbar-actions-list');
+    const utilityGroup = pluginSettings.closest('.nb-topbar-utility-actions-list');
+
+    expect(mainGroup).toContainElement(notification);
+    expect(mainGroup).not.toContainElement(pluginSettings);
+    expect(utilityGroup).not.toBeNull();
+    expect(utilityGroup).toContainElement(pluginSettings);
+    expect(utilityGroup).toContainElement(help);
+    expect(utilityGroup).toContainElement(userCenter);
+    expect(pluginSettings.compareDocumentPosition(help) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(help.compareDocumentPosition(userCenter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('should keep HelpLite rendered when one action fails', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
