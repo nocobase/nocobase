@@ -71,6 +71,7 @@ export function ChatComposer({
     employees,
     currentEmployee,
     currentModel,
+    canSend,
     selectModel,
     selectEmployee,
     composerFocusRequest,
@@ -193,7 +194,7 @@ export function ChatComposer({
             className="max-h-44 min-h-16 px-3 pt-3 text-sm"
             onChange={(event) => setDraft(event.target.value)}
             onPaste={(event) => {
-              if (!enableAttachments) return;
+              if (!enableAttachments || !canSend) return;
               const files = Array.from(event.clipboardData.items)
                 .filter((item) => item.kind === "file")
                 .map((item) => item.getAsFile())
@@ -360,6 +361,7 @@ export function ChatComposer({
                 className="rounded-lg"
                 aria-label="Send message"
                 disabled={
+                  !canSend ||
                   uploadingAttachments ||
                   (!draft.trim() &&
                     !attachments.some(

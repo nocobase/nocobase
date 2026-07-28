@@ -52,14 +52,27 @@ import {
   type AIChatMessage,
   type AIChatTaskRuntime,
   type AIConversation,
+  type AIEmployee,
   type AIEmployeeTask,
   type AIEmployeeTasks,
   type AIEmployeeTaskTrigger,
+  type AIModel,
   type AIWorkContextItem,
 } from "./types";
 
 const EMPTY_TASKS: AIEmployeeTask[] = [];
 const EMPTY_EMPLOYEE_TASKS: AIEmployeeTasks = {};
+const UNAVAILABLE_EMPLOYEE: AIEmployee = {
+  username: "__unavailable__",
+  nickname: "AI employee",
+  position: "Not configured",
+  greeting: "Configure an AI employee and model to start chatting.",
+};
+const UNAVAILABLE_MODEL: AIModel = {
+  value: "__unavailable__",
+  label: "No enabled model",
+  configured: false,
+};
 
 export type AIChatProviderProps = PropsWithChildren<{
   id: string;
@@ -197,16 +210,19 @@ export function AIChatProvider({
     dispatch,
   });
 
-  const currentEmployee =
+  const configuredEmployee =
     ai.employees.find(
       (employee) => employee.username === state.selectedEmployeeUsername
     ) ?? ai.employees[0];
-  const currentModel =
+  const configuredModel =
     findAIModel(ai.models, state.selectedModel) ?? ai.models[0];
-
-  if (!currentEmployee || !currentModel) {
-    throw new Error("AIProvider requires at least one employee and model");
-  }
+  const currentEmployee = configuredEmployee ?? UNAVAILABLE_EMPLOYEE;
+  const currentModel = configuredModel ?? UNAVAILABLE_MODEL;
+  const canSend = Boolean(
+    configuredEmployee &&
+      configuredModel &&
+      configuredModel.configured !== false
+  );
 
   const getActiveConversationId = useCallback(
     () => stateRef.current.activeConversationId,
@@ -271,7 +287,7 @@ export function AIChatProvider({
       const conversation = currentState.conversations.find(
         (item) => item.id === currentId
       );
-      if (!employee || !model) return;
+      if (!employee || !model || model.configured === false) return;
       const currentAttachments = getConversationAttachments(currentId);
       const unresolvedWorkContext = getConversationWorkContext(currentId);
       if (
@@ -712,6 +728,7 @@ export function AIChatProvider({
       models: ai.models,
       currentEmployee,
       currentModel,
+      canSend,
       activeConversation,
       activeConversationId: state.activeConversationId,
       conversations: state.conversations,
@@ -797,7 +814,9 @@ export function AIChatProvider({
       startEditingMessage,
       cancelEditingMessage,
       saveUserPrompt: (prompt) =>
-        ai.updateEmployeeUserPrompt(currentEmployee.username, prompt),
+        configuredEmployee
+          ? ai.updateEmployeeUserPrompt(configuredEmployee.username, prompt)
+          : Promise.resolve(),
       triggerTask,
       runTask,
       focusComposer: requestComposerFocus,
@@ -818,6 +837,8 @@ export function AIChatProvider({
       editingMessageId,
       currentEmployee,
       currentModel,
+      canSend,
+      configuredEmployee,
       getConfiguredTaskSet,
       invalidateConversationHistory,
       invalidatePendingInteraction,

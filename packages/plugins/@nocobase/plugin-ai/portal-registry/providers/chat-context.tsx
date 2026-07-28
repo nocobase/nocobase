@@ -20,6 +20,7 @@ export type AIChatContextValue = {
   models: AIModel[];
   currentEmployee: AIEmployee;
   currentModel: AIModel;
+  canSend: boolean;
   activeConversation?: AIConversation;
   activeConversationId: string;
   conversations: AIConversation[];
