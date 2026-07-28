@@ -16,26 +16,52 @@ function isSettingsOwnedRoute(name: string) {
     name === 'settings' ||
     name.startsWith('settings.') ||
     name === 'settingsDetails' ||
-    name.startsWith('settingsDetails.')
+    name.startsWith('settingsDetails.') ||
+    name === 'auth' ||
+    name.startsWith('auth.') ||
+    name === '2fa' ||
+    name.startsWith('2fa.')
   );
+}
+
+function isSettingsAuthenticationRoute(name: string) {
+  return name === 'auth' || name.startsWith('auth.') || name === '2fa' || name.startsWith('2fa.');
 }
 
 export class SettingsRouterManager<
   TApp extends BaseApplication<any> = BaseApplication<any>,
 > extends RouterManager<TApp> {
+  private rebaseAuthenticationRoute(route: RouteType) {
+    if (!route.path?.startsWith('/')) {
+      return route;
+    }
+
+    const settingsRoot = this.app.pluginSettingsManager.getRoutePath('').replace(/\/+$/, '');
+    if (route.path === settingsRoot || route.path.startsWith(`${settingsRoot}/`)) {
+      return route;
+    }
+
+    return {
+      ...route,
+      path: `${settingsRoot}/${route.path.replace(/^\/+/, '')}`,
+    };
+  }
+
   add(name: string, route: RouteType) {
     if (!isSettingsOwnedRoute(name)) {
       return;
     }
 
+    const ownedRoute = isSettingsAuthenticationRoute(name) ? this.rebaseAuthenticationRoute(route) : route;
+
     super.add(
       name,
       name === 'settingsDetails' || name.startsWith('settingsDetails.')
         ? {
-            ...route,
+            ...ownedRoute,
             authCheck: true,
           }
-        : route,
+        : ownedRoute,
     );
   }
 }

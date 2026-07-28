@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildRedirectPath } from '../buildRedirectPath';
+import { buildRedirectPath, resolveSigninPrefix } from '../buildRedirectPath';
 
 describe('buildRedirectPath', () => {
   describe('main app', () => {
@@ -121,5 +121,26 @@ describe('buildRedirectPath', () => {
         '/nocobase/apps/sub/admin/abc',
       );
     });
+  });
+});
+
+describe('resolveSigninPrefix', () => {
+  it.each([
+    ['/nocobase/settings/workflow', '', '/nocobase/settings'],
+    ['/nocobase/apps/sub/settings/workflow', '/apps/sub', '/nocobase/apps/sub/settings'],
+    ['/nocobase/_app/sub/settings/workflow', '/apps/sub', '/nocobase/_app/sub/settings'],
+    ['/nocobase/settings/workflow?tab=list#recent', '', '/nocobase/settings'],
+  ])('returns the current Settings signin prefix for %s', (redirect, subAppSegment, expected) => {
+    expect(resolveSigninPrefix({ appPublicPath: '/nocobase/', redirect, subAppSegment })).toBe(expected);
+  });
+
+  it('recognizes a root-mounted Settings redirect', () => {
+    expect(resolveSigninPrefix({ appPublicPath: '/', redirect: '/settings/workflow' })).toBe('/settings');
+  });
+
+  it('does not confuse a sibling path with the Settings runtime', () => {
+    expect(resolveSigninPrefix({ appPublicPath: '/nocobase/', redirect: '/nocobase/settings-preview' })).toBe(
+      '/nocobase',
+    );
   });
 });

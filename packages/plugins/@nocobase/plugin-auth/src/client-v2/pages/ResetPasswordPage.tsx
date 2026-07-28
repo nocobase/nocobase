@@ -14,6 +14,7 @@ import { useApp } from '@nocobase/client-v2';
 import { useAuthenticator } from '../authenticator';
 import { useAuthTranslation } from '../locale';
 import { useDocumentTitle } from '../hooks';
+import { getAuthRoutePath } from '../authRoutePaths';
 
 export default function ResetPasswordPage() {
   const app = useApp();
@@ -28,6 +29,7 @@ export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const signinPath = getAuthRoutePath(app, 'auth.signin');
 
   useDocumentTitle(t('Reset password'));
 
@@ -61,7 +63,7 @@ export default function ResetPasswordPage() {
   }, [app, resetToken]);
 
   if (!authenticator?.options?.enableResetPassword) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to={signinPath} replace />;
   }
 
   if (!checking && (!resetToken || expired)) {
@@ -70,7 +72,7 @@ export default function ResetPasswordPage() {
         status="403"
         title={t('Reset link has expired')}
         extra={
-          <Button type="primary" onClick={() => navigate('/signin')}>
+          <Button type="primary" onClick={() => navigate(signinPath)}>
             {t('Go to login')}
           </Button>
         }
@@ -89,7 +91,7 @@ export default function ResetPasswordPage() {
           await app.apiClient.auth.resetPassword({ ...values, resetToken });
           message.success(t('Password reset successful'));
           window.setTimeout(() => {
-            navigate('/signin', { replace: true });
+            navigate(signinPath, { replace: true });
           }, 1000);
         } catch (error) {
           setErrorMessage(error?.response?.data?.errors?.[0]?.message || error?.message || String(error));
@@ -129,7 +131,7 @@ export default function ResetPasswordPage() {
           {t('Confirm')}
         </Button>
       </Form.Item>
-      <Link to="/signin">{t('Go to login')}</Link>
+      <Link to={signinPath}>{t('Go to login')}</Link>
     </Form>
   );
 }

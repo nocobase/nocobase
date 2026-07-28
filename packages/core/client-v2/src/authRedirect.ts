@@ -233,8 +233,7 @@ function isSettingsTargetForAnotherApp(app: AppLike, pathname: string) {
 
 function getV2SigninPath(app: AppLike) {
   if (isStandaloneSettingsApp(app)) {
-    const signinRoute = `/${getModernClientPrefix()}${getSettingsAppScope(app)}/signin`;
-    return joinRootRelativePath(getSettingsRootPublicPath(app), signinRoute);
+    return joinRootRelativePath(getStandaloneSettingsBasePath(app), '/signin');
   }
   return joinRootRelativePath(getV2EffectiveBasePath(app), '/signin');
 }

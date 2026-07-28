@@ -200,7 +200,7 @@ describe('plugin-users client-v2', () => {
     );
   });
 
-  it('should return a standalone Settings runtime to the existing v2 signin document', async () => {
+  it('should return a standalone Settings runtime to its own signin document', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -228,7 +228,39 @@ describe('plugin-users client-v2', () => {
     await model.onClick();
 
     expect(replace).toHaveBeenCalledWith(
-      '/nocobase/v/signin?redirect=%2Fnocobase%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
+      '/nocobase/settings/signin?redirect=%2Fnocobase%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
+    );
+  });
+
+  it('should keep a sub-app Settings runtime in its document scope after sign out', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        pathname: '/nocobase/apps/demo/settings/workflow',
+        search: '?tab=list',
+        hash: '#recent',
+        replace,
+      },
+    });
+    const app = createMockClient({ publicPath: '/nocobase/' });
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+    const getRoutePath = app.pluginSettingsManager.getRoutePath.bind(app.pluginSettingsManager);
+    vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
+      return name === '' ? '/settings/' : getRoutePath(name);
+    });
+    app.router.setBasename('/nocobase/apps/demo/');
+
+    await app.flowEngine.getModelClassAsync('SignOutItemModel');
+    const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
+    app.apiClient.auth.signOut = vi.fn().mockResolvedValue({ data: { data: {} } });
+
+    await model.onClick();
+
+    expect(replace).toHaveBeenCalledWith(
+      '/nocobase/apps/demo/settings/signin?redirect=%2Fnocobase%2Fapps%2Fdemo%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
     );
   });
 });

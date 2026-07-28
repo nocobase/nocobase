@@ -98,6 +98,25 @@ export interface ResolveSigninPrefixOptions {
   subAppSegment?: string | null;
 }
 
+function resolveSettingsSigninPrefix(appPublicPath: string, redirect?: string | null): string | null {
+  if (typeof redirect !== 'string') {
+    return null;
+  }
+
+  const [pathname] = redirect.split(/[?#]/, 1);
+  if (appPublicPath && pathname !== appPublicPath && !pathname.startsWith(`${appPublicPath}/`)) {
+    return null;
+  }
+
+  const pathnameWithinPublicPath = pathname.slice(appPublicPath.length);
+  const scopedMatch = pathnameWithinPublicPath.match(/^\/((?:apps|_app)\/[^/]+)\/settings(?:\/|$)/);
+  if (scopedMatch) {
+    return `${appPublicPath}/${scopedMatch[1]}/settings`;
+  }
+
+  return /^\/settings(?:\/|$)/.test(pathnameWithinPublicPath) ? `${appPublicPath}/settings` : null;
+}
+
 /**
  * On SSO failure the user must land back on the signin page of the *same*
  * shell they started from (legacy v1 vs modern v2). Modern-client URLs always
@@ -108,6 +127,11 @@ export interface ResolveSigninPrefixOptions {
  */
 export function resolveSigninPrefix({ appPublicPath, redirect, subAppSegment }: ResolveSigninPrefixOptions): string {
   const normalizedAppPublicPath = (appPublicPath || '').replace(/\/+$/, '');
+  const settingsSigninPrefix = resolveSettingsSigninPrefix(normalizedAppPublicPath, redirect);
+  if (settingsSigninPrefix) {
+    return settingsSigninPrefix;
+  }
+
   const modernSegment = `/${getModernClientPrefix()}`;
   const modernMarker = `${normalizedAppPublicPath}${modernSegment}`;
   const isModernOrigin =

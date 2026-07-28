@@ -16,6 +16,7 @@ const navigateMock = vi.fn();
 const originalLocation = window.location;
 const mockState = vi.hoisted(() => ({
   basename: undefined as string | undefined,
+  settingsRouteRoot: '/admin/settings/',
   publicPath: '/nocobase/v2/',
   signIn: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
   request: vi.fn().mockResolvedValue({ data: {} }) as ReturnType<typeof vi.fn>,
@@ -35,6 +36,7 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
     ...actual,
     useApp: () => ({
       router: { getBasename: () => mockState.basename },
+      pluginSettingsManager: { getRoutePath: () => mockState.settingsRouteRoot },
       getPublicPath: () => mockState.publicPath,
       apiClient: {
         auth: { signIn: (...args: unknown[]) => mockState.signIn(...args) },
@@ -48,6 +50,8 @@ describe('plugin-auth client-v2 useRedirect', () => {
   beforeEach(() => {
     navigateMock.mockReset();
     mockState.basename = undefined;
+    mockState.settingsRouteRoot = '/admin/settings/';
+    mockState.publicPath = '/nocobase/v2/';
   });
 
   afterEach(() => {
@@ -130,6 +134,25 @@ describe('plugin-auth client-v2 useRedirect', () => {
     result.current();
 
     expect(replace).toHaveBeenCalledWith('/nocobase/settings/workflow?tab=list#recent');
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('should use the current Settings root when no redirect param is present', () => {
+    mockState.basename = '/nocobase/apps/test-app';
+    mockState.publicPath = '/nocobase/';
+    mockState.settingsRouteRoot = '/settings/';
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const { result } = renderHook(() => useRedirect(), {
+      wrapper: wrap(['/settings/signin']),
+    });
+
+    result.current();
+
+    expect(replace).toHaveBeenCalledWith('/nocobase/apps/test-app/settings/');
     expect(navigateMock).not.toHaveBeenCalled();
   });
 

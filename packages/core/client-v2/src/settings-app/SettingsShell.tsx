@@ -10,6 +10,7 @@
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 import { ConfigProvider, Layout, theme as antdTheme, type ThemeConfig } from 'antd';
 import React, { type FC } from 'react';
+import { useLocation } from 'react-router-dom';
 import { HelpLite } from '../flow/admin-shell/admin-layout/HelpLite';
 import { NocoBaseLogo } from '../flow/admin-shell/admin-layout/NocoBaseLogo';
 import {
@@ -57,7 +58,17 @@ const embedContainerStyle: React.CSSProperties = {
 
 export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
+  const location = useLocation();
   const { token } = antdTheme.useToken();
+  const isAuthenticationRoute = (app.router.matchRoutes(location.pathname) || []).some((match) => {
+    const routeId = match.route.id;
+    return routeId === 'auth' || routeId?.startsWith('auth.') || routeId === '2fa' || routeId?.startsWith('2fa.');
+  });
+
+  if (isAuthenticationRoute) {
+    return <>{children}</>;
+  }
+
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||

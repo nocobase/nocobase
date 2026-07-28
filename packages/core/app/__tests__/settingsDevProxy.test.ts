@@ -13,9 +13,16 @@ import { createSettingsDevProxyOptions, isSettingsDevPath, rewriteSettingsDevPro
 describe('settings dev proxy', () => {
   it.each([
     ['/settings', true],
+    ['/settings/signin', true],
+    ['/settings/signup', true],
+    ['/settings/forgot-password', true],
+    ['/settings/reset-password?resetToken=test-token', true],
+    ['/settings/2fa?redirect=%2Fsettings%2Fworkflow', true],
     ['/settings/workflow/workflows/1?tab=nodes', true],
+    ['/apps/demo/settings/signin', true],
     ['/apps/demo/settings', true],
     ['/apps/demo/settings/workflow/workflows/1', true],
+    ['/_app/demo/settings/reset-password?resetToken=test-token', true],
     ['/_app/demo/settings/ai/knowledge-base/detail/k1', true],
     ['/nocobase/settings/assets/index.js', false],
     ['/admin/settings', false],
@@ -27,8 +34,12 @@ describe('settings dev proxy', () => {
 
   it.each([
     ['/nocobase/settings', true],
+    ['/nocobase/settings/signin', true],
+    ['/nocobase/settings/2fa?redirect=%2Fnocobase%2Fsettings', true],
     ['/nocobase/settings/workflow/workflows/1', true],
+    ['/nocobase/apps/demo/settings/forgot-password', true],
     ['/nocobase/apps/demo/settings', true],
+    ['/nocobase/_app/demo/settings/reset-password?resetToken=test-token', true],
     ['/nocobase/_app/demo/settings/ai/knowledge-base/detail/k1', true],
     ['/settings', false],
     ['/nocobase/admin/settings', false],
@@ -69,7 +80,9 @@ describe('settings dev proxy', () => {
       xfwd: true,
     });
     expect(options.context?.('/nocobase/settings/__rspack_hmr')).toBe(true);
+    expect(options.context?.('/nocobase/settings/signin')).toBe(true);
     expect(options.context?.('/nocobase/apps/demo/settings/workflow')).toBe(true);
+    expect(options.context?.('/nocobase/apps/demo/settings/2fa')).toBe(true);
     expect(options.context?.('/nocobase/_app/demo/settings/ai')).toBe(true);
     expect(options.context?.('/nocobase/admin/settings')).toBe(false);
     expect(options.pathRewrite?.('/nocobase/apps/demo/settings/workflow')).toBe('/nocobase/settings/workflow');

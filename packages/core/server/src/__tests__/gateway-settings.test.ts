@@ -67,8 +67,15 @@ describe('gateway standalone settings client', () => {
 
   it.each([
     '/nocobase/settings',
+    '/nocobase/settings/signin',
+    '/nocobase/settings/signup',
+    '/nocobase/settings/forgot-password',
+    '/nocobase/settings/reset-password?resetToken=test-token',
+    '/nocobase/settings/2fa?redirect=%2Fnocobase%2Fsettings%2Fworkflow',
     '/nocobase/settings/workflow',
+    '/nocobase/apps/analytics/settings/signin',
     '/nocobase/apps/analytics/settings/workflow/workflows/42',
+    '/nocobase/_app/analytics/settings/reset-password?resetToken=test-token',
     '/nocobase/_app/analytics/settings/ai/knowledge-base/detail/orders/documents',
   ])('serves the settings HTML for %s', async (requestPath) => {
     const response = await supertest.agent(gateway.getCallback()).get(requestPath);

@@ -16,6 +16,7 @@ const navigateMock = vi.fn();
 const mockApp = vi.hoisted(() => ({
   publicPath: '/v/',
   basename: '/v/apps/sub/',
+  settingsRouteRoot: '/admin/settings/',
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -35,6 +36,9 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
       router: {
         getBasename: () => mockApp.basename,
       },
+      pluginSettingsManager: {
+        getRoutePath: () => mockApp.settingsRouteRoot,
+      },
     }),
     usePlugin: () => ({
       authTypes: {
@@ -49,6 +53,7 @@ describe('SignInPage', () => {
     navigateMock.mockReset();
     mockApp.publicPath = '/v/';
     mockApp.basename = '/v/apps/sub/';
+    mockApp.settingsRouteRoot = '/admin/settings/';
   });
 
   it('normalizes empty redirect to the current v2 app admin path', () => {
@@ -75,5 +80,25 @@ describe('SignInPage', () => {
     );
 
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('normalizes empty redirect to the current standalone Settings root', () => {
+    mockApp.publicPath = '/nocobase/';
+    mockApp.basename = '/nocobase/apps/sub/';
+    mockApp.settingsRouteRoot = '/settings/';
+
+    render(
+      <MemoryRouter initialEntries={['/settings/signin?redirect=']}>
+        <SignInPage />
+      </MemoryRouter>,
+    );
+
+    expect(navigateMock).toHaveBeenCalledWith(
+      {
+        pathname: '/settings/signin',
+        search: '?redirect=%2Fnocobase%2Fapps%2Fsub%2Fsettings%2F',
+      },
+      { replace: true },
+    );
   });
 });

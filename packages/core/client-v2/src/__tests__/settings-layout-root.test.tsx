@@ -126,7 +126,7 @@ describe('standalone settings layout root', () => {
     expect(pluginManagerIndex).toBeLessThan(firstDividerIndex);
   });
 
-  it('uses document navigation to the existing v2 signin page when unauthenticated', async () => {
+  it('uses document navigation to the standalone Settings signin page when unauthenticated', async () => {
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -152,7 +152,7 @@ describe('standalone settings layout root', () => {
     render(<Root />);
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/v/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
+      expect(replace).toHaveBeenCalledWith('/settings/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
     });
   });
 });

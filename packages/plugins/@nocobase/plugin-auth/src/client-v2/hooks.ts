@@ -10,6 +10,7 @@
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { normalizeV2RedirectPath, useApp } from '@nocobase/client-v2';
+import { getDefaultAuthRedirectPath, isStandaloneSettingsApplication } from './authRoutePaths';
 
 function normalizePathname(pathname: string) {
   const value = `/${String(pathname || '/').trim()}`.replace(/\/{2,}/g, '/');
@@ -22,7 +23,11 @@ function getSettingsScope(pathname?: string) {
 }
 
 function isStandaloneSettingsRedirect(
-  app: { getPublicPath: () => string; router: { getBasename?: () => string | undefined } },
+  app: {
+    getPublicPath: () => string;
+    pluginSettingsManager: { getRoutePath: (name: string) => string };
+    router: { getBasename?: () => string | undefined };
+  },
   target: string,
 ) {
   if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {
@@ -30,8 +35,11 @@ function isStandaloneSettingsRedirect(
   }
   const basename = app.router.getBasename?.();
   const appScope = getSettingsScope(basename);
-  const publicPathSegments = normalizePathname(app.getPublicPath()).split('/');
-  publicPathSegments.pop();
+  const publicPath = normalizePathname(app.getPublicPath());
+  const publicPathSegments = publicPath.split('/');
+  if (!isStandaloneSettingsApplication(app)) {
+    publicPathSegments.pop();
+  }
   const rootPublicPath = normalizePathname(publicPathSegments.join('/') || '/').replace(/\/+$/, '');
   const settingsBasePath = `${rootPublicPath}${appScope}/settings` || '/settings';
   const targetPathname = normalizePathname(target.split(/[?#]/)[0]);
@@ -60,15 +68,19 @@ function stripV2Basename(target: string, basename?: string): string {
   return target;
 }
 
-export function useRedirect(next = '/admin') {
+export function useRedirect(next?: string) {
   const app = useApp();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   return useCallback(() => {
     const redirect = searchParams.get('redirect');
-    const target = redirect ? normalizeV2RedirectPath(app, redirect, next) : next;
-    if (redirect && isStandaloneSettingsRedirect(app, target)) {
+    const fallbackPath = next || getDefaultAuthRedirectPath(app);
+    const target =
+      redirect || (next === undefined && isStandaloneSettingsApplication(app))
+        ? normalizeV2RedirectPath(app, redirect, fallbackPath)
+        : fallbackPath;
+    if (isStandaloneSettingsRedirect(app, target)) {
       window.location.replace(target);
       return;
     }
