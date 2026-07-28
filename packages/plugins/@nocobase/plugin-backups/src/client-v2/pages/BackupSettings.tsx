@@ -13,6 +13,7 @@ import { App, Button, Card, Checkbox, Form, Input, InputNumber, Select, Space, S
 import React, { useMemo, useState } from 'react';
 import { CronProps as ReactJsCronProps, Cron as ReactCron } from 'react-js-cron';
 import 'react-js-cron/dist/styles.css';
+import { MAX_BACKUP_KEEP_COUNT, MIN_BACKUP_KEEP_COUNT } from '../../constants';
 import { useT } from '../locale';
 
 type BackupSettingsValues = {
@@ -40,6 +41,8 @@ type StorageRecord = {
 type ResourceResponse<T> = {
   data?: T;
 };
+
+type ErrorMessage = string | { message?: string };
 
 const DEFAULT_FORM_VALUES: BackupSettingsValues = {
   scheduled: false,
@@ -117,7 +120,7 @@ const label = (text: string) => <strong>{text}:</strong>;
 const BackupSettings = () => {
   const ctx = useFlowContext();
   const t = useT();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const [form] = Form.useForm<BackupSettingsValues>();
   const [submitting, setSubmitting] = useState(false);
   const scheduled = Form.useWatch('scheduled', form);
@@ -158,8 +161,7 @@ const BackupSettings = () => {
     [storagesRequest.data],
   );
 
-  const handleSubmit = async () => {
-    const formValues = await form.validateFields();
+  const handleSubmit = async (formValues: BackupSettingsValues) => {
     const values = {
       ...settingsRequest.data,
       ...formValues,
@@ -171,9 +173,21 @@ const BackupSettings = () => {
         url: 'backupSettings:update/1',
         method: 'post',
         data: values,
+        skipNotify: true,
       });
       settingsRequest.mutate(values);
       message.success(t('Saved successfully'));
+    } catch (error: unknown) {
+      const errors = ctx.api.toErrMessages(error) as ErrorMessage[];
+      notification.error({
+        message: errors.length
+          ? errors.map((item, index) => {
+              const errorMessage = typeof item === 'string' ? item : item.message;
+              return <div key={`${index}_${errorMessage}`}>{errorMessage || t('Save failed')}</div>;
+            })
+          : t('Save failed'),
+        role: 'alert',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -187,6 +201,7 @@ const BackupSettings = () => {
         layout="vertical"
         initialValues={DEFAULT_FORM_VALUES}
         disabled={settingsRequest.loading}
+        onFinish={handleSubmit}
       >
         <Form.Item label={label(t('Automatic backup'))}>
           <Space direction="vertical" style={{ width: '100%' }}>
@@ -208,9 +223,25 @@ const BackupSettings = () => {
           label={label(t('Maximum number of backups'))}
           extra={t('The maximum number of backups to keep, older backups are automatically deleted.')}
           required
-          rules={[{ required: true, message: t('The field value is required') }]}
+          rules={[
+            { required: true, message: t('The field value is required') },
+            {
+              type: 'integer',
+              min: MIN_BACKUP_KEEP_COUNT,
+              max: MAX_BACKUP_KEEP_COUNT,
+              message: t('Maximum number of backups must be an integer between {{min}} and {{max}}', {
+                min: MIN_BACKUP_KEEP_COUNT,
+                max: MAX_BACKUP_KEEP_COUNT,
+              }),
+            },
+          ]}
         >
-          <InputNumber min={1} style={{ width: '100%' }} />
+          <InputNumber
+            min={MIN_BACKUP_KEEP_COUNT}
+            max={MAX_BACKUP_KEEP_COUNT}
+            precision={0}
+            style={{ width: '100%' }}
+          />
         </Form.Item>
 
         <Form.Item name="storageId" label={label(t('Sync backups to cloud storage'))}>
@@ -230,7 +261,7 @@ const BackupSettings = () => {
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" loading={submitting} onClick={handleSubmit}>
+          <Button type="primary" htmlType="submit" loading={submitting}>
             {t('Submit')}
           </Button>
         </Form.Item>
