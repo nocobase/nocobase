@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { JoiValidationError } from '@nocobase/database';
 import type { MockServer } from '@nocobase/test/server';
 import { MAX_BACKUP_KEEP_COUNT } from '../../constants';
 import { SETTINGS } from '../utils';
@@ -24,32 +25,29 @@ describe('backup settings validation', () => {
   });
 
   it('accepts the maximum backup retention value', async () => {
-    const settings = await app.db.getRepository(SETTINGS).findOne();
-    const response = await app
-      .agent()
-      .resource(SETTINGS)
-      .update({
-        filterByTk: settings.get('id'),
-        values: { keep: MAX_BACKUP_KEEP_COUNT },
-      });
+    const repository = app.db.getRepository(SETTINGS);
+    const settings = await repository.findOne();
 
-    expect(response.status).toBe(200);
-    expect((await app.db.getRepository(SETTINGS).findOne()).get('keep')).toBe(MAX_BACKUP_KEEP_COUNT);
+    await repository.update({
+      filterByTk: settings.get('id'),
+      values: { keep: MAX_BACKUP_KEEP_COUNT },
+    });
+
+    expect((await repository.findOne()).get('keep')).toBe(MAX_BACKUP_KEEP_COUNT);
   });
 
   it.each([0, 1.5, MAX_BACKUP_KEEP_COUNT + 1])('rejects an invalid backup retention value: %s', async (keep) => {
-    const settings = await app.db.getRepository(SETTINGS).findOne();
+    const repository = app.db.getRepository(SETTINGS);
+    const settings = await repository.findOne();
     const originalKeep = settings.get('keep');
-    const response = await app
-      .agent()
-      .resource(SETTINGS)
-      .update({
+
+    await expect(
+      repository.update({
         filterByTk: settings.get('id'),
         values: { keep },
-      });
+      }),
+    ).rejects.toBeInstanceOf(JoiValidationError);
 
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toHaveLength(1);
-    expect((await app.db.getRepository(SETTINGS).findOne()).get('keep')).toBe(originalKeep);
+    expect((await repository.findOne()).get('keep')).toBe(originalKeep);
   });
 });
