@@ -108,66 +108,68 @@ export function getTopbarPluginSettingsItems(options: {
 }): NonNullable<MenuProps['items']> {
   const { settings, canManagePlugins, t } = options;
   const topLevelSettings = filterVisibleSettings(filterRenderableSettings(settings));
-  const pluginManagerSetting = topLevelSettings.find((item) => item.name === PLUGIN_MANAGER_SETTING_NAME);
+  const primarySettings = sortTopLevelSettings(
+    topLevelSettings
+      .filter(
+        (item) =>
+          ((item.sort || 0) < 0 || item.name === PLUGIN_MANAGER_SETTING_NAME) &&
+          (item.name !== PLUGIN_MANAGER_SETTING_NAME || canManagePlugins),
+      )
+      .map((item) => ({
+        ...item,
+        children: undefined,
+      })),
+  );
   const settingsByKey = new Map<string, PluginSettingsPageType>();
   const normalSettings = sortTopLevelSettings(
     topLevelSettings
-      .filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME)
+      .filter((item) => (item.sort || 0) >= 0 && item.name !== PLUGIN_MANAGER_SETTING_NAME)
       .map((item) => ({
         ...item,
         children: undefined,
       })),
   );
 
-  normalSettings.forEach((item) => {
+  [...primarySettings, ...normalSettings].forEach((item) => {
     settingsByKey.set(item.key, item);
   });
 
-  const orderedSettings = (getMenuItems(normalSettings) || []).map((item: any) => {
-    if (item?.type === 'divider') {
-      return item;
-    }
+  const buildMenuItems = (targetSettings: PluginSettingsPageType[]) =>
+    (getMenuItems(targetSettings) || []).map((item: any) => {
+      if (item?.type === 'divider') {
+        return item;
+      }
 
-    const matchedSetting = settingsByKey.get(String(item.key));
-    const targetPath = matchedSetting?.path;
-    const targetLink = matchedSetting?.link;
-    const targetTitle = matchedSetting?.title || item.title;
+      const matchedSetting = settingsByKey.get(String(item.key));
+      const targetPath = matchedSetting?.path;
+      const targetLink = matchedSetting?.link;
+      const isPluginManager = matchedSetting?.name === PLUGIN_MANAGER_SETTING_NAME;
+      const targetTitle = matchedSetting?.title || (isPluginManager ? t('Plugin manager') : item.title);
 
-    return {
-      key: item.key,
-      name: matchedSetting?.name,
-      path: matchedSetting?.path,
-      link: targetLink,
-      title: targetTitle,
-      icon: item.icon,
-      label: targetLink ? (
-        <TopbarExternalSettingsLabel title={targetTitle} link={targetLink} />
-      ) : (
-        <TopbarInternalSettingsLabel title={targetTitle} path={targetPath} />
-      ),
-    };
-  });
-
-  const items: NonNullable<MenuProps['items']> = [];
-
-  if (canManagePlugins && pluginManagerSetting) {
-    items.push({
-      key: pluginManagerSetting.key,
-      icon: pluginManagerSetting.icon || <ApiOutlined />,
-      label: (
-        <TopbarInternalSettingsLabel
-          title={pluginManagerSetting.title || t('Plugin manager')}
-          path={pluginManagerSetting.path}
-        />
-      ),
+      return {
+        key: item.key,
+        name: matchedSetting?.name,
+        path: matchedSetting?.path,
+        link: targetLink,
+        title: targetTitle,
+        icon: isPluginManager ? matchedSetting?.icon || <ApiOutlined /> : item.icon,
+        label: targetLink ? (
+          <TopbarExternalSettingsLabel title={targetTitle} link={targetLink} />
+        ) : (
+          <TopbarInternalSettingsLabel title={targetTitle} path={targetPath} />
+        ),
+      };
     });
-  }
 
-  if (canManagePlugins && orderedSettings.length) {
+  const primaryItems = buildMenuItems(primarySettings);
+  const normalItems = buildMenuItems(normalSettings);
+  const items: NonNullable<MenuProps['items']> = [...primaryItems];
+
+  if (primaryItems.length && normalItems.length) {
     items.push({ type: 'divider' });
   }
 
-  items.push(...orderedSettings);
+  items.push(...normalItems);
 
   return items;
 }

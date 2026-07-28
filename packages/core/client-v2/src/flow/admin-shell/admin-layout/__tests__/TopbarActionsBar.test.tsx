@@ -136,6 +136,16 @@ describe('TopbarActionsBar helpers', () => {
           title: 'Plugin manager',
           path: '/admin/settings/plugin-manager',
           icon: null,
+          sort: -200,
+          componentLoader: async () => null,
+        },
+        {
+          key: 'multi-portal',
+          name: 'multi-portal',
+          title: 'Portal manager',
+          path: '/admin/settings/multi-portal',
+          icon: null,
+          sort: -300,
           componentLoader: async () => null,
         },
         {
@@ -159,13 +169,14 @@ describe('TopbarActionsBar helpers', () => {
     });
 
     expect((items as any[]).map((item) => item.type || item.key)).toEqual([
+      'multi-portal',
       'plugin-manager',
       'divider',
       'system-settings',
       'divider',
       'security',
     ]);
-    expect((items as any[])[2]).toMatchObject({
+    expect((items as any[]).find((item) => item.key === 'system-settings')).toMatchObject({
       key: 'system-settings',
       name: 'system-settings',
       path: '/admin/settings/system-settings',
