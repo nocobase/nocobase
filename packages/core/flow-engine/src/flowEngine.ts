@@ -15,7 +15,6 @@ import { FlowExecutor } from './executor/FlowExecutor';
 import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
-import { FORK_MODEL_MASTER } from './models/forkFlowModelSymbols';
 import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import { Emitter } from './emitter';
@@ -42,19 +41,6 @@ import type {
 import { isInheritedFrom } from './utils';
 
 const getFlowEngineLoggerLevel = () => (process.env.NODE_ENV === 'production' ? 'warn' : 'trace');
-
-type ForkPersistenceModel = FlowModel & {
-  isFork?: boolean;
-  [FORK_MODEL_MASTER]?: () => FlowModel;
-};
-
-function getPersistentModel(model: FlowModel): FlowModel {
-  const possibleFork = model as ForkPersistenceModel;
-  if (possibleFork.isFork === true && typeof possibleFork[FORK_MODEL_MASTER] === 'function') {
-    return possibleFork[FORK_MODEL_MASTER]();
-  }
-  return model;
-}
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -1484,9 +1470,8 @@ export class FlowEngine {
   async saveModel<T extends FlowModel = FlowModel>(model: T, options?: { onlyStepParams?: boolean }): Promise<any> {
     if (!this.ensureModelRepository()) return;
 
-    const persistentModel = getPersistentModel(model);
-    const modelUid = persistentModel.uid;
-    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(persistentModel, {
+    const modelUid = model.uid;
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(model, {
       force: !!options?.onlyStepParams,
     });
 
@@ -1497,7 +1482,7 @@ export class FlowEngine {
     }
 
     // 创建保存 Promise 并添加到追踪 Map 中
-    const savePromise = this._performModelSave(persistentModel, options);
+    const savePromise = this._performModelSave(model, options);
     this._savingModels.set(modelUid, savePromise);
 
     try {

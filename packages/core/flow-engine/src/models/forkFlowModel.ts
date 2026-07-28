@@ -11,8 +11,8 @@ import { action, define, observable } from '@formily/reactive';
 import { FlowForkModelContext, FlowModelContext } from '../flowContext';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
+import { FlowEngine } from '../flowEngine';
 import { uid } from 'uid/secure';
-import { FORK_MODEL_MASTER } from './forkFlowModelSymbols';
 
 /**
  * ForkFlowModel 作为 FlowModel 的独立实例：
@@ -212,10 +212,6 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
    */
   clearProps() {
     return (this.localProps = {});
-  }
-
-  [FORK_MODEL_MASTER](): TMaster {
-    return this.master;
   }
 
   /**

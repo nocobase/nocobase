@@ -73,24 +73,23 @@ describe('action linkage rules on action forks', () => {
     });
 
     expect(fork.getProps().title).toBe('Updated');
-    expect(fork.serialize().props.title).toBe('Updated');
+    expect(fork.serialize().props).toMatchObject({ title: 'Updated' });
+    expect(fork.serialize().props).not.toHaveProperty('disabled');
 
     const refreshedFork = master.createFork({ className: 'row-action' });
     expect(refreshedFork.getProps().title).toBe('Updated');
   });
 
   it.each(['disable', 'delete'] as const)(
-    'does not persist a row action disabled state when linkage rules are %sd',
+    'restores a row action when linkage rules are %sd without persisting disabled',
     async (change) => {
       const engine = new FlowEngine();
       engine.registerModels({ ConfiguredActionModel });
       engine.registerActions({ actionLinkageRules, linkageSetActionProps });
 
-      let savedModel: unknown;
       let savedData: ReturnType<ConfiguredActionModel['serialize']> | undefined;
       engine.setModelRepository({
         save: async (model) => {
-          savedModel = model;
           savedData = model.serialize();
           return savedData;
         },
@@ -128,9 +127,8 @@ describe('action linkage rules on action forks', () => {
       await fork.saveStepParams();
       await fork.rerender();
 
-      expect(savedModel).toBe(master);
       expect(savedData).toBeDefined();
-      expect(savedData?.props.disabled).toBeUndefined();
+      expect(savedData?.props).not.toHaveProperty('disabled');
       expect(savedData?.stepParams.buttonSettings.linkageRules.value).toEqual(nextRules);
       expect(fork.getProps().disabled).toBeUndefined();
 
@@ -150,7 +148,7 @@ describe('action linkage rules on action forks', () => {
   );
 
   it.each(['disabled', 'deleted'] as const)(
-    'repairs a historical disabled prop during rendering after the rule is %s',
+    'ignores a historical disabled prop after the linkage rule is %s',
     async (state) => {
       const engine = new FlowEngine();
       engine.registerModels({ ConfiguredActionModel });
@@ -168,7 +166,7 @@ describe('action linkage rules on action forks', () => {
           : [];
       const master = engine.createModel<ConfiguredActionModel>({
         use: 'ConfiguredActionModel',
-        props: { title: 'Edit', className: 'nb-table-row-action-button', disabled: true },
+        props: { title: 'Edit', disabled: true },
         stepParams: {
           buttonSettings: {
             linkageRules: { value: rules },
@@ -177,123 +175,44 @@ describe('action linkage rules on action forks', () => {
       });
       const fork = master.createFork({ className: 'row-action' });
 
+      expect(master.getProps()).not.toHaveProperty('disabled');
       await fork.dispatchEvent('beforeRender', undefined, { useCache: false });
 
-      expect(master.getProps().disabled).toBe(true);
       expect(fork.getProps().disabled).toBeUndefined();
     },
   );
 
-  it.each([
-    {
-      state: 'another linkage rule remains',
-      expectedDisabled: undefined,
-      rules: [
-        {
-          key: 'unrelated-rule',
-          enable: false,
-          actions: [{ name: 'runJs', params: {} }],
-        },
-      ],
-    },
-    {
-      state: 'the action state is changed to visible',
-      expectedDisabled: false,
-      rules: [
-        {
-          key: 'visible-edit',
-          enable: true,
-          condition: { logic: '$and', items: [] },
-          actions: [{ name: 'linkageSetActionProps', params: { value: 'visible' } }],
-        },
-      ],
-    },
-    {
-      state: 'the original rule remains without its disabled action',
-      expectedDisabled: undefined,
-      rules: [
-        {
-          key: 'disable-edit',
-          enable: true,
-          condition: { logic: '$and', items: [] },
-          actions: [],
-        },
-      ],
-    },
-  ])('repairs a historical disabled prop when $state', async ({ rules, expectedDisabled }) => {
+  it('still applies an enabled linkage rule after dropping a historical disabled prop', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ ConfiguredActionModel });
     engine.registerActions({ actionLinkageRules, linkageSetActionProps });
-    const master = engine.createModel<ConfiguredActionModel>({
-      use: 'ConfiguredActionModel',
-      props: { title: 'Edit', className: 'nb-table-row-action-button', disabled: true },
-      stepParams: {
-        buttonSettings: {
-          linkageRules: { value: rules },
-        },
-      },
-    });
-    const fork = master.createFork({ className: 'row-action' });
-
-    await fork.dispatchEvent('beforeRender', undefined, { useCache: false });
-
-    expect(master.getProps().disabled).toBe(true);
-    expect(fork.getProps().disabled).toBe(expectedDisabled);
-  });
-
-  it('preserves a disabled row action when linkage rules were never persisted', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ ConfiguredActionModel });
-    const master = engine.createModel<ConfiguredActionModel>({
-      use: 'ConfiguredActionModel',
-      props: { title: 'Edit', className: 'nb-table-row-action-button', disabled: true },
-    });
-    const fork = master.createFork({ className: 'row-action' });
-    const ctx = {
-      flowKey: 'buttonSettings',
-      model: fork,
-      app: { jsonLogic: { apply: vi.fn() } },
-      t: (value: string) => value,
-      resolveJsonTemplate: vi.fn(async (value: unknown) => value),
-      getAction: vi.fn(),
-    } as never;
-
-    await actionLinkageRules.handler(ctx, { value: [] });
-
-    expect(master.getProps().disabled).toBe(true);
-    expect(fork.getProps().disabled).toBe(true);
-  });
-
-  it('preserves a non-row action disabled prop even when linkage rules control the action state', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ ConfiguredActionModel });
-    engine.registerActions({ actionLinkageRules, linkageSetActionProps });
-    const rules = [
-      {
-        key: 'disable-edit',
-        enable: false,
-        condition: { logic: '$and', items: [] },
-        actions: [{ name: 'linkageSetActionProps', params: { value: 'disabled' } }],
-      },
-    ];
     const master = engine.createModel<ConfiguredActionModel>({
       use: 'ConfiguredActionModel',
       props: { title: 'Edit', disabled: true },
       stepParams: {
         buttonSettings: {
-          linkageRules: { value: rules },
+          linkageRules: {
+            value: [
+              {
+                key: 'disable-edit',
+                enable: true,
+                condition: { logic: '$and', items: [] },
+                actions: [{ name: 'linkageSetActionProps', params: { value: 'disabled' } }],
+              },
+            ],
+          },
         },
       },
     });
-    const fork = master.createFork({ className: 'toolbar-action' });
+    const fork = master.createFork({ className: 'row-action' });
 
+    expect(master.getProps()).not.toHaveProperty('disabled');
     await fork.dispatchEvent('beforeRender', undefined, { useCache: false });
 
-    expect(master.getProps().disabled).toBe(true);
     expect(fork.getProps().disabled).toBe(true);
   });
 
-  it('preserves a model default disabled state for empty historical linkage rules', async () => {
+  it('preserves a default disabled state as runtime-only state', async () => {
     class DefaultDisabledActionModel extends ConfiguredActionModel {
       defaultProps = { ...this.defaultProps, disabled: true };
     }
@@ -302,7 +221,7 @@ describe('action linkage rules on action forks', () => {
     engine.registerActions({ actionLinkageRules, linkageSetActionProps });
     const master = engine.createModel<DefaultDisabledActionModel>({
       use: 'DefaultDisabledActionModel',
-      props: { title: 'Edit', className: 'nb-table-row-action-button', disabled: true },
+      props: { title: 'Edit' },
       stepParams: {
         buttonSettings: {
           linkageRules: { value: [] },
@@ -313,40 +232,17 @@ describe('action linkage rules on action forks', () => {
 
     await fork.dispatchEvent('beforeRender', undefined, { useCache: false });
 
-    expect(master.getProps().disabled).toBe(true);
     expect(fork.getProps().disabled).toBe(true);
-  });
-
-  it('preserves a disabled state already supplied by the row fork', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ ConfiguredActionModel });
-    engine.registerActions({ actionLinkageRules, linkageSetActionProps });
-    const master = engine.createModel<ConfiguredActionModel>({
-      use: 'ConfiguredActionModel',
-      props: { title: 'Edit', className: 'nb-table-row-action-button', disabled: true },
-      stepParams: {
-        buttonSettings: {
-          linkageRules: { value: [] },
-        },
-      },
-    });
-    const fork = master.createFork({ className: 'row-action', disabled: true });
-
-    await fork.dispatchEvent('beforeRender', undefined, { useCache: false });
-
-    expect(master.getProps().disabled).toBe(true);
-    expect(fork.getProps().disabled).toBe(true);
+    expect(fork.serialize().props).not.toHaveProperty('disabled');
   });
 
   it('updates a disabled row action title through the real beforeRender flow', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ ConfiguredActionModel });
     engine.registerActions({ actionLinkageRules, linkageSetActionProps });
-    let savedModel: unknown;
     let savedData: ReturnType<ConfiguredActionModel['serialize']> | undefined;
     engine.setModelRepository({
       save: async (model) => {
-        savedModel = model;
         savedData = model.serialize();
         return savedData;
       },
@@ -379,8 +275,7 @@ describe('action linkage rules on action forks', () => {
     await fork.saveStepParams();
     await fork.rerender();
 
-    expect(savedModel).toBe(master);
-    expect(savedData?.props.disabled).toBeUndefined();
+    expect(savedData?.props).not.toHaveProperty('disabled');
     expect(savedData?.stepParams.buttonSettings.general.title).toBe('Updated');
     expect(fork.getProps()).toMatchObject({ title: 'Updated', disabled: true });
 

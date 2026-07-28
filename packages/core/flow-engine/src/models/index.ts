@@ -9,7 +9,6 @@
 
 export * from './flowModel';
 export * from './forkFlowModel';
-export * from './forkFlowModelSymbols';
 
 export * from './CollectionFieldModel';
 export * from './DisplayItemModel';
