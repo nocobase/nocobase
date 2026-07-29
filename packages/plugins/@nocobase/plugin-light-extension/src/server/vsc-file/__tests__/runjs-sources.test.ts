@@ -1005,6 +1005,76 @@ describe('runJSSources resource', () => {
     expect(latest.body.data.files).toEqual(opened.body.data.files);
   });
 
+  it('rolls back source and owner runtime when final commit metadata persistence fails', async () => {
+    const locator = createLocator('fm_metadata_rollback');
+    const users = app.db.getRepository('users');
+    const initialFingerprint = 'owner:fm_metadata_rollback:v1';
+    const nextFingerprint = 'owner:fm_metadata_rollback:v2';
+    await users.update({ filterByTk: currentUserId, values: { nickname: initialFingerprint } });
+
+    const readFingerprint = async (ctx: RunJSSourceAdapterContext) => {
+      const user = await users.findOne({ filterByTk: currentUserId, transaction: ctx.transaction });
+      return String(user.get('nickname'));
+    };
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: ({ ctx }) => readFingerprint(ctx),
+      readLegacy: async ({ ctx }) => ({
+        label: 'JS block / Metadata rollback',
+        code: 'ctx.render("before metadata failure");',
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint: await readFingerprint(ctx),
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: async ({ ctx }) => {
+        await users.update({
+          filterByTk: currentUserId,
+          values: { nickname: nextFingerprint },
+          transaction: ctx.transaction,
+        });
+        return { ownerFingerprint: nextFingerprint };
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const indexFile = opened.body.data.files.find((file: { path: string }) => file.path === 'src/client/index.tsx');
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    const updateCommit = vi
+      .spyOn(app.db.getRepository('vscFileCommits'), 'update')
+      .mockRejectedValueOnce(new Error('forced commit metadata failure'));
+
+    const response = await agent.resource('runJSSources').saveChanges({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Roll back failed commit metadata persistence',
+        changes: [
+          {
+            operation: 'upsert',
+            path: indexFile.path,
+            expectedBlobHash: indexFile.blobHash,
+            content: 'ctx.render("after metadata failure");',
+          },
+        ],
+      },
+    });
+    updateCommit.mockRestore();
+
+    expect(response.status).toBe(500);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+    const latest = await agent.resource('runJSSources').openLatest({ values: { locator } });
+    expect(latest.body.data.repository.headCommitId).toBe(opened.body.data.repository.headCommitId);
+    expect(latest.body.data.files).toEqual(opened.body.data.files);
+    const user = await users.findOne({ filterByTk: currentUserId });
+    expect(user.get('nickname')).toBe(initialFingerprint);
+  });
+
   it('keeps incremental permission failures free of repository and runtime side effects', async () => {
     const locator = createLocator('fm_incremental_permission');
     let canWrite = true;
