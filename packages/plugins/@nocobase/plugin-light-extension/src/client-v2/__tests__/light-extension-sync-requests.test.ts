@@ -51,10 +51,15 @@ describe('light-extension sync requests', () => {
     [
       'createFromGit',
       {
-        name: 'sales',
+        name: 'acceptance-git-196',
         provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: '', subdirectory: 'sales' },
-        authRef: '{{ $env.GITHUB_SYNC }}',
+        config: {
+          owner: 'gchust',
+          repository: 'nocobase-light-extension',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'ssh',
+        },
       },
     ],
   ] as const)('calls only the facade action for %s', async (action, input) => {

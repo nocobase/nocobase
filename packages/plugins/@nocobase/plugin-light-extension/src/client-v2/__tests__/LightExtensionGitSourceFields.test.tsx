@@ -54,7 +54,7 @@ function renderFields(onValidSourceChange = vi.fn()) {
 }
 
 describe('parseGitHubRepositoryLocator', () => {
-  it('accepts owner/repository and strict GitHub HTTPS locators', () => {
+  it('accepts owner/repository, strict GitHub HTTPS locators, and GitHub SSH locators', () => {
     expect(parseGitHubRepositoryLocator('nocobase/example')).toEqual({
       valid: true,
       owner: 'nocobase',
@@ -65,11 +65,17 @@ describe('parseGitHubRepositoryLocator', () => {
       owner: 'nocobase',
       repository: 'example',
     });
+    expect(parseGitHubRepositoryLocator('git@github.com:gchust/nocobase-light-extension.git')).toEqual({
+      valid: true,
+      owner: 'gchust',
+      repository: 'nocobase-light-extension',
+      transport: 'ssh',
+    });
   });
 
-  it('rejects non-GitHub, SSH, query-bearing, and nested locators', () => {
+  it('rejects non-GitHub, non-GitHub SSH, query-bearing, and nested locators', () => {
     expect(parseGitHubRepositoryLocator('https://example.com/nocobase/example').valid).toBe(false);
-    expect(parseGitHubRepositoryLocator('git@github.com:nocobase/example.git').valid).toBe(false);
+    expect(parseGitHubRepositoryLocator('git@example.com:nocobase/example.git').valid).toBe(false);
     expect(parseGitHubRepositoryLocator('https://github.com/nocobase/example?ref=main').valid).toBe(false);
     expect(parseGitHubRepositoryLocator('nocobase/group/example').valid).toBe(false);
   });

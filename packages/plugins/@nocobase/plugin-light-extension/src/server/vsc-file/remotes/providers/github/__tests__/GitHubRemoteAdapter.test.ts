@@ -9,13 +9,18 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import type { VscRemoteSnapshot, VscRemoteSnapshotFile } from '../../../../../../shared/vsc-file/remote-sync-types';
+import type {
+  VscGitHubRemoteConfig,
+  VscRemoteSnapshot,
+  VscRemoteSnapshotFile,
+} from '../../../../../../shared/vsc-file/remote-sync-types';
 import { RemoteSyncError, type RemoteSyncAdapterTarget } from '../../../RemoteSyncAdapter';
 import { computeRemoteSnapshotContentHash } from '../../../snapshot';
+import type { GitHubGitTransport } from '../GitHubGitTransport';
 import { GitHubRemoteAdapter } from '../GitHubRemoteAdapter';
 import type { GitHubApi, GitHubBlob, GitHubTree, GitHubTreeEntry } from '../githubTypes';
 
-const baseConfig = {
+const baseConfig: VscGitHubRemoteConfig = {
   owner: 'nocobase',
   repository: 'extensions',
   branch: 'main',
@@ -86,6 +91,7 @@ function createAdapter(
   api: GitHubApi,
   credential: string | null = null,
   limits?: ConstructorParameters<typeof GitHubRemoteAdapter>[0]['limits'],
+  gitTransport?: Pick<GitHubGitTransport, 'probe' | 'fetchSnapshot'>,
 ) {
   return new GitHubRemoteAdapter({
     api,
@@ -100,6 +106,7 @@ function createAdapter(
       }),
     },
     limits,
+    gitTransport,
   });
 }
 
@@ -183,6 +190,33 @@ describe('GitHubRemoteAdapter config and probe', () => {
 });
 
 describe('GitHubRemoteAdapter fetch', () => {
+  it('uses Git SSH instead of the GitHub API for an SSH locator', async () => {
+    const api = createApi();
+    const snapshot = {
+      revision: 'ssh-commit',
+      contentHash: computeRemoteSnapshotContentHash([{ path: 'index.ts', content: 'export default {}\n' }]),
+      files: [{ path: 'index.ts', content: 'export default {}\n' }],
+      metadata: { branch: 'main', transport: 'ssh' },
+    };
+    const gitTransport = {
+      probe: vi.fn(async () => ({ revision: 'ssh-commit', metadata: snapshot.metadata })),
+      fetchSnapshot: vi.fn(async () => snapshot),
+    };
+    const adapter = createAdapter(api, null, undefined, gitTransport);
+    const target = createTarget({ transport: 'ssh' });
+
+    await expect(adapter.probe(target)).resolves.toEqual({
+      revision: 'ssh-commit',
+      metadata: snapshot.metadata,
+    });
+    await expect(adapter.fetchSnapshot(target)).resolves.toEqual(snapshot);
+
+    expect(gitTransport.probe).toHaveBeenCalledWith(expect.objectContaining({ transport: 'ssh' }));
+    expect(gitTransport.fetchSnapshot).toHaveBeenCalledWith(expect.objectContaining({ transport: 'ssh' }), undefined);
+    expect(api.getRepository).not.toHaveBeenCalled();
+    expect(api.getRef).not.toHaveBeenCalled();
+  });
+
   it('fetches an explicitly pinned commit without rereading the branch Head', async () => {
     const api = createApi();
     const adapter = createAdapter(api);

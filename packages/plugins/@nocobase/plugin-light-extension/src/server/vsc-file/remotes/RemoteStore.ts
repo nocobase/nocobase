@@ -369,7 +369,8 @@ function sameConfig(left: VscRemoteNormalizedConfig, right: VscRemoteNormalizedC
     left.owner === right.owner &&
     left.repository === right.repository &&
     left.branch === right.branch &&
-    left.subdirectory === right.subdirectory
+    left.subdirectory === right.subdirectory &&
+    left.transport === right.transport
   );
 }
 

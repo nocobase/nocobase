@@ -26,6 +26,7 @@ import {
 import type { RemoteCredentialMode, RemoteCredentialResolver } from '../../security/RemoteCredentialResolver';
 import { computeRemoteSnapshotContentHash } from '../../snapshot';
 import { GitHubApiClient } from './GitHubApiClient';
+import type { GitHubGitTransport } from './GitHubGitTransport';
 import {
   addGitHubSubdirectory,
   isPathInSubdirectory,
@@ -58,6 +59,7 @@ interface CredentialResolver {
 export interface GitHubRemoteAdapterOptions {
   credentialResolver: Pick<RemoteCredentialResolver, 'resolve'> | CredentialResolver;
   api?: GitHubApi;
+  gitTransport?: Pick<GitHubGitTransport, 'probe' | 'fetchSnapshot'>;
   limits?: Partial<GitHubSnapshotLimits>;
 }
 
@@ -96,11 +98,14 @@ export class GitHubRemoteAdapter implements RemoteSyncAdapter {
 
   private readonly api: GitHubApi;
 
+  private readonly gitTransport?: Pick<GitHubGitTransport, 'probe' | 'fetchSnapshot'>;
+
   private readonly limits: GitHubSnapshotLimits;
 
   constructor(options: GitHubRemoteAdapterOptions) {
     this.credentialResolver = options.credentialResolver;
     this.api = options.api || new GitHubApiClient();
+    this.gitTransport = options.gitTransport;
     this.limits = normalizeLimits(options.limits);
   }
 
@@ -108,7 +113,7 @@ export class GitHubRemoteAdapter implements RemoteSyncAdapter {
     if (!isRecord(input)) {
       throw invalidConfig('GitHub remote config must be an object', 'invalid-config-shape');
     }
-    const allowedKeys = new Set(['owner', 'repository', 'branch', 'subdirectory']);
+    const allowedKeys = new Set(['owner', 'repository', 'branch', 'subdirectory', 'transport']);
     const keys = Object.keys(input);
     if (
       !Object.prototype.hasOwnProperty.call(input, 'owner') ||
@@ -118,15 +123,23 @@ export class GitHubRemoteAdapter implements RemoteSyncAdapter {
     ) {
       throw invalidConfig('GitHub remote config has missing or unknown fields', 'invalid-config-shape');
     }
+    if (input.transport !== undefined && input.transport !== 'ssh') {
+      throw invalidConfig('GitHub transport is invalid', 'invalid-transport');
+    }
     return {
       owner: normalizeGitHubOwner(input.owner),
       repository: normalizeGitHubRepository(input.repository),
       branch: normalizeGitHubBranch(input.branch),
       subdirectory: normalizeGitHubSubdirectory(input.subdirectory),
+      ...(input.transport === 'ssh' ? { transport: input.transport } : {}),
     };
   }
 
   async probe(target: RemoteSyncAdapterTarget): Promise<RemoteSyncProbeResult> {
+    const config = this.normalizeConfig(target.config);
+    if (config.transport === 'ssh') {
+      return this.requireGitTransport().probe(config);
+    }
     const context = await this.createContext(target, 'optional');
     const reference = await this.api.getRef(
       context.config.owner,
@@ -141,6 +154,10 @@ export class GitHubRemoteAdapter implements RemoteSyncAdapter {
   }
 
   async fetchSnapshot(target: RemoteSyncAdapterTarget, expectedRevision?: string | null): Promise<VscRemoteSnapshot> {
+    const config = this.normalizeConfig(target.config);
+    if (config.transport === 'ssh') {
+      return this.requireGitTransport().fetchSnapshot(config, expectedRevision);
+    }
     const context = await this.createContext(target, 'optional');
     if (typeof expectedRevision === 'string') {
       return (await this.fetchRevision(context, expectedRevision)).snapshot;
@@ -354,6 +371,15 @@ export class GitHubRemoteAdapter implements RemoteSyncAdapter {
     }
     const branch = config.branch || normalizeGitHubBranch(normalizedRepository.default_branch);
     return { config, branch, credential, repository: normalizedRepository };
+  }
+
+  private requireGitTransport(): Pick<GitHubGitTransport, 'probe' | 'fetchSnapshot'> {
+    if (!this.gitTransport) {
+      throw new RemoteSyncError('REMOTE_UNAVAILABLE', 'Git SSH transport is unavailable', {
+        details: { provider: this.provider, reasonCode: 'git-transport-unavailable' },
+      });
+    }
+    return this.gitTransport;
   }
 }
 

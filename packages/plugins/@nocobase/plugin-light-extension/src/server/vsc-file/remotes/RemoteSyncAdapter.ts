@@ -122,7 +122,7 @@ function isGitHubConfigObject(input: unknown): input is Record<string, unknown> 
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return false;
   }
-  const keys = ['owner', 'repository', 'branch', 'subdirectory'] as const;
+  const keys = ['owner', 'repository', 'branch', 'subdirectory', 'transport'] as const;
   const inputKeys = Object.keys(input);
   return (
     ['owner', 'repository', 'branch'].every((key) => inputKeys.includes(key)) &&
@@ -164,11 +164,17 @@ export function normalizeGitHubRemoteConfig(input: unknown): VscGitHubRemoteConf
     }
     subdirectory = input.subdirectory || null;
   }
+  if (input.transport !== undefined && input.transport !== 'ssh') {
+    throw new RemoteSyncError('CONFIG_INVALID', 'GitHub transport is invalid', {
+      details: { provider: 'github', reasonCode: 'invalid-transport' },
+    });
+  }
 
   return {
     owner: requireRemoteSegment(input.owner, 'owner'),
     repository: requireRemoteSegment(input.repository, 'repository'),
     branch: requireRemoteBranch(input.branch),
     subdirectory,
+    ...(input.transport === 'ssh' ? { transport: input.transport } : {}),
   };
 }

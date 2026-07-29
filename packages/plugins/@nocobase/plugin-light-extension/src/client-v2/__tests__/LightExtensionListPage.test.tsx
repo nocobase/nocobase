@@ -333,32 +333,42 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByText('Repository imported and compiled')).toBeInTheDocument();
   });
 
-  it('creates from GitHub with an exclusive safe source payload and updates the URL', async () => {
+  it('enables creation for a GitHub SSH locator and submits an exclusive safe source payload', async () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub smoke');
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'Acceptance Git 196');
     await userEvent.click(within(dialog).getByText('GitHub source'));
-    await userEvent.type(within(dialog).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+    const createButton = within(dialog).getByRole('button', { name: 'Create' });
+    expect(createButton).toBeDisabled();
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'GitHub repository' }),
+      'git@github.com:gchust/nocobase-light-extension.git',
+    );
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
+    await userEvent.tab();
+    expect(createButton).toBeEnabled();
+    await userEvent.click(createButton);
 
     await waitFor(() => expect(mocks.sync.createFromGit).toHaveBeenCalledTimes(1));
     expect(mocks.sync.createFromGit).toHaveBeenCalledWith({
       name: expect.stringMatching(/^l_[a-z0-9]+$/),
-      title: 'GitHub smoke',
+      title: 'Acceptance Git 196',
       description: null,
       provider: 'github',
       config: {
-        owner: 'nocobase',
-        repository: 'example',
-        branch: '',
+        owner: 'gchust',
+        repository: 'nocobase-light-extension',
+        branch: 'main',
         subdirectory: null,
+        transport: 'ssh',
       },
     });
     expect(mocks.sync.createFromGit.mock.calls[0][0]).not.toHaveProperty('zipBase64');
     expect(mocks.api.createRepo).not.toHaveBeenCalled();
     expect(await screen.findByText('GitHub smoke')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
     expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_github');
   });
 

@@ -9,7 +9,14 @@
 
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { FlowContextProvider, FlowEngine, FlowModel, FlowRuntimeContext, FlowStepContext } from '@nocobase/flow-engine';
+import {
+  createViewScopedEngine,
+  FlowContextProvider,
+  FlowEngine,
+  FlowModel,
+  FlowRuntimeContext,
+  FlowStepContext,
+} from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSEditorField, RunJSEditorRegistry, type RunJSSourceLocator } from '../runjs-studio';
@@ -346,6 +353,88 @@ describe('RunJSEditorField FlowModel integration', () => {
     });
     expect(rerender).toHaveBeenCalledTimes(1);
     expect(saveStepParams).not.toHaveBeenCalled();
+  });
+
+  it('syncs a server-persisted source transition to the page model behind a settings view', async () => {
+    const rootEngine = new FlowEngine();
+    const settingsEngine = createViewScopedEngine(rootEngine);
+    const initialValue = {
+      code: 'ctx.render("remote");',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'ler_1',
+        entryId: 'lee_1',
+        kind: 'js-block',
+      },
+      sourceMode: 'light-extension',
+      version: 'v2',
+    };
+    const pageModel = rootEngine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_scoped_move_inline',
+      stepParams: { jsSettings: { runJs: initialValue } },
+    });
+    const settingsModel = settingsEngine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: pageModel.uid,
+      stepParams: { jsSettings: { runJs: initialValue } },
+    });
+    const flowContext = new FlowRuntimeContext(settingsModel, 'jsSettings', 'settings');
+    flowContext.defineMethod('getStepFormValues', () => initialValue);
+    const pageRerender = vi.spyOn(pageModel, 'rerender').mockResolvedValue(undefined);
+    const settingsRerender = vi.spyOn(settingsModel, 'rerender').mockResolvedValue(undefined);
+    let persistedChange: Promise<void> | undefined;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'scoped-move-inline-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => (
+        <button
+          type="button"
+          onClick={() => {
+            persistedChange = Promise.resolve(
+              props.onPersistedChange?.({
+                code: 'ctx.render("inline");',
+                sourceMode: 'inline',
+                sourceBinding: undefined,
+                sourceRef: {
+                  type: 'vsc-file',
+                  repoId: 'runjs_repo_1',
+                  commitId: 'runjs_commit_1',
+                  entry: 'src/client/index.tsx',
+                },
+                version: 'v2',
+              }),
+            );
+          }}
+        >
+          move inline
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: initialValue, path: `${settingsModel.uid}_jsSettings_runJs` }}>
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value={initialValue.code} />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'move inline' }));
+    await persistedChange;
+
+    expect(pageModel.getStepParams('jsSettings', 'runJs')).toMatchObject({
+      code: 'ctx.render("inline");',
+      sourceMode: 'inline',
+      sourceRef: {
+        repoId: 'runjs_repo_1',
+        commitId: 'runjs_commit_1',
+      },
+    });
+    expect(pageModel.getStepParams('jsSettings', 'runJs').sourceBinding).toBeUndefined();
+    expect(pageRerender).toHaveBeenCalledTimes(1);
+    expect(settingsRerender).toHaveBeenCalledTimes(1);
   });
 
   it('syncs a server-persisted external binding into FlowModel step params', async () => {

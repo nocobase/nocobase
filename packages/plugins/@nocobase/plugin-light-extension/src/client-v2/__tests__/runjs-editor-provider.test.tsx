@@ -27,6 +27,10 @@ import { getOrCreateLightExtensionRuntimeCache } from '../resolvers/LightExtensi
 import { getLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 
+const workspacePageMockState = vi.hoisted(() => ({
+  moveToInlineCompleted: false,
+}));
+
 vi.mock('../pages/LightExtensionWorkspacePage', () => {
   const MockLightExtensionWorkspacePage = ({
     repoId,
@@ -78,6 +82,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
           ],
           version: 'v2',
         });
+        workspacePageMockState.moveToInlineCompleted = true;
       } catch {
         // The real workspace reports copyback failures without closing the editor.
       }
@@ -379,7 +384,13 @@ describe('RunJSLightExtensionEditorProvider', () => {
 
   it('moves a JS Page workspace back to inline once while preserving settings and the new source snapshot', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
-    const onPersistedChange = vi.fn();
+    let resolveHostRefresh: (() => void) | undefined;
+    const onPersistedChange = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveHostRefresh = resolve;
+        }),
+    );
     const onClose = vi.fn();
     const sourceRef = {
       type: 'vsc-file' as const,
@@ -446,6 +457,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       },
     };
 
+    workspacePageMockState.moveToInlineCompleted = false;
     render(
       <EditorViewHarness api={api} onClose={onClose}>
         {provider.renderEditor({
@@ -460,6 +472,15 @@ describe('RunJSLightExtensionEditorProvider', () => {
           sourceMetadata: { lightExtensionKind: 'js-page', modelUse: 'JSPageModel' },
           surfaceStyle: 'render',
           onPersistedChange,
+          renderNext: (overrides) => (
+            <div
+              data-source-binding={String(Boolean(overrides?.value?.sourceBinding))}
+              data-source-mode={overrides?.value?.sourceMode}
+              data-testid="inline-workspace-editor"
+            >
+              inline workspace editor
+            </div>
+          ),
         })}
       </EditorViewHarness>,
     );
@@ -502,8 +523,13 @@ describe('RunJSLightExtensionEditorProvider', () => {
       sourceRef,
     });
     expect(onPersistedChange).toHaveBeenCalledTimes(1);
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(workspacePageMockState.moveToInlineCompleted).toBe(true));
+    expect(screen.queryByRole('button', { name: 'move workspace to inline' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('inline-workspace-editor')).toHaveAttribute('data-source-mode', 'inline');
+    expect(screen.getByTestId('inline-workspace-editor')).toHaveAttribute('data-source-binding', 'false');
+    expect(onClose).not.toHaveBeenCalled();
     expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledWith('ler_example');
+    resolveHostRefresh?.();
   });
 
   it('keeps the JS Page external binding when copyback fails', async () => {

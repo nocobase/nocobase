@@ -557,9 +557,9 @@ function buildAmbientDeclarations(allowedGlobals: Set<string>): string {
 
   return [
     'interface RunJSPermissiveGlobal {',
-    '  readonly [key: string]: RunJSPermissiveGlobal;',
-    '  (...args: unknown[]): RunJSPermissiveGlobal;',
-    '  new (...args: unknown[]): RunJSPermissiveGlobal;',
+    '  [key: string]: any;',
+    '  (...args: any[]): any;',
+    '  new (...args: any[]): any;',
     '}',
     ...declarations,
   ].join('\n');

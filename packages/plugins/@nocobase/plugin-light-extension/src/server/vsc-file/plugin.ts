@@ -15,7 +15,7 @@ import { createRemoteSyncAuditActions, createRemoteSyncAuditEmitter } from './re
 import { RemoteSyncAdapterRegistry } from './remotes/RemoteSyncAdapterRegistry';
 import type { RemoteSyncRuntime } from './remotes/RemoteSyncRuntime';
 import { RemoteSyncRuntimeService } from './remotes/RemoteSyncRuntimeService';
-import { GitHubRemoteAdapter } from './remotes/providers/github';
+import { GitHubGitTransport, GitHubRemoteAdapter } from './remotes/providers/github';
 import { createRemoteInternalResources } from './remotes/resource';
 import { RemoteCredentialResolver } from './remotes/security/RemoteCredentialResolver';
 
@@ -57,6 +57,7 @@ export class LightExtensionRemoteSyncModule {
     this.unregisterGitHubAdapter = this.remoteAdapters.register(
       new GitHubRemoteAdapter({
         credentialResolver,
+        gitTransport: new GitHubGitTransport(),
       }),
     );
     this.remoteSyncRuntime = new RemoteSyncRuntimeService(this.db, {

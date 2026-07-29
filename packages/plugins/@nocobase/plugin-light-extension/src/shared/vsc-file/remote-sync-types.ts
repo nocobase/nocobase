@@ -16,6 +16,7 @@ export interface VscGitHubRemoteConfig {
   repository: string;
   branch: string;
   subdirectory: string | null;
+  transport?: 'ssh';
 }
 
 export type VscRemoteNormalizedConfig = VscGitHubRemoteConfig;

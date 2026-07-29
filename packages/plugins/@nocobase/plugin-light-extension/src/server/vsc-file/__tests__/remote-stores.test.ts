@@ -117,7 +117,7 @@ describe('vsc-file remote stores', () => {
 
     const updated = await remoteStore.updateTarget(remote.id, {
       provider: 'github',
-      config: { ...normalizedConfig, branch: 'next' },
+      config: { ...normalizedConfig, transport: 'ssh' },
       authRef: await validAuthRef(rotated.authRef),
     });
     expect(updated.version).toBe(2);

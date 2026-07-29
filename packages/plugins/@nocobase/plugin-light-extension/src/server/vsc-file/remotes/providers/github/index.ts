@@ -8,5 +8,6 @@
  */
 
 export { GitHubApiClient, GITHUB_API_ORIGIN } from './GitHubApiClient';
+export { GitHubGitTransport } from './GitHubGitTransport';
 export { GitHubRemoteAdapter } from './GitHubRemoteAdapter';
 export type { GitHubApi, GitHubRepository, GitHubTree, GitHubTreeEntry } from './githubTypes';

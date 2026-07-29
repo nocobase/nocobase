@@ -38,7 +38,7 @@ export interface LightExtensionGitHubSourceValue {
 }
 
 export type GitHubRepositoryLocatorResult =
-  | { valid: true; owner: string; repository: string }
+  | { valid: true; owner: string; repository: string; transport?: 'ssh' }
   | { valid: false; reason: 'required' | 'invalid' };
 
 type GitHubRepositoryLocatorErrorReason = 'required' | 'invalid';
@@ -71,7 +71,12 @@ export function parseGitHubRepositoryLocator(input: string): GitHubRepositoryLoc
   }
 
   let path = trimmed;
-  if (trimmed.startsWith('https://')) {
+  const sshMatch = /^git@github\.com:(.+)$/i.exec(trimmed);
+  let transport: 'ssh' | undefined;
+  if (sshMatch) {
+    path = sshMatch[1];
+    transport = 'ssh';
+  } else if (trimmed.startsWith('https://')) {
     let url: URL;
     try {
       url = new URL(trimmed);
@@ -110,7 +115,7 @@ export function parseGitHubRepositoryLocator(input: string): GitHubRepositoryLoc
     return { valid: false, reason: 'invalid' };
   }
 
-  return { valid: true, owner, repository };
+  return { valid: true, owner, repository, ...(transport ? { transport } : {}) };
 }
 
 export function validateGitHubBranch(input: string): GitHubBranchValidationResult {
@@ -191,6 +196,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
         repository: locator.repository,
         branch: branchValidation.branch,
         subdirectory: subdirectoryValidation.subdirectory,
+        ...(locator.transport ? { transport: locator.transport } : {}),
       },
       ...(authValidation.authRef ? { authRef: authValidation.authRef } : {}),
     };

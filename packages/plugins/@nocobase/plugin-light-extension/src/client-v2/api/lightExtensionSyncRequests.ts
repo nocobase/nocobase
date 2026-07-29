@@ -77,7 +77,7 @@ const actionFields: Record<LightExtensionSyncActionName, ReadonlySet<string>> = 
   ]),
   createFromGit: new Set(['provider', 'config', 'name', 'title', 'description', 'authRef']),
 };
-const configFields = new Set(['owner', 'repository', 'branch', 'subdirectory']);
+const configFields = new Set(['owner', 'repository', 'branch', 'subdirectory', 'transport']);
 
 export class LightExtensionSyncRequestInputError extends Error {
   readonly code = 'LIGHT_EXTENSION_SYNC_INVALID_CLIENT_INPUT';
@@ -233,6 +233,9 @@ function validateConfig(value: unknown): void {
   requireTrimmedString(config.branch, true);
   if (config.subdirectory !== null) {
     requireTrimmedString(config.subdirectory, true);
+  }
+  if (config.transport !== undefined && config.transport !== 'ssh') {
+    throw new LightExtensionSyncRequestInputError();
   }
 }
 
