@@ -102,7 +102,7 @@ export default class extends Instruction {
       job.execution = await job.getExecution();
     }
     if (job.execution.status === EXECUTION_STATUS.STARTED) {
-      this.workflow.resume(job);
+      await this.workflow.resume(job).catch(() => {});
     }
     const idStr = job.id.toString();
     if (this.timers.get(idStr)) {

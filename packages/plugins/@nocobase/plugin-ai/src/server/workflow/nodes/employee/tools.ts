@@ -10,7 +10,7 @@
 import type { Context } from '@nocobase/actions';
 import type { DynamicToolsProvider } from '@nocobase/ai';
 import { AsyncLocalStorageProviderSingleton } from '@langchain/core/singletons';
-import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS, type JobModel } from '@nocobase/plugin-workflow';
 import type { Plugin } from '@nocobase/server';
 import { AI_WORKFLOW_TASK_STATUS, REQUIRES_APPROVAL } from './constants';
 
@@ -112,7 +112,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
         };
       }
 
-      const job = await plugin.db.getModel('jobs').findByPk(task.jobId);
+      const job = await plugin.db.getModel<JobModel>('jobs').findByPk(task.jobId);
       if (!job) {
         return {
           status: 'fail',
