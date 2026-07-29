@@ -124,12 +124,16 @@ export const Sender: React.FC = () => {
       return;
     }
     e.preventDefault();
+    if (!uploadProps.validateFiles([file])) {
+      return;
+    }
 
     const uid = Date.now().toString();
     const rawFile = file;
     const uploadFile = {
       uid,
       name: rawFile.name,
+      filename: rawFile.name,
       status: 'uploading',
       originFileObj: rawFile,
       percent: 0,

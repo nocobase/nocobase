@@ -256,6 +256,8 @@
   "UID": "唯一标识",
   "Up": "上移",
   "Upload files": "上传文件",
+  "You can upload up to {{count}} attachments.": "最多可以上传 {{count}} 个附件。",
+  "The total size of attachments cannot exceed {{size}}.": "附件总大小不能超过 {{size}}。",
   "Use skill": "使用技能",
   "Use skills": "使用技能",
   "Use workflow as a tool": "使用工作流作为工具",

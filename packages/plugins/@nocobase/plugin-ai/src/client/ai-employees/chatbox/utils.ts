@@ -19,17 +19,86 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
-export function normalizeAIFileUploadAttachment(fileData: unknown, status: string) {
+export function normalizeAIFileUploadAttachment(fileData: unknown, status?: string) {
   if (!isRecord(fileData)) {
     return fileData;
   }
   const meta = isRecord(fileData.meta) ? fileData.meta : undefined;
   const source = isRecord(meta?.source) ? meta.source : undefined;
+  const filename =
+    typeof fileData.filename === 'string' && fileData.filename
+      ? fileData.filename
+      : typeof fileData.name === 'string'
+        ? fileData.name
+        : undefined;
   return {
     ...fileData,
+    ...(filename ? { filename } : {}),
     ...(source ? { source } : {}),
-    status,
+    ...(status ? { status } : {}),
   };
+}
+
+export const AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT = 10;
+export const AI_EMPLOYEE_ATTACHMENT_SIZE_LIMIT_DEFAULT = 20 * 1024 * 1024;
+
+export type AttachmentLimitViolation =
+  | {
+      type: 'count';
+      limit: number;
+    }
+  | {
+      type: 'size';
+      limit: number;
+    };
+
+export function resolveStorageSizeLimit(rules: unknown): number {
+  const configuredSize = isRecord(rules) ? Number(rules.size) : Number.NaN;
+  return Number.isFinite(configuredSize) && configuredSize > 0
+    ? configuredSize
+    : AI_EMPLOYEE_ATTACHMENT_SIZE_LIMIT_DEFAULT;
+}
+
+function getAttachmentSize(value: unknown): number {
+  if (!isRecord(value)) {
+    return 0;
+  }
+  const size = Number(value.size);
+  return Number.isFinite(size) && size > 0 ? size : 0;
+}
+
+export function validateAIEmployeeAttachmentLimits(
+  attachments: unknown[],
+  sizeLimit: number,
+): AttachmentLimitViolation | null {
+  if (attachments.length > AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT) {
+    return {
+      type: 'count',
+      limit: AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT,
+    };
+  }
+
+  const totalSize = attachments.reduce<number>((total, attachment) => total + getAttachmentSize(attachment), 0);
+  if (totalSize > sizeLimit) {
+    return {
+      type: 'size',
+      limit: sizeLimit,
+    };
+  }
+
+  return null;
+}
+
+export function formatAttachmentSizeLimit(size: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = size;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const fractionDigits = Number.isInteger(value) ? 0 : 2;
+  return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
 }
 
 async function replaceVariables(template, variables, localVariables = {}) {
