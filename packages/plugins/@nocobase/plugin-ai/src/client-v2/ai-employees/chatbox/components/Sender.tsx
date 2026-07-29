@@ -238,6 +238,10 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       return;
     }
 
+    if (!uploadProps.validateFiles([pastedFile])) {
+      return;
+    }
+
     event.preventDefault();
 
     const uid = Date.now().toString();
@@ -485,6 +489,7 @@ const UploadFiles: React.FC<{ disabled?: boolean }> = observer(({ disabled }) =>
       }}
       items={items}
       action={uploadProps.action}
+      beforeUpload={uploadProps.beforeUpload}
       customRequest={uploadProps.customRequest as React.ComponentProps<typeof Attachments>['customRequest']}
       onChange={(info) => {
         uploadProps.onChange({
