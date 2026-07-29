@@ -5945,8 +5945,8 @@ test('dev runs local npm/git source envs with a generated port when --port is om
 
   await Dev.prototype.run.call(command);
 
+  expect(mocks.announceTargetEnv).toHaveBeenCalledWith('dev');
   expect(mocks.printInfo.mock.calls).toEqual([
-    ['Using env "dev".'],
     ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
   ]);
   expect(mocks.startTask.mock.calls).toEqual([['Running local postinstall for "dev"...']]);

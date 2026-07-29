@@ -185,6 +185,13 @@ function collectRouteTitles(routes: RouteResponseItem[] = []) {
   ]);
 }
 
+function expectPosixMode(actual: number | undefined, expected: number): void {
+  if (process.platform === 'win32') {
+    return;
+  }
+  expect(actual === undefined ? actual : actual & 0o777).toBe(expected);
+}
+
 async function createPortalDistArchive(rootDir: string, files: Record<string, string>, modes?: Record<string, number>) {
   const distSourceDir = path.join(rootDir, `dist-source-${Date.now()}-${Math.random().toString().slice(2)}`);
   const archivePath = path.join(rootDir, `dist-${Date.now()}-${Math.random().toString().slice(2)}.tar.gz`);
@@ -1240,13 +1247,13 @@ describe('plugin-multi-portal server', () => {
     await expect(
       readFile(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'assets', 'index.js'), 'utf-8'),
     ).resolves.toBe('console.log("portal");\n');
-    expect((await stat(path.join(storagePath as string, 'portals'))).mode & 0o777).toBe(0o755);
-    expect((await stat(path.join(storagePath as string, 'portals', 'main'))).mode & 0o777).toBe(0o755);
-    expect((await stat(portalDir)).mode & 0o777).toBe(0o755);
-    expect((await stat(path.join(portalDir, 'dist'))).mode & 0o777).toBe(0o755);
-    expect((await stat(path.join(portalDir, 'dist', 'assets'))).mode & 0o777).toBe(0o755);
-    expect((await stat(path.join(portalDir, 'dist', 'index.html'))).mode & 0o777).toBe(0o644);
-    expect((await stat(path.join(portalDir, 'dist', 'assets', 'index.js'))).mode & 0o777).toBe(0o644);
+    expectPosixMode((await stat(path.join(storagePath as string, 'portals'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(storagePath as string, 'portals', 'main'))).mode, 0o755);
+    expectPosixMode((await stat(portalDir)).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'assets'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'index.html'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'assets', 'index.js'))).mode, 0o644);
     await expect(readdir(portalDir)).resolves.not.toEqual(
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );

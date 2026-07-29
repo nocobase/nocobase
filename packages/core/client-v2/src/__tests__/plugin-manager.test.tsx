@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACLRolesCheckProvider, createMockClient, Plugin } from '@nocobase/client-v2';
+import { ACLRolesCheckProvider, Plugin } from '@nocobase/client-v2';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
-import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
+import { SettingsBuildInPlugin } from '../settings-app/SettingsBuildInPlugin';
+import { createMockSettingsClient } from './mockSettingsApplication';
 
 class TestAclPlugin extends Plugin {
   async load() {
@@ -31,7 +32,7 @@ class TestSettingsLinkPlugin extends Plugin {
   }
 }
 
-type MockClientApplication = ReturnType<typeof createMockClient>;
+type MockClientApplication = ReturnType<typeof createMockSettingsClient>;
 
 const renderApp = (app: MockClientApplication) => {
   const Root = app.getRootComponent();
@@ -49,9 +50,9 @@ const waitForGetRequests = async (app: MockClientApplication, urls: string[]) =>
 };
 
 const setupApp = (pmList: any[], plugins: Array<typeof Plugin> = []) => {
-  const app = createMockClient({
-    plugins: [NocoBaseBuildInPlugin, TestAclPlugin, ...plugins],
-    router: { type: 'memory', initialEntries: ['/admin/settings/plugin-manager'] },
+  const app = createMockSettingsClient({
+    plugins: [SettingsBuildInPlugin, TestAclPlugin, ...plugins],
+    router: { type: 'memory', initialEntries: ['/settings/plugin-manager'] },
   });
 
   app.apiMock.onGet('/auth:check').reply(200, {

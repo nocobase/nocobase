@@ -75,6 +75,10 @@ async function runGit(args: string[], cwd?: string) {
   return await execFileAsync('git', args, { cwd });
 }
 
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n/g, '\n');
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
@@ -303,7 +307,7 @@ test('pull and push Git-managed source through the configured repository path', 
     changed: true,
   });
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
-  await expect(fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+  expect(normalizeLineEndings(await fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "remote";\n',
   );
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
@@ -325,8 +329,8 @@ test('pull and push Git-managed source through the configured repository path', 
   });
 
   const verifyRepo = await makeTempDir('nocobase-cli-portal-git-verify-');
-  await runGit(['clone', remoteRepo, verifyRepo]);
-  await expect(fsp.readFile(path.join(verifyRepo, 'customer', 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+  await runGit(['clone', '--branch', 'main', remoteRepo, verifyRepo]);
+  expect(normalizeLineEndings(await fsp.readFile(path.join(verifyRepo, 'customer', 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "local";\n',
   );
 });
@@ -392,7 +396,7 @@ test('push creates configured Git branch and uses repository root by default', a
 
   const verifyRepo = await makeTempDir('nocobase-cli-portal-git-empty-verify-');
   await runGit(['clone', '--branch', 'main', remoteRepoUrl, verifyRepo]);
-  await expect(fsp.readFile(path.join(verifyRepo, 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+  expect(normalizeLineEndings(await fsp.readFile(path.join(verifyRepo, 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "first push";\n',
   );
 });
