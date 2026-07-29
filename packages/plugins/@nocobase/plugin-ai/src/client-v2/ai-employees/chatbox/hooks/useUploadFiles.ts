@@ -8,11 +8,19 @@
  */
 
 import { useApp } from '@nocobase/client-v2';
+import { App, Upload, type UploadProps } from 'antd';
 import { useRequest } from 'ahooks';
+import { useT } from '../../../locale';
 import { useChat } from '../hooks/useChat';
 import type { Attachment } from '../../types';
 import { uploadAIFile } from '../upload';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
+import {
+  formatAttachmentSizeLimit,
+  normalizeAIFileUploadAttachment,
+  resolveStorageSizeLimit,
+  validateAIEmployeeAttachmentLimits,
+} from '../utils';
 
 type StorageBasicInfo = {
   rules?: Record<string, unknown>;
@@ -117,20 +125,20 @@ export const useUploadFiles = (runtime?: ChatBoxRuntime) => {
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
   const currentConversation = resolvedRuntime.chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, resolvedRuntime);
+  const attachments = chat.use.attachments();
   const setAttachments = chat.setAttachments;
+  const { message } = App.useApp();
+  const t = useT();
 
   const uploadProps = {
     action: 'aiFiles:create',
     onChange({ fileList }: UploadChangeInfo) {
       setAttachments(
         fileList.map((file) => {
-          if (file.status === 'done') {
-            if (!file?.response?.data) {
-              return file;
-            }
-            return file.response.data;
+          if (file.status === 'done' && file.response?.data) {
+            return normalizeAIFileUploadAttachment(file.response.data, file.status);
           }
-          return file;
+          return normalizeAIFileUploadAttachment(file, file.status);
         }),
       );
     },
@@ -138,9 +146,36 @@ export const useUploadFiles = (runtime?: ChatBoxRuntime) => {
 
   const props = useUploadProps(uploadProps);
   const storageUploadProps = useStorageUploadProps(uploadProps);
+  const sizeLimit = resolveStorageSizeLimit(storageUploadProps.rules);
+  const validateFiles = (files: unknown[], showMessage = true) => {
+    const violation = validateAIEmployeeAttachmentLimits([...(attachments ?? []), ...files], sizeLimit);
+    if (!violation) {
+      return true;
+    }
+
+    if (showMessage) {
+      if (violation.type === 'count') {
+        message.error(t('You can upload up to {{count}} attachments.', { count: violation.limit }));
+      } else {
+        message.error(
+          t('The total size of attachments cannot exceed {{size}}.', {
+            size: formatAttachmentSizeLimit(violation.limit),
+          }),
+        );
+      }
+    }
+    return false;
+  };
+  const beforeUpload: NonNullable<UploadProps['beforeUpload']> = (file, selectedFiles) => {
+    const files = selectedFiles.length ? selectedFiles : [file];
+    return validateFiles(files, files[0]?.uid === file.uid) ? true : Upload.LIST_IGNORE;
+  };
+
   return {
     ...props,
     ...uploadProps,
     ...storageUploadProps,
+    beforeUpload,
+    validateFiles,
   };
 };
