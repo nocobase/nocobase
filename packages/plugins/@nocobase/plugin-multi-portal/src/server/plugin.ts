@@ -1207,6 +1207,24 @@ async function getMultiPortalWriteTargets(ctx: ResourcerContext, fields: string[
   }
 
   const repository = ctx.db.getRepository('multiPortals');
+  const actionName = ctx.action?.actionName;
+  const requestedFilterKeys: unknown = ctx.action?.params.filterKeys;
+  if (
+    (actionName === 'firstOrCreate' || actionName === 'updateOrCreate') &&
+    Array.isArray(requestedFilterKeys) &&
+    requestedFilterKeys.every((filterKey) => typeof filterKey === 'string')
+  ) {
+    const targets: MultiPortalWriteTarget[] = [];
+    for (const values of records) {
+      const existing = await repository.findOne({
+        filter: Repository.valuesToFilter(values, requestedFilterKeys),
+        fields,
+      });
+      targets.push({ existing, values });
+    }
+    return targets;
+  }
+
   if (records.length > 1) {
     const targets: MultiPortalWriteTarget[] = [];
     for (const values of records) {
@@ -1353,31 +1371,37 @@ async function seedHistoricalMultiPortals(db: Database) {
 async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () => Promise<void>) {
   const targets = await getMultiPortalWriteTargets(ctx, ['uid', 'portalName', 'uiLayoutUid']);
   for (const { existing, values } of targets) {
-    const uid = trimString(values.uid ?? existing?.get('uid'));
+    const existingUid = trimString(existing?.get('uid'));
+    const uid = trimString(values.uid ?? existingUid);
     const portalName = trimString(values.portalName ?? existing?.get('portalName'));
     const uiLayoutUid = trimString(values.uiLayoutUid ?? existing?.get('uiLayoutUid'));
+
+    const fixedPortal = getFixedLayoutMultiPortalRecord(existingUid) || getFixedLayoutMultiPortalRecord(uid);
+    const canonicalPortal =
+      fixedPortal?.uid === uid &&
+      (!existingUid || fixedPortal.uid === existingUid) &&
+      fixedPortal.portalName === portalName &&
+      fixedPortal.uiLayoutUid === uiLayoutUid;
+    if (fixedPortal && !canonicalPortal) {
+      ctx.throw(400, 'Reserved Portal UID must match its canonical route and UI layout');
+      return;
+    }
     if (!portalName) {
       continue;
     }
-
-    const fixedPortal = getFixedLayoutMultiPortalRecord(uid);
-    const canonicalPortal = fixedPortal?.portalName === portalName && fixedPortal.uiLayoutUid === uiLayoutUid;
-    const existingInitPortal =
-      existing?.get('uid') === DEFAULT_MULTI_PORTAL_UID && existing.get('portalName') === portalName;
-    const usesCanonicalUid = isDefaultLayoutMultiPortalUid(uid);
-    const usesCanonicalSlug = portalName === 'admin' || portalName === 'mobile';
-    if ((usesCanonicalUid || usesCanonicalSlug) && !canonicalPortal && !existingInitPortal) {
-      ctx.throw(400, 'Reserved Portal UID and route name must match their canonical UI layout');
-      return;
+    if (portalName === 'admin' || portalName === 'mobile') {
+      continue;
     }
 
+    const existingInitPortal =
+      existing?.get('uid') === DEFAULT_MULTI_PORTAL_UID && existing.get('portalName') === portalName;
     const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
       filter: {
         routeName: portalName,
       },
       fields: ['uid'],
     });
-    if (uiLayout && !canonicalPortal && !existingInitPortal) {
+    if (uiLayout && !existingInitPortal) {
       ctx.throw(400, 'Portal route name conflicts with an existing UI layout');
       return;
     }
@@ -3424,19 +3448,19 @@ export class PluginMultiPortalServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventMultiPortalBackingLayoutChange);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventUiLayoutRouteNameConflict);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:firstOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
-    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventUiLayoutRouteNameConflict);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', captureSkipCreatePortalDirectory);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:updateOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
-    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', captureSkipCreatePortalDirectory);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal, {
       after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
