@@ -13,7 +13,7 @@ import crypto from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
-import { getEnv, upsertEnv } from '../lib/auth-store.ts';
+import { getEnv, type EnvConfigEntry, upsertEnv } from '../lib/auth-store.ts';
 import {
   type PromptBlock,
   type PromptCatalogValues,
@@ -1334,7 +1334,9 @@ Prompt modes:
     const dbSchema = String(results.dbSchema ?? '').trim();
     const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
-    const authType = String(results.authType ?? '').trim() || 'oauth';
+    const authTypeInput = String(results.authType ?? '').trim();
+    const authType: EnvConfigEntry['authType'] =
+      authTypeInput === 'basic' || authTypeInput === 'token' || authTypeInput === 'oauth' ? authTypeInput : 'oauth';
     const authUsername = authType === 'basic' ? String(results.username ?? results.rootUsername ?? '').trim() : '';
     const accessToken = String(results.accessToken ?? '');
     const skipDownload = results.skipDownload === true;
@@ -1357,7 +1359,7 @@ Prompt modes:
     results.appKey = appKey;
     results.timeZone = timeZone;
 
-    const savedEnvConfig = {
+    const savedEnvConfig: Partial<EnvConfigEntry> = {
       schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
       ...(source === 'docker'
         ? { kind: 'docker' }
