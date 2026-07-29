@@ -43,18 +43,29 @@ import c32 from './fixtures/chatbox-state/stable/C32-context-items-dedupe-remove
 import c33 from './fixtures/chatbox-state/stable/C33-draft-session-migration.fixture.json';
 import c34 from './fixtures/chatbox-state/stable/C34-dialog-hide-resume.fixture.json';
 import type { Message } from '../../../client-v2/ai-employees/types';
-import { useChatBoxStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-conversations';
 import {
   CHAT_DEFAULT_SESSION_KEY,
   CHAT_EMPTY_SESSION_STATE,
-  useChatMessagesStore,
 } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
-import { useChatToolCallStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tool-call';
-import { useChatToolsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tools';
-import { useWorkflowTasksStore } from '../../../client-v2/ai-employees/chatbox/stores/workflow-tasks';
+import { createChatBoxRuntime } from '../../../client-v2/ai-employees/chatbox/stores/runtime';
 import { aiSelection } from '../../../client-v2/ai-employees/stores/ai-selection';
 import { dialogController } from '../../../client-v2/ai-employees/stores/dialog-controller';
+
+const runtime = createChatBoxRuntime({ mode: 'global' });
+
+const createModelAccessor = <T extends object>(model: T) => ({
+  getState: () => model,
+  setState: (state: Partial<T>) => {
+    Object.assign(model, state);
+  },
+});
+
+const useChatBoxStore = createModelAccessor(runtime.chatBoxModel);
+const useChatConversationsStore = createModelAccessor(runtime.chatConversationModel);
+const useChatMessagesStore = createModelAccessor(runtime.chatMessageModel);
+const useChatToolCallStore = createModelAccessor(runtime.chatToolCallModel);
+const useChatToolsStore = createModelAccessor(runtime.chatToolModel);
+const useWorkflowTasksStore = createModelAccessor(runtime.workflowTaskModel);
 
 type MessageSummary = {
   role: string | null;
@@ -464,7 +475,8 @@ describe('AI employee chatbox P0 state regression', () => {
     chatBox.setEditingMessageId(undefined);
     messages.setSessionAttachments(sessionId, []);
     messages.setSessionContextItems(sessionId, []);
-    expect(useChatBoxStore.getState()).toMatchObject({ isEditingMessage: false, editingMessageId: undefined });
+    expect(useChatBoxStore.getState().isEditingMessage).toBe(false);
+    expect(useChatBoxStore.getState().editingMessageId ?? undefined).toBeUndefined();
     expect(useChatMessagesStore.getState().getSessionState(sessionId)).toMatchObject({
       attachments: [],
       contextItems: [],

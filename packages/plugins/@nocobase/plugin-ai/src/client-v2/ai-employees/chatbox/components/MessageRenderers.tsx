@@ -19,8 +19,7 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { FileCardList } from './Attachments';
 import { Actions } from './Actions';
 import { ContextItem } from './ContextItem';
@@ -30,7 +29,10 @@ import { ToolCard } from './ToolCard';
 const { Link, Paragraph, Text } = Typography;
 
 type MessagePayload = Message['content'];
-type ChatBubbleRole = Omit<React.ComponentProps<typeof Bubble>, 'content' | 'messageRender' | 'loadingRender'> & {
+export type ChatBubbleRole = Omit<
+  React.ComponentProps<typeof Bubble>,
+  'content' | 'messageRender' | 'loadingRender'
+> & {
   nickname?: string;
   content?: MessagePayload;
   messageRender?: (content: MessagePayload) => React.ReactNode;
@@ -214,10 +216,12 @@ export const AIMessage: React.FC<{
   const aiConfigRepository = useAIConfigRepository();
   const toolsLoading = aiConfigRepository.aiToolsLoading;
   const toolsMap = useMemo(() => toToolsMap(aiConfigRepository.aiTools || []), [aiConfigRepository.aiTools]);
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const readonly = useChatBoxStore.use.readonly();
-  const { resendMessages } = useChatMessageActions();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const readonly = chatBoxModel.readonly;
+  const { resendMessages } = useChatMessageActions(runtime);
   const footerButtonStyle: React.CSSProperties = {
     color: token.colorTextSecondary,
     fontSize: token.fontSizeSM,
@@ -319,13 +323,14 @@ const Reference: React.FC<{ references: { title?: string; url?: string }[] }> = 
 
 export const UserMessage: React.FC<{
   msg: MessagePayload;
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const setSenderValue = useChatBoxStore.use.setSenderValue();
-  const senderRef = useChatBoxStore.use.senderRef();
-  const readonly = useChatBoxStore.use.readonly();
-  const { startEditingMessage } = useChatMessageActions();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatSenderModel } = runtime;
+  const senderRef = chatSenderModel.senderRef;
+  const readonly = chatBoxModel.readonly;
+  const { startEditingMessage } = useChatMessageActions(runtime);
   const footerButtonStyle: React.CSSProperties = {
     color: token.colorTextSecondary,
     fontSize: token.fontSizeSM,
@@ -367,7 +372,7 @@ export const UserMessage: React.FC<{
                       ...msg,
                       messageId: msg.messageId,
                     });
-                    setSenderValue(stringifyContent(msg.content));
+                    chatSenderModel.setSenderValue(stringifyContent(msg.content));
                     senderRef?.current?.focus();
                   }}
                 />
@@ -428,12 +433,14 @@ UserMessage.displayName = 'UserMessage';
 
 export const ErrorMessage: React.FC<{
   msg: MessagePayload;
-}> = memo(({ msg }) => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+}> = observer(({ msg }) => {
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = runtime;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const currentConversation = chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const messages = chat.use.messages();
-  const { resendMessages } = useChatMessageActions();
+  const { resendMessages } = useChatMessageActions(runtime);
   const showAlert = msg.content !== 'GraphRecursionError';
 
   useEffect(() => {
@@ -489,13 +496,15 @@ HintMessage.displayName = 'HintMessage';
 
 export const TaskMessage: React.FC<{
   msg: MessagePayload;
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const rawTasks = msg.content;
   const tasks: Task[] = Array.isArray(rawTasks) ? rawTasks : rawTasks ? [rawTasks as Task] : [];
-  const taskVariables = useChatBoxStore.use.taskVariables();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const { triggerTask } = useChatBoxActions();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
+  const taskVariables = chatBoxModel.taskVariables;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const { triggerTask } = useChatBoxActions(runtime);
   const taskItems = tasks
     .map((task, index) => ({ ...task, title: task.title || `${t('Task')} ${index + 1}` }))
     .sort((a, b) => (b.title?.length ?? 0) - (a.title?.length ?? 0));
@@ -528,11 +537,12 @@ export const TaskMessage: React.FC<{
 
 TaskMessage.displayName = 'TaskMessage';
 
-export const AIThinking: React.FC<{ nickname?: string }> = ({ nickname }) => {
+export const AIThinking: React.FC<{ nickname?: string }> = observer(({ nickname }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const webSearching = chat.use.webSearching();
 
   return (
@@ -556,7 +566,7 @@ export const AIThinking: React.FC<{ nickname?: string }> = ({ nickname }) => {
       ) : null}
     </Space>
   );
-};
+});
 
 function stringifyContent(content: unknown) {
   if (typeof content === 'string') {

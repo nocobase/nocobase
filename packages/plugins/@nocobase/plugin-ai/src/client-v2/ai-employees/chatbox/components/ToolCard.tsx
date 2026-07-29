@@ -30,8 +30,7 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import type { ToolCall } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useToolCallActions } from '../hooks/useToolCallActions';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { isCurrentLiveMessage } from '../utils';
 
 type ToolCardProps = {
@@ -53,10 +52,11 @@ ${keyframes`
 
 export const ToolCard: React.FC<ToolCardProps> = observer(({ toolCalls, messageId = '', inlineActions }) => {
   const repository = useAIConfigRepository();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
   const toolItems = useMemo(() => (Array.isArray(toolCalls) ? toolCalls : []), [toolCalls]);
   const toolsMap = useMemo(() => toToolsMap(repository.aiTools), [repository.aiTools]);
-  const { getDecisionActions } = useToolCallActions({ messageId });
+  const { getDecisionActions } = useToolCallActions({ messageId, runtime });
 
   useEffect(() => {
     repository.getAITools(currentConversation).catch(console.error);
@@ -123,12 +123,14 @@ ToolCard.displayName = 'ToolCard';
 const CallButton: React.FC<{
   messageId: string;
   toolCalls: ToolCall[];
-}> = ({ messageId, toolCalls }) => {
+}> = observer(({ messageId, toolCalls }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const { getDecisionActions } = useToolCallActions({ messageId });
   const [loading, setLoading] = useState(false);
-  const readonly = useChatBoxStore.use.readonly();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
+  const { getDecisionActions } = useToolCallActions({ messageId, runtime });
+  const readonly = chatBoxModel.readonly;
 
   return (
     <Flex align="center" gap={token.marginXS}>
@@ -161,7 +163,7 @@ const CallButton: React.FC<{
       </Button>
     </Flex>
   );
-};
+});
 
 const InvokeStatus: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
   const t = useT();
@@ -302,10 +304,11 @@ const DefaultToolCard: React.FC<{
   tools: ToolsEntry[];
   toolCalls: ToolCall[];
   inlineActions?: React.ReactNode;
-}> = ({ messageId, tools, toolCalls, inlineActions }) => {
+}> = observer(({ messageId, tools, toolCalls, inlineActions }) => {
   const toolsMap = useMemo(() => toToolsMap(tools), [tools]);
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const messages = chat.use.messages();
   const responseLoading = chat.use.responseLoading();
   const latestMessageId = messages[messages.length - 1]?.content?.messageId;
@@ -342,7 +345,7 @@ const DefaultToolCard: React.FC<{
       {showCallButton ? <CallButton messageId={messageId} toolCalls={toolCalls} /> : null}
     </Flex>
   );
-};
+});
 
 const CodeHighlight: React.FC<{ language: string; value: string }> = ({ language, value }) => {
   const { isDarkTheme } = useGlobalTheme();

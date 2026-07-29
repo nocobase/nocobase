@@ -11,17 +11,13 @@ import React, { useMemo, useState } from 'react';
 import { Button, Card, Descriptions, Skeleton, Space, Typography, theme, type ButtonProps } from 'antd';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { useT } from '../../locale';
 import { Markdown } from '../chatbox/components/Markdown';
 import { useWorkflowTasks } from '../chatbox/hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
-import {
-  useWorkflowTasksStore,
-  type WorkflowTaskDetail,
-  type WorkflowTaskOutputSchema,
-} from '../chatbox/stores/workflow-tasks';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
+import { type WorkflowTaskDetail, type WorkflowTaskOutputSchema } from '../chatbox/stores/workflow-tasks';
 
 type WorkflowTaskOutputArgs = {
   result?: Record<string, unknown>;
@@ -61,22 +57,20 @@ const formatValue = (value: unknown): React.ReactNode => {
   );
 };
 
-export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutputArgs>> = ({
-  toolCall,
-  decisions,
-}) => {
+const WorkflowTaskOutputCardBase: React.FC<ToolsUIProperties<WorkflowTaskOutputArgs>> = ({ toolCall, decisions }) => {
   const t = useT();
   const { token } = theme.useToken();
   const app = useApp();
   const api = app.apiClient;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentWorkflowTask = useWorkflowTasksStore.use.currentWorkflowTask();
-  const { getWorkflowTaskBySession } = useWorkflowTasks();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, chatSenderModel, workflowTaskModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
+  const currentWorkflowTask = workflowTaskModel.currentWorkflowTask;
+  const { getWorkflowTaskBySession } = useWorkflowTasks(runtime);
   const [action, setAction] = useState<'approve' | 'reject' | 'revise' | null>(null);
-  const readonly = useChatBoxStore.use.readonly();
+  const readonly = chatBoxModel.readonly;
   const disabled = toolCall.invokeStatus !== 'interrupted' || Boolean(action) || readonly;
-  const senderRef = useChatBoxStore.use.senderRef();
-  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
+  const senderRef = chatSenderModel.senderRef;
 
   const cachedWorkflowTask =
     currentWorkflowTask && currentWorkflowTask.sessionId === currentConversation ? currentWorkflowTask : undefined;
@@ -163,7 +157,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutp
           onClick={async () => {
             setAction('revise');
             try {
-              setShowSenderHint(true);
+              chatSenderModel.setShowSenderHint(true);
               senderRef?.current?.focus?.();
             } finally {
               setAction(null);
@@ -194,3 +188,5 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutp
     </Card>
   );
 };
+
+export const WorkflowTaskOutputCard = observer(WorkflowTaskOutputCardBase);

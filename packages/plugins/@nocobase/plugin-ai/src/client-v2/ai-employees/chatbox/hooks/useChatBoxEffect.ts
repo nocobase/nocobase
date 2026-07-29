@@ -10,17 +10,16 @@
 import { useEffect } from 'react';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { aiEmployeeRole, defaultRoles } from '../roles';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-export const useChatBoxEffect = () => {
+export const useChatBoxEffect = (runtime?: ChatBoxRuntime) => {
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
-  const open = useChatBoxStore.use.open();
-  const senderRef = useChatBoxStore.use.senderRef();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const setRoles = useChatBoxStore.use.setRoles();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const { chatBoxModel, chatConversationModel, chatSenderModel } = useResolvedChatBoxRuntime(runtime);
+  const open = chatBoxModel.open;
+  const senderRef = chatSenderModel.senderRef;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const currentConversation = chatConversationModel.currentConversation;
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees().catch(console.error);
@@ -37,12 +36,12 @@ export const useChatBoxEffect = () => {
       {},
     );
 
-    setRoles((previous) => ({
+    chatBoxModel.setRoles((previous) => ({
       ...previous,
       ...defaultRoles,
       ...employeeRoles,
     }));
-  }, [aiEmployees, setRoles]);
+  }, [aiEmployees, chatBoxModel]);
 
   useEffect(() => {
     senderRef?.current?.focus();
