@@ -22,6 +22,7 @@ import { SettingsBrand } from './SettingsBrand';
 import { SettingsGroupNav } from './SettingsGroupNav';
 import { SettingsSearch } from './SettingsSearch';
 import { buildSettingsGlobalCss, buildSettingsNeutralTheme, getSettingsHeaderColors } from './settingsTheme';
+import { useSettingsThemeConfig } from './useSettingsThemeConfig';
 
 const rootStyle: React.CSSProperties = {
   height: '100vh',
@@ -71,7 +72,12 @@ export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
   const location = useLocation();
   const { token } = antdTheme.useToken();
-  const settingsShellTheme = useMemo<ThemeConfig>(() => buildSettingsNeutralTheme(token), [token]);
+  // 设置中心的外观由主题编辑器里那条 `settings` 主题记录约束；读不到才用代码里的中性配色兜底。
+  const storedThemeConfig = useSettingsThemeConfig();
+  const settingsShellTheme = useMemo<ThemeConfig>(
+    () => storedThemeConfig || buildSettingsNeutralTheme(token),
+    [storedThemeConfig, token],
+  );
   const headerColors = useMemo(() => getSettingsHeaderColors(token), [token]);
   const settingsGlobalCss = useMemo(() => buildSettingsGlobalCss(token), [token]);
   const authStatus = useCurrentUserAuthStatus(app);
