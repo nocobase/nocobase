@@ -3565,18 +3565,6 @@ export default class Install extends Command {
     if (shouldStartApp) {
       this.logStage('Starting NocoBase');
       await this.config.runCommand('app:start', this.buildAppStartArgv({ envName, verbose: parsed.verbose }));
-      if (isAiMode(appResults)) {
-        const portalName =
-          String(appResults.portalName ?? DEFAULT_INSTALL_PORTAL_NAME).trim() || DEFAULT_INSTALL_PORTAL_NAME;
-        await this.config.runCommand('portal:registry:sync', [
-          portalName,
-          '--env',
-          envName,
-          '--yes',
-          '--build',
-          '--skip-if-unsupported',
-        ]);
-      }
     }
 
     await this.syncInstalledEnvConnection({

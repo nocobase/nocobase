@@ -247,13 +247,12 @@ test('install syncs oauth env connection after the app becomes ready', async () 
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
   expect(runCommand.mock.calls).toEqual([
     ['app:start', ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init']],
-    ['portal:registry:sync', ['main', '--env', 'app1', '--yes', '--build', '--skip-if-unsupported']],
     ['env:auth', ['app1']],
     ['env:update', ['app1']],
   ]);
 });
 
-test('install delegates portal initialization to app startup', async () => {
+test('install delegates portal initialization to app startup without Registry sync', async () => {
   const { default: Install } = await import('../commands/install.js');
 
   const waitForAppHealthCheck = vi.fn(async () => undefined);
@@ -303,10 +302,7 @@ test('install delegates portal initialization to app startup', async () => {
     'app:start',
     ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'],
   ]);
-  expect(runCommand.mock.calls[1]).toEqual([
-    'portal:registry:sync',
-    ['admin', '--env', 'app1', '--yes', '--build', '--skip-if-unsupported'],
-  ]);
+  expect(runCommand.mock.calls.some(([name]) => name === 'portal:registry:sync')).toBe(false);
 });
 
 test('install saves the resolved app url before delegating startup', async () => {
@@ -411,7 +407,6 @@ test('install syncs token env connection after the app becomes ready without oau
 
   expect(runCommand.mock.calls).toEqual([
     ['app:start', ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init']],
-    ['portal:registry:sync', ['main', '--env', 'app1', '--yes', '--build', '--skip-if-unsupported']],
     ['env:update', ['app1']],
   ]);
   expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('app1', { scope: 'global' });
