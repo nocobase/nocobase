@@ -689,6 +689,50 @@ function DefaultValueControl(props: {
   return <Input disabled={disabled} value={value} onChange={(event) => onChange?.(event.target.value)} />;
 }
 
+type ConfigureSelectOption = {
+  label?: React.ReactNode;
+  value?: string | number | boolean;
+};
+
+type ConfigureSelectControlBehavior = {
+  allowClear: boolean;
+  autoSelectFirstOption: boolean;
+  showSearch: boolean;
+};
+
+const configureSelectControlPolicies: Record<string, Partial<ConfigureSelectControlBehavior>> = {
+  SourceKey: {
+    allowClear: false,
+    autoSelectFirstOption: true,
+    showSearch: true,
+  },
+  TargetKey: {
+    showSearch: true,
+  },
+};
+
+export function resolveConfigureSelectControlBehavior(
+  name: string,
+  component: string | undefined,
+  configured: Partial<ConfigureSelectControlBehavior> = {},
+): ConfigureSelectControlBehavior {
+  const policy = component ? configureSelectControlPolicies[component] : undefined;
+  return {
+    allowClear: policy?.allowClear ?? configured.allowClear ?? true,
+    autoSelectFirstOption: policy?.autoSelectFirstOption ?? configured.autoSelectFirstOption ?? false,
+    showSearch: policy?.showSearch ?? configured.showSearch ?? relationCollectionPropertyNames.has(name),
+  };
+}
+
+export function filterConfigureSelectOption(input: string, option?: ConfigureSelectOption) {
+  const normalizedInput = input.toLowerCase();
+  return [option?.label, option?.value].some((value) =>
+    String(value ?? '')
+      .toLowerCase()
+      .includes(normalizedInput),
+  );
+}
+
 function ConfigureSelectControl(props: {
   allowClear?: boolean;
   autoSelectFirstOption?: boolean;
@@ -744,11 +788,7 @@ function ConfigureSelectControl(props: {
       value={value}
       onChange={onChange}
       {...restSelectProps}
-      filterOption={(input, option) =>
-        String((option as { label?: React.ReactNode } | undefined)?.label || '')
-          .toLowerCase()
-          .includes(input.toLowerCase())
-      }
+      filterOption={filterConfigureSelectOption}
     />
   );
 }
@@ -1418,11 +1458,16 @@ function FieldConfigurePropertyItem(props: {
                 ? getCollectionOptions(collections, t)
                 : normalizeSchemaEnum(schema?.enum, t);
 
-    const { filter, multiple, ...selectProps } = componentProps;
+    const { autoSelectFirstOption, filter, multiple, ...selectProps } = componentProps;
     const resolvedSelectProps = {
       ...selectProps,
       mode: multiple ? 'multiple' : selectProps.mode,
     };
+    const selectControlBehavior = resolveConfigureSelectControlBehavior(name, component, {
+      allowClear: selectProps.allowClear,
+      autoSelectFirstOption,
+      showSearch: selectProps.showSearch,
+    });
     const filteredOptions =
       typeof filter === 'function'
         ? fieldOptions.filter((option) => {
@@ -1439,14 +1484,14 @@ function FieldConfigurePropertyItem(props: {
         rules={schema?.required ? [{ required: true }] : undefined}
       >
         <ConfigureSelectControl
-          allowClear={component === 'SourceKey' ? false : selectProps.allowClear ?? true}
-          autoSelectFirstOption={component === 'SourceKey'}
+          allowClear={selectControlBehavior.allowClear}
+          autoSelectFirstOption={selectControlBehavior.autoSelectFirstOption}
           disabled={disabled}
           form={form}
           namePath={namePath}
           options={filteredOptions}
           selectProps={resolvedSelectProps}
-          showSearch={component === 'SourceKey' || resolvedSelectProps.showSearch}
+          showSearch={selectControlBehavior.showSearch}
         />
       </Form.Item>
     );
