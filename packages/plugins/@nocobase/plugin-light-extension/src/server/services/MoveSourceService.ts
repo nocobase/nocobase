@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UniqueConstraintError, type Database, type Model, type Transaction } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import type {
   RunJSLegacySource,
   RunJSSourceAdapter,
@@ -43,7 +43,7 @@ import { LightExtensionFileService } from './LightExtensionFileService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
-import { buildApplicationDefaultLightExtensionIdentity, LightExtensionRepoService } from './LightExtensionRepoService';
+import { LightExtensionRepoService } from './LightExtensionRepoService';
 import {
   LightExtensionRuntimeCompileService,
   type LightExtensionPreparedInitialWorkspace,
@@ -187,9 +187,6 @@ export class MoveSourceService {
         return operationResolution.replayResult;
       }
       operation = operationResolution.reservation;
-      if (input.destination.type === 'default') {
-        return await this.moveSourceToDefaultRepo(input, ctx, operation);
-      }
       if (input.destination.type === 'existing') {
         return await this.moveSourceToExistingRepo(input, ctx, operation);
       }
@@ -197,79 +194,6 @@ export class MoveSourceService {
     } catch (error) {
       await this.failMoveOperation(operation, error);
       throw normalizeMoveSourceError(error);
-    }
-  }
-
-  private async moveSourceToDefaultRepo(
-    input: LightExtensionMoveSourceInput,
-    ctx: MoveSourceServiceContext,
-    operation?: MoveSourceOperationReservation,
-  ): Promise<LightExtensionMoveSourceResult> {
-    if (input.destination.type !== 'default') {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_INVALID_INPUT',
-        'Application default light extension destination is required',
-      );
-    }
-    const identity = buildApplicationDefaultLightExtensionIdentity(this.applicationName);
-    const existing = await this.findApplicationDefaultRepo(identity.repoId, ctx);
-    if (existing) {
-      return this.moveSourceToExistingRepo(
-        { ...input, destination: { type: 'existing', repoId: identity.repoId } },
-        ctx,
-        operation,
-      );
-    }
-
-    const newDestinationInput: LightExtensionMoveSourceInput = {
-      ...input,
-      destination: {
-        type: 'new',
-        name: identity.name,
-        title: identity.title,
-      },
-    };
-    try {
-      return await this.moveSourceToNewRepo(newDestinationInput, ctx, operation, identity.repoId);
-    } catch (error) {
-      const creationRace = isDefaultRepoCreationRaceError(error);
-      const concurrent = await this.findApplicationDefaultRepo(identity.repoId, ctx, creationRace ? 50 : 0);
-      if (!concurrent) {
-        if (creationRace) {
-          throw defaultRepoCreationConflict(identity.repoId);
-        }
-        throw error;
-      }
-      const completedResult = await this.findCompletedMoveOperation(input);
-      if (completedResult) {
-        return completedResult;
-      }
-      return this.moveSourceToExistingRepo(
-        { ...input, destination: { type: 'existing', repoId: identity.repoId } },
-        ctx,
-        operation,
-      );
-    }
-  }
-
-  private async findApplicationDefaultRepo(
-    repoId: string,
-    ctx: MoveSourceServiceContext,
-    retryCount = 0,
-  ): Promise<LightExtensionMoveSourceResult['repo'] | null> {
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        return await this.repoService.getRepo(repoId, ctx);
-      } catch (error) {
-        const notFound = isLightExtensionError(error) && error.code === 'LIGHT_EXTENSION_REPO_NOT_FOUND';
-        if ((!notFound && !isSqliteBusyError(error)) || attempt >= retryCount) {
-          if (notFound) {
-            return null;
-          }
-          throw error;
-        }
-      }
-      await delay(100);
     }
   }
 
@@ -591,7 +515,6 @@ export class MoveSourceService {
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
     operation?: MoveSourceOperationReservation,
-    reservedRepoId?: string,
   ): Promise<LightExtensionMoveSourceResult> {
     if (input.destination.type !== 'new') {
       throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'New light extension destination is required');
@@ -628,7 +551,7 @@ export class MoveSourceService {
     });
     const entryKey = getRelocatedEntryKey(entryFiles, kind, input.entryName);
     const commitMessage = buildMoveCommitMessage(input);
-    const repoId = reservedRepoId || `ler_${uid()}`;
+    const repoId = `ler_${uid()}`;
     const initialFiles = [...createLightExtensionBaseTemplate(), ...entryFiles.map(toInitialTreeEntry)];
     const prepared = await this.runtimeCompileService.prepareInitialWorkspace(
       { repoId, files: initialFiles },
@@ -1192,41 +1115,6 @@ function moveOperationInProgress(): LightExtensionError {
     'LIGHT_EXTENSION_IDEMPOTENCY_IN_PROGRESS',
     'Move source with this idempotency key is still in progress; retry the same request',
   );
-}
-
-function isDefaultRepoCreationRaceError(error: unknown): boolean {
-  return (
-    error instanceof UniqueConstraintError ||
-    (isLightExtensionError(error) && error.code === 'LIGHT_EXTENSION_REPO_CONFLICT') ||
-    isSqliteBusyError(error)
-  );
-}
-
-function defaultRepoCreationConflict(repoId: string): LightExtensionError {
-  return new LightExtensionError(
-    'LIGHT_EXTENSION_SOURCE_OUTDATED',
-    'Application default repository was created concurrently; retry the move against its current Head',
-    { details: { repoId, reasonCode: 'default-repository-create-race' } },
-  );
-}
-
-function isSqliteBusyError(error: unknown): boolean {
-  const candidate = error as {
-    name?: string;
-    code?: string;
-    parent?: { code?: string };
-    original?: { code?: string };
-  };
-  return (
-    candidate?.name === 'SequelizeTimeoutError' ||
-    candidate?.code === 'SQLITE_BUSY' ||
-    candidate?.parent?.code === 'SQLITE_BUSY' ||
-    candidate?.original?.code === 'SQLITE_BUSY'
-  );
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getMoveOperationErrorCode(error: unknown): string {

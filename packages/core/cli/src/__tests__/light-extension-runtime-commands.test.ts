@@ -75,12 +75,14 @@ describe('Light Extension runtime commands', () => {
     );
   });
 
-  it('generates action help for externalization with all destination forms, idempotency, and body-file examples', async () => {
+  it('generates action help for externalization with explicit destinations, idempotency, and body-file examples', async () => {
     const commands = await generateLightExtensionCommands();
     const moveSource = findCommand(commands, 'light-extensions move-source');
 
     expect(moveSource.summary).toContain('externalize a complete inline RunJS workspace');
-    expect(moveSource.description).toContain('destination supports default, existing, and new');
+    expect(moveSource.description).toContain(
+      'destination must select an existing Repository or describe a new Repository',
+    );
     expect(moveSource.description).toContain('idempotencyKey');
     expect(moveSource.description).toContain('HTTP POST /lightExtensions:moveSource');
     expect(moveSource.examples).toEqual(['nb api light-extensions move-source --body-file <path>']);
@@ -102,7 +104,7 @@ describe('Light Extension runtime commands', () => {
     );
 
     const flags = createGeneratedFlags(moveSource);
-    expect(flags.destination.description).toContain('default');
+    expect(flags.destination.description).not.toContain('default');
     expect(flags.destination.description).toContain('existing');
     expect(flags.destination.description).toContain('new');
     expect(flags['idempotency-key'].description).toContain('retry key');

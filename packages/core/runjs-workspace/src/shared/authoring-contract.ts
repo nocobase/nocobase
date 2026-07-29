@@ -25,7 +25,7 @@ export type RunJSInlineWorkspaceModelUse =
   | 'JSFormActionModel'
   | 'FilterFormJSActionModel';
 export type RunJSExternalizationEntryKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
-export type RunJSExternalizationDestinationType = 'existing' | 'new' | 'default';
+export type RunJSExternalizationDestinationType = 'existing' | 'new';
 
 export const RUNJS_AUTHORING_CONTRACT_VERSION = manifest.authoringContractVersion as '1';
 export const RUNJS_INLINE_WORKSPACE_OWNER_KINDS = manifest.inlineWorkspace

@@ -210,15 +210,12 @@ describe('light-extension swagger', () => {
       items: { $ref: '#/components/schemas/LightExtensionWorkspaceFile' },
     });
     expect(schemas.LightExtensionMoveSourceDestination.oneOf).toEqual([
-      expect.objectContaining({
-        required: ['type'],
-        properties: expect.objectContaining({
-          type: { type: 'string', enum: ['default'], description: expect.any(String) },
-        }),
-      }),
       expect.objectContaining({ required: ['type', 'repoId'] }),
       expect.objectContaining({ required: ['type', 'name'] }),
     ]);
+    expect(schemas.LightExtensionMoveSourceDestination.description).toBe(
+      'Destination selection: an existing repository or a new repository.',
+    );
     expect(moveSource.description).toContain('--body-file');
     expect(moveSource.description).toContain('idempotencyKey');
     expect(moveSource.description).toContain('does not advance');

@@ -289,9 +289,6 @@ function optionalLightExtensionKind(input: ResourceActionInput, key: string): Li
 function normalizeMoveSourceDestination(value: unknown): LightExtensionMoveSourceInput['destination'] {
   const destination = toRecord(value);
   const type = requireString(destination, 'type', 'destination.type');
-  if (type === 'default') {
-    return { type };
-  }
   if (type === 'existing') {
     return {
       type,
@@ -306,7 +303,7 @@ function normalizeMoveSourceDestination(value: unknown): LightExtensionMoveSourc
       description: optionalNullableString(destination, 'description'),
     };
   }
-  throw invalidInput('destination.type must be "default", "existing", or "new"');
+  throw invalidInput('destination.type must be "existing" or "new"');
 }
 
 function requireStringValue(input: ResourceActionInput, key: string, label: string): string {

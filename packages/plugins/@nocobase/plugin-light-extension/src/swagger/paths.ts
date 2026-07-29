@@ -421,7 +421,7 @@ export const lightExtensionPaths = {
       summary: 'Move an inline RunJS workspace to a light extension',
       description: [
         'Atomically compile and externalize a complete inline RunJS workspace into a Light Extension Entry, then bind its Host to that Entry.',
-        'Pass the root business payload directly and use --body-file for multi-file source. destination supports default, existing, and new Repository variants. idempotencyKey can make retries stable. HTTP 409 reports stale owner/source Head, Entry, Repository, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance Repository or Host state.',
+        'Pass the root business payload directly and use --body-file for multi-file source. destination must select an existing Repository or describe a new Repository. idempotencyKey can make retries stable. HTTP 409 reports stale owner/source Head, Entry, Repository, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance Repository or Host state.',
       ].join('\n\n'),
       requestBody: {
         required: true,

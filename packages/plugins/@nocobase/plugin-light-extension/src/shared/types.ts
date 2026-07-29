@@ -474,9 +474,6 @@ export interface LightExtensionMoveSourceWorkspaceFile {
 
 export type LightExtensionMoveSourceDestination =
   | {
-      type: 'default';
-    }
-  | {
       type: 'existing';
       repoId: string;
     }

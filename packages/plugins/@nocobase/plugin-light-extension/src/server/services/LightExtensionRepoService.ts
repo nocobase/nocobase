@@ -11,7 +11,7 @@ import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
 import { RemoteSyncError, VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
 import { uid } from '@nocobase/utils';
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import {
   LIGHT_EXTENSION_OWNER_TYPE,
@@ -196,115 +196,6 @@ export class LightExtensionRepoService {
 
       return repo;
     });
-  }
-
-  async getOrCreateApplicationDefaultRepo(
-    applicationName: string,
-    ctx: LightExtensionServiceContext = {},
-  ): Promise<LightExtensionRepoRecord> {
-    this.assertCurrentApplication(applicationName);
-    const identity = buildApplicationDefaultLightExtensionIdentity(applicationName);
-    const existing = await this.findInternalRepo(identity.repoId, ctx);
-    if (existing) {
-      return stripInternalRepo(existing);
-    }
-
-    const requestId = getRequestId(ctx);
-    const initialFiles = createDefaultLightExtensionTemplate();
-    this.assertValidInitialFiles(initialFiles);
-    try {
-      return await this.withTransaction(ctx.transaction, async (transaction) => {
-        const current = await this.findInternalRepo(identity.repoId, { ...ctx, transaction });
-        if (current) {
-          return stripInternalRepo(current);
-        }
-        const vscResult = await this.runVsc(identity.repoId, () =>
-          this.vscFileService.ensureRepository(
-            {
-              ownerType: LIGHT_EXTENSION_OWNER_TYPE,
-              ownerId: identity.repoId,
-              name: 'source',
-              initialFiles,
-              message: 'Initialize application light extensions',
-              authorId: ctx.actorUserId || null,
-              metadata: {
-                lightExtensionRepoId: identity.repoId,
-                applicationName,
-                defaultRepository: true,
-                requestId,
-              },
-            },
-            this.createVscContext({
-              ctx,
-              transaction,
-              requestId,
-              repoId: identity.repoId,
-              aclAction: 'create',
-              reason: 'create application default light-extension repository',
-              allowedActions: ['createRepository'],
-            }),
-          ),
-        );
-        const record = await this.createRepoRecord(
-          {
-            id: identity.repoId,
-            vscRepoId: vscResult.repository.id,
-            applicationName: this.requireApplicationName(),
-            name: identity.name,
-            normalizedName: identity.name,
-            title: identity.title,
-            description: null,
-            headCommitId: vscResult.repository.headCommitId || null,
-          },
-          transaction,
-        );
-        const repo = repoFromModel(record);
-
-        await this.auditService.recordLifecycleEvent({
-          repoId: repo.id,
-          action: 'repoCreate',
-          result: 'success',
-          requestId,
-          actorUserId: ctx.actorUserId,
-          toStatus: repo.lifecycleStatus,
-          message: 'Application default light extension repository created',
-          details: {
-            applicationName,
-            defaultRepository: true,
-            headCommitId: repo.headCommitId,
-          },
-          transaction,
-        });
-
-        return repo;
-      });
-    } catch (error) {
-      if (
-        error instanceof UniqueConstraintError ||
-        (error instanceof LightExtensionError && error.code === 'LIGHT_EXTENSION_REPO_CONFLICT')
-      ) {
-        const concurrent = await this.findInternalRepo(identity.repoId, ctx);
-        if (concurrent) {
-          return stripInternalRepo(concurrent);
-        }
-      }
-      if (this.db.sequelize.getDialect() === 'sqlite' && isSqliteBusyError(error)) {
-        for (let attempt = 0; attempt < 50; attempt += 1) {
-          await delay(100);
-          try {
-            const concurrent = await this.findInternalRepo(identity.repoId, ctx);
-            if (concurrent) {
-              return stripInternalRepo(concurrent);
-            }
-          } catch (lookupError) {
-            if (!isSqliteBusyError(lookupError)) {
-              throw lookupError;
-            }
-          }
-        }
-      }
-      throw error;
-    }
   }
 
   normalizeCreateMetadata(
@@ -978,23 +869,6 @@ function getRequestId(ctx: LightExtensionServiceContext): string {
   return ctx.requestId || randomUUID();
 }
 
-export function buildApplicationDefaultLightExtensionIdentity(applicationName: string): {
-  repoId: string;
-  name: string;
-  title: string;
-} {
-  const normalizedApplicationName = applicationName.trim();
-  if (!normalizedApplicationName) {
-    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
-  }
-  const identityHash = createHash('sha256').update(normalizedApplicationName).digest('hex');
-  return {
-    repoId: `ler_app_${identityHash.slice(0, 24)}`,
-    name: `application-extensions-${identityHash.slice(0, 12)}`,
-    title: 'Application extensions',
-  };
-}
-
 function normalizeRepoName(name: string): string {
   const normalized = name
     .trim()
@@ -1033,21 +907,6 @@ function referenceExistsError(repoId: string, referenceCount: number): LightExte
 
 function isReferenceConstraintError(error: unknown): boolean {
   return error instanceof Error && error.name === 'SequelizeForeignKeyConstraintError';
-}
-
-function isSqliteBusyError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const candidate = error as {
-    original?: { code?: unknown };
-    parent?: { code?: unknown };
-  };
-  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function optionalTrim(value: string | null | undefined): string | null | undefined {
