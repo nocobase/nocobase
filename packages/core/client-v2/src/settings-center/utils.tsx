@@ -7,8 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { MenuProps } from 'antd';
 import { Outlet } from 'react-router-dom';
 import type { PluginSettingsPageType } from '../PluginSettingsManager';
+
+export type SidebarMenuItem = NonNullable<MenuProps['items']>[number];
 
 export const ADMIN_SETTINGS_LAYOUT_MODEL_UID = 'admin-settings-layout-model';
 export const PLUGIN_MANAGER_SETTING_NAME = 'plugin-manager';
@@ -249,9 +252,9 @@ export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType
  * 避免出现「点开一层只有一个同名项」的无意义嵌套。
  *
  * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
- * @returns {any[]} antd Menu items
+ * @returns {SidebarMenuItem[]} antd Menu items
  */
-export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] = []): any[] {
+export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] = []): SidebarMenuItem[] {
   return settings
     .filter((item) => !item.hidden)
     .map((item) => {
@@ -266,6 +269,49 @@ export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] 
         children: children?.length ? children : undefined,
       };
     });
+}
+
+/**
+ * 把当前命中的配置项换算成左侧栏里真实存在的菜单 key。
+ *
+ * `getSidebarMenuItems` 会把单子项的层级折叠掉，被折叠掉的子项在左栏没有自己的条目，
+ * 直接拿它的 name 当 `selectedKeys` 会导致整个左栏都不高亮；这里沿路径回退到最深的、
+ * 确实被渲染出来的那一级。
+ *
+ * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
+ * @param {string | undefined} activeName 当前命中的配置项名称
+ * @returns {string | undefined} 左栏应选中的 key
+ */
+export function getSidebarSelectedKey(
+  settings: readonly PluginSettingsPageType[] = [],
+  activeName?: string,
+): string | undefined {
+  if (!activeName) {
+    return undefined;
+  }
+
+  const walk = (items: readonly PluginSettingsPageType[]): string | null => {
+    for (const item of items) {
+      if (item.name === activeName) {
+        return item.name;
+      }
+
+      const visibleChildren = (item.children || []).filter((child) => !child.hidden);
+      if (!visibleChildren.length) {
+        continue;
+      }
+
+      const found = walk(visibleChildren);
+      if (found) {
+        // 子级被折叠时，命中的是它自己这一条。
+        return visibleChildren.length > 1 ? found : item.name;
+      }
+    }
+
+    return null;
+  };
+
+  return walk(settings) || undefined;
 }
 
 /**

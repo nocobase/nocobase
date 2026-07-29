@@ -13,7 +13,7 @@ import { theme as antdTheme } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '../flow/system-settings';
-import { isDarkColor } from './settingsTheme';
+import { getSettingsHeaderColors } from './settingsTheme';
 
 const brandClassName = css`
   display: inline-flex;
@@ -62,6 +62,7 @@ const suffixClassName = css`
  */
 export const SettingsBrand = observer(() => {
   const { token } = antdTheme.useToken();
+  const headerColors = getSettingsHeaderColors(token);
   const result = useSystemSettings();
   const { t: tCollections } = useTranslation('lm-collections');
   const title = tCollections(result?.data?.data?.title || 'NocoBase');
@@ -74,16 +75,10 @@ export const SettingsBrand = observer(() => {
   return (
     <div className={brandClassName}>
       {logoUrl ? (
-        // 站点 logo 通常是为深色顶栏画的浅色图；设置中心顶栏是中性灰白，
-        // 因此统一压成单色，避免浅色 logo 直接消失在白底上。
-        <img
-          alt={title}
-          className={logoImageClassName}
-          src={logoUrl}
-          style={{ filter: isDarkColor(token.colorBgContainer) ? 'brightness(0) invert(1)' : 'brightness(0)' }}
-        />
+        // 顶栏跟随系统主题，logo 与业务端顶栏处在同一底色下，按原样显示即可。
+        <img alt={title} className={logoImageClassName} src={logoUrl} />
       ) : (
-        <span className={titleClassName} style={{ color: token.colorText, fontSize: token.fontSizeHeading4 }}>
+        <span className={titleClassName} style={{ color: headerColors.text, fontSize: token.fontSizeHeading4 }}>
           {title}
         </span>
       )}
@@ -91,16 +86,18 @@ export const SettingsBrand = observer(() => {
         aria-hidden
         style={{
           alignSelf: 'center',
-          background: token.colorSplit,
+          background: headerColors.text,
           height: 16,
+          opacity: 0.3,
           width: 1,
         }}
       />
       <span
         className={suffixClassName}
         style={{
-          color: token.colorTextDescription,
+          color: headerColors.text,
           fontSize: token.fontSize,
+          opacity: 0.75,
         }}
       >
         {SETTINGS_BRAND_SUFFIX}

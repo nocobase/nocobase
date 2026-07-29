@@ -86,7 +86,6 @@ type MultiPortalFormDraftValues = Omit<MultiPortalFormValues, 'routePath'> &
     gitBranch?: string;
     gitPath?: string;
     gitRepo?: string;
-    sourceStorage?: PortalSourceStorage;
     cover?: UploadedAttachment | null;
   };
 
@@ -281,22 +280,28 @@ function normalizeMultiPortalOptions(options?: MultiPortalOptions | null): Multi
 }
 
 function getSourceStorageOptionsFromDraft(values: MultiPortalFormDraftValues): MultiPortalOptions {
+  // options 是自由结构的 json 列，表单只管其中几个字段；其余内容原样带上，别在提交时冲掉。
+  const baseOptions = values.options || {};
   const cover = values.cover || null;
 
   if (normalizePortalType(values.portalType) !== 'ai') {
-    return { cover };
+    // 非 AI portal 的表单里没有源码位置，保留记录上的既有值。
+    return { ...baseOptions, cover };
   }
 
   // AI portal 的源码位置不再单独选：填了仓库地址就是 git，留空就存在 NocoBase 里。
   const repo = normalizeOptionalString(values.gitRepo);
   if (!repo) {
-    return { cover, sourceStorage: 'nocobase' };
+    // 仓库地址留空只切换存储位置，既有的 git 配置照旧留着，重新填回地址时不用再输一遍分支和路径。
+    return { ...baseOptions, cover, sourceStorage: 'nocobase' };
   }
 
   return {
+    ...baseOptions,
     cover,
     sourceStorage: 'git',
     git: {
+      ...baseOptions.git,
       repo,
       branch: normalizeOptionalString(values.gitBranch) || DEFAULT_PORTAL_GIT_BRANCH,
       path: normalizeOptionalString(values.gitPath) || DEFAULT_PORTAL_GIT_PATH,
@@ -363,8 +368,10 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
   if (portalNameError) {
     throw new Error(portalNameError);
   }
+  // cover / git* 只是表单里的中间态，最终都收进 options，不能作为顶层列提交。
+  const { cover: _cover, gitBranch: _gitBranch, gitPath: _gitPath, gitRepo: _gitRepo, ...columnValues } = values;
   return {
-    ...values,
+    ...columnValues,
     title: values.title.trim(),
     uid: values.uid.trim(),
     portalType: normalizePortalType(values.portalType),
@@ -414,7 +421,6 @@ function toFormDraftValues(record: MultiPortalRecord): MultiPortalFormDraftValue
   const options = values.options;
   return {
     ...values,
-    sourceStorage: normalizePortalSourceStorage(options?.sourceStorage),
     gitRepo: options?.git?.repo || '',
     gitBranch: options?.git?.branch || DEFAULT_PORTAL_GIT_BRANCH,
     gitPath: options?.git?.path || DEFAULT_PORTAL_GIT_PATH,
@@ -668,8 +674,10 @@ const MultiPortalsPage: React.FC = () => {
           styles={{ body: { padding: token.paddingSM } }}
           style={{ opacity: record.enabled ? 1 : 0.6 }}
           actions={[
+            // 卡片操作只有图标，可访问名靠 aria-label 给出：tooltip 的文字不参与无障碍命名。
             <Tooltip key="view" title={t('View')}>
               <Button
+                aria-label={t('View')}
                 type="text"
                 size="small"
                 icon={<ExportOutlined />}
@@ -679,10 +687,17 @@ const MultiPortalsPage: React.FC = () => {
               />
             </Tooltip>,
             <Tooltip key="edit" title={t('Edit')}>
-              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openFormDrawer(record)} />
+              <Button
+                aria-label={t('Edit')}
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => openFormDrawer(record)}
+              />
             </Tooltip>,
             <Tooltip key="routes" title={t('Routes')}>
               <Button
+                aria-label={t('Routes')}
                 type="text"
                 size="small"
                 icon={<ApartmentOutlined />}
@@ -691,7 +706,13 @@ const MultiPortalsPage: React.FC = () => {
               />
             </Tooltip>,
             <Tooltip key="delete" title={t('Delete')}>
-              <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDelete(record.uid)} />
+              <Button
+                aria-label={t('Delete')}
+                type="text"
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record.uid)}
+              />
             </Tooltip>,
           ]}
         >
@@ -1040,7 +1061,9 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
                 rules={[{ required: true, message: t('The field value is required') }]}
               >
                 <Select
-                  disabled={!!record || record?.defaultPortal}
+                  // 布局建好之后不允许改；但记录上本来就没有布局时（例如从 AI portal 切过来的）
+                  // 必须能选，否则必填 + 置灰会把编辑表单彻底卡死。
+                  disabled={record?.defaultPortal || !!(record?.uiLayoutUid || record?.uiLayout?.uid)}
                   loading={layoutOptionsService.loading}
                   options={layoutOptions}
                   showSearch
@@ -1056,7 +1079,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             accept="image/*"
             preview={{ width: 160, height: 90, fit: 'cover' }}
             uploadText={t('Upload cover')}
-            removeText={t('Remove cover')}
           />
         </Form.Item>
         <Form.Item name="icon" label={t('Icon')} extra={t('Used as the cover placeholder when no cover is uploaded.')}>

@@ -1679,5 +1679,8 @@
   "Applications": "应用",
   "Data": "数据",
   "Automation": "自动化",
-  "Users & Permissions": "用户与权限"
+  "Users & Permissions": "用户与权限",
+  "Search settings": "搜索设置",
+  "Recently visited": "最近访问",
+  "No matching settings": "没有匹配的设置项"
 }

@@ -25,6 +25,7 @@ import {
   getDefaultSettingsPath,
   getSidebarMenuItems,
   getSidebarOpenKeys,
+  getSidebarSelectedKey,
   matchSettingsRoute,
 } from './utils';
 
@@ -90,8 +91,15 @@ export const InternalAdminSettingsLayout = () => {
   const sidebarMenus = useMemo(() => getSidebarMenuItems(activeGroupSettings), [activeGroupSettings]);
   // 分组里只有一个没有下级的配置项时，左栏会退化成「一个和顶栏分组同义的孤零零条目」，
   // 这种情况直接不渲染侧栏，让页面标题承担命名（例如「应用」分组下的 Portal 管理）。
-  const shouldShowSidebar = sidebarMenus.length > 1 || sidebarMenus.some((item) => item?.children?.length);
-  const selectedMenuKey = currentVisibleSetting?.name || currentVisibleTopLevelSetting?.name;
+  const shouldShowSidebar =
+    sidebarMenus.length > 1 || sidebarMenus.some((item) => (item as { children?: unknown[] })?.children?.length);
+  // 命中的可能是被折叠掉的子项，要换算成左栏里真实存在的那一级，否则整个左栏都不高亮。
+  const selectedMenuKey = useMemo(
+    () =>
+      getSidebarSelectedKey(activeGroupSettings, currentVisibleSetting?.name) ||
+      getSidebarSelectedKey(activeGroupSettings, currentVisibleTopLevelSetting?.name),
+    [activeGroupSettings, currentVisibleSetting?.name, currentVisibleTopLevelSetting?.name],
+  );
   const derivedOpenKeys = useMemo(
     () => getSidebarOpenKeys(activeGroupSettings, selectedMenuKey),
     [activeGroupSettings, selectedMenuKey],

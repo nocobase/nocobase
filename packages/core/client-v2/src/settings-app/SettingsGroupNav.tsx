@@ -8,12 +8,13 @@
  */
 
 import { observer } from '@nocobase/flow-engine';
-import { Menu } from 'antd';
+import { ConfigProvider, Menu, theme as antdTheme } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
 import { useSettingsGroups } from '../settings-center/useSettingsGroups';
+import { buildSettingsHeaderMenuTheme } from './settingsTheme';
 
 const navStyle: React.CSSProperties = {
   background: 'transparent',
@@ -34,7 +35,9 @@ export const SettingsGroupNav: React.FC = observer(() => {
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = antdTheme.useToken();
   const { groups, activeGroupKey, getGroupEntryPath } = useSettingsGroups();
+  const headerMenuTheme = useMemo(() => buildSettingsHeaderMenuTheme(token), [token]);
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上不该出现设置导航。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
 
@@ -45,19 +48,21 @@ export const SettingsGroupNav: React.FC = observer(() => {
   }
 
   return (
-    <Menu
-      mode="horizontal"
-      disabledOverflow={false}
-      selectedKeys={activeGroupKey ? [activeGroupKey] : []}
-      items={items}
-      style={navStyle}
-      onClick={({ key }) => {
-        const targetPath = getGroupEntryPath(key);
-        if (targetPath && targetPath !== location.pathname) {
-          navigate(targetPath);
-        }
-      }}
-    />
+    <ConfigProvider theme={headerMenuTheme}>
+      <Menu
+        mode="horizontal"
+        disabledOverflow={false}
+        selectedKeys={activeGroupKey ? [activeGroupKey] : []}
+        items={items}
+        style={navStyle}
+        onClick={({ key }) => {
+          const targetPath = getGroupEntryPath(key);
+          if (targetPath && targetPath !== location.pathname) {
+            navigate(targetPath);
+          }
+        }}
+      />
+    </ConfigProvider>
   );
 });
 

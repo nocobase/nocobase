@@ -18,7 +18,8 @@ import {
 import { useApp } from '../hooks/useApp';
 import { SettingsBrand } from './SettingsBrand';
 import { SettingsGroupNav } from './SettingsGroupNav';
-import { buildSettingsNeutralTheme } from './settingsTheme';
+import { SettingsSearch } from './SettingsSearch';
+import { buildSettingsNeutralTheme, getSettingsHeaderColors } from './settingsTheme';
 
 const rootStyle: React.CSSProperties = {
   height: '100vh',
@@ -38,6 +39,7 @@ const actionsStyle: React.CSSProperties = {
   alignItems: 'center',
   display: 'flex',
   flexShrink: 0,
+  gap: 8,
   height: '100%',
 };
 
@@ -55,6 +57,7 @@ export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
   const { token } = antdTheme.useToken();
   const settingsShellTheme = useMemo<ThemeConfig>(() => buildSettingsNeutralTheme(token), [token]);
+  const headerColors = useMemo(() => getSettingsHeaderColors(token), [token]);
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -68,22 +71,19 @@ export const SettingsShell: FC = ({ children }) => {
     <ConfigProvider theme={settingsShellTheme}>
       <Layout style={rootStyle}>
         <Layout.Header
-          style={
-            {
-              borderBottom: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-              height: 46,
-              lineHeight: '46px',
-              paddingInline: token.paddingLG,
-              // 顶栏子组件里有一部分直接读 CSS 变量而不是 antd token，一起覆盖掉。
-              '--colorTextHeaderMenu': token.colorText,
-              '--nb-topbar-action-color': token.colorText,
-            } as React.CSSProperties
-          }
+          style={{
+            // 深色顶栏自带层次，只有浅色顶栏才需要一条分割线把它和内容区分开。
+            borderBottom: headerColors.dark ? 'none' : `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+            height: 46,
+            lineHeight: '46px',
+            paddingInline: token.paddingLG,
+          }}
         >
           <div style={headerContentStyle}>
             <SettingsBrand />
             <SettingsGroupNav />
             <div style={actionsStyle}>
+              <SettingsSearch />
               <HelpLite />
               {userCenter ? <FlowModelRenderer model={userCenter} /> : null}
             </div>

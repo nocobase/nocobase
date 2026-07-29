@@ -180,7 +180,10 @@ export const useACLSnippets = (): string[] => {
   const app = useApp();
   const ctx = useACLContext();
   const contextSnippets = ctx?.data?.data?.snippets;
-  const storeSnippets = (app.context.acl as ACLStore | undefined)?.data?.snippets;
+  // 必须走 ensureACLStore：调用方可能位于 `ACLRolesCheckProvider` 之外，此时 store 还没建，
+  // 直接读 `app.context.acl` 拿到的是 undefined，observer 就订阅不到后续的权限写入，
+  // 会一直停在首帧的空 snippets 上。
+  const storeSnippets = ensureACLStore(app)?.data?.snippets;
 
   return contextSnippets?.length ? contextSnippets : storeSnippets || [];
 };

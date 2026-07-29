@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UploadOutlined } from '@ant-design/icons';
-import { Button, Space, Upload, message, theme } from 'antd';
+import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import { css, cx } from '@emotion/css';
+import { Upload, message } from 'antd';
+import type { UploadFile } from 'antd';
 import mime from 'mime';
 import match from 'mime-match';
 import type { RcFile, UploadRequestOption } from 'rc-upload/lib/interface';
@@ -69,7 +71,11 @@ export function useAttachmentStorageRules() {
       }
     };
 
-    void loadStorageRules();
+    loadStorageRules().catch(() => {
+      if (mounted) {
+        setStorageRules(null);
+      }
+    });
 
     return () => {
       mounted = false;
@@ -82,7 +88,7 @@ export function useAttachmentStorageRules() {
 export type AttachmentUploadProps = {
   value?: UploadedAttachment | null;
   onChange?: (value: UploadedAttachment | null) => void;
-  /** 预览框尺寸；`fit` 对应 CSS object-fit */
+  /** 卡片尺寸；`fit` 对应 CSS object-fit */
   preview?: {
     width?: number;
     height?: number;
@@ -90,26 +96,24 @@ export type AttachmentUploadProps = {
   };
   /** 在存储规则之外再收窄可选文件类型，例如只收图片 */
   accept?: string;
-  /** 未上传时预览框里的占位内容 */
-  placeholder?: React.ReactNode;
+  /** 上传卡片里 `+` 下方的文字 */
   uploadText?: string;
-  removeText?: string;
   disabled?: boolean;
 };
 
-const DEFAULT_PREVIEW = { width: 96, height: 96, fit: 'contain' as const };
+const DEFAULT_PREVIEW = { width: 104, height: 104, fit: 'contain' as const };
 
 /**
  * 附件上传控件。
  *
  * 受控组件，值就是 `attachments:create` 返回的附件对象，可直接挂在 `Form.Item` 上。
+ * 外观沿用附件字段的原生形态：一张 picture-card，删除在卡片自身的悬浮操作里，不额外摆按钮。
  * 上传前按默认存储的规则校验大小与 mimetype，与业务表单里的附件字段保持同一套限制。
  */
 export const AttachmentUpload: React.FC<AttachmentUploadProps> = (props) => {
-  const { value, onChange, preview, accept, placeholder, uploadText, removeText, disabled } = props;
+  const { value, onChange, preview, accept, uploadText, disabled } = props;
   const app = useApp();
   const { t } = useTranslation();
-  const { token } = theme.useToken();
   const [uploading, setUploading] = useState(false);
   const storageRules = useAttachmentStorageRules();
   const previewConfig = { ...DEFAULT_PREVIEW, ...preview };
@@ -200,51 +204,69 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = (props) => {
     [app.apiClient, onChange],
   );
 
+  const fileList = useMemo<UploadFile[]>(() => {
+    if (!value?.url) {
+      return [];
+    }
+
+    return [
+      {
+        uid: `${value.id ?? value.url}`,
+        name: value.title || value.filename || '',
+        status: 'done',
+        url: value.url,
+        thumbUrl: value.url,
+      },
+    ];
+  }, [value?.filename, value?.id, value?.title, value?.url]);
+
+  const handlePreview = useCallback((file: UploadFile) => {
+    if (file.url) {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+    }
+  }, []);
+
+  const handleRemove = useCallback(() => {
+    onChange?.(null);
+    return true;
+  }, [onChange]);
+
+  // picture-card 的卡片尺寸写死在 104×104，这里按调用方要的比例覆盖掉。
+  const sizeClassName = useMemo(
+    () => css`
+      .ant-upload.ant-upload-select,
+      .ant-upload-list-item-container {
+        width: ${previewConfig.width}px !important;
+        height: ${previewConfig.height}px !important;
+      }
+
+      .ant-upload-list-item-thumbnail img {
+        object-fit: ${previewConfig.fit} !important;
+      }
+    `,
+    [previewConfig.fit, previewConfig.height, previewConfig.width],
+  );
+
   return (
-    <Space align="start" size={token.marginSM}>
-      <div
-        style={{
-          alignItems: 'center',
-          background: token.colorBgLayout,
-          border: `${token.lineWidth}px solid ${token.colorBorder}`,
-          borderRadius: token.borderRadius,
-          color: token.colorTextDescription,
-          display: 'flex',
-          height: previewConfig.height,
-          justifyContent: 'center',
-          overflow: 'hidden',
-          width: previewConfig.width,
-        }}
-      >
-        {value?.url ? (
-          <img
-            alt={value.title || value.filename || ''}
-            src={value.url}
-            style={{ height: '100%', objectFit: previewConfig.fit, width: '100%' }}
-          />
-        ) : (
-          placeholder
-        )}
-      </div>
-      <Space direction="vertical" size={token.marginXXS}>
-        <Upload
-          accept={acceptValue}
-          beforeUpload={beforeUpload}
-          customRequest={handleUpload}
-          disabled={disabled}
-          showUploadList={false}
-        >
-          <Button disabled={disabled} icon={<UploadOutlined />} loading={uploading}>
-            {uploadText || t('Upload')}
-          </Button>
-        </Upload>
-        {value ? (
-          <Button disabled={disabled} size="small" type="text" onClick={() => onChange?.(null)}>
-            {removeText || t('Delete')}
-          </Button>
-        ) : null}
-      </Space>
-    </Space>
+    <Upload
+      accept={acceptValue}
+      beforeUpload={beforeUpload}
+      className={cx('nb-attachment-upload', sizeClassName)}
+      customRequest={handleUpload}
+      disabled={disabled}
+      fileList={fileList}
+      listType="picture-card"
+      maxCount={1}
+      onPreview={handlePreview}
+      onRemove={handleRemove}
+    >
+      {fileList.length ? null : (
+        <div>
+          {uploading ? <LoadingOutlined /> : <PlusOutlined />}
+          <div style={{ marginTop: 8 }}>{uploadText || t('Upload')}</div>
+        </div>
+      )}
+    </Upload>
   );
 };
 

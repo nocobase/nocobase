@@ -27,8 +27,16 @@ vi.mock('../hooks/useApp', () => ({
   }),
 }));
 
-vi.mock('../flow/admin-shell/admin-layout/NocoBaseLogo', () => ({
-  NocoBaseLogo: () => <div data-testid="settings-logo">logo</div>,
+vi.mock('../settings-app/SettingsBrand', () => ({
+  SettingsBrand: () => <div data-testid="settings-logo">logo</div>,
+}));
+
+vi.mock('../settings-app/SettingsGroupNav', () => ({
+  SettingsGroupNav: () => <div data-testid="settings-group-nav">groups</div>,
+}));
+
+vi.mock('../settings-app/SettingsSearch', () => ({
+  SettingsSearch: () => <div data-testid="settings-search">search</div>,
 }));
 
 vi.mock('../flow/admin-shell/admin-layout/HelpLite', () => ({
@@ -50,7 +58,7 @@ describe('SettingsShell', () => {
     createModel.mockClear();
   });
 
-  it('renders only the settings logo, help and user center around its content', () => {
+  it('renders only the settings brand, group nav, help and user center around its content', () => {
     render(
       <SettingsShell>
         <div>settings content</div>
@@ -58,6 +66,8 @@ describe('SettingsShell', () => {
     );
 
     expect(screen.getByTestId('settings-logo')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-group-nav')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-search')).toBeInTheDocument();
     expect(screen.getByTestId('settings-help')).toBeInTheDocument();
     expect(screen.getByTestId('settings-user-center')).toHaveTextContent('settings-user-center');
     expect(screen.getByText('settings content')).toBeInTheDocument();
@@ -65,7 +75,7 @@ describe('SettingsShell', () => {
     expect(screen.queryByTestId('notifications-button')).not.toBeInTheDocument();
   });
 
-  it('keeps the designated header color when the shared header token uses its dark fallback', () => {
+  it('follows the shared header color instead of pinning its own', () => {
     render(
       <ConfigProvider
         theme={
@@ -83,6 +93,6 @@ describe('SettingsShell', () => {
       </ConfigProvider>,
     );
 
-    expect(screen.getByRole('banner')).toHaveStyle({ background: '#176CE1' });
+    expect(screen.getByRole('banner')).toHaveStyle({ background: '#001529' });
   });
 });
