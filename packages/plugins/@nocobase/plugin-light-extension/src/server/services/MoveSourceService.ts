@@ -17,6 +17,7 @@ import type {
 } from '../vsc-file/public-api';
 import { buildRunJSSourceRepositoryIdentity, isVscError } from '../vsc-file/public-api';
 import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
+import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import { uid } from '@nocobase/utils';
 
@@ -41,6 +42,7 @@ import { LightExtensionEntryService } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
+import { LightExtensionAuditService } from './LightExtensionAuditService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService } from './LightExtensionRepoService';
 import {
@@ -157,6 +159,7 @@ export class MoveSourceService {
     private readonly sourceSnapshotValidator: MoveSourceSourceSnapshotValidator = new PersistentMoveSourceSnapshotValidator(
       db,
     ),
+    private readonly auditService: LightExtensionAuditService = new LightExtensionAuditService(db),
   ) {
     this.moveOperationStore = new MoveOperationStore(db, applicationName);
   }
@@ -289,6 +292,7 @@ export class MoveSourceService {
     );
     return this.db.sequelize.transaction(async (transaction) => {
       const result = await this.publishExistingMove(input, ctx, adapter, kind, entryKey, prepared, transaction);
+      await this.recordMoveSuccessAudit(input, result, ctx, transaction);
       await this.moveOperationStore.complete(operation, result, transaction);
       return result;
     });
@@ -411,6 +415,7 @@ export class MoveSourceService {
         prepared,
         transaction,
       );
+      await this.recordMoveSuccessAudit(input, result, ctx, transaction);
       await this.moveOperationStore.complete(operation, result, transaction);
       return result;
     });
@@ -444,7 +449,7 @@ export class MoveSourceService {
       );
     }
 
-    const repo = await this.repoService.createRepo(
+    const repo = await this.repoService.createRepoForCompositeUseCase(
       {
         name: input.destination.name,
         title: input.destination.title,
@@ -477,6 +482,28 @@ export class MoveSourceService {
       serviceContext,
     );
     return { repo: compiled.repo, entry, binding, ownerFingerprint };
+  }
+
+  private async recordMoveSuccessAudit(
+    input: LightExtensionMoveSourceInput,
+    result: LightExtensionMoveSourceResult,
+    ctx: MoveSourceServiceContext,
+    transaction: Transaction,
+  ): Promise<void> {
+    await this.auditService.recordLifecycleEvent({
+      repoId: result.repo.id,
+      action: 'moveSource',
+      result: 'success',
+      requestId: ctx.requestId || randomUUID(),
+      actorUserId: ctx.actorUserId,
+      message: 'RunJS source moved to a light extension',
+      details: {
+        destinationType: input.destination.type,
+        entryId: result.entry.id,
+        kind: result.entry.kind,
+      },
+      transaction,
+    });
   }
 
   private async requireEntry(

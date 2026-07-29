@@ -51,3 +51,42 @@ test('keeps open metadata and missing-workspace status contracts public', () => 
   expect(swagger.paths['/runJSSources:open'].post.responses).toHaveProperty('409');
   expect(repository.required).toEqual(expect.arrayContaining(['id', 'repoId', 'headCommitId']));
 });
+
+test('documents the complete raw VSC compatibility resource without exposing protected owners', () => {
+  const rawPaths = Object.keys(swagger.paths)
+    .filter((path) => path.startsWith('/vscFile:'))
+    .sort();
+
+  expect(rawPaths).toEqual(
+    [
+      'archiveRepository',
+      'createRepository',
+      'diff',
+      'diffFile',
+      'getCommit',
+      'getFile',
+      'getRepository',
+      'listCommits',
+      'listRefs',
+      'pull',
+      'push',
+      'restoreCommit',
+      'restoreFile',
+      'updateRef',
+    ].map((action) => `/vscFile:${action}`),
+  );
+  expect(swagger.paths['/vscFile:push'].post).toMatchObject({
+    tags: ['vscFile'],
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            required: ['repoId', 'baseCommitId', 'message', 'files'],
+          },
+        },
+      },
+    },
+  });
+  expect(swagger.paths['/vscFile:push'].post.description).toContain('protected RunJS and light-extension repositories');
+});

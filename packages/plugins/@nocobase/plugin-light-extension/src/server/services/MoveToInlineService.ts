@@ -26,7 +26,7 @@ import {
   type VscServiceContext,
   VscFileService,
 } from '../vsc-file/public-api';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
@@ -37,6 +37,7 @@ import type {
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
 import { LightExtensionError } from '../../shared/errors';
+import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionEntryService } from './LightExtensionEntryService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
@@ -108,6 +109,7 @@ export class MoveToInlineService {
     private readonly getVscFileService: VscFileServiceProvider,
     private readonly getAdapterRegistry: AdapterRegistryProvider,
     private readonly applicationName = 'main',
+    private readonly auditService: LightExtensionAuditService = new LightExtensionAuditService(db),
   ) {
     this.moveOperationStore = new MoveOperationStore(db, applicationName);
   }
@@ -151,6 +153,7 @@ export class MoveToInlineService {
       const prepared = await this.prepareMoveToInline(input, ctx, relocatedFiles, vscFileService);
       return await this.db.sequelize.transaction(async (transaction) => {
         const result = await this.publishMoveToInline(input, ctx, prepared, vscFileService, transaction);
+        await this.recordMoveToInlineSuccessAudit(input, result, ctx, transaction);
         await this.moveOperationStore.complete(operation, result, transaction);
         return result;
       });
@@ -451,6 +454,29 @@ export class MoveToInlineService {
       filesHash: prepared.artifact.filesHash,
       sourceRef,
     };
+  }
+
+  private async recordMoveToInlineSuccessAudit(
+    input: LightExtensionMoveToInlineInput,
+    result: LightExtensionMoveToInlineResult,
+    ctx: MoveToInlineServiceContext,
+    transaction: Transaction,
+  ): Promise<void> {
+    await this.auditService.recordLifecycleEvent({
+      repoId: input.repoId,
+      action: 'moveSource',
+      result: 'success',
+      requestId: ctx.requestId || randomUUID(),
+      actorUserId: ctx.actorUserId,
+      message: 'Light extension entry moved to inline RunJS',
+      details: {
+        destinationType: 'inline',
+        entryId: input.entryId,
+        kind: input.kind,
+        runJSRepoId: result.runJSRepoId,
+      },
+      transaction,
+    });
   }
 }
 

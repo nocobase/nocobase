@@ -128,6 +128,18 @@ describe('plugin-light-extension repo service', () => {
     await expect(supportService.listRepos()).resolves.toEqual([expect.objectContaining({ id: supportRepo.id })]);
   });
 
+  it.each([null, ''])('claims a repository with legacy application ownership %j', async (applicationName) => {
+    const repo = await service.createRepo({ name: `Legacy owner ${applicationName === null ? 'null' : 'empty'}` });
+    await app.db.getRepository('lightExtensionRepos').update({
+      filterByTk: repo.id,
+      values: { applicationName },
+    });
+
+    await expect(service.getRepo(repo.id)).resolves.toMatchObject({ id: repo.id });
+    const claimed = await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id });
+    expect(claimed?.get('applicationName')).toBe('main');
+  });
+
   it('updates repository display metadata without changing its technical identity', async () => {
     const repo = await service.createRepo(
       {

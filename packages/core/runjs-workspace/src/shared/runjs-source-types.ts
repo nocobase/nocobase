@@ -11,6 +11,7 @@ import { VscError } from './errors';
 import { sha256Hex } from './hash';
 export { buildRunJSOwnerFingerprint } from '@nocobase/server';
 export { buildRunJSArtifactHash, buildRunJSFilesHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs/server';
+export { runJSSourceRequestActionNames } from './runjs-source-contracts';
 import type { RunJSSourceLocator } from './runjs-source-contracts';
 import type { VscRepositoryIdentity } from './types';
 
@@ -28,6 +29,12 @@ export type {
   RunJSSourceAuthoringInspector,
   RunJSSourceAuthoringLegacyInfo,
   RunJSSourceKind,
+  RunJSSourceCompilePreviewInput,
+  RunJSSourceCompilePreviewResult,
+  RunJSSourceExportZipInput,
+  RunJSSourceGetVersionInput,
+  RunJSSourceHistoryInput,
+  RunJSSourceHistoryResult,
   RunJSSourceInitialSource,
   RunJSSourceImportZipInput,
   RunJSSourceImportZipResult,
@@ -36,10 +43,17 @@ export type {
   RunJSSourceOpenSettingsDescriptor,
   RunJSSourcePermissionCheck,
   RunJSSourcePermissionResult,
+  RunJSSourceRepositoryRecord,
+  RunJSSourceRequestActionInput,
+  RunJSSourceRequestActionName,
+  RunJSSourceRequestActionResult,
+  RunJSSourceRequestMap,
   RunJSSourceFileChange,
   RunJSSourceSaveChangesInput,
   RunJSSourceSaveInput,
   RunJSSourceSaveResult,
+  RunJSSourceVersionFile,
+  RunJSSourceVersionResult,
   RunJSSourceWorkspaceFile,
   RunJSSurfaceStyle,
 } from './runjs-source-contracts';

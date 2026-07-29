@@ -25,11 +25,18 @@ import {
   validateRunJSWorkspacePathValue,
 } from '../../shared/runjs-workspace-path';
 import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
+import { runJSSourceRequestActionNames } from '../../shared/runjs-source-contracts';
 import {
   buildRunJSRuntimeCodeHash,
   buildRunJSSourceRepositoryIdentity,
   normalizeRunJSSourceLocator,
   type RunJSLegacySource,
+  type RunJSSourceCompilePreviewInput,
+  type RunJSSourceCompilePreviewResult,
+  type RunJSSourceExportZipInput,
+  type RunJSSourceGetVersionInput,
+  type RunJSSourceHistoryInput,
+  type RunJSSourceHistoryResult,
   type RunJSSourceInitialSource,
   type RunJSSourceImportZipInput,
   type RunJSSourceImportZipResult,
@@ -38,14 +45,16 @@ import {
   type RunJSSourceAuthoringInspector,
   type RunJSSourceKind,
   type RunJSSourcePermissionResult,
-  type RunJSRuntimeArtifact,
   type RunJSSourcePermissionCheck,
   type RunJSSourceOpenResult,
   type RunJSSourceOpenSettingsDescriptor,
+  type RunJSSourceRepositoryRecord,
+  type RunJSSourceRequestActionName,
   type RunJSSourceFileChange,
   type RunJSSourceSaveChangesInput,
   type RunJSSourceSaveInput,
   type RunJSSourceSaveResult,
+  type RunJSSourceVersionResult,
   type RunJSSourceWorkspaceFile,
 } from '../../shared/runjs-source-types';
 import type {
@@ -113,22 +122,10 @@ export type RunJSWorkspaceBootstrapPort = (
   input: RunJSWorkspaceBootstrapInput,
 ) => Promise<RunJSWorkspaceBootstrapResult>;
 
-export const runJSSourceActionNames = [
-  'capabilities',
-  'open',
-  'openLatest',
-  'restoreFromCode',
-  'compilePreview',
-  'save',
-  'saveChanges',
-  'exportZip',
-  'importZip',
-  'listHistory',
-  'getVersion',
-] as const;
+export const runJSSourceActionNames = ['capabilities', ...runJSSourceRequestActionNames] as const;
 
 type RunJSSourceActionName = (typeof runJSSourceActionNames)[number];
-type RunJSSourceWorkspaceActionName = Exclude<RunJSSourceActionName, 'capabilities'>;
+type RunJSSourceWorkspaceActionName = RunJSSourceRequestActionName;
 
 type ResourceActionInput = Record<string, unknown>;
 
@@ -909,45 +906,7 @@ async function pushRunJSSourceCommit(
 
 type RunJSSourceLocatorInput = RunJSSourceSaveInput['locator'];
 
-type RunJSSourceRepositoryResponse = VscRepositoryRecord & {
-  repoId: string;
-};
-
-interface RunJSSourceRepoInput {
-  locator: RunJSSourceLocatorInput;
-  repoId: string;
-}
-
-interface RunJSSourceCompilePreviewInput {
-  locator: RunJSSourceLocatorInput;
-  repoId?: string;
-  baseCommitId?: string | null;
-  files: VscFileChange[];
-  entryPath?: string;
-  version?: string;
-}
-
-interface RunJSSourceExportZipInput {
-  locator: RunJSSourceLocatorInput;
-  repoId?: string;
-  commitId?: string;
-}
-
-interface RunJSSourceHistoryInput extends RunJSSourceRepoInput {
-  limit?: number;
-  beforeSeq?: number;
-}
-
-interface RunJSSourceGetVersionInput extends RunJSSourceRepoInput {
-  commitId: string;
-  includeFiles: boolean;
-}
-
-interface RunJSSourceCompilePreviewResult {
-  locator: RunJSSourceLocatorInput;
-  locatorKind: RunJSSourceKind;
-  artifact: RunJSRuntimeArtifact;
-}
+type RunJSSourceRepoInput = Pick<RunJSSourceHistoryInput, 'locator' | 'repoId'>;
 
 interface RunJSCompileMaterializationInput {
   files: VscFileChange[];
@@ -979,22 +938,6 @@ type RunJSSourceWriteInput = {
 interface OpenRunJSWorkspaceOptions {
   assertHeadOwnerFingerprint: boolean;
   ensureRepository: boolean;
-}
-
-interface RunJSSourceHistoryResult {
-  locator: RunJSSourceLocatorInput;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryResponse;
-  items: VscCommitRecord[];
-  nextBeforeSeq: number | null;
-}
-
-interface RunJSSourceVersionResult {
-  locator: RunJSSourceLocatorInput;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryResponse;
-  commit: VscCommitRecord;
-  files: PulledFile[];
 }
 
 interface RunJSSourcePermissions {
@@ -1813,7 +1756,7 @@ function serializeRunJSSourceWorkspaceFile(file: PulledFile): RunJSSourceWorkspa
   };
 }
 
-function serializeRepository(repository: VscRepositoryRecord): RunJSSourceRepositoryResponse {
+function serializeRepository(repository: VscRepositoryRecord): RunJSSourceRepositoryRecord {
   return {
     ...repository,
     repoId: repository.id,

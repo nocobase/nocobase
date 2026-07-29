@@ -11,6 +11,7 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { VscErrorCode, VscErrorDetails } from '../../shared/errors';
+import { runJSSourceRequestActionNames } from '../../shared/runjs-source-contracts';
 import { useT } from '../locale';
 import type {
   RunJSCompileDiagnostic,
@@ -19,20 +20,9 @@ import type {
   RunJSSourceActionResult,
 } from './types';
 
-export const runJSSourceActionNames = [
-  'open',
-  'openLatest',
-  'restoreFromCode',
-  'compilePreview',
-  'save',
-  'saveChanges',
-  'exportZip',
-  'importZip',
-  'listHistory',
-  'getVersion',
-] as const;
+export const runJSSourceActionNames = runJSSourceRequestActionNames;
 
-const runJSSourceLoadingActionNames = ['restoreFromCode', 'exportZip'] as const;
+const runJSSourceLoadingActionNames = ['exportZip'] as const;
 
 type RunJSSourceLoadingActionName = (typeof runJSSourceLoadingActionNames)[number];
 

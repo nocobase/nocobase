@@ -8,7 +8,7 @@
  */
 
 import swaggerDocument from '../../swagger';
-import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
+import { runJSSourceActionNames, vscFileActionNames } from '@nocobase/runjs-workspace/server';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
@@ -22,6 +22,22 @@ const publicActions = {
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
   lightExtensions: ['compileWorkspacePreview', 'moveSource', 'moveToInline'],
   runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
+  vscFile: [
+    'createRepository',
+    'getRepository',
+    'archiveRepository',
+    'pull',
+    'getFile',
+    'push',
+    'listCommits',
+    'getCommit',
+    'diff',
+    'diffFile',
+    'restoreFile',
+    'restoreCommit',
+    'listRefs',
+    'updateRef',
+  ],
 } as const;
 
 describe('light-extension swagger', () => {
@@ -33,6 +49,7 @@ describe('light-extension swagger', () => {
       lightExtensionFiles: lightExtensionFileActionNames,
       lightExtensions: lightExtensionActionNames,
       runJSSources: runJSSourceActionNames,
+      vscFile: vscFileActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))

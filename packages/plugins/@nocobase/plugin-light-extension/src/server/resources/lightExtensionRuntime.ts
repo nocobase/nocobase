@@ -68,11 +68,16 @@ function createLightExtensionArtifactAction(service: RuntimeResolveService, run:
     const body: unknown = ctx.body;
     const status = typeof ctx.status === 'number' ? ctx.status : 200;
     if (status < 400 && isArtifactBody(body)) {
+      const etag = `"${body.artifactHash}"`;
       ctx.withoutDataWrapping = true;
       setHeaders(ctx, {
-        ETag: `"${body.artifactHash}"`,
+        ETag: etag,
         'Cache-Control': 'private, max-age=31536000, immutable',
       });
+      if (matchesIfNoneMatch(readRequestHeader(ctx, 'if-none-match'), etag)) {
+        ctx.status = 304;
+        ctx.body = null;
+      }
     }
     await next();
   };
@@ -94,4 +99,24 @@ function isArtifactBody(value: unknown): value is { artifactHash: string } {
 function setHeaders(ctx: ResourcerContext, headers: Record<string, string>): void {
   const set = (ctx as ResourcerContext & { set?: (headers: Record<string, string>) => void }).set;
   set?.call(ctx, headers);
+}
+
+function readRequestHeader(ctx: ResourcerContext, name: string): string | undefined {
+  const request = ctx as ResourcerContext & {
+    get?: (name: string) => string;
+    request?: { headers?: Record<string, string | string[] | undefined> };
+  };
+  const value = request.get?.(name) || request.request?.headers?.[name.toLowerCase()];
+  return Array.isArray(value) ? value.join(',') : value;
+}
+
+function matchesIfNoneMatch(value: string | undefined, etag: string): boolean {
+  if (!value) {
+    return false;
+  }
+  const normalizedEtag = etag.replace(/^W\//u, '');
+  return value.split(',').some((candidate) => {
+    const normalizedCandidate = candidate.trim();
+    return normalizedCandidate === '*' || normalizedCandidate.replace(/^W\//u, '') === normalizedEtag;
+  });
 }

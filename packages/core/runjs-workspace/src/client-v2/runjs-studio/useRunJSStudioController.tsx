@@ -722,6 +722,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       historyRequestSeqRef.current += 1;
       hasUnsavedLocalChangesRef.current = false;
       setWorkspace(loaded.opened);
+      setWorkspaceError(null);
       setHistoryLoading(false);
       setHistoryLoadingMore(false);
       setHistoryNextBeforeSeq(getNextHistoryCursor(loaded.opened.history.items, commitHistoryDefaultLimit));
@@ -789,7 +790,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     const requestSeq = requestSeqRef.current + 1;
     requestSeqRef.current = requestSeq;
     setLoadingWorkspace(true);
-    setWorkspaceError(null);
 
     try {
       const opened = await runJSSourceRequest('restoreFromCode', { locator: props.locator });
@@ -2069,7 +2069,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                   <Button
                     aria-label={t('Recover latest version from current code')}
                     icon={<ReloadOutlined />}
-                    loading={resource.isLoading('restoreFromCode')}
+                    loading={loadingWorkspace}
                     onClick={restoreLatestVersionFromCurrentCode}
                     size="small"
                     type="primary"

@@ -198,6 +198,7 @@ describe('MoveSourceService', () => {
       const prepareSaveSource = vi.fn(async () => preparedSave);
       const publishPreparedSave = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
       const syncReferences = vi.fn(async () => undefined);
+      const recordLifecycleEvent = vi.fn(async () => undefined);
       const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([movedEntry]);
       const service = new MoveSourceService(
         {
@@ -224,6 +225,7 @@ describe('MoveSourceService', () => {
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
         'main',
         { assertCurrent: vi.fn() },
+        { recordLifecycleEvent } as never,
       );
 
       const result = await service.moveSource(
@@ -247,6 +249,7 @@ describe('MoveSourceService', () => {
         },
         {
           actorUserId: '1',
+          requestId: 'req_move_existing',
           adapterContext: {},
         },
       );
@@ -285,10 +288,23 @@ describe('MoveSourceService', () => {
         expect.objectContaining({ transaction }),
       );
       expect(result.binding).toMatchObject({ repoId: repo.id, entryId: movedEntry.id, kind });
+      expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
+      expect(recordLifecycleEvent).toHaveBeenCalledWith({
+        repoId: repo.id,
+        action: 'moveSource',
+        result: 'success',
+        requestId: 'req_move_existing',
+        actorUserId: '1',
+        message: 'RunJS source moved to a light extension',
+        details: { destinationType: 'existing', entryId: movedEntry.id, kind },
+        transaction,
+      });
     },
   );
 
   it('creates a new repository with a compiled JS Page entry before binding it', async () => {
+    const transaction = { id: 'tx_create' } as unknown as Transaction;
+    const recordLifecycleEvent = vi.fn(async () => undefined);
     let reservedRepoId = '';
     const createdRepo = { ...repo, name: 'sales-tools', normalizedName: 'sales-tools' };
     const createdEntry = {
@@ -321,11 +337,10 @@ describe('MoveSourceService', () => {
     const service = new MoveSourceService(
       {
         sequelize: {
-          transaction: (run: (transaction: Transaction) => Promise<unknown>) =>
-            run({ id: 'tx_create' } as unknown as Transaction),
+          transaction: (run: (currentTransaction: Transaction) => Promise<unknown>) => run(transaction),
         },
       } as unknown as Database,
-      { createRepo, assertApplicationOwnership: vi.fn() } as never,
+      { createRepoForCompositeUseCase: createRepo, assertApplicationOwnership: vi.fn() } as never,
       {} as never,
       {
         listEntries: vi.fn(async () => {
@@ -355,6 +370,7 @@ describe('MoveSourceService', () => {
         }) as unknown as RunJSSourceAdapterRegistry,
       'main',
       { assertCurrent: vi.fn() },
+      { recordLifecycleEvent } as never,
     );
 
     const result = await service.moveSource(
@@ -369,7 +385,7 @@ describe('MoveSourceService', () => {
         destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
         entryName: 'sales-kpi',
       },
-      { adapterContext: {} },
+      { adapterContext: {}, requestId: 'req_move_new' },
     );
 
     const createInput = createRepo.mock.calls[0][0];
@@ -402,6 +418,17 @@ describe('MoveSourceService', () => {
       entryId: createdEntry.id,
       entryPath: createdEntry.entryPath,
       kind: 'js-page',
+    });
+    expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
+    expect(recordLifecycleEvent).toHaveBeenCalledWith({
+      repoId: reservedRepoId,
+      action: 'moveSource',
+      result: 'success',
+      requestId: 'req_move_new',
+      actorUserId: undefined,
+      message: 'RunJS source moved to a light extension',
+      details: { destinationType: 'new', entryId: createdEntry.id, kind: 'js-page' },
+      transaction,
     });
   });
 
@@ -736,7 +763,7 @@ describe('MoveSourceService', () => {
         },
       } as unknown as Database,
       {
-        createRepo,
+        createRepoForCompositeUseCase: createRepo,
       } as never,
       {} as never,
       { listEntries: vi.fn(async () => [{ ...entry, repoId: reservedRepoId }]) } as never,
@@ -762,6 +789,7 @@ describe('MoveSourceService', () => {
         }) as unknown as RunJSSourceAdapterRegistry,
       'main',
       { assertCurrent: vi.fn() },
+      { recordLifecycleEvent: vi.fn(async () => undefined) } as never,
     );
 
     const input = createMoveSourceInput({
@@ -1102,6 +1130,7 @@ function createFailureService(options: {
       }) as unknown as RunJSSourceAdapterRegistry,
     'main',
     options.sourceSnapshotValidator || { assertCurrent: vi.fn() },
+    { recordLifecycleEvent: vi.fn(async () => undefined) } as never,
   );
 }
 
@@ -1577,6 +1606,7 @@ describe('move to inline integration', () => {
       const getVscFileService = vi.fn(() => vscFileService);
       const assertApplicationOwnership = vi.fn(async () => undefined);
       const getEntry = vi.fn(async () => pageEntry);
+      const recordLifecycleEvent = vi.fn(async () => undefined);
       const service = new MoveToInlineService(
         db,
         { assertApplicationOwnership } as never,
@@ -1585,6 +1615,8 @@ describe('move to inline integration', () => {
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         getVscFileService,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
+        'main',
+        { recordLifecycleEvent } as never,
       );
 
       const input = {
@@ -1607,6 +1639,7 @@ describe('move to inline integration', () => {
       };
       const serviceContext = {
         actorUserId: '1',
+        requestId: 'req_move_inline',
         adapterContext: {},
       };
       const result = await service.moveToInline(input, serviceContext);
@@ -1734,6 +1767,22 @@ describe('move to inline integration', () => {
         expect.objectContaining({ status: 'completed', result }),
         expect.objectContaining({ transaction }),
       );
+      expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
+      expect(recordLifecycleEvent).toHaveBeenCalledWith({
+        repoId: pageBinding.repoId,
+        action: 'moveSource',
+        result: 'success',
+        requestId: 'req_move_inline',
+        actorUserId: '1',
+        message: 'Light extension entry moved to inline RunJS',
+        details: {
+          destinationType: 'inline',
+          entryId: pageBinding.entryId,
+          kind: 'js-page',
+          runJSRepoId: 'runjs_repo',
+        },
+        transaction,
+      });
       expect(result).toMatchObject({
         runJSRepoId: 'runjs_repo',
         commitId: 'runjs_new_commit',

@@ -8,21 +8,15 @@
  */
 
 import type {
-  RunJSRuntimeArtifact,
-  RunJSSourceKind,
-  RunJSSourceInitialSource,
-  RunJSSourceImportZipInput,
-  RunJSSourceImportZipResult,
-  RunJSSourceLocator,
   RunJSSourceOpenResult,
-  RunJSSourceRepositoryRecord,
-  RunJSSourceSaveChangesInput,
-  RunJSSourceSaveInput,
-  RunJSSourceSaveResult,
+  RunJSSourceRequestActionInput,
+  RunJSSourceRequestActionName,
+  RunJSSourceRequestActionResult,
+  RunJSSourceRequestMap as SharedRunJSSourceRequestMap,
 } from '../../shared/runjs-source-contracts';
 export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../shared/runjs-source-contracts';
 export type { RunJSSourceLocator } from '../../shared/runjs-source-contracts';
-import type { VscCommitRecord, VscFileChange } from '../../shared/types';
+import type { VscCommitRecord } from '../../shared/types';
 
 export interface RunJSWorkspaceFile {
   path: string;
@@ -39,106 +33,19 @@ export type RunJSSourceHistoryItem = VscCommitRecord;
 
 export type RunJSSourceOpenWorkspaceResult = RunJSSourceOpenResult;
 
-export interface RunJSSourceCompilePreviewInput {
-  locator: RunJSSourceLocator;
-  repoId?: string;
-  baseCommitId?: string | null;
-  files: VscFileChange[];
-  entryPath?: string;
-  entry?: string;
-  version?: string;
-}
+export type RunJSSourceRequestMap = SharedRunJSSourceRequestMap<Blob>;
 
-export interface RunJSSourceCompilePreviewResult {
-  locator: RunJSSourceLocator;
-  locatorKind: RunJSSourceKind;
-  artifact: RunJSRuntimeArtifact;
-}
+export type RunJSSourceActionName = RunJSSourceRequestActionName;
 
-export interface RunJSSourceHistoryInput {
-  locator: RunJSSourceLocator;
-  repoId: string;
-  limit?: number;
-  beforeSeq?: number;
-}
+export type RunJSSourceActionInput<TAction extends RunJSSourceActionName> = RunJSSourceRequestActionInput<
+  TAction,
+  Blob
+>;
 
-export interface RunJSSourceHistoryResult {
-  locator: RunJSSourceLocator;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryRecord;
-  items: RunJSSourceHistoryItem[];
-  nextBeforeSeq: number | null;
-}
-
-export interface RunJSSourceGetVersionInput {
-  locator: RunJSSourceLocator;
-  repoId: string;
-  commitId: string;
-  includeFiles: boolean;
-}
-
-export interface RunJSSourceVersionResult {
-  locator: RunJSSourceLocator;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryRecord;
-  commit: RunJSSourceHistoryItem;
-  files: RunJSWorkspaceFile[];
-}
-
-export interface RunJSSourceExportZipInput {
-  locator: RunJSSourceLocator;
-  repoId?: string;
-  commitId?: string;
-}
-
-export interface RunJSSourceRequestMap {
-  open: {
-    input: { locator: RunJSSourceLocator; initialSource?: RunJSSourceInitialSource };
-    result: RunJSSourceOpenWorkspaceResult;
-  };
-  openLatest: {
-    input: { locator: RunJSSourceLocator };
-    result: RunJSSourceOpenWorkspaceResult;
-  };
-  restoreFromCode: {
-    input: { locator: RunJSSourceLocator };
-    result: RunJSSourceOpenWorkspaceResult;
-  };
-  compilePreview: {
-    input: RunJSSourceCompilePreviewInput;
-    result: RunJSSourceCompilePreviewResult;
-  };
-  save: {
-    input: RunJSSourceSaveInput;
-    result: RunJSSourceSaveResult;
-  };
-  saveChanges: {
-    input: RunJSSourceSaveChangesInput;
-    result: RunJSSourceSaveResult;
-  };
-  exportZip: {
-    input: RunJSSourceExportZipInput;
-    result: Blob;
-  };
-  importZip: {
-    input: RunJSSourceImportZipInput;
-    result: RunJSSourceImportZipResult;
-  };
-  listHistory: {
-    input: RunJSSourceHistoryInput;
-    result: RunJSSourceHistoryResult;
-  };
-  getVersion: {
-    input: RunJSSourceGetVersionInput;
-    result: RunJSSourceVersionResult;
-  };
-}
-
-export type RunJSSourceActionName = keyof RunJSSourceRequestMap;
-
-export type RunJSSourceActionInput<TAction extends RunJSSourceActionName> = RunJSSourceRequestMap[TAction]['input'];
-
-export type RunJSSourceActionResult<TAction extends RunJSSourceActionName> = RunJSSourceRequestMap[TAction]['result'];
+export type RunJSSourceActionResult<TAction extends RunJSSourceActionName> = RunJSSourceRequestActionResult<
+  TAction,
+  Blob
+>;
 
 export interface RunJSConsoleEntry {
   id: number;

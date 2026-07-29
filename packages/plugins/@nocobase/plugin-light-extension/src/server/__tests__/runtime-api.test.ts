@@ -197,6 +197,49 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(artifactCtx.request.path).toBe(artifactPath);
   });
 
+  it('returns 304 through the documented artifact alias when If-None-Match matches', async () => {
+    const prefix = '/api';
+    const routes = await loadRoutes(prefix);
+    const route = routes.get('light-extension-runtime-artifact');
+    const getArtifact = vi.fn().mockResolvedValue(createArtifact());
+    const resource = createLightExtensionRuntimeResource({ getArtifact } as unknown as RuntimeResolveService);
+    const headers: Record<string, string> = {};
+    const path = `${prefix}/light-extension-runtime/artifacts/${artifactHash}`;
+    const ctx = {
+      path,
+      method: 'GET',
+      request: {
+        path,
+        headers: { 'if-none-match': `W/"other", "${artifactHash}"` },
+      },
+      action: { params: { values: { artifactHash } } },
+      status: 200,
+      set(nameOrHeaders: string | Record<string, string>, value?: string) {
+        if (typeof nameOrHeaders === 'string') {
+          headers[nameOrHeaders] = value || '';
+        } else {
+          Object.assign(headers, nameOrHeaders);
+        }
+      },
+    } as unknown as RouteContext & Context;
+
+    expect(route).toBeDefined();
+    await route?.(ctx, async () => {
+      expect(ctx.path).toBe(`${prefix}/lightExtensionRuntime:getArtifact/${artifactHash}`);
+      await resource.actions?.getArtifact?.(ctx, async () => undefined);
+    });
+
+    expect(getArtifact).toHaveBeenCalledWith(artifactHash, expect.any(Object));
+    expect(ctx.status).toBe(304);
+    expect(ctx.body).toBeNull();
+    expect(headers).toMatchObject({
+      ETag: `"${artifactHash}"`,
+      'Cache-Control': 'private, max-age=31536000, immutable',
+    });
+    expect(ctx.path).toBe(path);
+    expect(ctx.request.path).toBe(path);
+  });
+
   it('ignores malformed encoded alias parameters', async () => {
     const routes = await loadRoutes('/api');
     const route = routes.get('light-extension-compile-preview');

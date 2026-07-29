@@ -11,6 +11,7 @@ import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscReposito
 import type {
   RunJSCompileDiagnostic,
   RunJSLegacySource,
+  RunJSRuntimeArtifact,
   RunJSRuntimeWriteResult,
   RunJSSourceKind,
   RunJSSourceLocator,
@@ -177,3 +178,125 @@ export interface RunJSSourceImportZipResult {
   fileCount: number;
   diagnostics: RunJSWorkspaceDiagnostic[];
 }
+
+export interface RunJSSourceCompilePreviewInput {
+  locator: RunJSSourceLocator;
+  repoId?: string;
+  baseCommitId?: string | null;
+  files: VscFileChange[];
+  entryPath?: string;
+  entry?: string;
+  version?: string;
+}
+
+export interface RunJSSourceCompilePreviewResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  artifact: RunJSRuntimeArtifact;
+}
+
+export interface RunJSSourceHistoryInput {
+  locator: RunJSSourceLocator;
+  repoId: string;
+  limit?: number;
+  beforeSeq?: number;
+}
+
+export interface RunJSSourceHistoryResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryRecord;
+  items: VscCommitRecord[];
+  nextBeforeSeq: number | null;
+}
+
+export interface RunJSSourceGetVersionInput {
+  locator: RunJSSourceLocator;
+  repoId: string;
+  commitId: string;
+  includeFiles?: boolean;
+}
+
+export type RunJSSourceVersionFile = Omit<RunJSSourceWorkspaceFile, 'managed'> & { managed?: boolean };
+
+export interface RunJSSourceVersionResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryRecord;
+  commit: VscCommitRecord;
+  files: RunJSSourceVersionFile[];
+}
+
+export interface RunJSSourceExportZipInput {
+  locator: RunJSSourceLocator;
+  repoId?: string;
+  commitId?: string;
+}
+
+export interface RunJSSourceRequestMap<TExportZipResult = unknown> {
+  open: {
+    input: { locator: RunJSSourceLocator; initialSource?: RunJSSourceInitialSource };
+    result: RunJSSourceOpenResult;
+  };
+  openLatest: {
+    input: { locator: RunJSSourceLocator };
+    result: RunJSSourceOpenResult;
+  };
+  restoreFromCode: {
+    input: { locator: RunJSSourceLocator };
+    result: RunJSSourceOpenResult;
+  };
+  compilePreview: {
+    input: RunJSSourceCompilePreviewInput;
+    result: RunJSSourceCompilePreviewResult;
+  };
+  save: {
+    input: RunJSSourceSaveInput;
+    result: RunJSSourceSaveResult;
+  };
+  saveChanges: {
+    input: RunJSSourceSaveChangesInput;
+    result: RunJSSourceSaveResult;
+  };
+  exportZip: {
+    input: RunJSSourceExportZipInput;
+    result: TExportZipResult;
+  };
+  importZip: {
+    input: RunJSSourceImportZipInput;
+    result: RunJSSourceImportZipResult;
+  };
+  listHistory: {
+    input: RunJSSourceHistoryInput;
+    result: RunJSSourceHistoryResult;
+  };
+  getVersion: {
+    input: RunJSSourceGetVersionInput;
+    result: RunJSSourceVersionResult;
+  };
+}
+
+export const runJSSourceRequestActionNames = [
+  'open',
+  'openLatest',
+  'restoreFromCode',
+  'compilePreview',
+  'save',
+  'saveChanges',
+  'exportZip',
+  'importZip',
+  'listHistory',
+  'getVersion',
+] as const satisfies readonly (keyof RunJSSourceRequestMap)[];
+
+export type RunJSSourceRequestActionName = (typeof runJSSourceRequestActionNames)[number];
+
+export type RunJSSourceRequestActionInput<
+  TAction extends RunJSSourceRequestActionName,
+  TExportZipResult = unknown,
+> = RunJSSourceRequestMap<TExportZipResult>[TAction]['input'];
+
+export type RunJSSourceRequestActionResult<
+  TAction extends RunJSSourceRequestActionName,
+  TExportZipResult = unknown,
+> = RunJSSourceRequestMap<TExportZipResult>[TAction]['result'];

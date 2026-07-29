@@ -8,9 +8,9 @@
  */
 
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { appendRunDiagnostics, useRunJSImportModuleCompletions } from '../runjs-studio/studioUtils';
+import { useRunJSImportModuleCompletions } from '../runjs-studio/studioUtils';
 import type { RunJSWorkspaceFile } from '../runjs-studio/types';
 
 function workspaceFile(path: string, content = ''): RunJSWorkspaceFile {
@@ -37,29 +37,5 @@ describe('useRunJSImportModuleCompletions', () => {
       files: [{ ...workspaceFile('src/client/helper.ts', 'export const third = 3;'), revision: 2 }],
     });
     expect(result.current[0].exports).toEqual(['third']);
-  });
-});
-
-describe('appendRunDiagnostics', () => {
-  it('shows a captured render error once in the Studio console', () => {
-    const appendConsole = vi.fn();
-
-    appendRunDiagnostics(
-      {
-        execution: { finished: true, started: true, timeout: false },
-        issues: [{ type: 'runtime', ruleId: 'render-error', message: 'rawData.some is not a function' }],
-        logs: [{ level: 'error', message: 'rawData.some is not a function' }],
-      },
-      appendConsole,
-    );
-
-    expect(appendConsole).toHaveBeenCalledTimes(1);
-    expect(appendConsole).toHaveBeenCalledWith({
-      column: undefined,
-      level: 'error',
-      line: undefined,
-      message: 'rawData.some is not a function',
-      path: undefined,
-    });
   });
 });

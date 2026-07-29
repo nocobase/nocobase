@@ -1933,6 +1933,7 @@ describe('runJSStudioProvider', () => {
   });
 
   it('only offers recovery from current host code when versioned source diverges', async () => {
+    const recovery = deferred<unknown>();
     mocks.request.mockImplementation(({ url }: { url: string }) => {
       if (url === 'runJSSources:open') {
         return Promise.reject({
@@ -1952,14 +1953,7 @@ describe('runJSStudioProvider', () => {
       }
 
       if (url === 'runJSSources:restoreFromCode') {
-        return Promise.resolve({
-          data: {
-            data: {
-              ...openResult,
-              ownerFingerprint: 'owner-fingerprint-current',
-            },
-          },
-        });
+        return recovery.promise;
       }
 
       return Promise.resolve({
@@ -1974,7 +1968,8 @@ describe('runJSStudioProvider', () => {
     expect(await screen.findByText('RunJS source version is out of sync')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Recover latest version from current code' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Edit latest saved version' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Recover latest version from current code' }));
+    const recoveryButton = screen.getByRole('button', { name: 'Recover latest version from current code' });
+    fireEvent.click(recoveryButton);
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -1982,6 +1977,22 @@ describe('runJSStudioProvider', () => {
           url: 'runJSSources:restoreFromCode',
         }),
       );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Recover latest version from current code' })).toHaveClass(
+        'ant-btn-loading',
+      );
+    });
+    await act(async () => {
+      recovery.resolve({
+        data: {
+          data: {
+            ...openResult,
+            ownerFingerprint: 'owner-fingerprint-current',
+          },
+        },
+      });
+      await recovery.promise;
     });
     expect(await screen.findByLabelText('Edit file content')).toBeTruthy();
   });

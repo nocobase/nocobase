@@ -357,4 +357,14 @@ export const runJSSourceSchemas = {
       },
     },
   },
+  RawVscFileResponseEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'object',
+        additionalProperties: true,
+      },
+    },
+  },
 };

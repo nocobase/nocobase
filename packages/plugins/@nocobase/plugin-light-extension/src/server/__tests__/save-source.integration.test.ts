@@ -1132,6 +1132,129 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     ).resolves.toBe(0);
   });
 
+  it('rolls back all published state when the transactional success audit fails', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Runtime Compile Audit Persistence Rollback',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const initial = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'establish audit persistence rollback baseline',
+      files: validSalesKpiFiles(),
+    });
+    const entryId = initial.compile.entries[0].entryId;
+    const reference = await app.db.getRepository('lightExtensionReferences').create({
+      values: {
+        repoId: repo.id,
+        entryId,
+        kind: 'js-block',
+        ownerKind: 'flowModel.step',
+        ownerLocator: {
+          kind: 'flowModel.step',
+          modelUid: 'flow_audit_persistence_rollback',
+          use: 'JSBlockModel',
+          stepPath: ['stepParams', 'jsSettings'],
+        },
+        ownerLocatorHash: 'owner_audit_persistence_rollback',
+        resolvedStatus: 'active',
+      },
+    });
+    const initialEntry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
+    const initialSource = await fileService.pull({ repoId: repo.id, includeContent: 'all' });
+    const initialCounts = {
+      commits: await app.db.getRepository('vscFileCommits').count(),
+      trees: await app.db.getRepository('vscFileTrees').count(),
+      blobs: await app.db.getRepository('vscFileBlobs').count(),
+      artifacts: await app.db.getRepository('lightExtensionRuntimeArtifacts').count(),
+      entries: await app.db.getRepository('lightExtensionEntries').count(),
+      references: await app.db.getRepository('lightExtensionReferences').count(),
+      auditLogs: await app.db.getRepository('lightExtensionLogs').count(),
+    };
+    const initialEntryState = {
+      compiledCommitId: initialEntry?.get('compiledCommitId'),
+      compiledInputKey: initialEntry?.get('compiledInputKey'),
+      runtimeArtifact: initialEntry?.get('runtimeArtifact'),
+      runtimeCodeHash: initialEntry?.get('runtimeCodeHash'),
+      filesHash: initialEntry?.get('filesHash'),
+    };
+    const refreshReferencesForRepo = vi.fn(
+      async (_repoId: string, ctx?: LightExtensionServiceContext, _reason?: string) => {
+        await app.db.getRepository('lightExtensionReferences').update({
+          filterByTk: reference.get('id'),
+          values: { resolvedStatus: 'runtime_missing' },
+          transaction: ctx?.transaction,
+        });
+      },
+    );
+    runtimeCompileService.useReferenceService({ refreshReferencesForRepo });
+    const recordCompileEvent = vi
+      .spyOn(auditService, 'recordCompileEvent')
+      .mockRejectedValue(new Error('forced audit persistence failure'));
+
+    await expect(
+      runtimeCompileService.saveSource(
+        {
+          repoId: repo.id,
+          expectedHeadCommitId: initial.commit.id,
+          message: 'audit persistence failure must roll back',
+          files: [
+            {
+              path: 'src/client/js-blocks/sales-kpi/index.tsx',
+              content: 'ctx.render(<div>Audit persistence rollback</div>);\n',
+              language: 'typescript',
+            },
+          ],
+        },
+        { requestId: 'req_audit_persistence_rollback' },
+      ),
+    ).rejects.toThrow('forced audit persistence failure');
+
+    expect(refreshReferencesForRepo).toHaveBeenCalledWith(
+      repo.id,
+      expect.objectContaining({ transaction: expect.anything() }),
+      'source_published',
+    );
+    expect(recordCompileEvent).toHaveBeenCalledTimes(2);
+    expect(recordCompileEvent.mock.calls[0][0]).toMatchObject({
+      result: 'success',
+      transaction: expect.anything(),
+    });
+    expect(recordCompileEvent.mock.calls[1][0]).toMatchObject({
+      result: 'blocked',
+      reasonCode: 'save_failed',
+    });
+    expect(recordCompileEvent.mock.calls[1][0].transaction).toBeUndefined();
+
+    const currentRepo = await repoService.getRepo(repo.id);
+    const currentEntry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
+    const currentReference = await app.db.getRepository('lightExtensionReferences').findOne({
+      filterByTk: reference.get('id'),
+    });
+    const currentSource = await fileService.pull({ repoId: repo.id, includeContent: 'all' });
+    const currentCounts = {
+      commits: await app.db.getRepository('vscFileCommits').count(),
+      trees: await app.db.getRepository('vscFileTrees').count(),
+      blobs: await app.db.getRepository('vscFileBlobs').count(),
+      artifacts: await app.db.getRepository('lightExtensionRuntimeArtifacts').count(),
+      entries: await app.db.getRepository('lightExtensionEntries').count(),
+      references: await app.db.getRepository('lightExtensionReferences').count(),
+      auditLogs: await app.db.getRepository('lightExtensionLogs').count(),
+    };
+
+    expect(currentRepo.headCommitId).toBe(initial.commit.id);
+    expect(currentSource.commit?.id).toBe(initialSource.commit?.id);
+    expect(currentSource.files).toEqual(initialSource.files);
+    expect(currentCounts).toEqual(initialCounts);
+    expect({
+      compiledCommitId: currentEntry?.get('compiledCommitId'),
+      compiledInputKey: currentEntry?.get('compiledInputKey'),
+      runtimeArtifact: currentEntry?.get('runtimeArtifact'),
+      runtimeCodeHash: currentEntry?.get('runtimeCodeHash'),
+      filesHash: currentEntry?.get('filesHash'),
+    }).toEqual(initialEntryState);
+    expect(currentReference?.get('resolvedStatus')).toBe('active');
+  });
+
   it('rolls back source, artifacts, entries, and references when reference refresh fails', async () => {
     const repo = await repoService.createRepo({
       name: 'Reference Refresh Rollback',

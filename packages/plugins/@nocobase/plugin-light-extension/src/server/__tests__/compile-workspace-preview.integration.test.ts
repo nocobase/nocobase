@@ -316,7 +316,7 @@ function registerCompilePreviewTests() {
         })),
       });
 
-      expect(result.accepted).toBe(false);
+      expect(result).toMatchObject({ accepted: false, httpStatus: 207 });
       expect(result.entries).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ entryName: 'sales-kpi', accepted: true, status: 'success' }),
@@ -434,6 +434,38 @@ function registerCompilePreviewTests() {
         }),
       );
       expect(JSON.stringify(recordCompileEvent.mock.calls)).not.toContain('secret-source');
+    });
+
+    it('returns preview diagnostics when audit persistence fails', async () => {
+      const repo = createRepo();
+      const { db } = createDbStub([
+        createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
+      ]);
+      const fileService = createFileServiceStub(repo, [
+        ...validSalesKpiFiles(),
+        {
+          path: 'src/client/not-allowed.js',
+          content: 'export const invalid = true;\n',
+        },
+      ]);
+      const { service, recordCompileEvent } = createPreviewService(db, fileService);
+      recordCompileEvent.mockRejectedValueOnce(new Error('forced preview audit persistence failure'));
+
+      const result = await service.compilePreview(
+        { repoId: repo.id },
+        { requestId: 'req_compile_preview_audit_failure' },
+      );
+
+      expect(result).toMatchObject({
+        accepted: false,
+        diagnostics: [
+          expect.objectContaining({
+            code: 'workspace_path_not_allowed',
+            path: 'src/client/not-allowed.js',
+          }),
+        ],
+      });
+      expect(recordCompileEvent).toHaveBeenCalledTimes(1);
     });
 
     it('ignores unselected entry validation errors when previewing a selected valid entry', async () => {
