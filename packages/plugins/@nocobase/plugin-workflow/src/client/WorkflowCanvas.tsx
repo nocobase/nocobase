@@ -561,6 +561,7 @@ function RevisionsDropdown() {
         filter: { key: workflow.key },
         fields: ['id', 'createdAt', 'current', 'enabled', 'versionStats.executed'],
         sort: '-id',
+        paginate: false,
       },
     },
     {
