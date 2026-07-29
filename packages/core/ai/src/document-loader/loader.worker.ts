@@ -29,7 +29,15 @@ type WorkerResponse = {
 
 const loadPdf = async (filePath: string): Promise<Document[]> => {
   const loader = new PDFLoader(filePath);
-  return loader.load();
+  try {
+    return await loader.load();
+  } catch (error) {
+    const err = error as Error;
+    if (err?.name === 'PasswordException' || /password/i.test(err?.message)) {
+      throw new Error('The PDF file is password-protected and cannot be parsed. Please upload an unlocked version.');
+    }
+    throw error;
+  }
 };
 
 const loadDoc = async (filePath: string, type: 'docx' | 'doc'): Promise<Document[]> => {
@@ -37,7 +45,7 @@ const loadDoc = async (filePath: string, type: 'docx' | 'doc'): Promise<Document
   return loader.load();
 };
 
-const loadPpt = async (filePath: string): Promise<Document[]> => {
+const loadPptx = async (filePath: string): Promise<Document[]> => {
   const loader = new PPTXLoader(filePath);
   return loader.load();
 };
@@ -56,9 +64,8 @@ const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
   switch (payload.extname) {
     case '.pdf':
       return loadPdf(payload.filePath);
-    case '.ppt':
     case '.pptx':
-      return loadPpt(payload.filePath);
+      return loadPptx(payload.filePath);
     case '.doc':
       return loadDoc(payload.filePath, 'doc');
     case '.docx':
@@ -90,8 +97,9 @@ parentPort?.on('message', async (payload: ParsePayload) => {
     };
     parentPort?.postMessage(response);
   } catch (error) {
+    const err = error as Error;
     const response: WorkerResponse = {
-      error: String(error?.stack || error),
+      error: err?.message || String(error),
     };
     parentPort?.postMessage(response);
   }

@@ -8,6 +8,7 @@
  */
 
 import { defineCollection } from '@nocobase/database';
+import { MAX_BACKUP_KEEP_COUNT, MIN_BACKUP_KEEP_COUNT } from '../../constants';
 import { SETTINGS } from '../utils';
 
 export default defineCollection({
@@ -27,6 +28,15 @@ export default defineCollection({
     {
       type: 'integer',
       name: 'keep',
+      validation: {
+        type: 'number',
+        rules: [
+          { key: 'required', name: 'required' },
+          { key: 'integer', name: 'integer' },
+          { key: 'min', name: 'min', args: { limit: MIN_BACKUP_KEEP_COUNT } },
+          { key: 'max', name: 'max', args: { limit: MAX_BACKUP_KEEP_COUNT } },
+        ],
+      },
     },
     {
       type: 'boolean',

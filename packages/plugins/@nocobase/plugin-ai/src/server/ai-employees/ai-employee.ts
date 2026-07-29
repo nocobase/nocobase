@@ -98,6 +98,7 @@ export class AIEmployee {
   employee: Model;
   aiChatConversation: AIChatConversation;
   skillSettings?: Record<string, any>;
+  userMessageCount = 0;
   private plugin: PluginAIServer;
   private db: Database;
 
@@ -261,6 +262,7 @@ export class AIEmployee {
     const { provider, model, service } = await this.plugin.aiManager.getLLMService({
       ...this.model,
     });
+    this.userMessageCount = (userMessages ?? []).filter((message) => message.role === 'user').length;
     const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
@@ -1418,6 +1420,10 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
     const currentFrontendTools = await listCurrentFrontendTools(this.ctx, this.sessionId);
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    const getSkill = await this.toolsManager.getTools(SYSTEM_TOOLS.GET_SKILL, { ctx: this.ctx });
+    if (getSkill) {
+      tools.push(getSkill);
+    }
     if (this.webSearch === true) {
       const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH, { ctx: this.ctx });
       tools.push(subAgentWebSearch);

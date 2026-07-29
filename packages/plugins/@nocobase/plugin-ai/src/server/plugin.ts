@@ -24,6 +24,7 @@ import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
+import * as llmServiceActions from './resource/llmServices';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
@@ -162,6 +163,7 @@ export class PluginAIServer extends Plugin {
     this.defineResources();
     this.registerMcpClientEvents();
     this.setPermissions();
+    this.registerAIFileAccessAuthorizer();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
@@ -236,6 +238,9 @@ export class PluginAIServer extends Plugin {
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
+    });
+    Object.entries(llmServiceActions).forEach(([name, action]) => {
+      this.app.resourceManager.registerActionHandler(`llmServices:${name}`, action);
     });
   }
 
@@ -395,6 +400,27 @@ export class PluginAIServer extends Plugin {
     return {
       aiContextDatasources: this.repository('aiContextDatasources'),
     };
+  }
+
+  private registerAIFileAccessAuthorizer() {
+    this.fileManager.registerFileAccessAuthorizer({
+      name: 'ai-files',
+      authorize: async (ctx, params) => {
+        const currentUserId = ctx.state.currentUser?.id;
+        if (params.dataSourceKey !== 'main' || params.collectionName !== 'aiFiles' || !currentUserId) {
+          return false;
+        }
+
+        const file = await ctx.db.getRepository('aiFiles').findOne({
+          filter: {
+            id: params.id,
+            createdById: currentUserId,
+          },
+          fields: ['id'],
+        });
+        return Boolean(file);
+      },
+    });
   }
 
   get fileManager(): PluginFileManagerServer {

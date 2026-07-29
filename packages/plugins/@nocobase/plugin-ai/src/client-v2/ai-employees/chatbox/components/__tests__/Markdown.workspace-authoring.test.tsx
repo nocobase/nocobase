@@ -13,6 +13,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Code } from '../Markdown';
+import { ChatBoxRuntimeProvider, createChatBoxRuntime } from '../../stores/runtime';
 
 const mocks = vi.hoisted(() => ({
   workspaceSurfaceId: 'workspace-1' as string | undefined,
@@ -37,13 +38,19 @@ vi.mock('../../hooks/useChat', () => ({
   }),
 }));
 
-vi.mock('../../stores/chat-conversations', () => ({
-  useChatConversationsStore: {
-    use: { currentConversation: () => 'session-1' },
-  },
-}));
-
 vi.mock('../Actions', () => ({ Actions: () => null }));
+
+const renderCode = (code: string) => {
+  const runtime = createChatBoxRuntime();
+  runtime.chatConversationModel.setCurrentConversation('session-1');
+  return render(
+    <ChatBoxRuntimeProvider runtime={runtime}>
+      <App>
+        <Code className="language-js">{code}</Code>
+      </App>
+    </ChatBoxRuntimeProvider>,
+  );
+};
 
 describe('Markdown workspace authoring', () => {
   beforeEach(() => {
@@ -52,11 +59,7 @@ describe('Markdown workspace authoring', () => {
   });
 
   it('does not expose direct editor apply for a code-workspace session', () => {
-    render(
-      <App>
-        <Code className="language-js">return 2;</Code>
-      </App>,
-    );
+    renderCode('return 2;');
 
     expect(document.querySelector('code')).toHaveTextContent('return 2;');
     expect(screen.queryByRole('button', { name: 'Apply to editor' })).toBeNull();
@@ -65,11 +68,7 @@ describe('Markdown workspace authoring', () => {
 
   it('preserves direct editor apply for a legacy single-file session', () => {
     mocks.workspaceSurfaceId = undefined;
-    render(
-      <App>
-        <Code className="language-js">return 3;</Code>
-      </App>,
-    );
+    renderCode('return 3;');
 
     fireEvent.click(screen.getByRole('button', { name: 'Apply to editor' }));
     expect(mocks.write).toHaveBeenCalledWith('return 3;');

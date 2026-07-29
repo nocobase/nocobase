@@ -336,9 +336,8 @@ The “Data type” column comes from built-in classification. System base data 
 | Table | Description | Data type | Default migration strategy | Version control | Backup/restore |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Business runtime data | Schema-only | Not included | Backed up |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Business runtime data | Schema-only | Not included | Backed up |
+| `aiKnowledgeBase` | Knowledge-base type, external ID, vector database, LLM service, embedding model, and base information | Business runtime data | Schema-only | Not included | Backed up |
 | `aiVectorDatabases` | Vector database service and connection configuration | Business runtime data | Schema-only | Not included | Backed up |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Business runtime data | Schema-only | Not included | Backed up |
 
 ### Environment variables
 

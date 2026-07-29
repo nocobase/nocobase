@@ -30,7 +30,7 @@ AI 知识库节点是异步节点，创建工作流时需要选择异步执行�
 
 下面的示例沿用 [概述](./) 中的 `Answers` / `Questions` 表和目标知识库。开始配置前，先确认：
 
-- 已创建 Local 知识库，并配置好文件存储和向量存储，相关配置见 [知识库概述](../../../knowledge-base/knowledge-base) 和 [向量存储](../../../knowledge-base/vector-store)
+- 已创建 Local 知识库，并配置好文件存储、向量数据库、LLM 服务和 Embedding model，相关配置见 [知识库概述](../../../knowledge-base/knowledge-base/index.md) 和 [向量数据库](../../../knowledge-base/vector-database)
 - 已准备 `Answers.questions` 关系字段；如果需要查看表结构，可以回到 [概述](./)
 - 工作流使用异步执行；基础用法见 [工作流](../../../../workflow)
 

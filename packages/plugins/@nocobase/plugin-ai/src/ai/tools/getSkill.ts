@@ -13,7 +13,7 @@ import { z } from 'zod';
 import pkg from '../../../package.json';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("Load specific SKILLS", { ns: "${pkg.name}" })}}`,

@@ -8,11 +8,94 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
+import { UniqueConstraintError } from '@nocobase/database';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
 import { EEFeatures } from '../manager/ai-feature-manager';
+import {
+  AI_EMPLOYEE_NICKNAME_INVALID,
+  AI_EMPLOYEE_USERNAME_CONFLICT,
+  AI_EMPLOYEE_USERNAME_INVALID,
+} from '../../common/error-codes';
+import {
+  isValidAIEmployeeNickname,
+  isValidAIEmployeeUsername,
+  normalizeAIEmployeeName,
+} from '../../common/ai-employee-validation';
+
+const isUniqueConstraintError = (error: unknown) =>
+  error instanceof UniqueConstraintError ||
+  (typeof error === 'object' && error !== null && 'name' in error && error.name === 'SequelizeUniqueConstraintError');
+
+const throwUsernameConflict = (ctx: Context): void =>
+  ctx.throw(409, {
+    code: AI_EMPLOYEE_USERNAME_CONFLICT,
+    message: ctx.t('Username already exists'),
+  });
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const validateAndNormalizeProfileValues = (ctx: Context) => {
+  const values = ctx.action.params.values;
+  if (!isRecord(values)) {
+    return;
+  }
+
+  if ('username' in values) {
+    const username = values.username;
+    if (typeof username !== 'string' || !isValidAIEmployeeUsername(username)) {
+      ctx.throw(400, {
+        code: AI_EMPLOYEE_USERNAME_INVALID,
+        message: ctx.t('Use 1-64 letters, numbers, underscores, or hyphens.'),
+      });
+    } else {
+      values.username = normalizeAIEmployeeName(username);
+    }
+  }
+
+  if ('nickname' in values) {
+    const nickname = values.nickname;
+    if (typeof nickname !== 'string' || !isValidAIEmployeeNickname(nickname)) {
+      ctx.throw(400, {
+        code: AI_EMPLOYEE_NICKNAME_INVALID,
+        message: ctx.t("Use 1-64 letters, numbers, spaces, or . _ - ' ( ) & ·."),
+      });
+    } else {
+      values.nickname = normalizeAIEmployeeName(nickname);
+    }
+  }
+};
+
+export const create = async (ctx: Context, next: Next) => {
+  validateAndNormalizeProfileValues(ctx);
+  const username = ctx.action.params.values?.username;
+
+  if (typeof username === 'string') {
+    const existingEmployee = await ctx.db.getRepository('aiEmployees').findOne({
+      filter: { username },
+    });
+    if (existingEmployee) {
+      throwUsernameConflict(ctx);
+    }
+  }
+
+  try {
+    await actions.create(ctx, next);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throwUsernameConflict(ctx);
+    }
+    throw error;
+  }
+};
+
+export const update = async (ctx: Context, next: Next) => {
+  validateAndNormalizeProfileValues(ctx);
+  await actions.update(ctx, next);
+};
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
