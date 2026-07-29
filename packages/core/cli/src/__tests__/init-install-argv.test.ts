@@ -148,7 +148,7 @@ test('buildInstallArgv forwards app public path for new installs', () => {
   expect(argv).toContain('/console/');
 });
 
-test('buildInstallArgv forwards non-default portal type for new installs', () => {
+test('buildInstallArgv does not forward portal init options for new installs', () => {
   const buildInstallArgv = (
     Init.prototype as unknown as {
       buildInstallArgv: (
@@ -178,10 +178,8 @@ test('buildInstallArgv forwards non-default portal type for new installs', () =>
     },
   );
 
-  expect(argv).toContain('--portal-type');
-  expect(argv).toContain('no-code');
-  expect(argv).toContain('--portal-name');
-  expect(argv).toContain('main');
+  expect(argv).not.toContain('--portal-type');
+  expect(argv).not.toContain('--portal-name');
   expect(argv).not.toContain('--portal-template');
 });
 

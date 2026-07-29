@@ -50,12 +50,8 @@ import Install, { defaultDbPortForDialect } from './install.ts';
 
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
-const DEFAULT_INIT_PORTAL_TYPE = 'ai';
-const DEFAULT_INIT_PORTAL_NAME = 'main';
-const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const INIT_SETUP_MODES = ['install-new', 'manage-local', 'connect-remote'] as const;
-const INIT_PORTAL_TYPES = ['no-code', 'ai'] as const;
 type InitSetupMode = (typeof INIT_SETUP_MODES)[number];
 const INIT_ENV_ADD_FLAG_NAMES = [
   'locale',
@@ -110,10 +106,6 @@ function isInstallNewSetupMode(values: PromptCatalogValues | Record<string, unkn
 
 function isInstallLikeSetupMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
   return !isRemoteSetupMode(values);
-}
-
-function isAiMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
-  return String(values.portalType ?? DEFAULT_INIT_PORTAL_TYPE).trim() === 'ai';
 }
 
 function remoteConnectionOnly<T extends PromptBlock>(def: T): T {
@@ -472,42 +464,6 @@ Prompt modes:
     devDependencies: installLikeDownloadExecutionOnly(Download.prompts.devDependencies),
     build: installLikeDownloadExecutionOnly(Download.prompts.build),
     buildDts: installLikeDownloadExecutionOnly(Download.prompts.buildDts),
-    portalType: installNewOnly({
-      type: 'select',
-      variant: 'radio',
-      message: initText('prompts.portalType.message'),
-      options: [
-        {
-          value: 'no-code',
-          label: initText('prompts.portalType.noCodeLabel'),
-          hint: initText('prompts.portalType.noCodeHint'),
-        },
-        {
-          value: 'ai',
-          label: initText('prompts.portalType.aiLabel'),
-          hint: initText('prompts.portalType.aiHint'),
-        },
-      ],
-      initialValue: DEFAULT_INIT_PORTAL_TYPE,
-      yesInitialValue: DEFAULT_INIT_PORTAL_TYPE,
-      required: true,
-    }),
-    portalName: installNewOnly({
-      type: 'text',
-      message: initText('prompts.portalName.message'),
-      placeholder: DEFAULT_INIT_PORTAL_NAME,
-      initialValue: DEFAULT_INIT_PORTAL_NAME,
-      yesInitialValue: DEFAULT_INIT_PORTAL_NAME,
-      required: true,
-    }),
-    portalTemplate: installNewOnly({
-      type: 'text',
-      message: initText('prompts.portalTemplate.message'),
-      placeholder: DEFAULT_INIT_PORTAL_TEMPLATE,
-      yesInitialValue: DEFAULT_INIT_PORTAL_TEMPLATE,
-      hidden: (values) => !isAiMode(values),
-      required: true,
-    }),
     dbDialect: installLikeOnly(Install.dbPrompts.dbDialect),
     builtinDb: installLikeOnly(Install.dbPrompts.builtinDb),
     builtinDbImage: installLikeOnly(Install.dbPrompts.builtinDbImage),
@@ -531,19 +487,12 @@ Prompt modes:
 
   private buildPromptCatalog(
     flags: { 'skip-auth'?: boolean },
-    options: { defaultApiHost: string; defaultPortalTemplate?: string },
+    options: { defaultApiHost: string },
   ): PromptsCatalog {
     const prompts: PromptsCatalog = {
       ...Init.prompts,
       installApiBaseUrl: createInstallConnectionApiBaseUrlPrompt(options.defaultApiHost),
     };
-    const defaultPortalTemplate = String(options.defaultPortalTemplate ?? '').trim();
-    if (defaultPortalTemplate) {
-      prompts.portalTemplate = {
-        ...prompts.portalTemplate,
-        yesInitialValue: defaultPortalTemplate,
-      } as TextPromptBlock;
-    }
 
     if (flags['skip-auth']) {
       const accessTokenPrompt: TextPromptBlock = {
@@ -601,16 +550,6 @@ Prompt modes:
     'setup-mode': Flags.string({
       description: 'Setup mode: install a new app, manage a local app by reusing its database, or connect a remote app',
       options: [...INIT_SETUP_MODES],
-    }),
-    'portal-type': Flags.string({
-      description: 'Initial portal type: no-code or ai',
-      options: [...INIT_PORTAL_TYPES],
-    }),
-    'portal-name': Flags.string({
-      description: 'Initial portal name',
-    }),
-    'portal-template': Flags.string({
-      description: 'Initial portal template npm package or local path when --portal-type ai is used',
     }),
     ui: Flags.boolean({
       description: 'Open the guided setup flow in a local browser form (not valid with --yes)',
@@ -843,8 +782,7 @@ Prompt modes:
     );
     const defaultUiHost = await resolveDefaultUiHost();
     const defaultApiHost = await resolveDefaultApiHost();
-    const defaultPortalTemplate = String(dynamicInitialValues.portalTemplate ?? '').trim();
-    const promptCatalog = this.buildPromptCatalog(normalizedFlags, { defaultApiHost, defaultPortalTemplate });
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags, { defaultApiHost });
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
         stages: Init.buildWebUiStages(promptCatalog),
@@ -874,7 +812,7 @@ Prompt modes:
           ? { setupMode: normalizeInitSetupMode(presetValues.hasNocobase) }
           : {}),
       },
-      yesInitialValues: pickKeys(dynamicInitialValues, ['portalTemplate']),
+      yesInitialValues: {},
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
       hooks: {
@@ -964,7 +902,6 @@ Prompt modes:
       'app-root-path'?: string;
       'app-port'?: string;
       'storage-path'?: string;
-      'portal-template'?: string;
       'db-port'?: string;
       yes?: boolean;
     },
@@ -973,8 +910,7 @@ Prompt modes:
     const out: PromptInitialValues = {};
 
     const shouldResolveAppInitialValues =
-      !Object.prototype.hasOwnProperty.call(presetValues, 'appPort') ||
-      !Object.prototype.hasOwnProperty.call(presetValues, 'portalTemplate');
+      !Object.prototype.hasOwnProperty.call(presetValues, 'appPort');
     if (shouldResolveAppInitialValues) {
       const appInitialValues = await Install.buildAppPromptInitialValues({
         envName: String(presetValues.appName ?? '').trim(),
@@ -983,22 +919,11 @@ Prompt modes:
           'app-path': flags['app-path'] ?? '',
           'app-root-path': flags['app-root-path'] ?? '',
           'storage-path': flags['storage-path'] ?? '',
-          'portal-template':
-            flags['portal-template'] ??
-            (Object.prototype.hasOwnProperty.call(presetValues, 'portalTemplate')
-              ? String(presetValues.portalTemplate ?? '')
-              : undefined),
         },
         warnOnPortFallback: false,
       });
       if (appInitialValues.appPort !== undefined && !Object.prototype.hasOwnProperty.call(presetValues, 'appPort')) {
         out.appPort = appInitialValues.appPort;
-      }
-      if (
-        appInitialValues.portalTemplate !== undefined &&
-        !Object.prototype.hasOwnProperty.call(presetValues, 'portalTemplate')
-      ) {
-        out.portalTemplate = appInitialValues.portalTemplate;
       }
     }
 
@@ -1086,14 +1011,6 @@ Prompt modes:
         } satisfies PromptsCatalog,
       },
       {
-        sectionTitle: initText('webUi.portalType.title'),
-        sectionDescription: initText('webUi.portalType.description'),
-        catalog: {
-          portalName: c.portalName,
-          portalType: c.portalType,
-        } satisfies PromptsCatalog,
-      },
-      {
         sectionTitle: initText('webUi.configureDatabase.title'),
         sectionDescription: initText('webUi.configureDatabase.description'),
         catalog: {
@@ -1148,9 +1065,6 @@ Prompt modes:
     'app-port'?: string;
     'storage-path'?: string;
     'app-public-path'?: string;
-    'portal-type'?: string;
-    'portal-name'?: string;
-    'portal-template'?: string;
     'root-username'?: string;
     'root-email'?: string;
     'root-password'?: string;
@@ -1242,15 +1156,6 @@ Prompt modes:
     }
     if (flags['app-public-path'] !== undefined && String(flags['app-public-path']).trim() !== '') {
       preset.appPublicPath = String(flags['app-public-path']).trim();
-    }
-    if (flags['portal-type'] !== undefined && String(flags['portal-type']).trim() !== '') {
-      preset.portalType = String(flags['portal-type']).trim();
-    }
-    if (flags['portal-name'] !== undefined && String(flags['portal-name']).trim() !== '') {
-      preset.portalName = String(flags['portal-name']).trim();
-    }
-    if (flags['portal-template'] !== undefined && String(flags['portal-template']).trim() !== '') {
-      preset.portalTemplate = String(flags['portal-template']).trim();
     }
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
@@ -1402,9 +1307,6 @@ Prompt modes:
     const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
     const appPort = String(results.appPort ?? '').trim();
     const appPublicPath = String(results.appPublicPath ?? '').trim();
-    const portalType = String(results.portalType ?? '').trim();
-    const portalName = String(results.portalName ?? '').trim();
-    const portalTemplate = String(results.portalTemplate ?? '').trim();
     const source = String(results.source ?? '').trim();
     const version = resolveInitDownloadVersion(results);
     const dockerRegistry = String(results.dockerRegistry ?? '').trim();
@@ -1480,9 +1382,6 @@ Prompt modes:
       ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
       ...(appPort ? { appPort } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
-      ...(portalType && portalType !== DEFAULT_INIT_PORTAL_TYPE ? { portalType } : {}),
-      ...(portalName ? { portalName } : {}),
-      ...(portalTemplate ? { portalTemplate } : {}),
       ...(appKey ? { appKey } : {}),
       ...(timeZone ? { timezone: timeZone } : {}),
       ...(!skipDownload && results.devDependencies !== undefined
@@ -1546,9 +1445,6 @@ Prompt modes:
       'skip-auth'?: boolean;
       'skip-download'?: boolean;
       'app-path'?: string;
-      'portal-type'?: string;
-      'portal-name'?: string;
-      'portal-template'?: string;
       'db-host'?: string;
       'db-schema'?: string;
       'db-table-prefix'?: string;
@@ -1655,21 +1551,6 @@ Prompt modes:
     const appPublicPath = String(results.appPublicPath ?? '').trim();
     if (appPublicPath) {
       argv.push('--app-public-path', appPublicPath);
-    }
-
-    const portalType = String(results.portalType ?? '').trim();
-    if (portalType && portalType !== DEFAULT_INIT_PORTAL_TYPE) {
-      argv.push('--portal-type', portalType);
-    }
-
-    const portalName = String(results.portalName ?? '').trim();
-    if (portalName) {
-      argv.push('--portal-name', portalName);
-    }
-
-    const portalTemplate = String(results.portalTemplate ?? '').trim();
-    if (portalTemplate) {
-      argv.push('--portal-template', portalTemplate);
     }
 
     if (flags.force) {
@@ -1943,14 +1824,6 @@ Prompt modes:
       delete normalized.rootEmail;
       delete normalized.rootPassword;
       delete normalized.rootNickname;
-    }
-    const portalType = normalizeConnectionString(normalized.portalType) || DEFAULT_INIT_PORTAL_TYPE;
-    normalized.portalType = portalType;
-    normalized.portalName = normalizeConnectionString(normalized.portalName) || DEFAULT_INIT_PORTAL_NAME;
-    if (portalType === 'ai') {
-      normalized.portalTemplate = normalizeConnectionString(normalized.portalTemplate);
-    } else {
-      delete normalized.portalTemplate;
     }
     delete normalized.installApiBaseUrl;
     delete normalized.installAuthType;
