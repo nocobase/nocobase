@@ -25,7 +25,11 @@ import {
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '@nocobase/runjs-workspace/client-v2';
+import {
+  installRunJSWorkspaceClientV2,
+  runJSStudioToolbarRegistry,
+  type RunJSStudioToolbarContext,
+} from '@nocobase/runjs-workspace/client-v2';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import enUS from '../../locale/en-US.json';
@@ -62,6 +66,7 @@ describe('PluginLightExtensionClientV2', () => {
         [PluginLightExtensionClientV2, { name: 'light-extension', packageName: NAMESPACE }],
       ],
     });
+    const disposeRunJSWorkspace = installRunJSWorkspaceClientV2(app.apiClient);
 
     await app.load();
     const plugin = app.pm.get(PluginLightExtensionClientV2) as PluginLightExtensionClientV2;
@@ -112,6 +117,7 @@ describe('PluginLightExtensionClientV2', () => {
 
     plugin.dispose();
     expectLightExtensionRegistrations(0);
+    disposeRunJSWorkspace();
   });
 });
 
