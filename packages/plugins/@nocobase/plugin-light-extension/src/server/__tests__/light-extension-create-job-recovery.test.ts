@@ -10,6 +10,10 @@
 import { vi } from 'vitest';
 
 import type { LightExtensionCreateJobRecord } from '../../shared/types';
+import type {
+  LightExtensionAuditService,
+  LightExtensionCreateJobAuditInput,
+} from '../services/LightExtensionAuditService';
 import { LightExtensionCreateJobExecutor } from '../services/LightExtensionCreateJobExecutor';
 import { LightExtensionCreateJobRunner } from '../services/LightExtensionCreateJobRunner';
 import type { LightExtensionCreateJobStore } from '../services/LightExtensionCreateJobStore';
@@ -29,12 +33,19 @@ describe('LightExtensionCreateJobRunner', () => {
       execute: vi.fn(async () => job.targetRepoId),
       cleanup: vi.fn(),
     } as unknown as LightExtensionCreateJobExecutor;
-    const runner = new LightExtensionCreateJobRunner(store, executor, runnerOptions());
+    const recordCreateJobEvent = vi.fn(async (_event: LightExtensionCreateJobAuditInput) => undefined);
+    const runner = new LightExtensionCreateJobRunner(store, executor, runnerOptions(), {
+      recordCreateJobEvent,
+    } as unknown as LightExtensionAuditService);
 
     await runner.run(job.id);
 
     expect(store.start).toHaveBeenCalledTimes(2);
     expect(executor.execute).toHaveBeenCalledWith(job);
+    expect(recordCreateJobEvent.mock.calls.map(([event]) => event.action)).toEqual([
+      'createJobStart',
+      'createJobSucceed',
+    ]);
   });
 
   it('executes a queued job once when the same message is delivered twice', async () => {
@@ -70,7 +81,10 @@ describe('LightExtensionCreateJobRunner', () => {
       }),
       cleanup: vi.fn(async () => undefined),
     } as unknown as LightExtensionCreateJobExecutor;
-    const runner = new LightExtensionCreateJobRunner(store, executor, runnerOptions());
+    const recordCreateJobEvent = vi.fn(async (_event: LightExtensionCreateJobAuditInput) => undefined);
+    const runner = new LightExtensionCreateJobRunner(store, executor, runnerOptions(), {
+      recordCreateJobEvent,
+    } as unknown as LightExtensionAuditService);
 
     await runner.run(job.id);
 
@@ -82,6 +96,14 @@ describe('LightExtensionCreateJobRunner', () => {
     );
     expect(executor.cleanup).toHaveBeenCalledWith(job);
     expect(store.complete).not.toHaveBeenCalled();
+    expect(recordCreateJobEvent.mock.calls.map(([event]) => event.action)).toEqual(['createJobStart', 'createJobFail']);
+    expect(recordCreateJobEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        jobId: job.id,
+        reasonCode: 'LIGHT_EXTENSION_CREATE_FAILED',
+        result: 'blocked',
+      }),
+    );
   });
 
   it('fails and cleans stale jobs without executing them', async () => {

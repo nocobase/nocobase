@@ -97,7 +97,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await app?.destroy();
   });
 
-  it('atomically creates compiled source, a fixed remote target, mapping, succeeded job, and in-sync baseline', async () => {
+  it('atomically creates the Git source with exactly one primary business audit', async () => {
     const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
     const publishPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'publishPreparedInitialWorkspace');
     const result = await service.create(

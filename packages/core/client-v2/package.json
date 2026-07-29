@@ -41,7 +41,6 @@
     "@nocobase/flow-engine": "2.2.0-beta.15",
     "@nocobase/light-extension-sdk": "2.2.0-beta.15",
     "@nocobase/runjs": "2.2.0-beta.15",
-    "@nocobase/runjs-workspace": "2.2.0-beta.15",
     "@nocobase/sdk": "2.2.0-beta.15",
     "@nocobase/shared": "2.2.0-beta.15",
     "@nocobase/utils": "2.2.0-beta.15",

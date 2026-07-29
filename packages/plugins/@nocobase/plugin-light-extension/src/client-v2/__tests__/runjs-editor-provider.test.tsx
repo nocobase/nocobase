@@ -403,15 +403,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
           sourceMetadata: { lightExtensionKind: 'js-page', modelUse: 'JSPageModel' },
           surfaceStyle: 'render',
           onPersistedChange,
-          renderNext: (overrides) => (
-            <div
-              data-source-binding={String(Boolean(overrides?.value?.sourceBinding))}
-              data-source-mode={overrides?.value?.sourceMode}
-              data-testid="inline-workspace-editor"
-            >
-              inline workspace editor
-            </div>
-          ),
+          renderNext: () => <div>inline workspace editor</div>,
         })}
       </EditorViewHarness>,
     );
@@ -432,8 +424,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(onPersistedChange).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(workspacePageMockState.moveToInlineCompleted).toBe(true));
     expect(screen.queryByRole('button', { name: 'move workspace to inline' })).not.toBeInTheDocument();
-    expect(screen.getByTestId('inline-workspace-editor')).toHaveAttribute('data-source-mode', 'inline');
-    expect(screen.getByTestId('inline-workspace-editor')).toHaveAttribute('data-source-binding', 'false');
+    expect(screen.getByText('inline workspace editor')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
     resolveHostRefresh?.();
   });

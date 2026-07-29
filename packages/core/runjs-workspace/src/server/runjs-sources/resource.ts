@@ -13,6 +13,7 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
 import JSZip, { type JSZipObject } from 'jszip';
 import type { Readable } from 'stream';
+import { TextDecoder } from 'util';
 
 import { VscError, isVscError, type RunJSCompileFailedDetails } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
@@ -69,6 +70,7 @@ import type { CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler
 const inlineRunJSEntryDescriptorPath = 'src/client/entry.json';
 const emptyRunJSRenderSource = 'ctx.render(null);';
 const emptyRunJSActionSource = 'return;';
+const maxZipCompressionRatio = 20;
 
 export const RUNJS_WORKSPACE_HOSTS = {
   JSPageModel: 'js-page',
@@ -1059,7 +1061,13 @@ export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileC
     });
   }
   const filesByPath = new Map<string, VscFileChange>();
-  const entries = Object.values(zip.files).filter((entry) => !entry.dir);
+  const zipEntries = Object.values(zip.files);
+  for (const entry of zipEntries) {
+    if (isRunJSZipSymbolicLink(entry)) {
+      throw new VscError('PATH_INVALID', `ZIP entry "${getRunJSZipEntryName(entry)}" must not be a symbolic link`);
+    }
+  }
+  const entries = zipEntries.filter((entry) => !entry.dir);
   if (entries.length > maxFilesPerRepo) {
     throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP must not contain more than ${maxFilesPerRepo} files`, {
       details: {
@@ -1068,14 +1076,15 @@ export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileC
       },
     });
   }
-  const budget = { totalBytes: 0 };
+  const budget = { totalBytes: 0, declaredBytes: 0, compressedBytes: buffer.length };
 
   for (const entry of entries) {
-    const path = normalizeAllowedRunJSWorkspacePath(entry.name, 'zip.entry');
-    if (filesByPath.has(path)) {
+    const path = normalizeAllowedRunJSWorkspacePath(getRunJSZipEntryName(entry), 'zip.entry');
+    const pathKey = path.toLocaleLowerCase('en-US');
+    if (filesByPath.has(pathKey)) {
       throw new VscError('PATH_INVALID', `Duplicate file path "${path}" in ZIP`);
     }
-    filesByPath.set(path, {
+    filesByPath.set(pathKey, {
       path,
       operation: 'upsert',
       content: await readRunJSZipEntryText(entry, path, budget),
@@ -1091,7 +1100,7 @@ export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileC
 async function readRunJSZipEntryText(
   entry: JSZipObject,
   path: string,
-  budget: { totalBytes: number },
+  budget: { totalBytes: number; declaredBytes: number; compressedBytes: number },
 ): Promise<string> {
   const declaredSize = getZipEntryDeclaredSize(entry);
   if (declaredSize !== null && declaredSize > maxFileSize) {
@@ -1102,6 +1111,10 @@ async function readRunJSZipEntryText(
         maxFileSize,
       },
     });
+  }
+  if (declaredSize !== null) {
+    budget.declaredBytes += declaredSize;
+    assertRunJSZipCompressionRatio(budget.compressedBytes, budget.declaredBytes);
   }
   if (declaredSize !== null && budget.totalBytes + declaredSize > maxRepoTextSize) {
     throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP content exceeds ${maxRepoTextSize} bytes`, {
@@ -1192,7 +1205,34 @@ async function readRunJSZipEntryText(
     throw limitError;
   }
 
-  return normalizeText(Buffer.concat(chunks, fileBytes).toString('utf8'));
+  assertRunJSZipCompressionRatio(budget.compressedBytes, budget.totalBytes);
+  let content: string;
+  try {
+    content = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, fileBytes));
+  } catch {
+    throw new VscError('TEXT_ENCODING_INVALID', `ZIP entry "${path}" must be valid UTF-8 text`, {
+      details: { path },
+    });
+  }
+  return normalizeText(content);
+}
+
+function assertRunJSZipCompressionRatio(compressedBytes: number, uncompressedBytes: number): void {
+  if (compressedBytes > 0 && uncompressedBytes / compressedBytes > maxZipCompressionRatio) {
+    throw new VscError('REPO_LIMIT_EXCEEDED', 'ZIP compression ratio is too high', {
+      details: { compressedBytes, uncompressedBytes, maxZipCompressionRatio },
+    });
+  }
+}
+
+function getRunJSZipEntryName(entry: JSZipObject): string {
+  return entry.unsafeOriginalName || entry.name;
+}
+
+function isRunJSZipSymbolicLink(entry: JSZipObject): boolean {
+  const rawPermissions = entry.unixPermissions;
+  const permissions = typeof rawPermissions === 'string' ? Number.parseInt(rawPermissions, 8) : rawPermissions;
+  return typeof permissions === 'number' && (permissions & 0o170000) === 0o120000;
 }
 
 function getZipEntryDeclaredSize(entry: JSZipObject): number | null {

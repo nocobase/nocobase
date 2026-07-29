@@ -43,6 +43,55 @@ describe('RunJS workspace ZIP limits', () => {
     });
   });
 
+  it('rejects symbolic links', async () => {
+    const zip = new JSZip();
+    zip.file('src/link.ts', '../target.ts', { unixPermissions: 0o120777 });
+    const zipBase64 = await zip.generateAsync({ platform: 'UNIX', type: 'base64' });
+
+    await expect(readRunJSWorkspaceZip(zipBase64)).rejects.toMatchObject({
+      code: 'PATH_INVALID',
+      message: expect.stringContaining('symbolic link'),
+      status: 400,
+    });
+  });
+
+  it('rejects invalid UTF-8 source files', async () => {
+    const zip = new JSZip();
+    zip.file('src/main.ts', Buffer.from([0xff, 0xfe]));
+    const zipBase64 = await zip.generateAsync({ type: 'base64' });
+
+    await expect(readRunJSWorkspaceZip(zipBase64)).rejects.toMatchObject({
+      code: 'TEXT_ENCODING_INVALID',
+      message: expect.stringContaining('valid UTF-8'),
+      status: 400,
+    });
+  });
+
+  it('rejects case-insensitive duplicate paths', async () => {
+    const zip = new JSZip();
+    zip.file('src/main.ts', 'export default 1;');
+    zip.file('src/Main.ts', 'export default 2;');
+    const zipBase64 = await zip.generateAsync({ type: 'base64' });
+
+    await expect(readRunJSWorkspaceZip(zipBase64)).rejects.toMatchObject({
+      code: 'PATH_INVALID',
+      message: expect.stringContaining('Duplicate file path'),
+      status: 400,
+    });
+  });
+
+  it('rejects unsafe compression ratios', async () => {
+    const zip = new JSZip();
+    zip.file('src/main.ts', 'a'.repeat(256 * 1024));
+    const zipBase64 = await zip.generateAsync({ compression: 'DEFLATE', type: 'base64' });
+
+    await expect(readRunJSWorkspaceZip(zipBase64)).rejects.toMatchObject({
+      code: 'REPO_LIMIT_EXCEEDED',
+      message: 'ZIP compression ratio is too high',
+      status: 413,
+    });
+  });
+
   it('normalizes invalid archives to the public error contract', async () => {
     await expect(readRunJSWorkspaceZip(Buffer.from('not a zip').toString('base64'))).rejects.toMatchObject({
       code: 'PATH_INVALID',

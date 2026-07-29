@@ -8,7 +8,6 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { installRunJSWorkspaceClientV2 } from '@nocobase/runjs-workspace/client-v2';
 import { IconPicker } from '../flow-compat';
 import { Plugin, type PluginOptions } from '..';
 import type { BaseApplication } from '../BaseApplication';
@@ -52,16 +51,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
   PluginOptions<any>,
   TApp
 > {
-  private runJSWorkspaceDisposer?: () => void;
-
-  async beforeLoad() {
-    this.disposeRunJSWorkspaceClient();
-  }
-
   async load() {
-    this.disposeRunJSWorkspaceClient();
-    this.runJSWorkspaceDisposer = installRunJSWorkspaceClientV2(this.app.apiClient);
-
     const flowEngine = this.flowEngine as typeof this.flowEngine & FlowEngineWithPluginFlowEngineState;
 
     if (flowEngine[PLUGIN_FLOW_ENGINE_LOADED]) {
@@ -134,15 +124,6 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       },
     );
     flowEngine[PLUGIN_FLOW_ENGINE_LOADED] = true;
-  }
-
-  dispose() {
-    this.disposeRunJSWorkspaceClient();
-  }
-
-  private disposeRunJSWorkspaceClient(): void {
-    this.runJSWorkspaceDisposer?.();
-    this.runJSWorkspaceDisposer = undefined;
   }
 }
 

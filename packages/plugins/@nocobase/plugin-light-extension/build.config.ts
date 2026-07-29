@@ -14,8 +14,8 @@ import path from 'path';
 const sourceDependencies = [
   '@nocobase/light-extension-sdk',
   '@nocobase/runjs',
-  '@nocobase/runjs-workspace',
   '@nocobase/client-v2',
+  '@nocobase/runjs-workspace',
 ] as const;
 const repositoryRoot = path.resolve(__dirname, '../../../..');
 

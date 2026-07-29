@@ -53,6 +53,18 @@ describe('@nocobase/runjs-workspace package boundary', () => {
     expect(violations).toEqual([]);
   });
 
+  it('keeps the client-v2 integration dependency acyclic', () => {
+    const clientV2Package = JSON.parse(
+      fs.readFileSync(path.resolve(packageRoot, '../client-v2/package.json'), 'utf8'),
+    ) as { dependencies?: Record<string, string> };
+    const flowEnginePluginPackage = JSON.parse(
+      fs.readFileSync(path.resolve(packageRoot, '../../plugins/@nocobase/plugin-flow-engine/package.json'), 'utf8'),
+    ) as { dependencies?: Record<string, string> };
+
+    expect(clientV2Package.dependencies).not.toHaveProperty('@nocobase/runjs-workspace');
+    expect(flowEnginePluginPackage.dependencies).toHaveProperty('@nocobase/runjs-workspace');
+  });
+
   it('preserves all persisted VSC collection names without defining a plugin package', () => {
     const collectionSources = collectSourceFiles(path.join(sourceRoot, 'server/collections'))
       .map((file) => fs.readFileSync(file, 'utf8'))
