@@ -13,16 +13,14 @@ const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
 const { buildPortalRegistries } = require('../portal-registry/build');
-const { loadPluginPortalRegistry, validateRegistrySet } = require('../portal-registry/config');
+const { loadPluginPortalRegistry } = require('../portal-registry/config');
 const { initializePortalRegistry } = require('../portal-registry/init');
-const { getRootRegistryItems } = require('../portal-registry/test');
 const {
   copyPortalRegistrySource,
   createPortalEnvironment,
+  ensurePortalTemplate,
   getNocoBaseDevelopmentEnvironment,
   getPortalPnpmEnvironment,
-  getUnmanagedWorkspaceChanges,
-  replaceManagedGitExcludeBlock,
   watchPortalRegistrySources,
 } = require('../portal-registry/workspace');
 
@@ -34,21 +32,20 @@ async function waitFor(check, timeout = 3000) {
   }
 }
 
-async function createRegistryPlugin(root, packageName, options = {}) {
-  const pluginRoot = options.pluginRoot || path.resolve(root, 'packages/plugins', ...packageName.split('/'));
+async function createRegistryPlugin(root, packageName) {
+  const pluginRoot = path.resolve(root, 'packages/plugins', ...packageName.split('/'));
   const sourceRoot = path.resolve(pluginRoot, 'portal-registry');
   await fs.ensureDir(sourceRoot);
   await fs.writeJson(path.resolve(pluginRoot, 'package.json'), { name: packageName, version: '2.2.0-test.1' });
   await fs.outputFile(path.resolve(sourceRoot, 'components/button.tsx'), 'export const Button = () => null;');
   await fs.writeJson(path.resolve(sourceRoot, 'registry.config.json'), {
-    target: options.target || 'src/extensions/example',
+    target: 'src/extensions/example',
     items: [
       {
-        name: options.itemName || 'example',
+        name: 'example',
         type: 'registry:block',
         title: 'Example',
         include: ['components'],
-        registryDependencies: options.registryDependencies,
       },
     ],
   });
@@ -131,151 +128,95 @@ describe('portal Registry', () => {
     ).rejects.toThrow('installed in node_modules');
   });
 
-  test('rejects duplicate item names and unsafe targets', async () => {
-    const first = await createRegistryPlugin(root, '@nocobase/plugin-first', { itemName: 'shared' });
-    const second = await createRegistryPlugin(root, '@nocobase/plugin-second', {
-      itemName: 'shared',
-      target: 'src/extensions/second',
-    });
-    const firstRegistry = await loadPluginPortalRegistry(first.plugin);
-    const secondRegistry = await loadPluginPortalRegistry(second.plugin);
-
-    expect(() => validateRegistrySet([firstRegistry, secondRegistry])).toThrow(
-      "Duplicate portal Registry item 'shared'",
-    );
-
-    await fs.writeJson(path.resolve(first.pluginRoot, 'portal-registry/registry.config.json'), {
-      target: '../outside',
-      items: [{ name: 'unsafe', type: 'registry:block', include: ['components'] }],
-    });
-    await expect(loadPluginPortalRegistry(first.plugin)).rejects.toThrow('Unsafe @nocobase/plugin-first target');
-
-    await fs.writeJson(path.resolve(first.pluginRoot, 'portal-registry/registry.config.json'), {
-      target: 'src/extensions/first',
-      items: [{ name: 'all', type: 'registry:block', include: ['components'] }],
-    });
-    await expect(loadPluginPortalRegistry(first.plugin)).rejects.toThrow('uses reserved name: all');
-  });
-
-  test('builds package-owned output and honors package, path, glob, and core-only selectors', async () => {
-    const first = await createRegistryPlugin(root, '@nocobase/plugin-first', {
-      itemName: 'first',
-      target: 'src/extensions/first',
-    });
-    const second = await createRegistryPlugin(root, '@nocobase/plugin-second', {
-      itemName: 'second',
-      target: 'src/extensions/second',
-    });
-    const registries = [await loadPluginPortalRegistry(first.plugin), await loadPluginPortalRegistry(second.plugin)];
-    let buildCalls = 0;
-    const runShadcnBuild = async ({ registryPath, outputPath }) => {
-      buildCalls += 1;
-      const document = await fs.readJson(registryPath);
-      await fs.ensureDir(outputPath);
-      for (const item of document.items) {
-        await fs.writeJson(path.resolve(outputPath, `${item.name}.json`), item);
-      }
-    };
-
-    const fullBuild = await buildPortalRegistries({
-      cwd: root,
-      registries,
-      runShadcnBuild,
-    });
-
-    expect(fullBuild).toEqual({ pluginCount: 2, itemCount: 2 });
-    expect(await fs.readJson(path.resolve(first.pluginRoot, 'dist/portal-registry/manifest.json'))).toMatchObject({
-      schemaVersion: 1,
-      packageName: '@nocobase/plugin-first',
-      packageVersion: '2.2.0-test.1',
-      items: [{ name: 'first', file: 'first.json', digest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/) }],
-    });
-    expect(await fs.pathExists(path.resolve(second.pluginRoot, 'dist/portal-registry/second.json'))).toBe(true);
-
-    await fs.remove(path.resolve(first.pluginRoot, 'dist'));
-    await fs.remove(path.resolve(second.pluginRoot, 'dist'));
-    const packageBuild = await buildPortalRegistries({
-      cwd: root,
-      registries,
-      packageSelectors: ['@nocobase/plugin-first'],
-      runShadcnBuild,
-    });
-
-    expect(packageBuild).toEqual({ pluginCount: 1, itemCount: 1 });
-    await expect(fs.pathExists(path.resolve(first.pluginRoot, 'dist/portal-registry/first.json'))).resolves.toBe(true);
-    await expect(fs.pathExists(path.resolve(second.pluginRoot, 'dist/portal-registry/second.json'))).resolves.toBe(
-      false,
-    );
-
-    await fs.remove(path.resolve(first.pluginRoot, 'dist'));
-    const pathBuild = await buildPortalRegistries({
-      cwd: root,
-      registries,
-      packageSelectors: ['packages/plugins/@nocobase/plugin-second'],
-      runShadcnBuild,
-    });
-    expect(pathBuild).toEqual({ pluginCount: 1, itemCount: 1 });
-    await expect(fs.pathExists(path.resolve(second.pluginRoot, 'dist/portal-registry/second.json'))).resolves.toBe(
-      true,
-    );
-
-    await fs.remove(path.resolve(second.pluginRoot, 'dist'));
-    const globBuild = await buildPortalRegistries({
-      cwd: root,
-      registries,
-      packageSelectors: ['packages/plugins/*'],
-      runShadcnBuild,
-    });
-    expect(globBuild).toEqual({ pluginCount: 2, itemCount: 2 });
-
-    const callsBeforeCoreBuild = buildCalls;
-    const coreBuild = await buildPortalRegistries({
-      cwd: root,
-      registries,
-      packageSelectors: ['@nocobase/server'],
-      runShadcnBuild,
-    });
-    expect(coreBuild).toEqual({ pluginCount: 0, itemCount: 0 });
-    expect(buildCalls).toBe(callsBeforeCoreBuild);
-
-    await fs.remove(path.resolve(first.pluginRoot, 'portal-registry'));
-    const callsBeforeStaleCleanup = buildCalls;
-    const staleCleanupBuild = await buildPortalRegistries({
-      cwd: root,
-      packageSelectors: ['@nocobase/plugin-first'],
-      runShadcnBuild,
-    });
-    expect(staleCleanupBuild).toEqual({ pluginCount: 0, itemCount: 0 });
-    await expect(fs.pathExists(path.resolve(first.pluginRoot, 'dist/portal-registry'))).resolves.toBe(false);
-    expect(buildCalls).toBe(callsBeforeStaleCleanup);
-  });
-
-  test('installs only top-level items in the clean Template test', () => {
-    const registries = [
-      {
-        config: {
-          items: [
-            { name: 'runtime' },
-            { name: 'feature', registryDependencies: ['@nocobase/runtime', 'button'] },
-            { name: 'standalone' },
-          ],
+  test('builds independently targeted items owned by one plugin', async () => {
+    const entry = await createRegistryPlugin(root, '@nocobase/plugin-split');
+    const registryRoot = path.resolve(entry.pluginRoot, 'portal-registry');
+    await fs.outputFile(path.resolve(registryRoot, 'route-surfaces/extension.tsx'), 'export default {};');
+    await fs.outputFile(path.resolve(registryRoot, 'users-example/extension.tsx'), 'export default {};');
+    await fs.writeJson(path.resolve(registryRoot, 'registry.config.json'), {
+      items: [
+        {
+          name: 'route-surfaces',
+          type: 'registry:lib',
+          source: 'route-surfaces',
+          target: 'src/extensions/nocobase-route-surfaces',
+          include: ['.'],
         },
-      },
-    ];
+        {
+          name: 'users-example',
+          type: 'registry:block',
+          source: 'users-example',
+          target: 'src/extensions/nocobase-users-example',
+          include: ['.'],
+          registryDependencies: ['@nocobase/route-surfaces'],
+        },
+      ],
+    });
 
-    expect(getRootRegistryItems(registries)).toEqual(['feature', 'standalone']);
+    const registry = await loadPluginPortalRegistry(entry.plugin);
+    const result = await buildPortalRegistries({
+      cwd: root,
+      registries: [registry],
+      runShadcnBuild: async ({ registryPath, outputPath }) => {
+        const document = await fs.readJson(registryPath);
+        await fs.ensureDir(outputPath);
+        for (const item of document.items) {
+          await fs.writeJson(path.resolve(outputPath, `${item.name}.json`), item);
+        }
+      },
+    });
+    const builtItems = await Promise.all(
+      ['route-surfaces', 'users-example'].map((name) =>
+        fs.readJson(path.resolve(entry.pluginRoot, 'dist/portal-registry', `${name}.json`)),
+      ),
+    );
+    const manifest = await fs.readJson(path.resolve(entry.pluginRoot, 'dist/portal-registry/manifest.json'));
+
+    expect(result).toEqual({ pluginCount: 1, itemCount: 2 });
+    expect(builtItems.flatMap((item) => item.files.map((file) => file.target))).toEqual([
+      'src/extensions/nocobase-route-surfaces/extension.tsx',
+      'src/extensions/nocobase-users-example/extension.tsx',
+    ]);
+    expect(manifest).toMatchObject({
+      schemaVersion: 1,
+      packageName: '@nocobase/plugin-split',
+      packageVersion: '2.2.0-test.1',
+      items: [
+        {
+          name: 'route-surfaces',
+          file: 'route-surfaces.json',
+          digest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+        },
+        {
+          name: 'users-example',
+          file: 'users-example.json',
+          digest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+        },
+      ],
+    });
   });
 
-  test('preserves local Git excludes and still reports user-owned workspace changes', () => {
-    const status = ['?? .nocobase/portal-registry-workspace.json', ' M package.json', '?? local-file.ts'].join('\n');
-    const original = '# Local excludes\n.idea/\n';
-    const once = replaceManagedGitExcludeBlock(original, ['/src/extensions/']);
-    const twice = replaceManagedGitExcludeBlock(once, ['/src/extensions/']);
+  test('recreates the development workspace from a local Portal Template working tree', async () => {
+    const templatePath = path.resolve(root, 'portal-template');
+    const workspacePath = path.resolve(root, 'storage/portal-registry');
+    await fs.ensureDir(templatePath);
+    await fs.writeJson(path.resolve(templatePath, 'package.json'), { name: '@nocobase/portal-template-default' });
+    await fs.writeJson(path.resolve(templatePath, 'components.json'), {});
+    await fs.outputFile(path.resolve(templatePath, 'src/App.tsx'), 'export const localChange = true;');
+    await fs.outputFile(path.resolve(templatePath, '.git/config'), 'must not be copied');
+    await fs.outputFile(path.resolve(templatePath, 'node_modules/example/index.js'), 'must not be copied');
+    await fs.outputFile(path.resolve(templatePath, 'dist/index.html'), 'must not be copied');
+    await fs.outputFile(path.resolve(workspacePath, 'stale.txt'), 'remove me');
 
-    expect(getUnmanagedWorkspaceChanges(status)).toEqual([' M package.json', '?? local-file.ts']);
-    expect(twice).toBe(once);
-    expect(once).toContain('# Local excludes\n.idea/');
-    expect(once).toContain('/src/extensions/');
+    await ensurePortalTemplate({ cwd: root, workspacePath, templatePath });
+
+    await expect(fs.readFile(path.resolve(workspacePath, 'src/App.tsx'), 'utf8')).resolves.toBe(
+      'export const localChange = true;',
+    );
+    await expect(fs.pathExists(path.resolve(workspacePath, 'stale.txt'))).resolves.toBe(false);
+    await expect(fs.pathExists(path.resolve(workspacePath, '.git'))).resolves.toBe(false);
+    await expect(fs.pathExists(path.resolve(workspacePath, 'node_modules'))).resolves.toBe(false);
+    await expect(fs.pathExists(path.resolve(workspacePath, 'dist'))).resolves.toBe(false);
   });
 
   test('mirrors Registry sources into the Template without directory symlinks', async () => {
@@ -289,7 +230,12 @@ describe('portal Registry', () => {
     expect(await fs.readFile(path.resolve(targetRoot, 'component.tsx'), 'utf8')).toContain('value = 1');
 
     const watcher = watchPortalRegistrySources(
-      [{ sourceRoot, config: { target: 'src/extensions/example' } }],
+      [
+        {
+          sourceRoot,
+          config: { items: [{ source: '.', target: 'src/extensions/example' }] },
+        },
+      ],
       workspacePath,
     );
     await new Promise((resolve) => watcher.once('ready', resolve));

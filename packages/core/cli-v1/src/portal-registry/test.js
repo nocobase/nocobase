@@ -103,8 +103,8 @@ async function testPortalRegistries(options = {}) {
     });
     await runPortalPnpm(['install', '--frozen-lockfile', '--reporter=silent'], { cwd: testRoot });
 
-    for (const registry of registries) {
-      await fs.remove(path.resolve(testRoot, registry.config.target));
+    for (const target of new Set(registries.flatMap((registry) => registry.config.items.map((item) => item.target)))) {
+      await fs.remove(path.resolve(testRoot, target));
     }
 
     registryServer = await startRegistryServer(getBuiltRegistryItemPaths(registries));

@@ -1,17 +1,20 @@
-import type { AppExtension } from "../../../../app/extension";
-import { ResourceAccessGuard } from "@/components/access-control/resource-access-guard";
+import { CanAccess } from "@/components/access-control/can-access";
+import { UsersRound } from "lucide-react";
+import { Route } from "react-router";
+
+import type { AppExtension } from "../../app/extension";
+import { AccessDenied } from "@/components/access-control/access-denied";
 import { UserCreate } from "./create";
 import { UserEdit } from "./edit";
 import { UserResourceLayout } from "./layout";
 import { RoleDetailRoute } from "./role-detail";
 import { userRoutes } from "./routes";
 import { UserShow } from "./show";
-import { UsersRound } from "lucide-react";
-import { Route } from "react-router";
 import "./locales";
 
 const usersExampleExtension: AppExtension = {
   id: "nocobase-users-example",
+  priority: 0,
   resources: [
     {
       name: "users",
@@ -21,6 +24,7 @@ const usersExampleExtension: AppExtension = {
       show: userRoutes.show,
       meta: {
         label: "Users",
+        priority: 1,
         singularLabel: "User",
         i18nKey: "resources.users",
         i18nSingularKey: "resources.user",
@@ -40,49 +44,61 @@ const usersExampleExtension: AppExtension = {
       <Route
         path="create"
         element={
-          <ResourceAccessGuard resource="users" action="create">
+          <CanAccess
+            resource="users"
+            action="create"
+            fallback={<AccessDenied />}
+          >
             <UserCreate />
-          </ResourceAccessGuard>
+          </CanAccess>
         }
       />
       <Route
         path="edit/:id"
         element={
-          <ResourceAccessGuard resource="users" action="edit">
+          <CanAccess resource="users" action="edit" fallback={<AccessDenied />}>
             <UserEdit />
-          </ResourceAccessGuard>
+          </CanAccess>
         }
       />
       <Route
         path="roles/:roleName"
         element={
-          <ResourceAccessGuard resource="roles" action="show">
+          <CanAccess resource="roles" action="show" fallback={<AccessDenied />}>
             <RoleDetailRoute returnTo="list" />
-          </ResourceAccessGuard>
+          </CanAccess>
         }
       />
       <Route
         path="show/:id"
         element={
-          <ResourceAccessGuard resource="users" action="show">
+          <CanAccess resource="users" action="show" fallback={<AccessDenied />}>
             <UserShow />
-          </ResourceAccessGuard>
+          </CanAccess>
         }
       >
         <Route
           path="edit"
           element={
-            <ResourceAccessGuard resource="users" action="edit">
+            <CanAccess
+              resource="users"
+              action="edit"
+              fallback={<AccessDenied />}
+            >
               <UserEdit returnTo="show" />
-            </ResourceAccessGuard>
+            </CanAccess>
           }
         />
         <Route
           path="roles/:roleName"
           element={
-            <ResourceAccessGuard resource="roles" action="show">
+            <CanAccess
+              resource="roles"
+              action="show"
+              fallback={<AccessDenied />}
+            >
               <RoleDetailRoute returnTo="show" />
-            </ResourceAccessGuard>
+            </CanAccess>
           }
         />
       </Route>

@@ -81,8 +81,10 @@ async function loadPluginPortalRegistry(plugin) {
     throw new Error(`${plugin.packageName}: registry.config.json must contain at least one item`);
   }
 
-  const defaultTarget = assertSafeRelativePath(config.target, `${plugin.packageName} target`);
-  if (!defaultTarget.startsWith('src/')) {
+  const defaultTarget = config.target
+    ? assertSafeRelativePath(config.target, `${plugin.packageName} target`)
+    : undefined;
+  if (defaultTarget && !defaultTarget.startsWith('src/')) {
     throw new Error(`${plugin.packageName}: target must be inside src/`);
   }
 
@@ -114,21 +116,34 @@ async function loadPluginPortalRegistry(plugin) {
     validateStringArray(item.dependencies, `${plugin.packageName} item ${item.name} dependencies`);
     validateStringArray(item.registryDependencies, `${plugin.packageName} item ${item.name} registryDependencies`);
 
+    const source = assertSafeRelativePath(item.source ?? '.', `${plugin.packageName} item ${item.name} source`);
+    const target = assertSafeRelativePath(
+      item.target ?? defaultTarget,
+      `${plugin.packageName} item ${item.name} target`,
+    );
+    if (!target.startsWith('src/')) {
+      throw new Error(`${plugin.packageName} item ${item.name}: target must be inside src/`);
+    }
     if (!Array.isArray(item.include) || item.include.length === 0) {
       throw new Error(`${plugin.packageName} item ${item.name} must include at least one path`);
     }
     const include = item.include.map((entry) =>
       assertSafeRelativePath(entry, `${plugin.packageName} item ${item.name} include`),
     );
-    const files = allFiles.filter((file) => isIncluded(file, include));
+    const sourcePrefix = source === '.' ? '' : `${source}/`;
+    const files = allFiles
+      .filter((file) => !sourcePrefix || file.startsWith(sourcePrefix))
+      .map((file) => (sourcePrefix ? file.slice(sourcePrefix.length) : file))
+      .filter((file) => isIncluded(file, include));
     if (files.length === 0) {
       throw new Error(`${plugin.packageName} item ${item.name} include paths did not match any files`);
     }
 
     return {
       ...item,
+      source,
       include,
-      target: defaultTarget,
+      target,
       files,
     };
   });
@@ -152,15 +167,15 @@ function validateRegistrySet(registries, options = {}) {
   const extensionTargets = new Map();
 
   for (const registry of registries) {
-    const existingExtensionTarget = extensionTargets.get(registry.config.target);
-    if (existingExtensionTarget && existingExtensionTarget.plugin.packageName !== registry.plugin.packageName) {
-      throw new Error(
-        `Portal Registry extension target '${registry.config.target}' is shared by ${existingExtensionTarget.plugin.packageName} and ${registry.plugin.packageName}`,
-      );
-    }
-    extensionTargets.set(registry.config.target, registry);
-
     for (const item of registry.config.items) {
+      const existingExtensionTarget = extensionTargets.get(item.target);
+      if (existingExtensionTarget && existingExtensionTarget.plugin.packageName !== registry.plugin.packageName) {
+        throw new Error(
+          `Portal Registry extension target '${item.target}' is shared by ${existingExtensionTarget.plugin.packageName} and ${registry.plugin.packageName}`,
+        );
+      }
+      extensionTargets.set(item.target, registry);
+
       const existingItem = itemsByName.get(item.name);
       if (existingItem) {
         throw new Error(

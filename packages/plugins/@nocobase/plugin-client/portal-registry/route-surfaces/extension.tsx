@@ -1,16 +1,8 @@
 import type { AppExtension } from "../../app/extension";
 import { Layers3 } from "lucide-react";
-import { Fragment, lazy } from "react";
+import { lazy } from "react";
 import { Route } from "react-router";
 import { LazyRouteSurfaceDemo } from "./demo/lazy-route";
-
-const exampleModules = import.meta.glob<{ default: AppExtension }>(
-  "./examples/*/extension.tsx",
-  { eager: true }
-);
-const exampleExtensions = Object.values(exampleModules)
-  .map((module) => module.default)
-  .sort((left, right) => left.id.localeCompare(right.id));
 
 const DemoHome = lazy(() =>
   import("./demo").then((module) => ({
@@ -55,7 +47,6 @@ const routeSurfacesExtension: AppExtension = {
         acl: { type: "authenticated" },
       },
     },
-    ...exampleExtensions.flatMap((extension) => extension.resources ?? []),
   ],
   routes: (
     <>
@@ -121,9 +112,6 @@ const routeSurfacesExtension: AppExtension = {
           />
         </Route>
       </Route>
-      {exampleExtensions.map((extension) => (
-        <Fragment key={extension.id}>{extension.routes}</Fragment>
-      ))}
     </>
   ),
 };

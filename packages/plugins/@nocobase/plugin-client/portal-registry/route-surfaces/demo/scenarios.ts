@@ -89,7 +89,7 @@ Implementation requirements:
 - A full child page must be a page route branch, not an Outlet rendered inside a drawer.
 - For editable forms, use useRefineUnsavedChangesGuard, pass its beforeClose callback to the surface, render its confirmation node, and use useRouteSurfaceClose for Cancel and successful submission.
 - Direct URL entry, refresh, browser back/forward, Escape, the close button, and backdrop dismissal must all restore the correct layer stack.
-- Apply ResourceAccessGuard to each business resource/action independently; do not rely on a parent list permission for unrelated child pages.
+- Apply Refine CanAccess with an AccessDenied fallback to each business resource/action independently; do not rely on a parent list permission for unrelated child pages.
 
 Deliver the complete route definitions and React components using the application's existing design system.`;
 }

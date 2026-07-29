@@ -16,27 +16,7 @@ const { discoverPortalRegistries } = require('./config');
 
 const PORTAL_TEMPLATE_GIT_URL = 'git@github.com:nocobase/portal-template-default.git';
 const PORTAL_TEMPLATE_REF = 'main';
-const WORKSPACE_MARKER = '.nocobase/portal-registry-workspace.json';
-const GIT_EXCLUDE_BLOCK_START = '# BEGIN NOCOBASE PORTAL REGISTRY';
-const GIT_EXCLUDE_BLOCK_END = '# END NOCOBASE PORTAL REGISTRY';
-function replaceManagedGitExcludeBlock(content, entries) {
-  const escapedStart = GIT_EXCLUDE_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const escapedEnd = GIT_EXCLUDE_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const managedBlockPattern = new RegExp(`(?:^|\\n)${escapedStart}[\\s\\S]*?${escapedEnd}\\n?`, 'g');
-  const existing = content.replace(managedBlockPattern, '\n').trimEnd();
-  const managedBlock = [GIT_EXCLUDE_BLOCK_START, ...entries, GIT_EXCLUDE_BLOCK_END].join('\n');
-  return `${existing}${existing ? '\n\n' : ''}${managedBlock}\n`;
-}
-
-async function writeWorkspaceGitExcludes(workspacePath) {
-  const excludePath = path.resolve(workspacePath, '.git/info/exclude');
-  const existing = (await fs.pathExists(excludePath)) ? await fs.readFile(excludePath, 'utf8') : '';
-  const content = replaceManagedGitExcludeBlock(existing, [
-    '/.nocobase/portal-registry-workspace.json',
-    '/src/extensions/',
-  ]);
-  await fs.outputFile(excludePath, content);
-}
+const LOCAL_TEMPLATE_EXCLUDED_PATHS = new Set(['.git', 'node_modules', 'dist', 'dist-ssr']);
 
 async function run(command, args, options = {}) {
   return execa(command, args, {
@@ -90,118 +70,110 @@ function getNocoBaseDevelopmentEnvironment(environment = process.env) {
   };
 }
 
-async function removeManagedEntries(workspacePath, marker) {
-  for (const relativePath of marker?.managedPaths || []) {
-    const targetPath = path.resolve(workspacePath, relativePath);
-    const relativeTarget = path.relative(workspacePath, targetPath);
-    if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
-      throw new Error(`Refusing to clean unsafe Portal Registry workspace path: ${relativePath}`);
+function isNestedPath(parentPath, childPath) {
+  const relativePath = path.relative(parentPath, childPath);
+  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+}
+
+async function validateLocalPortalTemplate(templatePath) {
+  if (!(await fs.pathExists(templatePath)) || !(await fs.stat(templatePath)).isDirectory()) {
+    throw new Error(`Local Portal Template directory does not exist: ${templatePath}`);
+  }
+
+  const missingFiles = [];
+  for (const fileName of ['package.json', 'components.json']) {
+    if (!(await fs.pathExists(path.resolve(templatePath, fileName)))) missingFiles.push(fileName);
+  }
+  if (missingFiles.length > 0) {
+    throw new Error(`Invalid local Portal Template at ${templatePath}: missing ${missingFiles.join(', ')}`);
+  }
+}
+
+async function ensurePortalTemplate({ cwd, workspacePath, templatePath }) {
+  let localTemplatePath;
+  if (templatePath) {
+    localTemplatePath = path.resolve(cwd, templatePath);
+    await validateLocalPortalTemplate(localTemplatePath);
+    if (isNestedPath(localTemplatePath, workspacePath) || isNestedPath(workspacePath, localTemplatePath)) {
+      throw new Error('Local Portal Template and Portal Registry workspace must not contain each other');
     }
-    await fs.remove(targetPath);
   }
-}
 
-async function readWorkspaceMarker(workspacePath) {
-  const markerPath = path.resolve(workspacePath, WORKSPACE_MARKER);
-  if (!(await fs.pathExists(markerPath))) {
-    return null;
-  }
-  return fs.readJson(markerPath);
-}
+  await fs.remove(workspacePath);
+  await fs.ensureDir(path.dirname(workspacePath));
 
-function getUnmanagedWorkspaceChanges(statusOutput) {
-  return statusOutput
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .filter((line) => line.slice(3) !== WORKSPACE_MARKER);
-}
-
-async function ensurePortalTemplate({ cwd, workspacePath }) {
-  const gitPath = path.resolve(workspacePath, '.git');
-  if (!(await fs.pathExists(workspacePath))) {
-    await fs.ensureDir(path.dirname(workspacePath));
+  if (!localTemplatePath) {
     await run('git', ['clone', '--branch', PORTAL_TEMPLATE_REF, PORTAL_TEMPLATE_GIT_URL, workspacePath], { cwd });
-    const markerPath = path.resolve(workspacePath, WORKSPACE_MARKER);
-    await fs.ensureDir(path.dirname(markerPath));
-    await fs.writeJson(markerPath, { schemaVersion: 1, managedPaths: [] }, { spaces: 2 });
     return;
   }
 
-  if (!(await fs.pathExists(gitPath))) {
-    throw new Error(`Portal Registry workspace is not a Git checkout: ${workspacePath}`);
-  }
-
-  const marker = await readWorkspaceMarker(workspacePath);
-  if (!marker) {
-    throw new Error(
-      `Portal Registry workspace already exists but is not managed by NocoBase: ${workspacePath}. Move it away and retry.`,
-    );
-  }
-  await removeManagedEntries(workspacePath, marker);
-
-  const status = await execa('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: workspacePath });
-  const unmanagedChanges = getUnmanagedWorkspaceChanges(status.stdout);
-  if (unmanagedChanges.length > 0) {
-    throw new Error(`Portal Registry workspace contains local changes:\n${unmanagedChanges.join('\n')}`);
-  }
-
-  await run('git', ['fetch', 'origin', PORTAL_TEMPLATE_REF], { cwd: workspacePath });
-  await run('git', ['checkout', '--detach', 'FETCH_HEAD'], { cwd: workspacePath });
+  await fs.copy(localTemplatePath, workspacePath, {
+    filter: (sourcePath) => {
+      const relativePath = path.relative(localTemplatePath, sourcePath);
+      if (!relativePath) return true;
+      return !LOCAL_TEMPLATE_EXCLUDED_PATHS.has(relativePath.split(path.sep)[0]);
+    },
+  });
 }
 
-async function copyPortalRegistrySource(sourcePath, targetPath) {
+async function copyPortalRegistrySource(sourcePath, targetPath, options = {}) {
   if (await fs.pathExists(targetPath)) {
-    throw new Error(`Portal Registry development target already exists: ${targetPath}`);
+    if (!options.overwrite) {
+      throw new Error(`Portal Registry development target already exists: ${targetPath}`);
+    }
+    await fs.remove(targetPath);
   }
   await fs.copy(sourcePath, targetPath);
 }
 
-function watchPortalRegistrySources(registries, workspacePath) {
-  const sourceTargets = registries.map((registry) => ({
-    sourceRoot: registry.sourceRoot,
-    targetRoot: path.resolve(workspacePath, registry.config.target),
-  }));
-  const watcher = chokidar.watch(
-    sourceTargets.map(({ sourceRoot }) => sourceRoot),
-    {
-      ignoreInitial: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 50,
-        pollInterval: 10,
-      },
-    },
-  );
+function getPortalRegistryDevelopmentMappings(registries, workspacePath) {
+  const mappings = new Map();
+  for (const registry of registries) {
+    for (const item of registry.config.items) {
+      const sourceRoot = path.resolve(registry.sourceRoot, item.source);
+      const targetRoot = path.resolve(workspacePath, item.target);
+      mappings.set(`${sourceRoot}\0${targetRoot}`, { sourceRoot, targetRoot });
+    }
+  }
+  return [...mappings.values()];
+}
 
-  const resolveTarget = (sourcePath) => {
-    const entry = sourceTargets.find(({ sourceRoot }) => {
+function watchPortalRegistrySources(registries, workspacePath) {
+  const sourceTargets = getPortalRegistryDevelopmentMappings(registries, workspacePath);
+  const watcher = chokidar.watch([...new Set(sourceTargets.map(({ sourceRoot }) => sourceRoot))], {
+    ignoreInitial: true,
+    awaitWriteFinish: {
+      stabilityThreshold: 50,
+      pollInterval: 10,
+    },
+  });
+
+  const resolveTargets = (sourcePath) =>
+    sourceTargets.flatMap(({ sourceRoot, targetRoot }) => {
       const relativePath = path.relative(sourceRoot, sourcePath);
-      return relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return [];
+      return [path.resolve(targetRoot, relativePath)];
     });
-    if (!entry) return null;
-    return path.resolve(entry.targetRoot, path.relative(entry.sourceRoot, sourcePath));
-  };
   const reportError = (error) => console.error(`Portal Registry source sync failed: ${error.message}`);
+  const syncTargets = (sourcePath, operation) => {
+    for (const targetPath of resolveTargets(sourcePath)) operation(targetPath).catch(reportError);
+  };
 
   watcher
     .on('add', (sourcePath) => {
-      const targetPath = resolveTarget(sourcePath);
-      if (targetPath) fs.copy(sourcePath, targetPath).catch(reportError);
+      syncTargets(sourcePath, (targetPath) => fs.copy(sourcePath, targetPath));
     })
     .on('change', (sourcePath) => {
-      const targetPath = resolveTarget(sourcePath);
-      if (targetPath) fs.copy(sourcePath, targetPath).catch(reportError);
+      syncTargets(sourcePath, (targetPath) => fs.copy(sourcePath, targetPath));
     })
     .on('addDir', (sourcePath) => {
-      const targetPath = resolveTarget(sourcePath);
-      if (targetPath) fs.ensureDir(targetPath).catch(reportError);
+      syncTargets(sourcePath, (targetPath) => fs.ensureDir(targetPath));
     })
     .on('unlink', (sourcePath) => {
-      const targetPath = resolveTarget(sourcePath);
-      if (targetPath) fs.remove(targetPath).catch(reportError);
+      syncTargets(sourcePath, (targetPath) => fs.remove(targetPath));
     })
     .on('unlinkDir', (sourcePath) => {
-      const targetPath = resolveTarget(sourcePath);
-      if (targetPath) fs.remove(targetPath).catch(reportError);
+      syncTargets(sourcePath, (targetPath) => fs.remove(targetPath));
     })
     .on('error', reportError);
 
@@ -211,38 +183,22 @@ function watchPortalRegistrySources(registries, workspacePath) {
 async function preparePortalRegistryWorkspace(options = {}) {
   const cwd = path.resolve(options.cwd || process.cwd());
   const workspacePath = path.resolve(cwd, 'storage/portal-registry');
-  await ensurePortalTemplate({ cwd, workspacePath });
-  await writeWorkspaceGitExcludes(workspacePath);
+  await ensurePortalTemplate({ cwd, workspacePath, templatePath: options.templatePath });
   const registries = await discoverPortalRegistries({ cwd });
-  const managedPaths = [];
 
   try {
     const portalEnvironmentPath = path.resolve(workspacePath, '.env.local');
     await fs.writeFile(portalEnvironmentPath, createPortalEnvironment());
-    managedPaths.push(path.relative(workspacePath, portalEnvironmentPath));
 
-    for (const registry of registries) {
-      const extensionLink = path.resolve(workspacePath, registry.config.target);
-      await copyPortalRegistrySource(registry.sourceRoot, extensionLink);
-      managedPaths.push(path.relative(workspacePath, extensionLink));
+    const mappings = getPortalRegistryDevelopmentMappings(registries, workspacePath);
+    for (const targetRoot of new Set(mappings.map((mapping) => mapping.targetRoot))) {
+      await fs.remove(targetRoot);
     }
-
-    const markerPath = path.resolve(workspacePath, WORKSPACE_MARKER);
-    await fs.ensureDir(path.dirname(markerPath));
-    await fs.writeJson(
-      markerPath,
-      {
-        schemaVersion: 1,
-        template: {
-          url: PORTAL_TEMPLATE_GIT_URL,
-          ref: PORTAL_TEMPLATE_REF,
-        },
-        managedPaths,
-      },
-      { spaces: 2 },
-    );
+    for (const mapping of mappings) {
+      await fs.copy(mapping.sourceRoot, mapping.targetRoot);
+    }
   } catch (error) {
-    await removeManagedEntries(workspacePath, { managedPaths });
+    await fs.remove(workspacePath);
     throw error;
   }
 
@@ -254,7 +210,7 @@ async function preparePortalRegistryWorkspace(options = {}) {
 
 async function startPortalRegistryDevelopment(options = {}) {
   const cwd = path.resolve(options.cwd || process.cwd());
-  const workspace = await preparePortalRegistryWorkspace({ cwd });
+  const workspace = await preparePortalRegistryWorkspace({ cwd, templatePath: options.templatePath });
   const sourceWatcher = watchPortalRegistrySources(workspace.registries, workspace.workspacePath);
 
   try {
@@ -275,41 +231,51 @@ async function startPortalRegistryDevelopment(options = {}) {
     prefix: 'portal-registry',
     color: 'green',
     env: getPortalPnpmEnvironment(),
+    shell: false,
   });
   const children = [nocobase, portal];
-  const stop = () => children.forEach((child) => child.kill('SIGTERM', { forceKillAfterTimeout: 5000 }));
-  process.once('SIGINT', stop);
-  process.once('SIGTERM', stop);
+  let stopping = false;
+  const stop = (signal = 'SIGTERM') => {
+    if (stopping) return;
+    stopping = true;
+    for (const child of children) {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill(signal, { forceKillAfterTimeout: 3000 });
+      }
+    }
+  };
+  const handleSigint = () => stop('SIGINT');
+  const handleSigterm = () => stop('SIGTERM');
+  process.once('SIGINT', handleSigint);
+  process.once('SIGTERM', handleSigterm);
 
   try {
     await Promise.race(children);
+  } catch (error) {
+    if (!stopping && error.signal !== 'SIGINT') throw error;
   } finally {
     stop();
     await Promise.allSettled([...children, sourceWatcher.close()]);
-    process.removeListener('SIGINT', stop);
-    process.removeListener('SIGTERM', stop);
+    process.removeListener('SIGINT', handleSigint);
+    process.removeListener('SIGTERM', handleSigterm);
   }
 }
 
 module.exports = {
-  GIT_EXCLUDE_BLOCK_END,
-  GIT_EXCLUDE_BLOCK_START,
+  LOCAL_TEMPLATE_EXCLUDED_PATHS,
   PORTAL_TEMPLATE_GIT_URL,
   PORTAL_TEMPLATE_REF,
-  WORKSPACE_MARKER,
   copyPortalRegistrySource,
   createPortalEnvironment,
   ensurePortalTemplate,
   getNocoBaseDevelopmentEnvironment,
   getPortalPnpmEnvironment,
-  getUnmanagedWorkspaceChanges,
+  getPortalRegistryDevelopmentMappings,
   installPortalTemplateDependencies,
+  isNestedPath,
   preparePortalRegistryWorkspace,
-  readWorkspaceMarker,
-  removeManagedEntries,
-  replaceManagedGitExcludeBlock,
   runPortalPnpm,
   startPortalRegistryDevelopment,
+  validateLocalPortalTemplate,
   watchPortalRegistrySources,
-  writeWorkspaceGitExcludes,
 };

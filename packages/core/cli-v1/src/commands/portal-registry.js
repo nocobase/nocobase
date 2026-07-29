@@ -37,8 +37,9 @@ module.exports = (cli) => {
   command
     .command('dev')
     .description('start NocoBase and the Portal Template development workspace')
-    .action(async () => {
-      await startPortalRegistryDevelopment();
+    .option('--template <path>', 'use a local Portal Template working tree')
+    .action(async (options) => {
+      await startPortalRegistryDevelopment({ templatePath: options.template });
     });
 
   command

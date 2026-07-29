@@ -39,7 +39,7 @@ type OptionalAIModule = {
 };
 
 const aiModules = import.meta.glob<OptionalAIModule>(
-  "../../../nocobase-ai/index.ts",
+  "../nocobase-ai/index.ts",
   { eager: true }
 );
 const aiModule = Object.values(aiModules)[0];

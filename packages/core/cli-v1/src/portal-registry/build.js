@@ -34,22 +34,22 @@ function createRegistryDocument(registries, snapshotRoot) {
 
   for (const registry of registries) {
     const sourceName = getPluginSourceName(registry.plugin.packageName);
-    const sourceTarget = path.resolve(snapshotRoot, 'sources', sourceName);
-    fs.ensureDirSync(sourceTarget);
-
-    for (const file of new Set(registry.config.items.flatMap((item) => item.files))) {
-      const sourceFile = path.resolve(registry.sourceRoot, file);
-      const targetFile = path.resolve(sourceTarget, file);
-      fs.ensureDirSync(path.dirname(targetFile));
-      fs.copyFileSync(sourceFile, targetFile);
-    }
 
     for (const item of registry.config.items) {
-      const { include, target, files, ...registryItem } = item;
+      const sourceTarget = path.resolve(snapshotRoot, 'sources', sourceName, item.name);
+      fs.ensureDirSync(sourceTarget);
+      for (const file of item.files) {
+        const sourceFile = path.resolve(registry.sourceRoot, item.source, file);
+        const targetFile = path.resolve(sourceTarget, file);
+        fs.ensureDirSync(path.dirname(targetFile));
+        fs.copyFileSync(sourceFile, targetFile);
+      }
+
+      const { include, source, target, files, ...registryItem } = item;
       items.push({
         ...registryItem,
         files: files.map((file) => ({
-          path: path.posix.join('sources', sourceName, file),
+          path: path.posix.join('sources', sourceName, item.name, file),
           type: 'registry:file',
           target: path.posix.join(target, file),
         })),
