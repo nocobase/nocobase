@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   switchRole,
-  useAclSnapshot,
+  useAclState,
   type AclIdentity,
   type Role,
 } from "@/lib/nocobase/acl";
@@ -34,24 +34,41 @@ export function RoleSwitcher({
   showWhenUnavailable = false,
 }: RoleSwitcherProps) {
   const { data: identity, isLoading } = useGetIdentity<AclIdentity>();
-  const acl = useAclSnapshot();
+  const acl = useAclState();
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string>();
+  const permissions = acl.status === "ready" ? acl.permissions : undefined;
 
   const roles = useMemo(
     () =>
       getRoleOptions({
         roles: identity?.roles ?? [],
-        roleMode: acl.data.roleMode,
-        allowAnonymous: acl.data.allowAnonymous,
+        roleMode: permissions?.roleMode,
+        allowAnonymous: permissions?.allowAnonymous,
       }),
-    [acl.data.allowAnonymous, acl.data.roleMode, identity?.roles]
+    [identity?.roles, permissions?.allowAnonymous, permissions?.roleMode]
   );
 
-  const currentRole = acl.data.role ?? roles[0]?.name;
-  const canSwitch = roles.length > 1 && acl.data.roleMode !== "only-use-union";
+  const currentRole = permissions?.currentRole ?? roles[0]?.name;
+  const canSwitch =
+    roles.length > 1 && permissions?.roleMode !== "only-use-union";
 
-  if (isLoading) {
+  const handleRoleChange = async (value: string | null) => {
+    if (!value || value === currentRole) return;
+    setSwitching(true);
+    setError(undefined);
+    try {
+      await switchRole(value);
+      window.location.reload();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Unable to switch role"
+      );
+      setSwitching(false);
+    }
+  };
+
+  if (isLoading || acl.status === "idle" || acl.status === "loading") {
     return <Loader2 className="size-4 animate-spin text-muted-foreground" />;
   }
   if (!canSwitch && !showWhenUnavailable) return null;
@@ -74,21 +91,7 @@ export function RoleSwitcher({
       <Select
         value={currentRole}
         disabled={switching}
-        onValueChange={(value) => {
-          if (!value || value === currentRole) return;
-          setSwitching(true);
-          setError(undefined);
-          void switchRole(value, { reloadAcl: false })
-            .then(() => window.location.reload())
-            .catch((reason) => {
-              setError(
-                reason instanceof Error
-                  ? reason.message
-                  : "Unable to switch role"
-              );
-              setSwitching(false);
-            });
-        }}
+        onValueChange={handleRoleChange}
       >
         <SelectTrigger
           className={cn("w-full min-w-52", triggerClassName)}

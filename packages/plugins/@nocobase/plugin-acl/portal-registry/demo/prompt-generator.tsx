@@ -43,7 +43,9 @@ ${config.requirements}
 
 Implementation contract
 - Use the Starter's built-in NocoBase accessControlProvider and ACL store.
-- NocoBase roles:check is the source of truth. Do not create a second permission store or hard-code role names.
+- NocoBase roles:check is the source of truth. Do not create a second permission store. Use configured role names only when the requirement explicitly includes a role constraint.
+- Import the Starter CanAccess from @/components/access-control/can-access. Use it with AclPage, AclRegion, and AclField for permission presentation. Do not copy their checks into local booleans or role comparisons.
+- Use useGetRoles only when UI needs to display or pass through the current effective ACL roles; it is not a replacement permission evaluator.
 - Keep backend ACL enforcement in place; frontend checks only control presentation and navigation.
 - Import reusable components from the installed local entry point at @/extensions/nocobase-acl when page composition is needed.
 - Resource actions use the application names list, show, create, edit, and delete. Let the Starter map them to NocoBase list/get/create/update/destroy.

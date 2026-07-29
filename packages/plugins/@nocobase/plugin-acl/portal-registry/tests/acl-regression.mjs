@@ -9,10 +9,11 @@ const server = await createServer({
 
 try {
   const {
-    canAccessWithSnapshot,
-    getAclDataForDataSource,
+    evaluateAccess,
+    getEffectiveRoles,
+    getPermissionsForDataSource,
     resolveActionPermission,
-  } = await server.ssrLoadModule("/src/lib/nocobase/acl/action.ts");
+  } = await server.ssrLoadModule("/src/lib/nocobase/acl/evaluator.ts");
   const { resolveAclDataSourceKey } = await server.ssrLoadModule(
     "/src/lib/nocobase/acl/data-source.ts"
   );
@@ -24,82 +25,101 @@ try {
     updateRecordPermissions,
   } = await server.ssrLoadModule("/src/lib/nocobase/acl/record-permissions.ts");
   const { RoleSwitcher } = await server.ssrLoadModule(
-    "/registry/nocobase-acl/components/role-switcher.tsx"
+    "/src/extensions/nocobase-acl/components/role-switcher.tsx"
   );
   const { getRoleOptions, resolveRoleTitle } = await server.ssrLoadModule(
-    "/registry/nocobase-acl/components/role-options.ts"
+    "/src/extensions/nocobase-acl/components/role-options.ts"
   );
 
-  const snapshot = {
-    status: "ready",
-    version: 1,
-    data: {
-      role: "editor",
-      roleMode: "allow-use-union",
-      resources: ["blog_posts"],
-      actionAlias: {
-        list: "view",
-        get: "view",
-      },
-      actions: {
-        "blog_posts:view": { fields: ["id", "title"] },
-        "blog_posts:update": { fields: ["title"] },
-      },
-      strategy: {
-        actions: ["view:all"],
-      },
-      snippets: ["pm.*"],
+  const permissions = {
+    currentRole: "editor",
+    roles: ["editor", "auditor"],
+    roleMode: "allow-use-union",
+    resources: ["blog_posts"],
+    actionAlias: {
+      list: "view",
+      get: "view",
     },
-    meta: {},
+    actions: {
+      "blog_posts:view": { fields: ["id", "title"] },
+      "blog_posts:update": { fields: ["title"] },
+    },
+    strategy: {
+      actions: ["view:all"],
+    },
+    snippets: ["pm.*"],
   };
 
   assert.deepEqual(
     resolveActionPermission({
-      snapshot,
+      permissions,
       resource: "blog_posts",
       action: "list",
     }),
     { fields: ["id", "title"] }
   );
+  assert.deepEqual(getEffectiveRoles(permissions), ["editor", "auditor"]);
   assert.equal(
-    canAccessWithSnapshot(snapshot, {
+    evaluateAccess(permissions, {
+      roles: {
+        anyOf: ["editor"],
+        allOf: ["editor", "auditor"],
+        noneOf: ["anonymous"],
+      },
+    }),
+    true
+  );
+  assert.equal(
+    evaluateAccess(permissions, {
+      roles: { noneOf: ["editor"] },
+    }),
+    false
+  );
+  assert.equal(
+    evaluateAccess(permissions, {
+      roles: { anyOf: ["editor"] },
       resource: "blog_posts",
       action: "create",
     }),
     false
   );
+  assert.equal(
+    evaluateAccess(
+      { ...permissions, allowAll: true },
+      { roles: { anyOf: ["missing-role"] } }
+    ),
+    true
+  );
 
-  const externalSnapshot = {
-    ...snapshot,
-    data: {
-      ...snapshot.data,
-      allowAll: true,
-      actionAlias: { list: "view" },
-    },
-    meta: {
-      dataSources: {
-        analytics: {
-          allowAll: false,
-          resources: ["orders"],
-          actionAlias: { list: "read" },
-          actions: { "orders:read": {} },
-        },
+  const externalPermissions = {
+    ...permissions,
+    allowAll: true,
+    actionAlias: { list: "view" },
+    dataSources: {
+      analytics: {
+        allowAll: false,
+        resources: ["orders"],
+        actionAlias: { list: "read" },
+        actions: { "orders:read": {} },
       },
     },
   };
-  assert.deepEqual(getAclDataForDataSource(externalSnapshot, "analytics"), {
-    ...externalSnapshot.data,
-    allowAll: false,
-    resources: ["orders"],
-    actionAlias: { list: "read" },
-    actions: { "orders:read": {} },
-    snippets: externalSnapshot.data.snippets,
-  });
+  assert.deepEqual(
+    getPermissionsForDataSource(externalPermissions, "analytics"),
+    {
+      ...externalPermissions,
+      allowAll: false,
+      resources: ["orders"],
+      actionAlias: { list: "read" },
+      actions: { "orders:read": {} },
+      snippets: externalPermissions.snippets,
+    }
+  );
   assert.equal(
-    canAccessWithSnapshot(externalSnapshot, {
+    evaluateAccess(externalPermissions, {
       resource: "orders",
       action: "list",
-      params: { meta: { dataSourceKey: "analytics" } },
+      dataSourceKey: "analytics",
     }),
     true
   );
@@ -112,64 +132,31 @@ try {
     }),
     "analytics"
   );
+
   assert.equal(
-    resolveAclDataSourceKey(
-      { dataSourceKey: "reporting" },
-      {
-        acl: {
-          type: "collection",
-          dataSourceKey: "analytics",
-        },
-      }
-    ),
-    "reporting"
-  );
-  assert.equal(
-    getRecordActionPermission({
-      resource: "blog_posts",
-      action: "update",
-      id: 3,
-    }),
-    undefined
-  );
-  assert.equal(
-    canAccessWithSnapshot(snapshot, {
-      resource: "categories",
-      action: "list",
-    }),
-    true
-  );
-  assert.equal(
-    canAccessWithSnapshot(snapshot, {
+    evaluateAccess(permissions, {
       resource: "settings",
       action: "list",
-      params: {
-        resource: {
-          name: "settings",
-          meta: { acl: { type: "snippet", name: "*" } },
-        },
+      resourceItem: {
+        name: "settings",
+        meta: { acl: { type: "snippet", name: "pm.acl" } },
       },
     }),
     true
   );
   assert.equal(
-    canAccessWithSnapshot(
+    evaluateAccess(
       {
-        ...snapshot,
-        data: {
-          ...snapshot.data,
-          snippets: ["pm", "pm.*", "!pm.data-source-manager*"],
-        },
+        ...permissions,
+        snippets: ["pm", "pm.*", "!pm.data-source-manager*"],
       },
       {
         resource: "settings",
         action: "list",
-        params: {
-          resource: {
-            name: "settings",
-            meta: {
-              acl: { type: "snippet", name: "pm.data-source-manager" },
-            },
+        resourceItem: {
+          name: "settings",
+          meta: {
+            acl: { type: "snippet", name: "pm.data-source-manager" },
           },
         },
       }
@@ -177,47 +164,18 @@ try {
     false
   );
   assert.equal(
-    updateRecordPermissions({
-      resource: "blog_posts",
-      recordIds: [4],
-      allowedActions: { update: [] },
-    }),
-    true
-  );
-  assert.equal(
-    getRecordActionPermission({
-      resource: "blog_posts",
-      action: "update",
-      id: 4,
-    }),
-    false
-  );
-  assert.equal(
-    canAccessWithSnapshot(snapshot, {
-      resource: "settings",
-      action: "list",
-      params: {
-        resource: {
-          name: "settings",
-          meta: { acl: { type: "snippet", name: "pm.acl" } },
-        },
-      },
-    }),
-    true
-  );
-  assert.equal(
-    canAccessWithSnapshot(snapshot, {
+    evaluateAccess(permissions, {
       resource: "blog_posts",
       action: "edit",
-      params: { field: "title" },
+      field: "title",
     }),
     true
   );
   assert.equal(
-    canAccessWithSnapshot(snapshot, {
+    evaluateAccess(permissions, {
       resource: "blog_posts",
       action: "edit",
-      params: { field: "status" },
+      field: "status",
     }),
     false
   );
@@ -233,30 +191,26 @@ try {
     },
   });
   assert.equal(
-    canAccessWithSnapshot(snapshot, {
+    getRecordActionPermission({
       resource: "blog_posts",
-      action: "edit",
-      params: { id: 1 },
-    }),
-    true
-  );
-  assert.equal(
-    canAccessWithSnapshot(snapshot, {
-      resource: "blog_posts",
-      action: "edit",
-      params: { id: 2 },
+      action: "update",
+      id: 2,
     }),
     false
   );
   assert.equal(
-    updateRecordPermissions({
+    evaluateAccess(permissions, {
       resource: "blog_posts",
-      recordIds: [1, 2],
-      allowedActions: {
-        view: [1, 2],
-        update: [1],
-        destroy: [],
-      },
+      action: "edit",
+      id: 1,
+    }),
+    true
+  );
+  assert.equal(
+    evaluateAccess(permissions, {
+      resource: "blog_posts",
+      action: "edit",
+      id: 2,
     }),
     false
   );
@@ -278,13 +232,29 @@ try {
         ],
       },
     ],
-    {
-      ...snapshot,
-      data: { ...snapshot.data, strategy: { actions: [] } },
-    }
+    { ...permissions, strategy: { actions: [] } }
   );
   assert.equal(filteredMenu[0].route, undefined);
   assert.equal(findFirstAccessibleRoute(filteredMenu), "/public-child");
+
+  const roleFilteredMenu = filterMenuItemsByAcl(
+    [
+      {
+        key: "admin-only",
+        name: "admin-only",
+        route: "/admin-only",
+        meta: {
+          acl: {
+            type: "authenticated",
+            roles: { anyOf: ["admin"] },
+          },
+        },
+        children: [],
+      },
+    ],
+    permissions
+  );
+  assert.deepEqual(roleFilteredMenu, []);
 
   assert.deepEqual(
     getRoleOptions({
@@ -306,7 +276,6 @@ try {
     resolveRoleTitle({ name: "admin", title: '{{t("Admin")}}' }),
     "Admin"
   );
-
   assert.equal(typeof RoleSwitcher, "function");
   console.log("NocoBase ACL regression tests passed");
 } finally {

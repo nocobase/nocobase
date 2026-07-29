@@ -12,6 +12,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CanAccess } from "@/components/access-control/can-access";
 import {
   Card,
   CardContent,
@@ -20,6 +21,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { RoleConstraint } from "@/lib/nocobase/acl";
+import { AclField, AclPage, AclRegion } from "../components/acl-boundary";
+import { AclPreviewProvider } from "./acl-preview-provider";
 import { AclBoundaryApi } from "./boundary-api";
 import { AclScenarioSection } from "./scenario-section";
 
@@ -50,6 +54,55 @@ const demoUsers = [
   },
 ];
 
+const usersRouteRoles = {
+  anyOf: ["admin"],
+} satisfies RoleConstraint;
+
+const allowedRegionPermissions = {
+  "users:list": {},
+  "departments:list": {},
+};
+
+const restrictedRegionPermissions = {
+  "users:list": {},
+};
+
+const allowedActionPermissions = {
+  "users:get": {},
+  "users:create": {},
+  "users:update": {},
+  "users:destroy": {},
+};
+
+const restrictedActionPermissions = {
+  "users:get": {},
+  "users:update": {},
+  "users:destroy": {},
+};
+
+const restrictedRecordPermissions = demoUsers.flatMap((user) => [
+  {
+    resource: "users",
+    action: "update",
+    id: user.id,
+    allowed: false,
+  },
+  {
+    resource: "users",
+    action: "destroy",
+    id: user.id,
+    allowed: false,
+  },
+]);
+
+const editableFieldPermissions = {
+  "users:update": { fields: ["nickname", "email", "phone"] },
+};
+
+const restrictedFieldPermissions = {
+  "users:update": { fields: ["nickname"] },
+};
+
 export function AclPatternsPage() {
   return (
     <div className="space-y-10 pb-12">
@@ -65,18 +118,19 @@ export function AclPatternsPage() {
 
       <AclScenarioSection
         eyebrow="Navigation permission"
-        title="Inaccessible resources disappear from navigation"
-        description="A denied collection is removed from the sidebar and its direct route is guarded. Other accessible navigation remains unchanged."
+        title="Role-restricted routes disappear from navigation"
+        description="A route outside the current effective role is removed from the sidebar and its direct URL is guarded. Other accessible navigation remains unchanged."
         prompt={{
           title: "Resource navigation",
           description:
             "Generate application resources, sidebar behavior, and guarded routes backed by NocoBase collections.",
           defaultScene: "User and role administration",
           defaultTarget:
-            "Allow the Users resource but remove Roles from navigation and block its direct URL.",
-          requirements: `- Mark collection resources with meta.acl.type = "collection".
+            "Allow administrators to open Users, but remove it from navigation and block its direct URL for other roles.",
+          requirements: `- Put role constraints on the route resource through meta.acl.roles using anyOf, allOf, or noneOf.
+- Use meta.acl.type = "authenticated" when the route itself is role-controlled and its inner regions perform collection checks.
 - Let the Starter filter inaccessible sidebar items and choose the first accessible default route.
-- Wrap list, create, show, and edit routes with ResourceAccessGuard.
+- Wrap list, create, show, and edit routes with the Starter CanAccess and provide an AccessDenied fallback.
 - Mark non-collection utility pages as authenticated, snippet, route, or acl: false instead of treating them as collections.
 - If a parent route is denied but an accessible child remains, navigation must continue to the child route.`,
         }}
@@ -84,8 +138,16 @@ export function AclPatternsPage() {
         <OutcomeComparison
           allowedTitle="Users permission granted"
           deniedTitle="Users permission denied"
-          allowed={<NavigationPreview showUsers />}
-          denied={<NavigationPreview showUsers={false} />}
+          allowed={
+            <AclPreviewProvider roles={["admin"]}>
+              <NavigationPreview />
+            </AclPreviewProvider>
+          }
+          denied={
+            <AclPreviewProvider roles={["member"]}>
+              <NavigationPreview />
+            </AclPreviewProvider>
+          }
         />
       </AclScenarioSection>
 
@@ -99,9 +161,10 @@ export function AclPatternsPage() {
             "Generate a complete page whose availability depends on NocoBase permissions.",
           defaultScene: "User directory and account administration page",
           defaultTarget:
-            "Require users:list before rendering the complete page.",
+            "Allow administrators and user managers to render the complete page.",
           requirements: `- Wrap the complete business page with AclPage.
-- Use anyOf when one accessible collection is enough, or allOf when every permission is required.
+- Use the AclPage roles prop with anyOf, allOf, or noneOf for page-level role access.
+- Keep anyOf and allOf for resource permissions when the page also needs collection access.
 - Provide a useful page-level fallback instead of rendering an empty screen.
 - Keep each inner data region independently protected when the page combines multiple collections.`,
         }}
@@ -109,34 +172,56 @@ export function AclPatternsPage() {
         <OutcomeComparison
           allowedTitle="Page allowed"
           deniedTitle="Page denied"
-          allowed={<UserDirectoryPreview />}
-          denied={<PageDeniedPreview />}
+          allowed={
+            <AclPreviewProvider roles={["user-manager"]}>
+              <PagePermissionPreview />
+            </AclPreviewProvider>
+          }
+          denied={
+            <AclPreviewProvider roles={["member"]}>
+              <PagePermissionPreview />
+            </AclPreviewProvider>
+          }
         />
       </AclScenarioSection>
 
       <AclScenarioSection
         eyebrow="Region permission"
         title="Only the protected region changes"
-        description="On a page with multiple data sources, denying Roles must not hide the Users table. The restricted panel can be hidden or replaced with a local explanation."
+        description="On a page with multiple resources, denying Departments hides only that panel and must not affect the Users table."
         prompt={{
           title: "Region permission",
           description:
-            "Generate a multi-table page where each region follows its own collection ACL.",
-          defaultScene: "Identity administration dashboard",
+            "Generate a multi-resource page where each region follows its own collection ACL.",
+          defaultScene: "Organization management dashboard",
           defaultTarget:
-            "Keep Users visible while replacing the denied Roles panel with a local fallback.",
+            "Keep Users visible while hiding the denied Departments panel.",
           requirements: `- Keep the outer page visible when its page-level permission is satisfied.
 - Wrap every collection-backed panel in its own AclRegion.
 - Enable each data query only when the corresponding list permission is allowed.
-- Use fallback="hidden" for optional panels and fallback="forbidden" or a custom ReactNode when the missing region should be explained.
+- Use fallback="hidden" so denied regions do not reveal unavailable resources or placeholders.
 - Never use permission for one collection to hide unrelated tables or controls.`,
         }}
       >
         <OutcomeComparison
           allowedTitle="Both regions allowed"
-          deniedTitle="Roles region denied"
-          allowed={<RegionPreview showRoles />}
-          denied={<RegionPreview showRoles={false} />}
+          deniedTitle="Departments resource hidden"
+          allowed={
+            <AclPreviewProvider
+              roles={["member"]}
+              permissions={allowedRegionPermissions}
+            >
+              <RegionPreview />
+            </AclPreviewProvider>
+          }
+          denied={
+            <AclPreviewProvider
+              roles={["member"]}
+              permissions={restrictedRegionPermissions}
+            >
+              <RegionPreview />
+            </AclPreviewProvider>
+          }
         />
       </AclScenarioSection>
 
@@ -161,8 +246,23 @@ export function AclPatternsPage() {
         <OutcomeComparison
           allowedTitle="Create and row actions allowed"
           deniedTitle="Create, Update, and Delete denied"
-          allowed={<ActionsPreview allowed />}
-          denied={<ActionsPreview allowed={false} />}
+          allowed={
+            <AclPreviewProvider
+              roles={["admin"]}
+              permissions={allowedActionPermissions}
+            >
+              <ActionsPreview />
+            </AclPreviewProvider>
+          }
+          denied={
+            <AclPreviewProvider
+              roles={["viewer"]}
+              permissions={restrictedActionPermissions}
+              recordPermissions={restrictedRecordPermissions}
+            >
+              <ActionsPreview />
+            </AclPreviewProvider>
+          }
         />
       </AclScenarioSection>
 
@@ -187,8 +287,22 @@ export function AclPatternsPage() {
         <OutcomeComparison
           allowedTitle="All fields editable"
           deniedTitle="Email read-only and phone hidden"
-          allowed={<ProfileFormPreview restricted={false} />}
-          denied={<ProfileFormPreview restricted />}
+          allowed={
+            <AclPreviewProvider
+              roles={["admin"]}
+              permissions={editableFieldPermissions}
+            >
+              <ProfileFormPreview />
+            </AclPreviewProvider>
+          }
+          denied={
+            <AclPreviewProvider
+              roles={["member"]}
+              permissions={restrictedFieldPermissions}
+            >
+              <ProfileFormPreview />
+            </AclPreviewProvider>
+          }
         />
       </AclScenarioSection>
 
@@ -228,7 +342,7 @@ function OutcomeComparison({
   );
 }
 
-function NavigationPreview({ showUsers }: { showUsers: boolean }) {
+function NavigationPreview() {
   return (
     <div className="grid min-h-48 grid-cols-[150px_minmax(0,1fr)] overflow-hidden rounded-xl border bg-background">
       <aside className="border-r bg-muted/35 p-3">
@@ -236,13 +350,24 @@ function NavigationPreview({ showUsers }: { showUsers: boolean }) {
           Workspace
         </div>
         <NavItem icon={<LayoutPanelTop />} label="Dashboard" />
-        {showUsers ? (
+        <CanAccess roles={usersRouteRoles}>
           <NavItem icon={<UsersRound />} label="Users" active />
-        ) : null}
+        </CanAccess>
         <NavItem icon={<UserRoundCog />} label="Roles" />
       </aside>
       <div className="flex items-center justify-center p-5 text-center">
-        {showUsers ? (
+        <CanAccess
+          roles={usersRouteRoles}
+          fallback={
+            <div>
+              <LayoutPanelTop className="mx-auto size-7 text-muted-foreground" />
+              <div className="mt-2 font-medium">Dashboard</div>
+              <div className="mt-1 max-w-48 text-xs text-muted-foreground">
+                Users is absent from navigation and its direct route is guarded.
+              </div>
+            </div>
+          }
+        >
           <div>
             <UsersRound className="mx-auto size-7 text-primary" />
             <div className="mt-2 font-medium">Users</div>
@@ -250,15 +375,7 @@ function NavigationPreview({ showUsers }: { showUsers: boolean }) {
               Route is available
             </div>
           </div>
-        ) : (
-          <div>
-            <LayoutPanelTop className="mx-auto size-7 text-muted-foreground" />
-            <div className="mt-2 font-medium">Dashboard</div>
-            <div className="mt-1 max-w-48 text-xs text-muted-foreground">
-              Users is absent from navigation and its direct route is guarded.
-            </div>
-          </div>
-        )}
+        </CanAccess>
       </div>
     </div>
   );
@@ -282,6 +399,17 @@ function NavItem({
       <span className="[&_svg]:size-3.5">{icon}</span>
       {label}
     </div>
+  );
+}
+
+function PagePermissionPreview() {
+  return (
+    <AclPage
+      roles={{ anyOf: ["admin", "user-manager"] }}
+      fallback={<PageDeniedPreview />}
+    >
+      <UserDirectoryPreview />
+    </AclPage>
   );
 }
 
@@ -317,39 +445,35 @@ function PageDeniedPreview() {
   );
 }
 
-function RegionPreview({ showRoles }: { showRoles: boolean }) {
+function RegionPreview() {
   return (
-    <div
-      className={`grid gap-3 rounded-xl border bg-background p-3 ${
-        showRoles
-          ? "md:grid-cols-[minmax(0,1.3fr)_minmax(180px,0.7fr)]"
-          : "grid-cols-1"
-      }`}
-    >
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CompactUsersTable limit={2} />
-        </CardContent>
-      </Card>
-      {showRoles ? (
-        <Card size="sm">
+    <div className="flex flex-col gap-3 rounded-xl border bg-background p-3 md:flex-row">
+      <AclRegion resource="users" action="list">
+        <Card size="sm" className="min-w-0 flex-1">
           <CardHeader>
-            <CardTitle>Roles</CardTitle>
+            <CardTitle>Users</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <RoleRow title="Administrator" name="admin" />
-            <RoleRow title="Member" name="member" />
+          <CardContent>
+            <CompactUsersTable limit={2} />
           </CardContent>
         </Card>
-      ) : null}
+      </AclRegion>
+      <AclRegion resource="departments" action="list">
+        <Card size="sm" className="md:w-56">
+          <CardHeader>
+            <CardTitle>Departments</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <ResourceRow title="Engineering" name="engineering" />
+            <ResourceRow title="Operations" name="operations" />
+          </CardContent>
+        </Card>
+      </AclRegion>
     </div>
   );
 }
 
-function ActionsPreview({ allowed }: { allowed: boolean }) {
+function ActionsPreview() {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3">
@@ -357,11 +481,11 @@ function ActionsPreview({ allowed }: { allowed: boolean }) {
           <CardTitle>Users</CardTitle>
           <CardDescription>Record actions</CardDescription>
         </div>
-        {allowed ? (
+        <CanAccess resource="users" action="create">
           <Button size="sm">
             <Plus /> New user
           </Button>
-        ) : null}
+        </CanAccess>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
@@ -379,31 +503,33 @@ function ActionsPreview({ allowed }: { allowed: boolean }) {
                 <td className="py-3 text-muted-foreground">{user.role}</td>
                 <td className="py-3">
                   <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="View user"
-                    >
-                      <Eye />
-                    </Button>
-                    {allowed ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Edit user"
-                        >
-                          <Pencil />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Delete user"
-                        >
-                          <Trash2 />
-                        </Button>
-                      </>
-                    ) : null}
+                    <CanAccess resource="users" action="show" id={user.id}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="View user"
+                      >
+                        <Eye />
+                      </Button>
+                    </CanAccess>
+                    <CanAccess resource="users" action="edit" id={user.id}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Edit user"
+                      >
+                        <Pencil />
+                      </Button>
+                    </CanAccess>
+                    <CanAccess resource="users" action="delete" id={user.id}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Delete user"
+                      >
+                        <Trash2 />
+                      </Button>
+                    </CanAccess>
                   </div>
                 </td>
               </tr>
@@ -415,8 +541,9 @@ function ActionsPreview({ allowed }: { allowed: boolean }) {
   );
 }
 
-function ProfileFormPreview({ restricted }: { restricted: boolean }) {
+function ProfileFormPreview() {
   const user = demoUsers[1];
+
   return (
     <Card>
       <CardHeader>
@@ -424,27 +551,38 @@ function ProfileFormPreview({ restricted }: { restricted: boolean }) {
         <CardDescription>{user.name}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <DemoField label="Nickname">
-          <Input defaultValue={user.name} />
-        </DemoField>
-        <DemoField label="Email">
-          {restricted ? (
-            <div className="rounded-md border bg-muted/45 px-3 py-2 text-sm text-muted-foreground">
-              {user.email}
-              <Badge className="ml-2" variant="outline">
-                Read only
-              </Badge>
-            </div>
-          ) : (
+        <AclField resource="users" action="edit" field="nickname">
+          <DemoField label="Nickname">
+            <Input defaultValue={user.name} />
+          </DemoField>
+        </AclField>
+        <AclField
+          resource="users"
+          action="edit"
+          field="email"
+          fallback={
+            <DemoField label="Email">
+              <div className="rounded-md border bg-muted/45 px-3 py-2 text-sm text-muted-foreground">
+                {user.email}
+                <Badge className="ml-2" variant="outline">
+                  Read only
+                </Badge>
+              </div>
+            </DemoField>
+          }
+        >
+          <DemoField label="Email">
             <Input defaultValue={user.email} />
-          )}
-        </DemoField>
-        {!restricted ? (
+          </DemoField>
+        </AclField>
+        <AclField resource="users" action="edit" field="phone">
           <DemoField label="Phone">
             <Input defaultValue={user.phone} />
           </DemoField>
-        ) : null}
-        <Button size="sm">Save changes</Button>
+        </AclField>
+        <CanAccess resource="users" action="edit">
+          <Button size="sm">Save changes</Button>
+        </CanAccess>
       </CardContent>
     </Card>
   );
@@ -493,7 +631,7 @@ function CompactUsersTable({ limit = 3 }: { limit?: number }) {
   );
 }
 
-function RoleRow({ title, name }: { title: string; name: string }) {
+function ResourceRow({ title, name }: { title: string; name: string }) {
   return (
     <div className="rounded-lg border px-3 py-2">
       <div className="text-sm font-medium">{title}</div>

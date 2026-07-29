@@ -15,6 +15,33 @@ type PropRow = [
   description: string
 ];
 
+const canAccessProps: PropRow[] = [
+  [
+    "roles",
+    "RoleConstraint",
+    "undefined",
+    "Checks the current effective roles with anyOf, allOf, and noneOf.",
+  ],
+  [
+    "resource / action",
+    "string",
+    "undefined",
+    "Checks a NocoBase resource action. When roles are also present, both checks must pass.",
+  ],
+  [
+    "id / field",
+    "BaseKey / string",
+    "undefined",
+    "Optionally narrows the decision to one record or field.",
+  ],
+  [
+    "fallback",
+    "ReactNode",
+    "null",
+    "Renders when the access request is denied.",
+  ],
+];
+
 const pageProps: PropRow[] = [
   [
     "anyOf",
@@ -27,6 +54,12 @@ const pageProps: PropRow[] = [
     "AclPermission[]",
     "undefined",
     "Requires every listed permission before rendering the page.",
+  ],
+  [
+    "roles",
+    "RoleConstraint",
+    "undefined",
+    "Requires the current effective roles to match anyOf, allOf, and noneOf constraints.",
   ],
   [
     "fallback",
@@ -100,6 +133,21 @@ const fieldProps: PropRow[] = [
   ["children", "ReactNode", "required", "The protected field or field group."],
 ];
 
+const runtimeApis: PropRow[] = [
+  [
+    "AclStoreProvider",
+    "{ store, children }",
+    "required",
+    "Connects React ACL hooks and components to the application aclStore. The Starter mounts it at the application root.",
+  ],
+  [
+    "useGetRoles",
+    "() => QueryResult<string[]>",
+    "-",
+    "Returns the current effective ACL role names, including all participating roles in union mode.",
+  ],
+];
+
 export function AclBoundaryApi() {
   return (
     <section className="space-y-5 border-t pt-8">
@@ -117,6 +165,11 @@ export function AclBoundaryApi() {
       </div>
       <div className="space-y-7">
         <ComponentApi
+          title="CanAccess"
+          description="The Starter access boundary for role-only, resource-only, or combined permission checks."
+          rows={canAccessProps}
+        />
+        <ComponentApi
           title="AclPage"
           description="Protects a complete route or business page. This corresponds to the Page permission pattern above."
           rows={pageProps}
@@ -130,6 +183,11 @@ export function AclBoundaryApi() {
           title="AclField"
           description="Protects one field or field group. This corresponds to the Field permission pattern."
           rows={fieldProps}
+        />
+        <ComponentApi
+          title="ACL context APIs"
+          description="Read the active role context from the application ACL store. Demo previews use an isolated in-memory store with the same evaluator."
+          rows={runtimeApis}
         />
       </div>
     </section>

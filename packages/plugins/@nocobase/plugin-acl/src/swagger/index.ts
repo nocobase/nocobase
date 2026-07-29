@@ -931,6 +931,11 @@ export default {
         type: 'object',
         properties: {
           role: { type: 'string', description: 'Current effective role name.' },
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Role names participating in the current effective ACL context.',
+          },
           roleMode: {
             type: 'string',
             enum: ['default', 'allow-use-union', 'only-use-union'],
