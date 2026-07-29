@@ -25,6 +25,7 @@ import {
 import type { TaskTypeOptions } from './taskCenter';
 import type { Instruction } from './canvas/Instruction';
 import type { Trigger } from './triggers';
+import { buildLegacyWorkflowSettingsTarget } from './legacySettingsRedirect';
 import './models/triggerWorkflows';
 
 // Core node instructions — one file per node under `nodes/`, mirroring v1's `client/nodes/` layout. Each
@@ -94,10 +95,8 @@ const tpl = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
 function LegacyWorkflowSettingsRedirect() {
   const app = useApp();
   const location = useLocation();
-  const appScope = /\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(location.pathname)?.[0] || '';
   const rootPublicPath = stripModernClientPrefix(app.getPublicPath()).replace(/\/+$/, '');
-  const routePath = location.pathname.replace(/^.*?\/admin\/workflow(?=\/|$)/, '/settings/workflow');
-  const targetPath = `${rootPublicPath}${appScope}${routePath}${location.search}${location.hash}`;
+  const targetPath = buildLegacyWorkflowSettingsTarget(rootPublicPath, location);
 
   useEffect(() => {
     window.location.replace(targetPath);

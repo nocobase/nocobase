@@ -10,6 +10,7 @@
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 import { ConfigProvider, Layout, theme as antdTheme, type ThemeConfig } from 'antd';
 import React, { useMemo, type FC } from 'react';
+import { useLocation } from 'react-router-dom';
 import { HelpLite } from '../flow/admin-shell/admin-layout/HelpLite';
 import {
   USER_CENTER_ACTION_ID,
@@ -43,21 +44,43 @@ const actionsStyle: React.CSSProperties = {
   height: '100%',
 };
 
+const workspaceStyle: React.CSSProperties = {
+  display: 'flex',
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  overflow: 'hidden',
+};
+
 const contentStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
   minHeight: 0,
   overflow: 'hidden',
 };
 
 const embedContainerStyle: React.CSSProperties = {
+  flexShrink: 0,
+  height: '100%',
   position: 'relative',
   width: 'fit-content',
 };
 
 export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
+  const location = useLocation();
   const { token } = antdTheme.useToken();
   const settingsShellTheme = useMemo<ThemeConfig>(() => buildSettingsNeutralTheme(token), [token]);
   const headerColors = useMemo(() => getSettingsHeaderColors(token), [token]);
+  const isAuthenticationRoute = (app.router.matchRoutes(location.pathname) || []).some((match) => {
+    const routeId = match.route.id;
+    return routeId === 'auth' || routeId?.startsWith('auth.') || routeId === '2fa' || routeId?.startsWith('2fa.');
+  });
+
+  if (isAuthenticationRoute) {
+    return <>{children}</>;
+  }
+
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -89,8 +112,10 @@ export const SettingsShell: FC = ({ children }) => {
             </div>
           </div>
         </Layout.Header>
-        <Layout.Content style={contentStyle}>{children}</Layout.Content>
-        <div id="nocobase-embed-container" style={embedContainerStyle} />
+        <div style={workspaceStyle}>
+          <Layout.Content style={contentStyle}>{children}</Layout.Content>
+          <div id="nocobase-embed-container" style={embedContainerStyle} />
+        </div>
       </Layout>
     </ConfigProvider>
   );

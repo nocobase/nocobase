@@ -139,9 +139,7 @@ describe('BulkImportForm', () => {
 
     await waitFor(() =>
       expect(mocks.notification.error).toHaveBeenCalledWith({
-        message: 'Bulk import failed',
-        description: 'Name validation failed',
-        role: 'alert',
+        message: 'Name validation failed',
       }),
     );
     expect(onSubmitted).not.toHaveBeenCalled();

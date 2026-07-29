@@ -30,13 +30,22 @@ export function getWorkflowExecutionRuntimePath(id: string | number) {
 
 export function useWorkflowRuntimePaths() {
   const app = useApp();
-  const isStandaloneSettings = app.pluginSettingsManager.getRoutePath('') === '/settings/';
+  const isStandaloneSettings = app.pluginSettingsManager.getRouteName('') === 'settings.';
+  const settingsRoot = app.pluginSettingsManager.getRoutePath('').replace(/\/+$/, '');
   const isV2Runtime = isStandaloneSettings || isWorkflowV2Runtime();
   const getCanvasPath = useMemoizedFn((id: string | number) =>
-    isV2Runtime ? getWorkflowCanvasPath(id) : `/admin/settings/workflow/workflows/${id}`,
+    isStandaloneSettings
+      ? `${settingsRoot}/workflow/workflows/${id}`
+      : isV2Runtime
+        ? getWorkflowCanvasPath(id)
+        : `/admin/settings/workflow/workflows/${id}`,
   );
   const getExecutionPath = useMemoizedFn((id: string | number) =>
-    isV2Runtime ? getWorkflowExecutionPath(id) : `/admin/settings/workflow/executions/${id}`,
+    isStandaloneSettings
+      ? `${settingsRoot}/workflow/executions/${id}`
+      : isV2Runtime
+        ? getWorkflowExecutionPath(id)
+        : `/admin/settings/workflow/executions/${id}`,
   );
 
   return {

@@ -10,12 +10,14 @@
 import { render, screen } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsShell } from '../settings-app/SettingsShell';
 import type { ThemeConfig } from '../theme';
 
 const userCenterModel = { uid: 'settings-user-center' };
 const createModel = vi.fn(() => userCenterModel);
+const matchRoutes = vi.fn(() => [{ route: { id: 'settings' } }]);
 
 vi.mock('../hooks/useApp', () => ({
   useApp: () => ({
@@ -23,6 +25,9 @@ vi.mock('../hooks/useApp', () => ({
       createModel,
       getModel: vi.fn(() => null),
       getModelClass: vi.fn(() => true),
+    },
+    router: {
+      matchRoutes,
     },
   }),
 }));
@@ -56,13 +61,17 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 describe('SettingsShell', () => {
   beforeEach(() => {
     createModel.mockClear();
+    matchRoutes.mockReset();
+    matchRoutes.mockReturnValue([{ route: { id: 'settings' } }]);
   });
 
   it('renders only the settings brand, group nav, help and user center around its content', () => {
     render(
-      <SettingsShell>
-        <div>settings content</div>
-      </SettingsShell>,
+      <MemoryRouter initialEntries={['/settings/system-settings']}>
+        <SettingsShell>
+          <div>settings content</div>
+        </SettingsShell>
+      </MemoryRouter>,
     );
 
     expect(screen.getByTestId('settings-logo')).toBeInTheDocument();
@@ -87,12 +96,85 @@ describe('SettingsShell', () => {
           } as ThemeConfig
         }
       >
-        <SettingsShell>
-          <div>settings content</div>
-        </SettingsShell>
+        <MemoryRouter initialEntries={['/settings/system-settings']}>
+          <SettingsShell>
+            <div>settings content</div>
+          </SettingsShell>
+        </MemoryRouter>
       </ConfigProvider>,
     );
 
     expect(screen.getByRole('banner')).toHaveStyle({ background: '#001529' });
+  });
+
+  it('places the settings content and embed container side by side below the header', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/settings/theme-editor']}>
+        <SettingsShell>
+          <div>settings content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    const header = screen.getByRole('banner');
+    const content = screen.getByRole('main');
+    const embedContainer = container.querySelector<HTMLElement>('#nocobase-embed-container');
+    const workspace = content.parentElement;
+
+    expect(embedContainer).not.toBeNull();
+    if (!embedContainer) {
+      throw new Error('Expected the Settings shell to render the global embed container');
+    }
+    expect(header.nextElementSibling).toBe(workspace);
+    expect(workspace).toHaveStyle({
+      display: 'flex',
+      flex: '1',
+      minWidth: '0',
+      minHeight: '0',
+      overflow: 'hidden',
+    });
+    expect(workspace?.children).toHaveLength(2);
+    expect(workspace?.firstElementChild).toBe(content);
+    expect(workspace?.lastElementChild).toBe(embedContainer);
+    expect(content).toHaveStyle({
+      flex: '1',
+      minWidth: '0',
+      minHeight: '0',
+      overflow: 'hidden',
+    });
+    expect(embedContainer).toHaveStyle({
+      flexShrink: '0',
+      height: '100%',
+      position: 'relative',
+    });
+
+    embedContainer.style.width = '33.3%';
+    embedContainer.style.maxWidth = '800px';
+    expect(workspace?.lastElementChild).toBe(embedContainer);
+    expect(embedContainer).toHaveStyle({ width: '33.3%', maxWidth: '800px' });
+
+    embedContainer.style.width = 'auto';
+    embedContainer.style.maxWidth = 'none';
+    expect(content).toHaveStyle({ flex: '1' });
+    expect(embedContainer).toHaveStyle({ width: 'auto', maxWidth: 'none' });
+  });
+
+  it.each(['auth.signin', '2fa.verify'])('does not render the settings shell for %s', (routeId) => {
+    matchRoutes.mockReturnValue([{ route: { id: routeId } }]);
+
+    render(
+      <MemoryRouter initialEntries={[routeId === 'auth.signin' ? '/settings/signin' : '/settings/2fa']}>
+        <SettingsShell>
+          <div>authentication content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('authentication content')).toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('settings-logo')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('settings-help')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('settings-user-center')).not.toBeInTheDocument();
+    expect(document.querySelector('#nocobase-embed-container')).not.toBeInTheDocument();
   });
 });

@@ -9,9 +9,10 @@
 
 import type { BaseApplication } from '../BaseApplication';
 import { PluginSettingsManager } from '../PluginSettingsManager';
+import { resolveSettingsAppScopeWithinPublicPath } from './settingsDocumentPath';
 
 const SETTINGS_ROUTE_PREFIX = 'settings.';
-const SETTINGS_PATH_PREFIX = '/settings/';
+const MAIN_SETTINGS_PATH_PREFIX = '/settings/';
 
 export class SettingsPluginSettingsManager<
   TApp extends BaseApplication<any> = BaseApplication<any>,
@@ -21,10 +22,12 @@ export class SettingsPluginSettingsManager<
   }
 
   getRoutePath(name: string) {
+    const appScope = resolveSettingsAppScopeWithinPublicPath(this.app.getPublicPath(), this.app.router.getBasename?.());
+    const pathPrefix = appScope ? '/' : MAIN_SETTINGS_PATH_PREFIX;
     const separatorIndex = name.indexOf('.');
     const menuName = separatorIndex < 0 ? name : name.slice(0, separatorIndex);
     const pageName = separatorIndex < 0 ? undefined : name.slice(separatorIndex + 1);
-    const menuPath = `${SETTINGS_PATH_PREFIX}${menuName}`;
+    const menuPath = `${pathPrefix}${menuName}`;
 
     if (!pageName || pageName === 'index') {
       return menuPath;

@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '@nocobase/client-v2';
 import { useAuthTranslation } from '../locale';
 import { useAuthenticator } from '../authenticator';
+import { getAuthRoutePath } from '../authRoutePaths';
 
 type SignUpFormProps = {
   authenticatorName: string;
@@ -78,6 +79,7 @@ export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) 
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const signinPath = getAuthRoutePath(app, 'auth.signin');
 
   const fields = useMemo(() => {
     return (authenticator?.options?.signupForm || []).filter((item: any) => item?.show);
@@ -98,7 +100,7 @@ export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) 
           await app.apiClient.auth.signUp(values, authenticatorName);
           message.success(t('Sign up successfully, and automatically jump to the sign in page'));
           window.setTimeout(() => {
-            navigate('/signin', { replace: true });
+            navigate(signinPath, { replace: true });
           }, 2000);
         } catch (error) {
           setErrorMessage(error?.response?.data?.errors?.[0]?.message || error?.message || String(error));
@@ -139,7 +141,7 @@ export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) 
           {t('Sign up')}
         </Button>
       </Form.Item>
-      <Link to="/signin">{t('Log in with an existing account')}</Link>
+      <Link to={signinPath}>{t('Log in with an existing account')}</Link>
     </Form>
   );
 }

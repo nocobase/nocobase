@@ -10,19 +10,15 @@
 import { useApp } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import { Conversation } from '../../types';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { useWorkflowTasksStore } from '../stores/workflow-tasks';
+import { resolveChatBoxScope, type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-export const useChatConversationActions = () => {
+export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
   const api = app.apiClient;
-  const setConversations = useChatConversationsStore.use.setConversations();
-  const keyword = useChatConversationsStore.use.keyword();
-  const unreadCount = useChatConversationsStore.use.unreadCount();
-  const setUnreadCount = useChatConversationsStore.use.setUnreadCount();
-  const setWorkflowTaskUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatConversationModel, workflowTaskModel } = resolvedRuntime;
 
   const conversationsService = useRequest<
     {
@@ -31,12 +27,16 @@ export const useChatConversationActions = () => {
     },
     [number?, string?]
   >(
-    (page = 1, keyword = '') => {
-      const filter: { title?: { $includes: string } } = {};
+    async (page = 1, keyword = '') => {
+      const filter: { title?: { $includes: string }; scope?: string } = {};
+      const scope = await resolveChatBoxScope(resolvedRuntime, { operation: 'list' });
 
       // Filter by keyword
       if (keyword) {
         filter.title = { $includes: keyword };
+      }
+      if (scope) {
+        filter.scope = scope;
       }
 
       return api
@@ -58,9 +58,9 @@ export const useChatConversationActions = () => {
           return;
         }
         if (!page || page === 1) {
-          setConversations(data.data);
+          chatConversationModel.setConversations(data.data);
         } else {
-          setConversations((prev) => [...prev, ...data.data]);
+          chatConversationModel.setConversations((prev) => [...prev, ...data.data]);
         }
       },
     },
@@ -73,16 +73,16 @@ export const useChatConversationActions = () => {
     if (conversationsService.loading || (meta && meta.page >= meta.totalPage)) {
       return;
     }
-    await conversationsService.runAsync(meta?.page ? meta.page + 1 : 1, keyword);
-  }, [keyword]);
+    await conversationsService.runAsync(meta?.page ? meta.page + 1 : 1, chatConversationModel.keyword);
+  }, [chatConversationModel]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
   const loadUnreadCounts = useCallback(async () => {
     const res = await api.resource('aiConversations').unreadCounts();
     const data = res?.data?.data;
-    setUnreadCount(data?.conversationUnreadCount || 0);
-    setWorkflowTaskUnreadCount(data?.workflowTaskUnreadCount || 0);
-  }, [api, setUnreadCount, setWorkflowTaskUnreadCount]);
+    chatConversationModel.setUnreadCount(data?.conversationUnreadCount || 0);
+    workflowTaskModel.setUnreadCount(data?.workflowTaskUnreadCount || 0);
+  }, [api, chatConversationModel, workflowTaskModel]);
 
   const runSearch = (keyword = '') => conversationsService.run(1, keyword);
   const refresh = useCallback(() => {
@@ -95,6 +95,8 @@ export const useChatConversationActions = () => {
     lastConversationRef,
     runSearch,
     refresh,
-    unreadCount,
+    get unreadCount() {
+      return chatConversationModel.unreadCount;
+    },
   };
 };

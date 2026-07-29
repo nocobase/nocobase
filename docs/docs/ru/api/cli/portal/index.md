@@ -29,6 +29,7 @@ nb portal <command>
 | [`nb portal list`](./list.md) | Выводит записи Portal и состояние синхронизации локальных рабочих пространств |
 | [`nb portal pull`](./pull.md) | Загружает исходный код Portal из source storage в локальное рабочее пространство |
 | [`nb portal push`](./push.md) | Отправляет локальные изменения исходного кодa Portal в source storage |
+| [`nb portal registry`](./registry/index.md) | Управляет интеграциями Registry из включенных плагинов NocoBase |
 
 ## Типовой процесс
 

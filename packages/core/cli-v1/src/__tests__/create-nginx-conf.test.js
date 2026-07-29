@@ -49,13 +49,8 @@ describe('create-nginx-conf Settings SPA routing', () => {
   }
 
   test.each([
-    ['root mount', '/', '/settings/assets/', '^/(?:settings|(?:apps|_app)/[^/]+/settings)(?:/|$)'],
-    [
-      'custom public path',
-      '/nocobase/',
-      '/nocobase/settings/assets/',
-      '^/nocobase/(?:settings|(?:apps|_app)/[^/]+/settings)(?:/|$)',
-    ],
+    ['root mount', '/', '/settings/assets/', '^/settings(?:/|$)'],
+    ['custom public path', '/nocobase/', '/nocobase/settings/assets/', '^/nocobase/settings(?:/|$)'],
   ])(
     'proxies Settings documents and caches Settings assets for %s',
     async (_label, publicPath, assetsPath, routePattern) => {

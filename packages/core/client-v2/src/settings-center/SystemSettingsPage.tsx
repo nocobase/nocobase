@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Alert, Button, Form, Input, Select, theme } from 'antd';
+import { Alert, App, Button, Form, Input, Select, theme } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AttachmentUpload } from '../components/AttachmentUpload';
@@ -24,6 +24,7 @@ import { useSystemSettings } from '../flow/system-settings';
 export const SystemSettingsPage = () => {
   const app = useApp();
   const { token } = theme.useToken();
+  const { message } = App.useApp();
   const { t } = useTranslation();
   const { data, loading, error, mutate } = useSystemSettings();
   const [form] = Form.useForm();

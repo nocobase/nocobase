@@ -35,6 +35,24 @@ class StandaloneSettingsPlugin extends Plugin {
   }
 }
 
+class MultiPortalSettingsPlugin extends Plugin {
+  async load() {
+    this.pluginSettingsManager.addMenuItem({
+      key: 'multi-portal',
+      title: 'Portal manager',
+      aclSnippet: 'pm.multi-portal',
+      sort: -300,
+    });
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'multi-portal',
+      key: 'index',
+      title: 'Portal manager',
+      aclSnippet: 'pm.multi-portal',
+      Component: () => <div>Portal manager page</div>,
+    });
+  }
+}
+
 class PrimarySettingsPlugin extends Plugin {
   async load() {
     this.pluginSettingsManager.addMenuItem({
@@ -64,7 +82,35 @@ describe('standalone settings layout root', () => {
     }
   });
 
-  it('redirects /settings to the first available settings page', async () => {
+  it.each(['/settings', '/settings/', '/settings/index'])(
+    'redirects %s to multi-portal when it is accessible',
+    async (initialEntry) => {
+      const app = new SettingsApplication({
+        plugins: [SettingsBuildInPlugin, MultiPortalSettingsPlugin],
+        router: { type: 'memory', initialEntries: [initialEntry] },
+        ws: false,
+      });
+      const apiMock = new MockAdapter(app.apiClient.axios);
+      app.dataSourceManager.ensureLoaded = async () => {};
+      apiMock.onGet('app:getLang').reply(200, {
+        data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+      });
+      apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+      apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+      apiMock.onGet('systemSettings:get').reply(200, {
+        data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+      });
+
+      const Root = app.getRootComponent();
+      render(<Root />);
+
+      await waitFor(() => {
+        expect(app.router.state.location.pathname).toBe('/settings/multi-portal');
+      });
+    },
+  );
+
+  it('falls back to system-settings when multi-portal is not registered', async () => {
     const app = new SettingsApplication({
       plugins: [SettingsBuildInPlugin, StandaloneSettingsPlugin],
       router: { type: 'memory', initialEntries: ['/settings'] },
@@ -77,6 +123,34 @@ describe('standalone settings layout root', () => {
     });
     apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
     apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.router.state.location.pathname).toBe('/settings/system-settings');
+    });
+  });
+
+  it('falls back to system-settings when multi-portal is not accessible', async () => {
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').reply(200, {
+      data: { role: 'member', snippets: ['!pm.multi-portal'] },
+    });
     apiMock.onGet('systemSettings:get').reply(200, {
       data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
     });
@@ -126,7 +200,7 @@ describe('standalone settings layout root', () => {
     expect(pluginManagerIndex).toBeLessThan(firstDividerIndex);
   });
 
-  it('uses document navigation to the existing v2 signin page when unauthenticated', async () => {
+  it('uses document navigation to the standalone Settings signin page when unauthenticated', async () => {
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -152,7 +226,7 @@ describe('standalone settings layout root', () => {
     render(<Root />);
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/v/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
+      expect(replace).toHaveBeenCalledWith('/settings/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
     });
   });
 });

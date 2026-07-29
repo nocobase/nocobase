@@ -824,7 +824,7 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
   const fileAccessPath = `${context.appPublicPath}files/`;
   const settingsAssetsPath = `${context.appPublicPath}settings/assets/`;
   const settingsAssetsRoot = joinRuntimePath(context.distRootDir, `${context.activeVersion}/settings/assets`);
-  const settingsRoutePattern = `^${escapeRegExp(context.appPublicPath)}(?:settings|(?:apps|_app)/[^/]+/settings)(?:/|$)`;
+  const settingsRoutePattern = `^${escapeRegExp(context.appPublicPath)}settings(?:/|$)`;
   const isRootMounted = context.appPublicPath === '/';
   const appPublicPathRedirectBlock = isRootMounted
     ? ''
@@ -1703,7 +1703,7 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
   const distPathMatcher = toCaddyPathMatcher(context.distPath);
   const settingsAssetsPathMatcher = toCaddyPathMatcher(`${context.appPublicPath}settings/assets/`);
   const settingsAssetsRoot = joinRuntimePath(context.distClientRoot, `${context.activeVersion}/settings/assets`);
-  const settingsRoutePattern = `^${escapeRegExp(context.appPublicPath)}(?:settings|(?:apps|_app)/[^/]+/settings)(?:/.*)?$`;
+  const settingsRoutePattern = `^${escapeRegExp(context.appPublicPath)}settings(?:/.*)?$`;
   const uploadsPathMatcher = toCaddyPathMatcher(uploadsPath);
   const apiPathMatcher = toCaddyPathMatcher(context.apiBasePath);
   const appPublicPathNoTrailingSlash = trimTrailingSlash(context.appPublicPath);

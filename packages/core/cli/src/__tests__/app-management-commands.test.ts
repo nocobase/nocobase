@@ -556,7 +556,7 @@ test('start injects init env vars for prepared local envs and marks them install
         rootPassword: 'admin123',
         rootNickname: 'Admin',
         portalType: 'ai',
-        portalName: 'admin',
+        portalName: 'main',
         portalTemplate: '/tmp/portal-template',
       },
       envVars: { APP_PORT: '13000' },
@@ -580,7 +580,7 @@ test('start injects init env vars for prepared local envs and marks them install
       INIT_ROOT_PASSWORD: 'admin123',
       INIT_ROOT_NICKNAME: 'Admin',
       INIT_PORTAL_TYPE: 'ai',
-      INIT_PORTAL_NAME: 'admin',
+      INIT_PORTAL_NAME: 'main',
       INIT_PORTAL_TEMPLATE: '/tmp/portal-template',
     },
     stdio: 'ignore',
@@ -5945,8 +5945,8 @@ test('dev runs local npm/git source envs with a generated port when --port is om
 
   await Dev.prototype.run.call(command);
 
+  expect(mocks.announceTargetEnv).toHaveBeenCalledWith('dev');
   expect(mocks.printInfo.mock.calls).toEqual([
-    ['Using env "dev".'],
     ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
   ]);
   expect(mocks.startTask.mock.calls).toEqual([['Running local postinstall for "dev"...']]);

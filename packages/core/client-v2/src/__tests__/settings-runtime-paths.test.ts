@@ -48,10 +48,10 @@ describe('standalone settings runtime paths', () => {
     const newApp = createApp('/nocobase/v/', '/nocobase/v/_app/demo');
 
     expect(resolveStandaloneSettingsPath(appsApp, '/nocobase/v/apps/demo/admin/settings/routes')).toBe(
-      '/nocobase/apps/demo/settings/routes',
+      '/nocobase/settings/apps/demo/routes',
     );
     expect(resolveStandaloneSettingsPath(newApp, '/nocobase/v/_app/demo/admin/settings/routes')).toBe(
-      '/nocobase/_app/demo/settings/routes',
+      '/nocobase/settings/_app/demo/routes',
     );
   });
 
@@ -61,6 +61,33 @@ describe('standalone settings runtime paths', () => {
 
     expect(resolveStandaloneSettingsPath(app, '/base/modern/admin/settings/security')).toBe('/base/settings/security');
   });
+
+  it('does not treat an apps segment inside the main application public path as a sub-application scope', () => {
+    window.__nocobase_modern_client_prefix__ = 'modern';
+    const app = createApp('/tenant/apps/root/modern/', '/tenant/apps/root/modern');
+
+    expect(resolveStandaloneSettingsPath(app, '/tenant/apps/root/modern/admin/settings/security')).toBe(
+      '/tenant/apps/root/settings/security',
+    );
+  });
+
+  it.each(['apps', '_app'])(
+    'does not remove a matching %s segment from the root public path for a real sub-application',
+    (scope) => {
+      window.__nocobase_modern_client_prefix__ = 'modern';
+      const app = createApp(`/tenant/${scope}/demo/modern/`, `/tenant/${scope}/demo/modern/${scope}/demo`, 'demo');
+
+      expect(
+        resolveStandaloneSettingsPath(app, `/tenant/${scope}/demo/modern/${scope}/demo/admin/settings/security`),
+      ).toBe(`/tenant/${scope}/demo/settings/${scope}/demo/security`);
+      expect(
+        resolveStandaloneSettingsPath(
+          app,
+          `/tenant/${scope}/demo/modern/${scope}/demo/admin/settings/mail/oauth2?code=abc#done`,
+        ),
+      ).toBe(`/tenant/${scope}/demo/${scope}/demo/admin/settings/mail/oauth2?code=abc#done`);
+    },
+  );
 
   it('returns the legacy V1 callback for Email OAuth', () => {
     const app = createApp('/nocobase/v/', '/nocobase/v/apps/demo');

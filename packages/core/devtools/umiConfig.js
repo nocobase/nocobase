@@ -65,14 +65,10 @@ function getUmiConfig() {
 
     const settingsTarget = `http://127.0.0.1:${APP_SETTINGS_PORT}`;
     const settingsPath = `${normalizedAppPublicPath}settings`;
-    const scopedSettingsPattern = new RegExp(
-      `^${normalizedAppPublicPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:apps|_app)/[^/]+/settings(?=/|[?#]|$)`,
-    );
-    const createProxyOptions = (pathRewrite) => ({
+    const createProxyOptions = () => ({
       target: settingsTarget,
       changeOrigin: true,
       ws: true,
-      ...(pathRewrite ? { pathRewrite } : {}),
       onProxyReq: (proxyReq, req) => {
         if (req?.ip) {
           proxyReq.setHeader('X-Forwarded-For', req.ip);
@@ -82,12 +78,6 @@ function getUmiConfig() {
 
     return {
       [`${settingsPath}{,/**}`]: createProxyOptions(),
-      [`${normalizedAppPublicPath}apps/*/settings{,/**}`]: createProxyOptions((requestPath) =>
-        requestPath.replace(scopedSettingsPattern, settingsPath),
-      ),
-      [`${normalizedAppPublicPath}_app/*/settings{,/**}`]: createProxyOptions((requestPath) =>
-        requestPath.replace(scopedSettingsPattern, settingsPath),
-      ),
     };
   }
 

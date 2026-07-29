@@ -19,6 +19,7 @@ import {
 import debounce from 'lodash/debounce';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
+import { isStandaloneSettingsApplication } from './authRoutePaths';
 import AuthProvider from './providers/AuthProvider';
 import { NAMESPACE } from './locale';
 
@@ -216,7 +217,7 @@ export class PluginAuthClientV2 extends Plugin {
           const redirectPath = getCurrentV2RedirectPath(this.app, locationLike);
           debouncedRedirect(() => {
             this.app.apiClient.auth.setToken('');
-            if (this.pluginSettingsManager.getRoutePath('') === '/settings/') {
+            if (isStandaloneSettingsApplication(this.app)) {
               redirectToV2Signin(this.app, redirectPath);
             } else {
               // 用 react-router navigate (虚拟跳转)而不是 location.replace, 避免覆盖同时段其它响应拦截器触发的 window.location.href 整页跳转 (例如 2FA 接收到服务端 302 时)。

@@ -24,19 +24,14 @@ describe('getUmiConfig Settings dev proxy', () => {
     process.env = { ...originalEnv };
   });
 
-  test('proxies root and application-scoped Settings paths without taking over v1 settings', () => {
+  test('proxies the outer Settings document path without taking over v1 settings', () => {
     const { proxy } = getUmiConfig();
     const rootProxy = proxy['/nocobase/settings{,/**}'];
-    const appsProxy = proxy['/nocobase/apps/*/settings{,/**}'];
-    const newAppProxy = proxy['/nocobase/_app/*/settings{,/**}'];
 
     expect(rootProxy).toMatchObject({ target: 'http://127.0.0.1:13004', changeOrigin: true, ws: true });
-    expect(appsProxy).toMatchObject({ target: 'http://127.0.0.1:13004', changeOrigin: true, ws: true });
-    expect(newAppProxy).toMatchObject({ target: 'http://127.0.0.1:13004', changeOrigin: true, ws: true });
-    expect(appsProxy.pathRewrite('/nocobase/apps/demo/settings/workflow?tab=nodes')).toBe(
-      '/nocobase/settings/workflow?tab=nodes',
-    );
-    expect(newAppProxy.pathRewrite('/nocobase/_app/demo/settings')).toBe('/nocobase/settings');
+    expect(rootProxy.pathRewrite).toBeUndefined();
+    expect(proxy['/nocobase/apps/*/settings{,/**}']).toBeUndefined();
+    expect(proxy['/nocobase/_app/*/settings{,/**}']).toBeUndefined();
     expect(proxy['/nocobase/admin/settings']).toBeUndefined();
   });
 });

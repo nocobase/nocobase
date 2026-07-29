@@ -226,7 +226,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   );
   expect(bundle.appConfigContent).toContain('location ^~ /console/admin/ {');
   expect(bundle.appConfigContent).toContain('location ^~ /console/settings/assets/ {');
-  expect(bundle.appConfigContent).toContain('/console/(?:settings|(?:apps|_app)/[^/]+/settings)');
+  expect(bundle.appConfigContent).toContain('/console/settings(?:/|$)');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-settings.html =404;');
   expect(bundle.appConfigContent).not.toContain('/admin/settings');
   expect(bundle.appConfigContent).toContain('alias /workspace/.nocobase/proxy/nginx/demo/public/;');
@@ -283,7 +283,7 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('if ($uri ~ ^/x/(?<portal>[A-Za-z0-9_-]+)$) {');
   expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
   expect(bundle.appConfigContent).toContain('location ^~ /settings/assets/ {');
-  expect(bundle.appConfigContent).toContain('/(?:settings|(?:apps|_app)/[^/]+/settings)');
+  expect(bundle.appConfigContent).toContain('/settings(?:/|$)');
   expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
   expect(bundle.appConfigContent.match(/location \^~ \/files\//g)).toHaveLength(1);
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
@@ -694,6 +694,7 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.appConfigContent).toContain('handle_path /console/settings/assets/* {');
   expect(bundle.appConfigContent).toContain('header Cache-Control "public, max-age=31536000, immutable"');
   expect(bundle.appConfigContent).toContain('@settingsRoute path_regexp settingsRoute');
+  expect(bundle.appConfigContent).toContain('^/console/settings(?:/.*)?$');
   expect(bundle.appConfigContent).toContain('try_files {path} /index-settings.html');
   expect(bundle.appConfigContent).not.toContain('/admin/settings');
   expect(bundle.appConfigContent).toContain('try_files {path} /index-v2.html');

@@ -11,7 +11,6 @@ export const DOCUMENT_PARSE_META_KEY = 'documentParse';
 
 export const SUPPORTED_DOCUMENT_EXTNAMES: string[] = [
   '.pdf',
-  '.ppt',
   '.pptx',
   '.doc',
   '.docx',

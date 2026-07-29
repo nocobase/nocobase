@@ -10,9 +10,9 @@
 import { useCallback, useRef } from 'react';
 import { useApp } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
-import { useWorkflowTasksStore, WorkflowTask, WorkflowTaskDetail } from '../stores/workflow-tasks';
+import { WorkflowTask, WorkflowTaskDetail } from '../stores/workflow-tasks';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { useChatBoxStore } from '../stores/chat-box';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 const JOB_STATUS = {
   PENDING: 0,
@@ -28,24 +28,18 @@ const aiWorkflowTaskStatusMap: Record<number, string[]> = {
   [JOB_STATUS.ABORTED]: ['aborted'],
 };
 
-export const useWorkflowTasks = () => {
+export const useWorkflowTasks = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
   const api = app.apiClient;
   const workflowTasksResource = api.resource('aiWorkflowTasks');
+  const { chatBoxModel, workflowTaskModel } = useResolvedChatBoxRuntime(runtime);
 
-  const workflowTasks = useWorkflowTasksStore.use.workflowTasks();
-  const currentWorkflowTask = useWorkflowTasksStore.use.currentWorkflowTask();
-  const unreadCount = useWorkflowTasksStore.use.unreadCount();
-  const loading = useWorkflowTasksStore.use.loading();
-  const keyword = useWorkflowTasksStore.use.keyword();
-  const selectedJobStatus = useWorkflowTasksStore.use.selectedJobStatus();
-
-  const setWorkflowTasks = useWorkflowTasksStore.use.setWorkflowTasks();
-  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
-  const setLoading = useWorkflowTasksStore.use.setLoading();
-  const setKeyword = useWorkflowTasksStore.use.setKeyword();
-  const setSelectedJobStatus = useWorkflowTasksStore.use.setSelectedJobStatus();
-  const markWorkflowTaskRead = useWorkflowTasksStore.use.markWorkflowTaskRead();
+  const workflowTasks = workflowTaskModel.workflowTasks;
+  const currentWorkflowTask = workflowTaskModel.currentWorkflowTask;
+  const unreadCount = workflowTaskModel.unreadCount;
+  const loading = workflowTaskModel.loading;
+  const keyword = workflowTaskModel.keyword;
+  const selectedJobStatus = workflowTaskModel.selectedJobStatus;
   const keywordRef = useRef(keyword);
   keywordRef.current = keyword;
   const selectedJobStatusRef = useRef(selectedJobStatus);
@@ -75,7 +69,7 @@ export const useWorkflowTasks = () => {
       }
 
       try {
-        setLoading(true);
+        workflowTaskModel.setLoading(true);
         const res = await workflowTasksResource.list({
           sort: ['-updatedAt'],
           page,
@@ -86,7 +80,7 @@ export const useWorkflowTasks = () => {
       } catch (error) {
         throw error;
       } finally {
-        setLoading(false);
+        workflowTaskModel.setLoading(false);
       }
     },
     {
@@ -96,11 +90,11 @@ export const useWorkflowTasks = () => {
         const nextData = data?.data || [];
 
         if (page === 1) {
-          setWorkflowTasks(nextData);
+          workflowTaskModel.setWorkflowTasks(nextData);
           return;
         }
 
-        setWorkflowTasks((prev) => {
+        workflowTaskModel.setWorkflowTasks((prev) => {
           const prevSessionIds = new Set(prev.map((item) => item.sessionId));
           const appended = nextData.filter((item) => !prevSessionIds.has(item.sessionId));
           return [...prev, ...appended];
@@ -114,10 +108,10 @@ export const useWorkflowTasks = () => {
 
   const runSearch = useCallback(
     (nextKeyword = '') => {
-      setKeyword(nextKeyword);
+      workflowTaskModel.setKeyword(nextKeyword);
       workflowTasksService.run(1, nextKeyword, selectedJobStatus);
     },
-    [selectedJobStatus, setKeyword, workflowTasksService],
+    [selectedJobStatus, workflowTaskModel, workflowTasksService],
   );
 
   const refresh = useCallback(() => {
@@ -126,10 +120,10 @@ export const useWorkflowTasks = () => {
 
   const runJobStatusFilter = useCallback(
     (nextJobStatus?: number) => {
-      setSelectedJobStatus(nextJobStatus);
+      workflowTaskModel.setSelectedJobStatus(nextJobStatus);
       workflowTasksService.run(1, keyword || '', nextJobStatus);
     },
-    [keyword, setSelectedJobStatus, workflowTasksService],
+    [keyword, workflowTaskModel, workflowTasksService],
   );
 
   const loadMoreWorkflowTasks = useCallback(async () => {
@@ -158,9 +152,9 @@ export const useWorkflowTasks = () => {
           },
         })
         .catch(() => undefined);
-      markWorkflowTaskRead(sessionId);
+      workflowTaskModel.markWorkflowTaskRead(sessionId);
     },
-    [markWorkflowTaskRead, workflowTasksResource],
+    [workflowTaskModel, workflowTasksResource],
   );
 
   const getWorkflowTaskBySession = useCallback(
@@ -171,20 +165,19 @@ export const useWorkflowTasks = () => {
         },
       });
       const task = (res?.data?.data ?? res?.data) as WorkflowTaskDetail | undefined;
-      setCurrentWorkflowTask(task);
+      workflowTaskModel.setCurrentWorkflowTask(task);
       return task;
     },
-    [setCurrentWorkflowTask, workflowTasksResource],
+    [workflowTaskModel, workflowTasksResource],
   );
 
-  const setReadonly = useChatBoxStore.use.setReadonly();
   const updateReadonly = useCallback(
     async (sessionId: string) => {
       await acceptWorkflowTask(sessionId);
       const task = await getWorkflowTaskBySession(sessionId);
-      setReadonly(task?.readonly === true);
+      chatBoxModel.setReadonly(task?.readonly === true);
     },
-    [acceptWorkflowTask, getWorkflowTaskBySession, setReadonly],
+    [acceptWorkflowTask, chatBoxModel, getWorkflowTaskBySession],
   );
 
   return {
@@ -202,7 +195,7 @@ export const useWorkflowTasks = () => {
     getWorkflowTaskBySession,
     updateReadonly,
     currentWorkflowTask,
-    setCurrentWorkflowTask,
-    setSelectedJobStatus,
+    setCurrentWorkflowTask: workflowTaskModel.setCurrentWorkflowTask,
+    setSelectedJobStatus: workflowTaskModel.setSelectedJobStatus,
   };
 };

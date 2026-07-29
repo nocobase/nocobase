@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACLRolesCheckProvider, createMockClient, Plugin } from '@nocobase/client-v2';
+import { ACLRolesCheckProvider, Plugin } from '@nocobase/client-v2';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { message } from 'antd';
 import { AdminSettingsLayoutModel as ClientV2AdminSettingsLayoutModel } from '../settings-center';
 import { AdminSettingsLayoutModel as ClientV1AdminSettingsLayoutModel } from '../../../client/src/pm/AdminSettingsLayoutModel';
-import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
+import { SettingsBuildInPlugin } from '../settings-app/SettingsBuildInPlugin';
 import { matchSettingsRoute, sortTopLevelSettings } from '../settings-center/utils';
+import { createMockSettingsClient } from './mockSettingsApplication';
 
 class TestAclPlugin extends Plugin {
   async load() {
@@ -22,7 +23,7 @@ class TestAclPlugin extends Plugin {
   }
 }
 
-type MockClientApplication = ReturnType<typeof createMockClient>;
+type MockClientApplication = ReturnType<typeof createMockSettingsClient>;
 
 const renderApp = async (app: MockClientApplication) => {
   const Root = app.getRootComponent();
@@ -174,10 +175,10 @@ describe('settings center', () => {
     expect(sortTopLevelSettings(settings).map((item) => item.name)).toEqual(['api-keys', 'backups', 'system-settings']);
   });
 
-  it('should redirect /admin/settings to system-settings by default', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings'] },
+  it('should redirect /settings to system-settings by default', async () => {
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings'] },
     });
     mockAdminRuntime(app);
 
@@ -188,9 +189,9 @@ describe('settings center', () => {
   });
 
   it('should expose current language variable as enabled-language selector', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/system-settings'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
     });
     mockAdminRuntime(app, {
       systemSettings: {
@@ -218,9 +219,9 @@ describe('settings center', () => {
   });
 
   it('should fallback to plugin-manager when system-settings is not allowed', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings'] },
     });
     mockAdminRuntime(app, {
       snippets: ['pm', '!pm.system-settings.system-settings'],
@@ -244,9 +245,9 @@ describe('settings center', () => {
   });
 
   it('should hide plugin-manager menu item when pm snippet is missing', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/system-settings'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
     });
     mockAdminRuntime(app, {
       snippets: ['pm.system-settings.system-settings'],
@@ -260,9 +261,9 @@ describe('settings center', () => {
   });
 
   it('should show route empty state for unknown settings routes', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/unknown'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/unknown'] },
     });
     mockAdminRuntime(app);
 
@@ -286,9 +287,9 @@ describe('settings center', () => {
       }
     }
 
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, HiddenSettingsPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/hidden-demo'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, HiddenSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/hidden-demo'] },
     });
     mockAdminRuntime(app);
 
@@ -313,9 +314,9 @@ describe('settings center', () => {
       }
     }
 
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, ProtectedSettingsPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/secure-demo'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, ProtectedSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/secure-demo'] },
     });
     mockAdminRuntime(app, {
       snippets: ['pm', 'pm.system-settings.system-settings', '!pm.secure-demo.index'],
@@ -345,9 +346,9 @@ describe('settings center', () => {
       }
     }
 
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, MenuAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/menu-acl-demo'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MenuAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/menu-acl-demo'] },
     });
     mockAdminRuntime(app, {
       snippets: ['pm', 'pm.system-settings.system-settings', '!pm.menu-acl-demo.menu'],
@@ -378,9 +379,9 @@ describe('settings center', () => {
       }
     }
 
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, ManySettingsPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/scroll-demo-29'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, ManySettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/scroll-demo-29'] },
     });
     mockAdminRuntime(app);
 
@@ -394,9 +395,9 @@ describe('settings center', () => {
   });
 
   it('should save system settings through systemSettings:put', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/system-settings'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
     });
     mockAdminRuntime(app);
 
@@ -413,9 +414,9 @@ describe('settings center', () => {
   });
 
   it('should block invalid logo uploads by storage rules', async () => {
-    const app = createMockClient({
-      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
-      router: { type: 'memory', initialEntries: ['/admin/settings/system-settings'] },
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
     });
     const messageErrorSpy = vi.spyOn(message, 'error').mockImplementation(() => {
       return undefined as any;

@@ -252,7 +252,7 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/crm-amd/ekeisumx1zu');
 
     const link = screen.getByRole('link', { name: 'System settings' });
-    expect(link).toHaveAttribute('href', '/nocobase/apps/a_9xlild35jir/settings/system-settings');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/apps/a_9xlild35jir/system-settings');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
@@ -301,7 +301,7 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/admin/settings/routes');
 
     const link = screen.getByRole('link', { name: 'Routes' });
-    expect(link).toHaveAttribute('href', '/nocobase/apps/a_9xlild35jir/settings/routes');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/apps/a_9xlild35jir/routes');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
@@ -370,7 +370,7 @@ describe('TopbarActionsBar helpers', () => {
     renderSettingsLabel((items as any[])[0].label, '/_app/a_new/admin/settings/system-settings');
 
     const link = screen.getByRole('link', { name: 'System settings' });
-    expect(link).toHaveAttribute('href', '/nocobase/_app/a_new/settings/system-settings');
+    expect(link).toHaveAttribute('href', '/nocobase/settings/_app/a_new/system-settings');
     expect(link).toHaveAttribute('target', '_blank');
   });
 

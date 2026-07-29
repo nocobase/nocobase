@@ -39,6 +39,7 @@ import {
   theme,
 } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isDefaultLayoutMultiPortalUid } from '../../constants';
 import { getPortalEntryActionStore } from '../entryActions/portalEntryActionStore';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
@@ -176,7 +177,6 @@ const DEFAULT_PORTAL_TYPE = 'no-code';
 const NEW_PORTAL_DEFAULT_TYPE = 'ai';
 const PORTAL_TYPE_VALUES = ['no-code', 'ai'] as const;
 const DEFAULT_PORTAL_SOURCE_STORAGE: PortalSourceStorage = 'nocobase';
-const PORTAL_SOURCE_STORAGE_VALUES = ['nocobase', 'git'] as const;
 const DEFAULT_PORTAL_GIT_BRANCH = 'main';
 const DEFAULT_PORTAL_GIT_PATH = '';
 
@@ -184,6 +184,8 @@ const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'enabled'> =
   portalType: DEFAULT_PORTAL_TYPE,
   enabled: true,
 };
+
+const LEGACY_DEFAULT_PORTAL_UID = '__default_portal__';
 
 const describedRadioStyle: React.CSSProperties = {
   alignItems: 'flex-start',
@@ -197,7 +199,6 @@ const describedRadioCss = `
 }
 `;
 
-const DEFAULT_PORTAL_UIDS = new Set(['__default_portal__']);
 const portalSlugPattern = /^[a-z0-9_-]+$/;
 
 const IconPickerFormControl = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof IconPicker>>(
@@ -431,8 +432,12 @@ function toFormDraftValues(record: MultiPortalRecord): MultiPortalFormDraftValue
 function withDefaultPortalFlag(record: MultiPortalRecord): MultiPortalRecord {
   return {
     ...record,
-    defaultPortal: DEFAULT_PORTAL_UIDS.has(record.uid),
+    defaultPortal: record.uid === LEGACY_DEFAULT_PORTAL_UID || isDefaultLayoutMultiPortalUid(record.uid),
   };
+}
+
+function isFixedDefaultPortal(record?: MultiPortalRecord) {
+  return isDefaultLayoutMultiPortalUid(record?.uid);
 }
 
 const PORTAL_COVER_HEIGHT = 132;
@@ -881,6 +886,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   );
   const watchedPortalType = Form.useWatch('portalType', form);
   const accessPathPrefix = watchedPortalType === 'ai' ? '/x/' : '/v/';
+  const fixedDefaultPortal = isFixedDefaultPortal(record);
 
   // 从 git 地址推导出来的标题 / 名称。用户手动改过之后就不再覆盖。
   const autoFilledRef = useRef<{ portalName?: string; title?: string }>({});
@@ -959,7 +965,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           htmlFor="multi-portal-portal-type-ai"
           rules={[{ required: true, message: t('The field value is required') }]}
         >
-          <Radio.Group disabled={record?.defaultPortal} style={{ width: '100%' }}>
+          <Radio.Group disabled={fixedDefaultPortal} style={{ width: '100%' }}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Radio
                 className={describedRadioClassName}
@@ -1049,7 +1055,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             },
           ]}
         >
-          <Input disabled={record?.defaultPortal} addonBefore={accessPathPrefix} />
+          <Input disabled={fixedDefaultPortal} addonBefore={accessPathPrefix} />
         </Form.Item>
 
         <Form.Item noStyle shouldUpdate={(prev, next) => prev.portalType !== next.portalType}>
@@ -1063,7 +1069,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
                 <Select
                   // 布局建好之后不允许改；但记录上本来就没有布局时（例如从 AI portal 切过来的）
                   // 必须能选，否则必填 + 置灰会把编辑表单彻底卡死。
-                  disabled={record?.defaultPortal || !!(record?.uiLayoutUid || record?.uiLayout?.uid)}
+                  disabled={fixedDefaultPortal || !!(record?.uiLayoutUid || record?.uiLayout?.uid)}
                   loading={layoutOptionsService.loading}
                   options={layoutOptions}
                   showSearch
@@ -1073,7 +1079,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             ) : null
           }
         </Form.Item>
-
         <Form.Item name="cover" label={t('Cover')} extra={t('Shown on the portal card. A 16:9 image works best.')}>
           <AttachmentUpload
             accept="image/*"
