@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+yarn build @nocobase/runjs
 yarn test packages/core/runjs/src/__tests__/compiler-build-identity.test.ts --run
 yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.integration.test.ts --run
 yarn test:server packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.unit.test.ts --run
