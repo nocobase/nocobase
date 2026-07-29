@@ -22,7 +22,6 @@ type PortalRecord = {
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
-  routePermissionMode: string;
   uiLayoutUid: string;
 };
 
@@ -34,7 +33,7 @@ type FindOptions = {
 const ADMIN_LAYOUT_UID = 'admin-layout-model';
 const FALLBACK_LAYOUT_UID = 'fallback-layout-model';
 
-function createPortal(uid: string, routePermissionMode = 'portal', uiLayoutUid = ADMIN_LAYOUT_UID): PortalRecord {
+function createPortal(uid: string, uiLayoutUid = ADMIN_LAYOUT_UID): PortalRecord {
   return {
     uid,
     title: uid,
@@ -43,7 +42,6 @@ function createPortal(uid: string, routePermissionMode = 'portal', uiLayoutUid =
     routePath: `/${uid}`,
     authCheck: true,
     enabled: true,
-    routePermissionMode,
     uiLayoutUid,
   };
 }
@@ -131,47 +129,40 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
     );
   });
 
-  it.each(legacyNamedPortalUids)('resolves persisted portal %s by its stored mode', async (portalUid) => {
-    const service = new FlowSurfaceNavigationTargetsService(createDatabase([createPortal(portalUid, 'layout')]));
+  it.each(legacyNamedPortalUids)(
+    'resolves fixed portal %s through its backing Layout without a mode field',
+    async (portalUid) => {
+      const service = new FlowSurfaceNavigationTargetsService(createDatabase([createPortal(portalUid)]));
 
-    await expect(
-      service.resolvePortal(portalUid, {
+      const resolved = await service.resolvePortal(portalUid, {
         actionName: 'createMenu',
         path: 'portalUid',
         currentRoles: ['root'],
-      }),
-    ).resolves.toMatchObject({
-      uid: portalUid,
-      routePermissionMode: 'layout',
-    });
-  });
+      });
 
-  it('rejects an invalid mode instead of hiding its portal from navigation targets', async () => {
-    const service = new FlowSurfaceNavigationTargetsService(
-      createDatabase([createPortal('invalid-mode-portal', 'invalid')]),
-    );
+      expect(resolved).toMatchObject({
+        uid: portalUid,
+        layoutUid: ADMIN_LAYOUT_UID,
+      });
+      expect(resolved).not.toHaveProperty('routePermissionMode');
+    },
+  );
 
-    await expect(service.listNavigationTargets(['root'])).rejects.toMatchObject({
-      status: 400,
-      options: expect.objectContaining({ ruleId: 'navigation-portal-permission-mode-invalid' }),
-    });
-  });
+  it.each(['default_admin', 'default_mobile', 'admin-layout-model', '__default_admin__-copy'])(
+    'treats similar uid %s as a regular Portal',
+    async (portalUid) => {
+      const service = new FlowSurfaceNavigationTargetsService(createDatabase([createPortal(portalUid)]));
 
-  it('rejects an invalid mode while resolving the default portal', async () => {
-    const service = new FlowSurfaceNavigationTargetsService(
-      createDatabase([createPortal('invalid-mode-portal', 'invalid')]),
-    );
-
-    await expect(
-      service.resolveDefaultPortal({
+      const resolved = await service.resolvePortal(portalUid, {
         actionName: 'createMenu',
+        path: 'portalUid',
         currentRoles: ['root'],
-      }),
-    ).rejects.toMatchObject({
-      status: 400,
-      options: expect.objectContaining({ ruleId: 'navigation-portal-permission-mode-invalid' }),
-    });
-  });
+      });
+
+      expect(resolved).toMatchObject({ uid: portalUid, layoutUid: ADMIN_LAYOUT_UID });
+      expect(resolved).not.toHaveProperty('routePermissionMode');
+    },
+  );
 
   it.each([
     ['missing', [createLayout(FALLBACK_LAYOUT_UID)]],
@@ -180,7 +171,7 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
     const fallbackPortalUid = 'fallback-portal';
     const service = new FlowSurfaceNavigationTargetsService(
       createDatabase(
-        [createPortal(ADMIN_LAYOUT_UID, 'layout'), createPortal(fallbackPortalUid, 'layout', FALLBACK_LAYOUT_UID)],
+        [createPortal(DEFAULT_ADMIN_MULTI_PORTAL_UID), createPortal(fallbackPortalUid, FALLBACK_LAYOUT_UID)],
         layouts,
       ),
     );
@@ -199,8 +190,8 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
   it('prefers a custom Desktop portal over a lexically earlier custom Mobile portal', async () => {
     const mobileLayoutUid = 'custom-mobile-layout';
     const desktopLayoutUid = 'custom-desktop-layout';
-    const mobilePortal = createPortal('a-mobile-portal', 'portal', mobileLayoutUid);
-    const desktopPortal = createPortal('z-desktop-portal', 'portal', desktopLayoutUid);
+    const mobilePortal = createPortal('a-mobile-portal', mobileLayoutUid);
+    const desktopPortal = createPortal('z-desktop-portal', desktopLayoutUid);
     const service = new FlowSurfaceNavigationTargetsService(
       createDatabase(
         [mobilePortal, desktopPortal],

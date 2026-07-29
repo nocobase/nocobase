@@ -113,14 +113,13 @@ describe('plugin-multi-portal route permissions', () => {
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
-  it('should use layout route permissions for a migrated layout-mode portal', async () => {
+  it('should use layout route permissions for the fixed Admin Portal', async () => {
     const resource = createMultiPortalPermissionResources({
       portals: [
         {
-          uid: 'admin-layout-model',
+          uid: '__default_admin__',
           title: 'Desktop portal',
           portalType: 'no-code',
-          routePermissionMode: 'layout',
         },
       ],
       selectedPortalUids: [],
@@ -206,7 +205,6 @@ describe('plugin-multi-portal route permissions', () => {
           uid: 'ai-workspace',
           title: 'AI workspace',
           portalType: 'ai',
-          routePermissionMode: 'portal',
         },
       ],
       selectedPortalUids: [],
@@ -249,13 +247,11 @@ describe('plugin-multi-portal route permissions', () => {
           uid: 'missing-type-workspace',
           title: 'Missing type workspace',
           portalType: null,
-          routePermissionMode: 'portal',
         },
         {
           uid: 'unknown-type-workspace',
           title: 'Unknown type workspace',
           portalType: 'unknown',
-          routePermissionMode: 'portal',
         },
       ],
       selectedPortalUids: [],
@@ -583,7 +579,6 @@ type TestPortalRecord = {
   uid: string;
   title: string;
   portalType?: string | null;
-  routePermissionMode: 'layout' | 'portal';
 };
 
 function createMultiPortalPermissionResources(options: MultiPortalPermissionResourceOptions) {
@@ -610,7 +605,6 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
       uid: 'customer-portal',
       title: 'Customer portal',
       portalType: 'no-code',
-      routePermissionMode: 'portal',
     },
   ];
   const routes = options.routes ?? [

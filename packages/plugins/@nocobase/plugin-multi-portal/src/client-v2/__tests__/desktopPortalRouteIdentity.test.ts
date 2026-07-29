@@ -35,14 +35,10 @@ function createRouteRuntime() {
   return { api, repository, request };
 }
 
-function createPortalScope(
-  portalUid: string,
-  routePermissionMode: MultiPortalRouteScopeDescriptor['routePermissionMode'] = 'portal',
-): MultiPortalRouteScopeDescriptor {
+function createPortalScope(portalUid: string): MultiPortalRouteScopeDescriptor {
   return {
     cacheKey: getMultiPortalRouteScopeCacheKey(portalUid),
     portalUid,
-    routePermissionMode,
   };
 }
 
@@ -112,8 +108,8 @@ describe('desktop portal route identity', () => {
 
   it('replaces an inherited Mobile layout scope with the active Portal identity', async () => {
     const { api, repository, request } = createRouteRuntime();
-    installMultiPortalRouteRepositoryScope(repository, () => [createPortalScope('mobile-layout-model', 'layout')]);
-    const deactivatePortal = repository.activateLayout({ uid: 'mobile-layout-model' });
+    installMultiPortalRouteRepositoryScope(repository, () => [createPortalScope('__default_mobile__')]);
+    const deactivatePortal = repository.activateLayout({ uid: '__default_mobile__' });
 
     await api.request({
       method: 'get',
@@ -134,7 +130,7 @@ describe('desktop portal route identity', () => {
       params: {
         tree: true,
         sort: 'sort',
-        portal: 'mobile-layout-model',
+        portal: '__default_mobile__',
       },
     });
   });

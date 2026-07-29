@@ -39,7 +39,6 @@ async function createPortal(
   app: MockServer,
   values: {
     uid: string;
-    routePermissionMode: 'layout' | 'portal';
     uiLayoutUid?: string;
   },
 ) {
@@ -84,10 +83,9 @@ describe('Multi Portal effective route scope', () => {
     await app.destroy();
   });
 
-  it('uses the backing layout ownership and legacy route ACL for layout mode', async () => {
+  it('uses the backing layout ownership and legacy route ACL for the fixed Admin Portal', async () => {
     const portal = await createPortal(app, {
-      uid: 'migrated-desktop',
-      routePermissionMode: 'layout',
+      uid: '__default_admin__',
     });
     const route = await createRoute(app, 'LAYOUT MODE ROUTE', 'layout-mode-route');
     await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
@@ -154,10 +152,9 @@ describe('Multi Portal effective route scope', () => {
     ).toBe(0);
   });
 
-  it('resolves a layout-mode Mobile portal through its backing layout before the legacy accessible handler', async () => {
+  it('resolves the fixed Mobile Portal through its backing layout before the legacy accessible handler', async () => {
     const portal = await createPortal(app, {
-      uid: 'migrated-mobile',
-      routePermissionMode: 'layout',
+      uid: '__default_mobile__',
       uiLayoutUid: MOBILE_LAYOUT_UID,
     });
     const mobileRoute = await createRoute(app, 'MOBILE LAYOUT MODE ROUTE', 'mobile-layout-mode-route');
@@ -205,11 +202,9 @@ describe('Multi Portal effective route scope', () => {
   it('rebuilds portal ownership and rejects list or update attempts across owners', async () => {
     const portal = await createPortal(app, {
       uid: 'portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'portal-b',
-      routePermissionMode: 'portal',
     });
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {
@@ -262,11 +257,9 @@ describe('Multi Portal effective route scope', () => {
   it('sanitizes owner fields for every route in a scoped batch update', async () => {
     const portal = await createPortal(app, {
       uid: 'batch-update-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'batch-update-portal-b',
-      routePermissionMode: 'portal',
     });
     const firstRoute = await createRoute(app, 'PORTAL A FIRST ROUTE', 'portal-a-first-batch-route');
     const secondRoute = await createRoute(app, 'PORTAL A SECOND ROUTE', 'portal-a-second-batch-route');
@@ -324,11 +317,9 @@ describe('Multi Portal effective route scope', () => {
   it('rejects a mixed-owner scoped batch update without partially updating either route', async () => {
     const portal = await createPortal(app, {
       uid: 'mixed-batch-update-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'mixed-batch-update-portal-b',
-      routePermissionMode: 'portal',
     });
     const route = await createRoute(app, 'PORTAL A ORIGINAL BATCH ROUTE', 'portal-a-original-batch-route');
     const otherRoute = await createRoute(app, 'PORTAL B ORIGINAL BATCH ROUTE', 'portal-b-original-batch-route');
@@ -413,11 +404,9 @@ describe('Multi Portal effective route scope', () => {
   it('rejects updateOrCreate matches outside the effective owner without changing either owner', async () => {
     const portal = await createPortal(app, {
       uid: 'upsert-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'upsert-portal-b',
-      routePermissionMode: 'portal',
     });
     const otherRoute = await createRoute(app, 'PORTAL B ORIGINAL ROUTE', 'shared-upsert-schema');
     await app.db.getRepository('desktopRoutes.multiPortals', otherRoute.get('id')).set({
@@ -455,11 +444,9 @@ describe('Multi Portal effective route scope', () => {
   it('revalidates a create parent after the pre-action guard before writing the route', async () => {
     const portal = await createPortal(app, {
       uid: 'create-parent-race-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'create-parent-race-portal-b',
-      routePermissionMode: 'portal',
     });
     const parent = await createRoute(app, 'CREATE PARENT RACE', 'create-parent-race');
     await app.db.getRepository('desktopRoutes.multiPortals', parent.get('id')).set({
@@ -508,11 +495,9 @@ describe('Multi Portal effective route scope', () => {
   it('revalidates an update parent after the pre-action guard before writing parentId', async () => {
     const portal = await createPortal(app, {
       uid: 'update-parent-race-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'update-parent-race-portal-b',
-      routePermissionMode: 'portal',
     });
     const route = await createRoute(app, 'UPDATE PARENT RACE ROUTE', 'update-parent-race-route');
     const parent = await createRoute(app, 'UPDATE PARENT RACE TARGET', 'update-parent-race-target');
@@ -562,11 +547,9 @@ describe('Multi Portal effective route scope', () => {
   it('revalidates an updateOrCreate match introduced after the pre-action guard', async () => {
     const portal = await createPortal(app, {
       uid: 'upsert-owner-race-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'upsert-owner-race-portal-b',
-      routePermissionMode: 'portal',
     });
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {
@@ -612,11 +595,9 @@ describe('Multi Portal effective route scope', () => {
   it('rejects a parent route outside the effective owner before creating a child', async () => {
     const portal = await createPortal(app, {
       uid: 'child-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'child-portal-b',
-      routePermissionMode: 'portal',
     });
     const otherParent = await createRoute(app, 'PORTAL B PARENT', 'portal-b-parent');
     await app.db.getRepository('desktopRoutes.multiPortals', otherParent.get('id')).set({
@@ -652,11 +633,9 @@ describe('Multi Portal effective route scope', () => {
   it('rejects a mixed-owner batch destroy without detaching or deleting any route', async () => {
     const portal = await createPortal(app, {
       uid: 'destroy-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'destroy-portal-b',
-      routePermissionMode: 'portal',
     });
     const route = await createRoute(app, 'PORTAL A DESTROY ROUTE', 'portal-a-destroy-route');
     const otherRoute = await createRoute(app, 'PORTAL B DESTROY ROUTE', 'portal-b-destroy-route');
@@ -696,11 +675,9 @@ describe('Multi Portal effective route scope', () => {
   it('deletes ownerless descendants while preserving a root shared with another Portal', async () => {
     const portal = await createPortal(app, {
       uid: 'shared-root-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'shared-root-portal-b',
-      routePermissionMode: 'portal',
     });
     const root = await createRoute(app, 'SHARED ROOT', 'shared-root');
     const ownerlessChild = await createRoute(app, 'OWNERLESS CHILD', 'ownerless-child');
@@ -777,11 +754,9 @@ describe('Multi Portal effective route scope', () => {
   it('rolls back Portal ACL cleanup when detaching a shared route owner fails', async () => {
     const portal = await createPortal(app, {
       uid: 'rollback-detach-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'rollback-detach-portal-b',
-      routePermissionMode: 'portal',
     });
     const route = await createRoute(app, 'ROLLBACK SHARED ROUTE', 'rollback-shared-route');
     await app.db.getRepository('desktopRoutes.multiPortals', route.get('id')).set({
@@ -835,10 +810,9 @@ describe('Multi Portal effective route scope', () => {
     ).toBe(2);
   });
 
-  it('moves a layout-mode route within the backing Layout scope without Portal ownership', async () => {
+  it('moves a fixed Admin Portal route within the backing Layout scope without Portal ownership', async () => {
     const portal = await createPortal(app, {
-      uid: 'layout-mode-move-portal',
-      routePermissionMode: 'layout',
+      uid: '__default_admin__',
     });
     const sourceParent = await createRoute(app, 'LAYOUT MOVE SOURCE PARENT', 'layout-move-source-parent');
     const targetParent = await createRoute(app, 'LAYOUT MOVE TARGET PARENT', 'layout-move-target-parent');
@@ -890,7 +864,6 @@ describe('Multi Portal effective route scope', () => {
   it('rolls back the parent and sort changes when a scoped move fails after its first write', async () => {
     const portal = await createPortal(app, {
       uid: 'atomic-move-portal',
-      routePermissionMode: 'portal',
     });
     const sourceParent = await createRoute(app, 'ATOMIC MOVE SOURCE PARENT', 'atomic-move-source-parent');
     const targetParent = await createRoute(app, 'ATOMIC MOVE TARGET PARENT', 'atomic-move-target-parent');
@@ -956,7 +929,6 @@ describe('Multi Portal effective route scope', () => {
   it('moves a route within its effective Portal scope', async () => {
     const portal = await createPortal(app, {
       uid: 'successful-move-portal',
-      routePermissionMode: 'portal',
     });
     const sourceParent = await createRoute(app, 'MOVE SOURCE PARENT', 'move-source-parent');
     const targetParent = await createRoute(app, 'MOVE TARGET PARENT', 'move-target-parent');
@@ -1006,11 +978,9 @@ describe('Multi Portal effective route scope', () => {
   it('rejects a scoped move to a parent owned by another Portal', async () => {
     const portal = await createPortal(app, {
       uid: 'move-parent-portal-a',
-      routePermissionMode: 'portal',
     });
     const otherPortal = await createPortal(app, {
       uid: 'move-parent-portal-b',
-      routePermissionMode: 'portal',
     });
     const sourceParent = await createRoute(app, 'MOVE PARENT A', 'move-parent-a');
     const otherParent = await createRoute(app, 'MOVE PARENT B', 'move-parent-b');
@@ -1060,7 +1030,6 @@ describe('Multi Portal effective route scope', () => {
   it('rejects empty or mixed Portal scope parameters instead of falling back to a Layout scope', async () => {
     const portal = await createPortal(app, {
       uid: 'strict-scope-portal',
-      routePermissionMode: 'portal',
     });
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {

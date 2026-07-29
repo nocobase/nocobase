@@ -13,6 +13,7 @@ import { useMemoizedFn, useRequest } from 'ahooks';
 import { Button, Checkbox, Drawer, Input, Space, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
+import { isDefaultLayoutMultiPortalUid } from '../../constants';
 import { useT } from '../locale';
 
 interface Role {
@@ -32,7 +33,6 @@ interface MultiPortalRecord {
   uid: string;
   title?: string;
   portalType?: string | null;
-  routePermissionMode?: 'layout' | 'portal';
 }
 
 interface MultiPortalPayload {
@@ -328,7 +328,7 @@ function getRoutePermissionChanges(input: {
 }
 
 function hasLayoutRoutePermissions(portal: MultiPortalRecord | undefined) {
-  return portal?.routePermissionMode === 'layout';
+  return isDefaultLayoutMultiPortalUid(portal?.uid);
 }
 
 function supportsRoutePermissions(portal: MultiPortalRecord | undefined) {

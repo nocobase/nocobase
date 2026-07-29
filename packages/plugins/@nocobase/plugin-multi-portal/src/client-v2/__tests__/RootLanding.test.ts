@@ -35,7 +35,7 @@ describe('Client V2 portal root landing', () => {
     },
   };
   const adminPortal = {
-    uid: 'admin-layout-model',
+    uid: '__default_admin__',
     routePath: '/admin',
     portalType: 'no-code',
     uiLayout: {
@@ -49,6 +49,19 @@ describe('Client V2 portal root landing', () => {
     expect(selectRootLandingPortal([aiPortal, mobilePortal])).toEqual(mobilePortal);
     expect(selectRootLandingPortal([aiPortal])).toEqual(aiPortal);
     expect(selectRootLandingPortal([])).toBeUndefined();
+  });
+
+  it('does not give similar UIDs the fixed Admin priority', () => {
+    const similarUidPortal = {
+      uid: 'admin-layout-model',
+      routePath: '/similar-admin',
+      portalType: 'no-code',
+      uiLayout: {
+        layoutType: 'mobile',
+      },
+    };
+
+    expect(selectRootLandingPortal([similarUidPortal, desktopPortal])).toEqual(desktopPortal);
   });
 
   it('ignores portals with a missing or unknown portal type', () => {

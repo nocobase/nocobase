@@ -8,6 +8,7 @@
  */
 
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
+import { DEFAULT_MOBILE_MULTI_PORTAL_UID } from '../constants';
 import { getMultiPortalRouteScopeCacheKey, installMultiPortalRouteRepositoryScope } from './routeRepositoryScope';
 
 export { getMultiPortalRouteScopeCacheKey };
@@ -20,7 +21,6 @@ export type MultiPortalRuntimeRecord = {
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
-  routePermissionMode: 'layout' | 'portal';
   uiLayout?: {
     layoutType?: string;
     routeName?: string;
@@ -77,18 +77,14 @@ function isRuntimePortal(record: MultiPortalRuntimeRecord) {
   return record.portalType === 'no-code';
 }
 
-function isRoutePermissionMode(value: unknown): value is MultiPortalRuntimeRecord['routePermissionMode'] {
-  return value === 'layout' || value === 'portal';
-}
-
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
-  if (!record.enabled || !isRuntimePortal(record) || !isRoutePermissionMode(record.routePermissionMode)) {
+  if (!record.enabled || !isRuntimePortal(record)) {
     return null;
   }
 
   const layoutType = record.uiLayout?.layoutType || '';
   const codeDefinedOptions =
-    layoutType === UI_LAYOUT_TYPE_MOBILE && record.routePermissionMode === 'layout'
+    layoutType === UI_LAYOUT_TYPE_MOBILE && record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID
       ? layoutModeMobileRegisterOptions
       : layoutRegisterOptionsByType[layoutType];
   if (!codeDefinedOptions) {
@@ -126,9 +122,6 @@ export function registerMultiPortalRecords(
   for (const record of records) {
     if (!record.enabled || !isRuntimePortal(record)) {
       continue;
-    }
-    if (!isRoutePermissionMode(record.routePermissionMode)) {
-      throw new Error(`Portal '${record.uid}' has an invalid route permission mode.`);
     }
     const options = toMultiPortalLayoutRegisterOptions(record);
     if (!options) {
@@ -179,7 +172,6 @@ export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationAp
     .map((record) => ({
       cacheKey: getMultiPortalRouteScopeCacheKey(record.uid),
       portalUid: record.uid,
-      routePermissionMode: record.routePermissionMode,
     }));
   installMultiPortalRouteRepositoryScope(getRouteRepository(app), () => registeredPortalScopes);
 }

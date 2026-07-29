@@ -33,7 +33,6 @@ const portal = {
   routePath: '/customer',
   authCheck: true,
   enabled: true,
-  routePermissionMode: 'portal',
   uiLayout: {
     layoutType: 'desktop',
   },
@@ -64,15 +63,7 @@ describe('Multi Portal runtime registration failures', () => {
     ).rejects.toBe(error);
   });
 
-  it('rejects invalid mode, unknown layout type, duplicate uid, and duplicate route name before registration', () => {
-    expect(() =>
-      registerMultiPortalRecords(createLayoutManager(), [
-        {
-          ...portal,
-          routePermissionMode: 'invalid' as never,
-        },
-      ]),
-    ).toThrow("Portal 'customer-portal' has an invalid route permission mode.");
+  it('rejects unknown layout type, duplicate uid, and duplicate route name before registration', () => {
     expect(() =>
       registerMultiPortalRecords(createLayoutManager(), [
         {
@@ -114,10 +105,9 @@ describe('Multi Portal runtime registration failures', () => {
   it('keeps backing Layout identity out of the Client Portal scope descriptor', async () => {
     const layoutPortal = {
       ...portal,
-      uid: 'upgraded-desktop-portal',
+      uid: '__default_admin__',
       portalName: 'admin',
       routePath: '/admin',
-      routePermissionMode: 'layout',
     } satisfies MultiPortalRuntimeRecord;
 
     await registerMultiPortalsFromApi({
@@ -135,9 +125,8 @@ describe('Multi Portal runtime registration failures', () => {
       | undefined;
     expect(getScopes?.()).toEqual([
       {
-        cacheKey: 'portal:upgraded-desktop-portal',
-        portalUid: 'upgraded-desktop-portal',
-        routePermissionMode: 'layout',
+        cacheKey: 'portal:__default_admin__',
+        portalUid: '__default_admin__',
       },
     ]);
   });

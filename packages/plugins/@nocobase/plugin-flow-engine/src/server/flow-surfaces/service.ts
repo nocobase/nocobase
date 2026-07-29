@@ -1903,15 +1903,15 @@ export class FlowSurfacesService {
 
   private buildDesktopRouteScopeForPortal(portal: FlowSurfaceResolvedMultiPortal): FlowSurfaceDesktopRouteScope {
     return {
-      portalUids: portal.routePermissionMode === 'portal' ? [portal.uid] : [],
-      layoutUids: portal.routePermissionMode === 'layout' ? [portal.layoutUid] : [],
+      portalUids: portal.routeScopeKind === 'portal' ? [portal.uid] : [],
+      layoutUids: portal.routeScopeKind === 'layout' ? [portal.layoutUid] : [],
       selectedPortal: portal,
       layoutType: portal.layoutType,
     };
   }
 
   private getPortalRouteFilterUid(portal: FlowSurfaceResolvedMultiPortal | undefined) {
-    return portal?.routePermissionMode === 'portal' ? portal.uid : undefined;
+    return portal?.routeScopeKind === 'portal' ? portal.uid : undefined;
   }
 
   private async assertRouteBelongsToResolvedPortal(
@@ -1921,7 +1921,7 @@ export class FlowSurfacesService {
     path: string,
     transaction?: Transaction,
   ) {
-    if (portal.routePermissionMode === 'layout') {
+    if (portal.routeScopeKind === 'layout') {
       await this.assertDesktopRouteBelongsToUiLayout(actionName, route, portal.layoutUid, path, transaction);
       return;
     }
@@ -1972,7 +1972,7 @@ export class FlowSurfacesService {
         transaction: options.transaction,
       });
       return {
-        layoutUids: portal.routePermissionMode === 'layout' ? [portal.layoutUid] : undefined,
+        layoutUids: portal.routeScopeKind === 'layout' ? [portal.layoutUid] : undefined,
         portalUid: this.getPortalRouteFilterUid(portal),
       };
     }

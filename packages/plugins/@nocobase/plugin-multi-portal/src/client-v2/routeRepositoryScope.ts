@@ -31,13 +31,11 @@ type NocoBaseDesktopRoute = {
 export type MultiPortalRouteScopeDescriptor = {
   cacheKey: string;
   portalUid: string;
-  routePermissionMode: 'layout' | 'portal';
 };
 
 type UiLayoutRouteScope = {
   cacheKey: string;
   portalUid?: undefined;
-  routePermissionMode?: undefined;
   uiLayoutUid: string;
 };
 
@@ -138,8 +136,7 @@ function normalizePortalScopes(portalScopes: () => MultiPortalRouteScopeDescript
           typeof scope?.portalUid === 'string' &&
           !!scope.portalUid.trim() &&
           typeof scope.cacheKey === 'string' &&
-          !!scope.cacheKey.trim() &&
-          (scope.routePermissionMode === 'layout' || scope.routePermissionMode === 'portal'),
+          !!scope.cacheKey.trim(),
       )
       .map((scope) => [scope.portalUid, scope]),
   );

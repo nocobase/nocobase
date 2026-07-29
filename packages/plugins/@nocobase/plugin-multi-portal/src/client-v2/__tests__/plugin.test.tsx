@@ -26,14 +26,10 @@ import packageJson from '../../../package.json';
 const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
 const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 
-function createPortalScope(
-  portalUid: string,
-  routePermissionMode: MultiPortalRouteScopeDescriptor['routePermissionMode'] = 'portal',
-): MultiPortalRouteScopeDescriptor {
+function createPortalScope(portalUid: string): MultiPortalRouteScopeDescriptor {
   return {
     cacheKey: getMultiPortalRouteScopeCacheKey(portalUid),
     portalUid,
-    routePermissionMode,
   };
 }
 
@@ -45,7 +41,6 @@ const desktopPortal: MultiPortalRuntimeRecord = {
   routePath: '/portal-desktop',
   authCheck: true,
   enabled: true,
-  routePermissionMode: 'portal',
   uiLayout: {
     layoutType: UI_LAYOUT_TYPE_DESKTOP,
     routeName: 'admin',
@@ -201,10 +196,9 @@ describe('PluginMultiPortalClientV2', () => {
     expect(
       toMultiPortalLayoutRegisterOptions({
         ...desktopPortal,
-        uid: 'mobile-layout-model',
+        uid: '__default_mobile__',
         portalName: 'mobile',
         routePath: '/mobile',
-        routePermissionMode: 'layout',
         uiLayout: {
           layoutType: UI_LAYOUT_TYPE_MOBILE,
           routeName: 'mobile',
@@ -214,7 +208,7 @@ describe('PluginMultiPortalClientV2', () => {
     ).toEqual({
       routeName: 'mobile',
       routePath: '/mobile',
-      uid: 'mobile-layout-model',
+      uid: '__default_mobile__',
       layoutModelClass: 'MobileLayoutModel',
       rootPageModelClass: 'MobileRootPageModel',
       childPageModelClass: 'MobileChildPageModel',
@@ -222,9 +216,6 @@ describe('PluginMultiPortalClientV2', () => {
     });
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, enabled: false })).toBeNull();
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, portalType: 'ai' })).toBeNull();
-    expect(
-      toMultiPortalLayoutRegisterOptions({ ...desktopPortal, routePermissionMode: 'invalid' as never }),
-    ).toBeNull();
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, uiLayout: { layoutType: 'unknown' } })).toBeNull();
   });
 
@@ -242,12 +233,11 @@ describe('PluginMultiPortalClientV2', () => {
         routePath: '/mobile',
       },
     };
-    const layoutModeMobilePortal: MultiPortalRuntimeRecord = {
+    const fixedMobilePortal: MultiPortalRuntimeRecord = {
       ...mobilePortal,
-      uid: 'mobile-layout-model',
+      uid: '__default_mobile__',
       portalName: 'mobile',
       routePath: '/mobile',
-      routePermissionMode: 'layout',
     };
     const addPermissionsTab = vi.fn();
     const app = {
@@ -276,7 +266,7 @@ describe('PluginMultiPortalClientV2', () => {
             data: [
               desktopPortal,
               mobilePortal,
-              layoutModeMobilePortal,
+              fixedMobilePortal,
               { ...desktopPortal, uid: 'ai-portal', portalType: 'ai' },
               { ...desktopPortal, uid: 'disabled-portal', enabled: false },
             ],
@@ -361,7 +351,7 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.layoutManager.registerLayout).toHaveBeenNthCalledWith(3, {
       routeName: 'mobile',
       routePath: '/mobile',
-      uid: 'mobile-layout-model',
+      uid: '__default_mobile__',
       layoutModelClass: 'MobileLayoutModel',
       rootPageModelClass: 'MobileRootPageModel',
       childPageModelClass: 'MobileChildPageModel',
@@ -738,12 +728,12 @@ describe('PluginMultiPortalClientV2', () => {
     expect(tabModel.props.route).not.toHaveProperty('uiLayouts');
   });
 
-  it('should attach portal identity to layout-mode mobile root route requests', async () => {
+  it('should attach the fixed Mobile Portal identity to root route requests', async () => {
     const { MultiPortalMobileRootPageModel } = await import('../models/MultiPortalMobilePageModels');
     const flowEngine = new FlowEngine();
     flowEngine.context.defineProperty('layout', {
       value: {
-        uid: 'mobile-layout-model',
+        uid: '__default_mobile__',
       },
     });
     const request = vi.fn().mockResolvedValue({});
@@ -781,7 +771,7 @@ describe('PluginMultiPortalClientV2', () => {
       url: 'desktopRoutes:update?filter[id]=mobile-layout-root-route',
       method: 'post',
       params: {
-        portal: 'mobile-layout-model',
+        portal: '__default_mobile__',
       },
       data: {
         enableTabs: true,
@@ -791,7 +781,7 @@ describe('PluginMultiPortalClientV2', () => {
       url: '/desktopRoutes:listAccessible',
       method: 'get',
       params: {
-        portal: 'mobile-layout-model',
+        portal: '__default_mobile__',
       },
     });
   });
@@ -819,7 +809,7 @@ describe('PluginMultiPortalClientV2', () => {
 
     installMultiPortalRouteRepositoryScope(repository, () => [
       createPortalScope('customer-portal'),
-      createPortalScope('mobile-layout-model', 'layout'),
+      createPortalScope('__default_mobile__'),
     ]);
 
     const deactivatePortal = repository.activateLayout({ uid: 'customer-portal' });
@@ -846,10 +836,10 @@ describe('PluginMultiPortalClientV2', () => {
     await repository.moveRoute({ sourceId: 13, targetId: 14, refreshAfterMove: false });
     deactivatePortal();
 
-    const deactivateLayoutModePortal = repository.activateLayout({ uid: 'mobile-layout-model' });
+    const deactivateFixedMobilePortal = repository.activateLayout({ uid: '__default_mobile__' });
     await repository.refreshAccessible();
     expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['layout-page']);
-    deactivateLayoutModePortal();
+    deactivateFixedMobilePortal();
 
     const reactivatePortal = repository.activateLayout({ uid: 'customer-portal' });
     expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['portal-page']);
@@ -868,7 +858,7 @@ describe('PluginMultiPortalClientV2', () => {
       params: {
         tree: true,
         sort: 'sort',
-        portal: 'mobile-layout-model',
+        portal: '__default_mobile__',
       },
     });
     expect(create).toHaveBeenCalledWith({

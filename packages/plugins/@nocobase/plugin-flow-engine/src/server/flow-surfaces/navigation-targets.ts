@@ -12,13 +12,11 @@ import { throwBadRequest, throwForbidden } from './errors';
 
 export const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
 export const DEFAULT_MOBILE_UI_LAYOUT_UID = 'mobile-layout-model';
-/** @deprecated Portal identity must be read from persisted records. */
 export const DEFAULT_ADMIN_MULTI_PORTAL_UID = '__default_admin__';
-/** @deprecated Portal identity must be read from persisted records. */
 export const DEFAULT_MOBILE_MULTI_PORTAL_UID = '__default_mobile__';
 
 export type FlowSurfaceNavigationRequestRoles = readonly string[] | string;
-type FlowSurfacePortalRoutePermissionMode = 'layout' | 'portal';
+type FlowSurfacePortalRouteScopeKind = 'layout' | 'portal';
 
 export type FlowSurfaceResolvedMultiPortal = {
   uid: string;
@@ -31,7 +29,7 @@ export type FlowSurfaceResolvedMultiPortal = {
   layoutUid: string;
   layoutType?: string;
   portalType: 'no-code';
-  routePermissionMode: FlowSurfacePortalRoutePermissionMode;
+  routeScopeKind: FlowSurfacePortalRouteScopeKind;
 };
 
 export type FlowSurfaceNavigationTarget = {
@@ -86,6 +84,10 @@ function normalizeRoles(currentRoles?: FlowSurfaceNavigationRequestRoles) {
 
 function normalizeRelationRouteId(routeId: unknown): TargetKey | undefined {
   return routeId === null || typeof routeId === 'undefined' ? undefined : (routeId as TargetKey);
+}
+
+function isDefaultLayoutMultiPortalUid(uid: unknown) {
+  return uid === DEFAULT_ADMIN_MULTI_PORTAL_UID || uid === DEFAULT_MOBILE_MULTI_PORTAL_UID;
 }
 
 export class FlowSurfaceNavigationTargetsService {
@@ -146,7 +148,7 @@ export class FlowSurfaceNavigationTargetsService {
       filter: {
         enabled: true,
       },
-      fields: ['uid', 'portalType', 'portalName', 'routePath', 'uiLayoutUid', 'routePermissionMode'],
+      fields: ['uid', 'portalType', 'portalName', 'routePath', 'uiLayoutUid'],
       appends: ['uiLayout'],
       sort: ['uid'],
       transaction: options.transaction,
@@ -163,19 +165,8 @@ export class FlowSurfaceNavigationTargetsService {
 
     for (const candidate of candidates) {
       const portalUid = readStringField(candidate, 'uid');
-      const routePermissionMode = readStringField(candidate, 'routePermissionMode');
       if (!portalUid) {
         continue;
-      }
-      if (routePermissionMode !== 'layout' && routePermissionMode !== 'portal') {
-        throwBadRequest(
-          `flowSurfaces ${options.actionName} portal '${portalUid}' has an invalid route permission mode`,
-          {
-            ruleId: 'navigation-portal-permission-mode-invalid',
-            path: 'navigation',
-            details: { portalUid, routePermissionMode: routePermissionMode || null },
-          },
-        );
       }
       const layoutUid = readStringField(candidate, 'uiLayoutUid');
       if (!layoutUid || !this.db.getCollection('uiLayouts')) {
@@ -190,9 +181,8 @@ export class FlowSurfaceNavigationTargetsService {
         continue;
       }
       if (
-        routePermissionMode === 'layout' ||
-        (routePermissionMode === 'portal' &&
-          (await this.canAccessPortal(portalUid, options.currentRoles, options.transaction)))
+        isDefaultLayoutMultiPortalUid(portalUid) ||
+        (await this.canAccessPortal(portalUid, options.currentRoles, options.transaction))
       ) {
         return this.resolvePortal(portalUid, {
           ...options,
@@ -228,18 +218,7 @@ export class FlowSurfaceNavigationTargetsService {
     }
     const portal = await this.db.getRepository('multiPortals').findOne({
       filter: { uid: portalUid },
-      fields: [
-        'uid',
-        'title',
-        'icon',
-        'portalType',
-        'portalName',
-        'routePath',
-        'authCheck',
-        'enabled',
-        'uiLayoutUid',
-        'routePermissionMode',
-      ],
+      fields: ['uid', 'title', 'icon', 'portalType', 'portalName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
       transaction: options.transaction,
     });
     if (!portal) {
@@ -264,15 +243,6 @@ export class FlowSurfaceNavigationTargetsService {
         details: { portalUid, portalType: portalType || null },
       });
     }
-    const routePermissionMode = readStringField(portal, 'routePermissionMode');
-    if (routePermissionMode !== 'layout' && routePermissionMode !== 'portal') {
-      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has an invalid route permission mode`, {
-        ruleId: 'navigation-portal-permission-mode-invalid',
-        path: options.path,
-        details: { portalUid, routePermissionMode: routePermissionMode || null },
-      });
-    }
-
     const layoutUid = readStringField(portal, 'uiLayoutUid');
     if (!layoutUid || !this.db.getCollection('uiLayouts')) {
       throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has no available backing UI layout`, {
@@ -306,8 +276,11 @@ export class FlowSurfaceNavigationTargetsService {
         },
       );
     }
+    const routeScopeKind: FlowSurfacePortalRouteScopeKind = isDefaultLayoutMultiPortalUid(portalUid)
+      ? 'layout'
+      : 'portal';
     if (
-      routePermissionMode === 'portal' &&
+      routeScopeKind === 'portal' &&
       !(await this.canAccessPortal(portalUid, options.currentRoles, options.transaction))
     ) {
       throwForbidden(
@@ -332,7 +305,7 @@ export class FlowSurfaceNavigationTargetsService {
       layoutUid,
       layoutType: readStringField(layout, 'layoutType'),
       portalType,
-      routePermissionMode,
+      routeScopeKind,
     };
   }
 
@@ -481,18 +454,7 @@ export class FlowSurfaceNavigationTargetsService {
 
     const portals = await this.db.getRepository('multiPortals').find({
       filter: { enabled: true },
-      fields: [
-        'uid',
-        'title',
-        'icon',
-        'portalType',
-        'portalName',
-        'routePath',
-        'authCheck',
-        'enabled',
-        'uiLayoutUid',
-        'routePermissionMode',
-      ],
+      fields: ['uid', 'title', 'icon', 'portalType', 'portalName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
       sort: ['uid'],
       transaction,
     });
@@ -501,22 +463,11 @@ export class FlowSurfaceNavigationTargetsService {
       const portalUid = readStringField(portal, 'uid');
       const layoutUid = readStringField(portal, 'uiLayoutUid');
       const portalType = readStringField(portal, 'portalType');
-      const routePermissionMode = readStringField(portal, 'routePermissionMode');
       if (!portalUid || portalType !== 'no-code') {
         continue;
       }
-      if (routePermissionMode !== 'layout' && routePermissionMode !== 'portal') {
-        throwBadRequest(
-          `flowSurfaces listNavigationTargets portal '${portalUid}' has an invalid route permission mode`,
-          {
-            ruleId: 'navigation-portal-permission-mode-invalid',
-            path: 'navigation',
-            details: { portalUid, routePermissionMode: routePermissionMode || null },
-          },
-        );
-      }
       if (
-        (!isRoot && routePermissionMode === 'portal' && !accessiblePortalUids.has(portalUid)) ||
+        (!isRoot && !isDefaultLayoutMultiPortalUid(portalUid) && !accessiblePortalUids.has(portalUid)) ||
         !layoutUid ||
         !this.db.getCollection('uiLayouts')
       ) {
@@ -557,24 +508,13 @@ export class FlowSurfaceNavigationTargetsService {
   private getPortalPriority(portal: unknown) {
     const uiLayout = readRecordField(portal, 'uiLayout');
     const layoutType = readStringField(portal, 'layoutType') || readStringField(uiLayout, 'layoutType');
-    if (readStringField(portal, 'uid') === DEFAULT_ADMIN_UI_LAYOUT_UID) {
+    if (readStringField(portal, 'uid') === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
       return 0;
     }
-    if (readStringField(portal, 'portalName') === 'admin') {
+    if (layoutType !== 'mobile') {
       return 1;
     }
-    if (readStringField(portal, 'routePath') === '/admin') {
-      return 2;
-    }
-    if (
-      (readStringField(portal, 'layoutUid') || readStringField(portal, 'uiLayoutUid')) === DEFAULT_ADMIN_UI_LAYOUT_UID
-    ) {
-      return 3;
-    }
-    if (layoutType !== 'mobile') {
-      return 4;
-    }
-    return 5;
+    return 2;
   }
 
   private async canAccessPortal(

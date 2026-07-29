@@ -11,6 +11,7 @@ import { useApp, type Application } from '@nocobase/client-v2';
 import { Flex, Result, Spin } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { DEFAULT_ADMIN_MULTI_PORTAL_UID } from '../constants';
 import { useT } from './locale';
 import { getMultiPortalRouteUrl } from './routeUrl';
 
@@ -27,10 +28,8 @@ type RootLandingPortalListBody = {
   data?: RootLandingPortal[];
 };
 
-const ADMIN_PORTAL_UID = 'admin-layout-model';
-
 function getRootLandingPriority(portal: RootLandingPortal) {
-  if (portal.uid === ADMIN_PORTAL_UID && portal.portalType === 'no-code') {
+  if (portal.uid === DEFAULT_ADMIN_MULTI_PORTAL_UID && portal.portalType === 'no-code') {
     return 0;
   }
   if (portal.portalType === 'no-code' && portal.uiLayout?.layoutType === 'desktop') {

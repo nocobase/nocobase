@@ -404,7 +404,6 @@ describe('plugin-multi-portal settings page', () => {
           data: [
             {
               ...portalValues,
-              routePermissionMode: 'layout',
               uiLayout: {
                 layoutType: 'mobile',
                 title: 'Mobile layout',

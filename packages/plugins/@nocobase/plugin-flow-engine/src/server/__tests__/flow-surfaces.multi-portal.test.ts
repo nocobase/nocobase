@@ -17,7 +17,7 @@ import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from '
 
 const ADMIN_LAYOUT_UID = 'admin-layout-model';
 const MOBILE_LAYOUT_UID = 'mobile-layout-model';
-const ADMIN_LAYOUT_PORTAL_UID = ADMIN_LAYOUT_UID;
+const ADMIN_LAYOUT_PORTAL_UID = '__default_admin__';
 const DESKTOP_PORTAL_UID = 'flow-surfaces-desktop-portal';
 const SECOND_DESKTOP_PORTAL_UID = 'flow-surfaces-second-desktop-portal';
 const MOBILE_PORTAL_UID = 'flow-surfaces-mobile-portal';
@@ -40,7 +40,6 @@ function registerMultiPortalFixture(app: MockServer) {
       { name: 'routePath', type: 'string', allowNull: false },
       { name: 'authCheck', type: 'boolean', defaultValue: true, allowNull: false },
       { name: 'enabled', type: 'boolean', defaultValue: true, allowNull: false },
-      { name: 'routePermissionMode', type: 'string', defaultValue: 'portal', allowNull: false },
       { name: 'uiLayoutUid', type: 'string', allowNull: false },
       {
         type: 'belongsTo',
@@ -222,7 +221,6 @@ describe('flowSurfaces Multi-portal integration', () => {
       routePath: '/admin',
       authCheck: true,
       enabled: true,
-      routePermissionMode: 'layout',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
@@ -234,7 +232,6 @@ describe('flowSurfaces Multi-portal integration', () => {
       routePath: '/flow-surfaces-operations',
       authCheck: true,
       enabled: true,
-      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
@@ -246,7 +243,6 @@ describe('flowSurfaces Multi-portal integration', () => {
       routePath: '/flow-surfaces-secondary',
       authCheck: true,
       enabled: true,
-      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
@@ -258,7 +254,6 @@ describe('flowSurfaces Multi-portal integration', () => {
       routePath: '/flow-surfaces-mobile',
       authCheck: true,
       enabled: true,
-      routePermissionMode: 'portal',
       uiLayoutUid: MOBILE_LAYOUT_UID,
     });
     await createPortal(app, {
@@ -269,7 +264,6 @@ describe('flowSurfaces Multi-portal integration', () => {
       routePath: '/flow-surfaces-disabled',
       authCheck: true,
       enabled: false,
-      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
@@ -281,7 +275,6 @@ describe('flowSurfaces Multi-portal integration', () => {
       routePath: '/flow-surfaces-ai',
       authCheck: true,
       enabled: true,
-      routePermissionMode: 'portal',
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await app.db.getRepository('roles').create({
@@ -354,11 +347,10 @@ describe('flowSurfaces Multi-portal integration', () => {
     expect(targets.targets.some((target: any) => target.uid === SECOND_DESKTOP_PORTAL_UID)).toBe(false);
     expect(targets.targets.some((target: any) => target.uid === DISABLED_PORTAL_UID)).toBe(false);
     expect(targets.targets.some((target: FlowSurfaceNavigationTarget) => target.uid === AI_PORTAL_UID)).toBe(false);
-    expect(targets.targets.some((target: any) => target.uid === '__default_admin__')).toBe(false);
     expect(targets.targets.some((target: any) => target.uid === '__default_mobile__')).toBe(false);
   });
 
-  it('should create layout-mode portal routes through the backing layout permission model', async () => {
+  it('should create fixed Admin Portal routes through the backing layout permission model', async () => {
     const groupTitle = `Layout-mode portal group ${Date.now()}`;
     const pageTitle = `Layout-mode portal page ${Date.now()}`;
     const created = getData(
@@ -453,32 +445,21 @@ describe('flowSurfaces Multi-portal integration', () => {
   });
 
   it('should prefer the canonical Admin no-code portal for implicit route creation', async () => {
-    await app.db.getRepository('multiPortals').update({
-      filterByTk: ADMIN_LAYOUT_PORTAL_UID,
-      values: { routePermissionMode: 'portal' },
-    });
-    try {
-      const blueprint = buildMarkdownBlueprint(
-        ADMIN_LAYOUT_PORTAL_UID,
-        `Implicit Admin portal group ${Date.now()}`,
-        `Implicit Admin portal page ${Date.now()}`,
-      );
-      delete (blueprint.navigation as { portalUid?: string }).portalUid;
-      const created = getData(
-        await rootAgent.resource('flowSurfaces').applyBlueprint({
-          values: blueprint,
-        }),
-      );
+    const blueprint = buildMarkdownBlueprint(
+      ADMIN_LAYOUT_PORTAL_UID,
+      `Implicit Admin portal group ${Date.now()}`,
+      `Implicit Admin portal page ${Date.now()}`,
+    );
+    delete (blueprint.navigation as { portalUid?: string }).portalUid;
+    const created = getData(
+      await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: blueprint,
+      }),
+    );
 
-      const pageScope = await readRouteScope(app, created.surface.pageRoute.id);
-      expect(pageScope.portalUids).toEqual([ADMIN_LAYOUT_PORTAL_UID]);
-      expect(pageScope.layoutUids).toEqual([]);
-    } finally {
-      await app.db.getRepository('multiPortals').update({
-        filterByTk: ADMIN_LAYOUT_PORTAL_UID,
-        values: { routePermissionMode: 'layout' },
-      });
-    }
+    const pageScope = await readRouteScope(app, created.surface.pageRoute.id);
+    expect(pageScope.portalUids).toEqual([]);
+    expect(pageScope.layoutUids).toEqual([ADMIN_LAYOUT_UID]);
   });
 
   it('should create desktop portal group, page and tabs as portal-only routes with role grants', async () => {
