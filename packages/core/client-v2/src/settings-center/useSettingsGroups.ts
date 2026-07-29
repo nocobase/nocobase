@@ -72,10 +72,10 @@ export function useSettingsGroups() {
     return groups.some((group) => group.key === key) ? key : groups[0]?.key ?? null;
   }, [currentTopLevelSetting, groups]);
 
-  const activeGroupSettings = useMemo(
-    () => groups.find((group) => group.key === activeGroupKey)?.settings ?? [],
-    [activeGroupKey, groups],
-  );
+  const activeGroup = useMemo(() => groups.find((group) => group.key === activeGroupKey), [activeGroupKey, groups]);
+  const activeGroupSettings = activeGroup?.settings ?? [];
+  /** 当前分组的分割线位置：画在第几项之后，0 表示不画 */
+  const activeGroupLeadCount = activeGroup?.leadCount ?? 0;
 
   /**
    * 计算某个分组被点击后的落点。
@@ -96,6 +96,7 @@ export function useSettingsGroups() {
 
   return {
     activeGroupKey,
+    activeGroupLeadCount,
     activeGroupSettings,
     allSettings,
     currentSetting,

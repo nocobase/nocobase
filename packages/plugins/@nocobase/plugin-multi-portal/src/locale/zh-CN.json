@@ -126,6 +126,8 @@
   "Replace cover": "更换封面",
   "Used as the cover placeholder when no cover is uploaded.": "没有上传封面时，用它作为封面占位。",
   "Used in the access path.": "用于访问路径。",
-  "Optional. Fill it in to import an existing repository — the title and name below are filled in for you. Leave it empty to manage the source code in NocoBase.": "可选。填写后会自动带出下面的标题和名称，可再修改；留空则源码托管在 NocoBase 里。",
-  "Shown on the portal card. A 16:9 image works best.": "显示在 Portal 卡片上，建议使用 16:9 的图片。"
+  "Shown on the portal card. A 16:9 image works best.": "显示在 Portal 卡片上，建议使用 16:9 的图片。",
+  "Device": "设备",
+  "No-code portals render with the components of this device; AI portals use it for grouping.": "无代码 Portal 按此选择组件形态；AI Portal 用它做归类。",
+  "The title and name below are filled in from the repository name.": "下面的标题和名称会按仓库名自动填写。"
 }

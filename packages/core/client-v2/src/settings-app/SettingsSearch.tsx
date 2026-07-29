@@ -109,6 +109,12 @@ export const SettingsSearch: React.FC = observer(() => {
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
+      // 页面内组件（代码编辑器之类）可能自己就用 Cmd/Ctrl+K；它们 preventDefault 之后
+      // 这个 window 级监听器不该再抢一次。
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (event.key?.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         openPalette();

@@ -47,42 +47,26 @@ export function isDarkColor(color?: string) {
 }
 
 /**
- * NocoBase 主题里跟顶栏有关的自定义 token。
- *
- * 这些不在 antd 的 `GlobalToken` 里，由主题编辑器写入，业务端顶栏也读同一套。
- */
-type SettingsHeaderToken = GlobalToken & {
-  colorBgHeader?: string;
-  colorTextHeaderMenu?: string;
-  colorTextHeaderMenuHover?: string;
-  colorTextHeaderMenuActive?: string;
-  colorBgHeaderMenuHover?: string;
-  colorBgHeaderMenuActive?: string;
-};
-
-/**
  * 取顶栏配色。
  *
- * 设置中心顶栏跟随系统主题（含主题编辑器里改过的配色），与业务端顶栏保持一致，
- * 这样 logo、顶栏图标不需要各自再做一套反色处理。
+ * 设置中心的顶栏刻意**不跟随**主题编辑器里的 `colorBgHeader`：那套深色顶栏是给业务端的，
+ * 设置中心用容器底色（浅色主题下就是白色）+ 一条细分割线，和业务端在视觉上分开。
+ * 文字和图标一律走正文色，深色主题下由 `colorBgContainer` 自动翻成浅色。
  *
  * @param {GlobalToken} token 外层主题 token
  * @returns 顶栏底色、文字色、hover / active 色，以及顶栏是否为深色
  */
 export function getSettingsHeaderColors(token: GlobalToken) {
-  const headerToken = token as SettingsHeaderToken;
-  const bg = headerToken.colorBgHeader || token.colorBgContainer;
-  const dark = isDarkColor(bg);
-  const fallbackText = dark ? 'rgba(255, 255, 255, 0.85)' : token.colorText;
+  const bg = token.colorBgContainer;
 
   return {
     bg,
-    dark,
-    text: headerToken.colorTextHeaderMenu || fallbackText,
-    textHover: headerToken.colorTextHeaderMenuHover || headerToken.colorTextHeaderMenu || fallbackText,
-    textActive: headerToken.colorTextHeaderMenuActive || headerToken.colorTextHeaderMenu || fallbackText,
-    bgHover: headerToken.colorBgHeaderMenuHover || (dark ? 'rgba(255, 255, 255, 0.12)' : token.colorFillQuaternary),
-    bgActive: headerToken.colorBgHeaderMenuActive || (dark ? 'rgba(255, 255, 255, 0.16)' : token.colorFillQuaternary),
+    dark: isDarkColor(bg),
+    text: token.colorText,
+    textHover: token.colorText,
+    textActive: token.colorText,
+    bgHover: token.colorFillQuaternary,
+    bgActive: token.colorFillQuaternary,
   };
 }
 
@@ -142,6 +126,13 @@ export function buildSettingsNeutralTheme(token: GlobalToken): ThemeConfig {
       colorLinkActive: primary,
       // 主色是中性灰：深色主题下它是浅灰，压在其上的文字必须反成深色，否则主按钮白字白底。
       colorTextLightSolid: dark ? NEUTRAL_PRIMARY_LIGHT : '#ffffff',
+      // 顶栏图标（帮助、用户中心、pinned 插件）默认按深色顶栏取浅色；
+      // 这里的顶栏是灰白的，必须翻成正文色，否则整排图标白底白字看不见。
+      colorTextHeaderMenu: headerColors.text,
+      colorTextHeaderMenuHover: headerColors.textHover,
+      colorTextHeaderMenuActive: headerColors.textActive,
+      colorBgHeaderMenuHover: headerColors.bgHover,
+      colorBgHeaderMenuActive: headerColors.bgActive,
     } as ThemeConfig['token'],
     components: {
       Layout: {

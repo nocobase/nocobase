@@ -84,7 +84,7 @@ describe('SettingsShell', () => {
     expect(screen.queryByTestId('notifications-button')).not.toBeInTheDocument();
   });
 
-  it('follows the shared header color instead of pinning its own', () => {
+  it('keeps its neutral header instead of following the business-side header color', () => {
     render(
       <ConfigProvider
         theme={
@@ -104,7 +104,8 @@ describe('SettingsShell', () => {
       </ConfigProvider>,
     );
 
-    expect(screen.getByRole('banner')).toHaveStyle({ background: '#001529' });
+    // 主题编辑器里的深色顶栏只作用于业务端；设置中心固定用容器底色。
+    expect(screen.getByRole('banner')).toHaveStyle({ background: '#ffffff' });
   });
 
   it('places the settings content and embed container side by side below the header', () => {

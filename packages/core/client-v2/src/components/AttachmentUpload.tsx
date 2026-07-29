@@ -253,7 +253,9 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = (props) => {
       beforeUpload={beforeUpload}
       className={cx('nb-attachment-upload', sizeClassName)}
       customRequest={handleUpload}
-      disabled={disabled}
+      // 上传期间一并禁用：否则可以在第一个请求返回前再选一个文件，
+      // 两个请求谁后返回谁覆盖 onChange，最终留下的不一定是用户最后选的那张。
+      disabled={disabled || uploading}
       fileList={fileList}
       listType="picture-card"
       maxCount={1}

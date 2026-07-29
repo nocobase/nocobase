@@ -9,7 +9,7 @@
 
 import { observer } from '@nocobase/flow-engine';
 import { ConfigProvider, Menu, theme as antdTheme } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
@@ -27,8 +27,8 @@ const navStyle: React.CSSProperties = {
 /**
  * 设置中心顶栏的一级导航。
  *
- * 只铺分组（应用 / 数据 / 自动化 / 用户与权限 / 系统），
- * 分组内部的二三级菜单由左侧栏承担。
+ * 应用、插件管理各自只有一个页面，直接当一级入口；其余全部收在「系统设置」下，
+ * 鼠标移上去展开下拉，也可以点进去从左栏走。
  */
 export const SettingsGroupNav: React.FC = observer(() => {
   const { t } = useTranslation();
@@ -36,12 +36,62 @@ export const SettingsGroupNav: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = antdTheme.useToken();
-  const { groups, activeGroupKey, getGroupEntryPath } = useSettingsGroups();
+  const { groups, activeGroupKey, currentTopLevelSetting, getGroupEntryPath } = useSettingsGroups();
   const headerMenuTheme = useMemo(() => buildSettingsHeaderMenuTheme(token), [token]);
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上不该出现设置导航。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
 
-  const items = useMemo(() => groups.map((group) => ({ key: group.key, label: t(group.title) })), [groups, t]);
+  const handleClick = useCallback(
+    ({ key }: { key: string }) => {
+      const [groupKey, settingName] = key.split('::');
+      const targetPath = settingName
+        ? groups.find((group) => group.key === groupKey)?.settings.find((item) => item.name === settingName)?.path
+        : getGroupEntryPath(groupKey);
+
+      if (targetPath && targetPath !== location.pathname) {
+        navigate(targetPath);
+      }
+    },
+    [getGroupEntryPath, groups, location.pathname, navigate],
+  );
+
+  // 只有一个页面的分组直接当一级入口；系统设置这种大分组挂上子项，鼠标移上去即可展开全部设置。
+  const items = useMemo(
+    () =>
+      groups.map((group) => {
+        const label = t(group.title);
+        if (group.settings.length <= 1) {
+          return { key: group.key, label };
+        }
+
+        const children = group.settings
+          .filter((setting) => !setting.hidden)
+          .map((setting) => ({ key: `${group.key}::${setting.name}`, label: setting.label ?? setting.title }));
+        const withDivider =
+          group.leadCount > 0 && group.leadCount < children.length
+            ? [...children.slice(0, group.leadCount), { type: 'divider' as const }, ...children.slice(group.leadCount)]
+            : children;
+
+        return {
+          key: group.key,
+          label,
+          children: withDivider,
+          // 点标题本身也要能进去，而不是只能从下拉里挑。
+          onTitleClick: handleClick,
+        };
+      }),
+    [groups, handleClick, t],
+  );
+
+  // 子菜单标题只有在它的某个子项被选中时才会高亮，所以两个 key 都要给。
+  const selectedKeys = useMemo(() => {
+    if (!activeGroupKey) {
+      return [];
+    }
+    return currentTopLevelSetting?.name
+      ? [activeGroupKey, `${activeGroupKey}::${currentTopLevelSetting.name}`]
+      : [activeGroupKey];
+  }, [activeGroupKey, currentTopLevelSetting?.name]);
 
   if (isAuthRoute || items.length <= 1) {
     return <div style={{ flex: 'auto' }} />;
@@ -52,15 +102,11 @@ export const SettingsGroupNav: React.FC = observer(() => {
       <Menu
         mode="horizontal"
         disabledOverflow={false}
-        selectedKeys={activeGroupKey ? [activeGroupKey] : []}
+        selectedKeys={selectedKeys}
         items={items}
         style={navStyle}
-        onClick={({ key }) => {
-          const targetPath = getGroupEntryPath(key);
-          if (targetPath && targetPath !== location.pathname) {
-            navigate(targetPath);
-          }
-        }}
+        triggerSubMenuAction="hover"
+        onClick={handleClick}
       />
     </ConfigProvider>
   );

@@ -514,10 +514,8 @@ describe('plugin-multi-portal settings page', () => {
     const customerPortalCard = screen.getByText('Customer portal').closest('.ant-card') as HTMLElement;
     const developerPortalCard = screen.getByText('Developer portal').closest('.ant-card') as HTMLElement;
     const disabledPortalCard = screen.getByText('Disabled portal').closest('.ant-card') as HTMLElement;
-    expect(within(customerPortalCard).getByRole('link', { name: 'View' })).toHaveAttribute(
-      'href',
-      '/v/customer-portal',
-    );
+    // 打开按钮和后面四个一样是图标按钮，不是链接（带 href 的按钮尺寸和颜色都对不齐）。
+    expect(within(customerPortalCard).getByRole('button', { name: 'View' })).toBeEnabled();
     expect(within(customerPortalCard).getByRole('switch', { name: 'Enabled' })).toBeChecked();
     expect(within(disabledPortalCard).getByRole('switch', { name: 'Enabled' })).not.toBeChecked();
 
@@ -725,13 +723,13 @@ describe('plugin-multi-portal settings page', () => {
         .getByRole('radio', { name: /No-code portal/ })
         .closest('label'),
     ).toHaveStyle('align-items: flex-start');
-    expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Git repository URL')).toBeInTheDocument();
-    // 布局只属于 no-code portal。
-    expect(within(dialog).queryByLabelText('Layout')).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
-    expect(within(dialog).getByLabelText('Layout')).toBeInTheDocument();
+    // 源码存储默认 NocoBase，git 字段要选中 Git 才出现；设备两种类型都要选。
+    expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
     expect(within(dialog).getByText('Cover')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Icon')).not.toBeRequired();
     expect(within(dialog).getByLabelText('Enabled')).toBeInTheDocument();
@@ -914,11 +912,10 @@ describe('plugin-multi-portal settings page', () => {
 
     await user.type(within(dialog).getByLabelText('Title'), 'Developer portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'developer-portal');
-    // 源码位置不再单独选；git 地址留空即表示源码存在 NocoBase 里，分支 / 路径也不出现。
-    expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Git repository URL')).toHaveValue('');
-    expect(within(dialog).queryByLabelText('Git branch')).not.toBeInTheDocument();
-    expect(within(dialog).queryByLabelText('Git path')).not.toBeInTheDocument();
+    // 源码存储默认 NocoBase，git 相关字段要选中 Git 之后才出现。
+    expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
@@ -941,8 +938,8 @@ describe('plugin-multi-portal settings page', () => {
     const resource = makeResource();
     const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
 
+    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
     await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
-    // 填了地址才出现分支 / 路径。
     await user.clear(within(dialog).getByLabelText('Git branch'));
     await user.clear(within(dialog).getByLabelText('Git path'));
     await user.clear(within(dialog).getByLabelText('Title'));
@@ -976,6 +973,7 @@ describe('plugin-multi-portal settings page', () => {
     const resource = makeResource();
     const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
 
+    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
     await user.type(within(dialog).getByLabelText('Git repository URL'), 'git@github.com:nocobase/customer-portal.git');
 
     await waitFor(() => {
@@ -1266,7 +1264,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: /^Git/ })).toBeChecked();
     expect(within(dialog).getByLabelText('Git repository URL')).toHaveValue('git@github.com:nocobase/customer.git');
     expect(within(dialog).getByLabelText('Git branch')).toHaveValue('develop');
     expect(within(dialog).getByLabelText('Git path')).toHaveValue('portals/customer');
@@ -1288,6 +1286,102 @@ describe('plugin-multi-portal settings page', () => {
             },
           },
         }),
+      });
+    });
+  });
+
+  it('should not resurrect a cleared git repository URL when reopening the edit form', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    // 源码已经切回 NocoBase，但记录上仍留着上一次的 git 配置。
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              portalType: 'ai',
+              uiLayoutUid: null,
+              options: {
+                sourceStorage: 'nocobase',
+                git: {
+                  repo: 'git@github.com:nocobase/customer.git',
+                  branch: 'develop',
+                  path: 'portals/customer',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: defaultUiLayoutOptions } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
+    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+
+    await user.clear(within(dialog).getByLabelText('Title'));
+    await user.type(within(dialog).getByLabelText('Title'), 'Renamed portal');
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    // 只改了标题，源码存储不该被静默切回 git。
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 'customer-portal',
+        values: expect.objectContaining({
+          title: 'Renamed portal',
+          options: expect.objectContaining({ sourceStorage: 'nocobase' }),
+        }),
+      });
+    });
+  });
+
+  it('should submit the device for AI portals as well', async () => {
+    const resource = makeResource();
+    // 设备对 AI portal 同样有意义：应用切换器按它归类。
+    const { container, dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, {
+      portalType: 'ai',
+    });
+
+    await user.type(within(dialog).getByLabelText('Title'), 'Agent portal');
+    await user.type(within(dialog).getByLabelText('Portal name'), 'agent-portal');
+    await selectMobileLayout(container, user);
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.create).toHaveBeenCalledWith({
+        values: expect.objectContaining({ portalType: 'ai', uiLayoutUid: 'mobile-layout-model' }),
       });
     });
   });
@@ -1545,7 +1639,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).getByLabelText('Portal name')).not.toBeDisabled();
     expect(within(dialog).getByLabelText('Portal type')).not.toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
-    expect(within(dialog).getByLabelText('Layout')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Device')).toBeDisabled();
   });
 
   it('should populate the layout field from the appended uiLayout relation when editing', async () => {
@@ -1610,7 +1704,7 @@ describe('plugin-multi-portal settings page', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
     expect(await within(dialog).findByText('Mobile layout')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Layout')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Device')).toBeDisabled();
   });
 
   it('should reject portal names with dots before submitting', async () => {

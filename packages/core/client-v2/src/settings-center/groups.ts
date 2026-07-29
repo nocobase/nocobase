@@ -16,7 +16,7 @@ import type { PluginSettingsPageType } from '../PluginSettingsManager';
  * 分组归属优先取配置项自身的 `group` 字段，其次落到内置映射表，最后兜底到 `system`，
  * 因此第三方插件不改代码也能出现在设置中心里。
  */
-export type SettingsGroupKey = 'applications' | 'data' | 'automation' | 'access' | 'system';
+export type SettingsGroupKey = 'applications' | 'plugins' | 'system';
 
 export type SettingsGroupDefinition = {
   key: SettingsGroupKey;
@@ -31,53 +31,36 @@ export type SettingsGroupDefinition = {
   primary?: string;
 };
 
+/**
+ * 顶栏只留两个独立入口 + 一个「系统设置」大分组。
+ *
+ * 应用和插件管理是日常高频、且各自只有一个页面，铺成一级入口；
+ * 其余配置全部收进系统设置，靠左栏和顶栏悬浮下拉展开。
+ */
 export const SETTINGS_GROUPS: SettingsGroupDefinition[] = [
   { key: 'applications', title: 'Applications', primary: 'multi-portal' },
-  { key: 'data', title: 'Data', primary: 'data-source-manager' },
-  { key: 'automation', title: 'Automation', primary: 'workflow' },
-  { key: 'access', title: 'Users & Permissions', primary: 'users-permissions' },
-  { key: 'system', title: 'System', primary: 'system-settings' },
+  { key: 'plugins', title: 'Plugin manager', primary: 'plugin-manager' },
+  { key: 'system', title: 'System settings' },
 ];
 
 export const DEFAULT_SETTINGS_GROUP: SettingsGroupKey = 'system';
 
 /**
+ * 系统设置分组里排在最前面的四项。
+ *
+ * 这四个是体量最大的功能模块，和后面的零散配置之间用一条分割线隔开。
+ */
+export const SYSTEM_GROUP_LEAD_NAMES = ['data-source-manager', 'users-permissions', 'workflow', 'ai'];
+
+/**
  * 内置配置项到分组的映射。
  *
- * key 为 `pluginSettingsManager.addMenuItem` 时传入的 `key`。
+ * key 为 `pluginSettingsManager.addMenuItem` 时传入的 `key`；
+ * 没列出来的一律落到系统设置，第三方插件不改代码也能出现。
  */
 const BUILTIN_SETTINGS_GROUP_MAP: Record<string, SettingsGroupKey> = {
-  // 应用
   'multi-portal': 'applications',
-  mobile: 'applications',
-  'public-forms': 'applications',
-  embed: 'applications',
-  // 数据
-  'data-source-manager': 'data',
-  'file-manager': 'data',
-  backups: 'data',
-  map: 'data',
-  // 自动化
-  workflow: 'automation',
-  ai: 'automation',
-  'notification-manager': 'automation',
-  // 用户与权限
-  'users-permissions': 'access',
-  auth: 'access',
-  security: 'access',
-  'api-keys': 'access',
-  verification: 'access',
-  // 系统
-  'system-settings': 'system',
-  'plugin-manager': 'system',
-  localization: 'system',
-  'theme-editor': 'system',
-  'ui-templates': 'system',
-  '@nocobase/plugin-logger': 'system',
-  environment: 'system',
-  'api-doc': 'system',
-  'license-settings': 'system',
-  'locale-tester': 'system',
+  'plugin-manager': 'plugins',
 };
 
 /**
@@ -100,18 +83,42 @@ export function getSettingsGroupKey(setting?: PluginSettingsPageType | null): Se
 }
 
 /**
+ * 把系统设置分组重排成「四个主模块 + 其余」。
+ *
+ * @param {PluginSettingsPageType[]} members 系统设置分组下的配置项
+ * @returns {{ settings: PluginSettingsPageType[]; leadCount: number }} 重排后的列表，以及分割线该画在第几项之后
+ */
+function orderSystemGroup(members: PluginSettingsPageType[]) {
+  const lead = SYSTEM_GROUP_LEAD_NAMES.map((name) => members.find((item) => item.name === name)).filter(
+    Boolean,
+  ) as PluginSettingsPageType[];
+  const leadNames = new Set(lead.map((item) => item.name));
+  const rest = members.filter((item) => !leadNames.has(item.name));
+
+  return { settings: [...lead, ...rest], leadCount: rest.length ? lead.length : 0 };
+}
+
+/**
  * 按分组切分顶级配置项，并丢掉没有任何配置项的空分组。
  *
+ * `leadCount` 大于 0 时表示这一组要在第 `leadCount` 项之后画一条分割线。
+ *
  * @param {PluginSettingsPageType[]} settings 已排序的顶级配置项
- * @returns {{ key: SettingsGroupKey; title: string; settings: PluginSettingsPageType[] }[]} 非空分组
+ * @returns 非空分组
  */
 export function groupTopLevelSettings(settings: readonly PluginSettingsPageType[] = []) {
   return SETTINGS_GROUPS.map((group) => {
     const members = settings.filter((setting) => getSettingsGroupKey(setting) === group.key);
+
+    if (group.key === 'system') {
+      return { ...group, ...orderSystemGroup(members) };
+    }
+
     const primaryIndex = group.primary ? members.findIndex((item) => item.name === group.primary) : -1;
 
     return {
       ...group,
+      leadCount: 0,
       settings:
         primaryIndex > 0
           ? [members[primaryIndex], ...members.slice(0, primaryIndex), ...members.slice(primaryIndex + 1)]

@@ -75,8 +75,14 @@ export const SettingsBrand = observer(() => {
   return (
     <div className={brandClassName}>
       {logoUrl ? (
-        // 顶栏跟随系统主题，logo 与业务端顶栏处在同一底色下，按原样显示即可。
-        <img alt={title} className={logoImageClassName} src={logoUrl} />
+        // 站点 logo 通常是为深色顶栏画的浅色图；设置中心顶栏是灰白的，
+        // 统一压成单色，避免浅色 logo 直接消失在白底上。
+        <img
+          alt={title}
+          className={logoImageClassName}
+          src={logoUrl}
+          style={{ filter: headerColors.dark ? 'brightness(0) invert(1)' : 'brightness(0)' }}
+        />
       ) : (
         <span className={titleClassName} style={{ color: headerColors.text, fontSize: token.fontSizeHeading4 }}>
           {title}

@@ -254,8 +254,11 @@ export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType
  * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
  * @returns {SidebarMenuItem[]} antd Menu items
  */
-export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] = []): SidebarMenuItem[] {
-  return settings
+export function getSidebarMenuItems(
+  settings: readonly PluginSettingsPageType[] = [],
+  options: { dividerAfter?: number } = {},
+): SidebarMenuItem[] {
+  const items = settings
     .filter((item) => !item.hidden)
     .map((item) => {
       const visibleChildren = (item.children || []).filter((child) => !child.hidden);
@@ -269,6 +272,13 @@ export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] 
         children: children?.length ? children : undefined,
       };
     });
+
+  const { dividerAfter } = options;
+  if (dividerAfter && dividerAfter > 0 && dividerAfter < items.length) {
+    return [...items.slice(0, dividerAfter), { type: 'divider' }, ...items.slice(dividerAfter)];
+  }
+
+  return items;
 }
 
 /**

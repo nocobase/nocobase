@@ -1677,9 +1677,6 @@
   "No settings pages available": "暂无可用设置页",
   "The requested settings page does not exist or you do not have permission to access it.": "请求的设置页不存在，或者你没有访问权限。",
   "Applications": "应用",
-  "Data": "数据",
-  "Automation": "自动化",
-  "Users & Permissions": "用户与权限",
   "Search settings": "搜索设置",
   "Recently visited": "最近访问",
   "No matching settings": "没有匹配的设置项"

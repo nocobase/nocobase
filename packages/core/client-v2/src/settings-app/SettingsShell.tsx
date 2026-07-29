@@ -94,13 +94,18 @@ export const SettingsShell: FC = ({ children }) => {
     <ConfigProvider theme={settingsShellTheme}>
       <Layout style={rootStyle}>
         <Layout.Header
-          style={{
-            // 深色顶栏自带层次，只有浅色顶栏才需要一条分割线把它和内容区分开。
-            borderBottom: headerColors.dark ? 'none' : `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-            height: 46,
-            lineHeight: '46px',
-            paddingInline: token.paddingLG,
-          }}
+          style={
+            {
+              // 深色顶栏自带层次，只有浅色顶栏才需要一条分割线把它和内容区分开。
+              borderBottom: headerColors.dark ? 'none' : `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+              height: 46,
+              lineHeight: '46px',
+              paddingInline: token.paddingLG,
+              // 顶栏子组件里有一部分直接读 CSS 变量而不是 antd token，一起覆盖掉。
+              '--colorTextHeaderMenu': headerColors.text,
+              '--nb-topbar-action-color': headerColors.text,
+            } as React.CSSProperties
+          }
         >
           <div style={headerContentStyle}>
             <SettingsBrand />

@@ -41,7 +41,14 @@ function readRecentNames(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    // 存量数据可能是别的版本写的，统一在读取处去重并截断，别让脏数据一直传下去。
+    return [...new Set(parsed.filter((item): item is string => typeof item === 'string' && !!item))].slice(
+      0,
+      RECENT_MAX,
+    );
   } catch (error) {
     return [];
   }

@@ -66,6 +66,7 @@ export const InternalAdminSettingsLayout = () => {
   const location = useLocation();
   const { token } = theme.useToken();
   const {
+    activeGroupLeadCount,
     activeGroupSettings,
     allSettings,
     currentSetting,
@@ -88,7 +89,10 @@ export const InternalAdminSettingsLayout = () => {
   const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
   const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
 
-  const sidebarMenus = useMemo(() => getSidebarMenuItems(activeGroupSettings), [activeGroupSettings]);
+  const sidebarMenus = useMemo(
+    () => getSidebarMenuItems(activeGroupSettings, { dividerAfter: activeGroupLeadCount }),
+    [activeGroupLeadCount, activeGroupSettings],
+  );
   // 分组里只有一个没有下级的配置项时，左栏会退化成「一个和顶栏分组同义的孤零零条目」，
   // 这种情况直接不渲染侧栏，让页面标题承担命名（例如「应用」分组下的 Portal 管理）。
   const shouldShowSidebar =
