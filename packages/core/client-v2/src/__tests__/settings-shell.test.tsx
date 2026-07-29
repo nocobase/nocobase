@@ -12,24 +12,26 @@ import { ConfigProvider } from 'antd';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setCurrentUserAuthStatus } from '../nocobase-buildin-plugin/currentUserAuthStatus';
 import { SettingsShell } from '../settings-app/SettingsShell';
 import type { ThemeConfig } from '../theme';
 
 const userCenterModel = { uid: 'settings-user-center' };
 const createModel = vi.fn(() => userCenterModel);
 const matchRoutes = vi.fn(() => [{ route: { id: 'settings' } }]);
+const mockApp = {
+  flowEngine: {
+    createModel,
+    getModel: vi.fn(() => null),
+    getModelClass: vi.fn(() => true),
+  },
+  router: {
+    matchRoutes,
+  },
+};
 
 vi.mock('../hooks/useApp', () => ({
-  useApp: () => ({
-    flowEngine: {
-      createModel,
-      getModel: vi.fn(() => null),
-      getModelClass: vi.fn(() => true),
-    },
-    router: {
-      matchRoutes,
-    },
-  }),
+  useApp: () => mockApp,
 }));
 
 vi.mock('../flow/admin-shell/admin-layout/NocoBaseLogo', () => ({
@@ -55,6 +57,7 @@ describe('SettingsShell', () => {
     createModel.mockClear();
     matchRoutes.mockReset();
     matchRoutes.mockReturnValue([{ route: { id: 'settings' } }]);
+    setCurrentUserAuthStatus(mockApp, 'authenticated');
   });
 
   it('renders only the settings logo, help and user center around its content', () => {

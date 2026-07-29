@@ -229,4 +229,39 @@ describe('standalone settings layout root', () => {
       expect(replace).toHaveBeenCalledWith('/settings/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
     });
   });
+
+  it('does not render the Settings header before the initial auth check completes', async () => {
+    let resolveAuthCheck: (response: [number, { data: { id: number } }]) => void = () => {
+      throw new Error('Auth check resolver is not initialized');
+    };
+    const authCheckResponse = new Promise<[number, { data: { id: number } }]>((resolve) => {
+      resolveAuthCheck = resolve;
+    });
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin],
+      router: { type: 'memory', initialEntries: ['/settings'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(() => authCheckResponse);
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(apiMock.history.get.some((request) => request.url === '/auth:check')).toBe(true);
+    });
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+
+    resolveAuthCheck([200, { data: { id: 1 } }]);
+    expect(await screen.findByRole('banner')).toBeInTheDocument();
+  });
 });

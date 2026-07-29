@@ -18,6 +18,7 @@ import {
   type UserCenterTopbarActionModel,
 } from '../flow/models/topbar/UserCenterTopbarActionModel';
 import { useApp } from '../hooks/useApp';
+import { useCurrentUserAuthStatus } from '../nocobase-buildin-plugin/currentUserAuthStatus';
 
 const settingsShellTheme: ThemeConfig = {
   components: {
@@ -72,6 +73,7 @@ export const SettingsShell: FC = ({ children }) => {
   const app = useApp();
   const location = useLocation();
   const { token } = antdTheme.useToken();
+  const authStatus = useCurrentUserAuthStatus(app);
   const isAuthenticationRoute = (app.router.matchRoutes(location.pathname) || []).some((match) => {
     const routeId = match.route.id;
     return routeId === 'auth' || routeId?.startsWith('auth.') || routeId === '2fa' || routeId?.startsWith('2fa.');
@@ -81,6 +83,7 @@ export const SettingsShell: FC = ({ children }) => {
     return <>{children}</>;
   }
 
+  const shouldShowHeader = authStatus === 'authenticated';
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -95,6 +98,7 @@ export const SettingsShell: FC = ({ children }) => {
       <Layout style={rootStyle}>
         <Layout.Header
           style={{
+            display: shouldShowHeader ? undefined : 'none',
             height: 46,
             lineHeight: '46px',
             paddingInline: token.paddingLG,
