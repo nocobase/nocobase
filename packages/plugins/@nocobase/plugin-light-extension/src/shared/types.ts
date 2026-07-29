@@ -512,6 +512,7 @@ export interface LightExtensionMoveSourceResult {
 }
 
 export interface LightExtensionMoveToInlineInput {
+  idempotencyKey: string;
   locator: RunJSSourceLocator;
   repoId: string;
   entryId: string;

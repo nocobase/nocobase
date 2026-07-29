@@ -29,6 +29,7 @@ import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lig
 
 const workspacePageMockState = vi.hoisted(() => ({
   moveToInlineCompleted: false,
+  moveToInlineCode: 'ctx.render(<div>working copy</div>);',
 }));
 
 vi.mock('../pages/LightExtensionWorkspacePage', () => {
@@ -77,7 +78,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
         await onMoveToInline?.({
           entryPath: initialPath || '',
           files: [
-            { path: initialPath || '', content: 'ctx.render(<div>working copy</div>);' },
+            { path: initialPath || '', content: workspacePageMockState.moveToInlineCode },
             { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
           ],
           version: 'v2',
@@ -458,6 +459,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     };
 
     workspacePageMockState.moveToInlineCompleted = false;
+    workspacePageMockState.moveToInlineCode = 'ctx.render(<div>working copy</div>);';
     render(
       <EditorViewHarness api={api} onClose={onClose}>
         {provider.renderEditor({
@@ -492,6 +494,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
         url: 'lightExtensions:moveToInline',
         method: 'post',
         data: {
+          idempotencyKey: expect.stringMatching(/^move-to-inline-/),
           locator: {
             kind: 'flowModel.step',
             modelUid: 'page_1',
@@ -532,7 +535,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     resolveHostRefresh?.();
   });
 
-  it('keeps the JS Page external binding when copyback fails', async () => {
+  it('reuses the move-to-inline key for an exact retry and rotates it after the request changes', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onPersistedChange = vi.fn();
     const onClose = vi.fn();
@@ -571,6 +574,8 @@ describe('RunJSLightExtensionEditorProvider', () => {
       settings: { title: 'Page' },
     };
 
+    workspacePageMockState.moveToInlineCompleted = false;
+    workspacePageMockState.moveToInlineCode = 'ctx.render(<div>working copy</div>);';
     render(
       <EditorViewHarness api={api} onClose={onClose}>
         {provider.renderEditor({
@@ -594,6 +599,26 @@ describe('RunJSLightExtensionEditorProvider', () => {
     await waitFor(() => {
       expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensions:moveToInline' }));
     });
+    fireEvent.click(screen.getByRole('button', { name: 'move workspace to inline' }));
+    await waitFor(() => {
+      expect(
+        vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'lightExtensions:moveToInline'),
+      ).toHaveLength(2);
+    });
+    workspacePageMockState.moveToInlineCode = 'ctx.render(<div>changed working copy</div>);';
+    fireEvent.click(screen.getByRole('button', { name: 'move workspace to inline' }));
+    await waitFor(() => {
+      expect(
+        vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'lightExtensions:moveToInline'),
+      ).toHaveLength(3);
+    });
+    const moveRequests = vi
+      .mocked(api.request)
+      .mock.calls.filter(([options]) => options.url === 'lightExtensions:moveToInline')
+      .map(([options]) => options.data as { idempotencyKey: string });
+    expect(moveRequests[0].idempotencyKey).toMatch(/^move-to-inline-/);
+    expect(moveRequests[1].idempotencyKey).toBe(moveRequests[0].idempotencyKey);
+    expect(moveRequests[2].idempotencyKey).not.toBe(moveRequests[0].idempotencyKey);
     expect(onPersistedChange).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });

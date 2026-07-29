@@ -171,6 +171,7 @@ function normalizeMoveSourceOriginBinding(value: unknown): LightExtensionMoveSou
 
 function normalizeMoveToInlineInput(input: ResourceActionInput): LightExtensionMoveToInlineInput {
   return {
+    idempotencyKey: requireIdempotencyKey(input),
     locator: normalizeRunJSSourceLocator(input.locator),
     repoId: requireRepoId(input),
     entryId: requireString(input, 'entryId'),
@@ -179,6 +180,14 @@ function normalizeMoveToInlineInput(input: ResourceActionInput): LightExtensionM
     version: requireString(input, 'version'),
     files: requireArray(input, 'files', normalizeMoveSourceFile),
   };
+}
+
+function requireIdempotencyKey(input: ResourceActionInput): string {
+  const idempotencyKey = optionalIdempotencyKey(input);
+  if (!idempotencyKey) {
+    throw invalidInput('idempotencyKey must be a non-empty string');
+  }
+  return idempotencyKey;
 }
 
 function getMoveSourceServiceContext(ctx: LightExtensionResourceContext): MoveSourceServiceContext {

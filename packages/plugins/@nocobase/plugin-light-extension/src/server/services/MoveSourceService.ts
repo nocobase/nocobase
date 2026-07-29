@@ -18,7 +18,6 @@ import type {
 import { buildRunJSSourceRepositoryIdentity, isVscError } from '../vsc-file/public-api';
 import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
 import { posix as pathPosix } from 'path';
-import { createHash, randomUUID } from 'crypto';
 import { uid } from '@nocobase/utils';
 
 import {
@@ -50,11 +49,10 @@ import {
   type LightExtensionPreparedSave,
 } from './LightExtensionRuntimeCompileService';
 import { isSourceCodeFile, normalizeSourceWorkspacePath, rewriteRelativeImports } from './sourceRelocation';
+import { MoveOperationStore, type MoveOperationReservation } from './MoveOperationStore';
 
 const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const INLINE_ENTRY_DESCRIPTOR_PATH = 'src/client/entry.json';
-const MOVE_OPERATION_STALE_AFTER_MS = 15 * 60 * 1000;
-
 const ENTRY_ROOTS: Record<LightExtensionKind, string> = {
   'js-block': 'src/client/js-blocks',
   'js-page': 'src/client/js-pages',
@@ -68,16 +66,6 @@ export interface MoveSourceServiceContext extends LightExtensionServiceContext {
 }
 
 type AdapterRegistryProvider = () => RunJSSourceAdapterRegistry | null;
-
-interface MoveSourceOperationReservation {
-  identityHash: string;
-  attemptId: string;
-}
-
-interface MoveSourceOperationResolution {
-  reservation?: MoveSourceOperationReservation;
-  replayResult?: LightExtensionMoveSourceResult;
-}
 
 interface MoveSourceSourceSnapshotInput {
   locator: RunJSSourceLocator;
@@ -155,6 +143,8 @@ type ExternalBindingAdapter = RunJSSourceAdapter & {
 };
 
 export class MoveSourceService {
+  private readonly moveOperationStore: MoveOperationStore;
+
   constructor(
     private readonly db: Database,
     private readonly repoService: LightExtensionRepoService,
@@ -167,32 +157,36 @@ export class MoveSourceService {
     private readonly sourceSnapshotValidator: MoveSourceSourceSnapshotValidator = new PersistentMoveSourceSnapshotValidator(
       db,
     ),
-  ) {}
+  ) {
+    this.moveOperationStore = new MoveOperationStore(db, applicationName);
+  }
 
   async moveSource(
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
   ): Promise<LightExtensionMoveSourceResult> {
-    let operation: MoveSourceOperationReservation | undefined;
+    let operation: MoveOperationReservation | undefined;
     try {
       assertMoveSourceInputSupported(input);
-      const completedResult = await this.findCompletedMoveOperation(input);
-      if (completedResult) {
+      const descriptor = createMoveSourceOperationDescriptor(input);
+      const inspected = await this.moveOperationStore.inspect(descriptor);
+      if (inspected.replayResult) {
         await this.assertCanReplayMoveSource(input, ctx);
-        return completedResult;
+        return inspected.replayResult;
       }
+      const claimed = await this.moveOperationStore.claim(descriptor);
+      if (claimed.replayResult) {
+        await this.assertCanReplayMoveSource(input, ctx);
+        return claimed.replayResult;
+      }
+      operation = claimed.reservation;
       await this.assertCanStartMoveSource(input, ctx);
-      const operationResolution = await this.reserveMoveOperation(input);
-      if (operationResolution.replayResult) {
-        return operationResolution.replayResult;
-      }
-      operation = operationResolution.reservation;
       if (input.destination.type === 'existing') {
         return await this.moveSourceToExistingRepo(input, ctx, operation);
       }
       return await this.moveSourceToNewRepo(input, ctx, operation);
     } catch (error) {
-      await this.failMoveOperation(operation, error);
+      await this.moveOperationStore.fail(operation, error);
       throw normalizeMoveSourceError(error);
     }
   }
@@ -234,7 +228,7 @@ export class MoveSourceService {
   private async moveSourceToExistingRepo(
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
-    operation?: MoveSourceOperationReservation,
+    operation?: MoveOperationReservation,
   ): Promise<LightExtensionMoveSourceResult> {
     if (input.destination.type !== 'existing') {
       throw new LightExtensionError(
@@ -295,166 +289,9 @@ export class MoveSourceService {
     );
     return this.db.sequelize.transaction(async (transaction) => {
       const result = await this.publishExistingMove(input, ctx, adapter, kind, entryKey, prepared, transaction);
-      await this.completeMoveOperation(operation, result, transaction);
+      await this.moveOperationStore.complete(operation, result, transaction);
       return result;
     });
-  }
-
-  private async findCompletedMoveOperation(
-    input: LightExtensionMoveSourceInput,
-  ): Promise<LightExtensionMoveSourceResult | undefined> {
-    if (!input.idempotencyKey) {
-      return undefined;
-    }
-    const applicationName = this.applicationName.trim();
-    if (!applicationName) {
-      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
-    }
-    const identityHash = hashMoveOperation({
-      action: 'move-source',
-      applicationName,
-      idempotencyKey: input.idempotencyKey,
-    });
-    const record = await this.db.getRepository('lightExtensionMoveOperations').model.findOne({
-      where: { identityHash },
-    });
-    if (!record) {
-      return undefined;
-    }
-    const requestHash = hashMoveOperation({ ...input, idempotencyKey: undefined });
-    if (readModelString(record, 'requestHash') !== requestHash) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT',
-        'Move source idempotency key was already used with a different request',
-      );
-    }
-    return readModelString(record, 'status') === 'completed'
-      ? readMoveSourceOperationResult(record.get('result'))
-      : undefined;
-  }
-
-  private async reserveMoveOperation(input: LightExtensionMoveSourceInput): Promise<MoveSourceOperationResolution> {
-    if (!input.idempotencyKey) {
-      return {};
-    }
-    const applicationName = this.applicationName.trim();
-    if (!applicationName) {
-      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Application identity is required');
-    }
-    const identityHash = hashMoveOperation({
-      action: 'move-source',
-      applicationName,
-      idempotencyKey: input.idempotencyKey,
-    });
-    const requestHash = hashMoveOperation({ ...input, idempotencyKey: undefined });
-    const attemptId = randomUUID();
-    const operationRepository = this.db.getRepository('lightExtensionMoveOperations');
-    const [record, created] = await operationRepository.model.findOrCreate({
-      where: { identityHash },
-      defaults: {
-        id: `lemo_${uid()}`,
-        identityHash,
-        applicationName,
-        idempotencyKey: input.idempotencyKey,
-        requestHash,
-        attemptId,
-        status: 'pending',
-      },
-    });
-    if (created) {
-      return { reservation: { identityHash, attemptId } };
-    }
-    if (readModelString(record, 'requestHash') !== requestHash) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT',
-        'Move source idempotency key was already used with a different request',
-      );
-    }
-    if (readModelString(record, 'status') === 'completed') {
-      return { replayResult: readMoveSourceOperationResult(record.get('result')) };
-    }
-
-    const storedAttemptId = readModelString(record, 'attemptId');
-    const status = readModelString(record, 'status');
-    if (status !== 'failed' && !isMoveOperationStale(record.get('updatedAt'))) {
-      throw moveOperationInProgress();
-    }
-    const [claimed] = await operationRepository.model.update(
-      {
-        attemptId,
-        status: 'pending',
-        result: null,
-        errorCode: null,
-      },
-      {
-        where: {
-          identityHash,
-          attemptId: storedAttemptId,
-          status,
-        },
-      },
-    );
-    if (claimed !== 1) {
-      throw moveOperationInProgress();
-    }
-    return { reservation: { identityHash, attemptId } };
-  }
-
-  private async completeMoveOperation(
-    operation: MoveSourceOperationReservation | undefined,
-    result: LightExtensionMoveSourceResult,
-    transaction: Transaction,
-  ): Promise<void> {
-    if (!operation) {
-      return;
-    }
-    const [completed] = await this.db.getRepository('lightExtensionMoveOperations').model.update(
-      {
-        status: 'completed',
-        result,
-        errorCode: null,
-      },
-      {
-        where: {
-          identityHash: operation.identityHash,
-          attemptId: operation.attemptId,
-          status: 'pending',
-        },
-        transaction,
-      },
-    );
-    if (completed !== 1) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_SOURCE_ERROR',
-        'Move source operation could not persist its completed result',
-      );
-    }
-  }
-
-  private async failMoveOperation(
-    operation: MoveSourceOperationReservation | undefined,
-    error: unknown,
-  ): Promise<void> {
-    if (!operation) {
-      return;
-    }
-    try {
-      await this.db.getRepository('lightExtensionMoveOperations').model.update(
-        {
-          status: 'failed',
-          errorCode: getMoveOperationErrorCode(error),
-        },
-        {
-          where: {
-            identityHash: operation.identityHash,
-            attemptId: operation.attemptId,
-            status: 'pending',
-          },
-        },
-      );
-    } catch {
-      // Preserve the original move failure if the best-effort operation status update also fails.
-    }
   }
 
   private async publishExistingMove(
@@ -514,7 +351,7 @@ export class MoveSourceService {
   private async moveSourceToNewRepo(
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
-    operation?: MoveSourceOperationReservation,
+    operation?: MoveOperationReservation,
   ): Promise<LightExtensionMoveSourceResult> {
     if (input.destination.type !== 'new') {
       throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'New light extension destination is required');
@@ -574,7 +411,7 @@ export class MoveSourceService {
         prepared,
         transaction,
       );
-      await this.completeMoveOperation(operation, result, transaction);
+      await this.moveOperationStore.complete(operation, result, transaction);
       return result;
     });
   }
@@ -1028,32 +865,6 @@ function supportsExternalBinding(adapter: RunJSSourceAdapter): adapter is Extern
   return typeof (adapter as { writeExternalBinding?: unknown }).writeExternalBinding === 'function';
 }
 
-function hashMoveOperation(value: unknown): string {
-  return createHash('sha256')
-    .update(JSON.stringify(sortObjectKeys(value)))
-    .digest('hex');
-}
-
-function sortObjectKeys(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(sortObjectKeys);
-  }
-  if (!value || typeof value !== 'object') {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .filter(([, entryValue]) => typeof entryValue !== 'undefined')
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, entryValue]) => [key, sortObjectKeys(entryValue)]),
-  );
-}
-
-function readModelString(record: Model, key: string): string {
-  const value = record.get(key);
-  return typeof value === 'string' ? value : '';
-}
-
 function readNullableModelString(record: Model, key: string): string | null {
   const value = record.get(key);
   return typeof value === 'string' && value ? value : null;
@@ -1101,30 +912,17 @@ function readMoveSourceOperationResult(value: unknown): LightExtensionMoveSource
   return value as unknown as LightExtensionMoveSourceResult;
 }
 
+function createMoveSourceOperationDescriptor(input: LightExtensionMoveSourceInput) {
+  return {
+    action: 'move-source',
+    idempotencyKey: input.idempotencyKey,
+    request: { ...input, idempotencyKey: undefined },
+    parseResult: readMoveSourceOperationResult,
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isMoveOperationStale(updatedAt: unknown): boolean {
-  const timestamp = updatedAt instanceof Date ? updatedAt.getTime() : Date.parse(String(updatedAt || ''));
-  return Number.isFinite(timestamp) && Date.now() - timestamp >= MOVE_OPERATION_STALE_AFTER_MS;
-}
-
-function moveOperationInProgress(): LightExtensionError {
-  return new LightExtensionError(
-    'LIGHT_EXTENSION_IDEMPOTENCY_IN_PROGRESS',
-    'Move source with this idempotency key is still in progress; retry the same request',
-  );
-}
-
-function getMoveOperationErrorCode(error: unknown): string {
-  if (isLightExtensionError(error) || isVscError(error)) {
-    return error.code;
-  }
-  if (error instanceof Error) {
-    return error.name;
-  }
-  return 'UNKNOWN_ERROR';
 }
 
 function normalizeMoveSourceError(error: unknown): unknown {

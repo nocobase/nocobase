@@ -228,6 +228,7 @@ describe('light-extension swagger', () => {
       $ref: '#/components/schemas/LightExtensionMoveToInlineRequest',
     });
     expect(schemas.LightExtensionMoveToInlineRequest.required).toEqual([
+      'idempotencyKey',
       'locator',
       'repoId',
       'entryId',
@@ -236,13 +237,18 @@ describe('light-extension swagger', () => {
       'version',
       'files',
     ]);
-    expect(schemas.LightExtensionMoveToInlineRequest.properties.idempotencyKey).toBeUndefined();
+    expect(schemas.LightExtensionMoveToInlineRequest.properties.idempotencyKey).toMatchObject({
+      type: 'string',
+      minLength: 1,
+      maxLength: 255,
+    });
     expect(schemas.LightExtensionMoveToInlineRequest.properties.files).toMatchObject({
       minItems: 1,
       items: { $ref: '#/components/schemas/LightExtensionWorkspaceFile' },
     });
     expect(moveToInline.description).toContain('--body-file');
-    expect(moveToInline.description).toContain('does not accept an idempotency key');
+    expect(moveToInline.description).toContain('idempotencyKey is required');
+    expect(moveToInline.description).toContain('same complete request replays its first result');
     expect(moveToInline.description).toContain('does not advance');
     expect(Object.keys(moveToInline.responses).map(Number).sort()).toEqual([200, 400, 403, 404, 409, 422]);
     expect(moveToInline.responses[200].content['application/json'].schema).toEqual({

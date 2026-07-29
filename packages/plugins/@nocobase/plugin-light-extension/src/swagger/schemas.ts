@@ -897,8 +897,14 @@ export const lightExtensionSchemas = {
   },
   LightExtensionMoveToInlineRequest: {
     type: 'object',
-    required: ['locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'],
+    required: ['idempotencyKey', 'locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'],
     properties: {
+      idempotencyKey: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 255,
+        description: 'Required retry key. Reusing it with a different request returns an idempotency conflict.',
+      },
       locator: {
         $ref: '#/components/schemas/RunJSSourceLocator',
       },

@@ -348,11 +348,13 @@ export class PluginLightExtensionServer extends Plugin {
     );
     this.moveToInlineService = new MoveToInlineService(
       db,
+      this.repoService,
       this.entryService,
       this.workspaceCompilerBridge,
       this.referenceService,
       () => new VscFileService(db, workspaceModule.getPermissionHookRegistry()),
       () => workspaceModule.getRunJSSourceAdapterRegistry(),
+      this.app.name,
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionsResource(this.compilePreviewService, this.moveSourceService, this.moveToInlineService),
