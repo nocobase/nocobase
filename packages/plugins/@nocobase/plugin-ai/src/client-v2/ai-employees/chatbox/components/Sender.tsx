@@ -115,6 +115,9 @@ export const buildSenderSendOptions = ({
   uploadEnabled = true,
   webSearchEnabled = true,
 }: BuildSenderSendOptionsInput): SendOptions | null => {
+  if (content && !content.trim()) {
+    return null;
+  }
   if (!currentEmployee) {
     return null;
   }

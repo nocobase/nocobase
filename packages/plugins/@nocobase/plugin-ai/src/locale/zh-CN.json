@@ -525,6 +525,7 @@
   "Actions area": "操作区",
   "Allowed AI employees": "可选 AI 员工",
   "Controls which chat boxes share conversations. The default value isolates this chat box.": "控制哪些聊天框共享会话。默认值会隔离当前聊天框。",
+  "Scope can only contain letters, numbers, underscores, and hyphens.": "Scope 仅支持字母、数字、下划线和连字符。",
   "Basic settings": "基础设置",
   "Card settings": "卡片设置",
   "Chat content block": "聊天内容区块",

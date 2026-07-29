@@ -34,6 +34,7 @@ import PluginWorkflowClient, {
   useAvailableUpstreams,
   usePopupRecordContext,
   useTasksCountsContext,
+  useWorkflowTaskFilterContext,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
 import { useTempAssociationSources } from './hooks/useTempAssociationSources';
@@ -87,11 +88,20 @@ function useReadActionProps() {
 function useReadAllAction() {
   const api = useAPIClient();
   const ctx = useListBlockContext();
+  const { selectedWorkflow } = useWorkflowTaskFilterContext();
 
   return {
     async run() {
       try {
-        await api.resource('workflowCcTasks').read();
+        await api.resource('workflowCcTasks').read({
+          ...(selectedWorkflow
+            ? {
+                filter: {
+                  'workflow.key': selectedWorkflow.workflowKey,
+                },
+              }
+            : {}),
+        });
         ctx?.service?.refresh?.();
       } catch (error) {
         console.error('Failed to mark task as read:', error);
@@ -102,7 +112,8 @@ function useReadAllAction() {
 
 function useReadAllActionProps(props) {
   const { counts } = useTasksCountsContext();
-  const pending = counts[TASK_TYPE_CC]?.pending;
+  const { selectedWorkflow } = useWorkflowTaskFilterContext();
+  const pending = selectedWorkflow?.stats.pending ?? counts[TASK_TYPE_CC]?.pending;
   return {
     ...props,
     disabled: pending === 0,
@@ -450,8 +461,13 @@ const StatusFilterMap = {
   },
 };
 
-function useTodoActionParams(status) {
-  const filter = StatusFilterMap[status] ?? {};
+function useTodoActionParams(status, workflowKey?: string) {
+  const statusFilter = StatusFilterMap[status] ?? {};
+  const filter = workflowKey
+    ? {
+        $and: [statusFilter, { 'workflow.key': workflowKey }],
+      }
+    : statusFilter;
   return {
     filter,
     appends: [
@@ -504,9 +520,10 @@ function TodoExtraActions(props) {
             'x-component-props': {
               icon: 'FilterOutlined',
               ...props,
+              nonfilterable: ['workflow.title'],
             },
             default: {
-              $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+              $and: [{ title: { $includes: '' } }],
             },
           },
           readAll: {
