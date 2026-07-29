@@ -97,6 +97,7 @@ const external = [
   '@nocobase/client-v2',
   '@nocobase/shared',
   '@nocobase/runjs',
+  '@nocobase/runjs-workspace',
   '@nocobase/light-extension-sdk',
   // @nocobase/auth
   'jsonwebtoken',

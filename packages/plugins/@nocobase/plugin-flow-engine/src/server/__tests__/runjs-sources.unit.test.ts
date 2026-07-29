@@ -19,113 +19,27 @@ type Registrar = {
 };
 
 describe('flow-engine RunJS source registration', () => {
-  it('prefers the Light Extension host and unregisters every adapter on cleanup', () => {
-    const lightExtension = createRegistrar();
-    const legacyVsc = createRegistrar();
-    const cleanup = registerFlowModelRunJSSourceAdapters({
-      db: {} as Database,
-      app: {
-        pm: {
-          get: (name) => {
-            if (name === '@nocobase/plugin-light-extension') {
-              return lightExtension;
-            }
-            if (name === '@nocobase/plugin-vsc-file') {
-              return legacyVsc;
-            }
-            return null;
-          },
-        },
-      },
-    });
+  it('registers directly with the always-on Workspace runtime and unregisters every adapter on cleanup', () => {
+    const registrar = createRegistrar();
+    const cleanup = registerFlowModelRunJSSourceAdapters({} as Database, registrar);
 
-    expect(lightExtension.adapters.map((adapter) => adapter.kind)).toEqual([
+    expect(registrar.adapters.map((adapter) => adapter.kind)).toEqual([
       'flowModel.step',
       'flowModel.flowRegistry.runjs',
       'chart.option',
       'chart.events',
     ]);
-    expect(legacyVsc.adapters).toEqual([]);
-    cleanup();
-    expect(lightExtension.adapters).toEqual([]);
-  });
-
-  it('registers after Light Extension loads and removes the pending listener on cleanup', () => {
-    const registrar = createRegistrar();
-    const listeners = new Set<(plugin: unknown) => void>();
-    let loaded = false;
-    const cleanup = registerFlowModelRunJSSourceAdapters({
-      db: {} as Database,
-      app: {
-        pm: {
-          get: (name) => (loaded && name === '@nocobase/plugin-light-extension' ? registrar : null),
-        },
-        on: (_eventName, listener) => listeners.add(listener),
-        off: (_eventName, listener) => listeners.delete(listener),
-      },
-    });
-
-    expect(listeners.size).toBe(1);
-    loaded = true;
-    for (const listener of listeners) {
-      listener(registrar);
-    }
-    expect(registrar.adapters.length).toBeGreaterThan(0);
-    expect(listeners.size).toBe(0);
-
-    cleanup();
-    expect(registrar.adapters).toEqual([]);
-  });
-
-  it('discovers a capability host when no known alias resolves', () => {
-    const registrar = createRegistrar();
-    const legacyVsc = createRegistrar();
-    const cleanup = registerFlowModelRunJSSourceAdapters({
-      db: {} as Database,
-      app: {
-        pm: {
-          get: (name) => (name === '@nocobase/plugin-vsc-file' ? legacyVsc : null),
-          getPlugins: () => new Map([['custom-host', registrar]]),
-        },
-      },
-    });
-
-    expect(registrar.adapters.length).toBeGreaterThan(0);
-    expect(legacyVsc.adapters).toEqual([]);
-    cleanup();
-    expect(registrar.adapters).toEqual([]);
-  });
-
-  it('keeps the legacy VSC alias as the final compatibility fallback', () => {
-    const registrar = createRegistrar();
-    const cleanup = registerFlowModelRunJSSourceAdapters({
-      db: {} as Database,
-      app: {
-        pm: {
-          get: (name) => (name === 'vsc-file' ? registrar : null),
-        },
-      },
-    });
-
-    expect(registrar.adapters.length).toBeGreaterThan(0);
     cleanup();
     expect(registrar.adapters).toEqual([]);
   });
 
   it('keeps repeated load and cleanup free of duplicate or residual adapters', () => {
     const registrar = createRegistrar();
-    const plugin = {
-      db: {} as Database,
-      app: {
-        pm: {
-          get: (name: string) => (name === 'light-extension' ? registrar : null),
-        },
-      },
-    };
+    const db = {} as Database;
     let cleanup: (() => void) | undefined;
     const load = () => {
       cleanup?.();
-      cleanup = registerFlowModelRunJSSourceAdapters(plugin);
+      cleanup = registerFlowModelRunJSSourceAdapters(db, registrar);
     };
 
     load();
@@ -145,6 +59,7 @@ describe('flow-engine RunJS source registration', () => {
     { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSColumnModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'FormJSFieldItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
     { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
@@ -171,14 +86,7 @@ describe('flow-engine RunJS source registration', () => {
           },
         }),
       } as unknown as Database;
-      registerFlowModelRunJSSourceAdapters({
-        db,
-        app: {
-          pm: {
-            get: () => registrar,
-          },
-        },
-      });
+      registerFlowModelRunJSSourceAdapters(db, registrar);
 
       const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
       if (!stepAdapter) {
@@ -548,14 +456,7 @@ describe('flow-engine RunJS source registration', () => {
         },
       }),
     } as unknown as Database;
-    registerFlowModelRunJSSourceAdapters({
-      db,
-      app: {
-        pm: {
-          get: () => registrar,
-        },
-      },
-    });
+    registerFlowModelRunJSSourceAdapters(db, registrar);
 
     const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
 
@@ -590,14 +491,7 @@ describe('flow-engine RunJS source registration', () => {
         },
       }),
     } as unknown as Database;
-    registerFlowModelRunJSSourceAdapters({
-      db,
-      app: {
-        pm: {
-          get: () => registrar,
-        },
-      },
-    });
+    registerFlowModelRunJSSourceAdapters(db, registrar);
 
     const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
 

@@ -8,13 +8,15 @@
  */
 
 import { createMockDatabase, type Database } from '@nocobase/database';
-import path from 'path';
+import {
+  CommitService,
+  importRunJSWorkspaceCollections,
+  TreeService,
+  VscFileService,
+} from '@nocobase/runjs-workspace/server';
 import { vi } from 'vitest';
 
 import type { VscFileRemoteRecord, VscRemoteSnapshot } from '../../../../shared/vsc-file/remote-sync-types';
-import { VscFileService } from '../../services/VscFileService';
-import { CommitService } from '../../services/CommitService';
-import { TreeService } from '../../services/TreeService';
 import { ExternalCommitMapStore } from '../ExternalCommitMapStore';
 import { RemoteReconcileService, type RemoteReconcileRecoveryEvent } from '../RemoteReconcileService';
 import { RemoteSyncError } from '../RemoteSyncAdapter';
@@ -46,7 +48,7 @@ describe('RemoteReconcileService', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({ directory: path.resolve(__dirname, '../../collections') });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
     now = new Date('2026-07-16T00:00:00.000Z');
     claimSequence = 0;

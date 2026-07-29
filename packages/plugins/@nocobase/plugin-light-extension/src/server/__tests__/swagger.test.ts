@@ -8,19 +8,19 @@
  */
 
 import swaggerDocument from '../../swagger';
+import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
-import { runJSSourceActionNames } from '../vsc-file/runjs-sources';
 
 const publicActions = {
   lightExtensionRepos: ['list', 'get'],
-  lightExtensionEntries: ['get'],
+  lightExtensionEntries: ['get', 'listSelectable'],
   lightExtensionReferences: ['readReferences'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
-  lightExtensions: ['compileWorkspacePreview'],
+  lightExtensions: ['compileWorkspacePreview', 'moveSource', 'moveToInline'],
   runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
 } as const;
 
@@ -163,5 +163,104 @@ describe('light-extension swagger', () => {
     expect(preview.description).toContain('HTTP 207');
     expect(preview.description).toContain('HTTP 422');
     expect(Object.keys(preview.responses).map(Number).sort()).toEqual([200, 207, 403, 409, 422]);
+  });
+
+  it('documents the complete source migration and reusable Entry contracts', () => {
+    const schemas = swaggerDocument.components.schemas;
+    const moveSource = swaggerDocument.paths['/lightExtensions:moveSource'].post;
+    const moveToInline = swaggerDocument.paths['/lightExtensions:moveToInline'].post;
+    const listSelectable = swaggerDocument.paths['/lightExtensionEntries:listSelectable'].post;
+    const listRequest = listSelectable.requestBody.content['application/json'].schema;
+
+    expect(moveSource.requestBody.content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionMoveSourceRequest',
+    });
+    expect(schemas.LightExtensionMoveSourceRequest.required).toEqual([
+      'locator',
+      'expectedOwnerFingerprint',
+      'sourceRepoId',
+      'sourceHeadCommitId',
+      'entryPath',
+      'version',
+      'files',
+      'destination',
+      'entryName',
+    ]);
+    expect(Object.keys(schemas.LightExtensionMoveSourceRequest.properties).sort()).toEqual(
+      [
+        'idempotencyKey',
+        'locator',
+        'expectedOwnerFingerprint',
+        'sourceRepoId',
+        'sourceHeadCommitId',
+        'entryPath',
+        'version',
+        'files',
+        'originBinding',
+        'destination',
+        'entryName',
+        'entryTitle',
+      ].sort(),
+    );
+    expect(schemas.LightExtensionMoveSourceRequest.properties.locator).toEqual({
+      $ref: '#/components/schemas/RunJSSourceLocator',
+    });
+    expect(schemas.LightExtensionMoveSourceRequest.properties.files).toMatchObject({
+      minItems: 1,
+      items: { $ref: '#/components/schemas/LightExtensionWorkspaceFile' },
+    });
+    expect(schemas.LightExtensionMoveSourceDestination.oneOf).toEqual([
+      expect.objectContaining({
+        required: ['type'],
+        properties: expect.objectContaining({
+          type: { type: 'string', enum: ['default'], description: expect.any(String) },
+        }),
+      }),
+      expect.objectContaining({ required: ['type', 'repoId'] }),
+      expect.objectContaining({ required: ['type', 'name'] }),
+    ]);
+    expect(moveSource.description).toContain('--body-file');
+    expect(moveSource.description).toContain('idempotencyKey');
+    expect(moveSource.description).toContain('does not advance');
+    expect(Object.keys(moveSource.responses).map(Number).sort()).toEqual([200, 400, 403, 404, 409, 422]);
+    expect(moveSource.responses[200].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionMoveSourceEnvelope',
+    });
+
+    expect(moveToInline.requestBody.content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionMoveToInlineRequest',
+    });
+    expect(schemas.LightExtensionMoveToInlineRequest.required).toEqual([
+      'locator',
+      'repoId',
+      'entryId',
+      'entryPath',
+      'kind',
+      'version',
+      'files',
+    ]);
+    expect(schemas.LightExtensionMoveToInlineRequest.properties.idempotencyKey).toBeUndefined();
+    expect(schemas.LightExtensionMoveToInlineRequest.properties.files).toMatchObject({
+      minItems: 1,
+      items: { $ref: '#/components/schemas/LightExtensionWorkspaceFile' },
+    });
+    expect(moveToInline.description).toContain('--body-file');
+    expect(moveToInline.description).toContain('does not accept an idempotency key');
+    expect(moveToInline.description).toContain('does not advance');
+    expect(Object.keys(moveToInline.responses).map(Number).sort()).toEqual([200, 400, 403, 404, 409, 422]);
+    expect(moveToInline.responses[200].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/LightExtensionMoveToInlineEnvelope',
+    });
+
+    expect(listSelectable.requestBody.required).toBe(false);
+    expect(Object.keys(listRequest.properties).sort()).toEqual(['kind', 'repoId']);
+    expect(listRequest.properties.kind).toEqual({ $ref: '#/components/schemas/LightExtensionKind' });
+    expect(listSelectable.description).toContain('--body-file');
+    expect(schemas.LightExtensionSelectableEntry.required).toEqual(
+      expect.arrayContaining(['id', 'repoId', 'kind', 'entryName', 'entryPath', 'runtimeCodeHash', 'runtimeAvailable']),
+    );
+    expect(schemas.LightExtensionSelectableEntryListEnvelope.properties.data.items).toEqual({
+      $ref: '#/components/schemas/LightExtensionSelectableEntry',
+    });
   });
 });

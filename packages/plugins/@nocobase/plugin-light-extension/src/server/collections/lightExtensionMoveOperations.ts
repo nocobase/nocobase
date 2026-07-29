@@ -34,6 +34,7 @@ export default defineCollection({
       name: 'identityHash',
       length: 64,
       allowNull: false,
+      unique: true,
     },
     {
       type: 'string',

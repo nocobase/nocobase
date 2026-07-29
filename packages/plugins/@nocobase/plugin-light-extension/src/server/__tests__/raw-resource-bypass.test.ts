@@ -10,6 +10,7 @@
 import type { RunJSLegacySource, RunJSSourceAdapter, RunJSSourceLocator } from '../vsc-file';
 import { VscFileService } from '../vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
+import PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 
 import PluginLightExtensionServer from '../plugin';
 
@@ -21,7 +22,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
   let repoId: string;
 
   beforeEach(async () => {
-    await setupApp([PluginLightExtensionServer]);
+    await setupApp([PluginFlowEngineServer, PluginLightExtensionServer]);
   });
 
   afterEach(async () => {

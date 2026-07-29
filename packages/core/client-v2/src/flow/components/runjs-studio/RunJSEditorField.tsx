@@ -210,11 +210,11 @@ function containsSourceBinding(stepParams: unknown, sourceBinding: RunJSValue['s
   });
 }
 
-function collectModelTree(model: FlowModel, models: Map<string, FlowModel>): void {
-  if (models.has(model.uid)) {
+function collectModelTree(model: FlowModel, models: Set<FlowModel>): void {
+  if (models.has(model)) {
     return;
   }
-  models.set(model.uid, model);
+  models.add(model);
 
   Object.values(model.subModels).forEach((subModel) => {
     if (Array.isArray(subModel)) {
@@ -228,14 +228,21 @@ function collectModelTree(model: FlowModel, models: Map<string, FlowModel>): voi
 }
 
 function collectLoadedModels(model: FlowModel): FlowModel[] {
-  const models = new Map<string, FlowModel>();
+  const models = new Set<FlowModel>();
   let root = model;
   while (root.parent) {
     root = root.parent;
   }
   collectModelTree(root, models);
-  model.flowEngine?.forEachModel((loadedModel) => collectModelTree(loadedModel, models));
-  return Array.from(models.values());
+  let engine = model.flowEngine;
+  while (engine?.previousEngine) {
+    engine = engine.previousEngine;
+  }
+  while (engine) {
+    engine.forEachModel((loadedModel) => collectModelTree(loadedModel, models));
+    engine = engine.nextEngine;
+  }
+  return Array.from(models);
 }
 
 function invalidateRunJSSourceHost(model: FlowModel): void {
@@ -356,7 +363,15 @@ function syncFlowModelStepValue(
     setAtPath(currentStepParams, resolveSourceRefPath(locator.paramPath), value.sourceRef);
   }
   const stepParamsChanged = !isEqual(savedStepParams, currentStepParams);
-  model.setStepParams(locator.flowKey, locator.stepKey, currentStepParams);
+  const persistedHostModels = persist
+    ? [model]
+    : collectLoadedModels(model).filter((loadedModel) => loadedModel.uid === locator.modelUid);
+  if (!persistedHostModels.includes(model)) {
+    persistedHostModels.unshift(model);
+  }
+  persistedHostModels.forEach((loadedModel) => {
+    loadedModel.setStepParams(locator.flowKey, locator.stepKey, cloneRecord(currentStepParams));
+  });
   const refreshExternalSource = !persist && value.sourceMode === 'light-extension' && isRecord(value.sourceBinding);
   if (!stepParamsChanged && !refreshExternalSource) {
     invalidateRunJSSourceHost(model);
@@ -371,7 +386,7 @@ function syncFlowModelStepValue(
       return;
     }
     if (surfaceStyle === 'render') {
-      await model.rerender();
+      await Promise.all(persistedHostModels.map((loadedModel) => loadedModel.rerender()));
     }
   };
 

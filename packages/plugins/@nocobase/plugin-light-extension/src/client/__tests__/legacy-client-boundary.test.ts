@@ -10,6 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import type React from 'react';
+import { runJSStudioToolbarRegistry } from '@nocobase/runjs-workspace/client-v2';
 
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
@@ -29,7 +30,6 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from '../../client-v2/vsc-file/public-api';
 
 import { JSPageLightExtensionSourceField } from '../../client-v2/components/JSBlockLightExtensionSourceField';
 import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm';
@@ -101,13 +101,9 @@ describe('plugin-light-extension legacy client boundary', () => {
       }),
     );
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toContain(
-      '@nocobase/plugin-light-extension/inline-settings-descriptor',
-    );
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
-    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain(
-      '@nocobase/plugin-vsc-file/runjs-studio',
-    );
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
     expect(registerToolbar).toHaveBeenCalledWith(
       expect.objectContaining({ key: '@nocobase/plugin-light-extension/move-source' }),
     );

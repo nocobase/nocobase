@@ -7,17 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
+import {
+  maxFileSize,
+  runJSManifestPath,
+  VscError,
+  type RunJSRuntimeArtifact,
+  type RunJSSourceAdapterContext,
+} from '@nocobase/runjs-workspace/shared';
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 
-import { maxFileSize } from '../../../shared/vsc-file/constants';
-import { VscError } from '../../../shared/vsc-file/errors';
-import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../../shared/vsc-file/runjs-source-types';
-import { runJSManifestPath } from '../../../shared/vsc-file/runjs-workspace-path';
 import PluginLightExtensionServer from '../../plugin';
 import { buildLightExtensionSettingsHashes } from '../../services/LightExtensionEntryService';
 import { LightExtensionValidator } from '../../services/LightExtensionValidator';
-import { runJSSourceActionNames } from '../runjs-sources';
 
 describe('runJSSources resource', () => {
   let app: MockServer;

@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
+const RUNJS_WORKSPACE_PACKAGE = '@nocobase/runjs-workspace';
 const VSC_FILE_PACKAGE = '@nocobase/plugin-vsc-file';
 
 function readJson(relativePath: string) {
@@ -27,10 +28,12 @@ describe('Light Extension preset boundary', () => {
     const tsconfigPaths = readJson('tsconfig.paths.json').compilerOptions.paths;
 
     expect(preset.dependencies).toHaveProperty(LIGHT_EXTENSION_PACKAGE);
+    expect(preset.dependencies).toHaveProperty(RUNJS_WORKSPACE_PACKAGE);
     expect(preset.dependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
     expect(preset.builtIn).toContain(LIGHT_EXTENSION_PACKAGE);
     expect(preset.builtIn).not.toContain(VSC_FILE_PACKAGE);
     expect(flowEngine.devDependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
+    expect(flowEngine.dependencies).toHaveProperty(RUNJS_WORKSPACE_PACKAGE);
     expect(workflowJavaScript.devDependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
     expect(legacyMap).not.toHaveProperty(VSC_FILE_PACKAGE);
     expect(clientV2Map).not.toHaveProperty(VSC_FILE_PACKAGE);

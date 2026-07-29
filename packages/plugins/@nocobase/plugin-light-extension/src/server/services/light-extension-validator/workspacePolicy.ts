@@ -16,7 +16,7 @@ import {
   type LightExtensionKind,
 } from '../../../constants';
 import type { LightExtensionDiagnostic, LightExtensionValidationLimits } from '../../../shared/types';
-import { diagnostic } from './diagnostics';
+import { createRunJSWorkspaceDiagnostic as diagnostic } from '@nocobase/runjs-workspace/server';
 import type { EntryBucket, LightExtensionSourceFileInput, NormalizedSourceFile } from './types';
 
 export interface EntryFileRule {

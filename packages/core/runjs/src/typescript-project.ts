@@ -209,6 +209,17 @@ interface RunJSExecutionResult<T = unknown> {
 interface RunJSSafeElement extends RunJSUnknownObject {
   readonly __el: unknown;
 }
+interface PointerEvent {
+  readonly clientX: number;
+  readonly clientY: number;
+  preventDefault(): void;
+  stopPropagation(): void;
+}
+declare namespace JSX {
+  interface IntrinsicAttributes {
+    key?: string | number;
+  }
+}
 interface RunJSContext {
   logger: RunJSLogger;
   api: RunJSApi;

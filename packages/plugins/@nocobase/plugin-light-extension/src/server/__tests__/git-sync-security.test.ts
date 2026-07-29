@@ -373,7 +373,7 @@ describe('light extension Git credential logging integration', () => {
 });
 
 type LightExtensionPluginInternals = {
-  vscFileServerModule: {
+  remoteSyncModule: {
     remoteAdapters: RemoteSyncAdapterRegistry;
   };
 };
@@ -396,7 +396,7 @@ async function createApp(): Promise<MockServer> {
 
 function getGitAdapter(app: MockServer) {
   const plugin = app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
-  const registry = (plugin as unknown as LightExtensionPluginInternals).vscFileServerModule.remoteAdapters;
+  const registry = (plugin as unknown as LightExtensionPluginInternals).remoteSyncModule.remoteAdapters;
   const adapter = registry.get('git');
   if (!adapter) {
     throw new Error('Expected the Git remote adapter');

@@ -58,7 +58,7 @@ import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
 import { LightExtensionValidator, hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
-import { TreeService } from '../vsc-file/services/TreeService';
+import { TreeService } from '@nocobase/runjs-workspace/server';
 
 type ReferenceRefreshService = {
   refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext, reason?: string) => Promise<unknown>;

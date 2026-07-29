@@ -1001,40 +1001,42 @@ function LightExtensionListPageInner() {
         showIndex={false}
       />
 
-      <Modal
-        confirmLoading={creating}
-        okButtonProps={{ disabled: !createSource }}
-        okText={t('Create')}
-        onCancel={closeCreateModal}
-        onOk={createRepo}
-        open={createOpen}
-        title={t('Create light extension')}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            extra={t('The name is generated automatically and can be changed if needed.')}
-            label={t('Name')}
-            name="name"
-            rules={[
-              { required: true, message: t('Name is required') },
-              { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label={t('Title')}
-            name="title"
-            rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
-          >
-            <Input autoFocus />
-          </Form.Item>
-          <Form.Item label={t('Description')} name="description">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <LightExtensionCreateSourceSelector disabled={creating} key={createSourceKey} onChange={setCreateSource} />
-        </Form>
-      </Modal>
+      {createOpen ? (
+        <Modal
+          confirmLoading={creating}
+          okButtonProps={{ disabled: !createSource }}
+          okText={t('Create')}
+          onCancel={closeCreateModal}
+          onOk={createRepo}
+          open
+          title={t('Create light extension')}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item
+              extra={t('The name is generated automatically and can be changed if needed.')}
+              label={t('Name')}
+              name="name"
+              rules={[
+                { required: true, message: t('Name is required') },
+                { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label={t('Title')}
+              name="title"
+              rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
+            >
+              <Input autoFocus />
+            </Form.Item>
+            <Form.Item label={t('Description')} name="description">
+              <Input.TextArea rows={3} />
+            </Form.Item>
+            <LightExtensionCreateSourceSelector disabled={creating} key={createSourceKey} onChange={setCreateSource} />
+          </Form>
+        </Modal>
+      ) : null}
 
       <Drawer
         aria-label={t('Edit light extension')}

@@ -9,8 +9,9 @@
 
 import { TextDecoder } from 'node:util';
 
+import { normalizePath } from '@nocobase/runjs-workspace/shared';
+
 import type { VscRemoteSnapshotFile } from '../../../../../shared/vsc-file/remote-sync-types';
-import { normalizePath } from '../../../../../shared/vsc-file/path-normalize';
 import { RemoteSyncError } from '../../RemoteSyncAdapter';
 import { normalizeRemoteSnapshotFiles } from '../../snapshot';
 

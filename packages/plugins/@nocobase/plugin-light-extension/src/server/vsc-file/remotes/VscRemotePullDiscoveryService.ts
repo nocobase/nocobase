@@ -16,12 +16,12 @@ import type {
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
 } from '../../../shared/vsc-file/remote-sync-types';
-import type { VscRepositoryRecord } from '../../../shared/vsc-file/types';
-import type { VscPermissionRequestMetadata } from '../permissions';
-import { VscPermissionHookRegistry } from '../permissions';
-import { CommitService } from '../services/CommitService';
-import { RepositoryService } from '../services/RepositoryService';
-import { TreeService } from '../services/TreeService';
+import type { VscRepositoryRecord } from '@nocobase/runjs-workspace/shared';
+import type { VscPermissionRequestMetadata } from '@nocobase/runjs-workspace/server';
+import { VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { CommitService } from '@nocobase/runjs-workspace/server';
+import { RepositoryService } from '@nocobase/runjs-workspace/server';
+import { TreeService } from '@nocobase/runjs-workspace/server';
 import { ConflictStore } from './ConflictStore';
 import { ExternalCommitMapStore } from './ExternalCommitMapStore';
 import { RemoteSyncError, type RemoteSyncAdapter } from './RemoteSyncAdapter';

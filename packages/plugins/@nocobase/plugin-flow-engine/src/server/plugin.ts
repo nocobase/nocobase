@@ -10,6 +10,16 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import {
+  createFlowSurfaceRunJSWorkspaceBootstrapPort,
+  getOrCreateRunJSWorkspaceServerModule,
+  type RunJSSourceAdapter,
+  type RunJSSourceAdapterRegistry,
+  type RunJSSourceAuthoringInspector,
+  type RunJSWorkspaceServerModule,
+  type VscPermissionHook,
+  type VscPermissionHookRegistry,
+} from '@nocobase/runjs-workspace/server';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import {
   registerFlowSurfaceRunJSWorkspaceBootstrapPort,
@@ -21,6 +31,8 @@ import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
+  private runJSWorkspaceServerModule?: RunJSWorkspaceServerModule;
+
   private unregisterRunJSSourceAdapters?: () => void;
   private unregisterRunJSWorkspaceBootstrapPort?: () => void;
 
@@ -30,10 +42,35 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     return this.unregisterRunJSWorkspaceBootstrapPort;
   }
 
+  registerPermissionHook(hook: VscPermissionHook): () => void {
+    return this.requireRunJSWorkspaceServerModule().registerPermissionHook(hook);
+  }
+
+  getPermissionHookRegistry(): VscPermissionHookRegistry {
+    return this.requireRunJSWorkspaceServerModule().getPermissionHookRegistry();
+  }
+
+  registerRunJSSourceAdapter(adapter: RunJSSourceAdapter): () => void {
+    return this.requireRunJSWorkspaceServerModule().registerRunJSSourceAdapter(adapter);
+  }
+
+  getRunJSSourceAdapterRegistry(): RunJSSourceAdapterRegistry {
+    return this.requireRunJSWorkspaceServerModule().getRunJSSourceAdapterRegistry();
+  }
+
+  registerRunJSSourceAuthoringInspector(inspector: RunJSSourceAuthoringInspector): () => void {
+    return this.requireRunJSWorkspaceServerModule().registerRunJSSourceAuthoringInspector(inspector);
+  }
+
+  getRunJSWorkspaceServerModule(): RunJSWorkspaceServerModule {
+    return this.requireRunJSWorkspaceServerModule();
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {
     await super.beforeLoad();
+    await this.requireRunJSWorkspaceServerModule().beforeLoad();
   }
 
   getDatabaseByDataSourceKey(dataSourceKey = 'main') {
@@ -63,9 +100,21 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async load() {
     await super.load();
+    const workspaceModule = this.requireRunJSWorkspaceServerModule();
+    await workspaceModule.load();
     registerFlowSurfacesResource(this);
     this.unregisterRunJSSourceAdapters?.();
-    this.unregisterRunJSSourceAdapters = registerFlowModelRunJSSourceAdapters(this);
+    this.unregisterRunJSSourceAdapters = registerFlowModelRunJSSourceAdapters(this.db, workspaceModule);
+    this.unregisterRunJSWorkspaceBootstrapPort?.();
+    this.unregisterRunJSWorkspaceBootstrapPort = registerFlowSurfaceRunJSWorkspaceBootstrapPort(
+      this.app,
+      createFlowSurfaceRunJSWorkspaceBootstrapPort(
+        this.db,
+        workspaceModule.getRunJSSourceAdapterRegistry(),
+        workspaceModule.getPermissionHookRegistry(),
+        workspaceModule.getRunJSSourceAuthoringInspectorRegistry(),
+      ),
+    );
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
     this.app.auditManager.registerAction('flowModels:duplicate');
@@ -174,6 +223,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     this.unregisterRunJSWorkspaceBootstrapPort = undefined;
     this.unregisterRunJSSourceAdapters?.();
     this.unregisterRunJSSourceAdapters = undefined;
+    await this.runJSWorkspaceServerModule?.afterDisable();
   }
 
   async remove() {
@@ -181,11 +231,17 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     this.unregisterRunJSWorkspaceBootstrapPort = undefined;
     this.unregisterRunJSSourceAdapters?.();
     this.unregisterRunJSSourceAdapters = undefined;
+    await this.runJSWorkspaceServerModule?.remove();
   }
 
   async install() {}
 
   async afterEnable() {}
+
+  private requireRunJSWorkspaceServerModule(): RunJSWorkspaceServerModule {
+    this.runJSWorkspaceServerModule = getOrCreateRunJSWorkspaceServerModule(this.app, this.db);
+    return this.runJSWorkspaceServerModule;
+  }
 }
 
 export default PluginFlowEngineServer;

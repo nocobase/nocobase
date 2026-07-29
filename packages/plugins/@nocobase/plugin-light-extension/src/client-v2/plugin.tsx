@@ -8,8 +8,7 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from './vsc-file/public-api';
-import { installRunJSStudioClientV2 } from './vsc-file/plugin';
+import { runJSStudioToolbarRegistry } from '@nocobase/runjs-workspace/client-v2';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
@@ -23,7 +22,6 @@ import {
   JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   Plugin,
   RunJSSourceResolverRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
   RunJSEditorRegistry,
 } from '@nocobase/client-v2';
 
@@ -41,7 +39,6 @@ import { SettingsSingleField } from './components/SettingsAutoForm';
 import { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 import { registerLightExtensionRuntimeAuthSession } from './resolvers/LightExtensionRuntimeCacheRegistry';
-import { createInlineLightExtensionSettingsDescriptorProvider } from './resolvers/InlineLightExtensionSettingsDescriptorProvider';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
 
@@ -54,7 +51,6 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
   }
 
   async load() {
-    this.disposers.push(installRunJSStudioClientV2());
     this.disposers.push(registerLightExtensionRuntimeAuthSession(this.app.apiClient, this.app));
 
     const components = {
@@ -129,11 +125,6 @@ function installLightExtensionRunJSIntegrations(api: Application['apiClient']): 
   const disposers: Array<() => void> = [];
   try {
     disposers.push(RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(api)));
-    disposers.push(
-      RunJSSettingsDescriptorProviderRegistry.registerProvider(
-        createInlineLightExtensionSettingsDescriptorProvider(api),
-      ),
-    );
     disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
     disposers.push(runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(api)));
     disposers.push(registerLightExtensionModelMenus(api));

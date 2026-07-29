@@ -13,12 +13,13 @@ import {
   RemoteSyncError,
   RemoteSyncRuntimeService,
   VscPermissionHookRegistry,
-  validateVscRemoteAuthRef,
 } from '../vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 import { DeterministicRemoteAdapter } from '../vsc-file/remotes/testing/DeterministicRemoteAdapter';
+import { GitCommandRunner, GitRemoteAdapter } from '../vsc-file/remotes/providers/git';
+import { validateVscRemoteAuthRef } from '../vsc-file/remotes/credentialRef';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
@@ -147,6 +148,53 @@ describe('LightExtensionCreateFromRemoteService', () => {
     });
     expect(remote).toMatchObject({ lastSyncedAt: expect.any(String) });
   });
+
+  it.skipIf(process.env.RUN_LIGHT_EXTENSION_GITHUB_SSH_E2E !== '1')(
+    'imports and compiles all entries from gchust/nocobase-light-extension at 6fd1c4f8',
+    async () => {
+      const registry = new RemoteSyncAdapterRegistry();
+      registry.register(
+        new GitRemoteAdapter({
+          credentialResolver: { resolve: async () => null },
+          runner: new GitCommandRunner(),
+        }),
+      );
+      const gitRuntime = new RemoteSyncRuntimeService(app.db, {
+        adapterRegistry: registry,
+        credentialResolver: { validate: validateCredential },
+      });
+      const gitService = new LightExtensionCreateFromRemoteService(
+        app.db,
+        auditService,
+        repoService,
+        runtimeCompileService,
+        () => gitRuntime,
+      );
+
+      const result = await gitService.create({
+        name: 'Git compile fixture',
+        title: 'Git compile fixture',
+        provider: 'git',
+        config: {
+          url: 'https://github.com/gchust/nocobase-light-extension.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
+        authRef: null,
+      });
+      const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: result.repo.id } });
+
+      expect(result).toMatchObject({
+        repo: { lifecycleStatus: 'enabled', healthStatus: 'ready' },
+        revision: '6fd1c4f8bfaec9010298ff514aea3b41212c59a8',
+        fileCount: 60,
+      });
+      expect(entries).toHaveLength(16);
+      expect(entries.every((entry) => entry.get('healthStatus') === 'ready')).toBe(true);
+    },
+    60_000,
+  );
 
   it('preserves removed generic RunJS files as inert remote source', async () => {
     adapter.advanceRemote([...validFiles(), ...removedGenericRunJSFiles()], { branch: 'main' });

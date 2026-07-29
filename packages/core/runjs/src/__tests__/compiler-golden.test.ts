@@ -676,6 +676,8 @@ describe('@nocobase/runjs compiler golden contracts', () => {
 const React = ctx.libs.React;
 const dayjs = ctx.libs.dayjs;
 const Card = ctx.libs.antd.Card;
+type FormFieldProps = { field: { name: string } };
+const FormField = (_props: FormFieldProps) => null;
 const state = React.useState(0);
 const [records, setRecords] = React.useState<Record<string, unknown>[]>([]);
 const load = React.useCallback(async (page: number) => page + records.length, [records]);
@@ -686,7 +688,21 @@ const total = React.useMemo(() => records.length, [records]);
 const dailyMap = {};
 const key = dayjs().format('YYYY-MM-DD');
 dailyMap[key] = state[0] + 1;
-ctx.render(<Card>{dailyMap[key] > 0 ? String(dailyMap[key] + total) : '-'}</Card>);
+const previousCursor = document.body.style.cursor;
+document.body.style.cursor = 'col-resize';
+let animationFrame: number | null = null;
+const onPointerMove = (event: PointerEvent) => {
+  animationFrame = window.requestAnimationFrame(() => event.clientX);
+};
+document.addEventListener('pointermove', onPointerMove);
+if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+document.body.style.cursor = previousCursor;
+ctx.render(
+  <Card>
+    <FormField key="name" field={{ name: 'name' }} />
+    {dailyMap[key] > 0 ? String(dailyMap[key] + total) : '-'}
+  </Card>,
+);
 `,
         },
       ],

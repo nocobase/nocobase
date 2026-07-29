@@ -8,14 +8,16 @@
  */
 
 import { createMockDatabase, type Database, type Transaction } from '@nocobase/database';
-import path from 'path';
+import {
+  CommitService,
+  importRunJSWorkspaceCollections,
+  TreeService,
+  VscFileService,
+  VscPermissionHookRegistry,
+} from '@nocobase/runjs-workspace/server';
 import { vi } from 'vitest';
 
 import type { VscFileRemoteRecord, VscRemoteSnapshot } from '../../../../shared/vsc-file/remote-sync-types';
-import { VscPermissionHookRegistry } from '../../permissions';
-import { CommitService } from '../../services/CommitService';
-import { TreeService } from '../../services/TreeService';
-import { VscFileService } from '../../services/VscFileService';
 import { ExternalCommitMapStore } from '../ExternalCommitMapStore';
 import { RemoteSyncError } from '../RemoteSyncAdapter';
 import { RemoteSyncAdapterRegistry } from '../RemoteSyncAdapterRegistry';
@@ -44,7 +46,7 @@ describe('VscRemotePullDiscoveryService', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({ directory: path.resolve(__dirname, '../../collections') });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
     vsc = new VscFileService(db);
     adapter = new DeterministicRemoteAdapter({

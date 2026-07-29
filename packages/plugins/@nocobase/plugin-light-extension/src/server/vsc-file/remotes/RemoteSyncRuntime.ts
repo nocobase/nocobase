@@ -17,7 +17,7 @@ import type {
   VscRemoteSyncPlan,
 } from '../../../shared/vsc-file/remote-sync-types';
 import type { Transaction } from '@nocobase/database';
-import type { VscPermissionRequestMetadata } from '../permissions';
+import type { VscPermissionRequestMetadata } from '@nocobase/runjs-workspace/server';
 import type {
   VscRemotePullDiscoveryContext,
   VscRemotePullDiscoveryInput,

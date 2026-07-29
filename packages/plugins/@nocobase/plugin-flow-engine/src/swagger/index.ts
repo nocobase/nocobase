@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import runJSWorkspaceSwagger from '@nocobase/runjs-workspace/swagger';
+
 import flowSurfacesSwagger from './flow-surfaces';
 
 export default {
@@ -15,5 +17,16 @@ export default {
     title: 'NocoBase API - Flow engine plugin',
     version: '1.0.0',
   },
-  ...flowSurfacesSwagger,
+  tags: [...flowSurfacesSwagger.tags, ...runJSWorkspaceSwagger.tags],
+  paths: {
+    ...flowSurfacesSwagger.paths,
+    ...runJSWorkspaceSwagger.paths,
+  },
+  components: {
+    parameters: flowSurfacesSwagger.components.parameters,
+    schemas: {
+      ...flowSurfacesSwagger.components.schemas,
+      ...runJSWorkspaceSwagger.components.schemas,
+    },
+  },
 };

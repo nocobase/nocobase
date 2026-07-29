@@ -9,7 +9,7 @@
 
 import { createHash } from 'crypto';
 import type { VscRemoteSnapshotFile } from '../../../shared/vsc-file/remote-sync-types';
-import { normalizePath } from '../../../shared/vsc-file/path-normalize';
+import { normalizePath } from '@nocobase/runjs-workspace/shared';
 import { RemoteSyncError } from './RemoteSyncAdapter';
 
 function lengthPrefix(byteLength: number): Buffer {

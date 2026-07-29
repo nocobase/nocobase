@@ -132,6 +132,7 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
       await expect(
         bootstrapFlowSurfaceRunJSWorkspace(app, {
           hostKind: 'js-block',
+          modelUse: 'JSBlockModel',
           locator,
           transaction,
           authoringContext: {
@@ -185,6 +186,7 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
     await app.db.sequelize.transaction(async (transaction) => {
       await bootstrapFlowSurfaceRunJSWorkspace(app, {
         hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
         locator,
         transaction,
         authoringContext: {
@@ -250,6 +252,7 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
     await app.db.sequelize.transaction(async (transaction) => {
       await bootstrapFlowSurfaceRunJSWorkspace(app, {
         hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
         locator,
         transaction,
         authoringContext: {
@@ -306,6 +309,7 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
     const failed = await app.db.sequelize.transaction((transaction) =>
       bootstrapFlowSurfaceRunJSWorkspace(app, {
         hostKind: 'js-page',
+        modelUse: 'JSPageModel',
         locator,
         transaction,
         authoringContext,
@@ -338,6 +342,7 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
     const retried = await app.db.sequelize.transaction((transaction) =>
       bootstrapFlowSurfaceRunJSWorkspace(app, {
         hostKind: 'js-page',
+        modelUse: 'JSPageModel',
         locator,
         transaction,
         authoringContext,
@@ -384,6 +389,7 @@ describe('Light Extension Flow Engine RunJS source integration', () => {
       app.db.sequelize.transaction(async (transaction) => {
         await bootstrapFlowSurfaceRunJSWorkspace(app, {
           hostKind: 'js-page',
+          modelUse: 'JSPageModel',
           locator,
           transaction,
           authoringContext: {
