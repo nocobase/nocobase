@@ -336,9 +336,8 @@ keywords: "миграции,управление версиями,резервн
 | Таблица | Описание | Тип данных | Стратегия по умолчанию | Управление версиями | Backup/restore |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
+| `aiKnowledgeBase` | Тип базы знаний, внешний ID, векторная база данных, LLM-сервис, модель embedding и основные сведения | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
 | `aiVectorDatabases` | Vector database service and connection configuration | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
 
 ### Environment variables
 

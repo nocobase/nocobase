@@ -163,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Stockage vectoriel",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Base de connaissances",
         "items": [
           {

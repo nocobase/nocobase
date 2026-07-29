@@ -17,9 +17,9 @@ Saat ini Plugin Basis Pengetahuan AI hanya secara bawaan mendukung PGVector, ini
 
 ## Manajemen Vector Database
 
-Masuk ke halaman konfigurasi Plugin Karyawan AI, klik tab `Vector store`, pilih `Vector database` masuk ke halaman manajemen vector database.
+Masuk ke halaman konfigurasi Plugin Karyawan AI, lalu klik tab `Vector database` di bagian atas untuk masuk ke halaman manajemen vector database.
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 Klik tombol `Add new` di pojok kanan atas untuk menambah koneksi vector database `PGVector` baru:
 
@@ -33,4 +33,4 @@ Klik tombol `Add new` di pojok kanan atas untuk menambah koneksi vector database
 
 Setelah memasukkan semua informasi yang diperlukan, klik tombol `Test` untuk menguji apakah layanan vector database tersedia, klik tombol `Submit` untuk menyimpan informasi koneksi.
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)
