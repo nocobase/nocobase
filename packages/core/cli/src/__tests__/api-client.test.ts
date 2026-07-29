@@ -190,6 +190,46 @@ test('executeApiRequest sends multipart file bodies without setting JSON content
   }
 });
 
+test('executeApiRequest appends multipart array values as repeated fields', async () => {
+  let requestBody: FormData | undefined;
+
+  globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+    requestBody = init?.body as FormData;
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  await executeApiRequest({
+    cliVersion: '2.1.0-beta.37',
+    flags: {
+      'zip-filename-encoding': '["UTF-8","GBK"]',
+    },
+    operation: {
+      method: 'post',
+      pathTemplate: '/files:upload',
+      requestContentType: 'multipart/form-data',
+      hasBody: true,
+      bodyRequired: true,
+      parameters: [
+        {
+          name: 'zipFilenameEncoding',
+          flagName: 'zip-filename-encoding',
+          in: 'body',
+          required: false,
+          type: 'array',
+          isArray: true,
+          jsonEncoded: true,
+        },
+      ],
+    },
+  });
+
+  expect(requestBody).toBeInstanceOf(FormData);
+  expect(requestBody?.getAll('zipFilenameEncoding')).toEqual(['UTF-8', 'GBK']);
+});
+
 test('executeApiRequest writes binary responses to --output', async () => {
   const outputPath = join(tmpdir(), `nocobase-cli-download-${Date.now()}.bin`);
 
