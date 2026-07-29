@@ -676,6 +676,8 @@ describe('@nocobase/runjs compiler golden contracts', () => {
 const React = ctx.libs.React;
 const dayjs = ctx.libs.dayjs;
 const Card = ctx.libs.antd.Card;
+type FormFieldProps = { field: { name: string } };
+const FormField = (_props: FormFieldProps) => null;
 const state = React.useState(0);
 const [records, setRecords] = React.useState<Record<string, unknown>[]>([]);
 const load = React.useCallback(async (page: number) => page + records.length, [records]);
@@ -686,7 +688,21 @@ const total = React.useMemo(() => records.length, [records]);
 const dailyMap = {};
 const key = dayjs().format('YYYY-MM-DD');
 dailyMap[key] = state[0] + 1;
-ctx.render(<Card>{dailyMap[key] > 0 ? String(dailyMap[key] + total) : '-'}</Card>);
+const previousCursor = document.body.style.cursor;
+document.body.style.cursor = 'col-resize';
+let animationFrame: number | null = null;
+const onPointerMove = (event: PointerEvent) => {
+  animationFrame = window.requestAnimationFrame(() => event.clientX);
+};
+document.addEventListener('pointermove', onPointerMove);
+if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+document.body.style.cursor = previousCursor;
+ctx.render(
+  <Card>
+    <FormField key="name" field={{ name: 'name' }} />
+    {dailyMap[key] > 0 ? String(dailyMap[key] + total) : '-'}
+  </Card>,
+);
 `,
         },
       ],
@@ -696,6 +712,60 @@ ctx.render(<Card>{dailyMap[key] > 0 ? String(dailyMap[key] + total) : '-'}</Card
 
     expect(result.failureCode).toBeUndefined();
     expect(result.artifact.diagnostics).toEqual([]);
+  });
+
+  it('uses standard DOM and React JSX types without exposing new runtime globals', async () => {
+    const typedBrowserApis = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.tsx',
+          content: `
+type ItemProps = { label: string };
+interface PointerWithLabel extends PointerEvent { label?: string }
+const Item = ({ label }: ItemProps) => <div>{label}</div>;
+const handlePointerMove = (event: PointerEvent) => event.pointerId;
+document.body.style.cursor = 'grabbing';
+document.body.style.userSelect = 'none';
+const animationFrameId: number = window.requestAnimationFrame(() => handlePointerMove);
+ctx.render(<Item key="item-1" label={String(animationFrameId)} />);
+`,
+        },
+      ],
+      entry: 'index.tsx',
+      surfaceStyle: 'render',
+    });
+    const barePointerEvent = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: `new PointerEvent('pointermove');` }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    const bareDomBaseClass = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: `class CustomElement extends HTMLElement {}` }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+
+    expect(
+      typedBrowserApis.failureCode,
+      JSON.stringify(typedBrowserApis.artifact.diagnostics, null, 2),
+    ).toBeUndefined();
+    expect(typedBrowserApis.artifact.diagnostics).toEqual([]);
+    expect(barePointerEvent.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'PointerEvent'"),
+        }),
+      ]),
+    );
+    expect(bareDomBaseClass.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'HTMLElement'"),
+        }),
+      ]),
+    );
   });
 
   it('accepts browser APIs through the runtime window proxy while keeping bare globals restricted', async () => {

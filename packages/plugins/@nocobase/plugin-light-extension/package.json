@@ -37,6 +37,7 @@
   ],
   "dependencies": {
     "@nocobase/light-extension-sdk": "2.2.0-beta.15",
+    "@nocobase/runjs-workspace": "2.2.0-beta.15",
     "jszip": "^3.10.1",
     "typescript": "5.1.3"
   },

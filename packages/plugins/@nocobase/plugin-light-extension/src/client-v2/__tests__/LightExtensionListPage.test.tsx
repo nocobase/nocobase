@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { createMockClient, type CompiledFilter } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import userEvent from '@testing-library/user-event';
@@ -16,6 +16,8 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
+import type { UseLightExtensionCreateJobsResult } from '../hooks/useLightExtensionCreateJobs';
+import type { LightExtensionCreateJobSummary } from '../../shared/types';
 import { LightExtensionSyncHookError, type UseLightExtensionSyncResult } from '../hooks/useLightExtensionSync';
 import LightExtensionListPage, {
   LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
@@ -44,6 +46,14 @@ const mocks = vi.hoisted(() => ({
     push: vi.fn(),
     createFromGit: vi.fn(),
   },
+  createJobs: {
+    initialJobs: [] as LightExtensionCreateJobSummary[],
+    error: null as Error | null,
+    addAcceptedJob: vi.fn(),
+    refresh: vi.fn(async () => undefined),
+    dismiss: vi.fn(),
+    update: vi.fn(),
+  },
 }));
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -69,6 +79,32 @@ vi.mock('../hooks/useLightExtensionSync', async (importOriginal) => {
   return {
     ...actual,
     useLightExtensionSync: () => mocks.sync as unknown as UseLightExtensionSyncResult,
+  };
+});
+
+vi.mock('../hooks/useLightExtensionCreateJobs', async () => {
+  const React = await import('react');
+  return {
+    useLightExtensionCreateJobs: (): UseLightExtensionCreateJobsResult => {
+      const [jobs, setJobs] = React.useState<UseLightExtensionCreateJobsResult['jobs']>(mocks.createJobs.initialJobs);
+      React.useEffect(() => {
+        mocks.createJobs.update.mockImplementation((nextJobs: LightExtensionCreateJobSummary[]) => setJobs(nextJobs));
+      }, []);
+      return {
+        jobs,
+        loading: false,
+        error: mocks.createJobs.error,
+        addAcceptedJob: (job) => {
+          mocks.createJobs.addAcceptedJob(job);
+          setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+        },
+        refresh: mocks.createJobs.refresh,
+        dismiss: async (jobId) => {
+          await mocks.createJobs.dismiss(jobId);
+          setJobs((current) => current.filter((job) => job.id !== jobId));
+        },
+      };
+    },
   };
 });
 
@@ -193,16 +229,23 @@ function LocationSearch() {
 describe('LightExtensionListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.createJobs.initialJobs = [];
+    mocks.createJobs.error = null;
     mocks.api.listRepos.mockResolvedValue([]);
     mocks.api.createRepo.mockResolvedValue({
-      id: 'ler_browser_smoke',
+      id: 'lecj_browser_smoke',
+      targetRepoId: 'ler_browser_smoke',
       name: 'browser-smoke',
-      normalizedName: 'browser-smoke',
       title: 'Browser smoke',
       description: null,
-      lifecycleStatus: 'enabled',
-      healthStatus: 'pending',
-      headCommitId: null,
+      sourceType: 'template',
+      status: 'pending',
+      errorCode: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     });
     mocks.api.listCommits.mockResolvedValue([]);
     mocks.api.pull.mockResolvedValue({
@@ -233,47 +276,49 @@ describe('LightExtensionListPage', () => {
       headCommitId: null,
     });
     mocks.sync.createFromGit.mockResolvedValue({
-      repo: {
-        id: 'ler_github',
-        name: 'github-smoke',
-        normalizedName: 'github-smoke',
-        title: 'GitHub smoke',
-        description: null,
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: 'github-head',
-      },
-      source: {
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
-        status: 'active',
-        remoteTargetVersion: 1,
-        revision: 'github-head',
-        credentialConfigured: false,
-        authRefDisplay: null,
-      },
-      plan: {},
+      id: 'lecj_git',
+      targetRepoId: 'ler_git',
+      name: 'git-smoke',
+      title: 'Git smoke',
+      description: null,
+      sourceType: 'git',
+      status: 'pending',
+      errorCode: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     });
     mocks.sync.testConnection.mockResolvedValue({
       ok: true,
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
-      revision: 'github-head',
+      provider: 'git',
+      config: gitConfig(),
+      revision: 'git-head',
       credentialConfigured: false,
       authRefDisplay: null,
     });
     mocks.sync.configure.mockResolvedValue({
       repoId: 'ler_browser_smoke',
       source: {
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
+        provider: 'git',
+        config: gitConfig(),
         status: 'active',
         remoteTargetVersion: 1,
-        revision: 'github-head',
+        revision: 'git-head',
         credentialConfigured: false,
         authRefDisplay: null,
       },
     });
+  });
+
+  it('shows a safe error when creation jobs cannot be loaded', async () => {
+    mocks.createJobs.error = new Error('Light extension creation job request failed');
+
+    renderListPage();
+
+    expect(await screen.findByText('Failed to load creation jobs')).toBeInTheDocument();
+    expect(screen.queryByText('Light extension creation job request failed')).not.toBeInTheDocument();
   });
 
   it('opens the create dialog from the query parameter', async () => {
@@ -293,19 +338,32 @@ describe('LightExtensionListPage', () => {
       }),
     );
     expect(mocks.api.createRepo.mock.calls[0][0]).not.toHaveProperty('zipBase64');
-    expect(await screen.findByText('Repository created and compiled')).toBeInTheDocument();
+    const creationRow = await screen.findByRole('row', { name: /Browser smoke/ });
+    expect(within(creationRow).getByText('Creating')).toBeInTheDocument();
+    expect(within(creationRow).getByRole('checkbox', { name: 'Creation task Browser smoke' })).toBeDisabled();
+    const creationCells = within(creationRow).getAllByRole('cell');
+    expect(creationCells[3]).toBeEmptyDOMElement();
+    expect(creationCells[4]).toBeEmptyDOMElement();
+    expect(creationCells[5]).toBeEmptyDOMElement();
+    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
+    expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
   });
 
   it('uploads an optional source ZIP through the combined create dialog', async () => {
     mocks.api.createRepo.mockResolvedValueOnce({
-      id: 'ler_imported',
+      id: 'lecj_imported',
+      targetRepoId: 'ler_imported',
       name: 'imported-smoke',
-      normalizedName: 'imported-smoke',
       title: 'Imported smoke',
       description: null,
-      lifecycleStatus: 'enabled',
-      healthStatus: 'pending',
-      headCommitId: 'commit-import',
+      sourceType: 'zip',
+      status: 'pending',
+      errorCode: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     });
     renderListPage();
 
@@ -330,56 +388,63 @@ describe('LightExtensionListPage', () => {
         zipBase64: 'emlwLXNvdXJjZQ==',
       }),
     );
-    expect(await screen.findByText('Repository imported and compiled')).toBeInTheDocument();
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
   });
 
-  it('creates from GitHub with an exclusive safe source payload and updates the URL', async () => {
+  it('creates from Git with an exclusive safe source payload and updates the URL', async () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub smoke');
-    await userEvent.click(within(dialog).getByText('GitHub source'));
-    await userEvent.type(within(dialog).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'Git smoke');
+    await userEvent.click(within(dialog).getByText('Git source'));
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/nocobase/example.git',
+    );
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(mocks.sync.createFromGit).toHaveBeenCalledTimes(1));
     expect(mocks.sync.createFromGit).toHaveBeenCalledWith({
       name: expect.stringMatching(/^l_[a-z0-9]+$/),
-      title: 'GitHub smoke',
+      title: 'Git smoke',
       description: null,
-      provider: 'github',
+      provider: 'git',
       config: {
-        owner: 'nocobase',
-        repository: 'example',
-        branch: '',
+        url: 'https://git.example.com/nocobase/example.git',
+        branch: 'main',
         subdirectory: null,
+        transport: 'https',
       },
     });
     expect(mocks.sync.createFromGit.mock.calls[0][0]).not.toHaveProperty('zipBase64');
     expect(mocks.api.createRepo).not.toHaveBeenCalled();
-    expect(await screen.findByText('GitHub smoke')).toBeInTheDocument();
-    expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_github');
+    expect(await screen.findByText('Git smoke')).toBeInTheDocument();
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('repoId=ler_git');
   });
 
-  it('keeps GitHub create configuration in the modal when the request fails', async () => {
-    mocks.sync.createFromGit.mockRejectedValueOnce(new Error('GitHub source could not be created'));
+  it('keeps Git create configuration in the modal when the request fails', async () => {
+    mocks.sync.createFromGit.mockRejectedValueOnce(new Error('Git source could not be created'));
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub smoke');
-    await userEvent.click(within(dialog).getByText('GitHub source'));
-    const repositoryInput = within(dialog).getByRole('textbox', { name: 'GitHub repository' });
-    await userEvent.type(repositoryInput, 'nocobase/example');
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'Git smoke');
+    await userEvent.click(within(dialog).getByText('Git source'));
+    const repositoryInput = within(dialog).getByRole('textbox', { name: 'Git repository URL' });
+    await userEvent.type(repositoryInput, 'https://git.example.com/nocobase/example.git');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
-    expect(await screen.findByText('GitHub source could not be created')).toBeInTheDocument();
+    expect(await screen.findByText('Git source could not be created')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Create light extension' })).toBeInTheDocument();
-    expect(repositoryInput).toHaveValue('nocobase/example');
+    expect(repositoryInput).toHaveValue('https://git.example.com/nocobase/example.git');
   });
 
-  it('shows an actionable message instead of a raw GitHub rate-limit error code', async () => {
+  it('shows an actionable message instead of a raw provider error code', async () => {
     mocks.sync.createFromGit.mockRejectedValueOnce(
       new LightExtensionSyncHookError({
         operation: 'createFromGit',
@@ -392,15 +457,63 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub rate limit');
-    await userEvent.click(within(dialog).getByText('GitHub source'));
-    await userEvent.type(within(dialog).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'Git remote error');
+    await userEvent.click(within(dialog).getByText('Git source'));
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/nocobase/example.git',
+    );
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
-    expect(
-      await screen.findByText('GitHub API rate limit reached. Try again later or configure a GitHub token.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('The Git remote is temporarily unavailable. Try again later.')).toBeInTheDocument();
     expect(screen.queryByText('LIGHT_EXTENSION_SYNC_RATE_LIMITED')).not.toBeInTheDocument();
+  });
+
+  it('refreshes the ready repository and notifies once after an observed creation succeeds', async () => {
+    const pending = createJobSummary();
+    mocks.createJobs.initialJobs = [pending];
+    mocks.api.listRepos.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: pending.targetRepoId,
+        name: pending.name,
+        normalizedName: pending.name,
+        title: pending.title,
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: 'commit-ready',
+      },
+    ]);
+    renderListPage();
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([]);
+    });
+
+    await waitFor(() => expect(mocks.api.listRepos).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Creation succeeded: Demo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit code' })).toBeInTheDocument();
+    expect(screen.queryByText('Creating')).not.toBeInTheDocument();
+    await act(async () => {
+      mocks.createJobs.update([]);
+    });
+    expect(mocks.api.listRepos).toHaveBeenCalledTimes(2);
+  });
+
+  it('automatically removes a failed creation', async () => {
+    const failed = createJobSummary({
+      status: 'failed',
+      errorCode: 'LIGHT_EXTENSION_CREATE_FAILED',
+      errorMessage: 'Safe failure',
+    });
+    mocks.createJobs.initialJobs = [failed];
+    renderListPage();
+
+    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
+    expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove failed creation Demo' })).not.toBeInTheDocument();
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -423,7 +536,7 @@ describe('LightExtensionListPage', () => {
     expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
   });
 
-  it('opens Sync code from its row action, preserves unrelated query values, and wires GitHub configuration', async () => {
+  it('opens Sync code from its row action, preserves unrelated query values, and wires Git configuration', async () => {
     mocks.api.listRepos.mockResolvedValueOnce([
       {
         id: 'ler_browser_smoke',
@@ -444,20 +557,29 @@ describe('LightExtensionListPage', () => {
     expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_browser_smoke');
     expect(screen.getByTestId('location-search')).toHaveTextContent('panel=sync');
 
-    await userEvent.type(within(drawer).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await userEvent.type(
+      within(drawer).getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/nocobase/example.git',
+    );
+    await userEvent.type(within(drawer).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(drawer).getByRole('button', { name: 'Test connection' }));
     await waitFor(() =>
       expect(mocks.sync.testConnection).toHaveBeenCalledWith({
         repoId: 'ler_browser_smoke',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/nocobase/example.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
       }),
     );
     expect(await within(drawer).findByText('Connection successful')).toBeInTheDocument();
 
     await userEvent.click(within(drawer).getByRole('button', { name: 'Configure' }));
     await waitFor(() => expect(mocks.sync.configure).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByRole('textbox', { name: 'GitHub repository' })).toHaveValue(''));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Git repository URL' })).toHaveValue(''));
 
     const refreshedDrawer = await screen.findByRole('dialog', { name: 'Sync code' });
     await userEvent.click(within(refreshedDrawer).getByRole('button', { name: 'Close sync' }));
@@ -813,3 +935,31 @@ describe('LightExtensionListPage', () => {
     await waitFor(() => expect(screen.queryByText('sales-widgets')).not.toBeInTheDocument());
   });
 });
+
+function createJobSummary(overrides: Partial<LightExtensionCreateJobSummary> = {}): LightExtensionCreateJobSummary {
+  return {
+    id: 'lecj_demo',
+    targetRepoId: 'ler_demo',
+    name: 'demo',
+    title: 'Demo',
+    description: null,
+    sourceType: 'template',
+    status: 'pending',
+    errorCode: null,
+    errorMessage: null,
+    startedAt: null,
+    finishedAt: null,
+    createdAt: '2026-07-27T00:00:00.000Z',
+    updatedAt: '2026-07-27T00:00:01.000Z',
+    ...overrides,
+  };
+}
+
+function gitConfig() {
+  return {
+    url: 'https://git.example.com/nocobase/example.git',
+    branch: 'main',
+    subdirectory: null,
+    transport: 'https' as const,
+  };
+}

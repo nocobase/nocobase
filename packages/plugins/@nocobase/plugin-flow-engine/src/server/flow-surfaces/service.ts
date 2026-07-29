@@ -160,13 +160,17 @@ import {
   bootstrapFlowSurfaceRunJSWorkspace,
   buildFlowSurfaceJSPageCapabilities,
   buildFlowSurfaceRunJSLocator,
+  getFlowSurfaceRunJSWorkspaceProviderStatus,
   isRouteBackedPageUse,
   JS_PAGE_MODEL_USE,
+  resolveFlowSurfaceRunJSHost,
   supportsPageBlockAuthoring,
   supportsPageTabs,
   supportsStandardPageBlueprint,
   throwJSPageOperationUnsupported,
   type FlowSurfaceRunJSAuthoringContext,
+  type FlowSurfaceRunJSModelUse,
+  type FlowSurfaceRunJSWorkspaceBootstrapResult,
 } from './page-surface-contract';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
@@ -4980,10 +4984,11 @@ export class FlowSurfacesService {
     node: any,
     options: FlowSurfaceReadOptions = {},
   ) {
-    const nodeMap = flattenModel(node);
+    const publicNode = this.attachRunJSWorkspaceReadMetadata(node);
+    const nodeMap = flattenModel(publicNode);
     const result: Record<string, any> = {
       target: this.buildReadTargetSummary(target, resolved),
-      tree: node,
+      tree: publicNode,
       nodeMap,
     };
 
@@ -4994,6 +4999,27 @@ export class FlowSurfacesService {
     }
 
     return result;
+  }
+
+  private attachRunJSWorkspaceReadMetadata<T>(node: T): T {
+    const providerStatus = getFlowSurfaceRunJSWorkspaceProviderStatus(this.plugin.app);
+    const visit = (current: unknown) => {
+      if (!_.isPlainObject(current)) {
+        return;
+      }
+      const record = current as Record<string, unknown>;
+      if (typeof record.uid === 'string' && resolveFlowSurfaceRunJSHost(record.use)) {
+        Object.assign(record, this.buildRunJSWorkspaceMetadata(record.use, record.uid, providerStatus));
+      }
+      if (!_.isPlainObject(record.subModels)) {
+        return;
+      }
+      for (const value of Object.values(record.subModels)) {
+        (Array.isArray(value) ? value : [value]).forEach(visit);
+      }
+    };
+    visit(node);
+    return node;
   }
 
   private buildSurfaceContextFingerprint(
@@ -5199,6 +5225,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
     } = {},
   ) {
     const actionOptions = {
@@ -5207,6 +5234,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession: options.popupTemplateAliasSession,
       popupTemplateTreeCache: options.popupTemplateTreeCache,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
+      authoringContext: options.authoringContext,
     };
     switch (action) {
       case 'compose':
@@ -6274,7 +6302,11 @@ export class FlowSurfacesService {
 
   async applyBlueprint(
     values: Record<string, any>,
-    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
   ) {
     await this.assertStandardPageBlueprintTarget(
       'applyBlueprint',
@@ -6309,7 +6341,7 @@ export class FlowSurfacesService {
 
   private async applyBlueprintMutationWithoutExternalTransaction(
     values: Record<string, any>,
-    options: { currentRoles?: FlowSurfaceRequestRoles } = {},
+    options: { currentRoles?: FlowSurfaceRequestRoles; authoringContext?: FlowSurfaceRunJSAuthoringContext } = {},
     createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
   ): Promise<FlowSurfaceApplyBlueprintMutationResult> {
     try {
@@ -6379,19 +6411,34 @@ export class FlowSurfacesService {
 
   private async applyBlueprintWithTransaction(
     values: Record<string, any>,
-    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; skipAuthoringValidation?: boolean },
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      skipAuthoringValidation?: boolean;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    },
     createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] | undefined,
     resultOptions: { readSurface: false },
   ): Promise<FlowSurfaceApplyBlueprintMutationResult>;
   private async applyBlueprintWithTransaction(
     values: Record<string, any>,
-    options?: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; skipAuthoringValidation?: boolean },
+    options?: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      skipAuthoringValidation?: boolean;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    },
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
     resultOptions?: { readSurface?: true },
   ): Promise<FlowSurfaceApplyBlueprintResponse>;
   private async applyBlueprintWithTransaction(
     values: Record<string, any>,
-    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; skipAuthoringValidation?: boolean } = {},
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      skipAuthoringValidation?: boolean;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
     resultOptions: { readSurface?: boolean } = {},
   ): Promise<FlowSurfaceApplyBlueprintMutationResult | FlowSurfaceApplyBlueprintResponse> {
@@ -6411,6 +6458,7 @@ export class FlowSurfacesService {
       },
       this.buildPlanningRuntimeDeps({
         currentRoles: options.currentRoles,
+        authoringContext: options.authoringContext,
         popupTemplateAliasSession,
         popupTemplateTreeCache,
         skipGeneratedLayoutSingleColumnErrors: true,
@@ -8552,6 +8600,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
@@ -9221,31 +9270,72 @@ export class FlowSurfacesService {
     return this.isBindableMenuRoutePendingInitialization(route, structure);
   }
 
-  private async bootstrapRunJSHost(
-    hostKind: 'js-page' | 'js-block',
+  private buildRunJSWorkspaceMetadata(
+    modelUse: unknown,
     modelUid: string,
-    transaction: any,
-    authoringContext?: FlowSurfaceRunJSAuthoringContext,
+    workspace: FlowSurfaceRunJSWorkspaceBootstrapResult,
   ) {
-    if (!transaction) {
+    const host = resolveFlowSurfaceRunJSHost(modelUse);
+    if (!host) {
       throwInternalError(
-        `flowSurfaces ${hostKind} RunJS workspace bootstrap requires the create transaction`,
-        'FLOW_SURFACE_RUNJS_BOOTSTRAP_TRANSACTION_REQUIRED',
+        `flowSurfaces RunJS workspace does not support model use '${String(modelUse || '')}'`,
+        'FLOW_SURFACE_RUNJS_HOST_UNSUPPORTED',
       );
     }
-    const runJSLocator = buildFlowSurfaceRunJSLocator(modelUid);
-    const workspace = await bootstrapFlowSurfaceRunJSWorkspace(this.plugin.app, {
-      hostKind,
-      locator: runJSLocator,
-      transaction,
-      authoringContext: authoringContext || {},
-    });
+    const runJSLocator = buildFlowSurfaceRunJSLocator(modelUid, modelUse as FlowSurfaceRunJSModelUse);
     return {
       runJSLocator,
       workspaceStatus: workspace.status,
       workspaceRetryable: workspace.retryable,
       ...(workspace.error ? { workspaceError: workspace.error } : {}),
     };
+  }
+
+  private async bootstrapRunJSHost(
+    modelUse: FlowSurfaceRunJSModelUse,
+    modelUid: string,
+    transaction: any,
+    authoringContext?: FlowSurfaceRunJSAuthoringContext,
+  ) {
+    const host = resolveFlowSurfaceRunJSHost(modelUse);
+    if (!transaction) {
+      throwInternalError(
+        `flowSurfaces ${host.hostKind} RunJS workspace bootstrap requires the create transaction`,
+        'FLOW_SURFACE_RUNJS_BOOTSTRAP_TRANSACTION_REQUIRED',
+      );
+    }
+    const runJSLocator = buildFlowSurfaceRunJSLocator(modelUid, modelUse);
+    const workspace = await bootstrapFlowSurfaceRunJSWorkspace(this.plugin.app, {
+      hostKind: host.hostKind,
+      modelUse,
+      locator: runJSLocator,
+      transaction,
+      authoringContext: authoringContext || {},
+    });
+    return this.buildRunJSWorkspaceMetadata(modelUse, modelUid, workspace);
+  }
+
+  private async attachCreatedRunJSWorkspace<T extends Record<string, unknown>>(
+    result: T,
+    modelUse: unknown,
+    modelUid: string | undefined,
+    options: {
+      transaction?: any;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+      skipRunJSWorkspaceBootstrap?: boolean;
+    },
+  ): Promise<T> {
+    const host = resolveFlowSurfaceRunJSHost(modelUse);
+    if (!host || !modelUid || options.skipRunJSWorkspaceBootstrap) {
+      return result;
+    }
+    const workspace = await this.bootstrapRunJSHost(
+      modelUse as FlowSurfaceRunJSModelUse,
+      modelUid,
+      options.transaction,
+      options.authoringContext,
+    );
+    return { ...result, ...workspace };
   }
 
   private async initializeJSPageForRoute(
@@ -9328,7 +9418,7 @@ export class FlowSurfacesService {
       },
       { transaction },
     );
-    const workspace = await this.bootstrapRunJSHost('js-page', pageUid, transaction, options.authoringContext);
+    const workspace = await this.bootstrapRunJSHost('JSPageModel', pageUid, transaction, options.authoringContext);
 
     return {
       routeId,
@@ -9420,7 +9510,7 @@ export class FlowSurfacesService {
         'FLOW_SURFACE_IDEMPOTENCY_RESULT_INVALID',
       );
     }
-    const workspace = await this.bootstrapRunJSHost('js-page', pageUid, transaction, authoringContext);
+    const workspace = await this.bootstrapRunJSHost('JSPageModel', pageUid, transaction, authoringContext);
     const { workspaceError: _previousWorkspaceError, ...currentResult } = storedResult;
     return {
       ...currentResult,
@@ -10593,7 +10683,7 @@ export class FlowSurfacesService {
       });
       const runJSWorkspace =
         createdNode?.use === 'JSBlockModel' && !options.skipRunJSWorkspaceBootstrap
-          ? await this.bootstrapRunJSHost('js-block', result.uid, options.transaction, options.authoringContext)
+          ? await this.bootstrapRunJSHost('JSBlockModel', result.uid, options.transaction, options.authoringContext)
           : undefined;
       const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
       await this.persistCreatedKeysForAction('addBlock', values, publicResult, options.transaction);
@@ -11048,7 +11138,7 @@ export class FlowSurfacesService {
     }
     const runJSWorkspace =
       catalogItem.use === 'JSBlockModel' && !options.skipRunJSWorkspaceBootstrap
-        ? await this.bootstrapRunJSHost('js-block', result.uid, options.transaction, options.authoringContext)
+        ? await this.bootstrapRunJSHost('JSBlockModel', result.uid, options.transaction, options.authoringContext)
         : undefined;
     const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
     await this.persistCreatedKeysForAction('addBlock', values, publicResult, options.transaction);
@@ -11063,6 +11153,8 @@ export class FlowSurfacesService {
       enabledPackages?: ReadonlySet<string>;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+      skipRunJSWorkspaceBootstrap?: boolean;
     } = {},
   ): Promise<FlowSurfaceAddFieldResult> {
     const templateRef = !_.isUndefined(values?.template)
@@ -11072,9 +11164,17 @@ export class FlowSurfacesService {
       : null;
     if (templateRef) {
       const result = await this.addFieldFromTemplate(values, templateRef, options);
-      await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addField', options);
-      return result;
+      const modelUid = result.fieldUid || result.innerFieldUid || result.uid;
+      const createdNode = modelUid
+        ? await this.repository.findModelById(modelUid, {
+            transaction: options.transaction,
+            includeAsyncNode: true,
+          })
+        : undefined;
+      const publicResult = await this.attachCreatedRunJSWorkspace(result, createdNode?.use, modelUid, options);
+      await this.persistCreatedKeysForAction('addField', values, publicResult, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
+      return publicResult;
     }
     const target = await this.prepareWriteTarget('addField', values?.target, values, options);
     assertNoInternalFieldKeys(values, 'flowSurfaces addField');
@@ -11152,9 +11252,15 @@ export class FlowSurfacesService {
         type: values.type,
       };
       await this.applyInlineStandaloneFieldSettings('addField', result.uid, inlineSettings, options);
-      await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addField', options);
-      return result;
+      const publicResult = await this.attachCreatedRunJSWorkspace(
+        result,
+        fieldCapability.standaloneUse,
+        result.uid,
+        options,
+      );
+      await this.persistCreatedKeysForAction('addField', values, publicResult, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
+      return publicResult;
     }
 
     const requestedFilterTargetUid = values.defaultTargetUid || values.targetBlockUid || values.targetUid;
@@ -11517,9 +11623,15 @@ export class FlowSurfacesService {
       ...options,
       enabledPackages,
     });
-    await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addField', options);
-    return result;
+    const publicResult = await this.attachCreatedRunJSWorkspace(
+      result,
+      boundFieldCapability.fieldUse,
+      result.fieldUid,
+      options,
+    );
+    await this.persistCreatedKeysForAction('addField', values, publicResult, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
+    return publicResult;
   }
 
   async addAction(
@@ -11531,6 +11643,8 @@ export class FlowSurfacesService {
       autoCompleteDefaultPopup?: boolean;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+      skipRunJSWorkspaceBootstrap?: boolean;
     } = {},
   ) {
     const target = await this.prepareWriteTarget('addAction', values?.target, values, options);
@@ -11592,9 +11706,10 @@ export class FlowSurfacesService {
         scope: actionCatalogItem.scope,
         ...(await this.collectComposeActionKeys(reusableAction.uid, options.transaction)),
       };
-      await this.persistCreatedKeysForAction('addAction', values, result, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addAction', options);
-      return result;
+      const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
+      await this.persistCreatedKeysForAction('addAction', values, publicResult, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addAction', options);
+      return publicResult;
     }
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
@@ -11668,9 +11783,10 @@ export class FlowSurfacesService {
       scope: actionCatalogItem.scope,
       ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
-    await this.persistCreatedKeysForAction('addAction', values, result, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addAction', options);
-    return result;
+    const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
+    await this.persistCreatedKeysForAction('addAction', values, publicResult, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addAction', options);
+    return publicResult;
   }
 
   async addRecordAction(
@@ -11682,6 +11798,8 @@ export class FlowSurfacesService {
       autoCompleteDefaultPopup?: boolean;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+      skipRunJSWorkspaceBootstrap?: boolean;
     } = {},
   ) {
     const target = await this.prepareWriteTarget('addRecordAction', values?.target, values, options);
@@ -11736,9 +11854,10 @@ export class FlowSurfacesService {
         scope: actionCatalogItem.scope,
         ...(await this.collectComposeActionKeys(reusableAction.uid, options.transaction)),
       };
-      await this.persistCreatedKeysForAction('addRecordAction', values, result, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addRecordAction', options);
-      return result;
+      const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
+      await this.persistCreatedKeysForAction('addRecordAction', values, publicResult, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addRecordAction', options);
+      return publicResult;
     }
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
@@ -11814,9 +11933,10 @@ export class FlowSurfacesService {
       scope: actionCatalogItem.scope,
       ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
-    await this.persistCreatedKeysForAction('addRecordAction', values, result, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addRecordAction', options);
-    return result;
+    const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
+    await this.persistCreatedKeysForAction('addRecordAction', values, publicResult, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addRecordAction', options);
+    return publicResult;
   }
 
   async addBlocks(
@@ -11852,11 +11972,15 @@ export class FlowSurfacesService {
     });
   }
 
-  async addFields(values: Record<string, any>) {
+  async addFields(
+    values: Record<string, any>,
+    requestOptions: { authoringContext?: FlowSurfaceRunJSAuthoringContext } = {},
+  ) {
     if (!_.isUndefined(values?.template)) {
       const result = await this.transaction((transaction) =>
         this.addField(values, {
           transaction,
+          authoringContext: requestOptions.authoringContext,
         }),
       );
       return {
@@ -11876,28 +12000,43 @@ export class FlowSurfacesService {
       values,
       itemField: 'fields',
       resultField: 'fields',
+      authoringContext: requestOptions.authoringContext,
       invoke: (itemValues, options) => this.addField(itemValues, options),
     });
   }
 
-  async addActions(values: Record<string, any>, options: { currentRoles?: FlowSurfaceRequestRoles } = {}) {
+  async addActions(
+    values: Record<string, any>,
+    options: {
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
+  ) {
     return this.runBatchCreate({
       actionName: 'addActions',
       values,
       itemField: 'actions',
       resultField: 'actions',
       currentRoles: options.currentRoles,
+      authoringContext: options.authoringContext,
       invoke: (itemValues, options) => this.addAction(itemValues, options),
     });
   }
 
-  async addRecordActions(values: Record<string, any>, options: { currentRoles?: FlowSurfaceRequestRoles } = {}) {
+  async addRecordActions(
+    values: Record<string, any>,
+    options: {
+      currentRoles?: FlowSurfaceRequestRoles;
+      authoringContext?: FlowSurfaceRunJSAuthoringContext;
+    } = {},
+  ) {
     return this.runBatchCreate({
       actionName: 'addRecordActions',
       values,
       itemField: 'recordActions',
       resultField: 'recordActions',
       currentRoles: options.currentRoles,
+      authoringContext: options.authoringContext,
       invoke: (itemValues, options) => this.addRecordAction(itemValues, options),
     });
   }
@@ -18770,6 +18909,7 @@ export class FlowSurfacesService {
     const options = {
       transaction: ctx.transaction,
       currentRoles: runtimeOptions.currentRoles,
+      authoringContext: runtimeOptions.authoringContext,
       popupTemplateAliasSession: runtimeOptions.popupTemplateAliasSession,
       popupTemplateTreeCache: runtimeOptions.popupTemplateTreeCache,
     };
@@ -20427,9 +20567,15 @@ export class FlowSurfacesService {
     itemField: string;
     resultField: string;
     currentRoles?: FlowSurfaceRequestRoles;
+    authoringContext?: FlowSurfaceRunJSAuthoringContext;
     invoke: (
       itemValues: Record<string, any>,
-      options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; enabledPackages?: ReadonlySet<string> },
+      options: {
+        transaction?: any;
+        currentRoles?: FlowSurfaceRequestRoles;
+        enabledPackages?: ReadonlySet<string>;
+        authoringContext?: FlowSurfaceRunJSAuthoringContext;
+      },
     ) => Promise<any>;
   }) {
     const target = this.normalizeWriteTarget(options.actionName, options.values?.target, options.values);
@@ -20474,6 +20620,7 @@ export class FlowSurfacesService {
             transaction,
             currentRoles: options.currentRoles,
             enabledPackages,
+            authoringContext: options.authoringContext,
           }),
         );
         result.ok = true;

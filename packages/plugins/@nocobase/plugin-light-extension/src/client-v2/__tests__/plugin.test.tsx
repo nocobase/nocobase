@@ -25,6 +25,7 @@ import {
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '@nocobase/runjs-workspace/client-v2';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import enUS from '../../locale/en-US.json';
@@ -36,7 +37,6 @@ import {
   JSPageLightExtensionSourceField,
 } from '../components/JSBlockLightExtensionSourceField';
 import PluginLightExtensionClientV2 from '../plugin';
-import { type RunJSStudioToolbarContext, runJSStudioToolbarRegistry } from '../vsc-file/public-api';
 
 describe('plugin-light-extension client-v2 locale entries', () => {
   it('keeps English and Chinese keys aligned', () => {
@@ -91,6 +91,14 @@ describe('PluginLightExtensionClientV2', () => {
       JSPageSourceModeField,
     );
     expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBeUndefined();
+    expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toEqual([
+      '@nocobase/runjs-workspace/inline-settings-descriptor',
+    ]);
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
+      '@nocobase/runjs-workspace/runjs-studio',
+    ]);
+    expect(getToolbarContributionKeys()).not.toContain('@nocobase/plugin-light-extension/move-source');
     expectLightExtensionRegistrations(0);
 
     await plugin.load();
@@ -109,23 +117,23 @@ describe('PluginLightExtensionClientV2', () => {
 
 function expectLightExtensionRegistrations(count: number) {
   expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(count);
-  expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(count);
   expect(
     RunJSEditorRegistry.getProviders().filter((provider) => provider.key === 'light-extension-runjs-value'),
   ).toHaveLength(count);
   expect(
-    RunJSEditorRegistry.getProviders().filter((provider) => provider.key === '@nocobase/plugin-vsc-file/runjs-studio'),
+    getToolbarContributionKeys().filter((key) => key === '@nocobase/plugin-light-extension/move-source'),
   ).toHaveLength(count);
-  expect(
-    runJSStudioToolbarRegistry
-      .list({
-        locator: { kind: 'flowModel.step' },
-        workspace: {
-          permissions: { canWrite: true },
-          source: { metadata: { modelUse: 'JSBlockModel' } },
-        },
-        readOnly: false,
-      } as unknown as RunJSStudioToolbarContext)
-      .filter((contribution) => contribution.key === '@nocobase/plugin-light-extension/move-source'),
-  ).toHaveLength(count);
+}
+
+function getToolbarContributionKeys(): string[] {
+  return runJSStudioToolbarRegistry
+    .list({
+      locator: { kind: 'flowModel.step' },
+      workspace: {
+        permissions: { canWrite: true },
+        source: { metadata: { modelUse: 'JSBlockModel' } },
+      },
+      readOnly: false,
+    } as unknown as RunJSStudioToolbarContext)
+    .map((contribution) => contribution.key);
 }

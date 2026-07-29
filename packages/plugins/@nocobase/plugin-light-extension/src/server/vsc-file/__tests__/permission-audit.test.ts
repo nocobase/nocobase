@@ -8,12 +8,14 @@
  */
 
 import type { Context } from '@nocobase/actions';
+import {
+  runJSSourceAuditActionNames,
+  type VscPermissionHookInput,
+  vscFileAuditActionNames,
+} from '@nocobase/runjs-workspace/server';
+import { VscError, getRunJSSourceOwnerId, type RunJSSourceLocator } from '@nocobase/runjs-workspace/shared';
 import { MockServer, createMockServer } from '@nocobase/test';
 
-import { VscError } from '../../../shared/vsc-file/errors';
-import { getRunJSSourceOwnerId, type RunJSSourceLocator } from '../../../shared/vsc-file/runjs-source-types';
-import { runJSSourceAuditActionNames, vscFileAuditActionNames } from '../audit';
-import type { VscPermissionHookInput } from '../permissions';
 import PluginLightExtensionServer from '../../plugin';
 import { RemoteStore } from '../remotes/RemoteStore';
 import { SyncJobStore } from '../remotes/SyncJobStore';
@@ -277,8 +279,13 @@ describe('vsc-file permission hooks and audit registration', () => {
     const remote = await new RemoteStore(app.db).create({
       repoId: repository.id,
       name: 'origin',
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null },
+      provider: 'git',
+      config: {
+        url: 'https://git.example.com/nocobase/demo.git',
+        branch: 'main',
+        subdirectory: null,
+        transport: 'https',
+      },
       authRef: null,
     });
     await new SyncJobStore(app.db).createOrGet({

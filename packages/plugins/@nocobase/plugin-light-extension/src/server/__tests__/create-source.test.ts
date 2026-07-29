@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
 import type { Transaction } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
@@ -15,7 +14,10 @@ import { vi } from 'vitest';
 
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginLightExtensionServer from '../plugin';
-import { createLightExtensionReposResource } from '../resources/lightExtensionRepos';
+import type { LightExtensionCreateJobRecord } from '../../shared/types';
+import { LightExtensionCreateJobExecutor } from '../services/LightExtensionCreateJobExecutor';
+import { LightExtensionCreateJobStore } from '../services/LightExtensionCreateJobStore';
+import type { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
 import type { LightExtensionRepoService } from '../services/LightExtensionRepoService';
 import type { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
 
@@ -33,13 +35,12 @@ describe('plugin-light-extension initial source creation', () => {
   });
 
   it('creates and compiles the default source as the first version when ZIP is omitted', async () => {
-    const createResponse = await app
-      .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: { name: 'Default Source' },
-      });
-    const repo = createResponse.body.data;
+    const createResponse = await app.agent().post('/lightExtensionRepos:create').send({ name: 'Default Source' });
+    expect(createResponse.status).toBe(202);
+    const accepted = createResponse.body.data;
+    await waitForSuccessfulCreate(app, accepted.id, accepted.targetRepoId);
+    const repoResponse = await app.agent().resource('lightExtensionRepos').get({ filterByTk: accepted.targetRepoId });
+    const repo = repoResponse.body.data;
     const pullResponse = await app
       .agent()
       .resource('lightExtensionFiles')
@@ -59,7 +60,6 @@ describe('plugin-light-extension initial source creation', () => {
         values: { repoId: repo.id },
       });
 
-    expect(createResponse.status).toBe(200);
     expect(repo).toMatchObject({
       healthStatus: 'ready',
       headCommitId: expect.stringMatching(/^vscc_/),
@@ -92,25 +92,13 @@ describe('plugin-light-extension initial source creation', () => {
 
     const createResponse = await app
       .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: {
-          name: 'Removed RunJS Source',
-          zipBase64,
-        },
-      });
+      .post('/lightExtensionRepos:create')
+      .send({ name: 'Removed RunJS Source', zipBase64 });
 
-    expect(createResponse.status).toBe(422);
-    expect(createResponse.body.errors[0]).toMatchObject({
-      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([
-          expect.objectContaining({
-            code: 'workspace_path_not_allowed',
-            path: 'src/client/runjs/example/index.ts',
-          }),
-        ]),
-      },
+    expect(createResponse.status).toBe(202);
+    await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
+      status: 'failed',
+      errorCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
     });
   });
 
@@ -123,14 +111,13 @@ describe('plugin-light-extension initial source creation', () => {
 
     const createResponse = await app
       .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: {
-          name: 'Uploaded Source',
-          zipBase64,
-        },
-      });
-    const repo = createResponse.body.data;
+      .post('/lightExtensionRepos:create')
+      .send({ name: 'Uploaded Source', zipBase64 });
+    expect(createResponse.status).toBe(202);
+    const accepted = createResponse.body.data;
+    await waitForSuccessfulCreate(app, accepted.id, accepted.targetRepoId);
+    const repoResponse = await app.agent().resource('lightExtensionRepos').get({ filterByTk: accepted.targetRepoId });
+    const repo = repoResponse.body.data;
     const pullResponse = await app
       .agent()
       .resource('lightExtensionFiles')
@@ -144,7 +131,6 @@ describe('plugin-light-extension initial source creation', () => {
         values: { repoId: repo.id },
       });
 
-    expect(createResponse.status).toBe(200);
     expect(repo).toMatchObject({ healthStatus: 'ready', headCommitId: expect.any(String) });
     expect(pullResponse.body.data.files.map((file) => file.path)).toEqual([
       'README.md',
@@ -172,25 +158,13 @@ describe('plugin-light-extension initial source creation', () => {
 
     const createResponse = await app
       .agent()
-      .resource('lightExtensionRepos')
-      .create({
-        values: {
-          name: 'Broken Uploaded Source',
-          zipBase64,
-        },
-      });
+      .post('/lightExtensionRepos:create')
+      .send({ name: 'Broken Uploaded Source', zipBase64 });
 
-    expect(createResponse.status).toBe(422);
-    expect(createResponse.body.errors[0]).toMatchObject({
-      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([
-          expect.objectContaining({
-            severity: 'error',
-            path: 'src/client/js-blocks/broken/index.tsx',
-          }),
-        ]),
-      },
+    expect(createResponse.status).toBe(202);
+    await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
+      status: 'failed',
+      errorCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
     });
     await expect(app.db.getRepository('lightExtensionRepos').count()).resolves.toBe(repoCount);
     await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(vscRepoCount);
@@ -221,38 +195,111 @@ describe('plugin-light-extension initial source creation', () => {
     const runtimeCompileService = {
       compileCurrentRuntime: vi.fn(),
     } as unknown as LightExtensionRuntimeCompileService;
-    const resource = createLightExtensionReposResource(app.db, repoService, runtimeCompileService);
-    const next = vi.fn(async () => {});
-    const ctx = {
-      action: {
-        params: {
-          values: {
-            name: 'Missing Initial Commit',
-          },
-        },
-      },
-      request: {
-        headers: {},
-      },
-    } as unknown as Context;
+    Object.assign(repoService, { findInternalRepoById: vi.fn(async () => null) });
+    const executor = new LightExtensionCreateJobExecutor(
+      app.db,
+      repoService,
+      runtimeCompileService,
+      {} as LightExtensionCreateFromRemoteService,
+    );
 
-    await resource.actions?.create?.(ctx, next);
-
-    expect((ctx as { status?: number }).status).toBe(500);
-    expect((ctx as { body?: unknown }).body).toMatchObject({
-      errors: [
-        expect.objectContaining({
-          code: 'LIGHT_EXTENSION_SOURCE_ERROR',
-          details: { repoId },
-        }),
-      ],
+    await expect(
+      executor.execute(createJob('lecj_missing_commit', repoId, 'Missing Initial Commit')),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SOURCE_ERROR',
+      details: { repoId },
     });
+
     expect(runtimeCompileService.compileCurrentRuntime).not.toHaveBeenCalled();
-    expect(next).not.toHaveBeenCalled();
     await expect(
       app.db.getRepository('lightExtensionRepos').findOne({
         filterByTk: repoId,
       }),
     ).resolves.toBeNull();
   });
+
+  it('fails stale pending and running jobs and releases their retained input', async () => {
+    const createdAt = new Date('2026-07-27T00:00:00.000Z');
+    const store = new LightExtensionCreateJobStore(app.db, () => createdAt);
+    const pending = await store.enqueue(createJobInput('pending'));
+    const running = await store.enqueue(createJobInput('running'));
+    await store.start(running.id, 'main');
+
+    const cleanupStore = new LightExtensionCreateJobStore(app.db, () => new Date('2030-07-27T00:11:00.000Z'));
+    const failed = await cleanupStore.failStale('main', {
+      pendingTimeoutMs: 5 * 60_000,
+      runningTimeoutMs: 10 * 60_000,
+    });
+
+    expect(failed.map((job) => job.id).sort()).toEqual([pending.id, running.id].sort());
+    expect(failed).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: 'failed', payload: null, reservationKey: null }),
+        expect.objectContaining({ status: 'failed', payload: null, reservationKey: null }),
+      ]),
+    );
+  });
 });
+
+function createJobInput(name: string) {
+  return {
+    applicationName: 'main',
+    targetRepoId: `ler_stale_${name}`,
+    name,
+    normalizedName: name,
+    sourceType: 'template' as const,
+    payload: { sourceType: 'template' as const, message: 'Initial light extension source' },
+  };
+}
+
+async function waitForSuccessfulCreate(app: MockServer, jobId: string, repoId: string): Promise<void> {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const job = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (job?.get('status') === 'failed') {
+      throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
+    }
+    if (!job) {
+      const repo = await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId });
+      if (repo) {
+        return;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Creation job ${jobId} did not finish`);
+}
+
+async function waitForFailedCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const record = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (record?.get('status') === 'failed') {
+      return record.toJSON() as LightExtensionCreateJobRecord;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Creation job ${jobId} did not finish`);
+}
+
+function createJob(id: string, targetRepoId: string, name: string): LightExtensionCreateJobRecord {
+  return {
+    id,
+    applicationName: 'main',
+    targetRepoId,
+    name,
+    normalizedName: 'missing-initial-commit',
+    title: null,
+    description: null,
+    sourceType: 'template',
+    status: 'running',
+    payload: { sourceType: 'template', message: 'Initial light extension source' },
+    errorCode: null,
+    errorMessage: null,
+    reservationKey: 'sha256:missing',
+    actorUserId: null,
+    requestId: null,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}

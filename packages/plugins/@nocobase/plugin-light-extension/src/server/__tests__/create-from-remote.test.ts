@@ -13,12 +13,13 @@ import {
   RemoteSyncError,
   RemoteSyncRuntimeService,
   VscPermissionHookRegistry,
-  validateVscRemoteAuthRef,
 } from '../vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 import { DeterministicRemoteAdapter } from '../vsc-file/remotes/testing/DeterministicRemoteAdapter';
+import { GitCommandRunner, GitRemoteAdapter } from '../vsc-file/remotes/providers/git';
+import { validateVscRemoteAuthRef } from '../vsc-file/remotes/credentialRef';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
@@ -32,10 +33,10 @@ import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensio
 import { ReferenceService } from '../services/ReferenceService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
-  branch: '',
+  url: 'https://git.example.com/nocobase/extensions.git',
+  branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('LightExtensionCreateFromRemoteService', () => {
@@ -103,12 +104,13 @@ describe('LightExtensionCreateFromRemoteService', () => {
       {
         name: 'Remote Sales KPI',
         title: 'Remote Sales KPI',
-        description: 'Imported from GitHub',
-        provider: 'github',
+        description: 'Imported from Git',
+        provider: 'git',
         config: remoteConfig,
-        authRef: '{{ $env.GITHUB_SYNC }}',
+        authRef: '{{ $env.GIT_SYNC }}',
       },
       { requestId: 'req_create_from_git_main_audit' },
+      { targetRepoId: 'ler_durable_target' },
     );
     const internalRepo = await repoService.getInternalRepo(result.repo.id);
     const remote = await runtime.getRemote(internalRepo.vscRepoId, 'origin');
@@ -121,12 +123,12 @@ describe('LightExtensionCreateFromRemoteService', () => {
       filter: { repoId: result.repo.id, requestId: 'req_create_from_git_main_audit' },
     });
 
-    expect(validateCredential).toHaveBeenCalledWith('{{ $env.GITHUB_SYNC }}');
+    expect(validateCredential).toHaveBeenCalledWith('{{ $env.GIT_SYNC }}');
     expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
     expect(publishPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(result).toMatchObject({
-      repo: { healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
-      remote: { config: { branch: 'main' }, authRef: '{{ $env.GITHUB_SYNC }}' },
+      repo: { id: 'ler_durable_target', healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
+      remote: { config: { branch: 'main' }, authRef: '{{ $env.GIT_SYNC }}' },
       plan: { state: 'in-sync', action: 'noop' },
       revision: 'remote-initial',
       fileCount: 2,
@@ -148,15 +150,62 @@ describe('LightExtensionCreateFromRemoteService', () => {
     });
     expect(remote).toMatchObject({ lastSyncedAt: expect.any(String) });
     expect(auditLogs.map((log) => log.get('action'))).toEqual(['syncCreateFromGit']);
-    expect(JSON.stringify(auditLogs.map((log) => log.toJSON()))).not.toContain('GITHUB_SYNC');
+    expect(JSON.stringify(auditLogs.map((log) => log.toJSON()))).not.toContain('GIT_SYNC');
   });
+
+  it.skipIf(process.env.RUN_LIGHT_EXTENSION_GITHUB_SSH_E2E !== '1')(
+    'imports and compiles all entries from gchust/nocobase-light-extension at 6fd1c4f8',
+    async () => {
+      const registry = new RemoteSyncAdapterRegistry();
+      registry.register(
+        new GitRemoteAdapter({
+          credentialResolver: { resolve: async () => null },
+          runner: new GitCommandRunner(),
+        }),
+      );
+      const gitRuntime = new RemoteSyncRuntimeService(app.db, {
+        adapterRegistry: registry,
+        credentialResolver: { validate: validateCredential },
+      });
+      const gitService = new LightExtensionCreateFromRemoteService(
+        app.db,
+        auditService,
+        repoService,
+        runtimeCompileService,
+        () => gitRuntime,
+      );
+
+      const result = await gitService.create({
+        name: 'Git compile fixture',
+        title: 'Git compile fixture',
+        provider: 'git',
+        config: {
+          url: 'https://github.com/gchust/nocobase-light-extension.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
+        authRef: null,
+      });
+      const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: result.repo.id } });
+
+      expect(result).toMatchObject({
+        repo: { lifecycleStatus: 'enabled', healthStatus: 'ready' },
+        revision: '6fd1c4f8bfaec9010298ff514aea3b41212c59a8',
+        fileCount: 60,
+      });
+      expect(entries).toHaveLength(16);
+      expect(entries.every((entry) => entry.get('healthStatus') === 'ready')).toBe(true);
+    },
+    60_000,
+  );
 
   it('preserves removed generic RunJS files as inert remote source', async () => {
     adapter.advanceRemote([...validFiles(), ...removedGenericRunJSFiles()], { branch: 'main' });
 
     const result = await service.create({
       name: 'Remote Legacy RunJS',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });
@@ -179,7 +228,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
   it('keeps the fetched revision as the baseline when the remote advances later', async () => {
     const result = await service.create({
       name: 'Remote Advances',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });
@@ -200,7 +249,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
   it('reuses the existing name conflict and leaves no second local or remote records', async () => {
     await service.create({
       name: 'Duplicate Remote',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });
@@ -209,7 +258,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await expect(
       service.create({
         name: 'duplicate remote',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),
@@ -222,13 +271,13 @@ describe('LightExtensionCreateFromRemoteService', () => {
     adapter.setFailure(
       'fetch',
       new RemoteSyncError('REMOTE_UNAVAILABLE', 'provider details', {
-        details: { provider: 'github', reasonCode: 'fetch-failed' },
+        details: { provider: 'git', reasonCode: 'fetch-failed' },
       }),
     );
     await expect(
       service.create({
         name: 'Fetch Failure',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),
@@ -249,7 +298,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await expect(
       service.create({
         name: 'Validation Failure',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),
@@ -266,10 +315,10 @@ describe('LightExtensionCreateFromRemoteService', () => {
       service.create({
         name: '!!!',
         title: '  Invalid metadata  ',
-        description: '  Must fail before GitHub  ',
-        provider: 'github',
+        description: '  Must fail before remote access  ',
+        provider: 'git',
         config: remoteConfig,
-        authRef: '{{ $env.GITHUB_SYNC }}',
+        authRef: '{{ $env.GIT_SYNC }}',
       }),
     ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
 
@@ -291,7 +340,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await expect(
       service.create({
         name: 'Invalid Snapshot',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),
@@ -320,7 +369,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await expect(
       service.create({
         name: 'Compile Failure',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),
@@ -336,7 +385,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await expect(
       service.create({
         name: 'Baseline Failure',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),
@@ -348,7 +397,7 @@ describe('LightExtensionCreateFromRemoteService', () => {
     await expect(
       service.create({
         name: 'Audit Failure',
-        provider: 'github',
+        provider: 'git',
         config: remoteConfig,
         authRef: null,
       }),

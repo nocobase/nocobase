@@ -42,6 +42,10 @@ export interface LightExtensionCreateFromRemoteResult {
   fileCount: number;
 }
 
+export interface LightExtensionCreateFromRemoteOptions {
+  targetRepoId?: string;
+}
+
 export class LightExtensionCreateFromRemoteService {
   constructor(
     private readonly db: Database,
@@ -54,6 +58,7 @@ export class LightExtensionCreateFromRemoteService {
   async create(
     input: LightExtensionCreateFromRemoteInput,
     ctx: LightExtensionServiceContext = {},
+    options: LightExtensionCreateFromRemoteOptions = {},
   ): Promise<LightExtensionCreateFromRemoteResult> {
     const metadata = this.repoService.normalizeCreateMetadata(input);
     const runtime = this.getRemoteSyncRuntime();
@@ -66,7 +71,7 @@ export class LightExtensionCreateFromRemoteService {
     const revision = requireRemoteRevision(fetched.snapshot.revision);
     const initialFiles = toInitialFiles(fetched.snapshot.files);
     this.assertValidInitialFiles(initialFiles);
-    const repoId = `ler_${uid()}`;
+    const repoId = options.targetRepoId || `ler_${uid()}`;
     const prepared = await this.runtimeCompileService.prepareInitialWorkspace(
       { repoId, files: initialFiles },
       {

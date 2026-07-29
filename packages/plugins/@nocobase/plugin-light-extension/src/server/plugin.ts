@@ -8,25 +8,25 @@
  */
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH } from '@nocobase/light-extension-sdk/schema';
-import { registerFlowSurfaceRunJSWorkspaceBootstrapPort } from '@nocobase/plugin-flow-engine';
-import type {
-  RemoteSyncRuntime,
-  RunJSSourceAdapter,
-  RunJSSourceAdapterRegistry,
-  RunJSSourceAuthoringInspector,
-  VscPermissionHook,
-} from './vsc-file/public-api';
 import {
-  createFlowSurfaceRunJSWorkspaceBootstrapPort,
+  getOrCreateRunJSWorkspaceServerModule,
+  type RunJSSourceAdapter,
+  type RunJSSourceAdapterRegistry,
+  type RunJSSourceAuthoringInspector,
+  type RunJSWorkspaceServerModule,
+  type VscPermissionHook,
+  type VscPermissionHookRegistry,
   VscFileService,
-  VscPermissionHookRegistry,
-} from './vsc-file/public-api';
-import { VscFileServerModule } from './vsc-file/plugin';
+} from '@nocobase/runjs-workspace/server';
+import type { RemoteSyncRuntime } from './vsc-file/public-api';
+import { LightExtensionRemoteSyncModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
 import { LightExtensionError } from '../shared/errors';
+import { registerLightExtensionDomainAvailabilityGuard } from './domainAvailability';
+import { lightExtensionExternalizationCapabilities } from './externalizationCapabilities';
 import { lightExtensionEntryV1SchemaFileContent } from './lightExtensionEntrySchema';
 import {
   createLightExtensionCapabilitiesResource,
@@ -35,6 +35,10 @@ import {
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
+import {
+  createLightExtensionCreateJobsResource,
+  lightExtensionCreateJobActionNames,
+} from './resources/lightExtensionCreateJobs';
 import {
   createLightExtensionSyncResource,
   lightExtensionSyncActionNames,
@@ -53,6 +57,10 @@ import { createLightExtensionsResource, lightExtensionActionNames } from './reso
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
+import { LightExtensionCreateFromRemoteService } from './services/LightExtensionCreateFromRemoteService';
+import { LightExtensionCreateJobExecutor } from './services/LightExtensionCreateJobExecutor';
+import { LightExtensionCreateJobRunner } from './services/LightExtensionCreateJobRunner';
+import { LightExtensionCreateJobStore } from './services/LightExtensionCreateJobStore';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -131,7 +139,9 @@ const DOCUMENTED_RUNTIME_RESOLVE_ROUTE = '/light-extension-runtime/resolve';
 const DOCUMENTED_RUNTIME_ARTIFACT_ROUTE = /^\/light-extension-runtime\/artifacts\/([^/]+)$/;
 
 export class PluginLightExtensionServer extends Plugin {
-  private vscFileServerModule?: VscFileServerModule;
+  private runJSWorkspaceServerModule?: RunJSWorkspaceServerModule;
+
+  private remoteSyncModule?: LightExtensionRemoteSyncModule;
 
   private auditService?: LightExtensionAuditService;
 
@@ -163,7 +173,7 @@ export class PluginLightExtensionServer extends Plugin {
 
   private unregisterVscPermissionHook?: () => void;
 
-  private unregisterRunJSWorkspaceBootstrapPort?: () => void;
+  private unregisterExternalizationCapability?: () => void;
 
   private remotePullRecoveryListener?: () => Promise<void>;
 
@@ -171,28 +181,42 @@ export class PluginLightExtensionServer extends Plugin {
 
   private compileShutdownListener?: () => Promise<void>;
 
+  private createJobStore?: LightExtensionCreateJobStore;
+
+  private createJobExecutor?: LightExtensionCreateJobExecutor;
+
+  private createJobRunner?: LightExtensionCreateJobRunner;
+
+  private createJobStartListener?: () => Promise<void>;
+
+  private createJobStopListener?: () => Promise<void>;
+
+  private domainAvailable = false;
+
+  private domainAvailabilityGuardRegistered = false;
+
   registerPermissionHook(hook: VscPermissionHook): () => void {
-    return this.requireVscFileServerModule().registerPermissionHook(hook);
+    return this.requireRunJSWorkspaceServerModule().registerPermissionHook(hook);
   }
 
   getPermissionHookRegistry(): VscPermissionHookRegistry {
-    return this.requireVscFileServerModule().getPermissionHookRegistry();
+    return this.requireRunJSWorkspaceServerModule().getPermissionHookRegistry();
   }
 
   registerRunJSSourceAdapter(adapter: RunJSSourceAdapter): () => void {
-    return this.requireVscFileServerModule().registerRunJSSourceAdapter(adapter);
+    return this.requireRunJSWorkspaceServerModule().registerRunJSSourceAdapter(adapter);
   }
 
   getRunJSSourceAdapterRegistry(): RunJSSourceAdapterRegistry {
-    return this.requireVscFileServerModule().getRunJSSourceAdapterRegistry();
+    return this.requireRunJSWorkspaceServerModule().getRunJSSourceAdapterRegistry();
   }
 
   registerRunJSSourceAuthoringInspector(inspector: RunJSSourceAuthoringInspector): () => void {
-    return this.requireVscFileServerModule().registerRunJSSourceAuthoringInspector(inspector);
+    return this.requireRunJSWorkspaceServerModule().registerRunJSSourceAuthoringInspector(inspector);
   }
 
   getRemoteSyncRuntime(): RemoteSyncRuntime {
-    return this.requireVscFileServerModule().getRemoteSyncRuntime();
+    return this.requireRemoteSyncModule().getRemoteSyncRuntime();
   }
 
   async syncFlowModelReferencesForNodeTree(
@@ -215,7 +239,7 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
 
-    await this.requireVscFileServerModule().beforeLoad();
+    await this.requireRunJSWorkspaceServerModule().beforeLoad();
 
     if (this.options.packageName || db.hasCollection('lightExtensionRepos')) {
       return;
@@ -232,27 +256,24 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
 
+    await this.shutdownCreateJobRunner();
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
-    const vscFileServerModule = this.requireVscFileServerModule();
-    await vscFileServerModule.load();
-    this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
-    this.unregisterRunJSWorkspaceBootstrapPort = registerFlowSurfaceRunJSWorkspaceBootstrapPort(
-      this.app,
-      createFlowSurfaceRunJSWorkspaceBootstrapPort(
-        db,
-        vscFileServerModule.getRunJSSourceAdapterRegistry(),
-        vscFileServerModule.getPermissionHookRegistry(),
-        vscFileServerModule.getRunJSSourceAuthoringInspectorRegistry(),
-      ),
-    );
+    this.unregisterExternalizationCapabilityWhenNeeded();
+    const workspaceModule = this.requireRunJSWorkspaceServerModule();
+    await workspaceModule.load();
+    this.registerExternalizationCapability(workspaceModule);
+    const remoteSyncModule = this.requireRemoteSyncModule();
+    await remoteSyncModule.load();
+    this.domainAvailable = true;
+    this.registerDomainAvailabilityGuard();
 
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge();
     const app = this.app as unknown as AppWithPluginEvents;
-    const sharedVscPermissionHooks = vscFileServerModule.getPermissionHookRegistry();
+    const sharedVscPermissionHooks = workspaceModule.getPermissionHookRegistry();
     this.repoService = new LightExtensionRepoService(
       db,
       this.auditService,
@@ -292,10 +313,34 @@ export class PluginLightExtensionServer extends Plugin {
         validator: this.validator,
       },
     );
+    this.createJobStore = new LightExtensionCreateJobStore(db);
+    const createFromRemoteService = new LightExtensionCreateFromRemoteService(
+      db,
+      this.auditService,
+      this.repoService,
+      this.runtimeCompileService,
+      () => remoteSyncModule.getRemoteSyncRuntime(),
+    );
+    this.createJobExecutor = new LightExtensionCreateJobExecutor(
+      db,
+      this.repoService,
+      this.runtimeCompileService,
+      createFromRemoteService,
+    );
+    this.createJobRunner = new LightExtensionCreateJobRunner(
+      this.createJobStore,
+      this.createJobExecutor,
+      {
+        applicationName: this.app.name,
+        eventQueue: this.app.eventQueue,
+        logger: this.app.logger,
+      },
+      this.auditService,
+    );
     this.repoService.useReferenceService(this.referenceService);
     this.repoService.useRemoteSyncLifecycleGate({
       assertRepositoryIdle: (repoId, transaction) =>
-        vscFileServerModule.getRemoteSyncRuntime().assertRepositoryIdle(repoId, transaction),
+        remoteSyncModule.getRemoteSyncRuntime().assertRepositoryIdle(repoId, transaction),
     });
     this.runtimeCompileService.useReferenceService(this.referenceService);
     this.moveSourceService = new MoveSourceService(
@@ -305,7 +350,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.entryService,
       this.runtimeCompileService,
       this.referenceService,
-      () => vscFileServerModule.getRunJSSourceAdapterRegistry(),
+      () => workspaceModule.getRunJSSourceAdapterRegistry(),
       this.app.name,
     );
     this.moveSourceService.useAuditService(this.auditService);
@@ -314,8 +359,8 @@ export class PluginLightExtensionServer extends Plugin {
       this.entryService,
       this.workspaceCompilerBridge,
       this.referenceService,
-      () => new VscFileService(db, vscFileServerModule.getPermissionHookRegistry()),
-      () => vscFileServerModule.getRunJSSourceAdapterRegistry(),
+      () => new VscFileService(db, workspaceModule.getPermissionHookRegistry()),
+      () => workspaceModule.getRunJSSourceAdapterRegistry(),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionsResource(this.compilePreviewService, this.moveSourceService, this.moveToInlineService),
@@ -327,7 +372,15 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionReferencesResource(this.referenceService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionReposResource(db, this.repoService, this.runtimeCompileService),
+      createLightExtensionReposResource(
+        db,
+        this.repoService,
+        this.runtimeCompileService,
+        this.createJobStore,
+        this.createJobRunner,
+        this.app.name,
+        this.auditService,
+      ),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionFilesResource(this.fileService, this.runtimeCompileService),
@@ -345,7 +398,18 @@ export class PluginLightExtensionServer extends Plugin {
         permissionService: this.permissionService,
         repoService: this.repoService,
         runtimeCompileService: this.runtimeCompileService,
-        getRemoteSyncRuntime: () => vscFileServerModule.getRemoteSyncRuntime(),
+        getRemoteSyncRuntime: () => remoteSyncModule.getRemoteSyncRuntime(),
+        createJobStore: this.createJobStore,
+        createJobRunner: this.createJobRunner,
+        applicationName: this.app.name,
+      }),
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionCreateJobsResource({
+        store: this.createJobStore,
+        permissionService: this.permissionService,
+        applicationName: this.app.name,
+        auditService: this.auditService,
       }),
     );
     this.registerResourceAlias({
@@ -384,43 +448,74 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerAclActions();
     this.registerVscPermissionHook();
     this.registerRemotePullRecoveryListener();
+    this.registerCreateJobLifecycleListeners();
     this.registerCompileShutdownListener();
   }
 
   async afterDisable() {
+    await this.shutdownCreateJobRunner();
+    this.domainAvailable = false;
+    this.unregisterExternalizationCapabilityWhenNeeded();
     await this.shutdownCompileInfrastructure();
-    this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
-    await this.vscFileServerModule?.afterDisable();
+    await this.remoteSyncModule?.afterDisable();
   }
 
   async afterEnable() {
+    this.domainAvailable = true;
+    this.registerExternalizationCapability(this.requireRunJSWorkspaceServerModule());
+    await this.startCreateJobRunner();
     await this.runRemoteRecovery();
   }
 
   async remove() {
-    this.unregisterRunJSWorkspaceBootstrapPortWhenNeeded();
+    await this.shutdownCreateJobRunner();
+    this.domainAvailable = false;
+    this.unregisterExternalizationCapabilityWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
-    await this.vscFileServerModule?.remove();
+    await this.remoteSyncModule?.remove();
     await this.shutdownCompileInfrastructure();
   }
 
-  private requireVscFileServerModule(): VscFileServerModule {
-    if (!this.vscFileServerModule) {
-      const db = this.db;
-      if (!db) {
-        throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'VSC file server module is unavailable');
-      }
-      this.vscFileServerModule = new VscFileServerModule(this.app, db);
+  private requireRunJSWorkspaceServerModule(): RunJSWorkspaceServerModule {
+    const db = this.db;
+    if (!db) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+        'RunJS Workspace server module is unavailable',
+      );
     }
-    return this.vscFileServerModule;
+    this.runJSWorkspaceServerModule = getOrCreateRunJSWorkspaceServerModule(this.app, db);
+    return this.runJSWorkspaceServerModule;
   }
 
-  private unregisterRunJSWorkspaceBootstrapPortWhenNeeded() {
-    this.unregisterRunJSWorkspaceBootstrapPort?.();
-    this.unregisterRunJSWorkspaceBootstrapPort = undefined;
+  private requireRemoteSyncModule(): LightExtensionRemoteSyncModule {
+    const db = this.db;
+    if (!db) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Remote sync runtime is unavailable');
+    }
+    if (!this.remoteSyncModule || !this.remoteSyncModule.isBoundTo(db)) {
+      this.remoteSyncModule = new LightExtensionRemoteSyncModule(
+        this.app,
+        db,
+        this.requireRunJSWorkspaceServerModule().getPermissionHookRegistry(),
+      );
+    }
+    return this.remoteSyncModule;
+  }
+
+  private registerExternalizationCapability(workspaceModule: RunJSWorkspaceServerModule) {
+    this.unregisterExternalizationCapabilityWhenNeeded();
+    this.unregisterExternalizationCapability = workspaceModule.registerRunJSExternalizationCapability(
+      lightExtensionExternalizationCapabilities,
+    );
+  }
+
+  private unregisterExternalizationCapabilityWhenNeeded() {
+    this.unregisterExternalizationCapability?.();
+    this.unregisterExternalizationCapability = undefined;
   }
 
   private registerCompileShutdownListener() {
@@ -434,6 +529,22 @@ export class PluginLightExtensionServer extends Plugin {
     };
     this.compileShutdownListener = listener;
     app.on('beforeStop', listener);
+  }
+
+  private registerDomainAvailabilityGuard() {
+    if (this.domainAvailabilityGuardRegistered) {
+      return;
+    }
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.use) {
+      return;
+    }
+    registerLightExtensionDomainAvailabilityGuard(
+      this.app,
+      () => this.domainAvailable,
+      'light-extension-domain-availability',
+    );
+    this.domainAvailabilityGuardRegistered = true;
   }
 
   private removeCompileShutdownListener() {
@@ -458,10 +569,64 @@ export class PluginLightExtensionServer extends Plugin {
     }
   }
 
+  private registerCreateJobLifecycleListeners() {
+    this.removeCreateJobLifecycleListeners();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    this.createJobStartListener = async () => {
+      await this.startCreateJobRunner();
+    };
+    this.createJobStopListener = async () => {
+      await this.shutdownCreateJobRunner();
+    };
+    app.on('afterStart', this.createJobStartListener);
+    app.on('beforeStop', this.createJobStopListener);
+  }
+
+  private removeCreateJobLifecycleListeners() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    for (const [eventName, listener] of [
+      ['afterStart', this.createJobStartListener],
+      ['beforeStop', this.createJobStopListener],
+    ] as const) {
+      if (!listener) {
+        continue;
+      }
+      if (app.off) {
+        app.off(eventName, listener);
+      } else {
+        app.removeListener?.(eventName, listener);
+      }
+    }
+    this.createJobStartListener = undefined;
+    this.createJobStopListener = undefined;
+  }
+
+  private async startCreateJobRunner(): Promise<void> {
+    if (!this.db?.hasCollection?.('lightExtensionCreateJobs')) {
+      return;
+    }
+    await this.createJobRunner?.start();
+  }
+
+  private async shutdownCreateJobRunner(): Promise<void> {
+    this.removeCreateJobLifecycleListeners();
+    const runner = this.createJobRunner;
+    this.createJobRunner = undefined;
+    this.createJobExecutor = undefined;
+    this.createJobStore = undefined;
+    if (runner) {
+      await runner.stop();
+    }
+  }
+
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
+    app.acl?.allow?.('lightExtensionCreateJobs', [...lightExtensionCreateJobActionNames], 'loggedIn');
     this.registerSyncAcl(app);
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
@@ -470,6 +635,7 @@ export class PluginLightExtensionServer extends Plugin {
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
+        ...lightExtensionCreateJobActionNames.map((action) => `lightExtensionCreateJobs:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
@@ -585,9 +751,9 @@ export class PluginLightExtensionServer extends Plugin {
       return;
     }
 
-    const vscFileServerModule = this.requireVscFileServerModule();
-    const permissionHooks = vscFileServerModule.getPermissionHookRegistry();
-    this.unregisterVscPermissionHook = vscFileServerModule.registerPermissionHook(
+    const workspaceModule = this.requireRunJSWorkspaceServerModule();
+    const permissionHooks = workspaceModule.getPermissionHookRegistry();
+    this.unregisterVscPermissionHook = workspaceModule.registerPermissionHook(
       this.permissionService.createVscPermissionHook(),
     );
     this.repoService?.useVscPermissionHookRegistry(permissionHooks);
@@ -629,11 +795,11 @@ export class PluginLightExtensionServer extends Plugin {
     if (!this.repoService || !this.permissionService || !this.runtimeCompileService || !this.auditService) {
       return;
     }
-    const vscFileServerModule = this.vscFileServerModule;
-    if (!vscFileServerModule) {
+    const remoteSyncModule = this.remoteSyncModule;
+    if (!remoteSyncModule) {
       return;
     }
-    const runtime = vscFileServerModule.getRemoteSyncRuntime();
+    const runtime = remoteSyncModule.getRemoteSyncRuntime();
     const jobs = await runtime.getPullCoordinator().listRecoverablePullJobs();
     const pullService = new LightExtensionRemotePullService(
       this.permissionService,
@@ -706,7 +872,7 @@ export class PluginLightExtensionServer extends Plugin {
   }
 
   private async runRemoteRecovery(): Promise<void> {
-    await this.vscFileServerModule?.afterEnable();
+    await this.remoteSyncModule?.afterEnable();
     await this.runRemotePullRecovery();
   }
 }

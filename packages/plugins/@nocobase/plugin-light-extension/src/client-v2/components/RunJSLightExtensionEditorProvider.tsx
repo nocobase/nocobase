@@ -96,6 +96,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const translate = props.t;
   const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
   const [currentBinding, setCurrentBinding] = React.useState(binding);
+  const [movedInlineValue, setMovedInlineValue] = React.useState<RunJSValue | null>(null);
   const [footerActions, setFooterActions] = React.useState<LightExtensionWorkspaceFooterActions | null>(null);
   const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
@@ -232,20 +233,10 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       };
       persistedValueRef.current = nextValue;
       previewAppliedRef.current = false;
-      await (props.onPersistedChange || props.onChange)?.(nextValue);
-      await closeEditorViewWithoutRestore();
+      setMovedInlineValue(nextValue);
+      (props.onPersistedChange || props.onChange)?.(nextValue);
     },
-    [
-      closeEditorViewWithoutRestore,
-      currentBinding,
-      api,
-      effectiveLocator,
-      props.onChange,
-      props.onPersistedChange,
-      translate,
-      value,
-      workspaceScope,
-    ],
+    [currentBinding, api, effectiveLocator, props.onChange, props.onPersistedChange, translate, value, workspaceScope],
   );
   const handlePersistedChange = React.useCallback(async () => {
     let nextValue = props.value;
@@ -338,6 +329,10 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       editorView.setFooter?.(null);
     };
   }, [editorView, footerActions, translate]);
+
+  if (movedInlineValue) {
+    return <InlineLightExtensionWorkspaceEditor {...props} value={movedInlineValue} />;
+  }
 
   if (!currentBinding || !workspaceScope) {
     return <Alert message={props.t?.('Selected light extension entry is unavailable')} showIcon type="error" />;
@@ -433,6 +428,7 @@ const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
 
   const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
   return props.renderNext?.({
+    value: props.value,
     workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
     ...(lightExtensionKind
       ? {

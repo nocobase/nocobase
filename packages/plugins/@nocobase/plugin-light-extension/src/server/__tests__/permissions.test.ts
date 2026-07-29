@@ -14,6 +14,7 @@ import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } from '../../constants';
 import { lightExtensionCapabilitiesActionNames } from '../resources/lightExtensionCapabilities';
+import { lightExtensionCreateJobActionNames } from '../resources/lightExtensionCreateJobs';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
@@ -72,6 +73,7 @@ describe('plugin-light-extension permission service', () => {
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
+        ...lightExtensionCreateJobActionNames.map((action) => `lightExtensionCreateJobs:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),

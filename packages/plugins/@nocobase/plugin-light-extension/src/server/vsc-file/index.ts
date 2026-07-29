@@ -8,7 +8,5 @@
  */
 
 export * from './public-api';
-export * from './config';
-export * from './services/VscFileMetrics';
-export * from './services/TreeService';
+export * from './plugin';
 export { default } from './plugin';

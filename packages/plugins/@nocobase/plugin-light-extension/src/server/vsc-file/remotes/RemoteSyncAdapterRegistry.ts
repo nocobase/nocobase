@@ -116,6 +116,16 @@ export class RemoteSyncAdapterRegistry {
     }
     return canonicalResult;
   }
+
+  async resolveConfigDraft(
+    provider: VscRemoteProvider,
+    input: unknown,
+    authRef: string | null,
+  ): Promise<VscRemoteNormalizedConfig> {
+    const adapter = this.require(provider);
+    const resolved = adapter.resolveConfigDraft ? await adapter.resolveConfigDraft(input, authRef) : input;
+    return this.normalizeConfig(provider, resolved);
+  }
 }
 
 function assertSafeNormalizedConfig(

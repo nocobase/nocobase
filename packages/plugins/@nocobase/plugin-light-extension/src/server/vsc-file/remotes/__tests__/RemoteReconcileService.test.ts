@@ -8,13 +8,15 @@
  */
 
 import { createMockDatabase, type Database } from '@nocobase/database';
-import path from 'path';
+import {
+  CommitService,
+  importRunJSWorkspaceCollections,
+  TreeService,
+  VscFileService,
+} from '@nocobase/runjs-workspace/server';
 import { vi } from 'vitest';
 
 import type { VscFileRemoteRecord, VscRemoteSnapshot } from '../../../../shared/vsc-file/remote-sync-types';
-import { VscFileService } from '../../services/VscFileService';
-import { CommitService } from '../../services/CommitService';
-import { TreeService } from '../../services/TreeService';
 import { ExternalCommitMapStore } from '../ExternalCommitMapStore';
 import { RemoteReconcileService, type RemoteReconcileRecoveryEvent } from '../RemoteReconcileService';
 import { RemoteSyncError } from '../RemoteSyncAdapter';
@@ -26,10 +28,10 @@ import { DeterministicRemoteAdapter } from '../testing/DeterministicRemoteAdapte
 import { loadVscSnapshot } from '../VscRemotePushService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('RemoteReconcileService', () => {
@@ -46,7 +48,7 @@ describe('RemoteReconcileService', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({ directory: path.resolve(__dirname, '../../collections') });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
     now = new Date('2026-07-16T00:00:00.000Z');
     claimSequence = 0;
@@ -172,9 +174,9 @@ describe('RemoteReconcileService', () => {
     const second = await preparePendingJob('scan-success');
     const fetch = adapter.fetchSnapshot.bind(adapter);
     const fetchSpy = vi.spyOn(adapter, 'fetchSnapshot').mockImplementation(async (target) => {
-      if (target.config.repository === 'scan-failure') {
+      if (target.config.url === 'https://git.example.com/nocobase/scan-failure.git') {
         throw new RemoteSyncError('REMOTE_UNAVAILABLE', 'Provider unavailable', {
-          details: { provider: 'github', operation: 'fetch', reasonCode: 'provider-unavailable' },
+          details: { provider: 'git', operation: 'fetch', reasonCode: 'provider-unavailable' },
         });
       }
       return fetch(target);
@@ -296,8 +298,8 @@ describe('RemoteReconcileService', () => {
     const remote = await remoteStore.create({
       repoId: created.repository.id,
       name: 'origin',
-      provider: 'github',
-      config: { ...remoteConfig, repository: name },
+      provider: 'git',
+      config: { ...remoteConfig, url: `https://git.example.com/nocobase/${name}.git` },
       authRef: null,
     });
     return { repoId: created.repository.id, commitId: created.initialCommit.id, remote };

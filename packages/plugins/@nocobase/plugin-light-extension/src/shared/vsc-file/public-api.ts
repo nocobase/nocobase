@@ -7,7 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './errors';
+export * from '@nocobase/runjs-workspace/shared';
 export * from './remote-sync-types';
-export * from './runjs-source-types';
-export * from './types';

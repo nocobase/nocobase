@@ -10,6 +10,7 @@
 import type { Application } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs/server';
+import { getOrCreateRunJSWorkspaceServerModule } from '@nocobase/runjs-workspace/server';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -51,7 +52,7 @@ describe('plugin-light-extension bootstrap', () => {
     ).not.toThrow();
   }, 20_000);
 
-  it('hosts VSC capabilities and recovers Push before Pull with one listener across reloads', async () => {
+  it('hosts VSC capabilities and recovers Push before Pull with stable listeners across reloads', async () => {
     const afterStartListeners = new Set<() => Promise<void>>();
     const defineResource = vi.fn();
     const app = {
@@ -79,10 +80,11 @@ describe('plugin-light-extension bootstrap', () => {
       name: 'light-extension',
       packageName: NAMESPACE,
     });
+    getOrCreateRunJSWorkspaceServerModule(app, app.db);
     await plugin.load();
-    expect(afterStartListeners).toHaveLength(1);
+    expect(afterStartListeners).toHaveLength(2);
     await plugin.load();
-    expect(afterStartListeners).toHaveLength(1);
+    expect(afterStartListeners).toHaveLength(2);
     const order: string[] = [];
     const runtime = plugin.getRemoteSyncRuntime();
     vi.spyOn(runtime, 'recoverPushJobs').mockImplementation(async () => {
@@ -107,7 +109,7 @@ describe('plugin-light-extension bootstrap', () => {
     expect(() => plugin.getRemoteSyncRuntime()).toThrow('Remote sync runtime is not loaded');
   });
 
-  it('rebuilds lazy compile infrastructure and keeps one shutdown listener across reloads', async () => {
+  it('rebuilds lazy compile infrastructure and keeps stable shutdown listeners across reloads', async () => {
     const beforeStopListeners = new Set<() => Promise<void>>();
     const app = {
       db: {} as Database,
@@ -131,6 +133,7 @@ describe('plugin-light-extension bootstrap', () => {
       name: 'light-extension',
       packageName: NAMESPACE,
     });
+    getOrCreateRunJSWorkspaceServerModule(app, app.db);
     const infrastructure = () =>
       plugin as unknown as {
         compileWorkerPool?: LightExtensionCompileWorkerPool;
@@ -146,7 +149,7 @@ describe('plugin-light-extension bootstrap', () => {
     const firstPool = infrastructure().compileWorkerPool;
     expect(firstPool?.getMetrics().workerCount).toBe(0);
     expect(infrastructure().runtimeCompileService?.compileExecutor).toBe(firstPool);
-    expect(beforeStopListeners).toHaveLength(1);
+    expect(beforeStopListeners).toHaveLength(2);
 
     await plugin.load();
     const secondPool = infrastructure().compileWorkerPool;
@@ -154,7 +157,7 @@ describe('plugin-light-extension bootstrap', () => {
     expect(firstPool?.getMetrics()).toMatchObject({ workerCount: 0, shuttingDown: true });
     expect(secondPool?.getMetrics().workerCount).toBe(0);
     expect(infrastructure().runtimeCompileService?.compileExecutor).toBe(secondPool);
-    expect(beforeStopListeners).toHaveLength(1);
+    expect(beforeStopListeners).toHaveLength(2);
 
     await plugin.afterDisable();
     expect(secondPool?.getMetrics()).toMatchObject({ workerCount: 0, shuttingDown: true });
@@ -182,7 +185,7 @@ describe('plugin-light-extension bootstrap', () => {
       throw new Error('Expected compile worker pool after second reload');
     }
     await expect(fourthPool.submit(createCompileJob(2))).resolves.toMatchObject({ accepted: true });
-    expect(beforeStopListeners).toHaveLength(1);
+    expect(beforeStopListeners).toHaveLength(2);
     await Promise.all([...beforeStopListeners].map((listener) => listener()));
     expect(fourthPool?.getMetrics()).toMatchObject({ workerCount: 0, shuttingDown: true });
     expect(infrastructure().compileWorkerPool).toBeUndefined();

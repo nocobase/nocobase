@@ -7,10 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { registerLightExtensionDomainAvailabilityGuard } from '@nocobase/plugin-light-extension/server';
 import { findBuiltInPlugins, findLocalPlugins, packageNameTrim, Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 
+const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
+const LIGHT_EXTENSION_NAME = 'light-extension';
+
 export class PresetNocoBase extends Plugin {
+  async load() {
+    registerLightExtensionDomainAvailabilityGuard(
+      this.app,
+      async () => {
+        if (this.pm.get(LIGHT_EXTENSION_NAME)?.enabled) {
+          return true;
+        }
+        const record = await this.pm.repository.findOne({
+          filter: {
+            packageName: LIGHT_EXTENSION_PACKAGE,
+          },
+        });
+        return record ? Boolean(record.get('enabled')) : true;
+      },
+      'preset-light-extension-domain-availability',
+    );
+  }
+
   splitNames(name: string) {
     return (name || '').split(',').filter(Boolean);
   }

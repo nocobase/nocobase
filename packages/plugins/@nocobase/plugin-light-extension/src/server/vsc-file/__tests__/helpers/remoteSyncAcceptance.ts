@@ -8,16 +8,18 @@
  */
 
 import { createMockDatabase, type Database } from '@nocobase/database';
-import path from 'path';
+import {
+  CommitService,
+  importRunJSWorkspaceCollections,
+  TreeService,
+  VscFileService,
+} from '@nocobase/runjs-workspace/server';
 
 import type {
   VscFileRemoteRecord,
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
 } from '../../../../shared/vsc-file/remote-sync-types';
-import { CommitService } from '../../services/CommitService';
-import { TreeService } from '../../services/TreeService';
-import { VscFileService } from '../../services/VscFileService';
 import { ExternalCommitMapStore } from '../../remotes/ExternalCommitMapStore';
 import { RemoteSyncAdapterRegistry } from '../../remotes/RemoteSyncAdapterRegistry';
 import { RemoteStore } from '../../remotes/RemoteStore';
@@ -27,10 +29,10 @@ import { DeterministicRemoteAdapter } from '../../remotes/testing/DeterministicR
 import { loadVscSnapshot } from '../../remotes/VscRemotePushService';
 
 export const acceptanceRemoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 export interface RemoteSyncAcceptanceFixture {
@@ -66,7 +68,7 @@ export async function createRemoteSyncAcceptanceFixture(
 ): Promise<RemoteSyncAcceptanceFixture> {
   const db = await createMockDatabase();
   await db.clean({ drop: true });
-  await db.import({ directory: path.resolve(__dirname, '../../collections') });
+  await importRunJSWorkspaceCollections(db);
   await db.sync();
   const vsc = new VscFileService(db);
   const adapterRegistry = new RemoteSyncAdapterRegistry();
@@ -102,7 +104,7 @@ export async function createRemoteSyncAcceptanceFixture(
       const remote = await remoteStore.create({
         repoId: created.repository.id,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: acceptanceRemoteConfig,
         authRef: validatedAuthRef,
       });

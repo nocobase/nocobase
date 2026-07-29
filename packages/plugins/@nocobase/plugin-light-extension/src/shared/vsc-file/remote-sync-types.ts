@@ -7,18 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const vscRemoteProviders = ['github'] as const;
+export const vscRemoteProviders = ['git'] as const;
 
 export type VscRemoteProvider = (typeof vscRemoteProviders)[number];
 
-export interface VscGitHubRemoteConfig {
-  owner: string;
-  repository: string;
-  branch: string;
-  subdirectory: string | null;
+export type VscGitRemoteTransport = 'https' | 'ssh';
+
+export interface VscGitRemoteConfigDraft {
+  url: string;
+  branch?: string | null;
+  subdirectory?: string | null;
+  transport?: VscGitRemoteTransport;
 }
 
-export type VscRemoteNormalizedConfig = VscGitHubRemoteConfig;
+export interface VscGitRemoteConfig {
+  url: string;
+  branch: string;
+  subdirectory: string | null;
+  transport: VscGitRemoteTransport;
+}
+
+export type VscRemoteNormalizedConfig = VscGitRemoteConfig;
+
+export type GitRemoteCredential =
+  | {
+      kind: 'https';
+      username: string;
+      password: string;
+    }
+  | {
+      kind: 'ssh';
+      privateKey: string;
+      passphrase?: string;
+      knownHosts: string;
+    };
 
 export interface VscRemoteSnapshotFile {
   path: string;

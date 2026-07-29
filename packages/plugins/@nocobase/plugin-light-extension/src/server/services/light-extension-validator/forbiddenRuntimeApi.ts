@@ -10,7 +10,7 @@
 import ts from 'typescript';
 
 import type { LightExtensionDiagnostic } from '../../../shared/types';
-import { diagnosticAt } from './diagnostics';
+import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs-workspace/server';
 import {
   getImportEqualsSpecifier,
   getImportSpecifier,

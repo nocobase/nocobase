@@ -72,7 +72,7 @@ import {
   normalizeWorkspacePath,
   type LightExtensionWorkspaceScope,
 } from '../workspace/lightExtensionWorkspaceAccess';
-import { createWorkspaceAuthoringSurface, type WorkspaceAuthoringFile } from '../workspace/authoring';
+import { createWorkspaceAuthoringSurface, type WorkspaceAuthoringFile } from '@nocobase/runjs-workspace/client-v2';
 import {
   buildLightExtensionWorkspaceArchiveFileName,
   createLightExtensionWorkspaceArchive,

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscGitHubRemoteConfig } from '../../shared/vsc-file/public-api';
+import type { VscGitRemoteConfigDraft, VscGitRemoteTransport } from '../../shared/vsc-file/public-api';
 import { Form, Input } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -17,110 +17,103 @@ import LightExtensionCredentialInput, {
   type LightExtensionCredentialValidation,
 } from './LightExtensionSecretVariableInput';
 
-const GITHUB_OWNER_PATTERN = /^(?!-)(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
-const GITHUB_REPOSITORY_PATTERN = /^[A-Za-z0-9._-]+$/;
-const MAX_GITHUB_OWNER_LENGTH = 39;
-const MAX_GITHUB_REPOSITORY_LENGTH = 100;
-const MAX_GITHUB_BRANCH_LENGTH = 255;
-const MAX_GITHUB_SUBDIRECTORY_LENGTH = 1024;
+const MAX_GIT_URL_LENGTH = 2048;
+const MAX_GIT_BRANCH_LENGTH = 255;
+const MAX_GIT_SUBDIRECTORY_LENGTH = 1024;
 
 export interface LightExtensionGitSourceDraft {
-  repositoryLocator: string;
+  url: string;
   branch: string;
   subdirectory: string;
   authRef: string;
 }
 
-export interface LightExtensionGitHubSourceValue {
-  provider: 'github';
-  config: VscGitHubRemoteConfig;
+export interface LightExtensionGitSourceValue {
+  provider: 'git';
+  config: VscGitRemoteConfigDraft;
   authRef?: string;
 }
 
-export type GitHubRepositoryLocatorResult =
-  | { valid: true; owner: string; repository: string }
+export type GitRepositoryUrlResult =
+  | { valid: true; url: string; transport: VscGitRemoteTransport }
   | { valid: false; reason: 'required' | 'invalid' };
 
-type GitHubRepositoryLocatorErrorReason = 'required' | 'invalid';
+type GitRepositoryUrlErrorReason = 'required' | 'invalid';
 
-export type GitHubBranchValidationResult = { valid: true; branch: string } | { valid: false };
+export type GitBranchValidationResult =
+  | { valid: true; branch: string }
+  | { valid: false; reason: 'required' | 'invalid' };
 
-export type GitHubSubdirectoryValidationResult = { valid: true; subdirectory: string | null } | { valid: false };
+export type GitSubdirectoryValidationResult = { valid: true; subdirectory: string | null } | { valid: false };
 
 export interface LightExtensionGitSourceFieldsProps {
   value: LightExtensionGitSourceDraft;
   onChange: (value: LightExtensionGitSourceDraft) => void;
-  onValidSourceChange?: (source: LightExtensionGitHubSourceValue | undefined) => void;
+  onValidSourceChange?: (source: LightExtensionGitSourceValue | undefined) => void;
   disabled?: boolean;
   loadEnvironmentVariables?: () => Promise<LightExtensionEnvironmentVariableRecord[]>;
 }
 
 export function createEmptyLightExtensionGitSourceDraft(): LightExtensionGitSourceDraft {
   return {
-    repositoryLocator: '',
+    url: '',
     branch: '',
     subdirectory: '',
     authRef: '',
   };
 }
 
-export function parseGitHubRepositoryLocator(input: string): GitHubRepositoryLocatorResult {
-  const trimmed = input.trim();
-  if (!trimmed) {
+export function parseGitRepositoryUrl(input: string): GitRepositoryUrlResult {
+  const value = input.trim();
+  if (!value) {
     return { valid: false, reason: 'required' };
   }
-
-  let path = trimmed;
-  if (trimmed.startsWith('https://')) {
-    let url: URL;
-    try {
-      url = new URL(trimmed);
-    } catch {
-      return { valid: false, reason: 'invalid' };
-    }
-    if (
-      url.protocol !== 'https:' ||
-      url.hostname.toLowerCase() !== 'github.com' ||
-      url.username ||
-      url.password ||
-      url.port ||
-      url.search ||
-      url.hash
-    ) {
-      return { valid: false, reason: 'invalid' };
-    }
-    path = url.pathname.replace(/^\//, '').replace(/\/$/, '');
-  }
-
-  const segments = path.split('/');
-  if (segments.length !== 2) {
+  if (value.length > MAX_GIT_URL_LENGTH || value !== input || /[\0\r\n]/u.test(value)) {
     return { valid: false, reason: 'invalid' };
   }
 
-  const owner = segments[0];
-  const repository = segments[1].endsWith('.git') ? segments[1].slice(0, -4) : segments[1];
+  const scpLikeMatch = /^(?<username>[A-Za-z0-9._-]+)@(?<hostname>[^:/\s]+):(?<path>[^\s]+)$/u.exec(value);
+  const candidate = scpLikeMatch?.groups
+    ? `ssh://${scpLikeMatch.groups.username}@${scpLikeMatch.groups.hostname}/${scpLikeMatch.groups.path.replace(
+        /^\/+/,
+        '',
+      )}`
+    : value;
+  let url: URL;
+  try {
+    url = new URL(candidate);
+  } catch {
+    return { valid: false, reason: 'invalid' };
+  }
+
+  const transport = url.protocol === 'https:' ? 'https' : url.protocol === 'ssh:' ? 'ssh' : null;
   if (
-    owner.length > MAX_GITHUB_OWNER_LENGTH ||
-    repository.length > MAX_GITHUB_REPOSITORY_LENGTH ||
-    !GITHUB_OWNER_PATTERN.test(owner) ||
-    !GITHUB_REPOSITORY_PATTERN.test(repository) ||
-    repository === '.' ||
-    repository === '..'
+    !transport ||
+    !url.hostname ||
+    !url.pathname ||
+    url.pathname === '/' ||
+    url.search ||
+    url.hash ||
+    url.password ||
+    (transport === 'https' && url.username) ||
+    url.pathname.includes('\\')
   ) {
     return { valid: false, reason: 'invalid' };
   }
-
-  return { valid: true, owner, repository };
+  return { valid: true, url: url.toString(), transport };
 }
 
-export function validateGitHubBranch(input: string): GitHubBranchValidationResult {
+export function validateGitBranch(input: string): GitBranchValidationResult {
   const branch = input.trim();
   if (!branch) {
-    return { valid: true, branch: '' };
+    return { valid: false, reason: 'required' };
   }
   if (
-    branch.length > MAX_GITHUB_BRANCH_LENGTH ||
+    branch !== input ||
+    branch.length > MAX_GIT_BRANCH_LENGTH ||
     branch === '@' ||
+    branch === 'HEAD' ||
+    branch.startsWith('-') ||
     branch.startsWith('/') ||
     branch.endsWith('/') ||
     branch.endsWith('.') ||
@@ -131,18 +124,19 @@ export function validateGitHubBranch(input: string): GitHubBranchValidationResul
     hasInvalidGitRefCharacter(branch) ||
     branch.split('/').some((segment) => !segment || segment.startsWith('.') || segment.endsWith('.lock'))
   ) {
-    return { valid: false };
+    return { valid: false, reason: 'invalid' };
   }
   return { valid: true, branch };
 }
 
-export function validateGitHubSubdirectory(input: string): GitHubSubdirectoryValidationResult {
+export function validateGitSubdirectory(input: string): GitSubdirectoryValidationResult {
   const subdirectory = input.trim();
   if (!subdirectory) {
     return { valid: true, subdirectory: null };
   }
   if (
-    subdirectory.length > MAX_GITHUB_SUBDIRECTORY_LENGTH ||
+    subdirectory !== input ||
+    subdirectory.length > MAX_GIT_SUBDIRECTORY_LENGTH ||
     subdirectory.startsWith('/') ||
     subdirectory.endsWith('/') ||
     subdirectory.includes('\\')
@@ -169,32 +163,32 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
   const { value, onChange, onValidSourceChange, disabled, loadEnvironmentVariables } = props;
   const t = useT();
   const onValidSourceChangeRef = useRef(onValidSourceChange);
-  const [repositoryTouched, setRepositoryTouched] = useState(false);
+  const [urlTouched, setUrlTouched] = useState(false);
   const [branchTouched, setBranchTouched] = useState(false);
   const [subdirectoryTouched, setSubdirectoryTouched] = useState(false);
   const [authValidation, setAuthValidation] = useState<LightExtensionCredentialValidation>(() =>
     value.authRef.trim() ? { valid: false } : { valid: true },
   );
-  const locator = useMemo(() => parseGitHubRepositoryLocator(value.repositoryLocator), [value.repositoryLocator]);
-  const branchValidation = useMemo(() => validateGitHubBranch(value.branch), [value.branch]);
-  const subdirectoryValidation = useMemo(() => validateGitHubSubdirectory(value.subdirectory), [value.subdirectory]);
+  const urlResult = useMemo(() => parseGitRepositoryUrl(value.url), [value.url]);
+  const branchValidation = useMemo(() => validateGitBranch(value.branch), [value.branch]);
+  const subdirectoryValidation = useMemo(() => validateGitSubdirectory(value.subdirectory), [value.subdirectory]);
 
-  const validSource = useMemo<LightExtensionGitHubSourceValue | undefined>(() => {
-    if (!locator.valid || !branchValidation.valid || !subdirectoryValidation.valid || !authValidation.valid) {
+  const validSource = useMemo<LightExtensionGitSourceValue | undefined>(() => {
+    if (!urlResult.valid || !branchValidation.valid || !subdirectoryValidation.valid || !authValidation.valid) {
       return undefined;
     }
 
     return {
-      provider: 'github',
+      provider: 'git',
       config: {
-        owner: locator.owner,
-        repository: locator.repository,
+        url: urlResult.url,
         branch: branchValidation.branch,
         subdirectory: subdirectoryValidation.subdirectory,
+        transport: urlResult.transport,
       },
       ...(authValidation.authRef ? { authRef: authValidation.authRef } : {}),
     };
-  }, [authValidation, branchValidation, locator, subdirectoryValidation]);
+  }, [authValidation, branchValidation, subdirectoryValidation, urlResult]);
 
   useEffect(() => {
     onValidSourceChangeRef.current = onValidSourceChange;
@@ -211,39 +205,35 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
     [onChange, value],
   );
 
-  const handleAuthValidationChange = useCallback((validation: LightExtensionCredentialValidation) => {
-    setAuthValidation(validation);
-  }, []);
-
-  const repositoryError = repositoryTouched && 'reason' in locator ? getRepositoryError(locator.reason, t) : undefined;
-  const branchError = branchTouched && !branchValidation.valid ? t('GitHub branch is invalid') : undefined;
+  const urlError = urlTouched && 'reason' in urlResult ? getRepositoryUrlError(urlResult.reason, t) : undefined;
+  const branchError =
+    branchTouched && 'reason' in branchValidation
+      ? branchValidation.reason === 'required'
+        ? t('Git branch is required')
+        : t('Git branch is invalid')
+      : undefined;
   const subdirectoryError =
-    subdirectoryTouched && !subdirectoryValidation.valid ? t('GitHub subdirectory is invalid') : undefined;
+    subdirectoryTouched && !subdirectoryValidation.valid ? t('Git subdirectory is invalid') : undefined;
 
   return (
     <div>
       <Form.Item
-        help={repositoryError}
-        label={t('GitHub repository')}
+        help={urlError}
+        label={t('Git repository URL')}
         required
-        validateStatus={repositoryError ? 'error' : undefined}
+        validateStatus={urlError ? 'error' : undefined}
       >
         <Input
-          aria-label={t('GitHub repository')}
+          aria-label={t('Git repository URL')}
           disabled={disabled}
-          onBlur={() => setRepositoryTouched(true)}
-          onChange={(event) => updateField('repositoryLocator', event.target.value)}
-          placeholder={t('owner/repository or GitHub URL')}
-          status={repositoryError ? 'error' : undefined}
-          value={value.repositoryLocator}
+          onBlur={() => setUrlTouched(true)}
+          onChange={(event) => updateField('url', event.target.value)}
+          placeholder={t('HTTPS or SSH Git repository URL')}
+          status={urlError ? 'error' : undefined}
+          value={value.url}
         />
       </Form.Item>
-      <Form.Item
-        extra={t('Leave blank to use the default branch')}
-        help={branchError}
-        label={t('Branch')}
-        validateStatus={branchError ? 'error' : undefined}
-      >
+      <Form.Item help={branchError} label={t('Branch')} required validateStatus={branchError ? 'error' : undefined}>
         <Input
           aria-label={t('Branch')}
           disabled={disabled}
@@ -269,19 +259,23 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
         />
       </Form.Item>
       <Form.Item
-        extra={t('Optional for public repositories. Choose a Secret variable.')}
-        label={t('GitHub credential')}
+        extra={
+          urlResult.valid && urlResult.transport === 'ssh'
+            ? t("Optional. Leave blank to use the NocoBase process user's SSH configuration.")
+            : t('Optional. Select a Secret variable or enter a token.')
+        }
+        label={t('Git credential')}
       >
         <LightExtensionCredentialInput
-          aria-label={t('GitHub credential')}
+          aria-label={t('Git credential')}
           disabled={disabled}
           loadEnvironmentVariables={loadEnvironmentVariables}
           onChange={(nextValue) => {
             setAuthValidation(nextValue.trim() ? { valid: false } : { valid: true });
             updateField('authRef', nextValue);
           }}
-          onValidationChange={handleAuthValidationChange}
-          placeholder={t('Select a Secret variable')}
+          onValidationChange={setAuthValidation}
+          placeholder={t('Select a Secret variable or enter a token')}
           value={value.authRef}
         />
       </Form.Item>
@@ -289,8 +283,8 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
   );
 }
 
-function getRepositoryError(reason: GitHubRepositoryLocatorErrorReason, t: (key: string) => string): string {
-  return reason === 'required' ? t('GitHub repository is required') : t('GitHub repository locator is invalid');
+function getRepositoryUrlError(reason: GitRepositoryUrlErrorReason, t: (key: string) => string): string {
+  return reason === 'required' ? t('Git repository URL is required') : t('Git repository URL is invalid');
 }
 
 function hasInvalidGitRefCharacter(value: string): boolean {

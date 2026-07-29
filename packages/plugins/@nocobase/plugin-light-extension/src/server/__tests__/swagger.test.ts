@@ -8,19 +8,19 @@
  */
 
 import swaggerDocument from '../../swagger';
+import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
-import { runJSSourceActionNames } from '../vsc-file/runjs-sources';
 
 const publicActions = {
   lightExtensionRepos: ['list', 'get'],
-  lightExtensionEntries: ['get'],
+  lightExtensionEntries: ['get', 'listSelectable'],
   lightExtensionReferences: ['readReferences'],
   lightExtensionFiles: ['pull', 'getFile', 'saveSource'],
-  lightExtensions: ['compileWorkspacePreview'],
+  lightExtensions: ['compileWorkspacePreview', 'moveSource', 'moveToInline'],
   runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
 } as const;
 
@@ -84,6 +84,16 @@ describe('light-extension swagger', () => {
     expect(previewRequest.properties.files.items).toEqual({
       $ref: '#/components/schemas/LightExtensionWorkspaceFile',
     });
+    expect(schemas.LightExtensionMoveSourceDestination.oneOf).toEqual([
+      expect.objectContaining({
+        required: ['type'],
+        properties: expect.objectContaining({
+          type: expect.objectContaining({ enum: ['default'] }),
+        }),
+      }),
+      expect.objectContaining({ required: ['type', 'repoId'] }),
+      expect.objectContaining({ required: ['type', 'name'] }),
+    ]);
     expect(saveSource.responses).toHaveProperty('409');
     for (const status of [200, 207, 409, 422]) {
       expect(preview.responses).toHaveProperty(String(status));

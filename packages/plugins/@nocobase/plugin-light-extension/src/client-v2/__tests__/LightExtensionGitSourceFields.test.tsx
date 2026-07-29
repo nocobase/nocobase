@@ -7,31 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React, { useState } from 'react';
 import { vi } from 'vitest';
 
 import LightExtensionGitSourceFields, {
   createEmptyLightExtensionGitSourceDraft,
-  parseGitHubRepositoryLocator,
-  type LightExtensionGitHubSourceValue,
+  parseGitRepositoryUrl,
   type LightExtensionGitSourceDraft,
-  validateGitHubBranch,
-  validateGitHubSubdirectory,
+  type LightExtensionGitSourceValue,
+  validateGitBranch,
+  validateGitSubdirectory,
 } from '../components/LightExtensionGitSourceFields';
 
-const variables = [
-  { name: 'SYNC_SECRET', type: 'secret' },
-  { name: 'ORDINARY_VALUE', type: 'default' },
-];
+const variables = [{ name: 'SYNC_SECRET', type: 'secret' }];
 const loadVariables = async () => variables;
 
-function GitFieldsHarness(props: {
-  onValidSourceChange: (source: LightExtensionGitHubSourceValue | undefined) => void;
-}) {
+function GitFieldsHarness(props: { onValidSourceChange: (source: LightExtensionGitSourceValue | undefined) => void }) {
   const [value, setValue] = useState<LightExtensionGitSourceDraft>(createEmptyLightExtensionGitSourceDraft);
   return (
     <LightExtensionGitSourceFields
@@ -53,185 +48,154 @@ function renderFields(onValidSourceChange = vi.fn()) {
   return onValidSourceChange;
 }
 
-describe('parseGitHubRepositoryLocator', () => {
-  it('accepts owner/repository and strict GitHub HTTPS locators', () => {
-    expect(parseGitHubRepositoryLocator('nocobase/example')).toEqual({
+describe('generic Git source validation', () => {
+  it('accepts HTTPS, standard SSH, and scp-like SSH URLs while deriving transport', () => {
+    expect(parseGitRepositoryUrl('https://git.example.com/team/project.git')).toEqual({
       valid: true,
-      owner: 'nocobase',
-      repository: 'example',
+      url: 'https://git.example.com/team/project.git',
+      transport: 'https',
     });
-    expect(parseGitHubRepositoryLocator('https://github.com/nocobase/example.git')).toEqual({
+    expect(parseGitRepositoryUrl('ssh://git@git.example.com/team/project.git')).toEqual({
       valid: true,
-      owner: 'nocobase',
-      repository: 'example',
+      url: 'ssh://git@git.example.com/team/project.git',
+      transport: 'ssh',
+    });
+    expect(parseGitRepositoryUrl('git@git.example.com:team/project.git')).toEqual({
+      valid: true,
+      url: 'ssh://git@git.example.com/team/project.git',
+      transport: 'ssh',
     });
   });
 
-  it('rejects non-GitHub, SSH, query-bearing, and nested locators', () => {
-    expect(parseGitHubRepositoryLocator('https://example.com/nocobase/example').valid).toBe(false);
-    expect(parseGitHubRepositoryLocator('git@github.com:nocobase/example.git').valid).toBe(false);
-    expect(parseGitHubRepositoryLocator('https://github.com/nocobase/example?ref=main').valid).toBe(false);
-    expect(parseGitHubRepositoryLocator('nocobase/group/example').valid).toBe(false);
-  });
-
-  it('enforces GitHub owner and repository shape and length limits', () => {
-    expect(parseGitHubRepositoryLocator('bad--owner/example').valid).toBe(false);
-    expect(parseGitHubRepositoryLocator(`${'o'.repeat(40)}/example`).valid).toBe(false);
-    expect(parseGitHubRepositoryLocator(`owner/${'r'.repeat(101)}`).valid).toBe(false);
-    expect(parseGitHubRepositoryLocator('-owner/example').valid).toBe(false);
-  });
-});
-
-describe('GitHub branch and subdirectory validation', () => {
-  it('accepts an empty or safe branch and rejects unsafe Git ref forms', () => {
-    expect(validateGitHubBranch('')).toEqual({ valid: true, branch: '' });
-    expect(validateGitHubBranch(' feature/sync ')).toEqual({ valid: true, branch: 'feature/sync' });
-
-    for (const branch of [
-      'unsafe..branch',
-      '/main',
-      'main/',
-      'refs/heads/main',
-      '.hidden',
-      'feature//sync',
-      'x.lock',
+  it('rejects unsupported protocols, credentials in HTTPS URLs, query strings, and local paths', () => {
+    for (const value of [
+      'http://git.example.com/team/project.git',
+      'https://user:secret@git.example.com/team/project.git',
+      'https://git.example.com/team/project.git?ref=main',
+      'file:///tmp/project.git',
+      '/tmp/project.git',
     ]) {
-      expect(validateGitHubBranch(branch)).toEqual({ valid: false });
+      expect(parseGitRepositoryUrl(value).valid).toBe(false);
     }
   });
 
-  it('accepts a safe relative subdirectory and rejects unsafe path forms', () => {
-    expect(validateGitHubSubdirectory(' packages/light-extension ')).toEqual({
+  it('requires a valid branch and validates the optional subdirectory with server-compatible rules', () => {
+    expect(validateGitBranch('')).toEqual({ valid: false, reason: 'required' });
+    expect(validateGitBranch('feature/sync')).toEqual({ valid: true, branch: 'feature/sync' });
+    expect(validateGitBranch(' feature/sync ')).toEqual({ valid: false, reason: 'invalid' });
+    expect(validateGitBranch('unsafe..branch')).toEqual({ valid: false, reason: 'invalid' });
+    expect(validateGitSubdirectory('packages/light-extension')).toEqual({
       valid: true,
       subdirectory: 'packages/light-extension',
     });
-    expect(validateGitHubSubdirectory('')).toEqual({ valid: true, subdirectory: null });
-
-    for (const subdirectory of ['/absolute', 'a\\b', 'a/../b', 'a//b', 'a/.git/b', 'a/', './a']) {
-      expect(validateGitHubSubdirectory(subdirectory)).toEqual({ valid: false });
-    }
+    expect(validateGitSubdirectory('')).toEqual({ valid: true, subdirectory: null });
+    expect(validateGitSubdirectory('a/../b')).toEqual({ valid: false });
   });
 });
 
 describe('LightExtensionGitSourceFields', () => {
-  it('emits normalized non-sensitive GitHub config with optional branch, subdirectory, and authRef', async () => {
+  it('emits normalized public HTTPS config without credential material', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
-
-    await user.type(screen.getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
-    await user.type(screen.getByRole('textbox', { name: 'Branch' }), ' feature/sync ');
-    await user.type(screen.getByRole('textbox', { name: 'Subdirectory' }), ' packages/light-extension ');
-
-    const credentialInput = screen.getByRole('combobox', { name: 'GitHub credential' });
-    await user.click(credentialInput);
-    await user.click(await screen.findByText('SYNC_SECRET'));
+    await user.type(screen.getByRole('textbox', { name: 'Git repository URL' }), 'https://git.example.com/a/b.git');
+    await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'feature/sync');
+    await user.type(screen.getByRole('textbox', { name: 'Subdirectory' }), 'packages/light');
 
     await waitFor(() =>
       expect(onValidSourceChange).toHaveBeenLastCalledWith({
-        provider: 'github',
+        provider: 'git',
         config: {
-          owner: 'nocobase',
-          repository: 'example',
+          url: 'https://git.example.com/a/b.git',
           branch: 'feature/sync',
-          subdirectory: 'packages/light-extension',
+          subdirectory: 'packages/light',
+          transport: 'https',
+        },
+      }),
+    );
+  });
+
+  it('allows SSH without a credential and emits a Secret reference when selected', async () => {
+    const user = userEvent.setup();
+    const onValidSourceChange = renderFields();
+    await user.type(screen.getByRole('textbox', { name: 'Git repository URL' }), 'git@git.example.com:team/app.git');
+    await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'git',
+        config: {
+          url: 'ssh://git@git.example.com/team/app.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'ssh',
+        },
+      }),
+    );
+
+    await user.click(screen.getByRole('combobox', { name: 'Git credential' }));
+    await user.click(await screen.findByText('SYNC_SECRET'));
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'git',
+        config: {
+          url: 'ssh://git@git.example.com/team/app.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'ssh',
         },
         authRef: '{{ $env.SYNC_SECRET }}',
       }),
     );
-    expect(JSON.stringify(onValidSourceChange.mock.calls.at(-1))).not.toMatch(/zipBase64|accessToken|tokenValue/);
+    expect(JSON.stringify(onValidSourceChange.mock.calls.at(-1))).not.toMatch(/privateKey|knownHosts|passphrase/);
   });
 
-  it('allows an empty branch and authRef for a public repository', async () => {
+  it('emits a literal token for a private HTTPS repository', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
-
-    await user.type(screen.getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/public-example');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/team/app.git',
+    );
+    await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
+    await user.type(screen.getByRole('combobox', { name: 'Git credential' }), 'github_pat_direct_123');
 
     await waitFor(() =>
       expect(onValidSourceChange).toHaveBeenLastCalledWith({
-        provider: 'github',
+        provider: 'git',
         config: {
-          owner: 'nocobase',
-          repository: 'public-example',
-          branch: '',
+          url: 'https://git.example.com/team/app.git',
+          branch: 'main',
           subdirectory: null,
+          transport: 'https',
         },
+        authRef: 'github_pat_direct_123',
       }),
     );
   });
 
-  it('does not add a directly typed token to the source DTO', async () => {
+  it('shows URL, branch, and subdirectory errors and gates the valid source', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
-
-    await user.type(screen.getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/private-example');
-    const credentialInput = screen.getByRole('combobox', { name: 'GitHub credential' });
-    await user.type(credentialInput, 'github_pat_test_direct_123');
-    await user.keyboard('{Enter}');
-
-    await waitFor(() =>
-      expect(onValidSourceChange).toHaveBeenLastCalledWith({
-        provider: 'github',
-        config: {
-          owner: 'nocobase',
-          repository: 'private-example',
-          branch: '',
-          subdirectory: null,
-        },
-      }),
-    );
-    expect(JSON.stringify(onValidSourceChange.mock.calls.at(-1))).not.toContain('github_pat_test_direct_123');
-  });
-
-  it('keeps invalid locator feedback until the locator is corrected', async () => {
-    const user = userEvent.setup();
-    const onValidSourceChange = renderFields();
-    const repositoryInput = screen.getByRole('textbox', { name: 'GitHub repository' });
-
-    await user.type(repositoryInput, 'https://example.com/owner/repository');
+    const urlInput = screen.getByRole('textbox', { name: 'Git repository URL' });
+    await user.type(urlInput, 'file:///tmp/repo.git');
     await user.tab();
-    expect(await screen.findByText('GitHub repository locator is invalid')).toBeInTheDocument();
-    expect(onValidSourceChange).toHaveBeenLastCalledWith(undefined);
+    expect(await screen.findByText('Git repository URL is invalid')).toBeInTheDocument();
 
-    await user.clear(repositoryInput);
-    await user.type(repositoryInput, 'owner/repository');
-    await waitFor(() => expect(screen.queryByText('GitHub repository locator is invalid')).not.toBeInTheDocument());
-  });
-
-  it('shows branch and subdirectory errors and gates the valid source until corrected', async () => {
-    const user = userEvent.setup();
-    const onValidSourceChange = renderFields();
-    await user.type(screen.getByRole('textbox', { name: 'GitHub repository' }), 'owner/repository');
-    await waitFor(() =>
-      expect(onValidSourceChange).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'github' })),
-    );
-
+    await user.clear(urlInput);
+    await user.type(urlInput, 'https://git.example.com/team/repo.git');
     const branchInput = screen.getByRole('textbox', { name: 'Branch' });
+    await user.click(branchInput);
+    await user.tab();
+    expect(await screen.findByText('Git branch is required')).toBeInTheDocument();
+
     await user.type(branchInput, 'unsafe..branch');
     await user.tab();
-    expect(await screen.findByText('GitHub branch is invalid')).toBeInTheDocument();
-    expect(onValidSourceChange).toHaveBeenLastCalledWith(undefined);
+    expect(await screen.findByText('Git branch is invalid')).toBeInTheDocument();
 
     await user.clear(branchInput);
-    await user.type(branchInput, 'main');
     const subdirectoryInput = screen.getByRole('textbox', { name: 'Subdirectory' });
     await user.type(subdirectoryInput, 'a/../b');
     await user.tab();
-    expect(await screen.findByText('GitHub subdirectory is invalid')).toBeInTheDocument();
+    expect(await screen.findByText('Git subdirectory is invalid')).toBeInTheDocument();
     expect(onValidSourceChange).toHaveBeenLastCalledWith(undefined);
-
-    await user.clear(subdirectoryInput);
-    await user.type(subdirectoryInput, 'packages/light');
-    await waitFor(() =>
-      expect(onValidSourceChange).toHaveBeenLastCalledWith({
-        provider: 'github',
-        config: {
-          owner: 'owner',
-          repository: 'repository',
-          branch: 'main',
-          subdirectory: 'packages/light',
-        },
-      }),
-    );
   });
 });

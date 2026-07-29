@@ -8,7 +8,7 @@
  */
 
 import type { VscRemoteSnapshotFile } from '../vsc-file';
-import { VscPermissionHookRegistry } from '../vsc-file';
+import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -19,8 +19,6 @@ import { SyncStatePlanner } from '../vsc-file/remotes/SyncStatePlanner';
 import { DeterministicRemoteAdapter } from '../vsc-file/remotes/testing/DeterministicRemoteAdapter';
 import { VscRemotePullDiscoveryService } from '../vsc-file/remotes/VscRemotePullDiscoveryService';
 import { loadVscSnapshot } from '../vsc-file/remotes/VscRemotePushService';
-import { CommitService } from '../vsc-file/services/CommitService';
-import { TreeService } from '../vsc-file/services/TreeService';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
@@ -34,10 +32,10 @@ import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensio
 import { ReferenceService } from '../services/ReferenceService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('LightExtensionRemotePullService', () => {
@@ -272,7 +270,7 @@ describe('LightExtensionRemotePullService', () => {
     const remote = await remoteStore.create({
       repoId: internal.vscRepoId,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: null,
     });

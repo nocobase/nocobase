@@ -32,10 +32,10 @@ import { LightExtensionWorkspaceCompilerBridge } from '../../services/LightExten
 import { ReferenceService } from '../../services/ReferenceService';
 
 export const gitSyncRemoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 export interface GitSyncAcceptanceFixture {
@@ -132,7 +132,7 @@ export async function createGitSyncAcceptanceFixture(): Promise<GitSyncAcceptanc
       createService.create({
         name,
         title: name,
-        provider: 'github',
+        provider: 'git',
         config: gitSyncRemoteConfig,
         authRef,
       }),

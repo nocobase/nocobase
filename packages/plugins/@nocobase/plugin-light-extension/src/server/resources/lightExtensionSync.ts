@@ -16,7 +16,7 @@ import type {
   VscRemoteSyncPlan,
 } from '../vsc-file/public-api';
 import { RemoteSyncError } from '../vsc-file/public-api';
-import { randomUUID } from 'crypto';
+import { uid } from '@nocobase/utils';
 
 import type { LightExtensionAclAction } from '../../constants';
 import { LightExtensionError, isLightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
@@ -31,12 +31,14 @@ import type {
   LightExtensionSyncTestConnectionResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
+import { LightExtensionCreateJobRunner } from '../services/LightExtensionCreateJobRunner';
+import { LightExtensionCreateJobStore, toCreateJobSummary } from '../services/LightExtensionCreateJobStore';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionRemotePullService } from '../services/LightExtensionRemotePullService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
+import { normalizeGitRemoteConfigDraft } from '../vsc-file/remotes/providers/git/gitConfig';
 import {
   createTypedResourceAction,
   getServiceContext,
@@ -47,6 +49,7 @@ import {
 const remoteName = 'origin';
 const redactedCredential = '[REDACTED]';
 const secretAuthRefPattern = /^\{\{ \$env\.[A-Za-z_][A-Za-z0-9_]* \}\}$/;
+const maxLiteralTokenLength = 4096;
 const sensitiveCredentialKeyPattern = /(token|authorization|password|secret|credential|privatekey|authref)/i;
 const credentialTransportKeyPattern = /(token|password|secret|credential|privatekey|authref)/i;
 
@@ -70,6 +73,9 @@ interface SyncActionServices {
   repoService: LightExtensionRepoService;
   runtimeCompileService: LightExtensionRuntimeCompileService;
   getRemoteSyncRuntime: () => RemoteSyncRuntime;
+  createJobStore: LightExtensionCreateJobStore;
+  createJobRunner: LightExtensionCreateJobRunner;
+  applicationName: string;
 }
 
 type SyncActionRunner = (
@@ -157,6 +163,7 @@ function createSyncAction(
       return deepFreeze(await run(currentServices, input, ctx));
     },
     transformError: (error) => normalizeSyncError(error),
+    getHttpStatus: () => (actionName === 'createFromGit' ? 202 : undefined),
   });
   return async (ctx, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
@@ -166,7 +173,9 @@ function createSyncAction(
       values.__rejectedCredentialInput = true;
       params.values = values;
     }
-    await action(ctx, next);
+    const actionPromise = action(ctx, next);
+    redactLiteralCredential(resourceCtx);
+    await actionPromise;
   };
 }
 
@@ -219,7 +228,7 @@ function sanitizeRejectedBodyCredentials(ctx: LightExtensionResourceContext): bo
     let rejected = false;
     for (const [key, child] of Object.entries(value)) {
       const normalizedKey = normalizeCredentialKey(key);
-      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isSecretAuthRef(child)));
+      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isCredentialInput(child)));
       if (invalidAuthRef || (key !== 'authRef' && sensitiveCredentialKeyPattern.test(normalizedKey))) {
         value[key] = redactedCredential;
         rejected = true;
@@ -238,51 +247,48 @@ async function createFromGit(
   input: ResourceActionInput,
   ctx: LightExtensionServiceContext,
 ): Promise<LightExtensionSyncCreateFromGitResult> {
-  const requestId = ctx.requestId || `syncCreateFromGit:${randomUUID()}`;
-  let provider: VscRemoteProvider | undefined;
-  try {
-    provider = requireProvider(input.provider);
-    const authRef = typeof input.authRef === 'undefined' ? null : requireNullableAuthRef(input.authRef);
-    const createService = new LightExtensionCreateFromRemoteService(
-      services.db,
-      services.auditService,
-      services.repoService,
-      services.runtimeCompileService,
-      services.getRemoteSyncRuntime,
-    );
-    const created = await createService.create(
+  const provider = requireProvider(input.provider);
+  const authRef = typeof input.authRef === 'undefined' ? null : requireNullableAuthRef(input.authRef);
+  const config = normalizeGitRemoteConfigDraft(requireRecord(input.config, 'config'));
+  const metadata = services.repoService.normalizeCreateMetadata({
+    name: requireString(input.name, 'name'),
+    title: optionalNullableString(input.title, 'title'),
+    description: optionalNullableString(input.description, 'description'),
+  });
+  const targetRepoId = `ler_${uid()}`;
+  const job = await services.db.sequelize.transaction(async (transaction) => {
+    await services.repoService.assertCreateNameAvailable(metadata.name, metadata.normalizedName, transaction);
+    return services.createJobStore.enqueue(
       {
-        provider,
-        config: requireRecord(input.config, 'config'),
-        authRef,
-        name: requireString(input.name, 'name'),
-        title: optionalNullableString(input.title, 'title'),
-        description: optionalNullableString(input.description, 'description'),
-      },
-      { ...ctx, requestId },
-    );
-    return {
-      repo: created.repo,
-      source: toSourceSummary(created.remote, created.revision),
-      plan: created.plan,
-    };
-  } catch (error) {
-    const safeError = normalizeSyncError(error);
-    try {
-      await services.auditService.recordSyncEvent({
-        action: 'syncCreateFromGit',
-        result: 'blocked',
-        requestId,
+        applicationName: services.applicationName,
+        targetRepoId,
+        name: metadata.name,
+        normalizedName: metadata.normalizedName,
+        title: metadata.title,
+        description: metadata.description,
+        sourceType: 'git',
+        payload: { sourceType: 'git', provider, config: { ...config }, authRef },
         actorUserId: ctx.actorUserId,
-        provider,
-        reasonCode: isLightExtensionError(safeError) ? safeError.code : 'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE',
-        message: 'syncCreateFromGit failed',
-      });
-    } catch {
-      // The safe create error contract must not depend on audit persistence availability.
-    }
-    throw safeError;
+        requestId: ctx.requestId,
+      },
+      transaction,
+    );
+  });
+  await services.createJobRunner.publish(job.id);
+  try {
+    await services.auditService.recordCreateJobEvent({
+      jobId: job.id,
+      targetRepoId: job.targetRepoId,
+      sourceType: job.sourceType,
+      action: 'createJobEnqueue',
+      result: 'success',
+      requestId: job.requestId,
+      actorUserId: job.actorUserId,
+    });
+  } catch {
+    // A durable creation job must not depend on audit persistence availability.
   }
+  return toCreateJobSummary(job);
 }
 
 async function getSyncSource(
@@ -312,18 +318,15 @@ async function configureSyncSource(
   const authRef = typeof input.authRef === 'undefined' ? saved?.authRef ?? null : requireNullableAuthRef(input.authRef);
   return runSyncAudit(services, ctx, repo.id, 'syncConfigure', async () => {
     const runtime = services.getRemoteSyncRuntime();
-    const normalizedConfig = runtime.normalizeConfig(provider, requireRecord(input.config, 'config'));
-    const tested = normalizedConfig.branch
-      ? null
-      : await runtime.testTarget({ provider, config: normalizedConfig, authRef });
-    const remote = await services.getRemoteSyncRuntime().configureRemote({
+    const tested = await runtime.testTarget({ provider, config: requireRecord(input.config, 'config'), authRef });
+    const remote = await runtime.configureRemote({
       repoId: repo.vscRepoId,
       name: remoteName,
       provider,
-      config: tested?.config ?? normalizedConfig,
+      config: tested.config,
       authRef,
     });
-    const revision = tested?.snapshot.revision ?? (await runtime.getLatestMappedRevision(remote.id));
+    const revision = tested.snapshot.revision;
     return {
       result: {
         repoId: repo.id,
@@ -688,7 +691,7 @@ function requireRepoId(input: ResourceActionInput): string {
 }
 
 function requireProvider(value: unknown): VscRemoteProvider {
-  if (value !== 'github') {
+  if (value !== 'git') {
     throw invalidInput('provider is invalid');
   }
   return value;
@@ -698,14 +701,37 @@ function requireNullableAuthRef(value: unknown): string | null {
   if (value === null) {
     return null;
   }
-  if (!isSecretAuthRef(value)) {
-    throw invalidInput('authRef must reference a Secret environment variable');
+  if (!isCredentialInput(value)) {
+    throw invalidInput('authRef must be a Secret environment variable or token');
   }
   return value;
 }
 
 function isSecretAuthRef(value: unknown): value is string {
   return typeof value === 'string' && secretAuthRefPattern.test(value);
+}
+
+function isLiteralToken(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= maxLiteralTokenLength &&
+    /^\S+$/u.test(value) &&
+    !value.includes('{{') &&
+    !value.includes('}}')
+  );
+}
+
+function isCredentialInput(value: unknown): value is string {
+  return isSecretAuthRef(value) || isLiteralToken(value);
+}
+
+function redactLiteralCredential(ctx: LightExtensionResourceContext): void {
+  const params = toMutableRecord(ctx.action?.params);
+  const values = toMutableRecord(params.values);
+  if (isLiteralToken(values.authRef)) {
+    values.authRef = redactedCredential;
+  }
 }
 
 function normalizeCredentialKey(key: string): string {

@@ -40,6 +40,7 @@ describe('plugin-light-extension collections', () => {
   it('loads the stable collections and persists repository and entry defaults', async () => {
     for (const collectionName of [
       'lightExtensionRepos',
+      'lightExtensionCreateJobs',
       'lightExtensionEntries',
       'lightExtensionRuntimeArtifacts',
       'lightExtensionReferences',

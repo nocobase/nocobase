@@ -15,10 +15,10 @@ import { RemoteSyncAdapterRegistry } from '../RemoteSyncAdapterRegistry';
 import { DeterministicRemoteAdapter } from '../testing/DeterministicRemoteAdapter';
 
 const validConfig = {
-  owner: 'nocobase',
-  repository: 'nocobase',
+  url: 'https://git.example.com/nocobase/nocobase.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https' as const,
 };
 
 function captureRemoteSyncError(callback: () => unknown): RemoteSyncError {
@@ -34,15 +34,15 @@ function captureRemoteSyncError(callback: () => unknown): RemoteSyncError {
 describe('RemoteSyncAdapterRegistry', () => {
   it('registers, gets, requires, lists, and unregisters an adapter', () => {
     const registry = new RemoteSyncAdapterRegistry();
-    const adapter = new DeterministicRemoteAdapter({ title: 'GitHub deterministic' });
+    const adapter = new DeterministicRemoteAdapter({ title: 'Git deterministic' });
     const unregister = registry.register(adapter);
 
-    expect(registry.get('github')).toBe(adapter);
-    expect(registry.require('github')).toBe(adapter);
+    expect(registry.get('git')).toBe(adapter);
+    expect(registry.require('git')).toBe(adapter);
     expect(registry.list()).toEqual([
       {
-        provider: 'github',
-        title: 'GitHub deterministic',
+        provider: 'git',
+        title: 'Git deterministic',
         capabilities: { probe: true, fetch: true, publish: true, readOnly: false },
       },
     ]);
@@ -50,7 +50,7 @@ describe('RemoteSyncAdapterRegistry', () => {
     expect(registry.list()[0]).not.toHaveProperty('credentialResolver');
 
     unregister();
-    expect(registry.get('github')).toBeNull();
+    expect(registry.get('git')).toBeNull();
   });
 
   it('rejects empty, unknown, missing, and conflicting providers', () => {
@@ -69,7 +69,7 @@ describe('RemoteSyncAdapterRegistry', () => {
     expect(captureRemoteSyncError(() => registry.require('gitlab' as VscRemoteProvider))).toMatchObject({
       code: 'UNSUPPORTED_PROVIDER',
     });
-    expect(captureRemoteSyncError(() => new RemoteSyncAdapterRegistry().require('github'))).toMatchObject({
+    expect(captureRemoteSyncError(() => new RemoteSyncAdapterRegistry().require('git'))).toMatchObject({
       code: 'UNSUPPORTED_PROVIDER',
     });
     expect(captureRemoteSyncError(() => registry.register(new DeterministicRemoteAdapter()))).toMatchObject({
@@ -90,10 +90,10 @@ describe('RemoteSyncAdapterRegistry', () => {
 
     unregisterFirst();
     unregisterSame();
-    expect(registry.get('github')).toBe(second);
+    expect(registry.get('git')).toBe(second);
 
     unregisterSecond();
-    expect(registry.get('github')).toBeNull();
+    expect(registry.get('git')).toBeNull();
   });
 
   it('returns detached list capabilities instead of adapter instances', () => {
@@ -111,16 +111,19 @@ describe('RemoteSyncAdapterRegistry', () => {
     const registry = new RemoteSyncAdapterRegistry();
     registry.register(new DeterministicRemoteAdapter());
 
-    expect(registry.normalizeConfig('github', validConfig)).toEqual(validConfig);
+    expect(registry.normalizeConfig('git', validConfig)).toEqual(validConfig);
     expect(
-      captureRemoteSyncError(() => registry.normalizeConfig('github', { ...validConfig, token: 'must-not-pass' })),
+      captureRemoteSyncError(() => registry.normalizeConfig('git', { ...validConfig, token: 'must-not-pass' })),
     ).toMatchObject({ code: 'CONFIG_INVALID' });
+    expect(
+      captureRemoteSyncError(() => registry.normalizeConfig('github' as VscRemoteProvider, validConfig)),
+    ).toMatchObject({ code: 'UNSUPPORTED_PROVIDER' });
   });
 
   it('fails closed when an adapter parser is missing, throws raw errors, or returns a different config', () => {
     const createAdapter = (normalizeConfig: RemoteSyncAdapter['normalizeConfig'] | undefined): RemoteSyncAdapter =>
       ({
-        provider: 'github',
+        provider: 'git',
         title: 'Malformed adapter',
         capabilities: { probe: true, fetch: true, publish: true, readOnly: false },
         normalizeConfig,
@@ -131,7 +134,7 @@ describe('RemoteSyncAdapterRegistry', () => {
 
     const missingParserRegistry = new RemoteSyncAdapterRegistry();
     missingParserRegistry.register(createAdapter(undefined));
-    expect(captureRemoteSyncError(() => missingParserRegistry.normalizeConfig('github', validConfig))).toMatchObject({
+    expect(captureRemoteSyncError(() => missingParserRegistry.normalizeConfig('git', validConfig))).toMatchObject({
       code: 'CONFIG_INVALID',
       details: { reasonCode: 'config-parser-unavailable' },
     });
@@ -142,7 +145,7 @@ describe('RemoteSyncAdapterRegistry', () => {
         throw new Error('raw parser failure');
       }),
     );
-    expect(captureRemoteSyncError(() => rawErrorRegistry.normalizeConfig('github', validConfig))).toMatchObject({
+    expect(captureRemoteSyncError(() => rawErrorRegistry.normalizeConfig('git', validConfig))).toMatchObject({
       code: 'CONFIG_INVALID',
       details: { reasonCode: 'config-parser-failed' },
     });
@@ -152,7 +155,7 @@ describe('RemoteSyncAdapterRegistry', () => {
     differentConfigRegistry.register(
       createAdapter(() => ({ ...validConfig, branch: normalizeCall++ === 0 ? 'develop' : 'release' })),
     );
-    expect(captureRemoteSyncError(() => differentConfigRegistry.normalizeConfig('github', validConfig))).toMatchObject({
+    expect(captureRemoteSyncError(() => differentConfigRegistry.normalizeConfig('git', validConfig))).toMatchObject({
       code: 'CONFIG_INVALID',
       details: { reasonCode: 'non-canonical-config' },
     });
@@ -161,7 +164,7 @@ describe('RemoteSyncAdapterRegistry', () => {
     unsafeConfigRegistry.register(
       createAdapter(() => ({ ...validConfig, accessToken: 'raw-secret' }) as unknown as typeof validConfig),
     );
-    expect(captureRemoteSyncError(() => unsafeConfigRegistry.normalizeConfig('github', validConfig))).toMatchObject({
+    expect(captureRemoteSyncError(() => unsafeConfigRegistry.normalizeConfig('git', validConfig))).toMatchObject({
       code: 'CONFIG_INVALID',
       details: { reasonCode: 'sensitive-config-key' },
     });
@@ -176,6 +179,6 @@ describe('RemoteSyncAdapterRegistry', () => {
     };
     registry.register(adapter);
 
-    expect(captureRemoteSyncError(() => registry.normalizeConfig('github', validConfig))).toBe(expected);
+    expect(captureRemoteSyncError(() => registry.normalizeConfig('git', validConfig))).toBe(expected);
   });
 });

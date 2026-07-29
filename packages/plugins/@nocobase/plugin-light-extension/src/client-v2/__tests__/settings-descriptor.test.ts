@@ -14,7 +14,6 @@ import {
   listSelectableLightExtensionEntries,
 } from '../api/lightExtensionEntriesRequests';
 import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
-import { createInlineLightExtensionSettingsDescriptorProvider } from '../resolvers/InlineLightExtensionSettingsDescriptorProvider';
 import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
 import {
   getOrCreateLightExtensionRuntimeCache,
@@ -45,235 +44,6 @@ vi.mock('react-i18next', async () => ({
   ...(await vi.importActual<typeof import('react-i18next')>('react-i18next')),
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-
-// Consolidated from settings-descriptor-inline-provider.cases.ts.
-function registerInlineSettingsDescriptorTests() {
-  const locator = {
-    kind: 'flowModel.step' as const,
-    modelUid: 'model_1',
-    flowKey: 'jsSettings',
-    stepKey: 'runJs',
-    paramPath: ['code'],
-    versionPath: ['version'],
-  };
-
-  describe('inline light extension settings descriptor provider', () => {
-    it('consumes the server-canonical settings descriptor from the current RunJS workspace', async () => {
-      const request = vi.fn(async () => ({
-        data: {
-          data: {
-            repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_2' },
-            files: [{ path: 'src/client/entry.json', content: '{ client parsing must not run' }],
-            settingsDescriptor: {
-              descriptorPath: 'src/client/entry.json',
-              entryId: 'inline:repo_1:welcome-card',
-              key: 'welcome-card',
-              settingsSchemaHash: 'a'.repeat(64),
-              settingsDefaultsHash: 'b'.repeat(64),
-              schema: {
-                type: 'object',
-                required: ['title'],
-                properties: {
-                  title: { type: 'string', default: 'Welcome' },
-                  enabled: { type: 'boolean', default: false },
-                  count: { type: 'integer', default: 0 },
-                  label: { type: 'string', default: '' },
-                },
-              },
-              defaults: { title: 'Welcome', enabled: false, count: 0, label: '' },
-              diagnostics: [],
-            },
-          },
-        },
-      }));
-      const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
-
-      await expect(
-        provider.getSettingsDescriptor({
-          sourceMode: 'inline',
-          sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
-          runJs: { code: 'ctx.render(<div />);', version: 'v2' },
-          locator,
-        }),
-      ).resolves.toEqual({
-        entryId: 'inline:repo_1:welcome-card',
-        settingsSchemaHash: 'a'.repeat(64),
-        schema: {
-          type: 'object',
-          required: ['title'],
-          properties: {
-            title: { type: 'string', default: 'Welcome' },
-            enabled: { type: 'boolean', default: false },
-            count: { type: 'integer', default: 0 },
-            label: { type: 'string', default: '' },
-          },
-        },
-        defaults: { title: 'Welcome', enabled: false, count: 0, label: '' },
-      });
-      expect(request).toHaveBeenCalledWith({
-        url: 'runJSSources:open',
-        method: 'post',
-        data: {
-          locator,
-          initialSource: { code: 'ctx.render(<div />);', version: 'v2' },
-        },
-      });
-    });
-
-    it('treats a missing entry.json as no settings instead of a hard failure', async () => {
-      const request = vi.fn(async () => ({
-        data: {
-          data: {
-            repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_1' },
-            files: [],
-            settingsDescriptor: {
-              descriptorPath: 'src/client/entry.json',
-              entryId: null,
-              key: null,
-              settingsSchemaHash: null,
-              settingsDefaultsHash: null,
-              schema: null,
-              defaults: {},
-              diagnostics: [
-                {
-                  code: 'entry_descriptor_missing',
-                  severity: 'error',
-                  message: 'Entry root must include entry.json',
-                  path: 'src/client/entry.json',
-                },
-              ],
-            },
-          },
-        },
-      }));
-      const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
-
-      await expect(
-        provider.getSettingsDescriptor({
-          sourceMode: 'inline',
-          sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
-          locator,
-        }),
-      ).resolves.toBeUndefined();
-    });
-
-    it('treats an empty settings descriptor without entryId as no settings', async () => {
-      const request = vi.fn(async () => ({
-        data: {
-          data: {
-            repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_1' },
-            files: [],
-            settingsDescriptor: {
-              descriptorPath: 'src/client/entry.json',
-              entryId: null,
-              key: null,
-              settingsSchemaHash: null,
-              settingsDefaultsHash: null,
-              schema: null,
-              defaults: {},
-              diagnostics: [],
-            },
-          },
-        },
-      }));
-      const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
-
-      await expect(
-        provider.getSettingsDescriptor({
-          sourceMode: 'inline',
-          sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
-          locator,
-        }),
-      ).resolves.toBeUndefined();
-    });
-
-    it.each([
-      ['bad JSON', 'entry_descriptor_json_invalid'],
-      ['conflicting settings forms', 'entry_descriptor_settings_conflict'],
-    ])('surfaces canonical diagnostics for %s', async (_label, diagnosticCode) => {
-      const api = {
-        request: vi.fn(async () => ({
-          data: {
-            data: {
-              repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_1' },
-              files: [],
-              settingsDescriptor: {
-                descriptorPath: 'src/client/entry.json',
-                entryId: null,
-                key: null,
-                settingsSchemaHash: null,
-                settingsDefaultsHash: null,
-                schema: null,
-                defaults: {},
-                diagnostics: [
-                  {
-                    code: diagnosticCode,
-                    severity: 'error',
-                    message: `Canonical ${diagnosticCode}`,
-                    path: 'src/client/entry.json',
-                  },
-                ],
-              },
-            },
-          },
-        })),
-      } as ApiClientLike;
-      const provider = createInlineLightExtensionSettingsDescriptorProvider(api);
-
-      await expect(
-        provider.getSettingsDescriptor({
-          sourceMode: 'inline',
-          sourceRef: { type: 'vsc-file', repoId: 'repo_1', commitId: 'commit_1' },
-          locator,
-        }),
-      ).rejects.toMatchObject({
-        code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
-        status: 422,
-        paths: ['src/client/entry.json'],
-        details: {
-          reasonCode: 'settings_invalid',
-          diagnostics: [expect.objectContaining({ code: diagnosticCode })],
-        },
-      });
-    });
-
-    it('accepts the canonical no-settings descriptor without inventing a hash', async () => {
-      const request = vi.fn(async () => ({
-        data: {
-          data: {
-            repository: { id: 'repo_1', repoId: 'repo_1', headCommitId: 'commit_3' },
-            files: [],
-            settingsDescriptor: {
-              descriptorPath: 'src/client/entry.json',
-              entryId: 'inline:repo_1:no-settings',
-              key: 'no-settings',
-              settingsSchemaHash: null,
-              settingsDefaultsHash: null,
-              schema: null,
-              defaults: {},
-              diagnostics: [],
-            },
-          },
-        },
-      }));
-      const provider = createInlineLightExtensionSettingsDescriptorProvider({ request } as ApiClientLike);
-
-      await expect(
-        provider.getSettingsDescriptor({
-          sourceMode: 'inline',
-          sourceRef: { type: 'vsc-file', repoId: 'repo_1' },
-          locator,
-        }),
-      ).resolves.toMatchObject({
-        entryId: 'inline:repo_1:no-settings',
-        settingsSchemaHash: null,
-        schema: null,
-        defaults: {},
-      });
-    });
-  });
-}
-registerInlineSettingsDescriptorTests();
 
 // Consolidated from settings-descriptor-cache.cases.ts.
 function registerSettingsDescriptorCacheTests() {
@@ -671,12 +441,15 @@ function registerSettingsDescriptorMutationTests() {
       expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
     });
 
-    it('reloads the selectable catalog after every repo or entry mutation succeeds', async () => {
+    it('reloads the selectable catalog after completed mutations but not accepted creation', async () => {
       let catalogVersion = 0;
       mocks.request.mockImplementation((options: { url: string }) => {
         if (options.url === 'lightExtensionEntries:listSelectable') {
           catalogVersion += 1;
           return Promise.resolve(resourceResponse([{ ...createSelectableEntry(), id: `entry-${catalogVersion}` }]));
+        }
+        if (options.url === 'lightExtensionRepos:create') {
+          return Promise.resolve(resourceResponse(createAcceptedJob()));
         }
         return Promise.resolve(resourceResponse({ id: 'repo_sales' }));
       });
@@ -687,17 +460,17 @@ function registerSettingsDescriptorMutationTests() {
       await act(async () => {
         await result.current.createRepo({ name: 'sales' });
       });
-      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
+      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
 
       await act(async () => {
         await result.current.updateRepo({ repoId: 'repo_sales', title: 'Sales tools' });
       });
-      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-3' }]);
+      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
 
       await act(async () => {
         await result.current.changeLifecycle({ repoId: 'repo_sales', lifecycleStatus: 'disabled' });
       });
-      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-4' }]);
+      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-3' }]);
 
       await act(async () => {
         await result.current.saveSource({
@@ -707,12 +480,12 @@ function registerSettingsDescriptorMutationTests() {
           files: [],
         });
       });
-      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-5' }]);
+      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-4' }]);
 
       await act(async () => {
         await result.current.deleteRepo('repo_sales');
       });
-      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-6' }]);
+      await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-5' }]);
     });
   });
 
@@ -739,6 +512,24 @@ function registerSettingsDescriptorMutationTests() {
       settingsDefaultsHash: 'defaults-v1',
       runtimeCodeHash: 'runtime-v1',
       runtimeAvailable: true,
+    } as const;
+  }
+
+  function createAcceptedJob() {
+    return {
+      id: 'lecj_sales',
+      targetRepoId: 'repo_sales',
+      name: 'sales',
+      title: null,
+      description: null,
+      sourceType: 'template',
+      status: 'pending',
+      errorCode: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
     } as const;
   }
 

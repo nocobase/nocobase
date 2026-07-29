@@ -17,10 +17,11 @@ import type {
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
 } from '../../../shared/vsc-file/remote-sync-types';
-import { CommitService } from '../services/CommitService';
-import { RepositoryService } from '../services/RepositoryService';
-import { TreeService } from '../services/TreeService';
+import { CommitService } from '@nocobase/runjs-workspace/server';
+import { RepositoryService } from '@nocobase/runjs-workspace/server';
+import { TreeService } from '@nocobase/runjs-workspace/server';
 import { ExternalCommitMapStore } from './ExternalCommitMapStore';
+import { serializeVscRemoteCredentialRef } from './credentialRef';
 import { RemoteReconcileService } from './RemoteReconcileService';
 import type { RemoteReconcileRecoveryEvent } from './RemoteReconcileService';
 import { RemoteSyncError } from './RemoteSyncAdapter';
@@ -230,16 +231,9 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
   }
 
   async configureRemote(input: RemoteSyncConfigureInput): Promise<VscFileRemoteRecord> {
-    let config = this.adapterRegistry.normalizeConfig(input.provider, input.config);
     const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
-    if (!config.branch) {
-      const tested = await this.testTarget({
-        provider: input.provider,
-        config,
-        authRef: input.authRef,
-      });
-      config = tested.config;
-    }
+    const serializedAuthRef = authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
+    const config = await this.adapterRegistry.resolveConfigDraft(input.provider, input.config, serializedAuthRef);
 
     const remote = await this.db.sequelize.transaction(async (transaction) => {
       await this.assertRepositoryIdle(input.repoId, transaction);
@@ -274,23 +268,13 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
 
   async testTarget(input: RemoteSyncTestTargetInput): Promise<RemoteSyncTestTargetResult> {
     const adapter = this.adapterRegistry.require(input.provider);
-    let config = this.adapterRegistry.normalizeConfig(input.provider, input.config);
-    if (input.authRef !== null) {
-      await this.credentialResolver.validate(input.authRef);
-    }
+    const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
+    const serializedAuthRef = authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
+    const config = await this.adapterRegistry.resolveConfigDraft(input.provider, input.config, serializedAuthRef);
     const probe = await adapter.probe({
       config,
-      authRef: input.authRef,
+      authRef: serializedAuthRef,
     });
-    const branch = readProbeBranch(probe.metadata);
-    if (!config.branch) {
-      if (!branch) {
-        throw new RemoteSyncError('CONFIG_INVALID', 'Remote default branch is unavailable', {
-          details: { provider: input.provider, reasonCode: 'default-branch-unavailable' },
-        });
-      }
-      config = this.adapterRegistry.normalizeConfig(input.provider, { ...config, branch });
-    }
     return cloneFrozen({
       provider: input.provider,
       config,
@@ -702,11 +686,6 @@ function toAdapterTarget(remote: VscFileRemoteRecord) {
     config: remote.config,
     authRef: remote.authRef,
   };
-}
-
-function readProbeBranch(metadata: Record<string, unknown>): string | null {
-  const branch = metadata.branch;
-  return typeof branch === 'string' && branch ? branch : null;
 }
 
 function requireInitialRemoteRevision(revision: string | null): string {

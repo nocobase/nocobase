@@ -2252,6 +2252,15 @@ const schemas = {
       template: ref('FlowSurfaceBlockTemplateRef'),
       fieldsTemplate: ref('FlowSurfaceTemplateRef'),
       popup: ref('FlowSurfacePopupSummary'),
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
       subModels: {
         type: 'object',
         additionalProperties: {
@@ -3199,6 +3208,15 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
     },
     additionalProperties: false,
   },
@@ -3236,6 +3254,15 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
     },
     additionalProperties: false,
   },
@@ -3264,6 +3291,15 @@ const schemas = {
       actionsColumnUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
       fields: {
         type: 'array',
         items: ref('FlowSurfaceComposeFieldResult'),
@@ -5270,7 +5306,7 @@ const schemas = {
       },
       flowKey: {
         type: 'string',
-        enum: ['jsSettings'],
+        enum: ['jsSettings', 'clickSettings'],
       },
       stepKey: {
         type: 'string',
@@ -5770,6 +5806,15 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
     },
     additionalProperties: false,
   },
@@ -5819,6 +5864,15 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
+      runJSLocator: ref('FlowSurfaceRunJSLocator'),
+      workspaceStatus: {
+        type: 'string',
+        enum: ['ready', 'pending', 'error'],
+      },
+      workspaceRetryable: {
+        type: 'boolean',
+      },
+      workspaceError: ref('FlowSurfaceRunJSWorkspaceError'),
     },
     additionalProperties: false,
   },

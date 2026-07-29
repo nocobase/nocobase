@@ -8,7 +8,7 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import path from 'path';
+import { importRunJSWorkspaceCollections } from '@nocobase/runjs-workspace/server';
 import { UniqueConstraintError } from 'sequelize';
 
 describe('vsc-file remote collections', () => {
@@ -17,9 +17,7 @@ describe('vsc-file remote collections', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({
-      directory: path.resolve(__dirname, '../collections'),
-    });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
   });
 
@@ -52,8 +50,13 @@ describe('vsc-file remote collections', () => {
       values: {
         repoId: repository.get('id'),
         name: 'origin',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/nocobase/extensions.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
       },
     });
     const remoteId = remote.get('id') as string;
@@ -108,8 +111,13 @@ describe('vsc-file remote collections', () => {
     const remoteValues = {
       repoId: repository.get('id'),
       name: 'origin',
-      provider: 'github',
-      config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+      provider: 'git',
+      config: {
+        url: 'https://git.example.com/nocobase/extensions.git',
+        branch: 'main',
+        subdirectory: null,
+        transport: 'https',
+      },
     };
     const remote = await db.getRepository('vscFileRemotes').create({ values: remoteValues });
 

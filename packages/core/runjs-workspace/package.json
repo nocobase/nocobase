@@ -1,0 +1,80 @@
+{
+  "name": "@nocobase/runjs-workspace",
+  "version": "2.2.0-beta.15",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "client": [
+        "./lib/client/index.d.ts"
+      ],
+      "client-v2": [
+        "./lib/client-v2/index.d.ts"
+      ],
+      "server": [
+        "./lib/server/index.d.ts"
+      ],
+      "shared": [
+        "./lib/shared/index.d.ts"
+      ],
+      "swagger": [
+        "./lib/swagger/index.d.ts"
+      ]
+    }
+  },
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
+    },
+    "./server": {
+      "types": "./lib/server/index.d.ts",
+      "import": "./lib/server/index.js",
+      "require": "./lib/server/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "import": "./lib/client/index.js",
+      "require": "./lib/client/index.js"
+    },
+    "./client-v2": {
+      "types": "./lib/client-v2/index.d.ts",
+      "import": "./lib/client-v2/index.js",
+      "require": "./lib/client-v2/index.js"
+    },
+    "./shared": {
+      "types": "./lib/shared/index.d.ts",
+      "import": "./lib/shared/index.js",
+      "require": "./lib/shared/index.js"
+    },
+    "./swagger": {
+      "types": "./lib/swagger/index.d.ts",
+      "import": "./lib/swagger/index.js",
+      "require": "./lib/swagger/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@nocobase/light-extension-sdk": "2.2.0-beta.15",
+    "antd": "5.24.2",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "typescript": "5.1.3"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/resourcer": "2.x",
+    "@nocobase/runjs": "2.2.0-beta.15",
+    "@nocobase/server": "2.x",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}

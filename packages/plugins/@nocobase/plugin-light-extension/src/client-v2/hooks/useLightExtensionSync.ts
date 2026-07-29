@@ -49,8 +49,8 @@ type FlowContextWithApi = {
 
 const errorTranslationKeys: Partial<Record<LightExtensionErrorCode, string>> = {
   LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE: 'The configured credential is unavailable',
-  LIGHT_EXTENSION_SYNC_AUTH_FAILED: 'GitHub authentication failed',
-  LIGHT_EXTENSION_SYNC_RATE_LIMITED: 'GitHub API rate limit reached. Try again later or configure a GitHub token.',
+  LIGHT_EXTENSION_SYNC_AUTH_FAILED: 'Git authentication failed',
+  LIGHT_EXTENSION_SYNC_RATE_LIMITED: 'The Git remote is temporarily unavailable. Try again later.',
   LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE: 'The sync provider is unavailable',
   LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER: 'The sync provider is unsupported',
   LIGHT_EXTENSION_SYNC_REMOTE_NOT_FOUND: 'The remote repository or path was not found',
@@ -149,13 +149,8 @@ export function useLightExtensionSync(): UseLightExtensionSyncResult {
   );
   const push = useCallback((input: LightExtensionSyncPushInput) => requestOperation('push', input), [requestOperation]);
   const createFromGit = useCallback(
-    async (input: LightExtensionSyncCreateFromGitInput) => {
-      const result = await requestOperation('createFromGit', input);
-      invalidateLightExtensionSettingsDescriptorCache(ctx.api, result.repo.id);
-      invalidateLightExtensionRuntimeCache(ctx.api, result.repo.id);
-      return result;
-    },
-    [ctx.api, requestOperation],
+    (input: LightExtensionSyncCreateFromGitInput) => requestOperation('createFromGit', input),
+    [requestOperation],
   );
 
   return useMemo(

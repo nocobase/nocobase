@@ -9,7 +9,6 @@
 
 import type {
   RemoteSyncErrorCode,
-  VscGitHubRemoteConfig,
   VscRemoteNormalizedConfig,
   VscRemoteProvider,
   VscRemoteSafeMetadata,
@@ -109,6 +108,7 @@ export interface RemoteSyncAdapter {
   readonly title: string;
   readonly capabilities: RemoteSyncAdapterCapabilities;
   normalizeConfig(input: unknown): VscRemoteNormalizedConfig;
+  resolveConfigDraft?(input: unknown, authRef: string | null): Promise<VscRemoteNormalizedConfig>;
   probe(target: RemoteSyncAdapterTarget): Promise<RemoteSyncProbeResult>;
   fetchSnapshot(target: RemoteSyncAdapterTarget, revision?: string | null): Promise<VscRemoteSnapshot>;
   publishSnapshot(
@@ -116,59 +116,4 @@ export interface RemoteSyncAdapter {
     snapshot: VscRemoteSnapshot,
     expectedRevision: string | null,
   ): Promise<RemoteSyncPublishResult>;
-}
-
-function isGitHubConfigObject(input: unknown): input is Record<string, unknown> {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    return false;
-  }
-  const keys = ['owner', 'repository', 'branch', 'subdirectory'] as const;
-  const inputKeys = Object.keys(input);
-  return (
-    ['owner', 'repository', 'branch'].every((key) => inputKeys.includes(key)) &&
-    inputKeys.every((key) => keys.includes(key as (typeof keys)[number]))
-  );
-}
-
-function requireRemoteSegment(value: unknown, field: string): string {
-  if (typeof value !== 'string' || value.length === 0 || value.trim() !== value) {
-    throw new RemoteSyncError('CONFIG_INVALID', `GitHub ${field} must be a non-empty trimmed string`, {
-      details: { provider: 'github', reasonCode: `invalid-${field}` },
-    });
-  }
-  return value;
-}
-
-function requireRemoteBranch(value: unknown): string {
-  if (typeof value !== 'string' || value.trim() !== value) {
-    throw new RemoteSyncError('CONFIG_INVALID', 'GitHub branch must be a trimmed string', {
-      details: { provider: 'github', reasonCode: 'invalid-branch' },
-    });
-  }
-  return value;
-}
-
-export function normalizeGitHubRemoteConfig(input: unknown): VscGitHubRemoteConfig {
-  if (!isGitHubConfigObject(input)) {
-    throw new RemoteSyncError('CONFIG_INVALID', 'GitHub remote config has invalid or unknown fields', {
-      details: { provider: 'github', reasonCode: 'invalid-config-shape' },
-    });
-  }
-
-  let subdirectory: string | null = null;
-  if (input.subdirectory !== undefined && input.subdirectory !== null) {
-    if (typeof input.subdirectory !== 'string' || input.subdirectory.trim() !== input.subdirectory) {
-      throw new RemoteSyncError('CONFIG_INVALID', 'GitHub subdirectory must be a trimmed string or null', {
-        details: { provider: 'github', reasonCode: 'invalid-subdirectory' },
-      });
-    }
-    subdirectory = input.subdirectory || null;
-  }
-
-  return {
-    owner: requireRemoteSegment(input.owner, 'owner'),
-    repository: requireRemoteSegment(input.repository, 'repository'),
-    branch: requireRemoteBranch(input.branch),
-    subdirectory,
-  };
 }

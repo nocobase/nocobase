@@ -13,7 +13,6 @@ import type {
   VscRemoteSnapshotFile,
 } from '../../../../shared/vsc-file/remote-sync-types';
 import {
-  normalizeGitHubRemoteConfig,
   RemoteSyncError,
   type RemoteSyncAdapter,
   type RemoteSyncAdapterCapabilities,
@@ -21,6 +20,7 @@ import {
   type RemoteSyncProbeResult,
   type RemoteSyncPublishResult,
 } from '../RemoteSyncAdapter';
+import { normalizeGitRemoteConfig } from '../providers/git/gitConfig';
 import { computeRemoteSnapshotContentHash, normalizeRemoteSnapshotFiles } from '../snapshot';
 
 export type DeterministicRemoteOperation = 'probe' | 'fetch' | 'publish';
@@ -51,7 +51,7 @@ function cloneSnapshot(snapshot: VscRemoteSnapshot): VscRemoteSnapshot {
 }
 
 export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
-  readonly provider = 'github' as const;
+  readonly provider = 'git' as const;
 
   readonly title: string;
 
@@ -101,7 +101,7 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
   }
 
   normalizeConfig(input: unknown) {
-    return normalizeGitHubRemoteConfig(input);
+    return normalizeGitRemoteConfig(input);
   }
 
   async probe(target: RemoteSyncAdapterTarget): Promise<RemoteSyncProbeResult> {

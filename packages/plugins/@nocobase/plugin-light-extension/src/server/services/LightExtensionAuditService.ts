@@ -12,7 +12,7 @@ import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '../vs
 import { createHash, randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';
-import type { LightExtensionDiagnostic } from '../../shared/types';
+import type { LightExtensionCreateSourceType, LightExtensionDiagnostic } from '../../shared/types';
 import { sortDiagnostics } from './LightExtensionValidator';
 
 export interface LightExtensionRawResourceDeniedAuditInput {
@@ -123,6 +123,24 @@ export interface LightExtensionSyncAuditInput {
   reasonCode?: string;
   message: string;
   transaction?: Transaction;
+}
+
+export interface LightExtensionCreateJobAuditInput {
+  jobId: string;
+  targetRepoId: string;
+  sourceType: LightExtensionCreateSourceType;
+  action:
+    | 'createJobEnqueue'
+    | 'createJobStart'
+    | 'createJobSucceed'
+    | 'createJobFail'
+    | 'createJobRetry'
+    | 'createJobDismiss';
+  result: 'success' | 'blocked';
+  requestId?: string | null;
+  actorUserId?: string | null;
+  reasonCode?: string;
+  durationMs?: number;
 }
 
 export class LightExtensionAuditService {
@@ -251,6 +269,28 @@ export class LightExtensionAuditService {
         createdAt: new Date(),
       },
       transaction: input.transaction,
+    });
+  }
+
+  async recordCreateJobEvent(input: LightExtensionCreateJobAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.action === 'createJobSucceed' ? input.targetRepoId : undefined,
+        level: input.result === 'blocked' ? 'warn' : 'info',
+        action: input.action,
+        result: input.result,
+        requestId: sanitizeText(input.requestId),
+        actorUserId: sanitizeText(input.actorUserId),
+        reasonCode: sanitizeText(input.reasonCode),
+        message: `Light extension creation job ${input.action}`,
+        details: compactObject({
+          jobId: sanitizeText(input.jobId),
+          targetRepoId: sanitizeText(input.targetRepoId),
+          sourceType: sanitizeText(input.sourceType),
+          durationMs: input.durationMs,
+        }),
+        createdAt: new Date(),
+      },
     });
   }
 

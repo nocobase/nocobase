@@ -303,6 +303,10 @@ export function flattenModel(node: any, carry: Record<string, any> = {}) {
     ...(node.template ? { template: node.template } : {}),
     ...(node.fieldsTemplate ? { fieldsTemplate: node.fieldsTemplate } : {}),
     ...(node.popup ? { popup: node.popup } : {}),
+    ...(node.runJSLocator ? { runJSLocator: node.runJSLocator } : {}),
+    ...(node.workspaceStatus ? { workspaceStatus: node.workspaceStatus } : {}),
+    ...(typeof node.workspaceRetryable === 'boolean' ? { workspaceRetryable: node.workspaceRetryable } : {}),
+    ...(node.workspaceError ? { workspaceError: node.workspaceError } : {}),
   };
   Object.values(node.subModels || {}).forEach((value) => {
     _.castArray(value as any).forEach((child) => flattenModel(child, carry));

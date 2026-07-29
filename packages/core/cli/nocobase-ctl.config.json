@@ -218,6 +218,93 @@
         }
       }
     },
+    "run-js": {
+      "name": "run-js",
+      "description": "Discover and author owner-aware RunJS source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": ["runJSSources"],
+        "excludes": [],
+        "overrides": {
+          "runJSSources": {
+            "name": "run-js-sources",
+            "description": "Inspect capabilities and author complete RunJS workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "runJSSources:capabilities",
+                "runJSSources:open",
+                "runJSSources:openLatest",
+                "runJSSources:compilePreview",
+                "runJSSources:save",
+                "runJSSources:saveChanges"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "light-extension": {
+      "name": "light-extension",
+      "description": "Discover, author, compile, and migrate Light Extension source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "lightExtensionRepos",
+          "lightExtensionEntries",
+          "lightExtensionReferences",
+          "lightExtensionFiles",
+          "lightExtensions"
+        ],
+        "excludes": [],
+        "overrides": {
+          "lightExtensionRepos": {
+            "name": "light-extension-repos",
+            "description": "Discover Light Extension source repositories.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionRepos:list", "lightExtensionRepos:get"]
+            }
+          },
+          "lightExtensionEntries": {
+            "name": "light-extension-entries",
+            "description": "Inspect and discover reusable Light Extension entries.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionEntries:get", "lightExtensionEntries:listSelectable"]
+            }
+          },
+          "lightExtensionReferences": {
+            "name": "light-extension-references",
+            "description": "Inspect visible Light Extension usage references.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionReferences:readReferences"]
+            }
+          },
+          "lightExtensionFiles": {
+            "name": "light-extension-files",
+            "description": "Pull, read, and save Light Extension source workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionFiles:pull", "lightExtensionFiles:getFile", "lightExtensionFiles:saveSource"]
+            }
+          },
+          "lightExtensions": {
+            "name": "light-extensions",
+            "description": "Compile and migrate Light Extension source workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "lightExtensions:compileWorkspacePreview",
+                "lightExtensions:moveSource",
+                "lightExtensions:moveToInline"
+              ]
+            }
+          }
+        }
+      }
+    },
     "map": {
       "name": "map",
       "description": "Map blocks with support for AMap, Google Maps, and extensible providers.",

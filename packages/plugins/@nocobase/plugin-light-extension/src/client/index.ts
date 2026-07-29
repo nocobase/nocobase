@@ -20,11 +20,9 @@ import {
   JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from '../client-v2/vsc-file/public-api';
-import { installLegacyRunJSStudioClient } from './vsc-file/plugin';
+import { runJSStudioToolbarRegistry } from '@nocobase/runjs-workspace/client-v2';
 
 export * from './vsc-file/public-api';
 
@@ -43,7 +41,6 @@ import { registerLightExtensionModelMenus } from '../client-v2/modelMenu/registe
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 import { registerLightExtensionRuntimeAuthSession } from '../client-v2/resolvers/LightExtensionRuntimeCacheRegistry';
-import { createInlineLightExtensionSettingsDescriptorProvider } from '../client-v2/resolvers/InlineLightExtensionSettingsDescriptorProvider';
 
 interface LightExtensionLegacyClientOptions {
   name?: string;
@@ -119,8 +116,6 @@ export class PluginLightExtensionClient {
   }
 
   async load() {
-    this.disposers.push(installLegacyRunJSStudioClient());
-
     const components = {
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
       [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
@@ -170,11 +165,6 @@ export class PluginLightExtensionClient {
       this.disposers.push(registerLightExtensionModelMenus(this.app.apiClient));
       this.disposers.push(
         RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
-      );
-      this.disposers.push(
-        RunJSSettingsDescriptorProviderRegistry.registerProvider(
-          createInlineLightExtensionSettingsDescriptorProvider(this.app.apiClient),
-        ),
       );
       this.disposers.push(
         runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(this.app.apiClient)),

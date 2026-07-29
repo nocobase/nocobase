@@ -120,6 +120,7 @@ const chartEventGlobals = new Set(['chart', 'params']);
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
 const unknownNameDiagnosticCodes = new Set([2304, 2448, 2552, 2580, 2591]);
 let cachedTypeScriptEnvironmentFiles: RunJSTypeScriptEnvironmentFile[] | undefined;
+let cachedTypeScriptEnvironmentGlobalNames: Set<string> | undefined;
 
 export interface InspectRunJSSourceWorkspaceInput {
   files: Array<{
@@ -194,6 +195,15 @@ export class RunJSSourceWorkspaceInspector {
     const diagnostics = typeScriptDiagnosticsToRunJS(
       this.project.getDiagnostics(programSourcePaths),
       prepared.sourceFiles,
+    );
+    diagnostics.push(
+      ...standardLibraryGlobalReferencesToRunJS(
+        this.project.getDisallowedStandardLibraryGlobals(
+          programSourcePaths,
+          new Set([...RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES, ...resolveAllowedGlobals(input)]),
+        ),
+        prepared.sourceFiles,
+      ),
     );
     diagnostics.push(...collectTypeScriptDirectiveDiagnostics(prepared.sourceFiles));
     const entryPath = normalizePath(input.entry);
@@ -350,7 +360,7 @@ function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): Prep
   }
   const contextDeclaration = [
     buildRunJSTypeScriptContextDeclaration(typeof modelUse === 'string' ? modelUse : undefined),
-    buildAmbientDeclarations(allowedGlobals),
+    buildAmbientDeclarations(allowedGlobals, getTypeScriptEnvironmentGlobalNames()),
   ]
     .filter(Boolean)
     .join('\n');
@@ -445,6 +455,27 @@ function typeScriptDiagnosticsToRunJS(
   }
 
   return diagnostics;
+}
+
+function standardLibraryGlobalReferencesToRunJS(
+  references: ReturnType<RunJSTypeScriptProject['getDisallowedStandardLibraryGlobals']>,
+  sourceFiles: ReadonlyMap<string, string>,
+): RunJSCompileDiagnostic[] {
+  return references.map((reference) => {
+    const path = fromVirtualPath(reference.path);
+    const source = sourceFiles.get(path) || '';
+    const location = getSourceLocation(source, reference.start);
+    return {
+      severity: 'error',
+      code: 'RUNJS_COMPILE_FAILED',
+      ruleId: 'runjs-global-unknown',
+      path,
+      line: location.line,
+      column: location.column,
+      message: `Cannot find name '${reference.name}'.`,
+      details: { global: reference.name },
+    };
+  });
 }
 
 function isRunJSBuiltInModuleDiagnostic(message: string): boolean {
@@ -546,9 +577,9 @@ function maskTopLevelReturnKeywords(path: string, source: string): string {
   return characters.join('');
 }
 
-function buildAmbientDeclarations(allowedGlobals: Set<string>): string {
+function buildAmbientDeclarations(allowedGlobals: Set<string>, declaredGlobalNames: ReadonlySet<string>): string {
   const declarations = [...allowedGlobals]
-    .filter((name) => !RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES.has(name))
+    .filter((name) => !declaredGlobalNames.has(name))
     .filter((name) => /^[A-Za-z_$][\w$]*$/u.test(name))
     .map((name) => `declare const ${name}: RunJSPermissiveGlobal;`);
   if (!declarations.length) {
@@ -557,9 +588,9 @@ function buildAmbientDeclarations(allowedGlobals: Set<string>): string {
 
   return [
     'interface RunJSPermissiveGlobal {',
-    '  readonly [key: string]: RunJSPermissiveGlobal;',
-    '  (...args: unknown[]): RunJSPermissiveGlobal;',
-    '  new (...args: unknown[]): RunJSPermissiveGlobal;',
+    '  [key: string]: any;',
+    '  (...args: any[]): any;',
+    '  new (...args: any[]): any;',
     '}',
     ...declarations,
   ].join('\n');
@@ -582,6 +613,50 @@ function getTypeScriptEnvironmentFiles(): RunJSTypeScriptEnvironmentFile[] {
   });
   cachedTypeScriptEnvironmentFiles = buildRunJSTypeScriptEnvironmentFiles(sources);
   return cachedTypeScriptEnvironmentFiles;
+}
+
+function getTypeScriptEnvironmentGlobalNames(): Set<string> {
+  if (cachedTypeScriptEnvironmentGlobalNames) {
+    return cachedTypeScriptEnvironmentGlobalNames;
+  }
+  const names = new Set(RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES);
+  names.add('ctx');
+  for (const file of getTypeScriptEnvironmentFiles()) {
+    const sourceFile = ts.createSourceFile(file.path, file.content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    for (const statement of sourceFile.statements) {
+      if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          if (ts.isIdentifier(declaration.name)) {
+            names.add(declaration.name.text);
+          }
+        }
+        continue;
+      }
+      if (
+        (ts.isFunctionDeclaration(statement) ||
+          ts.isClassDeclaration(statement) ||
+          ts.isEnumDeclaration(statement) ||
+          ts.isModuleDeclaration(statement)) &&
+        statement.name &&
+        ts.isIdentifier(statement.name)
+      ) {
+        names.add(statement.name.text);
+      }
+    }
+  }
+  cachedTypeScriptEnvironmentGlobalNames = names;
+  return names;
+}
+
+function getSourceLocation(source: string, position: number): { column: number; line: number } {
+  const lineStart = source.lastIndexOf('\n', position - 1) + 1;
+  let line = 1;
+  for (let index = 0; index < lineStart; index += 1) {
+    if (source[index] === '\n') {
+      line += 1;
+    }
+  }
+  return { column: position - lineStart + 1, line };
 }
 
 function findIdentifierAt(sourceFile: ts.SourceFile, position: number): ts.Identifier | undefined {

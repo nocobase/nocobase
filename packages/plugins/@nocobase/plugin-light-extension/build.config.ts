@@ -11,7 +11,12 @@ import { defineConfig } from '@nocobase/build';
 import { spawn } from 'child_process';
 import path from 'path';
 
-const sourceDependencies = ['@nocobase/light-extension-sdk', '@nocobase/runjs', '@nocobase/client-v2'] as const;
+const sourceDependencies = [
+  '@nocobase/light-extension-sdk',
+  '@nocobase/runjs',
+  '@nocobase/runjs-workspace',
+  '@nocobase/client-v2',
+] as const;
 const repositoryRoot = path.resolve(__dirname, '../../../..');
 
 export default defineConfig({
@@ -23,23 +28,25 @@ export default defineConfig({
 });
 
 async function buildSourceDependencies(buildDeclarations: boolean): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const buildArgs = ['build', ...sourceDependencies];
-    if (!buildDeclarations) {
-      buildArgs.push('--no-dts');
-    }
-    const child = spawn('yarn', buildArgs, {
-      cwd: repositoryRoot,
-      shell: process.platform === 'win32',
-      stdio: 'inherit',
-    });
-    child.once('error', reject);
-    child.once('exit', (code, signal) => {
-      if (code === 0) {
-        resolve();
-        return;
+  for (const packageName of sourceDependencies) {
+    await new Promise<void>((resolve, reject) => {
+      const buildArgs = ['build', packageName];
+      if (!buildDeclarations) {
+        buildArgs.push('--no-dts');
       }
-      reject(new Error(`Failed to build ${sourceDependencies.join(', ')} (${signal || `exit code ${code}`})`));
+      const child = spawn('yarn', buildArgs, {
+        cwd: repositoryRoot,
+        shell: process.platform === 'win32',
+        stdio: 'inherit',
+      });
+      child.once('error', reject);
+      child.once('exit', (code, signal) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        reject(new Error(`Failed to build ${packageName} (${signal || `exit code ${code}`})`));
+      });
     });
-  });
+  }
 }

@@ -13,10 +13,30 @@ import { FlowSurfaceBadRequestError } from './errors';
 
 export const JS_PAGE_MODEL_USE = 'JSPageModel';
 
+export const FLOW_SURFACE_RUNJS_HOSTS = {
+  JSPageModel: { hostKind: 'js-page', flowKey: 'jsSettings' },
+  JSBlockModel: { hostKind: 'js-block', flowKey: 'jsSettings' },
+  JSFieldModel: { hostKind: 'js-field', flowKey: 'jsSettings' },
+  JSEditableFieldModel: { hostKind: 'js-editable-field', flowKey: 'jsSettings' },
+  JSColumnModel: { hostKind: 'js-column', flowKey: 'jsSettings' },
+  JSItemModel: { hostKind: 'js-item', flowKey: 'jsSettings' },
+  FormJSFieldItemModel: { hostKind: 'form-js-field-item', flowKey: 'jsSettings' },
+  JSItemActionModel: { hostKind: 'js-item-action', flowKey: 'jsSettings' },
+  JSActionModel: { hostKind: 'js-action', flowKey: 'clickSettings' },
+  JSRecordActionModel: { hostKind: 'js-record-action', flowKey: 'clickSettings' },
+  JSCollectionActionModel: { hostKind: 'js-collection-action', flowKey: 'clickSettings' },
+  JSFormActionModel: { hostKind: 'js-form-action', flowKey: 'clickSettings' },
+  FilterFormJSActionModel: { hostKind: 'filter-form-js-action', flowKey: 'clickSettings' },
+} as const;
+
+export type FlowSurfaceRunJSModelUse = keyof typeof FLOW_SURFACE_RUNJS_HOSTS;
+export type FlowSurfaceRunJSHostKind = (typeof FLOW_SURFACE_RUNJS_HOSTS)[FlowSurfaceRunJSModelUse]['hostKind'];
+export type FlowSurfaceRunJSFlowKey = (typeof FLOW_SURFACE_RUNJS_HOSTS)[FlowSurfaceRunJSModelUse]['flowKey'];
+
 export type FlowSurfaceRunJSLocator = {
   kind: 'flowModel.step';
   modelUid: string;
-  flowKey: 'jsSettings';
+  flowKey: FlowSurfaceRunJSFlowKey;
   stepKey: 'runJs';
   paramPath: ['code'];
   versionPath: ['version'];
@@ -30,7 +50,8 @@ export type FlowSurfaceRunJSWorkspaceError = {
 };
 
 export type FlowSurfaceRunJSWorkspaceBootstrapInput = {
-  hostKind: 'js-page' | 'js-block';
+  hostKind: FlowSurfaceRunJSHostKind;
+  modelUse: FlowSurfaceRunJSModelUse;
   locator: FlowSurfaceRunJSLocator;
   transaction: Transaction;
   authoringContext: FlowSurfaceRunJSAuthoringContext;
@@ -67,15 +88,32 @@ type FlowSurfaceRunJSWorkspaceBootstrapApp = object & {
   [RUNJS_WORKSPACE_BOOTSTRAP_PORT]?: FlowSurfaceRunJSWorkspaceBootstrapPort;
 };
 
-export function buildFlowSurfaceRunJSLocator(modelUid: string): FlowSurfaceRunJSLocator {
+export function resolveFlowSurfaceRunJSHost(modelUse: unknown) {
+  const normalizedUse = String(modelUse || '').trim() as FlowSurfaceRunJSModelUse;
+  return FLOW_SURFACE_RUNJS_HOSTS[normalizedUse];
+}
+
+export function buildFlowSurfaceRunJSLocator(
+  modelUid: string,
+  modelUse: FlowSurfaceRunJSModelUse = 'JSBlockModel',
+): FlowSurfaceRunJSLocator {
+  const host = FLOW_SURFACE_RUNJS_HOSTS[modelUse];
   return {
     kind: 'flowModel.step',
     modelUid,
-    flowKey: 'jsSettings',
+    flowKey: host.flowKey,
     stepKey: 'runJs',
     paramPath: ['code'],
     versionPath: ['version'],
   };
+}
+
+export function getFlowSurfaceRunJSWorkspaceProviderStatus(app: object): FlowSurfaceRunJSWorkspaceBootstrapResult {
+  const port = (app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
+  if (port) {
+    return { status: 'ready', retryable: false };
+  }
+  return buildProviderUnavailableResult();
 }
 
 export function buildFlowSurfaceJSPageCapabilities(): FlowSurfaceJSPageCapabilities {
@@ -108,16 +146,20 @@ export async function bootstrapFlowSurfaceRunJSWorkspace(
 ): Promise<FlowSurfaceRunJSWorkspaceBootstrapResult> {
   const port = (app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
   if (!port) {
-    return {
-      status: 'pending',
-      retryable: true,
-      error: {
-        code: 'FLOW_SURFACE_RUNJS_BOOTSTRAP_PROVIDER_UNAVAILABLE',
-        message: 'RunJS workspace bootstrap provider is unavailable',
-      },
-    };
+    return buildProviderUnavailableResult();
   }
   return port(input);
+}
+
+function buildProviderUnavailableResult(): FlowSurfaceRunJSWorkspaceBootstrapResult {
+  return {
+    status: 'pending',
+    retryable: true,
+    error: {
+      code: 'FLOW_SURFACE_RUNJS_BOOTSTRAP_PROVIDER_UNAVAILABLE',
+      message: 'RunJS workspace bootstrap provider is unavailable',
+    },
+  };
 }
 
 export function isRouteBackedPageUse(use?: string) {

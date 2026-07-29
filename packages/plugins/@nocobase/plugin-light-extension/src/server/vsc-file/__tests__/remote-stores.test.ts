@@ -8,7 +8,7 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import path from 'path';
+import { importRunJSWorkspaceCollections } from '@nocobase/runjs-workspace/server';
 
 import type { VscFileRemoteRecord, VscRemoteNormalizedConfig } from '../../../shared/vsc-file/remote-sync-types';
 import { ConflictStore } from '../remotes/ConflictStore';
@@ -18,10 +18,10 @@ import { SyncJobStore } from '../remotes/SyncJobStore';
 import { validateVscRemoteAuthRef, type VscRemoteAuthRef } from '../remotes/credentialRef';
 
 const normalizedConfig: VscRemoteNormalizedConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('vsc-file remote stores', () => {
@@ -30,9 +30,7 @@ describe('vsc-file remote stores', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({
-      directory: path.resolve(__dirname, '../collections'),
-    });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
   });
 
@@ -54,7 +52,7 @@ describe('vsc-file remote stores', () => {
       store.create({
         repoId,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: unsafeConfig,
         authRef: null,
       }),
@@ -64,7 +62,7 @@ describe('vsc-file remote stores', () => {
     expect(remote).toMatchObject({
       repoId,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: normalizedConfig,
       version: 1,
     });
@@ -78,7 +76,7 @@ describe('vsc-file remote stores', () => {
       store.create({
         repoId,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: normalizedConfig,
         authRef: 'github_pat_test_direct_123' as unknown as VscRemoteAuthRef,
       }),
@@ -112,13 +110,13 @@ describe('vsc-file remote stores', () => {
     });
     await remoteStore.recordCheck(remote.id, { remoteTargetVersion: remote.version, lastErrorCode: 'AUTH_FAILED' });
 
-    const rotated = await remoteStore.rotateAuthRef(remote.id, await validAuthRef('{{ $env.GITHUB_SYNC_ROTATED }}'));
+    const rotated = await remoteStore.rotateAuthRef(remote.id, await validAuthRef('{{ $env.GIT_SYNC_ROTATED }}'));
     expect(rotated.version).toBe(1);
     expect(rotated.lastErrorCode).toBeNull();
     await expect(mapStore.findLatest(remote.id)).resolves.toMatchObject({ id: mapping.id });
 
     const updated = await remoteStore.updateTarget(remote.id, {
-      provider: 'github',
+      provider: 'git',
       config: { ...normalizedConfig, branch: 'next' },
       authRef: await validAuthRef(rotated.authRef),
     });
@@ -261,7 +259,7 @@ describe('vsc-file remote stores', () => {
 
     await expect(
       remoteStore.updateTarget(remote.id, {
-        provider: 'github',
+        provider: 'git',
         config: { ...normalizedConfig, branch: 'next' },
         authRef: await validAuthRef(remote.authRef),
       }),
@@ -271,7 +269,7 @@ describe('vsc-file remote stores', () => {
     });
     await expect(
       remoteStore.updateTarget(remote.id, {
-        provider: 'github',
+        provider: 'git',
         config: normalizedConfig,
         authRef: await validAuthRef('{{ $env.ROTATED }}'),
       }),
@@ -388,9 +386,9 @@ describe('vsc-file remote stores', () => {
       {
         repoId,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: normalizedConfig,
-        authRef: await validAuthRef('{{ $env.GITHUB_SYNC }}'),
+        authRef: await validAuthRef('{{ $env.GIT_SYNC }}'),
       },
       transaction,
     );

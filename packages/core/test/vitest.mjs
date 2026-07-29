@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client', 'client-v2', 'flow-engine'];
+const MIXED_CORE_CLIENT_PACKAGES = ['runjs-workspace'];
 const PLUGIN_CLIENT_PACKAGES = ['client', 'client-v2'];
 // 按路径填写要跳过服务端测试的插件目录（相对仓库根目录）
 const skipPluginPaths = [
@@ -113,8 +114,9 @@ const defineCommonConfig = () => {
 };
 
 function getExclude(isServer) {
+  const coreClientPackages = isServer ? CORE_CLIENT_PACKAGES : [...CORE_CLIENT_PACKAGES, ...MIXED_CORE_CLIENT_PACKAGES];
   return [
-    `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
+    `packages/core/${isServer ? '' : '!'}(${coreClientPackages.join('|')})/**/*`,
     ...(isServer ? PLUGIN_CLIENT_PACKAGES : ['server']).map((dir) => `packages/**/src/${dir}/**/*`),
   ];
 }
@@ -200,7 +202,11 @@ export const getFilterInclude = (isServer, isCoverage) => {
     };
   }
 
-  const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
+  const suffix = isCoverage
+    ? `**/*.{ts,tsx}`
+    : path.basename(absPath) === '__tests__'
+      ? `**/*.{test,spec}.{ts,tsx}`
+      : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
 
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));

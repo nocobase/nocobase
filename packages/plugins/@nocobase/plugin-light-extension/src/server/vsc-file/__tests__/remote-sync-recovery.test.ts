@@ -8,12 +8,14 @@
  */
 
 import type { HandlerType } from '@nocobase/resourcer';
+import {
+  CommitService,
+  createVscFileResource,
+  TreeService,
+  VscPermissionHookRegistry,
+} from '@nocobase/runjs-workspace/server';
 import { vi } from 'vitest';
 
-import { CommitService } from '../services/CommitService';
-import { TreeService } from '../services/TreeService';
-import { VscPermissionHookRegistry } from '../permissions';
-import { createVscFileResource } from '../resources/vscFile';
 import { ExternalCommitMapStore } from '../remotes/ExternalCommitMapStore';
 import { RemoteReconcileService } from '../remotes/RemoteReconcileService';
 import { RemoteSyncRuntimeService } from '../remotes/RemoteSyncRuntimeService';
@@ -60,7 +62,7 @@ describe('remote sync server recovery acceptance', () => {
       runtime.configureRemote({
         repoId: setup.repoId,
         name: 'origin',
-        provider: 'github',
+        provider: 'git',
         config: { ...setup.remote.config, branch: 'next' },
         authRef: null,
       }),

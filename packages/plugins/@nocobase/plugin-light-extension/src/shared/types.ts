@@ -16,7 +16,8 @@ import type {
 } from '../constants';
 import type {
   RunJSSourceLocator,
-  VscGitHubRemoteConfig,
+  VscGitRemoteConfig,
+  VscGitRemoteConfigDraft,
   VscRemotePlannerAction,
   VscRemotePlannerLocalSummary,
   VscRemotePlannerRemoteSummary,
@@ -63,6 +64,80 @@ export interface LightExtensionCreateRepoInput {
   initialFiles?: LightExtensionTreeEntryInput[];
   message?: string;
 }
+
+export const lightExtensionCreateSourceTypes = ['template', 'zip', 'git'] as const;
+
+export type LightExtensionCreateSourceType = (typeof lightExtensionCreateSourceTypes)[number];
+
+export const lightExtensionCreateJobStatuses = ['pending', 'running', 'failed'] as const;
+
+export type LightExtensionCreateJobStatus = (typeof lightExtensionCreateJobStatuses)[number];
+
+export interface LightExtensionCreateJobRecord {
+  id: string;
+  applicationName: string;
+  targetRepoId: string;
+  name: string;
+  normalizedName: string;
+  title: string | null;
+  description: string | null;
+  sourceType: LightExtensionCreateSourceType;
+  status: LightExtensionCreateJobStatus;
+  payload: Record<string, unknown> | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  reservationKey: string | null;
+  actorUserId: string | null;
+  requestId: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LightExtensionCreateJobSummary {
+  id: string;
+  targetRepoId: string;
+  name: string;
+  title: string | null;
+  description: string | null;
+  sourceType: LightExtensionCreateSourceType;
+  status: LightExtensionCreateJobStatus;
+  errorCode: string | null;
+  errorMessage: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type LightExtensionCreateJobAcceptedResult = LightExtensionCreateJobSummary;
+
+export interface LightExtensionCreateJobListResult {
+  jobs: LightExtensionCreateJobSummary[];
+}
+
+export interface LightExtensionCreateJobMutationInput {
+  jobId: string;
+}
+
+export type LightExtensionCreateJobDismissInput = LightExtensionCreateJobMutationInput;
+
+export interface LightExtensionCreateJobDismissResult {
+  id: string;
+}
+
+export interface LightExtensionCreateJobActionContract {
+  list: {
+    result: LightExtensionCreateJobListResult;
+  };
+  dismiss: {
+    input: LightExtensionCreateJobDismissInput;
+    result: LightExtensionCreateJobDismissResult;
+  };
+}
+
+export type LightExtensionCreateJobActionName = keyof LightExtensionCreateJobActionContract;
 
 export interface LightExtensionUpdateRepoInput {
   repoId: string;
@@ -399,6 +474,9 @@ export interface LightExtensionMoveSourceWorkspaceFile {
 
 export type LightExtensionMoveSourceDestination =
   | {
+      type: 'default';
+    }
+  | {
       type: 'existing';
       repoId: string;
     }
@@ -592,7 +670,12 @@ export type LightExtensionSyncSourceStatus = 'active' | 'disabled';
 
 export interface LightExtensionSyncRemoteTarget {
   provider: LightExtensionSyncProvider;
-  config: VscGitHubRemoteConfig;
+  config: VscGitRemoteConfig;
+}
+
+export interface LightExtensionSyncRemoteTargetDraft {
+  provider: LightExtensionSyncProvider;
+  config: VscGitRemoteConfigDraft;
 }
 
 export interface LightExtensionSyncSourceSummary extends LightExtensionSyncRemoteTarget {
@@ -613,7 +696,9 @@ export interface LightExtensionSyncGetResult {
   source: LightExtensionSyncSourceSummary | null;
 }
 
-export interface LightExtensionSyncConfigureInput extends LightExtensionSyncGetInput, LightExtensionSyncRemoteTarget {
+export interface LightExtensionSyncConfigureInput
+  extends LightExtensionSyncGetInput,
+    LightExtensionSyncRemoteTargetDraft {
   authRef?: string;
 }
 
@@ -631,14 +716,14 @@ export interface LightExtensionSyncDisconnectResult {
 
 export interface LightExtensionSyncTestConnectionInput extends LightExtensionSyncGetInput {
   provider?: LightExtensionSyncProvider;
-  config?: VscGitHubRemoteConfig;
+  config?: VscGitRemoteConfigDraft;
   authRef?: string;
 }
 
 export interface LightExtensionSyncTestConnectionResult {
   ok: true;
   provider: LightExtensionSyncProvider;
-  config: VscGitHubRemoteConfig;
+  config: VscGitRemoteConfig;
   revision: string | null;
   credentialConfigured: boolean;
   authRefDisplay: string | null;
@@ -679,14 +764,14 @@ export type LightExtensionSyncPullResult = LightExtensionSyncOperationResult;
 
 export type LightExtensionSyncPushResult = LightExtensionSyncOperationResult;
 
-export interface LightExtensionSyncCreateFromGitInput extends LightExtensionSyncRemoteTarget {
+export interface LightExtensionSyncCreateFromGitInput extends LightExtensionSyncRemoteTargetDraft {
   name: string;
   title?: string | null;
   description?: string | null;
   authRef?: string;
 }
 
-export type LightExtensionSyncCreateFromGitResult = LightExtensionSyncOperationResult;
+export type LightExtensionSyncCreateFromGitResult = LightExtensionCreateJobAcceptedResult;
 
 export interface LightExtensionSyncActionContract {
   get: {

@@ -47,7 +47,7 @@ describe('light extension Git sync permissions acceptance', () => {
       const ctx = await runAction(
         'createFromGit',
         {
-          provider: 'github',
+          provider: 'git',
           config: gitSyncRemoteConfig,
           authRef: '{{ $env.GITHUB_SYNC }}',
           name: 'Denied Git Source',
@@ -153,7 +153,7 @@ describe('light extension Git sync permissions acceptance', () => {
     const plan = await fixture.createPullInput(created.repo.id);
     const values =
       action === 'configure'
-        ? { repoId: created.repo.id, provider: 'github', config: gitSyncRemoteConfig }
+        ? { repoId: created.repo.id, provider: 'git', config: gitSyncRemoteConfig }
         : action === 'pull' || action === 'push'
           ? {
               repoId: created.repo.id,
@@ -243,7 +243,7 @@ describe('light extension Git credential logging integration', () => {
         },
       });
 
-      const adapter = getGitHubAdapter(app);
+      const adapter = getGitAdapter(app);
       const baseSnapshot = createSnapshot('remote-base', 'Base');
       const nextSnapshot = createSnapshot('remote-next', 'Remote next');
       vi.spyOn(adapter, 'probe').mockResolvedValue({ revision: baseSnapshot.revision, metadata: { branch: 'main' } });
@@ -252,12 +252,15 @@ describe('light extension Git credential logging integration', () => {
       const user = await app.db.getRepository('users').findOne();
       const agent = await app.agent().login(user);
       const createResponse = await agent.post('/lightExtensionSync:createFromGit').send({
-        provider: 'github',
+        provider: 'git',
         config: gitSyncRemoteConfig,
         name: 'Credential logging integration',
       });
-      expect(createResponse.status).toBe(200);
-      const repoId = requireString(toRecord(responseData(createResponse.body).repo).id, 'repo id');
+      expect(createResponse.status).toBe(202);
+      const accepted = responseData(createResponse.body);
+      const createJobId = requireString(accepted.id, 'creation job id');
+      const repoId = requireString(accepted.targetRepoId, 'repo id');
+      await waitForSuccessfulCreate(app, createJobId, repoId);
 
       fetchSnapshot.mockResolvedValue(nextSnapshot);
       const planResponse = await agent.post('/lightExtensionSync:plan').send({ repoId });
@@ -270,17 +273,22 @@ describe('light extension Git credential logging integration', () => {
 
       requestLogs.length = 0;
       auditLogs.length = 0;
-      const token = 'github_pat_cross_layer_012345678901234567890123456789';
-      const authorization = `Bearer ${token}`;
-      const requestValues = { repoId, provider: 'github', config: gitSyncRemoteConfig };
+      const secretMarkers = {
+        httpsPassword: 'https-password-cross-layer-secret',
+        privateKey: '-----BEGIN PRIVATE KEY-----cross-layer-private-key',
+        passphrase: 'ssh-passphrase-cross-layer-secret',
+        knownHosts: 'git.example.com ssh-ed25519 cross-layer-host-key',
+      };
+      const authorization = `Bearer ${secretMarkers.httpsPassword}`;
+      const requestValues = { repoId, provider: 'git', config: gitSyncRemoteConfig };
       const bodyResponse = await agent
         .post('/lightExtensionSync:configure')
         .set('x-request-id', 'credential-body-rejected')
-        .send({ ...requestValues, authRef: token });
+        .send({ ...requestValues, authRef: secretMarkers.httpsPassword });
       const queryResponse = await restrictedAgent
         .post('/lightExtensionSync:configure')
         .set('x-request-id', 'credential-query-rejected')
-        .query({ authRef: token })
+        .query({ authRef: secretMarkers.passphrase })
         .send(requestValues);
       const headerResponse = await agent
         .post('/lightExtensionSync:configure')
@@ -288,15 +296,18 @@ describe('light extension Git credential logging integration', () => {
         .set('x-git-credential', authorization)
         .send(requestValues);
 
-      expect(bodyResponse.status).toBe(400);
+      expect(bodyResponse.status).toBe(200);
+      expect(responseData(bodyResponse.body)).toMatchObject({
+        source: { credentialConfigured: true, authRefDisplay: '********' },
+      });
       expect(queryResponse.status).toBe(403);
       expect(headerResponse.status).toBe(400);
 
       const rawProviderError = Object.assign(new Error(`provider raw failure: ${authorization}`), {
-        cause: new Error(token),
+        cause: new Error(secretMarkers.privateKey),
         config: { headers: { Authorization: authorization } },
-        request: { body: token },
-        response: { data: { token } },
+        request: { body: secretMarkers.passphrase },
+        response: { data: { knownHosts: secretMarkers.knownHosts } },
         vscRepoId: 'vscr_internal_secret',
         remoteId: 'vscrmt_internal_secret',
         jobId: 'job_internal_secret',
@@ -344,8 +355,10 @@ describe('light extension Git credential logging integration', () => {
         persistedLogs: persistedLogs.map((log) => log.toJSON()),
       });
       expect(serialized).toContain('[REDACTED]');
-      expect(serialized).not.toContain(token);
       expect(serialized).not.toContain(authorization);
+      for (const marker of Object.values(secretMarkers)) {
+        expect(serialized).not.toContain(marker);
+      }
       expect(serialized).not.toContain('provider raw failure');
       expect(serialized).not.toMatch(
         /vscr_internal_secret|vscrmt_internal_secret|job_internal_secret|claim_internal_secret/u,
@@ -359,7 +372,7 @@ describe('light extension Git credential logging integration', () => {
 });
 
 type LightExtensionPluginInternals = {
-  vscFileServerModule: {
+  remoteSyncModule: {
     remoteAdapters: RemoteSyncAdapterRegistry;
   };
 };
@@ -380,12 +393,12 @@ async function createApp(): Promise<MockServer> {
   });
 }
 
-function getGitHubAdapter(app: MockServer) {
+function getGitAdapter(app: MockServer) {
   const plugin = app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
-  const registry = (plugin as unknown as LightExtensionPluginInternals).vscFileServerModule.remoteAdapters;
-  const adapter = registry.get('github');
+  const registry = (plugin as unknown as LightExtensionPluginInternals).remoteSyncModule.remoteAdapters;
+  const adapter = registry.get('git');
   if (!adapter) {
-    throw new Error('Expected the GitHub remote adapter');
+    throw new Error('Expected the Git remote adapter');
   }
   return adapter;
 }
@@ -414,6 +427,23 @@ function createSnapshot(revision: string, label: string): VscRemoteSnapshot {
     files,
     metadata: { branch: 'main' },
   };
+}
+
+async function waitForSuccessfulCreate(app: MockServer, jobId: string, repoId: string): Promise<void> {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const job = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (job?.get('status') === 'failed') {
+      throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
+    }
+    if (!job) {
+      const repo = await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId });
+      if (repo) {
+        return;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Creation job ${jobId} did not finish`);
 }
 
 function responseData(body: unknown): Record<string, unknown> {

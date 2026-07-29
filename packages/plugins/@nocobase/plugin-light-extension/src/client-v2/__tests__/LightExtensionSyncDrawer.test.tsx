@@ -55,12 +55,12 @@ const repo: LightExtensionRepoRecord = {
 };
 
 const source: LightExtensionSyncSourceSummary = {
-  provider: 'github',
+  provider: 'git',
   config: {
-    owner: 'nocobase',
-    repository: 'extensions',
+    url: 'https://git.example.com/nocobase/extensions.git',
     branch: 'main',
     subdirectory: 'light/sales',
+    transport: 'https',
   },
   status: 'active',
   remoteTargetVersion: 3,
@@ -139,7 +139,7 @@ describe('LightExtensionSyncDrawer', () => {
     }
     mocks.testConnection.mockResolvedValue({
       ok: true,
-      provider: 'github',
+      provider: 'git',
       config: source.config,
       revision: source.revision,
       credentialConfigured: true,
@@ -176,11 +176,11 @@ describe('LightExtensionSyncDrawer', () => {
     mocks.get.mockResolvedValue({ repoId: repo.id, source });
     mocks.plan.mockResolvedValue({ repoId: repo.id, source: null, plan: createPlan('unconfigured') });
 
-    renderDrawer({ configurationPanel: <div>Configure GitHub source</div> });
+    renderDrawer({ configurationPanel: <div>Configure Git source</div> });
 
-    expect(await screen.findByText('Configure GitHub source')).toBeInTheDocument();
+    expect(await screen.findByText('Configure Git source')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Sync source is not configured');
-    expect(screen.queryByRole('cell', { name: 'nocobase/extensions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: source.config.url })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pull from Git' })).not.toBeInTheDocument();
   });
 
@@ -218,12 +218,9 @@ describe('LightExtensionSyncDrawer', () => {
 
   it.each([
     ['LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE', 'The configured credential is unavailable'],
-    ['LIGHT_EXTENSION_SYNC_AUTH_FAILED', 'GitHub authentication failed'],
+    ['LIGHT_EXTENSION_SYNC_AUTH_FAILED', 'Git authentication failed'],
     ['LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE', 'The sync provider is unavailable'],
-    [
-      'LIGHT_EXTENSION_SYNC_RATE_LIMITED',
-      'GitHub API rate limit reached. Try again later or configure a GitHub token.',
-    ],
+    ['LIGHT_EXTENSION_SYNC_RATE_LIMITED', 'The Git remote is temporarily unavailable. Try again later.'],
     ['LIGHT_EXTENSION_PERMISSION_DENIED', 'You do not have permission to perform this sync operation'],
   ])('maps safe error plan code %s to a user-facing message', async (reasonCode, label) => {
     setPlanResult(createPlan('error', { reasonCode }));
@@ -282,7 +279,7 @@ describe('LightExtensionSyncDrawer', () => {
     await user.click(await screen.findByRole('button', { name: 'Push to Git' }));
     expect(mocks.push).not.toHaveBeenCalled();
 
-    const confirmation = await screen.findByRole('dialog', { name: 'Push changes to GitHub?' });
+    const confirmation = await screen.findByRole('dialog', { name: 'Push changes to Git?' });
     await user.click(within(confirmation).getByRole('button', { name: 'Push to Git' }));
 
     await waitFor(() =>
@@ -294,9 +291,7 @@ describe('LightExtensionSyncDrawer', () => {
         planFingerprint: pushPlan.fingerprint,
       }),
     );
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Push changes to GitHub?' })).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Push changes to Git?' })).not.toBeInTheDocument());
   });
 
   it('ignores a late repo-A Pull result after switching to repo B and blocks a second write until it settles', async () => {
@@ -309,7 +304,7 @@ describe('LightExtensionSyncDrawer', () => {
     };
     const sourceB: LightExtensionSyncSourceSummary = {
       ...source,
-      config: { ...source.config, owner: 'repo-b-owner', repository: 'repo-b-extension' },
+      config: { ...source.config, url: 'https://git.example.com/repo-b/extension.git' },
     };
     const repoAPlan = createPlan('remote-ahead', { action: 'pull', canPull: true });
     const repoBPlan = createPlan('remote-ahead', {
@@ -341,7 +336,7 @@ describe('LightExtensionSyncDrawer', () => {
     mocks.plan.mockResolvedValue({ repoId: repoB.id, source: sourceB, plan: repoBPlan });
     rerender(<LightExtensionSyncDrawer open repo={repoB} {...callbacks} />);
 
-    expect(await screen.findByRole('cell', { name: 'repo-b-owner/repo-b-extension' })).toBeInTheDocument();
+    expect(await screen.findByRole('cell', { name: sourceB.config.url })).toBeInTheDocument();
     const repoBPullButton = screen.getByRole('button', { name: 'Pull from Git' });
     expect(repoBPullButton).toBeDisabled();
     await user.click(repoBPullButton);
@@ -358,7 +353,7 @@ describe('LightExtensionSyncDrawer', () => {
     await waitFor(() => expect(repoBPullButton).toBeEnabled());
     expect(callbacks.onRepoUpdated).not.toHaveBeenCalled();
     expect(callbacks.onSyncSourceChanged).not.toHaveBeenCalled();
-    expect(screen.getByRole('cell', { name: 'repo-b-owner/repo-b-extension' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: sourceB.config.url })).toBeInTheDocument();
 
     await user.click(repoBPullButton);
     await waitFor(() => expect(mocks.pull).toHaveBeenCalledTimes(2));
@@ -376,14 +371,12 @@ describe('LightExtensionSyncDrawer', () => {
     renderDrawer();
 
     await user.click(await screen.findByRole('button', { name: 'Push to Git' }));
-    const confirmation = await screen.findByRole('dialog', { name: 'Push changes to GitHub?' });
+    const confirmation = await screen.findByRole('dialog', { name: 'Push changes to Git?' });
     const staleSubmit = within(confirmation).getByRole('button', { name: 'Push to Git' });
 
     await user.click(screen.getByRole('button', { name: 'Test connection' }));
     await waitFor(() => expect(mocks.plan).toHaveBeenCalledTimes(2));
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Push changes to GitHub?' })).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Push changes to Git?' })).not.toBeInTheDocument());
     fireEvent.click(staleSubmit);
 
     expect(mocks.push).not.toHaveBeenCalled();

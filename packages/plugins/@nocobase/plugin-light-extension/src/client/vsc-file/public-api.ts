@@ -7,5 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './runjs-studio/contract';
-export * from './runjs-studio/LegacyRunJSStudioProvider';
+export * from '@nocobase/runjs-workspace/client';

@@ -20,6 +20,11 @@ import {
   mapRemoteSyncErrorToLightExtension,
 } from '../../shared/errors';
 import type {
+  LightExtensionCreateJobActionName,
+  LightExtensionCreateJobRecord,
+  LightExtensionCreateJobStatus,
+  LightExtensionCreateJobSummary,
+  LightExtensionCreateSourceType,
   LightExtensionSyncActionName,
   LightExtensionSyncConfigureInput,
   LightExtensionSyncCreateFromGitInput,
@@ -62,14 +67,36 @@ const remote: VscFileRemoteRecord = {
   id: 'vscrmt_demo',
   repoId: repo.vscRepoId,
   name: 'origin',
-  provider: 'github',
-  config: { owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null },
+  provider: 'git',
+  config: { url: 'https://git.example.com/nocobase/demo.git', branch: 'main', subdirectory: null, transport: 'https' },
   authRef: '{{ $env.GITHUB_TOKEN }}',
   status: 'active',
   version: 1,
   lastCheckedAt: null,
   lastSyncedAt: null,
   lastErrorCode: null,
+};
+
+const createJob = {
+  id: 'lecj_git_demo',
+  applicationName: 'main',
+  targetRepoId: 'ler_git_target',
+  name: 'demo',
+  normalizedName: 'demo',
+  title: 'Demo',
+  description: 'Remote demo',
+  sourceType: 'git' as const,
+  status: 'pending' as const,
+  payload: { sourceType: 'git', provider: 'git' },
+  errorCode: null,
+  errorMessage: null,
+  reservationKey: 'sha256:reservation',
+  actorUserId: null,
+  requestId: null,
+  startedAt: null,
+  finishedAt: null,
+  createdAt: '2026-07-27T00:00:00.000Z',
+  updatedAt: '2026-07-27T00:00:00.000Z',
 };
 
 describe('lightExtensionSync resource', () => {
@@ -81,7 +108,7 @@ describe('lightExtensionSync resource', () => {
     expect(ctx.body).toEqual({
       repoId: repo.id,
       source: {
-        provider: 'github',
+        provider: 'git',
         config: remote.config,
         status: 'active',
         remoteTargetVersion: 1,
@@ -100,7 +127,7 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('"authRef":');
   });
 
-  it('rejects a direct token before persistence or remote access', async () => {
+  it('accepts a direct token while masking it from the response and request context', async () => {
     const directToken = 'github_pat_test_direct_123';
     const fixture = createFixture();
     const ctx = await runAction(
@@ -108,16 +135,18 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: remote.config,
         authRef: directToken,
       },
       ['manageSyncSource'],
     );
 
-    expect(ctx.status).toBe(400);
-    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
-    expect(fixture.runtime.testTarget).not.toHaveBeenCalled();
+    expect(ctx.status).toBeUndefined();
+    expect(fixture.runtime.testTarget).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
+    expect(fixture.runtime.configureRemote).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
+    expect(ctx.body).toMatchObject({ source: { credentialConfigured: true, authRefDisplay: '********' } });
+    expect(JSON.stringify(ctx)).not.toContain(directToken);
     expect(JSON.stringify(ctx.body)).not.toContain(directToken);
   });
 
@@ -141,7 +170,7 @@ describe('lightExtensionSync resource', () => {
     const ctx = await runAction(
       fixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config, authRef: remote.authRef },
+      { repoId: repo.id, provider: 'git', config: remote.config, authRef: remote.authRef },
       ['manageSyncSource'],
     );
 
@@ -179,7 +208,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: remote.config,
         token: 'ghp_secret',
       },
@@ -190,6 +219,24 @@ describe('lightExtensionSync resource', () => {
     expect(ctx.body).toMatchObject({ errors: [{ code: 'LIGHT_EXTENSION_INVALID_INPUT' }] });
     expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
     expect(JSON.stringify(ctx.body)).not.toContain('ghp_secret');
+  });
+
+  it('rejects the removed legacy provider before calling the runtime', async () => {
+    const fixture = createFixture();
+    const ctx = await runAction(
+      fixture,
+      'configure',
+      {
+        repoId: repo.id,
+        provider: 'git' + 'hub',
+        config: remote.config,
+      },
+      ['manageSyncSource'],
+    );
+
+    expect(ctx.status).toBe(400);
+    expect(ctx.body).toMatchObject({ errors: [{ code: 'LIGHT_EXTENSION_INVALID_INPUT' }] });
+    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
   });
 
   it('keeps manage, Pull, Push, OR permissions, and repository scope separate', async () => {
@@ -210,7 +257,7 @@ describe('lightExtensionSync resource', () => {
 
   it.each([
     ['get', { repoId: repo.id }, 'manageSyncSource'],
-    ['configure', { repoId: repo.id, provider: 'github', config: remote.config, authRef: null }, 'manageSyncSource'],
+    ['configure', { repoId: repo.id, provider: 'git', config: remote.config, authRef: null }, 'manageSyncSource'],
     ['disconnect', { repoId: repo.id }, 'manageSyncSource'],
     ['testConnection', { repoId: repo.id }, 'manageSyncSource'],
     ['plan', { repoId: repo.id }, 'pullFromSyncSource'],
@@ -242,7 +289,7 @@ describe('lightExtensionSync resource', () => {
     },
   );
 
-  it('allows createFromGit only with all permissions and returns no credential or internal identifiers', async () => {
+  it('enqueues createFromGit with all permissions and returns 202 without remote access', async () => {
     const fixture = createFixture();
     const ctx = await runAction(
       fixture,
@@ -254,31 +301,31 @@ describe('lightExtensionSync resource', () => {
       { headers: { 'x-csrf-token': 'csrf-token' } },
     );
 
-    expect(ctx.status).toBeUndefined();
-    expect(fixture.runtime.fetchTarget).toHaveBeenCalledWith(
-      expect.objectContaining({ authRef: remote.authRef, config: remote.config }),
+    expect(ctx.status).toBe(202);
+    expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
+    expect(fixture.runtime.establishInitialBaseline).not.toHaveBeenCalled();
+    expect(fixture.createJobStore.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceType: 'git',
+        payload: expect.objectContaining({ authRef: remote.authRef, provider: 'git' }),
+      }),
+      expect.anything(),
     );
-    expect(fixture.runtime.establishInitialBaseline).toHaveBeenCalled();
+    expect(fixture.createJobRunner.publish).toHaveBeenCalledWith(createJob.id);
     expect(ctx.body).toMatchObject({
-      repo: { id: repo.id },
-      source: { revision: 'rev_remote', authRefDisplay: '********' },
-      plan: { state: 'in-sync' },
+      id: createJob.id,
+      targetRepoId: createJob.targetRepoId,
+      sourceType: 'git',
+      status: 'pending',
     });
     const serialized = JSON.stringify(ctx.body);
     expect(serialized).not.toContain('GITHUB_TOKEN');
     expect(serialized).not.toContain(repo.vscRepoId);
     expect(serialized).not.toContain(remote.id);
-    expect(fixture.auditService.recordSyncEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: repo.id,
-        action: 'syncCreateFromGit',
-        provider: 'github',
-        remoteRevision: 'rev_remote',
-        fileCount: 1,
-      }),
+    expect(fixture.auditService.recordSyncEvent).not.toHaveBeenCalled();
+    expect(fixture.auditService.recordCreateJobEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'createJobEnqueue', jobId: createJob.id, sourceType: 'git' }),
     );
-    expect(JSON.stringify(fixture.auditService.recordSyncEvent.mock.calls)).not.toContain('secret-source');
-    expect(JSON.stringify(fixture.auditService.recordSyncEvent.mock.calls)).not.toContain('GITHUB_TOKEN');
   });
 
   it('ignores an undefined framework filterByTk while rejecting a supplied createFromGit filterByTk', async () => {
@@ -292,8 +339,8 @@ describe('lightExtensionSync resource', () => {
       { filterByTk: undefined },
     );
 
-    expect(allowed.status).toBeUndefined();
-    expect(allowedFixture.runtime.fetchTarget).toHaveBeenCalledTimes(1);
+    expect(allowed.status).toBe(202);
+    expect(allowedFixture.createJobStore.enqueue).toHaveBeenCalledTimes(1);
 
     const rejectedFixture = createFixture();
     const rejected = await runAction(
@@ -307,22 +354,26 @@ describe('lightExtensionSync resource', () => {
 
     expect(rejected.status).toBe(400);
     expect(rejectedFixture.runtime.fetchTarget).not.toHaveBeenCalled();
+    expect(rejectedFixture.createJobStore.enqueue).not.toHaveBeenCalled();
   });
 
-  it.each([{ token: 'ghp_secret' }, { vscRepoId: repo.vscRepoId }, { remoteId: remote.id }])(
-    'rejects forbidden createFromGit input before remote access',
-    async (forbidden) => {
-      const fixture = createFixture();
-      const ctx = await runAction(fixture, 'createFromGit', { ...createFromGitInput(), ...forbidden }, [
-        'create',
-        'manageSyncSource',
-        'pullFromSyncSource',
-      ]);
+  it.each([
+    { token: 'ghp_secret' },
+    { vscRepoId: repo.vscRepoId },
+    { remoteId: remote.id },
+    { zipBase64: 'not-allowed' },
+    { initialFiles: [] },
+  ])('rejects forbidden createFromGit input before remote access', async (forbidden) => {
+    const fixture = createFixture();
+    const ctx = await runAction(fixture, 'createFromGit', { ...createFromGitInput(), ...forbidden }, [
+      'create',
+      'manageSyncSource',
+      'pullFromSyncSource',
+    ]);
 
-      expect(ctx.status).toBe(400);
-      expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
-    },
-  );
+    expect(ctx.status).toBe(400);
+    expect(fixture.runtime.fetchTarget).not.toHaveBeenCalled();
+  });
 
   it('rejects unknown provider config fields before resolving the remote credential', async () => {
     const fixture = createFixture();
@@ -347,7 +398,7 @@ describe('lightExtensionSync resource', () => {
 
   it.each([
     ['get', { repoId: repo.id }],
-    ['configure', { repoId: repo.id, provider: 'github', config: remote.config }],
+    ['configure', { repoId: repo.id, provider: 'git', config: remote.config }],
     ['disconnect', { repoId: repo.id }],
     ['testConnection', { repoId: repo.id }],
     ['plan', { repoId: repo.id }],
@@ -374,7 +425,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: { ...remote.config, branch: '' },
       },
       ['manageSyncSource'],
@@ -396,7 +447,7 @@ describe('lightExtensionSync resource', () => {
     expect(JSON.stringify(ctx.body)).not.toContain('GITHUB_TOKEN');
   });
 
-  it('allows public GitHub Pull with the saved null authRef and keeps internal handles out of the response', async () => {
+  it('allows public Git Pull with the saved null authRef and keeps internal handles out of the response', async () => {
     const fixture = createFixture({ remote: { ...remote, authRef: null } });
     const ctx = await runAction(fixture, 'pull', executionInput(), ['pullFromSyncSource']);
 
@@ -415,7 +466,7 @@ describe('lightExtensionSync resource', () => {
     const query = await runAction(
       queryFixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config },
+      { repoId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
       { authRef: token },
@@ -428,7 +479,7 @@ describe('lightExtensionSync resource', () => {
     const header = await runAction(
       headerFixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config },
+      { repoId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
       {},
@@ -442,7 +493,7 @@ describe('lightExtensionSync resource', () => {
     const path = await runAction(
       pathFixture,
       'configure',
-      { repoId: repo.id, provider: 'github', config: remote.config },
+      { repoId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
       {},
@@ -461,7 +512,7 @@ describe('lightExtensionSync resource', () => {
       'configure',
       {
         repoId: repo.id,
-        provider: 'github',
+        provider: 'git',
         config: { ...remote.config, nested: [{ authRef: token }] },
       },
       ['manageSyncSource'],
@@ -541,7 +592,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     configureRemote: vi.fn(async () => configuredRemote),
     disconnectRemote: vi.fn(async () => undefined),
     testTarget: vi.fn(),
-    fetchTarget: vi.fn(async () => ({ provider: 'github', config: configuredRemote.config, snapshot })),
+    fetchTarget: vi.fn(async () => ({ provider: 'git', config: configuredRemote.config, snapshot })),
     establishInitialBaseline: vi.fn(async () => ({
       remote: configuredRemote,
       job: {
@@ -561,7 +612,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     getPullCoordinator: vi.fn(() => pullCoordinator),
   } as unknown as RemoteSyncRuntime & Record<string, ReturnType<typeof vi.fn>>;
   vi.mocked(runtime.testTarget).mockResolvedValue({
-    provider: 'github',
+    provider: 'git',
     config: configuredRemote.config,
     snapshot: {
       revision: 'rev_remote',
@@ -572,6 +623,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
   });
   const auditService = {
     recordSyncEvent: vi.fn(async () => undefined),
+    recordCreateJobEvent: vi.fn(async () => undefined),
   };
   const repoService = {
     getInternalRepo: vi.fn(async () => repo),
@@ -588,6 +640,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
       ...input,
       normalizedName: input.name,
     })),
+    assertCreateNameAvailable: vi.fn(async () => undefined),
     getValidator: vi.fn(() => ({ validateInitialFiles: vi.fn(() => []) })),
   };
   const db = {
@@ -603,6 +656,12 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
   const permissionService = {
     assertActionAllowed: vi.fn(async () => undefined),
     createInternalVscRequestContext: vi.fn(() => ({})),
+  };
+  const createJobStore = {
+    enqueue: vi.fn(async () => createJob),
+  };
+  const createJobRunner = {
+    publish: vi.fn(async () => undefined),
   };
   const resource = createLightExtensionSyncResource({
     db,
@@ -625,8 +684,11 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
       }),
     },
     getRemoteSyncRuntime: () => runtime,
+    createJobStore,
+    createJobRunner,
+    applicationName: 'main',
   });
-  return { resource, runtime, auditService, repoService, pullCoordinator };
+  return { resource, runtime, auditService, repoService, pullCoordinator, createJobStore, createJobRunner };
 }
 
 async function runAction(
@@ -670,7 +732,7 @@ function executionInput() {
 
 function createFromGitInput() {
   return {
-    provider: 'github',
+    provider: 'git',
     config: remote.config,
     authRef: remote.authRef,
     name: 'demo',
@@ -687,14 +749,14 @@ type HasAuthRef<T> = 'authRef' extends keyof T ? true : false;
 
 describe('light-extension remote sync facade contract', () => {
   const config = {
-    owner: 'nocobase',
-    repository: 'light-extensions',
+    url: 'https://git.example.com/nocobase/light-extensions.git',
     branch: 'main',
     subdirectory: 'extensions/sales',
+    transport: 'https' as const,
   };
 
   const source: LightExtensionSyncSourceSummary = {
-    provider: 'github',
+    provider: 'git',
     config,
     status: 'active',
     remoteTargetVersion: 3,
@@ -784,16 +846,16 @@ describe('light-extension remote sync facade contract', () => {
       get: { repoId: 'ler_sales' } satisfies LightExtensionSyncGetInput,
       configure: {
         repoId: 'ler_sales',
-        provider: 'github',
+        provider: 'git',
         config,
-        authRef: '{{ $env.GITHUB_SYNC_SECRET }}',
+        authRef: '{{ $env.GIT_SYNC_SECRET }}',
       } satisfies LightExtensionSyncConfigureInput,
       disconnect: { repoId: 'ler_sales' } satisfies LightExtensionSyncDisconnectInput,
       testConnection: {
         repoId: 'ler_sales',
-        provider: 'github',
+        provider: 'git',
         config,
-        authRef: '{{ $env.GITHUB_SYNC_SECRET }}',
+        authRef: '{{ $env.GIT_SYNC_SECRET }}',
       } satisfies LightExtensionSyncTestConnectionInput,
       plan: { repoId: 'ler_sales' } satisfies LightExtensionSyncPlanInput,
       pull: {
@@ -814,9 +876,9 @@ describe('light-extension remote sync facade contract', () => {
         name: 'sales',
         title: 'Sales',
         description: 'Sales light extensions',
-        provider: 'github',
+        provider: 'git',
         config,
-        authRef: '{{ $env.GITHUB_SYNC_SECRET }}',
+        authRef: '{{ $env.GIT_SYNC_SECRET }}',
       } satisfies LightExtensionSyncCreateFromGitInput,
     };
 
@@ -914,6 +976,67 @@ describe('light-extension remote sync facade contract', () => {
     );
   });
 
+  it('freezes the durable creation job states, sources, actions, and safe summary boundary', () => {
+    const statuses: LightExtensionCreateJobStatus[] = ['pending', 'running', 'failed'];
+    const sourceTypes: LightExtensionCreateSourceType[] = ['template', 'zip', 'git'];
+    const actions: LightExtensionCreateJobActionName[] = ['list', 'dismiss'];
+    const record: LightExtensionCreateJobRecord = {
+      id: 'job-1',
+      applicationName: 'main',
+      targetRepoId: 'repo-1',
+      name: 'sales',
+      normalizedName: 'sales',
+      title: 'Sales',
+      description: null,
+      sourceType: 'git',
+      status: 'pending',
+      payload: { authRef: '{{ $env.GIT_SYNC_SECRET }}' },
+      errorCode: null,
+      errorMessage: null,
+      reservationKey: 'main:sales',
+      actorUserId: 'user-1',
+      requestId: 'request-1',
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-07-27T00:00:00.000Z',
+      updatedAt: '2026-07-27T00:00:00.000Z',
+    };
+    const summary: LightExtensionCreateJobSummary = {
+      id: record.id,
+      targetRepoId: record.targetRepoId,
+      name: record.name,
+      title: record.title,
+      description: record.description,
+      sourceType: record.sourceType,
+      status: record.status,
+      errorCode: record.errorCode,
+      errorMessage: record.errorMessage,
+      startedAt: record.startedAt,
+      finishedAt: record.finishedAt,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
+    const internalFieldContract: {
+      payload: 'payload' extends keyof LightExtensionCreateJobSummary ? true : false;
+      reservationKey: 'reservationKey' extends keyof LightExtensionCreateJobSummary ? true : false;
+      actorUserId: 'actorUserId' extends keyof LightExtensionCreateJobSummary ? true : false;
+    } = {
+      payload: false,
+      reservationKey: false,
+      actorUserId: false,
+    };
+
+    expect(statuses).toEqual(['pending', 'running', 'failed']);
+    expect(sourceTypes).toEqual(['template', 'zip', 'git']);
+    expect(actions).toEqual(['list', 'dismiss']);
+    expect(internalFieldContract).toEqual({
+      payload: false,
+      reservationKey: false,
+      actorUserId: false,
+    });
+    expect(JSON.stringify(summary)).not.toMatch(/payload|authRef|reservation|claim|lease|actor|requestId/iu);
+  });
+
   it('maps provider-neutral errors to stable facade codes and statuses', () => {
     const expected = {
       UNSUPPORTED_PROVIDER: ['LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER', 422],
@@ -954,7 +1077,7 @@ describe('light-extension remote sync facade contract', () => {
       code: 'RATE_LIMITED',
       message: 'Provider request is rate limited',
       details: {
-        provider: 'github',
+        provider: 'git',
         retryAfterSeconds: 60,
         token: 'raw-secret',
         config: { owner: 'nocobase' },
@@ -967,7 +1090,7 @@ describe('light-extension remote sync facade contract', () => {
 
     expect(error.details).toEqual({
       sourceCode: 'RATE_LIMITED',
-      provider: 'github',
+      provider: 'git',
       retryAfterSeconds: 60,
     });
     expect(serialized).not.toMatch(/raw-secret|raw-provider|authorization|"(?:request|response|cause|config|token)"/iu);

@@ -91,7 +91,7 @@ Repository imports replace the local working copy. Entry-scoped imports preserve
 
 ## Git synchronization safety
 
-`lightExtensionSync` is the public Git synchronization facade. It supports configuration, connection tests, Plan, Pull, Push, disconnect, and repository creation from Git without exposing internal VSC records or job state.
+`lightExtensionSync` is the public Git synchronization facade. Its only provider is `git`; GitHub, GitLab, Gitea, Bitbucket, Azure DevOps, and self-hosted Git services are addressed through standard HTTPS, `ssh://`, or scp-like SSH URLs. It supports configuration, connection tests, Plan, Pull, Push, disconnect, and repository creation from Git without exposing internal VSC records or job state.
 
 The ACL actions are independent:
 
@@ -100,9 +100,21 @@ The ACL actions are independent:
 - `pushToSyncSource` controls Push and Plan visibility
 - `createFromGit` requires repository creation, sync management, and Pull permissions
 
-Push and Pull require the exact local Head, remote revision, target version, and plan fingerprint returned by the latest Plan. Configuration changes, archive, disconnect, and delete are blocked while a sync job is active.
+Push and Pull require the exact local Head, remote revision, target version, and plan fingerprint returned by the latest Plan. Configuration changes, archive, disconnect, and delete are blocked while a sync job is active. Push uses an explicit lease and refuses to overwrite a branch that changed after Plan.
 
-Public Pull may omit credentials. Private Pull and every Push require a complete `{{ $env.NAME }}` reference to a secret record. Raw credentials are never stored in repository configuration, logs, source summaries, or API responses.
+Git credentials are optional. Private HTTPS accepts either a complete `{{ $env.NAME }}` reference to a secret JSON value containing `kind`, `username`, and `password`, or a literal token string. Literal tokens are stored in the remote record but are masked in logs, source summaries, and API responses. SSH accepts a secret JSON value containing `kind`, `privateKey`, optional `passphrase`, and required trusted `knownHosts`; when omitted, Git uses the NocoBase process user's SSH configuration, default keys, and SSH Agent. The transport and secret kind must match, and strict host-key checking cannot be disabled for supplied SSH credentials.
+
+Git Remote reuses `SERVER_REQUEST_WHITELIST` for outbound host policy. It rejects local paths, `file://`, `git://`, custom remote helpers, symlinks, gitlinks/submodules, Git LFS pointers, binary files, and invalid UTF-8. Repository content is handled as source snapshots and is never checked out or executed.
+
+Official runtime images include Git and OpenSSH clients. Non-Docker deployments must provide `git` and `ssh` in the NocoBase service user's `PATH`.
+
+## Asynchronous repository creation
+
+Template, ZIP, and Git creation are accepted as durable background jobs. `lightExtensionRepos:create` handles template or ZIP input, and `lightExtensionSync:createFromGit` handles Git input; both return HTTP 202 with a safe creation-job summary.
+
+`lightExtensionCreateJobs:list` and `lightExtensionCreateJobs:dismiss` are the public job facade. A visible job is `pending`, `running`, or `failed`. Acceptance only confirms persistence; a successful job disappears after the repository, source, compiled artifacts, and runtime are ready.
+
+The UI closes the creation dialog after acceptance and shows the job in a separate creation-status area. Success refreshes the repository table; failure offers removal. Public summaries never expose source payloads or credentials.
 
 ## Compatibility, rollback, and rollout
 

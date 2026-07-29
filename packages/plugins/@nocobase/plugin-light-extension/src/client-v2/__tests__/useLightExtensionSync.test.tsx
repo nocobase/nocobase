@@ -47,8 +47,13 @@ const operationResult: LightExtensionSyncOperationResult = {
     headCommitId: 'local-2',
   },
   source: {
-    provider: 'github',
-    config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+    provider: 'git',
+    config: {
+      url: 'https://git.example.com/nocobase/extensions.git',
+      branch: 'main',
+      subdirectory: null,
+      transport: 'https',
+    },
     status: 'active',
     remoteTargetVersion: 1,
     revision: 'remote-2',
@@ -173,7 +178,7 @@ describe('useLightExtensionSync', () => {
     expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
   });
 
-  it('invalidates descriptor, runtime, and catalog caches after createFromGit succeeds', async () => {
+  it('does not invalidate final repository caches when createFromGit is only accepted', async () => {
     let catalogVersion = 0;
     mocks.request.mockImplementation((options: { url: string }) => {
       if (options.url === 'lightExtensionEntries:listSelectable') {
@@ -228,14 +233,21 @@ describe('useLightExtensionSync', () => {
     await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
     await act(async () => {
       await result.current.createFromGit({
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/nocobase/extensions.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
         name: 'sales',
       });
     });
 
-    expect(descriptorCache.get({ repoId: 'repo-1', entryId: 'entry-1', kind: 'js-block' })).toBeUndefined();
-    expect(runtimeInvalidator.invalidateRepo).toHaveBeenCalledWith('repo-1');
-    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-2' }]);
+    expect(descriptorCache.get({ repoId: 'repo-1', entryId: 'entry-1', kind: 'js-block' })).toMatchObject({
+      entryId: 'entry-1',
+    });
+    expect(runtimeInvalidator.invalidateRepo).not.toHaveBeenCalled();
+    await expect(listSelectableLightExtensionEntries(mocks.api)).resolves.toMatchObject([{ id: 'entry-1' }]);
   });
 });

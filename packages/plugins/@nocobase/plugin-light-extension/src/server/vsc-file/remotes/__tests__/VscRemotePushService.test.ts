@@ -8,7 +8,13 @@
  */
 
 import { createMockDatabase, type Database } from '@nocobase/database';
-import path from 'path';
+import {
+  CommitService,
+  importRunJSWorkspaceCollections,
+  TreeService,
+  VscFileService,
+  VscPermissionHookRegistry,
+} from '@nocobase/runjs-workspace/server';
 import { vi } from 'vitest';
 
 import type {
@@ -16,10 +22,6 @@ import type {
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
 } from '../../../../shared/vsc-file/remote-sync-types';
-import { VscPermissionHookRegistry } from '../../permissions';
-import { CommitService } from '../../services/CommitService';
-import { TreeService } from '../../services/TreeService';
-import { VscFileService } from '../../services/VscFileService';
 import { validateVscRemoteAuthRef, type VscRemoteAuthRef } from '../credentialRef';
 import { ExternalCommitMapStore } from '../ExternalCommitMapStore';
 import { RemoteReconcileService } from '../RemoteReconcileService';
@@ -31,10 +33,10 @@ import { DeterministicRemoteAdapter } from '../testing/DeterministicRemoteAdapte
 import { VscRemotePushService, loadVscSnapshot } from '../VscRemotePushService';
 
 const remoteConfig = {
-  owner: 'nocobase',
-  repository: 'extensions',
+  url: 'https://git.example.com/nocobase/extensions.git',
   branch: 'main',
   subdirectory: null,
+  transport: 'https',
 };
 
 describe('VscRemotePushService', () => {
@@ -48,7 +50,7 @@ describe('VscRemotePushService', () => {
   beforeEach(async () => {
     db = await createMockDatabase();
     await db.clean({ drop: true });
-    await db.import({ directory: path.resolve(__dirname, '../../collections') });
+    await importRunJSWorkspaceCollections(db);
     await db.sync();
     vsc = new VscFileService(db);
     adapter = new DeterministicRemoteAdapter({ initialRevision: null });
@@ -289,7 +291,7 @@ describe('VscRemotePushService', () => {
     adapter.setFailure(
       'fetch',
       new RemoteSyncError('REMOTE_UNAVAILABLE', 'Safe provider failure', {
-        details: { provider: 'github', operation: 'fetch', reasonCode: 'provider-unavailable' },
+        details: { provider: 'git', operation: 'fetch', reasonCode: 'provider-unavailable' },
       }),
     );
 
@@ -322,7 +324,7 @@ describe('VscRemotePushService', () => {
     const remote = await remoteStore.create({
       repoId: created.repository.id,
       name: 'origin',
-      provider: 'github',
+      provider: 'git',
       config: remoteConfig,
       authRef: await validAuthRef(authRef),
     });

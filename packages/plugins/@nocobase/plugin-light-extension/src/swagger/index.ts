@@ -19,10 +19,13 @@ export default {
   },
   tags: [
     { name: 'lightExtensionRepos', description: 'Discover existing light-extension source repositories.' },
-    { name: 'lightExtensionEntries', description: 'Inspect persisted light-extension entries.' },
+    { name: 'lightExtensionEntries', description: 'Inspect and discover reusable light-extension entries.' },
     { name: 'lightExtensionReferences', description: 'Inspect visible light-extension usage references.' },
     { name: 'lightExtensionFiles', description: 'Read and save light-extension source files.' },
-    { name: 'lightExtensions', description: 'Preview light-extension source compilation.' },
+    {
+      name: 'lightExtensions',
+      description: 'Preview compilation and move source between inline and Entry workspaces.',
+    },
     ...vscFileSwagger.tags,
   ],
   paths: {

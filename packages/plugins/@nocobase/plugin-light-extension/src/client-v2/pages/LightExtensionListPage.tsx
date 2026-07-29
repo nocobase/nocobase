@@ -15,7 +15,7 @@ import {
   Table,
   type CompiledFilter,
 } from '@nocobase/client-v2';
-import { useFlowEngine, type Collection, type CollectionOptions } from '@nocobase/flow-engine';
+import { useFlowContext, useFlowEngine, type Collection, type CollectionOptions } from '@nocobase/flow-engine';
 import { getDayRangeByParams } from '@nocobase/utils/client';
 import { uid } from '@nocobase/utils/client';
 import {
@@ -30,6 +30,7 @@ import {
   Input,
   Modal,
   Space,
+  Spin,
   Switch,
   Tag,
   theme,
@@ -43,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, NAMESPACE } from '../../constants';
 import type {
+  LightExtensionCreateJobSummary,
   LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
   LightExtensionSyncSourceSummary,
@@ -52,17 +54,21 @@ import LightExtensionCreateSourceSelector, {
 } from '../components/LightExtensionCreateSourceSelector';
 import LightExtensionGitSourceFields, {
   createEmptyLightExtensionGitSourceDraft,
-  type LightExtensionGitHubSourceValue,
+  type LightExtensionGitSourceValue,
   type LightExtensionGitSourceDraft,
 } from '../components/LightExtensionGitSourceFields';
 import LightExtensionSyncDrawer from '../components/LightExtensionSyncDrawer';
 import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
+import { useLightExtensionCreateJobs } from '../hooks/useLightExtensionCreateJobs';
 import {
   getLightExtensionSyncErrorTranslationKey,
   LightExtensionSyncHookError,
   useLightExtensionSync,
 } from '../hooks/useLightExtensionSync';
 import { useT } from '../locale';
+import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
 
 interface CreateRepoFormValues {
@@ -84,6 +90,12 @@ type Notice = {
 type ToggleLifecycleStatus = 'enabled' | 'disabled';
 type DetailPanel = 'source' | 'sync';
 type SyncConfigurationRequest = 'test' | 'configure';
+type LightExtensionListRow =
+  | { rowType: 'repo'; repo: LightExtensionRepoRecord }
+  | { rowType: 'creation-job'; job: LightExtensionCreateJobSummary };
+type FlowContextWithApi = {
+  api: ApiClientLike;
+};
 
 const entryKinds = LIGHT_EXTENSION_SUPPORTED_KINDS;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
@@ -167,6 +179,7 @@ function LightExtensionListPage() {
 
 function LightExtensionListPageInner() {
   const { t } = useTranslation(NAMESPACE);
+  const flowContext = useFlowContext() as FlowContextWithApi;
   const compileT = useT();
   const { token } = theme.useToken();
   const filterCollection = useLightExtensionRepoFilterCollection();
@@ -178,6 +191,12 @@ function LightExtensionListPageInner() {
     updateRepo: updateRepoRequest,
   } = useLightExtensionRepo();
   const { createFromGit: createFromGitRequest } = useLightExtensionSync();
+  const {
+    jobs: createJobs,
+    error: createJobsError,
+    addAcceptedJob,
+    dismiss: dismissCreateJob,
+  } = useLightExtensionCreateJobs();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm<CreateRepoFormValues>();
   const [editForm] = Form.useForm<EditRepoFormValues>();
@@ -199,6 +218,7 @@ function LightExtensionListPageInner() {
   const [filterPayload, setFilterPayload] = useState<CompiledFilter>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [sourceFooterActions, setSourceFooterActions] = useState<LightExtensionWorkspaceFooterActions | null>(null);
+  const observedCreateJobs = useRef<Map<string, LightExtensionCreateJobSummary> | null>(null);
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
@@ -218,8 +238,10 @@ function LightExtensionListPageInner() {
     try {
       const nextRepos = await listRepos();
       setRepos(nextRepos);
+      return true;
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load repositories') });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -228,6 +250,64 @@ function LightExtensionListPageInner() {
   useEffect(() => {
     loadRepos();
   }, [loadRepos]);
+
+  const handleSucceededJobs = useCallback(
+    async (jobs: LightExtensionCreateJobSummary[]) => {
+      for (const job of jobs) {
+        invalidateLightExtensionSettingsDescriptorCache(flowContext.api, job.targetRepoId);
+        invalidateLightExtensionRuntimeCache(flowContext.api, job.targetRepoId);
+      }
+      const refreshed = await loadRepos();
+      if (refreshed) {
+        const job = jobs[jobs.length - 1];
+        setNotice({
+          type: 'success',
+          message: t('Creation succeeded: {{name}}').replace('{{name}}', job.title || job.name),
+        });
+      }
+    },
+    [flowContext.api, loadRepos, t],
+  );
+
+  useEffect(() => {
+    const currentJobs = new Map(createJobs.map((job) => [job.id, job]));
+    const previousJobs = observedCreateJobs.current;
+    observedCreateJobs.current = currentJobs;
+    if (!previousJobs) {
+      return;
+    }
+
+    const succeeded = [...previousJobs.values()].filter(
+      (job) => (job.status === 'pending' || job.status === 'running') && !currentJobs.has(job.id),
+    );
+    let lastFailed: LightExtensionCreateJobSummary | null = null;
+    for (const job of createJobs) {
+      const previous = previousJobs.get(job.id);
+      if ((previous?.status === 'pending' || previous?.status === 'running') && job.status === 'failed') {
+        lastFailed = job;
+      }
+    }
+
+    if (succeeded.length) {
+      handleSucceededJobs(succeeded).catch(() => undefined);
+    }
+    if (lastFailed) {
+      setNotice({
+        type: 'error',
+        message: `${t('Creation failed: {{name}}').replace('{{name}}', lastFailed.title || lastFailed.name)}: ${
+          lastFailed.errorMessage || t('Light extension creation failed')
+        }`,
+      });
+    }
+  }, [createJobs, handleSucceededJobs, t]);
+
+  useEffect(() => {
+    for (const job of createJobs) {
+      if (job.status === 'failed') {
+        dismissCreateJob(job.id).catch(() => undefined);
+      }
+    }
+  }, [createJobs, dismissCreateJob]);
 
   useEffect(() => {
     const repoId = searchParams.get('repoId');
@@ -258,6 +338,15 @@ function LightExtensionListPageInner() {
   const filteredRepos = useMemo(
     () => visibleRepos.filter((repo) => matchesLightExtensionRepoFilter(repo, filterPayload)),
     [filterPayload, visibleRepos],
+  );
+  const tableRows = useMemo<LightExtensionListRow[]>(
+    () => [
+      ...createJobs
+        .filter((job) => job.status === 'pending' || job.status === 'running')
+        .map((job): LightExtensionListRow => ({ rowType: 'creation-job', job })),
+      ...filteredRepos.map((repo): LightExtensionListRow => ({ rowType: 'repo', repo })),
+    ],
+    [createJobs, filteredRepos],
   );
   const selectedRepos = useMemo(
     () => visibleRepos.filter((repo) => selectedRowKeys.includes(repo.id)),
@@ -333,39 +422,27 @@ function LightExtensionListPageInner() {
         title: values.title.trim(),
         description: values.description?.trim() || null,
       };
-      const repo =
-        createSource.mode === 'github'
-          ? (
-              await createFromGitRequest({
-                ...metadata,
-                provider: createSource.provider,
-                config: createSource.config,
-                ...(createSource.authRef ? { authRef: createSource.authRef } : {}),
-              })
-            ).repo
+      const acceptedJob =
+        createSource.mode === 'git'
+          ? await createFromGitRequest({
+              ...metadata,
+              provider: createSource.provider,
+              config: createSource.config,
+              ...(createSource.authRef ? { authRef: createSource.authRef } : {}),
+            })
           : await createRepoRequest({
               ...metadata,
               ...(createSource.mode === 'zip' ? { zipBase64: createSource.zipBase64 } : {}),
             });
-      setRepos((current) => [repo, ...current.filter((item) => item.id !== repo.id)]);
-      setSelectedRepoId(repo.id);
+      addAcceptedJob(acceptedJob);
       const nextSearchParams = new URLSearchParams(searchParams);
       nextSearchParams.delete('create');
-      nextSearchParams.set('repoId', repo.id);
       setSearchParams(nextSearchParams, { replace: true });
       setCreateOpen(false);
       form.resetFields();
       setCreateSource({ mode: 'template' });
       setCreateSourceKey((current) => current + 1);
-      setNotice({
-        type: 'success',
-        message:
-          createSource.mode === 'github'
-            ? t('Repository created from GitHub and compiled')
-            : createSource.mode === 'zip'
-              ? t('Repository imported and compiled')
-              : t('Repository created and compiled'),
-      });
+      setNotice(null);
     } catch (error) {
       const syncErrorKey =
         error instanceof LightExtensionSyncHookError
@@ -547,41 +624,55 @@ function LightExtensionListPageInner() {
     [t],
   );
 
-  const columns = useMemo<ColumnsType<LightExtensionRepoRecord>>(
+  const handleWorkspaceSaved = useCallback(async () => {
+    await loadRepos();
+  }, [loadRepos]);
+
+  const columns = useMemo<ColumnsType<LightExtensionListRow>>(
     () => [
       {
         title: t('Title'),
         dataIndex: 'name',
         sorter: (left, right) =>
-          compareText(left.title || left.name, right.title || right.name) || compareText(left.name, right.name),
+          compareText(getListRowTitle(left), getListRowTitle(right)) ||
+          compareText(getListRowName(left), getListRowName(right)),
         width: 220,
-        render: (_value, repo) => (
+        render: (_value, row) => (
           <Space direction="vertical" size={0} style={{ maxWidth: 200, minWidth: 0 }}>
             <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
-              {repo.title || repo.name}
+              {getListRowTitle(row)}
             </Typography.Text>
-            <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
-              {repo.name}
-            </Typography.Text>
+            {row.rowType === 'repo' ? (
+              <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
+                {row.repo.name}
+              </Typography.Text>
+            ) : null}
           </Space>
         ),
       },
       {
         title: t('Description'),
         dataIndex: 'description',
-        sorter: (left, right) => compareText(left.description, right.description),
-        render: (value: string | null) => (
-          <Typography.Text ellipsis={{ tooltip: value || '-' }} style={{ maxWidth: 320 }} type="secondary">
-            {value || '-'}
-          </Typography.Text>
-        ),
+        sorter: (left, right) => compareText(getListRowDescription(left), getListRowDescription(right)),
+        render: (_value, row) => {
+          const description = getListRowDescription(row);
+          return (
+            <Typography.Text ellipsis={{ tooltip: description || '-' }} style={{ maxWidth: 320 }} type="secondary">
+              {description || '-'}
+            </Typography.Text>
+          );
+        },
       },
       {
         title: t('Entries'),
         key: 'entries',
-        sorter: (left, right) => getRepoEntryCount(left) - getRepoEntryCount(right),
+        sorter: (left, right) => getListRowEntryCount(left) - getListRowEntryCount(right),
         width: 250,
-        render: (_value, repo) => {
+        render: (_value, row) => {
+          if (row.rowType === 'creation-job') {
+            return null;
+          }
+          const repo = row.repo;
           const kinds = entryKinds.filter((kind) => Boolean(repo.entryKinds?.[kind]));
           return kinds.length ? (
             <Space size={[4, 4]} wrap>
@@ -599,84 +690,108 @@ function LightExtensionListPageInner() {
       {
         title: t('Updated at'),
         dataIndex: 'updatedAt',
-        sorter: (left, right) => getDateTimestamp(left.updatedAt) - getDateTimestamp(right.updatedAt),
+        sorter: (left, right) =>
+          getDateTimestamp(getListRowUpdatedAt(left)) - getDateTimestamp(getListRowUpdatedAt(right)),
         width: 180,
-        render: (_value, repo) => (
-          <Space direction="vertical" size={0}>
-            <Typography.Text>{formatDate(repo.updatedAt)}</Typography.Text>
-            <Typography.Text type="secondary">
-              {t('Created at')}: {formatDate(repo.createdAt)}
-            </Typography.Text>
-          </Space>
-        ),
+        render: (_value, row) => {
+          if (row.rowType === 'creation-job') {
+            return null;
+          }
+          return (
+            <Space direction="vertical" size={0}>
+              <Typography.Text>{formatDate(row.repo.updatedAt)}</Typography.Text>
+              <Typography.Text type="secondary">
+                {t('Created at')}: {formatDate(row.repo.createdAt)}
+              </Typography.Text>
+            </Space>
+          );
+        },
       },
       {
         title: t('Enabled'),
         dataIndex: 'lifecycleStatus',
         align: 'center',
         sorter: (left, right) =>
-          Number(left.lifecycleStatus === 'enabled') - Number(right.lifecycleStatus === 'enabled'),
+          Number(left.rowType === 'repo' && left.repo.lifecycleStatus === 'enabled') -
+          Number(right.rowType === 'repo' && right.repo.lifecycleStatus === 'enabled'),
         width: 100,
-        render: (_value: LightExtensionRepoLifecycleStatus, repo) => (
-          <span onClick={(event) => event.stopPropagation()}>
-            <Switch
-              aria-label={`${t('Enabled')} ${repo.title || repo.name}`}
-              checked={repo.lifecycleStatus === 'enabled'}
-              loading={changingRepoIds.has(repo.id)}
-              onChange={(checked) => {
-                changeRepoLifecycle(repo, checked ? 'enabled' : 'disabled');
-              }}
-              size="small"
-            />
-          </span>
-        ),
+        render: (_value: LightExtensionRepoLifecycleStatus, row) => {
+          if (row.rowType === 'creation-job') {
+            return null;
+          }
+          const repo = row.repo;
+          return (
+            <span onClick={(event) => event.stopPropagation()}>
+              <Switch
+                aria-label={`${t('Enabled')} ${repo.title || repo.name}`}
+                checked={repo.lifecycleStatus === 'enabled'}
+                loading={changingRepoIds.has(repo.id)}
+                onChange={(checked) => {
+                  changeRepoLifecycle(repo, checked ? 'enabled' : 'disabled');
+                }}
+                size="small"
+              />
+            </span>
+          );
+        },
       },
       {
         title: t('Actions'),
         key: 'actions',
         width: 350,
-        render: (_value, repo) => (
-          <Space size="small" onClick={(event) => event.stopPropagation()}>
-            <Button
-              aria-label={t('Edit code')}
-              onClick={() => selectRepo(repo.id, { panel: 'source' })}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Edit code')}
-            </Button>
-            <Button
-              aria-label={t('Sync code')}
-              onClick={() => selectRepo(repo.id, { panel: 'sync' })}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Sync code')}
-            </Button>
-            <Button
-              aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
-              onClick={() => openEditDrawer(repo)}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Edit details')}
-            </Button>
-            <Button
-              aria-label={t('Remove')}
-              danger
-              loading={removingRepoIds.has(repo.id)}
-              onClick={() => setRemoveTarget(repo)}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Remove')}
-            </Button>
-          </Space>
-        ),
+        render: (_value, row) => {
+          if (row.rowType === 'creation-job') {
+            return (
+              <Space aria-live="polite" role="status" size="small">
+                <Spin size="small" />
+                <Typography.Text>{t('Creating')}</Typography.Text>
+              </Space>
+            );
+          }
+          const repo = row.repo;
+          return (
+            <Space size="small" onClick={(event) => event.stopPropagation()}>
+              <Button
+                aria-label={t('Edit code')}
+                onClick={() => selectRepo(repo.id, { panel: 'source' })}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Edit code')}
+              </Button>
+              <Button
+                aria-label={t('Sync code')}
+                onClick={() => selectRepo(repo.id, { panel: 'sync' })}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Sync code')}
+              </Button>
+              <Button
+                aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
+                onClick={() => openEditDrawer(repo)}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Edit details')}
+              </Button>
+              <Button
+                aria-label={t('Remove')}
+                danger
+                loading={removingRepoIds.has(repo.id)}
+                onClick={() => setRemoveTarget(repo)}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Remove')}
+              </Button>
+            </Space>
+          );
+        },
       },
     ],
     [changeRepoLifecycle, changingRepoIds, openEditDrawer, removingRepoIds, selectRepo, t],
@@ -702,7 +817,7 @@ function LightExtensionListPageInner() {
           embedded
           onFooterActionsChange={setSourceFooterActions}
           onRequestClose={closeDetailDrawer}
-          onSaved={loadRepos}
+          onSaved={handleWorkspaceSaved}
         />
       );
     }
@@ -711,6 +826,14 @@ function LightExtensionListPageInner() {
 
   return (
     <Card variant="borderless">
+      {createJobsError ? (
+        <Alert
+          message={t('Failed to load creation jobs')}
+          showIcon
+          style={{ marginBottom: token.margin }}
+          type="error"
+        />
+      ) : null}
       {notice ? (
         <Alert
           closable
@@ -749,57 +872,66 @@ function LightExtensionListPageInner() {
         </Space>
       </Flex>
 
-      <Table<LightExtensionRepoRecord>
+      <Table<LightExtensionListRow>
         columns={columns}
-        dataSource={filteredRepos}
+        dataSource={tableRows}
         loading={loading}
         locale={{
           emptyText: <Empty description={t('No light extensions yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
         }}
         pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
-        rowKey="id"
+        rowKey={(row) => (row.rowType === 'repo' ? row.repo.id : `create-job:${row.job.id}`)}
         rowSelection={{
           selectedRowKeys,
           onChange: setSelectedRowKeys,
+          getCheckboxProps: (row) => ({
+            disabled: row.rowType === 'creation-job',
+            'aria-label':
+              row.rowType === 'creation-job'
+                ? `${t('Creation task')} ${row.job.title || row.job.name}`
+                : `${t('Select')} ${row.repo.title || row.repo.name}`,
+          }),
         }}
         scroll={{ x: 1250 }}
         showIndex={false}
       />
 
-      <Modal
-        confirmLoading={creating}
-        okButtonProps={{ disabled: !createSource }}
-        okText={t('Create')}
-        onCancel={closeCreateModal}
-        onOk={createRepo}
-        open={createOpen}
-        title={t('Create light extension')}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            extra={t('The name is generated automatically and can be changed if needed.')}
-            label={t('Name')}
-            name="name"
-            rules={[
-              { required: true, message: t('Name is required') },
-              { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label={t('Title')}
-            name="title"
-            rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
-          >
-            <Input autoFocus />
-          </Form.Item>
-          <Form.Item label={t('Description')} name="description">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <LightExtensionCreateSourceSelector disabled={creating} key={createSourceKey} onChange={setCreateSource} />
-        </Form>
-      </Modal>
+      {createOpen ? (
+        <Modal
+          confirmLoading={creating}
+          okButtonProps={{ disabled: !createSource }}
+          okText={t('Create')}
+          onCancel={closeCreateModal}
+          onOk={createRepo}
+          open
+          title={t('Create light extension')}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item
+              extra={t('The name is generated automatically and can be changed if needed.')}
+              label={t('Name')}
+              name="name"
+              rules={[
+                { required: true, message: t('Name is required') },
+                { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label={t('Title')}
+              name="title"
+              rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
+            >
+              <Input autoFocus />
+            </Form.Item>
+            <Form.Item label={t('Description')} name="description">
+              <Input.TextArea rows={3} />
+            </Form.Item>
+            <LightExtensionCreateSourceSelector disabled={creating} key={createSourceKey} onChange={setCreateSource} />
+          </Form>
+        </Modal>
+      ) : null}
 
       <Drawer
         aria-label={t('Edit light extension')}
@@ -923,7 +1055,7 @@ function LightExtensionSyncConfigurationPanel({ repoId, onConfigured }: LightExt
   const t = useT();
   const sync = useLightExtensionSync();
   const [draft, setDraft] = useState<LightExtensionGitSourceDraft>(createEmptyLightExtensionGitSourceDraft);
-  const [source, setSource] = useState<LightExtensionGitHubSourceValue>();
+  const [source, setSource] = useState<LightExtensionGitSourceValue>();
   const [request, setRequest] = useState<SyncConfigurationRequest>();
   const [feedback, setFeedback] = useState<Notice | null>(null);
   const disabled = Boolean(request);
@@ -1051,6 +1183,27 @@ function getRepoEntryCount(repo: LightExtensionRepoRecord): number {
   }
 
   return entryKinds.reduce((total, kind) => total + (repo.entryKinds?.[kind] || 0), 0);
+}
+
+function getListRowTitle(row: LightExtensionListRow): string {
+  const record = row.rowType === 'repo' ? row.repo : row.job;
+  return record.title || record.name;
+}
+
+function getListRowName(row: LightExtensionListRow): string {
+  return row.rowType === 'repo' ? row.repo.name : row.job.name;
+}
+
+function getListRowDescription(row: LightExtensionListRow): string | null | undefined {
+  return row.rowType === 'repo' ? row.repo.description : row.job.description;
+}
+
+function getListRowEntryCount(row: LightExtensionListRow): number {
+  return row.rowType === 'repo' ? getRepoEntryCount(row.repo) : 0;
+}
+
+function getListRowUpdatedAt(row: LightExtensionListRow): string | null | undefined {
+  return row.rowType === 'repo' ? row.repo.updatedAt : row.job.updatedAt;
 }
 
 function getDateTimestamp(value?: string | null): number {

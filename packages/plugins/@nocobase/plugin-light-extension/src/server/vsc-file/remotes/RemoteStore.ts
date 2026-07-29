@@ -9,15 +9,16 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 
-import { VscError } from '../../../shared/vsc-file/errors';
+import { VscError } from '@nocobase/runjs-workspace/shared';
 import type {
   RemoteSyncErrorCode,
   VscFileRemoteRecord,
   VscRemoteNormalizedConfig,
   VscRemoteProvider,
 } from '../../../shared/vsc-file/remote-sync-types';
-import { normalizeGitHubRemoteConfig, RemoteSyncError } from './RemoteSyncAdapter';
-import { serializeVscRemoteAuthRef, type VscRemoteAuthRef } from './credentialRef';
+import { normalizeGitRemoteConfig } from './providers/git/gitConfig';
+import { RemoteSyncError } from './RemoteSyncAdapter';
+import { serializeVscRemoteCredentialRef, type VscRemoteCredentialRef } from './credentialRef';
 
 const blockingJobStatuses = ['pending', 'running', 'finalize-pending'] as const;
 const credentialErrorCodes = new Set<RemoteSyncErrorCode>([
@@ -32,13 +33,13 @@ export interface CreateRemoteInput {
   name: string;
   provider: VscRemoteProvider;
   config: VscRemoteNormalizedConfig;
-  authRef: VscRemoteAuthRef | null;
+  authRef: VscRemoteCredentialRef | null;
 }
 
 export interface UpdateRemoteTargetInput {
   provider: VscRemoteProvider;
   config: VscRemoteNormalizedConfig;
-  authRef: VscRemoteAuthRef | null;
+  authRef: VscRemoteCredentialRef | null;
 }
 
 export interface RecordRemoteCheckInput {
@@ -144,7 +145,7 @@ export class RemoteStore {
 
   async rotateAuthRef(
     remoteId: string,
-    authRef: VscRemoteAuthRef | null,
+    authRef: VscRemoteCredentialRef | null,
     transaction?: Transaction,
   ): Promise<VscFileRemoteRecord> {
     return this.withTransaction(transaction, async (currentTransaction) => {
@@ -333,8 +334,8 @@ function validateNormalizedConfig(
 ): VscRemoteNormalizedConfig {
   assertNoSensitiveConfigKeys(config);
 
-  if (provider === 'github') {
-    return normalizeGitHubRemoteConfig(config);
+  if (provider === 'git') {
+    return normalizeGitRemoteConfig(config);
   }
 
   throw new RemoteSyncError('UNSUPPORTED_PROVIDER', `Unsupported remote provider "${provider}"`);
@@ -360,16 +361,16 @@ function assertNoSensitiveConfigKeys(value: unknown): void {
   }
 }
 
-function serializeNullableAuthRef(authRef: VscRemoteAuthRef | null): string | null {
-  return authRef === null ? null : serializeVscRemoteAuthRef(authRef);
+function serializeNullableAuthRef(authRef: VscRemoteCredentialRef | null): string | null {
+  return authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
 }
 
 function sameConfig(left: VscRemoteNormalizedConfig, right: VscRemoteNormalizedConfig): boolean {
   return (
-    left.owner === right.owner &&
-    left.repository === right.repository &&
+    left.url === right.url &&
     left.branch === right.branch &&
-    left.subdirectory === right.subdirectory
+    left.subdirectory === right.subdirectory &&
+    left.transport === right.transport
   );
 }
 
