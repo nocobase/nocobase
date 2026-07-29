@@ -12,6 +12,7 @@ import { getEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { resolveAccessToken } from '../../lib/env-auth.js';
 import { createPortalWorkspace } from '../../lib/portal-create.js';
 import { syncPortalRegistries } from '../../lib/portal-registry-sync.js';
 import { printInfo, printSuccess, printWarning } from '../../lib/ui.js';
@@ -86,7 +87,8 @@ export default class PortalCreate extends Command {
       return;
     }
 
-    const env = await getEnv(flags.env, { scope: resolveDefaultConfigScope() });
+    const scope = resolveDefaultConfigScope();
+    const env = await getEnv(flags.env, { scope });
     if (!env) {
       this.error(
         flags.env
@@ -119,11 +121,13 @@ export default class PortalCreate extends Command {
     });
 
     if (!result.installSkipped) {
+      const token = await resolveAccessToken({ envName: flags.env, baseUrl: env.apiBaseUrl, scope });
       await syncPortalRegistries({
         portal: result.portal,
         env,
         installDependencies: false,
         skipIfUnsupported: true,
+        token,
         onWarning: (message) => printWarning(message),
       });
     }

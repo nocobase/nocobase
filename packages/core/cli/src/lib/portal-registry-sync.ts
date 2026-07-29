@@ -23,6 +23,7 @@ import { run } from './run-npm.js';
 
 const NOCOBASE_REGISTRY_NAMESPACE = '@nocobase';
 const NOCOBASE_REGISTRY_URL = '${NOCOBASE_API_URL}/registry:get?name={name}';
+const NOCOBASE_REGISTRY_TOKEN_ENV = 'NOCOBASE_PORTAL_REGISTRY_TOKEN';
 const REGISTRY_ITEM_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
 type RunOptions = {
@@ -37,7 +38,7 @@ type RunOptions = {
 type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
 type RegistryIndexItem = { name: string; targets: string[] };
 type RegistryProbeResult = { ok: boolean; status: number; statusText?: string; items?: RegistryIndexItem[] };
-type RegistryProbe = (url: string) => Promise<RegistryProbeResult>;
+type RegistryProbe = (url: string, token?: string) => Promise<RegistryProbeResult>;
 
 export type PortalRegistrySyncOptions = {
   portal: string;
@@ -49,6 +50,7 @@ export type PortalRegistrySyncOptions = {
   build?: boolean;
   installDependencies?: boolean;
   skipIfUnsupported?: boolean;
+  token?: string;
   runCommand?: RunCommand;
   probeRegistry?: RegistryProbe;
   onWarning?: (message: string) => void;
@@ -99,8 +101,13 @@ function registryListUrl(apiBaseUrl: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '')}/registry:list`;
 }
 
-async function defaultProbeRegistry(url: string): Promise<RegistryProbeResult> {
-  const response = await fetch(url, { headers: { 'x-request-source': 'cli' } });
+async function defaultProbeRegistry(url: string, token?: string): Promise<RegistryProbeResult> {
+  const response = await fetch(url, {
+    headers: {
+      'x-request-source': 'cli',
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+  });
   let items: RegistryIndexItem[] | undefined;
   if (response.ok) {
     const document = (await response.json()) as unknown;
@@ -145,7 +152,7 @@ async function isRegistryItemInstalled(portalDir: string, item: RegistryIndexIte
   return true;
 }
 
-async function configureNocoBaseRegistry(componentsJsonPath: string): Promise<void> {
+async function configureNocoBaseRegistry(componentsJsonPath: string, authenticated: boolean): Promise<void> {
   const raw = await readFile(componentsJsonPath, 'utf8');
   let components: Record<string, unknown>;
   try {
@@ -162,7 +169,14 @@ async function configureNocoBaseRegistry(componentsJsonPath: string): Promise<vo
   const registries = components.registries;
   components.registries = {
     ...(registries && typeof registries === 'object' && !Array.isArray(registries) ? registries : {}),
-    [NOCOBASE_REGISTRY_NAMESPACE]: NOCOBASE_REGISTRY_URL,
+    [NOCOBASE_REGISTRY_NAMESPACE]: authenticated
+      ? {
+          url: NOCOBASE_REGISTRY_URL,
+          headers: {
+            Authorization: `Bearer \${${NOCOBASE_REGISTRY_TOKEN_ENV}}`,
+          },
+        }
+      : NOCOBASE_REGISTRY_URL,
   };
   await writeFile(componentsJsonPath, `${JSON.stringify(components, null, 2)}\n`, 'utf8');
 }
@@ -226,7 +240,7 @@ export async function syncPortalRegistries(options: PortalRegistrySyncOptions): 
   const items = normalizePortalRegistryItems(options.items);
   let probe: RegistryProbeResult;
   try {
-    probe = await (options.probeRegistry ?? defaultProbeRegistry)(registryListUrl(apiBaseUrl));
+    probe = await (options.probeRegistry ?? defaultProbeRegistry)(registryListUrl(apiBaseUrl), options.token);
   } catch (error) {
     throw new Error(
       portalRegistrySyncText(
@@ -257,12 +271,15 @@ export async function syncPortalRegistries(options: PortalRegistrySyncOptions): 
     );
   }
 
-  await configureNocoBaseRegistry(componentsJsonPath);
+  await configureNocoBaseRegistry(componentsJsonPath, Boolean(options.token));
   const runCommand = options.runCommand ?? run;
   const commandEnv = buildPortalCommandEnv({
     NOCOBASE_API_URL: apiBaseUrl.replace(/\/+$/, ''),
     NOCOBASE_PORTAL_BASE: portalBase,
   });
+  const registryCommandEnv = options.token
+    ? { ...commandEnv, [NOCOBASE_REGISTRY_TOKEN_ENV]: options.token }
+    : commandEnv;
   if (
     options.installDependencies === true ||
     (options.installDependencies !== false && !(await pathExists(path.join(portalDir, 'node_modules'))))
@@ -321,11 +338,13 @@ export async function syncPortalRegistries(options: PortalRegistrySyncOptions): 
           'add',
           ...(options.diff ? items : installItems),
           '--yes',
+          // shadcn still prompts for each existing file with --yes, so non-diff installs use --overwrite and restore
+          // protected files below.
           ...(options.diff ? ['--diff'] : ['--overwrite']),
         ],
         {
           cwd: portalDir,
-          env: commandEnv,
+          env: registryCommandEnv,
           envMode: 'replace',
           errorName: 'shadcn add',
         },
