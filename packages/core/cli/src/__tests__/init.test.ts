@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   error: vi.fn(),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
+  ensureManagedEnvFileDefaults: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -40,6 +41,7 @@ beforeEach(() => {
   mocks.getEnv.mockReset();
   mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.ensureManagedEnvFileDefaults.mockResolvedValue(undefined);
   mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
   mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.updateNocoBaseSkills.mockResolvedValue({ action: 'updated', status: {} });
@@ -95,6 +97,14 @@ vi.mock('../lib/run-npm.ts', async (importOriginal) => {
   return {
     ...actual,
     run: mocks.runNpm,
+  };
+});
+
+vi.mock('../lib/managed-env-file.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/managed-env-file.js')>();
+  return {
+    ...actual,
+    ensureManagedEnvFileDefaults: mocks.ensureManagedEnvFileDefaults,
   };
 });
 
@@ -214,21 +224,16 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   expect(webUiOptions?.stages[3]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.downloadAppFiles.title',
   });
-  expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
-    portalName: expect.objectContaining({ type: 'text' }),
-    portalType: expect.objectContaining({ variant: 'radio' }),
-  });
-  expect(webUiOptions?.stages[4]?.catalog).not.toHaveProperty('portalTemplate');
   expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
-    key: 'commands.init.webUi.portalType.title',
+    key: 'commands.init.webUi.configureDatabase.title',
   });
-  expect(webUiOptions?.stages[5]?.catalog).toMatchObject({
+  expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
     dbPassword: expect.any(Object),
     dbSchema: expect.any(Object),
     dbTablePrefix: expect.any(Object),
     dbUnderscored: expect.any(Object),
   });
-  expect(webUiOptions?.stages[7]?.catalog).toMatchObject({
+  expect(webUiOptions?.stages[6]?.catalog).toMatchObject({
     installApiBaseUrl: expect.any(Object),
     installAuthType: expect.any(Object),
     installAccessToken: expect.any(Object),
@@ -528,8 +533,6 @@ test('nb init forwards download options to nb install for a new app flow', async
         './storage/demoapp',
         '--app-public-path',
         '/console/',
-        '--portal-name',
-        'admin',
         '--source',
         'git',
         '--version',
@@ -682,7 +685,7 @@ test('nb init does not expose duplicate username/password fields in the final co
   await Init.prototype.run.call(command);
 
   const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
-  const finalCatalog = webUiOptions?.stages[7]?.catalog as Record<string, unknown>;
+  const finalCatalog = webUiOptions?.stages[6]?.catalog as Record<string, unknown>;
   expect(finalCatalog.installUsername).toBe(undefined);
   expect(finalCatalog.installPassword).toBe(undefined);
   expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
@@ -814,6 +817,17 @@ test('nb init saves env config before install starts so failures still leave the
     schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
     timezone: expect.any(String),
   });
+  expect(mocks.ensureManagedEnvFileDefaults.mock.calls[0]).toEqual([
+    'demoapp',
+    expect.objectContaining({
+      kind: 'docker',
+      source: 'docker',
+      setupState: 'prepared',
+    }),
+  ]);
+  expect(mocks.ensureManagedEnvFileDefaults.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(
+    true,
+  );
   expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(String(mocks.error.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
 });
@@ -1804,8 +1818,6 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
       './nocobase',
       '--storage-path',
       './storage/local5',
-      '--portal-name',
-      'admin',
       '--force',
     ],
   ]);
@@ -2258,210 +2270,6 @@ test('nb init seeds the configured docker registry into web UI defaults', async 
     expect(Object.prototype.hasOwnProperty.call(initialValues, 'builtinDbImage')).toBe(false);
   } finally {
     await deleteCliConfigValue('nb-image-registry', { scope: 'global' });
-  }
-});
-
-test('nb init seeds the configured default portal template into setup defaults', async () => {
-  const { default: Init } = await import('../commands/init.js');
-  const previous = process.env.NB_CLI_ROOT;
-  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-portal-template-'));
-
-  const buildDynamicInitialValuesForInstall = (
-    Init as unknown as {
-      buildDynamicInitialValuesForInstall: (
-        flags: { yes?: boolean; 'app-port'?: string; 'db-port'?: string; 'portal-template'?: string },
-        presetValues: Record<string, string | number | boolean>,
-      ) => Promise<Record<string, string | number | boolean>>;
-    }
-  ).buildDynamicInitialValuesForInstall;
-
-  const { setCliConfigValue, deleteCliConfigValue } = await import('../lib/cli-config.js');
-
-  try {
-    process.env.NB_CLI_ROOT = tempHome;
-    await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
-
-    await expect(
-      buildDynamicInitialValuesForInstall(
-        { yes: false },
-        {
-          appName: 'app1',
-          appPort: '13000',
-          source: 'docker',
-          builtinDb: true,
-          dbDialect: 'postgres',
-        },
-      ),
-    ).resolves.toMatchObject({
-      portalTemplate: '/workspace/portal-template',
-    });
-    await expect(
-      buildDynamicInitialValuesForInstall(
-        { yes: false, 'portal-template': '/explicit/portal-template' },
-        {
-          appName: 'app1',
-          appPort: '13000',
-          portalTemplate: '/explicit/portal-template',
-          source: 'docker',
-          builtinDb: true,
-          dbDialect: 'postgres',
-        },
-      ),
-    ).resolves.not.toHaveProperty('portalTemplate');
-  } finally {
-    await deleteCliConfigValue('default-portal-template', { scope: 'global' });
-    if (previous === undefined) {
-      delete process.env.NB_CLI_ROOT;
-    } else {
-      process.env.NB_CLI_ROOT = previous;
-    }
-    await rm(tempHome, { recursive: true, force: true });
-  }
-});
-
-test('nb init --yes uses the configured default portal template as a yes initial value', async () => {
-  const { default: Init } = await import('../commands/init.js');
-  const { setCliConfigValue, deleteCliConfigValue } = await import('../lib/cli-config.js');
-  const { runPromptCatalog } =
-    await vi.importActual<typeof import('../lib/prompt-catalog.js')>('../lib/prompt-catalog.js');
-  const previousCliRoot = process.env.NB_CLI_ROOT;
-  const originalArgv = process.argv;
-  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-portal-template-yes-'));
-  process.argv = [
-    'node',
-    'nb',
-    'init',
-    '--yes',
-    '--env',
-    'app2628',
-    '--version=pr-10155',
-    '--docker-registry=registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
-    '--docker-platform=linux/amd64',
-    '--db-dialect=mysql',
-    '--db-underscored',
-    '--auth-type=basic',
-    '--portal-type',
-    'ai',
-  ];
-
-  try {
-    process.env.NB_CLI_ROOT = tempHome;
-    await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
-    mocks.runPromptCatalog.mockImplementation(runPromptCatalog);
-
-    const runCommand = vi.fn(async () => undefined);
-    const command = Object.assign(Object.create(Init.prototype), {
-      parse: vi.fn(async () => ({
-        flags: {
-          yes: true,
-          ui: false,
-          env: 'app2628',
-          version: 'pr-10155',
-          'docker-registry': 'registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
-          'docker-platform': 'linux/amd64',
-          'db-dialect': 'mysql',
-          'db-underscored': true,
-          'auth-type': 'basic',
-          'portal-type': 'ai',
-        },
-      })),
-      config: { runCommand },
-      log: mocks.log,
-      error: mocks.error,
-      exit: (code?: number) => {
-        throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
-      },
-    });
-
-    await Init.prototype.run.call(command);
-
-    expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.yesInitialValues).toMatchObject({
-      portalTemplate: '/workspace/portal-template',
-    });
-    const installArgv = runCommand.mock.calls.find(([commandName]) => commandName === 'install')?.[1] as
-      | string[]
-      | undefined;
-    expect(installArgv).toEqual(expect.arrayContaining(['--portal-template', '/workspace/portal-template']));
-  } finally {
-    process.argv = originalArgv;
-    await deleteCliConfigValue('default-portal-template', { scope: 'global' });
-    if (previousCliRoot === undefined) {
-      delete process.env.NB_CLI_ROOT;
-    } else {
-      process.env.NB_CLI_ROOT = previousCliRoot;
-    }
-    await rm(tempHome, { recursive: true, force: true });
-  }
-});
-
-test('nb init --yes uses the built-in portal template when no config default is set', async () => {
-  const { default: Init } = await import('../commands/init.js');
-  const { runPromptCatalog } =
-    await vi.importActual<typeof import('../lib/prompt-catalog.js')>('../lib/prompt-catalog.js');
-  const previousCliRoot = process.env.NB_CLI_ROOT;
-  const originalArgv = process.argv;
-  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-portal-template-builtin-'));
-  process.argv = [
-    'node',
-    'nb',
-    'init',
-    '--yes',
-    '--env',
-    'app2628',
-    '--version=pr-10155',
-    '--docker-registry=registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
-    '--docker-platform=linux/amd64',
-    '--db-dialect=mysql',
-    '--db-underscored',
-    '--auth-type=basic',
-    '--portal-type',
-    'ai',
-  ];
-
-  try {
-    process.env.NB_CLI_ROOT = tempHome;
-    mocks.runPromptCatalog.mockImplementation(runPromptCatalog);
-
-    const runCommand = vi.fn(async () => undefined);
-    const command = Object.assign(Object.create(Init.prototype), {
-      parse: vi.fn(async () => ({
-        flags: {
-          yes: true,
-          ui: false,
-          env: 'app2628',
-          version: 'pr-10155',
-          'docker-registry': 'registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
-          'docker-platform': 'linux/amd64',
-          'db-dialect': 'mysql',
-          'db-underscored': true,
-          'auth-type': 'basic',
-          'portal-type': 'ai',
-        },
-      })),
-      config: { runCommand },
-      log: mocks.log,
-      error: mocks.error,
-      exit: (code?: number) => {
-        throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
-      },
-    });
-
-    await Init.prototype.run.call(command);
-
-    const installArgv = runCommand.mock.calls.find(([commandName]) => commandName === 'install')?.[1] as
-      | string[]
-      | undefined;
-    expect(installArgv).toEqual(
-      expect.arrayContaining(['--portal-template', '@nocobase/portal-template-default']),
-    );
-  } finally {
-    process.argv = originalArgv;
-    if (previousCliRoot === undefined) {
-      delete process.env.NB_CLI_ROOT;
-    } else {
-      process.env.NB_CLI_ROOT = previousCliRoot;
-    }
-    await rm(tempHome, { recursive: true, force: true });
   }
 });
 
