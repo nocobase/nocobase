@@ -25,6 +25,7 @@ import { Plugin } from '../Plugin';
 import type { PluginClass } from '../PluginManager';
 import { AdminSettingsLayoutModel } from '../settings-center';
 import { SettingsDocumentRedirect } from '../settings-app/SettingsDocumentRedirect';
+import { type CurrentUserAuthStatus, setCurrentUserAuthStatus } from './currentUserAuthStatus';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
 export type CurrentUserState = {
@@ -33,8 +34,6 @@ export type CurrentUserState = {
   };
   loading: boolean;
 };
-
-type CurrentUserAuthStatus = 'unknown' | 'authenticated' | 'unauthenticated' | 'redirecting';
 
 type CurrentUserInternalState = CurrentUserState & {
   authStatus: CurrentUserAuthStatus;
@@ -306,6 +305,10 @@ const CurrentUserProvider: FC = ({ children }) => {
       mounted = false;
     };
   }, [app, authCheckRouteState, navigate]);
+
+  useEffect(() => {
+    setCurrentUserAuthStatus(app, state.authStatus);
+  }, [app, state.authStatus]);
 
   if (state.error) {
     throw state.error;

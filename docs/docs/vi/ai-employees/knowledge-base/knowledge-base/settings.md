@@ -1,17 +1,17 @@
 ---
 pkg: "@nocobase/plugin-ai-knowledge-base"
 title: "Cài đặt"
-description: "Modify basic information, vector store, and default segmentation settings on the Settings page of a knowledge base, and understand the relation between knowledge-base-level and document-level segmentation settings."
-keywords: "knowledge base settings,segmentation settings,Chunk size,Chunk overlap,vector store,NocoBase"
+description: "Modify basic information, vector database, LLM service, embedding model, and default segmentation settings on the Settings page of a knowledge base."
+keywords: "knowledge base settings,vector database,LLM service,embedding model,segmentation settings,NocoBase"
 ---
 
 # Cài đặt
 
 ## Open the Settings page
 
-After opening the knowledge base detail page, click Settings in the left sidebar. This page modifies basic information, file storage, vector store, and default segmentation settings of the current knowledge base.
+After opening the knowledge base detail page, click Settings in the left sidebar. This page modifies basic information, file storage, vector database, LLM service, embedding model, and default segmentation settings of the current knowledge base.
 
-![](https://static-docs.nocobase.com/20260617005832.png)
+![](https://static-docs.nocobase.com/20260728222407.png)
 
 ## Basic information
 
@@ -22,17 +22,21 @@ Local knowledge base settings include:
 | Key | Unique identifier of the knowledge base. It cannot be changed after creation |
 | Name | Knowledge base name |
 | File storage | Where documents and segment files are stored. It cannot be changed after creation |
-| Vector store | Vector store used by the current knowledge base |
+| Vector database | Vector database used by the current knowledge base |
+| LLM service | LLM service used to generate embeddings |
+| Embedding model | Embedding model used to generate and retrieve vectors |
 | Description | Knowledge base description |
 | Enabled | Whether the current knowledge base is enabled |
 
-:::tip Vector store changes
+:::tip Vector configuration changes
 
-After you modify Vector store, NocoBase asks for confirmation when saving. After the vector store changes, existing documents must be vectorized again before vector data can be written to the new vector store. Choose Save and vectorize to save the settings and vectorize immediately, or choose Save only to save the settings and later run Vectorization manually on the Documents page.
+After you modify Vector database, LLM service, or Embedding model, NocoBase asks for confirmation when saving. After the vector configuration changes, existing documents must be vectorized again. Choose Save and vectorize to save the settings and vectorize immediately, or choose Save only to save the settings and later run Vectorization manually on the Documents page.
+
+If the vector database connection settings change, the Documents page also prompts you to run vectorization again.
 
 :::
 
-![](https://static-docs.nocobase.com/20260617005951.png)
+![](https://static-docs.nocobase.com/20260728222408.png)
 
 ## Default segmentation parameters
 

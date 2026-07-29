@@ -540,7 +540,7 @@ describe('plugin-multi-portal server', () => {
     ]);
   });
 
-  it('should enforce the fixed Portal UID, slug, and backing Layout combinations through management APIs', async () => {
+  it('should allow ordinary portals to use admin and mobile route names while protecting fixed UIDs', async () => {
     app = await createMultiPortalAclMockServer();
     const repository = app.db.getRepository('multiPortals');
     await repository.destroy({ filterByTk: '__default_portal__' });
@@ -551,27 +551,27 @@ describe('plugin-multi-portal server', () => {
     });
     const rootAgent = await app.agent().login(rootUser);
 
-    const wrongSlugResponse = await rootAgent.resource('multiPortals').create({
+    const invalidDefaultAdminResponse = await rootAgent.resource('multiPortals').create({
       values: {
         uid: '__default_admin__',
-        title: 'Wrong fixed Admin Portal',
-        portalType: 'no-code',
-        portalName: 'wrong-admin',
-        routePath: '/wrong-admin',
-        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
-      },
-    });
-    const reservedSlugResponse = await rootAgent.resource('multiPortals').create({
-      values: {
-        uid: 'ordinary-admin-portal',
-        title: 'Ordinary Admin Portal',
+        title: 'Invalid default Admin Portal',
         portalType: 'no-code',
         portalName: 'admin',
         routePath: '/admin',
-        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
       },
     });
-    const canonicalResponse = await rootAgent.resource('multiPortals').create({
+    const invalidDefaultMobileResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: '__default_mobile__',
+        title: 'Invalid default Mobile Portal',
+        portalType: 'no-code',
+        portalName: 'custom-mobile',
+        routePath: '/custom-mobile',
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const canonicalDefaultAdminResponse = await rootAgent.resource('multiPortals').create({
       values: {
         uid: '__default_admin__',
         title: 'Default Admin Portal',
@@ -581,17 +581,151 @@ describe('plugin-multi-portal server', () => {
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
     });
-    const rebindResponse = await rootAgent.resource('multiPortals').update({
+    const fixedToOrdinaryUidResponse = await rootAgent.resource('multiPortals').update({
       filterByTk: '__default_admin__',
+      values: {
+        uid: 'ordinary-masked-uid',
+        portalName: 'ordinary-masked',
+      },
+    });
+
+    expect(invalidDefaultAdminResponse.status).toBe(400);
+    expect(invalidDefaultMobileResponse.status).toBe(400);
+    expect(canonicalDefaultAdminResponse.status).toBe(200);
+    expect(fixedToOrdinaryUidResponse.status).toBe(400);
+    await repository.destroy({ filterByTk: '__default_admin__' });
+
+    const adminResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'ordinary-admin-portal',
+        title: 'Ordinary Admin Portal',
+        portalType: 'no-code',
+        portalName: 'admin',
+        routePath: '/admin',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const mobileResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'ordinary-mobile-portal',
+        title: 'Ordinary Mobile Portal',
+        portalType: 'no-code',
+        portalName: 'mobile',
+        routePath: '/mobile',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const rebindResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'ordinary-admin-portal',
       values: {
         uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
       },
     });
+    const ordinaryToFixedUidResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'ordinary-admin-portal',
+      values: {
+        uid: '__default_admin__',
+      },
+    });
 
-    expect(wrongSlugResponse.status).toBe(400);
-    expect(reservedSlugResponse.status).toBe(400);
-    expect(canonicalResponse.status).toBe(200);
+    expect(adminResponse.status).toBe(200);
+    expect(mobileResponse.status).toBe(200);
     expect(rebindResponse.status).toBe(400);
+    expect(ordinaryToFixedUidResponse.status).toBe(400);
+    expect(
+      await repository.find({
+        filter: { uid: ['ordinary-admin-portal', 'ordinary-mobile-portal'] },
+        fields: ['uid', 'portalName', 'uiLayoutUid'],
+        sort: ['uid'],
+      }),
+    ).toMatchObject([
+      {
+        uid: 'ordinary-admin-portal',
+        portalName: 'admin',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+      {
+        uid: 'ordinary-mobile-portal',
+        portalName: 'mobile',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    ]);
+
+    await repository.destroy({
+      filter: {
+        uid: ['ordinary-admin-portal', 'ordinary-mobile-portal'],
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'ordinary-renamed-portal',
+        title: 'Ordinary renamed Portal',
+        portalType: 'no-code',
+        portalName: 'ordinary-renamed-portal',
+        routePath: '/ordinary-renamed-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const updateToAdminResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'ordinary-renamed-portal',
+      values: {
+        portalName: 'admin',
+      },
+    });
+    const updatedToAdmin = await repository.findOne({ filterByTk: 'ordinary-renamed-portal' });
+    const updateToMobileResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'ordinary-renamed-portal',
+      values: {
+        portalName: 'mobile',
+      },
+    });
+    const updatedToMobile = await repository.findOne({ filterByTk: 'ordinary-renamed-portal' });
+
+    expect(updateToAdminResponse.status).toBe(200);
+    expect(updatedToAdmin?.get('portalName')).toBe('admin');
+    expect(updatedToAdmin?.get('routePath')).toBe('/admin');
+    expect(updateToMobileResponse.status).toBe(200);
+    expect(updatedToMobile?.get('portalName')).toBe('mobile');
+    expect(updatedToMobile?.get('routePath')).toBe('/mobile');
+  });
+
+  it('should protect fixed Portal identities when updateOrCreate resolves records by portalName', async () => {
+    app = await createMultiPortalAclMockServer();
+    const repository = app.db.getRepository('multiPortals');
+    await repository.destroy({ filterByTk: '__default_portal__' });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: '__default_admin__',
+        title: 'Default Admin Portal',
+        portalType: 'no-code',
+        portalName: 'admin',
+        routePath: '/admin',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const fixedToOrdinaryResponse = await rootAgent.resource('multiPortals').updateOrCreate({
+      filterKeys: ['portalName'],
+      values: {
+        uid: 'ordinary-upsert-masked-uid',
+        title: 'Masked Admin Portal',
+        portalType: 'no-code',
+        portalName: 'admin',
+        routePath: '/admin',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(fixedToOrdinaryResponse.status).toBe(400);
     expect(
       await repository.findOne({
         filterByTk: '__default_admin__',
@@ -599,6 +733,56 @@ describe('plugin-multi-portal server', () => {
       }),
     ).toMatchObject({
       uid: '__default_admin__',
+      portalName: 'admin',
+      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+    });
+
+    await repository.destroy({ filterByTk: '__default_admin__' });
+    await repository.create({
+      values: {
+        uid: 'ordinary-upsert-portal',
+        title: 'Ordinary upsert Portal',
+        portalType: 'no-code',
+        portalName: 'admin',
+        routePath: '/admin',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const ordinaryToFixedResponse = await rootAgent.resource('multiPortals').updateOrCreate({
+      filterKeys: ['portalName'],
+      values: {
+        uid: '__default_admin__',
+        title: 'Ordinary upsert Portal',
+        portalType: 'no-code',
+        portalName: 'admin',
+        routePath: '/admin',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(ordinaryToFixedResponse.status).toBe(400);
+    expect(await repository.findOne({ filterByTk: 'ordinary-upsert-portal' })).toMatchObject({
+      uid: 'ordinary-upsert-portal',
+      portalName: 'admin',
+      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+    });
+
+    const backingLayoutResponse = await rootAgent.resource('multiPortals').updateOrCreate({
+      filterKeys: ['portalName'],
+      values: {
+        uid: 'ordinary-upsert-portal',
+        title: 'Ordinary upsert Portal',
+        portalType: 'no-code',
+        portalName: ' admin ',
+        routePath: '/admin',
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(backingLayoutResponse.status).toBe(400);
+    expect(await repository.findOne({ filterByTk: 'ordinary-upsert-portal' })).toMatchObject({
+      uid: 'ordinary-upsert-portal',
       portalName: 'admin',
       uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });

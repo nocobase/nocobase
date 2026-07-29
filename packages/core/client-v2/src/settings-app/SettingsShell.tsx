@@ -17,6 +17,7 @@ import {
   type UserCenterTopbarActionModel,
 } from '../flow/models/topbar/UserCenterTopbarActionModel';
 import { useApp } from '../hooks/useApp';
+import { useCurrentUserAuthStatus } from '../nocobase-buildin-plugin/currentUserAuthStatus';
 import { SettingsBrand } from './SettingsBrand';
 import { SettingsGroupNav } from './SettingsGroupNav';
 import { SettingsSearch } from './SettingsSearch';
@@ -72,6 +73,7 @@ export const SettingsShell: FC = ({ children }) => {
   const { token } = antdTheme.useToken();
   const settingsShellTheme = useMemo<ThemeConfig>(() => buildSettingsNeutralTheme(token), [token]);
   const headerColors = useMemo(() => getSettingsHeaderColors(token), [token]);
+  const authStatus = useCurrentUserAuthStatus(app);
   const isAuthenticationRoute = (app.router.matchRoutes(location.pathname) || []).some((match) => {
     const routeId = match.route.id;
     return routeId === 'auth' || routeId?.startsWith('auth.') || routeId === '2fa' || routeId?.startsWith('2fa.');
@@ -81,6 +83,7 @@ export const SettingsShell: FC = ({ children }) => {
     return <>{children}</>;
   }
 
+  const shouldShowHeader = authStatus === 'authenticated';
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
@@ -98,6 +101,7 @@ export const SettingsShell: FC = ({ children }) => {
             {
               // 深色顶栏自带层次，只有浅色顶栏才需要一条分割线把它和内容区分开。
               borderBottom: headerColors.dark ? 'none' : `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+              display: shouldShowHeader ? undefined : 'none',
               height: 46,
               lineHeight: '46px',
               paddingInline: token.paddingLG,
