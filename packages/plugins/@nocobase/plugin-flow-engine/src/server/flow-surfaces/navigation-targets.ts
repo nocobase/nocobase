@@ -464,16 +464,26 @@ export class FlowSurfaceNavigationTargetsService {
     enabled.sort((left: unknown, right: unknown) =>
       String(readStringField(left, 'uid') || '').localeCompare(String(readStringField(right, 'uid') || '')),
     );
-    const accessible: unknown[] = [];
-    for (const portal of enabled) {
-      const portalUid = readStringField(portal, 'uid');
-      if (
-        portalUid &&
-        (isDefaultLayoutMultiPortalUid(portalUid) || (await this.canAccessPortal(portalUid, currentRoles, transaction)))
-      ) {
-        accessible.push(portal);
+    const roles = normalizeRoles(currentRoles);
+    const isRoot = roles.includes('root');
+    const accessiblePortalUids = new Set<string>();
+    if (!isRoot && roles.length && this.db.getCollection('rolesMultiPortals')) {
+      const grants = await this.db.getRepository('rolesMultiPortals').find({
+        filter: { roleName: roles },
+        fields: ['multiPortalUid'],
+        transaction,
+      });
+      for (const grant of grants) {
+        const portalUid = readStringField(grant, 'multiPortalUid');
+        if (portalUid) {
+          accessiblePortalUids.add(portalUid);
+        }
       }
     }
+    const accessible = enabled.filter((portal: unknown) => {
+      const portalUid = readStringField(portal, 'uid');
+      return !!portalUid && (isRoot || isDefaultLayoutMultiPortalUid(portalUid) || accessiblePortalUids.has(portalUid));
+    });
     return { enabled, accessible };
   }
 

@@ -111,6 +111,10 @@ function createDatabase(portals: PortalRecord[], layouts = [createLayout()], rol
       }),
     },
     rolesMultiPortals: {
+      find: vi.fn(async (options: FindOptions = {}) => {
+        const roles = Array.isArray(options.filter?.roleName) ? options.filter.roleName : [options.filter?.roleName];
+        return rolePortalGrants.filter((grant) => roles.includes(grant.roleName));
+      }),
       count: vi.fn(async (options: FindOptions = {}) => {
         const roles = Array.isArray(options.filter?.roleName) ? options.filter.roleName : [options.filter?.roleName];
         return rolePortalGrants.filter(
