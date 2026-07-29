@@ -793,7 +793,6 @@ type EnvProxyNginxRenderContext = {
   appPublicPath: string;
   backendUrl: string;
   cdnBaseUrl: string;
-  hasExplicitCdnBaseUrl: boolean;
   distPath: string;
   distRootDir: string;
   entryDir: string;
@@ -992,7 +991,7 @@ function buildNginxRuntimeConfig(
   variant: 'v1' | 'v2' | 'settings',
 ): Record<string, boolean | string> {
   return {
-    __webpack_public_path__: variant === 'settings' ? (context.hasExplicitCdnBaseUrl ? context.cdnBaseUrl : '') : context.cdnBaseUrl,
+    __webpack_public_path__: context.cdnBaseUrl,
     __nocobase_public_path__: variant === 'v2' ? context.v2PublicPath : context.appPublicPath,
     ...(variant !== 'v1' ? { __nocobase_modern_client_prefix__: context.modernClientPrefix } : {}),
     __nocobase_app_client_entry_mode__: context.appClientEntryMode,
@@ -1047,7 +1046,6 @@ async function buildEnvProxyNginxRenderContext(
     appPublicPath: source.settings.appPublicPath,
     backendUrl,
     cdnBaseUrl: ensureTrailingSlash(cdnBaseUrl),
-    hasExplicitCdnBaseUrl: Boolean(source.settings.cdnBaseUrl),
     distPath: source.settings.distPath,
     distRootDir: mappedDistRootDir,
     entryDir: mappedEntryDir,
