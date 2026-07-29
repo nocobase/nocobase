@@ -63,7 +63,12 @@ export const compact: Omit<ThemeItem, 'id'> = {
 export const minimal: Omit<ThemeItem, 'id'> = {
   config: {
     name: 'Minimal',
+    // 间距和字号跟「紧凑」一致：这条主题是整套替换而不是叠加，不带算法的话
+    // 会退回 antd 默认的宽松间距，跟平台其他地方对不上。
+    // @ts-ignore
+    algorithm: 'compactAlgorithm',
     token: {
+      fontSize: 16,
       // 顶栏那几个 token（colorBgHeader / colorTextHeaderMenu…）刻意不进这条主题：
       // 业务端顶栏是深色的，logo 和图标都按深底做的，翻成白底就得连 logo 一起反色。
       // 设置中心自己那条白顶栏由 settingsTheme 在代码里补，不牵连用这套主题的其他应用。
