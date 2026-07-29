@@ -38,7 +38,6 @@ const RENDER_MODEL_USES = new Set([
   'JSEditableFieldModel',
   'JSItemModel',
   'JSColumnModel',
-  'FormJSFieldItemModel',
   'JSItemActionModel',
 ]);
 

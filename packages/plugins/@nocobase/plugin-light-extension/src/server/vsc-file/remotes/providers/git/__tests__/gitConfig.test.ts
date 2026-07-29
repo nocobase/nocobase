@@ -119,9 +119,9 @@ describe('git remote config', () => {
 
 describe('git remote credential contract', () => {
   it('parses strict HTTPS and SSH credential JSON', () => {
-    expect(parseGitRemoteCredential('{"kind":"https","username":"oauth2","password":"secret"}', 'https')).toEqual({
+    expect(parseGitRemoteCredential('{"kind":"https","username":"git-user","password":"secret"}', 'https')).toEqual({
       kind: 'https',
-      username: 'oauth2',
+      username: 'git-user',
       password: 'secret',
     });
     expect(
@@ -142,23 +142,22 @@ describe('git remote credential contract', () => {
     });
   });
 
-  it('maps a literal HTTPS token to oauth2 credentials', () => {
-    expect(parseGitRemoteCredential('github_pat_direct_123', 'https')).toEqual({
-      kind: 'https',
-      username: 'oauth2',
-      password: 'github_pat_direct_123',
+  it('rejects literal HTTPS credentials with an actionable Secret format error', () => {
+    expect(captureRemoteSyncError(() => parseGitRemoteCredential('github_pat_direct_123', 'https'))).toMatchObject({
+      code: 'AUTH_REF_INVALID',
+      details: { reasonCode: 'invalid-credential-json' },
     });
   });
 
   it.each([
-    [{ kind: 'https', username: 'oauth2', password: '' }, 'https'],
-    [{ kind: 'https', username: 'oauth2', password: 'secret', token: 'secret' }, 'https'],
+    [{ kind: 'https', username: 'git-user', password: '' }, 'https'],
+    [{ kind: 'https', username: 'git-user', password: 'secret', token: 'secret' }, 'https'],
     [{ kind: 'ssh', privateKey: '', knownHosts: 'host key' }, 'ssh'],
     [{ kind: 'ssh', privateKey: 'key', knownHosts: '' }, 'ssh'],
     [{ kind: 'ssh', privateKey: 'key', knownHosts: 'host key' }, 'https'],
   ] as const)('rejects invalid credentials without exposing values', (credential, transport) => {
     const error = captureRemoteSyncError(() => parseGitRemoteCredential(credential, transport));
     expect(error.code).toBe('AUTH_REF_INVALID');
-    expect(JSON.stringify(error.toResponseBody())).not.toMatch(/oauth2|secret|host key/iu);
+    expect(JSON.stringify(error.toResponseBody())).not.toMatch(/git-user|secret|host key/iu);
   });
 });

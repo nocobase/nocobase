@@ -160,7 +160,11 @@ async function externalizeInlineJSPage(app: MockServer, suffix: string): Promise
       entryPath: 'src/client/index.tsx',
       version: opened.source.runtimeVersion,
       files,
-      destination: { type: 'default' },
+      destination: {
+        type: 'new',
+        name: `preset-${suffix}`,
+        title: `Preset ${suffix}`,
+      },
       entryName: `preset-${suffix}`,
       entryTitle: `Preset external entry ${suffix}`,
     },

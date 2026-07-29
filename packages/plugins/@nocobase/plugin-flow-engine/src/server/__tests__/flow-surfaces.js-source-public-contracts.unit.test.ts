@@ -434,7 +434,7 @@ describe('flowSurfaces public JS source contracts', () => {
   });
 
   it('keeps JS item surfaces on the js-item source kind', () => {
-    for (const use of ['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel']) {
+    for (const use of ['JSItemModel', 'JSItemActionModel']) {
       expectSourceOptions(use, 'js-item');
       expectSourceContract(use, 'jsSettings', 'js-item');
     }

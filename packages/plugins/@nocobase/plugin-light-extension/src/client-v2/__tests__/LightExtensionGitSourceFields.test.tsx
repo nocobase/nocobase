@@ -79,8 +79,8 @@ describe('generic Git source validation', () => {
     }
   });
 
-  it('requires a valid branch and validates the optional subdirectory with server-compatible rules', () => {
-    expect(validateGitBranch('')).toEqual({ valid: false, reason: 'required' });
+  it('allows an unresolved branch and validates explicit branches and optional subdirectories', () => {
+    expect(validateGitBranch('')).toEqual({ valid: true, branch: null });
     expect(validateGitBranch('feature/sync')).toEqual({ valid: true, branch: 'feature/sync' });
     expect(validateGitBranch(' feature/sync ')).toEqual({ valid: false, reason: 'invalid' });
     expect(validateGitBranch('unsafe..branch')).toEqual({ valid: false, reason: 'invalid' });
@@ -112,6 +112,25 @@ describe('LightExtensionGitSourceFields', () => {
         },
       }),
     );
+  });
+
+  it('emits an unresolved draft when Branch is blank', async () => {
+    const user = userEvent.setup();
+    const onValidSourceChange = renderFields();
+    await user.type(screen.getByRole('textbox', { name: 'Git repository URL' }), 'https://git.example.com/a/b.git');
+
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/a/b.git',
+          branch: null,
+          subdirectory: null,
+          transport: 'https',
+        },
+      }),
+    );
+    expect(screen.getByText('Leave blank to use the default branch')).toBeInTheDocument();
   });
 
   it('allows SSH without a credential and emits a Secret reference when selected', async () => {
@@ -148,7 +167,7 @@ describe('LightExtensionGitSourceFields', () => {
     expect(JSON.stringify(onValidSourceChange.mock.calls.at(-1))).not.toMatch(/privateKey|knownHosts|passphrase/);
   });
 
-  it('emits a literal token for a private HTTPS repository', async () => {
+  it('emits only a selected Secret reference for a private HTTPS repository', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
     await user.type(
@@ -156,7 +175,8 @@ describe('LightExtensionGitSourceFields', () => {
       'https://git.example.com/team/app.git',
     );
     await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
-    await user.type(screen.getByRole('combobox', { name: 'Git credential' }), 'github_pat_direct_123');
+    await user.click(screen.getByRole('combobox', { name: 'Git credential' }));
+    await user.click(await screen.findByText('SYNC_SECRET'));
 
     await waitFor(() =>
       expect(onValidSourceChange).toHaveBeenLastCalledWith({
@@ -167,12 +187,12 @@ describe('LightExtensionGitSourceFields', () => {
           subdirectory: null,
           transport: 'https',
         },
-        authRef: 'github_pat_direct_123',
+        authRef: '{{ $env.SYNC_SECRET }}',
       }),
     );
   });
 
-  it('shows URL, branch, and subdirectory errors and gates the valid source', async () => {
+  it('shows URL, explicit branch, and subdirectory errors and gates the valid source', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
     const urlInput = screen.getByRole('textbox', { name: 'Git repository URL' });
@@ -183,10 +203,6 @@ describe('LightExtensionGitSourceFields', () => {
     await user.clear(urlInput);
     await user.type(urlInput, 'https://git.example.com/team/repo.git');
     const branchInput = screen.getByRole('textbox', { name: 'Branch' });
-    await user.click(branchInput);
-    await user.tab();
-    expect(await screen.findByText('Git branch is required')).toBeInTheDocument();
-
     await user.type(branchInput, 'unsafe..branch');
     await user.tab();
     expect(await screen.findByText('Git branch is invalid')).toBeInTheDocument();

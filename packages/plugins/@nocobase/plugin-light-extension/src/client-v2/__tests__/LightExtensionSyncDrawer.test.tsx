@@ -425,6 +425,25 @@ describe('LightExtensionSyncDrawer', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('asks for an explicit branch when the remote has no default branch', async () => {
+    mocks.get.mockRejectedValue(
+      new LightExtensionSyncHookError({
+        operation: 'get',
+        code: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+        status: 422,
+        message: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+        details: { reasonCode: 'default-branch-unavailable' },
+      }),
+    );
+
+    renderDrawer();
+
+    expect(
+      await screen.findByText('The remote repository has no default branch. Enter a branch explicitly.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('LIGHT_EXTENSION_SYNC_CONFIG_INVALID')).not.toBeInTheDocument();
+  });
+
   it('reloads the source and plan every time the Drawer is reopened', async () => {
     setPlanResult(createPlan('in-sync'));
     const callbacks = {

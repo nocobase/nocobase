@@ -13,9 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CodeAuthoringSurface, EditorRef } from '@nocobase/client-v2';
 
 import { AICodingButton } from '../AICodingButton';
-import { CHAT_DEFAULT_SESSION_KEY, useChatMessagesStore } from '../../chatbox/stores/chat-messages';
-import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
-import { useChatBoxStore } from '../../chatbox/stores/chat-box';
+import { getGlobalChatBoxRuntime } from '../../chatbox/stores/runtime';
 
 const nathan = { username: 'nathan', nickname: 'Nathan', builtIn: true };
 const triggerTask = vi.fn(async () => undefined);
@@ -88,16 +86,15 @@ beforeEach(() => {
   surfaces.clear();
   triggerTask.mockClear();
   getAIEmployees.mockClear();
-  useChatConversationsStore.setState({ currentConversation: 'session-a' });
-  useChatBoxStore.setState({ open: true, currentEmployee: nathan });
-  useChatMessagesStore.setState({
-    sessions: {
-      [CHAT_DEFAULT_SESSION_KEY]: useChatMessagesStore.getState().getSessionState('__missing__'),
-    },
-    editorRef: {},
-    currentEditorRefUid: undefined,
-    flowContext: undefined,
-  });
+  const runtime = getGlobalChatBoxRuntime();
+  runtime.chatConversationModel.setCurrentConversation('session-a');
+  runtime.chatBoxModel.setOpen(true);
+  runtime.chatBoxModel.setCurrentEmployee(nathan);
+  runtime.chatMessageModel.resetSessionState(undefined);
+  runtime.chatMessageModel.resetSessionState('session-a');
+  runtime.chatMessageModel.editorRef = {};
+  runtime.chatMessageModel.setCurrentEditorRefUid(undefined);
+  runtime.chatMessageModel.setFlowContext(undefined);
 });
 
 afterEach(() => cleanup());
@@ -123,7 +120,8 @@ describe('AICodingButton authoring target', () => {
     await waitFor(() => expect(triggerTask).toHaveBeenCalledOnce());
     expect(surface.getSnapshot).toHaveBeenCalledOnce();
     expect(read).not.toHaveBeenCalled();
-    expect(useChatMessagesStore.getState().getSessionState(undefined).contextItems).toEqual([
+    const chatMessageModel = getGlobalChatBoxRuntime().chatMessageModel;
+    expect(chatMessageModel.getSessionState(undefined).contextItems).toEqual([
       {
         type: 'code-workspace',
         uid: 'workspace-a',
@@ -131,8 +129,8 @@ describe('AICodingButton authoring target', () => {
         content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
       },
     ]);
-    expect(useChatMessagesStore.getState().getSessionState(undefined).workspaceSurfaceId).toBe('workspace-a');
-    expect(useChatMessagesStore.getState().getSessionState('session-a').workspaceSurfaceId).toBeUndefined();
+    expect(chatMessageModel.getSessionState(undefined).workspaceSurfaceId).toBe('workspace-a');
+    expect(chatMessageModel.getSessionState('session-a').workspaceSurfaceId).toBeUndefined();
     expect(triggerTask).toHaveBeenCalledWith(
       expect.objectContaining({
         tasks: expect.arrayContaining([
@@ -165,12 +163,13 @@ describe('AICodingButton authoring target', () => {
       />,
     );
 
-    await waitFor(() => expect(useChatMessagesStore.getState().editorRef?.['editor-a']).toBeDefined());
+    const chatMessageModel = getGlobalChatBoxRuntime().chatMessageModel;
+    await waitFor(() => expect(chatMessageModel.editorRef['editor-a']).toBeDefined());
     const readsBeforeClick = read.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'AI coding assistant' }));
 
     expect(read).toHaveBeenCalledTimes(readsBeforeClick + 1);
-    expect(useChatMessagesStore.getState().getSessionState('session-a').contextItems[0]).toMatchObject({
+    expect(chatMessageModel.getSessionState('session-a').contextItems[0]).toMatchObject({
       type: 'code-editor',
       uid: 'editor-a',
       content: { code: 'const value = 1;' },

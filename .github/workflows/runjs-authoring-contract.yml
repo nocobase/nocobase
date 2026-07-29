@@ -6,6 +6,7 @@ on:
     branches:
       - improve-runjs-modules
     paths:
+      - 'packages/core/runjs/**'
       - 'packages/core/runjs-workspace/**'
       - 'packages/core/cli/**'
       - 'packages/core/cli-v1/**'
@@ -21,6 +22,7 @@ on:
       - '.github/workflows/runjs-authoring-contract.yml'
   pull_request:
     paths:
+      - 'packages/core/runjs/**'
       - 'packages/core/runjs-workspace/**'
       - 'packages/core/cli/**'
       - 'packages/core/cli-v1/**'

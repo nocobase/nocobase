@@ -2851,7 +2851,6 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['JSColumnModel', JS_COLUMN_CONTRACT],
   ['JSItemModel', JS_ITEM_CONTRACT],
   ['DividerItemModel', DIVIDER_ITEM_CONTRACT],
-  ['FormJSFieldItemModel', JS_ITEM_CONTRACT],
   ['AddNewActionModel', POPUP_ACTION_CONTRACT],
   ['ViewActionModel', POPUP_ACTION_CONTRACT],
   ['EditActionModel', POPUP_ACTION_CONTRACT],

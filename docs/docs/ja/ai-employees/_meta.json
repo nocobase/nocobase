@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "ページブロック",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "組み込みAI従業員",
     "items": [
       {
@@ -149,11 +160,6 @@
         "type": "custom-link",
         "label": "ベクトルデータベース",
         "link": "/ai-employees/knowledge-base/vector-database"
-      },
-      {
-        "type": "custom-link",
-        "label": "ベクトルストレージ",
-        "link": "/ai-employees/knowledge-base/vector-store"
       },
       {
         "type": "custom-link",

@@ -16,6 +16,7 @@ import { useT } from '../locale';
 import type { AIManager } from '../manager/ai-manager';
 import type { ContextItem, WorkContextOptions } from './types';
 import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
+import type { ChatBoxRuntime } from './chatbox/stores/runtime';
 
 type AIPluginLike = {
   aiManager?: AIManager;
@@ -55,13 +56,14 @@ export const AddContextButton: React.FC<{
   onRemove: (type: string, uid: string) => void;
   disabled?: boolean;
   ignore?: (key: string, workContext: WorkContextOptions) => boolean;
-}> = ({ contextItems, onAdd, onRemove, disabled, ignore }) => {
+  runtime?: ChatBoxRuntime;
+}> = ({ contextItems, onAdd, onRemove, disabled, ignore, runtime }) => {
   const t = useT();
   const app = useApp();
   const ctx = useFlowContext();
   const plugin = app.pm.get('ai') as AIPluginLike | undefined;
   const workContext = plugin?.aiManager?.workContext;
-  const { syncContextAttachments } = useChatMessageActions();
+  const { syncContextAttachments } = useChatMessageActions(runtime);
 
   const [items, onClick] = useMemo(() => {
     const context = Array.from(workContext?.getValues() || []);
@@ -100,6 +102,7 @@ export const AddContextButton: React.FC<{
     });
 
     const handleClick: MenuProps['onClick'] = (event) => {
+      event.domEvent.stopPropagation();
       const key = String(event.key);
       const workContextItem = contextItemMapping.get(key);
       workContextItem?.menu?.onClick?.({

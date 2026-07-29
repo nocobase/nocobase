@@ -49,7 +49,7 @@ describe('RunJS Runtime Features', () => {
     });
 
     it('should make ReactDOM available in all context types', async () => {
-      const contextTypes = ['JSBlockModel', 'JSFieldModel', 'JSItemModel', 'JSColumnModel', 'FormJSFieldItemModel'];
+      const contextTypes = ['JSBlockModel', 'JSFieldModel', 'JSEditableFieldModel', 'JSItemModel', 'JSColumnModel'];
 
       for (const modelName of contextTypes) {
         const ctx = new FlowContext();

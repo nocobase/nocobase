@@ -49,7 +49,6 @@ import {
 const remoteName = 'origin';
 const redactedCredential = '[REDACTED]';
 const secretAuthRefPattern = /^\{\{ \$env\.[A-Za-z_][A-Za-z0-9_]* \}\}$/;
-const maxLiteralTokenLength = 4096;
 const sensitiveCredentialKeyPattern = /(token|authorization|password|secret|credential|privatekey|authref)/i;
 const credentialTransportKeyPattern = /(token|password|secret|credential|privatekey|authref)/i;
 
@@ -167,15 +166,17 @@ function createSyncAction(
   });
   return async (ctx, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
-    if (sanitizeUnsafeLightExtensionSyncTransport(resourceCtx) || sanitizeRejectedBodyCredentials(resourceCtx)) {
-      const params = toMutableRecord(resourceCtx.action?.params);
-      const values = toMutableRecord(params.values);
-      values.__rejectedCredentialInput = true;
+    const params = toMutableRecord(resourceCtx.action?.params);
+    const values = toMutableRecord(params.values);
+    const invalidRootAuthRef =
+      Object.hasOwn(values, 'authRef') && values.authRef !== null && !isSecretAuthRef(values.authRef);
+    const rejectedTransportCredential = sanitizeUnsafeLightExtensionSyncTransport(resourceCtx);
+    const rejectedBodyCredential = sanitizeRejectedBodyCredentials(resourceCtx);
+    if (rejectedTransportCredential || rejectedBodyCredential) {
+      values[invalidRootAuthRef ? '__rejectedAuthRefInput' : '__rejectedCredentialInput'] = true;
       params.values = values;
     }
-    const actionPromise = action(ctx, next);
-    redactLiteralCredential(resourceCtx);
-    await actionPromise;
+    await action(ctx, next);
   };
 }
 
@@ -228,7 +229,7 @@ function sanitizeRejectedBodyCredentials(ctx: LightExtensionResourceContext): bo
     let rejected = false;
     for (const [key, child] of Object.entries(value)) {
       const normalizedKey = normalizeCredentialKey(key);
-      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isCredentialInput(child)));
+      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isSecretAuthRef(child)));
       if (invalidAuthRef || (key !== 'authRef' && sensitiveCredentialKeyPattern.test(normalizedKey))) {
         value[key] = redactedCredential;
         rejected = true;
@@ -701,37 +702,14 @@ function requireNullableAuthRef(value: unknown): string | null {
   if (value === null) {
     return null;
   }
-  if (!isCredentialInput(value)) {
-    throw invalidInput('authRef must be a Secret environment variable or token');
+  if (!isSecretAuthRef(value)) {
+    throw invalidInput('authRef must reference a Secret environment variable');
   }
   return value;
 }
 
 function isSecretAuthRef(value: unknown): value is string {
   return typeof value === 'string' && secretAuthRefPattern.test(value);
-}
-
-function isLiteralToken(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    value.length <= maxLiteralTokenLength &&
-    /^\S+$/u.test(value) &&
-    !value.includes('{{') &&
-    !value.includes('}}')
-  );
-}
-
-function isCredentialInput(value: unknown): value is string {
-  return isSecretAuthRef(value) || isLiteralToken(value);
-}
-
-function redactLiteralCredential(ctx: LightExtensionResourceContext): void {
-  const params = toMutableRecord(ctx.action?.params);
-  const values = toMutableRecord(params.values);
-  if (isLiteralToken(values.authRef)) {
-    values.authRef = redactedCredential;
-  }
 }
 
 function normalizeCredentialKey(key: string): string {
@@ -785,6 +763,13 @@ function optionalNullableString(value: unknown, label: string): string | null | 
 }
 
 function assertOnlyKeys(input: ResourceActionInput, allowedKeys: readonly string[]): void {
+  if (input.__rejectedAuthRefInput === true) {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID',
+      'Remote credential must reference a Secret environment variable',
+      { details: { reasonCode: 'secret-variable-required' } },
+    );
+  }
   const allowed = new Set([...allowedKeys, 'resourceName', 'actionName']);
   const unexpected = Object.keys(input).filter((key) => typeof input[key] !== 'undefined' && !allowed.has(key));
   if (unexpected.length) {

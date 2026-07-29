@@ -108,6 +108,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const persistedValueRef = React.useRef(value);
   const previewAppliedRef = React.useRef(false);
   const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
+  const moveToInlineAttemptRef = React.useRef<{ requestFingerprint: string; idempotencyKey: string } | null>(null);
 
   React.useEffect(() => {
     setCurrentBinding(binding);
@@ -210,7 +211,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         throw new Error(translate?.('RunJS source service is unavailable') || 'RunJS source service is unavailable');
       }
 
-      const result = await moveLightExtensionToInline(api, {
+      const moveInput = {
         locator: {
           ...effectiveLocator,
           paramPath: [...effectiveLocator.paramPath],
@@ -222,7 +223,19 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         kind: workspaceScope.kind,
         version: request.version,
         files: request.files,
+      };
+      const requestFingerprint = JSON.stringify(moveInput);
+      const existingAttempt = moveToInlineAttemptRef.current;
+      const attempt =
+        existingAttempt?.requestFingerprint === requestFingerprint
+          ? existingAttempt
+          : { requestFingerprint, idempotencyKey: createMoveToInlineIdempotencyKey() };
+      moveToInlineAttemptRef.current = attempt;
+      const result = await moveLightExtensionToInline(api, {
+        ...moveInput,
+        idempotencyKey: attempt.idempotencyKey,
       });
+      moveToInlineAttemptRef.current = null;
       const nextValue = {
         ...value,
         code: result.code,
@@ -481,6 +494,10 @@ function getLightExtensionKind(value: unknown): LightExtensionKind | undefined {
   return typeof kind === 'string' && (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind)
     ? (kind as LightExtensionKind)
     : undefined;
+}
+
+function createMoveToInlineIdempotencyKey(): string {
+  return `move-to-inline-${globalThis.crypto.randomUUID()}`;
 }
 
 function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionEntryWorkspaceScope | null {

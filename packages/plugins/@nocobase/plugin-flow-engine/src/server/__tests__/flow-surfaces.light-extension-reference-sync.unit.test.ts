@@ -35,7 +35,6 @@ function options(use: string, sourceMode: string, settings: Record<string, unkno
 const JS_OWNER_USES = [
   'JSBlockModel',
   'JSItemModel',
-  'FormJSFieldItemModel',
   'JSItemActionModel',
   'JSFieldModel',
   'JSEditableFieldModel',
@@ -67,10 +66,10 @@ function inlineCodeOptions(use: string, code: string) {
 
 describe('flowSurfaces light-extension reference sync', () => {
   it('maps every public JS owner use to its canonical settings group', () => {
-    for (const use of JS_OWNER_USES.slice(0, 7)) {
+    for (const use of JS_OWNER_USES.slice(0, 6)) {
       expect(resolveRunJsSettingsGroupKey(use), use).toBe('jsSettings');
     }
-    for (const use of JS_OWNER_USES.slice(7)) {
+    for (const use of JS_OWNER_USES.slice(6)) {
       expect(resolveRunJsSettingsGroupKey(use), use).toBe('clickSettings');
     }
   });

@@ -12,8 +12,7 @@ import type { FlowContext } from '@nocobase/flow-engine';
 import { getSnippetBody } from '@nocobase/flow-engine';
 import { applyPatch, parsePatch } from 'diff';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
-import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { type ChatBoxRuntime, useChatBoxRuntime } from '../chatbox/stores/runtime';
 import type { ChatEditorRef } from '../types';
 
 type FlowInfoContext = FlowContext & {
@@ -28,34 +27,47 @@ type FlowContextToolState = ToolsOptions & {
 };
 
 type EditorToolState = ToolsOptions & {
-  editorRef?: ChatEditorRef | null;
+  chatBoxRuntime?: ChatBoxRuntime;
 };
+
+type FlowEditorToolState = FlowContextToolState & EditorToolState;
 
 const editorVersions = new Map<string, number>();
 const workspaceToolError = 'This conversation is bound to a code workspace. Please use Workspace tools instead.';
+
+function useCurrentRuntimeChat() {
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  return useChat(currentConversation, runtime);
+}
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function assertLegacyToolAvailable() {
-  const state = useChatMessagesStore.getState();
-  const sessionId = useChatConversationsStore.getState().currentConversation;
-  if (state.getSessionState(sessionId).workspaceSurfaceId) {
+function useEditorToolState<T extends EditorToolState>(state: T) {
+  state.chatBoxRuntime = useChatBoxRuntime();
+  return state;
+}
+
+function assertLegacyToolAvailable(state: EditorToolState) {
+  const runtime = state.chatBoxRuntime;
+  const sessionId = runtime?.chatConversationModel.currentConversation;
+  if (runtime?.chatMessageModel.getSessionState(sessionId).workspaceSurfaceId) {
     throw new Error(workspaceToolError);
   }
 }
 
-function getCurrentEditorRef() {
-  const state = useChatMessagesStore.getState();
-  const uid = state.currentEditorRefUid;
-  const editorRef = uid ? state.editorRef?.[uid] : null;
+function getCurrentEditorRef(state: EditorToolState) {
+  const chatMessageModel = state.chatBoxRuntime?.chatMessageModel;
+  const uid = chatMessageModel?.currentEditorRefUid;
+  const editorRef = uid ? chatMessageModel?.editorRef[uid] : null;
   return { uid, editorRef };
 }
 
-function getEditorState() {
-  assertLegacyToolAvailable();
-  const { uid, editorRef } = getCurrentEditorRef();
+function getEditorState(state: EditorToolState) {
+  assertLegacyToolAvailable(state);
+  const { uid, editorRef } = getCurrentEditorRef(state);
   if (!uid || !editorRef) {
     throw new Error('Current code editor is not available.');
   }
@@ -164,15 +176,11 @@ export const listCodeSnippetTool: [string, ToolsOptions] = [
   'listCodeSnippet',
   {
     invoke(this: EditorToolState) {
-      return (this.editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
+      const { editorRef } = getCurrentEditorRef(this);
+      return (editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
     },
     useHooks(this: EditorToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
-      const editorRefMap = chat.use.editorRef() ?? {};
-      const currentEditorRefUid = chat.use.currentEditorRefUid();
-      this.editorRef = currentEditorRefUid ? editorRefMap[currentEditorRefUid] : null;
-      return this;
+      return useEditorToolState(this);
     },
   },
 ];
@@ -194,10 +202,8 @@ export const getContextApisTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
-      const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = flowContext;
+      const chat = useCurrentRuntimeChat();
+      this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
   },
@@ -211,10 +217,8 @@ export const getContextEnvsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
-      const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = flowContext;
+      const chat = useCurrentRuntimeChat();
+      this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
   },
@@ -231,10 +235,8 @@ export const getContextVarsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
-      const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = flowContext;
+      const chat = useCurrentRuntimeChat();
+      this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
   },
@@ -243,9 +245,9 @@ export const getContextVarsTool: [string, ToolsOptions] = [
 export const writeJSCodeTool: [string, ToolsOptions] = [
   'writeJSCode',
   {
-    async invoke(_app, args: { code?: unknown }) {
+    async invoke(this: EditorToolState, _app, args: { code?: unknown }) {
       try {
-        assertLegacyToolAvailable();
+        assertLegacyToolAvailable(this);
       } catch (error) {
         return {
           status: 'error',
@@ -264,21 +266,19 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
           },
         };
       }
-      let current;
-      try {
-        current = getCurrentEditorRef();
-      } catch (error) {
+      const { uid, editorRef } = getCurrentEditorRef(this);
+      if (!uid || !editorRef) {
         return {
           status: 'error',
           content: {
             success: false,
-            message: `Write code failed: ${getErrorMessage(error)}`,
+            message: 'Current code editor is not available. Cannot write code.',
           },
         };
       }
       const { code } = args;
-      current.editorRef.write(code);
-      const version = bumpEditorVersion(current.uid);
+      editorRef.write(code);
+      const version = bumpEditorVersion(uid);
       return {
         status: 'success',
         content: {
@@ -289,15 +289,18 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
         },
       };
     },
+    useHooks(this: EditorToolState) {
+      return useEditorToolState(this);
+    },
   },
 ];
 
 export const readJSCodeTool: [string, ToolsOptions] = [
   'readJSCode',
   {
-    async invoke() {
+    async invoke(this: EditorToolState) {
       try {
-        const current = getEditorState();
+        const current = getEditorState(this);
         return {
           status: 'success',
           content: {
@@ -318,15 +321,18 @@ export const readJSCodeTool: [string, ToolsOptions] = [
         };
       }
     },
+    useHooks(this: EditorToolState) {
+      return useEditorToolState(this);
+    },
   },
 ];
 
 export const patchJSCodeTool: [string, ToolsOptions] = [
   'patchJSCode',
   {
-    async invoke(_app, args: { patch?: unknown }) {
+    async invoke(this: EditorToolState, _app, args: { patch?: unknown }) {
       try {
-        assertLegacyToolAvailable();
+        assertLegacyToolAvailable(this);
       } catch (error) {
         return {
           status: 'error',
@@ -345,19 +351,8 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
           },
         };
       }
-      let current;
       try {
-        current = getEditorState();
-      } catch (error) {
-        return {
-          status: 'error',
-          content: {
-            success: false,
-            message: `Patch failed: ${getErrorMessage(error)}`,
-          },
-        };
-      }
-      try {
+        const current = getEditorState(this);
         const nextCode = applyUnifiedDiff(current.code, args.patch);
         current.editorRef.write(nextCode);
         const version = bumpEditorVersion(current.uid);
@@ -382,20 +377,20 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
         };
       }
     },
+    useHooks(this: EditorToolState) {
+      return useEditorToolState(this);
+    },
   },
 ];
 
 export const lintAndTestJSTool: [string, ToolsOptions] = [
   'lintAndTestJS',
   {
-    async invoke(this: FlowContextToolState, app, args: { code?: unknown }) {
-      let editorState: ReturnType<typeof getEditorState> | undefined;
+    async invoke(this: FlowEditorToolState, app, args: { code?: unknown }) {
+      let editorState: ReturnType<typeof getEditorState> | null;
       try {
-        if (typeof args?.code === 'string') {
-          assertLegacyToolAvailable();
-        } else {
-          editorState = getEditorState();
-        }
+        assertLegacyToolAvailable(this);
+        editorState = typeof args?.code === 'string' ? null : getEditorState(this);
       } catch (error) {
         return {
           status: 'error',
@@ -419,10 +414,7 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
       try {
-        const code = typeof args?.code === 'string' ? args.code : editorState?.code;
-        if (typeof code !== 'string') {
-          throw new Error('Current code editor is not available.');
-        }
+        const code = typeof args?.code === 'string' ? args.code : editorState.code;
         const content = await ctx.previewRunJS(code);
         let ranCurrentEditor = false;
         if (editorState && isPreviewSuccess(content) && typeof editorState.editorRef.run === 'function') {
@@ -449,12 +441,10 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
     },
-    useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
-      const flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      this.flowContext = flowContext;
-      return this;
+    useHooks(this: FlowEditorToolState) {
+      const chat = useCurrentRuntimeChat();
+      this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
+      return useEditorToolState(this);
     },
   },
 ];

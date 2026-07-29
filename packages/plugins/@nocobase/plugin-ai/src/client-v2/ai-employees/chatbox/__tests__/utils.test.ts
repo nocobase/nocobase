@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { isCurrentLiveMessage, parseWorkContext } from '../utils';
+import { isCurrentLiveMessage, parseTask, parseWorkContext } from '../utils';
 
 describe('client-v2 chatbox utils', () => {
   it('matches live messages by rendered message id', () => {
@@ -113,5 +113,22 @@ describe('client-v2 chatbox utils', () => {
     await expect(
       parseWorkContext(app, [{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [staleTool] }]),
     ).resolves.toEqual([{ type: 'code-workspace', uid: 'workspace-1', frontendTools: [] }]);
+  });
+
+  it('flattens valid task attachments and ignores entries without a filename', async () => {
+    const first = { id: 1, filename: 'first.txt' };
+    const second = { id: 2, filename: 'second.txt' };
+
+    await expect(
+      parseTask({
+        message: {
+          user: 'Summarize the files',
+          attachments: [first, [second, { id: 3 }]],
+        },
+      }),
+    ).resolves.toMatchObject({
+      userMessage: { type: 'text', content: 'Summarize the files' },
+      attachments: [first, second],
+    });
   });
 });

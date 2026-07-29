@@ -12,14 +12,19 @@ import { observer } from '@nocobase/flow-engine';
 import { AIEmployeeDropdown } from '../../AIEmployeeDropdown';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
-import { useChatBoxStore } from '../stores/chat-box';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 export const AIEmployeeSwitcher: React.FC<{
   disabled?: boolean;
-}> = observer(({ disabled }) => {
+  allowedUsernames?: string[];
+}> = observer(({ disabled, allowedUsernames }) => {
   const repository = useAIConfigRepository();
-  const aiEmployees = repository.aiEmployees;
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const allowedUsernameSet = allowedUsernames?.length ? new Set(allowedUsernames) : null;
+  const aiEmployees = allowedUsernameSet
+    ? repository.aiEmployees.filter((employee) => allowedUsernameSet.has(employee.username))
+    : repository.aiEmployees;
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const { switchAIEmployee } = useChatBoxActions();
 
   useEffect(() => {

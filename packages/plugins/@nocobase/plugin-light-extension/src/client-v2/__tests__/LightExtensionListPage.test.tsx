@@ -470,6 +470,39 @@ describe('LightExtensionListPage', () => {
     expect(screen.queryByText('LIGHT_EXTENSION_SYNC_RATE_LIMITED')).not.toBeInTheDocument();
   });
 
+  it('submits an unresolved branch and explains when an empty remote needs an explicit branch', async () => {
+    mocks.sync.createFromGit.mockRejectedValueOnce(
+      new LightExtensionSyncHookError({
+        operation: 'createFromGit',
+        code: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+        status: 422,
+        message: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+        details: { reasonCode: 'default-branch-unavailable' },
+      }),
+    );
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'Empty Git remote');
+    await userEvent.click(within(dialog).getByText('Git source'));
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/nocobase/empty.git',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    await waitFor(() =>
+      expect(mocks.sync.createFromGit).toHaveBeenCalledWith(
+        expect.objectContaining({ config: expect.objectContaining({ branch: null }) }),
+      ),
+    );
+    expect(
+      await screen.findByText('The remote repository has no default branch. Enter a branch explicitly.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('LIGHT_EXTENSION_SYNC_CONFIG_INVALID')).not.toBeInTheDocument();
+  });
+
   it('refreshes the ready repository and notifies once after an observed creation succeeds', async () => {
     const pending = createJobSummary();
     mocks.createJobs.initialJobs = [pending];

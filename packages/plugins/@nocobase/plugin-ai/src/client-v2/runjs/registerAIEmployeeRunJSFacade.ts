@@ -15,6 +15,7 @@ type AIEmployeeRunJSFlowContext = {
 };
 
 type AIEmployeeRunJSFacadeManager = {
+  uploadFile: (...args: unknown[]) => Promise<unknown>;
   triggerTask: (...args: unknown[]) => void;
   triggerModelTask: (...args: unknown[]) => void;
 };
@@ -33,21 +34,34 @@ export const registerPluginAIRunJSContextContribution = () => {
           description: 'AI employee task API.',
           detail: 'AI employee facade',
           properties: {
+            uploadFile: {
+              type: 'function',
+              description: 'Upload a file for use as an AI employee task attachment.',
+              detail:
+                '(file: File, options?: { onProgress?: (percent: number) => void; signal?: AbortSignal }) => Promise<Attachment>',
+              completion: {
+                insertText: `await ctx.ai.uploadFile(file)`,
+              },
+              examples: [`const attachment = await ctx.ai.uploadFile(file)`],
+            },
             triggerTask: {
               type: 'function',
               description: 'Trigger an AI employee task. This is fire-and-forget and does not return a task result.',
               detail:
-                '(options: { aiEmployee?: string | AIEmployee; tasks?: Task[]; auto?: boolean; open?: boolean }) => void',
+                '(options: { aiEmployee?: string | AIEmployee; tasks?: Task[]; chatBoxUid?: string; auto?: boolean; open?: boolean; onResponseLoadingChange?: (loading: boolean) => void }) => void',
               completion: {
                 insertText: `ctx.ai.triggerTask({ aiEmployee: 'username', tasks: [] })`,
               },
-              examples: [`ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true })`],
+              examples: [
+                `ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], chatBoxUid: 'ai-chat-box-uid', open: true })`,
+              ],
             },
             triggerModelTask: {
               type: 'function',
               description:
                 'Trigger a task from a Flow model by uid and 0-based task index. This is fire-and-forget and does not return a task result.',
-              detail: '(uid: string, taskIndex: number, options?: { auto?: boolean; open?: boolean }) => void',
+              detail:
+                '(uid: string, taskIndex: number, options?: { auto?: boolean; open?: boolean; attachments?: Attachment[]; onResponseLoadingChange?: (loading: boolean) => void }) => void',
               completion: {
                 insertText: `ctx.ai.triggerModelTask('flow-model-uid', 0)`,
               },
@@ -119,6 +133,7 @@ export const registerPluginAIRunJSFacade = (
 ) => {
   context.defineProperty('ai', {
     value: {
+      uploadFile: aiManager.uploadFile.bind(aiManager),
       triggerTask: aiManager.triggerTask.bind(aiManager),
       triggerModelTask: aiManager.triggerModelTask.bind(aiManager),
     },

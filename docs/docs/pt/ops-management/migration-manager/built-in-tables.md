@@ -336,9 +336,8 @@ A coluna “Tipo de dados” vem da classificação integrada. Dados base do sis
 | Tabela | Descrição | Tipo de dados | Estratégia padrão | Controle de versão | Backup/restauração |
 | --- | --- | --- | --- | --- | --- |
 | `aiKnowledgeBaseDocs` | Document chunks and index metadata stored in knowledge bases | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
-| `aiKnowledgeBase` | Knowledge-base type, external ID, and base information | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
+| `aiKnowledgeBase` | Tipo de base de conhecimento, ID externo, banco de dados vetorial, serviço LLM, modelo de embedding e informações básicas | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
 | `aiVectorDatabases` | Vector database service and connection configuration | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
-| `aiVectorStoreConfig` | Relationship between vector database connections and embedding models | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
 
 ### Environment variables
 

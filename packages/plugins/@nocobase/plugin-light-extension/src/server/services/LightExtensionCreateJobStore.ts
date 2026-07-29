@@ -231,11 +231,20 @@ export class LightExtensionCreateJobStore {
     jobId: string,
     run: (record: Model | null, transaction: Transaction) => Promise<T>,
   ): Promise<T> {
-    return this.db.sequelize.transaction(async (transaction) => {
-      const model = this.db.getModel<Model>('lightExtensionCreateJobs');
-      const record = await model.findByPk(jobId, { transaction, lock: transaction.LOCK.UPDATE });
-      return run(record, transaction);
-    });
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.db.sequelize.transaction(async (transaction) => {
+          const model = this.db.getModel<Model>('lightExtensionCreateJobs');
+          const record = await model.findByPk(jobId, { transaction, lock: transaction.LOCK.UPDATE });
+          return run(record, transaction);
+        });
+      } catch (error) {
+        if (this.db.sequelize.getDialect() !== 'sqlite' || !isSqliteBusyError(error) || attempt >= 2) {
+          throw error;
+        }
+        await delay(100);
+      }
+    }
   }
 }
 
@@ -334,6 +343,21 @@ function validateTimeout(timeoutMs: number): void {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
     throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Creation job timeout must be a positive integer');
   }
+}
+
+function isSqliteBusyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    original?: { code?: unknown };
+    parent?: { code?: unknown };
+  };
+  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function createNameConflict(name: string, normalizedName: string): LightExtensionError {

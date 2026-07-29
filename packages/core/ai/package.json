@@ -27,7 +27,7 @@
     "gray-matter": "^4.0.3",
     "langchain": "1.2.39",
     "mammoth": "^1.10.0",
-    "officeparser": "^5.2.0",
+    "officeparser": "^6.0.4",
     "pdf-parse": "^1.1.1",
     "word-extractor": "^1.0.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

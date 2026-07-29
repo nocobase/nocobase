@@ -103,10 +103,9 @@ export const conversationMiddleware = (
         }),
     }),
     beforeAgent: async (state) => {
-      const lastHumanMessageIndex = state.lastMessageIndex.lastHumanMessageIndex;
-      const userMessages = state.messages
-        .filter((x) => x.type === 'human')
-        .slice(lastHumanMessageIndex)
+      const humanMessages = state.messages.filter((x) => x.type === 'human');
+      const currentHumanMessageIndex = humanMessages.length;
+      const userMessages = (aiEmployee.userMessageCount ? humanMessages.slice(-aiEmployee.userMessageCount) : [])
         .map((x) => x as HumanMessage)
         .map(convertHumanMessage);
       await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
@@ -120,6 +119,12 @@ export const conversationMiddleware = (
           await conversation.addMessages(userMessages);
         }
       });
+      return {
+        lastMessageIndex: {
+          ...state.lastMessageIndex,
+          lastHumanMessageIndex: currentHumanMessageIndex,
+        },
+      };
     },
     afterAgent: async () => {
       aiEmployee.removeAbortController();

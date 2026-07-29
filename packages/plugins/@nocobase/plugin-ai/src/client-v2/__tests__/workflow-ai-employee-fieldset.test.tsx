@@ -17,6 +17,11 @@ import { Assignees } from '../workflow/nodes/employee/components/Assignees';
 import { FeedbackSettings } from '../workflow/nodes/employee/components/FeedbackSettings';
 import { SkillSettings } from '../workflow/nodes/employee/components/SkillSettings';
 import { StructuredOutput } from '../workflow/nodes/employee/components/StructuredOutput';
+import { UserInput } from '../workflow/nodes/employee/components/UserInput';
+
+const { useWorkflowVariableOptions } = vi.hoisted(() => ({
+  useWorkflowVariableOptions: vi.fn((_options?: { types?: Array<(field: unknown) => boolean> }) => []),
+}));
 
 vi.mock('../locale', () => ({
   NAMESPACE: '@nocobase/plugin-ai',
@@ -26,8 +31,25 @@ vi.mock('../locale', () => ({
 }));
 
 vi.mock('@nocobase/flow-engine', () => ({
-  FlowContextSelector: ({ onChange }: { onChange?: (value: string) => void }) => (
-    <button type="button" aria-label="workflow-variable-selector" onClick={() => onChange?.('{{$context.user.id}}')}>
+  FlowContextSelector: ({
+    value,
+    onChange,
+    onlyLeafSelectable,
+    dropdownFooter,
+  }: {
+    value?: string;
+    onChange?: (value: string) => void;
+    onlyLeafSelectable?: boolean;
+    dropdownFooter?: React.ReactNode;
+  }) => (
+    <button
+      type="button"
+      aria-label="workflow-variable-selector"
+      data-value={value}
+      data-only-leaf-selectable={String(onlyLeafSelectable)}
+      data-dropdown-footer={dropdownFooter === null ? 'none' : 'present'}
+      onClick={() => onChange?.('{{$context.user.id}}')}
+    >
       x
     </button>
   ),
@@ -86,7 +108,6 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => {
       onChange={(event) => onChange?.(JSON.parse(event.target.value) as Record<string, unknown>)}
     />
   );
-  const useWorkflowVariableOptions = () => [];
   class Instruction {}
 
   return {
@@ -168,6 +189,24 @@ describe('AI employee workflow fieldset', () => {
     const instruction = new AIEmployeeInstruction();
 
     await expect(instruction.FieldsetLoader()).resolves.toEqual({ default: AIEmployeeFieldset });
+  });
+
+  it('accepts context user variables without selecting parent variable categories', () => {
+    const onChange = vi.fn();
+    render(<UserInput value="{{$context.data}}" onChange={onChange} />);
+
+    const selector = screen.getByRole('button', { name: 'workflow-variable-selector' });
+    expect(selector).toHaveAttribute('data-value', '{{$context.data}}');
+    expect(selector).toHaveAttribute('data-only-leaf-selectable', 'true');
+    expect(selector).toHaveAttribute('data-dropdown-footer', 'none');
+
+    const options = useWorkflowVariableOptions.mock.calls.at(-1)?.[0];
+    const [isUserKeyField] = options?.types ?? [];
+    expect(isUserKeyField({ type: 'context', target: 'users' })).toBe(true);
+    expect(isUserKeyField({ type: 'context', target: 'posts' })).toBe(false);
+
+    fireEvent.click(selector);
+    expect(onChange).toHaveBeenCalledWith('{{$context.user.id}}');
   });
 
   it('keeps structured output and normalized approval mode under config when submitted', async () => {

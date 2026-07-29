@@ -19,7 +19,6 @@ export const RENDER_MODEL_USES = new Set([
   'JSFieldModel',
   'JSItemModel',
   'JSEditableFieldModel',
-  'FormJSFieldItemModel',
   'JSItemActionModel',
 ]);
 
@@ -75,10 +74,9 @@ export const SURFACE_ALLOWED_MODEL_USES: Record<string, Set<string>> = {
     'JSRecordActionModel',
     'JSCollectionActionModel',
     'JSItemActionModel',
-    'FormJSFieldItemModel',
   ]),
-  'reaction.value-runjs': new Set(['JSEditableFieldModel', 'JSItemModel', 'FormJSFieldItemModel']),
-  'custom-variable.runjs': new Set(['JSEditableFieldModel', 'JSItemModel', 'FormJSFieldItemModel']),
+  'reaction.value-runjs': new Set(['JSEditableFieldModel', 'JSItemModel']),
+  'custom-variable.runjs': new Set(['JSEditableFieldModel', 'JSItemModel']),
   'js-model.render': RENDER_MODEL_USES,
   'js-model.action': ACTION_MODEL_USES,
 };

@@ -127,7 +127,7 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('"authRef":');
   });
 
-  it('accepts a direct token while masking it from the response and request context', async () => {
+  it('rejects a direct credential without persisting or exposing it', async () => {
     const directToken = 'github_pat_test_direct_123';
     const fixture = createFixture();
     const ctx = await runAction(
@@ -142,10 +142,17 @@ describe('lightExtensionSync resource', () => {
       ['manageSyncSource'],
     );
 
-    expect(ctx.status).toBeUndefined();
-    expect(fixture.runtime.testTarget).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
-    expect(fixture.runtime.configureRemote).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
-    expect(ctx.body).toMatchObject({ source: { credentialConfigured: true, authRefDisplay: '********' } });
+    expect(ctx.status).toBe(422);
+    expect(fixture.runtime.testTarget).not.toHaveBeenCalled();
+    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
+    expect(ctx.body).toMatchObject({
+      errors: [
+        {
+          code: 'LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID',
+          details: { reasonCode: 'secret-variable-required' },
+        },
+      ],
+    });
     expect(JSON.stringify(ctx)).not.toContain(directToken);
     expect(JSON.stringify(ctx.body)).not.toContain(directToken);
   });

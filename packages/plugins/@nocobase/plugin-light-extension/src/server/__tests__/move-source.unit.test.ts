@@ -9,7 +9,6 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildApplicationDefaultLightExtensionIdentity } from '../services/LightExtensionRepoService';
 import { relocateRunJSWorkspace } from '../services/MoveSourceService';
 import { collectAndRelocateInlineFiles } from '../services/MoveToInlineService';
 
@@ -183,15 +182,6 @@ describe('move source relocation', () => {
     expect(code).toContain('export type JSPageContext<TSettings = Record<string, unknown>>');
     expect(code).toContain('type ImportedSettings = Record<string, unknown>;');
     expect(code).toContain('type ImportedContext = (typeof ctx & { settings: ImportedSettings });');
-  });
-
-  it('derives one stable default repository identity per application', () => {
-    expect(buildApplicationDefaultLightExtensionIdentity('sales-app')).toEqual(
-      buildApplicationDefaultLightExtensionIdentity('sales-app'),
-    );
-    expect(buildApplicationDefaultLightExtensionIdentity('sales-app')).not.toEqual(
-      buildApplicationDefaultLightExtensionIdentity('support-app'),
-    );
   });
 
   it('relocates the current multi-file workspace and rewrites relative imports', () => {

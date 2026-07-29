@@ -88,7 +88,11 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
 
   const setSafeError = useCallback((error: unknown) => {
     const code = error instanceof LightExtensionSyncHookError ? error.code : undefined;
-    setErrorKey(getLightExtensionSyncErrorTranslationKey(code) || 'Unable to complete sync operation');
+    const reasonCode =
+      error instanceof LightExtensionSyncHookError && typeof error.details?.reasonCode === 'string'
+        ? error.details.reasonCode
+        : undefined;
+    setErrorKey(getLightExtensionSyncErrorTranslationKey(code, reasonCode) || 'Unable to complete sync operation');
   }, []);
 
   const isCurrentRequest = useCallback(

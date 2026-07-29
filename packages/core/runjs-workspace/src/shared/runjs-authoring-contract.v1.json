@@ -12,7 +12,6 @@
       "JSEditableFieldModel",
       "JSColumnModel",
       "JSItemModel",
-      "FormJSFieldItemModel",
       "JSItemActionModel",
       "JSActionModel",
       "JSRecordActionModel",
@@ -24,7 +23,7 @@
   "externalization": {
     "available": true,
     "entryKinds": ["js-block", "js-page", "js-field", "js-action", "js-item"],
-    "destinationTypes": ["existing", "new", "default"],
+    "destinationTypes": ["existing", "new"],
     "supportsIdempotency": true,
     "supportsMoveToInline": true
   }

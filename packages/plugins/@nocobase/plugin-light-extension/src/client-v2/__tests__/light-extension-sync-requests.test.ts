@@ -121,8 +121,8 @@ describe('light-extension sync requests', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it('accepts a literal token in authRef', async () => {
-    const request = vi.fn().mockResolvedValue({ data: { data: { ok: true } } });
+  it('rejects a literal credential in authRef before calling the API', async () => {
+    const request = vi.fn();
     const api: ApiClientLike = { request };
     const input = {
       repoId: 'repo-1',
@@ -131,14 +131,10 @@ describe('light-extension sync requests', () => {
       authRef: 'github_pat_test_direct_123',
     };
 
-    await requestLightExtensionSync(api, 'configure', input);
-
-    expect(request).toHaveBeenCalledWith({
-      url: 'lightExtensionSync:configure',
-      method: 'post',
-      data: input,
-      skipNotify: true,
-    });
+    await expect(requestLightExtensionSync(api, 'configure', input)).rejects.toBeInstanceOf(
+      LightExtensionSyncRequestInputError,
+    );
+    expect(request).not.toHaveBeenCalled();
   });
 
   it('rejects fields outside the facade contract', async () => {
@@ -164,18 +160,23 @@ describe('light-extension sync requests', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it('rejects a Git config without a branch', async () => {
-    const request = vi.fn();
+  it('accepts a Git config with an unresolved branch', async () => {
+    const request = vi.fn().mockResolvedValue({ data: { data: { ok: true } } });
     const api: ApiClientLike = { request };
+    const input = {
+      name: 'sales',
+      provider: 'git' as const,
+      config: { ...gitConfig(), branch: null },
+    };
 
-    await expect(
-      requestLightExtensionSync(api, 'createFromGit', {
-        name: 'sales',
-        provider: 'git',
-        config: { ...gitConfig(), branch: null },
-      }),
-    ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
-    expect(request).not.toHaveBeenCalled();
+    await requestLightExtensionSync(api, 'createFromGit', input);
+
+    expect(request).toHaveBeenCalledWith({
+      url: 'lightExtensionSync:createFromGit',
+      method: 'post',
+      data: input,
+      skipNotify: true,
+    });
   });
 });
 

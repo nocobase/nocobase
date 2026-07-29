@@ -75,12 +75,14 @@ describe('Light Extension runtime commands', () => {
     );
   });
 
-  it('generates action help for externalization with all destination forms, idempotency, and body-file examples', async () => {
+  it('generates action help for externalization with explicit destinations, idempotency, and body-file examples', async () => {
     const commands = await generateLightExtensionCommands();
     const moveSource = findCommand(commands, 'light-extensions move-source');
 
     expect(moveSource.summary).toContain('externalize a complete inline RunJS workspace');
-    expect(moveSource.description).toContain('destination supports default, existing, and new');
+    expect(moveSource.description).toContain(
+      'destination must select an existing Repository or describe a new Repository',
+    );
     expect(moveSource.description).toContain('idempotencyKey');
     expect(moveSource.description).toContain('HTTP POST /lightExtensions:moveSource');
     expect(moveSource.examples).toEqual(['nb api light-extensions move-source --body-file <path>']);
@@ -102,23 +104,29 @@ describe('Light Extension runtime commands', () => {
     );
 
     const flags = createGeneratedFlags(moveSource);
-    expect(flags.destination.description).toContain('default');
+    expect(flags.destination.description).not.toContain('default');
     expect(flags.destination.description).toContain('existing');
     expect(flags.destination.description).toContain('new');
     expect(flags['idempotency-key'].description).toContain('retry key');
     expect(flags['body-file'].helpGroup).toBe('Raw JSON Body');
   });
 
-  it('generates move-back and reusable Entry help without claiming move-back idempotency', async () => {
+  it('generates idempotent move-back and reusable Entry help', async () => {
     const commands = await generateLightExtensionCommands();
     const moveToInline = findCommand(commands, 'light-extensions move-to-inline');
     const listSelectable = findCommand(commands, 'light-extension-entries list-selectable');
 
     expect(moveToInline.summary).toContain('relocate a complete reachable Light Extension Entry workspace');
-    expect(moveToInline.description).toContain('does not accept an idempotency key');
-    expect(moveToInline.parameters.some((parameter) => parameter.name === 'idempotencyKey')).toBe(false);
+    expect(moveToInline.description).toContain('idempotencyKey is required');
+    expect(moveToInline.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'idempotencyKey', flagName: 'idempotency-key', required: true }),
+      ]),
+    );
     expect(moveToInline.examples).toEqual(['nb api light-extensions move-to-inline --body-file <path>']);
-    expect(createGeneratedFlags(moveToInline)['body-file'].helpGroup).toBe('Raw JSON Body');
+    const moveToInlineFlags = createGeneratedFlags(moveToInline);
+    expect(moveToInlineFlags['idempotency-key'].description).toContain('retry key');
+    expect(moveToInlineFlags['body-file'].helpGroup).toBe('Raw JSON Body');
 
     expect(listSelectable.summary).toContain('List compiled Entries');
     expect(listSelectable.parameters.map((parameter) => parameter.flagName)).toEqual(['repo-id', 'kind']);

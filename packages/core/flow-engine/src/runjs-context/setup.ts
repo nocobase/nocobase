@@ -29,7 +29,6 @@ export async function setupRunJSContexts() {
     { JSEditableFieldRunJSContext },
     { JSItemRunJSContext },
     { JSColumnRunJSContext },
-    { FormJSFieldItemRunJSContext },
     { JSRecordActionRunJSContext },
     { JSCollectionActionRunJSContext },
   ] = await Promise.all([
@@ -41,7 +40,6 @@ export async function setupRunJSContexts() {
     import('./contexts/JSEditableFieldRunJSContext'),
     import('./contexts/JSItemRunJSContext'),
     import('./contexts/JSColumnRunJSContext'),
-    import('./contexts/FormJSFieldItemRunJSContext'),
     import('./contexts/JSRecordActionRunJSContext'),
     import('./contexts/JSCollectionActionRunJSContext'),
   ]);
@@ -57,7 +55,6 @@ export async function setupRunJSContexts() {
     RunJSContextRegistry.register(version, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSItemActionModel', JSItemRunJSContext, { scenes: ['table'] });
     RunJSContextRegistry.register(version, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
-    RunJSContextRegistry.register(version, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
     RunJSContextRegistry.register(version, 'JSCollectionActionModel', JSCollectionActionRunJSContext, {
       scenes: ['table'],

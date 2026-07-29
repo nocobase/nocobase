@@ -8,10 +8,12 @@
  */
 
 import { stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
+import {
+  RUNJS_COMPILER_BUILD_IDENTITY,
+  type RunJSCompilerBuildIdentity,
+} from '@nocobase/runjs/compiler/build-identity';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
-import type { RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler/build-identity';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
-import { createRequire } from 'node:module';
 import { posix as pathPosix } from 'path';
 
 import {
@@ -109,21 +111,9 @@ export interface LightExtensionCompilerBuildIdentity {
   runjs: RunJSCompilerBuildIdentity;
 }
 
-const requireCompiler = createRequire(__filename);
-
-function getRunJSCompilerBuildIdentity(): RunJSCompilerBuildIdentity {
-  return (
-    requireCompiler('@nocobase/runjs/compiler/build-identity') as {
-      RUNJS_COMPILER_BUILD_IDENTITY: RunJSCompilerBuildIdentity;
-    }
-  ).RUNJS_COMPILER_BUILD_IDENTITY;
-}
-
 export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS: Readonly<LightExtensionCompilerBuildIdentityComponents> =
   Object.freeze({
-    get runjsCompilerBuildId() {
-      return getRunJSCompilerBuildIdentity().compilerBuildId;
-    },
+    runjsCompilerBuildId: RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId,
     compilerBridgeContract: LIGHT_EXTENSION_COMPILER_BRIDGE_CONTRACT_VERSION,
     importRewritePolicy: LIGHT_EXTENSION_IMPORT_REWRITE_POLICY_VERSION,
     importSecurityPolicy: LIGHT_EXTENSION_IMPORT_SECURITY_POLICY_VERSION,
@@ -139,7 +129,7 @@ export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS: Readonly<LightE
 
 export function buildLightExtensionCompilerBuildIdentity(
   components: LightExtensionCompilerBuildIdentityComponents = LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS,
-  runjs: RunJSCompilerBuildIdentity = getRunJSCompilerBuildIdentity(),
+  runjs: RunJSCompilerBuildIdentity = RUNJS_COMPILER_BUILD_IDENTITY,
 ): LightExtensionCompilerBuildIdentity {
   const normalizedComponents = { ...components };
   return {

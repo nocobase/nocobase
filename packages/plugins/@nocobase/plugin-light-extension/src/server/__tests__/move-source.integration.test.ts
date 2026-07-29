@@ -9,7 +9,6 @@
 
 import type { Context } from '@nocobase/actions';
 import type { Database, Model, Transaction } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
 import { createHash } from 'crypto';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -20,24 +19,15 @@ import type {
   LightExtensionRepoRecord,
 } from '../../shared/types';
 import swaggerDocument from '../../swagger';
-import PluginLightExtensionServer from '../plugin';
 import { createLightExtensionsResource } from '../resources/lightExtensions';
-import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
-import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
-import { LightExtensionFileService } from '../services/LightExtensionFileService';
-import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import {
   MoveSourceService,
   PersistentMoveSourceSnapshotValidator,
   relocateRunJSWorkspace,
 } from '../services/MoveSourceService';
+import { MoveOperationStore } from '../services/MoveOperationStore';
 import { isMoveToInlineHostSupported, MoveToInlineService } from '../services/MoveToInlineService';
-import { buildApplicationDefaultLightExtensionIdentity } from '../services/LightExtensionRepoService';
-import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
-import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
-import { LightExtensionValidator } from '../services/LightExtensionValidator';
-import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 import {
   buildRunJSFilesHash,
   type RunJSSourceAdapterRegistry,
@@ -299,8 +289,6 @@ describe('MoveSourceService', () => {
   );
 
   it('creates a new repository with a compiled JS Page entry before binding it', async () => {
-    const transaction = { id: 'tx_create' } as unknown as Transaction;
-    const recordLifecycleEvent = vi.fn(async () => undefined);
     let reservedRepoId = '';
     const createdRepo = { ...repo, name: 'sales-tools', normalizedName: 'sales-tools' };
     const createdEntry = {
@@ -333,10 +321,11 @@ describe('MoveSourceService', () => {
     const service = new MoveSourceService(
       {
         sequelize: {
-          transaction: (run: (transaction: Transaction) => Promise<unknown>) => run(transaction),
+          transaction: (run: (transaction: Transaction) => Promise<unknown>) =>
+            run({ id: 'tx_create' } as unknown as Transaction),
         },
       } as unknown as Database,
-      { createRepoForCompositeUseCase: createRepo, assertApplicationOwnership: vi.fn() } as never,
+      { createRepo, assertApplicationOwnership: vi.fn() } as never,
       {} as never,
       {
         listEntries: vi.fn(async () => {
@@ -367,7 +356,6 @@ describe('MoveSourceService', () => {
       'main',
       { assertCurrent: vi.fn() },
     );
-    service.useAuditService({ recordLifecycleEvent } as never);
 
     const result = await service.moveSource(
       {
@@ -381,7 +369,7 @@ describe('MoveSourceService', () => {
         destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
         entryName: 'sales-kpi',
       },
-      { adapterContext: {}, requestId: 'req_move_source' },
+      { adapterContext: {} },
     );
 
     const createInput = createRepo.mock.calls[0][0];
@@ -414,21 +402,6 @@ describe('MoveSourceService', () => {
       entryId: createdEntry.id,
       entryPath: createdEntry.entryPath,
       kind: 'js-page',
-    });
-    expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
-    expect(recordLifecycleEvent).toHaveBeenCalledWith({
-      repoId: reservedRepoId,
-      action: 'moveSource',
-      result: 'success',
-      requestId: 'req_move_source',
-      actorUserId: undefined,
-      message: 'RunJS source moved to a light extension',
-      details: {
-        destinationType: 'new',
-        entryId: createdEntry.id,
-        kind: 'js-page',
-      },
-      transaction,
     });
   });
 
@@ -632,13 +605,12 @@ describe('MoveSourceService', () => {
     expect(saveSource).not.toHaveBeenCalled();
   });
 
-  it('authorizes before reserving an operation or resolving the default repo', async () => {
+  it('marks a reserved operation as failed when authorization rejects the request', async () => {
     const operationModel = createMoveOperationModel();
-    const getRepo = vi.fn();
+    const saveSource = vi.fn();
     const service = createFailureService({
-      saveSource: vi.fn(),
+      saveSource,
       operationModel,
-      getRepo,
       assertCanWrite: vi.fn(async () => {
         throw new Error('permission denied');
       }),
@@ -647,92 +619,106 @@ describe('MoveSourceService', () => {
     await expect(
       service.moveSource(
         createMoveSourceInput({
-          destination: { type: 'default' },
-          idempotencyKey: 'move-default-sales-kpi',
+          idempotencyKey: 'move-existing-sales-kpi',
         }),
         { adapterContext: {} },
       ),
     ).rejects.toThrow('permission denied');
 
     expect(operationModel.model.findOne).toHaveBeenCalledOnce();
-    expect(operationModel.model.findOrCreate).not.toHaveBeenCalled();
-    expect(getRepo).not.toHaveBeenCalled();
+    expect(operationModel.model.findOrCreate).toHaveBeenCalledOnce();
+    expect(operationModel.getValues()).toMatchObject({ status: 'failed', errorCode: 'Error' });
+    expect(saveSource).not.toHaveBeenCalled();
   });
 
-  it('validates the source snapshot before reserving an operation or resolving the default repo', async () => {
+  it('marks a reserved operation as failed when source snapshot validation rejects the request', async () => {
     const operationModel = createMoveOperationModel();
-    const getRepo = vi.fn();
+    const saveSource = vi.fn();
     const sourceSnapshotValidator = {
       assertCurrent: vi.fn(async () => {
         throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_OUTDATED', 'source changed');
       }),
     };
     const service = createFailureService({
-      saveSource: vi.fn(),
+      saveSource,
       operationModel,
-      getRepo,
       sourceSnapshotValidator,
     });
 
     await expect(
       service.moveSource(
         createMoveSourceInput({
-          destination: { type: 'default' },
-          idempotencyKey: 'move-stale-default-sales-kpi',
+          idempotencyKey: 'move-stale-existing-sales-kpi',
         }),
         { adapterContext: {} },
       ),
     ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_SOURCE_OUTDATED' });
 
     expect(sourceSnapshotValidator.assertCurrent).toHaveBeenCalledOnce();
-    expect(operationModel.model.findOrCreate).not.toHaveBeenCalled();
-    expect(getRepo).not.toHaveBeenCalled();
+    expect(operationModel.model.findOrCreate).toHaveBeenCalledOnce();
+    expect(operationModel.getValues()).toMatchObject({
+      status: 'failed',
+      errorCode: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
+    });
+    expect(saveSource).not.toHaveBeenCalled();
   });
 
-  it('reuses the stable application default repo through the existing publish path', async () => {
-    const identity = buildApplicationDefaultLightExtensionIdentity('sales-app');
-    const defaultRepo = { ...repo, id: identity.repoId, name: identity.name, normalizedName: identity.name };
-    const defaultEntry = { ...entry, repoId: identity.repoId };
-    const getRepo = vi.fn(async () => defaultRepo);
-    const saveSource = vi.fn(async () => ({ repo: defaultRepo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+  it('uses a repository created under the former contract as an explicit existing destination', async () => {
+    const historicalRepo = {
+      ...repo,
+      id: 'ler_app_historical',
+      name: 'application-extensions-legacy',
+      normalizedName: 'application-extensions-legacy',
+    };
+    const historicalEntry = { ...entry, repoId: historicalRepo.id };
+    const saveSource = vi.fn(async () => ({
+      repo: historicalRepo,
+      commit: {},
+      tree: {},
+      compile: {},
+      diagnostics: [],
+    }));
     const service = createFailureService({
-      destinationRepo: defaultRepo,
-      movedEntry: defaultEntry,
+      destinationRepo: historicalRepo,
+      movedEntry: historicalEntry,
       saveSource,
-      getRepo,
-      applicationName: 'sales-app',
     });
 
     await expect(
-      service.moveSource(createMoveSourceInput({ destination: { type: 'default' } }), { adapterContext: {} }),
+      service.moveSource(createMoveSourceInput({ destination: { type: 'existing', repoId: historicalRepo.id } }), {
+        adapterContext: {},
+      }),
     ).resolves.toMatchObject({
-      repo: { id: identity.repoId },
-      entry: { id: defaultEntry.id, repoId: identity.repoId },
+      repo: { id: historicalRepo.id, name: historicalRepo.name },
+      entry: { id: historicalEntry.id, repoId: historicalRepo.id },
     });
 
-    expect(getRepo).toHaveBeenCalledWith(identity.repoId, expect.objectContaining({ adapterContext: {} }));
     expect(saveSource).toHaveBeenCalledOnce();
   });
 
-  it('atomically creates the first application default repo and replays its persisted result', async () => {
-    const identity = buildApplicationDefaultLightExtensionIdentity('sales-app');
-    const transaction = { id: 'tx_default_create' } as unknown as Transaction;
+  it('creates one new repository and entry when the completed operation is replayed', async () => {
+    const transaction = { id: 'tx_new_create' } as unknown as Transaction;
     const operationModel = createMoveOperationModel();
-    const defaultRepo = {
+    let reservedRepoId = '';
+    const createdRepo = {
       ...repo,
-      id: identity.repoId,
-      name: identity.name,
-      normalizedName: identity.name,
-      title: identity.title,
+      name: 'sales-tools',
+      normalizedName: 'sales-tools',
+      title: 'Sales tools',
     };
-    const defaultEntry = { ...entry, repoId: identity.repoId };
-    const createRepo = vi.fn(async () => defaultRepo);
+    const createRepo = vi.fn(async (_input: unknown, _ctx: unknown, options: { repoId: string }) => ({
+      ...createdRepo,
+      id: options.repoId,
+    }));
     const prepared = {};
-    const prepareInitialWorkspace = vi.fn(async () => prepared);
+    const prepareInitialWorkspace = vi.fn(async (input: { repoId: string }) => {
+      reservedRepoId = input.repoId;
+      return prepared;
+    });
     const publishPreparedInitialWorkspace = vi.fn(async () => ({
-      repo: defaultRepo,
+      repo: { ...createdRepo, id: reservedRepoId },
       status: 'success',
-      entries: [defaultEntry],
+      entries: [{ ...entry, repoId: reservedRepoId }],
       diagnostics: [],
     }));
     const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
@@ -750,13 +736,10 @@ describe('MoveSourceService', () => {
         },
       } as unknown as Database,
       {
-        getRepo: vi.fn(async () => {
-          throw new LightExtensionError('LIGHT_EXTENSION_REPO_NOT_FOUND', 'not found');
-        }),
-        createRepoForCompositeUseCase: createRepo,
+        createRepo,
       } as never,
       {} as never,
-      { listEntries: vi.fn(async () => [defaultEntry]) } as never,
+      { listEntries: vi.fn(async () => [{ ...entry, repoId: reservedRepoId }]) } as never,
       { prepareInitialWorkspace, publishPreparedInitialWorkspace } as never,
       { syncFlowModelReferencesForNodeTree: syncReferences } as never,
       () =>
@@ -777,32 +760,33 @@ describe('MoveSourceService', () => {
             getFingerprint: vi.fn(async () => 'owner_after'),
           }),
         }) as unknown as RunJSSourceAdapterRegistry,
-      'sales-app',
+      'main',
       { assertCurrent: vi.fn() },
     );
 
     const input = createMoveSourceInput({
-      destination: { type: 'default' },
-      idempotencyKey: 'move-first-default-sales-kpi',
+      destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
+      idempotencyKey: 'move-new-sales-kpi',
     });
     const first = await service.moveSource(input, { adapterContext: {} });
     const replay = await service.moveSource(input, { adapterContext: {} });
 
-    expect(first).toMatchObject({ repo: { id: identity.repoId }, entry: { repoId: identity.repoId } });
+    expect(reservedRepoId).toMatch(/^ler_/);
+    expect(first).toMatchObject({ repo: { id: reservedRepoId }, entry: { repoId: reservedRepoId } });
     expect(replay).toEqual(first);
 
     expect(prepareInitialWorkspace).toHaveBeenCalledWith(
-      expect.objectContaining({ repoId: identity.repoId }),
+      expect.objectContaining({ repoId: reservedRepoId }),
       expect.not.objectContaining({ transaction: expect.anything() }),
     );
     expect(createRepo).toHaveBeenCalledWith(
-      expect.objectContaining({ name: identity.name, title: identity.title }),
+      expect.objectContaining({ name: 'sales-tools', title: 'Sales tools' }),
       expect.objectContaining({ transaction }),
-      { repoId: identity.repoId },
+      { repoId: reservedRepoId },
     );
     expect(publishPreparedInitialWorkspace).toHaveBeenCalledWith(
       prepared,
-      defaultRepo.headCommitId,
+      createdRepo.headCommitId,
       expect.objectContaining({ transaction }),
     );
     expect(writeExternalBinding).toHaveBeenCalledWith(
@@ -866,6 +850,63 @@ describe('MoveSourceService', () => {
 
     expect(saveSource).toHaveBeenCalledTimes(2);
     expect(operationModel.getValues()).toMatchObject({ status: 'completed' });
+  });
+
+  it('keeps move-source and move-to-inline reservations independent when they use the same key', async () => {
+    const operationModel = createMoveOperationModel();
+    const store = new MoveOperationStore(createMoveOperationDatabase(operationModel), 'main');
+    const descriptor = {
+      idempotencyKey: 'shared-move-key',
+      request: { locator, version: 'v2' },
+      parseResult: (value: unknown) => value,
+    };
+
+    await expect(store.claim({ ...descriptor, action: 'move-source' })).resolves.toHaveProperty('reservation');
+    await expect(store.claim({ ...descriptor, action: 'move-to-inline' })).resolves.toHaveProperty('reservation');
+
+    expect(operationModel.getAllValues()).toHaveLength(2);
+    expect(operationModel.getAllValues()[0].identityHash).not.toBe(operationModel.getAllValues()[1].identityHash);
+  });
+
+  it('allows only one concurrent move-to-inline reservation for the same request', async () => {
+    const operationModel = createMoveOperationModel();
+    const db = createMoveOperationDatabase(operationModel);
+    const descriptor = {
+      action: 'move-to-inline',
+      idempotencyKey: 'concurrent-move-inline',
+      request: { locator, version: 'v2' },
+      parseResult: (value: unknown) => value,
+    };
+
+    const resolutions = await Promise.allSettled([
+      new MoveOperationStore(db, 'main').claim(descriptor),
+      new MoveOperationStore(db, 'main').claim(descriptor),
+    ]);
+
+    expect(resolutions.filter((resolution) => resolution.status === 'fulfilled')).toHaveLength(1);
+    expect(resolutions.filter((resolution) => resolution.status === 'rejected')).toHaveLength(1);
+    expect(resolutions.find((resolution) => resolution.status === 'rejected')).toMatchObject({
+      reason: { code: 'LIGHT_EXTENSION_IDEMPOTENCY_IN_PROGRESS' },
+    });
+    expect(operationModel.getAllValues()).toHaveLength(1);
+  });
+
+  it('reclaims a failed move-to-inline reservation for the same request', async () => {
+    const operationModel = createMoveOperationModel();
+    const store = new MoveOperationStore(createMoveOperationDatabase(operationModel), 'main');
+    const descriptor = {
+      action: 'move-to-inline',
+      idempotencyKey: 'retry-move-inline',
+      request: { locator, version: 'v2' },
+      parseResult: (value: unknown) => value,
+    };
+
+    const first = await store.claim(descriptor);
+    await store.fail(first.reservation, new Error('first attempt failed'));
+    const retry = await store.claim(descriptor);
+
+    expect(retry.reservation?.attemptId).not.toBe(first.reservation?.attemptId);
+    expect(operationModel.getValues()).toMatchObject({ status: 'pending', errorCode: null, result: null });
   });
 
   it.each([
@@ -981,292 +1022,6 @@ describe('MoveSourceService', () => {
   });
 });
 
-describe('MoveSourceService default repository sqlite integration', () => {
-  let app: MockServer;
-
-  beforeEach(async () => {
-    app = await createMockServer({ plugins: [PluginLightExtensionServer] });
-    const hosts = app.db.collection({
-      name: 'moveSourceTestHosts',
-      autoGenId: false,
-      timestamps: false,
-      fields: [
-        { type: 'string', name: 'id', primaryKey: true },
-        { type: 'string', name: 'ownerFingerprint', allowNull: false },
-        { type: 'json', name: 'binding' },
-      ],
-    });
-    await hosts.sync();
-  });
-
-  afterEach(async () => {
-    await app?.destroy();
-  });
-
-  it('rolls back the first default repo, source, artifact, entry, host, reference, and completed operation', async () => {
-    const identity = buildApplicationDefaultLightExtensionIdentity('main');
-    const fixture = createSqliteMoveSourceFixture(app);
-    await createMoveSourceTestHost(app, 'host_rollback');
-    const baseline = await readMovePersistenceCounts(app);
-    const forcedRollback = new Error('forced transaction rollback after move publication');
-    const transaction = app.db.sequelize.transaction.bind(app.db.sequelize);
-    let observedPublishedState = false;
-
-    vi.spyOn(app.db.sequelize, 'transaction').mockImplementation(((...args: unknown[]) => {
-      const run = args.at(-1);
-      if (typeof run !== 'function') {
-        return Reflect.apply(transaction, undefined, args);
-      }
-      const transactionArgs = args.slice(0, -1);
-      return Reflect.apply(transaction, undefined, [
-        ...transactionArgs,
-        async (currentTransaction: Transaction) => {
-          const result = await run(currentTransaction);
-          const operation = await app.db.getRepository('lightExtensionMoveOperations').findOne({
-            filter: { idempotencyKey: 'rollback-first-default', status: 'completed' },
-            transaction: currentTransaction,
-          });
-          if (!operation) {
-            return result;
-          }
-          const persisted = await readMovePersistenceCounts(app, currentTransaction);
-          const host = await app.db.getRepository('moveSourceTestHosts').findOne({
-            filterByTk: 'host_rollback',
-            transaction: currentTransaction,
-          });
-
-          expect(persisted.repos).toBe(baseline.repos + 1);
-          expect(persisted.vscRepos).toBe(baseline.vscRepos + 1);
-          expect(persisted.commits).toBeGreaterThan(baseline.commits);
-          expect(persisted.entries).toBe(baseline.entries + 1);
-          expect(persisted.artifacts).toBe(baseline.artifacts + 1);
-          expect(persisted.references).toBe(baseline.references + 1);
-          expect(host?.get('binding')).toMatchObject({ repoId: identity.repoId, entryId: expect.any(String) });
-          expect(operation?.get('status')).toBe('completed');
-          expect(operation?.get('result')).toBeTruthy();
-          observedPublishedState = true;
-          throw forcedRollback;
-        },
-      ]);
-    }) as never);
-
-    await expect(
-      fixture.service.moveSource(createDefaultMoveInput('host_rollback', 'rollback-entry', 'rollback-first-default'), {
-        adapterContext: {},
-      }),
-    ).rejects.toThrow(forcedRollback.message);
-
-    expect(observedPublishedState).toBe(true);
-    await expect(readMovePersistenceCounts(app)).resolves.toEqual(baseline);
-    const host = await app.db.getRepository('moveSourceTestHosts').findOne({ filterByTk: 'host_rollback' });
-    expect(host?.get('ownerFingerprint')).toBe('owner_before');
-    expect(host?.get('binding')).toBeNull();
-    await expect(app.db.getRepository('lightExtensionRepos').count({ filter: { id: identity.repoId } })).resolves.toBe(
-      0,
-    );
-    const operation = await app.db.getRepository('lightExtensionMoveOperations').findOne({
-      filter: { idempotencyKey: 'rollback-first-default' },
-    });
-    expect(operation?.get('status')).toBe('failed');
-    expect(operation?.get('result')).toBeNull();
-  });
-
-  it('creates at most one stable default repo under two concurrent first moves', async () => {
-    const identity = buildApplicationDefaultLightExtensionIdentity('main');
-    const fixture = createSqliteMoveSourceFixture(app);
-    await Promise.all([
-      createMoveSourceTestHost(app, 'host_concurrent_a'),
-      createMoveSourceTestHost(app, 'host_concurrent_b'),
-    ]);
-
-    const settled = await Promise.allSettled([
-      fixture.service.moveSource(createDefaultMoveInput('host_concurrent_a', 'entry-a'), { adapterContext: {} }),
-      fixture.service.moveSource(createDefaultMoveInput('host_concurrent_b', 'entry-b'), { adapterContext: {} }),
-    ]);
-    const successes = settled.filter(
-      (result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof fixture.service.moveSource>>> =>
-        result.status === 'fulfilled',
-    );
-    const failures = settled.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
-
-    expect(successes.length).toBeGreaterThanOrEqual(1);
-    expect(failures.every(({ reason }) => isRetryableDefaultMoveConflict(reason))).toBe(true);
-    expect(successes.every(({ value }) => value.repo.id === identity.repoId)).toBe(true);
-    await expect(
-      app.db.getRepository('lightExtensionRepos').count({ filter: { id: identity.repoId, applicationName: 'main' } }),
-    ).resolves.toBe(1);
-    await expect(
-      app.db.getRepository('vscFileRepositories').count({
-        filter: { ownerType: 'light-extension', ownerId: identity.repoId, name: 'source' },
-      }),
-    ).resolves.toBe(1);
-    await expect(app.db.getRepository('lightExtensionRepos').count()).resolves.toBe(1);
-  });
-});
-
-function createSqliteMoveSourceFixture(app: MockServer) {
-  const auditService = new LightExtensionAuditService(app.db);
-  const permissionService = new LightExtensionPermissionService(auditService);
-  const validator = new LightExtensionValidator();
-  const repoService = new LightExtensionRepoService(
-    app.db,
-    auditService,
-    permissionService,
-    undefined,
-    validator,
-    'main',
-  );
-  const fileService = new LightExtensionFileService(app.db, permissionService, repoService, undefined, validator);
-  const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
-  const compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-  const runtimeCompileService = new LightExtensionRuntimeCompileService(
-    app.db,
-    fileService,
-    entryService,
-    compilerBridge,
-    { validator },
-  );
-  const referenceService = {
-    syncFlowModelReferencesForNodeTree: vi.fn(
-      async (input: { rootUid: string }, ctx: { transaction?: Transaction }) => {
-        const host = await app.db.getRepository('moveSourceTestHosts').findOne({
-          filterByTk: input.rootUid,
-          transaction: ctx.transaction,
-        });
-        const binding = host?.get('binding');
-        if (!isTestSourceBinding(binding)) {
-          throw new Error('Host binding was not persisted before reference synchronization');
-        }
-        await app.db.getRepository('lightExtensionReferences').create({
-          values: {
-            repoId: binding.repoId,
-            entryId: binding.entryId,
-            kind: binding.kind,
-            ownerKind: 'flowModel.step',
-            ownerLocator: { kind: 'flowModel.step', modelUid: input.rootUid },
-            ownerLocatorHash: `owner_${input.rootUid}`,
-            resolvedStatus: 'active',
-          },
-          transaction: ctx.transaction,
-        });
-      },
-    ),
-  };
-  const adapter = {
-    kind: 'flowModel.step',
-    assertCanWrite: vi.fn(),
-    readLegacy: async (input: { locator: { modelUid: string }; ctx: { transaction?: Transaction } }) => {
-      const host = await app.db.getRepository('moveSourceTestHosts').findOne({
-        filterByTk: input.locator.modelUid,
-        transaction: input.ctx.transaction,
-      });
-      return {
-        code: 'ctx.render(<div>Inline</div>);',
-        version: 'v2',
-        surfaceStyle: 'render' as const,
-        language: 'typescript',
-        ownerFingerprint: String(host?.get('ownerFingerprint')),
-        metadata: { modelUse: 'JSBlockModel' },
-      };
-    },
-    writeExternalBinding: async (input: {
-      locator: { modelUid: string };
-      binding: { sourceBinding: unknown };
-      baseOwnerFingerprint: string;
-      ctx: { transaction?: Transaction };
-    }) => {
-      const host = await app.db.getRepository('moveSourceTestHosts').findOne({
-        filterByTk: input.locator.modelUid,
-        transaction: input.ctx.transaction,
-      });
-      expect(host?.get('ownerFingerprint')).toBe(input.baseOwnerFingerprint);
-      await app.db.getRepository('moveSourceTestHosts').update({
-        filterByTk: input.locator.modelUid,
-        values: { binding: input.binding.sourceBinding, ownerFingerprint: 'owner_after' },
-        transaction: input.ctx.transaction,
-      });
-      return { ownerFingerprint: 'owner_after' };
-    },
-    getFingerprint: async (input: { locator: { modelUid: string }; ctx: { transaction?: Transaction } }) => {
-      const host = await app.db.getRepository('moveSourceTestHosts').findOne({
-        filterByTk: input.locator.modelUid,
-        transaction: input.ctx.transaction,
-      });
-      return String(host?.get('ownerFingerprint'));
-    },
-  };
-  const service = new MoveSourceService(
-    app.db,
-    repoService,
-    fileService,
-    entryService,
-    runtimeCompileService,
-    referenceService as never,
-    () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
-    'main',
-    { assertCurrent: vi.fn() },
-  );
-
-  return { service, referenceService };
-}
-
-async function createMoveSourceTestHost(app: MockServer, id: string): Promise<void> {
-  await app.db.getRepository('moveSourceTestHosts').create({
-    values: { id, ownerFingerprint: 'owner_before', binding: null },
-  });
-}
-
-function createDefaultMoveInput(
-  hostId: string,
-  entryName: string,
-  idempotencyKey?: string,
-): LightExtensionMoveSourceInput {
-  return {
-    idempotencyKey,
-    locator: {
-      ...locator,
-      modelUid: hostId,
-    },
-    expectedOwnerFingerprint: 'owner_before',
-    sourceRepoId: `runjs_${hostId}`,
-    sourceHeadCommitId: null,
-    entryPath: 'src/main.tsx',
-    version: 'v2',
-    files: [{ path: 'src/main.tsx', content: `ctx.render(<div>${entryName}</div>);\n` }],
-    destination: { type: 'default' },
-    entryName,
-  };
-}
-
-async function readMovePersistenceCounts(app: MockServer, transaction?: Transaction) {
-  const options = transaction ? { transaction } : undefined;
-  const [repos, vscRepos, commits, entries, artifacts, references] = await Promise.all([
-    app.db.getRepository('lightExtensionRepos').count(options),
-    app.db.getRepository('vscFileRepositories').count(options),
-    app.db.getRepository('vscFileCommits').count(options),
-    app.db.getRepository('lightExtensionEntries').count(options),
-    app.db.getRepository('lightExtensionRuntimeArtifacts').count(options),
-    app.db.getRepository('lightExtensionReferences').count(options),
-  ]);
-  return { repos, vscRepos, commits, entries, artifacts, references };
-}
-
-function isTestSourceBinding(value: unknown): value is { repoId: string; entryId: string; kind: string } {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
-  }
-  const binding = value as Record<string, unknown>;
-  return typeof binding.repoId === 'string' && typeof binding.entryId === 'string' && typeof binding.kind === 'string';
-}
-
-function isRetryableDefaultMoveConflict(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  return code === 'LIGHT_EXTENSION_SOURCE_OUTDATED' || code === 'LIGHT_EXTENSION_ENTRY_CONFLICT';
-}
-
 function createFailureService(options: {
   ownerFingerprint?: string;
   surfaceStyle?: 'render' | 'action' | 'value';
@@ -1278,8 +1033,6 @@ function createFailureService(options: {
   writeExternalBinding?: ReturnType<typeof vi.fn>;
   assertCanWrite?: ReturnType<typeof vi.fn>;
   syncReferences?: ReturnType<typeof vi.fn>;
-  getRepo?: ReturnType<typeof vi.fn>;
-  applicationName?: string;
   onTransactionSuccess?: () => void;
   operationModel?: ReturnType<typeof createMoveOperationModel>;
   listEntries?: ReturnType<typeof vi.fn>;
@@ -1305,7 +1058,6 @@ function createFailureService(options: {
     {
       lockInternalRepoForUpdate: vi.fn(async () => options.destinationRepo || repo),
       assertApplicationOwnership: vi.fn(),
-      getRepo: options.getRepo || vi.fn(async () => options.destinationRepo || repo),
     } as never,
     {
       pull: vi.fn(async () => ({
@@ -1348,48 +1100,60 @@ function createFailureService(options: {
           getFingerprint: vi.fn(async () => 'owner_after'),
         }),
       }) as unknown as RunJSSourceAdapterRegistry,
-    options.applicationName || 'main',
+    'main',
     options.sourceSnapshotValidator || { assertCurrent: vi.fn() },
   );
 }
 
 function createMoveOperationModel() {
-  let values: Record<string, unknown> | undefined;
-  const record = {
-    get: (key: string) => values?.[key],
-  } as Model;
+  const rows: Record<string, unknown>[] = [];
+  const matchesWhere = (values: Record<string, unknown>, where: Record<string, unknown>) =>
+    Object.entries(where).every(([key, value]) => values[key] === value);
+  const toRecord = (values: Record<string, unknown>) =>
+    ({
+      get: (key: string) => values[key],
+    }) as Model;
   const model = {
     findOne: vi.fn(async (options: { where: Record<string, unknown> }) => {
-      if (!values) {
-        return null;
-      }
-      return Object.entries(options.where).every(([key, value]) => values?.[key] === value) ? record : null;
+      const values = rows.find((candidate) => matchesWhere(candidate, options.where));
+      return values ? toRecord(values) : null;
     }),
-    findOrCreate: vi.fn(async (options: { defaults: Record<string, unknown> }) => {
-      if (values) {
-        return [record, false] as const;
+    findOrCreate: vi.fn(async (options: { where: Record<string, unknown>; defaults: Record<string, unknown> }) => {
+      const existing = rows.find((candidate) => matchesWhere(candidate, options.where));
+      if (existing) {
+        return [toRecord(existing), false] as const;
       }
-      values = { ...options.defaults, updatedAt: new Date() };
-      return [record, true] as const;
+      const values = { ...options.defaults, updatedAt: new Date() };
+      rows.push(values);
+      return [toRecord(values), true] as const;
     }),
     update: vi.fn(
       async (nextValues: Record<string, unknown>, options: { where: Record<string, unknown> }): Promise<[number]> => {
+        const values = rows.find((candidate) => matchesWhere(candidate, options.where));
         if (!values) {
           return [0];
         }
-        const matches = Object.entries(options.where).every(([key, value]) => values?.[key] === value);
-        if (!matches) {
-          return [0];
-        }
-        values = { ...values, ...nextValues, updatedAt: new Date() };
+        Object.assign(values, nextValues, { updatedAt: new Date() });
         return [1];
       },
     ),
   };
   return {
     model,
-    getValues: () => values,
+    getValues: () => rows[0],
+    getAllValues: () => rows,
   };
+}
+
+function createMoveOperationDatabase(operationModel: ReturnType<typeof createMoveOperationModel>): Database {
+  return {
+    getRepository: (name: string) => {
+      if (name !== 'lightExtensionMoveOperations') {
+        throw new Error(`Unexpected repository: ${name}`);
+      }
+      return { model: operationModel.model };
+    },
+  } as unknown as Database;
 }
 
 function createSnapshotDatabase(input: {
@@ -1456,7 +1220,7 @@ function createFailFastService(modelUse = 'JSBlockModel') {
   }));
   const service = new MoveSourceService(
     { sequelize: { transaction } } as unknown as Database,
-    { createRepoForCompositeUseCase: createRepo, assertApplicationOwnership: vi.fn() } as never,
+    { createRepo, assertApplicationOwnership: vi.fn() } as never,
     { pull } as never,
     { getEntry, listEntries } as never,
     { prepareSaveSource, publishPreparedSave, compileCurrentRuntime } as never,
@@ -1610,8 +1374,13 @@ describe('move to inline integration', () => {
       },
     ])('$label before opening a database transaction', async ({ files, expected }) => {
       const transaction = vi.fn();
+      const operationModel = createMoveOperationModel();
       const service = new MoveToInlineService(
-        { sequelize: { transaction } } as unknown as Database,
+        {
+          sequelize: { transaction },
+          getRepository: () => ({ model: operationModel.model }),
+        } as unknown as Database,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,
@@ -1622,6 +1391,7 @@ describe('move to inline integration', () => {
       await expect(
         service.moveToInline(
           {
+            idempotencyKey: 'move-inline-file-limit',
             locator,
             repoId: binding.repoId,
             entryId: binding.entryId,
@@ -1638,6 +1408,7 @@ describe('move to inline integration', () => {
 
     it('moves a JS Page inline with its snapshot and settings while removing the active reference', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+      const operationModel = createMoveOperationModel();
       const pageLocator = { ...locator, modelUid: 'fm_js_page' };
       const pageBinding = { ...binding, repoId: 'ler_pages', entryId: 'lee_page', kind: 'js-page' as const };
       const pageEntry = {
@@ -1700,7 +1471,8 @@ describe('move to inline integration', () => {
           model: { findByPk: lockFlowModelRecord },
           repository: { findModelById: vi.fn(async () => JSON.parse(JSON.stringify(flowModel))), patch },
         }),
-        getRepository: () => ({ update: updateCommit }),
+        getRepository: (name: string) =>
+          name === 'lightExtensionMoveOperations' ? { model: operationModel.model } : { update: updateCommit },
       } as unknown as Database;
       const compileEntry = vi.fn(async () => ({
         accepted: true,
@@ -1787,6 +1559,7 @@ describe('move to inline integration', () => {
       }));
       const vscFileService = {
         ensureRepository,
+        getRepository: vi.fn(async () => runJSRepo),
         pull: vi.fn(async () => ({
           repository: runJSRepo,
           commit: null,
@@ -1802,38 +1575,52 @@ describe('move to inline integration', () => {
         publishPreparedPush,
       } as unknown as VscFileService;
       const getVscFileService = vi.fn(() => vscFileService);
+      const assertApplicationOwnership = vi.fn(async () => undefined);
+      const getEntry = vi.fn(async () => pageEntry);
       const service = new MoveToInlineService(
         db,
-        { getEntry: vi.fn(async () => pageEntry) } as never,
+        { assertApplicationOwnership } as never,
+        { getEntry } as never,
         { compileEntry } as never,
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         getVscFileService,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
       );
 
-      const result = await service.moveToInline(
-        {
-          locator: pageLocator,
-          repoId: pageBinding.repoId,
-          entryId: pageBinding.entryId,
-          entryPath: pageEntry.entryPath,
-          kind: 'js-page',
-          version: 'v2',
-          files: [
-            {
-              path: pageEntry.entryPath,
-              content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
-            },
-            { path: pageEntry.descriptorPath, content: descriptorContent, language: 'json' },
-            { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
-            { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
-          ],
-        },
-        {
-          actorUserId: '1',
-          adapterContext: {},
-        },
-      );
+      const input = {
+        idempotencyKey: 'move-inline-page',
+        locator: pageLocator,
+        repoId: pageBinding.repoId,
+        entryId: pageBinding.entryId,
+        entryPath: pageEntry.entryPath,
+        kind: 'js-page' as const,
+        version: 'v2',
+        files: [
+          {
+            path: pageEntry.entryPath,
+            content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
+          },
+          { path: pageEntry.descriptorPath, content: descriptorContent, language: 'json' },
+          { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
+          { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
+        ],
+      };
+      const serviceContext = {
+        actorUserId: '1',
+        adapterContext: {},
+      };
+      const result = await service.moveToInline(input, serviceContext);
+      const replay = await service.moveToInline(input, serviceContext);
+
+      await expect(
+        service.moveToInline(
+          {
+            ...input,
+            files: [...input.files, { path: 'src/shared/changed.ts', content: 'export const changed = true;\n' }],
+          },
+          serviceContext,
+        ),
+      ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT' });
 
       expect(compileEntry).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1884,11 +1671,16 @@ describe('move to inline integration', () => {
         }),
       );
       expect(preparePush.mock.invocationCallOrder[0]).toBeLessThan(lockFlowModelRecord.mock.invocationCallOrder[0]);
-      expect(getVscFileService).toHaveBeenCalledTimes(1);
+      expect(replay).toEqual(result);
+      expect(getVscFileService).toHaveBeenCalledTimes(2);
       expect(publishPreparedPush).toHaveBeenCalledWith(preparedPush, expect.objectContaining({ transaction }));
+      expect(publishPreparedPush).toHaveBeenCalledOnce();
+      expect(writeRuntime).toHaveBeenCalledOnce();
+      expect(patch).toHaveBeenCalledOnce();
+      expect(syncReferences).toHaveBeenCalledOnce();
       expect(compileEntry.mock.calls[0][1]?.transaction).toBeUndefined();
       expect(preparePush.mock.calls[0][1]?.transaction).toBeUndefined();
-      expect(assertCanWrite).toHaveBeenCalledTimes(2);
+      expect(assertCanWrite).toHaveBeenCalledTimes(3);
       expect(assertCanWrite.mock.calls[0][0].ctx.transaction).toBeUndefined();
       expect(readLegacy).toHaveBeenCalledTimes(2);
       expect(readLegacy.mock.calls[0][0].ctx.transaction).toBeUndefined();
@@ -1934,6 +1726,14 @@ describe('move to inline integration', () => {
         expect.objectContaining({ transaction }),
       );
       expect(updateCommit).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'runjs_new_commit' }));
+      expect(assertApplicationOwnership).toHaveBeenCalledOnce();
+      expect(getEntry).toHaveBeenCalledTimes(3);
+      expect(vscFileService.getRepository).toHaveBeenCalledOnce();
+      expect(operationModel.getValues()).toMatchObject({ status: 'completed', result });
+      expect(operationModel.model.update).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'completed', result }),
+        expect.objectContaining({ transaction }),
+      );
       expect(result).toMatchObject({
         runJSRepoId: 'runjs_repo',
         commitId: 'runjs_new_commit',
@@ -1950,6 +1750,7 @@ describe('move to inline integration', () => {
 
     it('rolls back the external binding, repository Head, and reference index after a late failure', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+      const operationModel = createMoveOperationModel();
       const identity = buildRunJSSourceRepositoryIdentity(locator);
       const initialRunJS = {
         code: 'ctx.render("preserved inline");',
@@ -2014,7 +1815,8 @@ describe('move to inline integration', () => {
             }),
           },
         }),
-        getRepository: () => ({ update: vi.fn() }),
+        getRepository: (name: string) =>
+          name === 'lightExtensionMoveOperations' ? { model: operationModel.model } : { update: vi.fn() },
       } as unknown as Database;
       const adapter = {
         kind: 'flowModel.step',
@@ -2087,6 +1889,7 @@ describe('move to inline integration', () => {
       });
       const service = new MoveToInlineService(
         db,
+        { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
         { getEntry: vi.fn(async () => entry) } as never,
         {
           compileEntry: vi.fn(async () => ({
@@ -2116,6 +1919,7 @@ describe('move to inline integration', () => {
       await expect(
         service.moveToInline(
           {
+            idempotencyKey: 'move-inline-rollback',
             locator,
             repoId: binding.repoId,
             entryId: binding.entryId,
@@ -2145,10 +1949,12 @@ describe('move to inline integration', () => {
       expect(repository).toEqual(initialRepository);
       expect(commits).toEqual(initialCommits);
       expect(references).toEqual(initialReferences);
+      expect(operationModel.getValues()).toMatchObject({ status: 'failed', errorCode: 'Error' });
     });
 
     it('rejects a host that no longer points to the selected light extension entry', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+      const operationModel = createMoveOperationModel();
       const flowModel = {
         uid: locator.modelUid,
         use: 'JSBlockModel',
@@ -2171,9 +1977,11 @@ describe('move to inline integration', () => {
           model: { findByPk: vi.fn(async () => flowModel) },
           repository: { findModelById: vi.fn(async () => flowModel), patch: vi.fn() },
         }),
+        getRepository: () => ({ model: operationModel.model }),
       } as unknown as Database;
       const service = new MoveToInlineService(
         db,
+        { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
         { getEntry: vi.fn() } as never,
         { compileEntry: vi.fn() } as never,
         { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
@@ -2190,6 +1998,7 @@ describe('move to inline integration', () => {
       await expect(
         service.moveToInline(
           {
+            idempotencyKey: 'move-inline-stale-binding',
             locator,
             repoId: binding.repoId,
             entryId: binding.entryId,
@@ -2201,6 +2010,10 @@ describe('move to inline integration', () => {
           { adapterContext: {} },
         ),
       ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_BINDING_OUTDATED' });
+      expect(operationModel.getValues()).toMatchObject({
+        status: 'failed',
+        errorCode: 'LIGHT_EXTENSION_BINDING_OUTDATED',
+      });
     });
   });
 
@@ -2264,6 +2077,7 @@ describe('move resource integration', () => {
         ].sort(),
       );
       expect(moveToInlineRequest.required).toEqual([
+        'idempotencyKey',
         'locator',
         'repoId',
         'entryId',
@@ -2273,12 +2087,11 @@ describe('move resource integration', () => {
         'files',
       ]);
       expect(Object.keys(moveToInlineRequest.properties).sort()).toEqual(
-        ['locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'].sort(),
+        ['idempotencyKey', 'locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'].sort(),
       );
     });
 
     it.each([
-      { destination: { type: 'default' } },
       { destination: { type: 'existing', repoId: 'ler_existing' } },
       {
         destination: {
@@ -2289,7 +2102,7 @@ describe('move resource integration', () => {
         },
       },
     ])('normalizes moveSource $destination.type destination and request context', async ({ destination }) => {
-      const moveSource = vi.fn(async () => ({ repo: { id: 'ler_default' }, ownerFingerprint: 'owner_after' }));
+      const moveSource = vi.fn(async () => ({ repo: { id: 'ler_selected' }, ownerFingerprint: 'owner_after' }));
       const resource = createLightExtensionsResource(
         {} as LightExtensionCompilePreviewService,
         { moveSource } as unknown as MoveSourceService,
@@ -2334,8 +2147,51 @@ describe('move resource integration', () => {
         }),
       );
       expect((ctx as { body?: unknown }).body).toEqual({
-        repo: { id: 'ler_default' },
+        repo: { id: 'ler_selected' },
         ownerFingerprint: 'owner_after',
+      });
+    });
+
+    it.each([
+      ['missing', undefined, 'destination.type is required'],
+      ['null', null, 'destination.type is required'],
+      ['default', { type: 'default' }, 'destination.type must be "existing" or "new"'],
+    ] as const)('rejects a $label destination before invoking moveSource', async (_label, destination, message) => {
+      const moveSource = vi.fn();
+      const resource = createLightExtensionsResource(
+        {} as LightExtensionCompilePreviewService,
+        { moveSource } as unknown as MoveSourceService,
+      );
+      const values: Record<string, unknown> = {
+        locator,
+        expectedOwnerFingerprint: 'owner_before',
+        sourceRepoId: 'runjs_sales_page',
+        sourceHeadCommitId: 'commit_inline',
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+        files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
+        entryName: 'sales-page',
+      };
+      if (typeof destination !== 'undefined') {
+        values.destination = destination;
+      }
+      const ctx = {
+        action: { params: { values } },
+        auth: { user: { id: 9 } },
+        request: { headers: {} },
+      } as unknown as Context;
+      const next = vi.fn();
+
+      await resource.actions?.moveSource?.(ctx, next);
+
+      expect(moveSource).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+      expect((ctx as { status?: number }).status).toBe(400);
+      expect(
+        (ctx as { body?: { errors?: Array<{ code?: string; message?: string }> } }).body?.errors?.[0],
+      ).toMatchObject({
+        code: 'LIGHT_EXTENSION_INVALID_INPUT',
+        message,
       });
     });
 
@@ -2349,6 +2205,7 @@ describe('move resource integration', () => {
         action: {
           params: {
             values: {
+              idempotencyKey: '  move-inline-sales-v1  ',
               locator,
               repoId: binding.repoId,
               entryId: binding.entryId,
@@ -2373,6 +2230,7 @@ describe('move resource integration', () => {
 
       expect(moveToInline).toHaveBeenCalledWith(
         {
+          idempotencyKey: 'move-inline-sales-v1',
           locator,
           repoId: binding.repoId,
           entryId: binding.entryId,
@@ -2417,6 +2275,7 @@ describe('move resource integration', () => {
         action: {
           params: {
             values: {
+              idempotencyKey: 'move-inline-error-v1',
               locator,
               repoId: binding.repoId,
               entryId: binding.entryId,

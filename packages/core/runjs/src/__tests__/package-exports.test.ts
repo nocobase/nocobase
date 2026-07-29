@@ -11,13 +11,21 @@ import fs from 'fs';
 import path from 'path';
 
 const packageRoot = path.resolve(__dirname, '../..');
+interface RunJSPackageJson {
+  exports: Record<string, unknown>;
+  typesVersions?: Record<string, Record<string, string[]>>;
+}
+
+const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')) as RunJSPackageJson;
+const removedPublicNames = [
+  'RunJSEntryCompilerSession',
+  'RunJSEntryDependencyManifest',
+  'buildRunJSEntryDependencyManifestFromGraph',
+  'collectRunJSWorkspaceDependencyManifest',
+];
 
 describe('@nocobase/runjs package exports', () => {
   it('exposes only supported public entry points', () => {
-    const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')) as {
-      exports: Record<string, unknown>;
-    };
-
     expect(Object.keys(packageJson.exports).sort()).toEqual(
       [
         '.',
@@ -29,5 +37,33 @@ describe('@nocobase/runjs package exports', () => {
         './settings',
       ].sort(),
     );
+  });
+
+  it('ships the compiler build identity runtime and declarations through its dedicated subpath', () => {
+    const buildIdentityExport = packageJson.exports['./compiler/build-identity'];
+
+    expect(buildIdentityExport).toEqual({
+      types: './lib/compiler/build-identity.d.ts',
+      import: './lib/compiler/build-identity.js',
+      require: './lib/compiler/build-identity.js',
+    });
+    expect(packageJson.typesVersions?.['*']?.['compiler/build-identity']).toEqual([
+      './lib/compiler/build-identity.d.ts',
+    ]);
+    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/build-identity.js'))).toBe(true);
+    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/build-identity.d.ts'))).toBe(true);
+  });
+
+  it('keeps removed dependency and session APIs out of built public declarations', () => {
+    const declarations = [
+      fs.readFileSync(path.join(packageRoot, 'lib/index.d.ts'), 'utf8'),
+      fs.readFileSync(path.join(packageRoot, 'lib/compiler/index.d.ts'), 'utf8'),
+    ].join('\n');
+
+    for (const name of removedPublicNames) {
+      expect(declarations).not.toContain(name);
+    }
+    expect(declarations).not.toContain("export * from './dependency-collector'");
+    expect(declarations).not.toContain("export * from './session'");
   });
 });

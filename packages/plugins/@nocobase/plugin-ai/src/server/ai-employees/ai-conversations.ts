@@ -34,6 +34,7 @@ export type CreateAIConversationParams = {
   title?: string;
   options?: AIConversationsOptions;
   from?: 'main-agent' | 'sub-agent';
+  scope?: string;
   transaction?: Transaction;
   category?: 'chat' | 'task';
 };
@@ -94,6 +95,7 @@ export class AIConversationsManager {
     title,
     options = {},
     from = 'main-agent',
+    scope,
     transaction,
     category = 'chat',
   }: CreateAIConversationParams) {
@@ -105,6 +107,7 @@ export class AIConversationsManager {
         options,
         thread: 1,
         from,
+        ...(scope !== undefined ? { scope } : {}),
         category,
       },
       transaction,

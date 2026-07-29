@@ -12,7 +12,11 @@ import {
   RUNJS_COMPILER_BUILD_IDENTITY,
   RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS,
   type RunJSCompilerBuildIdentityComponents,
-} from '../compiler/build-identity';
+} from '@nocobase/runjs/compiler/build-identity';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 describe('RunJS compiler build identity', () => {
   it('is stable and content-addressed', () => {
     expect(buildRunJSCompilerBuildIdentity()).toEqual(RUNJS_COMPILER_BUILD_IDENTITY);
@@ -33,6 +37,33 @@ describe('RunJS compiler build identity', () => {
       );
     }
   });
+
+  it('does not initialize the full compiler entrypoint', () => {
+    const buildIdentityUrl = pathToFileURL(path.resolve(__dirname, '../compiler/build-identity.ts')).href;
+
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [
+          '--import',
+          'tsx',
+          '--input-type=module',
+          '--eval',
+          `
+            import { createRequire } from 'node:module';
+            const require = createRequire(import.meta.url);
+            await import(${JSON.stringify(buildIdentityUrl)});
+            const loaded = Object.keys(require.cache).some((file) =>
+              file.includes('/packages/core/runjs/src/compiler/index.') ||
+              file.includes('/packages/core/runjs/lib/compiler/index.'),
+            );
+            if (loaded) process.exit(1);
+          `,
+        ],
+        { cwd: process.cwd(), stdio: 'pipe' },
+      ),
+    ).not.toThrow();
+  }, 20_000);
 });
 
 function changeComponent(value: string | number): string | number {

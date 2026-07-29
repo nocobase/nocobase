@@ -30,7 +30,7 @@ Where:
 
 The example uses the `Answers` / `Questions` collections and target knowledge base described in [Overview](./). Before configuring the workflow, confirm that:
 
-- A Local knowledge base has been created, with file storage and vector store configured. See [Knowledge base overview](../../../knowledge-base/knowledge-base) and [Vector store](../../../knowledge-base/vector-store)
+- A Local knowledge base has been created, with file storage, vector database, LLM service, and embedding model configured. See [Knowledge base overview](../../../knowledge-base/knowledge-base/index.md) and [Vector database](../../../knowledge-base/vector-database)
 - The `Answers.questions` relation field is ready. To review the collection structure, return to [Overview](./)
 - The workflow uses asynchronous execution. See [Workflow](../../../../workflow) for the basics
 

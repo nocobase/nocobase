@@ -421,7 +421,7 @@ export const lightExtensionPaths = {
       summary: 'Move an inline RunJS workspace to a light extension',
       description: [
         'Atomically compile and externalize a complete inline RunJS workspace into a Light Extension Entry, then bind its Host to that Entry.',
-        'Pass the root business payload directly and use --body-file for multi-file source. destination supports default, existing, and new Repository variants. idempotencyKey can make retries stable. HTTP 409 reports stale owner/source Head, Entry, Repository, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance Repository or Host state.',
+        'Pass the root business payload directly and use --body-file for multi-file source. destination must select an existing Repository or describe a new Repository. idempotencyKey can make retries stable. HTTP 409 reports stale owner/source Head, Entry, Repository, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance Repository or Host state.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -453,7 +453,7 @@ export const lightExtensionPaths = {
       summary: 'Move a Light Extension Entry workspace back inline',
       description: [
         'Compile and relocate a complete reachable Light Extension Entry workspace into its bound RunJS Host, then remove that Host binding.',
-        'Pass the root business payload directly and use --body-file for multi-file source. This action does not accept an idempotency key. HTTP 409 reports stale binding, Repository, source, or owner state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
+        'Pass the root business payload directly and use --body-file for multi-file source. idempotencyKey is required: the same complete request replays its first result, while a different request with the same key returns a conflict. HTTP 409 reports stale binding, Repository, source, owner, or idempotency state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -466,13 +466,15 @@ export const lightExtensionPaths = {
           description: 'Reachable source files were committed to RunJS and the Host was atomically moved inline.',
           content: jsonContent('LightExtensionMoveToInlineEnvelope'),
         },
-        400: errorResponse('The locator, Entry binding identity, version, or reachable source workspace is invalid.'),
+        400: errorResponse(
+          'The idempotency key, locator, Entry binding identity, version, or reachable source workspace is invalid.',
+        ),
         403: errorResponse('The current user cannot read the Entry or write the bound RunJS Host.'),
         404: errorResponse(
           'The bound RunJS Host, Repository, Entry, source commit, or required source file was not found.',
         ),
         409: errorResponse(
-          'The binding, owner, Repository, Entry, or source state changed before the move completed. No persistent state is advanced.',
+          'The binding, owner, Repository, Entry, source, operation, or idempotency state prevents the move. No persistent state is advanced.',
         ),
         422: errorResponse(
           'The relocated inline workspace failed validation or compilation. No persistent state is advanced.',

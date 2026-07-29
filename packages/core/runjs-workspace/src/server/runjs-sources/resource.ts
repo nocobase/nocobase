@@ -79,7 +79,6 @@ export const RUNJS_WORKSPACE_HOSTS = {
   JSEditableFieldModel: 'js-editable-field',
   JSColumnModel: 'js-column',
   JSItemModel: 'js-item',
-  FormJSFieldItemModel: 'form-js-field-item',
   JSItemActionModel: 'js-item-action',
   JSActionModel: 'js-action',
   JSRecordActionModel: 'js-record-action',

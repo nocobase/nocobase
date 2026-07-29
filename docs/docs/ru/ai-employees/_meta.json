@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Блоки страниц",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Встроенные ИИ-сотрудники",
     "items": [
       {
@@ -149,11 +160,6 @@
         "type": "custom-link",
         "label": "Векторная база данных",
         "link": "/ai-employees/knowledge-base/vector-database"
-      },
-      {
-        "type": "custom-link",
-        "label": "Векторное хранилище",
-        "link": "/ai-employees/knowledge-base/vector-store"
       },
       {
         "type": "custom-link",

@@ -1079,7 +1079,6 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       options = cloneOptions(JS_COLUMN_OPTIONS);
       break;
     case 'JSItemModel':
-    case 'FormJSFieldItemModel':
       options = cloneOptions(JS_ITEM_OPTIONS);
       break;
     case 'DividerItemModel':

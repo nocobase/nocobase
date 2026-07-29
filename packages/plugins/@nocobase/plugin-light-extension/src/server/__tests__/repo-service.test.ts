@@ -128,18 +128,6 @@ describe('plugin-light-extension repo service', () => {
     await expect(supportService.listRepos()).resolves.toEqual([expect.objectContaining({ id: supportRepo.id })]);
   });
 
-  it('creates one application default repository under concurrent requests', async () => {
-    const [first, second] = await Promise.all([
-      service.getOrCreateApplicationDefaultRepo('main'),
-      service.getOrCreateApplicationDefaultRepo('main'),
-    ]);
-
-    expect(second.id).toBe(first.id);
-    await expect(
-      app.db.getRepository('lightExtensionRepos').count({ filter: { id: first.id, applicationName: 'main' } }),
-    ).resolves.toBe(1);
-  });
-
   it('updates repository display metadata without changing its technical identity', async () => {
     const repo = await service.createRepo(
       {

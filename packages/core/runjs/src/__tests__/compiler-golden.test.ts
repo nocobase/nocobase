@@ -8,6 +8,7 @@
  */
 
 import { compileRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from '../compiler';
+import { buildRunJSTypeScriptContextDeclaration } from '../typescript-project';
 
 type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
@@ -19,6 +20,20 @@ async function executeArtifact(code: string, ctx: unknown): Promise<unknown> {
 }
 
 describe('@nocobase/runjs compiler golden contracts', () => {
+  it('keeps the form JS menu provider out of authoring-specific TypeScript declarations', () => {
+    const menuProviderDeclaration = buildRunJSTypeScriptContextDeclaration('FormJSFieldItemModel');
+    const unknownModelDeclaration = buildRunJSTypeScriptContextDeclaration('UnknownMenuProviderModel');
+    const editableFieldDeclaration = buildRunJSTypeScriptContextDeclaration('JSEditableFieldModel');
+
+    expect(menuProviderDeclaration).toBe(unknownModelDeclaration);
+    expect(editableFieldDeclaration).not.toBe(menuProviderDeclaration);
+    expect(editableFieldDeclaration).toContain(
+      'addEventListener(type: string, listener: (event: RunJSUnknownObject) => void): void;',
+    );
+    expect(editableFieldDeclaration).toContain('setValue(value: unknown): void;');
+    expect(editableFieldDeclaration).toContain('runJsSource: RunJSSourceInfo;');
+  });
+
   it('reuses a provided TypeScript inspector across compilations', async () => {
     const sourceInspector = new RunJSSourceWorkspaceInspector();
     try {

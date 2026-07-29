@@ -59,7 +59,6 @@ describe('flow-engine RunJS source registration', () => {
     { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSColumnModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-    { modelUse: 'FormJSFieldItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
     { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
@@ -147,6 +146,31 @@ describe('flow-engine RunJS source registration', () => {
       });
     },
   );
+
+  it('does not initialize a RunJS source for the form JS field menu provider', async () => {
+    const model: Record<string, unknown> = {
+      uid: 'form-js-field-menu-provider',
+      use: 'FormJSFieldItemModel',
+      stepParams: {},
+    };
+    const { adapters, ctx } = createAdapterHarness(model);
+    const adapter = adapters.find((item) => item.kind === 'flowModel.step');
+    if (!adapter) {
+      throw new Error('FlowModel step source adapter is unavailable');
+    }
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'form-js-field-menu-provider',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+
+    await expect(adapter.readLegacy({ locator, ctx })).rejects.toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: { path: 'stepParams.jsSettings.runJs' },
+    });
+  });
 
   it('covers FlowModel step read/write and external-to-inline contracts without an app host', async () => {
     const model: Record<string, unknown> = {

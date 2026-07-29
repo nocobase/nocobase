@@ -20,7 +20,6 @@ export const FLOW_SURFACE_RUNJS_HOSTS = {
   JSEditableFieldModel: { hostKind: 'js-editable-field', flowKey: 'jsSettings' },
   JSColumnModel: { hostKind: 'js-column', flowKey: 'jsSettings' },
   JSItemModel: { hostKind: 'js-item', flowKey: 'jsSettings' },
-  FormJSFieldItemModel: { hostKind: 'form-js-field-item', flowKey: 'jsSettings' },
   JSItemActionModel: { hostKind: 'js-item-action', flowKey: 'jsSettings' },
   JSActionModel: { hostKind: 'js-action', flowKey: 'clickSettings' },
   JSRecordActionModel: { hostKind: 'js-record-action', flowKey: 'clickSettings' },

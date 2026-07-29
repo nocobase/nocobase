@@ -295,6 +295,14 @@ async function createMultipartBody(flags: Record<string, any>, operation: Reques
       continue;
     }
 
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        formData.append(parameter.name, typeof item === 'object' ? JSON.stringify(item) : String(item));
+      }
+      hasValues = hasValues || value.length > 0;
+      continue;
+    }
+
     formData.append(parameter.name, typeof value === 'object' ? JSON.stringify(value) : String(value));
     hasValues = true;
   }

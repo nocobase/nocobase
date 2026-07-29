@@ -11,23 +11,24 @@ import React, { useEffect, useState } from 'react';
 import { App as AntdApp, Button, Card, Grid, Input, Modal, Popover, Space, Tooltip, Typography, theme } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { useChatBoxStore } from '../stores/chat-box';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 type APIError = {
   message?: string;
 };
 
-export const UserPrompt: React.FC = () => {
+export const UserPrompt: React.FC = observer(() => {
   const t = useT();
   const app = useApp();
   const { message } = AntdApp.useApp();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const isMobileLayout = !screens.md;
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const aiConfigRepository = useAIConfigRepository();
   const [desktopOpen, setDesktopOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -62,10 +63,10 @@ export const UserPrompt: React.FC = () => {
         },
       });
       await aiConfigRepository.refreshAIEmployees();
-      setCurrentEmployee((previous) => ({
-        ...previous,
+      chatBoxModel.setCurrentEmployee((previous) => ({
+        ...(previous ?? currentEmployee),
         userConfig: {
-          ...previous.userConfig,
+          ...(previous ?? currentEmployee).userConfig,
           prompt,
         },
       }));
@@ -172,7 +173,7 @@ export const UserPrompt: React.FC = () => {
       </Modal>
     </>
   );
-};
+});
 
 function readErrorMessage(error: unknown) {
   return error && typeof error === 'object' && 'message' in error ? (error as APIError).message : undefined;

@@ -60,6 +60,7 @@ describe('runJSSources:capabilities', () => {
 
     await expect(invokeCapabilities(registry)).resolves.toMatchObject({ body: manifest });
     expect(manifest.inlineWorkspace.modelUses).toEqual(Object.keys(RUNJS_WORKSPACE_HOSTS));
+    expect(manifest.externalization.destinationTypes).toEqual(['existing', 'new']);
   });
 
   it('registers idempotently and keeps stale unregister callbacks identity-safe', () => {

@@ -446,7 +446,10 @@ function LightExtensionListPageInner() {
     } catch (error) {
       const syncErrorKey =
         error instanceof LightExtensionSyncHookError
-          ? getLightExtensionSyncErrorTranslationKey(error.code) || 'Failed to create repository'
+          ? getLightExtensionSyncErrorTranslationKey(
+              error.code,
+              typeof error.details?.reasonCode === 'string' ? error.details.reasonCode : undefined,
+            ) || 'Failed to create repository'
           : undefined;
       setNotice({
         type: 'error',
@@ -1069,8 +1072,15 @@ function LightExtensionSyncConfigurationPanel({ repoId, onConfigured }: LightExt
     try {
       await sync.testConnection({ repoId, ...source });
       setFeedback({ type: 'success', message: t('Connection successful') });
-    } catch {
-      setFeedback({ type: 'error', message: t('Unable to test connection') });
+    } catch (error) {
+      const errorKey =
+        error instanceof LightExtensionSyncHookError
+          ? getLightExtensionSyncErrorTranslationKey(
+              error.code,
+              typeof error.details?.reasonCode === 'string' ? error.details.reasonCode : undefined,
+            )
+          : undefined;
+      setFeedback({ type: 'error', message: t(errorKey || 'Unable to test connection') });
     } finally {
       setRequest(undefined);
     }
@@ -1085,8 +1095,15 @@ function LightExtensionSyncConfigurationPanel({ repoId, onConfigured }: LightExt
     try {
       const result = await sync.configure({ repoId, ...source });
       onConfigured(result.source);
-    } catch {
-      setFeedback({ type: 'error', message: t('Unable to configure sync source') });
+    } catch (error) {
+      const errorKey =
+        error instanceof LightExtensionSyncHookError
+          ? getLightExtensionSyncErrorTranslationKey(
+              error.code,
+              typeof error.details?.reasonCode === 'string' ? error.details.reasonCode : undefined,
+            )
+          : undefined;
+      setFeedback({ type: 'error', message: t(errorKey || 'Unable to configure sync source') });
     } finally {
       setRequest(undefined);
     }

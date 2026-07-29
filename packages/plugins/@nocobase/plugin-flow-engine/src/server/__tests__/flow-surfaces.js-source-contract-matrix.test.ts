@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { RUNJS_INLINE_WORKSPACE_MODEL_USES } from '@nocobase/runjs-workspace';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { compileFlowSurfaceApplyBlueprintRequest } from '../flow-surfaces/blueprint';
 import { exportFlowSurfaceBlueprintDocument } from '../flow-surfaces/blueprint/export-document';
@@ -16,6 +17,7 @@ import { FlowSurfaceContractGuard } from '../flow-surfaces/contract-guard';
 import { clearInactiveRunJsSourceBinding, resolveRunJsSettingsGroupKey } from '../flow-surfaces/service';
 import { buildRunJsSourceChanges } from '../flow-surfaces/service-utils';
 import { validateRunJsSourceBinding, type RunJsSourceBindingKind } from '../flow-surfaces/source-binding-authoring';
+import { FLOW_SURFACE_RUNJS_HOSTS } from '../flow-surfaces/page-surface-contract';
 
 type RunJsGroupKey = 'jsSettings' | 'clickSettings';
 
@@ -39,7 +41,6 @@ type RunJsStepParams = Partial<Record<RunJsGroupKey, { runJs: RunJsState }>>;
 const NON_ACTION_SURFACES: SurfaceCase[] = [
   { label: 'JS Block', use: 'JSBlockModel', kind: 'js-block', group: 'jsSettings' },
   { label: 'JS Item', use: 'JSItemModel', kind: 'js-item', group: 'jsSettings' },
-  { label: 'Form JS Item', use: 'FormJSFieldItemModel', kind: 'js-item', group: 'jsSettings' },
   { label: 'JS Item Action', use: 'JSItemActionModel', kind: 'js-item', group: 'jsSettings' },
   { label: 'JS Field', use: 'JSFieldModel', kind: 'js-field', group: 'jsSettings' },
   { label: 'JS Editable Field', use: 'JSEditableFieldModel', kind: 'js-field', group: 'jsSettings' },
@@ -295,6 +296,14 @@ function createLightExtensionPageTree() {
 }
 
 describe('flowSurfaces JS source contract matrix', () => {
+  it('keeps the public Flow Surface host set aligned with the fixed v1 authoring matrix', () => {
+    expect(Object.keys(FLOW_SURFACE_RUNJS_HOSTS)).toEqual(RUNJS_INLINE_WORKSPACE_MODEL_USES);
+    expect(RUNJS_INLINE_WORKSPACE_MODEL_USES).not.toContain('FormJSFieldItemModel');
+    expect(FLOW_SURFACE_RUNJS_HOSTS).not.toHaveProperty('FormJSFieldItemModel');
+    expect(resolveRunJsSettingsGroupKey('FormJSFieldItemModel')).toBeUndefined();
+    expect(getNodeContract('FormJSFieldItemModel')).toMatchObject({ editableDomains: [], domains: {} });
+  });
+
   it('keeps legacy inline, explicit inline, and light-extension source in canonical runJs for every owner use', () => {
     for (const caseItem of SURFACES) {
       expect(resolveRunJsSettingsGroupKey(caseItem.use), caseItem.label).toBe(caseItem.group);

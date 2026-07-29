@@ -773,18 +773,6 @@ export const lightExtensionSchemas = {
     oneOf: [
       {
         type: 'object',
-        required: ['type'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['default'],
-            description: 'Use the application default light-extension repository, creating it when necessary.',
-          },
-        },
-        additionalProperties: false,
-      },
-      {
-        type: 'object',
         required: ['type', 'repoId'],
         properties: {
           type: {
@@ -816,7 +804,7 @@ export const lightExtensionSchemas = {
         additionalProperties: false,
       },
     ],
-    description: 'Destination selection: application default, an existing repository, or a new repository.',
+    description: 'Destination selection: an existing repository or a new repository.',
   },
   LightExtensionMoveSourceRequest: {
     type: 'object',
@@ -909,8 +897,14 @@ export const lightExtensionSchemas = {
   },
   LightExtensionMoveToInlineRequest: {
     type: 'object',
-    required: ['locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'],
+    required: ['idempotencyKey', 'locator', 'repoId', 'entryId', 'entryPath', 'kind', 'version', 'files'],
     properties: {
+      idempotencyKey: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 255,
+        description: 'Required retry key. Reusing it with a different request returns an idempotency conflict.',
+      },
       locator: {
         $ref: '#/components/schemas/RunJSSourceLocator',
       },

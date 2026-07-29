@@ -136,6 +136,7 @@ describe('MoveSourceToLightExtension', () => {
     render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual(['existing', 'new']);
     fireEvent.click(await screen.findByRole('radio', { name: 'Existing light extension' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     expect(await screen.findByText('enabled-repo')).toBeTruthy();

@@ -39,6 +39,7 @@ describe('Light Extension authoring capability contribution', () => {
       supportsIdempotency: true,
       supportsMoveToInline: true,
     });
+    expect(lightExtensionExternalizationCapabilities.destinationTypes).toEqual(['existing', 'new']);
 
     await plugin.load();
     expect(workspaceModule.getRunJSAuthoringCapabilityRegistry().getExternalization()).toBe(

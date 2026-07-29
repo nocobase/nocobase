@@ -474,9 +474,6 @@ export interface LightExtensionMoveSourceWorkspaceFile {
 
 export type LightExtensionMoveSourceDestination =
   | {
-      type: 'default';
-    }
-  | {
       type: 'existing';
       repoId: string;
     }
@@ -515,6 +512,7 @@ export interface LightExtensionMoveSourceResult {
 }
 
 export interface LightExtensionMoveToInlineInput {
+  idempotencyKey: string;
   locator: RunJSSourceLocator;
   repoId: string;
   entryId: string;

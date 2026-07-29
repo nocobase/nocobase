@@ -42,6 +42,20 @@ type FilterGroupValue = {
   items: any[];
 };
 
+function getFirstErrorMessage(errors: unknown): string | undefined {
+  if (!Array.isArray(errors) || !errors.length) {
+    return;
+  }
+
+  const firstError = errors[0];
+  if (typeof firstError === 'string') {
+    return firstError;
+  }
+  if (typeof firstError === 'object' && firstError !== null && 'message' in firstError) {
+    return typeof firstError.message === 'string' ? firstError.message : undefined;
+  }
+}
+
 const drawerTitleClassName = css`
   display: inline-flex;
   align-items: center;
@@ -320,7 +334,7 @@ const EnvironmentPage: React.FC = observer(() => {
   );
 });
 
-function VariableForm(props: {
+export function VariableForm(props: {
   mode: 'create' | 'edit';
   initialValues?: EnvVariable;
   onSubmitted: () => void;
@@ -330,6 +344,7 @@ function VariableForm(props: {
   const t = useT();
   const ctx = useFlowContext();
   const view = useFlowView();
+  const { notification } = App.useApp();
   const [form] = Form.useForm<EnvVariable>();
   const [submitting, setSubmitting] = useState(false);
 
@@ -337,22 +352,29 @@ function VariableForm(props: {
     const values = await form.validateFields();
     setSubmitting(true);
     try {
-      if (mode === 'create') {
-        await ctx.api.request({ url: 'environmentVariables:create', method: 'post', data: values });
-      } else {
-        await ctx.api.request({
-          url: `environmentVariables:update`,
-          method: 'post',
-          params: { filterByTk: initialValues?.name },
-          data: values,
+      try {
+        if (mode === 'create') {
+          await ctx.api.request({ url: 'environmentVariables:create', method: 'post', data: values });
+        } else {
+          await ctx.api.request({
+            url: `environmentVariables:update`,
+            method: 'post',
+            params: { filterByTk: initialValues?.name },
+            data: values,
+          });
+        }
+      } catch (error) {
+        notification.error({
+          message: getFirstErrorMessage(ctx.api.toErrMessages(error)) || t('Operation failed'),
         });
+        return;
       }
       onSubmitted();
       await view.close();
     } finally {
       setSubmitting(false);
     }
-  }, [ctx.api, form, initialValues?.name, mode, onSubmitted, view]);
+  }, [ctx.api, form, initialValues?.name, mode, notification, onSubmitted, t, view]);
 
   return (
     <div>
@@ -471,24 +493,16 @@ export function BulkImportForm(props: { onSubmitted: () => void }) {
     }
     setSubmitting(true);
     try {
-      await ctx.api.request({ url: 'environmentVariables:create', method: 'post', data: items });
+      try {
+        await ctx.api.request({ url: 'environmentVariables:create', method: 'post', data: items });
+      } catch (error) {
+        notification.error({
+          message: getFirstErrorMessage(ctx.api.toErrMessages(error)) || t('Operation failed'),
+        });
+        return;
+      }
       onSubmitted();
       await view.close();
-    } catch (error: unknown) {
-      const responseError = ctx.api.toErrMessages(error)?.[0];
-      let responseMessage: string | undefined;
-      if (typeof responseError === 'string') {
-        responseMessage = responseError;
-      } else if (typeof responseError?.message === 'string') {
-        responseMessage = responseError.message;
-      } else if (error instanceof Error) {
-        responseMessage = error.message;
-      }
-      notification.error({
-        message: t('Bulk import failed'),
-        description: responseMessage,
-        role: 'alert',
-      });
     } finally {
       setSubmitting(false);
     }

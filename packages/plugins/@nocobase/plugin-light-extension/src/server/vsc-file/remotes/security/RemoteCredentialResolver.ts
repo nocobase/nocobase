@@ -10,7 +10,7 @@
 import type { Database, Model } from '@nocobase/database';
 
 import { RemoteSyncError } from '../RemoteSyncAdapter';
-import { isVscRemoteLiteralToken, validateVscRemoteCredentialRef, type VscRemoteCredentialRef } from '../credentialRef';
+import { validateVscRemoteCredentialRef, type VscRemoteCredentialRef } from '../credentialRef';
 
 export type RemoteCredentialMode = 'required' | 'optional';
 
@@ -46,10 +46,6 @@ export class RemoteCredentialResolver {
     }
 
     const parsed = await this.validate(authRef);
-    if (isVscRemoteLiteralToken(parsed)) {
-      return parsed.token;
-    }
-
     let variables: unknown;
     try {
       variables = this.environment.getVariables();

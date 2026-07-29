@@ -251,7 +251,7 @@ describe('GitCommandRunner', () => {
       args: ['ls-remote', 'https://git.example.com/team/project.git'],
       remoteUrl: 'https://git.example.com/team/project.git',
       transport: 'https',
-      credential: { kind: 'https', username: 'oauth2', password: httpsPassword },
+      credential: { kind: 'https', username: 'git-user', password: httpsPassword },
     });
     const sshResult = await runner.run({
       args: ['ls-remote', 'ssh://git@git.example.com/team/project.git'],

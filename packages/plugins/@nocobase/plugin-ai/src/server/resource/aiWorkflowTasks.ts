@@ -144,6 +144,14 @@ export const aiWorkflowTasks: ResourceOptions = {
         },
       });
 
+      const conversation = await ctx.db.getRepository('aiConversations').findOne({
+        filter: {
+          sessionId,
+        },
+        appends: ['aiEmployee'],
+      });
+      const aiEmployee = conversation?.aiEmployee;
+
       const readonly = task.status !== 'pending_approval' || task.acceptedUserId !== userId;
 
       ctx.body = {
@@ -151,6 +159,7 @@ export const aiWorkflowTasks: ResourceOptions = {
         read: usersAiWorkflowTasks?.read ?? true,
         config: node?.config ?? null,
         structuredOutputSchema: node?.config?.structuredOutput?.schema ?? null,
+        aiEmployee: aiEmployee?.toJSON?.() ?? aiEmployee ?? null,
         readonly,
       };
 

@@ -171,6 +171,7 @@ function normalizeMoveSourceOriginBinding(value: unknown): LightExtensionMoveSou
 
 function normalizeMoveToInlineInput(input: ResourceActionInput): LightExtensionMoveToInlineInput {
   return {
+    idempotencyKey: requireIdempotencyKey(input),
     locator: normalizeRunJSSourceLocator(input.locator),
     repoId: requireRepoId(input),
     entryId: requireString(input, 'entryId'),
@@ -179,6 +180,14 @@ function normalizeMoveToInlineInput(input: ResourceActionInput): LightExtensionM
     version: requireString(input, 'version'),
     files: requireArray(input, 'files', normalizeMoveSourceFile),
   };
+}
+
+function requireIdempotencyKey(input: ResourceActionInput): string {
+  const idempotencyKey = optionalIdempotencyKey(input);
+  if (!idempotencyKey) {
+    throw invalidInput('idempotencyKey must be a non-empty string');
+  }
+  return idempotencyKey;
 }
 
 function getMoveSourceServiceContext(ctx: LightExtensionResourceContext): MoveSourceServiceContext {
@@ -289,9 +298,6 @@ function optionalLightExtensionKind(input: ResourceActionInput, key: string): Li
 function normalizeMoveSourceDestination(value: unknown): LightExtensionMoveSourceInput['destination'] {
   const destination = toRecord(value);
   const type = requireString(destination, 'type', 'destination.type');
-  if (type === 'default') {
-    return { type };
-  }
   if (type === 'existing') {
     return {
       type,
@@ -306,7 +312,7 @@ function normalizeMoveSourceDestination(value: unknown): LightExtensionMoveSourc
       description: optionalNullableString(destination, 'description'),
     };
   }
-  throw invalidInput('destination.type must be "default", "existing", or "new"');
+  throw invalidInput('destination.type must be "existing" or "new"');
 }
 
 function requireStringValue(input: ResourceActionInput, key: string, label: string): string {

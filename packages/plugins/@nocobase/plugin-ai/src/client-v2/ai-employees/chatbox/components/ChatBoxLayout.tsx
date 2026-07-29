@@ -20,34 +20,42 @@ import { AISelection } from '../../AISelection';
 import { AISelectionControl } from '../../AISelectionControl';
 import { avatars } from '../../avatars';
 import { dialogController } from '../../stores/dialog-controller';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatToolsStore } from '../stores/chat-tools';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../manager/ai-manager';
 import { useT } from '../../../locale';
 import type { PluginAIClientV2 } from '../../../plugin';
-import {
-  normalizeTriggerTaskOptions,
-  type RunJSAIEmployeeTriggerTaskOptions,
-} from '../utils/normalizeTriggerTaskOptions';
+import { normalizeTriggerTaskOptions, type RunJSAIEmployeeTriggerTaskOptions } from '../utils';
+import { getMountedChatBox } from '../stores/mounted-chat-boxes';
+import { ChatBoxRuntimeProvider, getGlobalChatBoxRuntime, useChatBoxRuntime } from '../stores/runtime';
 
 const { Text } = Typography;
 
 export const ChatBoxLayout: React.FC<{
   children?: React.ReactNode;
 }> = ({ children }) => {
+  return (
+    <ChatBoxRuntimeProvider runtime={getGlobalChatBoxRuntime()}>
+      <ChatBoxLayoutContent>{children}</ChatBoxLayoutContent>
+    </ChatBoxRuntimeProvider>
+  );
+};
+
+const ChatBoxLayoutContent: React.FC<{
+  children?: React.ReactNode;
+}> = observer(({ children }) => {
   const app = useApp();
   const { isMobileLayout } = useMobileLayout();
-  const open = useChatBoxStore.use.open();
-  const expanded = useChatBoxStore.use.expanded();
-  const showDebugPanel = useChatBoxStore.use.showDebugPanel();
-  const setOpen = useChatBoxStore.use.setOpen();
-  const activeTool = useChatToolsStore.use.activeTool();
+  const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
+  const open = chatBoxModel.open;
+  const expanded = chatBoxModel.expanded;
+  const showDebugPanel = chatBoxModel.showDebugPanel;
+  const activeTool = chatToolModel.activeTool;
   const { loadUnreadCounts } = useChatConversationActions();
   const { triggerTask } = useChatBoxActions();
   const aiConfigRepository = useAIConfigRepository();
+  const t = useT();
 
   const refreshUnreadCounts = useCallback(() => {
     loadUnreadCounts().catch(console.error);
@@ -77,6 +85,17 @@ export const ChatBoxLayout: React.FC<{
           if (!normalized) {
             return undefined;
           }
+          const targetChatBoxUid = normalized.chatBoxUid;
+          const targetChatBox = targetChatBoxUid ? getMountedChatBox(targetChatBoxUid) : undefined;
+          if (targetChatBoxUid && !targetChatBox) {
+            notification.error({
+              message: t('AI chat box not found', { uid: targetChatBoxUid }),
+            });
+            return undefined;
+          }
+          if (targetChatBox) {
+            return targetChatBox.triggerTask(normalized);
+          }
           return triggerTask(normalized);
         })
         .catch(console.error);
@@ -88,7 +107,7 @@ export const ChatBoxLayout: React.FC<{
       aiManager?.onChatBoxUnmounted();
       app.eventBus.removeEventListener(AI_EMPLOYEE_TRIGGER_TASK_EVENT, handler);
     };
-  }, [aiConfigRepository, app.apiClient, app.eventBus, app.pm, triggerTask]);
+  }, [aiConfigRepository, app.apiClient, app.eventBus, app.pm, t, triggerTask]);
 
   const panelWidth = 450;
   const zIndex = 1100;
@@ -128,7 +147,7 @@ html body {
           panelWidth={panelWidth}
           zIndex={zIndex}
           onClose={() => {
-            setOpen(false);
+            chatBoxModel.setOpen(false);
           }}
         />
       ) : null}
@@ -138,7 +157,7 @@ html body {
       {showDebugPanel ? <DebugPanel /> : null}
     </>
   );
-};
+});
 
 const ChatBoxWrapper: React.FC<{
   expanded: boolean;
@@ -148,7 +167,8 @@ const ChatBoxWrapper: React.FC<{
   onClose: () => void;
 }> = observer(({ expanded, isMobileLayout, panelWidth, zIndex, onClose }) => {
   const { token } = theme.useToken();
-  const minimize = useChatBoxStore.use.minimize();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const minimize = chatBoxModel.minimize;
   const dialogZIndex = dialogController.shouldHide ? -1 : zIndex;
 
   if (isMobileLayout) {
@@ -232,10 +252,9 @@ const MobileLayoutChatBox: React.FC<{
 });
 
 const ChatBoxMinimizeControl: React.FC = () => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const minimize = useChatBoxStore.use.minimize();
-  const setMinimize = useChatBoxStore.use.setMinimize();
-  const setOpen = useChatBoxStore.use.setOpen();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const minimize = chatBoxModel.minimize;
   const t = useT();
   const [api, contextHolder] = notification.useNotification();
   const key = React.useRef(`ai-chat-box-minimize-control-${Date.now()}`);
@@ -257,8 +276,8 @@ const ChatBoxMinimizeControl: React.FC = () => {
               type="text"
               onClick={(event) => {
                 event.stopPropagation();
-                setOpen(false);
-                setMinimize(false);
+                chatBoxModel.setOpen(false);
+                chatBoxModel.setMinimize(false);
               }}
             />
           </Flex>
@@ -269,7 +288,7 @@ const ChatBoxMinimizeControl: React.FC = () => {
           width: 200,
         },
         onClick() {
-          setMinimize(false);
+          chatBoxModel.setMinimize(false);
         },
       });
     } else {
@@ -279,7 +298,7 @@ const ChatBoxMinimizeControl: React.FC = () => {
     return () => {
       api.destroy(notificationKey);
     };
-  }, [api, currentEmployeeAvatar, minimize, setMinimize, setOpen, t]);
+  }, [api, chatBoxModel, currentEmployeeAvatar, minimize, t]);
 
   return <>{contextHolder}</>;
 };

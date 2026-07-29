@@ -136,29 +136,6 @@ describe('RunJS Context Runtime Behavior', () => {
     });
   });
 
-  describe('FormJSFieldItemRunJSContext', () => {
-    it('should create FormJSFieldItem context successfully', async () => {
-      const ctx = new FlowContext();
-      ctx.defineProperty('model', { value: { constructor: { name: 'FormJSFieldItemModel' } } });
-
-      const runner = createJSRunnerWithVersion.call(ctx, { version: 'v1' });
-      const result = await runner.run('return typeof ctx !== "undefined"');
-
-      expect(result?.success).toBe(true);
-      expect(result?.value).toBe(true);
-    });
-
-    it('should have form field-specific properties and methods in documentation', () => {
-      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-
-      expect(doc?.properties?.element).toBeTruthy();
-      expect(doc?.properties?.value).toBeTruthy();
-      expect(doc?.properties?.record).toBeTruthy();
-      expect(doc?.methods?.setProps).toBeTruthy();
-    });
-  });
-
   describe('JSRecordActionRunJSContext', () => {
     it('should create JSRecordAction context successfully', async () => {
       const ctx = new FlowContext();
@@ -205,10 +182,10 @@ describe('RunJS Context Runtime Behavior', () => {
       const contextTypes = [
         'JSBlockModel',
         'JSFieldModel',
+        'JSEditableFieldModel',
         'JSItemModel',
         'JSItemActionModel',
         'JSColumnModel',
-        'FormJSFieldItemModel',
         'JSRecordActionModel',
         'JSCollectionActionModel',
       ];
@@ -257,10 +234,10 @@ describe('RunJS Context Runtime Behavior', () => {
       const contextTypes = [
         'JSBlockModel',
         'JSFieldModel',
+        'JSEditableFieldModel',
         'JSItemModel',
         'JSItemActionModel',
         'JSColumnModel',
-        'FormJSFieldItemModel',
         'JSRecordActionModel',
         'JSCollectionActionModel',
       ];

@@ -90,10 +90,10 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
 
   async resolveConfigDraft(input: unknown, authRef: unknown = null): Promise<VscGitRemoteConfig> {
     const draft = normalizeGitRemoteConfigDraft(input);
+    const credential = await this.resolveCredential(draft.transport, authRef, 'optional');
     if (draft.branch !== null) {
       return normalizeGitRemoteConfig(draft);
     }
-    const credential = await this.resolveCredential(draft.transport, authRef, 'optional');
     const probed = await this.probeDefaultBranch(draft.url, draft.transport, credential);
     return normalizeGitRemoteConfig({ ...draft, branch: probed.branch });
   }

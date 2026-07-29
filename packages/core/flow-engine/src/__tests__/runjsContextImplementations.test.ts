@@ -223,35 +223,6 @@ describe('Specific RunJSContext implementations', () => {
     });
   });
 
-  describe('FormJSFieldItemRunJSContext', () => {
-    it('should have element property', () => {
-      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.element).toBeTruthy();
-    });
-
-    it('should have value and record properties', () => {
-      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.value).toBeTruthy();
-      expect(doc?.properties?.record).toBeTruthy();
-    });
-
-    it('should have setProps method', () => {
-      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.methods?.setProps).toBeTruthy();
-    });
-
-    it('should support zh-CN locale', () => {
-      const ctx = new FlowContext();
-      (ctx as any).defineProperty('model', { value: { constructor: { name: 'FormJSFieldItemModel' } } });
-      (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.label).toMatch(/表单 JS 字段项/);
-    });
-  });
-
   describe('JSEditableFieldRunJSContext', () => {
     it('should be registered for JSEditableFieldModel', () => {
       const ctor = RunJSContextRegistry['resolve']('v1' as any, 'JSEditableFieldModel');

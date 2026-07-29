@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Page Blocks",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Built-in AI Employees",
     "items": [
       {
@@ -149,11 +160,6 @@
         "type": "custom-link",
         "label": "Vector Database",
         "link": "/ai-employees/knowledge-base/vector-database"
-      },
-      {
-        "type": "custom-link",
-        "label": "Vector Store",
-        "link": "/ai-employees/knowledge-base/vector-store"
       },
       {
         "type": "custom-link",

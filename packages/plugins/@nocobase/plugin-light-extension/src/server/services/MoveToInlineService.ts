@@ -41,6 +41,8 @@ import { LightExtensionEntryService } from './LightExtensionEntryService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
+import { LightExtensionRepoService } from './LightExtensionRepoService';
+import { MoveOperationStore, type MoveOperationReservation } from './MoveOperationStore';
 import {
   LightExtensionWorkspaceCompilerBridge,
   rewriteLightExtensionSdkRuntimeImports,
@@ -95,20 +97,40 @@ interface PreparedMoveToInline {
 }
 
 export class MoveToInlineService {
+  private readonly moveOperationStore: MoveOperationStore;
+
   constructor(
     private readonly db: Database,
+    private readonly repoService: LightExtensionRepoService,
     private readonly entryService: LightExtensionEntryService,
     private readonly workspaceCompilerBridge: LightExtensionWorkspaceCompilerBridge,
     private readonly referenceService: ReferenceService,
     private readonly getVscFileService: VscFileServiceProvider,
     private readonly getAdapterRegistry: AdapterRegistryProvider,
-  ) {}
+    private readonly applicationName = 'main',
+  ) {
+    this.moveOperationStore = new MoveOperationStore(db, applicationName);
+  }
 
   async moveToInline(
     input: LightExtensionMoveToInlineInput,
     ctx: MoveToInlineServiceContext,
   ): Promise<LightExtensionMoveToInlineResult> {
+    let operation: MoveOperationReservation | undefined;
     try {
+      assertMoveToInlineInputSupported(input);
+      const descriptor = createMoveToInlineOperationDescriptor(input);
+      const inspected = await this.moveOperationStore.inspect(descriptor);
+      if (inspected.replayResult) {
+        await this.assertCanReplayMoveToInline(input, inspected.replayResult, ctx);
+        return inspected.replayResult;
+      }
+      const claimed = await this.moveOperationStore.claim(descriptor);
+      if (claimed.replayResult) {
+        await this.assertCanReplayMoveToInline(input, claimed.replayResult, ctx);
+        return claimed.replayResult;
+      }
+      operation = claimed.reservation;
       assertRunJSCompileInputLimits(input.files);
       const relocatedFiles = collectAndRelocateInlineFiles({
         files: input.files,
@@ -127,12 +149,45 @@ export class MoveToInlineService {
         throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
       }
       const prepared = await this.prepareMoveToInline(input, ctx, relocatedFiles, vscFileService);
-      return await this.db.sequelize.transaction((transaction) =>
-        this.publishMoveToInline(input, ctx, prepared, vscFileService, transaction),
-      );
+      return await this.db.sequelize.transaction(async (transaction) => {
+        const result = await this.publishMoveToInline(input, ctx, prepared, vscFileService, transaction);
+        await this.moveOperationStore.complete(operation, result, transaction);
+        return result;
+      });
     } catch (error) {
+      await this.moveOperationStore.fail(operation, error);
       throw normalizeMoveToInlineError(error);
     }
+  }
+
+  private async assertCanReplayMoveToInline(
+    input: LightExtensionMoveToInlineInput,
+    result: LightExtensionMoveToInlineResult,
+    ctx: MoveToInlineServiceContext,
+  ): Promise<void> {
+    const locator = requireFlowModelStepLocator(input.locator);
+    const registry = this.getAdapterRegistry();
+    const vscFileService = this.getVscFileService();
+    if (!registry || !vscFileService) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+    }
+    await registry.require(locator.kind).assertCanWrite({
+      locator,
+      ctx: { ...ctx.adapterContext, sourceTransition: 'external-to-inline' },
+    });
+    await this.repoService.assertApplicationOwnership(input.repoId, this.applicationName, ctx);
+    assertCurrentEntry(await this.entryService.getEntry(input.entryId, ctx), input);
+    await vscFileService.getRepository(
+      { repoId: result.runJSRepoId },
+      {
+        authorId: ctx.actorUserId,
+        request: {
+          ...ctx.adapterContext.request,
+          resourceName: 'runJSSources',
+          actionName: 'save',
+        },
+      },
+    );
   }
 
   private async prepareMoveToInline(
@@ -891,6 +946,48 @@ function isLightExtensionBinding(value: unknown): value is LightExtensionRuntime
     typeof value.entryId === 'string' &&
     typeof value.kind === 'string'
   );
+}
+
+function assertMoveToInlineInputSupported(input: LightExtensionMoveToInlineInput): void {
+  if (typeof input.idempotencyKey !== 'string' || !input.idempotencyKey.trim()) {
+    throw invalidInput('Move to inline idempotency key must be a non-empty string');
+  }
+  if (input.idempotencyKey.length > 255) {
+    throw invalidInput('Move to inline idempotency key must be at most 255 characters');
+  }
+}
+
+function createMoveToInlineOperationDescriptor(input: LightExtensionMoveToInlineInput) {
+  return {
+    action: 'move-to-inline',
+    idempotencyKey: input.idempotencyKey,
+    request: { ...input, idempotencyKey: undefined },
+    parseResult: readMoveToInlineOperationResult,
+  };
+}
+
+function readMoveToInlineOperationResult(value: unknown): LightExtensionMoveToInlineResult {
+  if (
+    !isRecord(value) ||
+    typeof value.runJSRepoId !== 'string' ||
+    typeof value.commitId !== 'string' ||
+    typeof value.ownerFingerprint !== 'string' ||
+    typeof value.code !== 'string' ||
+    typeof value.version !== 'string' ||
+    typeof value.entryPath !== 'string' ||
+    typeof value.filesHash !== 'string' ||
+    !isRecord(value.sourceRef) ||
+    value.sourceRef.type !== 'vsc-file' ||
+    value.sourceRef.repoId !== value.runJSRepoId ||
+    value.sourceRef.commitId !== value.commitId ||
+    value.sourceRef.entry !== value.entryPath
+  ) {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_SOURCE_ERROR',
+      'Move to inline operation has an invalid completed result',
+    );
+  }
+  return value as unknown as LightExtensionMoveToInlineResult;
 }
 
 function bindingOutdated(

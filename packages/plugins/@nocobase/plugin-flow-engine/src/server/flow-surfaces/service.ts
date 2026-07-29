@@ -865,7 +865,6 @@ const JS_POPUP_GUIDANCE_USES = new Set([
   'JSItemModel',
   'JSFieldModel',
   'JSEditableFieldModel',
-  'FormJSFieldItemModel',
 ]);
 const JS_POPUP_GUIDANCE_PUBLIC_KEYS = new Set(['js', 'jsColumn', 'jsItem']);
 const POPUP_ACTION_USES = new Set([
@@ -1362,7 +1361,7 @@ function resolveRunJsSourceBindingKindForUse(use: unknown): RunJsSourceBindingKi
   if (['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(normalizedUse)) {
     return 'js-field';
   }
-  if (['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel'].includes(normalizedUse)) {
+  if (['JSItemModel', 'JSItemActionModel'].includes(normalizedUse)) {
     return 'js-item';
   }
   if (JS_ACTION_USES.has(normalizedUse)) {
@@ -1377,14 +1376,7 @@ export function resolveRunJsSettingsGroupKey(use: unknown): RunJsSettingsGroupKe
     return 'clickSettings';
   }
   if (
-    [
-      'JSBlockModel',
-      'JSItemModel',
-      'FormJSFieldItemModel',
-      'JSFieldModel',
-      'JSEditableFieldModel',
-      'JSColumnModel',
-    ].includes(normalizedUse) ||
+    ['JSBlockModel', 'JSItemModel', 'JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(normalizedUse) ||
     JS_ITEM_ACTION_USES.has(normalizedUse)
   ) {
     return 'jsSettings';
