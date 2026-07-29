@@ -5168,7 +5168,7 @@ function resolveRunJsSourceBindingKindForModelUse(modelUse: string): RunJsSource
   if (['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(modelUse)) {
     return 'js-field';
   }
-  if (['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel'].includes(modelUse)) {
+  if (['JSItemModel', 'JSItemActionModel'].includes(modelUse)) {
     return 'js-item';
   }
   if (

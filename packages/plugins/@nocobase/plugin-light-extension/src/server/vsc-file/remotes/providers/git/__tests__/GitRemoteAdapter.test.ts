@@ -77,6 +77,18 @@ describe('GitRemoteAdapter', () => {
     });
   });
 
+  it('validates a credential Secret even when the branch is explicit', async () => {
+    const credentialResolver = { resolve: vi.fn(async () => 'legacy-literal-token') };
+    const commandRunner = { run: vi.fn() };
+    const credentialAdapter = new GitRemoteAdapter({ credentialResolver, runner: commandRunner });
+
+    await expect(credentialAdapter.resolveConfigDraft(config, '{{ $env.LEGACY_GIT_TOKEN }}')).rejects.toMatchObject({
+      code: 'AUTH_REF_INVALID',
+      details: { reasonCode: 'invalid-credential-json' },
+    });
+    expect(commandRunner.run).not.toHaveBeenCalled();
+  });
+
   it('fetches root and subdirectory snapshots and rejects drift from a planned revision', async () => {
     const root = await adapter.fetchSnapshot(target(config));
     expect(root).toMatchObject({
@@ -206,7 +218,7 @@ describe('GitRemoteAdapter', () => {
           return null;
         }
         if (authRef === 'https-auth') {
-          return JSON.stringify({ kind: 'https', username: 'oauth2', password: 'secret' });
+          return JSON.stringify({ kind: 'https', username: 'git-user', password: 'secret' });
         }
         return JSON.stringify({
           kind: 'ssh',
@@ -238,7 +250,7 @@ describe('GitRemoteAdapter', () => {
     );
 
     const calls = vi.mocked(fakeRunner.run).mock.calls.map(([request]) => request);
-    expect(calls[0].credential).toEqual({ kind: 'https', username: 'oauth2', password: 'secret' });
+    expect(calls[0].credential).toEqual({ kind: 'https', username: 'git-user', password: 'secret' });
     expect(calls[1].credential).toEqual({
       kind: 'ssh',
       privateKey: 'private-key',
@@ -375,7 +387,7 @@ function createAdapter(runner: GitCommandExecutor, temporaryDirectory: string): 
           }
           return null;
         }
-        return JSON.stringify({ kind: 'https', username: 'oauth2', password: String(authRef) });
+        return JSON.stringify({ kind: 'https', username: 'git-user', password: String(authRef) });
       },
     },
   });

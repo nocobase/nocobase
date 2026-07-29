@@ -208,6 +208,8 @@ interface RunJSExecutionResult<T = unknown> {
 }
 interface RunJSSafeElement extends RunJSUnknownObject {
   readonly __el: unknown;
+  addEventListener(type: string, listener: (event: RunJSUnknownObject) => void): void;
+  removeEventListener(type: string, listener: (event: RunJSUnknownObject) => void): void;
 }
 interface PointerEvent {
   readonly clientX: number;
@@ -375,15 +377,6 @@ interface RunJSContext {
   collectionField?: RunJSCollectionField;
 }
 `,
-  FormJSFieldItemModel: `
-interface RunJSContext {
-  element: RunJSSafeElement;
-  value: unknown;
-  record?: RunJSRecord;
-  formValues?: Record<string, unknown>;
-  setProps(fieldModel: unknown, props: Record<string, unknown>): void;
-}
-`,
   JSRecordActionModel: `
 interface RunJSContext {
   record: RunJSRecord;
@@ -413,7 +406,6 @@ interface RunJSContext {}
 
 const runJSSourceRuntimeModelUses = new Set([
   'FilterFormJSActionModel',
-  'FormJSFieldItemModel',
   'JSActionModel',
   'JSBlockModel',
   'JSCollectionActionModel',

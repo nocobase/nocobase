@@ -64,7 +64,13 @@ const errorTranslationKeys: Partial<Record<LightExtensionErrorCode, string>> = {
   LIGHT_EXTENSION_PERMISSION_DENIED: 'You do not have permission to perform this sync operation',
 };
 
-export function getLightExtensionSyncErrorTranslationKey(code?: string | null): string | undefined {
+export function getLightExtensionSyncErrorTranslationKey(
+  code?: string | null,
+  reasonCode?: string | null,
+): string | undefined {
+  if (code === 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID' && reasonCode === 'default-branch-unavailable') {
+    return 'The remote repository has no default branch. Enter a branch explicitly.';
+  }
   return code ? errorTranslationKeys[code as LightExtensionErrorCode] : undefined;
 }
 

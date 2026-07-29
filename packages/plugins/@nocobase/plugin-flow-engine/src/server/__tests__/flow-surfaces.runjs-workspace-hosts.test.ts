@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -78,6 +77,7 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
   let actionPanelUid: string;
   let standardTabUid: string;
   let tableUid: string;
+  let formJSFieldHost: WorkspaceHost | undefined;
   const hosts: WorkspaceHost[] = [];
 
   beforeAll(async () => {
@@ -146,10 +146,6 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
         values: { target: { uid: table.uid }, fieldPath: 'nickname', renderer: 'js' },
       },
       {
-        modelUse: 'JSEditableFieldModel',
-        values: { target: { uid: createForm.uid }, fieldPath: 'nickname', renderer: 'js' },
-      },
-      {
         modelUse: 'JSColumnModel',
         values: { target: { uid: table.uid }, type: 'jsColumn' },
       },
@@ -162,6 +158,27 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
       const result = getData(await context.rootAgent.resource('flowSurfaces').addField({ values: input.values }));
       hosts.push(expectWorkspaceResult(result, input.modelUse));
     }
+
+    const formJSField = getData(
+      await context.rootAgent.resource('flowSurfaces').addField({
+        values: { target: { uid: createForm.uid }, fieldPath: 'nickname', renderer: 'js' },
+      }),
+    );
+    expect(formJSField).toMatchObject({
+      fieldUse: 'JSEditableFieldModel',
+      renderer: 'js',
+      workspaceStatus: 'ready',
+      runJSLocator: {
+        kind: 'flowModel.step',
+        modelUid: formJSField.fieldUid,
+        flowKey: 'jsSettings',
+        stepKey: 'runJs',
+        paramPath: ['code'],
+        versionPath: ['version'],
+      },
+    });
+    formJSFieldHost = expectWorkspaceResult(formJSField, 'JSEditableFieldModel');
+    hosts.push(formJSFieldHost);
 
     const actionCreates: Array<{ modelUse: FlowSurfaceRunJSModelUse; values: Record<string, unknown> }> = [
       { modelUse: 'JSCollectionActionModel', values: { target: { uid: table.uid }, type: 'js' } },
@@ -181,24 +198,6 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
       }),
     );
     hosts.push(expectWorkspaceResult(recordAction, 'JSRecordActionModel'));
-
-    const formItemUid = uid();
-    await context.flowRepo.upsertModel({
-      uid: formItemUid,
-      use: 'FormJSFieldItemModel',
-      stepParams: {},
-    });
-    hosts.push({
-      modelUse: 'FormJSFieldItemModel',
-      locator: {
-        kind: 'flowModel.step',
-        modelUid: formItemUid,
-        flowKey: 'jsSettings',
-        stepKey: 'runJs',
-        paramPath: ['code'],
-        versionPath: ['version'],
-      },
-    });
 
     expect(hosts.map((host) => host.modelUse).sort()).toEqual(Object.keys(FLOW_SURFACE_RUNJS_HOSTS).sort());
     for (const host of hosts) {
@@ -229,6 +228,10 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
 
   it('materializes and reopens a multi-file workspace for every complete JS host', async () => {
     expect(hosts).toHaveLength(Object.keys(FLOW_SURFACE_RUNJS_HOSTS).length);
+    if (!formJSFieldHost) {
+      throw new Error('Public JSEditableFieldModel host was not created');
+    }
+    expect(hosts).toContainEqual(formJSFieldHost);
 
     for (const host of hosts) {
       const openedResponse = await context.rootAgent.resource('runJSSources').open({
@@ -291,12 +294,25 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
         },
       });
       expect(saveResponse.status, `${host.modelUse}: ${readErrorMessage(saveResponse)}`).toBe(200);
+      const saved = readRecord(saveResponse.body.data);
+      expect(saved).toMatchObject({
+        locator: host.locator,
+        ownerFingerprint: expect.any(String),
+        artifact: {
+          entryPath: 'src/client/index.tsx',
+          filesHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+          runtimeCodeHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+          diagnostics: [],
+        },
+      });
+      expect(saved.ownerFingerprint).not.toBe(opened.ownerFingerprint);
 
       const reopenedResponse = await context.rootAgent.resource('runJSSources').openLatest({
         values: { locator: host.locator },
       });
       expect(reopenedResponse.status, `${host.modelUse}: ${readErrorMessage(reopenedResponse)}`).toBe(200);
       const reopened = readRecord(reopenedResponse.body.data);
+      expect(reopened.ownerFingerprint).toBe(saved.ownerFingerprint);
       const files = reopened.files as Array<Record<string, unknown>>;
       expect(files).toEqual(
         expect.arrayContaining([

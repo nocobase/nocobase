@@ -296,9 +296,14 @@ describe('light extension Git credential logging integration', () => {
         .set('x-git-credential', authorization)
         .send(requestValues);
 
-      expect(bodyResponse.status).toBe(200);
-      expect(responseData(bodyResponse.body)).toMatchObject({
-        source: { credentialConfigured: true, authRefDisplay: '********' },
+      expect(bodyResponse.status).toBe(422);
+      expect(bodyResponse.body).toMatchObject({
+        errors: [
+          {
+            code: 'LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID',
+            details: { reasonCode: 'secret-variable-required' },
+          },
+        ],
       });
       expect(queryResponse.status).toBe(403);
       expect(headerResponse.status).toBe(400);

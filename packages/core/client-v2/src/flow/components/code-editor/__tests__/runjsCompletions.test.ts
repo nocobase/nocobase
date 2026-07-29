@@ -92,14 +92,7 @@ vi.mock('@nocobase/flow-engine', () => {
     },
     methods,
   };
-  const domModels = new Set([
-    'JSBlockModel',
-    'JSFieldModel',
-    'JSEditableFieldModel',
-    'JSItemModel',
-    'JSColumnModel',
-    'FormJSFieldItemModel',
-  ]);
+  const domModels = new Set(['JSBlockModel', 'JSFieldModel', 'JSEditableFieldModel', 'JSItemModel', 'JSColumnModel']);
   return {
     getRunJSDocFor: (ctx: any) => (domModels.has(ctx?.model?.constructor?.name) ? domDoc : baseDoc),
     FlowRunJSContext: { getDoc: () => baseDoc },

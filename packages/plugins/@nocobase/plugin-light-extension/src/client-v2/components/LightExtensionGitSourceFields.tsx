@@ -40,9 +40,7 @@ export type GitRepositoryUrlResult =
 
 type GitRepositoryUrlErrorReason = 'required' | 'invalid';
 
-export type GitBranchValidationResult =
-  | { valid: true; branch: string }
-  | { valid: false; reason: 'required' | 'invalid' };
+export type GitBranchValidationResult = { valid: true; branch: string | null } | { valid: false; reason: 'invalid' };
 
 export type GitSubdirectoryValidationResult = { valid: true; subdirectory: string | null } | { valid: false };
 
@@ -104,9 +102,12 @@ export function parseGitRepositoryUrl(input: string): GitRepositoryUrlResult {
 }
 
 export function validateGitBranch(input: string): GitBranchValidationResult {
+  if (input === '') {
+    return { valid: true, branch: null };
+  }
   const branch = input.trim();
   if (!branch) {
-    return { valid: false, reason: 'required' };
+    return { valid: false, reason: 'invalid' };
   }
   if (
     branch !== input ||
@@ -206,12 +207,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
   );
 
   const urlError = urlTouched && 'reason' in urlResult ? getRepositoryUrlError(urlResult.reason, t) : undefined;
-  const branchError =
-    branchTouched && 'reason' in branchValidation
-      ? branchValidation.reason === 'required'
-        ? t('Git branch is required')
-        : t('Git branch is invalid')
-      : undefined;
+  const branchError = branchTouched && 'reason' in branchValidation ? t('Git branch is invalid') : undefined;
   const subdirectoryError =
     subdirectoryTouched && !subdirectoryValidation.valid ? t('Git subdirectory is invalid') : undefined;
 
@@ -233,12 +229,18 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
           value={value.url}
         />
       </Form.Item>
-      <Form.Item help={branchError} label={t('Branch')} required validateStatus={branchError ? 'error' : undefined}>
+      <Form.Item
+        extra={t('Leave blank to use the default branch')}
+        help={branchError}
+        label={t('Branch')}
+        validateStatus={branchError ? 'error' : undefined}
+      >
         <Input
           aria-label={t('Branch')}
           disabled={disabled}
           onBlur={() => setBranchTouched(true)}
           onChange={(event) => updateField('branch', event.target.value)}
+          placeholder={t('Leave blank to use the default branch')}
           status={branchError ? 'error' : undefined}
           value={value.branch}
         />
@@ -262,7 +264,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
         extra={
           urlResult.valid && urlResult.transport === 'ssh'
             ? t("Optional. Leave blank to use the NocoBase process user's SSH configuration.")
-            : t('Optional. Select a Secret variable or enter a token.')
+            : t('Optional for public repositories. Choose a Secret variable.')
         }
         label={t('Git credential')}
       >
@@ -275,7 +277,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
             updateField('authRef', nextValue);
           }}
           onValidationChange={setAuthValidation}
-          placeholder={t('Select a Secret variable or enter a token')}
+          placeholder={t('Select a Secret variable')}
           value={value.authRef}
         />
       </Form.Item>

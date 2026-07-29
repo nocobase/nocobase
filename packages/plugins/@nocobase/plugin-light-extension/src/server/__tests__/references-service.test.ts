@@ -397,35 +397,8 @@ describe('plugin-light-extension references service', () => {
     ]);
   });
 
-  it('indexes FormJSFieldItemModel as a JS item reference owner', async () => {
-    const formJsItem = createJsItemNode({ uid: 'flow_form_js_item' });
-    formJsItem.use = 'FormJSFieldItemModel';
-    const { service, repositories } = createReferenceServiceFixture({
-      flowModelTrees: {
-        flow_form_js_item: formJsItem,
-      },
-      repos: [createRepoRecord({ id: 'ler_items' })],
-      entries: [createJsItemEntryRecord()],
-    });
-
-    const result = await service.syncFlowModelReferencesForNodeTree({
-      rootUid: 'flow_form_js_item',
-      action: 'flowSurfaces.updateSettings',
-    });
-
-    expect(result).toMatchObject({
-      scanned: 1,
-      upserted: 1,
-      statusCounts: {
-        active: 1,
-      },
-    });
-    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
-      kind: 'js-item',
-      ownerLocator: expect.objectContaining({
-        use: 'FormJSFieldItemModel',
-      }),
-    });
+  it('does not index the form JS field menu provider as a source owner', async () => {
+    expect(getReferenceOwnerAdapterByUse('FormJSFieldItemModel')).toBeUndefined();
   });
 
   it('records repo_missing and binding_outdated without blocking reference synchronization', async () => {

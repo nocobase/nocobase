@@ -38,10 +38,10 @@ describe('flowRunJSContext registry and doc', () => {
         'JSBlockModel',
         'JSPageModel',
         'JSFieldModel',
+        'JSEditableFieldModel',
         'JSItemModel',
         'JSItemActionModel',
         'JSColumnModel',
-        'FormJSFieldItemModel',
         'JSRecordActionModel',
         'JSCollectionActionModel',
       ];
@@ -61,10 +61,12 @@ describe('flowRunJSContext registry and doc', () => {
       expect(getRunJSScenesForModel('JSBlockModel', 'v1')).toEqual(['block']);
       expect(getRunJSScenesForModel('JSPageModel', 'v1')).toEqual(['page']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v1')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('JSEditableFieldModel', 'v1')).toEqual(['form']);
       expect(getRunJSScenesForModel('JSItemActionModel', 'v1')).toEqual(['table']);
       expect(getRunJSScenesForModel('JSBlockModel', 'v2')).toEqual(['block']);
       expect(getRunJSScenesForModel('JSPageModel', 'v2')).toEqual(['page']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v2')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('JSEditableFieldModel', 'v2')).toEqual(['form']);
       expect(getRunJSScenesForModel('JSItemActionModel', 'v2')).toEqual(['table']);
       expect(getRunJSScenesForModel('UnknownModel', 'v1')).toEqual([]);
       expect(getRunJSScenesForModel('UnknownModel', 'v2')).toEqual([]);
@@ -75,6 +77,8 @@ describe('flowRunJSContext registry and doc', () => {
       expect(RunJSContextRegistry.resolve('v1', 'UnregisteredJSPageModel')).toBe(
         RunJSContextRegistry.resolve('v1', '*'),
       );
+      expect(RunJSContextRegistry.resolve('v1', 'FormJSFieldItemModel')).toBe(RunJSContextRegistry.resolve('v1', '*'));
+      expect(getRunJSScenesForModel('FormJSFieldItemModel', 'v1')).toEqual([]);
     });
 
     it('should only execute once (idempotent)', async () => {

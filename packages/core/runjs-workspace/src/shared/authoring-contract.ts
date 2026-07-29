@@ -17,7 +17,6 @@ export type RunJSInlineWorkspaceModelUse =
   | 'JSEditableFieldModel'
   | 'JSColumnModel'
   | 'JSItemModel'
-  | 'FormJSFieldItemModel'
   | 'JSItemActionModel'
   | 'JSActionModel'
   | 'JSRecordActionModel'
