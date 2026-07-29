@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   error: vi.fn(),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
+  ensureManagedEnvFileDefaults: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -40,6 +41,7 @@ beforeEach(() => {
   mocks.getEnv.mockReset();
   mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.ensureManagedEnvFileDefaults.mockResolvedValue(undefined);
   mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
   mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.updateNocoBaseSkills.mockResolvedValue({ action: 'updated', status: {} });
@@ -95,6 +97,14 @@ vi.mock('../lib/run-npm.ts', async (importOriginal) => {
   return {
     ...actual,
     run: mocks.runNpm,
+  };
+});
+
+vi.mock('../lib/managed-env-file.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/managed-env-file.js')>();
+  return {
+    ...actual,
+    ensureManagedEnvFileDefaults: mocks.ensureManagedEnvFileDefaults,
   };
 });
 
@@ -529,7 +539,7 @@ test('nb init forwards download options to nb install for a new app flow', async
         '--app-public-path',
         '/console/',
         '--portal-name',
-        'admin',
+        'main',
         '--source',
         'git',
         '--version',
@@ -814,6 +824,17 @@ test('nb init saves env config before install starts so failures still leave the
     schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
     timezone: expect.any(String),
   });
+  expect(mocks.ensureManagedEnvFileDefaults.mock.calls[0]).toEqual([
+    'demoapp',
+    expect.objectContaining({
+      kind: 'docker',
+      source: 'docker',
+      setupState: 'prepared',
+    }),
+  ]);
+  expect(mocks.ensureManagedEnvFileDefaults.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(
+    true,
+  );
   expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(String(mocks.error.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
 });
@@ -1805,7 +1826,7 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
       '--storage-path',
       './storage/local5',
       '--portal-name',
-      'admin',
+      'main',
       '--force',
     ],
   ]);

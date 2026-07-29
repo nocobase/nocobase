@@ -510,10 +510,10 @@ describe('plugin-multi-portal server', () => {
     expect(portals).toEqual([
       expect.objectContaining({
         uid: '__default_portal__',
-        title: 'Admin',
-        portalType: 'no-code',
-        portalName: 'admin',
-        routePath: '/admin',
+        title: 'Main',
+        portalType: 'ai',
+        portalName: 'main',
+        routePath: '/main',
       }),
     ]);
   });
@@ -741,7 +741,7 @@ describe('plugin-multi-portal server', () => {
 
     expect(response.status).toBe(200);
     expect(defaultPortal?.get('enabled')).toBe(false);
-    expect(defaultPortal?.get('portalName')).toBe('admin');
+    expect(defaultPortal?.get('portalName')).toBe('main');
   });
 
   it('should publish custom enabled portal manifest through app supervisor', async () => {

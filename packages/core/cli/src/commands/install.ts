@@ -68,6 +68,7 @@ import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
+import { ensureManagedEnvFileDefaults } from '../lib/managed-env-file.js';
 import {
   buildHookContext,
   persistHookScript,
@@ -104,8 +105,8 @@ const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
-const DEFAULT_INSTALL_PORTAL_TYPE = 'no-code';
-const DEFAULT_INSTALL_PORTAL_NAME = 'admin';
+const DEFAULT_INSTALL_PORTAL_TYPE = 'ai';
+const DEFAULT_INSTALL_PORTAL_NAME = 'main';
 const DEFAULT_INSTALL_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const INSTALL_PORTAL_TYPES = ['no-code', 'ai'] as const;
 
@@ -3079,11 +3080,16 @@ export default class Install extends Command {
     dbResults: Record<string, PromptValue>;
     rootResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
+    ensureEnvFileDefaults?: boolean;
   }): Promise<void> {
     const defaultApiHost = await resolveDefaultApiHost();
-    await upsertEnv(params.envName, Install.buildSavedEnvConfig(params, { defaultApiHost }), {
+    const savedEnvConfig = Install.buildSavedEnvConfig(params, { defaultApiHost });
+    await upsertEnv(params.envName, savedEnvConfig, {
       scope: resolveDefaultConfigScope(),
     });
+    if (params.ensureEnvFileDefaults !== false) {
+      await ensureManagedEnvFileDefaults(params.envName, savedEnvConfig);
+    }
     await setCurrentEnv(params.envName, { scope: resolveDefaultConfigScope() });
   }
 
@@ -3486,6 +3492,7 @@ export default class Install extends Command {
         dbResults,
         rootResults,
         envAddResults,
+        ensureEnvFileDefaults: false,
       });
       if (!parsed['skip-save-env-log']) {
         printInfo(`Saved env config for "${envName}".`);

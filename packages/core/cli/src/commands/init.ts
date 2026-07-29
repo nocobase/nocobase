@@ -43,14 +43,15 @@ import { omitKeys, pickKeys } from '../lib/object-utils.ts';
 import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import { persistHookScript } from '../lib/hook-script.js';
+import { ensureManagedEnvFileDefaults } from '../lib/managed-env-file.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
 
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
-const DEFAULT_INIT_PORTAL_TYPE = 'no-code';
-const DEFAULT_INIT_PORTAL_NAME = 'admin';
+const DEFAULT_INIT_PORTAL_TYPE = 'ai';
+const DEFAULT_INIT_PORTAL_NAME = 'main';
 const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
 const INIT_SETUP_MODES = ['install-new', 'manage-local', 'connect-remote'] as const;
@@ -1454,59 +1455,60 @@ Prompt modes:
     results.appKey = appKey;
     results.timeZone = timeZone;
 
-    await upsertEnv(
-      envName,
-      {
-        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
-        ...(source === 'docker'
-          ? { kind: 'docker' }
-          : source || appPath || appRootPath
-            ? { kind: 'local' }
-            : appPort
-              ? { kind: 'http' }
-              : {}),
-        ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
-        ...(authType ? { authType } : {}),
-        ...(authUsername ? { authUsername } : {}),
-        ...((authType === 'token' || authType === 'basic') && accessToken ? { accessToken } : {}),
-        ...(source ? { source } : {}),
-        ...(version ? { downloadVersion: version } : {}),
-        ...(dockerRegistry ? { dockerRegistry } : {}),
-        ...(dockerPlatform ? { dockerPlatform } : {}),
-        ...(gitUrl ? { gitUrl } : {}),
-        ...(npmRegistry ? { npmRegistry } : {}),
-        ...(hookScript ? { hookScript } : {}),
-        ...(appPath ? { appPath } : {}),
-        ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
-        ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
-        ...(appPort ? { appPort } : {}),
-        ...(appPublicPath ? { appPublicPath } : {}),
-        ...(portalType && portalType !== DEFAULT_INIT_PORTAL_TYPE ? { portalType } : {}),
-        ...(portalName ? { portalName } : {}),
-        ...(portalTemplate ? { portalTemplate } : {}),
-        ...(appKey ? { appKey } : {}),
-        ...(timeZone ? { timezone: timeZone } : {}),
-        ...(!skipDownload && results.devDependencies !== undefined
-          ? { devDependencies: Boolean(results.devDependencies) }
-          : {}),
-        ...(!skipDownload && results.build !== undefined ? { build: Boolean(results.build) } : {}),
-        ...(!skipDownload && results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
-        ...(builtinDb !== undefined ? { builtinDb } : {}),
-        ...(dbDialect ? { dbDialect } : {}),
-        ...(builtinDbImage || builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
-        ...(dbHost ? { dbHost } : {}),
-        ...(dbPort ? { dbPort } : {}),
-        ...(dbDatabase ? { dbDatabase } : {}),
-        ...(dbUser ? { dbUser } : {}),
-        ...(dbPassword ? { dbPassword } : {}),
-        ...(dbSchema ? { dbSchema } : {}),
-        ...(dbTablePrefix ? { dbTablePrefix } : {}),
-        ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
-        setupState: 'prepared',
-        ...(String(results.lang ?? '').trim() ? { lang: String(results.lang ?? '').trim() } : {}),
-      },
-      { scope: resolveDefaultConfigScope() },
-    );
+    const savedEnvConfig = {
+      schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
+      ...(source === 'docker'
+        ? { kind: 'docker' }
+        : source || appPath || appRootPath
+          ? { kind: 'local' }
+          : appPort
+            ? { kind: 'http' }
+            : {}),
+      ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+      ...(authType ? { authType } : {}),
+      ...(authUsername ? { authUsername } : {}),
+      ...((authType === 'token' || authType === 'basic') && accessToken ? { accessToken } : {}),
+      ...(source ? { source } : {}),
+      ...(version ? { downloadVersion: version } : {}),
+      ...(dockerRegistry ? { dockerRegistry } : {}),
+      ...(dockerPlatform ? { dockerPlatform } : {}),
+      ...(gitUrl ? { gitUrl } : {}),
+      ...(npmRegistry ? { npmRegistry } : {}),
+      ...(hookScript ? { hookScript } : {}),
+      ...(appPath ? { appPath } : {}),
+      ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
+      ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
+      ...(appPort ? { appPort } : {}),
+      ...(appPublicPath ? { appPublicPath } : {}),
+      ...(portalType && portalType !== DEFAULT_INIT_PORTAL_TYPE ? { portalType } : {}),
+      ...(portalName ? { portalName } : {}),
+      ...(portalTemplate ? { portalTemplate } : {}),
+      ...(appKey ? { appKey } : {}),
+      ...(timeZone ? { timezone: timeZone } : {}),
+      ...(!skipDownload && results.devDependencies !== undefined
+        ? { devDependencies: Boolean(results.devDependencies) }
+        : {}),
+      ...(!skipDownload && results.build !== undefined ? { build: Boolean(results.build) } : {}),
+      ...(!skipDownload && results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
+      ...(builtinDb !== undefined ? { builtinDb } : {}),
+      ...(dbDialect ? { dbDialect } : {}),
+      ...(builtinDbImage || builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
+      ...(dbHost ? { dbHost } : {}),
+      ...(dbPort ? { dbPort } : {}),
+      ...(dbDatabase ? { dbDatabase } : {}),
+      ...(dbUser ? { dbUser } : {}),
+      ...(dbPassword ? { dbPassword } : {}),
+      ...(dbSchema ? { dbSchema } : {}),
+      ...(dbTablePrefix ? { dbTablePrefix } : {}),
+      ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
+      setupState: 'prepared',
+      ...(String(results.lang ?? '').trim() ? { lang: String(results.lang ?? '').trim() } : {}),
+    };
+
+    await upsertEnv(envName, savedEnvConfig, { scope: resolveDefaultConfigScope() });
+    if (source === 'docker' || appPath) {
+      await ensureManagedEnvFileDefaults(envName, savedEnvConfig);
+    }
   }
 
   private buildEnvAddArgv(results: Record<string, string | number | boolean>): string[] {
