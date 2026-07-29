@@ -29,6 +29,7 @@ nb portal <command>
 | [`nb portal list`](./list.md) | Liệt kê bản ghi Portal và trạng thái đồng bộ workspace cục bộ |
 | [`nb portal pull`](./pull.md) | Kéo mã nguồn Portal từ source storage về workspace cục bộ |
 | [`nb portal push`](./push.md) | Đẩy thay đổi mã nguồn Portal cục bộ lên source storage |
+| [`nb portal registry`](./registry/index.md) | Quản lý tích hợp Registry do plugin NocoBase đang bật cung cấp |
 
 ## Quy trình điển hình
 

@@ -29,6 +29,7 @@ nb portal <command>
 | [`nb portal list`](./list.md) | Lista registros Portal e o status de sincronização do workspace local |
 | [`nb portal pull`](./pull.md) | Baixa o source do Portal do source storage para o workspace local |
 | [`nb portal push`](./push.md) | Envia alterações locais do source do Portal para o source storage |
+| [`nb portal registry`](./registry/index.md) | Gerencia integrações Registry fornecidas pelos plugins NocoBase habilitados |
 
 ## Fluxo típico
 
