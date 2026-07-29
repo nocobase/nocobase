@@ -29,7 +29,6 @@ nb portal <command>
 | [`nb portal list`](./list.md) | 列出 Portal 记录和本地工作区同步状态 |
 | [`nb portal pull`](./pull.md) | 从 source storage 拉取 Portal 源码到本地工作区 |
 | [`nb portal push`](./push.md) | 把本地 Portal 源码变更推送到 source storage |
-| [`nb portal registry`](./registry/index.md) | 管理 NocoBase 已启用插件提供的 Registry 集成 |
 
 ## 典型流程
 

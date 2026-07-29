@@ -23,7 +23,6 @@ import {
   applyDefaultRoleMultiPortalAccess,
   ensureDefaultRoleMultiPortalAccess,
 } from './ensureDefaultRoleMultiPortalAccess';
-import { createPortalRegistryActionHandlers } from './portal-registry';
 
 const MULTI_PORTAL_RUNTIME_FIELDS = [
   'uid',
@@ -2593,11 +2592,6 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async load() {
-    this.app.resourceManager.define({
-      name: 'registry',
-      actions: createPortalRegistryActionHandlers(this.app),
-      only: ['list', 'get'],
-    });
     this.app.acl.registerSnippet({
       name: 'pm.multi-portal',
       actions: MULTI_PORTAL_MANAGEMENT_ACTIONS,
@@ -2608,7 +2602,6 @@ export class PluginMultiPortalServer extends Plugin {
     });
     this.app.acl.allow('multiPortals', 'listEnabled', 'public');
     this.app.acl.allow('multiPortals', 'listAccessible', 'loggedIn');
-    this.app.acl.allow('registry', ['list', 'get'], 'public');
     this.app.resourceManager.use(createPortalDeployUploadMiddleware(), {
       tag: 'multiPortalDeployUpload',
       after: 'acl',

@@ -142,7 +142,7 @@ async function resolvePluginPackagePath(packageName, options = {}) {
     }
   }
 
-  const sourcePath = await resolvePluginSourcePath(normalizedPackageName, storagePluginsPath, options.cwd);
+  const sourcePath = await resolvePluginSourcePath(normalizedPackageName, storagePluginsPath);
   if (sourcePath) {
     return sourcePath;
   }
@@ -209,7 +209,7 @@ async function discoverPluginPackages(options = {}) {
     pushOrigin(originsByPackageName, packageName, 'preset-dependency');
   }
 
-  const sourceRoots = getPluginSourceRoots(storagePluginsPath, options.cwd);
+  const sourceRoots = getPluginSourceRoots(storagePluginsPath);
   for (const sourceRoot of sourceRoots) {
     const packages = await readPluginPackagesFromRoot(sourceRoot);
     for (const item of packages) {
@@ -238,7 +238,6 @@ async function discoverPluginPackages(options = {}) {
     const resolvedPath = await resolvePluginPackagePath(packageName, {
       nodeModulesPath,
       storagePluginsPath,
-      cwd: options.cwd,
     });
 
     if (!resolvedPath) {

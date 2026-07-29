@@ -302,10 +302,6 @@ test('install delegates portal initialization to app startup', async () => {
     'app:start',
     ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'],
   ]);
-  expect(runCommand.mock.calls[1]).toEqual([
-    'portal:registry:sync',
-    ['admin', '--env', 'app1', '--yes', '--build'],
-  ]);
 });
 
 test('install saves the resolved app url before delegating startup', async () => {

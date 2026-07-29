@@ -43,14 +43,13 @@ describe('shouldPreserveDistEntry', () => {
 });
 
 describe('deleteServerFiles', () => {
-  test('removes server artifacts and keeps client lanes and Portal Registry output', async () => {
+  test('removes server artifacts and keeps client lanes', async () => {
     const { cwd, distDir } = await createTempPluginDir();
 
     await fs.outputFile(path.join(distDir, 'index.js'), 'server entry');
     await fs.outputFile(path.join(distDir, 'server', 'index.js'), 'server build');
     await fs.outputFile(path.join(distDir, 'client', 'index.js'), 'client build');
     await fs.outputFile(path.join(distDir, 'client-v2', 'index.js'), 'client-v2 build');
-    await fs.outputFile(path.join(distDir, 'portal-registry', 'manifest.json'), '{}');
     await fs.outputFile(path.join(distDir, 'node_modules', 'pkg', 'index.js'), 'dependency');
 
     deleteServerFiles(cwd, () => {});
@@ -59,7 +58,6 @@ describe('deleteServerFiles', () => {
     await expect(fs.pathExists(path.join(distDir, 'server'))).resolves.toBe(false);
     await expect(fs.pathExists(path.join(distDir, 'client'))).resolves.toBe(true);
     await expect(fs.pathExists(path.join(distDir, 'client-v2'))).resolves.toBe(true);
-    await expect(fs.pathExists(path.join(distDir, 'portal-registry'))).resolves.toBe(true);
     await expect(fs.pathExists(path.join(distDir, 'node_modules'))).resolves.toBe(true);
   });
 });

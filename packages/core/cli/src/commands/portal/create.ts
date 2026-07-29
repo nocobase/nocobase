@@ -13,8 +13,7 @@ import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { createPortalWorkspace } from '../../lib/portal-create.js';
-import { syncPortalRegistries } from '../../lib/portal-registry-sync.js';
-import { printInfo, printSuccess, printWarning } from '../../lib/ui.js';
+import { printInfo, printSuccess } from '../../lib/ui.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const portalCreateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
@@ -117,16 +116,6 @@ export default class PortalCreate extends Command {
       gitPath: flags['git-path'],
       onSkipInstall: (message) => printInfo(message),
     });
-
-    if (!result.installSkipped) {
-      await syncPortalRegistries({
-        portal: result.portal,
-        env,
-        installDependencies: false,
-        skipIfUnsupported: true,
-        onWarning: (message) => printWarning(message),
-      });
-    }
 
     printSuccess(
       portalCreateText(
