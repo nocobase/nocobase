@@ -51,8 +51,11 @@ export const compact: Omit<ThemeItem, 'id'> = {
  * 简约主题：黑白灰、无强调色。
  *
  * 设置中心的外观由这条记录约束，不再写死在代码里：想调就在主题编辑器里改它，
- * 删掉则回落到代码里的默认中性配色。它是一条普通的可选主题，别的应用、别的用户
- * 想要同一套观感直接选它就行——这里只是设置中心默认指向它。
+ * 删掉则回落到代码里的默认中性配色。
+ *
+ * `optional: false`：默认不进用户的主题下拉框。它是给设置中心这个作用域用的，
+ * 不是谁的业务端个人偏好；需要给别的应用复用时，在主题编辑器里把「可被用户选择」
+ * 打开即可，记录本身是通用的。
  *
  * 主色收成黑白后 antd 会派生出一整套中灰色板（近黑主色派生的「浅色背景」是 #5e5e5e 这种
  * 中灰，会造成深底深字），所以派生出来的那几个必须显式钉住，取值就是 antd 默认的中性填充色。
@@ -61,12 +64,9 @@ export const minimal: Omit<ThemeItem, 'id'> = {
   config: {
     name: 'Minimal',
     token: {
-      // 顶栏图标默认按深色顶栏取浅色，设置中心的顶栏是白的，必须翻成正文色。
-      colorTextHeaderMenu: 'rgba(0, 0, 0, 0.88)',
-      colorTextHeaderMenuHover: 'rgba(0, 0, 0, 0.88)',
-      colorTextHeaderMenuActive: 'rgba(0, 0, 0, 0.88)',
-      colorBgHeaderMenuHover: 'rgba(0, 0, 0, 0.02)',
-      colorBgHeaderMenuActive: 'rgba(0, 0, 0, 0.02)',
+      // 顶栏那几个 token（colorBgHeader / colorTextHeaderMenu…）刻意不进这条主题：
+      // 业务端顶栏是深色的，logo 和图标都按深底做的，翻成白底就得连 logo 一起反色。
+      // 设置中心自己那条白顶栏由 settingsTheme 在代码里补，不牵连用这套主题的其他应用。
       colorPrimary: '#000000',
       colorInfo: '#000000',
       colorPrimaryHover: '#333333',
@@ -91,11 +91,6 @@ export const minimal: Omit<ThemeItem, 'id'> = {
       colorTextItemActive: '',
     },
     components: {
-      Layout: {
-        headerBg: '#ffffff',
-        headerColor: 'rgba(0, 0, 0, 0.88)',
-        bodyBg: '#f5f5f5',
-      },
       Menu: {
         itemSelectedBg: 'rgba(0, 0, 0, 0.06)',
         itemSelectedColor: 'rgba(0, 0, 0, 0.88)',
@@ -124,7 +119,7 @@ export const minimal: Omit<ThemeItem, 'id'> = {
       },
     },
   } as ThemeItem['config'],
-  optional: true,
+  optional: false,
   isBuiltIn: true,
   uid: 'minimal',
   default: false,

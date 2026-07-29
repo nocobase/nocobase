@@ -201,6 +201,42 @@ export function buildSettingsNeutralTheme(token: GlobalToken): ThemeConfig {
 }
 
 /**
+ * 给外部主题补上设置中心的顶栏配色。
+ *
+ * 顶栏那几个 token（`colorBgHeader`、`colorTextHeaderMenu` 系列、`Layout.headerBg`）
+ * 刻意不放进「简约」主题记录里：那条记录是通用的，业务端顶栏是深色的、logo 和图标都按
+ * 深底做的，一旦被改成白底就得连 logo 一起反色。设置中心的顶栏是白的，所以在这一层补。
+ *
+ * @param {ThemeConfig} theme 主题记录里读到的配置
+ * @param {GlobalToken} token 外层主题 token
+ * @returns {ThemeConfig} 补齐顶栏配色后的主题
+ */
+export function withSettingsHeaderTheme(theme: ThemeConfig, token: GlobalToken): ThemeConfig {
+  const colors = getSettingsHeaderColors(token);
+
+  return {
+    ...theme,
+    token: {
+      ...theme.token,
+      colorTextHeaderMenu: colors.text,
+      colorTextHeaderMenuHover: colors.textHover,
+      colorTextHeaderMenuActive: colors.textActive,
+      colorBgHeaderMenuHover: colors.bgHover,
+      colorBgHeaderMenuActive: colors.bgActive,
+    } as ThemeConfig['token'],
+    components: {
+      ...theme.components,
+      Layout: {
+        ...theme.components?.Layout,
+        headerBg: colors.bg,
+        headerColor: colors.text,
+        bodyBg: token.colorBgLayout,
+      },
+    },
+  };
+}
+
+/**
  * 设置中心的全局补丁样式。
  *
  * 这几件事 antd 没给 token，只能落到 CSS：
