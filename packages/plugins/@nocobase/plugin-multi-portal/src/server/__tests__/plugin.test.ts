@@ -136,6 +136,8 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'desktopRoutes:move',
   'desktopRoutes:destroy',
   'desktopRoutes:updateOrCreate',
+  'registry:list',
+  'registry:get',
 ];
 const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = [
   'roles.multiPortals:*',

@@ -10,9 +10,9 @@
 import { useApp } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import { useChat } from '../hooks/useChat';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import type { Attachment } from '../../types';
-import { normalizeAIFileUploadAttachment } from '../utils';
+import { uploadAIFile } from '../upload';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 type StorageBasicInfo = {
   rules?: Record<string, unknown>;
@@ -26,6 +26,7 @@ type UploadRequestOptions = {
   filename: string;
   headers?: Record<string, string>;
   onError: (error: Error) => void;
+  onProgress?: (event: { percent: number }) => void;
   onSuccess: (body: unknown, file: Blob) => void;
   withCredentials?: boolean;
 };
@@ -80,33 +81,42 @@ export function useUploadProps(props: Record<string, unknown>) {
       filename,
       headers,
       onError,
+      onProgress,
       onSuccess,
       withCredentials,
     }: UploadRequestOptions) {
-      const formData = new FormData();
-      if (data) {
-        Object.keys(data).forEach((key) => {
-          formData.append(key, data[key]);
+      const controller = new AbortController();
+      uploadAIFile(app.apiClient, file, {
+        action,
+        data,
+        fieldName: filename,
+        headers,
+        onProgress: (percent) => {
+          onProgress?.({ percent });
+        },
+        signal: controller.signal,
+        withCredentials,
+      })
+        .then((attachment) => {
+          onSuccess({ data: attachment }, file);
+        })
+        .catch((error: unknown) => {
+          onError(error instanceof Error ? error : new Error('AI file upload failed.'));
         });
-      }
-      formData.append(filename, file);
-      return app.apiClient.axios
-        .post(action, formData, {
-          withCredentials,
-          headers,
-        })
-        .then(({ data }) => {
-          onSuccess(data, file);
-        })
-        .catch((e) => onError(new Error(e.message)));
+      return {
+        abort() {
+          controller.abort();
+        },
+      };
     },
     ...props,
   };
 }
 
-export const useUploadFiles = () => {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+export const useUploadFiles = (runtime?: ChatBoxRuntime) => {
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const currentConversation = resolvedRuntime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, resolvedRuntime);
   const setAttachments = chat.setAttachments;
 
   const uploadProps = {
@@ -118,7 +128,7 @@ export const useUploadFiles = () => {
             if (!file?.response?.data) {
               return file;
             }
-            return normalizeAIFileUploadAttachment(file.response.data, file.status);
+            return file.response.data;
           }
           return file;
         }),

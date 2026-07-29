@@ -376,6 +376,19 @@
         "type": "custom-link",
         "label": "nb portal push",
         "link": "/api/cli/portal/push"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb portal registry",
+        "link": "/api/cli/portal/registry/",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb portal registry sync",
+            "link": "/api/cli/portal/registry/sync"
+          }
+        ],
+        "collapsed": true
       }
     ],
     "collapsed": true

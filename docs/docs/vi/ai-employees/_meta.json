@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Block trang",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Nhân viên AI tích hợp sẵn",
     "items": [
       {

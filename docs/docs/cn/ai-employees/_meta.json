@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "页面区块",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "内置 AI 员工",
     "items": [
       {

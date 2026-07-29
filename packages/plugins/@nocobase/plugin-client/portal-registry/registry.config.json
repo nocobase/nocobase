@@ -1,0 +1,59 @@
+{
+  "target": "src/extensions/nocobase-route-surfaces",
+  "items": [
+    {
+      "name": "route-surfaces",
+      "type": "registry:lib",
+      "title": "NocoBase Route Surfaces",
+      "description": "URL-backed drawer, dialog, and page containers with nested drawer stacking and a shared close lifecycle.",
+      "dependencies": [
+        "@base-ui/react@^1.6.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": ["alert-dialog", "badge", "button", "card", "input", "label", "select", "textarea"],
+      "docs": "Provides presentation containers plus an integrated Demo and Prompt generator. Route definitions, ACL guards, data fetching, and business content remain application-owned.",
+      "include": [
+        "README.md",
+        "demo",
+        "extension.tsx",
+        "index.ts",
+        "route-dialog.tsx",
+        "route-drawer.tsx",
+        "route-page.tsx",
+        "route-surface-context.ts",
+        "use-refine-unsaved-changes.tsx",
+        "use-route-surface-close.ts",
+        "use-route-surface-state.ts"
+      ]
+    },
+    {
+      "name": "users-example",
+      "type": "registry:block",
+      "title": "NocoBase Users Example",
+      "description": "Complete Users resource example with ACL-aware list, filters, route-backed drawers, nested role details, and optional AI page context.",
+      "dependencies": [
+        "@refinedev/core@^5.0.8",
+        "@refinedev/react-hook-form@^5.0.0",
+        "@refinedev/react-table@^6.0.0",
+        "@tanstack/react-table@^8.2.6",
+        "lucide-react@^0.487.0",
+        "react-hook-form@^7.57.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "@nocobase/route-surfaces",
+        "alert",
+        "badge",
+        "button",
+        "form",
+        "input",
+        "separator",
+        "skeleton"
+      ],
+      "docs": "Requires the compatible Portal Starter resource components, data table, NocoBase data provider, and ACL provider. AI page-element and form registration is enabled automatically when @nocobase/ai is also installed.",
+      "include": ["examples/users"]
+    }
+  ]
+}

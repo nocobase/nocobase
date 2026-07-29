@@ -28,7 +28,7 @@ import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
 import PluginDataVisualizationClient from '../../plugin';
 import { DaraButton } from '../components/DaraButton';
-import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client-v2';
+import { getGlobalChatBoxRuntime } from '@nocobase/plugin-ai/client-v2';
 import {
   getChartDirtyRefreshSnapshot,
   shouldRefreshChartOnActive,
@@ -707,10 +707,11 @@ const CancelButton = () => {
 };
 
 const closeAssociatedAIChatBox = (ctx: any) => {
-  const aiOpen = useChatBoxStore.getState().open;
-  const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
+  const { chatBoxModel, chatMessageModel } = getGlobalChatBoxRuntime();
+  const aiOpen = chatBoxModel.open;
+  const associatedUid = chatMessageModel.currentEditorRefUid;
   if (aiOpen && associatedUid === ctx.model.uid) {
-    useChatBoxStore.getState().setOpen(false);
+    chatBoxModel.setOpen(false);
   }
 };
 

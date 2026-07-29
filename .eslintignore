@@ -29,6 +29,8 @@ docker
 storage
 benchmark
 packages/core/cli/src
+packages/plugins/**/portal-registry
+packages/pro-plugins/**/portal-registry
 t.js
 packages/**/client.d.ts
 docs

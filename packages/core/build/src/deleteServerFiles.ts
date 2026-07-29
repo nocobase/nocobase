@@ -13,7 +13,7 @@ import path from 'path';
 import type { PkgLog } from './utils';
 
 const targetDir = 'dist';
-const preservedDistEntries = new Set(['client', 'client-v2']);
+const preservedDistEntries = new Set(['client', 'client-v2', 'portal-registry']);
 
 export function shouldPreserveDistEntry(item: string) {
   // fast-glob may return POSIX-style absolute paths on Windows, so use the

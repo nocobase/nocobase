@@ -32,6 +32,7 @@ import {
   applyDefaultRoleMultiPortalAccess,
   ensureDefaultRoleMultiPortalAccess,
 } from './ensureDefaultRoleMultiPortalAccess';
+import { createPortalRegistryActionHandlers } from './portal-registry';
 
 const MULTI_PORTAL_RUNTIME_FIELDS = [
   'uid',
@@ -96,6 +97,8 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'desktopRoutes:move',
   'desktopRoutes:destroy',
   'desktopRoutes:updateOrCreate',
+  'registry:list',
+  'registry:get',
 ];
 
 type PortalDeployTarEntry = {
@@ -3446,6 +3449,11 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async load() {
+    this.app.resourceManager.define({
+      name: 'registry',
+      actions: createPortalRegistryActionHandlers(this.app),
+      only: ['list', 'get'],
+    });
     this.app.acl.registerSnippet({
       name: 'pm.multi-portal',
       actions: MULTI_PORTAL_MANAGEMENT_ACTIONS,

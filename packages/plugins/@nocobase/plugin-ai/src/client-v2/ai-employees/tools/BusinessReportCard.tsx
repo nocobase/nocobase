@@ -12,10 +12,10 @@ import { Card, Space, Tag, theme, Typography } from 'antd';
 import { BarChartOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css, keyframes } from '@emotion/css';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
-import { useChatToolsStore } from '../chatbox/stores/chat-tools';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { BusinessReport, BusinessReportRenderState, normalizeBusinessReport } from './business-report-utils';
 
 class BoundedSet<T> {
@@ -55,15 +55,14 @@ const loadingBar = keyframes`
   }
 `;
 
-export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = ({ messageId, toolCall }) => {
+export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = observer(({ messageId, toolCall }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const responseLoading = chat.use.responseLoading();
-  const setOpen = useChatToolsStore.use.setOpenToolModal();
-  const setActiveTool = useChatToolsStore.use.setActiveTool();
-  const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+  const { chatToolModel } = runtime;
   const report = useMemo<Partial<BusinessReportRenderState>>(
     () => normalizeBusinessReport((toolCall.args as BusinessReport) || {}),
     [toolCall.args],
@@ -96,10 +95,10 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   );
 
   const openModal = useCallback(() => {
-    setActiveTool(toolCall);
-    setActiveMessageId(messageId);
-    setOpen(true);
-  }, [messageId, setActiveMessageId, setActiveTool, setOpen, toolCall]);
+    chatToolModel.setActiveTool(toolCall);
+    chatToolModel.setActiveMessageId(messageId);
+    chatToolModel.setOpenToolModal(true);
+  }, [chatToolModel, messageId, toolCall]);
 
   useEffect(() => {
     if (generatingStateRef.current.toolCallId !== toolCall.id) {
@@ -208,6 +207,6 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
       />
     </Card>
   );
-};
+});
 
 BusinessReportCard.displayName = 'BusinessReportCard';

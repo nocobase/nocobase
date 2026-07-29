@@ -34,6 +34,12 @@ import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/
 import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
 import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
 import { registerPluginAIRunJSFacade } from '../client-v2/runjs/registerAIEmployeeRunJSFacade';
+import {
+  AIChatBoxActionGroupModel,
+  AIChatBoxBlockModel,
+  AIChatBoxCoreModel,
+  AIChatBoxItemGroupModel,
+} from '../client-v2/block/ai-chat-box';
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
@@ -63,9 +69,19 @@ export class PluginAIClient extends Plugin {
     });
 
     this.flowEngine.registerModels({
+      AIChatBoxActionGroupModel,
       AIEmployeeShortcutListModel,
       AIEmployeeShortcutModel,
       AIEmployeeButtonModel,
+      AIChatBoxBlockModel,
+      AIChatBoxCoreModel,
+      AIChatBoxItemGroupModel,
+    });
+    this.flowEngine.registerModelLoaders({
+      AIEmployeeActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('../client-v2/models/ai-employees'),
+      },
     });
 
     this.addPluginSettings();
@@ -157,11 +173,9 @@ export type { AIEmployee, ToolCall } from '../client-v2/ai-employees/types';
 export * from '../client-v2/features';
 export { defaultVectorStorePropForm } from '../client-v2/features/components';
 export { AIEmployeeActionModel } from '../client-v2/models/ai-employees/AIEmployeeActionModel';
-export { useChatMessagesStore } from '../client-v2/ai-employees/chatbox/stores/chat-messages';
 export { useChat } from '../client-v2/ai-employees/chatbox/hooks/useChat';
-export { useChatBoxStore } from '../client-v2/ai-employees/chatbox/stores/chat-box';
 export { useChatBoxActions } from '../client-v2/ai-employees/chatbox/hooks/useChatBoxActions';
-export { useChatConversationsStore } from '../client-v2/ai-employees/chatbox/stores/chat-conversations';
+export { getGlobalChatBoxRuntime } from '../client-v2/ai-employees/chatbox/stores/runtime';
 export { useAIConfigRepository } from '../client-v2/repositories/hooks/useAIConfigRepository';
 export { AIEmployeeProfileCard as ProfileCard } from '../client-v2/ai-employees/ProfileCard';
 export { avatars } from '../client-v2/ai-employees/avatars';

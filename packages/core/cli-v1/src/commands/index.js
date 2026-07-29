@@ -41,6 +41,7 @@ module.exports = (cli) => {
   require('./view-license-key')(cli);
   require('./client')(cli);
   require('./docs')(cli);
+  require('./portal-registry')(cli);
   if (isPackageValid('@umijs/utils')) {
     require('./create-plugin')(cli);
   }

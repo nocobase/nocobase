@@ -12,15 +12,17 @@ import { getEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { resolveAccessToken } from '../../lib/env-auth.js';
 import { createPortalWorkspace } from '../../lib/portal-create.js';
-import { printInfo, printSuccess } from '../../lib/ui.js';
+import { syncPortalRegistries } from '../../lib/portal-registry-sync.js';
+import { printInfo, printSuccess, printWarning } from '../../lib/ui.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const portalCreateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalCreate.${key}`, values, { fallback });
 
 export default class PortalCreate extends Command {
-  static override summary = 'Create a local portal from a template';
+  static override summary = 'Create a local AI portal from a template';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
@@ -32,7 +34,7 @@ export default class PortalCreate extends Command {
   static override args = {
     portal: Args.string({
       required: true,
-      description: 'Portal name',
+      description: 'AI Portal name',
     }),
   };
 
@@ -85,7 +87,8 @@ export default class PortalCreate extends Command {
       return;
     }
 
-    const env = await getEnv(flags.env, { scope: resolveDefaultConfigScope() });
+    const scope = resolveDefaultConfigScope();
+    const env = await getEnv(flags.env, { scope });
     if (!env) {
       this.error(
         flags.env
@@ -116,6 +119,18 @@ export default class PortalCreate extends Command {
       gitPath: flags['git-path'],
       onSkipInstall: (message) => printInfo(message),
     });
+
+    if (!result.installSkipped) {
+      const token = await resolveAccessToken({ envName: flags.env, baseUrl: env.apiBaseUrl, scope });
+      await syncPortalRegistries({
+        portal: result.portal,
+        env,
+        installDependencies: false,
+        skipIfUnsupported: true,
+        token,
+        onWarning: (message) => printWarning(message),
+      });
+    }
 
     printSuccess(
       portalCreateText(

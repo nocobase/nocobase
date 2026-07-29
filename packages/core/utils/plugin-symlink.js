@@ -48,16 +48,12 @@ async function isValidPluginSourcePath(candidate) {
   return await fs.pathExists(resolve(candidate, 'package.json'));
 }
 
-function getPluginSourceRoots(storagePluginsPath) {
-  return [
-    resolve(process.cwd(), 'packages/plugins'),
-    resolve(process.cwd(), 'packages/pro-plugins'),
-    storagePluginsPath,
-  ];
+function getPluginSourceRoots(storagePluginsPath, cwd = process.cwd()) {
+  return [resolve(cwd, 'packages/plugins'), resolve(cwd, 'packages/pro-plugins'), storagePluginsPath];
 }
 
-async function resolvePluginSourcePath(pluginName, storagePluginsPath) {
-  const sourceRoots = getPluginSourceRoots(storagePluginsPath);
+async function resolvePluginSourcePath(pluginName, storagePluginsPath, cwd = process.cwd()) {
+  const sourceRoots = getPluginSourceRoots(storagePluginsPath, cwd);
   for (const rootPath of sourceRoots) {
     const candidate = resolve(rootPath, pluginName);
     if (await isValidPluginSourcePath(candidate)) {

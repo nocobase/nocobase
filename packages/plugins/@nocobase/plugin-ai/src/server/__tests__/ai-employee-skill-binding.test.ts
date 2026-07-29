@@ -8,9 +8,58 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { SYSTEM_TOOLS } from '@nocobase/ai';
 import { AIEmployee } from '../ai-employees/ai-employee';
 
 describe('AIEmployee skill tool binding', () => {
+  it('should keep getSkill available when only skills are selected', async () => {
+    const getSkillTool = { definition: { name: SYSTEM_TOOLS.GET_SKILL } };
+    const generalTool = { definition: { name: 'generalTool' } };
+    const toolsManager = {
+      getTools: vi.fn().mockResolvedValue(getSkillTool),
+      listTools: vi
+        .fn()
+        .mockImplementation(async (filter?: { scope?: string }) =>
+          filter?.scope === 'GENERAL' ? [generalTool] : [generalTool, getSkillTool],
+        ),
+    };
+    const employee = Object.create(AIEmployee.prototype) as AIEmployee;
+
+    Reflect.set(employee, 'ctx', {
+      app: {
+        aiManager: {
+          toolsManager,
+        },
+      },
+    });
+    Reflect.set(employee, 'employee', {
+      get: (key: string) => (key === 'chatSettings' ? {} : undefined),
+      skillSettings: { tools: [] },
+      toJSON: () => ({}),
+    });
+    Reflect.set(employee, 'plugin', {
+      knowledgeBaseManager: {
+        isEnabledKnowledgeBase: vi.fn().mockResolvedValue(false),
+      },
+    });
+    Reflect.set(employee, 'skillSettings', {
+      skillsVersion: 2,
+      toolsVersion: 2,
+      skills: ['business-analysis-report'],
+      tools: [],
+    });
+    Reflect.set(employee, 'tools', []);
+    Reflect.set(employee, 'webSearch', false);
+
+    const result = await (
+      employee as unknown as {
+        getAIEmployeeTools: () => Promise<Array<{ definition: { name: string } }>>;
+      }
+    ).getAIEmployeeTools();
+
+    expect(result.map((tool) => tool.definition.name)).toEqual([SYSTEM_TOOLS.GET_SKILL]);
+  });
+
   it('should include tools from dynamically loaded skills even if they are filtered out of available skills', async () => {
     const employee = Object.create(AIEmployee.prototype) as AIEmployee & {
       plugin: any;
