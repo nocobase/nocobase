@@ -127,8 +127,8 @@ describe('buildRedirectPath', () => {
 describe('resolveSigninPrefix', () => {
   it.each([
     ['/nocobase/settings/workflow', '', '/nocobase/settings'],
-    ['/nocobase/settings/apps/sub/settings/workflow', '/apps/sub', '/nocobase/settings/apps/sub/settings'],
-    ['/nocobase/settings/_app/sub/settings/workflow', '/apps/sub', '/nocobase/settings/_app/sub/settings'],
+    ['/nocobase/settings/apps/sub/workflow', '/apps/sub', '/nocobase/settings/apps/sub'],
+    ['/nocobase/settings/_app/sub/workflow', '/apps/sub', '/nocobase/settings/_app/sub'],
     ['/nocobase/settings/workflow?tab=list#recent', '', '/nocobase/settings'],
   ])('returns the current Settings signin prefix for %s', (redirect, subAppSegment, expected) => {
     expect(resolveSigninPrefix({ appPublicPath: '/nocobase/', redirect, subAppSegment })).toBe(expected);

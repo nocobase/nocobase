@@ -9,7 +9,11 @@
 
 import { stripModernClientPrefix } from '../authRedirect';
 import type { BaseApplication } from '../BaseApplication';
-import { resolveSettingsAppScope, resolveSettingsDocumentPath } from './settingsDocumentPath';
+import {
+  resolveSettingsAppScope,
+  resolveSettingsAppScopeWithinPublicPath,
+  resolveSettingsDocumentPath,
+} from './settingsDocumentPath';
 
 type SettingsRuntimeApp = Pick<BaseApplication<any>, 'name'> & {
   getPublicPath?: () => string;
@@ -44,20 +48,27 @@ function splitPathSuffix(pathLike: string) {
 
 function getRuntimeAppScope(app: SettingsRuntimeApp, pathname: string) {
   const basename = app.router?.getBasename?.() || app.router?.basename;
+  const publicPath = app.getPublicPath?.() || '/';
   return (
-    resolveSettingsAppScope(pathname) ||
-    resolveSettingsAppScope(basename) ||
-    resolveSettingsAppScope(app.getPublicPath?.()) ||
+    resolveSettingsAppScopeWithinPublicPath(publicPath, pathname) ||
+    resolveSettingsAppScopeWithinPublicPath(publicPath, basename) ||
     (app.name && app.name !== 'main' ? resolveSettingsAppScope(`/apps/${app.name}`) : '')
   );
 }
 
 function getRootPublicPath(app: SettingsRuntimeApp, appScope: string) {
   const basename = app.router?.getBasename?.() || app.router?.basename || '';
-  const publicPath = app.getPublicPath?.() || (appScope ? basename.replace(appScope, '') : basename);
-  const rootPublicPath = stripModernClientPrefix(publicPath);
-  const rootWithoutAppScope = appScope ? rootPublicPath.replace(appScope, '') : rootPublicPath;
-  return normalizePathname(rootWithoutAppScope);
+  const publicPath = app.getPublicPath?.();
+  if (publicPath) {
+    return normalizePathname(stripModernClientPrefix(publicPath));
+  }
+
+  const normalizedBasename = normalizePathname(basename);
+  const basenameWithoutAppScope =
+    appScope && normalizedBasename.endsWith(appScope)
+      ? normalizedBasename.slice(0, -appScope.length)
+      : normalizedBasename;
+  return normalizePathname(stripModernClientPrefix(basenameWithoutAppScope));
 }
 
 function findMappedRoute(pathname: string) {

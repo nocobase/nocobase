@@ -40,7 +40,29 @@ describe('resolveMapSettingsHref', () => {
     };
 
     expect(resolveMapSettingsHref(app, `/base/modern/${scope}/demo/admin/page`)).toBe(
-      `/base/${scope}/demo/settings/map`,
+      `/base/settings/${scope}/demo/map`,
     );
   });
+
+  it.each(['apps', '_app'])(
+    'ignores a %s segment in the root public path while preserving the runtime application scope',
+    (scope) => {
+      window.__nocobase_modern_client_prefix__ = 'modern';
+      const publicPath = `/tenant/${scope}/root/modern/`;
+      const mainApp = {
+        name: 'main',
+        getPublicPath: () => publicPath,
+        pluginSettingsManager: { getRoutePath: () => '/admin/settings/map' },
+      };
+      const subApp = {
+        ...mainApp,
+        name: 'demo',
+      };
+
+      expect(resolveMapSettingsHref(mainApp, `${publicPath}admin/page`)).toBe(`/tenant/${scope}/root/settings/map`);
+      expect(resolveMapSettingsHref(subApp, `${publicPath}${scope}/demo/admin/page`)).toBe(
+        `/tenant/${scope}/root/settings/${scope}/demo/map`,
+      );
+    },
+  );
 });

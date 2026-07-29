@@ -17,8 +17,11 @@ type MapSettingsApp = {
   };
 };
 
-function getAppScope(pathname: string, appName?: string) {
-  const pathScope = /\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(pathname)?.[0];
+function getAppScope(publicPath: string, pathname: string, appName?: string) {
+  const root = `/${publicPath}`.replace(/\/{2,}/g, '/').replace(/\/+$/, '');
+  const path = `/${pathname}`.replace(/\/{2,}/g, '/').split(/[?#]/)[0];
+  const relativePath = root && (path === root || path.startsWith(`${root}/`)) ? path.slice(root.length) || '/' : path;
+  const pathScope = /^\/(?:apps|_app)\/[^/]+(?=\/|$)/.exec(relativePath)?.[0];
   if (pathScope) {
     return pathScope;
   }
@@ -26,10 +29,14 @@ function getAppScope(pathname: string, appName?: string) {
 }
 
 export function resolveMapSettingsHref(app: MapSettingsApp, pathname: string, suffix = '') {
-  const rootPublicPath = stripModernClientPrefix(app.getPublicPath()).replace(/\/+$/, '');
-  const appScope = getAppScope(pathname, app.name);
+  const publicPath = app.getPublicPath();
+  const rootPublicPath = stripModernClientPrefix(publicPath).replace(/\/+$/, '');
+  const appScope = getAppScope(publicPath, pathname, app.name);
   const managerPath = app.pluginSettingsManager.getRoutePath('map');
   const settingsPath = managerPath.replace(/^\/admin\/settings(?=\/|$)/, '/settings');
+  const scopedSettingsPath = settingsPath.replace(/^\/settings(?=\/|$)/, '');
 
-  return `${rootPublicPath}${appScope}${settingsPath}${suffix}`;
+  return appScope
+    ? `${rootPublicPath}/settings${appScope}${scopedSettingsPath}${suffix}`
+    : `${rootPublicPath}${settingsPath}${suffix}`;
 }

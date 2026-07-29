@@ -279,6 +279,33 @@ describe('plugin-multi-portal settings page', () => {
     );
   });
 
+  it.each(['apps', '_app'])(
+    'should not treat a %s suffix in the main Settings public path as an application scope',
+    (scope) => {
+      window.__nocobase_modern_client_prefix__ = 'modern';
+      const publicPath = `/tenant/${scope}/root/`;
+      const app = {
+        name: 'main',
+        router: {
+          getBasename: () => publicPath,
+        },
+        getPublicPath: () => publicPath,
+      };
+      const subApp = {
+        ...app,
+        name: 'demo',
+        router: {
+          getBasename: () => `${publicPath}settings/${scope}/demo/`,
+        },
+      };
+
+      expect(getMultiPortalRouteUrl(app, '/admin', 'no-code')).toBe(`${publicPath}modern/admin`);
+      expect(getMultiPortalRouteUrl(app, '/assistant', 'ai')).toBe(`${publicPath}x/assistant`);
+      expect(getMultiPortalRouteUrl(subApp, '/admin', 'no-code')).toBe(`${publicPath}modern/${scope}/demo/admin`);
+      expect(getMultiPortalRouteUrl(subApp, '/assistant', 'ai')).toBe(`${publicPath}x/apps/demo/assistant`);
+    },
+  );
+
   it('should keep portal wording user-facing translations consistent', () => {
     expect(enUS['Add portal']).toBe('Add portal');
     expect(enUS['Edit portal']).toBe('Edit portal');

@@ -16,6 +16,7 @@ const navigateMock = vi.fn();
 const originalLocation = window.location;
 const mockState = vi.hoisted(() => ({
   basename: undefined as string | undefined,
+  settingsRouteName: 'admin.settings.',
   settingsRouteRoot: '/admin/settings/',
   publicPath: '/nocobase/v2/',
   signIn: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
@@ -36,7 +37,10 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
     ...actual,
     useApp: () => ({
       router: { getBasename: () => mockState.basename },
-      pluginSettingsManager: { getRoutePath: () => mockState.settingsRouteRoot },
+      pluginSettingsManager: {
+        getRouteName: () => mockState.settingsRouteName,
+        getRoutePath: () => mockState.settingsRouteRoot,
+      },
       getPublicPath: () => mockState.publicPath,
       apiClient: {
         auth: { signIn: (...args: unknown[]) => mockState.signIn(...args) },
@@ -50,6 +54,7 @@ describe('plugin-auth client-v2 useRedirect', () => {
   beforeEach(() => {
     navigateMock.mockReset();
     mockState.basename = undefined;
+    mockState.settingsRouteName = 'admin.settings.';
     mockState.settingsRouteRoot = '/admin/settings/';
     mockState.publicPath = '/nocobase/v2/';
   });
@@ -140,6 +145,27 @@ describe('plugin-auth client-v2 useRedirect', () => {
   it('should use the current Settings root when no redirect param is present', () => {
     mockState.basename = '/nocobase/settings/apps/test-app';
     mockState.publicPath = '/nocobase/';
+    mockState.settingsRouteName = 'settings.';
+    mockState.settingsRouteRoot = '/';
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const { result } = renderHook(() => useRedirect(), {
+      wrapper: wrap(['/settings/signin']),
+    });
+
+    result.current();
+
+    expect(replace).toHaveBeenCalledWith('/nocobase/settings/apps/test-app');
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('should not interpret an apps segment inside the main public path as a Settings sub-app scope', () => {
+    mockState.basename = '/tenant/apps/root';
+    mockState.publicPath = '/tenant/apps/root/';
+    mockState.settingsRouteName = 'settings.';
     mockState.settingsRouteRoot = '/settings/';
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
@@ -152,13 +178,13 @@ describe('plugin-auth client-v2 useRedirect', () => {
 
     result.current();
 
-    expect(replace).toHaveBeenCalledWith('/nocobase/settings/apps/test-app/settings/');
+    expect(replace).toHaveBeenCalledWith('/tenant/apps/root/settings/');
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it.each([
-    '/nocobase/settings/apps/test-app/settings/../../other-app/settings',
-    '/nocobase/settings/apps/test-app/settings/%2e%2e/%2E%2e/other-app/settings',
+    '/nocobase/settings/apps/test-app/../../other-app/settings',
+    '/nocobase/settings/apps/test-app/%2e%2e/%2E%2e/other-app/settings',
   ])('should reject a settings document redirect that resolves outside the current sub-app: %s', (target) => {
     mockState.basename = '/nocobase/v2/apps/test-app';
     const replace = vi.fn();

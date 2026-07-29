@@ -24,8 +24,8 @@
 
 1. 主应用 Settings 登录路由为 `/settings/signin`。
 2. 子应用 Settings 登录路由分别为：
-   - `/apps/:app/settings/signin`
-   - `/_app/:app/settings/signin`
+   - `/settings/apps/:app/signin`
+   - `/settings/_app/:app/signin`
 3. 配置 `APP_PUBLIC_PATH=/nocobase/` 时，以上地址统一位于 `/nocobase/` 下。
 4. `/v/signin`、`/v/apps/:app/signin` 及自定义 modern prefix 对应的登录地址完全不变。
 5. Settings 登录页使用原 Client V2 登录界面和认证器注册机制，不出现 Settings 顶栏、侧栏或 Admin Layout。
@@ -173,8 +173,8 @@ Settings SPA 继续使用插件已经注册的 route name，不引入新的认�
   -> /settings/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent
 
 子应用:
-/apps/demo/settings/workflow
-  -> /apps/demo/settings/signin?redirect=%2Fapps%2Fdemo%2Fsettings%2Fworkflow
+/settings/apps/demo/workflow
+  -> /settings/apps/demo/signin?redirect=%2Fsettings%2Fapps%2Fdemo%2Fworkflow
 ```
 
 普通 Client V2 仍生成：
@@ -296,7 +296,7 @@ multi-space 的早期请求判断同时识别普通和 Settings 认证公共路�
 
 ## 9. 构建、Gateway 与开发环境
 
-现有 Gateway 和开发代理已经按 `/settings/**`、`/apps/:app/settings/**`、`/_app/:app/settings/**` 返回 Settings HTML，因此认证子路由原则上不需要新的构建 stage 或代理分支。
+现有 Gateway 和开发代理已经按 `/settings/**` 返回 Settings HTML，其中包括 `/settings/apps/:app/**` 和 `/settings/_app/:app/**`，因此认证子路由原则上不需要新的构建 stage 或代理分支。
 
 仍需增加回归测试证明：
 
@@ -419,8 +419,8 @@ dist/client/settings/assets/**
 | 场景 | 入口 | 预期登录页 | 登录后 |
 | --- | --- | --- | --- |
 | 主应用 | `/settings/system-settings` | `/settings/signin` | 回原页 |
-| `apps` 子应用 | `/apps/demo/settings/system-settings` | `/apps/demo/settings/signin` | 回原页 |
-| `_app` 子应用 | `/_app/demo/settings/system-settings` | `/_app/demo/settings/signin` | 回原页 |
+| `apps` 子应用 | `/settings/apps/demo/system-settings` | `/settings/apps/demo/signin` | 回原页 |
+| `_app` 子应用 | `/settings/_app/demo/system-settings` | `/settings/_app/demo/signin` | 回原页 |
 | public path | `/nocobase/settings/system-settings` | `/nocobase/settings/signin` | 回原页 |
 | 普通 V2 | `/v/admin` | `/v/signin` | 回 `/v/admin` |
 

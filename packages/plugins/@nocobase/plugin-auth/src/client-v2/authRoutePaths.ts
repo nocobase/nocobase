@@ -18,6 +18,7 @@ const authRouteFallbacks: Record<AuthRouteName, string> = {
 
 type PluginSettingsRouteApplication = {
   pluginSettingsManager: {
+    getRouteName: (name: string) => string;
     getRoutePath: (name: string) => string;
   };
 };
@@ -34,7 +35,7 @@ export function getAuthRoutePath(app: AuthRouteApplication, name: AuthRouteName)
 }
 
 export function isStandaloneSettingsApplication(app: PluginSettingsRouteApplication) {
-  return app.pluginSettingsManager.getRoutePath('') === '/settings/';
+  return app.pluginSettingsManager.getRouteName('') === 'settings.';
 }
 
 export function getDefaultAuthRedirectPath(app: PluginSettingsRouteApplication) {

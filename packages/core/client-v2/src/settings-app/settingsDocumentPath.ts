@@ -23,9 +23,24 @@ export function resolveSettingsAppScope(pathname?: string): SettingsAppScope {
   return match ? (`/${match[1]}/${match[2]}` as SettingsAppScope) : '';
 }
 
+export function resolveSettingsAppScopeWithinPublicPath(publicPath: string, pathname?: string): SettingsAppScope {
+  const root = normalizeSettingsRootPublicPath(publicPath).replace(/\/+$/, '');
+  const path = ensureLeadingSlash(String(pathname || '/').split(/[?#]/)[0]).replace(/\/{2,}/g, '/');
+  const relativePath = root && (path === root || path.startsWith(`${root}/`)) ? path.slice(root.length) || '/' : path;
+  const match = /^\/(?:settings\/)?(apps|_app)\/([^/]+)(?=\/|$)/.exec(relativePath);
+  return match ? (`/${match[1]}/${match[2]}` as SettingsAppScope) : '';
+}
+
 function normalizeSettingsRoutePath(value: string) {
   const normalized = ensureLeadingSlash(String(value || '/settings')).replace(/\/{2,}/g, '/');
   return normalized === '/' ? '/settings' : normalized.replace(/\/+$/, '');
+}
+
+function removeSettingsRouteRoot(settingsRoute: string) {
+  if (settingsRoute === '/settings') {
+    return '';
+  }
+  return settingsRoute.replace(/^\/settings(?=\/|$)/, '');
 }
 
 export function resolveSettingsDocumentPath(
@@ -36,8 +51,10 @@ export function resolveSettingsDocumentPath(
   const root = normalizeSettingsRootPublicPath(rootPublicPath);
   const rootPrefix = root === '/' ? '' : root.replace(/\/+$/, '');
   const settingsRoute = normalizeSettingsRoutePath(settingsRoutePath);
-  const scopePrefix = appScope ? `/settings${appScope}` : '';
-  return `${rootPrefix}${scopePrefix}${settingsRoute}`;
+  if (!appScope) {
+    return `${rootPrefix}${settingsRoute}`;
+  }
+  return `${rootPrefix}/settings${appScope}${removeSettingsRouteRoot(settingsRoute)}`;
 }
 
 export function resolveSettingsDocumentBasename(rootPublicPath: string, appScope: SettingsAppScope) {

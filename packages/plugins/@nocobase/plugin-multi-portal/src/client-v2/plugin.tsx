@@ -64,7 +64,7 @@ export class PluginMultiPortalClientV2 extends Plugin {
     registerMultiPortalPermissionsTab(this.app, (key) => this.t(key));
     registerPortalEntryActions(this.app, (key) => String(this.t(key)));
 
-    if (this.pluginSettingsManager.getRoutePath?.('') === '/settings/') {
+    if (this.pluginSettingsManager.getRouteName('') === 'settings.') {
       return;
     }
 

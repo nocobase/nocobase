@@ -217,6 +217,10 @@ describe('plugin-users client-v2', () => {
     await app.pm.add(PluginUsersClientV2);
     await app.load();
     const getRoutePath = app.pluginSettingsManager.getRoutePath.bind(app.pluginSettingsManager);
+    const getRouteName = app.pluginSettingsManager.getRouteName.bind(app.pluginSettingsManager);
+    vi.spyOn(app.pluginSettingsManager, 'getRouteName').mockImplementation((name) => {
+      return name === '' ? 'settings.' : getRouteName(name);
+    });
     vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
       return name === '' ? '/settings/' : getRoutePath(name);
     });
@@ -238,7 +242,7 @@ describe('plugin-users client-v2', () => {
       configurable: true,
       value: {
         ...originalLocation,
-        pathname: '/nocobase/settings/apps/demo/settings/workflow',
+        pathname: '/nocobase/settings/apps/demo/workflow',
         search: '?tab=list',
         hash: '#recent',
         replace,
@@ -248,8 +252,12 @@ describe('plugin-users client-v2', () => {
     await app.pm.add(PluginUsersClientV2);
     await app.load();
     const getRoutePath = app.pluginSettingsManager.getRoutePath.bind(app.pluginSettingsManager);
+    const getRouteName = app.pluginSettingsManager.getRouteName.bind(app.pluginSettingsManager);
+    vi.spyOn(app.pluginSettingsManager, 'getRouteName').mockImplementation((name) => {
+      return name === '' ? 'settings.' : getRouteName(name);
+    });
     vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
-      return name === '' ? '/settings/' : getRoutePath(name);
+      return name === '' ? '/' : getRoutePath(name);
     });
     app.router.setBasename('/nocobase/settings/apps/demo/');
 
@@ -260,7 +268,7 @@ describe('plugin-users client-v2', () => {
     await model.onClick();
 
     expect(replace).toHaveBeenCalledWith(
-      '/nocobase/settings/apps/demo/settings/signin?redirect=%2Fnocobase%2Fsettings%2Fapps%2Fdemo%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent',
+      '/nocobase/settings/apps/demo/signin?redirect=%2Fnocobase%2Fsettings%2Fapps%2Fdemo%2Fworkflow%3Ftab%3Dlist%23recent',
     );
   });
 });

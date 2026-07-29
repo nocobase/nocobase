@@ -461,7 +461,11 @@ export class Gateway extends EventEmitter {
       }
       const appPublicPath = this.getAppPublicPath().replace(/\/$/, '');
       const targetPath =
-        from === '/admin/settings/mail/oauth2' ? `${appScope}${to}` : appScope ? `/settings${appScope}${to}` : to;
+        from === '/admin/settings/mail/oauth2'
+          ? `${appScope}${to}`
+          : appScope
+            ? `/settings${appScope}${to.replace(/^\/settings(?=\/|$)/, '')}`
+            : to;
       return `${appPublicPath}${targetPath}${legacyPath.slice(from.length)}`;
     }
 

@@ -188,7 +188,7 @@ function redirectUnauthenticatedRoute(
   navigate: ReturnType<typeof useNavigate>,
 ) {
   const redirectPath = getCurrentV2RedirectPath(app, location);
-  if (app.pluginSettingsManager.getRoutePath('') === '/settings/') {
+  if (app.pluginSettingsManager.getRouteName('') === 'settings.') {
     redirectToV2Signin(app, redirectPath);
     return;
   }

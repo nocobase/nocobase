@@ -26,6 +26,79 @@ describe('SettingsApplication', () => {
     expect(settingsApp.pluginSettingsManager.getRoutePath('')).toBe('/settings/');
   });
 
+  it.each(['apps', '_app'])('uses basename-relative paths for the %s sub-application Settings runtime', (scope) => {
+    const app = new SettingsApplication({
+      publicPath: '/nocobase/',
+      router: { type: 'memory', basename: `/nocobase/settings/${scope}/demo/` },
+      ws: false,
+    });
+
+    expect(app.pluginSettingsManager.getRouteName('demo.index')).toBe('settings.demo.index');
+    expect(app.pluginSettingsManager.getRoutePath('')).toBe('/');
+    expect(app.pluginSettingsManager.getRoutePath('demo.index')).toBe('/demo');
+
+    app.router.add('settings', { path: '/settings' });
+    app.router.add('settingsDetails.workflow.canvas', { path: '/settings/workflow/workflows/:id' });
+    app.router.add('settingsDetails.preview', { path: '/settings-preview/:id' });
+    app.router.add('auth.signin', { path: '/signin' });
+
+    expect(app.router.get('settings')).toMatchObject({ path: '/' });
+    expect(app.router.get('settingsDetails.workflow.canvas')).toMatchObject({
+      path: '/workflow/workflows/:id',
+      authCheck: true,
+    });
+    expect(
+      app.router
+        .matchRoutes(`/nocobase/settings/${scope}/demo/workflow/workflows/1`)
+        ?.some((match) => match.route.id === 'settingsDetails.workflow.canvas'),
+    ).toBe(true);
+    expect(
+      app.router
+        .matchRoutes(`/nocobase/settings/${scope}/demo/settings/workflow/workflows/1`)
+        ?.some((match) => match.route.id === 'settingsDetails.workflow.canvas'),
+    ).toBe(false);
+    expect(app.router.get('settingsDetails.preview')).toMatchObject({ path: '/settings-preview/:id' });
+    expect(app.router.get('auth.signin')).toMatchObject({ path: '/signin' });
+  });
+
+  it('does not treat an apps segment inside the main application public path as a sub-application scope', () => {
+    const app = new SettingsApplication({
+      router: { type: 'memory', basename: '/tenant/apps/root/' },
+      ws: false,
+    });
+
+    expect(app.pluginSettingsManager.getRoutePath('')).toBe('/settings/');
+    expect(app.pluginSettingsManager.getRoutePath('demo.index')).toBe('/settings/demo');
+
+    app.router.add('settingsDetails.workflow.canvas', { path: '/settings/workflow/workflows/:id' });
+    expect(app.router.get('settingsDetails.workflow.canvas')).toMatchObject({
+      path: '/settings/workflow/workflows/:id',
+    });
+  });
+
+  it.each(['apps', '_app'])(
+    'does not treat a scoped-looking %s suffix inside the main public path as a sub-application scope',
+    (scope) => {
+      const publicPath = `/tenant/settings/${scope}/root/`;
+      const app = new SettingsApplication({
+        publicPath,
+        router: { type: 'memory', basename: publicPath },
+        ws: false,
+      });
+
+      expect(app.pluginSettingsManager.getRoutePath('')).toBe('/settings/');
+      expect(app.pluginSettingsManager.getRoutePath('demo.index')).toBe('/settings/demo');
+
+      app.router.add('settingsDetails.workflow.canvas', { path: '/settings/workflow/workflows/:id' });
+      app.router.add('auth.signin', { path: '/signin' });
+
+      expect(app.router.get('settingsDetails.workflow.canvas')).toMatchObject({
+        path: '/settings/workflow/workflows/:id',
+      });
+      expect(app.router.get('auth.signin')).toMatchObject({ path: '/settings/signin' });
+    },
+  );
+
   it('keeps only routes owned by the settings runtime', () => {
     const app = new SettingsApplication({ router: { type: 'memory' }, ws: false });
 

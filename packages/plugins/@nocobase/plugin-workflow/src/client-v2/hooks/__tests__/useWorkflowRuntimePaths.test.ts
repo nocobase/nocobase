@@ -12,13 +12,16 @@ import { renderHook } from '@testing-library/react';
 
 const holder = vi.hoisted(() => ({
   runtime: 'legacy' as 'legacy' | 'modern',
+  routeName: 'admin.settings.',
+  routeRoot: '/admin/settings/',
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
   getRouteRuntimeVersion: () => holder.runtime,
   useApp: () => ({
     pluginSettingsManager: {
-      getRoutePath: () => '/admin/settings/',
+      getRouteName: () => holder.routeName,
+      getRoutePath: () => holder.routeRoot,
     },
   }),
 }));
@@ -33,6 +36,8 @@ import {
 describe('useWorkflowRuntimePaths', () => {
   it('maps legacy runtime to legacy workflow routes', () => {
     holder.runtime = 'legacy';
+    holder.routeName = 'admin.settings.';
+    holder.routeRoot = '/admin/settings/';
 
     expect(isWorkflowV2Runtime()).toBe(false);
     expect(getWorkflowCanvasRuntimePath(123)).toBe('/admin/settings/workflow/workflows/123');
@@ -41,6 +46,8 @@ describe('useWorkflowRuntimePaths', () => {
 
   it('maps modern runtime to modern workflow routes', () => {
     holder.runtime = 'modern';
+    holder.routeName = 'admin.settings.';
+    holder.routeRoot = '/admin/settings/';
 
     expect(isWorkflowV2Runtime()).toBe(true);
     expect(getWorkflowCanvasRuntimePath(123)).toBe('/settings/workflow/workflows/123');
@@ -49,10 +56,23 @@ describe('useWorkflowRuntimePaths', () => {
 
   it('exposes memoized route helpers through the hook', () => {
     holder.runtime = 'modern';
+    holder.routeName = 'admin.settings.';
+    holder.routeRoot = '/admin/settings/';
 
     const { result } = renderHook(() => useWorkflowRuntimePaths());
     expect(result.current.isV2Runtime).toBe(true);
     expect(result.current.getWorkflowCanvasPath(123)).toBe('/settings/workflow/workflows/123');
     expect(result.current.getWorkflowExecutionPath(456)).toBe('/settings/workflow/executions/456');
+  });
+
+  it('derives scoped Settings detail routes from the current manager root', () => {
+    holder.runtime = 'legacy';
+    holder.routeName = 'settings.';
+    holder.routeRoot = '/';
+
+    const { result } = renderHook(() => useWorkflowRuntimePaths());
+    expect(result.current.isV2Runtime).toBe(true);
+    expect(result.current.getWorkflowCanvasPath(123)).toBe('/workflow/workflows/123');
+    expect(result.current.getWorkflowExecutionPath(456)).toBe('/workflow/executions/456');
   });
 });

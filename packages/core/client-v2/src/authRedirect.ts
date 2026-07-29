@@ -10,6 +10,7 @@
 import type { BaseApplication } from './BaseApplication';
 import {
   resolveSettingsAppScope,
+  resolveSettingsAppScopeWithinPublicPath,
   resolveSettingsDocumentPath,
   type SettingsAppScope,
 } from './settings-app/settingsDocumentPath';
@@ -17,6 +18,7 @@ import {
 type AppLike = Pick<BaseApplication<any>, 'getPublicPath'> & {
   name?: string;
   pluginSettingsManager?: {
+    getRouteName?: (name: string) => string;
     getRoutePath?: (name: string) => string;
   };
   router?: {
@@ -190,7 +192,7 @@ function joinRootRelativePath(basePath: string, pathname: string) {
 }
 
 function isStandaloneSettingsApp(app: AppLike) {
-  return app.pluginSettingsManager?.getRoutePath?.('') === '/settings/';
+  return app.pluginSettingsManager?.getRouteName?.('') === 'settings.';
 }
 
 function getSettingsRootPublicPath(app: AppLike) {
@@ -205,9 +207,9 @@ function getSettingsRootPublicPath(app: AppLike) {
 }
 
 function getSettingsAppScope(app: AppLike): SettingsAppScope {
+  const publicPath = app.getPublicPath();
   return (
-    resolveSettingsAppScope(app.router?.getBasename?.()) ||
-    resolveSettingsAppScope(app.getPublicPath()) ||
+    resolveSettingsAppScopeWithinPublicPath(publicPath, app.router?.getBasename?.()) ||
     (app.name && app.name !== 'main' ? resolveSettingsAppScope(`/apps/${app.name}`) : '')
   );
 }

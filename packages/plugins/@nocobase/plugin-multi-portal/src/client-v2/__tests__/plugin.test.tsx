@@ -257,6 +257,7 @@ describe('PluginMultiPortalClientV2', () => {
       pluginSettingsManager: {
         addMenuItem: vi.fn(),
         addPageTabItem: vi.fn(),
+        getRouteName: vi.fn(() => 'admin.settings.'),
       },
       flowEngine: {
         registerModels: vi.fn(),
@@ -373,7 +374,7 @@ describe('PluginMultiPortalClientV2', () => {
     });
   });
 
-  it('should keep Settings registration without loading runtime portals', async () => {
+  it('should keep scoped Settings registration without loading runtime portals', async () => {
     const addPermissionsTab = vi.fn();
     const app = {
       i18n: {
@@ -382,7 +383,8 @@ describe('PluginMultiPortalClientV2', () => {
       pluginSettingsManager: {
         addMenuItem: vi.fn(),
         addPageTabItem: vi.fn(),
-        getRoutePath: vi.fn(() => '/settings/'),
+        getRouteName: vi.fn(() => 'settings.'),
+        getRoutePath: vi.fn(() => '/'),
       },
       flowEngine: {
         registerModels: vi.fn(),

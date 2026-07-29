@@ -20,7 +20,7 @@ describe('Settings runtime scope', () => {
   });
 
   it.each(['apps', '_app'])('derives %s application scope from the document path', (scope) => {
-    expect(resolveSettingsRuntimeScope('/nocobase/', `/nocobase/settings/${scope}/demo/settings/workflow`)).toEqual({
+    expect(resolveSettingsRuntimeScope('/nocobase/', `/nocobase/settings/${scope}/demo/workflow`)).toEqual({
       appName: 'demo',
       basename: `/nocobase/settings/${scope}/demo/`,
       rootPublicPath: '/nocobase/',
