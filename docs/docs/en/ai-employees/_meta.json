@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Page Blocks",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Built-in AI Employees",
     "items": [
       {

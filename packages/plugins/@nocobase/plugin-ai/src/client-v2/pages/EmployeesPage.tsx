@@ -29,7 +29,6 @@ import {
   Spin,
   Switch,
   Tabs,
-  Tag,
   Tooltip,
   Typography,
   theme,
@@ -45,10 +44,10 @@ import type { APIClient, SkillsEntry, ToolsEntry } from '@nocobase/client-v2';
 import { useT } from '../locale';
 import { avatars, avatarsMap } from '../ai-employees/avatars';
 import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
-import type { LLMServiceItem } from '../repositories/AIConfigRepository';
 import type { AIEmployee as ChatAIEmployee } from '../ai-employees/types';
 import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
+import { getLLMModelValue, LLMModelMultiSelect, parseLLMModelValue } from '../llm-services/model-select';
 
 type EmployeeCategory = 'business' | 'developer';
 type APIClientLike = Pick<APIClient, 'resource'>;
@@ -424,17 +423,6 @@ const SystemPromptSettings: React.FC<{ builtIn?: boolean; record?: SettingsAIEmp
   );
 };
 
-const parseModelValue = (value: string) => {
-  const [llmService, ...modelParts] = value.split(':');
-  return {
-    llmService,
-    model: modelParts.join(':'),
-  };
-};
-
-const toModelValue = (model: { llmService?: string; model?: string }) =>
-  model.llmService && model.model ? `${model.llmService}:${model.model}` : undefined;
-
 const normalizeModelSettings = (value: unknown): EmployeeModelSettings =>
   isRecord(value) ? (value as EmployeeModelSettings) : {};
 
@@ -525,29 +513,11 @@ const ModelSettings: React.FC = observer(() => {
   const selectedValues = useMemo(() => {
     const models = Array.isArray(modelSettings.models) ? modelSettings.models : [];
     if (models.length) {
-      return models.map(toModelValue).filter((value): value is string => !!value);
+      return models.map(getLLMModelValue).filter((value): value is string => !!value);
     }
-    const legacyValue = toModelValue(modelSettings);
+    const legacyValue = getLLMModelValue(modelSettings);
     return legacyValue ? [legacyValue] : [];
   }, [modelSettings]);
-  const options = useMemo(
-    () =>
-      services.map((service: LLMServiceItem) => ({
-        label: service.llmServiceTitle,
-        options: service.enabledModels.map((model) => ({
-          label: `${service.llmServiceTitle} / ${model.label}`,
-          value: `${service.llmService}:${model.value}`,
-        })),
-      })),
-    [services],
-  );
-  const labelMap = useMemo(() => {
-    const map = new Map<string, string>();
-    options.forEach((group) => {
-      group.options.forEach((option) => map.set(option.value, option.label));
-    });
-    return map;
-  }, [options]);
   const setModelSettings = useCallback(
     (values: Record<string, unknown>) => {
       const current = form.getFieldValue('modelSettings');
@@ -568,14 +538,16 @@ const ModelSettings: React.FC = observer(() => {
   }, [watchedModelSettings]);
 
   useEffect(() => {
-    if (!enabled || selectedValues.length || !options.length) {
+    if (!enabled || selectedValues.length || !services.length) {
       return;
     }
-    const first = options[0]?.options?.[0]?.value;
+    const firstService = services[0];
+    const firstModel = firstService?.enabledModels[0];
+    const first = firstService && firstModel ? `${firstService.llmService}:${firstModel.value}` : undefined;
     if (first) {
-      setModelSettings({ models: [parseModelValue(first)] });
+      setModelSettings({ models: [parseLLMModelValue(first)] });
     }
-  }, [enabled, options, selectedValues.length, setModelSettings]);
+  }, [enabled, selectedValues.length, services, setModelSettings]);
 
   return (
     <>
@@ -587,21 +559,11 @@ const ModelSettings: React.FC = observer(() => {
         <Switch checked={enabled} onChange={(checked) => setModelSettings({ enabled: checked })} />
       </Form.Item>
       <Form.Item label={<Typography.Text strong>{formLabel(t('Models'))}</Typography.Text>} preserve>
-        <Select
-          allowClear
+        <LLMModelMultiSelect
           disabled={!enabled}
           loading={loading}
-          mode="multiple"
-          notFoundContent={loading ? <Spin size="small" /> : null}
-          optionFilterProp="label"
-          options={options}
           placeholder={t('Select models')}
-          showSearch
-          tagRender={(props) => (
-            <Tag closable={props.closable} onClose={props.onClose}>
-              {labelMap.get(String(props.value)) || props.label}
-            </Tag>
-          )}
+          services={services}
           value={selectedValues}
           onChange={(values: string[]) => {
             if (!values.length) {
@@ -611,7 +573,7 @@ const ModelSettings: React.FC = observer(() => {
             setModelSettings({
               llmService: undefined,
               model: undefined,
-              models: values.map(parseModelValue),
+              models: values.map(parseLLMModelValue),
             });
           }}
         />

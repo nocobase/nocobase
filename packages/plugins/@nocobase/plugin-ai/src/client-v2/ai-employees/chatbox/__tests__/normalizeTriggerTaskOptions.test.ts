@@ -8,13 +8,13 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { normalizeTriggerTaskOptions } from '../normalizeTriggerTaskOptions';
-import type { AIEmployee } from '../../../types';
+import { normalizeTriggerTaskOptions } from '../utils';
+import type { AIEmployee } from '../../types';
 
 describe('normalizeTriggerTaskOptions', () => {
   it('keeps an AIEmployee object unchanged', async () => {
     const aiEmployee: AIEmployee = { username: 'nathan', nickname: 'Nathan' };
-    const options = { aiEmployee, tasks: [{ title: 'Write' }] };
+    const options = { aiEmployee, tasks: [{ title: 'Write' }], chatBoxUid: 'chat-box-1' };
 
     await expect(normalizeTriggerTaskOptions(options)).resolves.toBe(options);
   });

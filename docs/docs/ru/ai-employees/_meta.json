@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Блоки страниц",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Встроенные ИИ-сотрудники",
     "items": [
       {
