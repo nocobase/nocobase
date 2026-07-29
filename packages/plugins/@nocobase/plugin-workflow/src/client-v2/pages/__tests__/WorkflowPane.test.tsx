@@ -121,7 +121,10 @@ function makeCtx(resourceMap: Record<string, any>) {
     app: {
       name: 'main',
       pm: { get: () => mockPlugin },
-      pluginSettingsManager: { getRoutePath: () => '/admin/settings/workflow' },
+      pluginSettingsManager: {
+        getRouteName: () => 'admin.settings.',
+        getRoutePath: () => '/admin/settings/',
+      },
     },
   };
 }
