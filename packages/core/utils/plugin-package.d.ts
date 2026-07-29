@@ -35,7 +35,6 @@ export declare function resolvePluginPackagePath(
   options?: {
     nodeModulesPath?: string;
     storagePluginsPath?: string;
-    cwd?: string;
   },
 ): Promise<string>;
 export declare function discoverPluginPackages(options?: {

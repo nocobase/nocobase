@@ -29,7 +29,6 @@ nb portal <command>
 | [`nb portal list`](./list.md) | Menampilkan daftar record Portal dan status sinkronisasi workspace lokal |
 | [`nb portal pull`](./pull.md) | Menarik source Portal dari source storage ke workspace lokal |
 | [`nb portal push`](./push.md) | Mendorong perubahan source Portal lokal ke source storage |
-| [`nb portal registry`](./registry/index.md) | Mengelola integrasi Registry dari plugin NocoBase yang aktif |
 
 ## Alur Umum
 

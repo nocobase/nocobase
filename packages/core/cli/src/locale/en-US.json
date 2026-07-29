@@ -195,28 +195,6 @@
         "sourceStorage": "Source storage: {{sourceStorage}}"
       }
     },
-    "portalRegistrySync": {
-      "errors": {
-        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
-        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "invalidItem": "Invalid Portal Registry item \"{{item}}\". Use a name such as \"ai\" or \"@nocobase/ai\".",
-        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
-        "packageJsonMissing": "Portal is invalid: package.json is missing in {{portalDir}}.",
-        "componentsJsonMissing": "Portal is invalid: components.json is missing in {{portalDir}}.",
-        "invalidComponentsJson": "Portal components.json is not valid JSON: {{componentsJsonPath}}.",
-        "overwriteUiRequiresOverwrite": "--overwrite-ui requires --overwrite.",
-        "diffConflictsWithWrite": "--diff cannot be combined with --overwrite, --overwrite-ui, or --build.",
-        "registryUnavailable": "Could not reach Portal Registry. {{details}}",
-        "registryRequestFailed": "Portal Registry request failed with status {{status}}{{details}}."
-      },
-      "messages": {
-        "registryUnsupported": "The selected NocoBase service does not expose Portal Registries; skipped automatic Registry installation.",
-        "synced": "Portal Registry items installed in \"{{portal}}\": {{items}}.",
-        "skipped": "Already installed, skipped: {{items}}.",
-        "upToDate": "Portal Registry items in \"{{portal}}\" are up to date.",
-        "diffCompleted": "Portal Registry diff completed for \"{{portal}}\"."
-      }
-    },
     "portalConfig": {
       "errors": {
         "invalidSourceStorage": "Invalid source storage \"{{value}}\". Use \"nocobase\" or \"git\".",

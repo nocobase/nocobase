@@ -50,6 +50,7 @@ describe('role check action', () => {
     const response = await agent.resource('roles').check();
 
     expect(response.statusCode).toEqual(200);
+    expect(response.body.data.roles).toEqual(['test']);
   });
 
   it('should return updated roles info', async () => {
