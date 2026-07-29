@@ -57,6 +57,36 @@ describe('workflow > Processor', () => {
       expect(records.length).toBe(2);
     });
 
+    it('saves new jobs in batches', async () => {
+      const node = await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: true,
+        status: EXECUTION_STATUS.STARTED,
+      });
+      const processor = plugin.createProcessor(execution);
+      const JobModel = db.getModel('jobs');
+      const bulkCreate = vi.spyOn(JobModel, 'bulkCreate');
+
+      for (let index = 0; index < 201; index += 1) {
+        processor.saveJob({
+          nodeId: node.id,
+          nodeKey: node.key,
+          status: JOB_STATUS.RESOLVED,
+          result: index,
+        });
+      }
+
+      await processor.exit();
+
+      expect(bulkCreate).toHaveBeenCalledTimes(3);
+      expect(bulkCreate.mock.calls[0][0]).toHaveLength(100);
+      expect(bulkCreate.mock.calls[1][0]).toHaveLength(100);
+      expect(bulkCreate.mock.calls[2][0]).toHaveLength(1);
+      expect(await execution.countJobs()).toBe(201);
+    });
+
     it('empty workflow without any nodes', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 
