@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import DevicePage from '../pages/DevicePage';
@@ -79,7 +79,7 @@ describe('plugin-idp-oauth client-v2 DevicePage', () => {
 
   it('should send the current auth context when loading the device state', async () => {
     render(
-      <MemoryRouter initialEntries={['/idpOAuth/device?user_code=TKHX-NNCC']}>
+      <MemoryRouter initialEntries={['/settings/idpOAuth/device?user_code=TKHX-NNCC']}>
         <DevicePage />
       </MemoryRouter>,
     );
@@ -105,5 +105,29 @@ describe('plugin-idp-oauth client-v2 DevicePage', () => {
 
     expect(mockState.request).toHaveBeenCalledTimes(1);
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['/settings/idpOAuth/device?user_code=TKHX-NNCC', '/settings/'],
+    ['/v/idpOAuth/device?user_code=TKHX-NNCC', '/'],
+  ])('should navigate from %s to %s after completion', async (entry, expectedPath) => {
+    mockState.request = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          status: 'complete',
+          userCode: 'TKHX-NNCC',
+        },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={[entry]}>
+        <DevicePage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to home' }));
+
+    expect(navigateMock).toHaveBeenCalledWith(expectedPath);
   });
 });
