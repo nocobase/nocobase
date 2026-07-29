@@ -100,7 +100,18 @@ export const SettingsShell: FC = ({ children }) => {
   });
 
   if (isAuthenticationRoute) {
-    return <>{children}</>;
+    // 登录 / 二次验证页也要套设置中心自己的主题，否则它跟的是业务端主题：
+    // 业务端切暗黑之后登录页是暗的，登进去又变成浅色，中间闪一下。
+    // 外面这层用 `display: contents`，只为了让作用在 `.nb-settings-shell` 上的补丁样式
+    // 也能命中登录页，不改变任何布局。
+    return (
+      <ConfigProvider theme={settingsShellTheme}>
+        <style>{settingsGlobalCss}</style>
+        <div className="nb-settings-shell" style={{ display: 'contents' }}>
+          {children}
+        </div>
+      </ConfigProvider>
+    );
   }
 
   const shouldShowHeader = authStatus === 'authenticated';
@@ -128,7 +139,9 @@ export const SettingsShell: FC = ({ children }) => {
               height: 46,
               lineHeight: '46px',
               paddingInline: settingsToken.paddingLG,
-              // 顶栏子组件里有一部分直接读 CSS 变量而不是 antd token，一起覆盖掉。
+              // 顶栏子组件（动作条、pinned 插件列表）有一部分直接读 CSS 变量而不是 antd token，
+              // 而且兜底值是按深色顶栏写死的浅色，这里一并覆盖，免得白底上出现白图标。
+              '--nb-topbar-action-hover-bg': headerColors.bgHover,
               '--colorTextHeaderMenu': headerColors.text,
               '--nb-topbar-action-color': headerColors.text,
             } as React.CSSProperties

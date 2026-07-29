@@ -251,6 +251,12 @@ export function withSettingsHeaderTheme(theme: ThemeConfig, token: GlobalToken):
  */
 export function buildSettingsGlobalCss(token: GlobalToken): string {
   return `
+/* 最外层 body 的底色来自业务端主题（暗黑下是 #141414）。内容区一般把它整块盖住，
+   但内容不满屏、或者滚动橡皮筋回弹时会漏出来，所以这里一并接管。
+   设置中心是独立入口的单页应用，这条全局规则不会影响业务端。 */
+body {
+  background: ${token.colorBgLayout};
+}
 .nb-settings-shell a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn):not([class*="ant-"]) {
   color: ${token.colorTextSecondary};
 }
