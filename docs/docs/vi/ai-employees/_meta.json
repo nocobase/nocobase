@@ -163,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Lưu trữ vector",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Knowledge Base",
         "items": [
           {

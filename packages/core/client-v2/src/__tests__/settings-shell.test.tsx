@@ -12,24 +12,26 @@ import { ConfigProvider } from 'antd';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setCurrentUserAuthStatus } from '../nocobase-buildin-plugin/currentUserAuthStatus';
 import { SettingsShell } from '../settings-app/SettingsShell';
 import type { ThemeConfig } from '../theme';
 
 const userCenterModel = { uid: 'settings-user-center' };
 const createModel = vi.fn(() => userCenterModel);
 const matchRoutes = vi.fn(() => [{ route: { id: 'settings' } }]);
+const mockApp = {
+  flowEngine: {
+    createModel,
+    getModel: vi.fn(() => null),
+    getModelClass: vi.fn(() => true),
+  },
+  router: {
+    matchRoutes,
+  },
+};
 
 vi.mock('../hooks/useApp', () => ({
-  useApp: () => ({
-    flowEngine: {
-      createModel,
-      getModel: vi.fn(() => null),
-      getModelClass: vi.fn(() => true),
-    },
-    router: {
-      matchRoutes,
-    },
-  }),
+  useApp: () => mockApp,
 }));
 
 vi.mock('../settings-app/SettingsBrand', () => ({
@@ -63,6 +65,7 @@ describe('SettingsShell', () => {
     createModel.mockClear();
     matchRoutes.mockReset();
     matchRoutes.mockReturnValue([{ route: { id: 'settings' } }]);
+    setCurrentUserAuthStatus(mockApp, 'authenticated');
   });
 
   it('renders only the settings brand, group nav, help and user center around its content', () => {
@@ -177,5 +180,21 @@ describe('SettingsShell', () => {
     expect(screen.queryByTestId('settings-help')).not.toBeInTheDocument();
     expect(screen.queryByTestId('settings-user-center')).not.toBeInTheDocument();
     expect(document.querySelector('#nocobase-embed-container')).not.toBeInTheDocument();
+  });
+
+  it('does not render the Settings header before authentication completes', () => {
+    setCurrentUserAuthStatus(mockApp, 'unknown');
+
+    render(
+      <MemoryRouter initialEntries={['/settings/system-settings']}>
+        <SettingsShell>
+          <div>settings content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('settings content')).toBeInTheDocument();
+    expect(document.querySelector('header')).toHaveStyle({ display: 'none' });
+    expect(screen.queryByTestId('settings-logo')).not.toBeVisible();
   });
 });

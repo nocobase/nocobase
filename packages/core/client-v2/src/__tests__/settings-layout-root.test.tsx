@@ -163,7 +163,7 @@ describe('standalone settings layout root', () => {
     });
   });
 
-  it('groups negative-sort settings above plugin-manager', async () => {
+  it('keeps ordinary negative-sort settings in the active Settings group sidebar', async () => {
     const app = new SettingsApplication({
       plugins: [SettingsBuildInPlugin, TestAclPlugin, PrimarySettingsPlugin],
       router: { type: 'memory', initialEntries: ['/settings/portal-manager'] },
@@ -189,15 +189,8 @@ describe('standalone settings layout root', () => {
     expect(await screen.findByText('Portal manager page')).toBeInTheDocument();
 
     const portalManagerItem = screen.getByRole('menuitem', { name: 'Portal manager' });
-    const pluginManagerItem = screen.getByRole('menuitem', { name: /Plugin manager$/ });
-    const menu = portalManagerItem.closest('ul');
-    const menuChildren = Array.from(menu?.children || []);
-    const portalManagerIndex = menuChildren.indexOf(portalManagerItem);
-    const pluginManagerIndex = menuChildren.indexOf(pluginManagerItem);
-    const firstDividerIndex = menuChildren.findIndex((item) => item.classList.contains('ant-menu-item-divider'));
-
-    expect(portalManagerIndex).toBeLessThan(pluginManagerIndex);
-    expect(pluginManagerIndex).toBeLessThan(firstDividerIndex);
+    expect(portalManagerItem.closest('aside')).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Plugin manager$/ })).not.toBeInTheDocument();
   });
 
   it('uses document navigation to the standalone Settings signin page when unauthenticated', async () => {
@@ -228,5 +221,40 @@ describe('standalone settings layout root', () => {
     await waitFor(() => {
       expect(replace).toHaveBeenCalledWith('/settings/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
     });
+  });
+
+  it('does not render the Settings header before the initial auth check completes', async () => {
+    let resolveAuthCheck: (response: [number, { data: { id: number } }]) => void = () => {
+      throw new Error('Auth check resolver is not initialized');
+    };
+    const authCheckResponse = new Promise<[number, { data: { id: number } }]>((resolve) => {
+      resolveAuthCheck = resolve;
+    });
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin],
+      router: { type: 'memory', initialEntries: ['/settings'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(() => authCheckResponse);
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(apiMock.history.get.some((request) => request.url === '/auth:check')).toBe(true);
+    });
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+
+    resolveAuthCheck([200, { data: { id: 1 } }]);
+    expect(await screen.findByRole('banner')).toBeInTheDocument();
   });
 });
