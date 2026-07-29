@@ -3568,7 +3568,14 @@ export default class Install extends Command {
       if (isAiMode(appResults)) {
         const portalName =
           String(appResults.portalName ?? DEFAULT_INSTALL_PORTAL_NAME).trim() || DEFAULT_INSTALL_PORTAL_NAME;
-        await this.config.runCommand('portal:registry:sync', [portalName, '--env', envName, '--yes', '--build']);
+        await this.config.runCommand('portal:registry:sync', [
+          portalName,
+          '--env',
+          envName,
+          '--yes',
+          '--build',
+          '--skip-if-unsupported',
+        ]);
       }
     }
 
