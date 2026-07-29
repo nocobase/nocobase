@@ -651,6 +651,8 @@ describe('LightExtensionWorkspacePage', () => {
       expect.objectContaining({
         title: 'Move to inline code?',
         okText: 'Move to inline code',
+        transitionName: '',
+        maskTransitionName: '',
       }),
     );
     await waitFor(() =>

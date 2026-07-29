@@ -962,6 +962,8 @@ function LightExtensionWorkspacePage({
       ),
       okText: t('Move to inline code'),
       cancelText: t('Cancel'),
+      transitionName: '',
+      maskTransitionName: '',
       onOk: moveToInline,
     });
   }, [moveToInline, t]);

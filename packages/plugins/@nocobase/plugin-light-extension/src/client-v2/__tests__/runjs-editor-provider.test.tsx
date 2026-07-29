@@ -18,6 +18,7 @@ import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocoba
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  createMoveToInlineIdempotencyKey,
   createRunJSLightExtensionEditorProvider,
   waitForHostRefreshCommit,
 } from '../components/RunJSLightExtensionEditorProvider';
@@ -192,6 +193,16 @@ function EditorViewHarness(props: {
 }
 
 describe('RunJSLightExtensionEditorProvider', () => {
+  it('creates move-to-inline keys without secure-context randomUUID', () => {
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal('crypto', {});
+    try {
+      expect(createMoveToInlineIdempotencyKey()).toMatch(/^move-to-inline-[a-z0-9]{11}$/);
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto);
+    }
+  });
+
   it('handles only light-extension-capable flow model steps', () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const stepLocator = {

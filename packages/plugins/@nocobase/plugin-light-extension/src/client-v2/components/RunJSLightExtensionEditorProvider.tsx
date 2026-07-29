@@ -21,6 +21,7 @@ import {
   type ParamObject,
   type RunJSValue,
 } from '@nocobase/flow-engine';
+import { uid } from '@nocobase/utils/client';
 import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
@@ -496,8 +497,8 @@ function getLightExtensionKind(value: unknown): LightExtensionKind | undefined {
     : undefined;
 }
 
-function createMoveToInlineIdempotencyKey(): string {
-  return `move-to-inline-${globalThis.crypto.randomUUID()}`;
+export function createMoveToInlineIdempotencyKey(): string {
+  return `move-to-inline-${uid()}`;
 }
 
 function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionEntryWorkspaceScope | null {

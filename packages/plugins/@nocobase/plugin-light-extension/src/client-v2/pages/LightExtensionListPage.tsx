@@ -994,6 +994,7 @@ function LightExtensionListPageInner() {
 
       <Drawer
         destroyOnClose
+        motion={{ motionName: '' }}
         onClose={closeDetailDrawer}
         open={detailDrawerOpen}
         styles={{

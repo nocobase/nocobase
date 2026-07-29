@@ -877,6 +877,7 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     expect(desktopRoute.children[0].key).toBe('x-designer-button');
+    expect(desktopRoute.children[0].disabled).not.toBe(true);
     expect(desktopRoute.children[0].path).toBe('/admin/__admin_layout__/designer/admin-layout-model');
     expect(React.isValidElement(desktopRoute.children[0].name)).toBe(true);
     expect(desktopRoute.children[1].routes?.[1].key).toBe('x-designer-button');
