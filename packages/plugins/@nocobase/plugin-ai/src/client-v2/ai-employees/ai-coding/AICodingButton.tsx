@@ -54,6 +54,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const { triggerTask } = useChatBoxActions(runtime);
     const addContextItems = chat.addContextItems;
     const setEditorRef = chat.setEditorRef;
+    const unregisterEditorRef = chat.unregisterEditorRef;
     const setCurrentEditorRefUid = chat.setCurrentEditorRefUid;
     const ctx = useFlowContext();
 
@@ -67,9 +68,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       setEditorRef(uid, editorRef);
       setCurrentEditorRefUid(uid);
       return () => {
-        setEditorRef(uid, null);
+        unregisterEditorRef(uid, editorRef);
       };
-    }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid]);
+    }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid, unregisterEditorRef]);
 
     useEffect(() => {
       setActive('AICodingButton', !!aiEmployee);

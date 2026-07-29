@@ -215,6 +215,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         chatBoxModel.setOpen(true);
       }
       if (chatConversationModel.currentConversation) {
+        clear(undefined, draftChat.sessionKey);
         chatConversationModel.setCurrentConversation(undefined);
         workflowTaskModel.setCurrentWorkflowTask(undefined);
         draftChat.setMessages([]);
