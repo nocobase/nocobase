@@ -247,6 +247,7 @@ test('install syncs oauth env connection after the app becomes ready', async () 
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
   expect(runCommand.mock.calls).toEqual([
     ['app:start', ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init']],
+    ['portal:registry:sync', ['main', '--env', 'app1', '--yes', '--build', '--skip-if-unsupported']],
     ['env:auth', ['app1']],
     ['env:update', ['app1']],
   ]);
@@ -304,7 +305,7 @@ test('install delegates portal initialization to app startup', async () => {
   ]);
   expect(runCommand.mock.calls[1]).toEqual([
     'portal:registry:sync',
-    ['admin', '--env', 'app1', '--yes', '--build'],
+    ['admin', '--env', 'app1', '--yes', '--build', '--skip-if-unsupported'],
   ]);
 });
 
@@ -410,6 +411,7 @@ test('install syncs token env connection after the app becomes ready without oau
 
   expect(runCommand.mock.calls).toEqual([
     ['app:start', ['--env', 'app1', '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init']],
+    ['portal:registry:sync', ['main', '--env', 'app1', '--yes', '--build', '--skip-if-unsupported']],
     ['env:update', ['app1']],
   ]);
   expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('app1', { scope: 'global' });

@@ -519,6 +519,7 @@ describe('plugin-multi-portal server', () => {
   });
 
   it('should initialize canonical admin and mobile portals for a fresh no-code app', async () => {
+    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],

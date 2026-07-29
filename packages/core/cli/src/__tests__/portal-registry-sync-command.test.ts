@@ -131,5 +131,42 @@ test('portal registry sync forwards selected items and overwrite/build flags', a
     overwriteUi: true,
     diff: undefined,
     build: true,
+    skipIfUnsupported: undefined,
+    onWarning: expect.any(Function),
   });
+});
+
+test('portal registry sync can skip unsupported services for automatic setup', async () => {
+  const { default: PortalRegistrySync } = await import('../commands/portal/registry/sync.js');
+  mocks.syncPortalRegistries.mockResolvedValueOnce({
+    portal: 'customer',
+    portalDir: '/tmp/storage/portals/main/customer',
+    items: ['@nocobase/all'],
+    skippedItems: [],
+    status: 'unsupported',
+  });
+  const command = Object.assign(Object.create(PortalRegistrySync.prototype), {
+    argv: [],
+    parse: vi.fn(async () => ({
+      args: { portal: 'customer', items: [] },
+      flags: { build: true, yes: true, 'skip-if-unsupported': true },
+    })),
+    config: { pjson: { version: '2.2.0-test.1' } },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await PortalRegistrySync.prototype.run.call(command);
+
+  expect(mocks.syncPortalRegistries).toHaveBeenCalledWith(
+    expect.objectContaining({
+      portal: 'customer',
+      env,
+      build: true,
+      skipIfUnsupported: true,
+      onWarning: expect.any(Function),
+    }),
+  );
+  expect(mocks.printSuccess).not.toHaveBeenCalled();
 });

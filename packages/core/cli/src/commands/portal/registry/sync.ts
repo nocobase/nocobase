@@ -14,7 +14,7 @@ import { translateCli } from '../../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
 import { resolveAccessToken } from '../../../lib/env-auth.js';
 import { syncPortalRegistries } from '../../../lib/portal-registry-sync.js';
-import { printInfo, printSuccess } from '../../../lib/ui.js';
+import { printInfo, printSuccess, printWarning } from '../../../lib/ui.js';
 
 const portalRegistrySyncText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalRegistrySync.${key}`, values, { fallback });
@@ -62,6 +62,11 @@ export default class PortalRegistrySync extends Command {
       description: 'Build the portal after installing Registry items',
       default: false,
     }),
+    'skip-if-unsupported': Flags.boolean({
+      description: 'Skip automatic Registry installation when the service does not expose Portal Registries',
+      hidden: true,
+      default: false,
+    }),
   };
 
   async run(): Promise<void> {
@@ -96,8 +101,13 @@ export default class PortalRegistrySync extends Command {
       overwriteUi: flags['overwrite-ui'],
       diff: flags.diff,
       build: flags.build,
+      skipIfUnsupported: flags['skip-if-unsupported'],
       token,
+      onWarning: (message) => printWarning(message),
     });
+    if (result.status === 'unsupported') {
+      return;
+    }
     if (result.status === 'diffed') {
       printInfo(
         portalRegistrySyncText(
