@@ -11,8 +11,8 @@ import { theme as antdTheme, type ThemeConfig } from 'antd';
 import { useEffect, useState } from 'react';
 import { useApp } from '../hooks/useApp';
 
-/** 设置中心主题在 `themeConfig` 表里的固定标识，见 plugin-theme-editor 的 builtinThemes */
-export const SETTINGS_THEME_UID = 'settings';
+/** 简约主题在 `themeConfig` 表里的固定标识，见 plugin-theme-editor 的 builtinThemes */
+export const MINIMAL_THEME_UID = 'minimal';
 
 const ALGORITHMS = {
   defaultAlgorithm: antdTheme.defaultAlgorithm,
@@ -43,7 +43,8 @@ function toAlgorithm(value: unknown): ThemeConfig['algorithm'] | undefined {
 /**
  * 读取设置中心主题。
  *
- * 设置中心的外观由 `themeConfig` 里 uid 为 `settings` 的那条记录约束，在主题编辑器里就能改。
+ * 设置中心的外观由 `themeConfig` 里那条「简约」记录约束，在主题编辑器里就能改；
+ * 它本身是一条普通的可选主题，别的应用要同一套观感直接选它即可。
  * 读不到（主题编辑器插件没启、老实例还没迁移、请求失败）时返回 `null`，
  * 由调用方回落到代码里的默认中性配色，避免设置中心突然变回一片蓝。
  *
@@ -64,7 +65,7 @@ export function useSettingsThemeConfig(): ThemeConfig | null | undefined {
           params: { paginate: false },
         });
         const items: any[] = response?.data?.data || [];
-        const matched = items.find((item) => item?.uid === SETTINGS_THEME_UID);
+        const matched = items.find((item) => item?.uid === MINIMAL_THEME_UID);
         const config = matched?.config;
 
         if (cancelled) {

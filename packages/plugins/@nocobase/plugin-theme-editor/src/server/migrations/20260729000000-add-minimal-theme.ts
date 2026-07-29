@@ -8,12 +8,12 @@
  */
 
 import { Migration } from '@nocobase/server';
-import { settingsNeutral } from '../builtinThemes';
+import { minimal } from '../builtinThemes';
 
 /**
- * 给已有实例补一条设置中心主题。
+ * 给已有实例补一条简约主题。
  *
- * 设置中心的外观改由这条记录约束（见 `builtinThemes.settingsNeutral`），
+ * 设置中心的外观改由这条记录约束（见 `builtinThemes.minimal`），
  * 新装实例在 install 时写入，老实例走这里补。
  */
 export default class extends Migration {
@@ -25,11 +25,11 @@ export default class extends Migration {
       return;
     }
 
-    const existed = await repository.findOne({ filter: { uid: settingsNeutral.uid } });
+    const existed = await repository.findOne({ filter: { uid: minimal.uid } });
     if (existed) {
       return;
     }
 
-    await repository.create({ values: settingsNeutral });
+    await repository.create({ values: minimal });
   }
 }

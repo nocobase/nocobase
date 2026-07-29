@@ -48,18 +48,18 @@ export const compact: Omit<ThemeItem, 'id'> = {
 };
 
 /**
- * 设置中心专用主题。
+ * 简约主题：黑白灰、无强调色。
  *
  * 设置中心的外观由这条记录约束，不再写死在代码里：想调就在主题编辑器里改它，
- * 删掉则回落到代码里的默认中性配色。`optional: false` 表示它不进用户的主题下拉框——
- * 它管的是设置中心，不是某个人的业务端偏好。
+ * 删掉则回落到代码里的默认中性配色。它是一条普通的可选主题，别的应用、别的用户
+ * 想要同一套观感直接选它就行——这里只是设置中心默认指向它。
  *
  * 主色收成黑白后 antd 会派生出一整套中灰色板（近黑主色派生的「浅色背景」是 #5e5e5e 这种
  * 中灰，会造成深底深字），所以派生出来的那几个必须显式钉住，取值就是 antd 默认的中性填充色。
  */
-export const settingsNeutral: Omit<ThemeItem, 'id'> = {
+export const minimal: Omit<ThemeItem, 'id'> = {
   config: {
-    name: 'Settings',
+    name: 'Minimal',
     token: {
       // 顶栏图标默认按深色顶栏取浅色，设置中心的顶栏是白的，必须翻成正文色。
       colorTextHeaderMenu: 'rgba(0, 0, 0, 0.88)',
@@ -124,9 +124,9 @@ export const settingsNeutral: Omit<ThemeItem, 'id'> = {
       },
     },
   } as ThemeItem['config'],
-  optional: false,
+  optional: true,
   isBuiltIn: true,
-  uid: 'settings',
+  uid: 'minimal',
   default: false,
 };
 

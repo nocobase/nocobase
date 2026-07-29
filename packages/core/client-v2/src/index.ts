@@ -61,3 +61,4 @@ export {
 export type { NocoBaseDesktopRoute } from './flow-compat';
 export * from './utils/markdownSanitize';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';
+export { MINIMAL_THEME_UID, useSettingsThemeConfig } from './settings-app/useSettingsThemeConfig';
