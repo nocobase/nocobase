@@ -60,6 +60,7 @@ test('configures the service Registry, installs selected items, and builds when 
     env,
     items: ['ai', 'acl'],
     build: true,
+    token: 'registry-token',
     runCommand,
     probeRegistry: vi.fn(async () => ({ ok: true, status: 200 })),
   });
@@ -74,6 +75,7 @@ test('configures the service Registry, installs selected items, and builds when 
   expect(runCommand.mock.calls[1]?.[2]?.env).toMatchObject({
     NOCOBASE_API_URL: 'http://localhost:13000/api',
     NOCOBASE_PORTAL_BASE: '/x/customer/',
+    NOCOBASE_PORTAL_REGISTRY_TOKEN: 'registry-token',
   });
   expect(runCommand.mock.calls.map(([name, args]) => [name, args])).toEqual([
     ['pnpm', ['install', '--frozen-lockfile']],
@@ -84,7 +86,12 @@ test('configures the service Registry, installs selected items, and builds when 
   const components = JSON.parse(await fsp.readFile(path.join(portalDir, 'components.json'), 'utf8'));
   expect(components.registries).toEqual({
     '@example': 'https://example.test/{name}',
-    '@nocobase': '${NOCOBASE_API_URL}/registry:get?name={name}',
+    '@nocobase': {
+      url: '${NOCOBASE_API_URL}/registry:get?name={name}',
+      headers: {
+        Authorization: 'Bearer ${NOCOBASE_PORTAL_REGISTRY_TOKEN}',
+      },
+    },
   });
 });
 

@@ -12,6 +12,7 @@ import { getCurrentEnvName, getEnv } from '../../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../../lib/cli-home.js';
 import { translateCli } from '../../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
+import { resolveAccessToken } from '../../../lib/env-auth.js';
 import { syncPortalRegistries } from '../../../lib/portal-registry-sync.js';
 import { printInfo, printSuccess } from '../../../lib/ui.js';
 
@@ -85,6 +86,7 @@ export default class PortalRegistrySync extends Command {
         ),
       );
     }
+    const token = await resolveAccessToken({ envName, baseUrl: env.apiBaseUrl, scope });
 
     const result = await syncPortalRegistries({
       portal: args.portal,
@@ -94,6 +96,7 @@ export default class PortalRegistrySync extends Command {
       overwriteUi: flags['overwrite-ui'],
       diff: flags.diff,
       build: flags.build,
+      token,
     });
     if (result.status === 'diffed') {
       printInfo(

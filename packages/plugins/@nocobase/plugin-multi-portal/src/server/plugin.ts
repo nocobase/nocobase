@@ -78,6 +78,8 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:deploy',
   'multiPortals:pullSource',
   'multiPortals:pushSource',
+  'registry:list',
+  'registry:get',
 ];
 
 type PortalDeployTarEntry = {
@@ -2608,7 +2610,6 @@ export class PluginMultiPortalServer extends Plugin {
     });
     this.app.acl.allow('multiPortals', 'listEnabled', 'public');
     this.app.acl.allow('multiPortals', 'listAccessible', 'loggedIn');
-    this.app.acl.allow('registry', ['list', 'get'], 'public');
     this.app.resourceManager.use(createPortalDeployUploadMiddleware(), {
       tag: 'multiPortalDeployUpload',
       after: 'acl',
