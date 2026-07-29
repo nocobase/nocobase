@@ -78,7 +78,7 @@ export function validateAIEmployeeAttachmentLimits(
     };
   }
 
-  const totalSize = attachments.reduce((total, attachment) => total + getAttachmentSize(attachment), 0);
+  const totalSize = attachments.reduce<number>((total, attachment) => total + getAttachmentSize(attachment), 0);
   if (totalSize > sizeLimit) {
     return {
       type: 'size',
