@@ -1,4 +1,4 @@
-[English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md) | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
+[English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md) | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Português (BR)](./README.pt-BR.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
 
 https://github.com/user-attachments/assets/6032e3a6-d14f-4d40-aea5-acb74c383594
 
