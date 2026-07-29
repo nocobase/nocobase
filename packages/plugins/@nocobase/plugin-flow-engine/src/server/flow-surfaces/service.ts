@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { BelongsToManyRepository, HasManyRepository, TargetKey } from '@nocobase/database';
+import type { BelongsToManyRepository, HasManyRepository, Model, TargetKey, Transaction } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -1901,6 +1901,91 @@ export class FlowSurfacesService {
     };
   }
 
+  private buildDesktopRouteScopeForPortal(portal: FlowSurfaceResolvedMultiPortal): FlowSurfaceDesktopRouteScope {
+    return {
+      portalUids: portal.routeScopeKind === 'portal' ? [portal.uid] : [],
+      layoutUids: portal.routeScopeKind === 'layout' ? [portal.layoutUid] : [],
+      selectedPortal: portal,
+      layoutType: portal.layoutType,
+    };
+  }
+
+  private getPortalRouteFilterUid(portal: FlowSurfaceResolvedMultiPortal | undefined) {
+    return portal?.routeScopeKind === 'portal' ? portal.uid : undefined;
+  }
+
+  private async assertRouteBelongsToResolvedPortal(
+    actionName: string,
+    route: Model,
+    portal: FlowSurfaceResolvedMultiPortal,
+    path: string,
+    transaction?: Transaction,
+  ) {
+    if (portal.routeScopeKind === 'layout') {
+      await this.assertDesktopRouteBelongsToUiLayout(actionName, route, portal.layoutUid, path, transaction);
+      return;
+    }
+    await this.navigationTargets.assertRouteBelongsToPortal(
+      actionName,
+      this.readRouteField(route, 'id'),
+      portal.uid,
+      path,
+      transaction,
+    );
+  }
+
+  private async resolveDefaultDesktopRouteScope(
+    actionName: string,
+    options: { transaction?: Transaction; currentRoles?: FlowSurfaceRequestRoles } = {},
+  ): Promise<FlowSurfaceDesktopRouteScope> {
+    if (this.navigationTargets.hasMultiPortalCapability()) {
+      const portal = await this.navigationTargets.resolveDefaultPortal({
+        actionName,
+        currentRoles: options.currentRoles,
+        transaction: options.transaction,
+      });
+      return this.buildDesktopRouteScopeForPortal(portal);
+    }
+
+    const layoutUids = await this.resolveDefaultDesktopRouteUiLayoutUids(options.transaction);
+    return {
+      portalUids: [],
+      layoutUids,
+      layoutType:
+        layoutUids.length === 1
+          ? await this.getDesktopRouteUiLayoutTypeByUid(layoutUids[0], options.transaction)
+          : undefined,
+    };
+  }
+
+  private async resolveDesktopRouteMatchScope(
+    layoutUid: string | string[] | undefined,
+    portalUid: string | undefined,
+    actionName: string,
+    options: { transaction?: Transaction; currentRoles?: FlowSurfaceRequestRoles } = {},
+  ) {
+    if (portalUid) {
+      const portal = await this.navigationTargets.resolvePortal(portalUid, {
+        actionName,
+        path: 'values.navigation.portalUid',
+        currentRoles: options.currentRoles,
+        transaction: options.transaction,
+      });
+      return {
+        layoutUids: portal.routeScopeKind === 'layout' ? [portal.layoutUid] : undefined,
+        portalUid: this.getPortalRouteFilterUid(portal),
+      };
+    }
+    if (this.normalizeDesktopRouteLayoutUidFilter(layoutUid).length) {
+      return { layoutUids: layoutUid, portalUid: undefined };
+    }
+    const defaultScope = await this.resolveDefaultDesktopRouteScope(actionName, options);
+    return {
+      layoutUids: defaultScope.layoutUids.length ? defaultScope.layoutUids : undefined,
+      portalUid: this.getPortalRouteFilterUid(defaultScope.selectedPortal),
+    };
+  }
+
   private async resolveRequestedDesktopRouteScope(
     values: Record<string, any>,
     parentRoute: any,
@@ -1922,20 +2007,15 @@ export class FlowSurfacesService {
         transaction: options.transaction,
       });
       if (parentRoute) {
-        await this.navigationTargets.assertRouteBelongsToPortal(
+        await this.assertRouteBelongsToResolvedPortal(
           actionName,
-          this.readRouteField(parentRoute, 'id'),
-          portal.uid,
+          parentRoute,
+          portal,
           'values.parentMenuRouteId',
           options.transaction,
         );
       }
-      return {
-        portalUids: [portal.uid],
-        layoutUids: [],
-        selectedPortal: portal,
-        layoutType: portal.layoutType,
-      };
+      return this.buildDesktopRouteScopeForPortal(portal);
     }
 
     if (layoutUid) {
@@ -1986,6 +2066,10 @@ export class FlowSurfacesService {
       }
     }
 
+    if (!parentRoute) {
+      return this.resolveDefaultDesktopRouteScope(actionName, options);
+    }
+
     const layoutUids = await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, options.transaction);
     return {
       portalUids: [],
@@ -2018,18 +2102,14 @@ export class FlowSurfacesService {
         currentRoles: options.currentRoles,
         transaction: options.transaction,
       });
-      await this.navigationTargets.assertRouteBelongsToPortal(
+      await this.assertRouteBelongsToResolvedPortal(
         actionName,
-        this.readRouteField(route, 'id'),
-        portal.uid,
+        route,
+        portal,
         'values.menuRouteId',
         options.transaction,
       );
-      return {
-        ...routeScope,
-        selectedPortal: portal,
-        layoutType: portal.layoutType,
-      };
+      return this.buildDesktopRouteScopeForPortal(portal);
     }
 
     if (layoutUid) {
@@ -2296,7 +2376,7 @@ export class FlowSurfacesService {
       title,
       options.transaction,
       routeScope.layoutUids,
-      routeScope.selectedPortal?.uid,
+      this.getPortalRouteFilterUid(routeScope.selectedPortal),
     );
     if (existingGroups.length === 1) {
       return this.buildMenuResult(existingGroups[0]);
@@ -5020,7 +5100,7 @@ export class FlowSurfacesService {
 
   private async resolveApplyBlueprintCreateNavigationGroup(
     document: FlowSurfaceApplyBlueprintDocument,
-    transaction?: any,
+    options: { transaction?: Transaction; currentRoles?: FlowSurfaceRequestRoles } = {},
   ): Promise<FlowSurfaceApplyBlueprintDocument> {
     if (document.mode !== 'create' || !_.isPlainObject(document.navigation?.group)) {
       return document;
@@ -5037,12 +5117,13 @@ export class FlowSurfacesService {
 
     const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(document.navigation.layoutUid);
     const portalUid = this.navigationTargets.normalizePortalUid(document.navigation.portalUid);
+    const matchScope = await this.resolveDesktopRouteMatchScope(layoutUid, portalUid, 'applyBlueprint', options);
     const matchedRoutes = await this.findMenuGroupRoutesByParentIdAndTitle(
       null,
       groupTitle,
-      transaction,
-      layoutUid || (await this.resolveDefaultDesktopRouteUiLayoutUids(transaction)),
-      portalUid,
+      options.transaction,
+      matchScope.layoutUids,
+      matchScope.portalUid,
     );
     if (!matchedRoutes.length) {
       return document;
@@ -5067,6 +5148,34 @@ export class FlowSurfacesService {
         group: {
           routeId,
         },
+      },
+    };
+  }
+
+  private async resolveApplyBlueprintDefaultNavigationTarget(
+    document: FlowSurfaceApplyBlueprintDocument,
+    options: { transaction?: Transaction; currentRoles?: FlowSurfaceRequestRoles } = {},
+  ): Promise<FlowSurfaceApplyBlueprintDocument> {
+    if (
+      document.mode !== 'create' ||
+      document.navigation?.layoutUid ||
+      document.navigation?.portalUid ||
+      !_.isUndefined(document.navigation?.group?.routeId) ||
+      !this.navigationTargets.hasMultiPortalCapability()
+    ) {
+      return document;
+    }
+
+    const portal = await this.navigationTargets.resolveDefaultPortal({
+      actionName: 'applyBlueprint',
+      currentRoles: options.currentRoles,
+      transaction: options.transaction,
+    });
+    return {
+      ...document,
+      navigation: {
+        ...document.navigation,
+        portalUid: portal.uid,
       },
     };
   }
@@ -5137,10 +5246,10 @@ export class FlowSurfacesService {
         return;
       }
       const groupRoute = await this.assertMenuParentIsGroup(groupRouteId, options.transaction);
-      await this.navigationTargets.assertRouteBelongsToPortal(
+      await this.assertRouteBelongsToResolvedPortal(
         'applyBlueprint',
-        this.readRouteField(groupRoute, 'id'),
-        portal.uid,
+        groupRoute,
+        portal,
         'values.navigation.group.routeId',
         options.transaction,
       );
@@ -5174,7 +5283,7 @@ export class FlowSurfacesService {
 
   private async resolveApplyBlueprintCreatePageIdentity(
     document: FlowSurfaceApplyBlueprintDocument,
-    transaction?: any,
+    options: { transaction?: Transaction; currentRoles?: FlowSurfaceRequestRoles } = {},
   ): Promise<FlowSurfaceApplyBlueprintDocument> {
     if (document.mode !== 'create') {
       return document;
@@ -5188,11 +5297,11 @@ export class FlowSurfacesService {
     if (!pageTitle || (!hasGroupRouteId && !layoutUid && !portalUid)) {
       return document;
     }
-    const groupRoute = hasGroupRouteId ? await this.findMenuRouteById(groupRouteId, transaction) : null;
+    const groupRoute = hasGroupRouteId ? await this.findMenuRouteById(groupRouteId, options.transaction) : null;
     if (!portalUid && groupRoute) {
       const groupPortalUids = await this.navigationTargets.readRoutePortalUids(
         this.readRouteField(groupRoute, 'id'),
-        transaction,
+        options.transaction,
       );
       if (groupPortalUids.length > 1) {
         throwBadRequest(
@@ -5209,17 +5318,21 @@ export class FlowSurfacesService {
       }
       portalUid = groupPortalUids[0];
     }
-    const layoutUidFilter = portalUid
-      ? undefined
+    const portalMatchScope = portalUid
+      ? await this.resolveDesktopRouteMatchScope(layoutUid, portalUid, 'applyBlueprint', options)
+      : undefined;
+    const layoutUidFilter = portalMatchScope
+      ? portalMatchScope.layoutUids
       : layoutUid ||
-        (groupRoute ? await this.resolveInheritedDesktopRouteUiLayoutUids(groupRoute, transaction) : undefined);
+        (groupRoute ? await this.resolveInheritedDesktopRouteUiLayoutUids(groupRoute, options.transaction) : undefined);
+    const portalUidFilter = portalMatchScope?.portalUid;
 
     const matchedPages = await this.findFlowPageRoutesByParentIdAndTitle(
       hasGroupRouteId ? groupRouteId : null,
       pageTitle,
-      transaction,
+      options.transaction,
       layoutUidFilter,
-      portalUid,
+      portalUidFilter,
     );
     if (!matchedPages.length) {
       return document;
@@ -5262,14 +5375,15 @@ export class FlowSurfacesService {
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
   ): Promise<FlowSurfaceApplyBlueprintProgram> {
-    const initialDocument = prepareFlowSurfaceApplyBlueprintDocument(values);
+    const parsedDocument = prepareFlowSurfaceApplyBlueprintDocument(values);
+    const initialDocument = await this.resolveApplyBlueprintDefaultNavigationTarget(parsedDocument, options);
     await this.assertApplyBlueprintCreateNavigationTarget(initialDocument, options);
     const mobileNormalizedDocument = await this.normalizeApplyBlueprintCreateMobileNavigation(initialDocument, options);
     const groupResolvedDocument = await this.resolveApplyBlueprintCreateNavigationGroup(
       mobileNormalizedDocument,
-      options.transaction,
+      options,
     );
-    const document = await this.resolveApplyBlueprintCreatePageIdentity(groupResolvedDocument, options.transaction);
+    const document = await this.resolveApplyBlueprintCreatePageIdentity(groupResolvedDocument, options);
     await this.prepareApplyBlueprintKanbanBlocks(document, options.transaction, createdKanbanSortFields);
     const replaceTarget =
       document.mode === 'replace' && document.target
@@ -6080,8 +6194,18 @@ export class FlowSurfacesService {
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
       enabledPackages,
-      findMenuGroupRoutesByTitle: (title, transaction, targetLayoutUid, targetPortalUid) =>
-        this.findMenuGroupRoutesByTitle(title, transaction, targetLayoutUid, targetPortalUid),
+      findMenuGroupRoutesByTitle: async (title, transaction, targetLayoutUid, targetPortalUid) => {
+        const matchScope = await this.resolveDesktopRouteMatchScope(
+          targetLayoutUid,
+          targetPortalUid,
+          'applyBlueprint',
+          {
+            transaction,
+            currentRoles: options.currentRoles,
+          },
+        );
+        return this.findMenuGroupRoutesByTitle(title, transaction, matchScope.layoutUids, matchScope.portalUid);
+      },
       getUiLayoutTypeByUid: (layoutUid, transaction) => this.getDesktopRouteUiLayoutTypeByUid(layoutUid, transaction),
       getPortalLayoutTypeByUid: async (targetPortalUid, transaction) => {
         if (resolvedPortal?.uid === targetPortalUid) {
@@ -8688,18 +8812,18 @@ export class FlowSurfacesService {
         currentRoles: options.currentRoles,
         transaction: options.transaction,
       });
-      await this.navigationTargets.assertRouteBelongsToPortal(
+      await this.assertRouteBelongsToResolvedPortal(
         'updateMenu',
-        this.readRouteField(route, 'id'),
-        portal.uid,
+        route,
+        portal,
         'values.menuRouteId',
         options.transaction,
       );
       if (nextParentRoute) {
-        await this.navigationTargets.assertRouteBelongsToPortal(
+        await this.assertRouteBelongsToResolvedPortal(
           'updateMenu',
-          this.readRouteField(nextParentRoute, 'id'),
-          portal.uid,
+          nextParentRoute,
+          portal,
           'values.parentMenuRouteId',
           options.transaction,
         );

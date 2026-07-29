@@ -170,6 +170,7 @@
     "@nocobase/plugin-ui-schema-storage",
     "@nocobase/plugin-user-data-sync",
     "@nocobase/plugin-users",
+    "@nocobase/plugin-multi-portal",
     "@nocobase/plugin-verification",
     "@nocobase/plugin-workflow",
     "@nocobase/plugin-workflow-action-trigger",

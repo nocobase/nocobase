@@ -12,12 +12,27 @@ import PluginAuthClientV2 from '../plugin';
 
 describe('plugin-auth client-v2', () => {
   const originalLocation = globalThis.window.location;
+  const originalModernClientPrefix = window.__nocobase_modern_client_prefix__;
+  let debounceClock = Date.now();
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(Date, 'now').mockImplementation(() => debounceClock);
+  });
 
   afterEach(() => {
+    debounceClock += 3001;
+    vi.advanceTimersByTime(3001);
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
       value: originalLocation,
     });
+    if (originalModernClientPrefix === undefined) {
+      delete window.__nocobase_modern_client_prefix__;
+    } else {
+      window.__nocobase_modern_client_prefix__ = originalModernClientPrefix;
+    }
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -102,6 +117,98 @@ describe('plugin-auth client-v2', () => {
     await vi.waitFor(() => {
       expect(app.apiClient.auth.token).toBe('');
     });
+  });
+
+  it('should use the standalone Settings signin document for a Settings runtime 401', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    window.__nocobase_modern_client_prefix__ = 'v';
+    const app = createMockClient({
+      publicPath: '/',
+      plugins: [PluginAuthClientV2 as any],
+      router: { type: 'memory', initialEntries: ['/settings/workflow?tab=list#recent'] },
+    });
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+    const getRoutePath = app.pluginSettingsManager.getRoutePath.bind(app.pluginSettingsManager);
+    const getRouteName = app.pluginSettingsManager.getRouteName.bind(app.pluginSettingsManager);
+    vi.spyOn(app.pluginSettingsManager, 'getRouteName').mockImplementation((name) => {
+      return name === '' ? 'settings.' : getRouteName(name);
+    });
+    vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
+      return name === '' ? '/settings/' : getRoutePath(name);
+    });
+    app.router.router = {
+      basename: '/',
+      navigate: vi.fn(),
+      state: {
+        location: {
+          pathname: '/settings/workflow',
+          search: '?tab=list',
+          hash: '#recent',
+        },
+      },
+    } as any;
+
+    const error = {
+      response: { status: 401, data: { errors: [{ code: 'EXPIRED_SESSION' }] } },
+      config: {},
+    } as any;
+
+    // @ts-ignore
+    app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
+
+    expect(replace).toHaveBeenCalledWith('/settings/signin?redirect=%2Fsettings%2Fworkflow%3Ftab%3Dlist%23recent');
+  });
+
+  it('should keep a sub-app Settings runtime in its document scope after a 401', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const app = createMockClient({
+      publicPath: '/nocobase/',
+      plugins: [PluginAuthClientV2 as any],
+      router: { type: 'memory', initialEntries: ['/settings/workflow?tab=list#recent'] },
+    });
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+    const getRoutePath = app.pluginSettingsManager.getRoutePath.bind(app.pluginSettingsManager);
+    const getRouteName = app.pluginSettingsManager.getRouteName.bind(app.pluginSettingsManager);
+    vi.spyOn(app.pluginSettingsManager, 'getRouteName').mockImplementation((name) => {
+      return name === '' ? 'settings.' : getRouteName(name);
+    });
+    vi.spyOn(app.pluginSettingsManager, 'getRoutePath').mockImplementation((name) => {
+      return name === '' ? '/' : getRoutePath(name);
+    });
+    app.router.setBasename('/nocobase/settings/apps/demo/');
+    app.router.router = {
+      basename: '/nocobase/settings/apps/demo/',
+      navigate: vi.fn(),
+      state: {
+        location: {
+          pathname: '/nocobase/settings/apps/demo/workflow',
+          search: '?tab=list',
+          hash: '#recent',
+        },
+      },
+    } as any;
+
+    const error = {
+      response: { status: 401, data: { errors: [{ code: 'EXPIRED_SESSION' }] } },
+      config: {},
+    } as any;
+
+    // @ts-ignore
+    app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
+
+    expect(replace).toHaveBeenCalledWith(
+      '/nocobase/settings/apps/demo/signin?redirect=%2Fnocobase%2Fsettings%2Fapps%2Fdemo%2Fworkflow%3Ftab%3Dlist%23recent',
+    );
   });
 
   it('should not redirect skipped auth routes on runtime 401', async () => {

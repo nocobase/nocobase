@@ -13,7 +13,7 @@ A knowledge base is the foundation of RAG retrieval. You can add product manuals
 
 For most scenarios, a Local knowledge base is enough. Only consider Readonly or External knowledge bases when documents and vector data are already maintained by an external system.
 
-![](https://static-docs.nocobase.com/20260617003643.png)
+![](https://static-docs.nocobase.com/20260728222403.png)
 
 ## Open knowledge base management
 
@@ -23,15 +23,15 @@ Click a knowledge base card to open its detail page:
 
 - Documents is used to upload documents, run vectorization, and open segment management
 - Hit tests is used to test which segments can be matched by a query
-- Settings is used to adjust basic information, vector store, and default segmentation parameters
+- Settings is used to adjust basic information, vector configuration, and default segmentation parameters
 
-![](https://static-docs.nocobase.com/20260617004104.png)
+![](https://static-docs.nocobase.com/20260728222406.png)
 
 ## Create a knowledge base
 
 Click Add new in the upper-right corner to create a knowledge base. The menu shows three types: Local, Readonly, and External.
 
-![](https://static-docs.nocobase.com/20260617003505.png)
+![](https://static-docs.nocobase.com/20260728222404.png)
 
 The three knowledge base types have different capability boundaries:
 
@@ -45,19 +45,23 @@ Local knowledge bases are recommended by default. Only consider Readonly or Exte
 
 A Local knowledge base usually needs the following information:
 
-![](https://static-docs.nocobase.com/20260617003603.png)
+![](https://static-docs.nocobase.com/20260728222405.png)
 
 - Key: unique identifier of the knowledge base. It cannot be changed after creation
 - Name: knowledge base name
 - File storage: where original documents and segment files are stored
-- Vector store: vector store used to generate and retrieve vectors
+- Vector database: select a configured vector database. See [Vector database](../vector-database)
+- LLM service: select a configured LLM service that supports embedding models. See [LLM service management](../../features/llm-service)
+- Embedding model: select or enter the embedding model used to generate and retrieve vectors; available models update when the LLM service changes
 - Description: knowledge base description
 - Split document, Chunk size, and Chunk overlap: default segmentation parameters used after document upload
 - Enabled: whether the knowledge base is enabled
 
+A Readonly knowledge base does not require File storage or default segmentation parameters, but it still requires Vector database, LLM service, and Embedding model.
+
 :::tip Prerequisites
 
-Before creating a Local knowledge base, prepare two dependencies: file storage for original documents and segment files, see [File storage](../../../file-manager/storage/); and vector storage for generating and retrieving vectors, see [Vector database](../vector-database) and [Vector store](../vector-store).
+Before creating a Local knowledge base, prepare file storage, a vector database, and an LLM service that supports embedding models. File storage holds original documents and segment files; see [File storage](../../../file-manager/storage/index.md). Configure the vector database as described in [Vector database](../vector-database), and configure the LLM service as described in [LLM service management](../../features/llm-service).
 
 :::
 

@@ -12,7 +12,7 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { Button, Dropdown, Space, theme } from 'antd';
 import React, { useMemo } from 'react';
-import { getWorkflowExecutionPath } from '../constants';
+import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { ExecutionStatusIcon } from './ExecutionStatusIcon';
 import { formatTime } from './workflowCanvas';
 
@@ -34,6 +34,7 @@ export type ExecutionRecord = {
  */
 export function ExecutionsDropdown({ execution, refresh }: { execution: ExecutionRecord; refresh?: () => void }) {
   const ctx = useFlowContext();
+  const { getWorkflowExecutionPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
   const resource = ctx.api.resource('executions');
 

@@ -19,7 +19,7 @@ test('buildInitAppEnvVarsFromConfig includes initial portal type and portal sett
       rootPassword: 'admin123',
       rootNickname: 'Super Admin',
       portalType: 'ai',
-      portalName: 'admin',
+      portalName: 'main',
       portalTemplate: '@nocobase/portal-template-default',
     }),
   ).toEqual({
@@ -29,7 +29,7 @@ test('buildInitAppEnvVarsFromConfig includes initial portal type and portal sett
     INIT_ROOT_PASSWORD: 'admin123',
     INIT_ROOT_NICKNAME: 'Super Admin',
     INIT_PORTAL_TYPE: 'ai',
-    INIT_PORTAL_NAME: 'admin',
+    INIT_PORTAL_NAME: 'main',
     INIT_PORTAL_TEMPLATE: '@nocobase/portal-template-default',
   });
 });
@@ -41,7 +41,7 @@ test('buildInitAppEnvVarsFromConfig can omit portal init settings', () => {
         lang: 'en-US',
         rootUsername: 'nocobase',
         portalType: 'ai',
-        portalName: 'admin',
+        portalName: 'main',
         portalTemplate: '/tmp/portal-template',
       },
       { includePortal: false },

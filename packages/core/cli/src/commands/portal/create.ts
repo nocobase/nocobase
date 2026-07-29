@@ -85,7 +85,8 @@ export default class PortalCreate extends Command {
       return;
     }
 
-    const env = await getEnv(flags.env, { scope: resolveDefaultConfigScope() });
+    const scope = resolveDefaultConfigScope();
+    const env = await getEnv(flags.env, { scope });
     if (!env) {
       this.error(
         flags.env

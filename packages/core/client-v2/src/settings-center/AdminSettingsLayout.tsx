@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ApiOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
@@ -16,7 +15,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
-import { ADMIN_SETTINGS_PATH, type PluginSettingsPageType } from '../PluginSettingsManager';
+import type { PluginSettingsPageType } from '../PluginSettingsManager';
 import { useApp } from '../hooks/useApp';
 import { AdminSettingsLayoutModel } from './AdminSettingsLayoutModel';
 import {
@@ -69,7 +68,6 @@ export const InternalAdminSettingsLayout = () => {
   const location = useLocation();
   const params = useParams();
   const { token } = theme.useToken();
-  const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
 
   const allSettings = useMemo(
@@ -83,18 +81,16 @@ export const InternalAdminSettingsLayout = () => {
       ),
     [app.pluginSettingsManager],
   );
-  const pluginManagerSetting = useMemo(
-    () => visibleSettings.find((item) => item.name === PLUGIN_MANAGER_SETTING_NAME) || null,
+  // Negative-sort settings share the top management section; their sort value controls order within that section.
+  const primarySettings = useMemo(
+    () => sortTopLevelSettings(visibleSettings.filter((item) => (item.sort || 0) < 0)),
     [visibleSettings],
   );
   const normalSettings = useMemo(
-    () => sortTopLevelSettings(visibleSettings.filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME)),
+    () => sortTopLevelSettings(visibleSettings.filter((item) => (item.sort || 0) >= 0)),
     [visibleSettings],
   );
-  const allVisibleSettings = useMemo(
-    () => (pluginManagerSetting ? [pluginManagerSetting, ...normalSettings] : normalSettings),
-    [normalSettings, pluginManagerSetting],
-  );
+  const allVisibleSettings = useMemo(() => [...primarySettings, ...normalSettings], [normalSettings, primarySettings]);
   const registeredSettingsMapByPath = useMemo(() => createSettingsPathMap(allSettings), [allSettings]);
   const visibleSettingsMapByPath = useMemo(() => createSettingsPathMap(allVisibleSettings), [allVisibleSettings]);
   const currentSetting = useMemo(
@@ -117,11 +113,17 @@ export const InternalAdminSettingsLayout = () => {
     }
     return allVisibleSettings.find((item) => item.name === currentSetting.topLevelName) || null;
   }, [allVisibleSettings, currentSetting]);
-  const defaultSettingsPath = useMemo(() => getDefaultSettingsPath(allVisibleSettings), [allVisibleSettings]);
+  const defaultSettingsPath = useMemo(() => {
+    const preferredPrimarySettings = primarySettings.filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME);
+
+    return getDefaultSettingsPath(preferredPrimarySettings) || getDefaultSettingsPath(allVisibleSettings);
+  }, [allVisibleSettings, primarySettings]);
   const currentVisibleTabs = useMemo(() => {
     return (currentVisibleTopLevelSetting?.children || []).filter((item) => !item.hidden) as PluginSettingsPageType[];
   }, [currentVisibleTopLevelSetting?.children]);
   const shouldShowTabs = currentVisibleTabs.length > 1 && currentVisibleTopLevelSetting?.showTabs !== false;
+  const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
+  const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
 
   useEffect(() => {
     const nextTitle =
@@ -136,14 +138,15 @@ export const InternalAdminSettingsLayout = () => {
 
   const sidebarMenus = useMemo(() => {
     const items: any[] = [];
+    const visiblePrimarySettings = primarySettings.filter(
+      (item) => item.name !== PLUGIN_MANAGER_SETTING_NAME || snippets.includes('pm'),
+    );
+    const primaryMenuItems =
+      getMenuItems(
+        visiblePrimarySettings.map((item) => ({ ...item, children: undefined }) as PluginSettingsPageType),
+      ) || [];
 
-    if (pluginManagerSetting && snippets.includes('pm')) {
-      items.push({
-        key: pluginManagerSetting.name,
-        icon: pluginManagerSetting.icon || <ApiOutlined />,
-        label: pluginManagerSetting.label || t('Plugin manager'),
-      });
-    }
+    items.push(...primaryMenuItems);
 
     if (items.length && normalSettings.length) {
       items.push({ type: 'divider' });
@@ -155,12 +158,12 @@ export const InternalAdminSettingsLayout = () => {
     items.push(...normalMenuItems);
 
     return items;
-  }, [normalSettings, pluginManagerSetting, snippets, t]);
+  }, [normalSettings, primarySettings, snippets]);
 
   const shouldRedirectToDefault =
-    location.pathname === ADMIN_SETTINGS_PATH ||
-    location.pathname === ADMIN_SETTINGS_PATH.replace(/\/$/, '') ||
-    location.pathname === `${ADMIN_SETTINGS_PATH}index`;
+    location.pathname === settingsRootPath ||
+    location.pathname === settingsRootPathWithoutTrailingSlash ||
+    location.pathname === `${settingsRootPath}index`;
 
   if (shouldRedirectToDefault && defaultSettingsPath) {
     return <Navigate replace to={defaultSettingsPath} />;

@@ -8,13 +8,16 @@
  */
 
 import { Alert, Button, Form, Input } from 'antd';
+import { useApp } from '@nocobase/client-v2';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { type Authenticator } from '../authenticator';
 import { useAuthTranslation } from '../locale';
 import { useSignIn } from '../hooks';
+import { getAuthRoutePath } from '../authRoutePaths';
 
 export default function BasicSignInForm({ authenticator }: { authenticator: Authenticator }) {
+  const app = useApp();
   const { t } = useAuthTranslation();
   const [form] = Form.useForm();
   const [errorMessage, setErrorMessage] = useState('');
@@ -22,6 +25,8 @@ export default function BasicSignInForm({ authenticator }: { authenticator: Auth
   const signIn = useSignIn(authenticator.name);
   const allowSignUp = !!authenticator?.options?.allowSignUp;
   const showForgotPassword = !!authenticator?.options?.enableResetPassword;
+  const signupPath = getAuthRoutePath(app, 'auth.signup');
+  const forgotPasswordPath = getAuthRoutePath(app, 'auth.forgotPassword');
 
   return (
     <Form
@@ -72,9 +77,9 @@ export default function BasicSignInForm({ authenticator }: { authenticator: Auth
         </Button>
       </Form.Item>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        {allowSignUp ? <Link to={`/signup?name=${authenticator.name}`}>{t('Create an account')}</Link> : null}
+        {allowSignUp ? <Link to={`${signupPath}?name=${authenticator.name}`}>{t('Create an account')}</Link> : null}
         {showForgotPassword ? (
-          <Link to={`/forgot-password?name=${authenticator.name}`}>{t('Forgot password')}</Link>
+          <Link to={`${forgotPasswordPath}?name=${authenticator.name}`}>{t('Forgot password')}</Link>
         ) : null}
       </div>
     </Form>

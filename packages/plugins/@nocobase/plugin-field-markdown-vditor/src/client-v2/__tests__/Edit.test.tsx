@@ -138,6 +138,7 @@ async function renderEditor(props: Record<string, unknown> = {}) {
 
 describe('Edit', () => {
   beforeEach(() => {
+    fileManagerPlugin.uploadFile.mockReset();
     vi.stubGlobal('MutationObserver', MockMutationObserver);
     vi.stubGlobal('ResizeObserver', MockResizeObserver);
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -241,27 +242,18 @@ describe('Edit', () => {
     expect(instance.options.lang).toBe('en_US');
   });
 
-  it('uploads with a permanent URL regardless of the legacy storage support flag', async () => {
+  it('shows a storage tip when the selected collection cannot upload files', async () => {
     const check = vi.fn().mockResolvedValue({
       data: {
         data: {
           isSupportToUploadFiles: false,
           storage: {
-            id: 1,
             title: 'Local storage',
-            type: 'local',
-            rules: { size: 1024 },
           },
         },
       },
     });
     flowContext.api.resource.mockReturnValue({ check });
-    fileManagerPlugin.uploadFile.mockResolvedValueOnce({
-      data: {
-        filename: 'doc.txt',
-        url: '/files/main/main/attachments/1.txt',
-      },
-    });
     const { instance } = await renderEditor();
 
     await instance.options.upload.handler([new File(['doc'], 'doc.txt', { type: 'text/plain' })]);
@@ -270,15 +262,8 @@ describe('Edit', () => {
     expect(check).toHaveBeenCalledWith({
       fileCollectionName: 'attachments',
     });
-    expect(fileManagerPlugin.uploadFile).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fileCollectionName: 'attachments',
-        storageId: 1,
-        storageType: 'local',
-        storageRules: { size: 1024 },
-      }),
-    );
-    expect(instance.insertValue).toHaveBeenCalledWith('[doc.txt](/files/main/main/attachments/1.txt)');
+    expect(instance.tip).toHaveBeenCalledWith('vditor.uploadError.message:Local storage', 0);
+    expect(fileManagerPlugin.uploadFile).not.toHaveBeenCalled();
   });
 
   it('handles upload errors, empty responses and inserted markdown links', async () => {

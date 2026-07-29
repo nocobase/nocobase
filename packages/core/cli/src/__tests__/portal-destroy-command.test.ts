@@ -102,6 +102,6 @@ test('portal destroy resolves the current env name before destroying', async () 
     ['App: main'],
     ['Base: /x/cba/'],
     ['Record: deleted'],
-    ['Workspace: deleted (/Users/chen/test6/remote1/source/storage/portals/main/cba)'],
+    ['Portal files: deleted (/Users/chen/test6/remote1/source/storage/portals/main/cba)'],
   ]);
 });

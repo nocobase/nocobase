@@ -13,7 +13,7 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 
 大部分场景只需要维护 Local 知识库。只有当文档和向量数据已经由外部系统维护时，才需要考虑 Readonly 或 External 知识库。
 
-![20260617003643](https://static-docs.nocobase.com/20260617003643.png)
+![20260728222403](https://static-docs.nocobase.com/20260728222403.png)
 
 ## 进入知识库管理
 
@@ -23,15 +23,15 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 
 - 「Documents」用于上传文档、执行向量化、进入分段管理
 - 「Hit tests」用于测试检索词能命中哪些分段
-- 「Settings」用于调整知识库基本信息、向量存储和默认分段参数
+- 「Settings」用于调整知识库基本信息、向量配置和默认分段参数
 
-![20260617004104](https://static-docs.nocobase.com/20260617004104.png)
+![20260728222406](https://static-docs.nocobase.com/20260728222406.png)
 
 ## 新建知识库
 
 点击右上角「Add new」可以新建知识库。下拉菜单里会显示三种类型：Local、Readonly 和 External。
 
-![20260617003505](https://static-docs.nocobase.com/20260617003505.png)
+![20260728222404](https://static-docs.nocobase.com/20260728222404.png)
 
 三种知识库的能力边界不同：
 
@@ -45,19 +45,23 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 
 Local 知识库通常需要填写这些信息：
 
-![20260617003603](https://static-docs.nocobase.com/20260617003603.png)
+![20260728222405](https://static-docs.nocobase.com/20260728222405.png)
 
 - 「Key」：知识库唯一标识，创建后不可修改
 - 「Name」：知识库名称
 - 「File storage」：文档和分段文件保存到哪个文件存储
-- 「Vector store」：用于生成和检索向量的向量存储
+- 「Vector database」：选择已经配置好的向量数据库，配置见 [向量数据库](../vector-database)
+- 「LLM service」：选择已经配置且支持 Embedding model 的 LLM 服务，配置见 [LLM 服务管理](../../features/llm-service)
+- 「Embedding model」：选择或输入用于生成和检索向量的 Embedding model；切换 LLM 服务后，可选模型会随之更新
 - 「Description」：知识库说明
 - 「Split document」「Chunk size」「Chunk overlap」：文档上传后的默认分段参数
 - 「Enabled」：是否启用该知识库
 
+Readonly 知识库不需要「File storage」和默认分段参数，不过同样需要选择「Vector database」「LLM service」和「Embedding model」。
+
 :::tip 前置准备
 
-创建 Local 知识库前，需要先准备好两类依赖：文件存储用于保存原始文档和分段文件，配置见 [文件存储引擎](../../../file-manager/storage/)；向量存储用于生成和检索向量，配置见 [向量数据库](../vector-database) 和 [向量存储](../vector-store)。
+创建 Local 知识库前，需要先准备文件存储、向量数据库和支持 Embedding model 的 LLM 服务。文件存储用于保存原始文档和分段文件，配置见 [文件存储引擎](../../../file-manager/storage/index.md)；向量数据库配置见 [向量数据库](../vector-database)；LLM 服务配置见 [LLM 服务管理](../../features/llm-service)。
 
 :::
 

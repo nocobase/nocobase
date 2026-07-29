@@ -5,13 +5,12 @@
   "nocobase": {
     "supportedVersions": [
       "2.x"
-    ],
-    "editionLevel": 3
+    ]
   },
   "displayName": "Portal manager",
   "displayName.zh-CN": "Portal 管理",
-  "description": "Provides multi-portal management with separate layouts and menus for different entry points.",
-  "description.zh-CN": "提供多 Portal 管理能力，可为不同访问入口配置独立布局和菜单。",
+  "description": "Provides built-in Portal registration, entry access, and route permissions for Client V2.",
+  "description.zh-CN": "为 Client V2 提供内置 Portal 注册、入口访问与路由权限管理。",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@nocobase/plugin-ui-layout": "2.2.0-alpha.11",

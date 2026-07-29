@@ -29,7 +29,14 @@ export * from './PluginSettingsManager';
 export * from './layout-manager';
 export * from './hooks';
 export { default as languageCodes } from './locale/languageCodes';
-export * from './nocobase-buildin-plugin';
+export {
+  CurrentUserContext,
+  NocoBaseBuildInPlugin,
+  NocoBaseBuildInPluginV2,
+  useCurrentRoles,
+  useCurrentUserContext,
+} from './nocobase-buildin-plugin';
+export type { CurrentRoleOption, CurrentUserState } from './nocobase-buildin-plugin';
 export { getRouteRuntimeVersion } from './utils/getRouteRuntimeVersion';
 export type { RouteRuntimeVersion } from './utils/getRouteRuntimeVersion';
 export * from './collection-field-interface/CollectionFieldInterface';

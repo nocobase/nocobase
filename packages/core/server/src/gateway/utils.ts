@@ -16,6 +16,7 @@ import { IncomingRequest } from '.';
 // of this default lives in packages/core/cli-v1/src/util.js
 // (DEFAULT_MODERN_CLIENT_PREFIX). See docs/adr/0001-modern-client-prefix.md.
 export const MODERN_CLIENT_DIST_DIR = 'v';
+export const SETTINGS_CLIENT_DIST_DIR = 'settings';
 export const PORTAL_CLIENT_PREFIX = 'x';
 export const DEFAULT_PORTAL_APP_NAME = 'main';
 export const DEFAULT_PORTAL_NAME = 'admin';
@@ -32,13 +33,22 @@ export function normalizeModernClientPrefix(value?: string) {
   const segment = String(value || '')
     .trim()
     .replace(/^\/+|\/+$/g, '');
-  return segment || MODERN_CLIENT_DIST_DIR;
+  const normalized = segment || MODERN_CLIENT_DIST_DIR;
+  if (normalized === SETTINGS_CLIENT_DIST_DIR) {
+    throw new Error('APP_MODERN_CLIENT_PREFIX "settings" is reserved for the standalone Settings application.');
+  }
+  return normalized;
 }
 
 export function resolveV2PublicPath(appPublicPath = '/') {
   const publicPath = resolvePublicPath(appPublicPath);
   const prefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
   return `${publicPath.replace(/\/$/, '')}/${prefix}/`;
+}
+
+export function resolveSettingsPublicPath(appPublicPath = '/') {
+  const publicPath = resolvePublicPath(appPublicPath);
+  return `${publicPath.replace(/\/$/, '')}/${SETTINGS_CLIENT_DIST_DIR}/`;
 }
 
 export function normalizePortalName(value?: string) {
@@ -69,6 +79,17 @@ export function rewriteV2AssetPublicPath(html: string, assetPublicPath: string) 
   // HTML is built with the fixed dist-dir sentinel (`/v/`) baked into
   // asset URLs; rewrite it to the runtime asset path when they differ.
   const sentinel = `/${MODERN_CLIENT_DIST_DIR}/`;
+  if (normalizedAssetPublicPath === sentinel) {
+    return html;
+  }
+
+  const sentinelPattern = new RegExp(`((?:src|href)=["'])${sentinel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+  return html.replace(sentinelPattern, `$1${normalizedAssetPublicPath}`);
+}
+
+export function rewriteSettingsAssetPublicPath(html: string, assetPublicPath: string) {
+  const normalizedAssetPublicPath = ensureTrailingSlash(assetPublicPath);
+  const sentinel = `/${SETTINGS_CLIENT_DIST_DIR}/`;
   if (normalizedAssetPublicPath === sentinel) {
     return html;
   }

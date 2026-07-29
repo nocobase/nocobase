@@ -17,11 +17,82 @@ function normalizePublicPath(value) {
   return ensureTrailingSlash(normalized);
 }
 
+function normalizePathname(value) {
+  const normalized = ensureLeadingSlash(String(value || '/').trim() || '/').replace(/\/{2,}/g, '/');
+  return normalized === '/' ? normalized : normalized.replace(/\/+$/g, '');
+}
+
+function resolveSettingsRootPath(publicPath, modernPrefix, pathname) {
+  const normalizedPublicPath = normalizePublicPath(publicPath);
+  const normalizedModernPrefix =
+    String(modernPrefix || 'v')
+      .trim()
+      .replace(/^\/+|\/+$/g, '') || 'v';
+  const modernPublicPathSuffix = `/${normalizedModernPrefix}/`;
+  if (!normalizedPublicPath.endsWith(modernPublicPathSuffix)) {
+    return null;
+  }
+
+  const modernRootPath = normalizePathname(normalizedPublicPath);
+  const normalizedPathname = normalizePathname(pathname);
+  let relativePath = '';
+  if (normalizedPathname !== modernRootPath) {
+    if (!normalizedPathname.startsWith(`${modernRootPath}/`)) {
+      return null;
+    }
+    relativePath = normalizedPathname.slice(modernRootPath.length + 1);
+  }
+
+  let appScope = '';
+  if (relativePath) {
+    const match = /^(apps|_app)\/([^/]+)$/.exec(relativePath);
+    if (!match) {
+      return null;
+    }
+    appScope = `/${match[1]}/${match[2]}`;
+  }
+
+  const rootPublicPath = normalizedPublicPath.slice(0, -(normalizedModernPrefix.length + 1));
+  const rootPrefix = rootPublicPath === '/' ? '' : rootPublicPath.replace(/\/+$/g, '');
+  return `${rootPrefix}/settings${appScope}`;
+}
+
+function isSettingsBrowserCheckerScript(script) {
+  const source = String((script && script.src) || '').split(/[?#]/)[0];
+  return source.endsWith('/settings/browser-checker.js');
+}
+
+function resolveScopedSettingsRootPath(publicPath, pathname) {
+  const normalizedPublicPath = normalizePublicPath(publicPath);
+  const rootPrefix = normalizedPublicPath === '/' ? '' : normalizedPublicPath.replace(/\/+$/g, '');
+  const settingsRootPath = `${rootPrefix}/settings`;
+  if (!pathname.startsWith(`${settingsRootPath}/`)) {
+    return null;
+  }
+
+  const relativePath = pathname.slice(settingsRootPath.length + 1);
+  if (!/^(apps|_app)\/[^/]+$/.test(relativePath)) {
+    return null;
+  }
+
+  return `${pathname}/`;
+}
+
 const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
 const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
 const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
+const settingsRootPath = resolveSettingsRootPath(basename, window['__nocobase_modern_client_prefix__'], currentPath);
+const scopedSettingsRootPath = isSettingsBrowserCheckerScript(document.currentScript)
+  ? resolveScopedSettingsRootPath(basename, currentPath)
+  : null;
 
-if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
+if (settingsRootPath) {
+  const newUrl = `${window.location.origin}${settingsRootPath}${window.location.search}${window.location.hash}`;
+  window.location.replace(newUrl);
+} else if (scopedSettingsRootPath) {
+  const newUrl = `${window.location.origin}${scopedSettingsRootPath}${window.location.search}${window.location.hash}`;
+  window.location.replace(newUrl);
+} else if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newUrl = `${window.location.origin}${basename}${window.location.search}${window.location.hash}`;
   window.location.replace(newUrl);
 } else if (basename !== '/' && !currentPath.startsWith(basename)) {

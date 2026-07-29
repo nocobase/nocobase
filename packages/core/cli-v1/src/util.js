@@ -462,7 +462,11 @@ function normalizeModernClientPrefix(value) {
   const segment = String(value || '')
     .trim()
     .replace(/^\/+|\/+$/g, '');
-  return segment || DEFAULT_MODERN_CLIENT_PREFIX;
+  const normalized = segment || DEFAULT_MODERN_CLIENT_PREFIX;
+  if (normalized === 'settings') {
+    throw new Error('APP_MODERN_CLIENT_PREFIX "settings" is reserved for the standalone Settings application.');
+  }
+  return normalized;
 }
 
 exports.normalizeModernClientPrefix = normalizeModernClientPrefix;

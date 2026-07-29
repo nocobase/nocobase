@@ -145,14 +145,27 @@ export async function build(pkgs: string[]) {
     const appClient = packages.find((item) => item.location === CORE_APP);
     if (appClient) {
       await runProfiledStage(profile, 'app client shell', async () => {
-        await runScript(['rsbuild', 'build', '--config', path.join(CORE_APP, 'client', 'rsbuild.config.ts')], ROOT_PATH, {
-          APP_ROOT: path.join(CORE_APP, 'client'),
-          ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
-        });
+        await runScript(
+          ['rsbuild', 'build', '--config', path.join(CORE_APP, 'client', 'rsbuild.config.ts')],
+          ROOT_PATH,
+          {
+            APP_ROOT: path.join(CORE_APP, 'client'),
+            ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
+          },
+        );
       });
       await runProfiledStage(profile, 'app client-v2 shell', async () => {
         await runScript(
           ['rsbuild', 'build', '--config', path.join(CORE_APP, 'client-v2', 'rsbuild.config.ts')],
+          ROOT_PATH,
+          {
+            ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
+          },
+        );
+      });
+      await runProfiledStage(profile, 'app client-settings shell', async () => {
+        await runScript(
+          ['rsbuild', 'build', '--config', path.join(CORE_APP, 'client-settings', 'rsbuild.config.ts')],
           ROOT_PATH,
           {
             ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
@@ -191,7 +204,11 @@ export async function buildPackages(
   await runProfiledStage(profile, `${stageName} source`, async () => {
     for (let index = 0; index < layers.length; index++) {
       const layer = layers[index];
-      console.log(chalk.cyan(`[@nocobase/build]: ${stageName} source layer ${index + 1}/${layers.length} (${layer.length} packages)`));
+      console.log(
+        chalk.cyan(
+          `[@nocobase/build]: ${stageName} source layer ${index + 1}/${layers.length} (${layer.length} packages)`,
+        ),
+      );
       const layerStart = nowMs();
       await runWithConcurrency(layer, sourceConcurrency, async (pkg) => {
         await buildPackageSourceLifecycle(pkg, targetDir, doBuildPackage, profile);
@@ -207,7 +224,13 @@ export async function buildPackages(
         });
       }
       if (ENABLE_BUILD_PROFILE) {
-        console.log(chalk.gray(`[@nocobase/build]: ${stageName} source layer ${index + 1}/${layers.length} finished in ${formatDuration(layerDurationMs)}`));
+        console.log(
+          chalk.gray(
+            `[@nocobase/build]: ${stageName} source layer ${index + 1}/${layers.length} finished in ${formatDuration(
+              layerDurationMs,
+            )}`,
+          ),
+        );
       }
     }
   });
@@ -219,7 +242,11 @@ export async function buildPackages(
   await runProfiledStage(profile, `${stageName} declaration`, async () => {
     for (let index = 0; index < layers.length; index++) {
       const layer = layers[index];
-      console.log(chalk.cyan(`[@nocobase/build]: ${stageName} declaration layer ${index + 1}/${layers.length} (${layer.length} packages)`));
+      console.log(
+        chalk.cyan(
+          `[@nocobase/build]: ${stageName} declaration layer ${index + 1}/${layers.length} (${layer.length} packages)`,
+        ),
+      );
       const layerStart = nowMs();
       await runWithConcurrency(layer, declarationConcurrency, async (pkg) => {
         await buildPackageDeclarationLifecycle(pkg, targetDir, profile);
@@ -235,7 +262,13 @@ export async function buildPackages(
         });
       }
       if (ENABLE_BUILD_PROFILE) {
-        console.log(chalk.gray(`[@nocobase/build]: ${stageName} declaration layer ${index + 1}/${layers.length} finished in ${formatDuration(layerDurationMs)}`));
+        console.log(
+          chalk.gray(
+            `[@nocobase/build]: ${stageName} declaration layer ${index + 1}/${
+              layers.length
+            } finished in ${formatDuration(layerDurationMs)}`,
+          ),
+        );
       }
     }
   });
@@ -373,7 +406,9 @@ async function buildPackageSourceLifecycle(
           .join(', ');
         console.log(
           chalk.gray(
-            `[@nocobase/build:profile] ${pkg.name} ${status} in ${formatDuration(nowMs() - packageStart)}${summary ? ` (${summary})` : ''}`,
+            `[@nocobase/build:profile] ${pkg.name} ${status} in ${formatDuration(nowMs() - packageStart)}${
+              summary ? ` (${summary})` : ''
+            }`,
           ),
         );
       }
@@ -417,7 +452,9 @@ async function buildPackageDeclarationLifecycle(
           .join(', ');
         console.log(
           chalk.gray(
-            `[@nocobase/build:profile] ${pkg.name} declaration ${status} in ${formatDuration(nowMs() - packageStart)}${summary ? ` (${summary})` : ''}`,
+            `[@nocobase/build:profile] ${pkg.name} declaration ${status} in ${formatDuration(nowMs() - packageStart)}${
+              summary ? ` (${summary})` : ''
+            }`,
           ),
         );
       }

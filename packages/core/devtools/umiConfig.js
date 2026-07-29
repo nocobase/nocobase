@@ -8,6 +8,7 @@ function getUmiConfig() {
   const {
     APP_PORT,
     APP_V2_PORT,
+    APP_SETTINGS_PORT,
     API_BASE_URL,
     API_CLIENT_STORAGE_TYPE,
     API_CLIENT_STORAGE_PREFIX,
@@ -57,6 +58,29 @@ function getUmiConfig() {
     };
   }
 
+  function getSettingsProxy() {
+    if (!APP_SETTINGS_PORT) {
+      return {};
+    }
+
+    const settingsTarget = `http://127.0.0.1:${APP_SETTINGS_PORT}`;
+    const settingsPath = `${normalizedAppPublicPath}settings`;
+    const createProxyOptions = () => ({
+      target: settingsTarget,
+      changeOrigin: true,
+      ws: true,
+      onProxyReq: (proxyReq, req) => {
+        if (req?.ip) {
+          proxyReq.setHeader('X-Forwarded-For', req.ip);
+        }
+      },
+    });
+
+    return {
+      [`${settingsPath}{,/**}`]: createProxyOptions(),
+    };
+  }
+
   return {
     alias: getPackagePaths().reduce((memo, item) => {
       memo[item[0]] = item[1];
@@ -100,6 +124,8 @@ function getUmiConfig() {
       ...getLocalStorageProxy(),
       // v2 shell dev server proxy
       ...getClientV2Proxy(),
+      // standalone Settings dev server proxy
+      ...getSettingsProxy(),
     },
   };
 }

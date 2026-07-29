@@ -47,6 +47,7 @@ const mocks = vi.hoisted(() => ({
   refreshConversations: vi.fn(),
   chatFor: vi.fn(),
   addContextItems: vi.fn(),
+  addContextItemsForSession: vi.fn(),
   syncContextAttachments: vi.fn(),
   flowModelRendererProps: [] as FlowModelRendererProps[],
   renderActions: vi.fn(() => null),
@@ -114,7 +115,10 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
     for: (sessionId?: string) => {
       mocks.chatFor(sessionId);
       return {
-        addContextItems: mocks.addContextItems,
+        addContextItems: (items: unknown) => {
+          mocks.addContextItemsForSession(sessionId, items);
+          mocks.addContextItems(items);
+        },
       };
     },
   }),
@@ -180,6 +184,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.runtime.chatConversationModel.setConversationRead.mockClear();
     mocks.chatFor.mockClear();
     mocks.addContextItems.mockClear();
+    mocks.addContextItemsForSession.mockClear();
     mocks.syncContextAttachments.mockClear();
     mocks.renderActions.mockClear();
     mocks.renderConfigureActions.mockClear();
@@ -189,6 +194,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.runtime.chatConversationModel.currentConversation = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
+    mocks.runtime.chatConversationModel.currentConversation = undefined;
   });
 
   it('registers the mounted block runtime and removes it on unmount', () => {
@@ -212,6 +218,7 @@ describe('AIChatBoxView mounted registry', () => {
     entry?.syncContextItems([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.chatFor).toHaveBeenCalledWith('session-2');
     expect(mocks.addContextItems).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
+    expect(mocks.addContextItemsForSession).toHaveBeenCalledWith('session-2', [{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.syncContextAttachments).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
 
     unmount();

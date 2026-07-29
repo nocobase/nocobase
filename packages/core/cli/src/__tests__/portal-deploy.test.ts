@@ -53,6 +53,13 @@ function createEnv(params: {
   };
 }
 
+function expectPosixMode(actual: number | undefined, expected: number): void {
+  if (process.platform === 'win32') {
+    return;
+  }
+  expect(actual === undefined ? actual : actual & 0o777).toBe(expected);
+}
+
 async function preparePortalWorkspace(params: {
   storagePath: string;
   app?: string;
@@ -173,11 +180,11 @@ test('updates env files, builds, and syncs the portal record locally without upl
       'LOCAL_ONLY=true\n' +
       'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n',
   );
-  expect((await fsp.stat(path.join(storagePath, 'portals'))).mode & 0o777).toBe(0o755);
-  expect((await fsp.stat(path.join(storagePath, 'portals', 'crm'))).mode & 0o777).toBe(0o755);
-  expect((await fsp.stat(portalDir)).mode & 0o777).toBe(0o755);
-  expect((await fsp.stat(path.join(portalDir, 'dist'))).mode & 0o777).toBe(0o755);
-  expect((await fsp.stat(path.join(portalDir, 'dist', 'index.html'))).mode & 0o777).toBe(0o644);
+  expectPosixMode((await fsp.stat(path.join(storagePath, 'portals'))).mode, 0o755);
+  expectPosixMode((await fsp.stat(path.join(storagePath, 'portals', 'crm'))).mode, 0o755);
+  expectPosixMode((await fsp.stat(portalDir)).mode, 0o755);
+  expectPosixMode((await fsp.stat(path.join(portalDir, 'dist'))).mode, 0o755);
+  expectPosixMode((await fsp.stat(path.join(portalDir, 'dist', 'index.html'))).mode, 0o644);
 });
 
 test('docker deploy builds and syncs the portal record without uploading dist', async () => {
@@ -233,13 +240,13 @@ test('http deploy builds, packs dist, and uploads it', async () => {
       onentry: (entry) => {
         entries.push(entry.path);
         if (entry.path === 'index.html') {
-          expect(entry.mode).toBe(0o644);
+          expectPosixMode(entry.mode, 0o644);
         }
         if (entry.path === 'assets') {
-          expect(entry.mode).toBe(0o755);
+          expectPosixMode(entry.mode, 0o755);
         }
         if (entry.path === 'assets/index.js') {
-          expect(entry.mode).toBe(0o644);
+          expectPosixMode(entry.mode, 0o644);
         }
       },
     });

@@ -7,24 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// The canvas page is registered directly under `admin` (not `admin.settings`), so it renders in the admin content area
-// without the settings left menu. `admin.workflow.*` is a shared namespace so sibling pages (e.g. executions at
-// `/admin/workflow/executions/:id`) can line up under the same prefix, mirroring v1's `admin.workflow.workflows.id`
-// route.
-export const WORKFLOW_CANVAS_ROUTE_NAME = 'admin.workflow.workflows.id';
-export const WORKFLOW_CANVAS_ROUTE_PATH = '/admin/workflow/workflows/:id';
+// Full-width workflow details are siblings of the normal Settings layout. The `settingsDetails.*` namespace is owned
+// only by the standalone Client V2 Settings router, so these pages keep the compact Settings header without the sidebar.
+export const WORKFLOW_CANVAS_ROUTE_NAME = 'settingsDetails.workflow.workflows.id';
+export const WORKFLOW_CANVAS_ROUTE_PATH = '/settings/workflow/workflows/:id';
 
 export function getWorkflowCanvasPath(id: string | number) {
-  return `/admin/workflow/workflows/${id}`;
+  return `/settings/workflow/workflows/${id}`;
 }
 
-// Execution detail page, a sibling of the canvas under the same `admin.workflow` namespace — mirrors v1's
-// `admin.workflow.executions.id` route.
-export const WORKFLOW_EXECUTION_ROUTE_NAME = 'admin.workflow.executions.id';
-export const WORKFLOW_EXECUTION_ROUTE_PATH = '/admin/workflow/executions/:id';
+export const WORKFLOW_EXECUTION_ROUTE_NAME = 'settingsDetails.workflow.executions.id';
+export const WORKFLOW_EXECUTION_ROUTE_PATH = '/settings/workflow/executions/:id';
 
 export function getWorkflowExecutionPath(id: string | number) {
-  return `/admin/workflow/executions/${id}`;
+  return `/settings/workflow/executions/${id}`;
 }
 
 export const WORKFLOW_TASKS_ROUTE_NAME = 'admin.workflow.tasks';

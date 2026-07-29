@@ -9,9 +9,14 @@
 
 /* eslint-env jest */
 
+const { normalizeModernClientPrefix } = require('../util');
 const { colorizedDevLogEnv, createRunWithPrefixLabel } = require('../util')._test;
 
 describe('cli-v1 util helpers', () => {
+  test('normalizeModernClientPrefix reserves the Settings SPA path', () => {
+    expect(() => normalizeModernClientPrefix('/settings/')).toThrow('APP_MODERN_CLIENT_PREFIX "settings" is reserved');
+  });
+
   test('colorizedDevLogEnv enables color for dev child output by default', () => {
     expect(colorizedDevLogEnv({})).toEqual({ FORCE_COLOR: '1' });
   });

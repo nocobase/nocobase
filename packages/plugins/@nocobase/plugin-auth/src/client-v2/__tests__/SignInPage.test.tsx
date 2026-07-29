@@ -16,6 +16,8 @@ const navigateMock = vi.fn();
 const mockApp = vi.hoisted(() => ({
   publicPath: '/v/',
   basename: '/v/apps/sub/',
+  settingsRouteName: 'admin.settings.',
+  settingsRouteRoot: '/admin/settings/',
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -35,6 +37,10 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
       router: {
         getBasename: () => mockApp.basename,
       },
+      pluginSettingsManager: {
+        getRouteName: () => mockApp.settingsRouteName,
+        getRoutePath: () => mockApp.settingsRouteRoot,
+      },
     }),
     usePlugin: () => ({
       authTypes: {
@@ -49,9 +55,11 @@ describe('SignInPage', () => {
     navigateMock.mockReset();
     mockApp.publicPath = '/v/';
     mockApp.basename = '/v/apps/sub/';
+    mockApp.settingsRouteName = 'admin.settings.';
+    mockApp.settingsRouteRoot = '/admin/settings/';
   });
 
-  it('normalizes empty redirect to the current v2 app admin path', () => {
+  it('normalizes empty redirect to the current v2 app root for dynamic Portal landing', () => {
     render(
       <MemoryRouter initialEntries={['/signin?redirect=']}>
         <SignInPage />
@@ -61,7 +69,7 @@ describe('SignInPage', () => {
     expect(navigateMock).toHaveBeenCalledWith(
       {
         pathname: '/signin',
-        search: '?redirect=%2Fv%2Fapps%2Fsub%2Fadmin%2F',
+        search: '?redirect=%2Fv%2Fapps%2Fsub',
       },
       { replace: true },
     );
@@ -75,5 +83,26 @@ describe('SignInPage', () => {
     );
 
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('normalizes empty redirect to the current standalone Settings root', () => {
+    mockApp.publicPath = '/nocobase/';
+    mockApp.basename = '/nocobase/settings/apps/sub/';
+    mockApp.settingsRouteName = 'settings.';
+    mockApp.settingsRouteRoot = '/';
+
+    render(
+      <MemoryRouter initialEntries={['/signin?redirect=']}>
+        <SignInPage />
+      </MemoryRouter>,
+    );
+
+    expect(navigateMock).toHaveBeenCalledWith(
+      {
+        pathname: '/signin',
+        search: '?redirect=%2Fnocobase%2Fsettings%2Fapps%2Fsub',
+      },
+      { replace: true },
+    );
   });
 });
