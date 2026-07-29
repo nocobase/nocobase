@@ -17,6 +17,7 @@ import { defaultImage } from '../../../../shared/constants';
 import { mapActiveColor } from '../../../../shared/theme';
 import { useMapConfig } from '../../../hooks';
 import { useT } from '../../../locale';
+import { resolveMapSettingsHref } from '../../../settingsLink';
 import { MapEditorType } from '../../../../shared/types';
 import { Search } from './Search';
 import { getCurrentPosition, getIcon } from './utils';
@@ -306,7 +307,6 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     ...overlayCommonOptions,
   });
 
-  const { navigate } = ctx.router;
   const mapContainerRef = useRef<HTMLDivElement>();
   const cleanupOverlayListenersRef = useRef<Set<() => void>>(new Set());
 
@@ -601,9 +601,11 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
         action={
           <Button
             type="primary"
+            href={resolveMapSettingsHref(ctx.app, window.location.pathname, '?tab=google')}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => {
               ctx.view?.close?.();
-              navigate('/admin/settings/map' + '?tab=google');
             }}
           >
             {t('Go to the configuration page')}

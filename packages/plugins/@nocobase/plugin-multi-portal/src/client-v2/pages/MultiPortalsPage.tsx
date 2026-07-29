@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getPortalEntryActionStore } from '../entryActions/portalEntryActionStore';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
+import PortalRoutesDrawer from './PortalRoutesDrawer';
 
 type MultiPortalPrimaryKey = string;
 type PortalSourceStorage = 'nocobase' | 'git';
@@ -33,7 +34,6 @@ type MultiPortalOptions = {
 };
 
 export type MultiPortalRecord = MultiPortalFormValues & {
-  defaultPortal?: boolean;
   uiLayout?: {
     layoutType?: string;
     title?: string;
@@ -171,7 +171,6 @@ const describedRadioCss = `
 }
 `;
 
-const DEFAULT_PORTAL_UIDS = new Set(['__default_portal__']);
 const portalSlugPattern = /^[a-z0-9_-]+$/;
 
 const IconPickerFormControl = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof IconPicker>>(
@@ -342,13 +341,6 @@ function toFormDraftValues(record: MultiPortalRecord): MultiPortalFormDraftValue
   };
 }
 
-function withDefaultPortalFlag(record: MultiPortalRecord): MultiPortalRecord {
-  return {
-    ...record,
-    defaultPortal: DEFAULT_PORTAL_UIDS.has(record.uid),
-  };
-}
-
 const MultiPortalsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -369,7 +361,7 @@ const MultiPortalsPage: React.FC = () => {
   });
   const { data: listResp, loading } = listRequest;
   const records = useMemo(() => {
-    return Array.isArray(listResp?.data) ? listResp.data.map(withDefaultPortalFlag) : [];
+    return Array.isArray(listResp?.data) ? listResp.data : [];
   }, [listResp?.data]);
   const pagination = useMemo(() => {
     const meta = listResp?.meta;
@@ -406,6 +398,17 @@ const MultiPortalsPage: React.FC = () => {
       });
     },
     [ctx.viewer, refreshPortals, token.screenMD],
+  );
+
+  const openRoutesDrawer = useCallback(
+    (record: MultiPortalRecord) => {
+      ctx.viewer.drawer({
+        width: '80%',
+        closable: true,
+        content: () => <PortalRoutesDrawer portal={record} />,
+      });
+    },
+    [ctx.viewer],
   );
 
   const handleDelete = useCallback(
@@ -512,6 +515,16 @@ const MultiPortalsPage: React.FC = () => {
             <Button type="link" style={actionLinkButtonStyle} onClick={() => openFormDrawer(record)}>
               {t('Edit')}
             </Button>
+            {normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE ? (
+              <Button
+                disabled={!record.enabled}
+                type="link"
+                style={actionLinkButtonStyle}
+                onClick={() => openRoutesDrawer(record)}
+              >
+                {t('Routes')}
+              </Button>
+            ) : null}
             <Button type="link" style={actionLinkButtonStyle} onClick={() => handleDelete(record.uid)}>
               {t('Delete')}
             </Button>
@@ -519,7 +532,7 @@ const MultiPortalsPage: React.FC = () => {
         ),
       },
     ],
-    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],
+    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, openRoutesDrawer, t, updatingEnabledRowKeys],
   );
 
   const handleTableChange = useCallback<NonNullable<TableProps<MultiPortalRecord>['onChange']>>(
@@ -682,7 +695,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             },
           ]}
         >
-          <Input disabled={record?.defaultPortal} />
+          <Input />
         </Form.Item>
         <Form.Item
           name="portalType"
@@ -690,7 +703,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           htmlFor="multi-portal-portal-type-no-code"
           rules={[{ required: true, message: t('The field value is required') }]}
         >
-          <Radio.Group disabled={record?.defaultPortal}>
+          <Radio.Group>
             <Space direction="vertical">
               <Radio
                 className={describedRadioClassName}
@@ -789,7 +802,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           ]}
         >
           <Select
-            disabled={!!record || record?.defaultPortal}
+            disabled={!!record}
             loading={layoutOptionsService.loading}
             options={layoutOptions}
             showSearch

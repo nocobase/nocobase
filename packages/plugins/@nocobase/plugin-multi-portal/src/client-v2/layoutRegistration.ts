@@ -8,6 +8,7 @@
  */
 
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
+import { DEFAULT_MOBILE_MULTI_PORTAL_UID } from '../constants';
 import { getMultiPortalRouteScopeCacheKey, installMultiPortalRouteRepositoryScope } from './routeRepositoryScope';
 
 export { getMultiPortalRouteScopeCacheKey };
@@ -15,6 +16,7 @@ export { getMultiPortalRouteScopeCacheKey };
 export type MultiPortalRuntimeRecord = {
   uid: string;
   title?: string;
+  portalType?: string;
   portalName: string;
   routePath: string;
   authCheck: boolean;
@@ -38,7 +40,7 @@ type MultiPortalRegistrationApp = {
   flowEngine?: {
     context?: unknown;
   };
-  layoutManager: Pick<Application['layoutManager'], 'hasLayout' | 'registerLayout'>;
+  layoutManager: Pick<Application['layoutManager'], 'hasLayout' | 'listLayouts' | 'registerLayout'>;
 };
 
 const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
@@ -47,6 +49,9 @@ const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
 const MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS = 'MultiPortalMobileLayoutModel';
 const MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS = 'MultiPortalMobileRootPageModel';
 const MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS = 'MultiPortalMobileChildPageModel';
+const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
+const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
+const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
 
 const layoutRegisterOptionsByType: Record<
   string,
@@ -62,12 +67,26 @@ const layoutRegisterOptionsByType: Record<
   },
 };
 
+const layoutModeMobileRegisterOptions = {
+  layoutModelClass: MOBILE_LAYOUT_MODEL_CLASS,
+  rootPageModelClass: MOBILE_ROOT_PAGE_MODEL_CLASS,
+  childPageModelClass: MOBILE_CHILD_PAGE_MODEL_CLASS,
+} satisfies Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>;
+
+function isRuntimePortal(record: MultiPortalRuntimeRecord) {
+  return record.portalType === 'no-code';
+}
+
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
-  if (!record.enabled) {
+  if (!record.enabled || !isRuntimePortal(record)) {
     return null;
   }
 
-  const codeDefinedOptions = layoutRegisterOptionsByType[record.uiLayout?.layoutType || ''];
+  const layoutType = record.uiLayout?.layoutType || '';
+  const codeDefinedOptions =
+    layoutType === UI_LAYOUT_TYPE_MOBILE && record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID
+      ? layoutModeMobileRegisterOptions
+      : layoutRegisterOptionsByType[layoutType];
   if (!codeDefinedOptions) {
     return null;
   }
@@ -95,20 +114,37 @@ export function registerMultiPortalRecords(
   layoutManager: MultiPortalRegistrationApp['layoutManager'],
   records: MultiPortalRuntimeRecord[],
 ) {
-  const registeredPortalUids: string[] = [];
+  const candidates: Array<{ options: LayoutRegisterOptions; record: MultiPortalRuntimeRecord }> = [];
+  const existingPortalUids = new Set(layoutManager.listLayouts().map((layout) => layout.uid));
+  const portalUids = new Set<string>();
+  const routeNames = new Set<string>();
 
   for (const record of records) {
-    const options = toMultiPortalLayoutRegisterOptions(record);
-    if (!options || layoutManager.hasLayout(options.routeName)) {
+    if (!record.enabled || !isRuntimePortal(record)) {
       continue;
     }
-
-    try {
-      layoutManager.registerLayout(options);
-      registeredPortalUids.push(record.uid);
-    } catch (error) {
-      console.warn(`[NocoBase] plugin-multi-portal failed to register portal '${options.routeName}'.`, error);
+    const options = toMultiPortalLayoutRegisterOptions(record);
+    if (!options) {
+      throw new Error(`Portal '${record.uid}' uses an unknown UI layout type '${record.uiLayout?.layoutType || ''}'.`);
     }
+    if (portalUids.has(record.uid)) {
+      throw new Error(`Duplicate portal uid '${record.uid}'.`);
+    }
+    if (existingPortalUids.has(record.uid)) {
+      throw new Error(`Duplicate portal uid '${record.uid}'.`);
+    }
+    if (routeNames.has(options.routeName) || layoutManager.hasLayout(options.routeName)) {
+      throw new Error(`Duplicate portal route name '${options.routeName}'.`);
+    }
+    portalUids.add(record.uid);
+    routeNames.add(options.routeName);
+    candidates.push({ options, record });
+  }
+
+  const registeredPortalUids: string[] = [];
+  for (const { options, record } of candidates) {
+    layoutManager.registerLayout(options);
+    registeredPortalUids.push(record.uid);
   }
 
   return registeredPortalUids;
@@ -128,14 +164,14 @@ function getRouteRepository(app: MultiPortalRegistrationApp) {
 }
 
 export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
-  let records: MultiPortalRuntimeRecord[];
-  try {
-    records = await fetchMultiPortals(app.apiClient);
-  } catch (error) {
-    console.warn('[NocoBase] plugin-multi-portal failed to load portals.', error);
-    return;
-  }
-
+  const records = await fetchMultiPortals(app.apiClient);
   const registeredPortalUids = registerMultiPortalRecords(app.layoutManager, records);
-  installMultiPortalRouteRepositoryScope(getRouteRepository(app), () => registeredPortalUids);
+  const registeredPortalUidSet = new Set(registeredPortalUids);
+  const registeredPortalScopes = records
+    .filter((record) => registeredPortalUidSet.has(record.uid))
+    .map((record) => ({
+      cacheKey: getMultiPortalRouteScopeCacheKey(record.uid),
+      portalUid: record.uid,
+    }));
+  installMultiPortalRouteRepositoryScope(getRouteRepository(app), () => registeredPortalScopes);
 }

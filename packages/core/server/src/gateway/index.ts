@@ -39,8 +39,11 @@ import {
   normalizeModernClientPrefix,
   normalizePortalAppName,
   resolvePublicPath,
+  resolveSettingsPublicPath,
   resolveV2PublicPath,
+  rewriteSettingsAssetPublicPath,
   rewriteV2AssetPublicPath,
+  SETTINGS_CLIENT_DIST_DIR,
 } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
@@ -131,6 +134,7 @@ export class Gateway extends EventEmitter {
   private host = '0.0.0.0';
   private socketPath = getSocketPath();
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
+  private settingsIndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
 
   private getOriginalRequestUrl(req: IncomingMessage) {
@@ -185,6 +189,7 @@ export class Gateway extends EventEmitter {
 
   private constructor() {
     super();
+    normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
     this.reset();
     process.once('SIGTERM', this.onTerminate);
     process.once('SIGINT', this.onTerminate);
@@ -369,6 +374,104 @@ export class Gateway extends EventEmitter {
     return resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
   }
 
+  private getSettingsPublicPath() {
+    return resolveSettingsPublicPath(process.env.APP_PUBLIC_PATH || '/');
+  }
+
+  private getPathWithinAppPublicPath(pathname: string) {
+    const appPublicPath = this.getAppPublicPath();
+    if (appPublicPath === '/') {
+      return pathname;
+    }
+
+    const appPublicPathWithoutSlash = appPublicPath.slice(0, -1);
+    if (pathname === appPublicPathWithoutSlash) {
+      return '/';
+    }
+    if (!pathname.startsWith(appPublicPath)) {
+      return null;
+    }
+    return pathname.slice(appPublicPath.length - 1);
+  }
+
+  private isSettingsRequest(pathname: string) {
+    const appPath = this.getPathWithinAppPublicPath(pathname);
+    if (!appPath) {
+      return false;
+    }
+    return /^\/settings(?:\/|$)/.test(appPath);
+  }
+
+  private isSettingsIndexRequest(pathname: string) {
+    if (!this.isSettingsRequest(pathname)) {
+      return false;
+    }
+    if (pathname.endsWith('/index.html')) {
+      return true;
+    }
+    return !extname(pathname);
+  }
+
+  private isSettingsAssetsRequest(pathname: string) {
+    const appPath = this.getPathWithinAppPublicPath(pathname);
+    return appPath ? /^\/settings\/assets\//.test(appPath) : false;
+  }
+
+  private resolveLegacyV2SettingsRedirect(pathname: string) {
+    const appPath = this.getPathWithinAppPublicPath(pathname);
+    if (!appPath) {
+      return null;
+    }
+
+    const modernPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+    const escapedModernPrefix = modernPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = appPath.match(new RegExp(`^/${escapedModernPrefix}((?:/(?:apps|_app)/[^/]+)?)(/admin(?:/.*)?)$`));
+    if (!match) {
+      return null;
+    }
+
+    const appScope = match[1] || '';
+    const legacyPath = match[2];
+    const mappings = [
+      {
+        from: '/admin/settings/mail/oauth2',
+        to: '/admin/settings/mail/oauth2',
+      },
+      {
+        from: '/admin/ai/knowledge-base/detail',
+        to: '/settings/ai/knowledge-base/detail',
+      },
+      {
+        from: '/admin/workflow/executions',
+        to: '/settings/workflow/executions',
+      },
+      {
+        from: '/admin/workflow/workflows',
+        to: '/settings/workflow/workflows',
+      },
+      {
+        from: '/admin/settings',
+        to: '/settings',
+      },
+    ];
+
+    for (const { from, to } of mappings) {
+      if (legacyPath !== from && !legacyPath.startsWith(`${from}/`)) {
+        continue;
+      }
+      const appPublicPath = this.getAppPublicPath().replace(/\/$/, '');
+      const targetPath =
+        from === '/admin/settings/mail/oauth2'
+          ? `${appScope}${to}`
+          : appScope
+            ? `/settings${appScope}${to.replace(/^\/settings(?=\/|$)/, '')}`
+            : to;
+      return `${appPublicPath}${targetPath}${legacyPath.slice(from.length)}`;
+    }
+
+    return null;
+  }
+
   private getPortalRootPublicPath() {
     return `${this.getAppPublicPath().replace(/\/$/, '')}/${PORTAL_CLIENT_PREFIX}/`;
   }
@@ -527,6 +630,70 @@ export class Gateway extends EventEmitter {
     return injectRuntimeScript(html, this.getV2RuntimeConfigScript());
   }
 
+  private getSettingsRuntimeConfig() {
+    return {
+      __nocobase_public_path__: this.getAppPublicPath(),
+      __nocobase_modern_client_prefix__: normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX),
+      __webpack_public_path__: process.env.CDN_BASE_URL ? `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/` : '',
+      __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+      __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
+      __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
+      __nocobase_api_client_share_token__: process.env.API_CLIENT_SHARE_TOKEN === 'true',
+      __nocobase_ws_url__: process.env.WEBSOCKET_URL || '',
+      __nocobase_ws_path__: process.env.WS_PATH,
+      __nocobase_app_dev__: process.env.NOCOBASE_APP_DEV === 'true',
+      __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+      __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
+    };
+  }
+
+  private getSettingsRuntimeConfigScript() {
+    const scriptContent = Object.entries(this.getSettingsRuntimeConfig())
+      .map(([key, value]) => `window['${key}'] = ${JSON.stringify(value)};`)
+      .join('\n');
+
+    return `<script>${scriptContent}</script>`;
+  }
+
+  private getSettingsAssetPublicPath() {
+    if (process.env.CDN_BASE_URL) {
+      return `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/${SETTINGS_CLIENT_DIST_DIR}/`;
+    }
+    return this.getSettingsPublicPath();
+  }
+
+  private getSettingsIndexTemplate() {
+    const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/${SETTINGS_CLIENT_DIST_DIR}/index.html`;
+    if (!fs.existsSync(file)) {
+      return null;
+    }
+    const stat = fs.statSync(file);
+    if (
+      this.settingsIndexTemplateCache &&
+      this.settingsIndexTemplateCache.file === file &&
+      this.settingsIndexTemplateCache.mtimeMs === stat.mtimeMs
+    ) {
+      return this.settingsIndexTemplateCache.html;
+    }
+
+    const html = fs.readFileSync(file, 'utf-8');
+    this.settingsIndexTemplateCache = {
+      file,
+      mtimeMs: stat.mtimeMs,
+      html,
+    };
+    return html;
+  }
+
+  private renderSettingsIndexHtml() {
+    const template = this.getSettingsIndexTemplate();
+    if (!template) {
+      return null;
+    }
+    const html = rewriteSettingsAssetPublicPath(template, this.getSettingsAssetPublicPath());
+    return injectRuntimeScript(html, this.getSettingsRuntimeConfigScript());
+  }
+
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname, search } = parse(req.url);
     const { PLUGIN_STATICS_PATH } = process.env;
@@ -541,6 +708,14 @@ export class Gateway extends EventEmitter {
     if (APP_PUBLIC_PATH !== '/' && pathname.startsWith('/files/')) {
       res.statusCode = 302;
       res.setHeader('Location', `${APP_PUBLIC_PATH.replace(/\/$/, '')}${pathname}${search || ''}`);
+      res.end();
+      return;
+    }
+
+    const settingsRedirect = this.resolveLegacyV2SettingsRedirect(pathname);
+    if (settingsRedirect) {
+      res.statusCode = 302;
+      res.setHeader('Location', `${settingsRedirect}${search || ''}`);
       res.end();
       return;
     }
@@ -621,6 +796,35 @@ export class Gateway extends EventEmitter {
     const isFilesRequest = Boolean(getFileAccessRestPath(pathname, APP_PUBLIC_PATH));
 
     if (!pathname.startsWith(process.env.API_BASE_PATH) && !isFilesRequest) {
+      if (this.isSettingsRequest(pathname)) {
+        if (handleApp !== 'main') {
+          const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+          if (isProxy) {
+            return;
+          }
+        }
+
+        if (this.isSettingsIndexRequest(pathname)) {
+          const settingsHtml = this.renderSettingsIndexHtml();
+          if (settingsHtml) {
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(settingsHtml);
+            return;
+          }
+        }
+
+        if (this.isSettingsAssetsRequest(pathname)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+
+        req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+        await compress(req, res);
+        return handler(req, res, {
+          public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
+        });
+      }
+
       const portalMatch = this.getPortalMatch(pathname);
       if (portalMatch) {
         if (handleApp !== 'main' && handleApp !== portalMatch.appName) {

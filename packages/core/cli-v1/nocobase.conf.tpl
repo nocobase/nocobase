@@ -128,6 +128,34 @@ server {
         send_timeout 600;
     }
 
+    location ^~ {{settingsAssetsPath}} {
+        alias {{cwd}}/node_modules/@nocobase/app/dist/client/settings/assets/;
+        expires 365d;
+        add_header Cache-Control "public";
+        access_log off;
+        autoindex off;
+    }
+
+    # The standalone Settings SPA is a Client V2 surface. Keep this matcher
+    # narrow so legacy /admin/settings routes continue to use the v1 HTML.
+    location ~ {{settingsDocumentPattern}} {
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
     # RFC 8414 root-mounted discovery compatibility for path-based issuers/resources.
     location ~ ^/\.well-known/oauth-authorization-server/(.+)$ {
         rewrite ^/\.well-known/oauth-authorization-server/(.+)$ /$1/.well-known/oauth-authorization-server break;

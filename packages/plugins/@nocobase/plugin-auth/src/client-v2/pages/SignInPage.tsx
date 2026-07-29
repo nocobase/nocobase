@@ -15,6 +15,7 @@ import { AuthenticatorsContext, type Authenticator } from '../authenticator';
 import { useDocumentTitle } from '../hooks';
 import { useAuthTranslation, useT } from '../locale';
 import PluginAuthClientV2, { type AuthOptions } from '../plugin';
+import { getDefaultAuthRedirectPath } from '../authRoutePaths';
 
 type LoaderMap<L> = Record<string, L>;
 
@@ -64,7 +65,7 @@ export default function SignInPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const redirect = params.get('redirect');
-    const normalized = normalizeV2RedirectPath(app, redirect);
+    const normalized = normalizeV2RedirectPath(app, redirect, getDefaultAuthRedirectPath(app));
     if (redirect === normalized) {
       return;
     }

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getV2EffectiveBasePath } from '@nocobase/client-v2';
+import { getModernClientPrefix, getV2EffectiveBasePath } from '@nocobase/client-v2';
 
 export type MultiPortalAppLike = {
   router?: {
@@ -21,11 +21,9 @@ export type MultiPortalAppLike = {
 export type MultiPortalType = 'no-code' | 'ai';
 
 const DEFAULT_PORTAL_TYPE: MultiPortalType = 'no-code';
-const PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE: Record<MultiPortalType, string> = {
-  'no-code': '/v',
-  ai: '/x',
-};
-const PORTAL_ROUTE_PREFIXES = Object.values(PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE);
+const AI_PORTAL_ROUTE_PREFIX = '/x';
+const DEFAULT_MODERN_PORTAL_ROUTE_PREFIX = '/v';
+const SETTINGS_ROUTE_PREFIX = '/settings';
 
 const normalizeRootPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -57,24 +55,46 @@ function normalizePortalType(value?: string | null): MultiPortalType {
 }
 
 function getPortalRoutePrefix(portalType?: string | null) {
-  return PORTAL_ROUTE_PREFIX_BY_PORTAL_TYPE[normalizePortalType(portalType)];
+  return normalizePortalType(portalType) === 'ai' ? AI_PORTAL_ROUTE_PREFIX : `/${getModernClientPrefix()}`;
 }
 
-function getPortalTypeBasePath(basePath: string | undefined, portalType?: string | null) {
+function getPortalRoutePrefixes() {
+  return Array.from(
+    new Set([getPortalRoutePrefix(DEFAULT_PORTAL_TYPE), AI_PORTAL_ROUTE_PREFIX, DEFAULT_MODERN_PORTAL_ROUTE_PREFIX]),
+  );
+}
+
+function getPortalTypeBasePath(basePath: string | undefined, portalType?: string | null, useTrailingAppScope = true) {
   const base = normalizeBasePath(basePath);
   const portalRoutePrefix = getPortalRoutePrefix(portalType);
   if (!base) {
     return portalRoutePrefix;
   }
 
-  const portalAppBaseMatch = base.match(/^(.*)\/(?:v|x)\/apps\/([^/]+)$/);
-  if (portalAppBaseMatch) {
-    const publicPath = portalAppBaseMatch[1] || '';
-    return `${publicPath}${portalRoutePrefix}/apps/${portalAppBaseMatch[2]}`;
+  const appScopeMatch = useTrailingAppScope ? base.match(/^(.*)\/(apps|_app)\/([^/]+)$/) : null;
+  if (appScopeMatch) {
+    let publicPath = appScopeMatch[1] || '';
+    for (const prefix of [...getPortalRoutePrefixes(), SETTINGS_ROUTE_PREFIX]) {
+      if (publicPath === prefix) {
+        publicPath = '';
+        break;
+      }
+      if (publicPath.endsWith(prefix)) {
+        publicPath = publicPath.slice(0, -prefix.length);
+        break;
+      }
+    }
+    const appScope = normalizePortalType(portalType) === 'ai' ? 'apps' : appScopeMatch[2];
+    return `${publicPath}${portalRoutePrefix}/${appScope}/${appScopeMatch[3]}`;
   }
 
-  if (PORTAL_ROUTE_PREFIXES.some((prefix) => base.endsWith(prefix))) {
-    return base.replace(/\/(?:v|x)$/, portalRoutePrefix);
+  for (const prefix of getPortalRoutePrefixes()) {
+    if (base === prefix) {
+      return portalRoutePrefix;
+    }
+    if (base.endsWith(prefix)) {
+      return `${base.slice(0, -prefix.length)}${portalRoutePrefix}`;
+    }
   }
   return `${base}${portalRoutePrefix}`;
 }
@@ -98,12 +118,17 @@ function getAlternativePortalType(portalType?: string | null): MultiPortalType {
   return normalizePortalType(portalType) === 'ai' ? 'no-code' : 'ai';
 }
 
-function normalizePortalRoutePath(routePath: string, basePath: string | undefined, portalType?: string | null) {
+function normalizePortalRoutePath(
+  routePath: string,
+  basePath: string | undefined,
+  portalType?: string | null,
+  useTrailingAppScope = true,
+) {
   let path = normalizeRootPath(routePath);
   for (const base of [
-    getPortalTypeBasePath(basePath, portalType),
-    getPortalTypeBasePath(basePath, getAlternativePortalType(portalType)),
-    ...PORTAL_ROUTE_PREFIXES,
+    getPortalTypeBasePath(basePath, portalType, useTrailingAppScope),
+    getPortalTypeBasePath(basePath, getAlternativePortalType(portalType), useTrailingAppScope),
+    ...getPortalRoutePrefixes(),
   ]) {
     path = stripBasePath(path, base);
   }
@@ -130,6 +155,12 @@ function getBasePathFromRouteUrl(routeUrl: string, routePath: string) {
   return undefined;
 }
 
+function shouldUseTrailingAppScope(app: MultiPortalAppLike | undefined, basePath: string | undefined) {
+  const publicPath = app?.getPublicPath?.();
+  const appName = app && 'name' in app && typeof app.name === 'string' ? app.name : undefined;
+  return !(appName === 'main' && publicPath && normalizeBasePath(publicPath) === normalizeBasePath(basePath));
+}
+
 export function getMultiPortalRouteUrl(
   app: MultiPortalAppLike | undefined,
   routePath: string,
@@ -150,9 +181,10 @@ export function getMultiPortalRouteUrl(
           },
         })
       : basename;
+    const useTrailingAppScope = shouldUseTrailingAppScope(app, basePath);
     return joinRoutePath(
-      getPortalTypeBasePath(basePath, portalType),
-      normalizePortalRoutePath(normalizedRoutePath, basePath, portalType),
+      getPortalTypeBasePath(basePath, portalType, useTrailingAppScope),
+      normalizePortalRoutePath(normalizedRoutePath, basePath, portalType, useTrailingAppScope),
     );
   }
 
@@ -160,17 +192,19 @@ export function getMultiPortalRouteUrl(
     const routeUrl = app.getRouteUrl(normalizedRoutePath);
     const routeUrlBasePath = getBasePathFromRouteUrl(routeUrl, normalizedRoutePath);
     if (routeUrlBasePath !== undefined) {
+      const useTrailingAppScope = shouldUseTrailingAppScope(app, routeUrlBasePath);
       return joinRoutePath(
-        getPortalTypeBasePath(routeUrlBasePath, portalType),
-        normalizePortalRoutePath(normalizedRoutePath, routeUrlBasePath, portalType),
+        getPortalTypeBasePath(routeUrlBasePath, portalType, useTrailingAppScope),
+        normalizePortalRoutePath(normalizedRoutePath, routeUrlBasePath, portalType, useTrailingAppScope),
       );
     }
     return normalizeRootPath(routeUrl);
   }
 
   const publicPath = app?.getPublicPath?.();
+  const useTrailingAppScope = shouldUseTrailingAppScope(app, publicPath);
   return joinRoutePath(
-    getPortalTypeBasePath(publicPath, portalType),
-    normalizePortalRoutePath(normalizedRoutePath, publicPath, portalType),
+    getPortalTypeBasePath(publicPath, portalType, useTrailingAppScope),
+    normalizePortalRoutePath(normalizedRoutePath, publicPath, portalType, useTrailingAppScope),
   );
 }

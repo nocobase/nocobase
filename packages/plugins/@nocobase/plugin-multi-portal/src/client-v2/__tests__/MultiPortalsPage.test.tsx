@@ -209,6 +209,7 @@ async function selectMobileLayout(container: HTMLElement, user: ReturnType<typeo
 afterEach(() => {
   cleanup();
   flowContext.current = undefined;
+  window.__nocobase_modern_client_prefix__ = undefined;
 });
 
 describe('plugin-multi-portal settings page', () => {
@@ -247,6 +248,63 @@ describe('plugin-multi-portal settings page', () => {
       '/nocobase/x/apps/a_q7xx6p75d0e/test',
     );
   });
+
+  it.each([
+    ['apps', 'no-code', '/customer-portal/dashboard', '/nocobase/v/apps/demo/customer-portal/dashboard'],
+    ['apps', 'ai', '/developer-portal', '/nocobase/x/apps/demo/developer-portal'],
+    ['_app', 'no-code', '/customer-portal/dashboard', '/nocobase/v/_app/demo/customer-portal/dashboard'],
+    ['_app', 'ai', '/developer-portal', '/nocobase/x/apps/demo/developer-portal'],
+  ])('should build %s Settings %s portal hrefs from the real runtime basename', (scope, portalType, path, expected) => {
+    const app = {
+      router: {
+        getBasename: () => `/nocobase/settings/${scope}/demo/`,
+      },
+      getPublicPath: () => '/nocobase/',
+    };
+
+    expect(getMultiPortalRouteUrl(app, path, portalType)).toBe(expected);
+  });
+
+  it('should honor a custom modern client prefix in standalone Settings portal hrefs', () => {
+    window.__nocobase_modern_client_prefix__ = 'modern';
+    const app = {
+      router: {
+        getBasename: () => '/nocobase/_app/demo/',
+      },
+      getPublicPath: () => '/nocobase/',
+    };
+
+    expect(getMultiPortalRouteUrl(app, '/customer-portal/dashboard', 'no-code')).toBe(
+      '/nocobase/modern/_app/demo/customer-portal/dashboard',
+    );
+  });
+
+  it.each(['apps', '_app'])(
+    'should not treat a %s suffix in the main Settings public path as an application scope',
+    (scope) => {
+      window.__nocobase_modern_client_prefix__ = 'modern';
+      const publicPath = `/tenant/${scope}/root/`;
+      const app = {
+        name: 'main',
+        router: {
+          getBasename: () => publicPath,
+        },
+        getPublicPath: () => publicPath,
+      };
+      const subApp = {
+        ...app,
+        name: 'demo',
+        router: {
+          getBasename: () => `${publicPath}settings/${scope}/demo/`,
+        },
+      };
+
+      expect(getMultiPortalRouteUrl(app, '/admin', 'no-code')).toBe(`${publicPath}modern/admin`);
+      expect(getMultiPortalRouteUrl(app, '/assistant', 'ai')).toBe(`${publicPath}x/assistant`);
+      expect(getMultiPortalRouteUrl(subApp, '/admin', 'no-code')).toBe(`${publicPath}modern/${scope}/demo/admin`);
+      expect(getMultiPortalRouteUrl(subApp, '/assistant', 'ai')).toBe(`${publicPath}x/apps/demo/assistant`);
+    },
+  );
 
   it('should keep portal wording user-facing translations consistent', () => {
     expect(enUS['Add portal']).toBe('Add portal');
@@ -347,7 +405,9 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               uiLayout: {
+                layoutType: 'mobile',
                 title: 'Mobile layout',
+                uid: 'mobile-layout-model',
               },
             },
             {
@@ -359,6 +419,19 @@ describe('plugin-multi-portal settings page', () => {
               routePath: '/developer-portal',
               uiLayoutUid: null,
               uiLayout: null,
+            },
+            {
+              ...portalValues,
+              title: 'Disabled portal',
+              uid: 'disabled-portal',
+              portalName: 'disabled-portal',
+              routePath: '/disabled-portal',
+              enabled: false,
+              uiLayout: {
+                layoutType: 'desktop',
+                title: 'Desktop layout',
+                uid: 'desktop-layout-model',
+              },
             },
           ],
         },
@@ -412,10 +485,19 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('Access path')).toBeInTheDocument();
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /mode/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /View/ })[0]).toHaveAttribute('href', '/v/customer-portal');
-    const actionCell = container.querySelector('tbody tr .ant-table-cell:last-child');
+    const customerPortalRow = screen.getByText('Customer portal').closest('tr') as HTMLElement;
+    const developerPortalRow = screen.getByText('Developer portal').closest('tr') as HTMLElement;
+    const disabledPortalRow = screen.getByText('Disabled portal').closest('tr') as HTMLElement;
+    const routesButton = within(customerPortalRow).getByRole('button', { name: 'Routes' });
+    expect(routesButton).toBeEnabled();
+    expect(within(developerPortalRow).queryByRole('button', { name: 'Routes' })).not.toBeInTheDocument();
+    expect(within(disabledPortalRow).getByRole('button', { name: 'Routes' })).toBeDisabled();
+
+    const actionCell = customerPortalRow.querySelector('.ant-table-cell:last-child');
     const actionButtons = actionCell?.querySelectorAll('.ant-btn-link') ?? [];
-    expect(actionButtons).toHaveLength(3);
+    expect(Array.from(actionButtons).map((button) => button.textContent)).toEqual(['View', 'Edit', 'Routes', 'Delete']);
     actionButtons.forEach((button) => {
       expect(button).toHaveStyle('padding-inline: 0');
     });
@@ -424,6 +506,14 @@ describe('plugin-multi-portal settings page', () => {
       'ant-btn-dangerous',
     );
     expect(screen.queryByRole('button', { name: /Logs/ })).not.toBeInTheDocument();
+    await user.click(routesButton);
+    expect(flowContext.current?.viewer.drawer).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        closable: true,
+        content: expect.any(Function),
+        width: '80%',
+      }),
+    );
     await user.click(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
@@ -1291,7 +1381,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should allow toggling enabled for default portals from the table', async () => {
+  it('should treat the legacy default uid as a normal portal in the table', async () => {
     const user = userEvent.setup();
     const resource = makeResource({
       list: vi.fn().mockResolvedValue({
@@ -1354,7 +1444,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should allow toggling enabled for default portals from the edit form', async () => {
+  it('should not lock editable fields for the legacy default uid but should keep its layout immutable', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource({
@@ -1417,8 +1507,10 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByLabelText('Portal name')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Portal name')).not.toBeDisabled();
+    expect(within(dialog).getByLabelText('Portal type')).not.toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
+    expect(within(dialog).getByLabelText('Layout')).toBeDisabled();
   });
 
   it('should populate the layout field from the appended uiLayout relation when editing', async () => {

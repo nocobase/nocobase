@@ -15,8 +15,11 @@ import { fileURLToPath } from 'node:url';
 type BrowserCheckerCase = {
   pathname: string;
   publicPath: string;
+  search?: string;
+  hash?: string;
   modernClientPrefix?: string;
   appClientEntryMode?: string;
+  scriptSrc?: string;
   expectedRedirect?: string;
 };
 
@@ -47,8 +50,8 @@ function executeBrowserChecker(scriptPath: string, input: BrowserCheckerCase) {
       location: {
         origin: 'http://c.local.nocobase.com',
         pathname: input.pathname,
-        search: '',
-        hash: '',
+        search: input.search || '',
+        hash: input.hash || '',
         replace,
       },
       console: consoleMock,
@@ -58,6 +61,13 @@ function executeBrowserChecker(scriptPath: string, input: BrowserCheckerCase) {
       onresize: undefined,
     },
     document: {
+      currentScript: {
+        src:
+          input.scriptSrc ||
+          (scriptPath.includes('/app/client-v2/public/')
+            ? 'http://assets.local.nocobase.com/v/browser-checker.js?v=1'
+            : 'http://assets.local.nocobase.com/browser-checker.js?v=1'),
+      },
       documentElement: {
         className: '',
         clientWidth: 1280,
@@ -80,11 +90,11 @@ function executeBrowserChecker(scriptPath: string, input: BrowserCheckerCase) {
 describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
   it('normalizes a relative public path before redirecting to the trailing-slash entry', () => {
     const replace = executeBrowserChecker(scriptPath, {
-      pathname: '/nocobase/v',
-      publicPath: 'nocobase/v/',
+      pathname: '/nocobase/console',
+      publicPath: 'nocobase/console/',
     });
 
-    expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/');
+    expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/console/');
   });
 
   it('prefixes outside paths with a root-relative basename instead of duplicating a relative segment', () => {
@@ -98,7 +108,7 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
 
   it('does not redirect when the current path is already under the normalized basename', () => {
     const replace = executeBrowserChecker(scriptPath, {
-      pathname: '/nocobase/v/',
+      pathname: '/nocobase/v/admin',
       publicPath: 'nocobase/v/',
     });
 
@@ -168,6 +178,114 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
       });
 
       expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/apps/a_31itq60q4kg/admin');
+    });
+  }
+
+  if (scriptPath.includes('/app/client-v2/public/')) {
+    it.each(['/v', '/v/'])('redirects the main modern root %s to Settings', (pathname) => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath: '/v/',
+        modernClientPrefix: 'v',
+      });
+
+      expect(replace).toHaveBeenCalledOnce();
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/settings');
+    });
+
+    it.each([
+      ['/v/apps/demo', '/settings/apps/demo'],
+      ['/v/apps/demo/', '/settings/apps/demo'],
+      ['/v/_app/demo', '/settings/_app/demo'],
+      ['/v/_app/demo/', '/settings/_app/demo'],
+    ])('redirects the scoped modern root %s to %s', (pathname, expectedPathname) => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath: '/v/',
+        modernClientPrefix: 'v',
+      });
+
+      expect(replace).toHaveBeenCalledOnce();
+      expect(replace).toHaveBeenCalledWith(`http://c.local.nocobase.com${expectedPathname}`);
+    });
+
+    it.each([
+      ['/settings/apps/demo', '/', '/settings/apps/demo/', 'v'],
+      ['/settings/_app/demo', '/', '/settings/_app/demo/', 'v'],
+      ['/nocobase/settings/apps/demo', '/nocobase/', '/nocobase/settings/apps/demo/', 'v'],
+      ['/nocobase/settings/_app/demo', '/nocobase/', '/nocobase/settings/_app/demo/', 'v'],
+      ['/tenant/apps/root/settings/apps/demo', '/tenant/apps/root/', '/tenant/apps/root/settings/apps/demo/', 'v'],
+      ['/tenant/_app/root/settings/_app/demo', '/tenant/_app/root/', '/tenant/_app/root/settings/_app/demo/', 'v'],
+      ['/tenant/v/settings/apps/demo', '/tenant/v/', '/tenant/v/settings/apps/demo/', 'v'],
+      ['/tenant/modern/settings/_app/demo', '/tenant/modern/', '/tenant/modern/settings/_app/demo/', 'modern'],
+    ])('normalizes the scoped Settings root %s to %s', (pathname, publicPath, expectedPathname, modernClientPrefix) => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath,
+        modernClientPrefix,
+        scriptSrc: 'https://cdn.example.com/ui/settings/browser-checker.js?v=1',
+        search: '?tab=overview',
+        hash: '#panel',
+      });
+
+      expect(replace).toHaveBeenCalledOnce();
+      expect(replace).toHaveBeenCalledWith(`http://c.local.nocobase.com${expectedPathname}?tab=overview#panel`);
+    });
+
+    it.each([
+      ['/tenant/apps/root/modern/apps/demo/', '/tenant/apps/root/modern/', '/tenant/apps/root/settings/apps/demo'],
+      ['/tenant/_app/root/modern/_app/demo/', '/tenant/_app/root/modern/', '/tenant/_app/root/settings/_app/demo'],
+    ])(
+      'preserves public path, query, and hash for %s without treating public-path segments as app scope',
+      (pathname, publicPath, expectedPathname) => {
+        const replace = executeBrowserChecker(scriptPath, {
+          pathname,
+          publicPath,
+          modernClientPrefix: 'modern',
+          search: '?tab=overview',
+          hash: '#panel',
+        });
+
+        expect(replace).toHaveBeenCalledOnce();
+        expect(replace).toHaveBeenCalledWith(`http://c.local.nocobase.com${expectedPathname}?tab=overview#panel`);
+      },
+    );
+
+    it.each([
+      ['/v/admin', '/v/'],
+      ['/v/apps/demo/admin', '/v/'],
+      ['/v/_app/demo/admin', '/v/'],
+      ['/v/_apps/demo', '/v/'],
+      ['/v/settings/apps/demo', '/v/'],
+      ['/nocobase/modern/settings/_app/demo', '/nocobase/modern/', 'modern'],
+    ])('does not redirect a non-root modern path %s to Settings', (pathname, publicPath, modernClientPrefix = 'v') => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath,
+        modernClientPrefix,
+      });
+
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['/settings', '/'],
+      ['/settings/', '/'],
+      ['/settings/apps/demo/', '/'],
+      ['/settings/_app/demo/', '/'],
+      ['/settings/apps/demo/multi-portal', '/'],
+      ['/settings/_app/demo/multi-portal', '/'],
+      ['/settings/_apps/demo', '/'],
+      ['/nocobase/settings/apps/demo/multi-portal', '/nocobase/'],
+    ])('does not redirect a non-target Settings path %s', (pathname, publicPath) => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath,
+        modernClientPrefix: 'v',
+        scriptSrc: 'https://cdn.example.com/ui/settings/browser-checker.js?v=1',
+      });
+
+      expect(replace).not.toHaveBeenCalled();
     });
   }
 });

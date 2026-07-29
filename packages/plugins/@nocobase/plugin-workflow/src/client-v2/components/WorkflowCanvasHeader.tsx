@@ -8,6 +8,7 @@
  */
 
 import { Breadcrumb, Tooltip, theme } from 'antd';
+import { useApp } from '@nocobase/client-v2';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useT, useWorkflowTranslation } from '../locale';
@@ -17,8 +18,6 @@ import { WorkflowMenu } from './WorkflowMenu';
 import { WorkflowRevisionsDropdown } from './WorkflowRevisionsDropdown';
 import { ExecuteWorkflowButton } from '../triggers/ExecuteWorkflowButton';
 import { SyncModeTag } from './SyncModeTag';
-
-const WORKFLOW_HOMEPAGE = '/admin/settings/workflow';
 
 export function WorkflowCanvasHeader({
   record,
@@ -32,8 +31,10 @@ export function WorkflowCanvasHeader({
   refresh: () => void;
 }) {
   const { t } = useWorkflowTranslation();
+  const app = useApp();
   const compile = useT();
   const { token } = theme.useToken();
+  const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
 
   return (
     <div
@@ -52,7 +53,7 @@ export function WorkflowCanvasHeader({
         <Breadcrumb
           items={[
             {
-              title: <Link to={WORKFLOW_HOMEPAGE}>{t('Workflow')}</Link>,
+              title: <Link to={workflowHomepage}>{t('Workflow')}</Link>,
             },
             {
               title: (

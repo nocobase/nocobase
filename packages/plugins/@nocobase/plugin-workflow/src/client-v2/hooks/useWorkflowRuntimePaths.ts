@@ -8,7 +8,7 @@
  */
 
 import { useMemoizedFn } from 'ahooks';
-import { getRouteRuntimeVersion } from '@nocobase/client-v2';
+import { getRouteRuntimeVersion, useApp } from '@nocobase/client-v2';
 import { getWorkflowCanvasPath, getWorkflowExecutionPath } from '../constants';
 export function isWorkflowV2Runtime() {
   return getRouteRuntimeVersion() === 'modern';
@@ -29,11 +29,27 @@ export function getWorkflowExecutionRuntimePath(id: string | number) {
 }
 
 export function useWorkflowRuntimePaths() {
-  const getCanvasPath = useMemoizedFn((id: string | number) => getWorkflowCanvasRuntimePath(id));
-  const getExecutionPath = useMemoizedFn((id: string | number) => getWorkflowExecutionRuntimePath(id));
+  const app = useApp();
+  const isStandaloneSettings = app.pluginSettingsManager.getRouteName('') === 'settings.';
+  const settingsRoot = app.pluginSettingsManager.getRoutePath('').replace(/\/+$/, '');
+  const isV2Runtime = isStandaloneSettings || isWorkflowV2Runtime();
+  const getCanvasPath = useMemoizedFn((id: string | number) =>
+    isStandaloneSettings
+      ? `${settingsRoot}/workflow/workflows/${id}`
+      : isV2Runtime
+        ? getWorkflowCanvasPath(id)
+        : `/admin/settings/workflow/workflows/${id}`,
+  );
+  const getExecutionPath = useMemoizedFn((id: string | number) =>
+    isStandaloneSettings
+      ? `${settingsRoot}/workflow/executions/${id}`
+      : isV2Runtime
+        ? getWorkflowExecutionPath(id)
+        : `/admin/settings/workflow/executions/${id}`,
+  );
 
   return {
-    isV2Runtime: isWorkflowV2Runtime(),
+    isV2Runtime,
     getWorkflowCanvasPath: getCanvasPath,
     getWorkflowExecutionPath: getExecutionPath,
   };

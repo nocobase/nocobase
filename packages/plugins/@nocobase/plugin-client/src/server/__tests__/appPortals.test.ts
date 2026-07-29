@@ -55,4 +55,73 @@ describe('listAppPortals', () => {
       },
     ]);
   });
+
+  it('returns only real portal manifests and preserves portal type per app', async () => {
+    const getAppManifests = vi.fn(async () => ({
+      alpha: [
+        {
+          uid: 'alpha-ai',
+          title: 'Alpha AI',
+          icon: 'RobotOutlined',
+          portalType: 'ai',
+          routePath: '/assistant',
+          layout: 'desktop',
+        },
+      ],
+      main: [
+        {
+          uid: 'admin-layout-model',
+          title: 'Desktop',
+          icon: 'DesktopOutlined',
+          portalType: 'no-code',
+          routePath: '/admin',
+          layout: 'desktop',
+        },
+      ],
+    }));
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      getAppSsoIssuer: () => undefined,
+      getAppsStatuses: vi.fn(async () => ({
+        alpha: 'running',
+        main: 'running',
+      })),
+      getAppManifests,
+      listAppModels: vi.fn(async () => [
+        {
+          name: 'alpha',
+          title: 'Alpha',
+        },
+      ]),
+    } as unknown as AppSupervisor);
+
+    const result = await listAppPortals('main');
+
+    expect(getAppManifests).toHaveBeenCalledWith('multi-portal', ['main', 'alpha']);
+    expect(result.portals).toEqual([
+      {
+        uid: 'admin-layout-model',
+        appName: 'main',
+        title: 'Desktop',
+        icon: 'DesktopOutlined',
+        portalType: 'no-code',
+        routePath: '/admin',
+        layout: 'desktop',
+      },
+      {
+        uid: 'alpha-ai',
+        appName: 'alpha',
+        title: 'Alpha AI',
+        icon: 'RobotOutlined',
+        portalType: 'ai',
+        routePath: '/assistant',
+        layout: 'desktop',
+      },
+    ]);
+    expect(result.portals).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ uid: '__default_admin__' }),
+        expect.objectContaining({ uid: '__default_mobile__' }),
+      ]),
+    );
+  });
 });

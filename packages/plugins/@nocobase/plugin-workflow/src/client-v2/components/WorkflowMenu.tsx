@@ -8,6 +8,7 @@
  */
 
 import { EllipsisOutlined } from '@ant-design/icons';
+import { useApp } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { App, Button, Dropdown } from 'antd';
@@ -17,8 +18,6 @@ import { useWorkflowTranslation } from '../locale';
 import { ExecutionHistoryDrawer } from '../pages/ExecutionHistoryDrawer';
 import { WorkflowDetailsModal } from './WorkflowDetailsModal';
 import { normalizeRecordResponse, type WorkflowCanvasRecord, type WorkflowRevision } from './workflowCanvas';
-
-const WORKFLOW_HOMEPAGE = '/admin/settings/workflow';
 
 export function WorkflowMenu({
   record,
@@ -32,12 +31,14 @@ export function WorkflowMenu({
   refresh: () => void;
 }) {
   const { t } = useWorkflowTranslation();
+  const app = useApp();
   const ctx = useFlowContext();
   const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { modal, message } = App.useApp();
   const [detailsVisible, setDetailsVisible] = useState(false);
 
   const anyExecuted = Number(record.stats?.executed || 0) > 0;
+  const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
 
   const openExecutions = useMemoizedFn(() => {
     ctx.viewer.drawer({
@@ -68,11 +69,11 @@ export function WorkflowMenu({
         await resource.destroy({ filterByTk: record.id });
         message.success(t('Operation succeeded'));
         if (record.current) {
-          ctx.router.navigate(WORKFLOW_HOMEPAGE);
+          ctx.router.navigate(workflowHomepage);
           return;
         }
         const fallback = revisions.find((item) => item.current);
-        ctx.router.navigate(fallback?.id != null ? getWorkflowCanvasPath(fallback.id) : WORKFLOW_HOMEPAGE);
+        ctx.router.navigate(fallback?.id != null ? getWorkflowCanvasPath(fallback.id) : workflowHomepage);
       },
     });
   });

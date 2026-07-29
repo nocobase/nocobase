@@ -24,7 +24,9 @@ const topbarActionsBarClassName = css`
   align-items: center;
   color: var(--nb-topbar-action-color);
 
-  .nb-topbar-actions-list {
+  .nb-topbar-actions-list,
+  .nb-topbar-utility-actions-list,
+  .nb-topbar-plugin-settings-action {
     display: inline-flex;
     align-items: center;
     height: 100%;
@@ -127,12 +129,18 @@ const getTopbarActionId = (action: TopbarActionModel) => {
   return action?.actionId || action?.uid || '';
 };
 
+const PLUGIN_SETTINGS_ACTION_ID = 'plugin-settings';
+
 const TopbarActionsContent = React.memo((props: { actions: TopbarActionModel[]; onActionClick?: () => void }) => {
   const { allow } = useAclSnippets();
   const { token } = theme.useToken();
   const customToken = token as CustomToken;
   const actions = useMemo(() => getVisibleTopbarActions(props.actions, allow), [allow, props.actions]);
-  const mainActions = actions.filter((action) => getTopbarActionId(action) !== USER_CENTER_ACTION_ID);
+  const mainActions = actions.filter((action) => {
+    const actionId = getTopbarActionId(action);
+    return actionId !== PLUGIN_SETTINGS_ACTION_ID && actionId !== USER_CENTER_ACTION_ID;
+  });
+  const pluginSettingsAction = actions.find((action) => getTopbarActionId(action) === PLUGIN_SETTINGS_ACTION_ID);
   const userCenterAction = actions.find((action) => getTopbarActionId(action) === USER_CENTER_ACTION_ID);
 
   return (
@@ -153,18 +161,33 @@ const TopbarActionsContent = React.memo((props: { actions: TopbarActionModel[]; 
       <ConfigProvider theme={dividerTheme}>
         <Divider type="vertical" />
       </ConfigProvider>
-      <HelpLite />
-      {userCenterAction ? (
-        <ErrorBoundary
-          key={userCenterAction.uid}
-          FallbackComponent={TopbarActionErrorFallback}
-          onError={(error) => {
-            console.error('[NocoBase] Topbar action render failed.', error);
-          }}
-        >
-          <FlowModelRenderer model={userCenterAction} />
-        </ErrorBoundary>
-      ) : null}
+      <div className="nb-topbar-utility-actions-list">
+        {pluginSettingsAction ? (
+          <span className="nb-topbar-plugin-settings-action" onClick={props.onActionClick}>
+            <ErrorBoundary
+              key={pluginSettingsAction.uid}
+              FallbackComponent={TopbarActionErrorFallback}
+              onError={(error) => {
+                console.error('[NocoBase] Topbar action render failed.', error);
+              }}
+            >
+              <FlowModelRenderer model={pluginSettingsAction} />
+            </ErrorBoundary>
+          </span>
+        ) : null}
+        <HelpLite />
+        {userCenterAction ? (
+          <ErrorBoundary
+            key={userCenterAction.uid}
+            FallbackComponent={TopbarActionErrorFallback}
+            onError={(error) => {
+              console.error('[NocoBase] Topbar action render failed.', error);
+            }}
+          >
+            <FlowModelRenderer model={userCenterAction} />
+          </ErrorBoundary>
+        ) : null}
+      </div>
     </div>
   );
 });

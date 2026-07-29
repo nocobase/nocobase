@@ -28,33 +28,15 @@ export type AppPortalItem = {
   appName: string;
   title?: string | null;
   icon?: string | null;
+  portalType?: string | null;
   routePath: string;
   layout?: string | null;
-  defaultPortal?: boolean;
 };
 
-export type StoredAppPortalItem = Omit<AppPortalItem, 'appName' | 'defaultPortal'>;
+export type StoredAppPortalItem = Omit<AppPortalItem, 'appName'>;
 
 const MAIN_APP_NAME = 'main';
 const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
-const DEFAULT_PORTALS: Array<Omit<AppPortalItem, 'appName'>> = [
-  {
-    uid: '__default_admin__',
-    title: 'Admin',
-    icon: 'DesktopOutlined',
-    routePath: '/admin',
-    layout: 'desktop',
-    defaultPortal: true,
-  },
-  {
-    uid: '__default_mobile__',
-    title: 'Mobile',
-    icon: 'MobileOutlined',
-    routePath: '/mobile',
-    layout: 'mobile',
-    defaultPortal: true,
-  },
-];
 
 function getCname(cname?: string | null) {
   const trimmed = cname?.trim();
@@ -109,17 +91,6 @@ function addPortal(portals: Map<string, AppPortalItem>, item: AppPortalItem) {
   portals.set(getPortalKey(item), item);
 }
 
-function addDefaultPortals(portals: Map<string, AppPortalItem>, appNames: Set<string>) {
-  for (const appName of appNames) {
-    for (const portal of DEFAULT_PORTALS) {
-      addPortal(portals, {
-        ...portal,
-        appName,
-      });
-    }
-  }
-}
-
 function addStoredPortals(
   portals: Map<string, AppPortalItem>,
   appName: string,
@@ -138,6 +109,7 @@ function addStoredPortals(
       appName,
       title: typeof portal.title === 'string' ? portal.title : null,
       icon: typeof portal.icon === 'string' ? portal.icon : null,
+      portalType: typeof portal.portalType === 'string' ? portal.portalType : null,
       routePath: portal.routePath,
       layout: typeof portal.layout === 'string' ? portal.layout : null,
     });
@@ -184,7 +156,6 @@ export async function listAppPortals(currentAppName?: string | null) {
   );
   const portals = new Map<string, AppPortalItem>();
 
-  addDefaultPortals(portals, appNames);
   for (const appName of appNames) {
     addStoredPortals(portals, appName, manifests[appName]);
   }
