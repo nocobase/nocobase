@@ -8,6 +8,7 @@
  */
 
 import { action, define, observable } from '@nocobase/flow-engine';
+import type { AIEmployee } from '../../types';
 
 export type WorkflowTask = {
   id: string;
@@ -33,6 +34,7 @@ export type WorkflowTaskOutputSchema = {
 };
 
 export type WorkflowTaskDetail = WorkflowTask & {
+  aiEmployee?: AIEmployee | null;
   readonly?: boolean;
   structuredOutputSchema?: WorkflowTaskOutputSchema | string | null;
   config?: {

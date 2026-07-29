@@ -121,6 +121,22 @@ describe('chatbox action integration', () => {
     expect(otherRuntime.chatSenderModel.senderValue).toBe('other draft');
   });
 
+  it('clears stale draft context before leaving an existing conversation for a triggered task', async () => {
+    const runtime = createChatBoxRuntime();
+    const staleDraftContext: ContextItem = { type: 'flow-model', uid: 'users-block' };
+    runtime.chatMessageModel.setSessionContextItems(undefined, [staleDraftContext]);
+    runtime.chatConversationModel.setCurrentConversation('history-session');
+
+    const { result } = renderHook(() => useChatBoxActions(runtime));
+
+    await act(async () => {
+      await result.current.triggerTask({ aiEmployee: employee });
+    });
+
+    expect(runtime.chatConversationModel.currentConversation).toBeUndefined();
+    expect(runtime.chatMessageModel.getSessionState(undefined).contextItems).toEqual([]);
+  });
+
   it('creates a scoped conversation and switches the current session in the provided runtime', async () => {
     const getScope = vi.fn().mockResolvedValue('chat-box-1');
     const runtime = createChatBoxRuntime({ mode: 'block', getScope });
