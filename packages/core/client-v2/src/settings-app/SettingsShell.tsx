@@ -20,7 +20,7 @@ import { useApp } from '../hooks/useApp';
 import { SettingsBrand } from './SettingsBrand';
 import { SettingsGroupNav } from './SettingsGroupNav';
 import { SettingsSearch } from './SettingsSearch';
-import { buildSettingsNeutralTheme, getSettingsHeaderColors } from './settingsTheme';
+import { buildSettingsGlobalCss, buildSettingsNeutralTheme, getSettingsHeaderColors } from './settingsTheme';
 
 const rootStyle: React.CSSProperties = {
   height: '100vh',
@@ -72,6 +72,7 @@ export const SettingsShell: FC = ({ children }) => {
   const { token } = antdTheme.useToken();
   const settingsShellTheme = useMemo<ThemeConfig>(() => buildSettingsNeutralTheme(token), [token]);
   const headerColors = useMemo(() => getSettingsHeaderColors(token), [token]);
+  const settingsGlobalCss = useMemo(() => buildSettingsGlobalCss(token), [token]);
   const isAuthenticationRoute = (app.router.matchRoutes(location.pathname) || []).some((match) => {
     const routeId = match.route.id;
     return routeId === 'auth' || routeId?.startsWith('auth.') || routeId === '2fa' || routeId?.startsWith('2fa.');
@@ -92,7 +93,8 @@ export const SettingsShell: FC = ({ children }) => {
 
   return (
     <ConfigProvider theme={settingsShellTheme}>
-      <Layout style={rootStyle}>
+      <style>{settingsGlobalCss}</style>
+      <Layout className="nb-settings-shell" style={rootStyle}>
         <Layout.Header
           style={
             {

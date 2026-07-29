@@ -16,7 +16,7 @@ import type { PluginSettingsPageType } from '../PluginSettingsManager';
  * 分组归属优先取配置项自身的 `group` 字段，其次落到内置映射表，最后兜底到 `system`，
  * 因此第三方插件不改代码也能出现在设置中心里。
  */
-export type SettingsGroupKey = 'applications' | 'plugins' | 'system';
+export type SettingsGroupKey = 'applications' | 'plugins' | 'data' | 'access' | 'automation' | 'ai' | 'system';
 
 export type SettingsGroupDefinition = {
   key: SettingsGroupKey;
@@ -32,25 +32,22 @@ export type SettingsGroupDefinition = {
 };
 
 /**
- * 顶栏只留两个独立入口 + 一个「系统设置」大分组。
+ * 顶栏铺六个独立入口 + 一个「系统设置」兜底分组。
  *
- * 应用和插件管理是日常高频、且各自只有一个页面，铺成一级入口；
- * 其余配置全部收进系统设置，靠左栏和顶栏悬浮下拉展开。
+ * 前六个各自只有一个配置项、且都是日常高频，直接当一级入口（标题取配置项自己的名字，
+ * 顺带继承插件的翻译）；其余零散配置全部收进系统设置，靠左栏和悬浮下拉展开。
  */
 export const SETTINGS_GROUPS: SettingsGroupDefinition[] = [
   { key: 'applications', title: 'Applications', primary: 'multi-portal' },
   { key: 'plugins', title: 'Plugin manager', primary: 'plugin-manager' },
+  { key: 'data', title: 'Data sources', primary: 'data-source-manager' },
+  { key: 'access', title: 'Users & Permissions', primary: 'users-permissions' },
+  { key: 'automation', title: 'Workflow', primary: 'workflow' },
+  { key: 'ai', title: 'AI employees', primary: 'ai' },
   { key: 'system', title: 'System settings' },
 ];
 
 export const DEFAULT_SETTINGS_GROUP: SettingsGroupKey = 'system';
-
-/**
- * 系统设置分组里排在最前面的四项。
- *
- * 这四个是体量最大的功能模块，和后面的零散配置之间用一条分割线隔开。
- */
-export const SYSTEM_GROUP_LEAD_NAMES = ['data-source-manager', 'users-permissions', 'workflow', 'ai'];
 
 /**
  * 内置配置项到分组的映射。
@@ -61,6 +58,10 @@ export const SYSTEM_GROUP_LEAD_NAMES = ['data-source-manager', 'users-permission
 const BUILTIN_SETTINGS_GROUP_MAP: Record<string, SettingsGroupKey> = {
   'multi-portal': 'applications',
   'plugin-manager': 'plugins',
+  'data-source-manager': 'data',
+  'users-permissions': 'access',
+  workflow: 'automation',
+  ai: 'ai',
 };
 
 /**
@@ -83,25 +84,7 @@ export function getSettingsGroupKey(setting?: PluginSettingsPageType | null): Se
 }
 
 /**
- * 把系统设置分组重排成「四个主模块 + 其余」。
- *
- * @param {PluginSettingsPageType[]} members 系统设置分组下的配置项
- * @returns {{ settings: PluginSettingsPageType[]; leadCount: number }} 重排后的列表，以及分割线该画在第几项之后
- */
-function orderSystemGroup(members: PluginSettingsPageType[]) {
-  const lead = SYSTEM_GROUP_LEAD_NAMES.map((name) => members.find((item) => item.name === name)).filter(
-    Boolean,
-  ) as PluginSettingsPageType[];
-  const leadNames = new Set(lead.map((item) => item.name));
-  const rest = members.filter((item) => !leadNames.has(item.name));
-
-  return { settings: [...lead, ...rest], leadCount: rest.length ? lead.length : 0 };
-}
-
-/**
  * 按分组切分顶级配置项，并丢掉没有任何配置项的空分组。
- *
- * `leadCount` 大于 0 时表示这一组要在第 `leadCount` 项之后画一条分割线。
  *
  * @param {PluginSettingsPageType[]} settings 已排序的顶级配置项
  * @returns 非空分组
@@ -109,16 +92,10 @@ function orderSystemGroup(members: PluginSettingsPageType[]) {
 export function groupTopLevelSettings(settings: readonly PluginSettingsPageType[] = []) {
   return SETTINGS_GROUPS.map((group) => {
     const members = settings.filter((setting) => getSettingsGroupKey(setting) === group.key);
-
-    if (group.key === 'system') {
-      return { ...group, ...orderSystemGroup(members) };
-    }
-
     const primaryIndex = group.primary ? members.findIndex((item) => item.name === group.primary) : -1;
 
     return {
       ...group,
-      leadCount: 0,
       settings:
         primaryIndex > 0
           ? [members[primaryIndex], ...members.slice(0, primaryIndex), ...members.slice(primaryIndex + 1)]

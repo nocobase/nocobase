@@ -373,24 +373,24 @@ describe('plugin-multi-portal settings page', () => {
       'The corresponding portal directory will also be deleted.',
     );
 
-    expect(zhCN['Add portal']).toBe('新增 Portal');
-    expect(zhCN['Edit portal']).toBe('编辑 Portal');
-    expect(zhCN['Delete portal']).toBe('删除 Portal');
+    expect(zhCN['Add portal']).toBe('新增门户');
+    expect(zhCN['Edit portal']).toBe('编辑门户');
+    expect(zhCN['Delete portal']).toBe('删除门户');
     expect(zhCN.Desktop).toBe('桌面端');
-    expect(zhCN['Portal type']).toBe('Portal 类型');
-    expect(zhCN['No-code portal']).toBe('无代码 Portal');
-    expect(zhCN['AI portal']).toBe('AI Portal');
+    expect(zhCN['Portal type']).toBe('门户类型');
+    expect(zhCN['No-code portal']).toBe('无代码门户');
+    expect(zhCN['AI portal']).toBe('AI 门户');
     expect(zhCN.Icon).toBe('图标');
     expect(zhCN.Mobile).toBe('移动端');
-    expect(zhCN['Multi-portal']).toBe('Portal 管理');
-    expect(zhCN.Portals).toBe('Portal');
-    expect(zhCN['No portals']).toBe('暂无 Portal');
-    expect(zhCN['Failed to load portals']).toBe('加载 Portal 失败');
-    expect(zhCN['Portal']).toBe('Portal');
-    expect(zhCN['New portals are allowed to be accessed by default']).toBe('新建 Portal 默认允许访问');
-    expect(zhCN['Portal name']).toBe('Portal 名称');
+    expect(zhCN['Multi-portal']).toBe('门户管理');
+    expect(zhCN.Portals).toBe('门户');
+    expect(zhCN['No portals']).toBe('暂无门户');
+    expect(zhCN['Failed to load portals']).toBe('加载门户失败');
+    expect(zhCN['Portal']).toBe('门户');
+    expect(zhCN['New portals are allowed to be accessed by default']).toBe('新建门户默认允许访问');
+    expect(zhCN['Portal name']).toBe('门户名称');
     expect(zhCN['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
-      'Portal 名称只能包含小写英文字母、数字、连字符和下划线',
+      '门户名称只能包含小写英文字母、数字、连字符和下划线',
     );
     expect(zhCN['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
       '通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>',
@@ -404,15 +404,15 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Git repository URL']).toBe('Git 仓库 URL');
     expect(zhCN['Git branch']).toBe('Git 分支');
     expect(zhCN['Git path']).toBe('Git 路径');
-    expect(zhCN['Manage portal source code in NocoBase.']).toBe('在 NocoBase 中管理 Portal 源码。');
-    expect(zhCN['Manage portal source code in a Git repository.']).toBe('在 Git 仓库中管理 Portal 源码。');
+    expect(zhCN['Manage portal source code in NocoBase.']).toBe('在 NocoBase 中管理门户源码。');
+    expect(zhCN['Manage portal source code in a Git repository.']).toBe('在 Git 仓库中管理门户源码。');
     expect(zhCN['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
-      '该 Portal 在 Git 仓库内的目录，留空表示仓库根目录。',
+      '该门户在 Git 仓库内的目录，留空表示仓库根目录。',
     );
     expect(zhCN['When disabled, this portal will not be registered or accessible.']).toBe(
-      '关闭后，该 Portal 将不会注册，也无法访问。',
+      '关闭后，该门户将不会注册，也无法访问。',
     );
-    expect(zhCN['The corresponding portal directory will also be deleted.']).toBe('对应的 Portal 目录也会被删除。');
+    expect(zhCN['The corresponding portal directory will also be deleted.']).toBe('对应的门户目录也会被删除。');
   });
 
   it('should fire resource.create with portal fields including uiLayoutUid', async () => {
@@ -503,11 +503,11 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.queryByText('Access path')).not.toBeInTheDocument();
     expect(screen.queryByText('customer-portal')).not.toBeInTheDocument();
 
-    const noCodeAccessPathLink = screen.getByRole('link', { name: '/customer-portal' });
+    const noCodeAccessPathLink = screen.getByRole('link', { name: '/v/customer-portal' });
     expect(noCodeAccessPathLink).toHaveAttribute('href', '/v/customer-portal');
     expect(noCodeAccessPathLink).toHaveAttribute('target', '_blank');
     expect(noCodeAccessPathLink).toHaveAttribute('rel', 'noopener noreferrer');
-    const aiAccessPathLink = screen.getByRole('link', { name: '/developer-portal' });
+    const aiAccessPathLink = screen.getByRole('link', { name: '/x/developer-portal' });
     expect(aiAccessPathLink).toHaveAttribute('href', '/x/developer-portal');
     expect(aiAccessPathLink).toHaveAttribute('target', '_blank');
     expect(aiAccessPathLink).toHaveAttribute('rel', 'noopener noreferrer');
@@ -541,8 +541,10 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
 
     // 卡片上的标签：portal 类型 + 布局名，不出现权限 / UI layout 字样。
+    // 测试里的 t 是恒等函数，渲染出来的是词条 key 而不是译文。
     expect(within(customerPortalCard).getByText('No-code')).toBeInTheDocument();
-    expect(within(customerPortalCard).getByText('Mobile layout')).toBeInTheDocument();
+    // 卡片上的设备标签按 layoutType 映射，不直接用布局记录的名字。
+    expect(within(customerPortalCard).getByText('Mobile')).toBeInTheDocument();
     expect(within(developerPortalCard).getByText('AI')).toBeInTheDocument();
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();

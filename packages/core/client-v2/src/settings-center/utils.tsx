@@ -245,48 +245,30 @@ export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType
 }
 
 /**
- * 构造左侧栏的嵌套菜单。
+ * 构造左侧栏菜单。
  *
- * 与 `getMenuItems` 的差别：只有当某一级存在 **多个** 可见子项时才下钻成子菜单，
- * 单子项（典型是只有一个 `index` tab 的配置）继续保持成叶子节点，
- * 避免出现「点开一层只有一个同名项」的无意义嵌套。
+ * 左栏只铺**一级**配置项，不下钻子菜单：备份管理器、通知管理这类插件的子页面统一走页头下的
+ * Tab（和 v1 设置中心一致），左栏折叠展开再叠一层反而多一次点击、也和 Tab 表达重复。
  *
  * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
  * @returns {SidebarMenuItem[]} antd Menu items
  */
-export function getSidebarMenuItems(
-  settings: readonly PluginSettingsPageType[] = [],
-  options: { dividerAfter?: number } = {},
-): SidebarMenuItem[] {
-  const items = settings
+export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] = []): SidebarMenuItem[] {
+  return settings
     .filter((item) => !item.hidden)
-    .map((item) => {
-      const visibleChildren = (item.children || []).filter((child) => !child.hidden);
-      const children = visibleChildren.length > 1 ? getSidebarMenuItems(visibleChildren) : undefined;
-
-      return {
-        key: item.name,
-        label: item.label ?? item.title,
-        title: typeof item.title === 'string' ? item.title : undefined,
-        icon: item.icon,
-        children: children?.length ? children : undefined,
-      };
-    });
-
-  const { dividerAfter } = options;
-  if (dividerAfter && dividerAfter > 0 && dividerAfter < items.length) {
-    return [...items.slice(0, dividerAfter), { type: 'divider' }, ...items.slice(dividerAfter)];
-  }
-
-  return items;
+    .map((item) => ({
+      key: item.name,
+      label: item.label ?? item.title,
+      title: typeof item.title === 'string' ? item.title : undefined,
+      icon: item.icon,
+    }));
 }
 
 /**
  * 把当前命中的配置项换算成左侧栏里真实存在的菜单 key。
  *
- * `getSidebarMenuItems` 会把单子项的层级折叠掉，被折叠掉的子项在左栏没有自己的条目，
- * 直接拿它的 name 当 `selectedKeys` 会导致整个左栏都不高亮；这里沿路径回退到最深的、
- * 确实被渲染出来的那一级。
+ * 左栏只有一级，命中的可能是某个子页面（它在左栏没有自己的条目），
+ * 这里回退到它所属的那个一级项。
  *
  * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
  * @param {string | undefined} activeName 当前命中的配置项名称
@@ -300,59 +282,10 @@ export function getSidebarSelectedKey(
     return undefined;
   }
 
-  const walk = (items: readonly PluginSettingsPageType[]): string | null => {
-    for (const item of items) {
-      if (item.name === activeName) {
-        return item.name;
-      }
+  const contains = (items: readonly PluginSettingsPageType[]): boolean =>
+    items.some((item) => item.name === activeName || contains(item.children || []));
 
-      const visibleChildren = (item.children || []).filter((child) => !child.hidden);
-      if (!visibleChildren.length) {
-        continue;
-      }
-
-      const found = walk(visibleChildren);
-      if (found) {
-        // 子级被折叠时，命中的是它自己这一条。
-        return visibleChildren.length > 1 ? found : item.name;
-      }
-    }
-
-    return null;
-  };
-
-  return walk(settings) || undefined;
-}
-
-/**
- * 找出左侧栏里应该展开的父级 key。
- *
- * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
- * @param {string | undefined} activeName 当前命中的配置项名称
- * @returns {string[]} 需要展开的 key
- */
-export function getSidebarOpenKeys(settings: readonly PluginSettingsPageType[] = [], activeName?: string): string[] {
-  if (!activeName) {
-    return [];
-  }
-
-  const walk = (items: readonly PluginSettingsPageType[], trail: string[]): string[] | null => {
-    for (const item of items) {
-      if (item.name === activeName) {
-        return trail;
-      }
-      const visibleChildren = (item.children || []).filter((child) => !child.hidden);
-      if (visibleChildren.length > 1) {
-        const found = walk(visibleChildren, [...trail, item.name]);
-        if (found) {
-          return found;
-        }
-      }
-    }
-    return null;
-  };
-
-  return walk(settings, []) || [];
+  return settings.find((item) => item.name === activeName || contains(item.children || []))?.name;
 }
 
 /**

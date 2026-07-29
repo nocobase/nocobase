@@ -682,7 +682,18 @@ const MultiPortalsPage: React.FC = () => {
       const href = getMultiPortalRouteUrl(ctx.app, record.routePath, record.portalType);
       const isNoCode = normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE;
       const routesDisabled = !isNoCode || !record.enabled;
-      const layoutLabel = record.uiLayout?.title || record.uiLayoutUid;
+      // 布局记录的 title 是库里存的名字（"Desktop layout" 这种），不走 i18n；
+      // 卡片上按 layoutType 映射成「桌面端 / 移动端」，跟表单里的选项文案保持一致。
+      const layoutLabel = record.uiLayout
+        ? getUiLayoutOptionLabel(
+            {
+              layoutType: record.uiLayout.layoutType,
+              title: record.uiLayout.title,
+              uid: record.uiLayout.uid || record.uiLayoutUid || '',
+            },
+            t,
+          )
+        : record.uiLayoutUid;
 
       return (
         <Card
@@ -747,7 +758,9 @@ const MultiPortalsPage: React.FC = () => {
                 ellipsis
                 style={{ display: 'block', fontSize: token.fontSizeSM }}
               >
-                {record.routePath}
+                {/* 显示真正能访问的地址（带 /v 或 /x 前缀），而不是库里存的裸 routePath——
+                    后者复制出去打不开，和链接自身指向的 href 也对不上。 */}
+                {href}
               </Typography.Link>
             </div>
             <Switch

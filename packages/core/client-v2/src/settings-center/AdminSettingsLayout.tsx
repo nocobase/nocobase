@@ -10,8 +10,8 @@
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { Layout, Menu, Result, theme } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Layout, Menu, Result, Tabs, theme } from 'antd';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { PluginSettingsPageType } from '../PluginSettingsManager';
@@ -24,7 +24,6 @@ import {
   findSettingsByName,
   getDefaultSettingsPath,
   getSidebarMenuItems,
-  getSidebarOpenKeys,
   getSidebarSelectedKey,
   matchSettingsRoute,
 } from './utils';
@@ -66,7 +65,6 @@ export const InternalAdminSettingsLayout = () => {
   const location = useLocation();
   const { token } = theme.useToken();
   const {
-    activeGroupLeadCount,
     activeGroupSettings,
     allSettings,
     currentSetting,
@@ -89,14 +87,27 @@ export const InternalAdminSettingsLayout = () => {
   const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
   const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
 
-  const sidebarMenus = useMemo(
-    () => getSidebarMenuItems(activeGroupSettings, { dividerAfter: activeGroupLeadCount }),
-    [activeGroupLeadCount, activeGroupSettings],
-  );
-  // 分组里只有一个没有下级的配置项时，左栏会退化成「一个和顶栏分组同义的孤零零条目」，
-  // 这种情况直接不渲染侧栏，让页面标题承担命名（例如「应用」分组下的 Portal 管理）。
-  const shouldShowSidebar =
-    sidebarMenus.length > 1 || sidebarMenus.some((item) => (item as { children?: unknown[] })?.children?.length);
+  const sidebarMenus = useMemo(() => getSidebarMenuItems(activeGroupSettings), [activeGroupSettings]);
+  // 分组里只有一个顶级配置项时不铺左栏：那样整条侧栏只是把顶栏那一项重复一遍。
+  // 它自己的下级（用户和权限的 用户 / 角色和权限 / 同步，AI 员工的几个页面）改用页头下的 Tab。
+  const shouldShowSidebar = activeGroupSettings.length > 1;
+  // 子页面一律走页头下的 Tab：左栏只表达「哪个模块」，模块内部的分页交给 Tab，
+  // 和 v1 设置中心保持一致。
+  const pageTabs = useMemo(() => {
+    const children = (currentVisibleTopLevelSetting?.children || []).filter(
+      (item) => !item.hidden && !item.link && item.path,
+    );
+    return children.length > 1 ? children.map((item) => ({ key: item.path, label: item.label ?? item.title })) : [];
+  }, [currentVisibleTopLevelSetting]);
+  const activeTabKey = useMemo(() => {
+    if (!pageTabs.length) {
+      return undefined;
+    }
+    const matched = pageTabs.find(
+      (tab) => location.pathname === tab.key || location.pathname.startsWith(`${tab.key}/`),
+    );
+    return matched?.key ?? pageTabs[0]?.key;
+  }, [location.pathname, pageTabs]);
   // 命中的可能是被折叠掉的子项，要换算成左栏里真实存在的那一级，否则整个左栏都不高亮。
   const selectedMenuKey = useMemo(
     () =>
@@ -104,22 +115,11 @@ export const InternalAdminSettingsLayout = () => {
       getSidebarSelectedKey(activeGroupSettings, currentVisibleTopLevelSetting?.name),
     [activeGroupSettings, currentVisibleSetting?.name, currentVisibleTopLevelSetting?.name],
   );
-  const derivedOpenKeys = useMemo(
-    () => getSidebarOpenKeys(activeGroupSettings, selectedMenuKey),
-    [activeGroupSettings, selectedMenuKey],
-  );
-  const [manualOpenKeys, setManualOpenKeys] = useState<string[] | null>(null);
-  const openKeys = manualOpenKeys ?? derivedOpenKeys;
-  // 二三级菜单已经铺在左栏，页头只需要补一句「当前在哪个子页」。
+  // 页头只需要补一句「当前在哪个子页」。
   const pageSubTitle =
     currentVisibleSetting && currentVisibleSetting.title !== currentTopLevelSetting?.title
       ? currentVisibleSetting.title
       : undefined;
-
-  // 路由变化后回到「跟随当前页面自动展开」，避免手动折叠的状态跨页面残留。
-  useEffect(() => {
-    setManualOpenKeys(null);
-  }, [location.pathname]);
 
   useEffect(() => {
     const nextTitle =
@@ -194,8 +194,6 @@ export const InternalAdminSettingsLayout = () => {
             mode="inline"
             inlineIndent={16}
             selectedKeys={selectedMenuKey ? [selectedMenuKey] : []}
-            openKeys={openKeys}
-            onOpenChange={(keys) => setManualOpenKeys(keys as string[])}
             style={{ height: '100%', borderInlineEnd: 'none' }}
             onClick={({ key }) => {
               const setting = findSettingsByName(activeGroupSettings, String(key));
@@ -229,26 +227,45 @@ export const InternalAdminSettingsLayout = () => {
           overflow: 'hidden',
         }}
       >
-        <PageHeader
-          ghost={false}
-          title={currentTopLevelSetting?.title}
-          subTitle={pageSubTitle}
-          style={{
-            background: token.colorBgContainer,
-            borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-            paddingBottom: token.padding,
-          }}
-        />
+        {/*
+          页头放在滚动容器**内部**：钉在外面会让页面出现嵌套滚动（窗口一条、内容区一条），
+          插件页面自己再带滚动区时会套成两三层，而且长页面白白少掉一条页头的高度。
+        */}
         <div
           style={{
             flex: 1,
             minHeight: 0,
             boxSizing: 'border-box',
             overflow: 'auto',
-            padding: token.paddingLG,
           }}
         >
-          <Outlet />
+          <PageHeader
+            ghost={false}
+            title={currentTopLevelSetting?.title}
+            subTitle={pageTabs.length ? undefined : pageSubTitle}
+            footer={
+              pageTabs.length ? (
+                <Tabs
+                  activeKey={activeTabKey}
+                  items={pageTabs}
+                  tabBarStyle={{ marginBottom: 0 }}
+                  onChange={(key) => {
+                    if (key !== location.pathname) {
+                      navigate(key);
+                    }
+                  }}
+                />
+              ) : undefined
+            }
+            style={{
+              background: token.colorBgContainer,
+              borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+              paddingBottom: pageTabs.length ? 0 : token.padding,
+            }}
+          />
+          <div style={{ padding: token.paddingLG }}>
+            <Outlet />
+          </div>
         </div>
       </Layout.Content>
     </Layout>

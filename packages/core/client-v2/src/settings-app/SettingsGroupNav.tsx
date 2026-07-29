@@ -55,32 +55,39 @@ export const SettingsGroupNav: React.FC = observer(() => {
     [getGroupEntryPath, groups, location.pathname, navigate],
   );
 
-  // 只有一个页面的分组直接当一级入口；系统设置这种大分组挂上子项，鼠标移上去即可展开全部设置。
+  // 单入口分组直接当一级项，标题取配置项自己的名字（顺带继承插件的翻译）；
+  // 系统设置这种大分组挂上子项，鼠标移上去展开。
   const items = useMemo(
     () =>
       groups.map((group) => {
-        const label = t(group.title);
         if (group.settings.length <= 1) {
-          return { key: group.key, label };
+          return {
+            key: group.key,
+            label: group.settings[0]?.label ?? t(group.title),
+            icon: group.settings[0]?.icon,
+          };
         }
 
-        const children = group.settings
-          .filter((setting) => !setting.hidden)
-          .map((setting) => ({ key: `${group.key}::${setting.name}`, label: setting.label ?? setting.title }));
-        const withDivider =
-          group.leadCount > 0 && group.leadCount < children.length
-            ? [...children.slice(0, group.leadCount), { type: 'divider' as const }, ...children.slice(group.leadCount)]
-            : children;
+        // 已经站在这个分组里时不再弹下拉：左栏已经把同一份内容铺开了，再浮一层纯属打扰。
+        if (group.key === activeGroupKey) {
+          return { key: group.key, label: t(group.title) };
+        }
 
         return {
           key: group.key,
-          label,
-          children: withDivider,
+          label: t(group.title),
+          children: group.settings
+            .filter((setting) => !setting.hidden)
+            .map((setting) => ({
+              key: `${group.key}::${setting.name}`,
+              label: setting.label ?? setting.title,
+              icon: setting.icon,
+            })),
           // 点标题本身也要能进去，而不是只能从下拉里挑。
           onTitleClick: handleClick,
         };
       }),
-    [groups, handleClick, t],
+    [activeGroupKey, groups, handleClick, t],
   );
 
   // 子菜单标题只有在它的某个子项被选中时才会高亮，所以两个 key 都要给。
