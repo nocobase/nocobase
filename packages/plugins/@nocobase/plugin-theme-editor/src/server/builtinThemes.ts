@@ -109,8 +109,10 @@ export const minimal: Omit<ThemeItem, 'id'> = {
         colorPrimary: 'rgba(0, 0, 0, 0.45)',
       },
       Select: {
-        optionSelectedBg: '#000000',
-        optionSelectedColor: '#ffffff',
+        // 下拉选中项用浅灰底 + 正文色：整条纯黑压在下拉里太重，
+        // 而且下拉本来就是短暂出现的，不需要这么强的指示。
+        optionSelectedBg: 'rgba(0, 0, 0, 0.06)',
+        optionSelectedColor: 'rgba(0, 0, 0, 0.88)',
       },
       Switch: {
         colorPrimary: '#000000',

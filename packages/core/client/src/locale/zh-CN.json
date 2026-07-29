@@ -72,6 +72,7 @@
   "Advanced type": "高级类型",
   "No available title fields": "无可用标题字段",
   "Please choose a different title field before syncing": "请先选择不同的标题字段再同步",
+  "Settings center": "设置中心",
   "Sync selected title field to collection": "将所选标题字段同步到数据表",
   "Sync title field": "同步标题字段",
   "This will update the collection title field globally. Continue?": "这将全局更新数据表的标题字段。是否继续？",

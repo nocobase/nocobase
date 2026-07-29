@@ -105,9 +105,9 @@ export function buildSettingsHeaderMenuTheme(token: GlobalToken): ThemeConfig {
  * 只做**顶栏**这一层：白（或深色主题下的容器色）底 + 细分割线，文字与图标走正文色，
  * 和业务端那条深色顶栏区分开。
  *
- * 选中态做成黑底白字：只改 antd **成对提供了背景和文字 token** 的组件（菜单、Select 选项）。
+ * 选中态一律用浅灰底 + 正文色，只有开关这类「开/关」控件才用纯黑填充。
  * 各插件页面里 `controlItemBgActive` 常被当成纯背景用、文字色不跟着走，所以那个 token
- * 仍保持浅色，不然列表行会变成黑底黑字。
+ * 也保持浅色，不然列表行会变成深底深字。
  *
  * @param {GlobalToken} token 外层主题 token
  * @returns {ThemeConfig} 设置中心外壳主题
@@ -165,8 +165,7 @@ export function buildSettingsNeutralTheme(token: GlobalToken): ThemeConfig {
         bodyBg: token.colorBgLayout,
       },
       Menu: {
-        // 左栏选中态用一条竖线 + 浅底（竖线在 settingsGlobalCss 里画），
-        // 和顶栏的下划线是同一套语言：用「边」标记位置，而不是拿实心块压住整行。
+        // 左栏选中态：浅底 + 加粗，不再画左侧竖线。
         itemSelectedBg: token.colorFillSecondary,
         itemSelectedColor: token.colorText,
         // 子菜单容器保留一层很淡的底色标记「这是一组」，但要比选中项浅一档，
@@ -182,8 +181,9 @@ export function buildSettingsNeutralTheme(token: GlobalToken): ThemeConfig {
         colorPrimary: token.colorTextTertiary,
       },
       Select: {
-        optionSelectedBg: activeBg,
-        optionSelectedColor: activeText,
+        // 下拉选中项用浅灰底 + 正文色，别在下拉里压一条纯黑。
+        optionSelectedBg: token.colorFillSecondary,
+        optionSelectedColor: token.colorText,
       },
       Switch: {
         colorPrimary: activeBg,
@@ -243,16 +243,13 @@ export function withSettingsHeaderTheme(theme: ThemeConfig, token: GlobalToken):
  * - 裸 `<a>` 的颜色。它吃的是**最外层** ConfigProvider 生成的全局 reset 样式，
  *   我们这层嵌套 ConfigProvider 的 `colorLink` 够不着，只能在 CSS 里压一次。
  * - 链接下划线（`colorLink` 只管颜色）
- * - Switch 未激活时给纯白底 + 描边，而不是默认的灰色滑轨
- * - 顶栏选中项做成带圆角的色块，而不是顶天立地的直角方块
+ * - Switch 禁用态压得更淡，跟「未启用但可点」区分开
+ * - 顶栏选中项的下划线、左栏选中项的加粗
  *
  * @param {GlobalToken} token 外层主题 token
  * @returns {string} 可直接塞进 `<style>` 的 CSS
  */
 export function buildSettingsGlobalCss(token: GlobalToken): string {
-  const dark = isDarkColor(token.colorBgContainer);
-  const offBg = dark ? token.colorBgContainer : '#ffffff';
-
   return `
 .nb-settings-shell a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn):not([class*="ant-"]) {
   color: ${token.colorTextSecondary};
@@ -276,19 +273,23 @@ export function buildSettingsGlobalCss(token: GlobalToken): string {
 }
 .nb-settings-shell .ant-layout-sider .ant-menu-item-selected {
   font-weight: 600;
-  box-shadow: inset 3px 0 0 0 ${token.colorText};
 }
 .nb-settings-shell .ant-layout-sider .ant-menu-item::after,
 .nb-settings-shell .ant-layout-sider .ant-menu-submenu-title::after {
   display: none !important;
 }
-.nb-settings-shell .ant-switch:not(.ant-switch-checked) {
-  background: ${offBg};
-  /* 用内阴影而不是 border 描边：border 会占掉 1px，滑块位置跟着偏，一排开关就对不齐了 */
-  box-shadow: inset 0 0 0 ${token.lineWidth}px ${token.colorBorder};
+/* 未启用态保持 antd 默认的实心灰滑轨：之前做成白底描边太淡，和「禁用」几乎看不出差别。
+   禁用态不用整体压暗（插件管理器里一整屏都是不可操作的内置插件，压狠了像坏了），
+   而是把滑轨调到跟「未启用」同一档灰、滑块的小白圆点也压成浅灰——
+   整体退成一片同色系的浅灰，跟纯黑的「开着且能关」拉开距离。 */
+.nb-settings-shell .ant-switch-disabled {
+  opacity: 1;
 }
-.nb-settings-shell .ant-switch:not(.ant-switch-checked) .ant-switch-handle::before {
-  background: ${token.colorTextTertiary};
+.nb-settings-shell .ant-switch-disabled.ant-switch-checked {
+  background: ${token.colorTextQuaternary};
+}
+.nb-settings-shell .ant-switch-disabled .ant-switch-handle::before {
+  background: ${token.colorBorderSecondary};
 }
 `;
 }

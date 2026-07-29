@@ -40,14 +40,6 @@ const titleClassName = css`
   text-overflow: ellipsis;
 `;
 
-/**
- * Logo 后缀刻意不做多语言。
- *
- * 它是产品标识的一部分（`<站点名> · Settings`），跟着界面语言在「设置 / 設定 / Settings」
- * 之间来回跳会让品牌区不稳定，所以固定英文。
- */
-const SETTINGS_BRAND_SUFFIX = 'Settings';
-
 const suffixClassName = css`
   line-height: 1;
   white-space: nowrap;
@@ -57,13 +49,14 @@ const suffixClassName = css`
 /**
  * 设置中心顶栏品牌区。
  *
- * 沿用系统设置里的站点 logo / 标题，并在其后补一个弱化的 `Settings` 副标题，
- * 用于区分「设置管理中心」和业务端。
+ * 沿用系统设置里的站点 logo / 标题，并在其后补一个弱化的「设置中心」副标题，
+ * 用于区分设置中心和业务端。
  */
 export const SettingsBrand = observer(() => {
   const { token } = antdTheme.useToken();
   const headerColors = getSettingsHeaderColors(token);
   const result = useSystemSettings();
+  const { t } = useTranslation();
   const { t: tCollections } = useTranslation('lm-collections');
   const title = tCollections(result?.data?.data?.title || 'NocoBase');
   const logoUrl = result?.data?.data?.logo?.url;
@@ -106,7 +99,7 @@ export const SettingsBrand = observer(() => {
           opacity: 0.75,
         }}
       >
-        {SETTINGS_BRAND_SUFFIX}
+        {t('Settings center')}
       </span>
     </div>
   );
