@@ -69,7 +69,7 @@ export const lightExtensionCreateSourceTypes = ['template', 'zip', 'git'] as con
 
 export type LightExtensionCreateSourceType = (typeof lightExtensionCreateSourceTypes)[number];
 
-export const lightExtensionCreateJobStatuses = ['pending', 'running', 'succeeded', 'failed'] as const;
+export const lightExtensionCreateJobStatuses = ['pending', 'running', 'failed'] as const;
 
 export type LightExtensionCreateJobStatus = (typeof lightExtensionCreateJobStatuses)[number];
 
@@ -84,16 +84,9 @@ export interface LightExtensionCreateJobRecord {
   sourceType: LightExtensionCreateSourceType;
   status: LightExtensionCreateJobStatus;
   payload: Record<string, unknown> | null;
-  resultRepoId: string | null;
   errorCode: string | null;
   errorMessage: string | null;
   reservationKey: string | null;
-  claimToken: string | null;
-  leaseOwner: string | null;
-  leaseExpiresAt: string | null;
-  heartbeatAt: string | null;
-  attempt: number;
-  maxAttempts: number;
   actorUserId: string | null;
   requestId: string | null;
   startedAt: string | null;
@@ -110,11 +103,8 @@ export interface LightExtensionCreateJobSummary {
   description: string | null;
   sourceType: LightExtensionCreateSourceType;
   status: LightExtensionCreateJobStatus;
-  resultRepoId: string | null;
   errorCode: string | null;
   errorMessage: string | null;
-  canRetry: boolean;
-  canDismiss: boolean;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
@@ -131,10 +121,6 @@ export interface LightExtensionCreateJobMutationInput {
   jobId: string;
 }
 
-export type LightExtensionCreateJobRetryInput = LightExtensionCreateJobMutationInput;
-
-export type LightExtensionCreateJobRetryResult = LightExtensionCreateJobSummary;
-
 export type LightExtensionCreateJobDismissInput = LightExtensionCreateJobMutationInput;
 
 export interface LightExtensionCreateJobDismissResult {
@@ -144,10 +130,6 @@ export interface LightExtensionCreateJobDismissResult {
 export interface LightExtensionCreateJobActionContract {
   list: {
     result: LightExtensionCreateJobListResult;
-  };
-  retry: {
-    input: LightExtensionCreateJobRetryInput;
-    result: LightExtensionCreateJobRetryResult;
   };
   dismiss: {
     input: LightExtensionCreateJobDismissInput;

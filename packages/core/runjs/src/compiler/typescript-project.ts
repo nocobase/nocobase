@@ -42,6 +42,12 @@ export interface RunJSTypeScriptProjectDebugState {
   updateCount: number;
 }
 
+export interface RunJSTypeScriptGlobalReference {
+  name: string;
+  path: string;
+  start: number;
+}
+
 interface VersionedProjectFile extends RunJSTypeScriptProjectFile {
   version: number;
 }
@@ -155,6 +161,44 @@ export class RunJSTypeScriptProject {
     return [...new Set(workspacePaths.map(normalizeVirtualPath))]
       .filter((path) => Boolean(program.getSourceFile(path)))
       .sort();
+  }
+
+  getDisallowedStandardLibraryGlobals(
+    paths: readonly string[],
+    allowedGlobals: ReadonlySet<string>,
+  ): RunJSTypeScriptGlobalReference[] {
+    this.assertActive();
+    const program = this.languageService.getProgram();
+    if (!program) {
+      return [];
+    }
+    const checker = program.getTypeChecker();
+    const references: RunJSTypeScriptGlobalReference[] = [];
+    const reported = new Set<string>();
+    for (const path of [...new Set(paths)].sort()) {
+      const sourceFile = program.getSourceFile(path);
+      if (!sourceFile) {
+        continue;
+      }
+      const visit = (node: ts.Node) => {
+        if (ts.isIdentifier(node) && isRuntimeValueReference(node) && !allowedGlobals.has(node.text)) {
+          const symbol = checker.getSymbolAtLocation(node);
+          const declaredByStandardLibrary = symbol?.declarations?.some((declaration) =>
+            declaration.getSourceFile().fileName.startsWith('/__runjs__/lib.'),
+          );
+          if (declaredByStandardLibrary) {
+            const key = `${path}:${node.getStart(sourceFile)}:${node.text}`;
+            if (!reported.has(key)) {
+              reported.add(key);
+              references.push({ name: node.text, path, start: node.getStart(sourceFile) });
+            }
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(sourceFile);
+    }
+    return references;
   }
 
   getDependencyGraph(input: {
@@ -305,6 +349,74 @@ export class RunJSTypeScriptProject {
       throw new Error('RunJS TypeScript project has been disposed.');
     }
   }
+}
+
+function isRuntimeValueReference(node: ts.Identifier): boolean {
+  if (isDeclarationIdentifier(node)) {
+    return false;
+  }
+  const parent = node.parent;
+  if (
+    (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+    ts.isQualifiedName(parent) ||
+    (ts.isPropertyAssignment(parent) && parent.name === node) ||
+    (ts.isMethodDeclaration(parent) && parent.name === node) ||
+    (ts.isPropertyDeclaration(parent) && parent.name === node) ||
+    (ts.isGetAccessorDeclaration(parent) && parent.name === node) ||
+    (ts.isSetAccessorDeclaration(parent) && parent.name === node) ||
+    ts.isImportSpecifier(parent) ||
+    ts.isExportSpecifier(parent) ||
+    ts.isImportClause(parent) ||
+    ts.isNamespaceImport(parent) ||
+    ts.isNamespaceExport(parent) ||
+    ts.isLabeledStatement(parent) ||
+    ts.isBreakOrContinueStatement(parent)
+  ) {
+    return false;
+  }
+
+  let current: ts.Node = node;
+  while (current.parent) {
+    const currentParent = current.parent;
+    if (ts.isExpressionWithTypeArguments(currentParent)) {
+      const heritageClause = currentParent.parent;
+      if (!ts.isHeritageClause(heritageClause)) {
+        return false;
+      }
+      const declaration = heritageClause.parent;
+      return (
+        heritageClause.token === ts.SyntaxKind.ExtendsKeyword &&
+        (ts.isClassDeclaration(declaration) || ts.isClassExpression(declaration))
+      );
+    }
+    if (ts.isTypeNode(currentParent)) {
+      return false;
+    }
+    if (!ts.isQualifiedName(currentParent)) {
+      break;
+    }
+    current = currentParent;
+  }
+  return true;
+}
+
+function isDeclarationIdentifier(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  return Boolean(
+    (ts.isVariableDeclaration(parent) && parent.name === node) ||
+      (ts.isBindingElement(parent) && parent.name === node) ||
+      (ts.isParameter(parent) && parent.name === node) ||
+      (ts.isFunctionDeclaration(parent) && parent.name === node) ||
+      (ts.isFunctionExpression(parent) && parent.name === node) ||
+      (ts.isClassDeclaration(parent) && parent.name === node) ||
+      (ts.isClassExpression(parent) && parent.name === node) ||
+      (ts.isInterfaceDeclaration(parent) && parent.name === node) ||
+      (ts.isTypeAliasDeclaration(parent) && parent.name === node) ||
+      (ts.isTypeParameterDeclaration(parent) && parent.name === node) ||
+      (ts.isEnumDeclaration(parent) && parent.name === node) ||
+      (ts.isModuleDeclaration(parent) && parent.name === node) ||
+      (ts.isImportEqualsDeclaration(parent) && parent.name === node),
+  );
 }
 
 interface TypeModuleReference {

@@ -79,11 +79,11 @@ describe('generic Git source validation', () => {
     }
   });
 
-  it('validates optional branch and subdirectory with server-compatible rules', () => {
-    expect(validateGitBranch('')).toEqual({ valid: true, branch: null });
+  it('requires a valid branch and validates the optional subdirectory with server-compatible rules', () => {
+    expect(validateGitBranch('')).toEqual({ valid: false, reason: 'required' });
     expect(validateGitBranch('feature/sync')).toEqual({ valid: true, branch: 'feature/sync' });
-    expect(validateGitBranch(' feature/sync ')).toEqual({ valid: false });
-    expect(validateGitBranch('unsafe..branch')).toEqual({ valid: false });
+    expect(validateGitBranch(' feature/sync ')).toEqual({ valid: false, reason: 'invalid' });
+    expect(validateGitBranch('unsafe..branch')).toEqual({ valid: false, reason: 'invalid' });
     expect(validateGitSubdirectory('packages/light-extension')).toEqual({
       valid: true,
       subdirectory: 'packages/light-extension',
@@ -114,11 +114,22 @@ describe('LightExtensionGitSourceFields', () => {
     );
   });
 
-  it('requires a Secret reference for SSH and emits only the reference', async () => {
+  it('allows SSH without a credential and emits a Secret reference when selected', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
     await user.type(screen.getByRole('textbox', { name: 'Git repository URL' }), 'git@git.example.com:team/app.git');
-    await waitFor(() => expect(onValidSourceChange).toHaveBeenLastCalledWith(undefined));
+    await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'git',
+        config: {
+          url: 'ssh://git@git.example.com/team/app.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'ssh',
+        },
+      }),
+    );
 
     await user.click(screen.getByRole('combobox', { name: 'Git credential' }));
     await user.click(await screen.findByText('SYNC_SECRET'));
@@ -127,7 +138,7 @@ describe('LightExtensionGitSourceFields', () => {
         provider: 'git',
         config: {
           url: 'ssh://git@git.example.com/team/app.git',
-          branch: null,
+          branch: 'main',
           subdirectory: null,
           transport: 'ssh',
         },
@@ -135,6 +146,30 @@ describe('LightExtensionGitSourceFields', () => {
       }),
     );
     expect(JSON.stringify(onValidSourceChange.mock.calls.at(-1))).not.toMatch(/privateKey|knownHosts|passphrase/);
+  });
+
+  it('emits a literal token for a private HTTPS repository', async () => {
+    const user = userEvent.setup();
+    const onValidSourceChange = renderFields();
+    await user.type(
+      screen.getByRole('textbox', { name: 'Git repository URL' }),
+      'https://git.example.com/team/app.git',
+    );
+    await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
+    await user.type(screen.getByRole('combobox', { name: 'Git credential' }), 'github_pat_direct_123');
+
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'git',
+        config: {
+          url: 'https://git.example.com/team/app.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'https',
+        },
+        authRef: 'github_pat_direct_123',
+      }),
+    );
   });
 
   it('shows URL, branch, and subdirectory errors and gates the valid source', async () => {
@@ -148,6 +183,10 @@ describe('LightExtensionGitSourceFields', () => {
     await user.clear(urlInput);
     await user.type(urlInput, 'https://git.example.com/team/repo.git');
     const branchInput = screen.getByRole('textbox', { name: 'Branch' });
+    await user.click(branchInput);
+    await user.tab();
+    expect(await screen.findByText('Git branch is required')).toBeInTheDocument();
+
     await user.type(branchInput, 'unsafe..branch');
     await user.tab();
     expect(await screen.findByText('Git branch is invalid')).toBeInTheDocument();

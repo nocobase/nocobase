@@ -178,7 +178,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     if (expectedRevision !== null) {
       requireGitOid(expectedRevision, 'expected-revision');
     }
-    const context = await this.createContext(target, 'required');
+    const context = await this.createContext(target, 'optional');
     const files = normalizePublishedGitFiles(snapshot.files, this.limits);
     const contentHash = computeRemoteSnapshotContentHash(files);
     const current = await this.probeBranch(
@@ -287,8 +287,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     authRef: unknown,
     requestedMode: RemoteCredentialMode,
   ): Promise<GitRemoteCredential | null> {
-    const mode = transport === 'ssh' ? 'required' : requestedMode;
-    const rawCredential = await this.credentialResolver.resolve(authRef, mode);
+    const rawCredential = await this.credentialResolver.resolve(authRef, requestedMode);
     return rawCredential === null ? null : parseGitRemoteCredential(rawCredential, transport);
   }
 

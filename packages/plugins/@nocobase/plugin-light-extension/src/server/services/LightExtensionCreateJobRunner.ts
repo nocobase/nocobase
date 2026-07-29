@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { randomUUID } from 'crypto';
-
 import { isLightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
+import type { LightExtensionCreateJobRecord } from '../../shared/types';
 import { RemoteSyncError } from '../vsc-file/public-api';
 import { LightExtensionCreateJobExecutor } from './LightExtensionCreateJobExecutor';
 import { LightExtensionCreateJobStore } from './LightExtensionCreateJobStore';
@@ -34,30 +33,23 @@ export interface LightExtensionCreateJobRunnerOptions {
   applicationName: string;
   eventQueue: LightExtensionCreateJobEventQueue;
   logger: LightExtensionCreateJobLogger;
-  leaseOwner?: string;
-  leaseDurationMs?: number;
-  scanIntervalMs?: number;
-  shutdownTimeoutMs?: number;
+  cleanupIntervalMs?: number;
+  pendingTimeoutMs?: number;
+  runningTimeoutMs?: number;
 }
 
 const queueChannel = 'light-extension.create-jobs';
 
 export class LightExtensionCreateJobRunner {
-  private readonly leaseOwner: string;
+  private readonly cleanupIntervalMs: number;
 
-  private readonly leaseDurationMs: number;
+  private readonly pendingTimeoutMs: number;
 
-  private readonly scanIntervalMs: number;
-
-  private readonly shutdownTimeoutMs: number;
+  private readonly runningTimeoutMs: number;
 
   private started = false;
 
-  private stopping = false;
-
-  private scanTimer?: ReturnType<typeof setInterval>;
-
-  private scanPromise?: Promise<void>;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly store: LightExtensionCreateJobStore,
@@ -65,29 +57,29 @@ export class LightExtensionCreateJobRunner {
     private readonly options: LightExtensionCreateJobRunnerOptions,
     private readonly auditService?: LightExtensionAuditService,
   ) {
-    this.leaseOwner = options.leaseOwner || `${options.applicationName}:${process.pid}:${randomUUID()}`;
-    this.leaseDurationMs = options.leaseDurationMs ?? 30_000;
-    this.scanIntervalMs = options.scanIntervalMs ?? 5_000;
-    this.shutdownTimeoutMs = options.shutdownTimeoutMs ?? 5_000;
+    this.cleanupIntervalMs = options.cleanupIntervalMs ?? 60_000;
+    this.pendingTimeoutMs = options.pendingTimeoutMs ?? 5 * 60_000;
+    this.runningTimeoutMs = options.runningTimeoutMs ?? 10 * 60_000;
   }
 
   async start(): Promise<void> {
     if (this.started) {
-      await this.runOnce();
       return;
     }
     this.started = true;
-    this.stopping = false;
     this.options.eventQueue.subscribe(queueChannel, {
       concurrency: 1,
-      idle: () => !this.stopping,
-      process: async () => {
-        await this.runOnce();
+      idle: () => this.started,
+      process: async (message) => {
+        const jobId = getJobId(message);
+        if (jobId) {
+          await this.run(jobId);
+        }
       },
     });
-    this.scanTimer = setInterval(() => this.runScheduledScan(), this.scanIntervalMs);
-    this.scanTimer.unref();
-    await this.runScheduledScan();
+    await this.cleanupStale();
+    this.cleanupTimer = setInterval(() => this.cleanupStale(), this.cleanupIntervalMs);
+    this.cleanupTimer.unref();
   }
 
   async stop(): Promise<void> {
@@ -95,250 +87,112 @@ export class LightExtensionCreateJobRunner {
       return;
     }
     this.started = false;
-    this.stopping = true;
     this.options.eventQueue.unsubscribe(queueChannel);
-    if (this.scanTimer) {
-      clearInterval(this.scanTimer);
-      this.scanTimer = undefined;
-    }
-    const current = this.scanPromise;
-    if (current) {
-      await this.waitForCurrentScan(current);
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
     }
   }
 
-  scheduleWake(jobId: string): void {
-    setImmediate(() => this.publishWake(jobId));
+  async publish(jobId: string): Promise<void> {
+    await this.options.eventQueue.publish(queueChannel, { jobId });
   }
 
-  async runOnce(): Promise<void> {
-    if (this.scanPromise) {
-      return this.scanPromise;
-    }
-    const scan = this.scan();
-    this.scanPromise = scan;
-    try {
-      await scan;
-    } finally {
-      if (this.scanPromise === scan) {
-        this.scanPromise = undefined;
-      }
-    }
-  }
-
-  private async publishWake(jobId: string): Promise<void> {
-    try {
-      await this.options.eventQueue.publish(queueChannel, { jobId });
-    } catch {
-      this.options.logger.warn('Light extension create-job wake publish failed', { jobId });
-    }
-  }
-
-  private async runScheduledScan(): Promise<void> {
-    try {
-      await this.runOnce();
-    } catch (error) {
-      this.options.logger.error('Light extension create-job recovery scan failed', safeErrorMeta(error));
-    }
-  }
-
-  private async scan(): Promise<void> {
-    if (this.stopping) {
+  async run(jobId: string): Promise<void> {
+    const job = await this.store.start(jobId, this.options.applicationName);
+    if (!job) {
       return;
     }
-    await this.store.cleanupSucceeded(this.options.applicationName);
-    while (!this.stopping) {
-      const job = await this.store.claimPendingOrExpired(this.options.applicationName, {
-        leaseOwner: this.leaseOwner,
-        leaseDurationMs: this.leaseDurationMs,
-      });
-      if (!job?.claimToken) {
-        return;
-      }
-      const outcome = await this.executeClaimed(job.id, job.claimToken, job.recoveryOnly);
-      if (outcome === 'defer') {
-        return;
-      }
-    }
-  }
-
-  private async executeClaimed(
-    jobId: string,
-    claimToken: string,
-    recoveryOnly: boolean,
-  ): Promise<'continue' | 'defer'> {
     const startedAt = Date.now();
-    const heartbeat = new ClaimHeartbeat(this.store, jobId, claimToken, this.leaseDurationMs, this.options.logger);
-    heartbeat.start();
+    await this.recordAuditBestEffort(job, 'createJobStart', 'success');
     try {
-      const job = await this.store.get(jobId);
-      await this.recordAuditBestEffort({
-        jobId: job.id,
-        targetRepoId: job.targetRepoId,
-        sourceType: job.sourceType,
-        action: 'createJobStart',
-        result: 'success',
-        requestId: job.requestId,
-        actorUserId: job.actorUserId,
-      });
-      const repoId = await this.executor.execute(job, { recoveryOnly });
-      await this.store.succeed(jobId, claimToken, repoId);
-      await this.recordAuditBestEffort({
-        jobId: job.id,
-        targetRepoId: job.targetRepoId,
-        sourceType: job.sourceType,
-        action: 'createJobSucceed',
-        result: 'success',
-        requestId: job.requestId,
-        actorUserId: job.actorUserId,
-        durationMs: Date.now() - startedAt,
-      });
+      await this.executor.execute(job);
+      const completed = await this.store.complete(job.id, this.options.applicationName);
+      if (!completed) {
+        await this.cleanupJob(job);
+        this.options.logger.warn('Light extension create job finished after it expired', { jobId: job.id });
+        return;
+      }
+      await this.recordAuditBestEffort(job, 'createJobSucceed', 'success', undefined, Date.now() - startedAt);
       this.options.logger.info('Light extension create job succeeded', {
-        jobId,
+        jobId: job.id,
         sourceType: job.sourceType,
         targetRepoId: job.targetRepoId,
       });
-      return 'continue';
     } catch (error) {
       const safeError = normalizeCreateJobError(error);
-      const job = await this.getJobBestEffort(jobId);
-      heartbeat.stop();
-      if (job && job.attempt < job.maxAttempts && isRetryableCreateJobError(error)) {
-        try {
-          await this.store.requeue(jobId, claimToken);
-          this.options.logger.warn('Light extension create job will retry', {
-            jobId,
-            attempt: job.attempt,
-            maxAttempts: job.maxAttempts,
-            errorCode: safeError.code,
-          });
-        } catch (storeError) {
-          this.options.logger.warn('Light extension create-job retry was not persisted', {
-            jobId,
-            ...safeErrorMeta(storeError),
-          });
-        }
-        return 'defer';
-      }
       try {
-        await this.store.fail(jobId, claimToken, safeError.code, safeError.message);
+        await this.store.fail(job.id, this.options.applicationName, safeError.code, safeError.message);
       } catch (storeError) {
-        this.options.logger.warn('Light extension create-job result was not persisted', {
-          jobId,
+        this.options.logger.warn('Light extension create-job failure was not persisted', {
+          jobId: job.id,
           ...safeErrorMeta(storeError),
         });
       }
-      if (job) {
-        await this.recordAuditBestEffort({
-          jobId: job.id,
-          targetRepoId: job.targetRepoId,
-          sourceType: job.sourceType,
-          action: 'createJobFail',
-          result: 'blocked',
-          requestId: job.requestId,
-          actorUserId: job.actorUserId,
-          reasonCode: safeError.code,
-          durationMs: Date.now() - startedAt,
-        });
+      await this.cleanupJob(job);
+      await this.recordAuditBestEffort(job, 'createJobFail', 'blocked', safeError.code, Date.now() - startedAt);
+      this.options.logger.warn('Light extension create job failed', { jobId: job.id, errorCode: safeError.code });
+    }
+  }
+
+  private async cleanupStale(): Promise<void> {
+    try {
+      const jobs = await this.store.failStale(this.options.applicationName, {
+        pendingTimeoutMs: this.pendingTimeoutMs,
+        runningTimeoutMs: this.runningTimeoutMs,
+      });
+      for (const job of jobs) {
+        await this.cleanupJob(job);
+        await this.recordAuditBestEffort(job, 'createJobFail', 'blocked', job.errorCode || undefined);
       }
-      this.options.logger.warn('Light extension create job failed', { jobId, errorCode: safeError.code });
-      return 'continue';
-    } finally {
-      heartbeat.stop();
-    }
-  }
-
-  private async waitForCurrentScan(current: Promise<void>): Promise<void> {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const timedOut = new Promise<'timeout'>((resolve) => {
-      timeout = setTimeout(() => resolve('timeout'), this.shutdownTimeoutMs);
-      timeout.unref();
-    });
-    try {
-      const result = await Promise.race([current.then(() => 'settled' as const), timedOut]);
-      if (result === 'timeout') {
-        this.options.logger.warn('Light extension create-job shutdown wait timed out', {
-          timeoutMs: this.shutdownTimeoutMs,
-        });
-      }
-    } finally {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    }
-  }
-
-  private async getJobBestEffort(jobId: string) {
-    try {
-      return await this.store.get(jobId);
-    } catch {
-      return null;
-    }
-  }
-
-  private async recordAuditBestEffort(
-    input: Parameters<LightExtensionAuditService['recordCreateJobEvent']>[0],
-  ): Promise<void> {
-    try {
-      await this.auditService?.recordCreateJobEvent(input);
-    } catch {
-      // Durable job execution must not depend on audit persistence availability.
-    }
-  }
-}
-
-class ClaimHeartbeat {
-  private timer?: ReturnType<typeof setInterval>;
-
-  constructor(
-    private readonly store: LightExtensionCreateJobStore,
-    private readonly jobId: string,
-    private readonly claimToken: string,
-    private readonly leaseDurationMs: number,
-    private readonly logger: LightExtensionCreateJobLogger,
-  ) {}
-
-  start(): void {
-    const intervalMs = Math.max(250, Math.floor(this.leaseDurationMs / 3));
-    this.timer = setInterval(() => this.renew(), intervalMs);
-    this.timer.unref();
-  }
-
-  stop(): void {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
-  }
-
-  private async renew(): Promise<void> {
-    try {
-      await this.store.heartbeat(this.jobId, this.claimToken, this.leaseDurationMs);
     } catch (error) {
-      this.stop();
-      this.logger.warn('Light extension create-job heartbeat stopped', {
-        jobId: this.jobId,
+      this.options.logger.error('Light extension create-job cleanup failed', safeErrorMeta(error));
+    }
+  }
+
+  private async cleanupJob(job: LightExtensionCreateJobRecord): Promise<void> {
+    try {
+      await this.executor.cleanup(job);
+    } catch (error) {
+      this.options.logger.warn('Light extension failed-creation cleanup failed', {
+        jobId: job.id,
+        targetRepoId: job.targetRepoId,
         ...safeErrorMeta(error),
       });
     }
   }
+
+  private async recordAuditBestEffort(
+    job: LightExtensionCreateJobRecord,
+    action: 'createJobStart' | 'createJobSucceed' | 'createJobFail',
+    result: 'success' | 'blocked',
+    reasonCode?: string,
+    durationMs?: number,
+  ): Promise<void> {
+    try {
+      await this.auditService?.recordCreateJobEvent({
+        jobId: job.id,
+        targetRepoId: job.targetRepoId,
+        sourceType: job.sourceType,
+        action,
+        result,
+        requestId: job.requestId,
+        actorUserId: job.actorUserId,
+        reasonCode,
+        durationMs,
+      });
+    } catch {
+      // Job execution must not depend on audit persistence availability.
+    }
+  }
 }
 
-function isRetryableCreateJobError(error: unknown): boolean {
-  if (error instanceof RemoteSyncError) {
-    return ['BUSY', 'RATE_LIMITED', 'REMOTE_UNAVAILABLE'].includes(error.code);
+function getJobId(message: unknown): string | null {
+  if (!message || typeof message !== 'object' || !('jobId' in message)) {
+    return null;
   }
-  if (isLightExtensionError(error)) {
-    return [
-      'LIGHT_EXTENSION_IDEMPOTENCY_IN_PROGRESS',
-      'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
-      'LIGHT_EXTENSION_SOURCE_ERROR',
-      'LIGHT_EXTENSION_SYNC_BUSY',
-      'LIGHT_EXTENSION_SYNC_RATE_LIMITED',
-      'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE',
-    ].includes(error.code);
-  }
-  return true;
+  const jobId = message.jobId;
+  return typeof jobId === 'string' && jobId ? jobId : null;
 }
 
 function normalizeCreateJobError(error: unknown): { code: string; message: string } {

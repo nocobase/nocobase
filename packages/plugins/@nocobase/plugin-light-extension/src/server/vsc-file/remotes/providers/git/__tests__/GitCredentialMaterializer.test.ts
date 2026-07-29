@@ -94,12 +94,27 @@ describe('GitCredentialMaterializer', () => {
     await expect(access(knownHostsPath)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  it('rejects missing or malformed SSH credentials without leaving temporary resources', async () => {
-    const missing = await captureError(() => materializer.materialize({ transport: 'ssh' }));
-    expect(missing).toMatchObject({
-      code: 'CREDENTIAL_UNAVAILABLE',
-      details: { reasonCode: 'credential-required' },
-    });
+  it('uses the process user SSH environment when the credential is omitted', async () => {
+    const originalAgent = process.env.SSH_AUTH_SOCK;
+    process.env.SSH_AUTH_SOCK = '/run/user/1000/ssh-agent.sock';
+    try {
+      const result = await materializer.materialize({ transport: 'ssh' });
+      expect(result.environment).toMatchObject({
+        HOME: process.env.HOME || os.homedir(),
+        SSH_AUTH_SOCK: '/run/user/1000/ssh-agent.sock',
+      });
+      expect(result.environment).not.toHaveProperty('GIT_SSH');
+      await result.cleanup();
+    } finally {
+      if (originalAgent === undefined) {
+        delete process.env.SSH_AUTH_SOCK;
+      } else {
+        process.env.SSH_AUTH_SOCK = originalAgent;
+      }
+    }
+  });
+
+  it('rejects malformed SSH credentials without leaving temporary resources', async () => {
     const malformed = await captureError(() =>
       materializer.materialize({
         transport: 'ssh',

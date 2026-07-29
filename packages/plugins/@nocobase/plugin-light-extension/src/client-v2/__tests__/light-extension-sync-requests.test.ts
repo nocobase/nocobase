@@ -53,7 +53,7 @@ describe('light-extension sync requests', () => {
       {
         name: 'sales',
         provider: 'git',
-        config: { ...gitConfig(), branch: null, subdirectory: 'sales' },
+        config: { ...gitConfig(), subdirectory: 'sales' },
         authRef: '{{ $env.GITHUB_SYNC }}',
       },
     ],
@@ -115,18 +115,30 @@ describe('light-extension sync requests', () => {
         repoId: 'repo-1',
         provider: 'git',
         config: gitConfig(),
-        authRef: 'github_pat_test_direct_123',
-      }),
-    ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
-    await expect(
-      requestLightExtensionSync(api, 'configure', {
-        repoId: 'repo-1',
-        provider: 'git',
-        config: gitConfig(),
         authRef: 'Bearer {{ $env.GITHUB_SYNC }}',
       }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     expect(request).not.toHaveBeenCalled();
+  });
+
+  it('accepts a literal token in authRef', async () => {
+    const request = vi.fn().mockResolvedValue({ data: { data: { ok: true } } });
+    const api: ApiClientLike = { request };
+    const input = {
+      repoId: 'repo-1',
+      provider: 'git' as const,
+      config: gitConfig(),
+      authRef: 'github_pat_test_direct_123',
+    };
+
+    await requestLightExtensionSync(api, 'configure', input);
+
+    expect(request).toHaveBeenCalledWith({
+      url: 'lightExtensionSync:configure',
+      method: 'post',
+      data: input,
+      skipNotify: true,
+    });
   });
 
   it('rejects fields outside the facade contract', async () => {
@@ -148,6 +160,20 @@ describe('light-extension sync requests', () => {
         planFingerprint: 'plan-1',
         jobId: 'job-internal',
       } as unknown as LightExtensionSyncPullInput),
+    ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('rejects a Git config without a branch', async () => {
+    const request = vi.fn();
+    const api: ApiClientLike = { request };
+
+    await expect(
+      requestLightExtensionSync(api, 'createFromGit', {
+        name: 'sales',
+        provider: 'git',
+        config: { ...gitConfig(), branch: null },
+      }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     expect(request).not.toHaveBeenCalled();
   });

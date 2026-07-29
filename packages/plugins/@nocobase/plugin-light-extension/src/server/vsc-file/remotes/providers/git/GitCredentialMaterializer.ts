@@ -12,7 +12,6 @@ import os from 'node:os';
 import path from 'node:path';
 
 import type { VscGitRemoteTransport } from '../../../../../shared/vsc-file/remote-sync-types';
-import { RemoteSyncError } from '../../RemoteSyncAdapter';
 import { parseGitRemoteCredential } from './gitConfig';
 
 export const gitCommandTemporaryDirectoryPrefix = 'nocobase-git-command-';
@@ -72,12 +71,6 @@ export class GitCredentialMaterializer {
       request.credential === null || request.credential === undefined
         ? null
         : parseGitRemoteCredential(request.credential, request.transport);
-    if (request.transport === 'ssh' && credential === null) {
-      throw new RemoteSyncError('CREDENTIAL_UNAVAILABLE', 'SSH remote credential is required', {
-        details: { provider: 'git', reasonCode: 'credential-required' },
-      });
-    }
-
     await mkdir(this.temporaryDirectory, { recursive: true, mode: 0o700 });
     const rootDirectory = await mkdtemp(path.join(this.temporaryDirectory, gitCommandTemporaryDirectoryPrefix));
     let cleaned = false;
@@ -109,6 +102,13 @@ export class GitCredentialMaterializer {
         HOME: homeDirectory,
         XDG_CONFIG_HOME: xdgConfigDirectory,
       };
+
+      if (request.transport === 'ssh' && credential === null) {
+        environment.HOME = process.env.HOME || os.homedir();
+        if (process.env.SSH_AUTH_SOCK) {
+          environment.SSH_AUTH_SOCK = process.env.SSH_AUTH_SOCK;
+        }
+      }
 
       if (credential?.kind === 'https') {
         const askpassPath = path.join(credentialDirectory, 'askpass.sh');

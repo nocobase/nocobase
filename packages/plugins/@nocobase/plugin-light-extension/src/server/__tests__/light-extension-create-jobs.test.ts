@@ -25,7 +25,7 @@ describe('light extension durable creation jobs', () => {
       enqueue: vi.fn(async () => job),
     } as unknown as LightExtensionCreateJobStore;
     const runner = {
-      scheduleWake: vi.fn(),
+      publish: vi.fn(async () => undefined),
     } as unknown as LightExtensionCreateJobRunner;
     const repoService = {
       normalizeCreateMetadata: vi.fn(() => ({
@@ -82,7 +82,7 @@ describe('light extension durable creation jobs', () => {
       }),
       expect.anything(),
     );
-    expect(runner.scheduleWake).toHaveBeenCalledWith(job.id);
+    expect(runner.publish).toHaveBeenCalledWith(job.id);
     expect(runtimeCompileService.compileCurrentRuntime).not.toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe('light extension durable creation jobs', () => {
       } as unknown as LightExtensionRepoService,
       {} as LightExtensionRuntimeCompileService,
       store,
-      { scheduleWake: vi.fn() } as unknown as LightExtensionCreateJobRunner,
+      { publish: vi.fn() } as unknown as LightExtensionCreateJobRunner,
       'main',
       { recordCreateJobEvent: vi.fn(async () => undefined) } as never,
     );
@@ -112,7 +112,7 @@ describe('light extension durable creation jobs', () => {
     expect(store.enqueue).not.toHaveBeenCalled();
   });
 
-  it('builds summaries without payload, auth, lease, claim, or actor fields', () => {
+  it('builds summaries without payload, auth, or actor fields', () => {
     const summary = toCreateJobSummary(
       createJobRecord({
         payload: {
@@ -121,15 +121,11 @@ describe('light extension durable creation jobs', () => {
           config: { url: 'https://example.test/repo.git' },
           authRef: '{{ $env.SECRET_TOKEN }}',
         },
-        claimToken: 'claim-secret',
-        leaseOwner: 'worker-secret',
       }),
     );
     const serialized = JSON.stringify(summary);
 
     expect(serialized).not.toContain('SECRET_TOKEN');
-    expect(serialized).not.toContain('claim-secret');
-    expect(serialized).not.toContain('worker-secret');
     expect(summary).not.toHaveProperty('payload');
     expect(summary).not.toHaveProperty('actorUserId');
   });
@@ -147,16 +143,9 @@ function createJobRecord(overrides: Partial<LightExtensionCreateJobRecord> = {})
     sourceType: 'template',
     status: 'pending',
     payload: { sourceType: 'template', message: 'Initial light extension source' },
-    resultRepoId: null,
     errorCode: null,
     errorMessage: null,
     reservationKey: 'sha256:reservation',
-    claimToken: null,
-    leaseOwner: null,
-    leaseExpiresAt: null,
-    heartbeatAt: null,
-    attempt: 0,
-    maxAttempts: 3,
     actorUserId: '7',
     requestId: 'request-1',
     startedAt: null,

@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type {
-  LightExtensionCreateJobDismissResult,
-  LightExtensionCreateJobListResult,
-  LightExtensionCreateJobRetryResult,
-} from '../../shared/types';
+import type { LightExtensionCreateJobDismissResult, LightExtensionCreateJobListResult } from '../../shared/types';
 import type { ApiClientLike } from './lightExtensionEntriesRequests';
 import { unwrapResourceResponse } from './lightExtensionEntriesRequests';
 
@@ -29,19 +25,6 @@ export async function listLightExtensionCreateJobs(
     url: 'lightExtensionCreateJobs:list',
     method: 'post',
     signal,
-    skipNotify: true,
-  });
-  return unwrapResourceResponse(response);
-}
-
-export async function retryLightExtensionCreateJob(
-  api: ApiClientLike,
-  jobId: string,
-): Promise<LightExtensionCreateJobRetryResult> {
-  const response = await api.request<ResourceResponse<LightExtensionCreateJobRetryResult>>({
-    url: 'lightExtensionCreateJobs:retry',
-    method: 'post',
-    data: { jobId: requireJobId(jobId) },
     skipNotify: true,
   });
   return unwrapResourceResponse(response);

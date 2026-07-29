@@ -142,6 +142,14 @@ describe('git remote credential contract', () => {
     });
   });
 
+  it('maps a literal HTTPS token to oauth2 credentials', () => {
+    expect(parseGitRemoteCredential('github_pat_direct_123', 'https')).toEqual({
+      kind: 'https',
+      username: 'oauth2',
+      password: 'github_pat_direct_123',
+    });
+  });
+
   it.each([
     [{ kind: 'https', username: 'oauth2', password: '' }, 'https'],
     [{ kind: 'https', username: 'oauth2', password: 'secret', token: 'secret' }, 'https'],

@@ -88,16 +88,9 @@ const createJob = {
   sourceType: 'git' as const,
   status: 'pending' as const,
   payload: { sourceType: 'git', provider: 'git' },
-  resultRepoId: null,
   errorCode: null,
   errorMessage: null,
   reservationKey: 'sha256:reservation',
-  claimToken: null,
-  leaseOwner: null,
-  leaseExpiresAt: null,
-  heartbeatAt: null,
-  attempt: 0,
-  maxAttempts: 3,
   actorUserId: null,
   requestId: null,
   startedAt: null,
@@ -134,7 +127,7 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('"authRef":');
   });
 
-  it('rejects a direct token before persistence or remote access', async () => {
+  it('accepts a direct token while masking it from the response and request context', async () => {
     const directToken = 'github_pat_test_direct_123';
     const fixture = createFixture();
     const ctx = await runAction(
@@ -149,9 +142,11 @@ describe('lightExtensionSync resource', () => {
       ['manageSyncSource'],
     );
 
-    expect(ctx.status).toBe(400);
-    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
-    expect(fixture.runtime.testTarget).not.toHaveBeenCalled();
+    expect(ctx.status).toBeUndefined();
+    expect(fixture.runtime.testTarget).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
+    expect(fixture.runtime.configureRemote).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
+    expect(ctx.body).toMatchObject({ source: { credentialConfigured: true, authRefDisplay: '********' } });
+    expect(JSON.stringify(ctx)).not.toContain(directToken);
     expect(JSON.stringify(ctx.body)).not.toContain(directToken);
   });
 
@@ -316,7 +311,7 @@ describe('lightExtensionSync resource', () => {
       }),
       expect.anything(),
     );
-    expect(fixture.createJobRunner.scheduleWake).toHaveBeenCalledWith(createJob.id);
+    expect(fixture.createJobRunner.publish).toHaveBeenCalledWith(createJob.id);
     expect(ctx.body).toMatchObject({
       id: createJob.id,
       targetRepoId: createJob.targetRepoId,
@@ -666,7 +661,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     enqueue: vi.fn(async () => createJob),
   };
   const createJobRunner = {
-    scheduleWake: vi.fn(),
+    publish: vi.fn(async () => undefined),
   };
   const resource = createLightExtensionSyncResource({
     db,
@@ -982,9 +977,9 @@ describe('light-extension remote sync facade contract', () => {
   });
 
   it('freezes the durable creation job states, sources, actions, and safe summary boundary', () => {
-    const statuses: LightExtensionCreateJobStatus[] = ['pending', 'running', 'succeeded', 'failed'];
+    const statuses: LightExtensionCreateJobStatus[] = ['pending', 'running', 'failed'];
     const sourceTypes: LightExtensionCreateSourceType[] = ['template', 'zip', 'git'];
-    const actions: LightExtensionCreateJobActionName[] = ['list', 'retry', 'dismiss'];
+    const actions: LightExtensionCreateJobActionName[] = ['list', 'dismiss'];
     const record: LightExtensionCreateJobRecord = {
       id: 'job-1',
       applicationName: 'main',
@@ -996,16 +991,9 @@ describe('light-extension remote sync facade contract', () => {
       sourceType: 'git',
       status: 'pending',
       payload: { authRef: '{{ $env.GIT_SYNC_SECRET }}' },
-      resultRepoId: null,
       errorCode: null,
       errorMessage: null,
       reservationKey: 'main:sales',
-      claimToken: null,
-      leaseOwner: null,
-      leaseExpiresAt: null,
-      heartbeatAt: null,
-      attempt: 0,
-      maxAttempts: 3,
       actorUserId: 'user-1',
       requestId: 'request-1',
       startedAt: null,
@@ -1021,11 +1009,8 @@ describe('light-extension remote sync facade contract', () => {
       description: record.description,
       sourceType: record.sourceType,
       status: record.status,
-      resultRepoId: record.resultRepoId,
       errorCode: record.errorCode,
       errorMessage: record.errorMessage,
-      canRetry: false,
-      canDismiss: false,
       startedAt: record.startedAt,
       finishedAt: record.finishedAt,
       createdAt: record.createdAt,
@@ -1034,22 +1019,19 @@ describe('light-extension remote sync facade contract', () => {
     const internalFieldContract: {
       payload: 'payload' extends keyof LightExtensionCreateJobSummary ? true : false;
       reservationKey: 'reservationKey' extends keyof LightExtensionCreateJobSummary ? true : false;
-      claimToken: 'claimToken' extends keyof LightExtensionCreateJobSummary ? true : false;
       actorUserId: 'actorUserId' extends keyof LightExtensionCreateJobSummary ? true : false;
     } = {
       payload: false,
       reservationKey: false,
-      claimToken: false,
       actorUserId: false,
     };
 
-    expect(statuses).toEqual(['pending', 'running', 'succeeded', 'failed']);
+    expect(statuses).toEqual(['pending', 'running', 'failed']);
     expect(sourceTypes).toEqual(['template', 'zip', 'git']);
-    expect(actions).toEqual(['list', 'retry', 'dismiss']);
+    expect(actions).toEqual(['list', 'dismiss']);
     expect(internalFieldContract).toEqual({
       payload: false,
       reservationKey: false,
-      claimToken: false,
       actorUserId: false,
     });
     expect(JSON.stringify(summary)).not.toMatch(/payload|authRef|reservation|claim|lease|actor|requestId/iu);

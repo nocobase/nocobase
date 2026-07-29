@@ -18,6 +18,7 @@ import { RemoteSyncError } from '../../RemoteSyncAdapter';
 const maxUrlLength = 2048;
 const maxBranchLength = 255;
 const maxSubdirectoryLength = 1024;
+const maxLiteralTokenLength = 4096;
 const draftConfigKeys = new Set(['url', 'branch', 'subdirectory', 'transport']);
 
 export interface NormalizedVscGitRemoteConfigDraft {
@@ -59,7 +60,7 @@ export function normalizeGitRemoteConfig(input: unknown): VscGitRemoteConfig {
 }
 
 export function parseGitRemoteCredential(input: unknown, transport: VscGitRemoteTransport): GitRemoteCredential {
-  const value = parseCredentialValue(input);
+  const value = parseCredentialValue(input, transport);
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw credentialInvalid('Git remote credential must be a JSON object', 'invalid-credential-shape');
   }
@@ -241,13 +242,23 @@ function normalizeGitSubdirectory(value: unknown): string | null {
   return segments.join('/');
 }
 
-function parseCredentialValue(input: unknown): unknown {
+function parseCredentialValue(input: unknown, transport: VscGitRemoteTransport): unknown {
   if (typeof input !== 'string') {
     return input;
   }
   try {
     return JSON.parse(input) as unknown;
   } catch {
+    if (
+      transport === 'https' &&
+      input.length > 0 &&
+      input.length <= maxLiteralTokenLength &&
+      /^\S+$/u.test(input) &&
+      !input.includes('{{') &&
+      !input.includes('}}')
+    ) {
+      return { kind: 'https', username: 'oauth2', password: input };
+    }
     throw credentialInvalid('Git remote credential must contain valid JSON', 'invalid-credential-json');
   }
 }

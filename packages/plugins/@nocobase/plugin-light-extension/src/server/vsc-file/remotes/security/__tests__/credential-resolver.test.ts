@@ -10,6 +10,7 @@
 import type { Database } from '@nocobase/database';
 import { describe, expect, it } from 'vitest';
 
+import { serializeVscRemoteCredentialRef } from '../../credentialRef';
 import { RemoteSyncError } from '../../RemoteSyncAdapter';
 import { RemoteCredentialResolver } from '../RemoteCredentialResolver';
 
@@ -35,14 +36,16 @@ describe('RemoteCredentialResolver', () => {
     await expect(resolver.resolve('{{ $env.GITHUB_PAT }}')).resolves.toBe('rotated-secret-value');
   });
 
-  it('rejects a direct literal credential without reading Variables and secrets', async () => {
+  it('validates and resolves a direct literal token without reading Variables and secrets', async () => {
     const resolver = new RemoteCredentialResolver({
       db: createDatabase({}, false),
       environment: { getVariables: () => ({}) },
     });
 
-    await expect(resolver.validate('github_pat_test_direct_123')).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
-    await expect(resolver.resolve('github_pat_test_direct_123')).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
+    const validated = await resolver.validate('github_pat_test_direct_123');
+    expect(validated).toEqual({ token: 'github_pat_test_direct_123' });
+    expect(serializeVscRemoteCredentialRef(validated)).toBe('github_pat_test_direct_123');
+    await expect(resolver.resolve('github_pat_test_direct_123')).resolves.toBe('github_pat_test_direct_123');
   });
 
   it('allows an omitted optional credential but rejects an omitted required credential', async () => {
@@ -60,6 +63,7 @@ describe('RemoteCredentialResolver', () => {
 
   it.each([
     ['mixed expression', 'Bearer {{ $env.GITHUB_PAT }}'],
+    ['token with whitespace', 'github token'],
     ['ordinary variable', '{{ $env.PUBLIC_VALUE }}'],
     ['missing record', '{{ $env.MISSING }}'],
   ])('rejects %s without exposing a credential value', async (_caseName, authRef) => {

@@ -164,7 +164,7 @@ async function enqueueRepoCreation(
       transaction,
     );
   });
-  services.createJobRunner.scheduleWake(job.id);
+  await services.createJobRunner.publish(job.id);
   try {
     await services.auditService.recordCreateJobEvent({
       jobId: job.id,

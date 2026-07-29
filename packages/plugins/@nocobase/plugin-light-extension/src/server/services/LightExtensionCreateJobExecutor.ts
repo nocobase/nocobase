@@ -25,24 +25,12 @@ export class LightExtensionCreateJobExecutor {
     private readonly createFromRemoteService: LightExtensionCreateFromRemoteService,
   ) {}
 
-  async execute(job: LightExtensionCreateJobRecord, options: { recoveryOnly?: boolean } = {}): Promise<string> {
+  async execute(job: LightExtensionCreateJobRecord): Promise<string> {
     const existing = await this.repoService.findInternalRepoById(job.targetRepoId);
     if (existing) {
-      if (existing.healthStatus === 'ready') {
-        return existing.id;
-      }
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_SOURCE_ERROR',
-        'Existing light extension repository is not ready',
-        { details: { repoId: job.targetRepoId } },
-      );
-    }
-    if (options.recoveryOnly) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_SOURCE_ERROR',
-        'Light extension creation attempts were exhausted before the target repository became ready',
-        { details: { repoId: job.targetRepoId } },
-      );
+      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension creation target already exists', {
+        details: { repoId: job.targetRepoId },
+      });
     }
 
     const payload = requireJobPayload(job);
@@ -98,6 +86,21 @@ export class LightExtensionCreateJobExecutor {
       });
       return compiled.repo.id;
     });
+  }
+
+  async cleanup(job: LightExtensionCreateJobRecord): Promise<void> {
+    const existing = await this.repoService.findInternalRepoById(job.targetRepoId);
+    if (!existing) {
+      return;
+    }
+    await this.repoService.deleteRepo(
+      { repoId: job.targetRepoId },
+      {
+        actorUserId: job.actorUserId,
+        requestId: job.requestId || `create-job-cleanup:${job.id}`,
+        requestSource: `light-extension-create-job-cleanup:${job.sourceType}`,
+      },
+    );
   }
 }
 

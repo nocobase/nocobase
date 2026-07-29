@@ -69,16 +69,17 @@ describe('LightExtensionCredentialInput', () => {
     );
   });
 
-  it('does not accept a directly typed token as a selected value', async () => {
+  it('accepts a directly typed token as a credential value', async () => {
     const user = userEvent.setup();
     const onValidationChange = vi.fn();
     renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
 
     const input = screen.getByRole('combobox', { name: 'Git credential' });
     await user.type(input, 'direct-secret-value');
-    await user.keyboard('{Enter}');
 
-    expect(onValidationChange).not.toHaveBeenCalledWith(expect.objectContaining({ authRef: 'direct-secret-value' }));
+    await waitFor(() =>
+      expect(onValidationChange).toHaveBeenLastCalledWith({ valid: true, authRef: 'direct-secret-value' }),
+    );
   });
 
   it('rejects ordinary variables and missing Secrets supplied by existing drafts', async () => {
@@ -87,7 +88,9 @@ describe('LightExtensionCredentialInput', () => {
       <ControlledCredentialInput initialValue="{{ $env.PUBLIC_SETTING }}" onValidationChange={onValidationChange} />,
     );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Select an existing Secret variable');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Enter a valid token or select an existing Secret variable',
+    );
     await waitFor(() =>
       expect(onValidationChange).toHaveBeenLastCalledWith({ valid: false, reason: 'secret-not-found' }),
     );
@@ -119,7 +122,7 @@ describe('LightExtensionCredentialInput', () => {
     expect(expressionInput).toHaveAttribute('aria-describedby', alert.id);
   });
 
-  it('validates only empty values and exact known Secret references', () => {
+  it('validates empty values, literal tokens, and exact known Secret references', () => {
     const candidates = [{ name: 'SYNC_SECRET', authRef: formatLightExtensionSecretAuthRef('SYNC_SECRET') }];
 
     expect(validateLightExtensionCredential('', candidates)).toEqual({ valid: true });
@@ -133,11 +136,15 @@ describe('LightExtensionCredentialInput', () => {
     });
     expect(validateLightExtensionCredential('prefix {{ $env.SYNC_SECRET }}', candidates)).toEqual({
       valid: false,
-      reason: 'invalid-expression',
+      reason: 'invalid-credential',
     });
     expect(validateLightExtensionCredential('direct-secret-value', candidates)).toEqual({
+      valid: true,
+      authRef: 'direct-secret-value',
+    });
+    expect(validateLightExtensionCredential('token with spaces', candidates)).toEqual({
       valid: false,
-      reason: 'invalid-expression',
+      reason: 'invalid-credential',
     });
     expect(validateLightExtensionCredential('{{ $env.MISSING_SECRET }}', candidates)).toEqual({
       valid: false,

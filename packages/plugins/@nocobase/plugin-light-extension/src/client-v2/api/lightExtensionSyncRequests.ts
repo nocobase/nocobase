@@ -55,6 +55,7 @@ const syncActionUrls: Record<LightExtensionSyncActionName, string> = {
 const authRefActions = new Set<LightExtensionSyncActionName>(['configure', 'testConnection', 'createFromGit']);
 const sensitiveCredentialKeyPattern = /(token|authorization|password|secret|credential|privatekey)/i;
 const authRefPattern = /^\{\{ \$env\.[A-Za-z_][A-Za-z0-9_]* \}\}$/;
+const maxLiteralTokenLength = 4096;
 const actionFields: Record<LightExtensionSyncActionName, ReadonlySet<string>> = {
   get: new Set(['repoId']),
   configure: new Set(['repoId', 'provider', 'config', 'authRef']),
@@ -214,9 +215,20 @@ function validateAuthRef(action: LightExtensionSyncActionName, record: Record<st
   if (!authRefActions.has(action) || typeof record.authRef !== 'string') {
     throw new LightExtensionSyncRequestInputError();
   }
-  if (!authRefPattern.test(record.authRef)) {
+  if (!isCredentialInput(record.authRef)) {
     throw new LightExtensionSyncRequestInputError();
   }
+}
+
+function isCredentialInput(value: string): boolean {
+  return (
+    authRefPattern.test(value) ||
+    (value.length > 0 &&
+      value.length <= maxLiteralTokenLength &&
+      /^\S+$/u.test(value) &&
+      !value.includes('{{') &&
+      !value.includes('}}'))
+  );
 }
 
 function validateProvider(value: unknown): void {
@@ -229,9 +241,7 @@ function validateConfig(value: unknown): void {
   const config = requireRecord(value);
   assertOnlyFields(config, configFields);
   requireTrimmedString(config.url, false);
-  if (config.branch !== undefined && config.branch !== null) {
-    requireTrimmedString(config.branch, true);
-  }
+  requireTrimmedString(config.branch, false);
   if (config.subdirectory !== undefined && config.subdirectory !== null) {
     requireTrimmedString(config.subdirectory, true);
   }

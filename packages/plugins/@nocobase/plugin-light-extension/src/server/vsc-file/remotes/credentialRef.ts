@@ -10,10 +10,13 @@
 import { RemoteSyncError } from './RemoteSyncAdapter';
 
 const authRefPattern = /^\{\{ \$env\.([A-Za-z_][A-Za-z0-9_]*) \}\}$/;
+const maxLiteralTokenLength = 4096;
 const parsedAuthRefs = new WeakSet<object>();
 const validatedAuthRefs = new WeakSet<object>();
+const validatedLiteralTokens = new WeakSet<object>();
 declare const parsedAuthRefBrand: unique symbol;
 declare const validatedAuthRefBrand: unique symbol;
+declare const validatedLiteralTokenBrand: unique symbol;
 
 export interface ParsedVscRemoteAuthRef {
   readonly expression: string;
@@ -24,6 +27,13 @@ export interface ParsedVscRemoteAuthRef {
 export interface VscRemoteAuthRef extends ParsedVscRemoteAuthRef {
   readonly [validatedAuthRefBrand]: true;
 }
+
+export interface VscRemoteLiteralToken {
+  readonly token: string;
+  readonly [validatedLiteralTokenBrand]: true;
+}
+
+export type VscRemoteCredentialRef = VscRemoteAuthRef | VscRemoteLiteralToken;
 
 export interface VscRemoteAuthRefRecord {
   name: string;
@@ -60,6 +70,28 @@ export async function validateVscRemoteAuthRef(
   return parsed as VscRemoteAuthRef;
 }
 
+export async function validateVscRemoteCredentialRef(
+  input: unknown,
+  lookup: VscRemoteAuthRefLookup,
+): Promise<VscRemoteCredentialRef> {
+  if (typeof input === 'string' && authRefPattern.test(input)) {
+    return validateVscRemoteAuthRef(input, lookup);
+  }
+  if (
+    typeof input !== 'string' ||
+    input.length === 0 ||
+    input.length > maxLiteralTokenLength ||
+    !/^\S+$/u.test(input) ||
+    input.includes('{{') ||
+    input.includes('}}')
+  ) {
+    throw invalidAuthRef();
+  }
+  const token = Object.freeze({ token: input }) as VscRemoteLiteralToken;
+  validatedLiteralTokens.add(token);
+  return token;
+}
+
 export function serializeVscRemoteAuthRef(authRef: VscRemoteAuthRef): string {
   if (!parsedAuthRefs.has(authRef) || !validatedAuthRefs.has(authRef)) {
     throw invalidAuthRef();
@@ -67,6 +99,17 @@ export function serializeVscRemoteAuthRef(authRef: VscRemoteAuthRef): string {
   return authRef.expression;
 }
 
+export function serializeVscRemoteCredentialRef(credential: VscRemoteCredentialRef): string {
+  if (validatedLiteralTokens.has(credential)) {
+    return (credential as VscRemoteLiteralToken).token;
+  }
+  return serializeVscRemoteAuthRef(credential as VscRemoteAuthRef);
+}
+
+export function isVscRemoteLiteralToken(credential: VscRemoteCredentialRef): credential is VscRemoteLiteralToken {
+  return validatedLiteralTokens.has(credential);
+}
+
 function invalidAuthRef(): RemoteSyncError {
-  return new RemoteSyncError('AUTH_REF_INVALID', 'Remote authRef must be a complete secret environment expression');
+  return new RemoteSyncError('AUTH_REF_INVALID', 'Remote credential must be a Secret variable or token');
 }

@@ -49,6 +49,7 @@ import {
 const remoteName = 'origin';
 const redactedCredential = '[REDACTED]';
 const secretAuthRefPattern = /^\{\{ \$env\.[A-Za-z_][A-Za-z0-9_]* \}\}$/;
+const maxLiteralTokenLength = 4096;
 const sensitiveCredentialKeyPattern = /(token|authorization|password|secret|credential|privatekey|authref)/i;
 const credentialTransportKeyPattern = /(token|password|secret|credential|privatekey|authref)/i;
 
@@ -172,7 +173,9 @@ function createSyncAction(
       values.__rejectedCredentialInput = true;
       params.values = values;
     }
-    await action(ctx, next);
+    const actionPromise = action(ctx, next);
+    redactLiteralCredential(resourceCtx);
+    await actionPromise;
   };
 }
 
@@ -225,7 +228,7 @@ function sanitizeRejectedBodyCredentials(ctx: LightExtensionResourceContext): bo
     let rejected = false;
     for (const [key, child] of Object.entries(value)) {
       const normalizedKey = normalizeCredentialKey(key);
-      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isSecretAuthRef(child)));
+      const invalidAuthRef = key === 'authRef' && (!root || (child !== null && !isCredentialInput(child)));
       if (invalidAuthRef || (key !== 'authRef' && sensitiveCredentialKeyPattern.test(normalizedKey))) {
         value[key] = redactedCredential;
         rejected = true;
@@ -271,7 +274,7 @@ async function createFromGit(
       transaction,
     );
   });
-  services.createJobRunner.scheduleWake(job.id);
+  await services.createJobRunner.publish(job.id);
   try {
     await services.auditService.recordCreateJobEvent({
       jobId: job.id,
@@ -698,14 +701,37 @@ function requireNullableAuthRef(value: unknown): string | null {
   if (value === null) {
     return null;
   }
-  if (!isSecretAuthRef(value)) {
-    throw invalidInput('authRef must reference a Secret environment variable');
+  if (!isCredentialInput(value)) {
+    throw invalidInput('authRef must be a Secret environment variable or token');
   }
   return value;
 }
 
 function isSecretAuthRef(value: unknown): value is string {
   return typeof value === 'string' && secretAuthRefPattern.test(value);
+}
+
+function isLiteralToken(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= maxLiteralTokenLength &&
+    /^\S+$/u.test(value) &&
+    !value.includes('{{') &&
+    !value.includes('}}')
+  );
+}
+
+function isCredentialInput(value: unknown): value is string {
+  return isSecretAuthRef(value) || isLiteralToken(value);
+}
+
+function redactLiteralCredential(ctx: LightExtensionResourceContext): void {
+  const params = toMutableRecord(ctx.action?.params);
+  const values = toMutableRecord(params.values);
+  if (isLiteralToken(values.authRef)) {
+    values.authRef = redactedCredential;
+  }
 }
 
 function normalizeCredentialKey(key: string): string {

@@ -51,7 +51,6 @@ const mocks = vi.hoisted(() => ({
     error: null as Error | null,
     addAcceptedJob: vi.fn(),
     refresh: vi.fn(async () => undefined),
-    retry: vi.fn(),
     dismiss: vi.fn(),
     update: vi.fn(),
   },
@@ -100,11 +99,6 @@ vi.mock('../hooks/useLightExtensionCreateJobs', async () => {
           setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
         },
         refresh: mocks.createJobs.refresh,
-        retry: async (jobId) => {
-          const job = await mocks.createJobs.retry(jobId);
-          setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
-          return job;
-        },
         dismiss: async (jobId) => {
           await mocks.createJobs.dismiss(jobId);
           setJobs((current) => current.filter((job) => job.id !== jobId));
@@ -246,11 +240,8 @@ describe('LightExtensionListPage', () => {
       description: null,
       sourceType: 'template',
       status: 'pending',
-      resultRepoId: null,
       errorCode: null,
       errorMessage: null,
-      canRetry: false,
-      canDismiss: false,
       startedAt: null,
       finishedAt: null,
       createdAt: '2026-07-27T00:00:00.000Z',
@@ -292,11 +283,8 @@ describe('LightExtensionListPage', () => {
       description: null,
       sourceType: 'git',
       status: 'pending',
-      resultRepoId: null,
       errorCode: null,
       errorMessage: null,
-      canRetry: false,
-      canDismiss: false,
       startedAt: null,
       finishedAt: null,
       createdAt: '2026-07-27T00:00:00.000Z',
@@ -350,7 +338,13 @@ describe('LightExtensionListPage', () => {
       }),
     );
     expect(mocks.api.createRepo.mock.calls[0][0]).not.toHaveProperty('zipBase64');
-    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    const creationRow = await screen.findByRole('row', { name: /Browser smoke/ });
+    expect(within(creationRow).getByText('Creating')).toBeInTheDocument();
+    expect(within(creationRow).getByRole('checkbox', { name: 'Creation task Browser smoke' })).toBeDisabled();
+    const creationCells = within(creationRow).getAllByRole('cell');
+    expect(creationCells[3]).toBeEmptyDOMElement();
+    expect(creationCells[4]).toBeEmptyDOMElement();
+    expect(creationCells[5]).toBeEmptyDOMElement();
     expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
     expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
   });
@@ -364,11 +358,8 @@ describe('LightExtensionListPage', () => {
       description: null,
       sourceType: 'zip',
       status: 'pending',
-      resultRepoId: null,
       errorCode: null,
       errorMessage: null,
-      canRetry: false,
-      canDismiss: false,
       startedAt: null,
       finishedAt: null,
       createdAt: '2026-07-27T00:00:00.000Z',
@@ -412,6 +403,7 @@ describe('LightExtensionListPage', () => {
       within(dialog).getByRole('textbox', { name: 'Git repository URL' }),
       'https://git.example.com/nocobase/example.git',
     );
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(mocks.sync.createFromGit).toHaveBeenCalledTimes(1));
@@ -422,7 +414,7 @@ describe('LightExtensionListPage', () => {
       provider: 'git',
       config: {
         url: 'https://git.example.com/nocobase/example.git',
-        branch: null,
+        branch: 'main',
         subdirectory: null,
         transport: 'https',
       },
@@ -444,6 +436,7 @@ describe('LightExtensionListPage', () => {
     await userEvent.click(within(dialog).getByText('Git source'));
     const repositoryInput = within(dialog).getByRole('textbox', { name: 'Git repository URL' });
     await userEvent.type(repositoryInput, 'https://git.example.com/nocobase/example.git');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     expect(await screen.findByText('Git source could not be created')).toBeInTheDocument();
@@ -470,6 +463,7 @@ describe('LightExtensionListPage', () => {
       within(dialog).getByRole('textbox', { name: 'Git repository URL' }),
       'https://git.example.com/nocobase/example.git',
     );
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     expect(await screen.findByText('The Git remote is temporarily unavailable. Try again later.')).toBeInTheDocument();
@@ -495,14 +489,7 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByText('Creating')).toBeInTheDocument();
 
     await act(async () => {
-      mocks.createJobs.update([
-        createJobSummary({
-          status: 'succeeded',
-          resultRepoId: pending.targetRepoId,
-          finishedAt: '2026-07-27T00:00:02.000Z',
-          updatedAt: '2026-07-27T00:00:02.000Z',
-        }),
-      ]);
+      mocks.createJobs.update([]);
     });
 
     await waitFor(() => expect(mocks.api.listRepos).toHaveBeenCalledTimes(2));
@@ -510,45 +497,23 @@ describe('LightExtensionListPage', () => {
     expect(screen.getByRole('button', { name: 'Edit code' })).toBeInTheDocument();
     expect(screen.queryByText('Creating')).not.toBeInTheDocument();
     await act(async () => {
-      mocks.createJobs.update([
-        createJobSummary({
-          status: 'succeeded',
-          resultRepoId: pending.targetRepoId,
-          finishedAt: '2026-07-27T00:00:02.000Z',
-          updatedAt: '2026-07-27T00:00:02.000Z',
-        }),
-      ]);
+      mocks.createJobs.update([]);
     });
     expect(mocks.api.listRepos).toHaveBeenCalledTimes(2);
   });
 
-  it('retries a failed creation and dismisses it after confirmation', async () => {
+  it('automatically removes a failed creation', async () => {
     const failed = createJobSummary({
       status: 'failed',
       errorCode: 'LIGHT_EXTENSION_CREATE_FAILED',
       errorMessage: 'Safe failure',
-      canRetry: true,
-      canDismiss: true,
     });
     mocks.createJobs.initialJobs = [failed];
-    mocks.createJobs.retry.mockResolvedValue(
-      createJobSummary({ status: 'pending', updatedAt: '2026-07-27T00:00:02.000Z' }),
-    );
     renderListPage();
 
-    expect(await screen.findByText('Safe failure')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Retry creation Demo' }));
-    expect(await screen.findByText('Creating')).toBeInTheDocument();
-    expect(mocks.createJobs.retry).toHaveBeenCalledWith(failed.id);
-
-    await act(async () => {
-      mocks.createJobs.update([failed]);
-    });
-    await userEvent.click(screen.getByRole('button', { name: 'Remove failed creation Demo' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Remove failed creation?' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove failed creation' }));
     await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
     expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove failed creation Demo' })).not.toBeInTheDocument();
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -596,6 +561,7 @@ describe('LightExtensionListPage', () => {
       within(drawer).getByRole('textbox', { name: 'Git repository URL' }),
       'https://git.example.com/nocobase/example.git',
     );
+    await userEvent.type(within(drawer).getByRole('textbox', { name: 'Branch' }), 'main');
     await userEvent.click(within(drawer).getByRole('button', { name: 'Test connection' }));
     await waitFor(() =>
       expect(mocks.sync.testConnection).toHaveBeenCalledWith({
@@ -603,7 +569,7 @@ describe('LightExtensionListPage', () => {
         provider: 'git',
         config: {
           url: 'https://git.example.com/nocobase/example.git',
-          branch: null,
+          branch: 'main',
           subdirectory: null,
           transport: 'https',
         },
@@ -979,11 +945,8 @@ function createJobSummary(overrides: Partial<LightExtensionCreateJobSummary> = {
     description: null,
     sourceType: 'template',
     status: 'pending',
-    resultRepoId: null,
     errorCode: null,
     errorMessage: null,
-    canRetry: false,
-    canDismiss: false,
     startedAt: null,
     finishedAt: null,
     createdAt: '2026-07-27T00:00:00.000Z',

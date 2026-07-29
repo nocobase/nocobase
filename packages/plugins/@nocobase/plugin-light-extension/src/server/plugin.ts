@@ -399,7 +399,6 @@ export class PluginLightExtensionServer extends Plugin {
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCreateJobsResource({
         store: this.createJobStore,
-        runner: this.createJobRunner,
         permissionService: this.permissionService,
         applicationName: this.app.name,
         auditService: this.auditService,

@@ -13,11 +13,9 @@ import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCreateJobDismissResult,
   LightExtensionCreateJobListResult,
-  LightExtensionCreateJobRetryResult,
   LightExtensionCreateSourceType,
 } from '../../shared/types';
-import { LightExtensionCreateJobRunner } from '../services/LightExtensionCreateJobRunner';
-import { LightExtensionCreateJobStore, toCreateJobSummary } from '../services/LightExtensionCreateJobStore';
+import { LightExtensionCreateJobStore } from '../services/LightExtensionCreateJobStore';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import {
@@ -27,13 +25,12 @@ import {
   type ResourceActionInput,
 } from './resourceAction';
 
-export const lightExtensionCreateJobActionNames = ['list', 'retry', 'dismiss'] as const;
+export const lightExtensionCreateJobActionNames = ['list', 'dismiss'] as const;
 
 type LightExtensionCreateJobActionName = (typeof lightExtensionCreateJobActionNames)[number];
 
 interface LightExtensionCreateJobActionServices {
   store: LightExtensionCreateJobStore;
-  runner: LightExtensionCreateJobRunner;
   permissionService: LightExtensionPermissionService;
   applicationName: string;
   auditService: LightExtensionAuditService;
@@ -46,29 +43,11 @@ export function createLightExtensionCreateJobsResource(
     list: createTypedResourceAction({
       services,
       getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
-      run: async (currentServices, input, ctx): Promise<LightExtensionCreateJobListResult> => {
-        if (Object.keys(input).some((key) => typeof input[key] !== 'undefined')) {
-          throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Request contains unsupported fields');
-        }
+      run: async (currentServices, _input, ctx): Promise<LightExtensionCreateJobListResult> => {
         const actorUserId = requireActorUserId(ctx.actorUserId);
         return {
           jobs: await currentServices.store.listOwnVisibleJobs(currentServices.applicationName, actorUserId),
         };
-      },
-    }),
-    retry: createTypedResourceAction({
-      services,
-      getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
-      run: async (currentServices, input, ctx): Promise<LightExtensionCreateJobRetryResult> => {
-        assertOnlyJobId(input);
-        const actorUserId = requireActorUserId(ctx.actorUserId);
-        const jobId = requireJobId(input);
-        const job = await currentServices.store.getOwn(jobId, currentServices.applicationName, actorUserId);
-        await assertSourcePermissions(currentServices.permissionService, job.sourceType, ctx);
-        const retried = await currentServices.store.retry(job.id, currentServices.applicationName, actorUserId);
-        currentServices.runner.scheduleWake(retried.id);
-        await recordMutationAudit(currentServices.auditService, retried, 'createJobRetry');
-        return toCreateJobSummary(retried);
       },
     }),
     dismiss: createTypedResourceAction({
@@ -103,7 +82,7 @@ async function recordMutationAudit(
     requestId: string | null;
     actorUserId: string | null;
   },
-  action: 'createJobRetry' | 'createJobDismiss',
+  action: 'createJobDismiss',
 ): Promise<void> {
   try {
     await auditService.recordCreateJobEvent({
@@ -135,7 +114,7 @@ async function assertSourcePermissions(
 
 function assertOnlyJobId(input: ResourceActionInput): void {
   const keys = Object.keys(input).filter((key) => typeof input[key] !== 'undefined');
-  if (keys.some((key) => key !== 'jobId' && key !== 'filterByTk')) {
+  if (keys.some((key) => key !== 'resourceName' && key !== 'actionName' && key !== 'jobId' && key !== 'filterByTk')) {
     throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Request contains unsupported fields');
   }
 }

@@ -60,6 +60,7 @@ describe('LightExtensionCreateSourceSelector', () => {
       screen.getByRole('textbox', { name: 'Git repository URL' }),
       'https://git.example.com/nocobase/example.git',
     );
+    await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
 
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith({
@@ -67,7 +68,7 @@ describe('LightExtensionCreateSourceSelector', () => {
         provider: 'git',
         config: {
           url: 'https://git.example.com/nocobase/example.git',
-          branch: null,
+          branch: 'main',
           subdirectory: null,
           transport: 'https',
         },

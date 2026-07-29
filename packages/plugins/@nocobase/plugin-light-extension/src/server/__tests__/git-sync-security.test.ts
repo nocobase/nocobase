@@ -13,7 +13,6 @@ import type { Application } from '@nocobase/server';
 import { vi } from 'vitest';
 
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionCreateJobRecord } from '../../shared/types';
 import { createLightExtensionSyncResource } from '../resources/lightExtensionSync';
 import PluginLightExtensionServer from '../plugin';
 import {
@@ -258,13 +257,10 @@ describe('light extension Git credential logging integration', () => {
         name: 'Credential logging integration',
       });
       expect(createResponse.status).toBe(202);
-      const createJobId = requireString(responseData(createResponse.body).id, 'creation job id');
-      const createJob = await waitForCreateJob(app, createJobId);
-      if (createJob.status !== 'succeeded') {
-        throw new Error(`Creation job failed with ${createJob.errorCode}: ${createJob.errorMessage}`);
-      }
-      expect(createJob).toMatchObject({ status: 'succeeded' });
-      const repoId = requireString(createJob.resultRepoId, 'repo id');
+      const accepted = responseData(createResponse.body);
+      const createJobId = requireString(accepted.id, 'creation job id');
+      const repoId = requireString(accepted.targetRepoId, 'repo id');
+      await waitForSuccessfulCreate(app, createJobId, repoId);
 
       fetchSnapshot.mockResolvedValue(nextSnapshot);
       const planResponse = await agent.post('/lightExtensionSync:plan').send({ repoId });
@@ -300,7 +296,10 @@ describe('light extension Git credential logging integration', () => {
         .set('x-git-credential', authorization)
         .send(requestValues);
 
-      expect(bodyResponse.status).toBe(400);
+      expect(bodyResponse.status).toBe(200);
+      expect(responseData(bodyResponse.body)).toMatchObject({
+        source: { credentialConfigured: true, authRefDisplay: '********' },
+      });
       expect(queryResponse.status).toBe(403);
       expect(headerResponse.status).toBe(400);
 
@@ -430,11 +429,17 @@ function createSnapshot(revision: string, label: string): VscRemoteSnapshot {
   };
 }
 
-async function waitForCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const record = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
-    if (record && ['succeeded', 'failed'].includes(String(record.get('status')))) {
-      return record.toJSON() as LightExtensionCreateJobRecord;
+async function waitForSuccessfulCreate(app: MockServer, jobId: string, repoId: string): Promise<void> {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const job = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (job?.get('status') === 'failed') {
+      throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
+    }
+    if (!job) {
+      const repo = await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId });
+      if (repo) {
+        return;
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }

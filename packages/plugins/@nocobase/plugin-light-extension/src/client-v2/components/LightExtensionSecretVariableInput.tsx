@@ -8,13 +8,14 @@
  */
 
 import { useFlowContext } from '@nocobase/flow-engine';
-import { Select, Spin, Typography } from 'antd';
+import { AutoComplete, Input, Spin, Typography } from 'antd';
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { useT } from '../locale';
 
 const SECRET_AUTH_REF_PATTERN = /^\{\{ \$env\.([A-Za-z_][A-Za-z0-9_]*) \}\}$/;
 const ENVIRONMENT_VARIABLE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const MAX_LITERAL_TOKEN_LENGTH = 4096;
 
 type CredentialInputLoadState = 'loading' | 'ready' | 'failed';
 
@@ -30,7 +31,7 @@ export interface LightExtensionSecretVariableCandidate {
 
 export type LightExtensionCredentialValidation =
   | { valid: true; authRef?: string }
-  | { valid: false; reason?: 'invalid-expression' | 'secret-not-found' | 'load-failed' };
+  | { valid: false; reason?: 'invalid-credential' | 'secret-not-found' | 'load-failed' };
 
 interface EnvironmentVariablesApi {
   request(options: { url: string; method: 'get'; params: { paginate: false }; skipNotify: true }): Promise<unknown>;
@@ -75,7 +76,16 @@ export function validateLightExtensionCredential(
     return { valid: true, authRef: input };
   }
 
-  return { valid: false, reason: 'invalid-expression' };
+  if (
+    input.length <= MAX_LITERAL_TOKEN_LENGTH &&
+    /^\S+$/u.test(input) &&
+    !input.includes('{{') &&
+    !input.includes('}}')
+  ) {
+    return { valid: true, authRef: input };
+  }
+
+  return { valid: false, reason: 'invalid-credential' };
 }
 
 export async function fetchLightExtensionSecretVariables(
@@ -168,7 +178,7 @@ export function LightExtensionCredentialInput(props: LightExtensionCredentialInp
 
   return (
     <div>
-      <Select<string>
+      <AutoComplete
         allowClear
         aria-describedby={errorMessage ? validationMessageId : undefined}
         aria-invalid={errorMessage ? true : undefined}
@@ -178,11 +188,14 @@ export function LightExtensionCredentialInput(props: LightExtensionCredentialInp
         onChange={(nextValue) => onChange?.(nextValue || '')}
         optionFilterProp="label"
         options={options}
-        placeholder={placeholder || t('Select a Secret variable')}
-        showSearch
-        status={errorMessage ? 'error' : undefined}
         value={value || undefined}
-      />
+      >
+        <Input.Password
+          autoComplete="off"
+          placeholder={placeholder || t('Select a Secret variable or enter a token')}
+          status={errorMessage ? 'error' : undefined}
+        />
+      </AutoComplete>
       {errorMessage ? (
         <Typography.Text id={validationMessageId} role="alert" type="danger">
           {errorMessage}
@@ -199,8 +212,8 @@ function getValidationMessage(
   if (!('reason' in validation) || !validation.reason) {
     return undefined;
   }
-  if (validation.reason === 'invalid-expression' || validation.reason === 'secret-not-found') {
-    return t('Select an existing Secret variable');
+  if (validation.reason === 'invalid-credential' || validation.reason === 'secret-not-found') {
+    return t('Enter a valid token or select an existing Secret variable');
   }
   return t('Failed to load secret variables');
 }

@@ -21,7 +21,7 @@ import { CommitService } from '@nocobase/runjs-workspace/server';
 import { RepositoryService } from '@nocobase/runjs-workspace/server';
 import { TreeService } from '@nocobase/runjs-workspace/server';
 import { ExternalCommitMapStore } from './ExternalCommitMapStore';
-import { serializeVscRemoteAuthRef } from './credentialRef';
+import { serializeVscRemoteCredentialRef } from './credentialRef';
 import { RemoteReconcileService } from './RemoteReconcileService';
 import type { RemoteReconcileRecoveryEvent } from './RemoteReconcileService';
 import { RemoteSyncError } from './RemoteSyncAdapter';
@@ -232,7 +232,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
 
   async configureRemote(input: RemoteSyncConfigureInput): Promise<VscFileRemoteRecord> {
     const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
-    const serializedAuthRef = authRef === null ? null : serializeVscRemoteAuthRef(authRef);
+    const serializedAuthRef = authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
     const config = await this.adapterRegistry.resolveConfigDraft(input.provider, input.config, serializedAuthRef);
 
     const remote = await this.db.sequelize.transaction(async (transaction) => {
@@ -269,7 +269,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
   async testTarget(input: RemoteSyncTestTargetInput): Promise<RemoteSyncTestTargetResult> {
     const adapter = this.adapterRegistry.require(input.provider);
     const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
-    const serializedAuthRef = authRef === null ? null : serializeVscRemoteAuthRef(authRef);
+    const serializedAuthRef = authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
     const config = await this.adapterRegistry.resolveConfigDraft(input.provider, input.config, serializedAuthRef);
     const probe = await adapter.probe({
       config,

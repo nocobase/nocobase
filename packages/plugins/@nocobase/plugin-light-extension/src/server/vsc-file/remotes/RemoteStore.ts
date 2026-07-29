@@ -18,7 +18,7 @@ import type {
 } from '../../../shared/vsc-file/remote-sync-types';
 import { normalizeGitRemoteConfig } from './providers/git/gitConfig';
 import { RemoteSyncError } from './RemoteSyncAdapter';
-import { serializeVscRemoteAuthRef, type VscRemoteAuthRef } from './credentialRef';
+import { serializeVscRemoteCredentialRef, type VscRemoteCredentialRef } from './credentialRef';
 
 const blockingJobStatuses = ['pending', 'running', 'finalize-pending'] as const;
 const credentialErrorCodes = new Set<RemoteSyncErrorCode>([
@@ -33,13 +33,13 @@ export interface CreateRemoteInput {
   name: string;
   provider: VscRemoteProvider;
   config: VscRemoteNormalizedConfig;
-  authRef: VscRemoteAuthRef | null;
+  authRef: VscRemoteCredentialRef | null;
 }
 
 export interface UpdateRemoteTargetInput {
   provider: VscRemoteProvider;
   config: VscRemoteNormalizedConfig;
-  authRef: VscRemoteAuthRef | null;
+  authRef: VscRemoteCredentialRef | null;
 }
 
 export interface RecordRemoteCheckInput {
@@ -145,7 +145,7 @@ export class RemoteStore {
 
   async rotateAuthRef(
     remoteId: string,
-    authRef: VscRemoteAuthRef | null,
+    authRef: VscRemoteCredentialRef | null,
     transaction?: Transaction,
   ): Promise<VscFileRemoteRecord> {
     return this.withTransaction(transaction, async (currentTransaction) => {
@@ -361,8 +361,8 @@ function assertNoSensitiveConfigKeys(value: unknown): void {
   }
 }
 
-function serializeNullableAuthRef(authRef: VscRemoteAuthRef | null): string | null {
-  return authRef === null ? null : serializeVscRemoteAuthRef(authRef);
+function serializeNullableAuthRef(authRef: VscRemoteCredentialRef | null): string | null {
+  return authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
 }
 
 function sameConfig(left: VscRemoteNormalizedConfig, right: VscRemoteNormalizedConfig): boolean {

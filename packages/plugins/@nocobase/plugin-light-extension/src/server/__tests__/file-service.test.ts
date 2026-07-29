@@ -964,7 +964,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ],
       },
     });
-    const job = await waitForCreateJob(app, response.body.data.id);
+    const job = await waitForFailedCreateJob(app, response.body.data.id);
 
     expect(response.status).toBe(202);
     expect(job).toMatchObject({
@@ -1059,26 +1059,41 @@ async function createRepoAndWait(
 ): Promise<LightExtensionRepoRecord> {
   const response = await agent.resource('lightExtensionRepos').create({ values });
   expect(response.status).toBe(202);
-  const job = await waitForCreateJob(app, response.body.data.id);
-  if (job.status !== 'succeeded' || !job.resultRepoId) {
-    throw new Error(`Creation job ${job.id} failed with ${job.errorCode || 'an unknown error'}`);
-  }
-  const repoResponse = await agent.resource('lightExtensionRepos').get({ filterByTk: job.resultRepoId });
+  const accepted = response.body.data as LightExtensionCreateJobRecord;
+  await waitForSuccessfulCreate(app, accepted.id, accepted.targetRepoId);
+  const repoResponse = await agent.resource('lightExtensionRepos').get({ filterByTk: accepted.targetRepoId });
   if (repoResponse.status !== 200 || !repoResponse.body.data) {
-    throw new Error(`Creation job ${job.id} did not persist repository ${job.resultRepoId}`);
+    throw new Error(`Creation job ${accepted.id} did not persist repository ${accepted.targetRepoId}`);
   }
   return repoResponse.body.data as LightExtensionRepoRecord;
 }
 
-async function waitForCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
+async function waitForSuccessfulCreate(app: MockServer, jobId: string, repoId: string): Promise<void> {
   for (let attempt = 0; attempt < 500; attempt += 1) {
-    const record = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
-    if (record && ['succeeded', 'failed'].includes(String(record.get('status')))) {
-      return record.toJSON() as LightExtensionCreateJobRecord;
+    const job = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (job?.get('status') === 'failed') {
+      throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
+    }
+    if (!job) {
+      const repo = await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId });
+      if (repo) {
+        return;
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`Creation job ${jobId} did not finish`);
+}
+
+async function waitForFailedCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const job = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
+    if (job?.get('status') === 'failed') {
+      return job.toJSON() as LightExtensionCreateJobRecord;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Creation job ${jobId} did not fail`);
 }
 
 async function seedRawSourceFiles(app: MockServer, repoId: string, files: LightExtensionTreeEntryInput[]) {

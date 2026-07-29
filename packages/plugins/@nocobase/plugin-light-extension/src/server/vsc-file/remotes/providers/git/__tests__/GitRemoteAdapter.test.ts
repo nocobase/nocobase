@@ -202,6 +202,9 @@ describe('GitRemoteAdapter', () => {
     };
     const credentialResolver = {
       resolve: vi.fn(async (authRef: unknown) => {
+        if (authRef === null || authRef === undefined) {
+          return null;
+        }
         if (authRef === 'https-auth') {
           return JSON.stringify({ kind: 'https', username: 'oauth2', password: 'secret' });
         }
@@ -225,6 +228,14 @@ describe('GitRemoteAdapter', () => {
         'ssh-auth',
       ),
     );
+    await fakeAdapter.probe(
+      target({
+        url: 'ssh://git@git.test/team/project.git',
+        branch: 'main',
+        subdirectory: null,
+        transport: 'ssh',
+      }),
+    );
 
     const calls = vi.mocked(fakeRunner.run).mock.calls.map(([request]) => request);
     expect(calls[0].credential).toEqual({ kind: 'https', username: 'oauth2', password: 'secret' });
@@ -233,6 +244,8 @@ describe('GitRemoteAdapter', () => {
       privateKey: 'private-key',
       knownHosts: 'git.test ssh-ed25519 AAAA',
     });
+    expect(calls[2].credential).toBeNull();
+    expect(credentialResolver.resolve).toHaveBeenLastCalledWith(null, 'optional');
   });
 
   it('does not publish a second commit when the verified snapshot already matches', async () => {

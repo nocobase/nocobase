@@ -714,6 +714,60 @@ ctx.render(
     expect(result.artifact.diagnostics).toEqual([]);
   });
 
+  it('uses standard DOM and React JSX types without exposing new runtime globals', async () => {
+    const typedBrowserApis = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.tsx',
+          content: `
+type ItemProps = { label: string };
+interface PointerWithLabel extends PointerEvent { label?: string }
+const Item = ({ label }: ItemProps) => <div>{label}</div>;
+const handlePointerMove = (event: PointerEvent) => event.pointerId;
+document.body.style.cursor = 'grabbing';
+document.body.style.userSelect = 'none';
+const animationFrameId: number = window.requestAnimationFrame(() => handlePointerMove);
+ctx.render(<Item key="item-1" label={String(animationFrameId)} />);
+`,
+        },
+      ],
+      entry: 'index.tsx',
+      surfaceStyle: 'render',
+    });
+    const barePointerEvent = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: `new PointerEvent('pointermove');` }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    const bareDomBaseClass = await compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: `class CustomElement extends HTMLElement {}` }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+
+    expect(
+      typedBrowserApis.failureCode,
+      JSON.stringify(typedBrowserApis.artifact.diagnostics, null, 2),
+    ).toBeUndefined();
+    expect(typedBrowserApis.artifact.diagnostics).toEqual([]);
+    expect(barePointerEvent.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'PointerEvent'"),
+        }),
+      ]),
+    );
+    expect(bareDomBaseClass.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'HTMLElement'"),
+        }),
+      ]),
+    );
+  });
+
   it('accepts browser APIs through the runtime window proxy while keeping bare globals restricted', async () => {
     const windowResult = await compileRunJSSourceWorkspace({
       files: [

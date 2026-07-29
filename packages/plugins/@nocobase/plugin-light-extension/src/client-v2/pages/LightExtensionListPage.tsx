@@ -44,7 +44,6 @@ import { useTranslation } from 'react-i18next';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, NAMESPACE } from '../../constants';
 import type {
-  LightExtensionCreateJobStatus,
   LightExtensionCreateJobSummary,
   LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
@@ -94,7 +93,6 @@ type SyncConfigurationRequest = 'test' | 'configure';
 type LightExtensionListRow =
   | { rowType: 'repo'; repo: LightExtensionRepoRecord }
   | { rowType: 'creation-job'; job: LightExtensionCreateJobSummary };
-
 type FlowContextWithApi = {
   api: ApiClientLike;
 };
@@ -197,8 +195,6 @@ function LightExtensionListPageInner() {
     jobs: createJobs,
     error: createJobsError,
     addAcceptedJob,
-    refresh: refreshCreateJobs,
-    retry: retryCreateJob,
     dismiss: dismissCreateJob,
   } = useLightExtensionCreateJobs();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -222,11 +218,7 @@ function LightExtensionListPageInner() {
   const [filterPayload, setFilterPayload] = useState<CompiledFilter>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [sourceFooterActions, setSourceFooterActions] = useState<LightExtensionWorkspaceFooterActions | null>(null);
-  const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(() => new Set());
-  const [dismissTarget, setDismissTarget] = useState<LightExtensionCreateJobSummary | null>(null);
-  const [dismissingJobId, setDismissingJobId] = useState<string | null>(null);
-  const observedJobStatuses = useRef<Map<string, LightExtensionCreateJobStatus> | null>(null);
-  const notifiedJobIds = useRef(new Set<string>());
+  const observedCreateJobs = useRef<Map<string, LightExtensionCreateJobSummary> | null>(null);
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
@@ -262,10 +254,8 @@ function LightExtensionListPageInner() {
   const handleSucceededJobs = useCallback(
     async (jobs: LightExtensionCreateJobSummary[]) => {
       for (const job of jobs) {
-        if (job.resultRepoId) {
-          invalidateLightExtensionSettingsDescriptorCache(flowContext.api, job.resultRepoId);
-          invalidateLightExtensionRuntimeCache(flowContext.api, job.resultRepoId);
-        }
+        invalidateLightExtensionSettingsDescriptorCache(flowContext.api, job.targetRepoId);
+        invalidateLightExtensionRuntimeCache(flowContext.api, job.targetRepoId);
       }
       const refreshed = await loadRepos();
       if (refreshed) {
@@ -280,29 +270,20 @@ function LightExtensionListPageInner() {
   );
 
   useEffect(() => {
-    const currentStatuses = new Map(createJobs.map((job) => [job.id, job.status]));
-    const previousStatuses = observedJobStatuses.current;
-    observedJobStatuses.current = currentStatuses;
-    if (!previousStatuses) {
+    const currentJobs = new Map(createJobs.map((job) => [job.id, job]));
+    const previousJobs = observedCreateJobs.current;
+    observedCreateJobs.current = currentJobs;
+    if (!previousJobs) {
       return;
     }
 
-    const succeeded: LightExtensionCreateJobSummary[] = [];
+    const succeeded = [...previousJobs.values()].filter(
+      (job) => (job.status === 'pending' || job.status === 'running') && !currentJobs.has(job.id),
+    );
     let lastFailed: LightExtensionCreateJobSummary | null = null;
     for (const job of createJobs) {
-      const previous = previousStatuses.get(job.id);
-      if (previous === 'failed' && (job.status === 'pending' || job.status === 'running')) {
-        notifiedJobIds.current.delete(job.id);
-      }
-      const transitionedFromActive = previous === 'pending' || previous === 'running';
-      if (!transitionedFromActive || notifiedJobIds.current.has(job.id)) {
-        continue;
-      }
-      if (job.status === 'succeeded') {
-        notifiedJobIds.current.add(job.id);
-        succeeded.push(job);
-      } else if (job.status === 'failed') {
-        notifiedJobIds.current.add(job.id);
+      const previous = previousJobs.get(job.id);
+      if ((previous?.status === 'pending' || previous?.status === 'running') && job.status === 'failed') {
         lastFailed = job;
       }
     }
@@ -319,6 +300,14 @@ function LightExtensionListPageInner() {
       });
     }
   }, [createJobs, handleSucceededJobs, t]);
+
+  useEffect(() => {
+    for (const job of createJobs) {
+      if (job.status === 'failed') {
+        dismissCreateJob(job.id).catch(() => undefined);
+      }
+    }
+  }, [createJobs, dismissCreateJob]);
 
   useEffect(() => {
     const repoId = searchParams.get('repoId');
@@ -350,13 +339,15 @@ function LightExtensionListPageInner() {
     () => visibleRepos.filter((repo) => matchesLightExtensionRepoFilter(repo, filterPayload)),
     [filterPayload, visibleRepos],
   );
-  const tableRows = useMemo<LightExtensionListRow[]>(() => {
-    const repoIds = new Set(visibleRepos.map((repo) => repo.id));
-    const jobRows = createJobs
-      .filter((job) => job.status !== 'succeeded' || !job.resultRepoId || !repoIds.has(job.resultRepoId))
-      .map((job): LightExtensionListRow => ({ rowType: 'creation-job', job }));
-    return [...jobRows, ...filteredRepos.map((repo): LightExtensionListRow => ({ rowType: 'repo', repo }))];
-  }, [createJobs, filteredRepos, visibleRepos]);
+  const tableRows = useMemo<LightExtensionListRow[]>(
+    () => [
+      ...createJobs
+        .filter((job) => job.status === 'pending' || job.status === 'running')
+        .map((job): LightExtensionListRow => ({ rowType: 'creation-job', job })),
+      ...filteredRepos.map((repo): LightExtensionListRow => ({ rowType: 'repo', repo })),
+    ],
+    [createJobs, filteredRepos],
+  );
   const selectedRepos = useMemo(
     () => visibleRepos.filter((repo) => selectedRowKeys.includes(repo.id)),
     [selectedRowKeys, visibleRepos],
@@ -633,52 +624,6 @@ function LightExtensionListPageInner() {
     [t],
   );
 
-  const retryCreation = useCallback(
-    async (job: LightExtensionCreateJobSummary) => {
-      setRetryingJobIds((current) => new Set(current).add(job.id));
-      setNotice(null);
-      try {
-        await retryCreateJob(job.id);
-      } catch (error) {
-        setNotice({
-          type: 'error',
-          message: error instanceof Error ? error.message : t('Failed to retry creation'),
-        });
-      } finally {
-        setRetryingJobIds((current) => {
-          const next = new Set(current);
-          next.delete(job.id);
-          return next;
-        });
-      }
-    },
-    [retryCreateJob, t],
-  );
-
-  const confirmDismissCreation = useCallback(async () => {
-    if (!dismissTarget) {
-      return;
-    }
-    setDismissingJobId(dismissTarget.id);
-    setNotice(null);
-    try {
-      await dismissCreateJob(dismissTarget.id);
-      setDismissTarget(null);
-    } catch (error) {
-      setNotice({
-        type: 'error',
-        message: error instanceof Error ? error.message : t('Failed to remove failed creation'),
-      });
-    } finally {
-      setDismissingJobId(null);
-    }
-  }, [dismissCreateJob, dismissTarget, t]);
-
-  const refreshCreationResult = useCallback(async () => {
-    await refreshCreateJobs();
-    await loadRepos();
-  }, [loadRepos, refreshCreateJobs]);
-
   const handleWorkspaceSaved = useCallback(async () => {
     await loadRepos();
   }, [loadRepos]);
@@ -697,10 +642,11 @@ function LightExtensionListPageInner() {
             <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
               {getListRowTitle(row)}
             </Typography.Text>
-            <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
-              {getListRowName(row)}
-            </Typography.Text>
-            {row.rowType === 'creation-job' ? <Tag>{getCreationSourceLabel(row.job, t)}</Tag> : null}
+            {row.rowType === 'repo' ? (
+              <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
+                {row.repo.name}
+              </Typography.Text>
+            ) : null}
           </Space>
         ),
       },
@@ -724,7 +670,7 @@ function LightExtensionListPageInner() {
         width: 250,
         render: (_value, row) => {
           if (row.rowType === 'creation-job') {
-            return <Typography.Text type="secondary">-</Typography.Text>;
+            return null;
           }
           const repo = row.repo;
           const kinds = entryKinds.filter((kind) => Boolean(repo.entryKinds?.[kind]));
@@ -747,14 +693,19 @@ function LightExtensionListPageInner() {
         sorter: (left, right) =>
           getDateTimestamp(getListRowUpdatedAt(left)) - getDateTimestamp(getListRowUpdatedAt(right)),
         width: 180,
-        render: (_value, row) => (
-          <Space direction="vertical" size={0}>
-            <Typography.Text>{formatDate(getListRowUpdatedAt(row))}</Typography.Text>
-            <Typography.Text type="secondary">
-              {t('Created at')}: {formatDate(getListRowCreatedAt(row))}
-            </Typography.Text>
-          </Space>
-        ),
+        render: (_value, row) => {
+          if (row.rowType === 'creation-job') {
+            return null;
+          }
+          return (
+            <Space direction="vertical" size={0}>
+              <Typography.Text>{formatDate(row.repo.updatedAt)}</Typography.Text>
+              <Typography.Text type="secondary">
+                {t('Created at')}: {formatDate(row.repo.createdAt)}
+              </Typography.Text>
+            </Space>
+          );
+        },
       },
       {
         title: t('Enabled'),
@@ -766,7 +717,7 @@ function LightExtensionListPageInner() {
         width: 100,
         render: (_value: LightExtensionRepoLifecycleStatus, row) => {
           if (row.rowType === 'creation-job') {
-            return <Typography.Text type="secondary">-</Typography.Text>;
+            return null;
           }
           const repo = row.repo;
           return (
@@ -790,56 +741,10 @@ function LightExtensionListPageInner() {
         width: 350,
         render: (_value, row) => {
           if (row.rowType === 'creation-job') {
-            const job = row.job;
-            if (job.status === 'pending' || job.status === 'running') {
-              return (
-                <Space aria-live="polite" role="status" size="small" style={{ pointerEvents: 'auto' }}>
-                  <Spin size="small" />
-                  <Typography.Text>{t('Creating')}</Typography.Text>
-                </Space>
-              );
-            }
-            if (job.status === 'succeeded') {
-              return (
-                <Space aria-live="polite" role="status" size="small" style={{ pointerEvents: 'auto' }}>
-                  <Typography.Text type="success">{t('Creation succeeded')}</Typography.Text>
-                  <Button onClick={refreshCreationResult} size="small" type="link">
-                    {t('Refresh')}
-                  </Button>
-                </Space>
-              );
-            }
             return (
-              <Space
-                direction="vertical"
-                size={0}
-                onClick={(event) => event.stopPropagation()}
-                style={{ pointerEvents: 'auto' }}
-              >
-                <Typography.Text type="danger">{t('Creation failed')}</Typography.Text>
-                <Typography.Text>{job.errorMessage || t('Light extension creation failed')}</Typography.Text>
-                <Space size="small">
-                  <Button
-                    aria-label={`${t('Retry creation')} ${job.title || job.name}`}
-                    disabled={!job.canRetry}
-                    loading={retryingJobIds.has(job.id)}
-                    onClick={() => retryCreation(job)}
-                    size="small"
-                    type="link"
-                  >
-                    {t('Retry creation')}
-                  </Button>
-                  <Button
-                    aria-label={`${t('Remove failed creation')} ${job.title || job.name}`}
-                    danger
-                    disabled={!job.canDismiss}
-                    onClick={() => setDismissTarget(job)}
-                    size="small"
-                    type="link"
-                  >
-                    {t('Remove failed creation')}
-                  </Button>
-                </Space>
+              <Space aria-live="polite" role="status" size="small">
+                <Spin size="small" />
+                <Typography.Text>{t('Creating')}</Typography.Text>
               </Space>
             );
           }
@@ -889,17 +794,7 @@ function LightExtensionListPageInner() {
         },
       },
     ],
-    [
-      changeRepoLifecycle,
-      changingRepoIds,
-      openEditDrawer,
-      refreshCreationResult,
-      removingRepoIds,
-      retryCreation,
-      retryingJobIds,
-      selectRepo,
-      t,
-    ],
+    [changeRepoLifecycle, changingRepoIds, openEditDrawer, removingRepoIds, selectRepo, t],
   );
 
   const batchActionItems: MenuProps['items'] = [
@@ -1092,24 +987,6 @@ function LightExtensionListPageInner() {
           </Typography.Text>
           <Alert message={t('This action cannot be undone')} showIcon type="warning" />
         </Space>
-      </Modal>
-
-      <Modal
-        cancelButtonProps={{ disabled: Boolean(dismissingJobId) }}
-        cancelText={t('Cancel')}
-        closable={!dismissingJobId}
-        confirmLoading={Boolean(dismissingJobId)}
-        maskClosable={false}
-        okButtonProps={{ danger: true }}
-        okText={t('Remove failed creation')}
-        onCancel={() => setDismissTarget(null)}
-        onOk={confirmDismissCreation}
-        open={Boolean(dismissTarget)}
-        title={t('Remove failed creation?')}
-      >
-        <Typography.Text>
-          {t('This removes the failed task and releases its name. It does not delete an existing repository.')}
-        </Typography.Text>
       </Modal>
 
       <Drawer
@@ -1327,20 +1204,6 @@ function getListRowEntryCount(row: LightExtensionListRow): number {
 
 function getListRowUpdatedAt(row: LightExtensionListRow): string | null | undefined {
   return row.rowType === 'repo' ? row.repo.updatedAt : row.job.updatedAt;
-}
-
-function getListRowCreatedAt(row: LightExtensionListRow): string | null | undefined {
-  return row.rowType === 'repo' ? row.repo.createdAt : row.job.createdAt;
-}
-
-function getCreationSourceLabel(job: LightExtensionCreateJobSummary, t: (key: string) => string): string {
-  if (job.sourceType === 'git') {
-    return t('Git source');
-  }
-  if (job.sourceType === 'zip') {
-    return t('ZIP file');
-  }
-  return t('Template');
 }
 
 function getDateTimestamp(value?: string | null): number {

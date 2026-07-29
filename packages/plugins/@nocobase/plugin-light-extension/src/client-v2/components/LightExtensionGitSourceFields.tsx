@@ -40,7 +40,9 @@ export type GitRepositoryUrlResult =
 
 type GitRepositoryUrlErrorReason = 'required' | 'invalid';
 
-export type GitBranchValidationResult = { valid: true; branch: string | null } | { valid: false };
+export type GitBranchValidationResult =
+  | { valid: true; branch: string }
+  | { valid: false; reason: 'required' | 'invalid' };
 
 export type GitSubdirectoryValidationResult = { valid: true; subdirectory: string | null } | { valid: false };
 
@@ -104,7 +106,7 @@ export function parseGitRepositoryUrl(input: string): GitRepositoryUrlResult {
 export function validateGitBranch(input: string): GitBranchValidationResult {
   const branch = input.trim();
   if (!branch) {
-    return { valid: true, branch: null };
+    return { valid: false, reason: 'required' };
   }
   if (
     branch !== input ||
@@ -122,7 +124,7 @@ export function validateGitBranch(input: string): GitBranchValidationResult {
     hasInvalidGitRefCharacter(branch) ||
     branch.split('/').some((segment) => !segment || segment.startsWith('.') || segment.endsWith('.lock'))
   ) {
-    return { valid: false };
+    return { valid: false, reason: 'invalid' };
   }
   return { valid: true, branch };
 }
@@ -170,16 +172,9 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
   const urlResult = useMemo(() => parseGitRepositoryUrl(value.url), [value.url]);
   const branchValidation = useMemo(() => validateGitBranch(value.branch), [value.branch]);
   const subdirectoryValidation = useMemo(() => validateGitSubdirectory(value.subdirectory), [value.subdirectory]);
-  const credentialRequired = urlResult.valid && urlResult.transport === 'ssh';
 
   const validSource = useMemo<LightExtensionGitSourceValue | undefined>(() => {
-    if (
-      !urlResult.valid ||
-      !branchValidation.valid ||
-      !subdirectoryValidation.valid ||
-      !authValidation.valid ||
-      (urlResult.transport === 'ssh' && !authValidation.authRef)
-    ) {
+    if (!urlResult.valid || !branchValidation.valid || !subdirectoryValidation.valid || !authValidation.valid) {
       return undefined;
     }
 
@@ -211,7 +206,12 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
   );
 
   const urlError = urlTouched && 'reason' in urlResult ? getRepositoryUrlError(urlResult.reason, t) : undefined;
-  const branchError = branchTouched && !branchValidation.valid ? t('Git branch is invalid') : undefined;
+  const branchError =
+    branchTouched && 'reason' in branchValidation
+      ? branchValidation.reason === 'required'
+        ? t('Git branch is required')
+        : t('Git branch is invalid')
+      : undefined;
   const subdirectoryError =
     subdirectoryTouched && !subdirectoryValidation.valid ? t('Git subdirectory is invalid') : undefined;
 
@@ -233,12 +233,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
           value={value.url}
         />
       </Form.Item>
-      <Form.Item
-        extra={t('Leave blank to use the default branch')}
-        help={branchError}
-        label={t('Branch')}
-        validateStatus={branchError ? 'error' : undefined}
-      >
+      <Form.Item help={branchError} label={t('Branch')} required validateStatus={branchError ? 'error' : undefined}>
         <Input
           aria-label={t('Branch')}
           disabled={disabled}
@@ -265,12 +260,11 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
       </Form.Item>
       <Form.Item
         extra={
-          credentialRequired
-            ? t('SSH requires a Secret variable containing a private key and known hosts.')
-            : t('Optional for public HTTPS repositories. Choose a Secret variable for private repositories.')
+          urlResult.valid && urlResult.transport === 'ssh'
+            ? t("Optional. Leave blank to use the NocoBase process user's SSH configuration.")
+            : t('Optional. Select a Secret variable or enter a token.')
         }
         label={t('Git credential')}
-        required={credentialRequired}
       >
         <LightExtensionCredentialInput
           aria-label={t('Git credential')}
@@ -281,7 +275,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
             updateField('authRef', nextValue);
           }}
           onValidationChange={setAuthValidation}
-          placeholder={t('Select a Secret variable')}
+          placeholder={t('Select a Secret variable or enter a token')}
           value={value.authRef}
         />
       </Form.Item>

@@ -52,7 +52,12 @@ export const RUNJS_TYPESCRIPT_ES_LIB_FILE_NAMES = [
   'lib.es2020.symbol.wellknown.d.ts',
 ] as const;
 
-export const RUNJS_TYPESCRIPT_LIB_FILE_NAMES = RUNJS_TYPESCRIPT_ES_LIB_FILE_NAMES;
+export const RUNJS_TYPESCRIPT_DOM_LIB_FILE_NAMES = ['lib.dom.d.ts'] as const;
+
+export const RUNJS_TYPESCRIPT_LIB_FILE_NAMES = [
+  ...RUNJS_TYPESCRIPT_ES_LIB_FILE_NAMES,
+  ...RUNJS_TYPESCRIPT_DOM_LIB_FILE_NAMES,
+] as const;
 
 export type RunJSTypeScriptLibFileName = (typeof RUNJS_TYPESCRIPT_LIB_FILE_NAMES)[number];
 
@@ -67,6 +72,7 @@ export interface RunJSTypeScriptEnvironmentFile {
 }
 
 export const RUNJS_TYPESCRIPT_ES_LIB_PATH = '/__runjs__/lib.es2020.d.ts';
+export const RUNJS_TYPESCRIPT_DOM_LIB_PATH = '/__runjs__/lib.dom.d.ts';
 export const RUNJS_TYPESCRIPT_REACT_NAMESPACE_PATH = '/__runjs__/react-types.d.ts';
 
 const runJSTypeScriptReactNamespaceDeclaration = `
@@ -111,6 +117,14 @@ declare namespace React {
   interface MouseEvent<T = unknown> extends SyntheticEvent<T> {}
   interface KeyboardEvent<T = unknown> extends SyntheticEvent<T> {
     readonly key: string;
+  }
+}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicAttributes {
+      key?: React.Key | null;
+    }
   }
 }
 `;
@@ -196,10 +210,17 @@ export function buildRunJSTypeScriptEnvironmentFiles(
   const esDeclaration = RUNJS_TYPESCRIPT_ES_LIB_FILE_NAMES.map((fileName) =>
     stripLibReferences(readSource(fileName)),
   ).join('\n');
+  const domDeclaration = RUNJS_TYPESCRIPT_DOM_LIB_FILE_NAMES.map((fileName) =>
+    stripLibReferences(readSource(fileName)),
+  ).join('\n');
   return [
     {
       path: RUNJS_TYPESCRIPT_ES_LIB_PATH,
       content: esDeclaration,
+    },
+    {
+      path: RUNJS_TYPESCRIPT_DOM_LIB_PATH,
+      content: domDeclaration,
     },
     {
       path: RUNJS_TYPESCRIPT_REACT_NAMESPACE_PATH,
