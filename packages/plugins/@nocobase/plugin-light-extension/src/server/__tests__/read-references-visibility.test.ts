@@ -280,7 +280,7 @@ describe('plugin-light-extension readReferences visibility', () => {
       ],
       desktopRoutes: [
         {
-          id: 'route_sales',
+          id: 378224304062466,
           schemaUid: 'route_schema',
         },
       ],
@@ -289,7 +289,7 @@ describe('plugin-light-extension readReferences visibility', () => {
           name: 'member',
           desktopRoutes: [
             {
-              id: 'route_sales',
+              id: 378224304062466,
             },
           ],
         },

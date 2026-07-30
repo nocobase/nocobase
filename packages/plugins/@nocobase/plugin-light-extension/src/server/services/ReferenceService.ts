@@ -1490,10 +1490,8 @@ function normalizeRouteId(route: unknown): string {
     return '';
   }
   const get = route.get;
-  if (typeof get === 'function') {
-    return normalizeString(get.call(route, 'id'));
-  }
-  return normalizeString(route.id);
+  const routeId = typeof get === 'function' ? get.call(route, 'id') : route.id;
+  return typeof routeId === 'number' ? String(routeId) : normalizeString(routeId);
 }
 
 function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): NormalizedJsBlockSource {
