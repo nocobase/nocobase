@@ -19,7 +19,6 @@ import {
   CORE_APP,
   CORE_CLIENT,
   CORE_CLIENT_V2,
-  CORE_RUNJS_WORKSPACE,
   ESM_PACKAGES,
   getCjsPackages,
   getPluginPackages,
@@ -109,13 +108,6 @@ export async function build(pkgs: string[]) {
     if (clientCore) {
       await buildSinglePackage(clientCore, 'es', buildClient, {
         stageName: 'core client',
-        profile,
-      });
-    }
-    const runJSWorkspaceCore = packages.find((item) => item.location === CORE_RUNJS_WORKSPACE);
-    if (runJSWorkspaceCore) {
-      await buildSinglePackage(runJSWorkspaceCore, 'lib', buildCjs, {
-        stageName: 'core runjs-workspace',
         profile,
       });
     }
