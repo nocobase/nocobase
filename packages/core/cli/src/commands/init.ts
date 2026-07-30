@@ -144,6 +144,18 @@ function initVersionPromptValue(version: string): 'latest' | 'beta' | 'alpha' | 
   return version === 'latest' || version === 'beta' || version === 'alpha' ? version : 'other';
 }
 
+export function defaultInitDownloadVersionForCliVersion(cliVersion: string): 'latest' | 'beta' | 'alpha' {
+  if (/-alpha(?:[.-]|$)/i.test(cliVersion)) {
+    return 'alpha';
+  }
+
+  if (/-beta(?:[.-]|$)/i.test(cliVersion)) {
+    return 'beta';
+  }
+
+  return 'latest';
+}
+
 function yesInitialValue(def: PromptBlock, fallback: string): string {
   if ('yesInitialValue' in def && def.yesInitialValue !== undefined) {
     return String(def.yesInitialValue);
@@ -485,12 +497,16 @@ Prompt modes:
     installAccessToken: installConnectionAccessTokenPrompt,
   };
 
-  private buildPromptCatalog(
-    flags: { 'skip-auth'?: boolean },
-    options: { defaultApiHost: string },
-  ): PromptsCatalog {
+  private buildPromptCatalog(flags: { 'skip-auth'?: boolean }, options: { defaultApiHost: string }): PromptsCatalog {
+    const downloadVersion = defaultInitDownloadVersionForCliVersion(String(this.config.pjson?.version ?? '').trim());
+    const versionPrompt = Init.prompts.version as SelectPromptBlock;
     const prompts: PromptsCatalog = {
       ...Init.prompts,
+      version: {
+        ...versionPrompt,
+        initialValue: downloadVersion,
+        yesInitialValue: downloadVersion,
+      },
       installApiBaseUrl: createInstallConnectionApiBaseUrlPrompt(options.defaultApiHost),
     };
 
@@ -909,8 +925,7 @@ Prompt modes:
   ): Promise<PromptInitialValues> {
     const out: PromptInitialValues = {};
 
-    const shouldResolveAppInitialValues =
-      !Object.prototype.hasOwnProperty.call(presetValues, 'appPort');
+    const shouldResolveAppInitialValues = !Object.prototype.hasOwnProperty.call(presetValues, 'appPort');
     if (shouldResolveAppInitialValues) {
       const appInitialValues = await Install.buildAppPromptInitialValues({
         envName: String(presetValues.appName ?? '').trim(),
