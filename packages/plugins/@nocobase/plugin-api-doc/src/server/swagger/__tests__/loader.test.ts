@@ -69,4 +69,13 @@ describe('loadSwagger', () => {
       expect(swagger.paths).toHaveProperty(expectedPath);
     },
   );
+
+  test('resolves the Light Extension Swagger entry through package exports', () => {
+    expect(require.resolve('@nocobase/plugin-light-extension/src/swagger/index.ts')).toMatch(
+      /\/@nocobase\/plugin-light-extension\/src\/swagger\/index\.ts$/,
+    );
+    expect(require.resolve('@nocobase/plugin-light-extension/dist/swagger/index.js')).toMatch(
+      /\/@nocobase\/plugin-light-extension\/dist\/swagger\/index\.js$/,
+    );
+  });
 });

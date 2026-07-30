@@ -28,6 +28,8 @@
       "import": "./server.js",
       "require": "./server.js"
     },
+    "./src/swagger/index.ts": "./src/swagger/index.ts",
+    "./dist/swagger/index.js": "./dist/swagger/index.js",
     "./package.json": "./package.json"
   },
   "homepage": "https://docs.nocobase.com",
