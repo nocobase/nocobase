@@ -328,6 +328,12 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   });
 
   const runCommand = options.runCommand ?? run;
+  await runCommand('pnpm', ['install'], {
+    cwd: portalDir,
+    env: buildPortalCommandEnv(),
+    envMode: 'replace',
+    errorName: 'pnpm install',
+  });
   await runCommand('pnpm', ['build'], {
     cwd: portalDir,
     env: buildPortalCommandEnv({

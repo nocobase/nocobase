@@ -161,7 +161,13 @@ test('updates env files, builds, and syncs the portal record locally without upl
     recordSynced: true,
   });
 
-  expect(runCommand).toHaveBeenCalledWith('pnpm', ['build'], {
+  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install'], {
+    cwd: portalDir,
+    env: expect.any(Object),
+    envMode: 'replace',
+    errorName: 'pnpm install',
+  });
+  expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
     cwd: portalDir,
     env: expect.objectContaining({
       NOCOBASE_API_URL: 'http://localhost:13000/console/api/__app/crm',
@@ -295,7 +301,13 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     }),
   );
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
-  expect(runCommand).toHaveBeenCalledWith('pnpm', ['build'], {
+  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install'], {
+    cwd: portalDir,
+    env: expect.any(Object),
+    envMode: 'replace',
+    errorName: 'pnpm install',
+  });
+  expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
     cwd: portalDir,
     env: expect.objectContaining({
       NOCOBASE_API_URL: 'https://example.com/console/api/__app/crm',
