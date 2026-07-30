@@ -7,10 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ThemeItem } from '../types';
+import type { ThemeItem } from '../types';
+
+type BuiltInThemeAlgorithm = 'darkAlgorithm' | 'compactAlgorithm';
+type BuiltInThemeConfig = Omit<NonNullable<ThemeItem['config']>, 'algorithm'> & {
+  algorithm?: BuiltInThemeAlgorithm | BuiltInThemeAlgorithm[];
+};
+type BuiltInThemeItem = Omit<ThemeItem, 'id' | 'config'> & {
+  config: BuiltInThemeConfig;
+};
 
 /** antd 默认主题 */
-export const defaultTheme: Omit<ThemeItem, 'id'> = {
+export const defaultTheme: BuiltInThemeItem = {
   config: {
     name: 'Default',
   },
@@ -20,10 +28,9 @@ export const defaultTheme: Omit<ThemeItem, 'id'> = {
   default: process.env.__E2E__ ? true : false,
 };
 
-export const dark: Omit<ThemeItem, 'id'> = {
+export const dark: BuiltInThemeItem = {
   config: {
     name: 'Dark',
-    // @ts-ignore
     algorithm: 'darkAlgorithm',
   },
   optional: true,
@@ -32,10 +39,9 @@ export const dark: Omit<ThemeItem, 'id'> = {
   default: false,
 };
 
-export const compact: Omit<ThemeItem, 'id'> = {
+export const compact: BuiltInThemeItem = {
   config: {
     name: 'Compact',
-    // @ts-ignore
     algorithm: 'compactAlgorithm',
     token: {
       fontSize: 16,
@@ -60,12 +66,11 @@ export const compact: Omit<ThemeItem, 'id'> = {
  * 主色收成黑白后 antd 会派生出一整套中灰色板（近黑主色派生的「浅色背景」是 #5e5e5e 这种
  * 中灰，会造成深底深字），所以派生出来的那几个必须显式钉住，取值就是 antd 默认的中性填充色。
  */
-export const minimal: Omit<ThemeItem, 'id'> = {
+export const minimal: BuiltInThemeItem = {
   config: {
     name: 'Minimal',
     // 间距和字号跟「紧凑」一致：这条主题是整套替换而不是叠加，不带算法的话
     // 会退回 antd 默认的宽松间距，跟平台其他地方对不上。
-    // @ts-ignore
     algorithm: 'compactAlgorithm',
     token: {
       fontSize: 16,
@@ -125,7 +130,7 @@ export const minimal: Omit<ThemeItem, 'id'> = {
         inkBarColor: 'rgba(0, 0, 0, 0.88)',
       },
     },
-  } as ThemeItem['config'],
+  },
   optional: false,
   isBuiltIn: true,
   uid: 'minimal',
@@ -133,10 +138,9 @@ export const minimal: Omit<ThemeItem, 'id'> = {
 };
 
 /** 同时包含 `紧凑` 和 `暗黑` 两种模式 */
-export const compactDark: Omit<ThemeItem, 'id'> = {
+export const compactDark: BuiltInThemeItem = {
   config: {
     name: 'Compact dark',
-    // @ts-ignore
     algorithm: ['compactAlgorithm', 'darkAlgorithm'],
     token: {
       fontSize: 16,
