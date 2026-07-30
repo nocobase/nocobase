@@ -799,7 +799,7 @@ const MultiPortalsPage: React.FC = () => {
     <div>
       <Flex justify="space-between" align="center" wrap gap={token.marginSM} style={{ marginBottom: token.marginMD }}>
         <Typography.Text type="secondary">
-          {t('All applications built on this instance start from here.')}
+          {t('Each portal is a standalone front end with its own routes and menus.')}
         </Typography.Text>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={refreshPortals}>
@@ -916,6 +916,9 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   );
   const accessPathPrefix = watchedPortalType === 'ai' ? '/x/' : '/v/';
   const fixedDefaultPortal = isFixedDefaultPortal(record);
+  // 门户名和类型建好之后就是身份：名字在访问路径里、类型决定 /v 还是 /x，
+  // 都已经被外部链接和已配好的路由引用，改了等于换一个门户。所以只在新建时可填。
+  const identityLocked = fixedDefaultPortal || !!record;
 
   // 从 git 地址推导出来的标题 / 名称。用户手动改过之后就不再覆盖。
   const autoFilledRef = useRef<{ portalName?: string; title?: string }>({});
@@ -1009,7 +1012,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             },
           ]}
         >
-          <Input disabled={fixedDefaultPortal} addonBefore={accessPathPrefix} />
+          <Input disabled={identityLocked} addonBefore={accessPathPrefix} />
         </Form.Item>
         <Form.Item
           name="title"
@@ -1026,7 +1029,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           rules={[{ required: true, message: t('The field value is required') }]}
         >
           {/* 显式命名：两个单选组共用同一个 name 时会被浏览器当成同一组，互相取消选中。 */}
-          <Radio.Group name="multi-portal-portal-type" disabled={fixedDefaultPortal} style={{ width: '100%' }}>
+          <Radio.Group name="multi-portal-portal-type" disabled={identityLocked} style={{ width: '100%' }}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Radio
                 className={describedRadioClassName}

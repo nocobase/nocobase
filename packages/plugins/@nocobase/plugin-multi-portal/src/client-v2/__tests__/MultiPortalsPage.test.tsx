@@ -1575,7 +1575,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should not lock editable fields for the legacy default uid but should keep its layout immutable', async () => {
+  it('should lock identity fields when editing and keep the legacy default uid layout immutable', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource({
@@ -1638,8 +1638,10 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByLabelText('Portal name')).not.toBeDisabled();
-    expect(within(dialog).getByLabelText('Portal type')).not.toBeDisabled();
+    // 门户名和类型建好之后就是身份（名字在访问路径里、类型决定 /v 还是 /x），编辑态一律锁死；
+    // legacy default uid 的区别在于其余字段仍然可改。
+    expect(within(dialog).getByLabelText('Portal name')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Portal type')).toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
     expect(within(dialog).getByLabelText('Device')).toBeDisabled();
   });
@@ -1888,7 +1890,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    // 门户名只在新建时可填，所以校验也只能在新建抽屉里测。
+    await user.click((await screen.findAllByRole('button', { name: /Add portal/ }))[0]);
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1896,7 +1899,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
+    const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
     const portalSlugInput = within(dialog).getByLabelText('Portal name');
     await user.clear(portalSlugInput);
     await user.type(portalSlugInput, 'Customer');
@@ -1907,6 +1910,6 @@ describe('plugin-multi-portal settings page', () => {
         'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
       ),
     ).toBeInTheDocument();
-    expect(resource.update).not.toHaveBeenCalled();
+    expect(resource.create).not.toHaveBeenCalled();
   });
 });

@@ -120,7 +120,7 @@
   "AI": "AI mode",
   "Default": "Default",
   "No portals yet": "No portals yet",
-  "All applications built on this instance start from here.": "All applications built on this instance start from here.",
+  "Each portal is a standalone front end with its own routes and menus.": "Each portal is a standalone front end with its own routes and menus.",
   "Cover": "Cover",
   "Upload cover": "Upload cover",
   "Replace cover": "Replace cover",

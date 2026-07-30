@@ -13,6 +13,9 @@ import { SettingsRouterManager } from './SettingsRouterManager';
 import { SettingsShell } from './SettingsShell';
 
 export class SettingsApplication extends Application {
+  /** 设置中心的标记，插件通过 `isSettingsApp(app)` 读它，避免反向依赖这个类。 */
+  readonly isSettingsApp = true;
+
   protected addCustomProviders() {
     super.addCustomProviders();
     this.use(SettingsShell);

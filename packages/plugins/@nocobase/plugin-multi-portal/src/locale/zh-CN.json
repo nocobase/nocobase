@@ -120,7 +120,7 @@
   "AI": "AI 模式",
   "Default": "默认",
   "No portals yet": "还没有门户",
-  "All applications built on this instance start from here.": "这个实例上的门户都从这里开始。",
+  "Each portal is a standalone front end with its own routes and menus.": "每个门户是一套独立的前台，有自己的路由和菜单。",
   "Cover": "封面",
   "Upload cover": "上传封面",
   "Replace cover": "更换封面",
