@@ -55,12 +55,15 @@ function registerCompileContractTests() {
 
     it('keeps workspace compilation available after SES lockdown', () => {
       const contractPath = path.resolve(__dirname, '../services/LightExtensionCompileContract.ts');
+      const compilerLoaderPath = path.resolve(__dirname, '../../../../../../core/runjs/src/compiler/loader.ts');
       const sesPath = path.resolve(__dirname, '../../../../../../core/utils/src/ses.ts');
       const diagnostics = JSON.parse(
         readCompilerBuildId(
-          `require(${JSON.stringify(contractPath)}); const { lockdownSes } = require(${JSON.stringify(
+          `require(${JSON.stringify(contractPath)}); const { loadRunJSCompiler } = require(${JSON.stringify(
+            compilerLoaderPath,
+          )}); const { lockdownSes } = require(${JSON.stringify(
             sesPath,
-          )}); lockdownSes({ consoleTaming: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'moderate', stackFiltering: 'verbose' }); require('@nocobase/runjs/compiler').compileRunJSSourceWorkspace({ files: [{ path: 'src/client/index.tsx', content: 'ctx.render(<div />);' }], entry: 'src/client/index.tsx', surfaceStyle: 'render' }).then((result) => process.stdout.write(JSON.stringify(result.artifact.diagnostics)));`,
+          )}); lockdownSes({ consoleTaming: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'moderate', stackFiltering: 'verbose' }); loadRunJSCompiler().then(({ compileRunJSSourceWorkspace }) => compileRunJSSourceWorkspace({ files: [{ path: 'src/client/index.tsx', content: 'ctx.render(<div />);' }], entry: 'src/client/index.tsx', surfaceStyle: 'render' })).then((result) => process.stdout.write(JSON.stringify(result.artifact.diagnostics)));`,
         ),
       );
 
@@ -132,7 +135,7 @@ function registerCompileContractTests() {
   });
 
   function readCompilerBuildId(script: string): string {
-    return execFileSync(process.execPath, ['--require', 'tsx/cjs', '--eval', script], {
+    return execFileSync(process.execPath, ['--import', 'tsx', '--eval', script], {
       cwd: process.cwd(),
       encoding: 'utf8',
     }).trim();

@@ -9,6 +9,7 @@
 | `@nocobase/runjs` | Source locators, diagnostics, runtime artifacts, path normalization, and stable serialization |
 | `@nocobase/runjs/compiler` | Virtual-workspace compilation and source inspection |
 | `@nocobase/runjs/compiler/build-identity` | Compiler build identity without loading the compiler |
+| `@nocobase/runjs/compiler/loader` | Server-only lazy compiler loading that works from source and built packages |
 | `@nocobase/runjs/compiler/portable` | Portable path, import-resolution, built-in module, and diagnostic contracts |
 | `@nocobase/runjs/settings` | Settings defaults, conditions, pruning, and Entry selection normalization |
 | `@nocobase/runjs/server` | SHA-256 helpers for files, runtime code, and immutable artifacts |
@@ -48,6 +49,7 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 - Browser client code uses the dependency-light root or settings entry and never imports compiler or server helpers
 - Server code imports `@nocobase/runjs/server` or compiler subpaths
 - `compiler/build-identity` remains safe for startup paths that must not initialize the compiler
+- `compiler/loader` is server-only and resolves the compiler adjacent to its source or built module
 - Runtime values come from the host context; compile-time support never grants a capability
 
 ## Validation

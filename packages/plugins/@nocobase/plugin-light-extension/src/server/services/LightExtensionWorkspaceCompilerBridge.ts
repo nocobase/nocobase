@@ -10,6 +10,7 @@
 import { type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
 import { buildRunJSFilesHash } from '@nocobase/runjs/server';
 import type { CompileRunJSSourceWorkspaceResult, RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
+import { loadRunJSCompiler } from '@nocobase/runjs/compiler/loader';
 import { createRequire } from 'node:module';
 import { posix as pathPosix } from 'path';
 import type { Expression, ImportDeclaration, SourceFile } from 'typescript';
@@ -86,7 +87,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     }
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
     const runtimeFiles = filterCurrentEntryDescriptor(input);
-    const { compileRunJSSourceWorkspace } = await import('@nocobase/runjs/compiler');
+    const { compileRunJSSourceWorkspace } = await loadRunJSCompiler();
     const compiled = await compileRunJSSourceWorkspace({
       files: prepareLightExtensionCompileFiles(runtimeFiles, input.kind),
       entry: input.entryPath,

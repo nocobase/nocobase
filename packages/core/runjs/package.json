@@ -8,6 +8,9 @@
       "compiler/build-identity": [
         "./lib/compiler/build-identity.d.ts"
       ],
+      "compiler/loader": [
+        "./lib/compiler/loader.d.ts"
+      ],
       "compiler/portable": [
         "./lib/compiler/portable.d.ts"
       ],
@@ -32,6 +35,11 @@
       "types": "./lib/compiler/build-identity.d.ts",
       "import": "./lib/compiler/build-identity.js",
       "require": "./lib/compiler/build-identity.js"
+    },
+    "./compiler/loader": {
+      "types": "./lib/compiler/loader.d.ts",
+      "import": "./lib/compiler/loader.js",
+      "require": "./lib/compiler/loader.js"
     },
     "./compiler/portable": {
       "types": "./lib/compiler/portable.d.ts",

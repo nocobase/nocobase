@@ -9,6 +9,7 @@
 
 import { stableSerialize } from '@nocobase/runjs';
 import type { RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
+import { loadRunJSCompiler } from '@nocobase/runjs/compiler/loader';
 import { performance } from 'node:perf_hooks';
 import { threadId } from 'node:worker_threads';
 
@@ -36,7 +37,7 @@ export async function executeLightExtensionCompileJob(input: {
   try {
     assertLightExtensionCompileJob(input.job);
     assertCurrentCompilerBuild(input.job);
-    const compiler = await import('@nocobase/runjs/compiler');
+    const compiler = await loadRunJSCompiler();
     sourceInspector ||= new compiler.RunJSSourceWorkspaceInspector();
     const compiled = await workspaceCompiler.compileEntry(
       {

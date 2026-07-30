@@ -12,25 +12,21 @@ import type {
   CompileRunJSSourceWorkspaceResult,
   InspectRunJSSourceCodeInput,
 } from '@nocobase/runjs/compiler';
-import { createRequire } from 'node:module';
+import {
+  inspectRunJSSourceCode as inspectRunJSSourceCodeWithCompiler,
+  loadRunJSCompiler,
+} from '@nocobase/runjs/compiler/loader';
 
 import type { RunJSCompileDiagnostic } from '../../shared/runjs-source-types';
 
 export type * from '@nocobase/runjs/compiler';
 
-type RunJSCompilerModule = typeof import('@nocobase/runjs/compiler');
-const requireCompiler = createRequire(__filename);
-
-function getCompiler(): RunJSCompilerModule {
-  return requireCompiler('@nocobase/runjs/compiler') as RunJSCompilerModule;
-}
-
 export async function compileRunJSSourceWorkspace(
   input: CompileRunJSSourceWorkspaceInput,
 ): Promise<CompileRunJSSourceWorkspaceResult> {
-  return getCompiler().compileRunJSSourceWorkspace(input);
+  return (await loadRunJSCompiler()).compileRunJSSourceWorkspace(input);
 }
 
 export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJSCompileDiagnostic[] {
-  return getCompiler().inspectRunJSSourceCode(input);
+  return inspectRunJSSourceCodeWithCompiler(input);
 }

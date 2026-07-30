@@ -25,12 +25,26 @@ describe('@nocobase/runjs package exports', () => {
         '.',
         './compiler',
         './compiler/build-identity',
+        './compiler/loader',
         './compiler/portable',
         './package.json',
         './server',
         './settings',
       ].sort(),
     );
+  });
+
+  it('ships the source-safe compiler loader runtime and declarations through its dedicated subpath', () => {
+    const compilerLoaderExport = packageJson.exports['./compiler/loader'];
+
+    expect(compilerLoaderExport).toEqual({
+      types: './lib/compiler/loader.d.ts',
+      import: './lib/compiler/loader.js',
+      require: './lib/compiler/loader.js',
+    });
+    expect(packageJson.typesVersions?.['*']?.['compiler/loader']).toEqual(['./lib/compiler/loader.d.ts']);
+    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/loader.js'))).toBe(true);
+    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/loader.d.ts'))).toBe(true);
   });
 
   it('ships the compiler build identity runtime and declarations through its dedicated subpath', () => {
