@@ -291,6 +291,68 @@ describe('Multi Portal seed lifecycle', () => {
     expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_mobile__' } })).toBe(1);
   });
 
+  it('repairs fixed Layout-backed Portals with a missing portal type', async () => {
+    process.env.INIT_PORTAL_TYPE = 'no-code';
+    app = await createLifecycleServer();
+    const repository = app.db.getRepository('multiPortals');
+    await repository.destroy({ truncate: true });
+    await repository.create({
+      values: {
+        uid: '__default_admin__',
+        title: 'Desktop layout',
+        portalType: null,
+        portalName: 'admin',
+        routePath: '/admin',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: 'admin-layout-model',
+      },
+    });
+    await repository.create({
+      values: {
+        uid: '__default_mobile__',
+        title: 'Mobile layout',
+        portalType: null,
+        portalName: 'mobile',
+        routePath: '/mobile',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: 'mobile-layout-model',
+      },
+    });
+    await app.version.update('2.2.0-alpha.11');
+    const plugin = app.pm.get('multi-portal') as { afterEnable: () => Promise<void>; install: () => Promise<void> };
+
+    await expect(plugin.install()).resolves.toBeUndefined();
+    await plugin.afterEnable();
+
+    const portals = await repository.find({
+      fields: ['uid', 'portalType', 'portalName', 'routePath', 'uiLayoutUid'],
+      sort: ['uid'],
+    });
+    expect(
+      portals.map((portal) => ({
+        ...portal.toJSON(),
+        uiLayoutUid: portal.get('uiLayoutUid'),
+      })),
+    ).toEqual([
+      expect.objectContaining({
+        uid: '__default_admin__',
+        portalType: 'no-code',
+        portalName: 'admin',
+        routePath: '/admin',
+        uiLayoutUid: 'admin-layout-model',
+      }),
+      expect.objectContaining({
+        uid: '__default_mobile__',
+        portalType: 'no-code',
+        portalName: 'mobile',
+        routePath: '/mobile',
+        uiLayoutUid: 'mobile-layout-model',
+      }),
+    ]);
+  });
+
   it('creates the historical AI INIT Portal before best-effort fixed Portals', async () => {
     process.env.INIT_PORTAL_TYPE = 'ai';
     app = await createLifecycleServer();

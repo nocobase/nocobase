@@ -1353,6 +1353,30 @@ async function createDefaultMultiPortalBestEffort(db: Database, portal: DefaultM
   }
 }
 
+async function repairFixedLayoutMultiPortalRecords(db: Database) {
+  const repository = db.getRepository('multiPortals');
+  for (const portal of getFixedLayoutMultiPortalRecords()) {
+    const existing = await repository.findOne({
+      filterByTk: portal.uid,
+      fields: ['uid', 'portalType', 'portalName', 'routePath', 'uiLayoutUid'],
+    });
+    if (
+      existing?.get('portalName') !== portal.portalName ||
+      existing.get('routePath') !== portal.routePath ||
+      existing.get('uiLayoutUid') !== portal.uiLayoutUid ||
+      existing.get('portalType') === portal.portalType
+    ) {
+      continue;
+    }
+    await repository.update({
+      filterByTk: portal.uid,
+      values: {
+        portalType: portal.portalType,
+      },
+    });
+  }
+}
+
 async function seedFreshMultiPortals(db: Database) {
   for (const portal of getFreshMultiPortalRecords()) {
     await createDefaultMultiPortalBestEffort(db, portal);
@@ -1366,6 +1390,7 @@ async function seedHistoricalMultiPortals(db: Database) {
   for (const portal of getFixedLayoutMultiPortalRecords()) {
     await createDefaultMultiPortalBestEffort(db, portal);
   }
+  await repairFixedLayoutMultiPortalRecords(db);
 }
 
 async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () => Promise<void>) {
@@ -3554,6 +3579,7 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async afterEnable() {
+    await repairFixedLayoutMultiPortalRecords(this.db);
     await this.reconcilePortalStorage();
     await this.reconcileAppManifest();
   }
