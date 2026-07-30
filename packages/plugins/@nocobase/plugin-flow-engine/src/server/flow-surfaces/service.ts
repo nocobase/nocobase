@@ -1910,6 +1910,27 @@ export class FlowSurfacesService {
     };
   }
 
+  private assertAdminLayoutCreateScope(actionName: string, scope: FlowSurfaceDesktopRouteScope, path: string) {
+    if (
+      !this.navigationTargets.hasMultiPortalCapability() ||
+      scope.selectedPortal ||
+      !scope.layoutUids.includes(DEFAULT_ADMIN_UI_LAYOUT_UID)
+    ) {
+      return;
+    }
+    throwBadRequest(`flowSurfaces ${actionName} cannot create navigation directly in the Admin layout`, {
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path,
+      details: {
+        layoutUid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+        uiBuilderAllowed: false,
+        adminLayoutFallbackAllowed: false,
+        agentInstruction:
+          'Resolve the target Portal first. For a no-code Portal, pass portalUid (navigation.portalUid in applyBlueprint); for an AI Portal, stop this Flow Surfaces write and implement the request in the Portal source code.',
+      },
+    });
+  }
+
   private getPortalRouteFilterUid(portal: FlowSurfaceResolvedMultiPortal | undefined) {
     return portal?.routeScopeKind === 'portal' ? portal.uid : undefined;
   }
@@ -2019,6 +2040,8 @@ export class FlowSurfacesService {
     }
 
     if (layoutUid) {
+      const scope = { portalUids: [], layoutUids: [layoutUid] };
+      this.assertAdminLayoutCreateScope(actionName, scope, 'values.layoutUid');
       await this.assertEnabledDesktopRouteUiLayoutUid(layoutUid, actionName, 'values.layoutUid', options.transaction);
       if (parentRoute) {
         await this.assertDesktopRouteBelongsToUiLayout(
@@ -2030,8 +2053,7 @@ export class FlowSurfacesService {
         );
       }
       return {
-        portalUids: [],
-        layoutUids: [layoutUid],
+        ...scope,
         layoutType: await this.getDesktopRouteUiLayoutTypeByUid(layoutUid, options.transaction),
       };
     }
@@ -2071,9 +2093,13 @@ export class FlowSurfacesService {
     }
 
     const layoutUids = await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, options.transaction);
-    return {
+    const scope = {
       portalUids: [],
       layoutUids,
+    };
+    this.assertAdminLayoutCreateScope(actionName, scope, 'values.parentMenuRouteId');
+    return {
+      ...scope,
       layoutType:
         layoutUids.length === 1
           ? await this.getDesktopRouteUiLayoutTypeByUid(layoutUids[0], options.transaction)
@@ -2113,6 +2139,8 @@ export class FlowSurfacesService {
     }
 
     if (layoutUid) {
+      const scope = { ...routeScope, layoutUids: [layoutUid] };
+      this.assertAdminLayoutCreateScope(actionName, scope, 'values.layoutUid');
       await this.assertEnabledDesktopRouteUiLayoutUid(layoutUid, actionName, 'values.layoutUid', options.transaction);
       await this.assertDesktopRouteBelongsToUiLayout(
         actionName,
@@ -2122,7 +2150,7 @@ export class FlowSurfacesService {
         options.transaction,
       );
       return {
-        ...routeScope,
+        ...scope,
         layoutType: await this.getDesktopRouteUiLayoutTypeByUid(layoutUid, options.transaction),
       };
     }
@@ -2154,12 +2182,24 @@ export class FlowSurfacesService {
       };
     }
 
-    const layoutUids = routeScope.layoutUids.length
-      ? routeScope.layoutUids
-      : await this.ensureDesktopRouteUiLayouts(route, options.transaction);
-    return {
+    let layoutUids = routeScope.layoutUids;
+    if (!layoutUids.length) {
+      const parentRouteId = this.readRouteField(route, 'parentId');
+      const parentRoute = _.isNil(parentRouteId)
+        ? null
+        : await this.findMenuRouteById(parentRouteId, options.transaction);
+      layoutUids = await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, options.transaction);
+    }
+    const scope = {
       portalUids: [],
       layoutUids,
+    };
+    this.assertAdminLayoutCreateScope(actionName, scope, 'values.menuRouteId');
+    if (!routeScope.layoutUids.length) {
+      await this.setDesktopRouteUiLayouts(this.readRouteField(route, 'id'), layoutUids, options.transaction);
+    }
+    return {
+      ...scope,
       layoutType:
         layoutUids.length === 1
           ? await this.getDesktopRouteUiLayoutTypeByUid(layoutUids[0], options.transaction)
@@ -5256,6 +5296,11 @@ export class FlowSurfacesService {
       return;
     }
 
+    this.assertAdminLayoutCreateScope(
+      'applyBlueprint',
+      { portalUids: [], layoutUids: [layoutUid] },
+      'values.navigation.layoutUid',
+    );
     await this.assertEnabledDesktopRouteUiLayoutUid(
       layoutUid,
       'applyBlueprint',
@@ -5298,11 +5343,10 @@ export class FlowSurfacesService {
       return document;
     }
     const groupRoute = hasGroupRouteId ? await this.findMenuRouteById(groupRouteId, options.transaction) : null;
+    const groupScope =
+      groupRoute && !portalUid ? await this.readDesktopRouteScope(groupRoute, options.transaction) : undefined;
     if (!portalUid && groupRoute) {
-      const groupPortalUids = await this.navigationTargets.readRoutePortalUids(
-        this.readRouteField(groupRoute, 'id'),
-        options.transaction,
-      );
+      const groupPortalUids = groupScope?.portalUids || [];
       if (groupPortalUids.length > 1) {
         throwBadRequest(
           `flowSurfaces applyBlueprint navigation.group.routeId '${groupRouteId}' belongs to multiple portals; pass navigation.portalUid explicitly`,
@@ -5321,10 +5365,17 @@ export class FlowSurfacesService {
     const portalMatchScope = portalUid
       ? await this.resolveDesktopRouteMatchScope(layoutUid, portalUid, 'applyBlueprint', options)
       : undefined;
-    const layoutUidFilter = portalMatchScope
-      ? portalMatchScope.layoutUids
-      : layoutUid ||
-        (groupRoute ? await this.resolveInheritedDesktopRouteUiLayoutUids(groupRoute, options.transaction) : undefined);
+    let layoutUidFilter = portalMatchScope?.layoutUids || layoutUid;
+    if (!portalMatchScope && !layoutUid && groupRoute) {
+      layoutUidFilter = groupScope?.layoutUids.length
+        ? groupScope.layoutUids
+        : await this.resolveInheritedDesktopRouteUiLayoutUids(groupRoute, options.transaction);
+      this.assertAdminLayoutCreateScope(
+        'applyBlueprint',
+        { portalUids: [], layoutUids: this.normalizeDesktopRouteLayoutUidFilter(layoutUidFilter) },
+        'values.navigation.group.routeId',
+      );
+    }
     const portalUidFilter = portalMatchScope?.portalUid;
 
     const matchedPages = await this.findFlowPageRoutesByParentIdAndTitle(

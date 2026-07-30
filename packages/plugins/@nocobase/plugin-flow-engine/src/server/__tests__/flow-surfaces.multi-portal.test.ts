@@ -18,6 +18,7 @@ import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from '
 const ADMIN_LAYOUT_UID = 'admin-layout-model';
 const MOBILE_LAYOUT_UID = 'mobile-layout-model';
 const ADMIN_LAYOUT_PORTAL_UID = '__default_admin__';
+const MOBILE_LAYOUT_PORTAL_UID = '__default_mobile__';
 const DESKTOP_PORTAL_UID = 'flow-surfaces-desktop-portal';
 const SECOND_DESKTOP_PORTAL_UID = 'flow-surfaces-second-desktop-portal';
 const MOBILE_PORTAL_UID = 'flow-surfaces-mobile-portal';
@@ -235,6 +236,17 @@ describe('flowSurfaces Multi-portal integration', () => {
       uiLayoutUid: ADMIN_LAYOUT_UID,
     });
     await createPortal(app, {
+      uid: MOBILE_LAYOUT_PORTAL_UID,
+      title: 'Mobile layout portal',
+      icon: 'MobileOutlined',
+      portalType: 'no-code',
+      portalName: 'mobile',
+      routePath: '/mobile',
+      authCheck: true,
+      enabled: true,
+      uiLayoutUid: MOBILE_LAYOUT_UID,
+    });
+    await createPortal(app, {
       uid: SECOND_DESKTOP_PORTAL_UID,
       title: 'Secondary workspace',
       icon: 'ProjectOutlined',
@@ -323,7 +335,6 @@ describe('flowSurfaces Multi-portal integration', () => {
           uid: ADMIN_LAYOUT_PORTAL_UID,
           portalUid: ADMIN_LAYOUT_PORTAL_UID,
           layoutUid: ADMIN_LAYOUT_UID,
-          default: true,
         }),
         expect.objectContaining({
           kind: 'portal',
@@ -337,6 +348,12 @@ describe('flowSurfaces Multi-portal integration', () => {
           portalUid: MOBILE_PORTAL_UID,
           layoutType: 'mobile',
         }),
+        expect.objectContaining({
+          kind: 'portal',
+          uid: MOBILE_LAYOUT_PORTAL_UID,
+          portalUid: MOBILE_LAYOUT_PORTAL_UID,
+          layoutType: 'mobile',
+        }),
       ]),
     );
     expect(
@@ -347,7 +364,7 @@ describe('flowSurfaces Multi-portal integration', () => {
     expect(targets.targets.some((target: any) => target.uid === SECOND_DESKTOP_PORTAL_UID)).toBe(false);
     expect(targets.targets.some((target: any) => target.uid === DISABLED_PORTAL_UID)).toBe(false);
     expect(targets.targets.some((target: FlowSurfaceNavigationTarget) => target.uid === AI_PORTAL_UID)).toBe(false);
-    expect(targets.targets.some((target: any) => target.uid === '__default_mobile__')).toBe(false);
+    expect(targets.targets.some((target: FlowSurfaceNavigationTarget) => target.default)).toBe(false);
   });
 
   it('should create fixed Admin Portal routes through the backing layout permission model', async () => {
@@ -414,12 +431,23 @@ describe('flowSurfaces Multi-portal integration', () => {
       await rootAgent.resource('flowSurfaces').updateMenu({
         values: {
           menuRouteId: groupRouteId,
-          portalUid: ADMIN_LAYOUT_PORTAL_UID,
           title: `${groupTitle} updated`,
         },
       }),
     );
     expect(updated.routeId).toBe(groupRouteId);
+
+    const replaced = getData(
+      await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          ...buildMarkdownBlueprint(ADMIN_LAYOUT_PORTAL_UID, groupTitle, pageTitle),
+          mode: 'replace',
+          target: { pageSchemaUid: created.target.pageSchemaUid },
+          navigation: undefined,
+        },
+      }),
+    );
+    expect(replaced.target.pageSchemaUid).toBe(created.target.pageSchemaUid);
 
     const portalOnlyParent = getData(
       await rootAgent.resource('flowSurfaces').createMenu({
@@ -444,22 +472,213 @@ describe('flowSurfaces Multi-portal integration', () => {
     expect(mismatch.body?.errors?.[0]?.ruleId).toBe('navigation-route-layout-mismatch');
   });
 
-  it('should prefer the canonical Admin no-code portal for implicit route creation', async () => {
+  it('should require explicit selection when multiple Portal types are enabled', async () => {
     const blueprint = buildMarkdownBlueprint(
       ADMIN_LAYOUT_PORTAL_UID,
-      `Implicit Admin portal group ${Date.now()}`,
-      `Implicit Admin portal page ${Date.now()}`,
+      `Ambiguous portal group ${Date.now()}`,
+      `Ambiguous portal page ${Date.now()}`,
     );
     delete (blueprint.navigation as { portalUid?: string }).portalUid;
-    const created = getData(
-      await rootAgent.resource('flowSurfaces').applyBlueprint({
-        values: blueprint,
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({ values: blueprint });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-portal-selection-required',
+      details: {
+        uiBuilderAllowed: false,
+        adminLayoutFallbackAllowed: false,
+      },
+    });
+    expect(
+      await app.db.getRepository('desktopRoutes').find({
+        filter: { title: blueprint.page.title },
+      }),
+    ).toHaveLength(0);
+  });
+
+  it('should automatically use and discover the only enabled fixed Admin Portal', async () => {
+    const portals = await app.db.getRepository('multiPortals').find({ fields: ['uid', 'enabled'] });
+    for (const portal of portals) {
+      await app.db.getRepository('multiPortals').update({
+        filterByTk: portal.get('uid'),
+        values: { enabled: portal.get('uid') === ADMIN_LAYOUT_PORTAL_UID },
+      });
+    }
+
+    try {
+      const blueprint = buildMarkdownBlueprint(
+        ADMIN_LAYOUT_PORTAL_UID,
+        `Implicit Admin portal group ${Date.now()}`,
+        `Implicit Admin portal page ${Date.now()}`,
+      );
+      delete (blueprint.navigation as { portalUid?: string }).portalUid;
+      const created = getData(
+        await rootAgent.resource('flowSurfaces').applyBlueprint({
+          values: blueprint,
+        }),
+      );
+
+      const pageScope = await readRouteScope(app, created.surface.pageRoute.id);
+      expect(pageScope.portalUids).toEqual([]);
+      expect(pageScope.layoutUids).toEqual([ADMIN_LAYOUT_UID]);
+      const targets = getData(await rootAgent.resource('flowSurfaces').listNavigationTargets({ values: {} }));
+      expect(targets.targets.filter((target: FlowSurfaceNavigationTarget) => target.default)).toEqual([
+        expect.objectContaining({ kind: 'portal', uid: ADMIN_LAYOUT_PORTAL_UID }),
+      ]);
+    } finally {
+      for (const portal of portals) {
+        await app.db.getRepository('multiPortals').update({
+          filterByTk: portal.get('uid'),
+          values: { enabled: portal.get('enabled') },
+        });
+      }
+    }
+  });
+
+  it('should reject direct Admin layout create paths before writing navigation', async () => {
+    const blueprintPageTitle = `Direct Admin blueprint ${Date.now()}`;
+    const blueprint = buildMarkdownBlueprint(
+      ADMIN_LAYOUT_PORTAL_UID,
+      `Direct Admin blueprint group ${Date.now()}`,
+      blueprintPageTitle,
+    );
+    delete (blueprint.navigation as { portalUid?: string }).portalUid;
+    (blueprint.navigation as { layoutUid?: string }).layoutUid = ADMIN_LAYOUT_UID;
+    const blueprintResponse = await rootAgent.resource('flowSurfaces').applyBlueprint({ values: blueprint });
+    expect(blueprintResponse.status).toBe(400);
+    expect(blueprintResponse.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path: 'values.navigation.layoutUid',
+      details: { adminLayoutFallbackAllowed: false },
+    });
+
+    const menuTitle = `Direct Admin menu ${Date.now()}`;
+    const menuResponse = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        type: 'group',
+        title: menuTitle,
+        icon: 'AppstoreOutlined',
+        layoutUid: ADMIN_LAYOUT_UID,
+      },
+    });
+    expect(menuResponse.status).toBe(400);
+    expect(menuResponse.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path: 'values.layoutUid',
+      details: { adminLayoutFallbackAllowed: false },
+    });
+
+    const pageTitle = `Direct Admin page ${Date.now()}`;
+    const pageResponse = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        title: pageTitle,
+        icon: 'FileOutlined',
+        tabTitle: 'Overview',
+        layoutUid: ADMIN_LAYOUT_UID,
+      },
+    });
+    expect(pageResponse.status).toBe(400);
+    expect(pageResponse.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path: 'values.layoutUid',
+      details: { adminLayoutFallbackAllowed: false },
+    });
+
+    for (const title of [blueprintPageTitle, menuTitle, pageTitle]) {
+      expect(await app.db.getRepository('desktopRoutes').find({ filter: { title } })).toHaveLength(0);
+    }
+  });
+
+  it('should reject inherited Admin layout creation unless the fixed Portal is explicit', async () => {
+    const group = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          type: 'group',
+          title: `Inherited Admin group ${Date.now()}`,
+          icon: 'AppstoreOutlined',
+          portalUid: ADMIN_LAYOUT_PORTAL_UID,
+        },
       }),
     );
 
-    const pageScope = await readRouteScope(app, created.surface.pageRoute.id);
-    expect(pageScope.portalUids).toEqual([]);
-    expect(pageScope.layoutUids).toEqual([ADMIN_LAYOUT_UID]);
+    const rejectedChildTitle = `Rejected Admin child ${Date.now()}`;
+    const rejectedChild = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        type: 'item',
+        title: rejectedChildTitle,
+        icon: 'FileOutlined',
+        parentMenuRouteId: group.routeId,
+      },
+    });
+    expect(rejectedChild.status).toBe(400);
+    expect(rejectedChild.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path: 'values.parentMenuRouteId',
+    });
+    expect(await app.db.getRepository('desktopRoutes').find({ filter: { title: rejectedChildTitle } })).toHaveLength(0);
+
+    const explicitChild = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          type: 'item',
+          title: `Explicit Admin child ${Date.now()}`,
+          icon: 'FileOutlined',
+          parentMenuRouteId: group.routeId,
+          portalUid: ADMIN_LAYOUT_PORTAL_UID,
+        },
+      }),
+    );
+    expect(await readRouteScope(app, explicitChild.routeId)).toMatchObject({
+      portalUids: [],
+      layoutUids: [ADMIN_LAYOUT_UID],
+    });
+
+    const rejectedPage = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: explicitChild.routeId,
+        title: 'Rejected inherited Admin page',
+        tabTitle: 'Overview',
+      },
+    });
+    expect(rejectedPage.status).toBe(400);
+    expect(rejectedPage.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path: 'values.menuRouteId',
+    });
+
+    const explicitPage = getData(
+      await rootAgent.resource('flowSurfaces').createPage({
+        values: {
+          menuRouteId: explicitChild.routeId,
+          portalUid: ADMIN_LAYOUT_PORTAL_UID,
+          title: 'Explicit inherited Admin page',
+          tabTitle: 'Overview',
+        },
+      }),
+    );
+    expect(await readRouteScope(app, explicitPage.tabRouteId)).toMatchObject({
+      portalUids: [],
+      layoutUids: [ADMIN_LAYOUT_UID],
+    });
+
+    const blueprintPageTitle = `Inherited Admin blueprint ${Date.now()}`;
+    const blueprint = buildMarkdownBlueprint(ADMIN_LAYOUT_PORTAL_UID, 'ignored', blueprintPageTitle);
+    delete (blueprint.navigation as { portalUid?: string }).portalUid;
+    blueprint.navigation.group = { routeId: group.routeId } as typeof blueprint.navigation.group;
+    const rejectedBlueprint = await rootAgent.resource('flowSurfaces').applyBlueprint({ values: blueprint });
+    expect(rejectedBlueprint.status).toBe(400);
+    expect(rejectedBlueprint.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-admin-layout-not-portal-target',
+      path: 'values.navigation.group.routeId',
+    });
+    expect(await app.db.getRepository('desktopRoutes').find({ filter: { title: blueprintPageTitle } })).toHaveLength(0);
+
+    blueprint.navigation.portalUid = ADMIN_LAYOUT_PORTAL_UID;
+    const explicitBlueprint = getData(await rootAgent.resource('flowSurfaces').applyBlueprint({ values: blueprint }));
+    expect(await readRouteScope(app, explicitBlueprint.surface.pageRoute.id)).toMatchObject({
+      portalUids: [],
+      layoutUids: [ADMIN_LAYOUT_UID],
+    });
   });
 
   it('should create desktop portal group, page and tabs as portal-only routes with role grants', async () => {
@@ -537,6 +756,35 @@ describe('flowSurfaces Multi-portal integration', () => {
         filter: { type: 'group', title: groupTitle },
       }),
     ).toHaveLength(0);
+  });
+
+  it('should allow fixed Portal and explicit layout provenance for mobile creates', async () => {
+    const fixedPageTitle = `Fixed mobile page ${Date.now()}`;
+    const fixed = getData(
+      await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: buildMarkdownBlueprint(MOBILE_LAYOUT_PORTAL_UID, 'Ignored fixed mobile group', fixedPageTitle),
+      }),
+    );
+    expect(await readRouteScope(app, fixed.surface.pageRoute.id)).toMatchObject({
+      portalUids: [],
+      layoutUids: [MOBILE_LAYOUT_UID],
+    });
+
+    const layoutPageTitle = `Explicit mobile layout page ${Date.now()}`;
+    const layoutBlueprint = buildMarkdownBlueprint(
+      MOBILE_LAYOUT_PORTAL_UID,
+      'Ignored explicit mobile group',
+      layoutPageTitle,
+    );
+    delete (layoutBlueprint.navigation as { portalUid?: string }).portalUid;
+    (layoutBlueprint.navigation as { layoutUid?: string }).layoutUid = MOBILE_LAYOUT_UID;
+    const explicitLayout = getData(
+      await rootAgent.resource('flowSurfaces').applyBlueprint({ values: layoutBlueprint }),
+    );
+    expect(await readRouteScope(app, explicitLayout.surface.pageRoute.id)).toMatchObject({
+      portalUids: [],
+      layoutUids: [MOBILE_LAYOUT_UID],
+    });
   });
 
   it('should isolate same-title groups and pages across portals', async () => {
@@ -692,16 +940,25 @@ describe('flowSurfaces Multi-portal integration', () => {
     expect(disabled.status).toBe(400);
     expect(disabled.body?.errors?.[0]?.ruleId).toBe('navigation-portal-disabled');
 
+    const aiTitle = 'Unsupported AI portal group';
     const aiPortal = await rootAgent.resource('flowSurfaces').createMenu({
       values: {
         type: 'group',
-        title: 'Unsupported AI portal group',
+        title: aiTitle,
         icon: 'AppstoreOutlined',
         portalUid: AI_PORTAL_UID,
       },
     });
     expect(aiPortal.status).toBe(400);
-    expect(aiPortal.body?.errors?.[0]?.ruleId).toBe('navigation-portal-type-unsupported');
+    expect(aiPortal.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-portal-type-unsupported',
+      details: {
+        uiBuilderAllowed: false,
+        adminLayoutFallbackAllowed: false,
+        implementationPath: 'ai-portal-source',
+      },
+    });
+    expect(await app.db.getRepository('desktopRoutes').find({ filter: { title: aiTitle } })).toHaveLength(0);
 
     await expect(
       service.transaction((transaction) =>
@@ -724,7 +981,40 @@ describe('flowSurfaces Multi-portal integration', () => {
     });
   });
 
-  it('should reject implicit no-code route creation when only an AI portal is enabled', async () => {
+  it('should reject implicit create without writing when no Portal is enabled', async () => {
+    const portals = await app.db.getRepository('multiPortals').find({ fields: ['uid', 'enabled'] });
+    for (const portal of portals) {
+      await app.db.getRepository('multiPortals').update({
+        filterByTk: portal.get('uid'),
+        values: { enabled: false },
+      });
+    }
+
+    const pageTitle = `No Portal page ${Date.now()}`;
+    try {
+      const blueprint = buildMarkdownBlueprint(ADMIN_LAYOUT_PORTAL_UID, `No Portal group ${Date.now()}`, pageTitle);
+      delete (blueprint.navigation as { portalUid?: string }).portalUid;
+      const response = await rootAgent.resource('flowSurfaces').applyBlueprint({ values: blueprint });
+      expect(response.status).toBe(400);
+      expect(response.body?.errors?.[0]).toMatchObject({
+        ruleId: 'navigation-portal-not-found',
+        details: {
+          uiBuilderAllowed: false,
+          adminLayoutFallbackAllowed: false,
+        },
+      });
+      expect(await app.db.getRepository('desktopRoutes').find({ filter: { title: pageTitle } })).toHaveLength(0);
+    } finally {
+      for (const portal of portals) {
+        await app.db.getRepository('multiPortals').update({
+          filterByTk: portal.get('uid'),
+          values: { enabled: portal.get('enabled') },
+        });
+      }
+    }
+  });
+
+  it('should hand implicit create to Portal source when only an AI Portal is enabled', async () => {
     const noCodePortals = await app.db.getRepository('multiPortals').find({
       filter: { portalType: 'no-code' },
       fields: ['uid', 'enabled'],
@@ -737,15 +1027,22 @@ describe('flowSurfaces Multi-portal integration', () => {
     }
 
     try {
-      const response = await rootAgent.resource('flowSurfaces').createMenu({
-        values: {
-          type: 'group',
-          title: `AI-only implicit group ${Date.now()}`,
-          icon: 'AppstoreOutlined',
+      const pageTitle = `AI-only implicit page ${Date.now()}`;
+      const blueprint = buildMarkdownBlueprint(ADMIN_LAYOUT_PORTAL_UID, `AI-only group ${Date.now()}`, pageTitle);
+      delete (blueprint.navigation as { portalUid?: string }).portalUid;
+      const response = await rootAgent.resource('flowSurfaces').applyBlueprint({ values: blueprint });
+      expect(response.status).toBe(400);
+      expect(response.body?.errors?.[0]).toMatchObject({
+        ruleId: 'navigation-portal-type-unsupported',
+        details: {
+          portalUid: AI_PORTAL_UID,
+          portalName: 'flowSurfacesAi',
+          uiBuilderAllowed: false,
+          adminLayoutFallbackAllowed: false,
+          implementationPath: 'ai-portal-source',
         },
       });
-      expect(response.status).toBe(400);
-      expect(response.body?.errors?.[0]?.ruleId).toBe('navigation-no-code-portal-not-found');
+      expect(await app.db.getRepository('desktopRoutes').find({ filter: { title: pageTitle } })).toHaveLength(0);
     } finally {
       for (const portal of noCodePortals) {
         await app.db.getRepository('multiPortals').update({
