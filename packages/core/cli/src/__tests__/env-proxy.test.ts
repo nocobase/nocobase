@@ -260,7 +260,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.indexV2Content).toContain('src="/console/dist/2.1.0-beta.44/v/browser-checker.js?v=1"');
   expect(bundle.indexV2Content).toContain('src="/console/dist/2.1.0-beta.44/v/assets/runtime.js"');
   expect(bundle.indexSettingsContent).toContain(`window['__nocobase_public_path__'] = "/console/";`);
-  expect(bundle.indexSettingsContent).toContain(`window['__webpack_public_path__'] = "";`);
+  expect(bundle.indexSettingsContent).toContain(`window['__webpack_public_path__'] = "/console/dist/2.1.0-beta.44/";`);
   expect(bundle.indexSettingsContent).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
   expect(bundle.indexSettingsContent).toContain(`window['__nocobase_app_client_entry_mode__'] = "modern-only";`);
   expect(bundle.indexSettingsContent).toContain('src="/console/dist/2.1.0-beta.44/settings/assets/runtime.js"');
@@ -284,6 +284,7 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
   expect(bundle.appConfigContent).toContain('location ^~ /settings/assets/ {');
   expect(bundle.appConfigContent).toContain('/settings(?:/|$)');
+  expect(bundle.indexSettingsContent).toContain(`window['__webpack_public_path__'] = "/dist/2.1.0-beta.44/";`);
   expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
   expect(bundle.appConfigContent.match(/location \^~ \/files\//g)).toHaveLength(1);
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
@@ -705,7 +706,7 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/admin/";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
   expect(bundle.indexSettingsContent).toContain(`window['__nocobase_public_path__'] = "/console/";`);
-  expect(bundle.indexSettingsContent).toContain(`window['__webpack_public_path__'] = "";`);
+  expect(bundle.indexSettingsContent).toContain(`window['__webpack_public_path__'] = "/console/dist/2.1.0-beta.44/";`);
   expect(bundle.indexSettingsContent).toContain('src="/console/dist/2.1.0-beta.44/settings/assets/runtime.js"');
 });
 

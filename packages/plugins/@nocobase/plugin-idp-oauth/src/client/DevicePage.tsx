@@ -43,6 +43,10 @@ function getCurrentDevicePath(pathname: string, search: string, userCode?: strin
   return `${pathname}${currentSearch}`;
 }
 
+function getDeviceCompleteRedirectPath(pathname: string) {
+  return /(^|\/)settings(\/|$)/.test(pathname) ? '/settings/' : '/';
+}
+
 export const DevicePage = () => {
   const api = useAPIClient();
   const app = useApp();
@@ -188,7 +192,7 @@ export const DevicePage = () => {
           title={t('Device sign-in complete')}
           subTitle={t('Authorization is complete. You can return to the terminal.')}
           extra={
-            <Button type="primary" onClick={() => navigate('/')}>
+            <Button type="primary" onClick={() => navigate(getDeviceCompleteRedirectPath(location.pathname))}>
               {t('Back to home')}
             </Button>
           }

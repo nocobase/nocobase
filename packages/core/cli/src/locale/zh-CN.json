@@ -195,28 +195,6 @@
         "sourceStorage": "源码存储：{{sourceStorage}}"
       }
     },
-    "portalRegistrySync": {
-      "errors": {
-        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
-        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
-        "invalidItem": "Portal Registry 项 \"{{item}}\" 无效。请使用 \"ai\" 或 \"@nocobase/ai\" 这样的名称。",
-        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
-        "packageJsonMissing": "Portal 无效：{{portalDir}} 中缺少 package.json。",
-        "componentsJsonMissing": "Portal 无效：{{portalDir}} 中缺少 components.json。",
-        "invalidComponentsJson": "Portal components.json 不是有效的 JSON：{{componentsJsonPath}}。",
-        "overwriteUiRequiresOverwrite": "--overwrite-ui 必须与 --overwrite 一起使用。",
-        "diffConflictsWithWrite": "--diff 不能与 --overwrite、--overwrite-ui 或 --build 一起使用。",
-        "registryUnavailable": "无法连接 Portal Registry。{{details}}",
-        "registryRequestFailed": "Portal Registry 请求失败，状态码 {{status}}{{details}}。"
-      },
-      "messages": {
-        "registryUnsupported": "所选 NocoBase 服务未提供 Portal Registry，已跳过自动安装。",
-        "synced": "已在 Portal \"{{portal}}\" 中安装 Registry 项：{{items}}。",
-        "skipped": "已安装，跳过：{{items}}。",
-        "upToDate": "Portal \"{{portal}}\" 中的 Registry 已是最新状态。",
-        "diffCompleted": "Portal \"{{portal}}\" 的 Registry 差异检查已完成。"
-      }
-    },
     "portalConfig": {
       "errors": {
         "invalidSourceStorage": "源码存储 \"{{value}}\" 无效。请使用 \"nocobase\" 或 \"git\"。",

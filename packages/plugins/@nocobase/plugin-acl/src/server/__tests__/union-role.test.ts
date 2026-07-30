@@ -513,9 +513,11 @@ describe('union role: full permissions', async () => {
         roleMode: SystemRoleMode.allowUseUnion,
       },
     });
-    agent = await app.agent().login(user);
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
     const createRoleResponse = await agent.resource('roles').check();
     expect(createRoleResponse.statusCode).toBe(200);
+    expect(createRoleResponse.body.data.role).toBe(UNION_ROLE_KEY);
+    expect(createRoleResponse.body.data.roles).toEqual(expect.arrayContaining([role1.name, role2.name]));
   });
 
   it('should currentRole not be __union__ when default role mode #1907', async () => {

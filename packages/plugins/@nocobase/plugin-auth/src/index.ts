@@ -9,13 +9,15 @@
 
 export {
   AuthModel,
+  appendAuthRedirectQuery,
   BasicAuth,
   buildRedirectPath,
   defaultTokenPolicyConfig,
   default,
   getModernClientPrefix,
   presetAuthType,
-  resolveSubAppSegment,
+  resolveAuthRedirect,
   resolveSigninPrefix,
+  resolveSubAppSegment,
 } from './server';
-export type { BuildRedirectPathOptions, ResolveSigninPrefixOptions } from './server';
+export type { BuildRedirectPathOptions, AuthRedirectOriginContext, ResolveSigninPrefixOptions } from './server';

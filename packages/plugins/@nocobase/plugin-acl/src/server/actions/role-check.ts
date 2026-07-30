@@ -73,6 +73,7 @@ export async function checkAction(ctx, next) {
   ctx.body = {
     ...role,
     role: currentRole,
+    roles: currentRoles,
     roleMode,
     availableActions: [...availableActions.keys()],
     actionAlias: map2obj(ctx.app.acl.actionAlias),

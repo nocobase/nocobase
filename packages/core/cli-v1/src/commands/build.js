@@ -10,7 +10,6 @@
 const { resolve } = require('path');
 const { Command } = require('commander');
 const { run, nodeCheck, isPackageValid, buildIndexHtml } = require('../util');
-const { buildPortalRegistries } = require('../portal-registry/build');
 
 /**
  *
@@ -50,7 +49,6 @@ module.exports = (cli) => {
         options.sourcemap ? '--sourcemap' : '',
         options.retry ? '--retry' : '',
       ]);
-      await buildPortalRegistries({ packageSelectors: pkgs });
       buildIndexHtml(true);
     });
 };

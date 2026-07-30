@@ -67,13 +67,13 @@ function buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl: string) {
   const subappMatch = url.pathname.match(/^(.*)\/api\/__app\/([^/]+)\/?$/);
   if (subappMatch) {
     const publicPath = (subappMatch[1] || '').replace(/\/+$/, '');
-    return `${publicPath}/apps/${subappMatch[2]}/idpOAuth/device`;
+    return `${publicPath}/settings/apps/${subappMatch[2]}/idpOAuth/device`;
   }
 
   const appMatch = url.pathname.match(/^(.*)\/api\/?$/);
   if (appMatch) {
     const publicPath = (appMatch[1] || '').replace(/\/+$/, '');
-    return `${publicPath}/idpOAuth/device`;
+    return `${publicPath}/settings/idpOAuth/device`;
   }
 
   return undefined;

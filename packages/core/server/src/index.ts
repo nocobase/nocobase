@@ -16,7 +16,6 @@ export * from './audit-manager';
 export * from './gateway';
 export * from './gateway/static-file-security';
 export * as middlewares from './middlewares';
-export * from './portal-registry';
 export * from './migration';
 export * from './plugin';
 export * from './plugin-manager';

@@ -33,7 +33,6 @@ import {
   applyDefaultRoleMultiPortalAccess,
   ensureDefaultRoleMultiPortalAccess,
 } from './ensureDefaultRoleMultiPortalAccess';
-import { createPortalRegistryActionHandlers } from './portal-registry';
 import {
   DEFAULT_ADMIN_MULTI_PORTAL_UID,
   DEFAULT_MOBILE_MULTI_PORTAL_UID,
@@ -3478,11 +3477,6 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async load() {
-    this.app.resourceManager.define({
-      name: 'registry',
-      actions: createPortalRegistryActionHandlers(this.app),
-      only: ['list', 'get'],
-    });
     this.app.acl.registerSnippet({
       name: 'pm.multi-portal',
       actions: MULTI_PORTAL_MANAGEMENT_ACTIONS,

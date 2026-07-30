@@ -23,7 +23,17 @@ export class PluginIdpOauthClient extends Plugin {
       skipAuthCheck: true,
     });
     plugin.router.add('idp-oauth.device', {
+      path: '/settings/idpOAuth/device',
+      Component: DevicePage,
+      skipAuthCheck: true,
+    });
+    plugin.router.add('idp-oauth-legacy-device', {
       path: '/idpOAuth/device',
+      Component: DevicePage,
+      skipAuthCheck: true,
+    });
+    plugin.router.add('idp-oauth-modern-legacy-device', {
+      path: '/v/idpOAuth/device',
       Component: DevicePage,
       skipAuthCheck: true,
     });
