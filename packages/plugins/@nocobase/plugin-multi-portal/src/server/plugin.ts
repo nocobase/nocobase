@@ -1412,48 +1412,6 @@ async function seedHistoricalMultiPortals(db: Database) {
   await repairFixedLayoutMultiPortalRecords(db);
 }
 
-async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () => Promise<void>) {
-  const targets = await getMultiPortalWriteTargets(ctx, ['uid', 'portalName', 'uiLayoutUid']);
-  for (const { existing, values } of targets) {
-    const existingUid = trimString(existing?.get('uid'));
-    const uid = trimString(values.uid ?? existingUid);
-    const portalName = trimString(values.portalName ?? existing?.get('portalName'));
-    const uiLayoutUid = trimString(values.uiLayoutUid ?? existing?.get('uiLayoutUid'));
-
-    const fixedPortal = getFixedLayoutMultiPortalRecord(existingUid) || getFixedLayoutMultiPortalRecord(uid);
-    const canonicalPortal =
-      fixedPortal?.uid === uid &&
-      (!existingUid || fixedPortal.uid === existingUid) &&
-      fixedPortal.portalName === portalName &&
-      fixedPortal.uiLayoutUid === uiLayoutUid;
-    if (fixedPortal && !canonicalPortal) {
-      ctx.throw(400, 'Reserved Portal UID must match its canonical route and UI layout');
-      return;
-    }
-    if (!portalName) {
-      continue;
-    }
-    if (portalName === 'admin' || portalName === 'mobile') {
-      continue;
-    }
-
-    const existingInitPortal =
-      existing?.get('uid') === DEFAULT_MULTI_PORTAL_UID && existing.get('portalName') === portalName;
-    const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
-      filter: {
-        routeName: portalName,
-      },
-      fields: ['uid'],
-    });
-    if (uiLayout && !existingInitPortal) {
-      ctx.throw(400, 'Portal route name conflicts with an existing UI layout');
-      return;
-    }
-  }
-
-  await next();
-}
-
 async function preventMultiPortalBackingLayoutChange(ctx: ResourcerContext, next: () => Promise<void>) {
   const targets = await getMultiPortalWriteTargets(ctx, ['uiLayoutUid']);
   for (const { existing, values } of targets) {
@@ -1592,7 +1550,6 @@ async function assertDesktopRouteParentsBelongToScope(
       id: parentIds,
       ...scope.filter,
     },
-    ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
     transaction,
   });
   if (new Set(normalizeDesktopRouteTargetIds(parents)).size !== new Set(parentIds.map(String)).size) {
@@ -1644,7 +1601,6 @@ async function assertDesktopRouteUpsertMatchesBelongToScope(
         ...filter,
         ...scope.filter,
       },
-      ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
       transaction,
     });
     const allMatchIds = normalizeDesktopRouteTargetIds(allMatches);
@@ -2158,7 +2114,7 @@ async function findDesktopRouteMutationTargets(
       ...(filter ?? {}),
       ...(scopeFilter ?? {}),
     },
-    ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
+    ...(transaction && !scopeFilter ? { lock: transaction.LOCK.UPDATE } : {}),
     transaction,
   });
 }
@@ -2337,7 +2293,6 @@ async function guardDesktopRouteMoveScope(ctx: ResourcerContext, next: () => Pro
         id: routeIds,
         ...scope.filter,
       },
-      lock: transaction.LOCK.UPDATE,
       transaction,
     });
     if (
@@ -2372,7 +2327,6 @@ async function guardDesktopRouteMoveScope(ctx: ResourcerContext, next: () => Pro
           id: parentIds,
           ...scope.filter,
         },
-        lock: transaction.LOCK.UPDATE,
         transaction,
       });
       if (normalizeDesktopRouteTargetIds(parents).join(',') !== parentIds.map(String).sort().join(',')) {
@@ -2426,7 +2380,6 @@ async function guardDesktopRouteMoveScope(ctx: ResourcerContext, next: () => Pro
                 $gte: targetSort,
               },
         },
-        lock: transaction.LOCK.UPDATE,
         transaction,
       });
       const affectedRouteIds = affectedRoutes.map((route) => route.get('id'));
@@ -2540,7 +2493,7 @@ async function findDesktopRouteDestroyRoots(
       ...(scopeFilter ?? {}),
       ...(filterByTk.length ? { id: filterByTk } : {}),
     },
-    lock: transaction.LOCK.UPDATE,
+    ...(scopeFilter ? {} : { lock: transaction.LOCK.UPDATE }),
     transaction,
   });
   return collectDesktopRouteIds(records);
@@ -2624,13 +2577,20 @@ async function detachOwnerAndFindDestroyRoots(
   scope: DesktopRouteOwnerScope,
   transaction: Transaction,
 ) {
+  await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    filter: {
+      id: routeIds,
+    },
+    lock: transaction.LOCK.UPDATE,
+    transaction,
+  });
   const routes = await ctx.db.getRepository('desktopRoutes').find({
     fields: ['id', 'parentId'],
     appends: ['multiPortals', 'uiLayouts'],
     filter: {
       id: routeIds,
     },
-    lock: transaction.LOCK.UPDATE,
     transaction,
   });
   const routesById = new Map<string, Model>(routes.map((route): [string, Model] => [String(route.get('id')), route]));
@@ -3634,11 +3594,9 @@ export class PluginMultiPortalServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', preventDirectDefaultPortalMutation);
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:create', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventDirectDefaultPortalMutation);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventMultiPortalBackingLayoutChange);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventDirectDefaultPortalMutation);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:firstOrCreate',
@@ -3646,7 +3604,6 @@ export class PluginMultiPortalServer extends Plugin {
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:updateOrCreate',
       preventDirectDefaultPortalMutation,
@@ -3657,7 +3614,6 @@ export class PluginMultiPortalServer extends Plugin {
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal, {
       after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
     });
