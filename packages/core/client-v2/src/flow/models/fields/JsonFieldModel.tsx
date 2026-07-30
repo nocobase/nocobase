@@ -13,6 +13,22 @@ import JSON5 from 'json5';
 import React, { useState, useEffect, useRef } from 'react';
 import { FieldModel } from '../base/FieldModel';
 
+const jsonValidationRuleMarker = '__jsonSyntaxValidation';
+
+interface JsonValidationRule {
+  [jsonValidationRuleMarker]: true;
+  type: 'any';
+  validator?: (_rule: unknown, value: unknown) => Promise<void>;
+}
+
+function isRuleObject(rule: unknown): rule is Record<string, unknown> {
+  return typeof rule === 'object' && rule !== null;
+}
+
+function isJsonValidationRule(rule: unknown): rule is JsonValidationRule {
+  return isRuleObject(rule) && rule[jsonValidationRuleMarker] === true;
+}
+
 const jsonCss = css`
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
   font-size: 14px;
@@ -40,7 +56,7 @@ export const JsonInput = observer((props: any) => {
     }
 
     internalChange.current = false;
-  }, [value]);
+  }, [_JSON, space, value]);
 
   // 用户输入时
   const handleChange = (ev) => {
@@ -91,23 +107,30 @@ JsonFieldModel.registerFlow({
   key: 'jsonInitSetting',
   steps: {
     initValidation: {
-      handler(ctx, params) {
-        const rules = ctx.model.parent.props.rules || [];
+      handler(ctx) {
+        const currentRules = Array.isArray(ctx.model.parent.props.rules) ? ctx.model.parent.props.rules : [];
+        const rules = currentRules.filter((rule: unknown) => {
+          return (!isRuleObject(rule) || Object.keys(rule).length > 0) && !isJsonValidationRule(rule);
+        });
         // 添加 JSON 语法校验规则
         rules.push({
-          validator: (_, value) => {
+          // validator 函数序列化后会被丢弃；保留 any 类型可避免持久化规则退化为默认字符串校验。
+          type: 'any',
+          [jsonValidationRuleMarker]: true,
+          validator: (_rule: unknown, value: unknown) => {
             // 允许空
             if (value === null || value === undefined || value === '') return Promise.resolve();
             // 如果已经是对象/数组，直接通过
             if (typeof value === 'object') return Promise.resolve();
             try {
-              JSON.parse(value);
+              JSON.parse(String(value));
               return Promise.resolve();
-            } catch (err) {
-              return Promise.reject(ctx.t('Invalid JSON format') + ': ' + err.message);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              return Promise.reject(ctx.t('Invalid JSON format') + ': ' + message);
             }
           },
-        });
+        } satisfies JsonValidationRule);
         ctx.model.parent.setProps({
           rules,
         });
