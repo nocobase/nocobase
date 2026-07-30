@@ -75,47 +75,31 @@ function runBrowserChecker(options: RunBrowserCheckerOptions) {
 }
 
 describe('v2 browser checker', () => {
-  it('redirects the modern client root to Settings only in modern-only mode', () => {
-    expect(
-      runBrowserChecker({
-        appClientEntryMode: 'modern-only',
-        pathname: '/v/',
-      }).replacements,
-    ).toEqual(['https://example.test/settings']);
+  it.each([undefined, 'modern-default', 'modern-only'] as const)(
+    'redirects the modern client root to Settings for entry mode %s',
+    (appClientEntryMode) => {
+      expect(
+        runBrowserChecker({
+          appClientEntryMode,
+          pathname: '/v/',
+        }).replacements,
+      ).toEqual(['https://example.test/settings']);
+    },
+  );
 
-    expect(
-      runBrowserChecker({
-        appClientEntryMode: 'modern-default',
-        pathname: '/v/',
-      }).replacements,
-    ).toEqual([]);
-
-    expect(
-      runBrowserChecker({
-        pathname: '/v/',
-      }).replacements,
-    ).toEqual([]);
-  });
-
-  it('redirects scoped modern client roots to scoped Settings only in modern-only mode', () => {
-    expect(
-      runBrowserChecker({
-        appClientEntryMode: 'modern-only',
-        pathname: '/v/apps/demo',
-        search: '?from=admin',
-        hash: '#portal',
-      }).replacements,
-    ).toEqual(['https://example.test/settings/apps/demo?from=admin#portal']);
-
-    expect(
-      runBrowserChecker({
-        appClientEntryMode: 'modern-default',
-        pathname: '/v/apps/demo',
-        search: '?from=admin',
-        hash: '#portal',
-      }).replacements,
-    ).toEqual([]);
-  });
+  it.each([undefined, 'modern-default', 'modern-only'] as const)(
+    'redirects scoped modern client roots to scoped Settings for entry mode %s',
+    (appClientEntryMode) => {
+      expect(
+        runBrowserChecker({
+          appClientEntryMode,
+          pathname: '/v/apps/demo',
+          search: '?from=admin',
+          hash: '#portal',
+        }).replacements,
+      ).toEqual(['https://example.test/settings/apps/demo?from=admin#portal']);
+    },
+  );
 
   it('keeps Settings scoped trailing slash normalization independent from entry mode', () => {
     expect(
