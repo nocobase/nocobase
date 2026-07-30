@@ -544,7 +544,14 @@ describe('standalone settings layout root', () => {
     expect(within(header).queryByRole('menu')).not.toBeInTheDocument();
     expect(within(header).queryByTitle('Search settings')).not.toBeInTheDocument();
 
-    const shortcutEvent = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, cancelable: true });
+    const isMac = /Mac|iPhone|iPad/.test(window.navigator.platform || '');
+    const shortcutEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      ctrlKey: !isMac,
+      metaKey: isMac,
+      bubbles: true,
+      cancelable: true,
+    });
     fireEvent(window, shortcutEvent);
     expect(shortcutEvent.defaultPrevented).toBe(false);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
