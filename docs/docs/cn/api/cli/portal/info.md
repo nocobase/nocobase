@@ -1,12 +1,12 @@
 ---
 title: "nb portal info"
-description: "nb portal info 命令参考：查看指定 Portal 记录和本地工作区详情。"
-keywords: "nb portal info,NocoBase CLI,Portal,工作区详情,json-output"
+description: "nb portal info 命令参考：查看指定 Portal 记录和本地源码目录详情。"
+keywords: "nb portal info,NocoBase CLI,Portal,本地源码目录详情,json-output"
 ---
 
 # nb portal info
 
-查看指定 Portal 记录和本地工作区详情。遇到本地状态和远端记录不一致时，可以先用这个命令确认当前 Portal 的来源、路径和同步状态。
+查看指定 Portal 记录和本地源码目录详情。遇到本地状态和远端记录不一致时，可以先用这个命令确认当前 Portal 的来源、路径和同步状态。
 
 ## 用法
 

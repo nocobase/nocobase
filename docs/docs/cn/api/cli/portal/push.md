@@ -47,11 +47,11 @@ nb portal push customer --message "Update customer portal"
 
 ## 说明
 
-`push` 面向已经存在的本地 Portal 工作区。如果你只想部署当前本地构建结果，使用 [`nb portal deploy`](./deploy.md)；如果你还需要同步源码，先执行 `push`。
+`push` 面向已经存在的 Portal 本地源码目录。如果你只想部署当前本地构建结果，使用 [`nb portal deploy`](./deploy.md)；如果你还需要同步源码，先执行 `push`。
 
-执行时会读取本地工作区的 `portal.config.json`，并先把源码配置同步到远端 Portal 记录。
+执行时会读取本地源码目录的 `portal.config.json`，并先把源码配置同步到远端 Portal 记录。
 
-如果 Portal 使用 Git source storage，`push` 会 clone 配置中的仓库和分支，把本地 Portal 工作区复制到配置的 Git 目录，然后提交并推送。没有源码变更时不会创建 commit；如果没有传入 `--message`，默认 commit message 是 `chore(portal): update <portal>`。
+如果 Portal 使用 Git source storage，`push` 会 clone 配置中的仓库和分支，把 Portal 本地源码目录复制到配置的 Git 目录，然后提交并推送。没有源码变更时不会创建 commit；如果没有传入 `--message`，默认 commit message 是 `chore(portal): update <portal>`。
 
 如果 Portal 使用默认的 `nocobase` source storage，`local` 和 `docker` env 下源码通常已经在当前机器或 Docker volume 中，`push` 会提示不需要推送。`http` env 会打包本地源码并通过 API 上传。
 

@@ -8,7 +8,7 @@ keywords: "AI 搭建,版本控制,Version control,nocobase-revision,nb revision 
 
 :::tip 前置条件
 
-- 阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化
+- 阅读本页前，请确保你已按照 [AI 无代码搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化
 - 需要启用「备份管理」和「版本控制」两个插件
 - 社区版和标准版不包含版本控制插件。如果只是想在关键变更前保留可回退状态，可以使用 [备份管理](../ops-management/backup-manager/index.mdx)
 
@@ -116,5 +116,5 @@ nb revision create --env dev --yes "完成工单管理页面和 SLA 字段配置
 
 - [版本控制插件操作手册](../ops-management/version-control/index.md) — 手动创建、恢复版本和设置版本策略
 - [备份管理](../ops-management/backup-manager/index.mdx) — 版本控制依赖的基础能力
-- [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
+- [AI 无代码搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
 - [发布管理](./publish.md) — 跨环境发布、备份恢复和迁移

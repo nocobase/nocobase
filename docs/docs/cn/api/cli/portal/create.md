@@ -1,12 +1,12 @@
 ---
 title: "nb portal create"
-description: "nb portal create 命令参考：基于模板创建本地 Portal 工作区，并创建或更新 Portal 记录。"
-keywords: "nb portal create,NocoBase CLI,Portal,创建工作区,template,source storage,git"
+description: "nb portal create 命令参考：基于模板创建 Portal 本地源码目录，并创建或更新 Portal 记录。"
+keywords: "nb portal create,NocoBase CLI,Portal,创建本地源码目录,template,source storage,git"
 ---
 
 # nb portal create
 
-基于模板创建本地 Portal 工作区，并创建或更新 NocoBase 中的 Portal 记录。
+基于模板创建 Portal 本地源码目录，并创建或更新 NocoBase 中的 Portal 记录。
 
 默认模板是 `@nocobase/portal-template-default`，源码默认保存到 NocoBase 侧的 source storage。如果你希望用 Git 管理 Portal 源码，可以在创建时把 `--source-storage` 设置为 `git`。
 
@@ -25,7 +25,7 @@ nb portal create <portal> [flags]
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--title` | string | Portal 显示标题，省略时根据 Portal slug 自动生成 |
-| `--force` | boolean | 删除已有本地 Portal 工作区并重新创建 |
+| `--force` | boolean | 删除已有 Portal 本地源码目录并重新创建 |
 | `--source-storage` | `nocobase` \| `git` | Portal 源码保存方式，默认是 `nocobase` |
 | `--git-repo` | string | 当 `--source-storage=git` 时使用的 Git 仓库 URL |
 | `--git-branch` | string | 当 `--source-storage=git` 时使用的 Git 分支，省略时按配置默认值处理 |
@@ -59,9 +59,9 @@ nb portal create customer --source-storage git --git-repo git@github.com:nocobas
 
 ## 说明
 
-`--force` 会先删除已有本地 Portal 工作区，再重新创建。这个参数适合本地工作区已经损坏、或者你明确希望重新从模板生成的情况。
+`--force` 会先删除已有 Portal 本地源码目录，再重新创建。这个参数适合本地源码目录已经损坏、或者你明确希望重新从模板生成的情况。
 
-创建时会在本地工作区写入 `.env`、`.env.local` 和 `portal.config.json`。其中 `.env.local` 使用完整的 `apiBaseUrl`，`portal.config.json` 保存 source storage 和 Git 配置。
+创建时会在本地源码目录写入 `.env`、`.env.local` 和 `portal.config.json`。其中 `.env.local` 使用完整的 `apiBaseUrl`，`portal.config.json` 保存 source storage 和 Git 配置。
 
 如果模板里有 `package.json`，创建完成后会自动执行 `pnpm install`。如果模板里没有 `package.json`，会跳过依赖安装。
 

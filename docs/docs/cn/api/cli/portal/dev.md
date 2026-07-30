@@ -1,14 +1,14 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev 命令参考：启动指定 Portal 工作区的开发模式。"
+description: "nb portal dev 命令参考：启动指定 Portal 本地源码目录的开发模式。"
 keywords: "nb portal dev,NocoBase CLI,Portal,开发模式,本地开发"
 ---
 
 # nb portal dev
 
-启动指定 Portal 工作区的开发模式。通常在执行 [`nb portal create`](./create.md) 或 [`nb portal pull`](./pull.md) 后使用。
+启动指定 Portal 本地源码目录的开发模式。通常在执行 [`nb portal create`](./create.md) 或 [`nb portal pull`](./pull.md) 后使用。
 
-执行时会刷新工作区里的 `.env` 和 `.env.local`，然后在 Portal 工作区中运行 `pnpm dev`。
+执行时会刷新本地源码目录里的 `.env` 和 `.env.local`，然后在 Portal 本地源码目录中运行 `pnpm dev`。
 
 ## 用法
 
@@ -40,9 +40,9 @@ nb portal dev customer --env dev --yes
 
 ## 说明
 
-`dev` 使用本地 Portal 工作区启动开发服务。它不会创建 Portal 记录，也不会拉取远端源码；如果本地工作区不存在，先使用 [`nb portal create`](./create.md) 或 [`nb portal pull`](./pull.md)。
+`dev` 使用 Portal 本地源码目录启动开发服务。它不会创建 Portal 记录，也不会拉取远端源码；如果本地源码目录不存在，先使用 [`nb portal create`](./create.md) 或 [`nb portal pull`](./pull.md)。
 
-工作区必须包含 `package.json`。`ssh` env 当前暂不支持启动 Portal 开发模式。
+本地源码目录必须包含 `package.json`。`ssh` env 当前暂不支持启动 Portal 开发模式。
 
 ## 相关命令
 

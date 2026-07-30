@@ -113,7 +113,7 @@ nb env list
 
 - [NocoBase CLI](../quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [NocoBase Skills](../../ai-builder/index.md#nocobase-skills) — 可安装到 AI Agent 中的领域知识包
-- [AI 搭建快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
+- [AI 无代码搭建快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [WorkBuddy 官方文档](https://www.codebuddy.cn/docs/workbuddy/Overview) — WorkBuddy 完整使用指南
 - [OpenClaw + NocoBase](../openclaw/index.md) — 全球最火的开源 AI Agent，飞书一键部署
 - [Hermes Agent + NocoBase](../hermes-agent/index.md) — 自动沉淀技能，越用越懂你的业务系统

@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速开始",
+    "link": "/ai-portal/"
+  },
+  {
+    "type": "file",
+    "name": "agent-workflow",
+    "label": "与 AI Agent 协作搭建"
+  },
+  {
+    "type": "file",
+    "name": "project-structure",
+    "label": "项目结构与技术栈"
+  },
+  {
+    "type": "file",
+    "name": "data-api",
+    "label": "数据与 API"
+  },
+  {
+    "type": "file",
+    "name": "auth-acl",
+    "label": "认证与权限"
+  },
+  {
+    "type": "file",
+    "name": "components",
+    "label": "标准组件与扩展"
+  },
+  {
+    "type": "file",
+    "name": "deploy",
+    "label": "部署与源码管理"
+  }
+]

@@ -98,7 +98,7 @@ nb env list
 
 - [NocoBase CLI](../quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [NocoBase Skills](../../ai-builder/index.md#nocobase-skills) — 可安装到 AI Agent 中的领域知识包
-- [AI 搭建快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
+- [AI 无代码搭建快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [Codex GitHub](https://github.com/openai/codex) — Codex 源码和文档
 - [Claude Code + NocoBase](../claude-code/index.md) — Anthropic 官方 AI 编程助手
 - [OpenCode + NocoBase](../opencode/index.md) — 开源、支持 75+ 模型的终端 AI Agent

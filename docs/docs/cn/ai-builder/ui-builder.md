@@ -8,7 +8,7 @@ keywords: "AI 搭建,界面配置,页面,区块,弹窗,联动,UI Builder"
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+阅读本页前，请确保你已按照 [AI 无代码搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
 
 :::
 
@@ -33,6 +33,7 @@ keywords: "AI 搭建,界面配置,页面,区块,弹窗,联动,UI Builder"
 - 不能设计数据表结构（用[数据建模 Skill](./data-modeling)）
 - 不能编排工作流（用[工作流管理 Skill](./workflow)）
 - 不能处理非现代页面（v1）的导航，只支持处理 v2 的页面。
+- 不处理 AI Portal 的前端源码（用 [AI Portal](../ai-portal/index.md)）
 
 ## 提示词示例
 
@@ -94,7 +95,8 @@ Skill 会先读取数据表字段，生成页面蓝图并写入。
 
 ## 相关链接
 
-- [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
+- [AI 无代码搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
 - [数据建模](./data-modeling) — 用 AI 创建和管理数据表、字段、关联关系
 - [权限配置](./acl) — 配置角色和数据访问权限
 - [工作流管理](./workflow) — 创建、编辑和诊断工作流
+- [AI Portal](../ai-portal/index.md) — 需要写代码定制页面时的另一种方式
