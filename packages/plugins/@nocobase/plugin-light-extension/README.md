@@ -75,7 +75,7 @@ nb light save --dir ./workspace --yes --json-output
 
 ## Move RunJS source
 
-**Move to light extension** moves the complete current workspace, including unsaved files, into a new or existing repository. The public API also accepts the stable application-default repository, creating it when necessary. The server derives the Entry kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
+**Move to light extension** moves the complete current workspace, including unsaved files, into a new or existing repository. The server derives the Entry kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
 
 **Move to inline** copies the current reachable Entry files back to the owner and clears the external binding. It copies current repository source; it does not silently restore the older fallback snapshot.
 
