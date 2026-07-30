@@ -176,11 +176,25 @@ describe('RunJSLightExtensionEditorProvider', () => {
     },
   };
 
-  it('creates move-to-inline keys without secure-context randomUUID', () => {
+  it('creates move-to-inline keys with secure-context randomUUID', () => {
+    const originalCrypto = globalThis.crypto;
+    const randomUUID = vi.fn(() => '123e4567-e89b-42d3-a456-426614174000');
+    vi.stubGlobal('crypto', { randomUUID });
+    try {
+      expect(createMoveToInlineIdempotencyKey()).toBe('move-to-inline-123e4567-e89b-42d3-a456-426614174000');
+      expect(randomUUID).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto);
+    }
+  });
+
+  it('creates UUID v4 move-to-inline keys without secure-context randomUUID', () => {
     const originalCrypto = globalThis.crypto;
     vi.stubGlobal('crypto', {});
     try {
-      expect(createMoveToInlineIdempotencyKey()).toMatch(/^move-to-inline-[a-z0-9]{11}$/);
+      expect(createMoveToInlineIdempotencyKey()).toMatch(
+        /^move-to-inline-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u,
+      );
     } finally {
       vi.stubGlobal('crypto', originalCrypto);
     }
