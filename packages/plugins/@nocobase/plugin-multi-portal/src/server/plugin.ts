@@ -793,6 +793,7 @@ async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorag
   const buildEnv = getPortalStorageCommandEnv({
     NOCOBASE_API_URL: getPortalStorageApiUrl(item.appName),
     NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
+    COREPACK_ENABLE_PROJECT_SPEC: '0',
   });
   await appendPortalStorageLog(logPath, `Building portal ${item.appName}/${item.portalName}.`);
   await appendPortalStorageLog(
