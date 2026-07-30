@@ -32,10 +32,13 @@ export type SettingsGroupDefinition = {
 };
 
 /**
- * 顶栏铺六个独立入口 + 一个「系统设置」兜底分组。
+ * 顶栏铺六个独立入口 + 一个「其他设置」兜底分组。
  *
  * 前六个各自只有一个配置项、且都是日常高频，直接当一级入口（标题取配置项自己的名字，
- * 顺带继承插件的翻译）；其余零散配置全部收进系统设置，靠左栏和悬浮下拉展开。
+ * 顺带继承插件的翻译）；其余零散配置全部收进其他设置，靠左栏和悬浮下拉展开。
+ *
+ * 兜底分组不叫「系统设置」：它下面本来就有一个同名的配置项（站点标题、logo 那个），
+ * 分组和子项重名会让人以为点进去是同一个东西。
  */
 export const SETTINGS_GROUPS: SettingsGroupDefinition[] = [
   { key: 'applications', title: 'Applications', primary: 'multi-portal' },
@@ -44,7 +47,7 @@ export const SETTINGS_GROUPS: SettingsGroupDefinition[] = [
   { key: 'access', title: 'Users & Permissions', primary: 'users-permissions' },
   { key: 'automation', title: 'Workflow', primary: 'workflow' },
   { key: 'ai', title: 'AI employees', primary: 'ai' },
-  { key: 'system', title: 'System settings' },
+  { key: 'system', title: 'Other settings' },
 ];
 
 export const DEFAULT_SETTINGS_GROUP: SettingsGroupKey = 'system';
@@ -53,7 +56,7 @@ export const DEFAULT_SETTINGS_GROUP: SettingsGroupKey = 'system';
  * 内置配置项到分组的映射。
  *
  * key 为 `pluginSettingsManager.addMenuItem` 时传入的 `key`；
- * 没列出来的一律落到系统设置，第三方插件不改代码也能出现。
+ * 没列出来的一律落到其他设置，第三方插件不改代码也能出现。
  */
 const BUILTIN_SETTINGS_GROUP_MAP: Record<string, SettingsGroupKey> = {
   'multi-portal': 'applications',
