@@ -75,10 +75,12 @@ AI Portal 就是这个思路的产物——一个专门留给 AI Agent 写代码
 
 ## 前置条件
 
-- NocoBase >= 3.0.0-alpha.1
+- NocoBase >= 3.0.0-alpha.3
 - Node.js >= 22
 - pnpm——Portal 模板用它安装依赖和启动开发服务
-- 已经通过 `nb init` 完成初始化的 NocoBase 应用，详见 [AI Agent 接入指南](../ai/quick-start.md)
+- 安装了 `nocobase cli` 的 alpha 版本（**注意：目前只支持 alpha 版本**）
+  - `npm install -g @nocobase/cli@alpha`
+  - 并且已经通过 `nb init --ui` 完成初始化的 NocoBase 应用，详见 [AI Agent 接入指南](../ai/quick-start.md)
 - 一个 AI Agent，比如 Claude Code、Codex、Cursor
 
 :::tip 提示
