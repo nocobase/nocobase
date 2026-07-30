@@ -2986,10 +2986,9 @@ export class PluginMultiPortalServer extends Plugin {
     await run();
   }
 
-  private async removePortalStorageDist(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
-    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist'), {
+  private async removePortalStorageIndexHtml(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
+    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist', 'index.html'), {
       force: true,
-      recursive: true,
     });
   }
 
@@ -3040,8 +3039,8 @@ export class PluginMultiPortalServer extends Plugin {
         }
 
         this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
-        await this.removePortalStorageDist(item);
-        await appendPortalStorageLog(logPath, `Portal dist directory removed for ${item.appName}/${item.portalName}.`);
+        await this.removePortalStorageIndexHtml(item);
+        await appendPortalStorageLog(logPath, `Portal index.html removed for ${item.appName}/${item.portalName}.`);
       } catch (error) {
         await appendPortalStorageLog(
           logPath,
@@ -3093,8 +3092,8 @@ export class PluginMultiPortalServer extends Plugin {
     }
 
     this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
-    await this.removePortalStorageDist(item);
-    await appendPortalStorageLog(logPath, `Portal dist directory removed for ${item.appName}/${item.portalName}.`);
+    await this.removePortalStorageIndexHtml(item);
+    await appendPortalStorageLog(logPath, `Portal index.html removed for ${item.appName}/${item.portalName}.`);
   }
 
   private async syncMultiPortalStorageItem(
@@ -3114,7 +3113,7 @@ export class PluginMultiPortalServer extends Plugin {
           previousItem.portalName !== currentItem.portalName ||
           !currentItem.enabled)
       ) {
-        await this.removePortalStorageDist(previousItem);
+        await this.removePortalStorageIndexHtml(previousItem);
       }
       if (currentItem) {
         await this.ensurePortalStorageItem(currentItem, { forceBuild });

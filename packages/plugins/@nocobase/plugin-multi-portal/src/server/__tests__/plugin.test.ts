@@ -1201,7 +1201,76 @@ describe('plugin-multi-portal server', () => {
         enabled: false,
       },
     });
+    const disabledDistStat = await stat(path.join(portalDir, 'dist'));
+    expect(disabledDistStat.isDirectory()).toBe(true);
     await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+  });
+
+  it('should rebuild storage portal HTML when an AI portal is re-enabled through multiPortals:update', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'api-toggle-storage-portal');
+    const portalIndex = path.join(portalDir, 'dist', 'index.html');
+
+    const createResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'api-toggle-storage-portal',
+        title: 'API toggle storage portal',
+        portalType: 'ai',
+        portalName: 'api-toggle-storage-portal',
+        routePath: '/api-toggle-storage-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    expect(createResponse.status).toBe(200);
+    await waitForPath(portalIndex);
+
+    const disableResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'api-toggle-storage-portal',
+      values: {
+        enabled: false,
+      },
+    });
+    expect(disableResponse.status).toBe(200);
+    const disabledDistStat = await stat(path.join(portalDir, 'dist'));
+    expect(disabledDistStat.isDirectory()).toBe(true);
+    await expect(access(portalIndex)).rejects.toThrow();
+
+    spawnMock.mockClear();
+    const enableResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'api-toggle-storage-portal',
+      values: {
+        enabled: true,
+      },
+    });
+
+    expect(enableResponse.status).toBe(200);
+    await waitForPath(portalIndex);
+    await expect(readFile(portalIndex, 'utf-8')).resolves.toBe('/console/x/api-toggle-storage-portal/');
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+        env: expect.objectContaining({
+          NOCOBASE_API_URL: '/console/api',
+          NOCOBASE_PORTAL_BASE: '/console/x/api-toggle-storage-portal/',
+        }),
+      }),
+    );
   });
 
   it('should build storage portal HTML with the sub-app portal base path', async () => {
