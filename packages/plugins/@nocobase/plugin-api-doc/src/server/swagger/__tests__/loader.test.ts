@@ -71,11 +71,15 @@ describe('loadSwagger', () => {
   );
 
   test('resolves the Light Extension Swagger entry through package exports', () => {
-    expect(require.resolve('@nocobase/plugin-light-extension/src/swagger/index.ts')).toMatch(
-      /\/@nocobase\/plugin-light-extension\/src\/swagger\/index\.ts$/,
-    );
-    expect(require.resolve('@nocobase/plugin-light-extension/dist/swagger/index.js')).toMatch(
-      /\/@nocobase\/plugin-light-extension\/dist\/swagger\/index\.js$/,
-    );
+    expect(
+      require
+        .resolve('@nocobase/plugin-light-extension/src/swagger/index.ts')
+        .endsWith(join('@nocobase', 'plugin-light-extension', 'src', 'swagger', 'index.ts')),
+    ).toBe(true);
+    expect(
+      require
+        .resolve('@nocobase/plugin-light-extension/dist/swagger/index.js')
+        .endsWith(join('@nocobase', 'plugin-light-extension', 'dist', 'swagger', 'index.js')),
+    ).toBe(true);
   });
 });

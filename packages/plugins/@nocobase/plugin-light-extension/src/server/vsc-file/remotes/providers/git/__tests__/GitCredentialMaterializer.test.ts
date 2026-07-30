@@ -43,12 +43,14 @@ describe('GitCredentialMaterializer', () => {
     expect(askpass).toContain('NBS_GIT_HTTPS_PASSWORD');
     expect(askpass).not.toContain(username);
     expect(askpass).not.toContain(password);
-    expect((await stat(result.rootDirectory)).mode & 0o777).toBe(0o700);
-    expect((await stat(askpassPath)).mode & 0o777).toBe(0o700);
+    if (process.platform !== 'win32') {
+      expect((await stat(result.rootDirectory)).mode & 0o777).toBe(0o700);
+      expect((await stat(askpassPath)).mode & 0o777).toBe(0o700);
+    }
     expect(result.environment).toMatchObject({
       GIT_TERMINAL_PROMPT: '0',
       GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null',
       HOME: result.homeDirectory,
       XDG_CONFIG_HOME: result.xdgConfigDirectory,
     });
@@ -72,8 +74,10 @@ describe('GitCredentialMaterializer', () => {
     const knownHostsPath = result.environment.NBS_GIT_SSH_KNOWN_HOSTS as string;
     const wrapperPath = result.environment.GIT_SSH as string;
     const wrapper = await readFile(wrapperPath, 'utf8');
-    expect((await stat(privateKeyPath)).mode & 0o777).toBe(0o600);
-    expect((await stat(knownHostsPath)).mode & 0o777).toBe(0o600);
+    if (process.platform !== 'win32') {
+      expect((await stat(privateKeyPath)).mode & 0o777).toBe(0o600);
+      expect((await stat(knownHostsPath)).mode & 0o777).toBe(0o600);
+    }
     expect(await readFile(privateKeyPath, 'utf8')).toBe(privateKey);
     expect(await readFile(knownHostsPath, 'utf8')).toBe(knownHosts);
     expect(wrapper).toMatch(/IdentitiesOnly=yes/u);

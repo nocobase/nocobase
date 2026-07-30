@@ -15,6 +15,7 @@ import type { VscGitRemoteTransport } from '../../../../../shared/vsc-file/remot
 import { parseGitRemoteCredential } from './gitConfig';
 
 export const gitCommandTemporaryDirectoryPrefix = 'nocobase-git-command-';
+const gitGlobalConfigPath = process.platform === 'win32' ? 'NUL' : '/dev/null';
 
 const askpassScript = `#!/bin/sh
 case "$NBS_GIT_ASKPASS_MODE:$1" in
@@ -98,7 +99,7 @@ export class GitCredentialMaterializer {
       const environment: NodeJS.ProcessEnv = {
         GIT_TERMINAL_PROMPT: '0',
         GIT_CONFIG_NOSYSTEM: '1',
-        GIT_CONFIG_GLOBAL: '/dev/null',
+        GIT_CONFIG_GLOBAL: gitGlobalConfigPath,
         HOME: homeDirectory,
         XDG_CONFIG_HOME: xdgConfigDirectory,
       };
