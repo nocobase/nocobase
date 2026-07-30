@@ -36,6 +36,7 @@ import {
 import {
   DEFAULT_ADMIN_MULTI_PORTAL_UID,
   DEFAULT_MOBILE_MULTI_PORTAL_UID,
+  NAMESPACE,
   isDefaultLayoutMultiPortalUid,
 } from '../constants';
 
@@ -1332,7 +1333,7 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
 async function preventDirectDefaultPortalMutation(ctx: ResourcerContext, next: () => Promise<void>) {
   for (const values of getMultiPortalWriteRecords(ctx)) {
     if (Object.prototype.hasOwnProperty.call(values, 'isDefault')) {
-      ctx.throw(400, 'Use multiPortals:setDefault to update the default Portal');
+      ctx.throw(400, ctx.t('Use multiPortals:setDefault to update the default Portal', { ns: NAMESPACE }));
       return;
     }
   }
@@ -2712,15 +2713,18 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
 
 const DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS = ['uid', 'portalType', 'routePath'] as const;
 
-function getDefaultMultiPortalType(record: Model) {
+function getDefaultMultiPortalType(record: Model): InitPortalType | null {
   const portalType = record.get('portalType');
-  return typeof portalType === 'string' ? portalType : 'no-code';
+  if (portalType === null || portalType === undefined) {
+    return 'no-code';
+  }
+  return typeof portalType === 'string' && isInitPortalType(portalType) ? portalType : null;
 }
 
 function pickDefaultMultiPortalFields(record: Model) {
   return {
     uid: String(record.get('uid')),
-    portalType: getDefaultMultiPortalType(record),
+    portalType: getDefaultMultiPortalType(record) || 'no-code',
     routePath: String(record.get('routePath')),
   };
 }
@@ -2739,7 +2743,11 @@ async function findEnabledDefaultMultiPortal(ctx: ResourcerContext, transaction?
     return null;
   }
 
-  if (getDefaultMultiPortalType(record) === 'no-code') {
+  const portalType = getDefaultMultiPortalType(record);
+  if (!portalType) {
+    return null;
+  }
+  if (portalType === 'no-code') {
     const uiLayout = record.get('uiLayout') as Model | undefined;
     if (!uiLayout || uiLayout.get('enabled') !== true) {
       return null;
@@ -2757,7 +2765,7 @@ async function getDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<
 async function setDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<void>) {
   const filterByTk = ctx.action?.params.filterByTk;
   if (filterByTk === undefined || filterByTk === null || filterByTk === '') {
-    ctx.throw(400, 'filterByTk is required');
+    ctx.throw(400, ctx.t('filterByTk is required', { ns: NAMESPACE }));
     return;
   }
 
@@ -2770,14 +2778,19 @@ async function setDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<
       transaction,
     });
     if (!target) {
-      ctx.throw(404, 'Portal not found');
+      ctx.throw(404, ctx.t('Portal not found', { ns: NAMESPACE }));
       return null;
     }
     if (target.get('enabled') !== true) {
-      ctx.throw(400, 'Disabled Portal cannot be set as default');
+      ctx.throw(400, ctx.t('Disabled Portal cannot be set as default', { ns: NAMESPACE }));
       return null;
     }
-    if (getDefaultMultiPortalType(target) === 'no-code') {
+    const portalType = getDefaultMultiPortalType(target);
+    if (!portalType) {
+      ctx.throw(400, ctx.t('Unsupported Portal type cannot be set as default', { ns: NAMESPACE }));
+      return null;
+    }
+    if (portalType === 'no-code') {
       const uiLayoutUid = target.get('uiLayoutUid');
       const uiLayout =
         typeof uiLayoutUid === 'string' && uiLayoutUid
@@ -2792,7 +2805,7 @@ async function setDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<
             })
           : null;
       if (!uiLayout) {
-        ctx.throw(400, 'Portal layout must be enabled before setting it as default');
+        ctx.throw(400, ctx.t('Portal layout must be enabled before setting it as default', { ns: NAMESPACE }));
         return null;
       }
     }

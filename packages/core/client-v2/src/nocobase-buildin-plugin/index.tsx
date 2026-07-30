@@ -185,7 +185,7 @@ export function resolveUnauthenticatedSignInRoute(app: Application, pathname: st
   const matchedRoutes = app.router.matchRoutes(pathname) || [];
   for (let index = matchedRoutes.length - 1; index >= 0; index -= 1) {
     const pathnameBase = matchedRoutes[index].pathnameBase.replace(/\/+$/g, '');
-    const candidate = `${pathnameBase}/signin` || '/signin';
+    const candidate = `${pathnameBase}/signin`;
     if (app.router.isSkippedAuthCheckRoute(candidate)) {
       return candidate;
     }

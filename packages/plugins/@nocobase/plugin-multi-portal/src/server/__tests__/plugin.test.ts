@@ -659,6 +659,37 @@ describe('plugin-multi-portal server', () => {
     });
   });
 
+  it('should reject an unsupported default Portal type without clearing the current default', async () => {
+    app = await createMultiPortalAclMockServer();
+    const repository = app.db.getRepository('multiPortals');
+    await repository.create({
+      values: {
+        uid: 'unsupported-portal',
+        title: 'Unsupported Portal',
+        portalType: 'unsupported',
+        portalName: 'unsupported-portal',
+        routePath: '/unsupported-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const response = await rootAgent.resource('multiPortals').setDefault({
+      filterByTk: 'unsupported-portal',
+    });
+
+    expect(response.status).toBe(400);
+    expect((await repository.findOne({ filterByTk: '__default_portal__' }))?.get('isDefault')).toBe(true);
+    expect((await repository.findOne({ filterByTk: 'unsupported-portal' }))?.get('isDefault')).toBeNull();
+  });
+
   it('should allow ordinary portals to use admin and mobile route names', async () => {
     app = await createMultiPortalAclMockServer();
     const repository = app.db.getRepository('multiPortals');

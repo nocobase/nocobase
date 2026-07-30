@@ -103,7 +103,8 @@ export class PluginMultiPortalClientV2 extends Plugin {
       const records = await fetchMultiPortals(this.app.apiClient);
       registerMultiPortals(this.app, records);
       registerMultiPortalSignInRoutes(this.app.pm.get<SignInRouteRegistrar>('@nocobase/plugin-auth'), records);
-    } catch {
+    } catch (error) {
+      console.error('[NocoBase] Failed to register multi-portals.', error);
       runtimeRegistrationFailed = true;
     }
   }

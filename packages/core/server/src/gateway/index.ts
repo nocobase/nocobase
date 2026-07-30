@@ -502,19 +502,6 @@ export class Gateway extends EventEmitter {
     return match ? `${v2PublicPath}apps/${match[1]}/` : null;
   }
 
-  private resolvePortalFallbackRedirect(pathname: string, appName = DEFAULT_PORTAL_APP_NAME) {
-    const portalRootPublicPath = this.getPortalRootPublicPath();
-    if (pathname !== portalRootPublicPath.slice(0, -1) && !pathname.startsWith(portalRootPublicPath)) {
-      return null;
-    }
-
-    const v2PublicPath = this.getV2PublicPath();
-    if (v2PublicPath === portalRootPublicPath) {
-      return null;
-    }
-    return appName === DEFAULT_PORTAL_APP_NAME ? v2PublicPath : `${v2PublicPath}apps/${appName}/`;
-  }
-
   private getPortalMatch(pathname: string): PortalMatch | null {
     const portalRootPublicPath = this.getPortalRootPublicPath();
     if (!pathname.startsWith(portalRootPublicPath)) {
@@ -877,11 +864,7 @@ export class Gateway extends EventEmitter {
         const portalDistRoot = this.getPortalDistRoot(portalMatch);
         const portalIndex = resolve(portalDistRoot, 'index.html');
         if (!fs.existsSync(portalIndex)) {
-          const portalFallbackRedirect = this.resolvePortalFallbackRedirect(pathname, portalMatch.appName);
-          res.statusCode = portalFallbackRedirect ? 302 : 404;
-          if (portalFallbackRedirect) {
-            res.setHeader('Location', `${portalFallbackRedirect}${search || ''}`);
-          }
+          res.statusCode = 404;
           res.end();
           return;
         }
@@ -909,11 +892,7 @@ export class Gateway extends EventEmitter {
 
       const portalRootPublicPath = this.getPortalRootPublicPath();
       if (pathname === portalRootPublicPath.slice(0, -1) || pathname.startsWith(portalRootPublicPath)) {
-        const portalFallbackRedirect = this.resolvePortalFallbackRedirect(pathname);
-        res.statusCode = portalFallbackRedirect ? 302 : 404;
-        if (portalFallbackRedirect) {
-          res.setHeader('Location', `${portalFallbackRedirect}${search || ''}`);
-        }
+        res.statusCode = 404;
         res.end();
         return;
       }

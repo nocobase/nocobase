@@ -379,6 +379,18 @@ describe('plugin-multi-portal settings page', () => {
     );
     expect(enUS['Set as default']).toBe('Set as default');
     expect(enUS['Default portal updated successfully']).toBe('Default portal updated successfully');
+    expect(enUS['Use multiPortals:setDefault to update the default Portal']).toBe(
+      'Use multiPortals:setDefault to update the default Portal',
+    );
+    expect(enUS['filterByTk is required']).toBe('filterByTk is required');
+    expect(enUS['Portal not found']).toBe('Portal not found');
+    expect(enUS['Disabled Portal cannot be set as default']).toBe('Disabled Portal cannot be set as default');
+    expect(enUS['Portal layout must be enabled before setting it as default']).toBe(
+      'Portal layout must be enabled before setting it as default',
+    );
+    expect(enUS['Unsupported Portal type cannot be set as default']).toBe(
+      'Unsupported Portal type cannot be set as default',
+    );
 
     expect(zhCN['Add portal']).toBe('新增门户');
     expect(zhCN['Edit portal']).toBe('编辑门户');
@@ -426,6 +438,16 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Users enter this portal by default when they open the application without specifying one.']).toBe(
       '用户未指定门户访问应用时，将默认进入此门户。',
     );
+    expect(zhCN['Use multiPortals:setDefault to update the default Portal']).toBe(
+      '请使用 multiPortals:setDefault 更新默认门户',
+    );
+    expect(zhCN['filterByTk is required']).toBe('filterByTk 为必填项');
+    expect(zhCN['Portal not found']).toBe('门户不存在');
+    expect(zhCN['Disabled Portal cannot be set as default']).toBe('已禁用的门户不能设为默认');
+    expect(zhCN['Portal layout must be enabled before setting it as default']).toBe(
+      '设为默认门户前必须先启用该门户布局',
+    );
+    expect(zhCN['Unsupported Portal type cannot be set as default']).toBe('不支持的门户类型不能设为默认');
   });
 
   it('should fire resource.create with portal fields including uiLayoutUid', async () => {

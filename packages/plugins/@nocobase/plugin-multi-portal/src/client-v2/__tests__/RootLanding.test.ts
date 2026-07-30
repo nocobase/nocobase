@@ -238,4 +238,32 @@ describe('Client V2 portal root landing', () => {
       expect(replace).toHaveBeenCalledWith('/settings?from=root#panel');
     });
   });
+
+  it('falls back to Settings when the default Portal response is malformed', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    rootLandingContext.app = {
+      apiClient: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: {
+              uid: 'assistant-portal',
+              portalType: 'ai',
+            },
+          },
+        }),
+      },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
+    };
+
+    renderRootLanding();
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith('/settings?from=root#panel');
+    });
+  });
 });

@@ -277,30 +277,27 @@ test('gateway redirects a sub-app portal path without trailing slash', async () 
 });
 
 test.each([
-  ['/console/x/missing?from=portal', '/console/v/?from=portal'],
-  ['/console/x/missing/?from=portal', '/console/v/?from=portal'],
-  ['/console/x/missing/deep/path?from=portal', '/console/v/?from=portal'],
-  ['/console/x/apps/crm/missing?from=portal', '/console/v/apps/crm/?from=portal'],
-  ['/console/x/apps/crm/missing/?from=portal', '/console/v/apps/crm/?from=portal'],
-])(
-  'gateway redirects unavailable portal path %s to the default Portal entry',
-  async (requestPath, expectedLocation) => {
-    const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
-    process.env.APP_PUBLIC_PATH = '/console/';
-    process.env.API_BASE_PATH = '/api';
-    process.env.STORAGE_PATH = storagePath;
+  '/console/x/missing?from=portal',
+  '/console/x/missing/?from=portal',
+  '/console/x/missing/deep/path?from=portal',
+  '/console/x/apps/crm/missing?from=portal',
+  '/console/x/apps/crm/missing/?from=portal',
+])('gateway returns 404 for unavailable portal path %s', async (requestPath) => {
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
+  process.env.APP_PUBLIC_PATH = '/console/';
+  process.env.API_BASE_PATH = '/api';
+  process.env.STORAGE_PATH = storagePath;
 
-    await mkdir(path.join(storagePath, 'portals'), { recursive: true });
+  await mkdir(path.join(storagePath, 'portals'), { recursive: true });
 
-    try {
-      const gateway = Gateway.getInstance();
-      const response = await supertest.agent(gateway.getCallback()).get(requestPath);
+  try {
+    const gateway = Gateway.getInstance();
+    const response = await supertest.agent(gateway.getCallback()).get(requestPath);
 
-      expect(response.status).toBe(302);
-      expect(response.headers.location).toBe(expectedLocation);
-      expect(serveHandlerMock).not.toHaveBeenCalled();
-    } finally {
-      await rm(storagePath, { recursive: true, force: true });
-    }
-  },
-);
+    expect(response.status).toBe(404);
+    expect(response.headers.location).toBeUndefined();
+    expect(serveHandlerMock).not.toHaveBeenCalled();
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});

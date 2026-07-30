@@ -23,11 +23,25 @@ export type RootLandingProps = {
 };
 
 type RootLandingPortalBody = {
-  data?: RootLandingPortal | null;
+  data?: unknown;
 };
 
 function getLocationSuffix(location: { search?: string; hash?: string }) {
   return `${location.search || ''}${location.hash || ''}`;
+}
+
+function isRootLandingPortal(value: unknown): value is RootLandingPortal {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const portal = value as Record<string, unknown>;
+  return (
+    typeof portal.uid === 'string' &&
+    portal.uid.length > 0 &&
+    (portal.portalType === 'no-code' || portal.portalType === 'ai') &&
+    typeof portal.routePath === 'string' &&
+    portal.routePath.trim().length > 0
+  );
 }
 
 export function RootLanding({ runtimeRegistrationFailed = false }: RootLandingProps) {
@@ -56,7 +70,7 @@ export function RootLanding({ runtimeRegistrationFailed = false }: RootLandingPr
           return;
         }
         const defaultPortal = response?.data?.data;
-        if (defaultPortal && (defaultPortal.portalType === 'no-code' || defaultPortal.portalType === 'ai')) {
+        if (isRootLandingPortal(defaultPortal)) {
           if (
             defaultPortal.portalType === 'no-code' &&
             !app.layoutManager.listLayouts().some((layout) => layout.uid === defaultPortal.uid)

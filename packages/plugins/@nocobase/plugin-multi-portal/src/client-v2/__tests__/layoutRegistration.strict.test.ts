@@ -63,7 +63,7 @@ describe('Multi Portal runtime registration failures', () => {
     ).rejects.toBe(error);
   });
 
-  it('rejects unknown layout type, duplicate uid, and duplicate route name before registration', () => {
+  it('rejects unknown layout type, duplicate uid, and duplicate portal name before registration', () => {
     expect(() =>
       registerMultiPortalRecords(createLayoutManager(), [
         {
@@ -79,7 +79,7 @@ describe('Multi Portal runtime registration failures', () => {
     ).toThrow("Duplicate portal uid 'customer-portal'.");
     expect(() =>
       registerMultiPortalRecords(createLayoutManager(), [portal, { ...portal, uid: 'customer-copy' }]),
-    ).toThrow("Duplicate portal route name 'customer'.");
+    ).toThrow("Duplicate portal name 'customer'.");
 
     const layoutManager = createLayoutManager();
     layoutManager.listLayouts.mockReturnValue([{ routeName: 'existing', uid: portal.uid }]);

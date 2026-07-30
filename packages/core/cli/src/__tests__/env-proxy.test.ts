@@ -208,7 +208,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('absolute_redirect off;');
   expect(bundle.appConfigContent).toContain('if ($uri ~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {');
   expect(bundle.appConfigContent).toContain('return 302 /console/admin/apps/$subapp/$is_args$args;');
-  expect(bundle.appConfigContent).toContain('error_page 404 =302 /console/admin/apps/$subapp/;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /console/admin/apps/$subapp/;');
   expect(bundle.appConfigContent).toContain(
     'if ($uri ~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {',
   );
@@ -222,7 +222,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path');
   expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path/');
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
-  expect(bundle.appConfigContent).toContain('error_page 404 =302 /console/admin/;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /console/admin/;');
   expect(bundle.appConfigContent).toContain('return 308 /console/x/$portal/$is_args$args;');
   expect(bundle.appConfigContent).toContain('if ($uri !~ ^/console/x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {');
   expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/index.html break;');
@@ -287,8 +287,8 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('location = /x/ {');
   expect(bundle.appConfigContent).toContain('return 302 /v/$is_args$args;');
   expect(bundle.appConfigContent).toContain('return 302 /v/apps/$subapp/$is_args$args;');
-  expect(bundle.appConfigContent).toContain('error_page 404 =302 /v/apps/$subapp/;');
-  expect(bundle.appConfigContent).toContain('error_page 404 =302 /v/;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /v/apps/$subapp/;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /v/;');
   expect(bundle.appConfigContent).toContain(
     'if ($uri ~ ^/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {',
   );
