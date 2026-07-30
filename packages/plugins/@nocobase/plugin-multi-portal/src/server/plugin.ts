@@ -3448,19 +3448,19 @@ export class PluginMultiPortalServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventMultiPortalBackingLayoutChange);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventUiLayoutRouteNameConflict);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:firstOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
+    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventUiLayoutRouteNameConflict);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', captureSkipCreatePortalDirectory);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:updateOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
+    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', captureSkipCreatePortalDirectory);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', normalizeMultiPortalSlugValues);
     this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal, {
       after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,

@@ -163,7 +163,7 @@ describe('standalone settings layout root', () => {
     });
   });
 
-  it('groups negative-sort settings above plugin-manager', async () => {
+  it('keeps ordinary negative-sort settings in the active Settings group sidebar', async () => {
     const app = new SettingsApplication({
       plugins: [SettingsBuildInPlugin, TestAclPlugin, PrimarySettingsPlugin],
       router: { type: 'memory', initialEntries: ['/settings/portal-manager'] },
@@ -189,15 +189,8 @@ describe('standalone settings layout root', () => {
     expect(await screen.findByText('Portal manager page')).toBeInTheDocument();
 
     const portalManagerItem = screen.getByRole('menuitem', { name: 'Portal manager' });
-    const pluginManagerItem = screen.getByRole('menuitem', { name: /Plugin manager$/ });
-    const menu = portalManagerItem.closest('ul');
-    const menuChildren = Array.from(menu?.children || []);
-    const portalManagerIndex = menuChildren.indexOf(portalManagerItem);
-    const pluginManagerIndex = menuChildren.indexOf(pluginManagerItem);
-    const firstDividerIndex = menuChildren.findIndex((item) => item.classList.contains('ant-menu-item-divider'));
-
-    expect(portalManagerIndex).toBeLessThan(pluginManagerIndex);
-    expect(pluginManagerIndex).toBeLessThan(firstDividerIndex);
+    expect(portalManagerItem.closest('aside')).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Plugin manager$/ })).not.toBeInTheDocument();
   });
 
   it('uses document navigation to the standalone Settings signin page when unauthenticated', async () => {

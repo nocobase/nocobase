@@ -34,8 +34,16 @@ vi.mock('../hooks/useApp', () => ({
   useApp: () => mockApp,
 }));
 
-vi.mock('../flow/admin-shell/admin-layout/NocoBaseLogo', () => ({
-  NocoBaseLogo: () => <div data-testid="settings-logo">logo</div>,
+vi.mock('../settings-app/SettingsBrand', () => ({
+  SettingsBrand: () => <div data-testid="settings-logo">logo</div>,
+}));
+
+vi.mock('../settings-app/SettingsGroupNav', () => ({
+  SettingsGroupNav: () => <div data-testid="settings-group-nav">groups</div>,
+}));
+
+vi.mock('../settings-app/SettingsSearch', () => ({
+  SettingsSearch: () => <div data-testid="settings-search">search</div>,
 }));
 
 vi.mock('../flow/admin-shell/admin-layout/HelpLite', () => ({
@@ -60,7 +68,7 @@ describe('SettingsShell', () => {
     setCurrentUserAuthStatus(mockApp, 'authenticated');
   });
 
-  it('renders only the settings logo, help and user center around its content', () => {
+  it('renders only the settings brand, group nav, help and user center around its content', () => {
     render(
       <MemoryRouter initialEntries={['/settings/system-settings']}>
         <SettingsShell>
@@ -70,6 +78,8 @@ describe('SettingsShell', () => {
     );
 
     expect(screen.getByTestId('settings-logo')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-group-nav')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-search')).toBeInTheDocument();
     expect(screen.getByTestId('settings-help')).toBeInTheDocument();
     expect(screen.getByTestId('settings-user-center')).toHaveTextContent('settings-user-center');
     expect(screen.getByText('settings content')).toBeInTheDocument();
@@ -77,7 +87,7 @@ describe('SettingsShell', () => {
     expect(screen.queryByTestId('notifications-button')).not.toBeInTheDocument();
   });
 
-  it('keeps the designated header color when the shared header token uses its dark fallback', () => {
+  it('keeps its neutral header instead of following the business-side header color', () => {
     render(
       <ConfigProvider
         theme={
@@ -97,7 +107,8 @@ describe('SettingsShell', () => {
       </ConfigProvider>,
     );
 
-    expect(screen.getByRole('banner')).toHaveStyle({ background: '#176CE1' });
+    // 主题编辑器里的深色顶栏只作用于业务端；设置中心固定用容器底色。
+    expect(screen.getByRole('banner')).toHaveStyle({ background: '#ffffff' });
   });
 
   it('places the settings content and embed container side by side below the header', () => {
@@ -169,5 +180,21 @@ describe('SettingsShell', () => {
     expect(screen.queryByTestId('settings-help')).not.toBeInTheDocument();
     expect(screen.queryByTestId('settings-user-center')).not.toBeInTheDocument();
     expect(document.querySelector('#nocobase-embed-container')).not.toBeInTheDocument();
+  });
+
+  it('does not render the Settings header before authentication completes', () => {
+    setCurrentUserAuthStatus(mockApp, 'unknown');
+
+    render(
+      <MemoryRouter initialEntries={['/settings/system-settings']}>
+        <SettingsShell>
+          <div>settings content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('settings content')).toBeInTheDocument();
+    expect(document.querySelector('header')).toHaveStyle({ display: 'none' });
+    expect(screen.queryByTestId('settings-logo')).not.toBeVisible();
   });
 });

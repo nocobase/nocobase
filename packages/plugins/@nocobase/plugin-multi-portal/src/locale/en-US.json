@@ -115,5 +115,19 @@
   "URL field is required": "URL field is required",
   "Untitled": "Untitled",
   "Value": "Value",
-  "View {{route}}": "View {{route}}"
+  "View {{route}}": "View {{route}}",
+  "No-code": "No-code mode",
+  "AI": "AI mode",
+  "Default": "Default",
+  "No portals yet": "No portals yet",
+  "Each portal is a standalone front end with its own routes and menus.": "Each portal is a standalone front end with its own routes and menus.",
+  "Cover": "Cover",
+  "Upload cover": "Upload cover",
+  "Replace cover": "Replace cover",
+  "Used as the cover placeholder when no cover is uploaded.": "Used as the cover placeholder when no cover is uploaded.",
+  "Used in the access path.": "Used in the access path.",
+  "Shown on the portal card. A 16:9 image works best.": "Shown on the portal card. A 16:9 image works best.",
+  "Device": "Device",
+  "No-code portals render with the components of this device; AI portals use it for grouping.": "No-code portals render with the components of this device; AI portals use it for grouping.",
+  "The title and name below are filled in from the repository name.": "The title and name below are filled in from the repository name."
 }

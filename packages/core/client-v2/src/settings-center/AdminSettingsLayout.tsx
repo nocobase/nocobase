@@ -10,25 +10,22 @@
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { Layout, Menu, Result, theme } from 'antd';
+import { Layout, Menu, Result, Tabs, theme } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useACLRoleContext } from '../acl';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { PluginSettingsPageType } from '../PluginSettingsManager';
 import { useApp } from '../hooks/useApp';
 import { AdminSettingsLayoutModel } from './AdminSettingsLayoutModel';
+import { useSettingsGroups } from './useSettingsGroups';
 import {
   ADMIN_SETTINGS_LAYOUT_MODEL_UID,
   createSettingsPathMap,
-  filterRenderableSettings,
-  filterVisibleSettings,
+  findSettingsByName,
   getDefaultSettingsPath,
-  getMenuItems,
+  getSidebarMenuItems,
+  getSidebarSelectedKey,
   matchSettingsRoute,
-  PLUGIN_MANAGER_SETTING_NAME,
-  replaceRouteParams,
-  sortTopLevelSettings,
 } from './utils';
 
 function SettingsEmpty(props: { type: 'home' | 'route' }) {
@@ -59,71 +56,70 @@ function SettingsEmpty(props: { type: 'home' | 'route' }) {
 /**
  * `client-v2` 的 settings 页面壳实现。
  *
- * 该组件负责左侧菜单、顶部 tabs、默认落点和两类空态，
- * 页面内容本身继续由各个 settings route 的 `<Outlet />` 渲染。
+ * 一级分组铺在顶栏（见 `SettingsGroupNav`），这里负责当前分组下的二三级嵌套菜单、
+ * 默认落点和两类空态，页面内容本身继续由各个 settings route 的 `<Outlet />` 渲染。
  */
 export const InternalAdminSettingsLayout = () => {
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  const params = useParams();
   const { token } = theme.useToken();
-  const { snippets = [] } = useACLRoleContext();
+  const {
+    activeGroupSettings,
+    allSettings,
+    currentSetting,
+    currentTopLevelSetting,
+    visibleSettings: allVisibleSettings,
+  } = useSettingsGroups();
 
-  const allSettings = useMemo(
-    () => filterRenderableSettings(app.pluginSettingsManager.getList(false) as PluginSettingsPageType[]),
-    [app.pluginSettingsManager],
-  );
-  const visibleSettings = useMemo(
-    () =>
-      filterVisibleSettings(
-        filterRenderableSettings(app.pluginSettingsManager.getList(true) as PluginSettingsPageType[]),
-      ),
-    [app.pluginSettingsManager],
-  );
-  // Negative-sort settings share the top management section; their sort value controls order within that section.
-  const primarySettings = useMemo(
-    () => sortTopLevelSettings(visibleSettings.filter((item) => (item.sort || 0) < 0)),
-    [visibleSettings],
-  );
-  const normalSettings = useMemo(
-    () => sortTopLevelSettings(visibleSettings.filter((item) => (item.sort || 0) >= 0)),
-    [visibleSettings],
-  );
-  const allVisibleSettings = useMemo(() => [...primarySettings, ...normalSettings], [normalSettings, primarySettings]);
-  const registeredSettingsMapByPath = useMemo(() => createSettingsPathMap(allSettings), [allSettings]);
   const visibleSettingsMapByPath = useMemo(() => createSettingsPathMap(allVisibleSettings), [allVisibleSettings]);
-  const currentSetting = useMemo(
-    () => matchSettingsRoute(registeredSettingsMapByPath, location.pathname),
-    [location.pathname, registeredSettingsMapByPath],
-  );
   const currentVisibleSetting = useMemo(
     () => matchSettingsRoute(visibleSettingsMapByPath, location.pathname),
     [location.pathname, visibleSettingsMapByPath],
   );
-  const currentTopLevelSetting = useMemo(() => {
-    if (!currentSetting) {
-      return null;
-    }
-    return allSettings.find((item) => item.name === currentSetting.topLevelName) || currentSetting;
-  }, [allSettings, currentSetting]);
   const currentVisibleTopLevelSetting = useMemo(() => {
     if (!currentSetting) {
       return null;
     }
     return allVisibleSettings.find((item) => item.name === currentSetting.topLevelName) || null;
   }, [allVisibleSettings, currentSetting]);
-  const defaultSettingsPath = useMemo(() => {
-    const preferredPrimarySettings = primarySettings.filter((item) => item.name !== PLUGIN_MANAGER_SETTING_NAME);
-
-    return getDefaultSettingsPath(preferredPrimarySettings) || getDefaultSettingsPath(allVisibleSettings);
-  }, [allVisibleSettings, primarySettings]);
-  const currentVisibleTabs = useMemo(() => {
-    return (currentVisibleTopLevelSetting?.children || []).filter((item) => !item.hidden) as PluginSettingsPageType[];
-  }, [currentVisibleTopLevelSetting?.children]);
-  const shouldShowTabs = currentVisibleTabs.length > 1 && currentVisibleTopLevelSetting?.showTabs !== false;
+  const defaultSettingsPath = useMemo(() => getDefaultSettingsPath(allVisibleSettings), [allVisibleSettings]);
   const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
   const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
+
+  const sidebarMenus = useMemo(() => getSidebarMenuItems(activeGroupSettings), [activeGroupSettings]);
+  // 分组里只有一个顶级配置项时不铺左栏：那样整条侧栏只是把顶栏那一项重复一遍。
+  // 它自己的下级（用户和权限的 用户 / 角色和权限 / 同步，AI 员工的几个页面）改用页头下的 Tab。
+  const shouldShowSidebar = activeGroupSettings.length > 1;
+  // 子页面一律走页头下的 Tab：左栏只表达「哪个模块」，模块内部的分页交给 Tab，
+  // 和 v1 设置中心保持一致。
+  const pageTabs = useMemo(() => {
+    const children = (currentVisibleTopLevelSetting?.children || []).filter(
+      (item) => !item.hidden && !item.link && item.path,
+    );
+    return children.length > 1 ? children.map((item) => ({ key: item.path, label: item.label ?? item.title })) : [];
+  }, [currentVisibleTopLevelSetting]);
+  const activeTabKey = useMemo(() => {
+    if (!pageTabs.length) {
+      return undefined;
+    }
+    const matched = pageTabs.find(
+      (tab) => location.pathname === tab.key || location.pathname.startsWith(`${tab.key}/`),
+    );
+    return matched?.key ?? pageTabs[0]?.key;
+  }, [location.pathname, pageTabs]);
+  // 命中的可能是被折叠掉的子项，要换算成左栏里真实存在的那一级，否则整个左栏都不高亮。
+  const selectedMenuKey = useMemo(
+    () =>
+      getSidebarSelectedKey(activeGroupSettings, currentVisibleSetting?.name) ||
+      getSidebarSelectedKey(activeGroupSettings, currentVisibleTopLevelSetting?.name),
+    [activeGroupSettings, currentVisibleSetting?.name, currentVisibleTopLevelSetting?.name],
+  );
+  // 页头只需要补一句「当前在哪个子页」。
+  const pageSubTitle =
+    currentVisibleSetting && currentVisibleSetting.title !== currentTopLevelSetting?.title
+      ? currentVisibleSetting.title
+      : undefined;
 
   useEffect(() => {
     const nextTitle =
@@ -135,30 +131,6 @@ export const InternalAdminSettingsLayout = () => {
       document.title = nextTitle;
     }
   }, [currentTopLevelSetting]);
-
-  const sidebarMenus = useMemo(() => {
-    const items: any[] = [];
-    const visiblePrimarySettings = primarySettings.filter(
-      (item) => item.name !== PLUGIN_MANAGER_SETTING_NAME || snippets.includes('pm'),
-    );
-    const primaryMenuItems =
-      getMenuItems(
-        visiblePrimarySettings.map((item) => ({ ...item, children: undefined }) as PluginSettingsPageType),
-      ) || [];
-
-    items.push(...primaryMenuItems);
-
-    if (items.length && normalSettings.length) {
-      items.push({ type: 'divider' });
-    }
-
-    const normalMenuItems =
-      getMenuItems(normalSettings.map((item) => ({ ...item, children: undefined }) as PluginSettingsPageType)) || [];
-
-    items.push(...normalMenuItems);
-
-    return items;
-  }, [normalSettings, primarySettings, snippets]);
 
   const shouldRedirectToDefault =
     location.pathname === settingsRootPath ||
@@ -207,41 +179,43 @@ export const InternalAdminSettingsLayout = () => {
         overflow: 'hidden',
       }}
     >
-      <Layout.Sider
-        width={200}
-        style={{
-          background: token.colorBgContainer,
-          borderInlineEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-          minHeight: 0,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
-      >
-        <Menu
-          selectedKeys={currentVisibleTopLevelSetting?.name ? [currentVisibleTopLevelSetting.name] : []}
-          style={{ height: '100%', borderInlineEnd: 'none' }}
-          onClick={({ key }) => {
-            const topLevelSetting = allVisibleSettings.find((item) => item.name === key);
-            if (!topLevelSetting) {
-              return;
-            }
-
-            if (topLevelSetting.link) {
-              window.open(topLevelSetting.link, '_blank', 'noopener,noreferrer');
-              return;
-            }
-
-            const firstPath = topLevelSetting.children?.length
-              ? getDefaultSettingsPath(topLevelSetting.children)
-              : topLevelSetting.path;
-
-            if (firstPath) {
-              navigate(firstPath);
-            }
+      {shouldShowSidebar ? (
+        <Layout.Sider
+          width={200}
+          style={{
+            background: token.colorBgContainer,
+            borderInlineEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+            minHeight: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
           }}
-          items={sidebarMenus}
-        />
-      </Layout.Sider>
+        >
+          <Menu
+            mode="inline"
+            inlineIndent={16}
+            selectedKeys={selectedMenuKey ? [selectedMenuKey] : []}
+            style={{ height: '100%', borderInlineEnd: 'none' }}
+            onClick={({ key }) => {
+              const setting = findSettingsByName(activeGroupSettings, String(key));
+              if (!setting) {
+                return;
+              }
+
+              if (setting.link) {
+                window.open(setting.link, '_blank', 'noopener,noreferrer');
+                return;
+              }
+
+              const targetPath = setting.children?.length ? getDefaultSettingsPath(setting.children) : setting.path;
+
+              if (targetPath && targetPath !== location.pathname) {
+                navigate(targetPath);
+              }
+            }}
+            items={sidebarMenus}
+          />
+        </Layout.Sider>
+      ) : null}
       <Layout.Content
         style={{
           background: token.colorBgLayout,
@@ -253,41 +227,45 @@ export const InternalAdminSettingsLayout = () => {
           overflow: 'hidden',
         }}
       >
-        <PageHeader
-          ghost={false}
-          title={currentTopLevelSetting?.title}
-          style={{
-            background: token.colorBgContainer,
-            borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-            paddingBottom: shouldShowTabs ? 0 : token.padding,
-          }}
-          footer={
-            shouldShowTabs ? (
-              <Menu
-                mode="horizontal"
-                selectedKeys={[currentVisibleSetting?.name || currentSetting?.name]}
-                items={getMenuItems(currentVisibleTabs)}
-                onClick={({ key }) => {
-                  const targetPath = replaceRouteParams(app.pluginSettingsManager.getRoutePath(String(key)), params);
-                  if (location.pathname !== targetPath) {
-                    navigate(targetPath);
-                  }
-                }}
-                style={{ marginLeft: -token.marginSM, borderBottom: 'none' }}
-              />
-            ) : null
-          }
-        />
+        {/*
+          页头放在滚动容器**内部**：钉在外面会让页面出现嵌套滚动（窗口一条、内容区一条），
+          插件页面自己再带滚动区时会套成两三层，而且长页面白白少掉一条页头的高度。
+        */}
         <div
           style={{
             flex: 1,
             minHeight: 0,
             boxSizing: 'border-box',
             overflow: 'auto',
-            padding: token.paddingLG,
           }}
         >
-          <Outlet />
+          <PageHeader
+            ghost={false}
+            title={currentTopLevelSetting?.title}
+            subTitle={pageTabs.length ? undefined : pageSubTitle}
+            footer={
+              pageTabs.length ? (
+                <Tabs
+                  activeKey={activeTabKey}
+                  items={pageTabs}
+                  tabBarStyle={{ marginBottom: 0 }}
+                  onChange={(key) => {
+                    if (key !== location.pathname) {
+                      navigate(key);
+                    }
+                  }}
+                />
+              ) : undefined
+            }
+            style={{
+              background: token.colorBgContainer,
+              borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+              paddingBottom: pageTabs.length ? 0 : token.padding,
+            }}
+          />
+          <div style={{ padding: token.paddingLG }}>
+            <Outlet />
+          </div>
         </div>
       </Layout.Content>
     </Layout>
