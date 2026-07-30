@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-portal",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "main": "dist/server/index.js",
   "nocobase": {
     "supportedVersions": [
@@ -13,7 +13,7 @@
   "description.zh-CN": "为 Client V2 提供内置 Portal 注册、入口访问与路由权限管理。",
   "devDependencies": {
     "@ant-design/icons": "5.x",
-    "@nocobase/plugin-ui-layout": "3.0.0-alpha.1",
+    "@nocobase/plugin-ui-layout": "3.0.0-alpha.2",
     "ahooks": "3.x",
     "antd": "5.x",
     "react": "^18.2.0",
