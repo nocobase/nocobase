@@ -67,46 +67,50 @@ vi.mock('@nocobase/client-v2', async () => {
 
 vi.mock('../components/DiagnosticsPanel', () => ({ default: () => null }));
 
-vi.mock('../vsc-file/public-api', () => ({
-  inferLanguageFromPath: (path: string) => {
-    if (path.endsWith('.tsx')) return 'typescriptreact';
-    if (path.endsWith('.ts')) return 'typescript';
-    if (path.endsWith('.json')) return 'json';
-    return 'plaintext';
-  },
-  mergeHistoryItems: <T,>(current: T[], next: T[]) => [...current, ...next],
-  summarizeWorkspaceChanges: () => ({ files: 1, additions: 1, deletions: 1 }),
-  useVscFileT: () => (key: string) => key,
-  FilesPanel: () => <div data-testid="files-panel" />,
-  VersionHistoryDock: () => null,
-  RestoreVersionModal: () => null,
-  SaveVersionModal: () => null,
-  CloseConfirmModal: () => null,
-  CodeTab: ({
-    activeFile,
-    authoringSurfaceId,
-    onChange,
-    workspaceFiles,
-  }: {
-    activeFile?: { path: string; content: string };
-    authoringSurfaceId?: string;
-    onChange: (content: string) => void;
-    workspaceFiles: Array<{ path: string }>;
-  }) => (
-    <div
-      data-authoring-surface-id={authoringSurfaceId}
-      data-testid="code-tab"
-      data-workspace-paths={workspaceFiles.map((file) => file.path).join(',')}
-    >
-      <span data-testid="active-path">{activeFile?.path}</span>
-      <textarea
-        aria-label="Edit file content"
-        onChange={(event) => onChange(event.target.value)}
-        value={activeFile?.content || ''}
-      />
-    </div>
-  ),
-}));
+vi.mock('../vsc-file/public-api', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    inferLanguageFromPath: (path: string) => {
+      if (path.endsWith('.tsx')) return 'typescriptreact';
+      if (path.endsWith('.ts')) return 'typescript';
+      if (path.endsWith('.json')) return 'json';
+      return 'plaintext';
+    },
+    mergeHistoryItems: <T,>(current: T[], next: T[]) => [...current, ...next],
+    summarizeWorkspaceChanges: () => ({ files: 1, additions: 1, deletions: 1 }),
+    useVscFileT: () => (key: string) => key,
+    FilesPanel: () => <div data-testid="files-panel" />,
+    VersionHistoryDock: () => null,
+    RestoreVersionModal: () => null,
+    SaveVersionModal: () => null,
+    CloseConfirmModal: () => null,
+    CodeTab: ({
+      activeFile,
+      authoringSurfaceId,
+      onChange,
+      workspaceFiles,
+    }: {
+      activeFile?: { path: string; content: string };
+      authoringSurfaceId?: string;
+      onChange: (content: string) => void;
+      workspaceFiles: Array<{ path: string }>;
+    }) => (
+      <div
+        data-authoring-surface-id={authoringSurfaceId}
+        data-testid="code-tab"
+        data-workspace-paths={workspaceFiles.map((file) => file.path).join(',')}
+      >
+        <span data-testid="active-path">{activeFile?.path}</span>
+        <textarea
+          aria-label="Edit file content"
+          onChange={(event) => onChange(event.target.value)}
+          value={activeFile?.content || ''}
+        />
+      </div>
+    ),
+  };
+});
 
 vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
