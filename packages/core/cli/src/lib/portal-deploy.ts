@@ -343,6 +343,15 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     envMode: 'replace',
     errorName: 'pnpm build',
   });
+  await runCommand('pnpm', ['build:html'], {
+    cwd: portalDir,
+    env: buildPortalCommandEnv({
+      NOCOBASE_API_URL: apiBaseUrl,
+      NOCOBASE_PORTAL_BASE: portalBase,
+    }),
+    envMode: 'replace',
+    errorName: 'pnpm build:html',
+  });
 
   await assertFileExists(
     path.join(distDir, 'index.html'),
