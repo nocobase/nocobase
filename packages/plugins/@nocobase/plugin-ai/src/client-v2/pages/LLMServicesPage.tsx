@@ -1037,7 +1037,7 @@ export const LLMServicesPage: React.FC = () => {
                 {t('Delete')}
               </Button>
             </Popconfirm>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreateDrawer()}>
               {t('Add new')}
             </Button>
           </Space>
