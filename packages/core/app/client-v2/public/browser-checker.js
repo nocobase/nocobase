@@ -81,7 +81,11 @@ function resolveScopedSettingsRootPath(publicPath, pathname) {
 const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
 const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
 const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
-const settingsRootPath = resolveSettingsRootPath(basename, window['__nocobase_modern_client_prefix__'], currentPath);
+const appClientEntryMode = window['__nocobase_app_client_entry_mode__'];
+const settingsRootPath =
+  appClientEntryMode === 'modern-only'
+    ? resolveSettingsRootPath(basename, window['__nocobase_modern_client_prefix__'], currentPath)
+    : null;
 const scopedSettingsRootPath = isSettingsBrowserCheckerScript(document.currentScript)
   ? resolveScopedSettingsRootPath(basename, currentPath)
   : null;
