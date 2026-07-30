@@ -670,8 +670,8 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Admin')).toBeInTheDocument();
     const card = screen.getByText('Admin').closest('.ant-card') as HTMLElement;
-    // 显式默认 portal 带 Default 标签，但删除入口照常给。
-    expect(within(card).getByText('Default')).toBeInTheDocument();
+    // 显式默认 portal 在封面和卡片信息区都带 Default 标识，但删除入口照常给。
+    expect(within(card).getAllByText('Default')).toHaveLength(2);
     expect(within(card).getByRole('button', { name: 'Set as default' })).toBeDisabled();
 
     await user.click(within(card).getByRole('button', { name: 'Delete' }));
