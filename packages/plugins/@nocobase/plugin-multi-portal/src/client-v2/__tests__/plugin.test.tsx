@@ -148,6 +148,27 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.pm.get(PluginMultiPortalClientV2)).toBeInstanceOf(PluginMultiPortalClientV2);
   });
 
+  it('should register the root landing when the public Portal list request fails', async () => {
+    const app = createMockClient({
+      plugins: [PluginMultiPortalClientV2],
+    });
+    app.apiMock.onGet('multiPortals:listEnabled').reply(500);
+
+    await app.load();
+
+    expect(app.router.get('root')).toMatchObject({
+      path: '/',
+      authCheck: false,
+    });
+    const RootComponent = app.router.get('root')?.Component;
+    expect(RootComponent).toBeTypeOf('function');
+    const rootElement = (RootComponent as React.FC)({});
+    expect(React.isValidElement(rootElement)).toBe(true);
+    expect((rootElement as React.ReactElement<{ runtimeRegistrationFailed?: boolean }>).props).toMatchObject({
+      runtimeRegistrationFailed: true,
+    });
+  });
+
   it('should fetch enabled multi portals for runtime registration', async () => {
     const request = vi.fn().mockResolvedValue({
       data: {
@@ -159,7 +180,46 @@ describe('PluginMultiPortalClientV2', () => {
     expect(request).toHaveBeenCalledWith({
       url: 'multiPortals:listEnabled',
       method: 'get',
+      skipAuth: true,
       skipNotify: true,
+    });
+  });
+
+  it('should reject an invalid public Portal list response', async () => {
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: null,
+      },
+    });
+
+    await expect(fetchMultiPortals({ request })).rejects.toThrow(
+      'multiPortals:listEnabled returned an invalid response',
+    );
+  });
+
+  it('should keep the root landing available when runtime Portal registration fails', async () => {
+    const app = createMockClient({
+      plugins: [PluginMultiPortalClientV2],
+    });
+    app.apiMock.onGet('multiPortals:listEnabled').reply(200, {
+      data: [
+        {
+          ...desktopPortal,
+          uiLayout: {
+            layoutType: 'unsupported',
+          },
+        },
+      ],
+    });
+
+    await expect(app.load()).resolves.toBeUndefined();
+
+    const RootComponent = app.router.get('root')?.Component;
+    expect(RootComponent).toBeTypeOf('function');
+    const rootElement = (RootComponent as React.FC)({});
+    expect(React.isValidElement(rootElement)).toBe(true);
+    expect((rootElement as React.ReactElement<{ runtimeRegistrationFailed?: boolean }>).props).toMatchObject({
+      runtimeRegistrationFailed: true,
     });
   });
 
@@ -240,6 +300,7 @@ describe('PluginMultiPortalClientV2', () => {
       routePath: '/mobile',
     };
     const addPermissionsTab = vi.fn();
+    const registerSignInRoute = vi.fn();
     const app = {
       i18n: {
         t: vi.fn((key: string) => key),
@@ -254,11 +315,15 @@ describe('PluginMultiPortalClientV2', () => {
         registerModelLoaders: vi.fn(),
       },
       pm: {
-        get: vi.fn(() => ({
-          settingsUI: {
-            addPermissionsTab,
-          },
-        })),
+        get: vi.fn((name: string) =>
+          name === '@nocobase/plugin-auth'
+            ? { registerSignInRoute }
+            : {
+                settingsUI: {
+                  addPermissionsTab,
+                },
+              },
+        ),
       },
       apiClient: {
         request: vi.fn().mockResolvedValue({
@@ -329,6 +394,7 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'multiPortals:listEnabled',
       method: 'get',
+      skipAuth: true,
       skipNotify: true,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenCalledTimes(3);
@@ -357,10 +423,23 @@ describe('PluginMultiPortalClientV2', () => {
       childPageModelClass: 'MobileChildPageModel',
       authCheck: false,
     });
+    expect(registerSignInRoute).toHaveBeenCalledTimes(3);
+    expect(registerSignInRoute).toHaveBeenNthCalledWith(
+      1,
+      'multiPortalSignin_desktop-portal-model',
+      '/portal-desktop/signin',
+    );
+    expect(registerSignInRoute).toHaveBeenNthCalledWith(
+      2,
+      'multiPortalSignin_mobile-portal-model',
+      '/portal-mobile/signin',
+    );
+    expect(registerSignInRoute).toHaveBeenNthCalledWith(3, 'multiPortalSignin___default_mobile__', '/mobile/signin');
     expect(app.router.add).toHaveBeenCalledWith('root', {
       path: '/',
       Component: expect.any(Function),
-      authCheck: true,
+      authCheck: false,
+      skipAuthCheck: true,
     });
   });
 

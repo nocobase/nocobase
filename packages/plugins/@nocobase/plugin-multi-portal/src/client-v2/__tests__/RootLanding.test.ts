@@ -7,82 +7,235 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { selectRootLandingPortal } from '../RootLanding';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { RootLanding, type RootLandingProps } from '../RootLanding';
+import { getMultiPortalSettingsUrl } from '../routeUrl';
+
+const rootLandingContext = vi.hoisted(() => ({
+  app: undefined as unknown,
+}));
+
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+  return {
+    ...actual,
+    useApp: () => rootLandingContext.app,
+  };
+});
+
+function LocationProbe() {
+  const location = useLocation();
+  return React.createElement('div', null, `${location.pathname}${location.search}${location.hash}`);
+}
+
+function renderRootLanding(props: RootLandingProps = {}) {
+  return render(
+    React.createElement(
+      MemoryRouter,
+      { initialEntries: ['/?from=root#panel'] },
+      React.createElement(
+        Routes,
+        null,
+        React.createElement(Route, { path: '/', element: React.createElement(RootLanding, props) }),
+        React.createElement(Route, { path: '/customer', element: React.createElement(LocationProbe) }),
+      ),
+    ),
+  );
+}
 
 describe('Client V2 portal root landing', () => {
-  const aiPortal = {
-    uid: 'ai-workspace',
-    routePath: '/assistant',
-    portalType: 'ai',
-    uiLayout: {
-      layoutType: 'desktop',
-    },
-  };
-  const mobilePortal = {
-    uid: 'mobile-workspace',
-    routePath: '/mobile-workspace',
-    portalType: 'no-code',
-    uiLayout: {
-      layoutType: 'mobile',
-    },
-  };
-  const desktopPortal = {
-    uid: 'customer-workspace',
-    routePath: '/customer-workspace',
-    portalType: 'no-code',
-    uiLayout: {
-      layoutType: 'desktop',
-    },
-  };
-  const adminPortal = {
-    uid: '__default_admin__',
-    routePath: '/admin',
-    portalType: 'no-code',
-    uiLayout: {
-      layoutType: 'desktop',
-    },
-  };
+  const originalLocation = globalThis.window.location;
 
-  it('prefers the canonical Admin portal, then desktop, mobile, and AI', () => {
-    expect(selectRootLandingPortal([aiPortal, mobilePortal, desktopPortal, adminPortal])).toEqual(adminPortal);
-    expect(selectRootLandingPortal([aiPortal, mobilePortal, desktopPortal])).toEqual(desktopPortal);
-    expect(selectRootLandingPortal([aiPortal, mobilePortal])).toEqual(mobilePortal);
-    expect(selectRootLandingPortal([aiPortal])).toEqual(aiPortal);
-    expect(selectRootLandingPortal([])).toBeUndefined();
+  afterEach(() => {
+    cleanup();
+    rootLandingContext.app = undefined;
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
+    delete window.__nocobase_modern_client_prefix__;
   });
 
-  it('does not give similar UIDs the fixed Admin priority', () => {
-    const similarUidPortal = {
-      uid: 'admin-layout-model',
-      routePath: '/similar-admin',
-      portalType: 'no-code',
-      uiLayout: {
-        layoutType: 'mobile',
-      },
-    };
-
-    expect(selectRootLandingPortal([similarUidPortal, desktopPortal])).toEqual(desktopPortal);
+  it.each([
+    ['/v/', '/', '/settings'],
+    ['/nocobase/v/', '/nocobase/v/', '/nocobase/settings'],
+    ['/v/apps/demo/', '/v/', '/settings/apps/demo'],
+    ['/nocobase/v/apps/demo/', '/nocobase/v/', '/nocobase/settings/apps/demo'],
+  ])('resolves the Settings fallback for basename %s', (basename, publicPath, expected) => {
+    expect(
+      getMultiPortalSettingsUrl({
+        router: {
+          getBasename: () => basename,
+        },
+        getPublicPath: () => publicPath,
+      }),
+    ).toBe(expected);
   });
 
-  it('ignores portals with a missing or unknown portal type', () => {
-    const missingTypePortal = {
-      uid: 'admin-layout-model',
-      routePath: '/unregistered-admin',
-      portalType: null,
-      uiLayout: {
-        layoutType: 'desktop',
+  it('supports a custom modern client prefix', () => {
+    window.__nocobase_modern_client_prefix__ = 'modern';
+    expect(
+      getMultiPortalSettingsUrl({
+        router: {
+          getBasename: () => '/nocobase/modern/_app/demo/',
+        },
+        getPublicPath: () => '/nocobase/modern/',
+      }),
+    ).toBe('/nocobase/settings/_app/demo');
+  });
+
+  it('uses the explicit No-code default and preserves query and hash with Router navigation', async () => {
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          uid: 'customer-portal',
+          portalType: 'no-code',
+          routePath: '/customer',
+        },
       },
-    };
-    const unknownTypePortal = {
-      uid: 'unknown-workspace',
-      routePath: '/unknown-workspace',
-      portalType: 'unknown',
-      uiLayout: {
-        layoutType: 'desktop',
-      },
+    });
+    rootLandingContext.app = {
+      apiClient: { request },
+      layoutManager: { listLayouts: () => [{ uid: 'customer-portal' }] },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
     };
 
-    expect(selectRootLandingPortal([missingTypePortal, unknownTypePortal, aiPortal])).toEqual(aiPortal);
-    expect(selectRootLandingPortal([missingTypePortal, unknownTypePortal])).toBeUndefined();
+    renderRootLanding();
+
+    expect(await screen.findByText('/customer?from=root#panel')).toBeInTheDocument();
+    expect(request).toHaveBeenCalledWith({
+      url: 'multiPortals:getDefault',
+      method: 'get',
+      skipAuth: true,
+      skipNotify: true,
+    });
+  });
+
+  it('uses document navigation for an AI default and preserves query and hash', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    rootLandingContext.app = {
+      apiClient: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: {
+              uid: 'assistant-portal',
+              portalType: 'ai',
+              routePath: '/assistant',
+            },
+          },
+        }),
+      },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
+    };
+
+    renderRootLanding();
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith('/x/assistant?from=root#panel');
+    });
+  });
+
+  it('does not show an intermediate loading indicator before document navigation', () => {
+    rootLandingContext.app = {
+      apiClient: {
+        request: vi.fn().mockReturnValue(new Promise(() => undefined)),
+      },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
+    };
+
+    const { container } = renderRootLanding();
+
+    expect(container.querySelector('.ant-spin')).not.toBeInTheDocument();
+  });
+
+  it('falls back to Settings without resolving an AI default when runtime registration failed', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          uid: 'assistant-portal',
+          portalType: 'ai',
+          routePath: '/assistant',
+        },
+      },
+    });
+    rootLandingContext.app = {
+      apiClient: { request },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
+    };
+
+    renderRootLanding({ runtimeRegistrationFailed: true });
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith('/settings?from=root#panel');
+    });
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('falls back to Settings when the No-code default was not registered', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    rootLandingContext.app = {
+      apiClient: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: {
+              uid: 'customer-portal',
+              portalType: 'no-code',
+              routePath: '/customer',
+            },
+          },
+        }),
+      },
+      layoutManager: { listLayouts: () => [] },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
+    };
+
+    renderRootLanding();
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith('/settings?from=root#panel');
+    });
+  });
+
+  it.each(['missing default', 'API error'])('falls back to Settings on %s', async (scenario) => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, replace },
+    });
+    const request =
+      scenario === 'API error'
+        ? vi.fn().mockRejectedValue(new Error('failed'))
+        : vi.fn().mockResolvedValue({ data: { data: null } });
+    rootLandingContext.app = {
+      apiClient: { request },
+      router: { getBasename: () => '/v/' },
+      getPublicPath: () => '/v/',
+    };
+
+    renderRootLanding();
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith('/settings?from=root#panel');
+    });
   });
 });

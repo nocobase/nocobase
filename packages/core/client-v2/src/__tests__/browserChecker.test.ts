@@ -136,6 +136,17 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
       expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/v/');
     });
 
+    it('redirects app root to modern entry for modern-only', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/',
+        publicPath: '/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-only',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/v/');
+    });
+
     it('does not redirect legacy deep links for modern-default', () => {
       const replace = executeBrowserChecker(scriptPath, {
         pathname: '/admin',
@@ -182,32 +193,36 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
   }
 
   if (scriptPath.includes('/app/client-v2/public/')) {
-    it.each(['/v', '/v/'])('redirects the main modern root %s to Settings', (pathname) => {
-      const replace = executeBrowserChecker(scriptPath, {
-        pathname,
-        publicPath: '/v/',
-        modernClientPrefix: 'v',
-      });
-
-      expect(replace).toHaveBeenCalledOnce();
-      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/settings');
-    });
-
     it.each([
-      ['/v/apps/demo', '/settings/apps/demo'],
-      ['/v/apps/demo/', '/settings/apps/demo'],
-      ['/v/_app/demo', '/settings/_app/demo'],
-      ['/v/_app/demo/', '/settings/_app/demo'],
-    ])('redirects the scoped modern root %s to %s', (pathname, expectedPathname) => {
+      ['/v', 'http://c.local.nocobase.com/v/'],
+      ['/v/', undefined],
+    ])('normalizes the modern client root %s without redirecting to Settings', (pathname, expectedRedirect) => {
       const replace = executeBrowserChecker(scriptPath, {
         pathname,
         publicPath: '/v/',
         modernClientPrefix: 'v',
       });
 
-      expect(replace).toHaveBeenCalledOnce();
-      expect(replace).toHaveBeenCalledWith(`http://c.local.nocobase.com${expectedPathname}`);
+      if (expectedRedirect) {
+        expect(replace).toHaveBeenCalledOnce();
+        expect(replace).toHaveBeenCalledWith(expectedRedirect);
+      } else {
+        expect(replace).not.toHaveBeenCalled();
+      }
     });
+
+    it.each(['/v/apps/demo', '/v/apps/demo/', '/v/_app/demo', '/v/_app/demo/'])(
+      'lets the scoped modern client handle its root %s',
+      (pathname) => {
+        const replace = executeBrowserChecker(scriptPath, {
+          pathname,
+          publicPath: '/v/',
+          modernClientPrefix: 'v',
+        });
+
+        expect(replace).not.toHaveBeenCalled();
+      },
+    );
 
     it.each([
       ['/settings/apps/demo', '/', '/settings/apps/demo/', 'v'],
@@ -233,23 +248,19 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
     });
 
     it.each([
-      ['/tenant/apps/root/modern/apps/demo/', '/tenant/apps/root/modern/', '/tenant/apps/root/settings/apps/demo'],
-      ['/tenant/_app/root/modern/_app/demo/', '/tenant/_app/root/modern/', '/tenant/_app/root/settings/_app/demo'],
-    ])(
-      'preserves public path, query, and hash for %s without treating public-path segments as app scope',
-      (pathname, publicPath, expectedPathname) => {
-        const replace = executeBrowserChecker(scriptPath, {
-          pathname,
-          publicPath,
-          modernClientPrefix: 'modern',
-          search: '?tab=overview',
-          hash: '#panel',
-        });
+      ['/tenant/apps/root/modern/apps/demo/', '/tenant/apps/root/modern/'],
+      ['/tenant/_app/root/modern/_app/demo/', '/tenant/_app/root/modern/'],
+    ])('lets the modern client handle %s under a nested public path', (pathname, publicPath) => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath,
+        modernClientPrefix: 'modern',
+        search: '?tab=overview',
+        hash: '#panel',
+      });
 
-        expect(replace).toHaveBeenCalledOnce();
-        expect(replace).toHaveBeenCalledWith(`http://c.local.nocobase.com${expectedPathname}?tab=overview#panel`);
-      },
-    );
+      expect(replace).not.toHaveBeenCalled();
+    });
 
     it.each([
       ['/v/admin', '/v/'],

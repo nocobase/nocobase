@@ -14,10 +14,12 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MultiPortalsPage, {
   createMultiPortal,
+  setDefaultMultiPortal,
+  updateMultiPortal,
   type MultiPortalFormValues,
   type MultiPortalResource,
 } from '../pages/MultiPortalsPage';
-import { getMultiPortalRouteUrl } from '../routeUrl';
+import { getMultiPortalRouteUrl, getMultiPortalSettingsUrl } from '../routeUrl';
 import enUS from '../../locale/en-US.json';
 import zhCN from '../../locale/zh-CN.json';
 
@@ -158,6 +160,7 @@ function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortal
     create: vi.fn().mockResolvedValue(undefined),
     update: vi.fn().mockResolvedValue(undefined),
     destroy: vi.fn().mockResolvedValue(undefined),
+    setDefault: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue({
       data: {
         data: [],
@@ -257,6 +260,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal')).toBe('/nocobase/v/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/x/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
+    expect(getMultiPortalSettingsUrl(app)).toBe('/nocobase/settings');
   });
 
   it('should build sub-app portal hrefs from the app-scoped basename', () => {
@@ -276,6 +280,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/apps/a_q7xx6p75d0e/x/test', 'ai')).toBe(
       '/nocobase/x/apps/a_q7xx6p75d0e/test',
     );
+    expect(getMultiPortalSettingsUrl(app)).toBe('/nocobase/settings/apps/a_q7xx6p75d0e');
   });
 
   it.each([
@@ -372,6 +377,8 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS['The corresponding portal directory will also be deleted.']).toBe(
       'The corresponding portal directory will also be deleted.',
     );
+    expect(enUS['Set as default']).toBe('Set as default');
+    expect(enUS['Default portal updated successfully']).toBe('Default portal updated successfully');
 
     expect(zhCN['Add portal']).toBe('新增门户');
     expect(zhCN['Edit portal']).toBe('编辑门户');
@@ -413,6 +420,12 @@ describe('plugin-multi-portal settings page', () => {
       '关闭后，该门户将不会注册，也无法访问。',
     );
     expect(zhCN['The corresponding portal directory will also be deleted.']).toBe('对应的门户目录也会被删除。');
+    expect(zhCN['Set as default']).toBe('设为默认');
+    expect(zhCN['Default portal']).toBe('默认门户');
+    expect(zhCN['Default portal updated successfully']).toBe('默认门户更新成功');
+    expect(zhCN['Users enter this portal by default when they open the application without specifying one.']).toBe(
+      '用户未指定门户访问应用时，将默认进入此门户。',
+    );
   });
 
   it('should fire resource.create with portal fields including uiLayoutUid', async () => {
@@ -422,6 +435,36 @@ describe('plugin-multi-portal settings page', () => {
     await createMultiPortal({ resource, values: portalValues, onSubmitted });
 
     expect(resource.create).toHaveBeenCalledWith({ values: portalValues });
+    expect(onSubmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('should set the explicit default through the dedicated action', async () => {
+    const resource = makeResource();
+    const onSubmitted = vi.fn();
+
+    await setDefaultMultiPortal({ resource, filterByTk: 'customer-portal', onSubmitted });
+
+    expect(resource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
+    expect(onSubmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('should update the portal before setting it as default', async () => {
+    const resource = makeResource();
+    const onSubmitted = vi.fn();
+
+    await updateMultiPortal({
+      resource,
+      filterByTk: 'customer-portal',
+      values: portalValues,
+      setAsDefault: true,
+      onSubmitted,
+    });
+
+    expect(resource.update).toHaveBeenCalledWith({ filterByTk: 'customer-portal', values: portalValues });
+    expect(resource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
+    expect(vi.mocked(resource.update).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(resource.setDefault).mock.invocationCallOrder[0],
+    );
     expect(onSubmitted).toHaveBeenCalledTimes(1);
   });
 
@@ -524,6 +567,9 @@ describe('plugin-multi-portal settings page', () => {
     expect(routesButton).toBeEnabled();
     expect(within(developerPortalCard).getByRole('button', { name: 'Routes' })).toBeDisabled();
     expect(within(disabledPortalCard).getByRole('button', { name: 'Routes' })).toBeDisabled();
+    const setDefaultButton = within(customerPortalCard).getByRole('button', { name: 'Set as default' });
+    expect(setDefaultButton).toBeEnabled();
+    expect(within(disabledPortalCard).getByRole('button', { name: 'Set as default' })).toBeDisabled();
 
     expect(within(customerPortalCard).getByRole('button', { name: 'Delete' })).not.toHaveClass('ant-btn-dangerous');
     expect(screen.queryByRole('button', { name: /Logs/ })).not.toBeInTheDocument();
@@ -536,6 +582,8 @@ describe('plugin-multi-portal settings page', () => {
         width: '80%',
       }),
     );
+    await user.click(setDefaultButton);
+    expect(multiPortalsResource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
     await user.click(within(customerPortalCard).getByRole('button', { name: 'Delete' }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
@@ -566,6 +614,7 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Admin',
               uid: '__default_portal__',
+              isDefault: true,
               portalName: 'admin',
               routePath: '/admin',
               uiLayout: {
@@ -599,8 +648,9 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Admin')).toBeInTheDocument();
     const card = screen.getByText('Admin').closest('.ant-card') as HTMLElement;
-    // 默认 portal 也带 Default 标签，但删除入口照常给。
+    // 显式默认 portal 带 Default 标签，但删除入口照常给。
     expect(within(card).getByText('Default')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Set as default' })).toBeDisabled();
 
     await user.click(within(card).getByRole('button', { name: 'Delete' }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
@@ -1122,6 +1172,81 @@ describe('plugin-multi-portal settings page', () => {
           options: { cover: null },
         },
       });
+    });
+  });
+
+  it('should expose the default portal setting in the edit form', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              isDefault: false,
+              uiLayout: {
+                title: 'Mobile layout',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: defaultUiLayoutOptions } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
+    const defaultPortalSwitch = within(dialog).getByRole('switch', { name: 'Default portal' });
+    expect(defaultPortalSwitch).toBeEnabled();
+    expect(defaultPortalSwitch).not.toBeChecked();
+    expect(
+      within(dialog).getByText(
+        'Users enter this portal by default when they open the application without specifying one.',
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(defaultPortalSwitch);
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 'customer-portal',
+        values: expect.objectContaining({
+          title: 'Customer portal',
+          enabled: true,
+        }),
+      });
+      expect(resource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
     });
   });
 

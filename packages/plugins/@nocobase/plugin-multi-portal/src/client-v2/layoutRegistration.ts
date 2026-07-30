@@ -104,10 +104,14 @@ export async function fetchMultiPortals(apiClient: MultiPortalRegistrationApp['a
   const response = await apiClient.request<MultiPortalListBody>({
     url: 'multiPortals:listEnabled',
     method: 'get',
+    skipAuth: true,
     skipNotify: true,
   });
   const records = response?.data?.data;
-  return Array.isArray(records) ? records : [];
+  if (!Array.isArray(records)) {
+    throw new Error('multiPortals:listEnabled returned an invalid response');
+  }
+  return records;
 }
 
 export function registerMultiPortalRecords(
@@ -163,8 +167,7 @@ function getRouteRepository(app: MultiPortalRegistrationApp) {
   return (context as { routeRepository?: unknown }).routeRepository;
 }
 
-export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
-  const records = await fetchMultiPortals(app.apiClient);
+export function registerMultiPortals(app: MultiPortalRegistrationApp, records: MultiPortalRuntimeRecord[]) {
   const registeredPortalUids = registerMultiPortalRecords(app.layoutManager, records);
   const registeredPortalUidSet = new Set(registeredPortalUids);
   const registeredPortalScopes = records
@@ -174,4 +177,9 @@ export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationAp
       portalUid: record.uid,
     }));
   installMultiPortalRouteRepositoryScope(getRouteRepository(app), () => registeredPortalScopes);
+  return records;
+}
+
+export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
+  return registerMultiPortals(app, await fetchMultiPortals(app.apiClient));
 }

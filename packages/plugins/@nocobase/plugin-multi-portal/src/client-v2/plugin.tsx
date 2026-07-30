@@ -8,11 +8,34 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import React from 'react';
 import { RootLanding } from './RootLanding';
 import { registerPortalEntryActions } from './entryActions/registerPortalEntryActions';
-import { registerMultiPortalsFromApi } from './layoutRegistration';
+import { fetchMultiPortals, registerMultiPortals, type MultiPortalRuntimeRecord } from './layoutRegistration';
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
 import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';
+
+type SignInRouteRegistrar = {
+  registerSignInRoute: (name: string, path: string) => void;
+};
+
+function registerMultiPortalSignInRoutes(
+  authPlugin: SignInRouteRegistrar | undefined,
+  records: MultiPortalRuntimeRecord[],
+) {
+  if (!authPlugin || typeof authPlugin.registerSignInRoute !== 'function') {
+    return;
+  }
+
+  for (const record of records) {
+    if (!record.enabled || (record.portalType || 'no-code') !== 'no-code') {
+      continue;
+    }
+    const routeName = `multiPortalSignin_${encodeURIComponent(record.uid).replace(/\./g, '%2E')}`;
+    const routePath = `${record.routePath.replace(/\/+$/g, '')}/signin`;
+    authPlugin.registerSignInRoute(routeName, routePath);
+  }
+}
 
 export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
@@ -68,12 +91,21 @@ export class PluginMultiPortalClientV2 extends Plugin {
       return;
     }
 
-    await registerMultiPortalsFromApi(this.app);
+    let runtimeRegistrationFailed = false;
     this.router.add('root', {
       path: '/',
-      Component: RootLanding,
-      authCheck: true,
+      Component: () => <RootLanding runtimeRegistrationFailed={runtimeRegistrationFailed} />,
+      authCheck: false,
+      skipAuthCheck: true,
     });
+
+    try {
+      const records = await fetchMultiPortals(this.app.apiClient);
+      registerMultiPortals(this.app, records);
+      registerMultiPortalSignInRoutes(this.app.pm.get<SignInRouteRegistrar>('@nocobase/plugin-auth'), records);
+    } catch {
+      runtimeRegistrationFailed = true;
+    }
   }
 }
 

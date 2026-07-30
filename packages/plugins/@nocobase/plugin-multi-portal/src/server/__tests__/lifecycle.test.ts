@@ -63,7 +63,7 @@ describe('Multi Portal seed lifecycle', () => {
     app = await createLifecycleServer();
 
     const portals = await app.db.getRepository('multiPortals').find({
-      fields: ['uid', 'portalName', 'routePath', 'portalType', 'uiLayoutUid'],
+      fields: ['uid', 'portalName', 'routePath', 'portalType', 'uiLayoutUid', 'isDefault'],
       sort: ['uid'],
     });
     expect(
@@ -78,6 +78,7 @@ describe('Multi Portal seed lifecycle', () => {
         routePath: '/admin',
         portalType: 'no-code',
         uiLayoutUid: 'admin-layout-model',
+        isDefault: true,
       }),
     ]);
     for (const portal of portals) {
@@ -116,12 +117,13 @@ describe('Multi Portal seed lifecycle', () => {
     app = await createLifecycleServer();
 
     const portals = await app.db.getRepository('multiPortals').find({
-      fields: ['uid', 'portalType'],
+      fields: ['uid', 'portalType', 'isDefault'],
     });
     expect(portals).toHaveLength(1);
     expect(portals[0].toJSON()).toMatchObject({
       uid: '__default_portal__',
       portalType: 'ai',
+      isDefault: true,
     });
     expect(await app.db.getRepository('rolesMultiPortals').count()).toBeGreaterThan(0);
     expect(await app.db.getRepository('rolesMultiPortalRoutePolicies').count()).toBe(0);
@@ -160,7 +162,7 @@ describe('Multi Portal seed lifecycle', () => {
     });
 
     const portals = await app.db.getRepository('multiPortals').find({
-      fields: ['uid', 'portalName', 'routePath', 'portalType', 'uiLayoutUid'],
+      fields: ['uid', 'portalName', 'routePath', 'portalType', 'uiLayoutUid', 'isDefault'],
       sort: ['uid'],
     });
     expect(
@@ -175,6 +177,7 @@ describe('Multi Portal seed lifecycle', () => {
         routePath: '/admin',
         portalType: 'no-code',
         uiLayoutUid: 'admin-layout-model',
+        isDefault: null,
       }),
       expect.objectContaining({
         uid: '__default_mobile__',
@@ -182,6 +185,7 @@ describe('Multi Portal seed lifecycle', () => {
         routePath: '/mobile',
         portalType: 'no-code',
         uiLayoutUid: 'mobile-layout-model',
+        isDefault: null,
       }),
     ]);
     for (const portal of portals) {
@@ -363,12 +367,17 @@ describe('Multi Portal seed lifecycle', () => {
     await expect(plugin.install()).resolves.toBeUndefined();
 
     const portals = await app.db.getRepository('multiPortals').find({
-      fields: ['uid', 'portalType', 'portalName'],
+      fields: ['uid', 'portalType', 'portalName', 'isDefault'],
       sort: ['uid'],
     });
     expect(portals.map((portal) => portal.toJSON())).toEqual([
-      expect.objectContaining({ uid: '__default_mobile__', portalType: 'no-code', portalName: 'mobile' }),
-      expect.objectContaining({ uid: '__default_portal__', portalType: 'ai', portalName: 'admin' }),
+      expect.objectContaining({
+        uid: '__default_mobile__',
+        portalType: 'no-code',
+        portalName: 'mobile',
+        isDefault: null,
+      }),
+      expect.objectContaining({ uid: '__default_portal__', portalType: 'ai', portalName: 'admin', isDefault: null }),
     ]);
   });
 
