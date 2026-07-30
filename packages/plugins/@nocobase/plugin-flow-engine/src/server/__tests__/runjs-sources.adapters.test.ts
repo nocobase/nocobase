@@ -1150,7 +1150,7 @@ describe('flow-engine RunJS source adapters', () => {
 
     const save = await saveSource(locator, open.body.data, 'ctx.render(null);');
 
-    expect(save.status).toBe(400);
+    expect(save.status).toBe(422);
     expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_COMPILE_FAILED',
       details: {
@@ -1208,7 +1208,7 @@ describe('flow-engine RunJS source adapters', () => {
 
       const save = await saveSource(locator, open.body.data, 'ctx.render(null);', reversedAgent);
 
-      expect(save.status).toBe(400);
+      expect(save.status).toBe(422);
       expect(save.body.errors[0]).toMatchObject({
         code: 'RUNJS_COMPILE_FAILED',
         details: {

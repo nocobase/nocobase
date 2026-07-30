@@ -1481,17 +1481,19 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
       }),
     );
-    expect((await getSurface(rootAgent, { uid: collectionAction.uid })).tree).toMatchObject({
+    const collectionActionReadback = await getSurface(rootAgent, { uid: collectionAction.uid });
+    expect(collectionActionReadback.tree).toMatchObject({
       use: 'JSItemActionModel',
       stepParams: {
         jsSettings: {
           runJs: {
             version: '1.0.0',
-            code: 'ctx.render(null);',
+            sourceRef: { type: 'vsc-file' },
           },
         },
       },
     });
+    expect(collectionActionReadback.tree.stepParams?.jsSettings?.runJs?.code).toContain('ctx.render(null);');
 
     const recordAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -1508,17 +1510,19 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
       }),
     );
-    expect((await getSurface(rootAgent, { uid: recordAction.uid })).tree).toMatchObject({
+    const recordActionReadback = await getSurface(rootAgent, { uid: recordAction.uid });
+    expect(recordActionReadback.tree).toMatchObject({
       use: 'JSItemActionModel',
       stepParams: {
         jsSettings: {
           runJs: {
             version: '1.0.1',
-            code: 'ctx.render(null);',
+            sourceRef: { type: 'vsc-file' },
           },
         },
       },
     });
+    expect(recordActionReadback.tree.stepParams?.jsSettings?.runJs?.code).toContain('ctx.render(null);');
 
     const formAction = getData(
       await rootAgent.resource('flowSurfaces').addAction({

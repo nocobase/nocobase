@@ -443,6 +443,7 @@ const EXPORTED_FILTER_FORM_ITEM_SETTING_PATHS = [
 const EXPORTED_JS_FIELD_SETTING_PATHS = [
   'runJs.code',
   'runJs.version',
+  'runJs.sourceRef.*',
   'runJs.sourceMode',
   'runJs.sourceBinding.*',
   'runJs.settings.*',
@@ -577,6 +578,11 @@ function readNumber(value: unknown): number | undefined {
 
 function clonePlainObject(value: unknown): Record<string, unknown> | undefined {
   return _.isPlainObject(value) ? _.cloneDeep(value as Record<string, unknown>) : undefined;
+}
+
+function clonePublicRunJsSettings(value: unknown) {
+  const runJs = clonePlainObject(value);
+  return runJs ? _.omit(runJs, ['sourceRef']) : undefined;
 }
 
 function cloneArray(value: unknown): unknown[] | undefined {
@@ -1934,7 +1940,7 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
   }
 
   if (fieldHost.use === 'JSColumnModel' || fieldHost.use === 'JSItemModel') {
-    const runJs = clonePlainObject(getByPath(fieldHost, ['stepParams', 'jsSettings', 'runJs']));
+    const runJs = clonePublicRunJsSettings(getByPath(fieldHost, ['stepParams', 'jsSettings', 'runJs']));
     const type = fieldHost.use === 'JSColumnModel' ? 'jsColumn' : 'jsItem';
     const publicSettings = exportFieldPublicSettings(fieldHost);
     const settings = buildDefinedPayload({
@@ -1956,7 +1962,9 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
   const publicSettings = exportFieldPublicSettings(fieldHost);
   const innerField = getSubNode(fieldHost, 'field');
   const isJsField = isBoundJsFieldNode(innerField);
-  const runJs = isJsField ? clonePlainObject(getByPath(innerField, ['stepParams', 'jsSettings', 'runJs'])) : undefined;
+  const runJs = isJsField
+    ? clonePublicRunJsSettings(getByPath(innerField, ['stepParams', 'jsSettings', 'runJs']))
+    : undefined;
   const fieldType = inferExportFieldType(innerField);
   const titleField =
     readString(getByPath(fieldHost, ['stepParams', 'tableColumnSettings', 'fieldNames', 'label'])) ||
@@ -2144,8 +2152,8 @@ function exportDeleteActionSettings(action: FlowSurfaceExportNode, type: string)
 
 function readActionRunJsSettings(action: FlowSurfaceExportNode) {
   return (
-    clonePlainObject(getByPath(action, ['stepParams', 'clickSettings', 'runJs'])) ||
-    clonePlainObject(getByPath(action, ['stepParams', 'jsSettings', 'runJs']))
+    clonePublicRunJsSettings(getByPath(action, ['stepParams', 'clickSettings', 'runJs'])) ||
+    clonePublicRunJsSettings(getByPath(action, ['stepParams', 'jsSettings', 'runJs']))
   );
 }
 

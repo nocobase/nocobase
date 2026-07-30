@@ -843,6 +843,7 @@ describe('flowSurfaces exportBlueprint', () => {
         },
       },
     });
+    expect(jsAction?.settings).not.toHaveProperty('sourceRef');
     const jsItemAction = tableDocument.recordActions.find((action) => action?.type === 'jsItem');
     expect(jsItemAction).toMatchObject({
       type: 'jsItem',
@@ -1018,10 +1019,12 @@ describe('flowSurfaces exportBlueprint', () => {
       renderer: 'js',
       settings: jsFieldSettings,
     });
+    expect(table.fields.find((field) => field.key === 'nicknameField')?.settings).not.toHaveProperty('sourceRef');
     expect(table.fields.find((field) => field.key === 'statusColumn')).toMatchObject({
       type: 'jsColumn',
       settings: jsColumnSettings,
     });
+    expect(table.fields.find((field) => field.key === 'statusColumn')?.settings).not.toHaveProperty('sourceRef');
     expect(form.fields.find((field) => field.key === 'editableNicknameField')).toMatchObject({
       field: 'nickname',
       renderer: 'js',
