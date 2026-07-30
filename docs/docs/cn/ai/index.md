@@ -2,7 +2,7 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'NocoBase 的 AI 能力体系：AI Portal、AI 无代码搭建、AI 员工、AI Agent 对接、AI 工具与资源。'
+description: 'NocoBase 的 AI 能力体系：AI 搭建、AI 无代码搭建、AI 员工、AI Agent 对接、AI 工具与资源。'
 keywords: 'NocoBase AI,AI Portal,AI 搭建,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: 开始
@@ -24,11 +24,11 @@ features:
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
 
-  - title: AI 搭建：让 AI Agent 写前端
+  - title: AI 搭建
     details: AI Agent 写业务系统代码，认证、数据、权限等能力由 NocoBase 提供，产出的是可以提交到 Git 的源码。AI 自由发挥，NocoBase 负责可靠性。
     items:
       - title: AI 搭建快速开始
-        details: NocoBase 提供认证、数据和权限作为基座，你只写前端——从确认默认 Portal 到部署上线。
+        details: 从确认默认的 AI Portal 到部署上线，跑通描述需求、AI 写代码、看效果、部署的完整循环。
         link: /ai-portal
       - title: 与 AI Agent 协作搭建
         details: 在 Portal 源码目录下打开 AI Agent，用自然语言描述页面需求，它来写代码。
