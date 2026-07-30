@@ -280,6 +280,26 @@ test('run reports a friendly error when Yarn is missing', async () => {
   );
 });
 
+test('run reports a friendly error when pnpm is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn pnpm ENOENT'), { code: 'ENOENT' })));
+
+  const { run } = await import('../lib/run-npm.js');
+  await expect(run('pnpm', ['install'], { stdio: 'ignore', errorName: 'pnpm install' })).rejects.toThrow(
+    "Couldn't run `pnpm install` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
+  );
+});
+
+test('runPnpmCommand reports a friendly error for injected pnpm runners', async () => {
+  const runCommand = vi.fn(async () => {
+    throw new Error('spawn pnpm ENOENT');
+  });
+
+  const { runPnpmCommand } = await import('../lib/run-npm.js');
+  await expect(runPnpmCommand(runCommand, ['build:html'], { errorName: 'pnpm build:html' })).rejects.toThrow(
+    "Couldn't run `pnpm build:html` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
+  );
+});
+
 test('run reports a friendly error when Nginx is missing', async () => {
   spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn nginx ENOENT'), { code: 'ENOENT' })));
 

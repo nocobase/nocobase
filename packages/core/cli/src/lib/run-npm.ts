@@ -68,7 +68,7 @@ async function resolveCommandName(name: string): Promise<string> {
   return await resolveConfiguredCommandName(name);
 }
 
-type CommandProcessOptions = {
+export type CommandProcessOptions = {
   cwd?: string;
   env?: Record<string, string>;
   envMode?: 'inherit' | 'replace';
@@ -76,11 +76,13 @@ type CommandProcessOptions = {
   timeoutMs?: number;
 };
 
-type RunProcessOptions = CommandProcessOptions & {
+export type RunProcessOptions = CommandProcessOptions & {
   stdio?: 'inherit' | 'pipe' | 'ignore';
   onStdout?: (chunk: string) => void;
   onStderr?: (chunk: string) => void;
 };
+
+export type RunCommand = (name: string, args: string[], options?: RunProcessOptions) => Promise<void>;
 
 function shouldTeeInheritedOutput(options?: RunProcessOptions): boolean {
   return options?.stdio === 'inherit' && Boolean(String(process.env.NB_CLI_ACTIVE_LOG_FILE ?? '').trim());
@@ -97,17 +99,15 @@ function buildProcessEnv(options?: CommandProcessOptions): NodeJS.ProcessEnv {
 }
 
 function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
-  const code =
-    error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : undefined;
-  if (code !== 'ENOENT') {
-    return undefined;
-  }
-
   if (!Object.prototype.hasOwnProperty.call(MISSING_COMMAND_SPECS, name)) {
     return undefined;
   }
 
   const spec = MISSING_COMMAND_SPECS[name as keyof typeof MISSING_COMMAND_SPECS];
+  if (!isMissingCommandError(name, spec.displayName, error)) {
+    return undefined;
+  }
+
   return new Error(
     translateCli(
       'commands.shared.missingCommand',
@@ -117,6 +117,34 @@ function createMissingCommandError(name: string, label: string, error: unknown):
       },
     ),
   );
+}
+
+function isMissingCommandError(name: string, displayName: string, error: unknown): boolean {
+  const code =
+    error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : undefined;
+  if (code === 'ENOENT') {
+    return true;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  const lowerMessage = message.toLowerCase();
+  return (
+    lowerMessage.includes(`spawn ${name.toLowerCase()} enoent`) ||
+    lowerMessage.includes(`${name.toLowerCase()} executable could not be found`) ||
+    lowerMessage.includes(`${displayName.toLowerCase()} executable could not be found`)
+  );
+}
+
+export async function runPnpmCommand(
+  runCommand: RunCommand,
+  args: string[],
+  options: RunProcessOptions,
+): Promise<void> {
+  try {
+    await runCommand('pnpm', args, options);
+  } catch (error) {
+    throw createMissingCommandError('pnpm', options.errorName ?? `pnpm ${args.join(' ')}`.trim(), error) ?? error;
+  }
 }
 
 function isDockerDaemonUnavailableError(error: unknown): boolean {

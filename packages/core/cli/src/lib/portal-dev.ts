@@ -19,18 +19,7 @@ import {
 } from './portal-create.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
-import { run } from './run-npm.js';
-
-type RunOptions = {
-  cwd?: string;
-  env?: Record<string, string>;
-  envMode?: 'inherit' | 'replace';
-  errorName?: string;
-  stdio?: 'inherit' | 'pipe' | 'ignore';
-  timeoutMs?: number;
-};
-
-type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
+import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
 export type PortalDevEnvLike = PortalCreateEnvLike;
 
@@ -130,7 +119,7 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
   options.onStart?.(result);
 
   const runCommand = options.runCommand ?? run;
-  await runCommand('pnpm', ['dev'], {
+  await runPnpmCommand(runCommand, ['dev'], {
     cwd: portalDir,
     env: buildPortalCommandEnv({
       NOCOBASE_API_URL: apiBaseUrl,
