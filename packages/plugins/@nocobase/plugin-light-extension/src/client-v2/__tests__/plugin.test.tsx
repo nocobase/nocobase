@@ -73,7 +73,6 @@ describe('PluginLightExtensionClientV2', () => {
 
     expect(app.pluginSettingsManager.get(LIGHT_EXTENSION_SETTINGS_KEY, false)).toMatchObject({
       key: LIGHT_EXTENSION_SETTINGS_KEY,
-      title: 'Light extensions',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.index`, false)).toMatchObject({

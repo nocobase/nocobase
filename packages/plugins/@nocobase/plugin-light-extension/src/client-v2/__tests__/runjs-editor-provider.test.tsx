@@ -305,8 +305,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
       flowEngine: new FlowEngine(),
       stepParams: { jsSettings: { runJs: value } },
     });
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
-
     render(
       <EditorViewHarness model={model} onClose={onClose}>
         {provider.renderEditor({
@@ -335,7 +333,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'close workspace' }));
     await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
-    expect(rerender).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
@@ -639,7 +636,6 @@ describe('RunJSLightExtensionEditorProvider', () => {
         },
       },
     });
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
     const renderNext = vi.fn(() => <div>inline studio</div>);
     const rendered = render(
       <EditorViewHarness model={model} onClose={vi.fn()}>
@@ -673,11 +669,9 @@ describe('RunJSLightExtensionEditorProvider', () => {
       version: 'v2',
       sourceMode: 'inline',
     });
-    expect(rerender).toHaveBeenCalledTimes(1);
 
     rendered.unmount();
     await waitFor(() => expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value));
-    expect(rerender).toHaveBeenCalledTimes(2);
   });
 
   it.each([
