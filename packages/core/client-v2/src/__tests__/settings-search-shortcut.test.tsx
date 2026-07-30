@@ -236,10 +236,65 @@ describe('SettingsSearch shortcut', () => {
     act(() => input.focus());
     expect(input).toHaveFocus();
 
-    fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    fireEvent(input, escapeEvent);
+
+    expect(escapeEvent.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(outsideControl).toHaveFocus();
+  });
+
+  it('closes before a downstream capture handler consumes Escape', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    dispatchShortcut({ key: 'f', metaKey: true });
+    const input = screen.getByPlaceholderText('Search settings');
+    act(() => input.focus());
+    const downstreamCapture = vi.fn((event: KeyboardEvent) => {
+      input.blur();
+      event.stopPropagation();
+    });
+    document.addEventListener('keydown', downstreamCapture, true);
+
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    try {
+      fireEvent(input, escapeEvent);
+    } finally {
+      document.removeEventListener('keydown', downstreamCapture, true);
+    }
+
+    expect(escapeEvent.defaultPrevented).toBe(true);
+    expect(downstreamCapture).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes when the browser consumes Escape by blurring the input', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    const outsideControl = screen.getByRole('button', { name: 'Outside control' });
+    outsideControl.focus();
+    dispatchShortcut({ key: 'f', metaKey: true });
+    const input = screen.getByPlaceholderText('Search settings');
+    act(() => input.focus());
+
+    act(() => input.blur());
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(outsideControl).toHaveFocus();
+  });
+
+  it('keeps the dialog open when a pointer action blurs the input', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    dispatchShortcut({ key: 'f', metaKey: true });
+    const input = screen.getByPlaceholderText('Search settings');
+    act(() => input.focus());
+
+    fireEvent.pointerDown(input);
+    act(() => input.blur());
+    fireEvent.pointerUp(input);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('keeps focus inside the dialog when the platform shortcut is pressed again', async () => {

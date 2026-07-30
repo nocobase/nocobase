@@ -72,6 +72,7 @@ export const SettingsSearch: React.FC = observer(() => {
   const inputRef = useRef<InputRef>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const isPointerDownRef = useRef(false);
 
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上没有可搜索的配置项。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
@@ -156,8 +157,51 @@ export const SettingsSearch: React.FC = observer(() => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isACLReady, isAuthRoute, openPalette]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const onEscapeKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.target !== inputRef.current?.input) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+
+    const onPointerDown = () => {
+      isPointerDownRef.current = true;
+    };
+
+    const onPointerUp = () => {
+      isPointerDownRef.current = false;
+    };
+
+    window.addEventListener('keydown', onEscapeKeyDown, true);
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('pointerup', onPointerUp, true);
+    window.addEventListener('pointercancel', onPointerUp, true);
+    return () => {
+      isPointerDownRef.current = false;
+      window.removeEventListener('keydown', onEscapeKeyDown, true);
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('pointerup', onPointerUp, true);
+      window.removeEventListener('pointercancel', onPointerUp, true);
+    };
+  }, [open]);
+
   const onInputKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+        return;
+      }
+
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         setActiveIndex((index) => (results.length ? (index + 1) % results.length : 0));
@@ -244,6 +288,19 @@ export const SettingsSearch: React.FC = observer(() => {
           size="large"
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
+          onBlur={(event) => {
+            // Browser keyboard handlers may consume Escape before the page sees keydown and only blur the input.
+            const nextActiveElement = event.relatedTarget;
+            const dialog = event.currentTarget.closest('[role="dialog"]');
+            if (
+              isPointerDownRef.current ||
+              (nextActiveElement instanceof Node && dialog?.contains(nextActiveElement))
+            ) {
+              return;
+            }
+
+            setOpen(false);
+          }}
           onKeyDown={onInputKeyDown}
         />
         <div style={{ borderTop: `${token.lineWidth}px solid ${token.colorSplit}`, margin: '8px -24px 0' }} />
