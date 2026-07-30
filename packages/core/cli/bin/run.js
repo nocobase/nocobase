@@ -64,6 +64,7 @@ function reexecWithTsx() {
       ...process.env,
       _NOCO_CLI_TSX_CHILD: '1',
       NODE_ENV: 'development',
+      TSX_TSCONFIG_PATH: process.env.TSX_TSCONFIG_PATH ?? path.join(root, 'tsconfig.runtime.json'),
     },
   });
   process.exit(result.status === null ? 1 : result.status);

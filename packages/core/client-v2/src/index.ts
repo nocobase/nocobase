@@ -53,4 +53,5 @@ export {
 } from './flow-compat';
 export type { NocoBaseDesktopRoute } from './flow-compat';
 export * from './utils/markdownSanitize';
+export * from './ui-operation';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';
