@@ -7,28 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { UIOperationCodec } from './ui-operation.js';
-
-const base64UrlPattern = /^[A-Za-z0-9_-]*$/;
-const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-
-function encodeNodeUIOperation(value: string): string {
-  return Buffer.from(value, 'utf8').toString('base64url');
+export function encodeUIOperation(operation: object): string {
+  return Buffer.from(JSON.stringify(operation), 'utf8').toString('base64url');
 }
-
-export const nodeUIOperationCodec: UIOperationCodec = {
-  encode: encodeNodeUIOperation,
-  decode(value) {
-    if (!base64UrlPattern.test(value) || value.length % 4 === 1) {
-      return undefined;
-    }
-
-    try {
-      const bytes = Buffer.from(value, 'base64url');
-      const decoded = utf8Decoder.decode(bytes);
-      return encodeNodeUIOperation(decoded) === value ? decoded : undefined;
-    } catch {
-      return undefined;
-    }
-  },
-};

@@ -16,7 +16,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { encodeUIOperation, UI_OPERATION_QUERY_KEY, UI_OPERATION_VERSION, type UIOperation } from './ui-operation.js';
+import { encodeUIOperation } from './ui-operation-codec.js';
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { getCurrentEnvName, getEnv } from './auth-store.js';
@@ -27,8 +27,10 @@ import { openUrlInDefaultBrowser } from './browser.js';
 import { ensureCrossEnvConfirmed } from './env-guard.js';
 import { applyPostProcessor } from './post-processors.js';
 import { readInstalledManagedSkillsVersion } from './skills-manager.js';
-import { nodeUIOperationCodec } from './ui-operation-codec.js';
 import { registerPostProcessors } from '../post-processors/index.js';
+
+const UI_OPERATION_QUERY_KEY = '_operation_';
+const UI_OPERATION_VERSION = 1;
 
 export interface GeneratedParameter {
   name: string;
@@ -275,12 +277,12 @@ async function openUiOperation(command: GeneratedApiCommand, operation: Generate
       .filter((parameter) => uiParameterNames.has(parameter.name) && hasFlagValue(flags[parameter.flagName]))
       .map((parameter) => [parameter.name, flags[parameter.flagName]]),
   );
-  const uiOperation: UIOperation = {
+  const uiOperation = {
     v: UI_OPERATION_VERSION,
     operationId,
     ...(Object.keys(params).length ? { params } : {}),
   };
-  const encodedOperation = encodeUIOperation(uiOperation, nodeUIOperationCodec);
+  const encodedOperation = encodeUIOperation(uiOperation);
   const appUrl = await resolveUiAppUrl(flags);
   const targetUrl = buildUiOperationUrl(appUrl, ui.path, encodedOperation);
   const opened = await openUrlInDefaultBrowser(targetUrl);
