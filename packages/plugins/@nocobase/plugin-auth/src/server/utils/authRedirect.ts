@@ -12,8 +12,12 @@ import { namespace } from '../../preset';
 import { buildRedirectPath, type BuildRedirectPathOptions } from './buildRedirectPath';
 
 export interface AuthRedirectOriginContext extends OriginContext {
-  t(key: string, options?: { ns?: string }): string;
+  t?(key: string, options?: { ns?: string }): string;
   throw(status: number, message: string): never;
+}
+
+function getInvalidOriginMessage(ctx: AuthRedirectOriginContext) {
+  return ctx.t?.('Invalid sign-in origin', { ns: namespace }) || 'Invalid sign-in origin';
 }
 
 function isRootRelativePath(value: string) {
@@ -35,14 +39,14 @@ function resolveAbsoluteUrl(ctx: AuthRedirectOriginContext, value: string) {
   try {
     url = new URL(value);
   } catch {
-    ctx.throw(400, ctx.t('Invalid sign-in origin', { ns: namespace }));
+    ctx.throw(400, getInvalidOriginMessage(ctx));
   }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
-    ctx.throw(400, ctx.t('Invalid sign-in origin', { ns: namespace }));
+    ctx.throw(400, getInvalidOriginMessage(ctx));
   }
   const whitelist = getCorsWhitelist();
   if (!isSameOrigin(ctx, url.origin) && !whitelist?.has(url.origin)) {
-    ctx.throw(400, ctx.t('Invalid sign-in origin', { ns: namespace }));
+    ctx.throw(400, getInvalidOriginMessage(ctx));
   }
   return url;
 }
