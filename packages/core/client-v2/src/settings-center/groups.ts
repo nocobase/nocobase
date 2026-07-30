@@ -42,11 +42,11 @@ export type SettingsGroupDefinition = {
  */
 export const SETTINGS_GROUPS: SettingsGroupDefinition[] = [
   { key: 'applications', title: 'Applications', primary: 'multi-portal' },
-  { key: 'plugins', title: 'Plugin manager', primary: 'plugin-manager' },
   { key: 'data', title: 'Data sources', primary: 'data-source-manager' },
   { key: 'access', title: 'Users & Permissions', primary: 'users-permissions' },
   { key: 'automation', title: 'Workflow', primary: 'workflow' },
   { key: 'ai', title: 'AI employees', primary: 'ai' },
+  { key: 'plugins', title: 'Plugin manager', primary: 'plugin-manager' },
   { key: 'system', title: 'Other settings' },
 ];
 
