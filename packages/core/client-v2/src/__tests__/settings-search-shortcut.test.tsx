@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -70,6 +70,7 @@ async function renderSettingsSearch(platform: string) {
   const { SettingsSearch } = await import('../settings-app/SettingsSearch');
   return render(
     <ReactRouterDOM.MemoryRouter initialEntries={['/settings/system-settings']}>
+      <button type="button">Outside control</button>
       <SettingsSearch />
     </ReactRouterDOM.MemoryRouter>,
   );
@@ -147,4 +148,115 @@ describe('SettingsSearch shortcut', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     },
   );
+
+  it.each([
+    { activation: 'click', key: null },
+    { activation: 'Enter', key: 'Enter' },
+    { activation: 'Space', key: ' ' },
+  ])('closes immediately with Escape after opening by $activation', async ({ key }) => {
+    await renderSettingsSearch('MacIntel');
+
+    const outsideControl = screen.getByRole('button', { name: 'Outside control' });
+    const trigger = screen.getByTitle('Search settings');
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    if (key) {
+      trigger.focus();
+      fireEvent.keyDown(trigger, { key });
+      expect(trigger).toHaveFocus();
+      fireEvent(document.activeElement as Element, event);
+    } else {
+      outsideControl.focus();
+      trigger.focus();
+      fireEvent.click(trigger);
+      expect(trigger).toHaveFocus();
+      fireEvent(document.activeElement as Element, event);
+    }
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+
+    const closedEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    fireEvent(trigger, closedEvent);
+    expect(closedEvent.defaultPrevented).toBe(false);
+  });
+
+  it('moves focus to the trigger before opening from the platform shortcut', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    const outsideControl = screen.getByRole('button', { name: 'Outside control' });
+    const trigger = screen.getByTitle('Search settings');
+    outsideControl.focus();
+
+    const shortcutEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(outsideControl, shortcutEvent);
+
+    expect(shortcutEvent.defaultPrevented).toBe(true);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    fireEvent(document.activeElement as Element, escapeEvent);
+    expect(escapeEvent.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(outsideControl).toHaveFocus();
+  });
+
+  it('keeps immediate Escape from reaching a lower overlay', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    const trigger = screen.getByTitle('Search settings');
+    fireEvent.click(trigger);
+    const lowerOverlayKeyDown = vi.fn();
+    window.addEventListener('keydown', lowerOverlayKeyDown);
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    fireEvent(trigger, event);
+    window.removeEventListener('keydown', lowerOverlayKeyDown);
+
+    expect(lowerOverlayKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('closes from the dialog Escape path and restores the original focus', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    const outsideControl = screen.getByRole('button', { name: 'Outside control' });
+    outsideControl.focus();
+    dispatchShortcut({ key: 'f', metaKey: true });
+    const input = screen.getByPlaceholderText('Search settings');
+    act(() => input.focus());
+    expect(input).toHaveFocus();
+
+    fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(outsideControl).toHaveFocus();
+  });
+
+  it('keeps focus inside the dialog when the platform shortcut is pressed again', async () => {
+    await renderSettingsSearch('MacIntel');
+
+    dispatchShortcut({ key: 'f', metaKey: true });
+    const input = screen.getByPlaceholderText('Search settings');
+    act(() => input.focus());
+    expect(input).toHaveFocus();
+    fireEvent.change(input, { target: { value: 'portal' } });
+
+    const shortcutEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(input, shortcutEvent);
+
+    expect(shortcutEvent.defaultPrevented).toBe(true);
+    expect(input).toHaveValue('');
+    expect(input).toHaveFocus();
+  });
 });

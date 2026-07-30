@@ -68,6 +68,8 @@ export const SettingsSearch: React.FC = observer(() => {
   const [keyword, setKeyword] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<InputRef>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const lastActiveElementRef = useRef<HTMLElement | null>(null);
 
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上没有可搜索的配置项。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
@@ -78,10 +80,26 @@ export const SettingsSearch: React.FC = observer(() => {
     setActiveIndex(0);
   }, [keyword]);
 
+  const restoreLastActiveElement = useCallback(() => {
+    const lastActiveElement = lastActiveElementRef.current;
+    lastActiveElementRef.current = null;
+    if (lastActiveElement?.isConnected) {
+      lastActiveElement.focus({ preventScroll: true });
+    }
+  }, []);
+
   const openPalette = useCallback(() => {
     setKeyword('');
+
+    if (open) {
+      inputRef.current?.focus();
+      return;
+    }
+
+    lastActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    triggerRef.current?.focus();
     setOpen(true);
-  }, []);
+  }, [open]);
 
   const go = useCallback(
     (item?: SettingsSearchItem) => {
@@ -158,6 +176,7 @@ export const SettingsSearch: React.FC = observer(() => {
   return (
     <>
       <div
+        ref={triggerRef}
         className={triggerClassName}
         role="button"
         tabIndex={0}
@@ -165,6 +184,14 @@ export const SettingsSearch: React.FC = observer(() => {
         style={{ color: headerColors.text }}
         onClick={openPalette}
         onKeyDown={(event) => {
+          if (event.key === 'Escape' && open) {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(false);
+            restoreLastActiveElement();
+            return;
+          }
+
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             openPalette();
@@ -186,9 +213,17 @@ export const SettingsSearch: React.FC = observer(() => {
         footer={null}
         closable={false}
         destroyOnClose
+        focusTriggerAfterClose={false}
         width={520}
         styles={{ body: { paddingTop: 4 } }}
-        afterOpenChange={(opened) => opened && inputRef.current?.focus()}
+        afterOpenChange={(opened) => {
+          if (opened) {
+            inputRef.current?.focus();
+            return;
+          }
+
+          restoreLastActiveElement();
+        }}
         onCancel={() => setOpen(false)}
       >
         <Input
