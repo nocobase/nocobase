@@ -35,6 +35,32 @@ const pushAttribute = (node, attribute) => {
   }
 };
 
+// Only direct root fields are safe here. Grouping by to-many association fields would change the root ID cardinality.
+const getRootModelOrderFields = (node: EagerLoadingNode): string[] => {
+  if (!lodash.isArray(node.order)) {
+    return [];
+  }
+
+  const fields: string[] = [];
+
+  for (const orderItem of node.order) {
+    if (!lodash.isArray(orderItem) || orderItem.length !== 2 || !lodash.isString(orderItem[0])) {
+      continue;
+    }
+
+    const fieldName = orderItem[0];
+    const attribute =
+      node.model.rawAttributes[fieldName] ||
+      Object.values(node.model.rawAttributes).find((item) => item.field === fieldName);
+
+    if (attribute) {
+      fields.push(attribute.field || fieldName);
+    }
+  }
+
+  return fields;
+};
+
 const EagerLoadingNodeProto = {
   afterBuild(db: Database) {
     const collection = db.modelCollection.get(this.model);
@@ -263,13 +289,21 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
-          // find all ids
+          const group = [`${node.model.name}.${primaryKeyField}`];
+
+          if (this.db.inDialect('mssql')) {
+            // Association filters group root IDs before pagination. MSSQL rejects root ORDER BY fields that are not
+            // grouped, so include direct root order fields without changing the root row cardinality.
+            group.push(...getRootModelOrderFields(node).map((field) => `${node.model.name}.${field}`));
+          }
+
+          // find the paginated root ids after deduplication
           const ids = (
             await node.model.findAll({
               ...this.rootQueryOptions,
               includeIgnoreAttributes: false,
               attributes: [primaryKeyField],
-              group: `${node.model.name}.${primaryKeyField}`,
+              group: lodash.uniq(group),
               transaction,
               include: processIncludes(includeForFilter, node.model),
               raw: true,
