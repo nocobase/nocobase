@@ -12,6 +12,7 @@ import React, { useRef } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type FC } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
+import { getACLCheckReady, setACLCheckReady } from './aclCheckReadiness';
 import { createAclSnippetAllow } from './createAclSnippetAllow';
 
 export type ACLRoleData = {
@@ -84,16 +85,23 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
   const location = useLocation();
   const aclStore = ensureACLStore(app);
   const [loading, setLoading] = useState(false);
+  const refreshGenerationRef = useRef(0);
+  const lastSuccessfulCheckRef = useRef(getACLCheckReady(app));
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
 
   const refresh = useCallback(async () => {
     if (app.router.isSkippedAuthCheckRoute(pathnameRef.current)) {
       // 认证页等免鉴权路由不需要执行 `roles:check`，避免未登录时产生多余的 401 与 loading 闪烁。
+      refreshGenerationRef.current += 1;
+      lastSuccessfulCheckRef.current = false;
+      setACLCheckReady(app, false);
       setLoading(false);
       return;
     }
 
+    const refreshGeneration = ++refreshGenerationRef.current;
+    setACLCheckReady(app, false);
     const shouldShowLoading = !aclStore.data?.role && !aclStore.data?.snippets?.length;
     if (shouldShowLoading) {
       setLoading(true);
@@ -109,6 +117,10 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
       const nextData = res?.data?.data || {};
       const nextMeta = res?.data?.meta || {};
 
+      if (refreshGeneration !== refreshGenerationRef.current) {
+        return;
+      }
+
       aclStore.setData(nextData);
       aclStore.setMeta(nextMeta);
       app.pluginSettingsManager.setAclSnippets(nextData?.snippets || []);
@@ -117,13 +129,21 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
         app.apiClient.auth.setRole(nextData?.role);
       }
 
+      lastSuccessfulCheckRef.current = true;
+      setACLCheckReady(app, true);
+
       if (!createAclSnippetAllow(nextData?.snippets || [], !!nextData?.allowAll)('ui.*')) {
         await app.flowEngine.flowSettings.disable();
       }
     } catch (error) {
+      if (refreshGeneration !== refreshGenerationRef.current) {
+        return;
+      }
+
       const status = error?.response?.status || error?.status;
 
       if (status === 401) {
+        lastSuccessfulCheckRef.current = false;
         aclStore.setData({});
         aclStore.setMeta({});
         app.pluginSettingsManager.setAclSnippets([]);
@@ -131,15 +151,24 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
         return;
       }
 
+      setACLCheckReady(app, lastSuccessfulCheckRef.current);
       console.error(error);
     } finally {
-      setLoading(false);
+      if (refreshGeneration === refreshGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, [aclStore, app]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    refresh();
+
+    return () => {
+      refreshGenerationRef.current += 1;
+      lastSuccessfulCheckRef.current = false;
+      setACLCheckReady(app, false);
+    };
+  }, [app, refresh]);
 
   const value = useMemo<ACLContextValue>(
     () => ({

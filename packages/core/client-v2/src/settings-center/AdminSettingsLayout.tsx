@@ -28,28 +28,42 @@ import {
   matchSettingsRoute,
 } from './utils';
 
-function SettingsEmpty(props: { type: 'home' | 'route' }) {
+function SettingsEmpty(props: { type: 'forbidden' | 'home' | 'not-found' }) {
   const { type } = props;
   const { t } = useTranslation();
 
-  if (type === 'route') {
-    return (
-      <Result
-        status="warning"
-        title={t('Current settings page is unavailable')}
-        subTitle={t('The requested settings page does not exist or you do not have permission to access it.')}
-      />
+  let status: '403' | '404' | 'info';
+  let title: string;
+  let subTitle: string;
+
+  if (type === 'forbidden') {
+    status = '403';
+    title = t('Your current role cannot access Settings');
+    subTitle = t('Switch to a role with access, or contact an administrator to request access.');
+  } else if (type === 'not-found') {
+    status = '404';
+    title = t('Settings page not found');
+    subTitle = t('The settings page you requested does not exist or has been removed.');
+  } else {
+    status = 'info';
+    title = t('No settings pages available');
+    subTitle = t(
+      'No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.',
     );
   }
 
   return (
-    <Result
-      status="info"
-      title={t('No settings pages available')}
-      subTitle={t(
-        'No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.',
-      )}
-    />
+    <div role="status" aria-atomic="true">
+      <Result
+        status={status}
+        title={
+          <span role="heading" aria-level={1}>
+            {title}
+          </span>
+        }
+        subTitle={subTitle}
+      />
+    </div>
   );
 }
 
@@ -136,6 +150,18 @@ export const InternalAdminSettingsLayout = () => {
     location.pathname === settingsRootPath ||
     location.pathname === settingsRootPathWithoutTrailingSlash ||
     location.pathname === `${settingsRootPath}index`;
+  const currentPathWithoutTrailingSlash = location.pathname.replace(/\/+$/, '');
+  const currentTopLevelPathWithoutTrailingSlash = currentTopLevelSetting?.path.replace(/\/+$/, '');
+  const isTopLevelSettingsPath =
+    currentPathWithoutTrailingSlash === currentTopLevelPathWithoutTrailingSlash &&
+    !!currentTopLevelSetting?.children?.length;
+  const visibleIndexPath = isTopLevelSettingsPath
+    ? currentVisibleTopLevelSetting?.children?.find((item) => item.pageKey === 'index')?.path
+    : undefined;
+  const firstVisibleChildPath = isTopLevelSettingsPath
+    ? getDefaultSettingsPath(currentVisibleTopLevelSetting?.children as PluginSettingsPageType[])
+    : undefined;
+  const nextVisibleChildPath = visibleIndexPath || firstVisibleChildPath;
 
   if (shouldRedirectToDefault && defaultSettingsPath) {
     return <Navigate replace to={defaultSettingsPath} />;
@@ -146,27 +172,23 @@ export const InternalAdminSettingsLayout = () => {
   }
 
   if (!currentSetting) {
-    return <SettingsEmpty type="route" />;
+    return <SettingsEmpty type="not-found" />;
   }
 
-  if (!currentVisibleSetting && currentSetting.isAllow === false) {
-    return <SettingsEmpty type="route" />;
+  if (currentSetting.isAllow === false) {
+    if (nextVisibleChildPath && nextVisibleChildPath !== location.pathname) {
+      return <Navigate replace to={nextVisibleChildPath} />;
+    }
+
+    return <SettingsEmpty type="forbidden" />;
   }
 
   if (currentSetting.link) {
     return <Navigate replace to={currentSetting.link} />;
   }
 
-  if (location.pathname === currentTopLevelSetting?.path && currentTopLevelSetting?.children?.length) {
-    const visibleIndexPath = currentVisibleTopLevelSetting?.children?.find((item) => item.pageKey === 'index')?.path;
-    const firstVisibleChildPath = getDefaultSettingsPath(
-      currentVisibleTopLevelSetting?.children as PluginSettingsPageType[],
-    );
-    const nextPath = visibleIndexPath || firstVisibleChildPath;
-
-    if (nextPath && nextPath !== location.pathname) {
-      return <Navigate replace to={nextPath} />;
-    }
+  if (nextVisibleChildPath && nextVisibleChildPath !== location.pathname) {
+    return <Navigate replace to={nextVisibleChildPath} />;
   }
 
   return (

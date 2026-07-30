@@ -15,6 +15,7 @@ import type { InputRef } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useACLCheckReady } from '../acl/aclCheckReadiness';
 import { useApp } from '../hooks/useApp';
 import { useSettingsSearch, type SettingsSearchItem } from '../settings-center/useSettingsSearch';
 import { getSettingsHeaderColors } from './settingsTheme';
@@ -63,6 +64,7 @@ export const SettingsSearch: React.FC = observer(() => {
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const headerColors = getSettingsHeaderColors(token);
+  const isACLReady = useACLCheckReady(app);
   const { recentItems, search } = useSettingsSearch();
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
@@ -77,6 +79,13 @@ export const SettingsSearch: React.FC = observer(() => {
   useEffect(() => {
     setActiveIndex(0);
   }, [keyword]);
+
+  useEffect(() => {
+    if (isAuthRoute || !isACLReady) {
+      setOpen(false);
+      setKeyword('');
+    }
+  }, [isACLReady, isAuthRoute]);
 
   const openPalette = useCallback(() => {
     setKeyword('');
@@ -104,7 +113,7 @@ export const SettingsSearch: React.FC = observer(() => {
   );
 
   useEffect(() => {
-    if (isAuthRoute) {
+    if (isAuthRoute || !isACLReady) {
       return;
     }
 
@@ -123,7 +132,7 @@ export const SettingsSearch: React.FC = observer(() => {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isAuthRoute, openPalette]);
+  }, [isACLReady, isAuthRoute, openPalette]);
 
   const onInputKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -147,7 +156,7 @@ export const SettingsSearch: React.FC = observer(() => {
     [activeIndex, go, results],
   );
 
-  if (isAuthRoute) {
+  if (isAuthRoute || !isACLReady) {
     return null;
   }
 
