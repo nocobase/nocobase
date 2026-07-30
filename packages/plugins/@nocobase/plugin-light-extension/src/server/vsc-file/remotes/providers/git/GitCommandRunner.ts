@@ -65,6 +65,8 @@ const trustedProxyEnvironmentVariables = new Set([
   'https_proxy',
   'no_proxy',
 ]);
+const defaultPathEnvironment =
+  process.platform === 'win32' ? process.env.PATH || process.env.Path || '' : '/usr/local/bin:/usr/bin:/bin';
 
 export interface GitCommandLimits {
   timeoutMs: number;
@@ -160,7 +162,7 @@ export class GitCommandRunner {
   constructor(options: GitCommandRunnerOptions = {}) {
     this.gitBinary = requireTrustedBinary(options.gitBinary || 'git', 'Git');
     this.sshBinary = requireTrustedBinary(options.sshBinary || 'ssh', 'SSH');
-    this.pathEnvironment = options.pathEnvironment || '/usr/local/bin:/usr/bin:/bin';
+    this.pathEnvironment = options.pathEnvironment || defaultPathEnvironment;
     this.proxyEnvironmentVariables = validateProxyEnvironmentVariables(options.proxyEnvironmentVariables || []);
     this.limitOverrides = options.limits || {};
     this.limits = mergeAndValidateLimits(defaultLimits, this.limitOverrides);

@@ -63,7 +63,7 @@ describe('GitCommandRunner', () => {
     let capturedSpawnOptions: Parameters<GitSpawnProcess>[2] | undefined;
     const spawnProcess: GitSpawnProcess = (command, args, options) => {
       capturedSpawnOptions = options;
-      return spawn(command, [...args], options);
+      return spawnNodeScript(command, args, options);
     };
     const inherited = {
       HOME: process.env.HOME,
@@ -104,7 +104,7 @@ describe('GitCommandRunner', () => {
     expect(captured.env.XDG_CONFIG_HOME).toContain(gitCommandTemporaryDirectoryPrefix);
     expect(captured.env).toMatchObject({
       GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null',
       GIT_TERMINAL_PROMPT: '0',
     });
     expect(captured.env.GIT_ASKPASS).toBeUndefined();
@@ -128,7 +128,7 @@ describe('GitCommandRunner', () => {
       },
       spawnProcess: (command, args, options) => {
         spawnCount += 1;
-        return spawn(command, [...args], options);
+        return spawnNodeScript(command, args, options);
       },
     });
 
@@ -146,27 +146,30 @@ describe('GitCommandRunner', () => {
     expect(spawnCount).toBe(0);
   });
 
-  it('terminates a process group on timeout and removes the job directory', async () => {
-    const childPidPath = path.join(temporaryDirectory, 'child.pid');
-    const fakeGit = await createFakeGit(`
+  it.skipIf(process.platform === 'win32')(
+    'terminates a process group on timeout and removes the job directory',
+    async () => {
+      const childPidPath = path.join(temporaryDirectory, 'child.pid');
+      const fakeGit = await createFakeGit(`
       const child = require('child_process').spawn('/bin/sh', ['-c', 'trap "" TERM; sleep 30'], { stdio: 'ignore' });
       require('fs').writeFileSync(${JSON.stringify(childPidPath)}, String(child.pid));
       setInterval(() => {}, 1000);
     `);
-    const runner = new GitCommandRunner({
-      gitBinary: fakeGit,
-      materializer,
-      limits: { timeoutMs: 80, terminationGraceMs: 40 },
-    });
+      const runner = new GitCommandRunner({
+        gitBinary: fakeGit,
+        materializer,
+        limits: { timeoutMs: 80, terminationGraceMs: 40 },
+      });
 
-    const error = await captureError(() => runner.run({ args: ['init', '--bare'] }));
-    expect(error).toMatchObject({ code: 'REMOTE_UNAVAILABLE', details: { reasonCode: 'command-timeout' } });
-    const childPid = Number(await readFile(childPidPath, 'utf8'));
-    await expectProcessToStop(childPid);
-    expect(
-      (await readdir(temporaryDirectory)).filter((name) => name.startsWith(gitCommandTemporaryDirectoryPrefix)),
-    ).toEqual([]);
-  });
+      const error = await captureError(() => runner.run({ args: ['init', '--bare'] }));
+      expect(error).toMatchObject({ code: 'REMOTE_UNAVAILABLE', details: { reasonCode: 'command-timeout' } });
+      const childPid = Number(await readFile(childPidPath, 'utf8'));
+      await expectProcessToStop(childPid);
+      expect(
+        (await readdir(temporaryDirectory)).filter((name) => name.startsWith(gitCommandTemporaryDirectoryPrefix)),
+      ).toEqual([]);
+    },
+  );
 
   it('terminates output overflow and abort paths with stable errors', async () => {
     const outputGit = await createFakeGit(
@@ -176,6 +179,7 @@ describe('GitCommandRunner', () => {
       gitBinary: outputGit,
       materializer,
       limits: { maxStdoutBytes: 128, terminationGraceMs: 30 },
+      spawnProcess: spawnNodeScript,
     });
     expect(await captureError(() => outputRunner.run({ args: ['cat-file', '--batch'] }))).toMatchObject({
       code: 'REMOTE_UNAVAILABLE',
@@ -187,6 +191,7 @@ describe('GitCommandRunner', () => {
       gitBinary: abortGit,
       materializer,
       limits: { terminationGraceMs: 30 },
+      spawnProcess: spawnNodeScript,
     });
     const controller = new AbortController();
     const promise = abortRunner.run({ args: ['read-tree', '--empty'], signal: controller.signal });
@@ -206,6 +211,7 @@ describe('GitCommandRunner', () => {
       gitBinary: fakeGit,
       sshBinary: path.join(temporaryDirectory, 'missing-ssh'),
       materializer,
+      spawnProcess: spawnNodeScript,
     });
     await expect(
       runner.run({
@@ -241,7 +247,12 @@ describe('GitCommandRunner', () => {
       `require('fs').appendFileSync(${JSON.stringify(capturePath)}, JSON.stringify(process.argv.slice(2)) + '\\n');`,
     );
     const fakeSsh = await createFakeGit('process.stdout.write("OpenSSH_9.9");');
-    const runner = new GitCommandRunner({ gitBinary: fakeGit, sshBinary: fakeSsh, materializer });
+    const runner = new GitCommandRunner({
+      gitBinary: fakeGit,
+      sshBinary: fakeSsh,
+      materializer,
+      spawnProcess: spawnNodeScript,
+    });
     const httpsPassword = 'https-password-must-not-leak';
     const privateKey = 'ssh-private-key-must-not-leak';
     const passphrase = 'ssh-passphrase-must-not-leak';
@@ -274,7 +285,7 @@ describe('GitCommandRunner', () => {
 
   it('rejects commands, process overrides, and untrusted environment variables', async () => {
     const fakeGit = await createFakeGit('process.exit(0);');
-    const runner = new GitCommandRunner({ gitBinary: fakeGit, materializer });
+    const runner = new GitCommandRunner({ gitBinary: fakeGit, materializer, spawnProcess: spawnNodeScript });
 
     expect(
       await captureError(() => runner.run({ args: ['config', '--global', 'credential.helper', 'evil'] })),
@@ -304,7 +315,7 @@ describe('GitCommandRunner', () => {
       materializer,
       spawnProcess: (command, args, options) => {
         spawnCount += 1;
-        return spawn(command, [...args], options);
+        return spawnNodeScript(command, args, options);
       },
     });
 
@@ -346,6 +357,9 @@ ${body}
 
 let temporaryPathHolder = os.tmpdir();
 let fakeGitSequence = 0;
+
+const spawnNodeScript: GitSpawnProcess = (command, args, options) =>
+  spawn(process.execPath, [command, ...args], options);
 
 function restoreEnvironment(values: Record<string, string | undefined>): void {
   for (const [name, value] of Object.entries(values)) {

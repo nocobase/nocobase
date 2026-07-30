@@ -9,7 +9,7 @@
 
 import { spawn } from 'node:child_process';
 import { execFile } from 'node:child_process';
-import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -412,11 +412,12 @@ async function seedRemote(remote: string): Promise<void> {
   await git(['init', working]);
   await git(['-C', working, 'config', 'user.name', 'Test']);
   await git(['-C', working, 'config', 'user.email', 'test@example.com']);
+  await git(['-C', working, 'config', 'core.autocrlf', 'false']);
   await mkdir(path.join(working, 'packages/light'), { recursive: true });
   await writeFile(path.join(working, 'outside.txt'), 'outside\n');
-  await chmod(path.join(working, 'outside.txt'), 0o755);
   await writeFile(path.join(working, 'packages/light/index.ts'), 'export const value = 1;\n');
   await git(['-C', working, 'add', '.']);
+  await git(['-C', working, 'update-index', '--chmod=+x', 'outside.txt']);
   await git(['-C', working, 'commit', '-m', 'seed']);
   await git(['-C', working, 'branch', '-M', 'main']);
   await git(['-C', working, 'push', remote, 'main']);
