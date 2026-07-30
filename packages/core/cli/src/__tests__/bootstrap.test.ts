@@ -23,6 +23,7 @@ test('shouldSkipRuntimeBootstrap skips root help and no-arg invocations', () => 
   expect(shouldSkipRuntimeBootstrap(['resource', 'list'])).toBe(true);
   expect(shouldSkipRuntimeBootstrap(['api', 'resource', 'list'])).toBe(true);
   expect(shouldSkipRuntimeBootstrap(['api', 'resource', 'list', '--help'])).toBe(true);
+  expect(shouldSkipRuntimeBootstrap(['api', 'swagger', 'get', '--json'])).toBe(true);
 });
 
 test('shouldSkipRuntimeBootstrap still loads runtime for non-builtin commands', () => {
