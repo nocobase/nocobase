@@ -191,6 +191,7 @@ describe('backup pages', () => {
       expect(mocks.flowContext.api.request).toHaveBeenCalledWith({
         url: 'backupSettings:update/1',
         method: 'post',
+        skipNotify: true,
         data: expect.objectContaining({
           id: 1,
           keep: 5,
