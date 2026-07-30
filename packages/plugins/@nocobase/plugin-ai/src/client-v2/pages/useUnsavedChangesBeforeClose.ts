@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Modal } from 'antd';
+import { App } from 'antd';
 import type { FormInstance } from 'antd';
 import isEqual from 'lodash/isEqual';
 
@@ -41,6 +41,7 @@ export function useUnsavedChangesBeforeClose<Values extends object>({
   title,
   content,
 }: UseUnsavedChangesBeforeCloseOptions<Values>) {
+  const { modal } = App.useApp();
   const confirmedRef = useRef(false);
 
   const hasUnsavedChanges = useCallback(() => {
@@ -57,7 +58,7 @@ export function useUnsavedChangesBeforeClose<Values extends object>({
       }
 
       return new Promise<boolean>((resolve) => {
-        const confirmInstance = Modal.confirm({
+        const confirmInstance = modal.confirm({
           title,
           content,
           onOk: () => {
@@ -82,7 +83,7 @@ export function useUnsavedChangesBeforeClose<Values extends object>({
         view.beforeClose = previousBeforeClose;
       }
     };
-  }, [content, hasUnsavedChanges, title, view]);
+  }, [content, hasUnsavedChanges, modal, title, view]);
 
   return useCallback(() => view.close(), [view]);
 }

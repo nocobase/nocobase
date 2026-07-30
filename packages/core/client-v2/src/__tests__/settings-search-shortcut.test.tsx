@@ -12,6 +12,10 @@ import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('../acl/aclCheckReadiness', () => ({
+  useACLCheckReady: () => true,
+}));
+
 vi.mock('../hooks/useApp', () => ({
   useApp: () => ({
     router: {

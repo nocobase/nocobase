@@ -12,6 +12,7 @@ import { ConfigProvider, Menu, theme as antdTheme } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useACLCheckReady } from '../acl/aclCheckReadiness';
 import { useApp } from '../hooks/useApp';
 import { useSettingsGroups } from '../settings-center/useSettingsGroups';
 import { buildSettingsHeaderMenuTheme } from './settingsTheme';
@@ -37,6 +38,7 @@ export const SettingsGroupNav: React.FC = observer(() => {
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const { groups, activeGroupKey, currentTopLevelSetting, getGroupEntryPath } = useSettingsGroups();
+  const isACLReady = useACLCheckReady(app);
   const headerMenuTheme = useMemo(() => buildSettingsHeaderMenuTheme(token), [token]);
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上不该出现设置导航。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
@@ -100,7 +102,7 @@ export const SettingsGroupNav: React.FC = observer(() => {
       : [activeGroupKey];
   }, [activeGroupKey, currentTopLevelSetting?.name]);
 
-  if (isAuthRoute || items.length <= 1) {
+  if (isAuthRoute || !isACLReady || items.length <= 1) {
     return <div style={{ flex: 'auto' }} />;
   }
 
