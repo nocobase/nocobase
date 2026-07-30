@@ -29,7 +29,7 @@ import {
   type PortalConfig,
   type PortalSourceStorage,
 } from './portal-config.js';
-import { run } from './run-npm.js';
+import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const DEFAULT_PORTAL_APP_NAME = 'main';
@@ -38,18 +38,6 @@ const NPM_PACK_TIMEOUT_MS = 30_000;
 
 type TemplateSourceType = 'local' | 'package';
 
-type RunOptions = {
-  cwd?: string;
-  env?: Record<string, string>;
-  envMode?: 'inherit' | 'replace';
-  errorName?: string;
-  stdio?: 'inherit' | 'pipe' | 'ignore';
-  timeoutMs?: number;
-  onStdout?: (chunk: string) => void;
-  onStderr?: (chunk: string) => void;
-};
-
-type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
 type ApiRequest = typeof executeApiRequest;
 const portalCreateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalCreate.${key}`, values, { fallback });
@@ -610,7 +598,7 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
     const hasPackageJson = await pathExists(path.join(portalDir, 'package.json'));
     if (hasPackageJson) {
       const runCommand = options.runCommand ?? run;
-      await runCommand('pnpm', ['install'], {
+      await runPnpmCommand(runCommand, ['install'], {
         cwd: portalDir,
         env: buildPortalCommandEnv(),
         envMode: 'replace',

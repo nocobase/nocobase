@@ -259,6 +259,32 @@
         "localSynced": "本地已同步"
       }
     },
+    "swagger": {
+      "errors": {
+        "pluginDisabled": "API 文档插件尚未启用。请先启用该插件，再获取 Swagger 文档。",
+        "requestFailed": "Swagger 请求失败，状态码 {{status}}\n{{details}}",
+        "invalidDestinations": "swagger:getUrls 返回了无效的文档列表。",
+        "invalidDocument": "swagger:get 返回了无效的 OpenAPI 文档。"
+      },
+      "messages": {
+        "empty": "没有可用的 Swagger 文档命名空间。",
+        "saved": "Swagger 文档已保存到 {{output}}。"
+      },
+      "table": {
+        "name": "名称",
+        "namespace": "命名空间",
+        "url": "URL",
+        "field": "字段",
+        "value": "值"
+      },
+      "fields": {
+        "namespace": "命名空间",
+        "title": "标题",
+        "version": "版本",
+        "openapi": "OpenAPI",
+        "paths": "路径数"
+      }
+    },
     "portalInfo": {
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",

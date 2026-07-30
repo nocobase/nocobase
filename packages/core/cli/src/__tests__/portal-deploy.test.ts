@@ -228,6 +228,36 @@ test('docker deploy builds and syncs the portal record without uploading dist', 
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[0][0]);
 });
 
+test('deploy reports a clear error when pnpm is not installed', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
+  await preparePortalWorkspace({ storagePath });
+  const runCommand = vi.fn(async () => {
+    throw Object.assign(new Error('spawn pnpm ENOENT'), { code: 'ENOENT' });
+  });
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: { uid: 'customer' } } }));
+
+  await expect(
+    deployPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({ kind: 'local', storagePath }),
+      runCommand,
+      apiRequest,
+    }),
+  ).rejects.toThrow(
+    "Couldn't run `pnpm install` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
+  );
+
+  expect(runCommand).toHaveBeenCalledTimes(1);
+  expect(runCommand).toHaveBeenCalledWith(
+    'pnpm',
+    ['install'],
+    expect.objectContaining({
+      errorName: 'pnpm install',
+    }),
+  );
+  expect(apiRequest).not.toHaveBeenCalled();
+});
+
 test('http deploy builds, packs dist, and uploads it', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
   const portalDir = await preparePortalWorkspace({

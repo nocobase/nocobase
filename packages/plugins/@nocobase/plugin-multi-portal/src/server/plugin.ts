@@ -793,6 +793,8 @@ async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorag
   const buildEnv = getPortalStorageCommandEnv({
     NOCOBASE_API_URL: getPortalStorageApiUrl(item.appName),
     NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
+    SKIP_YARN_COREPACK_CHECK: '1',
+    COREPACK_ENABLE_STRICT: '0',
     COREPACK_ENABLE_PROJECT_SPEC: '0',
   });
   await appendPortalStorageLog(logPath, `Building portal ${item.appName}/${item.portalName}.`);
@@ -800,7 +802,11 @@ async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorag
     logPath,
     `Build environment: NOCOBASE_API_URL=${buildEnv.NOCOBASE_API_URL || ''} NOCOBASE_PORTAL_BASE=${
       buildEnv.NOCOBASE_PORTAL_BASE || ''
-    } APP_PUBLIC_PATH=${buildEnv.APP_PUBLIC_PATH || ''}`,
+    } APP_PUBLIC_PATH=${buildEnv.APP_PUBLIC_PATH || ''} SKIP_YARN_COREPACK_CHECK=${
+      buildEnv.SKIP_YARN_COREPACK_CHECK || ''
+    } COREPACK_ENABLE_STRICT=${buildEnv.COREPACK_ENABLE_STRICT || ''} COREPACK_ENABLE_PROJECT_SPEC=${
+      buildEnv.COREPACK_ENABLE_PROJECT_SPEC || ''
+    }`,
   );
   await runPortalStorageCommandOnce('yarn', ['build:html'], {
     cwd: portalDir,
@@ -1393,48 +1399,6 @@ async function seedHistoricalMultiPortals(db: Database) {
   await repairFixedLayoutMultiPortalRecords(db);
 }
 
-async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () => Promise<void>) {
-  const targets = await getMultiPortalWriteTargets(ctx, ['uid', 'portalName', 'uiLayoutUid']);
-  for (const { existing, values } of targets) {
-    const existingUid = trimString(existing?.get('uid'));
-    const uid = trimString(values.uid ?? existingUid);
-    const portalName = trimString(values.portalName ?? existing?.get('portalName'));
-    const uiLayoutUid = trimString(values.uiLayoutUid ?? existing?.get('uiLayoutUid'));
-
-    const fixedPortal = getFixedLayoutMultiPortalRecord(existingUid) || getFixedLayoutMultiPortalRecord(uid);
-    const canonicalPortal =
-      fixedPortal?.uid === uid &&
-      (!existingUid || fixedPortal.uid === existingUid) &&
-      fixedPortal.portalName === portalName &&
-      fixedPortal.uiLayoutUid === uiLayoutUid;
-    if (fixedPortal && !canonicalPortal) {
-      ctx.throw(400, 'Reserved Portal UID must match its canonical route and UI layout');
-      return;
-    }
-    if (!portalName) {
-      continue;
-    }
-    if (portalName === 'admin' || portalName === 'mobile') {
-      continue;
-    }
-
-    const existingInitPortal =
-      existing?.get('uid') === DEFAULT_MULTI_PORTAL_UID && existing.get('portalName') === portalName;
-    const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
-      filter: {
-        routeName: portalName,
-      },
-      fields: ['uid'],
-    });
-    if (uiLayout && !existingInitPortal) {
-      ctx.throw(400, 'Portal route name conflicts with an existing UI layout');
-      return;
-    }
-  }
-
-  await next();
-}
-
 async function preventMultiPortalBackingLayoutChange(ctx: ResourcerContext, next: () => Promise<void>) {
   const targets = await getMultiPortalWriteTargets(ctx, ['uiLayoutUid']);
   for (const { existing, values } of targets) {
@@ -1573,7 +1537,6 @@ async function assertDesktopRouteParentsBelongToScope(
       id: parentIds,
       ...scope.filter,
     },
-    ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
     transaction,
   });
   if (new Set(normalizeDesktopRouteTargetIds(parents)).size !== new Set(parentIds.map(String)).size) {
@@ -1625,7 +1588,6 @@ async function assertDesktopRouteUpsertMatchesBelongToScope(
         ...filter,
         ...scope.filter,
       },
-      ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
       transaction,
     });
     const allMatchIds = normalizeDesktopRouteTargetIds(allMatches);
@@ -2139,7 +2101,7 @@ async function findDesktopRouteMutationTargets(
       ...(filter ?? {}),
       ...(scopeFilter ?? {}),
     },
-    ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
+    ...(transaction && !scopeFilter ? { lock: transaction.LOCK.UPDATE } : {}),
     transaction,
   });
 }
@@ -2318,7 +2280,6 @@ async function guardDesktopRouteMoveScope(ctx: ResourcerContext, next: () => Pro
         id: routeIds,
         ...scope.filter,
       },
-      lock: transaction.LOCK.UPDATE,
       transaction,
     });
     if (
@@ -2353,7 +2314,6 @@ async function guardDesktopRouteMoveScope(ctx: ResourcerContext, next: () => Pro
           id: parentIds,
           ...scope.filter,
         },
-        lock: transaction.LOCK.UPDATE,
         transaction,
       });
       if (normalizeDesktopRouteTargetIds(parents).join(',') !== parentIds.map(String).sort().join(',')) {
@@ -2407,7 +2367,6 @@ async function guardDesktopRouteMoveScope(ctx: ResourcerContext, next: () => Pro
                 $gte: targetSort,
               },
         },
-        lock: transaction.LOCK.UPDATE,
         transaction,
       });
       const affectedRouteIds = affectedRoutes.map((route) => route.get('id'));
@@ -2521,7 +2480,7 @@ async function findDesktopRouteDestroyRoots(
       ...(scopeFilter ?? {}),
       ...(filterByTk.length ? { id: filterByTk } : {}),
     },
-    lock: transaction.LOCK.UPDATE,
+    ...(scopeFilter ? {} : { lock: transaction.LOCK.UPDATE }),
     transaction,
   });
   return collectDesktopRouteIds(records);
@@ -2605,13 +2564,20 @@ async function detachOwnerAndFindDestroyRoots(
   scope: DesktopRouteOwnerScope,
   transaction: Transaction,
 ) {
+  await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    filter: {
+      id: routeIds,
+    },
+    lock: transaction.LOCK.UPDATE,
+    transaction,
+  });
   const routes = await ctx.db.getRepository('desktopRoutes').find({
     fields: ['id', 'parentId'],
     appends: ['multiPortals', 'uiLayouts'],
     filter: {
       id: routeIds,
     },
-    lock: transaction.LOCK.UPDATE,
     transaction,
   });
   const routesById = new Map<string, Model>(routes.map((route): [string, Model] => [String(route.get('id')), route]));
@@ -2980,10 +2946,9 @@ export class PluginMultiPortalServer extends Plugin {
     await run();
   }
 
-  private async removePortalStorageDist(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
-    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist'), {
+  private async removePortalStorageIndexHtml(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
+    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist', 'index.html'), {
       force: true,
-      recursive: true,
     });
   }
 
@@ -3034,8 +2999,8 @@ export class PluginMultiPortalServer extends Plugin {
         }
 
         this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
-        await this.removePortalStorageDist(item);
-        await appendPortalStorageLog(logPath, `Portal dist directory removed for ${item.appName}/${item.portalName}.`);
+        await this.removePortalStorageIndexHtml(item);
+        await appendPortalStorageLog(logPath, `Portal index.html removed for ${item.appName}/${item.portalName}.`);
       } catch (error) {
         await appendPortalStorageLog(
           logPath,
@@ -3087,8 +3052,8 @@ export class PluginMultiPortalServer extends Plugin {
     }
 
     this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
-    await this.removePortalStorageDist(item);
-    await appendPortalStorageLog(logPath, `Portal dist directory removed for ${item.appName}/${item.portalName}.`);
+    await this.removePortalStorageIndexHtml(item);
+    await appendPortalStorageLog(logPath, `Portal index.html removed for ${item.appName}/${item.portalName}.`);
   }
 
   private async syncMultiPortalStorageItem(
@@ -3108,7 +3073,7 @@ export class PluginMultiPortalServer extends Plugin {
           previousItem.portalName !== currentItem.portalName ||
           !currentItem.enabled)
       ) {
-        await this.removePortalStorageDist(previousItem);
+        await this.removePortalStorageIndexHtml(previousItem);
       }
       if (currentItem) {
         await this.ensurePortalStorageItem(currentItem, { forceBuild });
@@ -3507,24 +3472,20 @@ export class PluginMultiPortalServer extends Plugin {
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:create', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventMultiPortalBackingLayoutChange);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:firstOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:updateOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', normalizeMultiPortalSlugValues);
-    this.app.resourceManager.registerPreActionHandler('multiPortals:updateOrCreate', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal, {
       after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
     });

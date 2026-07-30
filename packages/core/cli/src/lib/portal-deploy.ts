@@ -24,18 +24,7 @@ import {
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import { mergePortalConfigIntoOptions, readPortalConfig, type PortalConfig } from './portal-config.js';
-import { run } from './run-npm.js';
-
-type RunOptions = {
-  cwd?: string;
-  env?: Record<string, string>;
-  envMode?: 'inherit' | 'replace';
-  errorName?: string;
-  stdio?: 'inherit' | 'pipe' | 'ignore';
-  timeoutMs?: number;
-};
-
-type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
+import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
 type ApiRequest = typeof executeApiRequest;
 
@@ -328,13 +317,13 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   });
 
   const runCommand = options.runCommand ?? run;
-  await runCommand('pnpm', ['install'], {
+  await runPnpmCommand(runCommand, ['install'], {
     cwd: portalDir,
     env: buildPortalCommandEnv(),
     envMode: 'replace',
     errorName: 'pnpm install',
   });
-  await runCommand('pnpm', ['build'], {
+  await runPnpmCommand(runCommand, ['build'], {
     cwd: portalDir,
     env: buildPortalCommandEnv({
       NOCOBASE_API_URL: apiBaseUrl,
@@ -343,7 +332,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     envMode: 'replace',
     errorName: 'pnpm build',
   });
-  await runCommand('pnpm', ['build:html'], {
+  await runPnpmCommand(runCommand, ['build:html'], {
     cwd: portalDir,
     env: buildPortalCommandEnv({
       NOCOBASE_API_URL: apiBaseUrl,

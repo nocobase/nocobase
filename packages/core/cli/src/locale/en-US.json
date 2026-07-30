@@ -259,6 +259,32 @@
         "localSynced": "Local synced"
       }
     },
+    "swagger": {
+      "errors": {
+        "pluginDisabled": "The API documentation plugin is not enabled. Enable it before requesting Swagger documents.",
+        "requestFailed": "Swagger request failed with status {{status}}\n{{details}}",
+        "invalidDestinations": "swagger:getUrls returned an invalid destination list.",
+        "invalidDocument": "swagger:get returned an invalid OpenAPI document."
+      },
+      "messages": {
+        "empty": "No Swagger document namespaces are available.",
+        "saved": "Saved Swagger document to {{output}}."
+      },
+      "table": {
+        "name": "Name",
+        "namespace": "Namespace",
+        "url": "URL",
+        "field": "Field",
+        "value": "Value"
+      },
+      "fields": {
+        "namespace": "Namespace",
+        "title": "Title",
+        "version": "Version",
+        "openapi": "OpenAPI",
+        "paths": "Paths"
+      }
+    },
     "portalInfo": {
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",

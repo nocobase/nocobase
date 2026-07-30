@@ -34,7 +34,7 @@ import {
 } from './portal-create.js';
 import { listPortalWorkspaces } from './portal-list.js';
 import { findPortalListItem } from './portal-info.js';
-import { run } from './run-npm.js';
+import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
 type ApiRequest = typeof executeApiRequest;
 const execFileAsync = promisify(execFile);
@@ -51,17 +51,6 @@ type PortalSourceContext = {
   gitPath: string;
   options: Record<string, unknown>;
 };
-
-type RunOptions = {
-  cwd?: string;
-  env?: Record<string, string>;
-  envMode?: 'inherit' | 'replace';
-  errorName?: string;
-  stdio?: 'inherit' | 'pipe' | 'ignore';
-  timeoutMs?: number;
-};
-
-type RunCommand = (name: string, args: string[], options?: RunOptions) => Promise<void>;
 
 export type PortalSourceEnvLike = PortalCreateEnvLike;
 
@@ -303,7 +292,7 @@ async function installPortalDependencies(params: {
   }
 
   const runCommand = params.runCommand ?? run;
-  await runCommand('pnpm', ['install'], {
+  await runPnpmCommand(runCommand, ['install'], {
     cwd: params.portalDir,
     env: buildPortalCommandEnv(),
     envMode: 'replace',
