@@ -793,6 +793,8 @@ async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorag
   const buildEnv = getPortalStorageCommandEnv({
     NOCOBASE_API_URL: getPortalStorageApiUrl(item.appName),
     NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
+    SKIP_YARN_COREPACK_CHECK: '1',
+    COREPACK_ENABLE_STRICT: '0',
     COREPACK_ENABLE_PROJECT_SPEC: '0',
   });
   await appendPortalStorageLog(logPath, `Building portal ${item.appName}/${item.portalName}.`);
@@ -800,7 +802,11 @@ async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorag
     logPath,
     `Build environment: NOCOBASE_API_URL=${buildEnv.NOCOBASE_API_URL || ''} NOCOBASE_PORTAL_BASE=${
       buildEnv.NOCOBASE_PORTAL_BASE || ''
-    } APP_PUBLIC_PATH=${buildEnv.APP_PUBLIC_PATH || ''}`,
+    } APP_PUBLIC_PATH=${buildEnv.APP_PUBLIC_PATH || ''} SKIP_YARN_COREPACK_CHECK=${
+      buildEnv.SKIP_YARN_COREPACK_CHECK || ''
+    } COREPACK_ENABLE_STRICT=${buildEnv.COREPACK_ENABLE_STRICT || ''} COREPACK_ENABLE_PROJECT_SPEC=${
+      buildEnv.COREPACK_ENABLE_PROJECT_SPEC || ''
+    }`,
   );
   await runPortalStorageCommandOnce('yarn', ['build:html'], {
     cwd: portalDir,

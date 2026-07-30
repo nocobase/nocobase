@@ -1306,6 +1306,9 @@ describe('plugin-multi-portal server', () => {
         env: expect.objectContaining({
           NOCOBASE_API_URL: '/console/api',
           NOCOBASE_PORTAL_BASE: '/console/x/api-storage-template-portal/',
+          SKIP_YARN_COREPACK_CHECK: '1',
+          COREPACK_ENABLE_STRICT: '0',
+          COREPACK_ENABLE_PROJECT_SPEC: '0',
         }),
       }),
     );
