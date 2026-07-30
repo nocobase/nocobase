@@ -35,10 +35,10 @@ import {
 import { buildRunJSFilesHash, sha256Hex } from '../server';
 import { inspectRunJSSourceWorkspaceWithDependencies, RunJSSourceWorkspaceInspector } from './source-inspection';
 import {
+  buildRunJSRuntimeRequirePreamble,
   isRunJSImportablePath,
   resolveRunJSBuiltInModule,
   resolveRunJSWorkspaceImport,
-  RUNJS_BUILTIN_MODULES,
   runJSVirtualExtname,
 } from './portable';
 
@@ -308,7 +308,7 @@ function createRunJSBuildOptions(state: RunJSWorkspacePluginState): BuildOptions
   return {
     ...compilerPaths,
     banner: {
-      js: buildRuntimeRequirePreamble(),
+      js: buildRunJSRuntimeRequirePreamble(),
     },
     bundle: true,
     charset: 'utf8',
@@ -938,21 +938,6 @@ function convertSourceMap(
     generatedCodeLineOffset: jsRunnerGeneratedCodeLineOffset,
     mappings,
   };
-}
-
-function buildRuntimeRequirePreamble(): string {
-  const cases = Object.entries(RUNJS_BUILTIN_MODULES)
-    .map(([specifier, ctxLibName]) => `    case ${JSON.stringify(specifier)}: return ctx.libs.${ctxLibName};`)
-    .join('\n');
-  return [
-    'const __runjs_require__ = (specifier) => {',
-    '  switch (specifier) {',
-    cases,
-    '    default: throw new Error(`RunJS module "${specifier}" is not available`);',
-    '  }',
-    '};',
-    'const require = __runjs_require__;',
-  ].join('\n');
 }
 
 function diagnosticToEsbuildMessage(diagnostic: RunJSCompileDiagnostic): PartialMessage {

@@ -8,6 +8,7 @@
  */
 
 import type { FlowSurfaceErrorItemInput } from '../errors';
+import { prepareRunJSRuntimeArtifactForInspection } from '@nocobase/runjs/compiler/portable';
 import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
 import type { RunJsAuthoringInspectionInput } from './types';
 import type { RunJsAuthoringContext, RunJsSourceBudget } from './internal-types';
@@ -34,7 +35,16 @@ export function inspectRunJsAuthoringCodeForWrite(
   if (limitResult.skipInspection || limitResult.errors.length) {
     return limitResult.errors;
   }
-  return inspectRunJsAuthoringCode(input, context);
+  const artifactInspectionCode = prepareRunJSRuntimeArtifactForInspection(input.code);
+  return inspectRunJsAuthoringCode(
+    artifactInspectionCode
+      ? {
+          ...input,
+          code: artifactInspectionCode,
+        }
+      : input,
+    context,
+  );
 }
 
 export function inspectRunJsAuthoringCode(

@@ -1370,9 +1370,12 @@ describe('flowSurfaces exportBlueprint', () => {
       settings: {
         showBlockCard: false,
         version: '1.0.0',
-        code: "ctx.render('Ready');",
+        code: expect.stringContaining('ctx.render("Ready")'),
       },
     });
+    expect(jsBlock?.settings?.code).toContain('//# sourceURL=nocobase-runjs://bundle/');
+    expect(jsBlock?.settings).not.toHaveProperty('sourceRef');
+    const runtimeBannerArtifact = jsBlock?.settings?.code;
     const recordHistoryBlock = blocks.find((block) => block.key === 'departmentHistory');
     expect(recordHistoryBlock).toMatchObject({
       type: 'recordHistory',
@@ -1408,7 +1411,11 @@ describe('flowSurfaces exportBlueprint', () => {
     expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
     const replacedBlocks = getData(replacedExportRes).document.tabs[0].blocks;
     const replacedJsBlock = replacedBlocks.find((block) => block.key === 'runtimeBanner');
-    expect(replacedJsBlock?.settings?.showBlockCard).toBe(false);
+    expect(replacedJsBlock?.settings).toMatchObject({
+      showBlockCard: false,
+      code: runtimeBannerArtifact,
+    });
+    expect(replacedJsBlock?.settings).not.toHaveProperty('sourceRef');
   });
 
   it('should preserve supported kanban public settings and hidden popup display settings', async () => {

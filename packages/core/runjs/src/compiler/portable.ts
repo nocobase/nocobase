@@ -24,6 +24,56 @@ export const RUNJS_BUILTIN_MODULES: Readonly<Record<string, string>> = Object.fr
   '@formulajs/formulajs': 'formula',
 });
 
+const runJSRuntimeLauncherPattern =
+  /^\/\/ runjs-launcher:__runjs_launcher__\.js\nvar __runjs_entry__ = \([A-Za-z_$][\w$]*\(\), __toCommonJS\([A-Za-z_$][\w$]*\)\);\nreturn __runjs_entry__\.default\(\);\n\/\/# sourceURL=nocobase-runjs:\/\/bundle\/[a-f0-9]{16}\.js$/u;
+
+export function buildRunJSRuntimeRequirePreamble(): string {
+  const cases = Object.entries(RUNJS_BUILTIN_MODULES)
+    .map(([specifier, ctxLibName]) => `    case ${JSON.stringify(specifier)}: return ctx.libs.${ctxLibName};`)
+    .join('\n');
+  return [
+    'const __runjs_require__ = (specifier) => {',
+    '  switch (specifier) {',
+    cases,
+    '    default: throw new Error(`RunJS module "${specifier}" is not available`);',
+    '  }',
+    '};',
+    'const require = __runjs_require__;',
+  ].join('\n');
+}
+
+export function isRunJSRuntimeArtifact(code: unknown): code is string {
+  if (typeof code !== 'string' || !code.startsWith(`${buildRunJSRuntimeRequirePreamble()}\n`)) {
+    return false;
+  }
+  const launcherMarker = '// runjs-launcher:__runjs_launcher__.js';
+  const launcherIndex = code.lastIndexOf(launcherMarker);
+  if (launcherIndex <= 0 || code.indexOf(launcherMarker) !== launcherIndex) {
+    return false;
+  }
+  return runJSRuntimeLauncherPattern.test(code.slice(launcherIndex));
+}
+
+export function prepareRunJSRuntimeArtifactForInspection(code: unknown): string | undefined {
+  if (!isRunJSRuntimeArtifact(code)) {
+    return undefined;
+  }
+  const executeMatches = Array.from(code.matchAll(/\nasync function (__runjs_execute_[a-f0-9]{12})\(\) \{/gu));
+  if (executeMatches.length !== 1) {
+    return undefined;
+  }
+  const launcherCall = 'return __runjs_entry__.default();';
+  const launcherIndex = code.lastIndexOf('// runjs-launcher:__runjs_launcher__.js');
+  const launcherCallIndex = code.indexOf(launcherCall, launcherIndex);
+  if (launcherCallIndex < 0) {
+    return undefined;
+  }
+  const directExecuteCall = `${executeMatches[0][1]}();`;
+  return `${code.slice(0, launcherCallIndex)}${directExecuteCall}${code.slice(
+    launcherCallIndex + launcherCall.length,
+  )}`;
+}
+
 export type RunJSPortableDiagnosticSeverity = 'error' | 'warning' | 'info';
 
 export interface RunJSPortableCompileDiagnostic {

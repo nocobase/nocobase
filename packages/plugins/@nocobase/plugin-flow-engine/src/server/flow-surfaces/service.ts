@@ -4950,6 +4950,7 @@ export class FlowSurfacesService {
         if (_.isPlainObject(jsSettings) && _.isPlainObject(runJs)) {
           const jsSettingsRecord = jsSettings as Record<string, unknown>;
           const runJsRecord = runJs as Record<string, unknown>;
+          delete runJsRecord.sourceRef;
           RUN_JS_SOURCE_SETTING_KEYS.forEach((key) => {
             if (Object.prototype.hasOwnProperty.call(runJsRecord, key)) {
               jsSettingsRecord[key] = _.cloneDeep(runJsRecord[key]);
@@ -8665,6 +8666,7 @@ export class FlowSurfacesService {
     });
 
     const generatedDefaultFilterByComposeBlockUid = new Map<string, any>();
+    const deferredRunJSWorkspaceBootstrapResults = new Map<string, Record<string, unknown>>();
     const result = await executeComposeRuntime(plan, {
       removeExistingItem: async (uid) => this.removeNodeTreeWithBindings(uid, options.transaction),
       createBlock: async (payload, spec) => {
@@ -8699,6 +8701,8 @@ export class FlowSurfacesService {
           ...calendarPopupSettings,
           ...kanbanPopupSettings,
         };
+        const deferRunJSWorkspaceBootstrap =
+          (spec.type === 'jsBlock' || !!spec.template) && !!spec.settings && Object.keys(spec.settings).length > 0;
         const result = await this.addBlock(
           {
             ...payload,
@@ -8712,8 +8716,12 @@ export class FlowSurfacesService {
             skipDefaultBlockActions: true,
             skipAuthoringValidation: true,
             explicitFields: spec.explicitFields === true,
+            skipRunJSWorkspaceBootstrap: deferRunJSWorkspaceBootstrap,
           },
         );
+        if (deferRunJSWorkspaceBootstrap) {
+          deferredRunJSWorkspaceBootstrapResults.set(result.uid, result);
+        }
         const generatedDefaultFilterInfo = await this.buildDefaultFilterFromDataBlockUid({
           blockType: spec.type,
           template: spec.template,
@@ -8736,6 +8744,27 @@ export class FlowSurfacesService {
           return;
         }
         await this.applyInlineNodeSettings(actionName, targetUid, settings, runtimeOptions);
+        const deferredResult = deferredRunJSWorkspaceBootstrapResults.get(targetUid);
+        if (!deferredResult) {
+          return;
+        }
+        deferredRunJSWorkspaceBootstrapResults.delete(targetUid);
+        const configuredNode = await this.repository.findModelById(targetUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
+        if (
+          configuredNode?.use === 'JSBlockModel' &&
+          !hasLightExtensionSourceMode(configuredNode.stepParams, 'jsSettings')
+        ) {
+          const runJSWorkspace = await this.bootstrapRunJSHost(
+            'JSBlockModel',
+            targetUid,
+            options.transaction,
+            options.authoringContext,
+          );
+          Object.assign(deferredResult, runJSWorkspace);
+        }
       },
       resolveBlockSettings: (settings, state, block) => this.resolveComposeBlockSettings(settings, state.keyMap, block),
       resolveActionSettings: (settings, state, block, action, actionName) =>
@@ -10674,7 +10703,9 @@ export class FlowSurfacesService {
         includeAsyncNode: true,
       });
       const runJSWorkspace =
-        createdNode?.use === 'JSBlockModel' && !options.skipRunJSWorkspaceBootstrap
+        createdNode?.use === 'JSBlockModel' &&
+        !options.skipRunJSWorkspaceBootstrap &&
+        !hasLightExtensionSourceMode(createdNode.stepParams, 'jsSettings')
           ? await this.bootstrapRunJSHost('JSBlockModel', result.uid, options.transaction, options.authoringContext)
           : undefined;
       const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
@@ -11128,8 +11159,17 @@ export class FlowSurfacesService {
         options,
       );
     }
+    const createdRunJSBlock =
+      catalogItem.use === 'JSBlockModel'
+        ? await this.repository.findModelById(result.uid, {
+            transaction: options.transaction,
+            includeAsyncNode: true,
+          })
+        : undefined;
     const runJSWorkspace =
-      catalogItem.use === 'JSBlockModel' && !options.skipRunJSWorkspaceBootstrap
+      catalogItem.use === 'JSBlockModel' &&
+      !options.skipRunJSWorkspaceBootstrap &&
+      !hasLightExtensionSourceMode(createdRunJSBlock?.stepParams, 'jsSettings')
         ? await this.bootstrapRunJSHost('JSBlockModel', result.uid, options.transaction, options.authoringContext)
         : undefined;
     const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;

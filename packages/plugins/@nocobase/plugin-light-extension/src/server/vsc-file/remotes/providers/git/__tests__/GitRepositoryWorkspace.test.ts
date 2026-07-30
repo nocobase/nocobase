@@ -31,6 +31,8 @@ import { normalizeGitSnapshotLimits, selectGitSnapshotEntries } from '../gitSnap
 
 const execFileAsync = promisify(execFile);
 const remoteUrl = 'https://git.test/team/project.git';
+const seededOddPath = process.platform === 'win32' ? 'packages/light/odd-name.ts' : 'packages/light/odd\tname\n.ts';
+const seededScopedOddPath = seededOddPath.slice('packages/light/'.length);
 
 describe('GitRepositoryWorkspace', () => {
   let temporaryDirectory: string;
@@ -63,7 +65,7 @@ describe('GitRepositoryWorkspace', () => {
     expect(snapshot.files).toEqual([
       { path: 'outside.txt', content: 'outside\n', mode: '100755' },
       { path: 'packages/light/index.ts', content: 'export const value = 1;\n', mode: '100755' },
-      { path: 'packages/light/odd\tname\n.ts', content: 'odd\n', mode: '100644' },
+      { path: seededOddPath, content: 'odd\n', mode: '100644' },
     ]);
     expect(snapshot.treeOid).toMatch(/^[0-9a-f]{40}$/u);
     expect(runner.requests.filter((request) => request.args[0] === 'cat-file')).toHaveLength(1);
@@ -81,7 +83,7 @@ describe('GitRepositoryWorkspace', () => {
     await expect(scoped.readSnapshot(revision)).resolves.toMatchObject({
       files: [
         { path: 'index.ts', content: 'export const value = 1;\n', mode: '100755' },
-        { path: 'odd\tname\n.ts', content: 'odd\n', mode: '100644' },
+        { path: seededScopedOddPath, content: 'odd\n', mode: '100644' },
       ],
     });
     expect(
@@ -128,7 +130,7 @@ describe('GitRepositoryWorkspace', () => {
       .stdout;
     expect(tree).toMatch(/^100755 blob [0-9a-f]{40}\tpackages\/light\/index\.ts$/mu);
     expect(tree).toMatch(/packages\/light\/new\.ts/u);
-    expect(tree).not.toMatch(/odd\tname/u);
+    expect(tree).not.toContain(seededOddPath);
     await workspace.cleanup();
   });
 
@@ -331,16 +333,7 @@ async function seedRemote(remote: string): Promise<void> {
   await rm(oddSourcePath);
   await git(['-C', working, 'add', 'outside.txt', 'packages/light/index.ts']);
   await git(['-C', working, 'update-index', '--chmod=+x', 'outside.txt', 'packages/light/index.ts']);
-  await git([
-    '-C',
-    working,
-    'update-index',
-    '--add',
-    '--cacheinfo',
-    '100644',
-    oddBlobOid,
-    'packages/light/odd\tname\n.ts',
-  ]);
+  await git(['-C', working, 'update-index', '--add', '--cacheinfo', '100644', oddBlobOid, seededOddPath]);
   await git(['-C', working, 'commit', '-m', 'seed']);
   await git(['-C', working, 'branch', '-M', 'main']);
   await git(['-C', working, 'push', remote, 'main']);

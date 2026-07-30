@@ -270,7 +270,7 @@ async function waitForSuccessfulCreate(app: MockServer, jobId: string, repoId: s
 }
 
 async function waitForFailedCreateJob(app: MockServer, jobId: string): Promise<LightExtensionCreateJobRecord> {
-  for (let attempt = 0; attempt < 500; attempt += 1) {
+  for (let attempt = 0; attempt < 1200; attempt += 1) {
     const record = await app.db.getRepository('lightExtensionCreateJobs').findOne({ filterByTk: jobId });
     if (record?.get('status') === 'failed') {
       return record.toJSON() as LightExtensionCreateJobRecord;

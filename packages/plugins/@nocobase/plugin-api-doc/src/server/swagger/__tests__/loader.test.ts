@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
@@ -70,16 +70,18 @@ describe('loadSwagger', () => {
     },
   );
 
-  test('resolves the Light Extension Swagger entry through package exports', () => {
+  test('resolves the source Light Extension Swagger entry and declares its distribution export', () => {
     expect(
       require
         .resolve('@nocobase/plugin-light-extension/src/swagger/index.ts')
         .endsWith(join('@nocobase', 'plugin-light-extension', 'src', 'swagger', 'index.ts')),
     ).toBe(true);
-    expect(
-      require
-        .resolve('@nocobase/plugin-light-extension/dist/swagger/index.js')
-        .endsWith(join('@nocobase', 'plugin-light-extension', 'dist', 'swagger', 'index.js')),
-    ).toBe(true);
+
+    const packageJsonPath = require.resolve('@nocobase/plugin-light-extension/package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
+      exports?: Record<string, unknown>;
+    };
+
+    expect(packageJson.exports?.['./dist/swagger/index.js']).toBe('./dist/swagger/index.js');
   });
 });
