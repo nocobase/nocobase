@@ -3543,7 +3543,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   async install() {
     const version = await this.app.version.get();
-    if (version === null) {
+    if (!version) {
       await ensureDefaultRoleMultiPortalAccess(this.db);
       await seedFreshMultiPortals(this.db);
     } else {
