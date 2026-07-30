@@ -133,7 +133,13 @@ export class LightExtensionCreateJobRunner {
     } catch (error) {
       const safeError = normalizeCreateJobError(error);
       try {
-        await this.store.fail(job.id, this.options.applicationName, safeError.code, safeError.message);
+        await this.store.fail(
+          job.id,
+          this.options.applicationName,
+          safeError.code,
+          safeError.message,
+          safeError.reasonCode,
+        );
       } catch (storeError) {
         this.options.logger.warn('Light extension create-job failure was not persisted', {
           jobId: job.id,
@@ -141,7 +147,13 @@ export class LightExtensionCreateJobRunner {
         });
       }
       await this.cleanupJob(job);
-      await this.recordAuditBestEffort(job, 'createJobFail', 'blocked', safeError.code, Date.now() - startedAt);
+      await this.recordAuditBestEffort(
+        job,
+        'createJobFail',
+        'blocked',
+        safeError.reasonCode || safeError.code,
+        Date.now() - startedAt,
+      );
       this.options.logger.warn('Light extension create job failed', { jobId: job.id, errorCode: safeError.code });
     }
   }
@@ -206,18 +218,27 @@ function getJobId(message: unknown): string | null {
   return typeof jobId === 'string' && jobId ? jobId : null;
 }
 
-function normalizeCreateJobError(error: unknown): { code: string; message: string } {
+function normalizeCreateJobError(error: unknown): { code: string; message: string; reasonCode: string | null } {
   if (isLightExtensionError(error)) {
-    return { code: error.code, message: error.message };
+    return { code: error.code, message: error.message, reasonCode: safeCreateJobReasonCode(error.details?.reasonCode) };
   }
   if (error instanceof RemoteSyncError) {
     const mapped = mapRemoteSyncErrorToLightExtension(error);
-    return { code: mapped.code, message: mapped.message };
+    return {
+      code: mapped.code,
+      message: mapped.message,
+      reasonCode: safeCreateJobReasonCode(mapped.details?.reasonCode),
+    };
   }
   return {
     code: 'LIGHT_EXTENSION_CREATE_FAILED',
     message: 'Light extension creation failed',
+    reasonCode: null,
   };
+}
+
+function safeCreateJobReasonCode(value: unknown): string | null {
+  return value === 'default-branch-unavailable' ? value : null;
 }
 
 function safeErrorMeta(error: unknown): Record<string, unknown> {

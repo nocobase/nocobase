@@ -38,6 +38,7 @@ export default defineCollection({
     { type: 'string', name: 'status', length: 32, allowNull: false, defaultValue: 'pending' },
     { type: 'json', name: 'payload' },
     { type: 'string', name: 'errorCode' },
+    { type: 'string', name: 'errorReasonCode', length: 128 },
     { type: 'text', name: 'errorMessage' },
     { type: 'string', name: 'reservationKey', length: 80 },
     { type: 'string', name: 'actorUserId' },

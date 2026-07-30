@@ -85,6 +85,7 @@ export interface LightExtensionCreateJobRecord {
   status: LightExtensionCreateJobStatus;
   payload: Record<string, unknown> | null;
   errorCode: string | null;
+  errorReasonCode?: string | null;
   errorMessage: string | null;
   reservationKey: string | null;
   actorUserId: string | null;
@@ -104,6 +105,7 @@ export interface LightExtensionCreateJobSummary {
   sourceType: LightExtensionCreateSourceType;
   status: LightExtensionCreateJobStatus;
   errorCode: string | null;
+  errorReasonCode?: string | null;
   errorMessage: string | null;
   startedAt: string | null;
   finishedAt: string | null;

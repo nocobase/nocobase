@@ -62,10 +62,9 @@ export class LightExtensionCreateFromRemoteService {
   ): Promise<LightExtensionCreateFromRemoteResult> {
     const metadata = this.repoService.normalizeCreateMetadata(input);
     const runtime = this.getRemoteSyncRuntime();
-    const config = runtime.normalizeConfig(input.provider, input.config);
     const fetched = await runtime.fetchTarget({
       provider: input.provider,
-      config,
+      config: input.config,
       authRef: input.authRef,
     });
     const revision = requireRemoteRevision(fetched.snapshot.revision);

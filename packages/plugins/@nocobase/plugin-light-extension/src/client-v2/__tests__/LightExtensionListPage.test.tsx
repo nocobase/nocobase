@@ -471,15 +471,6 @@ describe('LightExtensionListPage', () => {
   });
 
   it('submits an unresolved branch and explains when an empty remote needs an explicit branch', async () => {
-    mocks.sync.createFromGit.mockRejectedValueOnce(
-      new LightExtensionSyncHookError({
-        operation: 'createFromGit',
-        code: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
-        status: 422,
-        message: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
-        details: { reasonCode: 'default-branch-unavailable' },
-      }),
-    );
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
@@ -497,8 +488,26 @@ describe('LightExtensionListPage', () => {
         expect.objectContaining({ config: expect.objectContaining({ branch: null }) }),
       ),
     );
+    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    await act(async () => {
+      mocks.createJobs.update([
+        createJobSummary({
+          id: 'lecj_git',
+          targetRepoId: 'ler_git',
+          name: 'git-smoke',
+          title: 'Empty Git remote',
+          sourceType: 'git',
+          status: 'failed',
+          errorCode: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+          errorReasonCode: 'default-branch-unavailable',
+          errorMessage: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+        }),
+      ]);
+    });
     expect(
-      await screen.findByText('The remote repository has no default branch. Enter a branch explicitly.'),
+      await screen.findByText(
+        'Creation failed: Empty Git remote: The remote repository has no default branch. Enter a branch explicitly.',
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText('LIGHT_EXTENSION_SYNC_CONFIG_INVALID')).not.toBeInTheDocument();
   });

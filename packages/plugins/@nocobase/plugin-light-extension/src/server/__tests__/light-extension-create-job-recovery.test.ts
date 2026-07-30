@@ -10,6 +10,7 @@
 import { vi } from 'vitest';
 
 import type { LightExtensionCreateJobRecord } from '../../shared/types';
+import { RemoteSyncError } from '../vsc-file/public-api';
 import type {
   LightExtensionAuditService,
   LightExtensionCreateJobAuditInput,
@@ -93,6 +94,7 @@ describe('LightExtensionCreateJobRunner', () => {
       'main',
       'LIGHT_EXTENSION_CREATE_FAILED',
       'Light extension creation failed',
+      null,
     );
     expect(executor.cleanup).toHaveBeenCalledWith(job);
     expect(store.complete).not.toHaveBeenCalled();
@@ -103,6 +105,40 @@ describe('LightExtensionCreateJobRunner', () => {
         reasonCode: 'LIGHT_EXTENSION_CREATE_FAILED',
         result: 'blocked',
       }),
+    );
+  });
+
+  it('preserves only the safe default-branch reason for an asynchronous Git creation failure', async () => {
+    const job = createJob({ sourceType: 'git' });
+    const store = {
+      start: vi.fn(async () => job),
+      complete: vi.fn(),
+      fail: vi.fn(async () => ({ ...job, status: 'failed' })),
+    } as unknown as LightExtensionCreateJobStore;
+    const executor = {
+      execute: vi.fn(async () => {
+        throw new RemoteSyncError('CONFIG_INVALID', 'Git default branch is unavailable', {
+          details: { provider: 'git', reasonCode: 'default-branch-unavailable' },
+        });
+      }),
+      cleanup: vi.fn(async () => undefined),
+    } as unknown as LightExtensionCreateJobExecutor;
+    const recordCreateJobEvent = vi.fn(async (_event: LightExtensionCreateJobAuditInput) => undefined);
+    const runner = new LightExtensionCreateJobRunner(store, executor, runnerOptions(), {
+      recordCreateJobEvent,
+    } as unknown as LightExtensionAuditService);
+
+    await runner.run(job.id);
+
+    expect(store.fail).toHaveBeenCalledWith(
+      job.id,
+      'main',
+      'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+      'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+      'default-branch-unavailable',
+    );
+    expect(recordCreateJobEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reasonCode: 'default-branch-unavailable', result: 'blocked' }),
     );
   });
 

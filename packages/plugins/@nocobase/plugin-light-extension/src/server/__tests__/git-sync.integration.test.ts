@@ -80,7 +80,7 @@ describe('light extension Git sync integration', () => {
     }
   });
 
-  it('rejects anonymous private-source creation and succeeds only after resolving the referenced secret', async () => {
+  it('rejects anonymous private-source creation and resolves credentials and the default branch before persistence', async () => {
     const credential = 'git-private-source-password';
     const authRef = '{{ $env.PRIVATE_GIT }}';
     const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'git-sync-integration-'));
@@ -132,10 +132,22 @@ describe('light extension Git sync integration', () => {
       config: gitSyncRemoteConfig,
       authRef,
     });
+    const createdFromDefaultBranch = await service.create({
+      name: 'Resolved Default Branch Source',
+      provider: 'git',
+      config: { ...gitSyncRemoteConfig, branch: null },
+      authRef,
+    });
 
     expect(created).toMatchObject({
       repo: { healthStatus: 'ready' },
       remote: { authRef },
+      revision: expect.stringMatching(/^[0-9a-f]{40}$/u),
+      plan: { state: 'in-sync' },
+    });
+    expect(createdFromDefaultBranch).toMatchObject({
+      repo: { healthStatus: 'ready' },
+      remote: { config: { branch: 'main' }, authRef },
       revision: expect.stringMatching(/^[0-9a-f]{40}$/u),
       plan: { state: 'in-sync' },
     });

@@ -292,10 +292,11 @@ function LightExtensionListPageInner() {
       handleSucceededJobs(succeeded).catch(() => undefined);
     }
     if (lastFailed) {
+      const errorKey = getLightExtensionSyncErrorTranslationKey(lastFailed.errorCode, lastFailed.errorReasonCode);
       setNotice({
         type: 'error',
         message: `${t('Creation failed: {{name}}').replace('{{name}}', lastFailed.title || lastFailed.name)}: ${
-          lastFailed.errorMessage || t('Light extension creation failed')
+          errorKey ? t(errorKey) : lastFailed.errorMessage || t('Light extension creation failed')
         }`,
       });
     }

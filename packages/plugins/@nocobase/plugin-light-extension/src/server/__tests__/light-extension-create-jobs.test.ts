@@ -115,6 +115,7 @@ describe('light extension durable creation jobs', () => {
   it('builds summaries without payload, auth, or actor fields', () => {
     const summary = toCreateJobSummary(
       createJobRecord({
+        errorReasonCode: 'default-branch-unavailable',
         payload: {
           sourceType: 'git',
           provider: 'git',
@@ -126,6 +127,7 @@ describe('light extension durable creation jobs', () => {
     const serialized = JSON.stringify(summary);
 
     expect(serialized).not.toContain('SECRET_TOKEN');
+    expect(summary.errorReasonCode).toBe('default-branch-unavailable');
     expect(summary).not.toHaveProperty('payload');
     expect(summary).not.toHaveProperty('actorUserId');
   });

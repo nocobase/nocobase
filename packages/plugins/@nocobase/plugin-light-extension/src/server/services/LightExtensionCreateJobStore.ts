@@ -81,6 +81,7 @@ export class LightExtensionCreateJobStore {
           status: 'pending',
           payload: input.payload,
           errorCode: null,
+          errorReasonCode: null,
           errorMessage: null,
           reservationKey: createReservationKey(input.applicationName, input.normalizedName),
           actorUserId: input.actorUserId ?? null,
@@ -124,6 +125,7 @@ export class LightExtensionCreateJobStore {
     applicationName: string,
     errorCode: string,
     errorMessage: string,
+    errorReasonCode: string | null = null,
   ): Promise<LightExtensionCreateJobRecord | null> {
     return this.withLockedJob(jobId, async (record, transaction) => {
       if (
@@ -133,7 +135,7 @@ export class LightExtensionCreateJobStore {
       ) {
         return null;
       }
-      await markFailed(record, transaction, this.clock(), errorCode, errorMessage);
+      await markFailed(record, transaction, this.clock(), errorCode, errorMessage, errorReasonCode);
       return createJobFromModel(record);
     });
   }
@@ -222,6 +224,7 @@ export class LightExtensionCreateJobStore {
         now,
         'LIGHT_EXTENSION_CREATE_TIMED_OUT',
         status === 'running' ? 'Light extension creation timed out' : 'Light extension creation did not start in time',
+        null,
       );
       return createJobFromModel(record);
     });
@@ -258,6 +261,7 @@ export function toCreateJobSummary(job: LightExtensionCreateJobRecord): LightExt
     sourceType: job.sourceType,
     status: job.status,
     errorCode: job.errorCode,
+    errorReasonCode: job.errorReasonCode ?? null,
     errorMessage: job.errorMessage,
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
@@ -279,6 +283,7 @@ export function createJobFromModel(record: Model): LightExtensionCreateJobRecord
     status: record.get('status') as LightExtensionCreateJobRecord['status'],
     payload: record.get('payload') as Record<string, unknown> | null,
     errorCode: nullableString(record.get('errorCode')),
+    errorReasonCode: nullableString(record.get('errorReasonCode')),
     errorMessage: nullableString(record.get('errorMessage')),
     reservationKey: nullableString(record.get('reservationKey')),
     actorUserId: nullableString(record.get('actorUserId')),
@@ -296,11 +301,13 @@ async function markFailed(
   now: Date,
   errorCode: string,
   errorMessage: string,
+  errorReasonCode: string | null,
 ): Promise<void> {
   await record.update(
     {
       status: 'failed',
       errorCode,
+      errorReasonCode,
       errorMessage,
       payload: null,
       reservationKey: null,
