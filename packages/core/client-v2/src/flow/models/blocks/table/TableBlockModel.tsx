@@ -234,7 +234,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   createResource(ctx, params) {
-    return this.context.createResource(MultiRecordResource);
+    const resource = this.context.createResource(MultiRecordResource);
+    resource.addRequestHeader('X-With-ACL-Meta', 'true');
+    return resource;
   }
 
   /**

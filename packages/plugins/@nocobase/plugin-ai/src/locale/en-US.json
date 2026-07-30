@@ -255,6 +255,8 @@
   "UID": "UID",
   "Up": "Up",
   "Upload files": "Upload files",
+  "You can upload up to {{count}} attachments.": "You can upload up to {{count}} attachments.",
+  "The total size of attachments cannot exceed {{size}}.": "The total size of attachments cannot exceed {{size}}.",
   "Use skill": "Use skill",
   "Use skills": "Use skills",
   "Use workflow as a tool": "Use workflow as a tool",

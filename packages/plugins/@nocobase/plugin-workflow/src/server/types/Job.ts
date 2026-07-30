@@ -9,9 +9,12 @@
 
 import { BelongsToGetAssociationMixin, Model } from '@nocobase/database';
 import FlowNodeModel from './FlowNode';
+import ExecutionModel from './Execution';
 
 export default class JobModel extends Model {
   declare id: number;
+  declare executionId: number;
+  declare workflowId?: number;
   declare status: number;
   declare result?: any;
   declare meta?: any;
@@ -25,4 +28,7 @@ export default class JobModel extends Model {
   declare nodeId: number;
   declare node?: FlowNodeModel;
   declare getNode: BelongsToGetAssociationMixin<FlowNodeModel>;
+
+  declare execution?: ExecutionModel;
+  declare getExecution: BelongsToGetAssociationMixin<ExecutionModel>;
 }

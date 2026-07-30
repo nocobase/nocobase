@@ -53,6 +53,5 @@ export async function resume(context: Context, next: Next) {
   context.status = 202;
   await next();
 
-  job.execution = execution;
-  workflowPlugin.resume(job);
+  await workflowPlugin.resume(job);
 }

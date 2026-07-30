@@ -53,9 +53,6 @@ export class AIEmployeeTaskModel extends FlowModel {
                 }),
               },
               'x-component': UsersSelect,
-              'x-component-props': {
-                multiple: false,
-              },
               required: true,
             },
             message: {

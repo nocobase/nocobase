@@ -43,4 +43,17 @@ describe('normalizeAIFileUploadAttachment', () => {
       status: 'done',
     });
   });
+
+  it('uses the local file name before the server returns an attachment', () => {
+    const uploadFile = {
+      uid: 'large-file',
+      name: 'large-file.zip',
+      status: 'error',
+    };
+
+    expect(normalizeAIFileUploadAttachment(uploadFile, uploadFile.status)).toEqual({
+      ...uploadFile,
+      filename: uploadFile.name,
+    });
+  });
 });
