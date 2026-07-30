@@ -13,18 +13,20 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
   resolvePortalAppFromApiBaseUrl,
-  resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { assertPortalConfigMatches, readPortalConfig } from './portal-config.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
+import { resolvePortalWorkspaceDirectory } from './portal-workspace.js';
 import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
 export type PortalDevEnvLike = PortalCreateEnvLike;
 
 export type PortalDevOptions = {
   portal: string;
+  directory?: string;
   env: PortalDevEnvLike;
   runCommand?: RunCommand;
   onStart?: (result: PortalDevResult) => void;
@@ -80,10 +82,13 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
       ),
     );
   }
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
-  const portalDir = path.join(storagePath, 'portals', app, portal);
+  const portalDir = await resolvePortalWorkspaceDirectory({
+    portal,
+    directory: options.directory,
+    mode: 'existing',
+  });
 
   if (!(await pathExists(portalDir))) {
     throw new Error(
@@ -94,6 +99,7 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
       ),
     );
   }
+  assertPortalConfigMatches(await readPortalConfig(portalDir), portal, portalDir);
   await assertFileExists(
     path.join(portalDir, 'package.json'),
     portalDevText(

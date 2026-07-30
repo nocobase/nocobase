@@ -18,6 +18,7 @@ nb portal info <portal> [flags]
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
+| `--dir` | string | Portal workspace used for local file details. Default: the current directory. |
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |

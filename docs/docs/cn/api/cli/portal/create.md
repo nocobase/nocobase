@@ -20,6 +20,7 @@ nb portal create <portal> [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
+| `--dir` | string | 本地工作区目录，默认是 `<当前目录>/<portal>` |
 | `<portal>` | string | Portal 名称或 slug |
 | `--template` | string | 模板包、本地路径或 `file://` URL，默认是 `@nocobase/portal-template-default` |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
@@ -61,7 +62,7 @@ nb portal create customer --source-storage git --git-repo git@github.com:nocobas
 
 `--force` 会先删除已有本地 Portal 工作区，再重新创建。这个参数适合本地工作区已经损坏、或者你明确希望重新从模板生成的情况。
 
-创建时会在本地工作区写入 `.env`、`.env.local` 和 `portal.config.json`。其中 `.env.local` 使用完整的 `apiBaseUrl`，`portal.config.json` 保存 source storage 和 Git 配置。
+创建时会在本地工作区写入 `.env`、`.env.local` 和 `portal.config.json`。其中 `.env.local` 使用完整的 `apiBaseUrl`，`portal.config.json` 保存 Portal 名称、source storage 和 Git 配置。
 
 如果模板里有 `package.json`，创建完成后会自动执行 `pnpm install`。如果模板里没有 `package.json`，会跳过依赖安装。
 

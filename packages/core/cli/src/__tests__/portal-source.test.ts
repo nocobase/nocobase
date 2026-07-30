@@ -68,7 +68,10 @@ function portalListData(sourceStorage = 'nocobase') {
 }
 
 async function writePortalConfig(portalDir: string, config: Record<string, unknown> = { sourceStorage: 'nocobase' }) {
-  await fsp.writeFile(path.join(portalDir, 'portal.config.json'), `${JSON.stringify(config, null, 2)}\n`);
+  await fsp.writeFile(
+    path.join(portalDir, 'portal.config.json'),
+    `${JSON.stringify({ portal: path.basename(portalDir), ...config }, null, 2)}\n`,
+  );
 }
 
 async function runGit(args: string[], cwd?: string) {
@@ -85,6 +88,7 @@ afterEach(async () => {
 
 test('pull downloads NocoBase-managed source for http envs', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
   await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default null;\n');
@@ -109,6 +113,7 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
   await expect(
     pullPortalSource({
       portal: 'customer',
+      directory: portalDir,
       envName: 'prod',
       env: createEnv({ storagePath, kind: 'http' }),
       apiRequest,
@@ -122,14 +127,12 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
     dependenciesInstalled: true,
   });
 
-  await expect(
-    fsp.readFile(path.join(storagePath, 'portals', 'main', 'customer', 'src', 'index.tsx'), 'utf-8'),
-  ).resolves.toBe('export default null;\n');
-  await expect(
-    fsp.readFile(path.join(storagePath, 'portals', 'main', 'customer', 'portal.config.json'), 'utf-8'),
-  ).resolves.toBe('{\n  "sourceStorage": "nocobase"\n}\n');
+  await expect(fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe('export default null;\n');
+  await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
+    '{\n  "portal": "customer",\n  "sourceStorage": "nocobase"\n}\n',
+  );
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
-    cwd: path.join(storagePath, 'portals', 'main', 'customer'),
+    cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm install',
@@ -181,6 +184,7 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
   await expect(
     pushPortalSource({
       portal: 'customer',
+      directory: portalDir,
       envName: 'prod',
       env: createEnv({ storagePath, kind: 'http' }),
       apiRequest,
@@ -199,38 +203,55 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
   ]);
 });
 
-test('local and docker NocoBase-managed source sync is a no-op', async () => {
+test('local and docker NocoBase-managed source sync uses the API', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
-  await fsp.mkdir(portalDir, { recursive: true });
-  await writePortalConfig(portalDir);
-  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: portalListData() }));
+  const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:pullSource') {
+      await tar.create({ cwd: sourceDir, file: String(options.flags.output), gzip: true }, ['package.json']);
+      return { ok: true, status: 200, data: { output: options.flags.output } };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:update') {
+      return { ok: true, status: 200, data: {} };
+    }
+    return { ok: true, status: 200, data: { data: { sourceRevision: 'local-revision' } } };
+  });
 
   await expect(
     pullPortalSource({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath, kind: 'local', apiBaseUrl: 'http://localhost:13000/api' }),
+      installDependencies: false,
       apiRequest,
     }),
   ).resolves.toMatchObject({
     mode: 'local',
-    changed: false,
+    changed: true,
   });
 
   await expect(
     pushPortalSource({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath, kind: 'docker', apiBaseUrl: 'http://localhost:13000/api' }),
       apiRequest,
     }),
   ).resolves.toMatchObject({
     mode: 'docker',
-    changed: false,
+    changed: true,
+    sourceRevision: 'local-revision',
   });
 });
 
 test('pull can skip dependency installation', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
   await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
   const runCommand = vi.fn().mockResolvedValue(undefined);
@@ -246,6 +267,7 @@ test('pull can skip dependency installation', async () => {
   await expect(
     pullPortalSource({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath, kind: 'http' }),
       installDependencies: false,
       runCommand,
@@ -259,8 +281,30 @@ test('pull can skip dependency installation', async () => {
   expect(runCommand).not.toHaveBeenCalled();
 });
 
+test('pull with force refuses to replace a directory that is not a Portal workspace', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = path.join(storagePath, 'customer');
+  await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'keep.txt'), 'keep');
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: portalListData() }));
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      directory: portalDir,
+      env: createEnv({ storagePath, kind: 'http' }),
+      force: true,
+      apiRequest,
+    }),
+  ).rejects.toThrow(/not a Portal workspace/);
+
+  await expect(fsp.readFile(path.join(portalDir, 'keep.txt'), 'utf-8')).resolves.toBe('keep');
+  expect(apiRequest).toHaveBeenCalledTimes(1);
+});
+
 test('pull and push Git-managed source through the configured repository path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   const remoteRepo = await makeTempDir('nocobase-cli-portal-git-remote-');
   const remoteRepoUrl = `file://${remoteRepo}`;
   const seedRepo = await makeTempDir('nocobase-cli-portal-git-seed-');
@@ -299,6 +343,7 @@ test('pull and push Git-managed source through the configured repository path', 
   await expect(
     pullPortalSource({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath, kind: 'http' }),
       apiRequest,
     }),
@@ -306,18 +351,18 @@ test('pull and push Git-managed source through the configured repository path', 
     sourceStorage: 'git',
     changed: true,
   });
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   expect(normalizeLineEndings(await fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "remote";\n',
   );
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-    `{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "${remoteRepoUrl}",\n    "branch": "main",\n    "path": "customer"\n  }\n}\n`,
+    `{\n  "portal": "customer",\n  "sourceStorage": "git",\n  "git": {\n    "repo": "${remoteRepoUrl}",\n    "branch": "main",\n    "path": "customer"\n  }\n}\n`,
   );
 
   await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "local";\n');
   await expect(
     pushPortalSource({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath, kind: 'http' }),
       message: 'Update portal source',
       apiRequest,
@@ -381,6 +426,7 @@ test('push creates configured Git branch and uses repository root by default', a
   await expect(
     pushPortalSource({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath, kind: 'http' }),
       message: 'Initial portal source',
       apiRequest,

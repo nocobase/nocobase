@@ -51,6 +51,10 @@ async function preparePortalWorkspace(params: { storagePath: string; app?: strin
   const portalDir = path.join(params.storagePath, 'portals', app, portal);
   await fsp.mkdir(path.join(portalDir, 'dist'), { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'dist', 'index.html'), '<div id="root"></div>');
+  await fsp.writeFile(
+    path.join(portalDir, 'portal.config.json'),
+    `${JSON.stringify({ portal, sourceStorage: 'nocobase' }, null, 2)}\n`,
+  );
   return portalDir;
 }
 
@@ -91,6 +95,7 @@ test('destroys the portal record and local workspace', async () => {
   await expect(
     destroyPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       envName: 'dev',
       cliVersion: '1.2.3',
       env: createEnv({
@@ -123,11 +128,13 @@ test('destroys the portal record and local workspace', async () => {
 
 test('force destroy ignores a missing portal record and workspace', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const portalDir = path.join(storagePath, 'customer');
   const apiRequest = vi.fn(async () => ({ ok: false, status: 404, data: { errors: [{ message: 'Not Found' }] } }));
 
   await expect(
     destroyPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       force: true,
       apiRequest,
@@ -143,7 +150,7 @@ test('force destroy ignores a missing portal record and workspace', async () => 
   expectPortalRecordDestroy(apiRequest.mock.calls[0][0]);
 });
 
-test('http destroy uses env source storage when no local storagePath is configured', async () => {
+test('http destroy uses an explicit local workspace directory', async () => {
   const cliRoot = await makeTempDir('nocobase-cli-portal-destroy-root-');
   const originalCliRoot = process.env[NB_CLI_ROOT_ENV];
   process.env[NB_CLI_ROOT_ENV] = cliRoot;
@@ -155,6 +162,7 @@ test('http destroy uses env source storage when no local storagePath is configur
     await expect(
       destroyPortalWorkspace({
         portal: 'customer',
+        directory: portalDir,
         envName: 'remote1',
         env: createEnv({
           kind: 'http',
@@ -184,11 +192,13 @@ test('http destroy uses env source storage when no local storagePath is configur
 
 test('fails before deleting the record when workspace is missing without force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const portalDir = path.join(storagePath, 'customer');
   const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
 
   await expect(
     destroyPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       apiRequest,
     }),
@@ -205,6 +215,7 @@ test('fails when portal record destroy fails', async () => {
   await expect(
     destroyPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       apiRequest,
     }),

@@ -25,6 +25,7 @@ export default class PortalPush extends Command {
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env prod --yes',
     '<%= config.bin %> <%= command.id %> customer --message "Update customer portal"',
+    '<%= config.bin %> <%= command.id %> customer --dir ./customer',
   ];
 
   static override args = {
@@ -47,6 +48,9 @@ export default class PortalPush extends Command {
     message: Flags.string({
       char: 'm',
       description: 'Source update message; used as the Git commit message for Git-managed source',
+    }),
+    dir: Flags.string({
+      description: 'Portal workspace directory; defaults to the current directory',
     }),
   };
 
@@ -79,6 +83,7 @@ export default class PortalPush extends Command {
 
     const result = await pushPortalSource({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),

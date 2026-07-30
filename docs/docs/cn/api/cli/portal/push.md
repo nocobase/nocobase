@@ -20,6 +20,7 @@ nb portal push <portal> [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
+| `--dir` | string | Portal 工作区目录，默认是当前目录 |
 | `<portal>` | string | Portal 名称或 slug |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
@@ -53,7 +54,7 @@ nb portal push customer --message "Update customer portal"
 
 如果 Portal 使用 Git source storage，`push` 会 clone 配置中的仓库和分支，把本地 Portal 工作区复制到配置的 Git 目录，然后提交并推送。没有源码变更时不会创建 commit；如果没有传入 `--message`，默认 commit message 是 `chore(portal): update <portal>`。
 
-如果 Portal 使用默认的 `nocobase` source storage，`local` 和 `docker` env 下源码通常已经在当前机器或 Docker volume 中，`push` 会提示不需要推送。`http` env 会打包本地源码并通过 API 上传。
+如果 Portal 使用默认的 `nocobase` source storage，`local`、`docker` 和 `http` env 都会打包本地源码并通过 API 上传。
 
 ## 相关命令
 

@@ -84,7 +84,7 @@ nb portal push customer -e dev --yes --message "Move customer portal source to G
 
 如果只是快速创建和开发 Portal，默认的 `nocobase` 就够了。只有当你希望把 Portal 源码纳入已有 Git 仓库、走团队代码评审或 CI 流程时，才需要选择 `git`。
 
-源码配置会写入本地工作区的 `portal.config.json`。`create`、`pull` 和 `config` 都会维护这个文件；`push` 和 `deploy` 会读取它，并按配置同步源码或部署产物。
+Portal 名称和源码配置会写入本地工作区的 `portal.config.json`。`create`、`pull` 和 `config` 都会维护这个文件；`push` 和 `deploy` 会读取它，并按配置同步源码或部署产物。
 
 ## env 类型
 
@@ -92,19 +92,21 @@ nb portal push customer -e dev --yes --message "Move customer portal source to G
 
 | env 类型 | 说明 |
 | --- | --- |
-| `local` | 本地工作区和应用 storage 在当前机器上，`pull`/`push` 对默认 `nocobase` 存储通常不需要做额外同步 |
-| `docker` | 本地工作区通过 Docker volume 和应用共享，`pull`/`push` 对默认 `nocobase` 存储通常不需要做额外同步 |
+| `local` | 本地工作区独立于应用 storage，源码和部署产物通过 API 同步 |
+| `docker` | 本地工作区不依赖 Docker volume，源码和部署产物通过 API 同步 |
 | `http` | 通过 API 同步源码和部署产物，`pull`/`push` 会下载或上传源码归档 |
 
 `ssh` env 在当前版本暂不支持 Portal 工作区管理。
 
 ## 本地工作区路径
 
-Portal 工作区会放在当前 env 的 storage 下：
+`create` 默认在当前目录下创建以 Portal 命名的子目录。第一次 `pull` 也使用这个位置；如果当前目录已经包含 `portal.config.json`，`pull` 会直接使用当前目录：
 
 ```text
-<storagePath>/portals/<app>/<portal>
+<当前目录>/<portal>
 ```
+
+`dev`、`push`、`deploy`、`config`、`destroy`、`info` 和 `list` 默认把当前目录作为本地 Portal 工作区。所有这些命令都可以通过 `--dir <路径>` 显式指定工作区；相对路径按当前目录解析。CLI 不会从 env 的 `storagePath` 推导本地工作区。
 
 主应用的访问路径通常是：
 

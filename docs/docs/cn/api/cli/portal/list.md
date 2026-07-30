@@ -18,6 +18,7 @@ nb portal list [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
+| `--dir` | string | 用于检查本地同步状态的 Portal 工作区目录，默认是当前目录 |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--json-output`, `-j` | boolean | 以 JSON 输出 Portal 记录 |

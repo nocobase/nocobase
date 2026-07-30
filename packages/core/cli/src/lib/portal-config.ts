@@ -23,6 +23,7 @@ export type PortalGitConfig = {
 };
 
 export type PortalConfig = {
+  portal: string;
   sourceStorage: PortalSourceStorage;
   git?: PortalGitConfig;
 };
@@ -97,6 +98,12 @@ function validateGitPath(value: string): string {
 }
 
 export function buildPortalConfig(options: BuildPortalConfigOptions): PortalConfig {
+  const portal = trimValue(options.portal);
+  if (!portal) {
+    throw new Error(
+      portalConfigText('errors.portalRequired', undefined, 'Portal name is required in portal.config.json.'),
+    );
+  }
   const sourceStorage = validatePortalSourceStorage(options.sourceStorage ?? options.existingConfig?.sourceStorage);
   const hasGitOption = Boolean(trimValue(options.gitRepo) || trimValue(options.gitBranch) || trimValue(options.gitPath));
   if (sourceStorage === 'nocobase') {
@@ -109,7 +116,7 @@ export function buildPortalConfig(options: BuildPortalConfigOptions): PortalConf
         ),
       );
     }
-    return { sourceStorage };
+    return { portal, sourceStorage };
   }
 
   const repo = trimValue(options.gitRepo) || options.existingConfig?.git?.repo || '';
@@ -125,6 +132,7 @@ export function buildPortalConfig(options: BuildPortalConfigOptions): PortalConf
   }
 
   return {
+    portal,
     sourceStorage,
     git: {
       repo,
@@ -167,12 +175,25 @@ export async function readPortalConfig(portalDir: string): Promise<PortalConfig>
   const config = readObject(data);
   const git = readObject(config.git);
   return buildPortalConfig({
-    portal: path.basename(portalDir),
+    portal: trimValue(config.portal) || path.basename(portalDir),
     sourceStorage: trimValue(config.sourceStorage),
     gitRepo: trimValue(git.repo),
     gitBranch: trimValue(git.branch),
     gitPath: trimValue(git.path),
   });
+}
+
+export function assertPortalConfigMatches(config: PortalConfig, portal: string, portalDir: string): void {
+  if (config.portal === portal) {
+    return;
+  }
+  throw new Error(
+    portalConfigText(
+      'errors.workspaceMismatch',
+      { portalDir, configuredPortal: config.portal, portal },
+      `Portal workspace ${portalDir} belongs to "${config.portal}", not "${portal}".`,
+    ),
+  );
 }
 
 export async function writePortalConfig(portalDir: string, config: PortalConfig): Promise<void> {

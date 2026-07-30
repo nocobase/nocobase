@@ -25,6 +25,7 @@ export default class PortalConfig extends Command {
     '<%= config.bin %> <%= command.id %> customer --source-storage nocobase',
     '<%= config.bin %> <%= command.id %> customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git',
     '<%= config.bin %> <%= command.id %> customer --git-branch main --git-path portals/customer',
+    '<%= config.bin %> <%= command.id %> customer --dir ./customer --source-storage nocobase',
   ];
 
   static override args = {
@@ -57,6 +58,9 @@ export default class PortalConfig extends Command {
     'git-path': Flags.string({
       description: 'Directory inside the Git repository for this portal; defaults to the repository root',
     }),
+    dir: Flags.string({
+      description: 'Portal workspace directory; defaults to the current directory',
+    }),
   };
 
   async run(): Promise<void> {
@@ -88,6 +92,7 @@ export default class PortalConfig extends Command {
 
     const result = await configurePortalWorkspace({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),

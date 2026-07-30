@@ -18,6 +18,7 @@ nb portal create <portal> [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
+| `--dir` | string | Local workspace directory. Default: `<current-directory>/<portal>`. |
 | `<portal>` | string | Portal name or slug. |
 | `--template` | string | Template package, local path, or `file://` URL. Default: `@nocobase/portal-template-default`. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
@@ -40,7 +41,7 @@ nb portal create customer --source-storage git --git-repo git@github.com:nocobas
 
 ## Notes
 
-The command writes `.env`, `.env.local`, and `portal.config.json`. If the template contains `package.json`, it runs `pnpm install`. Portal names must use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.
+The command writes `.env`, `.env.local`, and `portal.config.json`. The config file records the Portal name and source settings. If the template contains `package.json`, the command runs `pnpm install`. Portal names must use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.
 
 ## Commandes liées
 

@@ -26,6 +26,7 @@ export default class PortalCreate extends Command {
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --template @nocobase/portal-template-default',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --dir ./portals/customer',
     '<%= config.bin %> <%= command.id %> customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git',
   ];
 
@@ -56,6 +57,9 @@ export default class PortalCreate extends Command {
     force: Flags.boolean({
       description: 'Delete the existing portal and recreate it',
       default: false,
+    }),
+    dir: Flags.string({
+      description: 'Local portal workspace directory; defaults to <current-directory>/<portal>',
     }),
     'source-storage': Flags.string({
       description: 'Where portal source code is managed',
@@ -105,6 +109,7 @@ export default class PortalCreate extends Command {
 
     const result = await createPortalWorkspace({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       title: flags.title,
       template: flags.template,
       env,

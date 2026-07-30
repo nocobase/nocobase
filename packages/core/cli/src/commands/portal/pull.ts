@@ -26,6 +26,7 @@ export default class PortalPull extends Command {
     '<%= config.bin %> <%= command.id %> customer --env prod --yes',
     '<%= config.bin %> <%= command.id %> customer --force',
     '<%= config.bin %> <%= command.id %> customer --no-install',
+    '<%= config.bin %> <%= command.id %> customer --dir ./portals/customer',
   ];
 
   static override args = {
@@ -53,6 +54,10 @@ export default class PortalPull extends Command {
       description: 'Run pnpm install after pulling the portal source',
       default: true,
       allowNo: true,
+    }),
+    dir: Flags.string({
+      description:
+        'Local portal workspace directory; defaults to the current workspace or <current-directory>/<portal>',
     }),
   };
 
@@ -85,6 +90,7 @@ export default class PortalPull extends Command {
 
     const result = await pullPortalSource({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),

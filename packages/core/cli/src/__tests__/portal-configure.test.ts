@@ -38,7 +38,10 @@ function createEnv(params: { storagePath: string; kind?: PortalCreateEnvLike['ki
 async function preparePortalWorkspace(storagePath: string): Promise<string> {
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await fsp.mkdir(portalDir, { recursive: true });
-  await fsp.writeFile(path.join(portalDir, 'portal.config.json'), '{\n  "sourceStorage": "nocobase"\n}\n');
+  await fsp.writeFile(
+    path.join(portalDir, 'portal.config.json'),
+    '{\n  "portal": "customer",\n  "sourceStorage": "nocobase"\n}\n',
+  );
   return portalDir;
 }
 
@@ -90,6 +93,7 @@ test('updates local Portal config and syncs remote options when the remote recor
   await expect(
     configurePortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       envName: 'prod',
       cliVersion: '1.2.3',
       env: createEnv({ storagePath }),
@@ -103,6 +107,7 @@ test('updates local Portal config and syncs remote options when the remote recor
     portalDir,
     remoteSynced: true,
     config: {
+      portal: 'customer',
       sourceStorage: 'git',
       git: {
         repo: 'git@github.com:nocobase/customer-portal.git',
@@ -112,7 +117,7 @@ test('updates local Portal config and syncs remote options when the remote recor
     },
   });
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-    '{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "main",\n    "path": "portals/customer"\n  }\n}\n',
+    '{\n  "portal": "customer",\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "main",\n    "path": "portals/customer"\n  }\n}\n',
   );
   expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
     '/multiPortals:list',
@@ -128,6 +133,7 @@ test('writes local Portal config without remote sync when the remote record is m
   await expect(
     configurePortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       sourceStorage: 'nocobase',
       apiRequest,
@@ -136,7 +142,7 @@ test('writes local Portal config without remote sync when the remote record is m
     remoteSynced: false,
   });
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-    '{\n  "sourceStorage": "nocobase"\n}\n',
+    '{\n  "portal": "customer",\n  "sourceStorage": "nocobase"\n}\n',
   );
   expect(apiRequest).toHaveBeenCalledTimes(1);
 });
@@ -178,6 +184,7 @@ test('defaults Git path to the repository root', async () => {
   await expect(
     configurePortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       sourceStorage: 'git',
       gitRepo: 'git@github.com:nocobase/customer-portal.git',
@@ -185,6 +192,7 @@ test('defaults Git path to the repository root', async () => {
     }),
   ).resolves.toMatchObject({
     config: {
+      portal: 'customer',
       sourceStorage: 'git',
       git: {
         repo: 'git@github.com:nocobase/customer-portal.git',
@@ -194,6 +202,6 @@ test('defaults Git path to the repository root', async () => {
     },
   });
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-    '{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "main",\n    "path": "."\n  }\n}\n',
+    '{\n  "portal": "customer",\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "main",\n    "path": "."\n  }\n}\n',
   );
 });

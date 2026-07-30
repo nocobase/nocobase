@@ -136,6 +136,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
     [
       {
         env,
+        directory: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
         envName: 'remote1',
         cliVersion: '1.2.3',
       },

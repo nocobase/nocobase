@@ -18,6 +18,7 @@ nb portal pull <portal> [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
+| `--dir` | string | Local workspace directory. Uses the current Portal workspace, or `<current-directory>/<portal>`. |
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
@@ -35,7 +36,7 @@ nb portal pull customer --no-install
 
 ## Notes
 
-When the pulled workspace contains `package.json`, `pnpm install` runs by default. Use `--no-install` to skip it. Git source storage clones the configured repo and branch, then copies `--git-path`. With default `nocobase` storage, `local` and `docker` envs are usually no-op; `http` envs download a source archive through the API.
+When the pulled workspace contains `package.json`, `pnpm install` runs by default. Use `--no-install` to skip it. Git source storage clones the configured repo and branch, then copies `--git-path`. With default `nocobase` storage, `local`, `docker`, and `http` envs download a source archive through the API.
 
 ## Commandes liées
 

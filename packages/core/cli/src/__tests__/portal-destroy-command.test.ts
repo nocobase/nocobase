@@ -63,12 +63,13 @@ test('portal destroy resolves the current env name before destroying', async () 
   });
 
   const command = Object.assign(Object.create(PortalDestroy.prototype), {
-    argv: ['--yes'],
+    argv: ['--yes', '--dir', './cba'],
     parse: vi.fn(async () => ({
       args: { portal: 'cba' },
       flags: {
         yes: true,
         force: false,
+        dir: './cba',
       },
     })),
     config: {
@@ -89,6 +90,7 @@ test('portal destroy resolves the current env name before destroying', async () 
     [
       {
         portal: 'cba',
+        directory: './cba',
         env,
         envName: 'remote1',
         cliVersion: '1.2.3',

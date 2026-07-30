@@ -62,6 +62,10 @@ async function preparePortalWorkspace(params: {
   const portalDir = path.join(params.storagePath, 'portals', app, portal);
   await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"portal"}\n');
+  await fsp.writeFile(
+    path.join(portalDir, 'portal.config.json'),
+    `${JSON.stringify({ portal, sourceStorage: 'nocobase' }, null, 2)}\n`,
+  );
   if (params.envContent !== undefined) {
     await fsp.writeFile(path.join(portalDir, '.env'), params.envContent);
   }
@@ -89,6 +93,7 @@ test('updates env files and starts portal dev without building or syncing record
   await expect(
     devPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({
         kind: 'http',
         storagePath,
@@ -135,10 +140,12 @@ test('updates env files and starts portal dev without building or syncing record
 
 test('fails when Portal is missing', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-dev-storage-');
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
 
   await expect(
     devPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       runCommand: vi.fn(),
     }),
@@ -147,11 +154,17 @@ test('fails when Portal is missing', async () => {
 
 test('fails when package.json is missing', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-dev-storage-');
-  await fsp.mkdir(path.join(storagePath, 'portals', 'main', 'customer'), { recursive: true });
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(
+    path.join(portalDir, 'portal.config.json'),
+    `${JSON.stringify({ portal: 'customer', sourceStorage: 'nocobase' }, null, 2)}\n`,
+  );
 
   await expect(
     devPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       env: createEnv({ storagePath }),
       runCommand: vi.fn(),
     }),

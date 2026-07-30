@@ -32,6 +32,7 @@ export default class PortalList extends Command {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env dev --yes',
     '<%= config.bin %> <%= command.id %> --json',
+    '<%= config.bin %> <%= command.id %> --dir ./customer',
   ];
 
   static override flags = {
@@ -49,6 +50,9 @@ export default class PortalList extends Command {
       aliases: ['json'],
       description: 'Print portal records as JSON',
       default: false,
+    }),
+    dir: Flags.string({
+      description: 'Portal workspace directory used for local sync status; defaults to the current directory',
     }),
   };
 
@@ -81,6 +85,7 @@ export default class PortalList extends Command {
 
     const result = await listPortalWorkspaces({
       env,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
     });

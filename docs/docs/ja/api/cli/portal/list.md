@@ -18,6 +18,7 @@ nb portal list [flags]
 
 | パラメーター | 型 | 説明 |
 | --- | --- | --- |
+| `--dir` | string | Portal workspace used for local sync status. Default: the current directory. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
 | `--json-output`, `-j` | boolean | Print Portal records as JSON. |

@@ -20,6 +20,7 @@ nb portal destroy <portal> [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
+| `--dir` | string | Portal 工作区目录，默认是当前目录 |
 | `<portal>` | string | Portal 名称或 slug |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 跳过确认提示 |

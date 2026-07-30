@@ -18,6 +18,7 @@ nb portal info <portal> [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
+| `--dir` | string | 用于显示本地文件详情的 Portal 工作区目录，默认是当前目录 |
 | `<portal>` | string | Portal 名称或 slug |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |

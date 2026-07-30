@@ -84,7 +84,7 @@ Al crear un Portal, elige dónde se gestiona el código fuente:
 
 For quick creation and development, the default `nocobase` storage is usually enough. Use `git` when the Portal source should be reviewed, versioned, or built through an existing team workflow.
 
-Source configuration is written to `portal.config.json` in the local workspace. `create`, `pull`, and `config` maintain this file; `push` and `deploy` read it to sync source or deployment output.
+The Portal name and source configuration are written to `portal.config.json` in the local workspace. `create`, `pull`, and `config` maintain this file; `push` and `deploy` read it to sync source or deployment output.
 
 ## Env Types
 
@@ -92,19 +92,21 @@ Source configuration is written to `portal.config.json` in the local workspace. 
 
 | Modo | Descripción |
 | --- | --- |
-| `local` | The workspace and app storage are on the current machine. With default `nocobase` storage, `pull`/`push` usually do not need extra sync. |
-| `docker` | The workspace is shared with the app through a Docker volume. With default `nocobase` storage, `pull`/`push` usually do not need extra sync. |
+| `local` | The workspace is independent of app storage. Source and deployment output are synced through APIs. |
+| `docker` | The workspace does not depend on a Docker volume. Source and deployment output are synced through APIs. |
 | `http` | Source and deployment output are synced through APIs. `pull` downloads a source archive, and `push` uploads one. |
 
 `ssh` envs do not support Portal management in the current version.
 
 ## Local Workspace Path
 
-Portals are stored under the selected env storage:
+`create` defaults to a portal-named child of the current directory. The first `pull` uses the same location; if the current directory already contains `portal.config.json`, `pull` uses the current directory directly:
 
 ```text
-<storagePath>/portals/<app>/<portal>
+<current-directory>/<portal>
 ```
+
+`dev`, `push`, `deploy`, `config`, `destroy`, `info`, and `list` use the current directory as the local Portal workspace by default. Pass `--dir <path>` to any of these commands to select a workspace explicitly; relative paths are resolved from the current directory. The CLI does not derive the local workspace from the env `storagePath`.
 
 The main app access path is usually:
 

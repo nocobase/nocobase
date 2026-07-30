@@ -25,6 +25,7 @@ export default class PortalInfo extends Command {
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
     '<%= config.bin %> <%= command.id %> customer --json',
+    '<%= config.bin %> <%= command.id %> customer --dir ./customer',
   ];
 
   static override args = {
@@ -49,6 +50,9 @@ export default class PortalInfo extends Command {
       aliases: ['json'],
       description: 'Print portal details as JSON',
       default: false,
+    }),
+    dir: Flags.string({
+      description: 'Portal workspace directory used for local file details; defaults to the current directory',
     }),
   };
 
@@ -81,6 +85,7 @@ export default class PortalInfo extends Command {
 
     const result = await listPortalWorkspaces({
       env,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
     });

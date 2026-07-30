@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { appendAppPublicPath } from './app-public-path.js';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
@@ -15,9 +14,10 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
   resolvePortalAppFromApiBaseUrl,
-  resolvePortalStoragePath,
   type PortalCreateEnvLike,
 } from './portal-create.js';
+import { readPortalConfig, type PortalConfig } from './portal-config.js';
+import { isPortalWorkspace } from './portal-workspace.js';
 
 type ApiRequest = typeof executeApiRequest;
 
@@ -27,6 +27,7 @@ export type PortalListMode = 'local' | 'docker' | 'http';
 
 export type PortalListOptions = {
   env: PortalListEnvLike;
+  directory?: string;
   envName?: string;
   cliVersion?: string;
   apiRequest?: ApiRequest;
@@ -62,7 +63,7 @@ export type PortalOutputItem = {
 export type PortalListResult = {
   app: string;
   mode: PortalListMode;
-  storagePath: string;
+  workspaceDir: string;
   items: PortalListItem[];
 };
 
@@ -121,15 +122,6 @@ function readListData(data: unknown): Array<Record<string, unknown>> {
   }
 
   return readListData(directData);
-}
-
-async function pathExists(target: string): Promise<boolean> {
-  try {
-    await stat(target);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function buildPortalAccessUrl(apiBaseUrl: string, portalBase: string): string {
@@ -245,9 +237,12 @@ async function listMultiPortalRecords(params: {
 
 export async function listPortalWorkspaces(options: PortalListOptions): Promise<PortalListResult> {
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
   const mode = options.env.kind;
+  const workspaceDir = path.resolve(options.directory ?? process.cwd());
+  const workspaceConfig: PortalConfig | undefined = (await isPortalWorkspace(workspaceDir))
+    ? await readPortalConfig(workspaceDir)
+    : undefined;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
     throw new Error(
@@ -276,7 +271,7 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
       const git = readRecordObject(options, 'git');
       const sourceStorage = trimValue(options.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
       const isAi = portalType === 'ai';
-      const portalDir = isAi ? path.join(storagePath, 'portals', app, portalName) : '';
+      const portalDir = isAi && workspaceConfig?.portal === portalName ? workspaceDir : '';
 
       return {
         uid,
@@ -299,7 +294,7 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
             )
           : '',
         portalDir,
-        localSynced: isAi ? await pathExists(portalDir) : null,
+        localSynced: isAi ? Boolean(portalDir) : null,
       };
     }),
   );
@@ -307,7 +302,7 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
   return {
     app,
     mode: listMode,
-    storagePath,
+    workspaceDir,
     items,
   };
 }

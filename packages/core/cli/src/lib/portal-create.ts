@@ -19,16 +19,18 @@ import * as tar from 'tar';
 import { appendAppPublicPath, resolveAppPublicPath } from './app-public-path.js';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import type { Env } from './auth-store.js';
-import { resolveEnvRelativePath } from './cli-home.js';
 import { translateCli } from './cli-locale.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import {
+  assertPortalConfigMatches,
   buildPortalConfig,
   mergePortalConfigIntoOptions,
+  readPortalConfig,
   writePortalConfig,
   type PortalConfig,
   type PortalSourceStorage,
 } from './portal-config.js';
+import { isPortalWorkspace, resolvePortalWorkspaceDirectory } from './portal-workspace.js';
 import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
@@ -48,6 +50,7 @@ export type PortalCreateEnvLike = Pick<Env, 'apiBaseUrl' | 'kind' | 'storagePath
 
 export type PortalCreateOptions = {
   portal: string;
+  directory?: string;
   title?: string;
   template?: string;
   env: PortalCreateEnvLike;
@@ -503,41 +506,13 @@ export function buildPortalBasePath(params: { app: string; appPublicPath: string
   return appendAppPublicPath(params.appPublicPath, segment, { trailingSlash: true });
 }
 
-export function resolvePortalStoragePath(env: PortalCreateEnvLike): string {
-  if (env.kind === 'ssh') {
+export async function createPortalWorkspace(options: PortalCreateOptions): Promise<PortalCreateResult> {
+  const portal = validatePortalSlug(options.portal);
+  if (options.env.kind === 'ssh') {
     throw new Error(
       portalCreateText('errors.sshUnsupported', undefined, 'Cannot create a portal for ssh envs in the first version.'),
     );
   }
-
-  if (env.kind === 'http' && !trimValue(env.config.storagePath)) {
-    const envName = trimValue(env.name);
-    if (envName) {
-      return path.join(resolveEnvRelativePath(envName), 'source', 'storage');
-    }
-
-    const envStoragePath = trimValue(process.env.STORAGE_PATH);
-    if (envStoragePath) {
-      return path.isAbsolute(envStoragePath) ? envStoragePath : path.resolve(process.cwd(), envStoragePath);
-    }
-    return path.resolve(process.cwd(), 'storage');
-  }
-
-  const storagePath = trimValue(env.storagePath);
-  if (storagePath) {
-    return storagePath;
-  }
-
-  const envStoragePath = trimValue(process.env.STORAGE_PATH);
-  if (envStoragePath) {
-    return path.isAbsolute(envStoragePath) ? envStoragePath : path.resolve(process.cwd(), envStoragePath);
-  }
-
-  return path.resolve(process.cwd(), 'storage');
-}
-
-export async function createPortalWorkspace(options: PortalCreateOptions): Promise<PortalCreateResult> {
-  const portal = validatePortalSlug(options.portal);
   const title = trimValue(options.title) || titleFromPortalSlug(portal);
   const portalConfig = buildPortalConfig({
     portal,
@@ -548,11 +523,14 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
   });
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
-  const portalParentDir = path.join(storagePath, 'portals', app);
-  const portalDir = path.join(portalParentDir, portal);
+  const portalDir = await resolvePortalWorkspaceDirectory({
+    portal,
+    directory: options.directory,
+    mode: 'create',
+  });
+  const portalParentDir = path.dirname(portalDir);
 
   assertPortalDirIsInsideParent(portalParentDir, portalDir);
   const targetExists = await pathExists(portalDir);
@@ -564,6 +542,18 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
         `Portal already exists: ${portalDir}\nPass --force to delete it and create a new portal.`,
       ),
     );
+  }
+  if (targetExists && options.force) {
+    if (!(await isPortalWorkspace(portalDir))) {
+      throw new Error(
+        portalCreateText(
+          'errors.forceRequiresWorkspace',
+          { portalDir },
+          `Refusing to replace ${portalDir} because it is not a Portal workspace.`,
+        ),
+      );
+    }
+    assertPortalConfigMatches(await readPortalConfig(portalDir), portal, portalDir);
   }
 
   const template = await resolvePortalTemplate(options.template, {

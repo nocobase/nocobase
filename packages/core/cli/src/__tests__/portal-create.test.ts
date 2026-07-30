@@ -17,12 +17,10 @@ import {
   createPortalWorkspace,
   resolvePortalAppFromApiBaseUrl,
   resolvePortalEnvApiUrl,
-  resolvePortalStoragePath,
   titleFromPortalSlug,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from '../lib/portal-create.js';
-import { NB_CLI_ROOT_ENV } from '../lib/cli-home.js';
 
 type PortalCreateRunOptions = {
   cwd?: string;
@@ -166,6 +164,7 @@ test('creates a portal from a local template', async () => {
 
   const result = await createPortalWorkspace({
     portal: 'customer',
+    directory: path.join(storagePath, 'portals', 'crm', 'customer'),
     template: templatePath,
     env: createEnv({
       storagePath,
@@ -199,6 +198,7 @@ test('creates a portal from a local template', async () => {
       'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
   );
   expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
+    portal: 'customer',
     sourceStorage: 'nocobase',
   });
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
@@ -220,6 +220,7 @@ test('skips pnpm install when package.json is missing', async () => {
 
   const result = await createPortalWorkspace({
     portal: 'no_package',
+    directory: path.join(storagePath, 'portals', 'main', 'no_package'),
     template: templatePath,
     env: createEnv({ storagePath }),
     runCommand,
@@ -261,6 +262,7 @@ test('downloads npm package templates with npm pack when not installed locally',
 
   await createPortalWorkspace({
     portal: 'customer',
+    directory: path.join(storagePath, 'portals', 'main', 'customer'),
     template: '@nocobase/missing-portal-template',
     env: createEnv({
       storagePath,
@@ -274,6 +276,7 @@ test('downloads npm package templates with npm pack when not installed locally',
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
   expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
+    portal: 'customer',
     sourceStorage: 'nocobase',
   });
   expect(runCommand).toHaveBeenNthCalledWith(
@@ -298,6 +301,7 @@ test('fails when the target directory exists without force', async () => {
   await expect(
     createPortalWorkspace({
       portal: 'customer',
+      directory: path.join(storagePath, 'portals', 'main', 'customer'),
       template: templatePath,
       env: createEnv({ storagePath }),
       runCommand: vi.fn().mockResolvedValue(undefined),
@@ -314,6 +318,7 @@ test('fails before resolving the template when the target directory exists witho
   await expect(
     createPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       template: path.join(storagePath, 'missing-template'),
       env: createEnv({ storagePath }),
       runCommand: vi.fn().mockResolvedValue(undefined),
@@ -329,9 +334,11 @@ test('deletes and recreates an existing target directory with force', async () =
   await writeTemplate(templatePath);
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+  await fsp.writeFile(path.join(portalDir, 'portal.config.json'), '{"portal":"customer","sourceStorage":"nocobase"}\n');
 
   await createPortalWorkspace({
     portal: 'customer',
+    directory: portalDir,
     template: templatePath,
     env: createEnv({ storagePath }),
     force: true,
@@ -342,15 +349,39 @@ test('deletes and recreates an existing target directory with force', async () =
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
 });
 
+test('force refuses to replace a directory that is not a Portal workspace', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const portalDir = path.join(storagePath, 'customer');
+  await writeTemplate(templatePath);
+  await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'keep.txt'), 'keep');
+
+  await expect(
+    createPortalWorkspace({
+      portal: 'customer',
+      directory: portalDir,
+      template: templatePath,
+      env: createEnv({ storagePath }),
+      force: true,
+      runCommand: vi.fn().mockResolvedValue(undefined),
+    }),
+  ).rejects.toThrow(/not a Portal workspace/);
+
+  await expect(fsp.readFile(path.join(portalDir, 'keep.txt'), 'utf-8')).resolves.toBe('keep');
+});
+
 test('force keeps an existing target directory when template resolution fails', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+  await fsp.writeFile(path.join(portalDir, 'portal.config.json'), '{"portal":"customer","sourceStorage":"nocobase"}\n');
 
   await expect(
     createPortalWorkspace({
       portal: 'customer',
+      directory: portalDir,
       template: path.join(storagePath, 'missing-template'),
       env: createEnv({ storagePath }),
       force: true,
@@ -359,45 +390,4 @@ test('force keeps an existing target directory when template resolution fails', 
   ).rejects.toThrow(/Portal template directory does not exist/);
 
   expect(await fsp.readFile(path.join(portalDir, 'old.txt'), 'utf-8')).toBe('old');
-});
-
-test('http envs use env source storage when no local storagePath is configured', async () => {
-  const originalStoragePath = process.env.STORAGE_PATH;
-  const originalCliRoot = process.env[NB_CLI_ROOT_ENV];
-  const cliRoot = await makeTempDir('nocobase-cli-portal-create-root-');
-  delete process.env.STORAGE_PATH;
-  process.env[NB_CLI_ROOT_ENV] = cliRoot;
-  try {
-    expect(
-      resolvePortalStoragePath(
-        createEnv({
-          kind: 'http',
-          name: 'remote1',
-          storagePath: '/tmp/fallback',
-          configuredStoragePath: '',
-        }),
-      ),
-    ).toBe(path.join(cliRoot, 'remote1', 'source', 'storage'));
-    expect(
-      resolvePortalStoragePath(
-        createEnv({
-          kind: 'http',
-          name: 'remote1',
-          storagePath: '/tmp/nocobase-storage',
-          configuredStoragePath: '/tmp/nocobase-storage',
-        }),
-      ),
-    ).toBe('/tmp/nocobase-storage');
-  } finally {
-    if (originalStoragePath === undefined) {
-      delete process.env.STORAGE_PATH;
-    } else {
-      process.env.STORAGE_PATH = originalStoragePath;
-    }
-    if (originalCliRoot === undefined) {
-      delete process.env[NB_CLI_ROOT_ENV];
-    } else {
-      process.env[NB_CLI_ROOT_ENV] = originalCliRoot;
-    }
-  }
 });

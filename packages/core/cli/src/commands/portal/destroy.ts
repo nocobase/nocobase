@@ -40,7 +40,7 @@ async function ensureDestroyConfirmed(options: { command: Command; portal: strin
         message: portalDestroyText(
           'prompts.confirm',
           { portal: options.portal },
-          `Destroy portal "${options.portal}" and delete its storage directory?`,
+          `Destroy portal "${options.portal}" and delete its local workspace?`,
         ),
         default: false,
       }),
@@ -57,6 +57,7 @@ export default class PortalDestroy extends Command {
     '<%= config.bin %> <%= command.id %> customer --yes',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
     '<%= config.bin %> <%= command.id %> customer --force --yes',
+    '<%= config.bin %> <%= command.id %> customer --dir ./customer --yes',
   ];
 
   static override args = {
@@ -79,6 +80,9 @@ export default class PortalDestroy extends Command {
     force: Flags.boolean({
       description: 'Ignore missing portal records or local files',
       default: false,
+    }),
+    dir: Flags.string({
+      description: 'Portal workspace directory; defaults to the current directory',
     }),
   };
 
@@ -120,6 +124,7 @@ export default class PortalDestroy extends Command {
 
     const result = await destroyPortalWorkspace({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),

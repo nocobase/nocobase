@@ -24,6 +24,7 @@ export default class PortalDev extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --dir ./customer',
   ];
 
   static override args = {
@@ -42,6 +43,9 @@ export default class PortalDev extends Command {
       char: 'y',
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
+    }),
+    dir: Flags.string({
+      description: 'Portal workspace directory; defaults to the current directory',
     }),
   };
 
@@ -74,6 +78,7 @@ export default class PortalDev extends Command {
 
     await devPortalWorkspace({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       env,
       onStart: (result) => {
         printInfo(

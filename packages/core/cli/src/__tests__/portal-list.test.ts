@@ -50,6 +50,10 @@ async function preparePortalWorkspace(params: { storagePath: string; app?: strin
   const portal = params.portal ?? 'customer';
   const portalDir = path.join(params.storagePath, 'portals', app, portal);
   await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(
+    path.join(portalDir, 'portal.config.json'),
+    `${JSON.stringify({ portal, sourceStorage: 'nocobase' }, null, 2)}\n`,
+  );
   return portalDir;
 }
 
@@ -119,6 +123,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
 
   await expect(
     listPortalWorkspaces({
+      directory: customerDir,
       envName: 'dev',
       cliVersion: '1.2.3',
       env: createEnv({
@@ -131,7 +136,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
   ).resolves.toEqual({
     app: 'crm',
     mode: 'local',
-    storagePath,
+    workspaceDir: customerDir,
     items: [
       {
         uid: 'customer',
@@ -178,7 +183,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
   expectPortalRecordList(apiRequest.mock.calls[0][0]);
 });
 
-test('http list uses env source storage when no local storagePath is configured', async () => {
+test('http list uses the explicit local workspace directory', async () => {
   const cliRoot = await makeTempDir('nocobase-cli-portal-list-root-');
   const originalCliRoot = process.env[NB_CLI_ROOT_ENV];
   process.env[NB_CLI_ROOT_ENV] = cliRoot;
@@ -204,6 +209,7 @@ test('http list uses env source storage when no local storagePath is configured'
 
     await expect(
       listPortalWorkspaces({
+        directory: portalDir,
         envName: 'remote1',
         env: createEnv({
           kind: 'http',
@@ -217,7 +223,7 @@ test('http list uses env source storage when no local storagePath is configured'
     ).resolves.toMatchObject({
       app: 'main',
       mode: 'http',
-      storagePath,
+      workspaceDir: portalDir,
       items: [
         expect.objectContaining({
           portalDir,

@@ -20,6 +20,7 @@ nb portal pull <portal> [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
+| `--dir` | string | 本地工作区目录；省略时使用当前 Portal 工作区，否则使用 `<当前目录>/<portal>` |
 | `<portal>` | string | Portal 名称或 slug |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
@@ -60,7 +61,7 @@ nb portal pull customer --no-install
 
 如果 Portal 使用 Git source storage，`pull` 会 clone 配置中的仓库和分支，并复制 `--git-path` 对应目录。配置中的分支不存在时，CLI 会尝试基于仓库默认分支创建本地分支；如果配置目录不存在，命令会报错。
 
-如果 Portal 使用默认的 `nocobase` source storage，`local` 和 `docker` env 下源码通常已经在当前机器或 Docker volume 中，`pull` 会提示不需要拉取。`http` env 会通过 API 下载源码归档，并展开到本地工作区。
+如果 Portal 使用默认的 `nocobase` source storage，`local`、`docker` 和 `http` env 都会通过 API 下载源码归档，并展开到本地工作区。
 
 ## 相关命令
 

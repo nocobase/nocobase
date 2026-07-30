@@ -7,19 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, stat } from 'node:fs/promises';
-import path from 'node:path';
+import { stat } from 'node:fs/promises';
 import { executeApiRequest } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   resolvePortalAppFromApiBaseUrl,
-  resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
 import {
   buildPortalConfig,
-  buildPortalConfigFromOptions,
+  assertPortalConfigMatches,
   readPortalConfig,
   syncPortalConfigToRemote,
   writePortalConfig,
@@ -28,6 +26,7 @@ import {
 } from './portal-config.js';
 import { findPortalListItem } from './portal-info.js';
 import { listPortalWorkspaces } from './portal-list.js';
+import { resolvePortalWorkspaceDirectory } from './portal-workspace.js';
 
 type ApiRequest = typeof executeApiRequest;
 
@@ -35,6 +34,7 @@ export type PortalConfigureEnvLike = PortalCreateEnvLike;
 
 export type PortalConfigureOptions = {
   portal: string;
+  directory?: string;
   env: PortalConfigureEnvLike;
   envName?: string;
   cliVersion?: string;
@@ -78,41 +78,6 @@ function hasConfigurationChange(options: PortalConfigureOptions): boolean {
   );
 }
 
-async function readExistingConfig(portalDir: string): Promise<PortalConfig | undefined> {
-  try {
-    return await readPortalConfig(portalDir);
-  } catch (error) {
-    const code = (error as { code?: unknown }).code;
-    if (code === 'ENOENT') {
-      return undefined;
-    }
-    throw error;
-  }
-}
-
-function buildConfigFromRemoteOptions(params: {
-  portal: string;
-  options?: Record<string, unknown>;
-  sourceStorage?: string;
-  gitRepo?: string;
-  gitBranch?: string;
-  gitPath?: string;
-}): PortalConfig | undefined {
-  if (params.options && Object.keys(params.options).length > 0) {
-    return buildPortalConfigFromOptions(params.options, params.portal);
-  }
-  if (!params.sourceStorage && !params.gitRepo && !params.gitBranch && !params.gitPath) {
-    return undefined;
-  }
-  return buildPortalConfig({
-    portal: params.portal,
-    sourceStorage: params.sourceStorage,
-    gitRepo: params.gitRepo,
-    gitBranch: params.gitBranch,
-    gitPath: params.gitPath,
-  });
-}
-
 export async function configurePortalWorkspace(options: PortalConfigureOptions): Promise<PortalConfigureResult> {
   if (!hasConfigurationChange(options)) {
     throw new Error(
@@ -126,9 +91,12 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
 
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
-  const portalDir = path.join(storagePath, 'portals', app, portal);
+  const portalDir = await resolvePortalWorkspaceDirectory({
+    portal,
+    directory: options.directory,
+    mode: 'existing',
+  });
 
   if (!(await pathExists(portalDir))) {
     throw new Error(
@@ -142,21 +110,14 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
 
   const list = await listPortalWorkspaces({
     env: options.env,
+    directory: portalDir,
     envName: options.envName,
     cliVersion: options.cliVersion,
     apiRequest: options.apiRequest,
   });
   const remoteItem = findPortalListItem(list.items, portal);
-  const existingConfig =
-    (await readExistingConfig(portalDir)) ??
-    buildConfigFromRemoteOptions({
-      portal,
-      options: remoteItem?.options,
-      sourceStorage: remoteItem?.sourceStorage,
-      gitRepo: remoteItem?.gitRepo,
-      gitBranch: remoteItem?.gitBranch,
-      gitPath: remoteItem?.gitPath,
-    });
+  const existingConfig = await readPortalConfig(portalDir);
+  assertPortalConfigMatches(existingConfig, portal, portalDir);
   const config = buildPortalConfig({
     portal,
     sourceStorage: options.sourceStorage,
@@ -166,7 +127,6 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
     existingConfig,
   });
 
-  await mkdir(portalDir, { recursive: true });
   await writePortalConfig(portalDir, config);
 
   if (remoteItem) {

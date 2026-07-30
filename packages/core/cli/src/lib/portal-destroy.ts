@@ -14,10 +14,11 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
   resolvePortalAppFromApiBaseUrl,
-  resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
+import { assertPortalConfigMatches, readPortalConfig } from './portal-config.js';
+import { resolvePortalWorkspaceDirectory } from './portal-workspace.js';
 
 type ApiRequest = typeof executeApiRequest;
 
@@ -27,6 +28,7 @@ export type PortalDestroyMode = 'local' | 'docker' | 'http';
 
 export type PortalDestroyOptions = {
   portal: string;
+  directory?: string;
   env: PortalDestroyEnvLike;
   envName?: string;
   cliVersion?: string;
@@ -123,11 +125,14 @@ async function destroyMultiPortalRecord(params: {
 export async function destroyPortalWorkspace(options: PortalDestroyOptions): Promise<PortalDestroyResult> {
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
-  const portalParentDir = path.join(storagePath, 'portals', app);
-  const portalDir = path.join(portalParentDir, portal);
+  const portalDir = await resolvePortalWorkspaceDirectory({
+    portal,
+    directory: options.directory,
+    mode: 'existing',
+  });
+  const portalParentDir = path.dirname(portalDir);
   const mode = options.env.kind;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
@@ -152,6 +157,9 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
         `Portal does not exist: ${portalDir}\nPass --force to ignore missing local files.`,
       ),
     );
+  }
+  if (workspaceExists) {
+    assertPortalConfigMatches(await readPortalConfig(portalDir), portal, portalDir);
   }
 
   const recordDeleted = await destroyMultiPortalRecord({

@@ -18,6 +18,7 @@ nb portal destroy <portal> [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
+| `--dir` | string | Portal workspace directory. Default: the current directory. |
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip confirmation prompts. |

@@ -185,6 +185,7 @@
         "missingApiBaseUrl": "无法创建 Portal，因为当前 env 没有 apiBaseUrl。",
         "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
         "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal。",
+        "forceRequiresWorkspace": "拒绝替换 {{portalDir}}，因为它不是 Portal 工作区。",
         "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。"
       },
       "messages": {
@@ -197,12 +198,19 @@
     },
     "portalConfig": {
       "errors": {
+        "portalRequired": "portal.config.json 中必须包含 Portal 名称。",
+        "workspaceMismatch": "Portal 工作区 {{portalDir}} 属于 \"{{configuredPortal}}\"，不属于 \"{{portal}}\"。",
         "invalidSourceStorage": "源码存储 \"{{value}}\" 无效。请使用 \"nocobase\" 或 \"git\"。",
         "invalidGitPath": "--git-path 必须是 Git 仓库内的相对路径。",
         "gitOptionsForNocobaseStorage": "--git-repo、--git-branch 和 --git-path 只能与 --source-storage git 一起使用。",
         "gitRepoRequired": "--source-storage 为 git 时必须提供 --git-repo。",
         "gitRepoInvalid": "--git-repo 必须是完整的 Git remote URL。",
         "updateFailed": "Portal 配置更新失败，状态码 {{status}}\n{{details}}"
+      }
+    },
+    "portalSource": {
+      "errors": {
+        "forceRequiresWorkspace": "拒绝替换 {{portalDir}}，因为它不是 Portal 工作区。"
       }
     },
     "portalConfigure": {

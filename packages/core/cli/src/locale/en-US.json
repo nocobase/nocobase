@@ -185,6 +185,7 @@
         "missingApiBaseUrl": "Cannot create a portal because the selected env has no apiBaseUrl.",
         "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
         "sshUnsupported": "Cannot create a portal for ssh envs in the first version.",
+        "forceRequiresWorkspace": "Refusing to replace {{portalDir}} because it is not a Portal workspace.",
         "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal."
       },
       "messages": {
@@ -197,12 +198,19 @@
     },
     "portalConfig": {
       "errors": {
+        "portalRequired": "Portal name is required in portal.config.json.",
+        "workspaceMismatch": "Portal workspace {{portalDir}} belongs to \"{{configuredPortal}}\", not \"{{portal}}\".",
         "invalidSourceStorage": "Invalid source storage \"{{value}}\". Use \"nocobase\" or \"git\".",
         "invalidGitPath": "--git-path must be a relative path inside the Git repository.",
         "gitOptionsForNocobaseStorage": "--git-repo, --git-branch, and --git-path can only be used with --source-storage git.",
         "gitRepoRequired": "--git-repo is required when --source-storage is git.",
         "gitRepoInvalid": "--git-repo must be a full Git remote URL.",
         "updateFailed": "Portal config update failed with status {{status}}\n{{details}}"
+      }
+    },
+    "portalSource": {
+      "errors": {
+        "forceRequiresWorkspace": "Refusing to replace {{portalDir}} because it is not a Portal workspace."
       }
     },
     "portalConfigure": {

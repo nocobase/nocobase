@@ -26,6 +26,7 @@ export default class PortalDeploy extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --dir ./customer',
   ];
 
   static override args = {
@@ -44,6 +45,9 @@ export default class PortalDeploy extends Command {
       char: 'y',
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
+    }),
+    dir: Flags.string({
+      description: 'Portal workspace directory; defaults to the current directory',
     }),
   };
 
@@ -76,6 +80,7 @@ export default class PortalDeploy extends Command {
 
     const result = await deployPortalWorkspace({
       portal: args.portal,
+      ...(flags.dir ? { directory: flags.dir } : {}),
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
@@ -86,6 +91,7 @@ export default class PortalDeploy extends Command {
     );
     const info = await listPortalWorkspaces({
       env,
+      directory: result.portalDir,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
     });

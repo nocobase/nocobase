@@ -18,6 +18,7 @@ nb portal push <portal> [flags]
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--dir` | string | Portal workspace directory. Default: the current directory. |
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
@@ -33,7 +34,7 @@ nb portal push customer --message "Update customer portal"
 
 ## Notes
 
-The command reads `portal.config.json` and syncs that configuration to the remote portal record first. Git source storage clones the configured repo, copies the local workspace into `--git-path`, commits, and pushes. With default `nocobase` storage, `local` and `docker` envs are usually no-op; `http` envs upload a source archive through the API.
+The command reads `portal.config.json` and syncs that configuration to the remote portal record first. Git source storage clones the configured repo, copies the local workspace into `--git-path`, commits, and pushes. With default `nocobase` storage, `local`, `docker`, and `http` envs upload a source archive through the API.
 
 ## Related Commands
 
