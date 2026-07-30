@@ -8,11 +8,12 @@
  */
 
 import { ACLRolesCheckProvider, Plugin } from '@nocobase/client-v2';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { message } from 'antd';
 import { AdminSettingsLayoutModel as ClientV2AdminSettingsLayoutModel } from '../settings-center';
 import { AdminSettingsLayoutModel as ClientV1AdminSettingsLayoutModel } from '../../../client/src/pm/AdminSettingsLayoutModel';
+import zhCN from '../../../client/src/locale/zh-CN.json';
 import { SettingsBuildInPlugin } from '../settings-app/SettingsBuildInPlugin';
 import { matchSettingsRoute, sortTopLevelSettings } from '../settings-center/utils';
 import { createMockSettingsClient } from './mockSettingsApplication';
@@ -44,12 +45,20 @@ const waitForGetRequests = async (app: MockClientApplication, urls: string[]) =>
 const mockAdminRuntime = (
   app: MockClientApplication,
   options: {
+    lang?: string;
     snippets?: string[];
     pmList?: any[];
+    resources?: Record<string, string>;
     systemSettings?: Record<string, any>;
   } = {},
 ) => {
-  const { snippets = ['pm', 'pm.system-settings.system-settings'], pmList = [], systemSettings = {} } = options;
+  const {
+    lang = 'en-US',
+    snippets = ['pm', 'pm.system-settings.system-settings'],
+    pmList = [],
+    resources = {},
+    systemSettings = {},
+  } = options;
 
   app.dataSourceManager.getCollection = ((name: string, collectionName: string) => {
     if (name === 'main' && collectionName === 'attachments') {
@@ -74,9 +83,9 @@ const mockAdminRuntime = (
   });
   app.apiMock.onGet('app:getLang').reply(200, {
     data: {
-      lang: 'en-US',
+      lang,
       resources: {
-        client: {},
+        client: resources,
       },
       cron: {},
     },
@@ -270,7 +279,11 @@ describe('settings center', () => {
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
-    expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
+    const result = await screen.findByRole('status');
+    expect(within(result).getByRole('heading', { name: 'Settings page not found' })).toBeInTheDocument();
+    expect(
+      within(result).getByText('The settings page you requested does not exist or has been removed.'),
+    ).toBeInTheDocument();
   });
 
   it('should allow direct access to hidden page without showing menu entry', async () => {
@@ -319,15 +332,97 @@ describe('settings center', () => {
       router: { type: 'memory', initialEntries: ['/settings/secure-demo'] },
     });
     mockAdminRuntime(app, {
+      lang: 'zh-CN',
+      resources: zhCN,
       snippets: ['pm', 'pm.system-settings.system-settings', '!pm.secure-demo.index'],
     });
 
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
-    expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
+    const result = await screen.findByRole('status');
+    expect(within(result).getByRole('heading', { name: '当前角色无权访问设置中心' })).toBeInTheDocument();
+    expect(within(result).getByText('请切换至有权限的角色，或联系管理员获取访问权限。')).toBeInTheDocument();
     expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
   });
+
+  it('should deny a protected child page when a sibling remains visible', async () => {
+    class MixedAccessSettingsPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({ key: 'mixed-access', title: 'Mixed access' });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'mixed-access',
+          key: 'index',
+          title: 'Allowed settings',
+          Component: () => <div>Allowed settings page</div>,
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'mixed-access',
+          key: 'restricted',
+          title: 'Restricted settings',
+          aclSnippet: 'pm.mixed-access.restricted',
+          Component: () => <div>Restricted settings page</div>,
+        });
+      }
+    }
+
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MixedAccessSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/mixed-access/restricted'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', 'pm.system-settings.system-settings', '!pm.mixed-access.restricted'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Your current role cannot access Settings' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Restricted settings page')).not.toBeInTheDocument();
+  });
+
+  it.each(['/settings/fallback-access', '/settings/fallback-access/'])(
+    'should redirect a denied index page to an accessible sibling from %s',
+    async (initialEntry) => {
+      class FallbackAccessSettingsPlugin extends Plugin {
+        async load() {
+          this.pluginSettingsManager.addMenuItem({ key: 'fallback-access', title: 'Fallback access' });
+          this.pluginSettingsManager.addPageTabItem({
+            menuKey: 'fallback-access',
+            key: 'index',
+            title: 'Restricted index settings',
+            aclSnippet: 'pm.fallback-access.index',
+            Component: () => <div>Restricted index settings page</div>,
+          });
+          this.pluginSettingsManager.addPageTabItem({
+            menuKey: 'fallback-access',
+            key: 'allowed',
+            title: 'Allowed fallback settings',
+            Component: () => <div>Allowed fallback settings page</div>,
+          });
+        }
+      }
+
+      const app = createMockSettingsClient({
+        plugins: [SettingsBuildInPlugin, TestAclPlugin, FallbackAccessSettingsPlugin],
+        router: { type: 'memory', initialEntries: [initialEntry] },
+      });
+      mockAdminRuntime(app, {
+        snippets: ['pm', 'pm.system-settings.system-settings', '!pm.fallback-access.index'],
+      });
+
+      await renderApp(app);
+      await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+      expect(await screen.findByText('Allowed fallback settings page')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'Your current role cannot access Settings' }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Restricted index settings page')).not.toBeInTheDocument();
+    },
+  );
 
   it('should keep menu visible when menu acl is denied but child page is visible', async () => {
     class MenuAclPlugin extends Plugin {
