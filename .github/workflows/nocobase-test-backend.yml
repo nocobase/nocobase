@@ -63,7 +63,9 @@ jobs:
       - name: Install project dependencies
         run: |
           yarn install
-          yarn add sqlite3 --no-save -W
+          yarn add sqlite3@5.1.7 --no-save -W
+      - name: Build RunJS compiler
+        run: yarn build @nocobase/runjs --no-dts
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
         env:
@@ -119,6 +121,8 @@ jobs:
 
       - name: Install project dependencies
         run: yarn install
+      - name: Build RunJS compiler
+        run: yarn build @nocobase/runjs --no-dts
       - name: Test with postgres
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
@@ -169,6 +173,8 @@ jobs:
 
       - name: Install project dependencies
         run: yarn install
+      - name: Build RunJS compiler
+        run: yarn build @nocobase/runjs --no-dts
       - name: Test with MySQL
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
@@ -217,6 +223,8 @@ jobs:
         run: yarn install
       - name: Install project dependencies
         run: yarn --prefer-offline
+      - name: Build RunJS compiler
+        run: yarn build @nocobase/runjs --no-dts
       - name: Test with MariaDB
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &

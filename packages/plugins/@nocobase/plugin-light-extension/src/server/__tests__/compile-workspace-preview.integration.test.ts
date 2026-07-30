@@ -752,63 +752,66 @@ function registerCompilePreviewTests() {
       expect((ctx as { body?: unknown }).body).toEqual({ ok: true });
     });
 
-    it('normalizes the unsaved workspace preview resource input', async () => {
-      const previewResult = {
-        accepted: false,
-        httpStatus: 422,
-        failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
-        diagnostics: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
-      };
-      const compileWorkspacePreview = vi.fn().mockResolvedValue(previewResult);
-      const resource = createLightExtensionsResource({
-        compileWorkspacePreview,
-      } as unknown as LightExtensionCompilePreviewService);
-      const ctx = {
-        action: {
-          params: {
-            values: {
-              repoId: 'ler_sales',
-              expectedHeadCommitId: 'vsc_commit_1',
-              entryId: 'lee_sales_kpi',
-              kind: 'js-block',
-              entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-              runtimeVersion: 'v2',
-              files: [
-                {
-                  path: 'src/client/js-blocks/sales-kpi/index.tsx',
-                  content: 'ctx.render(<div />);',
-                  language: 'typescript',
-                },
-              ],
+    it.each([207, 422] as const)(
+      'normalizes the unsaved workspace preview resource input with HTTP %s',
+      async (httpStatus) => {
+        const previewResult = {
+          accepted: false,
+          httpStatus,
+          failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+          diagnostics: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
+        };
+        const compileWorkspacePreview = vi.fn().mockResolvedValue(previewResult);
+        const resource = createLightExtensionsResource({
+          compileWorkspacePreview,
+        } as unknown as LightExtensionCompilePreviewService);
+        const ctx = {
+          action: {
+            params: {
+              values: {
+                repoId: 'ler_sales',
+                expectedHeadCommitId: 'vsc_commit_1',
+                entryId: 'lee_sales_kpi',
+                kind: 'js-block',
+                entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+                runtimeVersion: 'v2',
+                files: [
+                  {
+                    path: 'src/client/js-blocks/sales-kpi/index.tsx',
+                    content: 'ctx.render(<div />);',
+                    language: 'typescript',
+                  },
+                ],
+              },
             },
           },
-        },
-      } as unknown as Context;
+        } as unknown as Context;
 
-      await resource.actions?.compileWorkspacePreview?.(ctx, async () => {});
+        await resource.actions?.compileWorkspacePreview?.(ctx, async () => {});
 
-      expect(compileWorkspacePreview).toHaveBeenCalledWith(
-        {
-          repoId: 'ler_sales',
-          expectedHeadCommitId: 'vsc_commit_1',
-          entryId: 'lee_sales_kpi',
-          kind: 'js-block',
-          entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-          runtimeVersion: 'v2',
-          files: [
-            {
-              path: 'src/client/js-blocks/sales-kpi/index.tsx',
-              content: 'ctx.render(<div />);',
-              language: 'typescript',
-              mode: undefined,
-            },
-          ],
-        },
-        expect.any(Object),
-      );
-      expect((ctx as { status?: number }).status).toBe(422);
-      expect((ctx as { body?: unknown }).body).toBe(previewResult);
-    });
+        expect(compileWorkspacePreview).toHaveBeenCalledWith(
+          {
+            repoId: 'ler_sales',
+            expectedHeadCommitId: 'vsc_commit_1',
+            entryId: 'lee_sales_kpi',
+            kind: 'js-block',
+            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+            runtimeVersion: 'v2',
+            files: [
+              {
+                path: 'src/client/js-blocks/sales-kpi/index.tsx',
+                content: 'ctx.render(<div />);',
+                language: 'typescript',
+                mode: undefined,
+              },
+            ],
+          },
+          expect.any(Object),
+        );
+        expect((ctx as { status?: number }).status).toBe(httpStatus);
+        expect((ctx as { body?: unknown }).body).toBe(previewResult);
+      },
+    );
   });
 
   function createPreviewService(db: Database, fileService: LightExtensionFileService) {
