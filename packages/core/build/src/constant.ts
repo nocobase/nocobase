@@ -60,6 +60,7 @@ export const getPresetsPackages = (packages: Package[]) =>
 export const CORE_APP = path.join(PACKAGES_PATH, 'core/app');
 export const CORE_CLIENT = path.join(PACKAGES_PATH, 'core/client');
 export const CORE_CLIENT_V2 = path.join(PACKAGES_PATH, 'core/client-v2');
+export const CORE_RUNJS_WORKSPACE = path.join(PACKAGES_PATH, 'core/runjs-workspace');
 export const ESM_PACKAGES = ['@nocobase/test'];
 export const CJS_EXCLUDE_PACKAGES = [
   path.join(PACKAGES_PATH, 'core/build'),
@@ -67,6 +68,7 @@ export const CJS_EXCLUDE_PACKAGES = [
   path.join(PACKAGES_PATH, 'core/cli'),
   CORE_CLIENT,
   CORE_CLIENT_V2,
+  CORE_RUNJS_WORKSPACE,
 ];
 export const getCjsPackages = (packages: Package[]) =>
   packages
