@@ -16,7 +16,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { encodeUIOperation } from './ui-operation-codec.js';
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { getCurrentEnvName, getEnv } from './auth-store.js';
@@ -31,6 +30,10 @@ import { registerPostProcessors } from '../post-processors/index.js';
 
 const UI_OPERATION_QUERY_KEY = '_operation_';
 const UI_OPERATION_VERSION = 1;
+
+function encodeUIOperation(operation: object): string {
+  return Buffer.from(JSON.stringify(operation), 'utf8').toString('base64url');
+}
 
 export interface GeneratedParameter {
   name: string;
