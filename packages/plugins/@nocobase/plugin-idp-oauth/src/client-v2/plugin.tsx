@@ -17,8 +17,25 @@ export class PluginIdpOauthClientV2 extends Plugin<any, Application> {
       componentLoader: () => import('./pages/InteractionPage'),
       skipAuthCheck: true,
     });
+    const deviceSettingsRouteName = this.pluginSettingsManager.getRouteName('idpOAuth.device');
+    if (deviceSettingsRouteName.startsWith('settings.')) {
+      this.router.add('settingsDetails.idpOAuth.device', {
+        path: this.pluginSettingsManager.getRoutePath('idpOAuth.device'),
+        componentLoader: () => import('./pages/DevicePage'),
+      });
+    }
     this.router.add('idp-oauth.device', {
+      path: '/settings/idpOAuth/device',
+      componentLoader: () => import('./pages/DevicePage'),
+      skipAuthCheck: true,
+    });
+    this.router.add('idp-oauth-legacy-device', {
       path: '/idpOAuth/device',
+      componentLoader: () => import('./pages/DevicePage'),
+      skipAuthCheck: true,
+    });
+    this.router.add('idp-oauth-modern-legacy-device', {
+      path: '/v/idpOAuth/device',
       componentLoader: () => import('./pages/DevicePage'),
       skipAuthCheck: true,
     });

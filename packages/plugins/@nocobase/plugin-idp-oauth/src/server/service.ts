@@ -364,10 +364,10 @@ export class IdpOauthService {
   getFrontendDevicePath(appName: string, issuerPath = this.getIssuerPath(appName)) {
     const appPublicPath = this.getAppPublicPath();
     if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return `${appPublicPath}/idpOAuth/device`;
+      return `${appPublicPath}/settings/idpOAuth/device`;
     }
 
-    return `${appPublicPath}/apps/${appName}/idpOAuth/device`;
+    return `${appPublicPath}/settings/apps/${appName}/idpOAuth/device`;
   }
 
   getProviderContext(ctx: any): ProviderContext {

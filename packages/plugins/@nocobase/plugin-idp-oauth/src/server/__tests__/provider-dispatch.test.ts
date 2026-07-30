@@ -54,7 +54,7 @@ const service = {
     issuer: 'http://127.0.0.1:13000/api',
     issuerPath: '/api',
   }),
-  getFrontendDevicePath: () => '/idpOAuth/device',
+  getFrontendDevicePath: () => '/settings/idpOAuth/device',
 } as any;
 
 describe('plugin-idp-oauth > provider dispatch', () => {
@@ -143,8 +143,8 @@ describe('plugin-idp-oauth > provider dispatch', () => {
 
     expect(ctx.status).toBe(200);
     expect(ctx.body).toMatchObject({
-      verification_uri: 'http://127.0.0.1:13000/idpOAuth/device',
-      verification_uri_complete: 'http://127.0.0.1:13000/idpOAuth/device?user_code=XGNB-CXRZ',
+      verification_uri: 'http://127.0.0.1:13000/settings/idpOAuth/device',
+      verification_uri_complete: 'http://127.0.0.1:13000/settings/idpOAuth/device?user_code=XGNB-CXRZ',
     });
   });
 

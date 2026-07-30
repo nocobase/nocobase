@@ -29,7 +29,6 @@ nb portal <command>
 | [`nb portal list`](./list.md) | Listet Portal-Datensätze und den Synchronisierungsstatus lokaler Workspaces auf |
 | [`nb portal pull`](./pull.md) | Zieht Portal-Quellcode aus dem source storage in den lokalen Workspace |
 | [`nb portal push`](./push.md) | Pusht lokale Portal-Quellcodeänderungen in den source storage |
-| [`nb portal registry`](./registry/index.md) | Verwaltet Registry-Integrationen aktivierter NocoBase-Plugins |
 
 ## Typischer Ablauf
 

@@ -29,7 +29,6 @@ nb portal <command>
 | [`nb portal list`](./list.md) | Portal レコードとローカルワークスペースの同期状態を一覧表示します |
 | [`nb portal pull`](./pull.md) | source storage から Portal ソースをローカルワークスペースへ取得します |
 | [`nb portal push`](./push.md) | ローカルの Portal ソース変更を source storage に push します |
-| [`nb portal registry`](./registry/index.md) | 有効な NocoBase プラグインが提供する Registry 統合を管理します |
 
 ## 典型的な流れ
 
