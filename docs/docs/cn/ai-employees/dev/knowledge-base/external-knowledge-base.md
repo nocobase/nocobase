@@ -12,7 +12,7 @@ External 知识库插件不参与 NocoBase 的文档上传、分段、向量化�
 
 :::tip 前置阅读
 
-- [知识库概述](../knowledge-base/) — 了解 Local、Readonly 和 External 知识库的能力边界
+- [知识库概述](../../knowledge-base/knowledge-base/index.md) — 了解 Local、Readonly 和 External 知识库的能力边界
 - [Plugin 插件](../../../plugin-development/server/plugin.md) — 了解服务端插件生命周期和 `this.app.pm`
 - [i18n 国际化](../../../plugin-development/server/i18n.md) — 如果插件提供配置表单，需要为界面文案准备翻译
 
@@ -312,7 +312,7 @@ src/client/index.tsx
 
 ## 相关链接
 
-- [知识库概述](../knowledge-base/) — Local、Readonly 和 External 知识库的使用边界
+- [知识库概述](../../knowledge-base/knowledge-base/index.md) — Local、Readonly 和 External 知识库的使用边界
 - [Plugin 插件](../../../plugin-development/server/plugin.md) — 服务端插件生命周期和 `this.app.pm`
 - [i18n 国际化](../../../plugin-development/server/i18n.md) — 插件前后端多语言配置
 - [客户端插件开发概述](../../../plugin-development/client/index.md) — 客户端入口、组件和上下文能力
