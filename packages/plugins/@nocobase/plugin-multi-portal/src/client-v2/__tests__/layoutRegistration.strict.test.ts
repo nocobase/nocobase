@@ -89,12 +89,26 @@ describe('Multi Portal runtime registration failures', () => {
     expect(layoutManager.registerLayout).not.toHaveBeenCalled();
   });
 
-  it('registers only no-code portals and skips every other portal type', () => {
+  it('treats empty portal types as no-code portals', () => {
+    const layoutManager = createLayoutManager();
+    const emptyTypePortals = [
+      { ...portal, uid: 'missing-type-portal', portalName: 'missingType', portalType: undefined },
+      { ...portal, uid: 'null-type-portal', portalName: 'nullType', portalType: null },
+      { ...portal, uid: 'empty-type-portal', portalName: 'emptyType', portalType: '' },
+    ];
+
+    expect(registerMultiPortalRecords(layoutManager, emptyTypePortals)).toEqual([
+      'missing-type-portal',
+      'null-type-portal',
+      'empty-type-portal',
+    ]);
+    expect(layoutManager.registerLayout).toHaveBeenCalledTimes(3);
+  });
+
+  it('skips ai and unknown non-empty portal types', () => {
     const layoutManager = createLayoutManager();
     const skippedPortals = [
       { ...portal, uid: 'ai-portal', portalName: 'ai', portalType: 'ai' },
-      { ...portal, uid: 'missing-type-portal', portalName: 'missingType', portalType: undefined },
-      { ...portal, uid: 'empty-type-portal', portalName: 'emptyType', portalType: '' },
       { ...portal, uid: 'unknown-type-portal', portalName: 'unknownType', portalType: 'custom' },
     ];
 

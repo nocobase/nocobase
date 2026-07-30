@@ -16,7 +16,7 @@ export { getMultiPortalRouteScopeCacheKey };
 export type MultiPortalRuntimeRecord = {
   uid: string;
   title?: string;
-  portalType?: string;
+  portalType?: string | null;
   portalName: string;
   routePath: string;
   authCheck: boolean;
@@ -74,7 +74,7 @@ const layoutModeMobileRegisterOptions = {
 } satisfies Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>;
 
 function isRuntimePortal(record: MultiPortalRuntimeRecord) {
-  return record.portalType === 'no-code';
+  return (record.portalType || 'no-code') === 'no-code';
 }
 
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
