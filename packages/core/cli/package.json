@@ -125,7 +125,6 @@
     "@inquirer/select": "^5.1.5",
     "@inquirer/type": "^4.0.5",
     "@nocobase/license-kit": "^0.3.8",
-    "@nocobase/shared": "2.2.0-beta.15",
     "@oclif/core": "^4.10.4",
     "cross-spawn": "^7.0.6",
     "mysql2": "^3.14.0",

@@ -16,7 +16,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { encodeUIOperation, UI_OPERATION_QUERY_KEY, UI_OPERATION_VERSION, type UIOperation } from '@nocobase/shared';
+import { encodeUIOperation, UI_OPERATION_QUERY_KEY, UI_OPERATION_VERSION, type UIOperation } from './ui-operation.js';
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { getCurrentEnvName, getEnv } from './auth-store.js';

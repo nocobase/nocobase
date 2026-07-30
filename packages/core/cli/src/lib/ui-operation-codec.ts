@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { UIOperationCodec } from '@nocobase/shared';
+import type { UIOperationCodec } from './ui-operation.js';
 
 const base64UrlPattern = /^[A-Za-z0-9_-]*$/;
 const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
