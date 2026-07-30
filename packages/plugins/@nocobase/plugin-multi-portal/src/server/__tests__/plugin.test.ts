@@ -1245,6 +1245,125 @@ describe('plugin-multi-portal server', () => {
     );
   });
 
+  it('should build storage portal HTML when creating an AI portal through multiPortals:create', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    const loggerInfoSpy = vi.spyOn(app.logger, 'info');
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'api-storage-template-portal');
+    await mkdir(path.join(portalDir, 'dist'), { recursive: true });
+    await writeFile(path.join(portalDir, 'dist', 'index.html'), 'stale portal dist', 'utf-8');
+
+    const response = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'api-storage-template-portal',
+        title: 'API storage template portal',
+        portalType: 'ai',
+        portalName: 'api-storage-template-portal',
+        routePath: '/api-storage-template-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/api-storage-template-portal/',
+    );
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      `Portal yarn build:html requested for ${appName}/api-storage-template-portal`,
+      expect.objectContaining({
+        appName,
+        portalName: 'api-storage-template-portal',
+        reason: 'forceBuild is enabled',
+      }),
+    );
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      `Portal yarn build:html completed for ${appName}/api-storage-template-portal`,
+      expect.objectContaining({
+        appName,
+        portalName: 'api-storage-template-portal',
+        reason: 'yarn build:html finished successfully',
+      }),
+    );
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+        env: expect.objectContaining({
+          NOCOBASE_API_URL: '/console/api',
+          NOCOBASE_PORTAL_BASE: '/console/x/api-storage-template-portal/',
+        }),
+      }),
+    );
+  });
+
+  it('should log when storage portal HTML build is skipped because dist already exists', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    const loggerInfoSpy = vi.spyOn(app.logger, 'info');
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'skip-existing-dist-portal');
+
+    const createResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'skip-existing-dist-portal',
+        title: 'Skip existing dist portal',
+        portalType: 'ai',
+        portalName: 'skip-existing-dist-portal',
+        routePath: '/skip-existing-dist-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    expect(createResponse.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+
+    spawnMock.mockClear();
+    loggerInfoSpy.mockClear();
+    const updateResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'skip-existing-dist-portal',
+      values: {
+        title: 'Skip existing dist portal updated',
+      },
+    });
+
+    expect(updateResponse.status).toBe(200);
+    expect(spawnMock).not.toHaveBeenCalledWith('yarn', ['build:html'], expect.any(Object));
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      `Portal yarn build:html skipped for ${appName}/skip-existing-dist-portal`,
+      expect.objectContaining({
+        appName,
+        portalName: 'skip-existing-dist-portal',
+        reason: 'dist/index.html already exists',
+      }),
+    );
+  });
+
   it('should skip preparing the storage portal directory when requested by multiPortals:create', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     app = await createMultiPortalAclMockServer();

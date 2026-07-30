@@ -2947,6 +2947,18 @@ export class PluginMultiPortalServer extends Plugin {
     });
   }
 
+  private logPortalBuildHtml(
+    item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>,
+    status: 'requested' | 'skipped' | 'completed',
+    reason: string,
+  ) {
+    this.app.logger?.info?.(`Portal yarn build:html ${status} for ${item.appName}/${item.portalName}`, {
+      appName: item.appName,
+      portalName: item.portalName,
+      reason,
+    });
+  }
+
   private getPortalStorageTaskKey(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
     return `${item.appName}/${item.portalName}`;
   }
@@ -2990,6 +3002,7 @@ export class PluginMultiPortalServer extends Plugin {
   ) {
     const taskKey = this.getPortalStorageTaskKey(item);
     if (this.portalStorageTaskKeys.has(taskKey)) {
+      this.logPortalBuildHtml(item, 'skipped', 'a storage task is already running');
       await template.cleanup?.();
       return;
     }
@@ -3014,10 +3027,13 @@ export class PluginMultiPortalServer extends Plugin {
         await appendPortalStorageLog(logPath, `Portal configuration files updated in ${portalDir}.`);
 
         if (item.enabled) {
+          this.logPortalBuildHtml(item, 'requested', 'storage directory was initialized');
           await buildPortalStorageItem(portalDir, item);
+          this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
           return;
         }
 
+        this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
         await this.removePortalStorageDist(item);
         await appendPortalStorageLog(logPath, `Portal dist directory removed for ${item.appName}/${item.portalName}.`);
       } catch (error) {
@@ -3037,28 +3053,50 @@ export class PluginMultiPortalServer extends Plugin {
     await task;
   }
 
-  private async ensurePortalStorageItem(item: MultiPortalStorageItem) {
+  private async ensurePortalStorageItem(
+    item: MultiPortalStorageItem,
+    options: {
+      forceBuild?: boolean;
+    } = {},
+  ) {
     const portalDir = storagePathJoin('portals', item.appName, item.portalName);
     const portalIndex = path.join(portalDir, 'dist', 'index.html');
+    const logPath = getPortalStorageLogPath(item);
 
     if (!(await pathExists(portalDir))) {
-      const template = await resolvePortalTemplate(getInitPortalTemplate(), getPortalStorageLogPath(item));
+      const template = await resolvePortalTemplate(getInitPortalTemplate(), logPath);
       await this.schedulePortalTemplateCopyAndBuild(item, template, portalDir);
       return;
     }
 
     await ensurePortalStorageConfigFiles(portalDir, item);
     if (item.enabled) {
-      if (!(await pathExists(portalIndex))) {
+      const hasPortalIndex = await pathExists(portalIndex);
+      if (options.forceBuild || !hasPortalIndex) {
+        this.logPortalBuildHtml(
+          item,
+          'requested',
+          options.forceBuild ? 'forceBuild is enabled' : 'dist/index.html does not exist',
+        );
         await buildPortalStorageItem(portalDir, item);
+        this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
+      } else {
+        this.logPortalBuildHtml(item, 'skipped', 'dist/index.html already exists');
       }
       return;
     }
 
+    this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
     await this.removePortalStorageDist(item);
+    await appendPortalStorageLog(logPath, `Portal dist directory removed for ${item.appName}/${item.portalName}.`);
   }
 
-  private async syncMultiPortalStorageItem(multiPortal: Model, options?: DatabaseHookOptions, syncPrevious = false) {
+  private async syncMultiPortalStorageItem(
+    multiPortal: Model,
+    options?: DatabaseHookOptions,
+    syncPrevious = false,
+    forceBuild = false,
+  ) {
     const currentItem = this.getMultiPortalStorageItem(multiPortal);
     const previousItem = syncPrevious ? this.getMultiPortalStorageItem(multiPortal, true) : null;
 
@@ -3073,7 +3111,7 @@ export class PluginMultiPortalServer extends Plugin {
         await this.removePortalStorageDist(previousItem);
       }
       if (currentItem) {
-        await this.ensurePortalStorageItem(currentItem);
+        await this.ensurePortalStorageItem(currentItem, { forceBuild });
       }
     }, options);
   }
@@ -3548,7 +3586,7 @@ export class PluginMultiPortalServer extends Plugin {
       if (shouldSkipCreatePortalDirectory(options)) {
         return;
       }
-      await this.syncMultiPortalStorageItem(multiPortal, options);
+      await this.syncMultiPortalStorageItem(multiPortal, options, false, true);
     });
     this.app.db.on('multiPortals.afterUpdate', async (multiPortal: Model, options?: DatabaseHookOptions) => {
       await this.publishAppManifestItem(multiPortal, options);
