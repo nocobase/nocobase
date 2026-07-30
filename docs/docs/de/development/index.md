@@ -62,5 +62,5 @@ features:
         link: /file-manager/development
       - title: Knowledge-Base-Erweiterung
         details: Binden Sie externe Wissensdatenbanken oder eigene Retrieval-Dienste an, um die RAG-Quellen für AI employees zu erweitern.
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

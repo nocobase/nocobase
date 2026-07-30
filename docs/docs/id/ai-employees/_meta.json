@@ -196,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "Panduan pengembangan",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Plugin External Knowledge Base",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -312,6 +301,69 @@
         "type": "custom-link",
         "label": "Panduan Prompt",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Panduan Pengembangan",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Karyawan AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Pengembangan Plugin Karyawan AI",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mendefinisikan Tool Sisi Server",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mendefinisikan Skill",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mendefinisikan Karyawan AI Bawaan",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "Contoh Lengkap: Membuat Karyawan AI Bawaan",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Menambahkan Interaksi Frontend ke Tool",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "Internasionalisasi Ekstensi Karyawan AI",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pemecahan Masalah Pengembangan Plugin Karyawan AI",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Basis Pengetahuan AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Plugin Basis Pengetahuan Eksternal",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }
