@@ -182,6 +182,41 @@ describe('SettingsShell', () => {
     expect(document.querySelector('#nocobase-embed-container')).not.toBeInTheDocument();
   });
 
+  it('does not display the Settings header on the OAuth device verification route', () => {
+    matchRoutes.mockReturnValue([
+      { route: { id: 'settingsDetails' } },
+      { route: { id: 'settingsDetails.idpOAuth.device' } },
+    ]);
+
+    render(
+      <MemoryRouter initialEntries={['/settings/idpOAuth/device?user_code=TKHX-NNCC']}>
+        <SettingsShell>
+          <div>device verification content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('device verification content')).toBeInTheDocument();
+    expect(document.querySelector('header')).toHaveStyle({ display: 'none' });
+  });
+
+  it('continues to display the Settings header on other details routes', () => {
+    matchRoutes.mockReturnValue([
+      { route: { id: 'settingsDetails' } },
+      { route: { id: 'settingsDetails.workflow.workflows.id' } },
+    ]);
+
+    render(
+      <MemoryRouter initialEntries={['/settings/workflow/workflows/1']}>
+        <SettingsShell>
+          <div>workflow details content</div>
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('banner')).toBeVisible();
+  });
+
   it('does not render the Settings header before authentication completes', () => {
     setCurrentUserAuthStatus(mockApp, 'unknown');
 

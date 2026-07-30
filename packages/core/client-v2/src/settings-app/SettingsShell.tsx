@@ -94,10 +94,12 @@ export const SettingsShell: FC = ({ children }) => {
   const headerColors = useMemo(() => getSettingsHeaderColors(settingsToken), [settingsToken]);
   const settingsGlobalCss = useMemo(() => buildSettingsGlobalCss(settingsToken), [settingsToken]);
   const authStatus = useCurrentUserAuthStatus(app);
-  const isAuthenticationRoute = (app.router.matchRoutes(location.pathname) || []).some((match) => {
+  const routeMatches = app.router.matchRoutes(location.pathname) || [];
+  const isAuthenticationRoute = routeMatches.some((match) => {
     const routeId = match.route.id;
     return routeId === 'auth' || routeId?.startsWith('auth.') || routeId === '2fa' || routeId?.startsWith('2fa.');
   });
+  const shouldHideHeader = routeMatches.some((match) => match.route.id === 'settingsDetails.idpOAuth.device');
 
   if (isAuthenticationRoute) {
     // 登录 / 二次验证页也要套设置中心自己的主题，否则它跟的是业务端主题：
@@ -114,7 +116,7 @@ export const SettingsShell: FC = ({ children }) => {
     );
   }
 
-  const shouldShowHeader = authStatus === 'authenticated';
+  const shouldShowHeader = authStatus === 'authenticated' && !shouldHideHeader;
   const hasUserCenterModel = Boolean(app.flowEngine.getModelClass('UserCenterTopbarActionModel'));
   const userCenter = hasUserCenterModel
     ? app.flowEngine.getModel<UserCenterTopbarActionModel>(`topbar-action-${USER_CENTER_ACTION_ID}`) ||
