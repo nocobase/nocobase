@@ -18,6 +18,7 @@ export {
 export {
   CloseConfirmModal,
   CodeTab,
+  CommitDiffModal,
   FilesPanel,
   RestoreVersionModal,
   SaveVersionModal,
@@ -29,4 +30,4 @@ export type {
   RunJSWorkspacePathType,
 } from './RunJSStudioComponents';
 export { inferLanguageFromPath, mergeHistoryItems, summarizeWorkspaceChanges } from './workspaceUtils';
-export type { RunJSChangeSummary, RunJSSourceHistoryItem, RunJSWorkspaceFile } from './types';
+export type { RunJSChangeSummary, RunJSSourceHistoryItem, RunJSWorkspaceFile, VscCommitDiffResult } from './types';

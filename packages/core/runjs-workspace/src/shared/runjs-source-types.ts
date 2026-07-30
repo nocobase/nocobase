@@ -31,6 +31,8 @@ export type {
   RunJSSourceKind,
   RunJSSourceCompilePreviewInput,
   RunJSSourceCompilePreviewResult,
+  RunJSSourceDiffInput,
+  RunJSSourceDiffResult,
   RunJSSourceExportZipInput,
   RunJSSourceGetVersionInput,
   RunJSSourceHistoryInput,

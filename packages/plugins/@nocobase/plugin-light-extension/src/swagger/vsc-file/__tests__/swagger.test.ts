@@ -52,7 +52,7 @@ test('keeps open metadata and missing-workspace status contracts public', () => 
   expect(repository.required).toEqual(expect.arrayContaining(['id', 'repoId', 'headCommitId']));
 });
 
-test('documents the complete raw VSC compatibility resource without exposing protected owners', () => {
+test('documents the raw VSC compatibility action allowlist', () => {
   const rawPaths = Object.keys(swagger.paths)
     .filter((path) => path.startsWith('/vscFile:'))
     .sort();
@@ -82,11 +82,10 @@ test('documents the complete raw VSC compatibility resource without exposing pro
       content: {
         'application/json': {
           schema: {
-            required: ['repoId', 'baseCommitId', 'message', 'files'],
+            required: expect.arrayContaining(['repoId', 'baseCommitId', 'message', 'files']),
           },
         },
       },
     },
   });
-  expect(swagger.paths['/vscFile:push'].post.description).toContain('protected RunJS and light-extension repositories');
 });

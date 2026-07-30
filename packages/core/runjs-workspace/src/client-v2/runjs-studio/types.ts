@@ -16,6 +16,7 @@ import type {
 } from '../../shared/runjs-source-contracts';
 export type { RunJSCompileDiagnostic, RunJSSourceSaveResult } from '../../shared/runjs-source-contracts';
 export type { RunJSSourceLocator } from '../../shared/runjs-source-contracts';
+export type { VscCommitDiffResult } from '../../shared/types';
 import type { VscCommitRecord } from '../../shared/types';
 
 export interface RunJSWorkspaceFile {

@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     saveSource: vi.fn(),
     compileWorkspacePreview: vi.fn(),
     listCommits: vi.fn(),
+    diffCommits: vi.fn(),
   },
   archive: {
     buildLightExtensionWorkspaceArchiveFileName: vi.fn(() => 'sales-widgets.zip'),
@@ -152,19 +153,28 @@ vi.mock('../vsc-file/public-api', () => {
       historyItems,
       onLoadMore,
       onSelect,
+      onViewDiff,
       restoreDisabled,
     }: {
       hasMore: boolean;
-      historyItems: Array<{ id: string; message: string; seq: number }>;
+      historyItems: Array<{ id: string; message: string; seq: number; parentCommitId: string | null }>;
       onLoadMore: () => void;
-      onSelect: (commit: { id: string; message: string; seq: number }) => void;
+      onSelect: (commit: { id: string; message: string; seq: number; parentCommitId: string | null }) => void;
+      onViewDiff?: (commit: { id: string; message: string; seq: number; parentCommitId: string | null }) => void;
       restoreDisabled?: boolean;
     }) => (
       <div data-testid="runjs-history-dock">
         {historyItems.map((commit) => (
-          <button disabled={restoreDisabled} key={commit.id} onClick={() => onSelect(commit)} type="button">
-            Restore v{commit.seq}
-          </button>
+          <React.Fragment key={commit.id}>
+            <button disabled={restoreDisabled} onClick={() => onSelect(commit)} type="button">
+              Restore v{commit.seq}
+            </button>
+            {commit.parentCommitId && onViewDiff ? (
+              <button onClick={() => onViewDiff(commit)} type="button">
+                Changes v{commit.seq}
+              </button>
+            ) : null}
+          </React.Fragment>
         ))}
         {hasMore ? (
           <button onClick={onLoadMore} type="button">
@@ -173,6 +183,18 @@ vi.mock('../vsc-file/public-api', () => {
         ) : null}
       </div>
     ),
+    CommitDiffModal: ({
+      commit,
+      diff,
+    }: {
+      commit: { seq: number } | null;
+      diff: { files: Array<{ path: string }> } | null;
+    }) =>
+      commit ? (
+        <div aria-label={`Commit changes v${commit.seq}`} role="dialog">
+          {diff?.files.map((file) => <span key={file.path}>{file.path}</span>)}
+        </div>
+      ) : null,
     CodeTab: ({
       activeFile,
       onChange,
@@ -386,6 +408,10 @@ describe('LightExtensionWorkspacePage', () => {
     });
     mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
     mocks.api.listCommits.mockResolvedValue([]);
+    mocks.api.diffCommits.mockResolvedValue({
+      files: [],
+      summary: { added: 0, modified: 0, deleted: 0, unchanged: 0, renamed: 0 },
+    });
     mocks.archive.createLightExtensionWorkspaceArchive.mockResolvedValue(
       new Blob(['workspace'], { type: 'application/zip' }),
     );
@@ -1323,6 +1349,53 @@ describe('LightExtensionWorkspacePage', () => {
     expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual([
       expect.objectContaining({ path: 'src/client/js-blocks/product-list/index.tsx', operation: 'upsert' }),
     ]);
+  });
+
+  it('opens the permission-protected commit diff from version history', async () => {
+    mocks.api.listCommits.mockResolvedValueOnce([
+      {
+        id: 'commit-2',
+        repoId: 'ler_sales',
+        hash: 'hash-2',
+        seq: 2,
+        parentCommitId: 'commit-1',
+        treeHash: 'tree-2',
+        message: 'Update source',
+        authorId: null,
+        metadata: {},
+      },
+    ]);
+    mocks.api.diffCommits.mockResolvedValueOnce({
+      files: [
+        {
+          status: 'modified',
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          pathHash: 'path-1',
+          additions: 2,
+          deletions: 1,
+          tooLarge: false,
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, unchanged: 0, renamed: 0 },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Changes v2' }));
+    await waitFor(() => {
+      expect(mocks.api.diffCommits).toHaveBeenCalledWith({
+        repoId: 'ler_sales',
+        fromCommitId: 'commit-1',
+        toCommitId: 'commit-2',
+      });
+    });
+    const dialog = await screen.findByRole('dialog', { name: /Commit changes.*v2/ });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('src/client/js-blocks/sales-kpi/index.tsx')).toBeInTheDocument();
   });
 
   it('loads older history pages without duplicating commits', async () => {

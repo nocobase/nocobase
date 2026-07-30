@@ -31,12 +31,32 @@ import {
   type CodeEditorFullscreenControl,
   type CodeEditorJsonSchema,
 } from '@nocobase/client-v2';
-import { Alert, Button, Empty, Input, List, Modal, Popconfirm, Space, Tooltip, Typography, message, theme } from 'antd';
+import {
+  Alert,
+  Button,
+  Empty,
+  Input,
+  List,
+  Modal,
+  Popconfirm,
+  Space,
+  Spin,
+  Tooltip,
+  Typography,
+  message,
+  theme,
+} from 'antd';
 import type { InputRef } from 'antd/es/input';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RunJSCompileDiagnostic } from './types';
-import type { RunJSChangeSummary, RunJSConsoleEntry, RunJSSourceHistoryItem, RunJSWorkspaceFile } from './types';
+import type {
+  RunJSChangeSummary,
+  RunJSConsoleEntry,
+  RunJSSourceHistoryItem,
+  RunJSWorkspaceFile,
+  VscCommitDiffResult,
+} from './types';
 import type { PendingDirtyAction } from './studioInternalTypes';
 import {
   buildFileTreeRows,
@@ -1147,6 +1167,8 @@ export function VersionHistoryDock(props: {
   onLoadMore: () => void;
   onRefresh: () => void;
   onSelect: (commit: RunJSSourceHistoryItem) => void;
+  onViewDiff?: (commit: RunJSSourceHistoryItem) => void;
+  diffLoadingCommitId?: string | null;
   restoreDisabled?: boolean;
   restoreDisabledReason?: string;
   t: (key: string) => string;
@@ -1164,6 +1186,8 @@ export function VersionHistoryDock(props: {
     onLoadMore,
     onRefresh,
     onSelect,
+    onViewDiff,
+    diffLoadingCommitId,
     restoreDisabled = false,
     restoreDisabledReason,
     t,
@@ -1228,7 +1252,6 @@ export function VersionHistoryDock(props: {
                 <button
                   aria-label={`${t('Restore')} ${formatCommitTime(commit)} ${formatVersion(commit.seq)}`}
                   disabled={restoreDisabled}
-                  key={commit.id}
                   onClick={() => onSelect(commit)}
                   style={{
                     background: 'transparent',
@@ -1265,12 +1288,29 @@ export function VersionHistoryDock(props: {
                 </button>
               );
 
-              return restoreDisabled && restoreDisabledReason ? (
-                <Tooltip key={commit.id} title={restoreDisabledReason}>
-                  <span style={{ display: 'block' }}>{restoreButton}</span>
-                </Tooltip>
-              ) : (
-                restoreButton
+              return (
+                <div key={commit.id} style={{ alignItems: 'center', display: 'flex', gap: 4 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {restoreDisabled && restoreDisabledReason ? (
+                      <Tooltip title={restoreDisabledReason}>
+                        <span style={{ display: 'block' }}>{restoreButton}</span>
+                      </Tooltip>
+                    ) : (
+                      restoreButton
+                    )}
+                  </div>
+                  {onViewDiff && commit.parentCommitId ? (
+                    <Button
+                      aria-label={`${t('Changes')} ${formatVersion(commit.seq)}`}
+                      loading={diffLoadingCommitId === commit.id}
+                      onClick={() => onViewDiff(commit)}
+                      size="small"
+                      type="link"
+                    >
+                      {t('Changes')}
+                    </Button>
+                  ) : null}
+                </div>
               );
             })}
             {hasMore ? (
@@ -1283,6 +1323,76 @@ export function VersionHistoryDock(props: {
       ) : null}
     </section>
   );
+}
+
+export function CommitDiffModal(props: {
+  commit: RunJSSourceHistoryItem | null;
+  diff: VscCommitDiffResult | null;
+  loading: boolean;
+  onCancel: () => void;
+  t: (key: string) => string;
+}) {
+  const { commit, diff, loading, onCancel, t } = props;
+  const changedFiles = diff?.files.filter((file) => file.status !== 'unchanged') || [];
+
+  return (
+    <Modal
+      aria-label={commit ? `${t('Commit changes')} ${formatVersion(commit.seq)}` : undefined}
+      footer={null}
+      onCancel={onCancel}
+      open={Boolean(commit)}
+      title={commit ? `${t('Commit changes')} · ${formatVersion(commit.seq)}` : t('Commit changes')}
+    >
+      {loading ? (
+        <div aria-label={t('Loading changes')} role="status" style={{ padding: 32, textAlign: 'center' }}>
+          <Spin />
+        </div>
+      ) : null}
+      {!loading && diff ? (
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space wrap>
+            <Typography.Text>{`${t('Added')}: ${diff.summary.added}`}</Typography.Text>
+            <Typography.Text>{`${t('Modified')}: ${diff.summary.modified}`}</Typography.Text>
+            <Typography.Text>{`${t('Deleted')}: ${diff.summary.deleted}`}</Typography.Text>
+            <Typography.Text>{`${t('Renamed')}: ${diff.summary.renamed}`}</Typography.Text>
+          </Space>
+          {changedFiles.length ? (
+            <List
+              dataSource={changedFiles}
+              size="small"
+              renderItem={(file) => (
+                <List.Item>
+                  <Space direction="vertical" size={0} style={{ minWidth: 0 }}>
+                    <Typography.Text code ellipsis>
+                      {file.oldPath && file.oldPath !== file.path ? `${file.oldPath} → ${file.path}` : file.path}
+                    </Typography.Text>
+                    <Typography.Text type="secondary">
+                      {formatDiffStatus(file.status, t)}
+                      {typeof file.additions === 'number' ? ` · +${file.additions}` : ''}
+                      {typeof file.deletions === 'number' ? ` · -${file.deletions}` : ''}
+                    </Typography.Text>
+                  </Space>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Empty description={t('No changes')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          )}
+        </Space>
+      ) : null}
+    </Modal>
+  );
+}
+
+function formatDiffStatus(status: VscCommitDiffResult['files'][number]['status'], t: (key: string) => string): string {
+  const labels = {
+    added: 'Added',
+    modified: 'Modified',
+    deleted: 'Deleted',
+    unchanged: 'Unchanged',
+    renamed: 'Renamed',
+  } as const;
+  return t(labels[status]);
 }
 
 function formatCommitTime(commit: RunJSSourceHistoryItem): string {

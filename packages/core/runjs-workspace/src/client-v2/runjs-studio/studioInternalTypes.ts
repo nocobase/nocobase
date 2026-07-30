@@ -31,12 +31,6 @@ export type ExportDownloadState = {
   url: string;
 };
 
-export type PreviewArtifactState = {
-  code: string;
-  version: string;
-  snapshotKey: string;
-};
-
 export type ClosableView = {
   close?: () => boolean | void | Promise<boolean | void>;
   beforeClose?: (options?: unknown) => boolean | void | Promise<boolean | void>;

@@ -29,6 +29,7 @@ import { useT } from '../locale';
 import {
   CloseConfirmModal,
   CodeTab,
+  CommitDiffModal,
   ConsolePanel,
   FilesPanel,
   RestoreVersionModal,
@@ -44,13 +45,13 @@ import type {
   RunJSSourceOpenWorkspaceResult,
   RunJSSourceSaveResult,
   RunJSWorkspaceFile,
+  VscCommitDiffResult,
 } from './types';
 import type {
   ActionErrorState,
   ClosableView,
   ExportDownloadState,
   PendingDirtyAction,
-  PreviewArtifactState,
   WorkspaceLoadResult,
 } from './studioInternalTypes';
 import {
@@ -345,6 +346,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const previousLocatorKeyRef = useRef(locatorKey);
   const requestSeqRef = useRef(0);
   const historyRequestSeqRef = useRef(0);
+  const commitDiffRequestSeqRef = useRef(0);
   const consoleSeqRef = useRef(0);
   const fileRevisionSeqRef = useRef(0);
   const draftRevisionRef = useRef(0);
@@ -381,13 +383,15 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [previewDiagnostics, setPreviewDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnostics, setSaveDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnosticsOpen, setSaveDiagnosticsOpen] = useState(false);
-  const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [historyNextBeforeSeq, setHistoryNextBeforeSeq] = useState<number | null>(null);
+  const [commitDiffCommit, setCommitDiffCommit] = useState<RunJSSourceHistoryItem | null>(null);
+  const [commitDiff, setCommitDiff] = useState<VscCommitDiffResult | null>(null);
+  const [diffLoadingCommitId, setDiffLoadingCommitId] = useState<string | null>(null);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -540,7 +544,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const invalidatePreview = useCallback(() => {
     cancelPreviewSession();
     setPreviewing(false);
-    setPreviewArtifact(null);
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
     setSaveDiagnosticsOpen(false);
@@ -640,6 +643,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     cancelPreviewSession();
     requestSeqRef.current += 1;
     historyRequestSeqRef.current += 1;
+    commitDiffRequestSeqRef.current += 1;
     workspaceSessionRef.current += 1;
     draftRevisionRef.current = 0;
     draftTokenRef.current = buildWorkspaceDraftToken(0, workspaceSessionRef.current, valueVersionRef.current);
@@ -667,11 +671,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
     setSaveDiagnosticsOpen(false);
-    setPreviewArtifact(null);
     setNotice(null);
     setHistoryLoading(false);
     setHistoryLoadingMore(false);
     setHistoryNextBeforeSeq(null);
+    setCommitDiffCommit(null);
+    setCommitDiff(null);
+    setDiffLoadingCommitId(null);
     setRestoreCommit(null);
     setRestoringVersion(false);
     setCloseConfirmOpen(false);
@@ -735,7 +741,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         openPaths: [nextActivePath],
       }));
       setPreviewDiagnostics([]);
-      setPreviewArtifact(null);
       setRestoreCommit(null);
       setRestoringVersion(false);
       setActionError(null);
@@ -917,11 +922,6 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         return;
       }
       setPreviewDiagnostics(result.artifact.diagnostics);
-      setPreviewArtifact({
-        code: result.artifact.code,
-        version: result.artifact.version,
-        snapshotKey: requestDraftToken,
-      });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
       const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
       let hasRuntimeError = false;
@@ -1292,6 +1292,48 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         setHistoryLoadingMore(false);
       }
     }
+  };
+
+  const viewCommitDiff = async (commit: RunJSSourceHistoryItem) => {
+    if (!workspace || !props.locator || !commit.parentCommitId) {
+      return;
+    }
+
+    const requestSeq = commitDiffRequestSeqRef.current + 1;
+    commitDiffRequestSeqRef.current = requestSeq;
+    const repoId = workspace.repository.repoId;
+    setCommitDiffCommit(commit);
+    setCommitDiff(null);
+    setDiffLoadingCommitId(commit.id);
+    setActionError(null);
+    try {
+      const result = await runJSSourceRequest('diff', {
+        locator: props.locator,
+        repoId,
+        fromCommitId: commit.parentCommitId,
+        toCommitId: commit.id,
+      });
+      if (commitDiffRequestSeqRef.current !== requestSeq || workspaceRef.current?.repository.repoId !== repoId) {
+        return;
+      }
+      setCommitDiff(result);
+    } catch (error) {
+      if (commitDiffRequestSeqRef.current === requestSeq) {
+        setCommitDiffCommit(null);
+        reportActionError(error, t('Failed to load commit changes'), () => viewCommitDiff(commit));
+      }
+    } finally {
+      if (commitDiffRequestSeqRef.current === requestSeq) {
+        setDiffLoadingCommitId(null);
+      }
+    }
+  };
+
+  const closeCommitDiff = () => {
+    commitDiffRequestSeqRef.current += 1;
+    setCommitDiffCommit(null);
+    setCommitDiff(null);
+    setDiffLoadingCommitId(null);
   };
 
   const loadVersionIntoEditor = async (commit: RunJSSourceHistoryItem) => {
@@ -2252,6 +2294,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                       <VersionHistoryDock
                         baseVersion={baseVersion}
                         collapsed={historyCollapsed}
+                        diffLoadingCommitId={diffLoadingCommitId}
                         hasMore={historyNextBeforeSeq !== null}
                         hasUnsavedLocalChanges={hasUnsavedLocalChanges}
                         historyItems={historyItems}
@@ -2261,6 +2304,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         onLoadMore={loadMoreHistory}
                         onRefresh={refreshHistory}
                         onSelect={setRestoreCommit}
+                        onViewDiff={viewCommitDiff}
                         t={t}
                       />
                     </div>
@@ -2413,6 +2457,14 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         loading={restoringVersion}
         onCancel={() => setRestoreCommit(null)}
         onRestore={confirmLoadVersion}
+        t={t}
+      />
+
+      <CommitDiffModal
+        commit={commitDiffCommit}
+        diff={commitDiff}
+        loading={Boolean(diffLoadingCommitId)}
+        onCancel={closeCommitDiff}
         t={t}
       />
     </div>

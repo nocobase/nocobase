@@ -91,3 +91,43 @@ export interface VscStoredTree {
 export interface VscFileChange extends VscTreeEntryInput {
   operation?: VscFileOperation;
 }
+
+export type VscFileDiffStatus = 'added' | 'modified' | 'deleted' | 'unchanged' | 'renamed';
+
+export interface VscCommitDiffInput {
+  repoId: string;
+  fromCommitId: string;
+  toCommitId: string;
+}
+
+export interface VscFileDiffEntry {
+  status: VscFileDiffStatus;
+  path: string;
+  pathHash: string;
+  oldPath?: string;
+  oldPathHash?: string;
+  blobHash?: string;
+  oldBlobHash?: string;
+  language?: string;
+  oldLanguage?: string;
+  mode?: string;
+  oldMode?: string;
+  size?: number;
+  oldSize?: number;
+  additions?: number;
+  deletions?: number;
+  tooLarge: boolean;
+}
+
+export interface VscFileDiffSummary {
+  added: number;
+  modified: number;
+  deleted: number;
+  unchanged: number;
+  renamed: number;
+}
+
+export interface VscCommitDiffResult {
+  files: VscFileDiffEntry[];
+  summary: VscFileDiffSummary;
+}

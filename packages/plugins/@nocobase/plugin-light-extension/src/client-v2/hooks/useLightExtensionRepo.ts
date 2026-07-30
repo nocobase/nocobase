@@ -12,6 +12,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
+import type { VscCommitDiffResult } from '../../shared/vsc-file/public-api';
 import type {
   LightExtensionChangeLifecycleInput,
   LightExtensionCommitRecord,
@@ -82,6 +83,12 @@ export interface LightExtensionListCommitsInput {
   beforeSeq?: number;
 }
 
+export interface LightExtensionDiffCommitsInput {
+  repoId: string;
+  fromCommitId: string;
+  toCommitId: string;
+}
+
 export interface LightExtensionSaveSourceInput {
   repoId: string;
   expectedHeadCommitId: string | null;
@@ -104,6 +111,7 @@ export interface UseLightExtensionRepoResult {
   saveSource(input: LightExtensionSaveSourceInput): Promise<LightExtensionSaveSourceResult>;
   compileWorkspacePreview(input: LightExtensionWorkspacePreviewInput): Promise<LightExtensionWorkspacePreviewResult>;
   listCommits(input: LightExtensionListCommitsInput): Promise<LightExtensionCommitRecord[]>;
+  diffCommits(input: LightExtensionDiffCommitsInput): Promise<VscCommitDiffResult>;
 }
 
 type ApiRequestOptions = {
@@ -139,6 +147,7 @@ type OperationInputMap = {
   saveSource: LightExtensionSaveSourceInput;
   compileWorkspacePreview: LightExtensionWorkspacePreviewInput;
   listCommits: LightExtensionListCommitsInput;
+  diffCommits: LightExtensionDiffCommitsInput;
 };
 
 type OperationResultMap = {
@@ -154,6 +163,7 @@ type OperationResultMap = {
   saveSource: LightExtensionSaveSourceResult;
   compileWorkspacePreview: LightExtensionWorkspacePreviewResult;
   listCommits: LightExtensionCommitRecord[];
+  diffCommits: VscCommitDiffResult;
 };
 
 const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
@@ -169,6 +179,7 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   saveSource: 'lightExtensionFiles:saveSource',
   compileWorkspacePreview: 'lightExtensions:compileWorkspacePreview',
   listCommits: 'lightExtensionFiles:listCommits',
+  diffCommits: 'lightExtensionFiles:diff',
 };
 
 export function useLightExtensionRepo(): UseLightExtensionRepoResult {
@@ -253,6 +264,10 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     (input: LightExtensionListCommitsInput) => requestOperation('listCommits', input),
     [requestOperation],
   );
+  const diffCommits = useCallback(
+    (input: LightExtensionDiffCommitsInput) => requestOperation('diffCommits', input),
+    [requestOperation],
+  );
 
   return useMemo<UseLightExtensionRepoResult>(
     () => ({
@@ -268,6 +283,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       saveSource,
       compileWorkspacePreview,
       listCommits,
+      diffCommits,
     }),
     [
       changeLifecycle,
@@ -277,6 +293,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       getRepo,
       inspectSourceArchive,
       listCommits,
+      diffCommits,
       listRepos,
       pull,
       pullCommit,

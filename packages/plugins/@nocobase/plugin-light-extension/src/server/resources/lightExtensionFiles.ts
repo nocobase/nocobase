@@ -13,6 +13,7 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionFileChange } from '../../shared/types';
 import type {
+  LightExtensionDiffCommitsInput,
   LightExtensionGetFileInput,
   LightExtensionListCommitsInput,
   LightExtensionPullCommitInput,
@@ -32,6 +33,7 @@ export const lightExtensionFileActionNames = [
   'readArchivedSource',
   'saveSource',
   'listCommits',
+  'diff',
 ] as const;
 
 type LightExtensionFileActionName = (typeof lightExtensionFileActionNames)[number];
@@ -57,6 +59,8 @@ const resourceActionRunners: Record<LightExtensionFileActionName, ResourceAction
   saveSource: (services, input, currentUser) => saveSource(services, input, currentUser),
   listCommits: (services, input, currentUser) =>
     services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),
+  diff: (services, input, currentUser) =>
+    services.fileService.diffCommits(normalizeDiffCommitsInput(input), currentUser),
 };
 
 export function createLightExtensionFilesResource(
@@ -127,6 +131,14 @@ function normalizeListCommitsInput(input: ResourceActionInput): LightExtensionLi
     limit: optionalPositiveInteger(input, 'limit'),
     beforeSeq: optionalPositiveInteger(input, 'beforeSeq'),
   });
+}
+
+function normalizeDiffCommitsInput(input: ResourceActionInput): LightExtensionDiffCommitsInput {
+  return {
+    repoId: requireRepoId(input),
+    fromCommitId: requireString(input, 'fromCommitId'),
+    toCommitId: requireString(input, 'toCommitId'),
+  };
 }
 
 function normalizeFileChange(value: unknown, label: string): LightExtensionFileChange {

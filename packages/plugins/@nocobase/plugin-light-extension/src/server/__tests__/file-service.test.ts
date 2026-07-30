@@ -241,6 +241,13 @@ describe('plugin-light-extension file service resource bridge', () => {
         repoId: repo.id,
       },
     });
+    const diffResponse = await agent.resource('lightExtensionFiles').diff({
+      values: {
+        repoId: repo.id,
+        fromCommitId: firstCommit.id,
+        toCommitId: secondCommit.id,
+      },
+    });
     const rawVscResponse = await agent.resource('vscFile').getRepository({
       values: {
         repoId: vscRepoId,
@@ -272,6 +279,19 @@ describe('plugin-light-extension file service resource bridge', () => {
       initialCommitId,
     ]);
     expect(historyResponse.body.data.every((commit: { repoId: string }) => commit.repoId === repo.id)).toBe(true);
+    expect(diffResponse.status).toBe(200);
+    expect(diffResponse.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'modified',
+          path: 'README.md',
+        }),
+        expect.objectContaining({
+          status: 'added',
+          path: 'src/client/js-blocks/source-workflow/index.tsx',
+        }),
+      ]),
+    );
     expect(rawVscResponse.status).toBe(403);
     expect(JSON.stringify([repo, firstPush.body.data, secondPush.body.data, pullResponse.body.data])).not.toContain(
       vscRepoId,

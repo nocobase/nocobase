@@ -21,6 +21,7 @@ import {
 } from '@nocobase/client-v2';
 import {
   CodeTab,
+  CommitDiffModal,
   CloseConfirmModal,
   FilesPanel,
   RestoreVersionModal,
@@ -30,6 +31,7 @@ import {
   mergeHistoryItems,
   summarizeWorkspaceChanges,
   type RunJSSourceHistoryItem,
+  type VscCommitDiffResult,
   type RunJSWorkspacePathAccess,
   type RunJSWorkspacePathType,
   type RunJSWorkspaceFile,
@@ -153,8 +155,16 @@ function LightExtensionWorkspacePage({
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
-  const { compileWorkspacePreview, getRepo, inspectSourceArchive, listCommits, pull, pullCommit, saveSource } =
-    useLightExtensionRepo();
+  const {
+    compileWorkspacePreview,
+    diffCommits,
+    getRepo,
+    inspectSourceArchive,
+    listCommits,
+    pull,
+    pullCommit,
+    saveSource,
+  } = useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
@@ -179,6 +189,9 @@ function LightExtensionWorkspacePage({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [historyNextBeforeSeq, setHistoryNextBeforeSeq] = useState<number | null>(null);
+  const [commitDiffCommit, setCommitDiffCommit] = useState<RunJSSourceHistoryItem | null>(null);
+  const [commitDiff, setCommitDiff] = useState<VscCommitDiffResult | null>(null);
+  const [diffLoadingCommitId, setDiffLoadingCommitId] = useState<string | null>(null);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -192,6 +205,7 @@ function LightExtensionWorkspacePage({
   } | null>(null);
   const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
   const historyRequestSeqRef = useRef(0);
+  const commitDiffRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestCheckSnapshotRef = useRef('');
   const authoringSourceFilesRef = useRef<WorkspaceFile[]>([]);
@@ -223,8 +237,12 @@ function LightExtensionWorkspacePage({
 
       const historyRequestSeq = historyRequestSeqRef.current + 1;
       historyRequestSeqRef.current = historyRequestSeq;
+      commitDiffRequestSeqRef.current += 1;
       setHistoryLoading(false);
       setHistoryLoadingMore(false);
+      setCommitDiffCommit(null);
+      setCommitDiff(null);
+      setDiffLoadingCommitId(null);
       setLoading(true);
       if (options.resetNotice !== false) {
         setNotice(null);
@@ -596,6 +614,48 @@ function LightExtensionWorkspacePage({
         setHistoryLoadingMore(false);
       }
     }
+  };
+
+  const viewCommitDiff = async (commit: RunJSSourceHistoryItem) => {
+    if (!repoId || !commit.parentCommitId) {
+      return;
+    }
+
+    const requestSeq = commitDiffRequestSeqRef.current + 1;
+    commitDiffRequestSeqRef.current = requestSeq;
+    setCommitDiffCommit(commit);
+    setCommitDiff(null);
+    setDiffLoadingCommitId(commit.id);
+    try {
+      const result = await diffCommits({
+        repoId,
+        fromCommitId: commit.parentCommitId,
+        toCommitId: commit.id,
+      });
+      if (commitDiffRequestSeqRef.current !== requestSeq) {
+        return;
+      }
+      setCommitDiff(result);
+    } catch (error) {
+      if (commitDiffRequestSeqRef.current === requestSeq) {
+        setCommitDiffCommit(null);
+        setNotice({
+          type: 'error',
+          message: error instanceof Error ? error.message : t('Failed to load commit changes'),
+        });
+      }
+    } finally {
+      if (commitDiffRequestSeqRef.current === requestSeq) {
+        setDiffLoadingCommitId(null);
+      }
+    }
+  };
+
+  const closeCommitDiff = () => {
+    commitDiffRequestSeqRef.current += 1;
+    setCommitDiffCommit(null);
+    setCommitDiff(null);
+    setDiffLoadingCommitId(null);
   };
 
   const loadVersionIntoEditor = async (commit: RunJSSourceHistoryItem) => {
@@ -1209,6 +1269,7 @@ function LightExtensionWorkspacePage({
                     <VersionHistoryDock
                       baseVersion={formatHistoryVersion(baseCommitSeq)}
                       collapsed={historyCollapsed}
+                      diffLoadingCommitId={diffLoadingCommitId}
                       emptyHistoryDescription={t('No source versions yet')}
                       hasMore={historyNextBeforeSeq !== null}
                       hasUnsavedLocalChanges={hasUnsavedLocalChanges}
@@ -1219,6 +1280,7 @@ function LightExtensionWorkspacePage({
                       onLoadMore={loadMoreHistory}
                       onRefresh={refreshHistory}
                       onSelect={setRestoreCommit}
+                      onViewDiff={viewCommitDiff}
                       t={studioT}
                     />
                   </div>
@@ -1314,6 +1376,14 @@ function LightExtensionWorkspacePage({
             ? t('Only editable files in this workspace will be restored. Read-only files will remain unchanged.')
             : undefined
         }
+        t={studioT}
+      />
+
+      <CommitDiffModal
+        commit={commitDiffCommit}
+        diff={commitDiff}
+        loading={Boolean(diffLoadingCommitId)}
+        onCancel={closeCommitDiff}
         t={studioT}
       />
 

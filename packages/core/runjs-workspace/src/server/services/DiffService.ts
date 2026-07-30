@@ -12,7 +12,16 @@ import type { Database, Transaction } from '@nocobase/database';
 import { diffMaxFileSize } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { normalizePath, pathHash } from '../../shared/path';
-import type { VscCommitRecord, VscNormalizedTreeEntry, VscStoredBlob } from '../../shared/types';
+import type {
+  VscCommitDiffInput,
+  VscCommitDiffResult,
+  VscCommitRecord,
+  VscFileDiffEntry,
+  VscFileDiffStatus,
+  VscFileDiffSummary,
+  VscNormalizedTreeEntry,
+  VscStoredBlob,
+} from '../../shared/types';
 import { BlobService } from './BlobService';
 import { CommitService } from './CommitService';
 import { RepositoryService } from './RepositoryService';
@@ -20,13 +29,7 @@ import { TreeService } from './TreeService';
 
 const maxLineDiffLines = 20000;
 const maxLineDiffComparisons = 1000000;
-export type VscFileDiffStatus = 'added' | 'modified' | 'deleted' | 'unchanged' | 'renamed';
-
-export interface DiffCommitsInput {
-  repoId: string;
-  fromCommitId: string;
-  toCommitId: string;
-}
+export type DiffCommitsInput = VscCommitDiffInput;
 
 export type DiffFileEndpoint =
   | {
@@ -45,37 +48,11 @@ export interface DiffFileInput {
   to?: DiffFileEndpoint | null;
 }
 
-export interface FileDiffEntry {
-  status: VscFileDiffStatus;
-  path: string;
-  pathHash: string;
-  oldPath?: string;
-  oldPathHash?: string;
-  blobHash?: string;
-  oldBlobHash?: string;
-  language?: string;
-  oldLanguage?: string;
-  mode?: string;
-  oldMode?: string;
-  size?: number;
-  oldSize?: number;
-  additions?: number;
-  deletions?: number;
-  tooLarge: boolean;
-}
+export type FileDiffEntry = VscFileDiffEntry;
 
-export interface FileDiffSummary {
-  added: number;
-  modified: number;
-  deleted: number;
-  unchanged: number;
-  renamed: number;
-}
+export type FileDiffSummary = VscFileDiffSummary;
 
-export interface FileDiffResult {
-  files: FileDiffEntry[];
-  summary: FileDiffSummary;
-}
+export type FileDiffResult = VscCommitDiffResult;
 
 export type LineDiffType = 'context' | 'delete' | 'insert';
 

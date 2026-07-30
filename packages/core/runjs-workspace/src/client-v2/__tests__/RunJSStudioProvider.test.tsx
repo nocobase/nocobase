@@ -477,6 +477,69 @@ describe('runJSStudioProvider', () => {
     ]);
   });
 
+  it('opens the permission-protected commit diff from version history', async () => {
+    const historyCommit = createHistoryCommit(2);
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              history: { items: [historyCommit, commit] },
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:diff') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              fromCommitId: commit.id,
+              toCommitId: historyCommit.id,
+              files: [
+                {
+                  status: 'modified',
+                  path: 'src/client/index.tsx',
+                  pathHash: 'path-1',
+                  additions: 2,
+                  deletions: 1,
+                  tooLarge: false,
+                },
+              ],
+              summary: { added: 0, modified: 1, deleted: 0, unchanged: 0, renamed: 0 },
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+
+    renderEditor();
+    await screen.findByRole('textbox', { name: 'Edit file content' });
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Changes v2' }));
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:diff',
+          data: {
+            locator,
+            repoId: repository.id,
+            fromCommitId: commit.id,
+            toCommitId: historyCommit.id,
+          },
+        }),
+      );
+    });
+    expect(await screen.findByRole('dialog', { name: /Commit changes.*v2/ })).toBeTruthy();
+    expect(screen.getByText('src/client/index.tsx')).toBeTruthy();
+    expect(screen.getByText('Modified · +2 · -1')).toBeTruthy();
+  });
+
   it('handles only flow model step locators and prefers sourceLocator', () => {
     expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator })).toBe(true);
 

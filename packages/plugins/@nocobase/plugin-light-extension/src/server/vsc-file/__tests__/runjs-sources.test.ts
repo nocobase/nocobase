@@ -321,6 +321,29 @@ describe('runJSSources resource', () => {
       id: save.body.data.commit.id,
     });
 
+    const diff = await agent.resource('runJSSources').diff({
+      values: {
+        locator,
+        repoId: firstOpen.body.data.repository.id,
+        fromCommitId: firstOpen.body.data.repository.headCommitId,
+        toCommitId: save.body.data.commit.id,
+      },
+    });
+
+    expect(diff.status).toBe(200);
+    expect(diff.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'added',
+          path: 'src/client/helper.ts',
+        }),
+        expect.objectContaining({
+          status: 'modified',
+          path: 'src/client/index.tsx',
+        }),
+      ]),
+    );
+
     const version = await agent.resource('runJSSources').getVersion({
       values: {
         locator,

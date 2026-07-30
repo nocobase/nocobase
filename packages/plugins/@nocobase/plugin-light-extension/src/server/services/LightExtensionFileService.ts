@@ -9,6 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import type {
+  VscCommitDiffResult,
   VscCommitRecord,
   VscFileChange,
   VscPermissionAction,
@@ -71,6 +72,12 @@ export interface LightExtensionListCommitsInput {
   repoId: string;
   limit?: number;
   beforeSeq?: number;
+}
+
+export interface LightExtensionDiffCommitsInput {
+  repoId: string;
+  fromCommitId: string;
+  toCommitId: string;
 }
 
 export interface LightExtensionReplaceSourceSnapshotInput {
@@ -564,6 +571,34 @@ export class LightExtensionFileService {
       );
 
       return commits.map((commit) => toPublicCommit(commit, repo.id));
+    });
+  }
+
+  async diffCommits(
+    input: LightExtensionDiffCommitsInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<VscCommitDiffResult> {
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
+      assertRepoNotArchived(repo, 'read source');
+      return this.runVsc(repo.id, () =>
+        this.vscFileService.diff(
+          {
+            repoId: repo.vscRepoId,
+            fromCommitId: input.fromCommitId,
+            toCommitId: input.toCommitId,
+          },
+          this.createVscContext({
+            ctx,
+            transaction,
+            requestId: getRequestId(ctx),
+            repoId: repo.id,
+            aclAction: 'readSource',
+            reason: 'read light-extension commit diff',
+            allowedActions: ['diff'],
+          }),
+        ),
+      );
     });
   }
 

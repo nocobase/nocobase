@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from './types';
+import type {
+  VscCommitDiffResult,
+  VscCommitRecord,
+  VscFileChange,
+  VscRepositoryIdentity,
+  VscRepositoryRecord,
+} from './types';
 import type {
   RunJSCompileDiagnostic,
   RunJSLegacySource,
@@ -210,6 +216,21 @@ export interface RunJSSourceHistoryResult {
   nextBeforeSeq: number | null;
 }
 
+export interface RunJSSourceDiffInput {
+  locator: RunJSSourceLocator;
+  repoId: string;
+  fromCommitId: string;
+  toCommitId: string;
+}
+
+export interface RunJSSourceDiffResult extends VscCommitDiffResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryRecord;
+  fromCommitId: string;
+  toCommitId: string;
+}
+
 export interface RunJSSourceGetVersionInput {
   locator: RunJSSourceLocator;
   repoId: string;
@@ -270,6 +291,10 @@ export interface RunJSSourceRequestMap<TExportZipResult = unknown> {
     input: RunJSSourceHistoryInput;
     result: RunJSSourceHistoryResult;
   };
+  diff: {
+    input: RunJSSourceDiffInput;
+    result: RunJSSourceDiffResult;
+  };
   getVersion: {
     input: RunJSSourceGetVersionInput;
     result: RunJSSourceVersionResult;
@@ -286,6 +311,7 @@ export const runJSSourceRequestActionNames = [
   'exportZip',
   'importZip',
   'listHistory',
+  'diff',
   'getVersion',
 ] as const satisfies readonly (keyof RunJSSourceRequestMap)[];
 

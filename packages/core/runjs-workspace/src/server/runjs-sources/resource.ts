@@ -33,6 +33,8 @@ import {
   type RunJSLegacySource,
   type RunJSSourceCompilePreviewInput,
   type RunJSSourceCompilePreviewResult,
+  type RunJSSourceDiffInput,
+  type RunJSSourceDiffResult,
   type RunJSSourceExportZipInput,
   type RunJSSourceGetVersionInput,
   type RunJSSourceHistoryInput,
@@ -370,6 +372,36 @@ const actionRunners: Record<RunJSSourceWorkspaceActionName, RunJSSourceActionRun
         repository: serializeRepository(repository),
         items,
         nextBeforeSeq: items.length ? items[items.length - 1].seq : null,
+      };
+    });
+  },
+  diff: async (db, registry, permissionHooks, _authoringInspectors, input, ctx): Promise<RunJSSourceDiffResult> => {
+    const diffInput = normalizeDiffInput(input);
+    const adapter = registry.require(diffInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+
+      await adapter.assertCanRead({ locator: diffInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, diffInput.repoId, diffInput.locator, serviceCtx);
+      const diff = await service.diff(
+        {
+          repoId: repository.id,
+          fromCommitId: diffInput.fromCommitId,
+          toCommitId: diffInput.toCommitId,
+        },
+        serviceCtx,
+      );
+
+      return {
+        locator: diffInput.locator,
+        locatorKind: diffInput.locator.kind,
+        repository: serializeRepository(repository),
+        fromCommitId: diffInput.fromCommitId,
+        toCommitId: diffInput.toCommitId,
+        ...diff,
       };
     });
   },
@@ -2345,6 +2377,14 @@ function normalizeHistoryInput(input: ResourceActionInput): RunJSSourceHistoryIn
     ...normalizeRepoInput(input),
     limit: optionalNumber(input, 'limit'),
     beforeSeq: optionalNumber(input, 'beforeSeq'),
+  };
+}
+
+function normalizeDiffInput(input: ResourceActionInput): RunJSSourceDiffInput {
+  return {
+    ...normalizeRepoInput(input),
+    fromCommitId: requireString(input, 'fromCommitId'),
+    toCommitId: requireString(input, 'toCommitId'),
   };
 }
 
