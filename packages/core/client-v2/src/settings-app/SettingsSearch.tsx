@@ -20,7 +20,7 @@ import { useSettingsSearch, type SettingsSearchItem } from '../settings-center/u
 import { getSettingsHeaderColors } from './settingsTheme';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
-const SHORTCUT_LABEL = isMac ? '⌘K' : 'Ctrl K';
+const SHORTCUT_LABEL = isMac ? '⌘F' : 'Ctrl F';
 
 const triggerClassName = css`
   align-items: center;
@@ -54,7 +54,7 @@ const resultItemClassName = css`
  * 设置中心的搜索入口。
  *
  * 顶栏放一个轻量触发器，真正的搜索在弹层里进行；关键词为空时展示最近访问，
- * 这样分组化之后被收进左侧栏的深层页面仍然一步可达。支持 `Cmd/Ctrl + K` 唤起。
+ * 这样分组化之后被收进左侧栏的深层页面仍然一步可达。支持 `Cmd/Ctrl + F` 唤起。
  */
 export const SettingsSearch: React.FC = observer(() => {
   const { t } = useTranslation();
@@ -109,15 +109,19 @@ export const SettingsSearch: React.FC = observer(() => {
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
-      // 页面内组件（代码编辑器之类）可能自己就用 Cmd/Ctrl+K；它们 preventDefault 之后
+      // 页面内组件可能自己就用 Cmd/Ctrl+F；它们 preventDefault 之后
       // 这个 window 级监听器不该再抢一次。
       if (event.defaultPrevented) {
         return;
       }
 
-      if (event.key?.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+      const hasPlatformModifier = isMac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+
+      if (event.key?.toLowerCase() === 'f' && hasPlatformModifier && !event.altKey && !event.shiftKey) {
         event.preventDefault();
-        openPalette();
+        if (!event.repeat) {
+          openPalette();
+        }
       }
     };
 
