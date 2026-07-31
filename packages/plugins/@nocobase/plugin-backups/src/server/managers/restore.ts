@@ -43,6 +43,7 @@ interface Metadata {
     backupClientVersion?: string;
   };
   enableFilesBackup: boolean;
+  enablePortalsBackup?: boolean;
   plugins: Array<{
     name: string;
     version: string;
@@ -70,6 +71,7 @@ export class RestoreManager {
   #backupDir: string;
   #tempDir: string;
   #uploadDir: string;
+  #portalDir: string;
   #aesKeyPath: string;
   constructor(ctx: ResourcerContext, dbOptions?: any) {
     this.ctx = ctx;
@@ -78,6 +80,7 @@ export class RestoreManager {
     this.#backupDir = storagePathJoin('backups', ctx.app.name);
     this.#tempDir = storagePathJoin('tmp', 'backups', ctx.app.name);
     this.#uploadDir = storagePathJoin('uploads');
+    this.#portalDir = storagePathJoin('portals', ctx.app.name);
     this.#aesKeyPath = storagePathJoin('apps', ctx.app.name, 'aes_key.dat');
   }
 
@@ -91,6 +94,10 @@ export class RestoreManager {
 
   protected set uploadDir(uploadDir: string) {
     this.#uploadDir = uploadDir;
+  }
+
+  protected set portalDir(portalDir: string) {
+    this.#portalDir = portalDir;
   }
 
   protected set restoreTasksCacheName(restoreTasksCacheName: string) {
@@ -155,6 +162,7 @@ export class RestoreManager {
         this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
           module: BACKUPS,
         });
+        await this.#restorePortals(metadata.enablePortalsBackup === true, extractedDir);
         await this.#restoreFilesAndCleanup(uploadsExist, extractedDir);
         // await sleep(5000); // wait for the client to show the error message, for debug
         await this.ctx.app.upgrade();
@@ -200,6 +208,7 @@ export class RestoreManager {
       });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
       // copy the uploads directory
+      await this.#restorePortals(metadata.enablePortalsBackup === true, extractedDir);
       await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
     } catch (error) {
       this.ctx.logger.error(`Error restoring backup: ${error.message}. Trying to revert the backup process`, {
@@ -258,6 +267,7 @@ export class RestoreManager {
           this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
             module: BACKUPS,
           });
+          await this.#restorePortals(metadata.enablePortalsBackup === true, extractedDir);
           await this.#restoreFilesAndCleanup(uploadsExist, extractedDir);
           // await sleep(5000); // wait for the client to show the error message, for debug
           await this.ctx.app.runCommand('upgrade');
@@ -511,6 +521,7 @@ export class RestoreManager {
       if (restoreUploads) {
         this.#notify(RESTORE_STEPS.UPLOADS);
       }
+      await this.#restorePortals(metadata.enablePortalsBackup === true, extractedDir);
       await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
     } catch (error) {
       await statusCache.set(taskId, {
@@ -528,6 +539,18 @@ export class RestoreManager {
       inProgress: false,
     });
     await this.ctx.app.runCommand('upgrade');
+  }
+
+  async #restorePortals(restorePortals: boolean, extractedDir: string) {
+    if (!restorePortals) {
+      return;
+    }
+
+    const portalsDir = path.join(extractedDir, 'portals');
+    await fs.rm(this.#portalDir, { recursive: true, force: true });
+    if (await fs.pathExists(portalsDir)) {
+      await fs.copy(portalsDir, this.#portalDir, { overwrite: true });
+    }
   }
 
   async #restoreFilesAndCleanup(restoreUploads: boolean, extractedDir: string) {

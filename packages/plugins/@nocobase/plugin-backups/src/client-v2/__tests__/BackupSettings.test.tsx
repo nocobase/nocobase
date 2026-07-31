@@ -31,6 +31,7 @@ function renderBackupSettings() {
       cron: '0 0 * * *',
       keep: 100,
       enableFilesBackup: false,
+      enablePortalsBackup: true,
     },
   });
   app.apiMock.onGet('storages:list').reply(200, { data: [] });
@@ -53,6 +54,13 @@ describe('backup settings', () => {
 
     expect(input).toHaveAttribute('aria-valuemin', '1');
     expect(input).toHaveAttribute('aria-valuemax', String(MAX_BACKUP_KEEP_COUNT));
+  });
+
+  it('shows independent switches for local files and portals', async () => {
+    renderBackupSettings();
+
+    expect(await screen.findByText('Backup local storage files')).toBeInTheDocument();
+    expect(screen.getByText('Backup portals')).toBeInTheDocument();
   });
 
   it('shows the server error when saving fails', async () => {

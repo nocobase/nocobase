@@ -43,6 +43,11 @@ export default defineCollection({
       name: 'enableFilesBackup',
     },
     {
+      type: 'boolean',
+      name: 'enablePortalsBackup',
+      defaultValue: true,
+    },
+    {
       type: 'belongsTo',
       name: 'storage',
       target: 'storages',
