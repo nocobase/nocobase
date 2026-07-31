@@ -239,31 +239,32 @@ async function selectMobileLayout(container: HTMLElement, user: ReturnType<typeo
 }
 
 /**
- * 打开某张卡片右上角的「更多」菜单。
+ * Open the "more" menu at the top right of a card.
  *
- * 卡片上的操作（编辑 / 路由 / 设为默认 / 删除）都收在这个菜单里，测试要先展开再点。
- * antd 的下拉渲染在 body 下的 portal，菜单本身不在卡片 DOM 里，所以返回 `within(menu)`。
+ * The card actions (edit / routes / set as default / delete) all live in that menu,
+ * so a test has to expand it first. antd renders the dropdown into a portal under
+ * body, outside the card's DOM, hence the `within(menu)` scope.
  *
- * @param {ReturnType<typeof userEvent.setup>} user 交互实例
- * @param {HTMLElement} card 目标卡片
- * @returns 菜单作用域的查询器
+ * @param {ReturnType<typeof userEvent.setup>} user interaction instance
+ * @param {HTMLElement} card target card
+ * @returns queries scoped to the menu
  */
 async function openCardMenu(user: ReturnType<typeof userEvent.setup>, card: HTMLElement) {
   await user.click(within(card).getByRole('button', { name: 'More' }));
-  // 等菜单项真正挂上来：`role="menu"` 的容器会先出现，里面的项晚一拍。
-  // 「删除」每张卡都有，拿它当锚点定位当前这份菜单。
-  // 菜单项带图标，antd 的图标是 <span role="img" aria-label="delete">，会被算进可访问名，
-  // 所以按名字匹配要用正则而不是全等。
+  // Wait for the entries to mount: the role="menu" container shows up first and the
+  // items land a tick later. Every card has "delete", so it anchors the current menu.
+  // Entries carry icons, and antd renders those as <span role="img" aria-label="delete">,
+  // which counts towards the accessible name - hence matching by regex, not equality.
   const anchor = await screen.findByRole('menuitem', { name: /Delete/ });
   return within(anchor.closest('[role="menu"]') as HTMLElement);
 }
 
 /**
- * 展开卡片菜单并点其中一项。
+ * Expand a card menu and click one of its entries.
  *
- * @param {ReturnType<typeof userEvent.setup>} user 交互实例
- * @param {HTMLElement} card 目标卡片
- * @param {string} name 菜单项名称
+ * @param {ReturnType<typeof userEvent.setup>} user interaction instance
+ * @param {HTMLElement} card target card
+ * @param {string} name entry name
  */
 async function clickCardMenuItem(user: ReturnType<typeof userEvent.setup>, card: HTMLElement, name: string) {
   const menu = await openCardMenu(user, card);
@@ -614,14 +615,14 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(customerPortalCard).getByRole('switch', { name: 'Enabled' })).toBeChecked();
     expect(within(disabledPortalCard).getByRole('switch', { name: 'Enabled' })).not.toBeChecked();
 
-    // 「打开」不再占一个操作位：点卡片本身就是打开，色块上那层 hover 覆盖是键盘可达的同一入口。
+    // Open no longer takes an action slot: the card itself opens the portal, and the hover overlay on the tile is the same entry, reachable by keyboard.
     expect(within(customerPortalCard).getByRole('button', { name: 'View' })).toHaveClass('nb-portal-cover-overlay');
     const openInNewTab = vi.spyOn(window, 'open').mockImplementation(() => null);
     await user.click(within(customerPortalCard).getByText('Customer portal'));
     expect(openInNewTab).toHaveBeenCalledWith('/v/customer-portal', '_blank', 'noopener,noreferrer');
     openInNewTab.mockRestore();
 
-    // AI portal 没有可视化路由，禁用的 portal 也进不去——这两种情况菜单里直接不列这一项。
+    // AI portals have no visual routes and disabled ones cannot be entered, so the menu omits the entry in both cases.
     const customerMenu = await openCardMenu(user, customerPortalCard);
     expect(customerMenu.getByRole('menuitem', { name: /Routes/ })).toBeInTheDocument();
     expect(customerMenu.getByRole('menuitem', { name: /Set as default/ })).toBeInTheDocument();
@@ -634,7 +635,7 @@ describe('plugin-multi-portal settings page', () => {
 
     const disabledMenu = await openCardMenu(user, disabledPortalCard);
     expect(disabledMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
-    // 关着的门户设成默认，用户打开应用会落到进不去的地方，所以这一项也不列。
+    // Making a disabled portal the default would leave users landing on an entry they cannot open, so that is omitted too.
     expect(disabledMenu.queryByRole('menuitem', { name: /Set as default/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
@@ -654,12 +655,12 @@ describe('plugin-multi-portal settings page', () => {
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
 
-    // 门户类型（AI / 无代码）由所在分组的标题表达，卡片上不再挂类型标签。
-    // 测试里的 t 是恒等函数，渲染出来的是词条 key 而不是译文。
+    // The portal type (AI / no-code) is carried by the group heading; cards no longer
+    // hold a type tag. `t` is the identity function here, so keys render, not translations.
     expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
     expect(screen.getByText('No-code')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
-    // 设备变成标题右边的图标，文字进了 aria-label。
+    // The device became an icon next to the title, with its wording in the aria-label.
     expect(within(customerPortalCard).getByLabelText('Mobile')).toBeInTheDocument();
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
@@ -715,14 +716,14 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Admin')).toBeInTheDocument();
     const card = screen.getByText('Admin').closest('.ant-card') as HTMLElement;
-    // 默认门户挂一条缎带徽章，写着 Default。缎带是 Badge.Ribbon 包在卡片外面的，
-    // 不在 .ant-card 里，所以从卡片的父节点找。
+    // The default portal gets a ribbon reading "Default". Badge.Ribbon wraps the card
+    // from the outside, so the text lives in the card's parent, not in .ant-card.
     const cardWrapper = card.parentElement as HTMLElement;
     expect(within(cardWrapper).getByText('Default')).toBeInTheDocument();
-    // 停用默认门户会让入口落空，所以启用开关置灰。
+    // Disabling the default portal would leave the app entry pointing nowhere, so the switch is greyed out.
     expect(within(card).getByRole('switch', { name: 'Enabled' })).toBeDisabled();
 
-    // 已经是默认了，菜单里不再列「设为默认」；删除入口照常给。
+    // Already the default, so the menu drops "set as default"; delete stays available.
     const menu = await openCardMenu(user, card);
     expect(menu.queryByRole('menuitem', { name: /Set as default/ })).not.toBeInTheDocument();
     await user.click(menu.getByRole('menuitem', { name: /Delete/ }));

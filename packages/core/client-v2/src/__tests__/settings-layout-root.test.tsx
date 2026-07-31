@@ -209,14 +209,15 @@ describe('standalone settings layout root', () => {
 
     expect(await screen.findByText('Portal manager page')).toBeInTheDocument();
 
-    // 左栏已经去掉：负排序的配置项不再单独铺一列，而是跟着它所属的分组走。
-    // 这里验证它没有被挤到别的分组去——顶栏当前高亮的是它自己那一组，
-    // 而「插件管理器」是另一组，不该混进来。
+    // The sidebar is gone: a negative-sort setting no longer gets its own column and
+    // follows whichever group it belongs to. This checks it did not drift into a
+    // different group.
     expect(document.querySelector('.ant-layout-sider')).toBeNull();
     const groupNav = document.querySelector('.ant-layout-header .ant-menu') as HTMLElement;
     expect(groupNav).toBeInTheDocument();
-    // 它是负排序的普通配置项，落在兜底分组「其他设置」里，不会被提成顶栏的一级入口，
-    // 更不会混进「插件管理器」那一组。
+    // Being an ordinary negative-sort setting, it lands in the catch-all "other
+    // settings" group: never promoted to a top-level entry, never folded into the
+    // plugin manager group.
     expect(within(groupNav).getByRole('menuitem', { name: 'Other settings' })).toBeInTheDocument();
     expect(within(groupNav).getByRole('menuitem', { name: /Plugin manager$/ })).toBeInTheDocument();
     expect(within(groupNav).queryByRole('menuitem', { name: 'Portal manager' })).not.toBeInTheDocument();

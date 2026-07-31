@@ -26,10 +26,11 @@ import {
 } from './utils';
 
 /**
- * 内容区最大宽度。
+ * Maximum width of the content area.
  *
- * 宽屏上让内容居中收窄：设置页大多是表单和列表，铺满 2560px 之后一行字要横扫整个屏幕，
- * 读起来很累，右侧操作也离左侧标题太远。
+ * Centers and narrows the content on wide screens: settings pages are mostly forms
+ * and lists, and across 2560px a single line sweeps the whole display, which is
+ * tiring to read and leaves the actions on the right far from the title on the left.
  */
 const SETTINGS_CONTENT_MAX_WIDTH = 1280;
 
@@ -105,8 +106,9 @@ export const InternalAdminSettingsLayout = () => {
   const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
   const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
 
-  // 没有左栏：单入口分组本来就不需要，「其他设置」那种多入口分组改走顶栏的悬浮下拉。
-  // 顶级配置项自己的下级（用户和权限的 用户 / 角色和权限 / 同步）继续用页头下的 Tab。
+  // No sidebar: single-entry groups never needed one, and multi-entry groups such as
+  // "other settings" now use the hover dropdown in the top bar. Children of a
+  // top-level setting (users / roles / sync) keep using the tabs under the header.
   // 子页面一律走页头下的 Tab：左栏只表达「哪个模块」，模块内部的分页交给 Tab，
   // 和 v1 设置中心保持一致。
   const pageTabs = useMemo(() => {
@@ -220,8 +222,9 @@ export const InternalAdminSettingsLayout = () => {
           }}
         >
           {/*
-            页头不再是一条通栏白底：标题跟内容共用一个底色、一条最大宽度，
-            视觉上就是同一页，不是"标题栏 + 内容区"两块。
+            The header is no longer a full-width white band: title and content share one
+            background and one max width, so the page reads as a single surface rather
+            than a title bar stacked on a content area.
           */}
           <div style={{ margin: '0 auto', maxWidth: SETTINGS_CONTENT_MAX_WIDTH, padding: token.paddingLG }}>
             <PageHeader
@@ -242,8 +245,8 @@ export const InternalAdminSettingsLayout = () => {
                   />
                 ) : undefined
               }
-              // 去掉白底之后页头和内容之间没有任何分隔了，靠间距把它们分开：
-              // 原来那条底边线兼着这个活，现在得显式留白。
+              // With the white band gone there is nothing separating header from content,
+              // so spacing does the job the bottom border used to do implicitly.
               style={{
                 background: 'transparent',
                 marginBottom: token.marginLG,

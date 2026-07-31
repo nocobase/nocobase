@@ -10,23 +10,28 @@
 import type { GlobalToken } from 'antd';
 
 /**
- * 把 Swagger UI 的自带皮肤压到当前主题上。
+ * Map Swagger UI's built-in skin onto the current theme.
  *
- * Swagger UI 自己带一整套 CSS（字体、圆角、阴影、蓝绿配色），和设置中心那套黑白灰放在
- * 一起像两个网站。这里不改它的 DOM，只按 token 覆盖表层样式：
+ * Swagger UI ships a full stylesheet of its own (typography, radii, shadows, a
+ * blue-and-green palette) that reads like a second website next to the neutral
+ * settings center. This leaves its DOM alone and only overrides the surface:
  *
- * - 排版和控件跟随主题，圆角 / 边框 / 输入框和别的页面一致；
- * - 请求方法的颜色**保留**——GET / POST / DELETE 靠颜色区分是功能信号，全部灰掉之后
- *   只能逐字读；但整行的彩色底去掉，颜色只留在方法那个小标签上，噪音降下来；
- * - 它自带的大标题块隐藏——页面顶部已经有「API 文档」了，重复一次只是占地方。
+ * - typography and controls follow the theme, so radii, borders and inputs match
+ *   the rest of the pages;
+ * - method colors are **kept** — GET / POST / DELETE are told apart by color, and
+ *   greying them out would force reading every verb; only the tinted row
+ *   backgrounds go away, leaving the color on the method badge;
+ * - its own title block is hidden, since the page header already says
+ *   "API documentation".
  *
- * @param {GlobalToken} token 当前主题 token
- * @returns {string} 作用域样式文本
+ * @param {GlobalToken} token current theme token
+ * @returns {string} scoped stylesheet
  */
 export function buildSwaggerCss(token: GlobalToken): string {
-  // 方法色写死，不取主题的语义色：简约主题把 colorInfo 钉成了黑色、colorSuccess 是
-  // antd 那个高饱和绿，套上去 GET 变纯黑、POST 刺眼。这里用一组压过饱和度的固定色，
-  // 彼此仍然分得开，也不会把页面拉回彩色。
+  // Fixed palette instead of semantic tokens: the minimal theme pins colorInfo to
+  // black and colorSuccess is antd's saturated green, which turns GET into a solid
+  // black block and makes POST shout. These hues stay distinguishable without
+  // dragging color back into the page.
   const methodColors: Record<string, string> = {
     get: '#3b73c4',
     post: '#3f9070',
@@ -64,12 +69,12 @@ export function buildSwaggerCss(token: GlobalToken): string {
   padding: 0;
 }
 
-/* 页面顶部已经有标题了，Swagger 自己那块 info 是第二遍。 */
+/* The page header already carries the title, so Swagger's info block is a repeat. */
 .nb-swagger .swagger-ui .information-container {
   display: none;
 }
 
-/* servers + Authorize 那条：去掉它自带的灰底和阴影，融进页面。 */
+/* The servers + Authorize bar: drop its grey background and shadow so it blends in. */
 .nb-swagger .swagger-ui .scheme-container {
   background: transparent;
   box-shadow: none;
@@ -88,7 +93,7 @@ export function buildSwaggerCss(token: GlobalToken): string {
   font-size: ${token.fontSizeSM}px;
 }
 
-/* 整行彩色底换成白底，方法本身的颜色只留在那个小标签上。 */
+/* Plain background for the whole row; the method keeps its color on the badge. */
 .nb-swagger .swagger-ui .opblock {
   background: ${token.colorBgContainer};
   border: ${token.lineWidth}px solid ${token.colorBorderSecondary};

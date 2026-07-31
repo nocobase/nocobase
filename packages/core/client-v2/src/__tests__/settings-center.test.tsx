@@ -453,8 +453,9 @@ describe('settings center', () => {
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
     expect(await screen.findByText('Menu ACL child page')).toBeInTheDocument();
-    // 左栏已经去掉，这一组的入口挂在顶栏「其他设置」的悬浮下拉里；
-    // 下拉要 hover 才渲染，这里只验证分组入口还在（菜单没有因为 ACL 被整条摘掉）。
+    // The sidebar is gone; this group is reached from the "other settings" hover
+    // dropdown in the top bar. The dropdown only renders on hover, so this just
+    // checks the group entry survived (ACL did not drop the whole menu).
     expect(screen.getByRole('menuitem', { name: 'Other settings' })).toBeInTheDocument();
   });
 
@@ -487,8 +488,9 @@ describe('settings center', () => {
 
     expect(await screen.findByText('Scroll demo page 29')).toBeInTheDocument();
 
-    // 左栏去掉之后这里不再有独立滚动区：30 个配置项全部收在顶栏下拉里，
-    // 页面本身只渲染当前这一页，验证它没被撑坏即可。
+    // Without the sidebar there is no separate scroll area: all 30 settings live in
+    // the top bar dropdown and the page renders only the active one, so this just
+    // checks it still holds up.
     expect(document.querySelector('.ant-layout-sider')).toBeNull();
   });
 

@@ -219,13 +219,14 @@ const describedRadioCss = `
 `;
 
 /**
- * 画廊卡片的悬浮态样式。
+ * Hover styles for the gallery cards.
  *
- * 走 CSS 而不是 React state：一页几十张卡，用 state 的话鼠标每进出一张就整页重渲染；
- * `:focus-within` 还能顺带把键盘路径覆盖掉，不用自己接 focus / blur。
+ * Kept in CSS rather than React state: a page holds dozens of cards, and state
+ * would re-render all of them every time the pointer crosses one. `:focus-within`
+ * also covers the keyboard path for free, with no focus / blur handlers.
  *
- * @param {ReturnType<typeof theme.useToken>['token']} token 当前主题 token
- * @returns {string} 样式文本
+ * @param {ReturnType<typeof theme.useToken>['token']} token current theme token
+ * @returns {string} stylesheet
  */
 function buildPortalCardCss(token: ReturnType<typeof theme.useToken>['token']) {
   return `
@@ -501,13 +502,13 @@ function isFixedDefaultPortal(record?: MultiPortalRecord) {
   return isDefaultLayoutMultiPortalUid(record?.uid);
 }
 
-/** 行卡片左侧那块方形封面的边长 */
+/** Side length of the square cover on the left of a row card */
 const PORTAL_COVER_HEIGHT = 56;
 
 const galleryGridStyle: React.CSSProperties = {
   display: 'grid',
   gap: 16,
-  // 行卡片放太宽会拉出一条空荡荡的横条，300 左右刚好放下标题和地址。
+  // Wider row cards stretch into empty bars; 300 fits the title and access path.
   gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
 };
 
@@ -529,26 +530,27 @@ function hashString(value: string) {
 }
 
 /**
- * 生成 portal 的默认封面底色。
+ * Default cover color for a portal.
  *
- * 纯色而不是渐变，明度压到能承住白字的程度：色块小（56px），渐变在这个尺寸下
- * 只会糊成一团脏色；纯色 + 白字反而干净，也更容易一眼区分不同门户。
+ * Solid rather than gradient, dark enough to carry white text: the tile is small
+ * (56px), where a gradient only smears into a muddy patch, while a solid fill with
+ * white text stays clean and keeps portals easy to tell apart.
  *
- * @param {string} seed 生成种子（portal uid）
- * @param {boolean} dark 是否深色主题
- * @returns {string} CSS 颜色
+ * @param {string} seed hash seed (the portal uid)
+ * @param {boolean} dark whether the theme is dark
+ * @returns {string} CSS color
  */
 /**
- * 色块可选的色相。
+ * Hues the tile can take.
  *
- * 不直接用 `hash % 360`：相邻的几十度肉眼分不出来，实测连着几个门户都是紫的。
- * 这里挑一圈彼此拉得开的色相，两两至少差 35 度。
+ * Not `hash % 360`: neighbouring degrees are indistinguishable, and in practice
+ * several portals in a row came out purple. These hues sit at least 35 degrees apart.
  */
 const PORTAL_COVER_HUES = [210, 145, 25, 340, 265, 190, 45, 300, 165, 120];
 
 function getPortalCoverBackground(seed: string, dark: boolean) {
   const hue = PORTAL_COVER_HUES[hashString(seed) % PORTAL_COVER_HUES.length];
-  // 深色主题下同一明度会显得比浅色主题更刺眼，稍微收一点。
+  // The same lightness reads harsher on a dark theme, so pull it back a little.
   return dark ? `hsl(${hue}, 32%, 38%)` : `hsl(${hue}, 38%, 46%)`;
 }
 
@@ -627,9 +629,10 @@ function PortalCover(props: { record: MultiPortalRecord; href: string; openLabel
       }}
     >
       {artwork}
-      {/* 整块色块就是「打开」：蒙一层深色 + 居中图标，鼠标进卡片才显形。
-          用 CSS 的 :hover / :focus-within 而不是 React state —— 每张卡都挂一份
-          state 会让整页跟着鼠标重渲染，而且 focus-within 天然覆盖键盘路径。 */}
+      {/* The whole tile is the open control: a dark scrim with a centered icon that
+          appears once the pointer enters the card. Driven by CSS :hover /
+          :focus-within instead of React state - per-card state would re-render the
+          page on every pointer move, and focus-within covers the keyboard path. */}
       <button
         type="button"
         aria-label={openLabel}
@@ -666,11 +669,12 @@ const MultiPortalsPage: React.FC = () => {
   const records = useMemo(() => {
     return Array.isArray(listResp?.data) ? listResp.data : [];
   }, [listResp?.data]);
-  // AI 门户和无代码门户是两种做法（写代码 vs 可视化配置），做的事、能改的东西都不一样，
-  // 混在一格画廊里只能靠标签分辨。拆成上下两段，AI 在上。空的那一组不占位。
+  // AI and no-code portals are two ways of building (source code vs visual
+  // configuration) with different capabilities; mixed into one grid they can only
+  // be told apart by a tag. Split into two sections, AI first. Empty ones vanish.
   const groupedRecords = useMemo(() => {
-    // 标题直接复用卡片上原来那两个标签的词条（「AI 模式」/「无代码模式」），
-    // 说的是同一件事，不另起一套说法。
+    // Reuse the locale keys the per-card tags used (AI mode / No-code mode):
+    // the same thing is being named, no second vocabulary for it.
     const groups = [
       { key: 'ai', title: 'AI', records: [] as MultiPortalRecord[] },
       { key: 'no-code', title: 'No-code', records: [] as MultiPortalRecord[] },
@@ -813,12 +817,14 @@ const MultiPortalsPage: React.FC = () => {
           className="nb-portal-card"
           size="small"
           styles={{ body: { padding: token.paddingLG } }}
-          // 缎带要探出卡片左边一点，卡片不能裁剪自己。
+          // The ribbon pokes out past the left edge, so the card must not clip itself.
           style={{ cursor: 'pointer', opacity: record.enabled ? 1 : 0.6, overflow: 'visible' }}
-          // 整张卡片就是「打开这个门户」，但有两类点击要放过：
-          // 1. 下拉菜单、弹窗这些渲染在 body 下的 portal——React 的事件冒泡走组件树而不是
-          //    DOM 树，点菜单项照样会冒到这里，用 DOM 包含关系挡掉；
-          // 2. 卡片内部自带动作的元素（开关、更多按钮、地址链接），各管各的。
+          // The whole card opens the portal, except for two kinds of clicks:
+          // 1. dropdowns and modals rendered into portals under body - React events
+          //    bubble through the component tree rather than the DOM tree, so menu
+          //    clicks reach this handler; DOM containment filters them out;
+          // 2. elements inside the card that carry their own action (the switch,
+          //    the more button, the access path link).
           onClick={(event) => {
             const target = event.target as HTMLElement;
             if (!event.currentTarget.contains(target)) {
@@ -833,7 +839,7 @@ const MultiPortalsPage: React.FC = () => {
           <Flex align="center" gap={token.margin}>
             <PortalCover record={record} href={href} openLabel={t('View')} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              {/* 门户类型由所在分组说明，这里只补一个设备图标；说明文字交给 tooltip。 */}
+              {/* The group heading says which type this is; only the device icon is added here, with its wording in the tooltip. */}
               <Flex align="center" gap={token.marginXXS}>
                 <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
                   {record.title}
@@ -863,16 +869,18 @@ const MultiPortalsPage: React.FC = () => {
                   type="secondary"
                   style={{ fontSize: token.fontSizeSM, minWidth: 0 }}
                 >
-                  {/* 显示真正能访问的地址（带 /v 或 /x 前缀），而不是库里存的裸 routePath——
-                      后者复制出去打不开，和链接自身指向的 href 也对不上。 */}
+                  {/* Show the address that actually resolves (with the /v or /x prefix)
+                      rather than the bare routePath from the database: copying that one
+                      out leads nowhere and disagrees with the link's own href. */}
                   {href}
                 </Typography.Link>
               </Flex>
             </div>
-            {/* 操作钉在右上角：缎带已经挪到卡片左上角，这边不会再和它撞上。 */}
+            {/* Actions pinned to the top right; the ribbon moved to the top left, so they no longer collide. */}
             <Flex align="center" gap={token.marginXS} style={{ alignSelf: 'flex-start', flexShrink: 0 }}>
-              {/* 默认门户不能停用：停掉之后用户打开应用会落到一个进不去的地方，
-                  所以开关直接置灰，要停先把默认换给别人。 */}
+              {/* The default portal cannot be disabled: doing so leaves users landing on
+                  an entry they cannot open, so the switch is greyed out until the default
+                  is handed to another portal. */}
               <Tooltip title={record.isDefault ? t('The default portal cannot be disabled') : ''}>
                 <Switch
                   aria-label={t('Enabled')}
@@ -885,20 +893,23 @@ const MultiPortalsPage: React.FC = () => {
                   }}
                 />
               </Tooltip>
-              {/* 剩下的操作收进「更多」。留在外面的只有开关——它同时是状态指示，
-                  扫一眼就知道哪些门户是关着的。 */}
+              {/* The remaining actions live under "more". Only the switch stays outside,
+                  because it doubles as a status indicator: one glance shows which portals
+                  are turned off. */}
               <Dropdown
                 trigger={['click']}
                 menu={{
                   items: [
-                    // 「打开」不在这里：点卡片本身就是打开。
+                    // No open entry here: clicking the card itself opens the portal.
                     { key: 'edit', icon: <EditOutlined />, label: t('Edit') },
-                    // 路由只对启用中的无代码门户有意义，其余情况直接不列这一项：
-                    // 按钮摆在外面时置灰还能提示"有这么个功能"，收进菜单之后
-                    // 置灰项只是让人多读一行点不动的字。
+                    // Routes only mean something for an enabled no-code portal, so the
+                    // entry is omitted otherwise. A greyed-out button out in the open at
+                    // least hints the feature exists; inside a menu it is just one more
+                    // line to read that cannot be clicked.
                     ...(routesDisabled ? [] : [{ key: 'routes', icon: <ApartmentOutlined />, label: t('Routes') }]),
-                    // 已经是默认、或者门户是关着的，就不列这一项：关着的门户设成默认，
-                    // 用户打开应用会落到一个进不去的地方。
+                    // Omitted when it already is the default or the portal is off: making
+                    // a disabled portal the default leaves users landing on an entry they
+                    // cannot open.
                     ...(record.isDefault === true || !record.enabled
                       ? []
                       : [{ key: 'default', icon: <StarOutlined />, label: t('Set as default') }]),
@@ -925,8 +936,9 @@ const MultiPortalsPage: React.FC = () => {
         </Card>
       );
 
-      // 默认门户挂一条缎带在卡片左上角。挂在 56px 的色块上试过——尺寸再压也占掉小半个图标；
-      // 卡片这么宽，缎带本来就是给这个尺寸设计的。
+      // The default portal gets a ribbon on the top left of the card. Hanging it on the
+      // 56px tile was tried: even shrunk it covered a good part of the icon, while the
+      // card is exactly the width a ribbon is designed for.
       return (
         <div key={record.uid}>
           {record.isDefault ? (

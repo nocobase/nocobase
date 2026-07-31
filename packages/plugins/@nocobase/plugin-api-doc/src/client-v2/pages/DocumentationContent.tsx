@@ -125,7 +125,7 @@ const DocumentationContent = ({ apiClient, appName, t }: DocumentationContentPro
   return (
     <div style={{ height: '100%', overflowY: 'auto', width: '100%' }}>
       <style>{swaggerCss}</style>
-      {/* 端点选择靠左，和页面里其他表单一个起始位置；不再居中浮一行。 */}
+      {/* The definition picker aligns left with the rest of the page's form controls instead of floating centered. */}
       <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginLG }}>
         <Typography.Text style={{ whiteSpace: 'nowrap' }}>{t('Select a definition')}</Typography.Text>
         <Select

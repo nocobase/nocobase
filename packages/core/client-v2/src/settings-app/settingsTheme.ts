@@ -237,9 +237,10 @@ export function withSettingsHeaderTheme(theme: ThemeConfig, token: GlobalToken):
 }
 
 /**
- * 顶栏下拉里每一条的高度。
+ * Height of one entry in the top bar dropdown.
  *
- * 取自用户中心下拉（`nb-user-center-item`）的 30px——顶栏上两个下拉高度对齐。
+ * Taken from the user center dropdown (`nb-user-center-item`, 30px) so that the
+ * two dropdowns hanging off the same top bar line up.
  */
 const SETTINGS_MENU_ITEM_HEIGHT = 30;
 
@@ -258,10 +259,11 @@ const SETTINGS_MENU_ITEM_HEIGHT = 30;
  */
 export function buildSettingsGlobalCss(token: GlobalToken): string {
   return `
-/* 下面几组规则不加 .nb-settings-shell 前缀，因为 antd 的抽屉、弹窗、下拉是渲染到
-   body 下的 portal 里的，挂在壳上的选择器够不着——数据表那个抽屉里的「编辑」链接一直是
-   antd 默认蓝，就是这么漏出去的。这份样式只在设置中心这个独立 SPA 里注入，
-   全局选择器不会波及业务端。 */
+/* The rules below deliberately drop the .nb-settings-shell prefix: antd renders
+   drawers, modals and dropdowns into portals under body, where a shell-scoped
+   selector never matches — that is how the edit link inside the collection drawer
+   kept antd's default blue. This stylesheet is only injected by the standalone
+   settings SPA, so unscoped selectors cannot reach the business side. */
 
 /* 最外层 body 的底色来自业务端主题（暗黑下是 #141414）。内容区一般把它整块盖住，
    但内容不满屏、或者滚动橡皮筋回弹时会漏出来，所以这里一并接管。
@@ -296,15 +298,17 @@ a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn),
 .nb-settings-shell .ant-layout-sider .ant-menu-submenu-title::after {
   display: none !important;
 }
-/* 悬浮下拉的条目高度对齐顶栏另一个下拉（用户中心，nb-user-center-item 是 30px）：
-   同一条顶栏里弹出来的两个下拉，高度一致才不别扭。
-   antd 给菜单项的是 controlHeightLG（紧凑下 35px），那是「一个可点控件」的高度，
-   这份下拉是十几条一列的跳转清单，35 摞起来偏松。
+/* Entry height matches the other dropdown on the same top bar (the user center,
+   whose nb-user-center-item is 30px). antd sizes menu entries with
+   controlHeightLG (35px under compact), which is the height of a single clickable
+   control; this dropdown is a list of a dozen links and reads loose at 35.
 
-   只写弹层里的条目——顶栏那排横向菜单和它共用一套 Menu token，改 token 会把顶栏
-   的左右间距一起吃掉。选择器要到三层，两层压不过 antd 自己那条。 */
+   Scoped to entries inside the popup only: the horizontal top bar menu shares the
+   same Menu tokens, so changing tokens would eat its horizontal padding too. The
+   selector needs three classes; two do not outweigh antd's own rule. */
 .ant-menu-submenu-popup .ant-menu.ant-menu-sub.ant-menu-vertical {
-  /* 条目之间的 4px 外边距去掉之后，首尾两条会贴着弹层边缘，靠容器补回上下留白。 */
+  /* With the 4px margin between entries gone, the first and last would sit flush
+     against the popup edge, so the container gives the padding back. */
   padding-block: ${token.paddingXXS}px;
 }
 .ant-menu-submenu-popup .ant-menu-sub > .ant-menu-item,
@@ -314,10 +318,12 @@ a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn),
   margin-block: 0;
 }
 
-/* 信息类 Alert：主色收成黑白之后，它的底色被派生成了几乎看不见的 rgba(0,0,0,0.02)，
-   一整条提示淡到会被当成空白。这里不靠颜色找存在感（那会把彩色带回来），
-   而是加重形状：左边一道 4px 竖条 + 更实的底和描边 + 标题加粗 + 图标放大。
-   警告 / 错误 / 成功三种自己有语义色，不动。 */
+/* Info alerts: with the primary color collapsed to black and white, their derived
+   background lands on rgba(0,0,0,0.02) — faint enough to read as empty space.
+   Rather than reaching for color (which would drag the palette back in), the shape
+   carries the weight: a 4px bar on the left, a firmer background and border, a
+   bold title and a larger icon. Warning / error / success keep their semantic
+   colors and are left alone. */
 .ant-alert-info {
   background: ${token.colorFillSecondary};
   border: ${token.lineWidth}px solid ${token.colorBorder};
@@ -337,19 +343,23 @@ a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn),
 .ant-alert-info .ant-alert-description {
   color: ${token.colorTextSecondary};
 }
-/* 开关三档灰：未开启=浅灰（colorFill，0.15），禁用=深灰（colorTextTertiary，0.45），开启=纯黑。
-   禁用比未开启更深是刻意的——「深」在这里表示"钉死了"，而不是"更强"；
-   两者一浅一深摆在一起，扫一眼就分得出，不用比对细微的明度差。
-   禁用态不整体压暗：插件管理器一屏 100 多个内置插件都是禁用的，压狠了整页像坏了。 */
+/* Three switch shades: off is light grey (colorFill, 0.15), disabled is dark grey
+   (colorTextTertiary, 0.45), on is black. Disabled being darker than off is
+   deliberate — here "darker" reads as "pinned", not "stronger" — and one light
+   against one dark is told apart at a glance, without comparing subtle
+   brightness steps. Disabled is not dimmed as a whole: the plugin manager shows
+   over a hundred built-in plugins in that state, and dimming makes the page look
+   broken. */
 .ant-switch {
   background: ${token.colorFill};
 }
 .ant-switch.ant-switch-checked {
   background: ${token.colorText};
 }
-/* 选择器必须比 antd 自己那条 .ant-switch.ant-switch-disabled 权重高（去掉 shell 前缀之后
-   单个类名压不住它），否则 opacity: 0.65 还在，深灰会被压淡，正好跟未开启撞在一起，
-   看着就是同一个颜色。 */
+/* This selector has to outweigh antd's own .ant-switch.ant-switch-disabled (a
+   single class no longer does, now that the shell prefix is gone), otherwise its
+   opacity: 0.65 survives and washes the dark grey out onto the off state, where
+   the two read as the same color. */
 .ant-switch.ant-switch-disabled,
 .ant-switch.ant-switch-disabled.ant-switch-checked {
   background: ${token.colorTextTertiary};

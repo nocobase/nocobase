@@ -28,8 +28,9 @@ const navStyle: React.CSSProperties = {
 /**
  * 设置中心顶栏的一级导航。
  *
- * 应用、插件管理各自只有一个页面，直接当一级入口；其余全部收在「其他设置」下，
- * 鼠标移上去展开下拉——那一组没有左栏，下拉就是进入组内各页面的唯一入口。
+ * Applications and the plugin manager have a single page each and act as top-level
+ * entries; everything else sits under "other settings" and expands on hover — that
+ * group has no sidebar, so the dropdown is the only way into its pages.
  */
 export const SettingsGroupNav: React.FC = observer(() => {
   const { t } = useTranslation();
@@ -70,7 +71,8 @@ export const SettingsGroupNav: React.FC = observer(() => {
           };
         }
 
-        // 站在这个分组里时下拉照样弹：左栏已经去掉了，这里是进入组内其他页面的唯一入口。
+        // The dropdown still opens while standing inside the group: with the sidebar
+        // gone, this is the only way to reach the other pages in it.
         return {
           key: group.key,
           label: t(group.title),
@@ -81,8 +83,8 @@ export const SettingsGroupNav: React.FC = observer(() => {
               label: setting.label ?? setting.title,
               icon: setting.icon,
             })),
-          // 分组标题只负责展开下拉，不可点：它不是一个页面，点它没有确定的落点。
-          // 想进组内某一页，从下拉里挑。
+          // The group title only expands the dropdown and is not clickable: it is not a
+          // page, so clicking it has no well-defined destination. Pick a page instead.
         };
       }),
     [groups, handleClick, t],

@@ -215,8 +215,9 @@ export default function UsersManagementPage() {
   const { token } = theme.useToken();
   const [activeTabKey, setActiveTabKey] = useState('usersManager');
 
-  // 页签放进卡片头部，而不是浮在页面底色上再接一张白卡：
-  // 后者上下两截看着像两个不相干的块，卡片自带的 tabList 天生就是一体的。
+  // Tabs go into the card head instead of floating above a separate white card:
+  // the latter reads as two unrelated blocks, while the card's own tabList is one
+  // surface by construction.
   return (
     <Card
       tabList={[
@@ -225,9 +226,9 @@ export default function UsersManagementPage() {
       ]}
       activeTabKey={activeTabKey}
       onTabChange={setActiveTabKey}
-      // 卡片头部的页签默认是 large（16px），比页面其他文字大一号，看着像标题。
+      // Card head tabs default to large (16px), a step above the rest of the page.
       tabProps={{ size: 'middle' }}
-      // 表格自带内边距，表单没有，所以按页签给。
+      // The table brings its own padding, the form does not, so it is per tab.
       styles={{ body: { padding: activeTabKey === 'usersSettings' ? token.paddingLG : 0 } }}
     >
       {activeTabKey === 'usersSettings' ? <UsersSettingsForm /> : <UsersTable />}
