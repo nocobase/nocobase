@@ -393,7 +393,19 @@ export class TreeBlockModel extends CollectionBlockModel {
   }
 
   getTitleFieldName() {
-    return this.props?.fieldNames?.title || this.collection?.filterTargetKey;
+    const explicitTitleFieldName = this.props?.fieldNames?.title;
+    if (explicitTitleFieldName) {
+      return explicitTitleFieldName;
+    }
+
+    const collection = this.collection;
+    const collectionTitleFieldName = collection?.titleCollectionField?.name;
+    if (collectionTitleFieldName && collectionTitleFieldName !== collection?.filterTargetKey) {
+      return collectionTitleFieldName;
+    }
+
+    const businessTitleFieldName = ['name', 'code', 'title'].find((fieldName) => collection?.getField?.(fieldName));
+    return businessTitleFieldName || collectionTitleFieldName || collection?.filterTargetKey;
   }
 
   private getTreeAddChildFormDataCacheKey(actionUid: string, sourceId: any) {
