@@ -1327,6 +1327,32 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
     values.portalName = slug;
     values.routePath = `/${slug}`;
   }
+
+  const repository = ctx.db.getRepository('multiPortals');
+  const pendingPortalNames = new Set<string>();
+  const targets = await getMultiPortalWriteTargets(ctx, ['uid']);
+  for (const { existing, values } of targets) {
+    const portalName = values.portalName;
+    if (typeof portalName !== 'string' || !portalName) {
+      continue;
+    }
+
+    if (pendingPortalNames.has(portalName)) {
+      ctx.throw(409, ctx.t('Portal name "{{portalName}}" already exists', { ns: NAMESPACE, portalName }));
+      return;
+    }
+    pendingPortalNames.add(portalName);
+
+    const conflict = await repository.findOne({
+      filter: { portalName },
+      fields: ['uid'],
+    });
+    if (conflict && conflict.get('uid') !== existing?.get('uid')) {
+      ctx.throw(409, ctx.t('Portal name "{{portalName}}" already exists', { ns: NAMESPACE, portalName }));
+      return;
+    }
+  }
+
   await next();
 }
 

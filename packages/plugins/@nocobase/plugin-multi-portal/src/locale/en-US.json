@@ -57,6 +57,7 @@
   "No-code portal": "No-code portal",
   "Portal manager": "Portal manager",
   "Portal name": "Portal name",
+  "Portal name \"{{portalName}}\" already exists": "Portal name \"{{portalName}}\" already exists",
   "Portal name can only contain lowercase letters, numbers, hyphens, and underscores": "Portal name can only contain lowercase letters, numbers, hyphens, and underscores",
   "Portals": "Portals",
   "Refresh": "Refresh",

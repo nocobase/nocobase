@@ -788,6 +788,74 @@ describe('plugin-multi-portal server', () => {
     expect(updatedToMobile?.get('routePath')).toBe('/mobile');
   });
 
+  it('should reject duplicate portal names before collection writes', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const repository = app.db.getRepository('multiPortals');
+    await repository.create({
+      values: {
+        uid: 'existing-portal',
+        title: 'Existing Portal',
+        portalType: 'no-code',
+        portalName: 'existing-portal',
+        routePath: '/existing-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'renamed-portal',
+        title: 'Renamed Portal',
+        portalType: 'no-code',
+        portalName: 'renamed-portal',
+        routePath: '/renamed-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const duplicateCreateResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'duplicate-portal',
+        title: 'Duplicate Portal',
+        portalType: 'no-code',
+        portalName: 'existing-portal',
+        routePath: '/ignored-by-normalization',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const samePortalUpdateResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'existing-portal',
+      values: {
+        title: 'Updated Existing Portal',
+        portalName: 'existing-portal',
+      },
+    });
+    const duplicateUpdateResponse = await rootAgent
+      .set('X-Locale', 'zh-CN')
+      .resource('multiPortals')
+      .update({
+        filterByTk: 'renamed-portal',
+        values: {
+          portalName: 'existing-portal',
+        },
+      });
+
+    expect(duplicateCreateResponse.status).toBe(409);
+    expect(duplicateCreateResponse.body.errors[0].message).toBe('Portal name "existing-portal" already exists');
+    expect(samePortalUpdateResponse.status).toBe(200);
+    expect(duplicateUpdateResponse.status).toBe(409);
+    expect(duplicateUpdateResponse.body.errors[0].message).toBe('门户名称“existing-portal”已存在');
+    expect(await repository.findOne({ filterByTk: 'duplicate-portal' })).toBeNull();
+    expect((await repository.findOne({ filterByTk: 'renamed-portal' }))?.get('portalName')).toBe('renamed-portal');
+  });
+
   it('should apply INIT_PORTAL_NAME to the fresh AI portal', async () => {
     process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace_home';
