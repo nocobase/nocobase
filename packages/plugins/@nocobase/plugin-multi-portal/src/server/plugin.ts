@@ -2759,6 +2759,7 @@ async function findEnabledDefaultMultiPortal(ctx: ResourcerContext, transaction?
 async function getDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<void>) {
   const record = await findEnabledDefaultMultiPortal(ctx);
   ctx.body = record ? pickDefaultMultiPortalFields(record) : null;
+  ctx.status = 200;
   await next();
 }
 

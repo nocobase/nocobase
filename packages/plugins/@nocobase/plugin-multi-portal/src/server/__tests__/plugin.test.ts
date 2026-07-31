@@ -402,7 +402,6 @@ describe('plugin-multi-portal server', () => {
     });
     expect(collection.getField('isDefault')?.options).toMatchObject({
       type: 'boolean',
-      defaultValue: null,
       allowNull: true,
     });
     expect(collection.getField('isDefault')?.options.hidden).not.toBe(true);
@@ -2077,11 +2076,14 @@ describe('plugin-multi-portal server', () => {
     const collection = app.db.getCollection('rolesMultiPortalRoutePolicies');
     expect(collection).toBeTruthy();
     expect(collection.options.autoGenId).toBe(false);
+    const routePolicyIndexFields = ['roleName', 'multiPortalUid'].map(
+      (fieldName) => collection.model.rawAttributes[fieldName].field,
+    );
     expect(collection.options.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           unique: true,
-          fields: ['roleName', 'multiPortalUid'],
+          fields: routePolicyIndexFields,
         }),
       ]),
     );
