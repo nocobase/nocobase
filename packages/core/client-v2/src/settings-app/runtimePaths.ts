@@ -26,7 +26,6 @@ type SettingsRuntimeApp = Pick<BaseApplication<any>, 'name'> & {
 const LEGACY_EMAIL_OAUTH_PATH = '/admin/settings/mail/oauth2';
 
 const ROUTE_MAPPINGS = [
-  { from: '/admin/ai/knowledge-base/detail', to: '/settings/ai/knowledge-base/detail' },
   { from: '/admin/workflow/executions', to: '/settings/workflow/executions' },
   { from: '/admin/workflow/workflows', to: '/settings/workflow/workflows' },
   { from: '/admin/settings', to: '/settings' },

@@ -38,7 +38,7 @@ describe('standalone settings runtime paths', () => {
     expect(resolveStandaloneSettingsPath(app, '/nocobase/v/admin/workflow/executions/88')).toBe(
       '/nocobase/settings/workflow/executions/88',
     );
-    expect(resolveStandaloneSettingsPath(app, '/nocobase/v/admin/ai/knowledge-base/detail/k1/documents')).toBe(
+    expect(resolveStandaloneSettingsPath(app, '/nocobase/v/admin/settings/ai/knowledge-base/detail/k1/documents')).toBe(
       '/nocobase/settings/ai/knowledge-base/detail/k1/documents',
     );
   });

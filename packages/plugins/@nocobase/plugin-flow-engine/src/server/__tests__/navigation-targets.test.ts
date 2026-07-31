@@ -403,28 +403,6 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
     }
   });
 
-  it('excludes a fixed Portal whose canonical layout UID is bound to the wrong device', async () => {
-    const validPortal = createPortal('valid-portal');
-    const misboundPortal = createPortal(DEFAULT_ADMIN_MULTI_PORTAL_UID, MOBILE_LAYOUT_UID);
-    const service = new FlowSurfaceNavigationTargetsService(createDatabase([validPortal, misboundPortal]));
-
-    await expect(
-      service.resolveDefaultPortal({ actionName: 'createMenu', currentRoles: ['root'] }),
-    ).resolves.toMatchObject({ uid: validPortal.uid });
-    expect(
-      (await service.listNavigationTargets(['root'])).targets.filter((target) => target.kind === 'portal'),
-    ).toEqual([expect.objectContaining({ uid: validPortal.uid })]);
-
-    const error = await captureError(
-      service.resolvePortal(misboundPortal.uid, {
-        actionName: 'createMenu',
-        path: 'portalUid',
-        currentRoles: ['root'],
-      }),
-    );
-    expect(error.options.ruleId).toBe('navigation-portal-layout-not-found');
-  });
-
   it('does not count disabled Portals when selecting the only enabled accessible Portal', async () => {
     const enabledPortal = createPortal('enabled-portal');
     const service = new FlowSurfaceNavigationTargetsService(
@@ -436,19 +414,6 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
     ).resolves.toMatchObject({ uid: enabledPortal.uid });
     expect((await service.listNavigationTargets(['root'])).targets.filter((target) => target.default)).toEqual([
       expect.objectContaining({ uid: enabledPortal.uid }),
-    ]);
-  });
-
-  it('does not count enabled Portals with unsupported layout UIDs when selecting the default', async () => {
-    const validPortal = createPortal('valid-portal');
-    const historicalPortal = createPortal('historical-portal', 'historical-layout-uid');
-    const service = new FlowSurfaceNavigationTargetsService(createDatabase([validPortal, historicalPortal]));
-
-    await expect(
-      service.resolveDefaultPortal({ actionName: 'createMenu', currentRoles: ['root'] }),
-    ).resolves.toMatchObject({ uid: validPortal.uid });
-    expect((await service.listNavigationTargets(['root'])).targets.filter((target) => target.default)).toEqual([
-      expect.objectContaining({ uid: validPortal.uid }),
     ]);
   });
 

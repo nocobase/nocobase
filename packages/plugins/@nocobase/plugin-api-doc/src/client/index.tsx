@@ -11,15 +11,13 @@ import { Plugin } from '@nocobase/client';
 import React, { lazy } from 'react';
 import { API_DOC_ACL, DOCUMENTATION_PATH } from '../client-v2/constants';
 import DocumentationPreviewShell from '../client-v2/pages/DocumentationPreviewShell';
-import { NAMESPACE, useTranslation } from '../locale';
+import { NAMESPACE } from '../locale';
 
 const Documentation = lazy(() => import('./Documentation'));
 
 const SCDocumentation = () => {
-  const { t } = useTranslation();
-
   return (
-    <DocumentationPreviewShell previewTitle={t('Preview')}>
+    <DocumentationPreviewShell>
       <Documentation />
     </DocumentationPreviewShell>
   );

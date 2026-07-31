@@ -99,16 +99,6 @@ function getMultiPortalLayoutType(uiLayoutUid: string | undefined) {
   }
 }
 
-function isValidMultiPortalLayoutBinding(portalUid: string | undefined, uiLayoutUid: string | undefined) {
-  if (portalUid === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
-    return uiLayoutUid === DEFAULT_ADMIN_UI_LAYOUT_UID;
-  }
-  if (portalUid === DEFAULT_MOBILE_MULTI_PORTAL_UID) {
-    return uiLayoutUid === DEFAULT_MOBILE_UI_LAYOUT_UID;
-  }
-  return !!getMultiPortalLayoutType(uiLayoutUid);
-}
-
 export class FlowSurfaceNavigationTargetsService {
   constructor(private readonly db: Database) {}
 
@@ -305,7 +295,7 @@ export class FlowSurfaceNavigationTargetsService {
     }
     const layoutUid = readStringField(portal, 'uiLayoutUid');
     const layoutType = getMultiPortalLayoutType(layoutUid);
-    if (!layoutUid || !layoutType || !isValidMultiPortalLayoutBinding(portalUid, layoutUid)) {
+    if (!layoutUid || !layoutType) {
       throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has an unsupported UI layout uid`, {
         ruleId: 'navigation-portal-layout-not-found',
         path: options.path,
@@ -457,9 +447,8 @@ export class FlowSurfaceNavigationTargetsService {
       transaction,
     });
     const enabled = records.filter((portal: unknown) => {
-      const portalUid = readStringField(portal, 'uid');
       const uiLayoutUid = readStringField(portal, 'uiLayoutUid');
-      return isValidMultiPortalLayoutBinding(portalUid, uiLayoutUid);
+      return !!getMultiPortalLayoutType(uiLayoutUid);
     });
     enabled.sort((left: unknown, right: unknown) =>
       String(readStringField(left, 'uid') || '').localeCompare(String(readStringField(right, 'uid') || '')),
@@ -500,7 +489,7 @@ export class FlowSurfaceNavigationTargetsService {
         continue;
       }
       const layoutType = getMultiPortalLayoutType(layoutUid);
-      if (!layoutUid || !layoutType || !isValidMultiPortalLayoutBinding(portalUid, layoutUid)) {
+      if (!layoutUid || !layoutType) {
         continue;
       }
       targets.push({

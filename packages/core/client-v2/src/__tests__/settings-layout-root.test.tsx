@@ -184,7 +184,7 @@ describe('standalone settings layout root', () => {
     });
   });
 
-  it('keeps ordinary negative-sort settings in the active Settings group sidebar', async () => {
+  it('keeps ordinary negative-sort settings reachable in the active Settings group', async () => {
     const app = new SettingsApplication({
       plugins: [SettingsBuildInPlugin, TestAclPlugin, PrimarySettingsPlugin],
       router: { type: 'memory', initialEntries: ['/settings/portal-manager'] },
@@ -209,13 +209,18 @@ describe('standalone settings layout root', () => {
 
     expect(await screen.findByText('Portal manager page')).toBeInTheDocument();
 
-    const portalManagerItem = screen.getByRole('menuitem', { name: 'Portal manager' });
-    const sidebar = portalManagerItem.closest('aside');
-    expect(sidebar).toBeInTheDocument();
-    if (!sidebar) {
-      throw new Error('Expected the Portal manager item to render in the Settings sidebar');
-    }
-    expect(within(sidebar).queryByRole('menuitem', { name: /Plugin manager$/ })).not.toBeInTheDocument();
+    // The sidebar is gone: a negative-sort setting no longer gets its own column and
+    // follows whichever group it belongs to. This checks it did not drift into a
+    // different group.
+    expect(document.querySelector('.ant-layout-sider')).toBeNull();
+    const groupNav = document.querySelector('.ant-layout-header .ant-menu') as HTMLElement;
+    expect(groupNav).toBeInTheDocument();
+    // Being an ordinary negative-sort setting, it lands in the catch-all "other
+    // settings" group: never promoted to a top-level entry, never folded into the
+    // plugin manager group.
+    expect(within(groupNav).getByRole('menuitem', { name: 'Other settings' })).toBeInTheDocument();
+    expect(within(groupNav).getByRole('menuitem', { name: /Plugin manager$/ })).toBeInTheDocument();
+    expect(within(groupNav).queryByRole('menuitem', { name: 'Portal manager' })).not.toBeInTheDocument();
   });
 
   it('uses document navigation to the standalone Settings signin page when unauthenticated', async () => {

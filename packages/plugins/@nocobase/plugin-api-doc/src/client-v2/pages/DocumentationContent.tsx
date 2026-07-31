@@ -8,12 +8,13 @@
  */
 
 import { useRequest } from 'ahooks';
-import { Flex, Select, Space, Spin, Typography, theme } from 'antd';
+import { Flex, Select, Spin, Typography, theme } from 'antd';
 import type { CSSProperties } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
 import 'swagger-ui-dist/swagger-ui.css';
 import { DESTINATION_URL_KEY } from '../constants';
+import { buildSwaggerCss } from './swaggerTheme';
 import { createSwaggerParameterValuePlugin } from '../swaggerParameterValuePlugin';
 
 type SwaggerUrl = {
@@ -70,17 +71,7 @@ const DocumentationContent = ({ apiClient, appName, t }: DocumentationContentPro
   );
 
   const [destination, onDestinationChange] = useState<string | null>(getUrl());
-  const selectorStyle = useMemo<CSSProperties>(
-    () => ({
-      alignItems: 'center',
-      display: 'flex',
-      gap: token.marginXS,
-      paddingBlock: token.padding,
-      paddingInline: token.paddingLG,
-      width: '100%',
-    }),
-    [token.marginXS, token.padding, token.paddingLG],
-  );
+  const swaggerCss = useMemo(() => buildSwaggerCss(token), [token]);
   const spinStyle = useMemo<CSSProperties>(
     () => ({
       minHeight: token.controlHeightLG,
@@ -132,27 +123,25 @@ const DocumentationContent = ({ apiClient, appName, t }: DocumentationContentPro
   }
 
   return (
-    <Space direction="vertical" style={{ height: '100%', overflowY: 'auto', width: '100%' }}>
-      <Flex justify="center" style={{ width: '100%' }}>
-        <div style={selectorStyle}>
-          <Typography.Text style={{ whiteSpace: 'nowrap' }} strong>
-            {t('Select a definition')}
-          </Typography.Text>
-          <Select
-            showSearch
-            value={destination}
-            options={urls?.data}
-            style={{ width: '100%' }}
-            fieldNames={{
-              label: 'name',
-              value: 'url',
-            }}
-            onChange={onDestinationChange}
-          />
-        </div>
+    <div style={{ height: '100%', overflowY: 'auto', width: '100%' }}>
+      <style>{swaggerCss}</style>
+      {/* The definition picker aligns left with the rest of the page's form controls instead of floating centered. */}
+      <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginLG }}>
+        <Typography.Text style={{ whiteSpace: 'nowrap' }}>{t('Select a definition')}</Typography.Text>
+        <Select
+          showSearch
+          value={destination}
+          options={urls?.data}
+          style={{ maxWidth: 420, width: '100%' }}
+          fieldNames={{
+            label: 'name',
+            value: 'url',
+          }}
+          onChange={onDestinationChange}
+        />
       </Flex>
-      <div ref={swaggerUIRef}></div>
-    </Space>
+      <div className="nb-swagger" ref={swaggerUIRef}></div>
+    </div>
   );
 };
 

@@ -77,23 +77,6 @@ describe('Multi Portal runtime registration failures', () => {
     expect(layoutManager.registerLayout).not.toHaveBeenCalled();
   });
 
-  it('rejects a fixed Portal bound to the opposite canonical device UID atomically', () => {
-    const layoutManager = createLayoutManager();
-
-    expect(() =>
-      registerMultiPortalRecords(layoutManager, [
-        portal,
-        {
-          ...portal,
-          uid: '__default_admin__',
-          portalName: 'admin',
-          uiLayoutUid: 'mobile-layout-model',
-        },
-      ]),
-    ).toThrow("Portal '__default_admin__' uses an unknown UI layout uid 'mobile-layout-model'.");
-    expect(layoutManager.registerLayout).not.toHaveBeenCalled();
-  });
-
   it('rejects duplicate uid and duplicate route name before registration', () => {
     expect(() =>
       registerMultiPortalRecords(createLayoutManager(), [portal, { ...portal, portalName: 'customer-copy' }]),

@@ -542,146 +542,6 @@ describe('plugin-multi-portal server', () => {
     expect(invalidFirstOrCreateResponse.status).toBe(400);
     expect(missingLayoutUpdateOrCreateResponse.status).toBe(400);
     expect(persistedApiPortal?.toJSON()).toMatchObject({ uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid });
-    const invalidLayoutPortal = await repository.create({
-      values: {
-        uid: 'invalid-layout-portal',
-        title: 'Invalid layout portal',
-        portalType: 'no-code',
-        portalName: 'invalidLayoutPortal',
-        routePath: '/invalid-layout-portal',
-        uiLayoutUid: 'missing-ui-layout',
-      },
-    });
-    const repairResponse = await rootAgent.resource('multiPortals').update({
-      filterByTk: invalidLayoutPortal.get('uid'),
-      values: {
-        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
-      },
-    });
-    const persistedInvalidLayoutPortal = await repository.findOne({
-      filterByTk: invalidLayoutPortal.get('uid'),
-    });
-    expect(repairResponse.status).toBe(200);
-    expect(persistedInvalidLayoutPortal?.toJSON()).toMatchObject({ uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid });
-  });
-
-  it('should keep fixed Portal UIDs bound to their matching device layout', async () => {
-    app = await createMultiPortalAclMockServer();
-    const repository = app.db.getRepository('multiPortals');
-    await repository.destroy({
-      filterByTk: ['__default_admin__', '__default_mobile__'],
-    });
-    const rootUser = await app.db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const rootAgent = await app.agent().login(rootUser);
-
-    const wrongAdminCreateResponse = await rootAgent.resource('multiPortals').create({
-      values: {
-        uid: '__default_admin__',
-        title: 'Wrong Admin Portal',
-        portalType: 'no-code',
-        portalName: 'wrong-fixed-admin',
-        routePath: '/wrong-fixed-admin',
-        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
-      },
-    });
-    const wrongMobileUpsertResponse = await rootAgent.resource('multiPortals').firstOrCreate({
-      filterKeys: ['uid'],
-      values: {
-        uid: '__default_mobile__',
-        title: 'Wrong Mobile Portal',
-        portalType: 'no-code',
-        portalName: 'wrong-fixed-mobile',
-        routePath: '/wrong-fixed-mobile',
-        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
-      },
-    });
-
-    expect(wrongAdminCreateResponse.status).toBe(400);
-    expect(wrongMobileUpsertResponse.status).toBe(400);
-    expect(
-      await repository.count({
-        filter: {
-          uid: ['__default_admin__', '__default_mobile__'],
-        },
-      }),
-    ).toBe(0);
-
-    const mobilePortal = await repository.create({
-      values: {
-        uid: 'rename-to-fixed-admin-portal',
-        title: 'Rename to fixed Admin Portal',
-        portalType: 'no-code',
-        portalName: 'rename-to-fixed-admin-portal',
-        routePath: '/rename-to-fixed-admin-portal',
-        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
-      },
-    });
-    const wrongFixedUidUpdateResponse = await rootAgent.resource('multiPortals').update({
-      filterByTk: mobilePortal.get('uid'),
-      values: {
-        uid: '__default_admin__',
-      },
-    });
-    const persistedMobilePortal = await repository.findOne({
-      filterByTk: mobilePortal.get('uid'),
-      fields: ['uid', 'uiLayoutUid'],
-    });
-
-    expect(wrongFixedUidUpdateResponse.status).toBe(400);
-    expect(persistedMobilePortal?.get('uiLayoutUid')).toBe(DEFAULT_MOBILE_UI_LAYOUT.uid);
-
-    await repository.create({
-      values: {
-        uid: '__default_admin__',
-        title: 'Historically misbound Admin Portal',
-        portalType: 'no-code',
-        portalName: 'historically-misbound-admin',
-        routePath: '/historically-misbound-admin',
-        authCheck: true,
-        enabled: true,
-        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
-      },
-    });
-    const [listEnabledResponse, listAccessibleResponse, routeResponse, manifestResponse] = await Promise.all([
-      app.agent().get('/multiPortals:listEnabled'),
-      rootAgent.get('/multiPortals:listAccessible'),
-      rootAgent.get('/desktopRoutes:listAccessible').query({
-        portal: '__default_admin__',
-      }),
-      rootAgent.get('/app:getPortals'),
-    ]);
-
-    expect(listEnabledResponse.status).toBe(200);
-    expect(listAccessibleResponse.status).toBe(200);
-    expect(routeResponse.status).toBe(400);
-    expect(manifestResponse.status).toBe(200);
-    expect((listEnabledResponse.body.data as Array<Record<string, unknown>>).map((record) => record.uid)).not.toContain(
-      '__default_admin__',
-    );
-    expect(
-      (listAccessibleResponse.body.data as Array<Record<string, unknown>>).map((record) => record.uid),
-    ).not.toContain('__default_admin__');
-    expect(
-      (manifestResponse.body.data.portals as Array<Record<string, unknown>>).map((record) => record.uid),
-    ).not.toContain('__default_admin__');
-
-    const repairResponse = await rootAgent.resource('multiPortals').update({
-      filterByTk: '__default_admin__',
-      values: {
-        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
-      },
-    });
-    const repairedPortal = await repository.findOne({
-      filterByTk: '__default_admin__',
-      fields: ['uid', 'uiLayoutUid'],
-    });
-
-    expect(repairResponse.status).toBe(200);
-    expect(repairedPortal?.get('uiLayoutUid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
   });
 
   it('should resolve Portal route scope without requiring an enabled UI Layout record', async () => {
@@ -1099,6 +959,74 @@ describe('plugin-multi-portal server', () => {
     expect(updateToMobileResponse.status).toBe(200);
     expect(updatedToMobile?.get('portalName')).toBe('mobile');
     expect(updatedToMobile?.get('routePath')).toBe('/mobile');
+  });
+
+  it('should reject duplicate portal names before collection writes', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const repository = app.db.getRepository('multiPortals');
+    await repository.create({
+      values: {
+        uid: 'existing-portal',
+        title: 'Existing Portal',
+        portalType: 'no-code',
+        portalName: 'existing-portal',
+        routePath: '/existing-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'renamed-portal',
+        title: 'Renamed Portal',
+        portalType: 'no-code',
+        portalName: 'renamed-portal',
+        routePath: '/renamed-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const duplicateCreateResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'duplicate-portal',
+        title: 'Duplicate Portal',
+        portalType: 'no-code',
+        portalName: 'existing-portal',
+        routePath: '/ignored-by-normalization',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const samePortalUpdateResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'existing-portal',
+      values: {
+        title: 'Updated Existing Portal',
+        portalName: 'existing-portal',
+      },
+    });
+    const duplicateUpdateResponse = await rootAgent
+      .set('X-Locale', 'zh-CN')
+      .resource('multiPortals')
+      .update({
+        filterByTk: 'renamed-portal',
+        values: {
+          portalName: 'existing-portal',
+        },
+      });
+
+    expect(duplicateCreateResponse.status).toBe(409);
+    expect(duplicateCreateResponse.body.errors[0].message).toBe('Portal name "existing-portal" already exists');
+    expect(samePortalUpdateResponse.status).toBe(200);
+    expect(duplicateUpdateResponse.status).toBe(409);
+    expect(duplicateUpdateResponse.body.errors[0].message).toBe('门户名称“existing-portal”已存在');
+    expect(await repository.findOne({ filterByTk: 'duplicate-portal' })).toBeNull();
+    expect((await repository.findOne({ filterByTk: 'renamed-portal' }))?.get('portalName')).toBe('renamed-portal');
   });
 
   it('should apply INIT_PORTAL_NAME to the fresh AI portal', async () => {

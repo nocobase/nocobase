@@ -10,7 +10,6 @@
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
 import {
   ADMIN_UI_LAYOUT_UID,
-  DEFAULT_ADMIN_MULTI_PORTAL_UID,
   DEFAULT_MOBILE_MULTI_PORTAL_UID,
   isMultiPortalUiLayoutUid,
   MOBILE_UI_LAYOUT_UID,
@@ -82,23 +81,13 @@ function getMultiPortalLayoutRouteName(uid: string) {
   return `${MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX}${encodeURIComponent(uid).replace(/\./g, '%2E')}`;
 }
 
-function isValidRuntimePortalLayoutBinding(record: MultiPortalRuntimeRecord, uiLayoutUid: string) {
-  if (record.uid === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
-    return uiLayoutUid === ADMIN_UI_LAYOUT_UID;
-  }
-  if (record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID) {
-    return uiLayoutUid === MOBILE_UI_LAYOUT_UID;
-  }
-  return isMultiPortalUiLayoutUid(uiLayoutUid);
-}
-
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
   if (!record.enabled || !isRuntimePortal(record)) {
     return null;
   }
 
   const uiLayoutUid = record.uiLayoutUid || '';
-  if (!isValidRuntimePortalLayoutBinding(record, uiLayoutUid)) {
+  if (!isMultiPortalUiLayoutUid(uiLayoutUid)) {
     return null;
   }
   const codeDefinedOptions =

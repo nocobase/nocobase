@@ -1322,6 +1322,32 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
     values.portalName = slug;
     values.routePath = `/${slug}`;
   }
+
+  const repository = ctx.db.getRepository('multiPortals');
+  const pendingPortalNames = new Set<string>();
+  const targets = await getMultiPortalWriteTargets(ctx, ['uid']);
+  for (const { existing, values } of targets) {
+    const portalName = values.portalName;
+    if (typeof portalName !== 'string' || !portalName) {
+      continue;
+    }
+
+    if (pendingPortalNames.has(portalName)) {
+      ctx.throw(409, ctx.t('Portal name "{{portalName}}" already exists', { ns: NAMESPACE, portalName }));
+      return;
+    }
+    pendingPortalNames.add(portalName);
+
+    const conflict = await repository.findOne({
+      filter: { portalName },
+      fields: ['uid'],
+    });
+    if (conflict && conflict.get('uid') !== existing?.get('uid')) {
+      ctx.throw(409, ctx.t('Portal name "{{portalName}}" already exists', { ns: NAMESPACE, portalName }));
+      return;
+    }
+  }
+
   await next();
 }
 
@@ -1408,68 +1434,26 @@ async function seedHistoricalMultiPortals(db: Database) {
   await repairFixedLayoutMultiPortalRecords(db);
 }
 
-function isValidMultiPortalUiLayoutBinding(portalUid: unknown, uiLayoutUid: unknown) {
-  if (portalUid === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
-    return uiLayoutUid === ADMIN_UI_LAYOUT_UID;
-  }
-  if (portalUid === DEFAULT_MOBILE_MULTI_PORTAL_UID) {
-    return uiLayoutUid === MOBILE_UI_LAYOUT_UID;
-  }
-  return isMultiPortalUiLayoutUid(uiLayoutUid);
-}
-
 async function validateMultiPortalUiLayoutUidWrite(ctx: ResourcerContext, next: () => Promise<void>) {
-  const targets = await getMultiPortalWriteTargets(ctx, ['uid', 'uiLayoutUid']);
+  const targets = await getMultiPortalWriteTargets(ctx, ['uiLayoutUid']);
   const actionName = ctx.action?.actionName;
   const createsWhenMissing =
     actionName === 'create' || actionName === 'firstOrCreate' || actionName === 'updateOrCreate';
   for (const { existing, values } of targets) {
     const hasUiLayoutUid = Object.prototype.hasOwnProperty.call(values, 'uiLayoutUid');
-    const hasUid = Object.prototype.hasOwnProperty.call(values, 'uid');
-    if (!existing && createsWhenMissing && (!hasUiLayoutUid || !isMultiPortalUiLayoutUid(values.uiLayoutUid))) {
+    if (!existing && createsWhenMissing && !hasUiLayoutUid) {
       ctx.throw(400, `Portal UI layout must be one of: ${MULTI_PORTAL_UI_LAYOUT_UIDS.join(', ')}`);
-      return;
-    }
-    const existingUid = existing?.get('uid');
-    const changesUid = !!existing && hasUid && values.uid !== existingUid;
-    if (!hasUiLayoutUid && !changesUid) {
-      continue;
-    }
-    if (hasUiLayoutUid && !isMultiPortalUiLayoutUid(values.uiLayoutUid)) {
-      ctx.throw(400, `Portal UI layout must be one of: ${MULTI_PORTAL_UI_LAYOUT_UIDS.join(', ')}`);
-      return;
-    }
-    const portalUid = changesUid ? values.uid : existingUid ?? values.uid;
-    const uiLayoutUid = hasUiLayoutUid ? values.uiLayoutUid : existing?.get('uiLayoutUid');
-    const expectedUiLayoutUid =
-      portalUid === DEFAULT_ADMIN_MULTI_PORTAL_UID
-        ? ADMIN_UI_LAYOUT_UID
-        : portalUid === DEFAULT_MOBILE_MULTI_PORTAL_UID
-          ? MOBILE_UI_LAYOUT_UID
-          : undefined;
-    if (!isValidMultiPortalUiLayoutBinding(portalUid, uiLayoutUid)) {
-      ctx.throw(
-        400,
-        expectedUiLayoutUid
-          ? `Portal '${portalUid}' must use UI layout '${expectedUiLayoutUid}'`
-          : `Portal UI layout must be one of: ${MULTI_PORTAL_UI_LAYOUT_UIDS.join(', ')}`,
-      );
       return;
     }
     if (!hasUiLayoutUid) {
       continue;
     }
+    if (!isMultiPortalUiLayoutUid(values.uiLayoutUid)) {
+      ctx.throw(400, `Portal UI layout must be one of: ${MULTI_PORTAL_UI_LAYOUT_UIDS.join(', ')}`);
+      return;
+    }
     const existingUiLayoutUid = existing?.get('uiLayoutUid');
-    const repairsFixedPortalLayout =
-      !!expectedUiLayoutUid &&
-      existingUiLayoutUid !== expectedUiLayoutUid &&
-      values.uiLayoutUid === expectedUiLayoutUid;
-    if (
-      existing &&
-      isMultiPortalUiLayoutUid(existingUiLayoutUid) &&
-      existingUiLayoutUid !== values.uiLayoutUid &&
-      !repairsFixedPortalLayout
-    ) {
+    if (existing && existingUiLayoutUid !== values.uiLayoutUid) {
       ctx.throw(400, 'Portal UI layout cannot be changed');
       return;
     }
@@ -1505,7 +1489,7 @@ async function findRequestedMultiPortal(
   }
 
   const uiLayoutUid = portal.get('uiLayoutUid');
-  if (!isValidMultiPortalUiLayoutBinding(portalUid, uiLayoutUid)) {
+  if (!isMultiPortalUiLayoutUid(uiLayoutUid)) {
     ctx.throw(400, `Portal '${portalUid}' has an unsupported UI layout UID`);
   }
 
@@ -2859,9 +2843,7 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
     sort: ['uid'],
   });
 
-  ctx.body = records
-    .filter((record) => isValidMultiPortalUiLayoutBinding(record.get('uid'), record.get('uiLayoutUid')))
-    .map((record) => pickMultiPortalRuntimeFields(record));
+  ctx.body = records.map((record) => pickMultiPortalRuntimeFields(record));
   await next();
 }
 
@@ -2900,7 +2882,7 @@ async function findEnabledDefaultMultiPortal(ctx: ResourcerContext, transaction?
   if (!portalType) {
     return null;
   }
-  if (!isValidMultiPortalUiLayoutBinding(record.get('uid'), record.get('uiLayoutUid'))) {
+  if (!isMultiPortalUiLayoutUid(record.get('uiLayoutUid'))) {
     return null;
   }
   return record;
@@ -2941,7 +2923,7 @@ async function setDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<
       ctx.throw(400, ctx.t('Unsupported Portal type cannot be set as default', { ns: NAMESPACE }));
       return null;
     }
-    if (!isValidMultiPortalUiLayoutBinding(target.get('uid'), target.get('uiLayoutUid'))) {
+    if (!isMultiPortalUiLayoutUid(target.get('uiLayoutUid'))) {
       ctx.throw(400, ctx.t('Portal device configuration is invalid', { ns: NAMESPACE }));
       return null;
     }
@@ -2983,10 +2965,9 @@ async function listAccessibleMultiPortals(ctx: ResourcerContext, next: () => Pro
   const accessiblePortalUidSet = Array.isArray(accessiblePortalUids) ? new Set(accessiblePortalUids) : undefined;
   const accessibleRecords = records.filter(
     (record) =>
-      isValidMultiPortalUiLayoutBinding(record.get('uid'), record.get('uiLayoutUid')) &&
-      (isDefaultLayoutMultiPortalUid(record.get('uid')) ||
-        !accessiblePortalUidSet ||
-        accessiblePortalUidSet.has(String(record.get('uid')))),
+      isDefaultLayoutMultiPortalUid(record.get('uid')) ||
+      !accessiblePortalUidSet ||
+      accessiblePortalUidSet.has(String(record.get('uid'))),
   );
 
   ctx.body = accessibleRecords.map((record) => pickMultiPortalAccessibleFields(record));
@@ -3562,9 +3543,6 @@ export class PluginMultiPortalServer extends Plugin {
     }
 
     const uiLayoutUid = getRecordField(multiPortal, 'uiLayoutUid');
-    if (!isValidMultiPortalUiLayoutBinding(uid, uiLayoutUid)) {
-      return null;
-    }
     const layout = getMultiPortalLayoutType(uiLayoutUid);
     if (!layout) {
       return null;

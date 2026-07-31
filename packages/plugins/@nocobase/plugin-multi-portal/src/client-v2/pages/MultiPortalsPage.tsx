@@ -10,11 +10,13 @@
 import {
   ApartmentOutlined,
   DeleteOutlined,
+  DesktopOutlined,
   EditOutlined,
+  EllipsisOutlined,
   ExportOutlined,
+  MobileOutlined,
   PlusOutlined,
   ReloadOutlined,
-  StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
 import { AttachmentUpload, DrawerFormLayout, Icon, IconPicker, type UploadedAttachment } from '@nocobase/client-v2';
@@ -26,6 +28,7 @@ import {
   Button,
   Card,
   Divider,
+  Dropdown,
   Empty,
   Flex,
   Form,
@@ -36,7 +39,6 @@ import {
   Space,
   Spin,
   Switch,
-  Tag,
   Tooltip,
   Typography,
   theme,
@@ -44,8 +46,6 @@ import {
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ADMIN_UI_LAYOUT_UID,
-  DEFAULT_ADMIN_MULTI_PORTAL_UID,
-  DEFAULT_MOBILE_MULTI_PORTAL_UID,
   isDefaultLayoutMultiPortalUid,
   isMultiPortalUiLayoutUid,
   MOBILE_UI_LAYOUT_UID,
@@ -212,6 +212,48 @@ const describedRadioCss = `
   margin-top: 3px;
 }
 `;
+
+/**
+ * Hover styles for the gallery cards.
+ *
+ * Kept in CSS rather than React state: a page holds dozens of cards, and state
+ * would re-render all of them every time the pointer crosses one. `:focus-within`
+ * also covers the keyboard path for free, with no focus / blur handlers.
+ *
+ * @param {ReturnType<typeof theme.useToken>['token']} token current theme token
+ * @returns {string} stylesheet
+ */
+function buildPortalCardCss(token: ReturnType<typeof theme.useToken>['token']) {
+  return `
+.nb-portal-card {
+  transition: box-shadow ${token.motionDurationMid};
+}
+.nb-portal-card:hover {
+  box-shadow: ${token.boxShadowSecondary};
+}
+.nb-portal-cover {
+  position: relative;
+}
+.nb-portal-cover-overlay {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  transition: opacity ${token.motionDurationMid};
+}
+.nb-portal-card:hover .nb-portal-cover-overlay,
+.nb-portal-cover-overlay:focus-visible {
+  opacity: 1;
+}
+`;
+}
 
 const portalSlugPattern = /^[a-z0-9_-]+$/;
 
@@ -450,21 +492,14 @@ function isFixedDefaultPortal(record?: MultiPortalRecord) {
   return isDefaultLayoutMultiPortalUid(record?.uid);
 }
 
-function getFixedPortalUiLayoutUid(uid: unknown) {
-  if (uid === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
-    return ADMIN_UI_LAYOUT_UID;
-  }
-  if (uid === DEFAULT_MOBILE_MULTI_PORTAL_UID) {
-    return MOBILE_UI_LAYOUT_UID;
-  }
-}
-
-const PORTAL_COVER_HEIGHT = 132;
+/** Side length of the square cover on the left of a row card */
+const PORTAL_COVER_HEIGHT = 56;
 
 const galleryGridStyle: React.CSSProperties = {
   display: 'grid',
   gap: 16,
-  gridTemplateColumns: 'repeat(auto-fill, minmax(272px, 1fr))',
+  // Wider row cards stretch into empty bars; 300 fits the title and access path.
+  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
 };
 
 /**
@@ -485,21 +520,28 @@ function hashString(value: string) {
 }
 
 /**
- * 生成 portal 的默认封面底色。
+ * Default cover color for a portal.
  *
- * 设置中心整体是中性灰白，封面因此走低饱和度的柔和渐变：
- * 既能让画廊里的每张卡片彼此可区分，又不会把页面拉回彩色。
+ * Solid rather than gradient, dark enough to carry white text: the tile is small
+ * (56px), where a gradient only smears into a muddy patch, while a solid fill with
+ * white text stays clean and keeps portals easy to tell apart.
  *
- * @param {string} seed 生成种子（portal uid）
- * @param {boolean} dark 是否深色主题
- * @returns {string} CSS 渐变
+ * @param {string} seed hash seed (the portal uid)
+ * @param {boolean} dark whether the theme is dark
+ * @returns {string} CSS color
  */
+/**
+ * Hues the tile can take.
+ *
+ * Not `hash % 360`: neighbouring degrees are indistinguishable, and in practice
+ * several portals in a row came out purple. These hues sit at least 35 degrees apart.
+ */
+const PORTAL_COVER_HUES = [210, 145, 25, 340, 265, 190, 45, 300, 165, 120];
+
 function getPortalCoverBackground(seed: string, dark: boolean) {
-  const hue = hashString(seed) % 360;
-  if (dark) {
-    return `linear-gradient(135deg, hsl(${hue}, 14%, 26%) 0%, hsl(${(hue + 40) % 360}, 16%, 18%) 100%)`;
-  }
-  return `linear-gradient(135deg, hsl(${hue}, 26%, 93%) 0%, hsl(${(hue + 40) % 360}, 22%, 85%) 100%)`;
+  const hue = PORTAL_COVER_HUES[hashString(seed) % PORTAL_COVER_HUES.length];
+  // The same lightness reads harsher on a dark theme, so pull it back a little.
+  return dark ? `hsl(${hue}, 32%, 38%)` : `hsl(${hue}, 38%, 46%)`;
 }
 
 /**
@@ -519,23 +561,21 @@ function isDarkThemeColor(color?: string) {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
-function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string }) {
-  const { record } = props;
-  const { defaultLabel } = props;
+function PortalCover(props: { record: MultiPortalRecord; href: string; openLabel: string }) {
+  const { href, openLabel, record } = props;
   const { token } = theme.useToken();
   const dark = isDarkThemeColor(token.colorBgContainer);
   const background = getPortalCoverBackground(record.uid || record.portalName || '', dark);
   const initial = (record.title || record.portalName || '?').trim().charAt(0).toUpperCase();
   const coverUrl = record.options?.cover?.url;
-  const coverBorderRadius = `${token.borderRadiusLG}px ${token.borderRadiusLG}px 0 0`;
 
-  const cover = coverUrl ? (
+  const artwork = coverUrl ? (
     <div
       aria-hidden
       style={{
         background: `${token.colorFillQuaternary} center / cover no-repeat url("${coverUrl}")`,
-        borderRadius: coverBorderRadius,
-        height: PORTAL_COVER_HEIGHT,
+        height: '100%',
+        width: '100%',
       }}
     />
   ) : (
@@ -544,20 +584,20 @@ function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string })
       style={{
         alignItems: 'center',
         background,
-        borderRadius: coverBorderRadius,
         display: 'flex',
-        height: PORTAL_COVER_HEIGHT,
+        height: '100%',
         justifyContent: 'center',
         overflow: 'hidden',
+        width: '100%',
       }}
     >
       {record.icon ? (
-        <Icon type={record.icon} style={{ color: token.colorTextSecondary, fontSize: 44 }} />
+        <Icon type={record.icon} style={{ color: '#fff', fontSize: 24 }} />
       ) : (
         <span
           style={{
-            color: token.colorTextSecondary,
-            fontSize: 44,
+            color: '#fff',
+            fontSize: 22,
             fontWeight: 600,
             lineHeight: 1,
           }}
@@ -568,13 +608,33 @@ function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string })
     </div>
   );
 
-  return record.isDefault ? (
-    <Badge.Ribbon text={defaultLabel} color={token.colorWarning} placement="end">
-      {cover}
-    </Badge.Ribbon>
-  ) : (
-    cover
+  const tile = (
+    <div
+      className="nb-portal-cover"
+      style={{
+        borderRadius: token.borderRadiusLG,
+        height: PORTAL_COVER_HEIGHT,
+        overflow: 'hidden',
+        width: PORTAL_COVER_HEIGHT,
+      }}
+    >
+      {artwork}
+      {/* The whole tile is the open control: a dark scrim with a centered icon that
+          appears once the pointer enters the card. Driven by CSS :hover /
+          :focus-within instead of React state - per-card state would re-render the
+          page on every pointer move, and focus-within covers the keyboard path. */}
+      <button
+        type="button"
+        aria-label={openLabel}
+        className="nb-portal-cover-overlay"
+        onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
+      >
+        <ExportOutlined style={{ fontSize: 20 }} />
+      </button>
+    </div>
   );
+
+  return <div style={{ flexShrink: 0 }}>{tile}</div>;
 }
 
 const MultiPortalsPage: React.FC = () => {
@@ -598,6 +658,23 @@ const MultiPortalsPage: React.FC = () => {
   const records = useMemo(() => {
     return Array.isArray(listResp?.data) ? listResp.data : [];
   }, [listResp?.data]);
+  // AI and no-code portals are two ways of building (source code vs visual
+  // configuration) with different capabilities; mixed into one grid they can only
+  // be told apart by a tag. Split into two sections, AI first. Empty ones vanish.
+  const groupedRecords = useMemo(() => {
+    // Reuse the locale keys the per-card tags used (AI mode / No-code mode):
+    // the same thing is being named, no second vocabulary for it.
+    const groups = [
+      { key: 'ai', title: 'AI', records: [] as MultiPortalRecord[] },
+      { key: 'no-code', title: 'No-code', records: [] as MultiPortalRecord[] },
+    ];
+    for (const record of records) {
+      const isNoCode = normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE;
+      groups[isNoCode ? 1 : 0].records.push(record);
+    }
+    return groups.filter((group) => group.records.length > 0);
+  }, [records]);
+  const portalCardCss = useMemo(() => buildPortalCardCss(token), [token]);
   const pagination = useMemo(() => {
     const meta = listResp?.meta;
     if (!meta) return false as const;
@@ -713,106 +790,143 @@ const MultiPortalsPage: React.FC = () => {
       const routesDisabled = !isNoCode || !record.enabled;
       const layoutLabel = getUiLayoutUidLabel(record.uiLayoutUid, t);
 
-      return (
+      const card = (
         <Card
-          key={record.uid}
+          className="nb-portal-card"
           size="small"
-          cover={<PortalCover record={record} defaultLabel={t('Default')} />}
-          styles={{
-            actions: { borderRadius: `0 0 ${token.borderRadiusLG}px ${token.borderRadiusLG}px` },
-            body: { padding: token.paddingSM },
+          styles={{ body: { padding: token.paddingLG } }}
+          // The ribbon pokes out past the left edge, so the card must not clip itself.
+          style={{ cursor: 'pointer', opacity: record.enabled ? 1 : 0.6, overflow: 'visible' }}
+          // The whole card opens the portal, except for two kinds of clicks:
+          // 1. dropdowns and modals rendered into portals under body - React events
+          //    bubble through the component tree rather than the DOM tree, so menu
+          //    clicks reach this handler; DOM containment filters them out;
+          // 2. elements inside the card that carry their own action (the switch,
+          //    the more button, the access path link).
+          onClick={(event) => {
+            const target = event.target as HTMLElement;
+            if (!event.currentTarget.contains(target)) {
+              return;
+            }
+            if (target.closest('button, a, .ant-switch')) {
+              return;
+            }
+            window.open(href, '_blank', 'noopener,noreferrer');
           }}
-          style={{ borderRadius: token.borderRadiusLG, opacity: record.enabled ? 1 : 0.6, overflow: 'visible' }}
-          actions={[
-            // 卡片操作只有图标，可访问名靠 aria-label 给出：tooltip 的文字不参与无障碍命名。
-            // 这一个不能用 href —— 带 href 的 antd Button 渲染成 <a>，拿不到 icon-only 的方形尺寸，
-            // 会变成一条明显更宽的悬浮区域，颜色也走链接色而不是正文色，和后面四个对不齐。
-            <Tooltip key="view" title={t('View')}>
-              <Button
-                aria-label={t('View')}
-                type="text"
-                size="small"
-                icon={<ExportOutlined />}
-                onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
-              />
-            </Tooltip>,
-            <Tooltip key="edit" title={t('Edit')}>
-              <Button
-                aria-label={t('Edit')}
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => openFormDrawer(record)}
-              />
-            </Tooltip>,
-            // 禁用态不弹提示：点不动的按钮再解释一遍反而干扰。
-            <Tooltip key="routes" title={routesDisabled ? '' : t('Routes')}>
-              <Button
-                aria-label={t('Routes')}
-                type="text"
-                size="small"
-                icon={<ApartmentOutlined />}
-                disabled={routesDisabled}
-                onClick={() => openRoutesDrawer(record)}
-              />
-            </Tooltip>,
-            <Tooltip key="default" title={t('Set as default')}>
-              <Button
-                aria-label={t('Set as default')}
-                type="text"
-                size="small"
-                icon={record.isDefault ? <StarFilled style={{ color: token.colorWarning }} /> : <StarOutlined />}
-                disabled={!record.enabled || record.isDefault === true}
-                loading={updatingDefaultRowKey === record.uid}
-                onClick={async () => {
-                  await handleSetDefault(record);
-                }}
-              />
-            </Tooltip>,
-            <Tooltip key="delete" title={t('Delete')}>
-              <Button
-                aria-label={t('Delete')}
-                type="text"
-                size="small"
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(record.uid)}
-              />
-            </Tooltip>,
-          ]}
         >
-          <Flex align="flex-start" justify="space-between" gap={token.marginXS}>
-            <div style={{ minWidth: 0 }}>
-              <Typography.Text strong ellipsis style={{ display: 'block' }}>
-                {record.title}
-              </Typography.Text>
-              <Typography.Link
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                ellipsis
-                style={{ display: 'block', fontSize: token.fontSizeSM }}
-              >
-                {/* 显示真正能访问的地址（带 /v 或 /x 前缀），而不是库里存的裸 routePath——
-                    后者复制出去打不开，和链接自身指向的 href 也对不上。 */}
-                {href}
-              </Typography.Link>
+          <Flex align="center" gap={token.margin}>
+            <PortalCover record={record} href={href} openLabel={t('View')} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* The group heading says which type this is; only the device icon is added here, with its wording in the tooltip. */}
+              <Flex align="center" gap={token.marginXXS}>
+                <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
+                  {record.title}
+                </Typography.Text>
+                {layoutLabel ? (
+                  <Tooltip title={layoutLabel}>
+                    {record.uiLayoutUid === MOBILE_UI_LAYOUT_UID ? (
+                      <MobileOutlined
+                        aria-label={layoutLabel}
+                        style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+                      />
+                    ) : (
+                      <DesktopOutlined
+                        aria-label={layoutLabel}
+                        style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+                      />
+                    )}
+                  </Tooltip>
+                ) : null}
+              </Flex>
+              <Flex align="center" gap={token.marginXXS} style={{ minWidth: 0 }}>
+                <Typography.Link
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ellipsis
+                  type="secondary"
+                  style={{ fontSize: token.fontSizeSM, minWidth: 0 }}
+                >
+                  {/* Show the address that actually resolves (with the /v or /x prefix)
+                      rather than the bare routePath from the database: copying that one
+                      out leads nowhere and disagrees with the link's own href. */}
+                  {href}
+                </Typography.Link>
+              </Flex>
             </div>
-            <Switch
-              aria-label={t('Enabled')}
-              checked={record.enabled}
-              loading={updatingEnabledRowKeys.includes(record.uid)}
-              size="small"
-              onChange={async (checked) => {
-                await handleToggleEnabled(record, checked);
-              }}
-            />
+            {/* Actions pinned to the top right; the ribbon moved to the top left, so they no longer collide. */}
+            <Flex align="center" gap={token.marginXS} style={{ alignSelf: 'flex-start', flexShrink: 0 }}>
+              {/* The default portal cannot be disabled: doing so leaves users landing on
+                  an entry they cannot open, so the switch is greyed out until the default
+                  is handed to another portal. */}
+              <Tooltip title={record.isDefault ? t('The default portal cannot be disabled') : ''}>
+                <Switch
+                  aria-label={t('Enabled')}
+                  checked={record.enabled}
+                  disabled={record.isDefault === true}
+                  loading={updatingEnabledRowKeys.includes(record.uid) || updatingDefaultRowKey === record.uid}
+                  size="small"
+                  onChange={async (checked) => {
+                    await handleToggleEnabled(record, checked);
+                  }}
+                />
+              </Tooltip>
+              {/* The remaining actions live under "more". Only the switch stays outside,
+                  because it doubles as a status indicator: one glance shows which portals
+                  are turned off. */}
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: [
+                    // No open entry here: clicking the card itself opens the portal.
+                    { key: 'edit', icon: <EditOutlined />, label: t('Edit') },
+                    // Routes only mean something for an enabled no-code portal, so the
+                    // entry is omitted otherwise. A greyed-out button out in the open at
+                    // least hints the feature exists; inside a menu it is just one more
+                    // line to read that cannot be clicked.
+                    ...(routesDisabled ? [] : [{ key: 'routes', icon: <ApartmentOutlined />, label: t('Routes') }]),
+                    // Omitted when it already is the default or the portal is off: making
+                    // a disabled portal the default leaves users landing on an entry they
+                    // cannot open.
+                    ...(record.isDefault === true || !record.enabled
+                      ? []
+                      : [{ key: 'default', icon: <StarOutlined />, label: t('Set as default') }]),
+                    { type: 'divider' as const },
+                    { key: 'delete', icon: <DeleteOutlined />, label: t('Delete') },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'edit') {
+                      openFormDrawer(record);
+                    } else if (key === 'routes') {
+                      openRoutesDrawer(record);
+                    } else if (key === 'default') {
+                      handleSetDefault(record);
+                    } else if (key === 'delete') {
+                      handleDelete(record.uid);
+                    }
+                  },
+                }}
+              >
+                <Button aria-label={t('More')} type="text" size="small" icon={<EllipsisOutlined />} />
+              </Dropdown>
+            </Flex>
           </Flex>
-          <Space size={[4, 4]} wrap style={{ marginTop: token.marginXS }}>
-            <Tag>{isNoCode ? t('No-code') : t('AI')}</Tag>
-            {layoutLabel ? <Tag>{layoutLabel}</Tag> : null}
-            {record.isDefault ? <Tag color="gold">{t('Default')}</Tag> : null}
-          </Space>
         </Card>
+      );
+
+      // The default portal gets a ribbon on the top left of the card. Hanging it on the
+      // 56px tile was tried: even shrunk it covered a good part of the icon, while the
+      // card is exactly the width a ribbon is designed for.
+      return (
+        <div key={record.uid}>
+          {record.isDefault ? (
+            <Badge.Ribbon text={t('Default')} color={token.colorWarning} placement="start">
+              {card}
+            </Badge.Ribbon>
+          ) : (
+            card
+          )}
+        </div>
       );
     },
     [
@@ -823,11 +937,13 @@ const MultiPortalsPage: React.FC = () => {
       openFormDrawer,
       openRoutesDrawer,
       t,
-      token.borderRadiusLG,
-      token.colorWarning,
       token.fontSizeSM,
+      token.colorTextDescription,
+      token.colorWarning,
+      token.margin,
       token.marginXS,
-      token.paddingSM,
+      token.marginXXS,
+      token.paddingLG,
       updatingDefaultRowKey,
       updatingEnabledRowKeys,
     ],
@@ -835,6 +951,7 @@ const MultiPortalsPage: React.FC = () => {
 
   return (
     <div>
+      <style>{portalCardCss}</style>
       <Flex justify="space-between" align="center" wrap gap={token.marginSM} style={{ marginBottom: token.marginMD }}>
         <Typography.Text type="secondary">
           {t('Each portal is a standalone front end with its own routes and menus.')}
@@ -856,30 +973,22 @@ const MultiPortalsPage: React.FC = () => {
             </Button>
           </Empty>
         ) : (
-          <div style={galleryGridStyle}>
-            {records.map(renderPortalCard)}
-            <button
-              type="button"
-              onClick={() => openFormDrawer()}
-              style={{
-                alignItems: 'center',
-                background: 'transparent',
-                border: `${token.lineWidth}px dashed ${token.colorBorder}`,
-                borderRadius: token.borderRadiusLG,
-                color: token.colorTextDescription,
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: token.marginXS,
-                justifyContent: 'center',
-                minHeight: PORTAL_COVER_HEIGHT + 96,
-                width: '100%',
-              }}
-            >
-              <PlusOutlined style={{ fontSize: 22 }} />
-              <span>{t('Add portal')}</span>
-            </button>
-          </div>
+          groupedRecords.map((group) => (
+            <div key={group.key} style={{ marginBottom: token.marginXL }}>
+              {/* 组标题：标题 + 计数 + 一条延伸到底的细线。只有一行浅灰文字的话，
+                  它会和上面那句说明混成一片，看不出这里已经换了一组。 */}
+              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
+                <Typography.Text strong>{t(group.title)}</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  {group.records.length}
+                </Typography.Text>
+                <div style={{ background: token.colorSplit, flex: 1, height: token.lineWidth }} />
+              </Flex>
+              {/* 网格里不再放虚线的新建块：右上角那个「新增门户」按钮已经是入口，
+                  分了组之后虚线块还得挑跟在哪一组后面，怎么放都像是"新建这一类"。 */}
+              <div style={galleryGridStyle}>{group.records.map(renderPortalCard)}</div>
+            </div>
+          ))
         )}
       </Spin>
       {pagination ? (
@@ -906,22 +1015,18 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   const [form] = Form.useForm<MultiPortalFormDraftValues>();
   const [submitting, setSubmitting] = useState(false);
   const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
-  const fixedUiLayoutUid = getFixedPortalUiLayoutUid(record?.uid);
-  const layoutOptions = useMemo(() => {
-    const options = [
+  const layoutOptions = useMemo(
+    () => [
       { value: ADMIN_UI_LAYOUT_UID, label: t('Desktop') },
       { value: MOBILE_UI_LAYOUT_UID, label: t('Mobile') },
-    ];
-    return fixedUiLayoutUid ? options.filter((option) => option.value === fixedUiLayoutUid) : options;
-  }, [fixedUiLayoutUid, t]);
+    ],
+    [t],
+  );
   const watchedPortalType = Form.useWatch('portalType', form);
   const watchedEnabled = Form.useWatch('enabled', form);
   const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(() => {
     if (record) {
-      const values = { ...toFormDraftValues(record), setAsDefault: false };
-      return fixedUiLayoutUid && record.uiLayoutUid !== fixedUiLayoutUid
-        ? { ...values, uiLayoutUid: fixedUiLayoutUid }
-        : values;
+      return { ...toFormDraftValues(record), setAsDefault: false };
     }
     return {
       ...defaultFormValues,
@@ -932,7 +1037,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
       gitPath: DEFAULT_PORTAL_GIT_PATH,
       cover: null,
     };
-  }, [fixedUiLayoutUid, record]);
+  }, [record]);
   const accessPathPrefix = watchedPortalType === 'ai' ? '/x/' : '/v/';
   const fixedDefaultPortal = isFixedDefaultPortal(record);
   // 门户名和类型建好之后就是身份：名字在访问路径里、类型决定 /v 还是 /x，
@@ -1162,18 +1267,14 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           ]}
         >
           <Select
-            // 合法绑定建立之后不允许改；历史空值、异常值或固定 Portal 的错绑必须能单向修复。
-            disabled={
-              fixedUiLayoutUid
-                ? record?.uiLayoutUid === fixedUiLayoutUid
-                : isMultiPortalUiLayoutUid(record?.uiLayoutUid)
-            }
+            // 设备类型创建后保持不变；新建时只能从两个固定 UID 中选择。
+            disabled={Boolean(record)}
             options={layoutOptions}
             showSearch
             optionFilterProp="label"
           />
         </Form.Item>
-        <Form.Item name="cover" label={t('Cover')} extra={t('Shown on the portal card. A 16:9 image works best.')}>
+        <Form.Item name="cover" label={t('Cover')} extra={t('Shown on the portal card.')}>
           <AttachmentUpload
             accept="image/*"
             preview={{ width: 160, height: 90, fit: 'cover' }}
