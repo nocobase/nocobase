@@ -76,6 +76,115 @@ describe('PortalEntryActionModel', () => {
     expect(open).toHaveBeenCalledWith('/v/apps/alpha/app-sso?redirect=%2Fworkspace', '_blank', 'noopener,noreferrer');
   });
 
+  it.each([
+    ['no-code', '/v/workspace'],
+    ['ai', '/x/workspace'],
+  ])('opens a main app %s portal with the matching route prefix', (portalType, expectedUrl) => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const app = {
+      name: 'main',
+      getRouteUrl: (pathname: string) => `/v${pathname}`,
+      router: {
+        basename: '/v',
+      },
+    };
+    const entryPortal = {
+      uid: `${portalType}-workspace`,
+      appName: 'main',
+      portalType,
+      routePath: '/workspace',
+    };
+    getPortalEntryActionStore(app as never).payload = {
+      apps: [],
+      portals: [entryPortal],
+    };
+    const model = Object.create(PortalEntryActionModel.prototype) as PortalEntryActionModel;
+    Object.defineProperty(model, 'context', { value: { app } });
+    Object.assign(model, {
+      entryActionAvailability: 'available',
+      hidden: false,
+      props: {
+        entryPortal,
+      },
+    });
+
+    model.onClick();
+
+    expect(open).toHaveBeenCalledWith(expectedUrl, '_blank', 'noopener,noreferrer');
+  });
+
+  it('opens a main app AI portal from a sub-app without keeping its scope', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const app = {
+      name: 'alpha',
+      router: {
+        basename: '/nocobase/v/apps/alpha',
+      },
+    };
+    const entryPortal = {
+      uid: 'main-ai-workspace',
+      appName: 'main',
+      portalType: 'ai',
+      routePath: '/workspace',
+    };
+    getPortalEntryActionStore(app as never).payload = {
+      apps: [],
+      portals: [entryPortal],
+    };
+    const model = Object.create(PortalEntryActionModel.prototype) as PortalEntryActionModel;
+    Object.defineProperty(model, 'context', { value: { app } });
+    Object.assign(model, {
+      entryActionAvailability: 'available',
+      hidden: false,
+      props: {
+        entryPortal,
+      },
+    });
+
+    model.onClick();
+
+    expect(open).toHaveBeenCalledWith('/nocobase/x/workspace', '_blank', 'noopener,noreferrer');
+  });
+
+  it('opens a direct cross-app AI portal with the x route prefix', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const app = {
+      name: 'main',
+      getRouteUrl: (pathname: string) => `/v${pathname}`,
+      router: {
+        basename: '/v',
+      },
+    };
+    const entryPortal = {
+      uid: 'alpha-ai-workspace',
+      appName: 'alpha',
+      portalType: 'ai',
+      routePath: '/workspace',
+    };
+    getPortalEntryActionStore(app as never).payload = {
+      apps: [
+        {
+          name: 'alpha',
+          ssoEnabled: false,
+        },
+      ],
+      portals: [entryPortal],
+    };
+    const model = Object.create(PortalEntryActionModel.prototype) as PortalEntryActionModel;
+    Object.defineProperty(model, 'context', { value: { app } });
+    Object.assign(model, {
+      entryActionAvailability: 'available',
+      hidden: false,
+      props: {
+        entryPortal,
+      },
+    });
+
+    model.onClick();
+
+    expect(open).toHaveBeenCalledWith('/x/apps/alpha/workspace', '_blank', 'noopener,noreferrer');
+  });
+
   it('marks missing portal as unavailable when target app is not running', async () => {
     const app = {
       apiClient: createAppPortalsApiClient({
