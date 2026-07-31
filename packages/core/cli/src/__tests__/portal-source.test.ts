@@ -11,6 +11,7 @@ import fsp from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import * as tar from 'tar';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -20,6 +21,10 @@ import { pullPortalSource, pushPortalSource } from '../lib/portal-source.js';
 
 const tempDirs: string[] = [];
 const execFileAsync = promisify(execFile);
+
+function toFileUrl(filePath: string): string {
+  return pathToFileURL(filePath).href;
+}
 
 async function makeTempDir(prefix: string): Promise<string> {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -262,7 +267,7 @@ test('pull can skip dependency installation', async () => {
 test('pull and push Git-managed source through the configured repository path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const remoteRepo = await makeTempDir('nocobase-cli-portal-git-remote-');
-  const remoteRepoUrl = `file://${remoteRepo}`;
+  const remoteRepoUrl = toFileUrl(remoteRepo);
   const seedRepo = await makeTempDir('nocobase-cli-portal-git-seed-');
   await runGit(['init', '--bare'], remoteRepo);
   await runGit(['init', '--initial-branch=main'], seedRepo);
@@ -338,7 +343,7 @@ test('pull and push Git-managed source through the configured repository path', 
 test('push creates configured Git branch and uses repository root by default', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const remoteRepo = await makeTempDir('nocobase-cli-portal-git-empty-remote-');
-  const remoteRepoUrl = `file://${remoteRepo}`;
+  const remoteRepoUrl = toFileUrl(remoteRepo);
   await runGit(['init', '--bare'], remoteRepo);
 
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
