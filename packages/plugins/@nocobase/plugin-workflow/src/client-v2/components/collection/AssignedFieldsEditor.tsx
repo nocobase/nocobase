@@ -11,11 +11,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FieldAssignValueInput } from '@nocobase/client-v2';
-import { FlowModelProvider, useFlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import { FlowModelProvider, VariableHybridInput, useFlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { Button, ConfigProvider, Dropdown, Empty, Form } from 'antd';
 import type { MenuProps } from 'antd';
 import { useWorkflowVariableOptions } from '../../canvas/useWorkflowVariableOptions';
-import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../../canvas/workflowVariableConverters';
+import {
+  formatWorkflowPathToValue,
+  parseWorkflowValueToPath,
+  workflowVariableConverters,
+} from '../../canvas/workflowVariableConverters';
 import { useT } from '../../locale';
 import {
   getCollection,
@@ -29,6 +33,8 @@ type AssignedValues = Record<string, unknown>;
 type AssignedField = ReturnType<typeof getCollectionFields>[number] & { name: string };
 type WorkflowVariableTree = ReturnType<typeof useWorkflowVariableOptions>;
 export type AssignedFieldFilter = (field: AssignedField) => boolean;
+
+const VARIABLE_EXPRESSION_FIELD_TYPES: ReadonlySet<string> = new Set(['string', 'text']);
 
 const fieldItemClassName = css`
   position: relative;
@@ -205,19 +211,30 @@ export function AssignedFieldsEditor({
               layout="vertical"
               colon
             >
-              <FieldAssignValueInput
-                key={field.name}
-                targetPath={field.name}
-                value={normalizedValue[field.name]}
-                onChange={(nextValue) => updateValue(field.name, nextValue)}
-                allowRunJS={false}
-                disabled={mergedDisabled}
-                variableConverters={{
-                  resolvePathFromValue: (currentValue) =>
-                    typeof currentValue === 'string' ? parseWorkflowValueToPath(currentValue) : undefined,
-                  resolveValueFromPath: (metaTreeNode) => formatWorkflowPathToValue(metaTreeNode),
-                }}
-              />
+              {VARIABLE_EXPRESSION_FIELD_TYPES.has(field.type ?? '') ? (
+                <VariableHybridInput
+                  value={typeof normalizedValue[field.name] === 'string' ? normalizedValue[field.name] : ''}
+                  onChange={(nextValue) => updateValue(field.name, nextValue)}
+                  disabled={mergedDisabled}
+                  metaTree={workflowVariableTree}
+                  converters={workflowVariableConverters}
+                  style={{ width: '100%' }}
+                />
+              ) : (
+                <FieldAssignValueInput
+                  key={field.name}
+                  targetPath={field.name}
+                  value={normalizedValue[field.name]}
+                  onChange={(nextValue) => updateValue(field.name, nextValue)}
+                  allowRunJS={false}
+                  disabled={mergedDisabled}
+                  variableConverters={{
+                    resolvePathFromValue: (currentValue) =>
+                      typeof currentValue === 'string' ? parseWorkflowValueToPath(currentValue) : undefined,
+                    resolveValueFromPath: (metaTreeNode) => formatWorkflowPathToValue(metaTreeNode),
+                  }}
+                />
+              )}
             </Form.Item>
             <Button
               aria-label={t('Remove field')}
