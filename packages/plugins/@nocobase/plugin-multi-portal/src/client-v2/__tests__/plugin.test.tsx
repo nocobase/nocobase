@@ -306,7 +306,7 @@ describe('PluginMultiPortalClientV2', () => {
       routePath: '/mobile',
     };
     const addPermissionsTab = vi.fn();
-    const registerSignInRoute = vi.fn();
+    const registerAuthRouteScope = vi.fn();
     const app = {
       i18n: {
         t: vi.fn((key: string) => key),
@@ -323,7 +323,7 @@ describe('PluginMultiPortalClientV2', () => {
       pm: {
         get: vi.fn((name: string) =>
           name === '@nocobase/plugin-auth'
-            ? { registerSignInRoute }
+            ? { registerAuthRouteScope }
             : {
                 settingsUI: {
                   addPermissionsTab,
@@ -429,18 +429,19 @@ describe('PluginMultiPortalClientV2', () => {
       childPageModelClass: 'MobileChildPageModel',
       authCheck: false,
     });
-    expect(registerSignInRoute).toHaveBeenCalledTimes(3);
-    expect(registerSignInRoute).toHaveBeenNthCalledWith(
-      1,
-      'multiPortalSignin_desktop-portal-model',
-      '/portal-desktop/signin',
-    );
-    expect(registerSignInRoute).toHaveBeenNthCalledWith(
-      2,
-      'multiPortalSignin_mobile-portal-model',
-      '/portal-mobile/signin',
-    );
-    expect(registerSignInRoute).toHaveBeenNthCalledWith(3, 'multiPortalSignin___default_mobile__', '/mobile/signin');
+    expect(registerAuthRouteScope).toHaveBeenCalledTimes(3);
+    expect(registerAuthRouteScope).toHaveBeenNthCalledWith(1, 'multiPortal_desktop-portal-model', '/portal-desktop', {
+      signin: 'multiPortalSignin_desktop-portal-model',
+      signup: 'multiPortalSignup_desktop-portal-model',
+    });
+    expect(registerAuthRouteScope).toHaveBeenNthCalledWith(2, 'multiPortal_mobile-portal-model', '/portal-mobile', {
+      signin: 'multiPortalSignin_mobile-portal-model',
+      signup: 'multiPortalSignup_mobile-portal-model',
+    });
+    expect(registerAuthRouteScope).toHaveBeenNthCalledWith(3, 'multiPortal___default_mobile__', '/mobile', {
+      signin: 'multiPortalSignin___default_mobile__',
+      signup: 'multiPortalSignup___default_mobile__',
+    });
     expect(app.router.add).toHaveBeenCalledWith('root', {
       path: '/',
       Component: expect.any(Function),
