@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.33](https://github.com/nocobase/nocobase/compare/v2.1.32...v2.1.33) - 2026-07-31
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix JSON field save validation errors after reloading v2 forms. ([#10206](https://github.com/nocobase/nocobase/pull/10206)) by @katherinehhh
+
+- **[Backup manager]** Validate the maximum backup retention count and display save errors. ([#10189](https://github.com/nocobase/nocobase/pull/10189)) by @katherinehhh
+
+- **[AI employees]** AI employee chat now validates attachment count and combined size before upload ([#10195](https://github.com/nocobase/nocobase/pull/10195)) by @cgyrock
+
+- **[Workflow]** Fixed workflow executions becoming blocked while saving a large number of jobs in one database operation ([#10204](https://github.com/nocobase/nocobase/pull/10204)) by @mytharcher
+
 ## [v2.1.32](https://github.com/nocobase/nocobase/compare/v2.1.31...v2.1.32) - 2026-07-29
 
 ### 🚀 Improvements
