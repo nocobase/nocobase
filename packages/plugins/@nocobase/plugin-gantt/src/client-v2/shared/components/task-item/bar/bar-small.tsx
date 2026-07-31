@@ -31,6 +31,7 @@ export const BarSmall: React.FC<TaskItemProps> = ({
       <BarDisplay
         x={task.x1}
         y={task.y}
+        color={task.color}
         width={task.x2 - task.x1}
         height={task.height}
         progressX={task.progressX}
