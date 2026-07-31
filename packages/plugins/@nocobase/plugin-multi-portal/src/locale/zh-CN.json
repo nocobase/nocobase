@@ -57,6 +57,7 @@
   "No-code portal": "无代码门户",
   "Portal manager": "门户管理",
   "Portal name": "门户名称",
+  "Portal name \"{{portalName}}\" already exists": "门户名称“{{portalName}}”已存在",
   "Portal name can only contain lowercase letters, numbers, hyphens, and underscores": "门户名称只能包含小写英文字母、数字、连字符和下划线",
   "Portals": "门户",
   "Refresh": "刷新",
