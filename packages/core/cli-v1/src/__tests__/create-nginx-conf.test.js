@@ -72,8 +72,14 @@ describe('create-nginx-conf routing', () => {
   ])('redirects Portal roots to the Modern Client for %s', async (_label, publicPath, portalRoot, modernRoot) => {
     const config = await renderConfig(publicPath);
 
-    expect(config).toContain(`location = ${portalRoot} {`);
-    expect(config).toContain(`location = ${portalRoot}/ {`);
+    expect(config).toContain(`location = ${portalRoot} {
+        absolute_redirect off;
+        return 302 ${modernRoot}$is_args$args;
+    }`);
+    expect(config).toContain(`location = ${portalRoot}/ {
+        absolute_redirect off;
+        return 302 ${modernRoot}$is_args$args;
+    }`);
     expect(config).toContain(`return 302 ${modernRoot}$is_args$args;`);
     expect(config).toContain(`if ($uri ~ ^${portalRoot}/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {`);
     expect(config).toContain(`return 302 ${modernRoot}apps/$subapp/$is_args$args;`);

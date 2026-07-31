@@ -936,10 +936,12 @@ function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): str
 
   return [
     `    location = ${portalBasePath} {`,
+    '        absolute_redirect off;',
     `        return 302 ${context.v2PublicPath}$is_args$args;`,
     '    }',
     '',
     `    location = ${portalBasePath}/ {`,
+    '        absolute_redirect off;',
     `        return 302 ${context.v2PublicPath}$is_args$args;`,
     '    }',
     '',

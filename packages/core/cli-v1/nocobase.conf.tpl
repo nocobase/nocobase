@@ -215,10 +215,12 @@ server {
 
 
     location = {{publicPath}}{{portalClientPrefix}} {
+        absolute_redirect off;
         return 302 {{v2PublicPath}}$is_args$args;
     }
 
     location = {{publicPath}}{{portalClientPrefix}}/ {
+        absolute_redirect off;
         return 302 {{v2PublicPath}}$is_args$args;
     }
 

@@ -143,7 +143,7 @@ async function createLocalRuntime(
     ].join(''),
   );
 
-  return ({
+  return {
     kind: 'local',
     envName: 'demo',
     source: 'npm',
@@ -160,7 +160,7 @@ async function createLocalRuntime(
         version,
       },
     },
-  } as unknown) as Extract<ManagedAppRuntime, { kind: 'local' }>;
+  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
 }
 
 test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed assets', async () => {
@@ -202,8 +202,14 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/apps/ {');
-  expect(bundle.appConfigContent).toContain('location = /console/x {');
-  expect(bundle.appConfigContent).toContain('location = /console/x/ {');
+  expect(bundle.appConfigContent).toContain(`location = /console/x {
+        absolute_redirect off;
+        return 302 /console/admin/$is_args$args;
+    }`);
+  expect(bundle.appConfigContent).toContain(`location = /console/x/ {
+        absolute_redirect off;
+        return 302 /console/admin/$is_args$args;
+    }`);
   expect(bundle.appConfigContent).toContain('return 302 /console/admin/$is_args$args;');
   expect(bundle.appConfigContent).toContain('absolute_redirect off;');
   expect(bundle.appConfigContent).toContain('if ($uri ~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {');
