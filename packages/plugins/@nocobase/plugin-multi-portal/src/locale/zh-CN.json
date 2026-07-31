@@ -127,7 +127,7 @@
   "filterByTk is required": "filterByTk 为必填项",
   "Portal not found": "门户不存在",
   "Disabled Portal cannot be set as default": "已禁用的门户不能设为默认",
-  "Portal layout must be enabled before setting it as default": "设为默认门户前必须先启用该门户布局",
+  "Portal device configuration is invalid": "门户设备配置无效",
   "Unsupported Portal type cannot be set as default": "不支持的门户类型不能设为默认",
   "No portals yet": "还没有门户",
   "Each portal is a standalone front end with its own routes and menus.": "每个门户是一套独立的前台，有自己的路由和菜单。",

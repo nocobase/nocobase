@@ -27,7 +27,6 @@ type PortalRecord = {
 };
 
 type FindOptions = {
-  appends?: string[];
   filter?: Record<string, unknown>;
 };
 
@@ -37,6 +36,7 @@ type RolePortalGrant = {
 };
 
 const ADMIN_LAYOUT_UID = 'admin-layout-model';
+const MOBILE_LAYOUT_UID = 'mobile-layout-model';
 const FALLBACK_LAYOUT_UID = 'fallback-layout-model';
 
 function createPortal(
@@ -55,6 +55,10 @@ function createPortal(
     uiLayoutUid,
     ...overrides,
   };
+}
+
+function createFixedPortal(uid: string) {
+  return createPortal(uid, uid === DEFAULT_MOBILE_MULTI_PORTAL_UID ? MOBILE_LAYOUT_UID : ADMIN_LAYOUT_UID);
 }
 
 function filterPortalRecords(portals: PortalRecord[], filter: Record<string, unknown> = {}) {
@@ -82,14 +86,7 @@ function createDatabase(portals: PortalRecord[], layouts = [createLayout()], rol
   const repositories = {
     multiPortals: {
       find: vi.fn(async (options: FindOptions = {}) => {
-        const records = filterPortalRecords(portals, options.filter);
-        if (!options.appends?.includes('uiLayout')) {
-          return records;
-        }
-        return records.map((portal) => ({
-          ...portal,
-          uiLayout: layouts.find((layout) => layout.uid === portal.uiLayoutUid),
-        }));
+        return filterPortalRecords(portals, options.filter);
       }),
       findOne: vi.fn(async (options: FindOptions = {}) => {
         const uid = options.filter?.uid;
@@ -153,7 +150,7 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
 
   it('lists persisted portals even when their UIDs look like legacy virtual defaults', async () => {
     const service = new FlowSurfaceNavigationTargetsService(
-      createDatabase(legacyNamedPortalUids.map((uid) => createPortal(uid))),
+      createDatabase(legacyNamedPortalUids.map((uid) => createFixedPortal(uid))),
     );
 
     const targets = await service.listNavigationTargets(['root']);
@@ -166,7 +163,8 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
   it.each(legacyNamedPortalUids)(
     'resolves fixed portal %s through its backing Layout without a mode field',
     async (portalUid) => {
-      const service = new FlowSurfaceNavigationTargetsService(createDatabase([createPortal(portalUid)]));
+      const portal = createFixedPortal(portalUid);
+      const service = new FlowSurfaceNavigationTargetsService(createDatabase([portal]));
 
       const resolved = await service.resolvePortal(portalUid, {
         actionName: 'createMenu',
@@ -176,7 +174,7 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
 
       expect(resolved).toMatchObject({
         uid: portalUid,
-        layoutUid: ADMIN_LAYOUT_UID,
+        layoutUid: portal.uiLayoutUid,
       });
       expect(resolved).not.toHaveProperty('routePermissionMode');
     },
@@ -388,7 +386,7 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
 
   it('keeps fixed Portal ACL exceptions for callers without role grants', async () => {
     for (const portalUid of legacyNamedPortalUids) {
-      const service = new FlowSurfaceNavigationTargetsService(createDatabase([createPortal(portalUid)]));
+      const service = new FlowSurfaceNavigationTargetsService(createDatabase([createFixedPortal(portalUid)]));
       await expect(
         service.resolvePortal(portalUid, {
           actionName: 'createMenu',
@@ -405,6 +403,28 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
     }
   });
 
+  it('excludes a fixed Portal whose canonical layout UID is bound to the wrong device', async () => {
+    const validPortal = createPortal('valid-portal');
+    const misboundPortal = createPortal(DEFAULT_ADMIN_MULTI_PORTAL_UID, MOBILE_LAYOUT_UID);
+    const service = new FlowSurfaceNavigationTargetsService(createDatabase([validPortal, misboundPortal]));
+
+    await expect(
+      service.resolveDefaultPortal({ actionName: 'createMenu', currentRoles: ['root'] }),
+    ).resolves.toMatchObject({ uid: validPortal.uid });
+    expect(
+      (await service.listNavigationTargets(['root'])).targets.filter((target) => target.kind === 'portal'),
+    ).toEqual([expect.objectContaining({ uid: validPortal.uid })]);
+
+    const error = await captureError(
+      service.resolvePortal(misboundPortal.uid, {
+        actionName: 'createMenu',
+        path: 'portalUid',
+        currentRoles: ['root'],
+      }),
+    );
+    expect(error.options.ruleId).toBe('navigation-portal-layout-not-found');
+  });
+
   it('does not count disabled Portals when selecting the only enabled accessible Portal', async () => {
     const enabledPortal = createPortal('enabled-portal');
     const service = new FlowSurfaceNavigationTargetsService(
@@ -419,20 +439,49 @@ describe('FlowSurfaceNavigationTargetsService portal identity', () => {
     ]);
   });
 
+  it('does not count enabled Portals with unsupported layout UIDs when selecting the default', async () => {
+    const validPortal = createPortal('valid-portal');
+    const historicalPortal = createPortal('historical-portal', 'historical-layout-uid');
+    const service = new FlowSurfaceNavigationTargetsService(createDatabase([validPortal, historicalPortal]));
+
+    await expect(
+      service.resolveDefaultPortal({ actionName: 'createMenu', currentRoles: ['root'] }),
+    ).resolves.toMatchObject({ uid: validPortal.uid });
+    expect((await service.listNavigationTargets(['root'])).targets.filter((target) => target.default)).toEqual([
+      expect.objectContaining({ uid: validPortal.uid }),
+    ]);
+  });
+
   it.each([
-    ['missing', [createLayout(FALLBACK_LAYOUT_UID)], 'navigation-portal-layout-not-found'],
-    ['disabled', [createLayout(ADMIN_LAYOUT_UID, false)], 'navigation-portal-layout-disabled'],
+    ['missing', [createLayout(FALLBACK_LAYOUT_UID)], [ADMIN_LAYOUT_UID, FALLBACK_LAYOUT_UID]],
+    ['disabled', [createLayout(ADMIN_LAYOUT_UID, false)], [ADMIN_LAYOUT_UID]],
   ])(
-    'reports the existing backing Layout error when the only no-code Portal Layout is %s',
-    async (_case, layouts, ruleId) => {
-      const service = new FlowSurfaceNavigationTargetsService(createDatabase([createPortal('broken-portal')], layouts));
+    'resolves a scalar Portal when its matching UI Layout record is %s',
+    async (_case, layouts, expectedLayoutTargetUids) => {
+      const portal = createPortal('scalar-portal');
+      const service = new FlowSurfaceNavigationTargetsService(createDatabase([portal], layouts));
 
-      const error = await captureError(
+      await expect(
         service.resolveDefaultPortal({ actionName: 'createMenu', currentRoles: ['root'] }),
-      );
+      ).resolves.toMatchObject({
+        uid: portal.uid,
+        layoutUid: ADMIN_LAYOUT_UID,
+        layoutType: 'desktop',
+        routeScopeKind: 'portal',
+      });
+      const targets = await service.listNavigationTargets(['root']);
 
-      expect(error.options.ruleId).toBe(ruleId);
-      expect((await service.listNavigationTargets(['root'])).targets.filter((target) => target.default)).toEqual([]);
+      expect(targets.targets.filter((target) => target.kind === 'layout').map((target) => target.uid)).toEqual(
+        expectedLayoutTargetUids,
+      );
+      expect(targets.targets.filter((target) => target.kind === 'portal')).toEqual([
+        expect.objectContaining({
+          uid: portal.uid,
+          layoutUid: ADMIN_LAYOUT_UID,
+          layoutType: 'desktop',
+          default: true,
+        }),
+      ]);
     },
   );
 

@@ -142,19 +142,6 @@ const portalValues: MultiPortalFormValues = {
   enabled: true,
 };
 
-type UiLayoutTestRecord = {
-  layoutType?: string;
-  title?: string;
-  uid: string;
-};
-
-const defaultUiLayoutOptions: UiLayoutTestRecord[] = [
-  {
-    uid: 'mobile-layout-model',
-    title: 'Mobile layout',
-  },
-];
-
 function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortalResource {
   return {
     create: vi.fn().mockResolvedValue(undefined),
@@ -178,18 +165,14 @@ function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortal
  */
 async function openCreatePortalForm(
   resource = makeResource(),
-  uiLayouts = defaultUiLayoutOptions,
   { portalType = 'no-code' }: { portalType?: 'ai' | 'no-code' } = {},
 ) {
   const user = userEvent.setup();
   let drawerContent: React.ReactNode;
+  const request = vi.fn().mockResolvedValue({ data: { data: [] } });
   flowContext.current = {
     api: {
-      request: vi.fn().mockResolvedValue({
-        data: {
-          data: uiLayouts,
-        },
-      }),
+      request,
       resource: vi.fn((name: string) => {
         if (name === 'multiPortals') {
           return resource;
@@ -228,6 +211,7 @@ async function openCreatePortalForm(
   return {
     container,
     dialog,
+    request,
     resource,
     user,
   };
@@ -235,7 +219,7 @@ async function openCreatePortalForm(
 
 async function selectMobileLayout(container: HTMLElement, user: ReturnType<typeof userEvent.setup>) {
   fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-  await user.click(await screen.findByText('Mobile layout'));
+  await user.click(await screen.findByText('Mobile'));
 }
 
 afterEach(() => {
@@ -385,9 +369,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS['filterByTk is required']).toBe('filterByTk is required');
     expect(enUS['Portal not found']).toBe('Portal not found');
     expect(enUS['Disabled Portal cannot be set as default']).toBe('Disabled Portal cannot be set as default');
-    expect(enUS['Portal layout must be enabled before setting it as default']).toBe(
-      'Portal layout must be enabled before setting it as default',
-    );
+    expect(enUS['Portal device configuration is invalid']).toBe('Portal device configuration is invalid');
     expect(enUS['Unsupported Portal type cannot be set as default']).toBe(
       'Unsupported Portal type cannot be set as default',
     );
@@ -444,9 +426,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['filterByTk is required']).toBe('filterByTk 为必填项');
     expect(zhCN['Portal not found']).toBe('门户不存在');
     expect(zhCN['Disabled Portal cannot be set as default']).toBe('已禁用的门户不能设为默认');
-    expect(zhCN['Portal layout must be enabled before setting it as default']).toBe(
-      '设为默认门户前必须先启用该门户布局',
-    );
+    expect(zhCN['Portal device configuration is invalid']).toBe('门户设备配置无效');
     expect(zhCN['Unsupported Portal type cannot be set as default']).toBe('不支持的门户类型不能设为默认');
   });
 
@@ -498,11 +478,6 @@ describe('plugin-multi-portal settings page', () => {
           data: [
             {
               ...portalValues,
-              uiLayout: {
-                layoutType: 'mobile',
-                title: 'Mobile layout',
-                uid: 'mobile-layout-model',
-              },
             },
             {
               ...portalValues,
@@ -512,7 +487,6 @@ describe('plugin-multi-portal settings page', () => {
               portalName: 'developer-portal',
               routePath: '/developer-portal',
               uiLayoutUid: null,
-              uiLayout: null,
             },
             {
               ...portalValues,
@@ -521,11 +495,7 @@ describe('plugin-multi-portal settings page', () => {
               portalName: 'disabled-portal',
               routePath: '/disabled-portal',
               enabled: false,
-              uiLayout: {
-                layoutType: 'desktop',
-                title: 'Desktop layout',
-                uid: 'desktop-layout-model',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -613,7 +583,7 @@ describe('plugin-multi-portal settings page', () => {
     // 卡片上的标签：portal 类型 + 布局名，不出现权限 / UI layout 字样。
     // 测试里的 t 是恒等函数，渲染出来的是词条 key 而不是译文。
     expect(within(customerPortalCard).getByText('No-code')).toBeInTheDocument();
-    // 卡片上的设备标签按 layoutType 映射，不直接用布局记录的名字。
+    // 卡片上的设备标签直接按固定的 uiLayoutUid 映射。
     expect(within(customerPortalCard).getByText('Mobile')).toBeInTheDocument();
     expect(within(developerPortalCard).getByText('AI')).toBeInTheDocument();
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
@@ -622,7 +592,6 @@ describe('plugin-multi-portal settings page', () => {
       page: 1,
       pageSize: 20,
       sort: ['createdAt'],
-      appends: ['uiLayout'],
     });
   });
 
@@ -639,9 +608,7 @@ describe('plugin-multi-portal settings page', () => {
               isDefault: true,
               portalName: 'admin',
               routePath: '/admin',
-              uiLayout: {
-                title: 'Desktop layout',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -737,20 +704,11 @@ describe('plugin-multi-portal settings page', () => {
     }
   });
 
-  it('should open create form with portal fields and layout selection', async () => {
+  it('should open create form without requesting enabled UI layouts', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource();
-    const request = vi.fn().mockResolvedValue({
-      data: {
-        data: [
-          {
-            uid: 'mobile-layout-model',
-            title: 'Mobile layout',
-          },
-        ],
-      },
-    });
+    const request = vi.fn().mockResolvedValue({ data: { data: [] } });
     flowContext.current = {
       api: {
         request,
@@ -814,49 +772,20 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).queryByText('UI layout')).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/permission/i)).not.toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(request).toHaveBeenCalledWith({
-        url: 'uiLayouts:listEnabled',
-        method: 'get',
-        params: {
-          pageSize: 200,
-          sort: ['uid'],
-        },
-        skipNotify: true,
-      });
-    });
+    expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:listEnabled' }));
     expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:list' }));
   });
 
-  it('should simplify layout option labels while preserving selected layout uid', async () => {
+  it('should expose only the two fixed device options and preserve the selected uid', async () => {
     const resource = makeResource();
-    const { container, dialog, user } = await openCreatePortalForm(resource, [
-      {
-        uid: 'desktop-layout-model',
-        title: 'Desktop layout',
-        layoutType: 'desktop',
-      },
-      {
-        uid: 'mobile-layout-model',
-        title: 'Mobile layout',
-        layoutType: 'mobile',
-      },
-      {
-        uid: 'legacy-layout-model',
-        title: 'Legacy layout',
-      },
-      {
-        uid: 'fallback-layout-model',
-      },
-    ]);
+    const { container, dialog, request, user } = await openCreatePortalForm(resource);
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
     expect((await screen.findAllByText('Desktop')).length).toBeGreaterThan(0);
     expect(await screen.findByText('Mobile')).toBeInTheDocument();
-    expect(await screen.findByText('Legacy layout')).toBeInTheDocument();
-    expect(await screen.findByText('fallback-layout-model')).toBeInTheDocument();
-    expect(screen.queryByText('Desktop layout')).not.toBeInTheDocument();
-    expect(screen.queryByText('Mobile layout')).not.toBeInTheDocument();
+    expect(
+      Array.from(document.querySelectorAll('.ant-select-item-option-content'), (node) => node.textContent),
+    ).toEqual(['Desktop', 'Mobile']);
     await user.click(screen.getByText('Mobile'));
 
     await user.type(within(dialog).getByLabelText('Title'), 'Mobile portal');
@@ -873,22 +802,12 @@ describe('plugin-multi-portal settings page', () => {
         }),
       });
     });
+    expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:listEnabled' }));
   });
 
-  it('should select the desktop layout by default when creating a portal', async () => {
+  it('should select the admin layout uid by default when creating a portal', async () => {
     const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, [
-      {
-        uid: 'desktop-layout-model',
-        title: 'Desktop layout',
-        layoutType: 'desktop',
-      },
-      {
-        uid: 'mobile-layout-model',
-        title: 'Mobile layout',
-        layoutType: 'mobile',
-      },
-    ]);
+    const { dialog, user } = await openCreatePortalForm(resource);
 
     expect(await within(dialog).findByText('Desktop')).toBeInTheDocument();
 
@@ -902,7 +821,7 @@ describe('plugin-multi-portal settings page', () => {
           portalName: 'desktop-portal',
           routePath: '/desktop-portal',
           title: 'Desktop portal',
-          uiLayoutUid: 'desktop-layout-model',
+          uiLayoutUid: 'admin-layout-model',
         }),
       });
     });
@@ -960,7 +879,7 @@ describe('plugin-multi-portal settings page', () => {
     await user.type(within(dialog).getByLabelText('Icon'), 'homeoutlined');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(await screen.findByText('Mobile'));
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
@@ -982,7 +901,7 @@ describe('plugin-multi-portal settings page', () => {
 
   it('should submit explicit route name and portal type when creating a portal', async () => {
     const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
+    const { dialog, user } = await openCreatePortalForm(resource, { portalType: 'ai' });
 
     await user.type(within(dialog).getByLabelText('Title'), 'Developer portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'developer-portal');
@@ -1010,7 +929,7 @@ describe('plugin-multi-portal settings page', () => {
 
   it('should submit git source storage options when creating an AI portal', async () => {
     const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
+    const { dialog, user } = await openCreatePortalForm(resource, { portalType: 'ai' });
 
     await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
     await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
@@ -1045,7 +964,7 @@ describe('plugin-multi-portal settings page', () => {
 
   it('should fill the title and portal name from the git repository URL', async () => {
     const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
+    const { dialog, user } = await openCreatePortalForm(resource, { portalType: 'ai' });
 
     await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
     await user.type(within(dialog).getByLabelText('Git repository URL'), 'git@github.com:nocobase/customer-portal.git');
@@ -1124,9 +1043,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               icon: 'homeoutlined',
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },
@@ -1207,9 +1123,7 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               isDefault: false,
-              uiLayout: {
-                title: 'Mobile layout',
-              },
+              uiLayoutUid: 'mobile-layout-model',
             },
           ],
         },
@@ -1217,7 +1131,7 @@ describe('plugin-multi-portal settings page', () => {
     });
     flowContext.current = {
       api: {
-        request: vi.fn().mockResolvedValue({ data: { data: defaultUiLayoutOptions } }),
+        request: vi.fn(),
         resource: vi.fn((name: string) => {
           if (name === 'multiPortals') {
             return resource;
@@ -1282,9 +1196,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               icon: 'homeoutlined',
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },
@@ -1362,9 +1273,6 @@ describe('plugin-multi-portal settings page', () => {
                   branch: 'develop',
                   path: 'portals/customer',
                 },
-              },
-              uiLayout: {
-                title: 'Mobile layout',
               },
             },
           ],
@@ -1450,7 +1358,7 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               portalType: 'ai',
-              uiLayoutUid: null,
+              uiLayoutUid: 'admin-layout-model',
               options: {
                 sourceStorage: 'nocobase',
                 git: {
@@ -1466,7 +1374,7 @@ describe('plugin-multi-portal settings page', () => {
     });
     flowContext.current = {
       api: {
-        request: vi.fn().mockResolvedValue({ data: { data: defaultUiLayoutOptions } }),
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
         resource: vi.fn((name: string) => {
           if (name === 'multiPortals') {
             return resource;
@@ -1519,7 +1427,7 @@ describe('plugin-multi-portal settings page', () => {
   it('should submit the device for AI portals as well', async () => {
     const resource = makeResource();
     // 设备对 AI portal 同样有意义：应用切换器按它归类。
-    const { container, dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, {
+    const { container, dialog, user } = await openCreatePortalForm(resource, {
       portalType: 'ai',
     });
 
@@ -1544,9 +1452,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               icon: 'homeoutlined',
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },
@@ -1584,7 +1489,6 @@ describe('plugin-multi-portal settings page', () => {
           uid: 'customer-portal',
           portalName: 'customer-portal',
           routePath: '/customer-portal',
-          uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
           portalType: 'no-code',
           enabled: false,
@@ -1656,6 +1560,7 @@ describe('plugin-multi-portal settings page', () => {
           },
         }),
       });
+      expect(resource.update.mock.calls[0]?.[0].values).not.toHaveProperty('uiLayoutUid');
     });
   });
 
@@ -1671,9 +1576,7 @@ describe('plugin-multi-portal settings page', () => {
               uid: '__default_portal__',
               portalName: 'admin',
               routePath: '/admin',
-              uiLayout: {
-                title: 'Desktop layout',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -1713,7 +1616,6 @@ describe('plugin-multi-portal settings page', () => {
           uid: '__default_portal__',
           portalName: 'admin',
           routePath: '/admin',
-          uiLayoutUid: 'mobile-layout-model',
           icon: null,
           portalType: 'no-code',
           enabled: false,
@@ -1735,9 +1637,7 @@ describe('plugin-multi-portal settings page', () => {
               uid: '__default_portal__',
               portalName: 'admin',
               routePath: '/admin',
-              uiLayout: {
-                title: 'Desktop layout',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -1793,70 +1693,78 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).getByLabelText('Device')).toBeDisabled();
   });
 
-  it('should populate the layout field from the appended uiLayout relation when editing', async () => {
-    const user = userEvent.setup();
-    let drawerContent: React.ReactNode;
-    const resource = makeResource({
-      list: vi.fn().mockResolvedValue({
-        data: {
-          data: [
-            {
-              ...portalValues,
-              uiLayoutUid: undefined,
-              uiLayout: {
-                uid: 'mobile-layout-model',
-                title: 'Mobile layout',
-              },
-            },
-          ],
-        },
-      }),
-    });
-    flowContext.current = {
-      api: {
-        request: vi.fn().mockResolvedValue({
+  it.each(['legacy-layout-model', 'mobile-layout-model'])(
+    'should constrain a fixed portal with historical layout uid %s to its expected device',
+    async (historicalLayoutUid) => {
+      const user = userEvent.setup();
+      let drawerContent: React.ReactNode;
+      const resource = makeResource({
+        list: vi.fn().mockResolvedValue({
           data: {
             data: [
               {
-                uid: 'mobile-layout-model',
-                title: 'Mobile layout',
+                ...portalValues,
+                uid: '__default_admin__',
+                portalName: 'admin',
+                routePath: '/admin',
+                uiLayoutUid: historicalLayoutUid,
               },
             ],
           },
         }),
-        resource: vi.fn((name: string) => {
-          if (name === 'multiPortals') {
-            return resource;
-          }
-          throw new Error(`Unexpected resource ${name}`);
-        }),
-      },
-      viewer: {
-        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
-          drawerContent = options.content();
-        }),
-      },
-    };
+      });
+      flowContext.current = {
+        api: {
+          request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+          resource: vi.fn((name: string) => {
+            if (name === 'multiPortals') {
+              return resource;
+            }
+            throw new Error(`Unexpected resource ${name}`);
+          }),
+        },
+        viewer: {
+          drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+            drawerContent = options.content();
+          }),
+        },
+      };
 
-    const { rerender } = render(
-      <AntdApp>
-        <MultiPortalsPage />
-        {drawerContent}
-      </AntdApp>,
-    );
+      const { rerender } = render(
+        <AntdApp>
+          <MultiPortalsPage />
+          {drawerContent}
+        </AntdApp>,
+      );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
-    rerender(
-      <AntdApp>
-        <MultiPortalsPage />
-        {drawerContent}
-      </AntdApp>,
-    );
+      await user.click(await screen.findByRole('button', { name: /Edit/ }));
+      rerender(
+        <AntdApp>
+          <MultiPortalsPage />
+          {drawerContent}
+        </AntdApp>,
+      );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(await within(dialog).findByText('Mobile layout')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Device')).toBeDisabled();
-  });
+      const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
+      const device = within(dialog).getByLabelText('Device');
+      expect(device).not.toBeDisabled();
+
+      fireEvent.mouseDown(device.closest('.ant-select-selector') || device);
+      const desktopOption = await screen.findByRole('option', { name: 'Desktop' });
+      expect(screen.queryByRole('option', { name: 'Mobile' })).not.toBeInTheDocument();
+      await user.click(desktopOption);
+      await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+      await waitFor(() => {
+        expect(resource.update).toHaveBeenCalledWith({
+          filterByTk: '__default_admin__',
+          values: expect.objectContaining({
+            uiLayoutUid: 'admin-layout-model',
+          }),
+        });
+      });
+    },
+  );
 
   it('should reject portal names with dots before submitting', async () => {
     const user = userEvent.setup();
@@ -1909,7 +1817,7 @@ describe('plugin-multi-portal settings page', () => {
     await user.type(within(dialog).getByLabelText('Portal name'), 'foo.bar');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(await screen.findByText('Mobile'));
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     expect(
@@ -1980,7 +1888,7 @@ describe('plugin-multi-portal settings page', () => {
     await user.type(within(dialog).getByLabelText('Portal name'), 'duplicate-portal');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(await screen.findByText('Mobile'));
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     expect(await screen.findByText(backendMessage)).toBeInTheDocument();
@@ -1996,9 +1904,6 @@ describe('plugin-multi-portal settings page', () => {
           data: [
             {
               ...portalValues,
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },

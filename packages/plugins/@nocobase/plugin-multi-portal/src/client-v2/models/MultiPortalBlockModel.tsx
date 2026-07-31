@@ -25,9 +25,7 @@ type MultiPortalAccessibleRecord = {
   routePath: string;
   authCheck?: boolean;
   enabled?: boolean;
-  uiLayout?: {
-    layoutType?: string;
-  };
+  uiLayoutUid?: string | null;
 };
 
 type MultiPortalAccessibleListBody = {

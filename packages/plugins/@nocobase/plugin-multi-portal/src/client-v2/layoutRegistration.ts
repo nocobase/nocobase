@@ -8,7 +8,13 @@
  */
 
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
-import { DEFAULT_MOBILE_MULTI_PORTAL_UID } from '../constants';
+import {
+  ADMIN_UI_LAYOUT_UID,
+  DEFAULT_ADMIN_MULTI_PORTAL_UID,
+  DEFAULT_MOBILE_MULTI_PORTAL_UID,
+  isMultiPortalUiLayoutUid,
+  MOBILE_UI_LAYOUT_UID,
+} from '../constants';
 import { getMultiPortalRouteScopeCacheKey, installMultiPortalRouteRepositoryScope } from './routeRepositoryScope';
 
 export { getMultiPortalRouteScopeCacheKey };
@@ -21,11 +27,7 @@ export type MultiPortalRuntimeRecord = {
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
-  uiLayout?: {
-    layoutType?: string;
-    routeName?: string;
-    routePath?: string;
-  };
+  uiLayoutUid?: string | null;
 };
 
 type MultiPortalListBody = {
@@ -43,8 +45,6 @@ type MultiPortalRegistrationApp = {
   layoutManager: Pick<Application['layoutManager'], 'hasLayout' | 'listLayouts' | 'registerLayout'>;
 };
 
-const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
-const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
 const MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS = 'MultiPortalMobileLayoutModel';
 const MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS = 'MultiPortalMobileRootPageModel';
@@ -54,14 +54,14 @@ const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
 const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
 const MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX = 'multiPortalLayout_';
 
-const layoutRegisterOptionsByType: Record<
-  string,
+const layoutRegisterOptionsByUid: Record<
+  typeof ADMIN_UI_LAYOUT_UID | typeof MOBILE_UI_LAYOUT_UID,
   Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>
 > = {
-  [UI_LAYOUT_TYPE_DESKTOP]: {
+  [ADMIN_UI_LAYOUT_UID]: {
     layoutModelClass: ADMIN_LAYOUT_MODEL_CLASS,
   },
-  [UI_LAYOUT_TYPE_MOBILE]: {
+  [MOBILE_UI_LAYOUT_UID]: {
     layoutModelClass: MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS,
     rootPageModelClass: MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS,
     childPageModelClass: MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS,
@@ -82,16 +82,31 @@ function getMultiPortalLayoutRouteName(uid: string) {
   return `${MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX}${encodeURIComponent(uid).replace(/\./g, '%2E')}`;
 }
 
+function isValidRuntimePortalLayoutBinding(record: MultiPortalRuntimeRecord, uiLayoutUid: string) {
+  if (record.uid === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
+    return uiLayoutUid === ADMIN_UI_LAYOUT_UID;
+  }
+  if (record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID) {
+    return uiLayoutUid === MOBILE_UI_LAYOUT_UID;
+  }
+  return isMultiPortalUiLayoutUid(uiLayoutUid);
+}
+
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
   if (!record.enabled || !isRuntimePortal(record)) {
     return null;
   }
 
-  const layoutType = record.uiLayout?.layoutType || '';
+  const uiLayoutUid = record.uiLayoutUid || '';
+  if (!isValidRuntimePortalLayoutBinding(record, uiLayoutUid)) {
+    return null;
+  }
   const codeDefinedOptions =
-    layoutType === UI_LAYOUT_TYPE_MOBILE && record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID
+    uiLayoutUid === MOBILE_UI_LAYOUT_UID && record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID
       ? layoutModeMobileRegisterOptions
-      : layoutRegisterOptionsByType[layoutType];
+      : isMultiPortalUiLayoutUid(uiLayoutUid)
+        ? layoutRegisterOptionsByUid[uiLayoutUid]
+        : undefined;
   if (!codeDefinedOptions) {
     return null;
   }
@@ -135,7 +150,7 @@ export function registerMultiPortalRecords(
     }
     const options = toMultiPortalLayoutRegisterOptions(record);
     if (!options) {
-      throw new Error(`Portal '${record.uid}' uses an unknown UI layout type '${record.uiLayout?.layoutType || ''}'.`);
+      throw new Error(`Portal '${record.uid}' uses an unknown UI layout uid '${record.uiLayoutUid || ''}'.`);
     }
     if (portalUids.has(record.uid)) {
       throw new Error(`Duplicate portal uid '${record.uid}'.`);
