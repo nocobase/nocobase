@@ -177,6 +177,10 @@ export const llmPaths = {
   '/llmServices:create': {
     post: {
       operationId: 'llmServices:create',
+      'x-nocobase-cli-ui': {
+        path: 'admin/settings/ai/llm-services',
+        parameters: ['provider'],
+      },
       tags: ['llmServices'],
       summary: 'Create an LLM service',
       requestBody: {
@@ -195,6 +199,10 @@ export const llmPaths = {
   '/llmServices:update': {
     post: {
       operationId: 'llmServices:update',
+      'x-nocobase-cli-ui': {
+        path: 'admin/settings/ai/llm-services',
+        parameters: ['filterByTk'],
+      },
       tags: ['llmServices'],
       summary: 'Update an LLM service',
       parameters: [filterByTkParameter],

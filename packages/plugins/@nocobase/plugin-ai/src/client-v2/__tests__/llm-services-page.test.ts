@@ -21,7 +21,6 @@ import {
   listProviderModels,
   moveLLMService,
   normalizeEnabledModels,
-  shouldAutoOpenAddNew,
   testLLMServiceFlight,
   updateLLMService,
   updateLLMServiceEnabled,
@@ -156,12 +155,6 @@ describe('LLMServicesPage request helpers', () => {
         },
       }),
     );
-  });
-
-  it('detects the v1-compatible auto-open add-new route state', () => {
-    expect(shouldAutoOpenAddNew({ autoOpenAddNew: true })).toBe(true);
-    expect(shouldAutoOpenAddNew({ autoOpenAddNew: false })).toBe(false);
-    expect(shouldAutoOpenAddNew(null)).toBe(false);
   });
 
   it('normalizes legacy enabledModels values', () => {
