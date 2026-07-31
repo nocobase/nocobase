@@ -196,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "Guia de desenvolvimento",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Plugin External Knowledge Base",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -312,6 +301,69 @@
         "type": "custom-link",
         "label": "Guia de engenharia de prompt",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Guia de desenvolvimento",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Funcionários de IA",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Definir uma Tool no servidor",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Definir uma Skill",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "Definir um funcionário de IA integrado",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exemplo completo: criar um funcionário de IA integrado",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Adicionar interação no frontend a uma Tool",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "Internacionalização",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "Problemas comuns",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Base de conhecimento de IA",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Plugin External Knowledge Base",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

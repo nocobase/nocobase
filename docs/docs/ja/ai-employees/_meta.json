@@ -196,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "開発ガイド",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "External Knowledge Base プラグイン",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -312,6 +301,69 @@
         "type": "custom-link",
         "label": "プロンプトガイド",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "開発ガイド",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI 従業員",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "サーバーサイド Tool の定義",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Skill の定義",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "組み込み AI 従業員の定義",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "完全な例：組み込み AI 従業員の作成",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tool にフロントエンドインタラクションを追加する",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "国際化",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "トラブルシューティング",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI ナレッジベース",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "External Knowledge Base プラグイン",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

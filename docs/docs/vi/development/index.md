@@ -52,5 +52,5 @@ features:
         link: /file-manager/development
       - title: Mở rộng knowledge base
         details: Kết nối knowledge base bên ngoài hoặc dịch vụ retrieval tùy chỉnh để mở rộng nguồn RAG cho AI employees.
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

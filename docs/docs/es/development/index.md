@@ -62,5 +62,5 @@ features:
         link: /file-manager/development
       - title: Extensión de base de conocimiento
         details: Conecte bases de conocimiento externas o servicios de recuperación personalizados para ampliar las fuentes RAG de AI employees.
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---
