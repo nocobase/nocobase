@@ -72,6 +72,12 @@ interface LinkageRule {
   }[];
 }
 
+export function updateLinkageRules<T>(rules: T[], updater: (nextRules: T[]) => void): T[] {
+  const nextRules = _.cloneDeep(rules);
+  updater(nextRules);
+  return nextRules;
+}
+
 const previewValueForLog = (value: any) => {
   if (value == null) return value;
   const t = typeof value;
@@ -1469,12 +1475,25 @@ async function resolveLinkageRulesParamsPreservingRunJsScripts(ctx: FlowContext,
 }
 
 const LinkageRulesUI = observer(
-  (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
-    const { value: rules, supportedActions } = props;
+  (props: {
+    readonly value: LinkageRule[];
+    onChange?: (value: LinkageRule[]) => void;
+    supportedActions: string[];
+    title?: string;
+  }) => {
+    const { value: rules = [], onChange, supportedActions } = props;
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
     const assignPriorityTip = t('Assignment takes precedence over form field assignment');
+
+    const replaceRules = (updater: (nextRules: LinkageRule[]) => void) => {
+      if (onChange) {
+        onChange(updateLinkageRules(rules, updater));
+      } else {
+        updater(rules);
+      }
+    };
 
     // 创建新规则的默认值
     const createNewRule = (): LinkageRule => ({
@@ -1492,7 +1511,7 @@ const LinkageRulesUI = observer(
 
     // 删除规则
     const handleDeleteRule = (index: number) => {
-      rules.splice(index, 1);
+      replaceRules((nextRules) => nextRules.splice(index, 1));
     };
 
     // 上移规则
@@ -1531,7 +1550,9 @@ const LinkageRulesUI = observer(
 
     // 切换规则启用状态
     const handleToggleEnable = (index: number, enable: boolean) => {
-      rules[index].enable = enable;
+      replaceRules((nextRules) => {
+        nextRules[index].enable = enable;
+      });
     };
 
     // 获取可用的动作类型

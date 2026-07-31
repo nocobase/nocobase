@@ -14,7 +14,11 @@ import path from 'node:path';
 export type DocumentLoaderWorkerOptions = {
   filePath: string;
   mimeType?: string;
+  /** Timeout in milliseconds for the worker to complete. Defaults to 5 minutes. */
+  timeout?: number;
 };
+
+const DEFAULT_WORKER_TIMEOUT = 5 * 60 * 1000;
 
 export const loadByWorker = async (extname: string, options: DocumentLoaderWorkerOptions): Promise<Document[]> => {
   const isTsRuntime = __filename.endsWith('.ts');
@@ -22,6 +26,7 @@ export const loadByWorker = async (extname: string, options: DocumentLoaderWorke
   const worker = new Worker(workerPath, {
     execArgv: isTsRuntime ? ['--require', 'tsx/cjs'] : undefined,
   });
+  const timeout = options.timeout ?? DEFAULT_WORKER_TIMEOUT;
   return new Promise<Document[]>((resolve, reject) => {
     let settled = false;
     const close = (error?: Error, result?: Document[]) => {
@@ -29,12 +34,17 @@ export const loadByWorker = async (extname: string, options: DocumentLoaderWorke
         return;
       }
       settled = true;
+      clearTimeout(timer);
       if (error) {
         reject(error);
         return;
       }
       resolve(result || []);
     };
+
+    const timer = setTimeout(() => {
+      close(new Error(`Document loading timed out after ${Math.round(timeout / 1000)}s`));
+    }, timeout);
 
     worker.once('message', (payload: { documents?: Document[]; error?: string }) => {
       if (payload?.error) {

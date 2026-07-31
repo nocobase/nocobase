@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, FlowModel, tExpr, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModel, tExpr, useFlowModel } from '@nocobase/flow-engine';
+import type { DefaultStructure, FlowModelOptions } from '@nocobase/flow-engine';
 import { Icon } from '../../../components';
 import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
@@ -86,14 +87,22 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     return null;
   }
 
-  onInit(options: any): void {
+  onInit(options: FlowModelOptions<T>): void {
     super.onInit(options);
+    // Action disabled state is computed at runtime and must never be restored from persisted props.
+    delete this.props.disabled;
     this.context.defineProperty('actionName', {
       get: () => {
         return this.getAclActionName();
       },
       cache: false,
     });
+  }
+
+  serialize() {
+    const data = super.serialize();
+    delete data.props.disabled;
+    return data;
   }
 
   getInputArgs() {

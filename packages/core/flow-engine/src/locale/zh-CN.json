@@ -1,5 +1,6 @@
 {
   "Add": "添加",
+  "Are you sure you want to perform the action?": "确定要执行此操作吗？",
   "Are you sure you want to delete this item? This action cannot be undone.": "确定要删除此项吗？此操作不可撤销。",
   "Are you sure to convert this template block to copy mode?": "确定将该模板区块转换为复制模式吗？",
   "Array index out of bounds": "数组索引 {{index}} 超出 '{{subKey}}' 的边界",
@@ -59,6 +60,7 @@
   "OK": "确定",
   "Other blocks": "其他区块",
   "Previous step": "上一步",
+  "Please Confirm": "请确认",
   "Render failed": "渲染失败",
   "Response record": "响应结果记录",
   "Step configuration": "步骤配置",

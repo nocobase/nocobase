@@ -18,25 +18,11 @@ function isUserKeyField(field) {
   return field.collectionName === 'users' && field.name === 'id';
 }
 
-export function UsersSelect({ disabled = false, multiple = false, value, onChange }) {
+export function UsersSelect({ value, onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
-  const handleSelectChanged = (v) => {
-    if (multiple) {
-      onChange(Array.isArray(v) ? v : [v]);
-    } else {
-      onChange(v);
-    }
-  };
-
   return (
-    <Variable.Input
-      scope={scope}
-      value={value}
-      onChange={(next) => {
-        onChange([next]);
-      }}
-    >
+    <Variable.Input nullable={false} scope={scope} value={value} onChange={onChange} changeOnSelect={false}>
       <RemoteSelect
         fieldNames={{
           label: 'nickname',
@@ -47,9 +33,7 @@ export function UsersSelect({ disabled = false, multiple = false, value, onChang
         }}
         manual={false}
         value={value}
-        onChange={handleSelectChanged}
-        multiple={multiple}
-        disabled={disabled}
+        onChange={onChange}
       />
     </Variable.Input>
   );

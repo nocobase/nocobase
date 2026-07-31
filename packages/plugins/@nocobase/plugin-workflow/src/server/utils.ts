@@ -23,6 +23,10 @@ export function getExecutionLockKey(executionId: number | string) {
   return `workflow:execution:${executionId}`;
 }
 
+export function getJobLockKey(jobId: number | string) {
+  return `workflow:job:${jobId}`;
+}
+
 export function isLockAcquireError(error: unknown) {
   return error instanceof Error && error.constructor.name === 'LockAcquireError';
 }

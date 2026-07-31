@@ -25,6 +25,8 @@ type ResourceResponse<T> = {
   data?: T;
 };
 
+type ErrorMessage = string | { message?: string };
+
 export const RestoreFromLocal = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -75,15 +77,24 @@ export const RestoreFromLocal = () => {
         url: 'backups:upload',
         method: 'post',
         data: formData,
+        skipNotify: true,
       });
       restoreTaskId.current = response.data?.data?.task ?? null;
       showCheckBackupMessage();
-    } catch (error) {
-      console.error(error);
+      setIsModalVisible(false);
+      resetFields();
+    } catch (error: unknown) {
+      const errors = ctx.api.toErrMessages(error) as ErrorMessage[];
+      notification.error({
+        message: errors.map((item, index) => {
+          const message = typeof item === 'string' ? item : item.message;
+          return <div key={`${index}_${message}`}>{message || t('Restore failed')}</div>;
+        }),
+        role: 'alert',
+      });
+    } finally {
+      setProgressing(false);
     }
-    setProgressing(false);
-    setIsModalVisible(false);
-    resetFields();
   };
 
   const handleCancel = () => {
