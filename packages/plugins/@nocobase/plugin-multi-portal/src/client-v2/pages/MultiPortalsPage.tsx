@@ -14,12 +14,15 @@ import {
   ExportOutlined,
   PlusOutlined,
   ReloadOutlined,
+  StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import { AttachmentUpload, DrawerFormLayout, Icon, IconPicker, type UploadedAttachment } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
+import { useMemoizedFn, useRequest } from 'ahooks';
 import {
   App,
+  Badge,
   Button,
   Card,
   Divider,
@@ -62,7 +65,7 @@ type MultiPortalOptions = {
 };
 
 export type MultiPortalRecord = MultiPortalFormValues & {
-  defaultPortal?: boolean;
+  isDefault?: boolean | null;
   uiLayout?: {
     layoutType?: string;
     title?: string;
@@ -87,6 +90,7 @@ type MultiPortalFormDraftValues = Omit<MultiPortalFormValues, 'routePath'> &
     gitBranch?: string;
     gitPath?: string;
     gitRepo?: string;
+    setAsDefault?: boolean;
     sourceStorage?: PortalSourceStorage;
     cover?: UploadedAttachment | null;
   };
@@ -143,6 +147,7 @@ export type MultiPortalResource = {
   update: (params: { filterByTk: MultiPortalPrimaryKey; values: MultiPortalFormValues }) => Promise<unknown>;
   destroy: (params: { filterByTk: MultiPortalPrimaryKey | MultiPortalPrimaryKey[] }) => Promise<unknown>;
   list: (params: Record<string, unknown>) => Promise<{ data?: MultiPortalListBody }>;
+  setDefault: (params: { filterByTk: MultiPortalPrimaryKey }) => Promise<unknown>;
 };
 
 export async function createMultiPortal(args: {
@@ -158,9 +163,13 @@ export async function updateMultiPortal(args: {
   resource: MultiPortalResource;
   filterByTk: MultiPortalPrimaryKey;
   values: MultiPortalFormValues;
+  setAsDefault?: boolean;
   onSubmitted: () => void;
 }) {
   await args.resource.update({ filterByTk: args.filterByTk, values: args.values });
+  if (args.setAsDefault) {
+    await args.resource.setDefault({ filterByTk: args.filterByTk });
+  }
   args.onSubmitted();
 }
 
@@ -171,6 +180,15 @@ export async function deleteMultiPortals(args: {
 }) {
   await args.resource.destroy({ filterByTk: args.filterByTk });
   args.onDeleted();
+}
+
+export async function setDefaultMultiPortal(args: {
+  resource: MultiPortalResource;
+  filterByTk: MultiPortalPrimaryKey;
+  onSubmitted: () => void;
+}) {
+  await args.resource.setDefault({ filterByTk: args.filterByTk });
+  args.onSubmitted();
 }
 
 const DEFAULT_PORTAL_TYPE = 'no-code';
@@ -185,8 +203,6 @@ const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'enabled'> =
   portalType: DEFAULT_PORTAL_TYPE,
   enabled: true,
 };
-
-const LEGACY_DEFAULT_PORTAL_UID = '__default_portal__';
 
 const describedRadioStyle: React.CSSProperties = {
   alignItems: 'flex-start',
@@ -375,6 +391,7 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
     gitBranch: _gitBranch,
     gitPath: _gitPath,
     gitRepo: _gitRepo,
+    setAsDefault: _setAsDefault,
     sourceStorage: _sourceStorage,
     ...columnValues
   } = values;
@@ -438,13 +455,6 @@ function toFormDraftValues(record: MultiPortalRecord): MultiPortalFormDraftValue
     gitBranch: options?.git?.branch || DEFAULT_PORTAL_GIT_BRANCH,
     gitPath: options?.git?.path || DEFAULT_PORTAL_GIT_PATH,
     cover: options?.cover || null,
-  };
-}
-
-function withDefaultPortalFlag(record: MultiPortalRecord): MultiPortalRecord {
-  return {
-    ...record,
-    defaultPortal: record.uid === LEGACY_DEFAULT_PORTAL_UID || isDefaultLayoutMultiPortalUid(record.uid),
   };
 }
 
@@ -512,32 +522,32 @@ function isDarkThemeColor(color?: string) {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
-function PortalCover(props: { record: MultiPortalRecord }) {
+function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string }) {
   const { record } = props;
+  const { defaultLabel } = props;
   const { token } = theme.useToken();
   const dark = isDarkThemeColor(token.colorBgContainer);
   const background = getPortalCoverBackground(record.uid || record.portalName || '', dark);
   const initial = (record.title || record.portalName || '?').trim().charAt(0).toUpperCase();
   const coverUrl = record.options?.cover?.url;
+  const coverBorderRadius = `${token.borderRadiusLG}px ${token.borderRadiusLG}px 0 0`;
 
-  if (coverUrl) {
-    return (
-      <div
-        aria-hidden
-        style={{
-          background: `${token.colorFillQuaternary} center / cover no-repeat url("${coverUrl}")`,
-          height: PORTAL_COVER_HEIGHT,
-        }}
-      />
-    );
-  }
-
-  return (
+  const cover = coverUrl ? (
+    <div
+      aria-hidden
+      style={{
+        background: `${token.colorFillQuaternary} center / cover no-repeat url("${coverUrl}")`,
+        borderRadius: coverBorderRadius,
+        height: PORTAL_COVER_HEIGHT,
+      }}
+    />
+  ) : (
     <div
       aria-hidden
       style={{
         alignItems: 'center',
         background,
+        borderRadius: coverBorderRadius,
         display: 'flex',
         height: PORTAL_COVER_HEIGHT,
         justifyContent: 'center',
@@ -560,6 +570,14 @@ function PortalCover(props: { record: MultiPortalRecord }) {
       )}
     </div>
   );
+
+  return record.isDefault ? (
+    <Badge.Ribbon text={defaultLabel} color={token.colorWarning} placement="end">
+      {cover}
+    </Badge.Ribbon>
+  ) : (
+    cover
+  );
 }
 
 const MultiPortalsPage: React.FC = () => {
@@ -568,6 +586,7 @@ const MultiPortalsPage: React.FC = () => {
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
   const [updatingEnabledRowKeys, setUpdatingEnabledRowKeys] = useState<MultiPortalPrimaryKey[]>([]);
+  const [updatingDefaultRowKey, setUpdatingDefaultRowKey] = useState<MultiPortalPrimaryKey>();
   const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
 
   const listRequest = useRequest(async (page = 1): Promise<MultiPortalListBody> => {
@@ -581,7 +600,7 @@ const MultiPortalsPage: React.FC = () => {
   });
   const { data: listResp, loading } = listRequest;
   const records = useMemo(() => {
-    return Array.isArray(listResp?.data) ? listResp.data.map(withDefaultPortalFlag) : [];
+    return Array.isArray(listResp?.data) ? listResp.data : [];
   }, [listResp?.data]);
   const pagination = useMemo(() => {
     const meta = listResp?.meta;
@@ -677,6 +696,20 @@ const MultiPortalsPage: React.FC = () => {
     [message, refreshPortals, resource, t],
   );
 
+  const handleSetDefault = useMemoizedFn(async (record: MultiPortalRecord) => {
+    setUpdatingDefaultRowKey(record.uid);
+    try {
+      await setDefaultMultiPortal({
+        resource,
+        filterByTk: record.uid,
+        onSubmitted: refreshPortals,
+      });
+      message.success(t('Default portal updated successfully'));
+    } finally {
+      setUpdatingDefaultRowKey(undefined);
+    }
+  });
+
   const renderPortalCard = useCallback(
     (record: MultiPortalRecord) => {
       const href = getMultiPortalRouteUrl(ctx.app, record.routePath, record.portalType);
@@ -699,9 +732,12 @@ const MultiPortalsPage: React.FC = () => {
         <Card
           key={record.uid}
           size="small"
-          cover={<PortalCover record={record} />}
-          styles={{ body: { padding: token.paddingSM } }}
-          style={{ opacity: record.enabled ? 1 : 0.6 }}
+          cover={<PortalCover record={record} defaultLabel={t('Default')} />}
+          styles={{
+            actions: { borderRadius: `0 0 ${token.borderRadiusLG}px ${token.borderRadiusLG}px` },
+            body: { padding: token.paddingSM },
+          }}
+          style={{ borderRadius: token.borderRadiusLG, opacity: record.enabled ? 1 : 0.6, overflow: 'visible' }}
           actions={[
             // 卡片操作只有图标，可访问名靠 aria-label 给出：tooltip 的文字不参与无障碍命名。
             // 这一个不能用 href —— 带 href 的 antd Button 渲染成 <a>，拿不到 icon-only 的方形尺寸，
@@ -733,6 +769,19 @@ const MultiPortalsPage: React.FC = () => {
                 icon={<ApartmentOutlined />}
                 disabled={routesDisabled}
                 onClick={() => openRoutesDrawer(record)}
+              />
+            </Tooltip>,
+            <Tooltip key="default" title={t('Set as default')}>
+              <Button
+                aria-label={t('Set as default')}
+                type="text"
+                size="small"
+                icon={record.isDefault ? <StarFilled style={{ color: token.colorWarning }} /> : <StarOutlined />}
+                disabled={!record.enabled || record.isDefault === true}
+                loading={updatingDefaultRowKey === record.uid}
+                onClick={async () => {
+                  await handleSetDefault(record);
+                }}
               />
             </Tooltip>,
             <Tooltip key="delete" title={t('Delete')}>
@@ -776,7 +825,7 @@ const MultiPortalsPage: React.FC = () => {
           <Space size={[4, 4]} wrap style={{ marginTop: token.marginXS }}>
             <Tag>{isNoCode ? t('No-code') : t('AI')}</Tag>
             {layoutLabel ? <Tag color={getLayoutTagColor(record.uiLayout?.layoutType)}>{layoutLabel}</Tag> : null}
-            {record.defaultPortal ? <Tag>{t('Default')}</Tag> : null}
+            {record.isDefault ? <Tag color="gold">{t('Default')}</Tag> : null}
           </Space>
         </Card>
       );
@@ -784,13 +833,17 @@ const MultiPortalsPage: React.FC = () => {
     [
       ctx.app,
       handleDelete,
+      handleSetDefault,
       handleToggleEnabled,
       openFormDrawer,
       openRoutesDrawer,
       t,
+      token.borderRadiusLG,
+      token.colorWarning,
       token.fontSizeSM,
       token.marginXS,
       token.paddingSM,
+      updatingDefaultRowKey,
       updatingEnabledRowKeys,
     ],
   );
@@ -889,6 +942,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
     [layoutOptionsService.data, t],
   );
   const watchedPortalType = Form.useWatch('portalType', form);
+  const watchedEnabled = Form.useWatch('enabled', form);
   // 设备对两种类型都有意义，新建时默认给桌面端。
   useEffect(() => {
     if (record || form.getFieldValue('uiLayoutUid')) {
@@ -902,7 +956,10 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(
     () =>
       record
-        ? toFormDraftValues(record)
+        ? {
+            ...toFormDraftValues(record),
+            setAsDefault: false,
+          }
         : {
             ...defaultFormValues,
             portalType: NEW_PORTAL_DEFAULT_TYPE,
@@ -953,7 +1010,8 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   );
 
   const handleSubmit = useCallback(async () => {
-    const values = completeMultiPortalFormValues(await form.validateFields());
+    const draftValues = await form.validateFields();
+    const values = completeMultiPortalFormValues(draftValues);
     setSubmitting(true);
     try {
       if (record) {
@@ -961,6 +1019,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           resource,
           filterByTk: record.uid,
           values,
+          setAsDefault: record.isDefault !== true && draftValues.enabled && draftValues.setAsDefault === true,
           onSubmitted,
         });
       } else {
@@ -1168,6 +1227,20 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         >
           <Switch />
         </Form.Item>
+        {record ? (
+          <Form.Item
+            label={t('Default portal')}
+            extra={t('Users enter this portal by default when they open the application without specifying one.')}
+          >
+            {record.isDefault ? (
+              <Switch aria-label={t('Default portal')} checked disabled />
+            ) : (
+              <Form.Item name="setAsDefault" noStyle valuePropName="checked">
+                <Switch aria-label={t('Default portal')} disabled={watchedEnabled === false} />
+              </Form.Item>
+            )}
+          </Form.Item>
+        ) : null}
       </Form>
     </DrawerFormLayout>
   );

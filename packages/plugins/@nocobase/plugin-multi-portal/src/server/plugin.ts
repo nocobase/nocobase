@@ -36,6 +36,7 @@ import {
 import {
   DEFAULT_ADMIN_MULTI_PORTAL_UID,
   DEFAULT_MOBILE_MULTI_PORTAL_UID,
+  NAMESPACE,
   isDefaultLayoutMultiPortalUid,
 } from '../constants';
 
@@ -86,6 +87,7 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:create',
   'multiPortals:update',
   'multiPortals:firstOrCreate',
+  'multiPortals:setDefault',
   'multiPortals:destroy',
   'multiPortals:deploy',
   'multiPortals:pullSource',
@@ -155,6 +157,7 @@ type DefaultMultiPortalRecord = {
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
+  isDefault?: true;
   uiLayoutUid: string;
 };
 type AppPortalManifestItem = {
@@ -285,7 +288,7 @@ function formatInitPortalTitle(portalName: string) {
   return title || portalName;
 }
 
-function getDefaultMultiPortalRecord(): DefaultMultiPortalRecord {
+function getDefaultMultiPortalRecord(options: { isDefault?: true } = {}): DefaultMultiPortalRecord {
   const portalName = getInitPortalName();
   return {
     uid: DEFAULT_MULTI_PORTAL_UID,
@@ -296,12 +299,13 @@ function getDefaultMultiPortalRecord(): DefaultMultiPortalRecord {
     routePath: `/${portalName}`,
     authCheck: true,
     enabled: true,
+    ...(options.isDefault ? { isDefault: true } : {}),
     uiLayoutUid: 'admin-layout-model',
   };
 }
 
 function getFreshMultiPortalRecords(): DefaultMultiPortalRecord[] {
-  return [getDefaultMultiPortalRecord()];
+  return [getDefaultMultiPortalRecord({ isDefault: true })];
 }
 
 function getFixedLayoutMultiPortalRecords(): DefaultMultiPortalRecord[] {
@@ -1322,6 +1326,16 @@ async function normalizeMultiPortalSlugValues(ctx: ResourcerContext, next: () =>
 
     values.portalName = slug;
     values.routePath = `/${slug}`;
+  }
+  await next();
+}
+
+async function preventDirectDefaultPortalMutation(ctx: ResourcerContext, next: () => Promise<void>) {
+  for (const values of getMultiPortalWriteRecords(ctx)) {
+    if (Object.prototype.hasOwnProperty.call(values, 'isDefault')) {
+      ctx.throw(400, ctx.t('Use multiPortals:setDefault to update the default Portal', { ns: NAMESPACE }));
+      return;
+    }
   }
   await next();
 }
@@ -2697,6 +2711,127 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
   await next();
 }
 
+const DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS = ['uid', 'portalType', 'routePath'] as const;
+
+function getDefaultMultiPortalType(record: Model): InitPortalType | null {
+  const portalType = record.get('portalType');
+  if (portalType === null || portalType === undefined) {
+    return 'no-code';
+  }
+  return typeof portalType === 'string' && isInitPortalType(portalType) ? portalType : null;
+}
+
+function pickDefaultMultiPortalFields(record: Model) {
+  return {
+    uid: String(record.get('uid')),
+    portalType: getDefaultMultiPortalType(record) || 'no-code',
+    routePath: String(record.get('routePath')),
+  };
+}
+
+async function findEnabledDefaultMultiPortal(ctx: ResourcerContext, transaction?: Transaction) {
+  const record = await ctx.db.getRepository('multiPortals').findOne({
+    filter: {
+      enabled: true,
+      isDefault: true,
+    },
+    fields: [...DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS, 'uiLayoutUid'],
+    appends: ['uiLayout'],
+    transaction,
+  });
+  if (!record) {
+    return null;
+  }
+
+  const portalType = getDefaultMultiPortalType(record);
+  if (!portalType) {
+    return null;
+  }
+  if (portalType === 'no-code') {
+    const uiLayout = record.get('uiLayout') as Model | undefined;
+    if (!uiLayout || uiLayout.get('enabled') !== true) {
+      return null;
+    }
+  }
+  return record;
+}
+
+async function getDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<void>) {
+  const record = await findEnabledDefaultMultiPortal(ctx);
+  ctx.body = record ? pickDefaultMultiPortalFields(record) : null;
+  ctx.status = 200;
+  await next();
+}
+
+async function setDefaultMultiPortal(ctx: ResourcerContext, next: () => Promise<void>) {
+  const filterByTk = ctx.action?.params.filterByTk;
+  if (filterByTk === undefined || filterByTk === null || filterByTk === '') {
+    ctx.throw(400, ctx.t('filterByTk is required', { ns: NAMESPACE }));
+    return;
+  }
+
+  const repository = ctx.db.getRepository('multiPortals');
+  const updated = await ctx.db.sequelize.transaction(async (transaction) => {
+    const target = await repository.findOne({
+      filterByTk,
+      fields: [...DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS, 'enabled', 'uiLayoutUid'],
+      lock: transaction.LOCK.UPDATE,
+      transaction,
+    });
+    if (!target) {
+      ctx.throw(404, ctx.t('Portal not found', { ns: NAMESPACE }));
+      return null;
+    }
+    if (target.get('enabled') !== true) {
+      ctx.throw(400, ctx.t('Disabled Portal cannot be set as default', { ns: NAMESPACE }));
+      return null;
+    }
+    const portalType = getDefaultMultiPortalType(target);
+    if (!portalType) {
+      ctx.throw(400, ctx.t('Unsupported Portal type cannot be set as default', { ns: NAMESPACE }));
+      return null;
+    }
+    if (portalType === 'no-code') {
+      const uiLayoutUid = target.get('uiLayoutUid');
+      const uiLayout =
+        typeof uiLayoutUid === 'string' && uiLayoutUid
+          ? await ctx.db.getRepository('uiLayouts').findOne({
+              filter: {
+                uid: uiLayoutUid,
+                enabled: true,
+              },
+              fields: ['uid'],
+              lock: transaction.LOCK.UPDATE,
+              transaction,
+            })
+          : null;
+      if (!uiLayout) {
+        ctx.throw(400, ctx.t('Portal layout must be enabled before setting it as default', { ns: NAMESPACE }));
+        return null;
+      }
+    }
+
+    await repository.update({
+      filter: { isDefault: true },
+      values: { isDefault: null },
+      transaction,
+    });
+    await repository.update({
+      filterByTk,
+      values: { isDefault: true },
+      transaction,
+    });
+    return repository.findOne({
+      filterByTk,
+      fields: [...DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS],
+      transaction,
+    });
+  });
+
+  ctx.body = updated ? pickDefaultMultiPortalFields(updated) : null;
+  await next();
+}
+
 async function listAccessibleMultiPortals(ctx: ResourcerContext, next: () => Promise<void>) {
   const accessiblePortalUids = await listCurrentRoleAccessibleMultiPortalUids(ctx);
 
@@ -3470,16 +3605,23 @@ export class PluginMultiPortalServer extends Plugin {
       'desktopRoutes:listRolePermissionTargets',
       mapMultiPortalLayoutToUiLayoutForRolePermissionTargets,
     );
+    this.app.resourceManager.registerPreActionHandler('multiPortals:create', preventDirectDefaultPortalMutation);
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', normalizeMultiPortalSlugValues);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventDirectDefaultPortalMutation);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventMultiPortalBackingLayoutChange);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', normalizeMultiPortalSlugValues);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', preventDirectDefaultPortalMutation);
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:firstOrCreate',
       preventMultiPortalBackingLayoutChange,
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', captureSkipCreatePortalDirectory);
     this.app.resourceManager.registerPreActionHandler('multiPortals:firstOrCreate', normalizeMultiPortalSlugValues);
+    this.app.resourceManager.registerPreActionHandler(
+      'multiPortals:updateOrCreate',
+      preventDirectDefaultPortalMutation,
+    );
     this.app.resourceManager.registerPreActionHandler(
       'multiPortals:updateOrCreate',
       preventMultiPortalBackingLayoutChange,
@@ -3511,12 +3653,15 @@ export class PluginMultiPortalServer extends Plugin {
       actions: ROLE_MULTI_PORTAL_PERMISSION_ACTIONS,
     });
     this.app.acl.allow('multiPortals', 'listEnabled', 'public');
+    this.app.acl.allow('multiPortals', 'getDefault', 'public');
     this.app.acl.allow('multiPortals', 'listAccessible', 'loggedIn');
     this.app.resourceManager.use(createPortalDeployUploadMiddleware(), {
       tag: 'multiPortalDeployUpload',
       after: 'acl',
     });
     this.app.resourceManager.registerActionHandler('multiPortals:listEnabled', listEnabledMultiPortals);
+    this.app.resourceManager.registerActionHandler('multiPortals:getDefault', getDefaultMultiPortal);
+    this.app.resourceManager.registerActionHandler('multiPortals:setDefault', setDefaultMultiPortal);
     this.app.resourceManager.registerActionHandler('multiPortals:listAccessible', listAccessibleMultiPortals);
     this.app.resourceManager.registerActionHandler('multiPortals:deploy', async (ctx, next) => {
       await this.deployPortalDist(ctx, next);
@@ -3541,6 +3686,11 @@ export class PluginMultiPortalServer extends Plugin {
       applyDefaultRoleMultiPortalAccess(role);
     });
     this.app.db.on('desktopRoutes.afterCreate', reconcileCreatedDesktopRoutePermissions);
+    this.app.db.on('multiPortals.beforeUpdate', (multiPortal: Model) => {
+      if (multiPortal.get('enabled') === false && multiPortal.get('isDefault') === true) {
+        multiPortal.set('isDefault', null);
+      }
+    });
     this.app.db.on('multiPortals.afterCreate', async (multiPortal: Model, options?: DatabaseHookOptions) => {
       await grantDefaultAccessToNewMultiPortal(this.app.db, multiPortal, options);
       await this.publishAppManifestItem(multiPortal, options);

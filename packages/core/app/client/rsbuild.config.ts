@@ -16,6 +16,7 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
+import { isClientDevProxyPath, rewriteClientDevProxyRootPath } from '../clientDevProxy';
 import { createSettingsDevProxyOptions } from '../settingsDevProxy';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -259,17 +260,15 @@ export default defineConfig(({ command }) => {
           xfwd: true,
         },
         {
-          context: v2BasePath,
+          context: (pathname) => isClientDevProxyPath(pathname, v2BasePath),
           target: `http://127.0.0.1:${v2Port}`,
           changeOrigin: true,
           ws: true,
-          pathRewrite: {
-            [`^${v2BasePath}`]: v2BasePath,
-          },
+          pathRewrite: (pathname) => rewriteClientDevProxyRootPath(pathname, v2BasePath),
           xfwd: true,
         },
         {
-          context: portalBasePath,
+          context: (pathname) => isClientDevProxyPath(pathname, portalBasePath),
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,

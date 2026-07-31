@@ -9,6 +9,7 @@
 
 export const DEFAULT_ADMIN_MULTI_PORTAL_UID = '__default_admin__';
 export const DEFAULT_MOBILE_MULTI_PORTAL_UID = '__default_mobile__';
+export const NAMESPACE = '@nocobase/plugin-multi-portal';
 
 const DEFAULT_LAYOUT_MULTI_PORTAL_UIDS = new Set<string>([
   DEFAULT_ADMIN_MULTI_PORTAL_UID,

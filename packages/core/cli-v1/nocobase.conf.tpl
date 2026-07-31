@@ -214,14 +214,28 @@ server {
 
 
 
-    location ^~ {{publicPath}}x/apps/ {
+    location = {{publicPath}}{{portalClientPrefix}} {
+        absolute_redirect off;
+        return 302 {{v2PublicPath}}$is_args$args;
+    }
+
+    location = {{publicPath}}{{portalClientPrefix}}/ {
+        absolute_redirect off;
+        return 302 {{v2PublicPath}}$is_args$args;
+    }
+
+    location ^~ {{publicPath}}{{portalClientPrefix}}/apps/ {
         absolute_redirect off;
 
-        if ($uri ~ ^{{publicPath}}x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {
-            return 308 {{publicPath}}x/apps/$subapp/$portal/$is_args$args;
+        if ($uri ~ ^{{publicPath}}{{portalClientPrefix}}/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {
+            return 302 {{v2PublicPath}}apps/$subapp/$is_args$args;
         }
 
-        if ($uri !~ ^{{publicPath}}x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {
+        if ($uri ~ ^{{publicPath}}{{portalClientPrefix}}/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {
+            return 308 {{publicPath}}{{portalClientPrefix}}/apps/$subapp/$portal/$is_args$args;
+        }
+
+        if ($uri !~ ^{{publicPath}}{{portalClientPrefix}}/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {
             return 404;
         }
 
@@ -238,14 +252,14 @@ server {
             =404;
     }
 
-    location ^~ {{publicPath}}x/ {
+    location ^~ {{publicPath}}{{portalClientPrefix}}/ {
         absolute_redirect off;
 
-        if ($uri ~ ^{{publicPath}}x/(?<portal>[A-Za-z0-9_-]+)$) {
-            return 308 {{publicPath}}x/$portal/$is_args$args;
+        if ($uri ~ ^{{publicPath}}{{portalClientPrefix}}/(?<portal>[A-Za-z0-9_-]+)$) {
+            return 308 {{publicPath}}{{portalClientPrefix}}/$portal/$is_args$args;
         }
 
-        if ($uri !~ ^{{publicPath}}x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {
+        if ($uri !~ ^{{publicPath}}{{portalClientPrefix}}/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {
             return 404;
         }
 

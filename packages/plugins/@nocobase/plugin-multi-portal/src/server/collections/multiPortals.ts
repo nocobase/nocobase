@@ -20,6 +20,10 @@ export default defineCollection({
       type: 'UNIQUE',
       fields: ['portalName'],
     },
+    {
+      type: 'UNIQUE',
+      fields: ['isDefault'],
+    },
   ],
   fields: [
     {
@@ -67,6 +71,12 @@ export default defineCollection({
       type: 'boolean',
       defaultValue: true,
       allowNull: false,
+    },
+    {
+      name: 'isDefault',
+      type: 'boolean',
+      defaultValue: null,
+      allowNull: true,
     },
     {
       name: 'options',

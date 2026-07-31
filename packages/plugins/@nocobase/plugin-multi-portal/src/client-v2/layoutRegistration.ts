@@ -52,6 +52,7 @@ const MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS = 'MultiPortalMobileChildPageMo
 const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
 const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
 const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
+const MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX = 'multiPortalLayout_';
 
 const layoutRegisterOptionsByType: Record<
   string,
@@ -77,6 +78,10 @@ function isRuntimePortal(record: MultiPortalRuntimeRecord) {
   return (record.portalType || 'no-code') === 'no-code';
 }
 
+function getMultiPortalLayoutRouteName(uid: string) {
+  return `${MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX}${encodeURIComponent(uid).replace(/\./g, '%2E')}`;
+}
+
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
   if (!record.enabled || !isRuntimePortal(record)) {
     return null;
@@ -92,7 +97,7 @@ export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRec
   }
 
   return {
-    routeName: record.portalName,
+    routeName: getMultiPortalLayoutRouteName(record.uid),
     routePath: record.routePath,
     uid: record.uid,
     ...codeDefinedOptions,
@@ -104,10 +109,14 @@ export async function fetchMultiPortals(apiClient: MultiPortalRegistrationApp['a
   const response = await apiClient.request<MultiPortalListBody>({
     url: 'multiPortals:listEnabled',
     method: 'get',
+    skipAuth: true,
     skipNotify: true,
   });
   const records = response?.data?.data;
-  return Array.isArray(records) ? records : [];
+  if (!Array.isArray(records)) {
+    throw new Error('multiPortals:listEnabled returned an invalid response');
+  }
+  return records;
 }
 
 export function registerMultiPortalRecords(
@@ -117,7 +126,8 @@ export function registerMultiPortalRecords(
   const candidates: Array<{ options: LayoutRegisterOptions; record: MultiPortalRuntimeRecord }> = [];
   const existingPortalUids = new Set(layoutManager.listLayouts().map((layout) => layout.uid));
   const portalUids = new Set<string>();
-  const routeNames = new Set<string>();
+  const portalNames = new Set<string>();
+  const layoutRouteNames = new Set<string>();
 
   for (const record of records) {
     if (!record.enabled || !isRuntimePortal(record)) {
@@ -133,11 +143,15 @@ export function registerMultiPortalRecords(
     if (existingPortalUids.has(record.uid)) {
       throw new Error(`Duplicate portal uid '${record.uid}'.`);
     }
-    if (routeNames.has(options.routeName) || layoutManager.hasLayout(options.routeName)) {
-      throw new Error(`Duplicate portal route name '${options.routeName}'.`);
+    if (portalNames.has(record.portalName)) {
+      throw new Error(`Duplicate portal name '${record.portalName}'.`);
+    }
+    if (layoutRouteNames.has(options.routeName) || layoutManager.hasLayout(options.routeName)) {
+      throw new Error(`Duplicate portal layout route name '${options.routeName}'.`);
     }
     portalUids.add(record.uid);
-    routeNames.add(options.routeName);
+    portalNames.add(record.portalName);
+    layoutRouteNames.add(options.routeName);
     candidates.push({ options, record });
   }
 
@@ -163,8 +177,7 @@ function getRouteRepository(app: MultiPortalRegistrationApp) {
   return (context as { routeRepository?: unknown }).routeRepository;
 }
 
-export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
-  const records = await fetchMultiPortals(app.apiClient);
+export function registerMultiPortals(app: MultiPortalRegistrationApp, records: MultiPortalRuntimeRecord[]) {
   const registeredPortalUids = registerMultiPortalRecords(app.layoutManager, records);
   const registeredPortalUidSet = new Set(registeredPortalUids);
   const registeredPortalScopes = records
@@ -174,4 +187,9 @@ export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationAp
       portalUid: record.uid,
     }));
   installMultiPortalRouteRepositoryScope(getRouteRepository(app), () => registeredPortalScopes);
+  return records;
+}
+
+export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
+  return registerMultiPortals(app, await fetchMultiPortals(app.apiClient));
 }

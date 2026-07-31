@@ -202,7 +202,19 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/apps/ {');
+  expect(bundle.appConfigContent).toContain(`location = /console/x {
+        absolute_redirect off;
+        return 302 /console/admin/$is_args$args;
+    }`);
+  expect(bundle.appConfigContent).toContain(`location = /console/x/ {
+        absolute_redirect off;
+        return 302 /console/admin/$is_args$args;
+    }`);
+  expect(bundle.appConfigContent).toContain('return 302 /console/admin/$is_args$args;');
   expect(bundle.appConfigContent).toContain('absolute_redirect off;');
+  expect(bundle.appConfigContent).toContain('if ($uri ~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {');
+  expect(bundle.appConfigContent).toContain('return 302 /console/admin/apps/$subapp/$is_args$args;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /console/admin/apps/$subapp/;');
   expect(bundle.appConfigContent).toContain(
     'if ($uri ~ ^/console/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {',
   );
@@ -216,6 +228,7 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path');
   expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path/');
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /console/admin/;');
   expect(bundle.appConfigContent).toContain('return 308 /console/x/$portal/$is_args$args;');
   expect(bundle.appConfigContent).toContain('if ($uri !~ ^/console/x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {');
   expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/index.html break;');
@@ -276,6 +289,12 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).not.toContain('location ^~ / {');
   expect(bundle.appConfigContent).toContain('location ^~ /x/apps/ {');
+  expect(bundle.appConfigContent).toContain('location = /x {');
+  expect(bundle.appConfigContent).toContain('location = /x/ {');
+  expect(bundle.appConfigContent).toContain('return 302 /v/$is_args$args;');
+  expect(bundle.appConfigContent).toContain('return 302 /v/apps/$subapp/$is_args$args;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /v/apps/$subapp/;');
+  expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /v/;');
   expect(bundle.appConfigContent).toContain(
     'if ($uri ~ ^/x/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {',
   );
@@ -646,6 +665,8 @@ test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy
   expect(result.content).toContain('try_files {path} /index-v1.html');
   expect(result.content).toContain('file_server');
   expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
+  expect(result.content).toContain('handle /x {');
+  expect(result.content).toContain('handle /x/* {');
 });
 
 test('buildEnvProxyConfig renders explicit Caddy redirects when app public path is not root', async () => {
@@ -691,6 +712,8 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.appConfigContent).not.toContain('route {');
   expect(bundle.appConfigContent).toContain('handle /console/files/* {');
   expect(bundle.appConfigContent).toContain('handle /files/* {');
+  expect(bundle.appConfigContent).toContain('handle /console/x {');
+  expect(bundle.appConfigContent).toContain('handle /console/x/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/settings/assets/* {');
   expect(bundle.appConfigContent).toContain('header Cache-Control "public, max-age=31536000, immutable"');

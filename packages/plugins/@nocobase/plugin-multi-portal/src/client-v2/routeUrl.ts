@@ -208,3 +208,44 @@ export function getMultiPortalRouteUrl(
     normalizePortalRoutePath(normalizedRoutePath, publicPath, portalType, useTrailingAppScope),
   );
 }
+
+function getSettingsBasePath(basePath?: string) {
+  const base = normalizeBasePath(basePath);
+  const modernPrefixes = Array.from(
+    new Set([getPortalRoutePrefix(DEFAULT_PORTAL_TYPE), DEFAULT_MODERN_PORTAL_ROUTE_PREFIX]),
+  );
+
+  for (const prefix of modernPrefixes) {
+    if (base === prefix) {
+      return SETTINGS_ROUTE_PREFIX;
+    }
+
+    const scopedMatch = base.match(new RegExp(`^(.*)${prefix}/(apps|_app)/([^/]+)$`));
+    if (scopedMatch) {
+      return `${scopedMatch[1]}${SETTINGS_ROUTE_PREFIX}/${scopedMatch[2]}/${scopedMatch[3]}`;
+    }
+
+    if (base.endsWith(prefix)) {
+      return `${base.slice(0, -prefix.length)}${SETTINGS_ROUTE_PREFIX}`;
+    }
+  }
+
+  return joinRoutePath(base, SETTINGS_ROUTE_PREFIX);
+}
+
+export function getMultiPortalSettingsUrl(app?: MultiPortalAppLike) {
+  const basename = app?.router?.getBasename?.() || app?.router?.basename;
+  if (basename) {
+    const basePath = hasPublicPath(app)
+      ? getV2EffectiveBasePath({
+          getPublicPath: app.getPublicPath,
+          router: {
+            getBasename: () => app.router?.getBasename?.() || app.router?.basename,
+          },
+        })
+      : basename;
+    return getSettingsBasePath(basePath);
+  }
+
+  return getSettingsBasePath(app?.getPublicPath?.());
+}

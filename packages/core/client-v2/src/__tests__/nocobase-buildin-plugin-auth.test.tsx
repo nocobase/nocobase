@@ -72,6 +72,21 @@ class TestRootPortalPlugin extends Plugin {
   }
 }
 
+class TestScopedPortalPlugin extends Plugin {
+  async load() {
+    this.router.add('customer-portal', {
+      path: '/customer/*',
+      authCheck: true,
+      Component: () => <div>customer portal</div>,
+    });
+    this.router.add('customer-portal-signin', {
+      path: '/customer/signin',
+      skipAuthCheck: true,
+      Component: () => <div>customer portal signin</div>,
+    });
+  }
+}
+
 describe('nocobase buildin plugin auth redirect', () => {
   const originalLocation = globalThis.window.location;
 
@@ -184,6 +199,28 @@ describe('nocobase buildin plugin auth redirect', () => {
     await waitFor(() => {
       expect(app.router.router.state.location.pathname).toBe('/nocobase/v2/signin');
       expect(app.router.router.state.location.search).toBe('?redirect=%2Fnocobase%2Fv2');
+    });
+  });
+
+  it('should use an explicitly registered Portal signin route when unauthenticated', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as unknown as typeof Plugin, TestScopedPortalPlugin as typeof Plugin],
+      router: { type: 'memory', initialEntries: ['/v2/customer/dashboard?tab=overview#panel'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, { data: {} });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/v2/customer/signin');
+      expect(app.router.router.state.location.search).toBe(
+        '?redirect=%2Fv2%2Fcustomer%2Fdashboard%3Ftab%3Doverview%23panel',
+      );
     });
   });
 

@@ -11,6 +11,8 @@ const { resolve, posix } = require('path');
 const { storagePathJoin, resolvePublicPath, resolveV2PublicPath, normalizeModernClientPrefix } = require('../util');
 const { readFileSync, writeFileSync } = require('fs');
 
+const PORTAL_CLIENT_PREFIX = 'x';
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -70,6 +72,7 @@ module.exports = (cli) => {
       .replace(/\{\{distPath\}\}/g, distPath)
       .replace(/\{\{v2PublicPath\}\}/g, v2PublicPath)
       .replace(/\{\{v2PublicPathNoTrailingSlash\}\}/g, v2PublicPathWithoutTrailingSlash)
+      .replace(/\{\{portalClientPrefix\}\}/g, PORTAL_CLIENT_PREFIX)
       .replace(/\{\{settingsAssetsPath\}\}/g, settingsAssetsPath)
       .replace(/\{\{settingsDocumentPattern\}\}/g, settingsDocumentPattern)
       .replace(/\{\{apiPort\}\}/g, process.env.APP_PORT)

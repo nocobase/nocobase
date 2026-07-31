@@ -8,71 +8,83 @@
  */
 
 import { useApp, type Application } from '@nocobase/client-v2';
-import { Flex, Result, Spin } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { DEFAULT_ADMIN_MULTI_PORTAL_UID } from '../constants';
-import { useT } from './locale';
-import { getMultiPortalRouteUrl } from './routeUrl';
+import React, { useEffect, useRef, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { getMultiPortalRouteUrl, getMultiPortalSettingsUrl } from './routeUrl';
 
 export type RootLandingPortal = {
   uid: string;
   portalType?: string | null;
   routePath: string;
-  uiLayout?: {
-    layoutType?: string | null;
-  };
 };
 
-type RootLandingPortalListBody = {
-  data?: RootLandingPortal[];
+export type RootLandingProps = {
+  runtimeRegistrationFailed?: boolean;
 };
 
-function getRootLandingPriority(portal: RootLandingPortal) {
-  if (portal.uid === DEFAULT_ADMIN_MULTI_PORTAL_UID && portal.portalType === 'no-code') {
-    return 0;
-  }
-  if (portal.portalType === 'no-code' && portal.uiLayout?.layoutType === 'desktop') {
-    return 1;
-  }
-  if (portal.portalType === 'no-code' && portal.uiLayout?.layoutType === 'mobile') {
-    return 2;
-  }
-  return 3;
+type RootLandingPortalBody = {
+  data?: unknown;
+};
+
+function getLocationSuffix(location: { search?: string; hash?: string }) {
+  return `${location.search || ''}${location.hash || ''}`;
 }
 
-export function selectRootLandingPortal(portals: RootLandingPortal[]) {
-  return portals
-    .filter((portal) => portal.portalType === 'no-code' || portal.portalType === 'ai')
-    .map((portal, index) => ({ index, portal, priority: getRootLandingPriority(portal) }))
-    .sort((left, right) => left.priority - right.priority || left.index - right.index)[0]?.portal;
+function isRootLandingPortal(value: unknown): value is RootLandingPortal {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const portal = value as Record<string, unknown>;
+  return (
+    typeof portal.uid === 'string' &&
+    portal.uid.length > 0 &&
+    (portal.portalType === 'no-code' || portal.portalType === 'ai') &&
+    typeof portal.routePath === 'string' &&
+    portal.routePath.trim().length > 0
+  );
 }
 
-export function RootLanding() {
+export function RootLanding({ runtimeRegistrationFailed = false }: RootLandingProps) {
   const app = useApp<Application>();
-  const t = useT();
-  const [portals, setPortals] = useState<RootLandingPortal[]>();
-  const [error, setError] = useState<Error>();
+  const location = useLocation();
+  const [portal, setPortal] = useState<RootLandingPortal>();
   const documentNavigationTargetRef = useRef<string>();
 
   useEffect(() => {
+    if (runtimeRegistrationFailed) {
+      window.location.replace(`${getMultiPortalSettingsUrl(app)}${getLocationSuffix(location)}`);
+      return;
+    }
+
     let active = true;
 
     const load = async () => {
       try {
-        const response = await app.apiClient.request<RootLandingPortalListBody>({
-          url: 'multiPortals:listAccessible',
+        const response = await app.apiClient.request<RootLandingPortalBody>({
+          url: 'multiPortals:getDefault',
           method: 'get',
+          skipAuth: true,
           skipNotify: true,
         });
-        if (active) {
-          setPortals(Array.isArray(response?.data?.data) ? response.data.data : []);
-          setError(undefined);
+        if (!active) {
+          return;
         }
-      } catch (cause) {
-        if (active) {
-          setError(cause instanceof Error ? cause : new Error(String(cause)));
+        const defaultPortal = response?.data?.data;
+        if (isRootLandingPortal(defaultPortal)) {
+          if (
+            defaultPortal.portalType === 'no-code' &&
+            !app.layoutManager.listLayouts().some((layout) => layout.uid === defaultPortal.uid)
+          ) {
+            window.location.replace(`${getMultiPortalSettingsUrl(app)}${getLocationSuffix(location)}`);
+            return;
+          }
+          setPortal(defaultPortal);
+          return;
         }
+        window.location.replace(`${getMultiPortalSettingsUrl(app)}${getLocationSuffix(location)}`);
+      } catch {
+        if (!active) return;
+        window.location.replace(`${getMultiPortalSettingsUrl(app)}${getLocationSuffix(location)}`);
       }
     };
 
@@ -80,35 +92,23 @@ export function RootLanding() {
     return () => {
       active = false;
     };
-  }, [app]);
-
-  const selectedPortal = useMemo(() => selectRootLandingPortal(portals ?? []), [portals]);
+  }, [app, location, runtimeRegistrationFailed]);
 
   useEffect(() => {
-    if (!selectedPortal || selectedPortal.portalType !== 'ai') {
+    if (!portal || portal.portalType !== 'ai') {
       return;
     }
-    const target = getMultiPortalRouteUrl(app, selectedPortal.routePath, selectedPortal.portalType);
+    const target = `${getMultiPortalRouteUrl(app, portal.routePath, portal.portalType)}${getLocationSuffix(location)}`;
     if (documentNavigationTargetRef.current === target) {
       return;
     }
     documentNavigationTargetRef.current = target;
     window.location.replace(target);
-  }, [app, selectedPortal]);
+  }, [app, location, portal]);
 
-  if (error) {
-    return <Result status="error" title={t('Failed to load portals')} />;
-  }
-  if (!portals || (selectedPortal && selectedPortal.portalType === 'ai')) {
-    return (
-      <Flex align="center" justify="center" style={{ minHeight: '100vh' }}>
-        <Spin size="large" />
-      </Flex>
-    );
-  }
-  if (!selectedPortal) {
-    return <Result status="info" title={t('No accessible portals')} />;
+  if (!portal || portal.portalType === 'ai') {
+    return null;
   }
 
-  return <Navigate replace to={selectedPortal.routePath} />;
+  return <Navigate replace to={{ pathname: portal.routePath, search: location.search, hash: location.hash }} />;
 }

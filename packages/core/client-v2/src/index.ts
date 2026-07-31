@@ -33,6 +33,7 @@ export {
   CurrentUserContext,
   NocoBaseBuildInPlugin,
   NocoBaseBuildInPluginV2,
+  resolveUnauthenticatedSignInRoute,
   useCurrentRoles,
   useCurrentUserContext,
 } from './nocobase-buildin-plugin';

@@ -15,6 +15,7 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generateV2Plugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
+import { isClientDevProxyPath, rewriteClientDevProxyRootPath } from '../clientDevProxy';
 import { createSettingsDevProxyOptions, isSettingsDevPath } from '../settingsDevProxy';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -300,7 +301,7 @@ export default defineConfig(({ command }) => {
           changeOrigin: true,
         },
         {
-          context: portalBasePath,
+          context: (pathname) => isClientDevProxyPath(pathname, portalBasePath),
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
@@ -324,11 +325,12 @@ export default defineConfig(({ command }) => {
       lazyCompilation: false,
       setupMiddlewares: [
         (middlewares) => {
-          if (appClientEntryMode !== 'modern-only') {
-            return;
-          }
-
           middlewares.unshift((req, res, next) => {
+            req.url = rewriteClientDevProxyRootPath(String(req.url || '/'), v2PublicPath);
+            if (appClientEntryMode !== 'modern-only') {
+              next();
+              return;
+            }
             const [rawPathname = '/', query = ''] = String(req.url || '/').split('?');
             const pathname = normalizePathname(rawPathname);
             if (
@@ -337,7 +339,7 @@ export default defineConfig(({ command }) => {
               pathname.startsWith(apiBasePath) ||
               pathname.startsWith(wsBasePath) ||
               pathname.startsWith(localStorageBasePath) ||
-              pathname.startsWith(portalBasePath) ||
+              isClientDevProxyPath(pathname, portalBasePath) ||
               pathname.startsWith(staticBasePath) ||
               isSettingsDevPath(pathname, appPublicPath)
             ) {

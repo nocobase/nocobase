@@ -14,6 +14,7 @@ import {
   languageCodes,
   Plugin,
   redirectToV2Signin,
+  resolveUnauthenticatedSignInRoute,
   UserCenterSelectItemModel,
 } from '@nocobase/client-v2';
 import debounce from 'lodash/debounce';
@@ -93,6 +94,14 @@ export class PluginAuthClientV2 extends Plugin {
 
   registerType(authType: string, options: AuthOptions) {
     this.authTypes.register(authType, options);
+  }
+
+  registerSignInRoute(name: string, path: string) {
+    this.router.add(`auth.${name}`, {
+      path,
+      skipAuthCheck: true,
+      componentLoader: () => import('./pages/SignInPage'),
+    });
   }
 
   async load() {
@@ -221,7 +230,8 @@ export class PluginAuthClientV2 extends Plugin {
               redirectToV2Signin(this.app, redirectPath);
             } else {
               // 用 react-router navigate (虚拟跳转)而不是 location.replace, 避免覆盖同时段其它响应拦截器触发的 window.location.href 整页跳转 (例如 2FA 接收到服务端 302 时)。
-              this.app.router.navigate(`/signin?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
+              const signInPath = resolveUnauthenticatedSignInRoute(this.app, pathname);
+              this.app.router.navigate(`${signInPath}?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
             }
           });
           return new Promise<never>(() => undefined);
