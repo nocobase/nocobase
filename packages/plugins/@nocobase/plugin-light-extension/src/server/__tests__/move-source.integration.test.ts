@@ -31,6 +31,7 @@ import { isMoveToInlineHostSupported, MoveToInlineService } from '../services/Mo
 import {
   buildRunJSFilesHash,
   type RunJSSourceAdapterRegistry,
+  VscError,
   type VscFileChange,
   type VscFileService,
 } from '../vsc-file';
@@ -1134,7 +1135,7 @@ function createFailureService(options: {
   );
 }
 
-function createMoveOperationModel() {
+function createMoveOperationModel(hooks: { beforeUpdate?: (values: Record<string, unknown>) => void } = {}) {
   const rows: Record<string, unknown>[] = [];
   const matchesWhere = (values: Record<string, unknown>, where: Record<string, unknown>) =>
     Object.entries(where).every(([key, value]) => values[key] === value);
@@ -1157,8 +1158,9 @@ function createMoveOperationModel() {
       return [toRecord(values), true] as const;
     }),
     update: vi.fn(
-      async (nextValues: Record<string, unknown>, options: { where: Record<string, unknown> }): Promise<[number]> => {
-        const values = rows.find((candidate) => matchesWhere(candidate, options.where));
+      async (nextValues: Record<string, unknown>, query: { where: Record<string, unknown> }): Promise<[number]> => {
+        hooks.beforeUpdate?.(nextValues);
+        const values = rows.find((candidate) => matchesWhere(candidate, query.where));
         if (!values) {
           return [0];
         }
@@ -1354,6 +1356,296 @@ describe('move to inline integration', () => {
     diagnostics: [],
   };
 
+  function createMoveToInlinePreflightFixture(
+    options: {
+      entry?: LightExtensionEntryRecord;
+      entryError?: Error;
+      compileAccepted?: boolean;
+    } = {},
+  ) {
+    const operationModel = createMoveOperationModel();
+    const transaction = vi.fn(async (run: (current: Transaction) => Promise<unknown>) =>
+      run({ LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction),
+    );
+    const flowModel = {
+      uid: locator.modelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("external");',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: binding,
+          },
+        },
+      },
+    };
+    const db = {
+      sequelize: { transaction },
+      getCollection: () => ({
+        model: { findByPk: vi.fn(async () => flowModel) },
+        repository: { findModelById: vi.fn(async () => flowModel), patch: vi.fn() },
+      }),
+      getRepository: (name: string) => {
+        if (name === 'lightExtensionMoveOperations') {
+          return { model: operationModel.model };
+        }
+        return { update: vi.fn() };
+      },
+    } as unknown as Database;
+    const getEntry = vi.fn(async () => {
+      if (options.entryError) {
+        throw options.entryError;
+      }
+      return options.entry || entry;
+    });
+    const compileEntry = vi.fn(async () =>
+      options.compileAccepted === false
+        ? {
+            accepted: false,
+            diagnostics: [{ code: 'LIGHT_EXTENSION_COMPILE_FAILED', severity: 'error', message: 'compile failed' }],
+            failureCode: 'LIGHT_EXTENSION_COMPILE_FAILED',
+          }
+        : {
+            accepted: true,
+            diagnostics: [],
+            surface: {
+              surface: 'js-block',
+              surfaceStyle: 'render',
+              compilerSurfaceStyle: 'render',
+              modelUse: 'JSBlockModel',
+            },
+            artifact: {
+              code: 'ctx.render("inline");',
+              version: 'v2',
+              entryPath: 'src/client/index.tsx',
+              filesHash: 'light_extension_files_hash',
+              diagnostics: [],
+              metadata: {},
+            },
+          },
+    );
+    const findRepositoryByIdentity = vi.fn(async () => null);
+    const ensureAndPush = vi.fn(async () => {
+      throw new Error('unexpected repository publish');
+    });
+    const service = new MoveToInlineService(
+      db,
+      { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+      { getEntry } as never,
+      { compileEntry } as never,
+      { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
+      () =>
+        ({
+          findRepositoryByIdentity,
+          ensureAndPush,
+        }) as unknown as VscFileService,
+      () =>
+        ({
+          require: () => ({
+            kind: 'flowModel.step',
+            assertCanWrite: vi.fn(async () => undefined),
+            readLegacy: vi.fn(async () => ({
+              code: 'ctx.render("external");',
+              version: 'v2',
+              label: 'JS block',
+              surfaceStyle: 'render' as const,
+              language: 'typescript' as const,
+              ownerFingerprint: 'owner_before',
+              metadata: { modelUse: 'JSBlockModel' },
+            })),
+          }),
+        }) as unknown as RunJSSourceAdapterRegistry,
+    );
+
+    return {
+      service,
+      transaction,
+      findRepositoryByIdentity,
+      ensureAndPush,
+    };
+  }
+
+  function createMoveToInlineTransactionFailureFixture(
+    failureStage: 'host-write' | 'reference-sync' | 'audit' | 'operation-complete',
+  ) {
+    const operationModel = createMoveOperationModel({
+      beforeUpdate: (values) => {
+        if (failureStage === 'operation-complete' && values.status === 'completed') {
+          throw new Error('forced operation complete rollback');
+        }
+      },
+    });
+    const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+    const initialFlowModel = {
+      uid: locator.modelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("external");',
+            version: 'v1',
+            sourceMode: 'light-extension',
+            sourceBinding: { ...binding },
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: 'old_inline_repo',
+              commitId: 'old_inline_commit',
+              entry: 'src/client/index.ts',
+            },
+          },
+        },
+      },
+    };
+    let flowModel = clone(initialFlowModel);
+    let repositoryId: string | null = null;
+    let commitCount = 0;
+    let referenceActive = true;
+    let auditCount = 0;
+    const db = {
+      sequelize: {
+        transaction: async (run: (current: Transaction) => Promise<unknown>) => {
+          try {
+            return await run(transaction);
+          } catch (error) {
+            flowModel = clone(initialFlowModel);
+            repositoryId = null;
+            commitCount = 0;
+            referenceActive = true;
+            auditCount = 0;
+            throw error;
+          }
+        },
+      },
+      getCollection: () => ({
+        model: { findByPk: vi.fn(async () => clone(flowModel)) },
+        repository: {
+          findModelById: vi.fn(async () => clone(flowModel)),
+          patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
+            flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
+          }),
+        },
+      }),
+      getRepository: (name: string) =>
+        name === 'lightExtensionMoveOperations' ? { model: operationModel.model } : { update: vi.fn() },
+    } as unknown as Database;
+    const identity = buildRunJSSourceRepositoryIdentity(locator);
+    const ensureAndPush = vi.fn(async () => {
+      repositoryId = 'runjs_repo_created_in_transaction';
+      commitCount = 1;
+      return {
+        repository: {
+          id: repositoryId,
+          ...identity,
+          status: 'active' as const,
+          defaultRef: 'head' as const,
+          headCommitId: 'runjs_commit_created_in_transaction',
+          headSeq: 1,
+        },
+        commit: {
+          id: 'runjs_commit_created_in_transaction',
+          repoId: repositoryId,
+          seq: 1,
+          parentCommitId: null,
+          treeHash: 'tree_created_in_transaction',
+          hash: 'commit_hash',
+          message: 'Move to inline',
+          authorId: '1',
+          metadata: {},
+        },
+        tree: { hash: 'tree_created_in_transaction', entryCount: 2, byteSize: 100 },
+      };
+    });
+    const adapter = {
+      kind: 'flowModel.step',
+      assertCanWrite: vi.fn(async () => undefined),
+      readLegacy: vi.fn(async () => ({
+        code: 'ctx.render("external");',
+        version: 'v1',
+        label: 'JS block',
+        surfaceStyle: 'render' as const,
+        language: 'typescript' as const,
+        ownerFingerprint: 'owner_before',
+        metadata: { modelUse: 'JSBlockModel' },
+      })),
+      writeRuntime: vi.fn(
+        async (input: {
+          artifact: { code: string; version: string; entryPath?: string; metadata?: Record<string, unknown> };
+          commitId: string;
+        }) => {
+          const runJS = flowModel.stepParams.jsSettings.runJs;
+          runJS.code = input.artifact.code;
+          runJS.version = input.artifact.version;
+          runJS.sourceRef = {
+            type: 'vsc-file',
+            repoId: String(input.artifact.metadata?.repoId || ''),
+            commitId: input.commitId,
+            entry: String(input.artifact.entryPath || ''),
+          };
+          if (failureStage === 'host-write') {
+            throw new Error('forced host write rollback');
+          }
+        },
+      ),
+      getFingerprint: vi.fn(async () => 'owner_after'),
+    };
+    const syncFlowModelReferencesForNodeTree = vi.fn(async () => {
+      referenceActive = false;
+      if (failureStage === 'reference-sync') {
+        throw new Error('forced reference sync rollback');
+      }
+    });
+    const recordLifecycleEvent = vi.fn(async () => {
+      auditCount += 1;
+      if (failureStage === 'audit') {
+        throw new Error('forced audit rollback');
+      }
+    });
+    const service = new MoveToInlineService(
+      db,
+      { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+      { getEntry: vi.fn(async () => entry) } as never,
+      {
+        compileEntry: vi.fn(async () => ({
+          accepted: true,
+          diagnostics: [],
+          surface: {
+            surface: 'js-block',
+            surfaceStyle: 'render',
+            compilerSurfaceStyle: 'render',
+            modelUse: 'JSBlockModel',
+          },
+          artifact: {
+            code: 'ctx.render("inline");',
+            version: 'v2',
+            entryPath: 'src/client/index.ts',
+            filesHash: 'light_extension_files_hash',
+            diagnostics: [],
+            metadata: {},
+          },
+        })),
+      } as never,
+      { syncFlowModelReferencesForNodeTree } as never,
+      () =>
+        ({
+          findRepositoryByIdentity: vi.fn(async () => null),
+          ensureAndPush,
+        }) as unknown as VscFileService,
+      () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
+      'main',
+      { recordLifecycleEvent } as never,
+    );
+
+    return {
+      service,
+      operationModel,
+      ensureAndPush,
+      getState: () => ({ flowModel, repositoryId, commitCount, referenceActive, auditCount }),
+      initialFlowModel,
+    };
+  }
+
   describe('MoveToInlineService', () => {
     it.each([
       ['js-block', 'JSBlockModel', true],
@@ -1433,6 +1725,56 @@ describe('move to inline integration', () => {
         ),
       ).rejects.toMatchObject(expected);
       expect(transaction).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {
+        label: 'a missing Entry',
+        options: {
+          entryError: new LightExtensionError('LIGHT_EXTENSION_ENTRY_NOT_FOUND', 'Entry was not found'),
+        },
+        files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
+        expectedCode: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+      },
+      {
+        label: 'an Entry that no longer matches the request',
+        options: { entry: { ...entry, repoId: 'ler_other' } },
+        files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
+        expectedCode: 'LIGHT_EXTENSION_BINDING_OUTDATED',
+      },
+      {
+        label: 'a rejected Light Extension compile',
+        options: { compileAccepted: false },
+        files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
+        expectedCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      },
+      {
+        label: 'a rejected canonical Inline compile',
+        options: {},
+        files: [{ path: entry.entryPath, content: 'ctx.render(<div>);' }],
+        expectedCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      },
+    ])('does not create a RunJS repository for $label', async ({ options, files, expectedCode }) => {
+      const fixture = createMoveToInlinePreflightFixture(options);
+
+      await expect(
+        fixture.service.moveToInline(
+          {
+            idempotencyKey: `move-inline-preflight-${expectedCode}-${files[0].content.length}`,
+            locator,
+            repoId: binding.repoId,
+            entryId: binding.entryId,
+            entryPath: entry.entryPath,
+            kind: 'js-block',
+            version: 'v2',
+            files,
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({ code: expectedCode });
+
+      expect(fixture.transaction).not.toHaveBeenCalled();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
     });
 
     it('moves a JS Page inline with its snapshot and settings while removing the active reference', async () => {
@@ -1565,13 +1907,11 @@ describe('move to inline integration', () => {
         headCommitId: 'runjs_old_commit',
         headSeq: 1,
       };
-      const ensureRepository = vi.fn(async (input: { ownerId: string }) => ({
-        repository: { ...runJSRepo, ownerId: input.ownerId },
-        initialCommit: null,
+      const findRepositoryByIdentity = vi.fn(async (input: { ownerId: string }) => ({
+        ...runJSRepo,
+        ownerId: input.ownerId,
       }));
-      const preparedPush = {};
-      const preparePush = vi.fn(async () => preparedPush);
-      const publishPreparedPush = vi.fn(async () => ({
+      const ensureAndPush = vi.fn(async () => ({
         repository: runJSRepo,
         commit: {
           id: 'runjs_new_commit',
@@ -1587,7 +1927,7 @@ describe('move to inline integration', () => {
         tree: { hash: 'tree_hash', entryCount: 2, byteSize: 100 },
       }));
       const vscFileService = {
-        ensureRepository,
+        findRepositoryByIdentity,
         getRepository: vi.fn(async () => runJSRepo),
         pull: vi.fn(async () => ({
           repository: runJSRepo,
@@ -1600,8 +1940,7 @@ describe('move to inline integration', () => {
             { path: 'src/client/old.ts', language: 'typescript', mode: '100644' },
           ],
         })),
-        preparePush,
-        publishPreparedPush,
+        ensureAndPush,
       } as unknown as VscFileService;
       const getVscFileService = vi.fn(() => vscFileService);
       const assertApplicationOwnership = vi.fn(async () => undefined);
@@ -1643,7 +1982,10 @@ describe('move to inline integration', () => {
         adapterContext: {},
       };
       const result = await service.moveToInline(input, serviceContext);
-      const replay = await service.moveToInline(input, serviceContext);
+      getEntry.mockResolvedValue({ ...entry, entryPath: 'src/client/js-blocks/changed/index.tsx' });
+      const modifiedEntryReplay = await service.moveToInline(input, serviceContext);
+      getEntry.mockRejectedValue(new Error('source entry was deleted after the completed move'));
+      const deletedEntryReplay = await service.moveToInline(input, serviceContext);
 
       await expect(
         service.moveToInline(
@@ -1654,6 +1996,8 @@ describe('move to inline integration', () => {
           serviceContext,
         ),
       ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_IDEMPOTENCY_CONFLICT' });
+      assertCanWrite.mockRejectedValueOnce(new Error('replay host permission denied'));
+      await expect(service.moveToInline(input, serviceContext)).rejects.toThrow('replay host permission denied');
 
       expect(compileEntry).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1666,7 +2010,7 @@ describe('move to inline integration', () => {
         }),
       );
       expect(JSON.stringify(compileEntry.mock.calls)).not.toContain('src/shared/unused.ts');
-      expect(preparePush).toHaveBeenCalledWith(
+      expect(ensureAndPush).toHaveBeenCalledWith(
         expect.objectContaining({
           allowEmptyCommit: true,
           files: expect.arrayContaining([
@@ -1689,12 +2033,12 @@ describe('move to inline integration', () => {
         }),
         expect.any(Object),
       );
-      const pushedFiles = preparePush.mock.calls[0][0].files as VscFileChange[];
+      const pushedFiles = ensureAndPush.mock.calls[0][0].files as VscFileChange[];
       const canonicalFiles = pushedFiles.filter((file) => file.operation === 'upsert');
       expect(result.filesHash).toBe(buildRunJSFilesHash(canonicalFiles));
       const sourceId = createHash('sha256').update(result.filesHash).digest('hex').slice(0, 16);
       expect(result.code).toContain(`nocobase-runjs://bundle/${sourceId}.js`);
-      expect(ensureRepository).toHaveBeenCalledWith(
+      expect(findRepositoryByIdentity).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
           request: expect.objectContaining({
@@ -1703,17 +2047,19 @@ describe('move to inline integration', () => {
           }),
         }),
       );
-      expect(preparePush.mock.invocationCallOrder[0]).toBeLessThan(lockFlowModelRecord.mock.invocationCallOrder[0]);
-      expect(replay).toEqual(result);
-      expect(getVscFileService).toHaveBeenCalledTimes(2);
-      expect(publishPreparedPush).toHaveBeenCalledWith(preparedPush, expect.objectContaining({ transaction }));
-      expect(publishPreparedPush).toHaveBeenCalledOnce();
+      expect(findRepositoryByIdentity.mock.invocationCallOrder[0]).toBeLessThan(
+        lockFlowModelRecord.mock.invocationCallOrder[0],
+      );
+      expect(modifiedEntryReplay).toEqual(result);
+      expect(deletedEntryReplay).toEqual(result);
+      expect(getVscFileService).toHaveBeenCalledTimes(4);
+      expect(ensureAndPush).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ transaction }));
+      expect(ensureAndPush).toHaveBeenCalledOnce();
       expect(writeRuntime).toHaveBeenCalledOnce();
       expect(patch).toHaveBeenCalledOnce();
       expect(syncReferences).toHaveBeenCalledOnce();
       expect(compileEntry.mock.calls[0][1]?.transaction).toBeUndefined();
-      expect(preparePush.mock.calls[0][1]?.transaction).toBeUndefined();
-      expect(assertCanWrite).toHaveBeenCalledTimes(3);
+      expect(assertCanWrite).toHaveBeenCalledTimes(5);
       expect(assertCanWrite.mock.calls[0][0].ctx.transaction).toBeUndefined();
       expect(readLegacy).toHaveBeenCalledTimes(2);
       expect(readLegacy.mock.calls[0][0].ctx.transaction).toBeUndefined();
@@ -1759,9 +2105,9 @@ describe('move to inline integration', () => {
         expect.objectContaining({ transaction }),
       );
       expect(updateCommit).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'runjs_new_commit' }));
-      expect(assertApplicationOwnership).toHaveBeenCalledOnce();
-      expect(getEntry).toHaveBeenCalledTimes(3);
-      expect(vscFileService.getRepository).toHaveBeenCalledOnce();
+      expect(assertApplicationOwnership).toHaveBeenCalledTimes(3);
+      expect(getEntry).toHaveBeenCalledTimes(2);
+      expect(vscFileService.getRepository).toHaveBeenCalledTimes(2);
       expect(operationModel.getValues()).toMatchObject({ status: 'completed', result });
       expect(operationModel.model.update).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'completed', result }),
@@ -1797,7 +2143,229 @@ describe('move to inline integration', () => {
       });
     });
 
-    it('rolls back the external binding, repository Head, and reference index after a late failure', async () => {
+    it.each([
+      ['host-write', 'forced host write rollback'],
+      ['reference-sync', 'forced reference sync rollback'],
+      ['audit', 'forced audit rollback'],
+      ['operation-complete', 'forced operation complete rollback'],
+    ] as const)('rolls back every resource after a %s failure', async (failureStage, message) => {
+      const fixture = createMoveToInlineTransactionFailureFixture(failureStage);
+
+      await expect(
+        fixture.service.moveToInline(
+          {
+            idempotencyKey: `move-inline-${failureStage}-rollback`,
+            locator,
+            repoId: binding.repoId,
+            entryId: binding.entryId,
+            entryPath: entry.entryPath,
+            kind: 'js-block',
+            version: 'v2',
+            files: [{ path: entry.entryPath, content: 'ctx.render("inline");' }],
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toThrow(message);
+
+      expect(fixture.ensureAndPush).toHaveBeenCalledOnce();
+      expect(fixture.getState()).toEqual({
+        flowModel: fixture.initialFlowModel,
+        repositoryId: null,
+        commitCount: 0,
+        referenceActive: true,
+        auditCount: 0,
+      });
+      expect(fixture.operationModel.getValues()).toMatchObject({ status: 'failed', errorCode: 'Error' });
+    });
+
+    it('publishes only one of two different idempotency keys racing for a missing repository', async () => {
+      const operationModel = createMoveOperationModel();
+      const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+      let flowModel = {
+        uid: locator.modelUid,
+        use: 'JSBlockModel',
+        stepParams: {
+          jsSettings: {
+            runJs: {
+              code: 'ctx.render("external");',
+              version: 'v1',
+              sourceMode: 'light-extension',
+              sourceBinding: { ...binding },
+              sourceRef: {
+                type: 'vsc-file',
+                repoId: 'old_inline_repo',
+                commitId: 'old_inline_commit',
+                entry: 'src/client/index.ts',
+              },
+            },
+          },
+        },
+      };
+      const db = {
+        sequelize: {
+          transaction: (run: (current: Transaction) => Promise<unknown>) => run(transaction),
+        },
+        getCollection: () => ({
+          model: { findByPk: vi.fn(async () => clone(flowModel)) },
+          repository: {
+            findModelById: vi.fn(async () => clone(flowModel)),
+            patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
+              flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
+            }),
+          },
+        }),
+        getRepository: (name: string) =>
+          name === 'lightExtensionMoveOperations' ? { model: operationModel.model } : { update: vi.fn() },
+      } as unknown as Database;
+      let releaseFirstEnsure: (() => void) | undefined;
+      const secondEnsureEntered = new Promise<void>((resolve) => {
+        releaseFirstEnsure = resolve;
+      });
+      let ensureCallCount = 0;
+      let repositoryHead: string | null = null;
+      let commitCount = 0;
+      const identity = buildRunJSSourceRepositoryIdentity(locator);
+      const ensureAndPush = vi.fn(async () => {
+        ensureCallCount += 1;
+        const callNumber = ensureCallCount;
+        if (callNumber === 1) {
+          await secondEnsureEntered;
+        } else {
+          releaseFirstEnsure?.();
+        }
+        if (repositoryHead) {
+          throw new VscError('BASE_COMMIT_OUTDATED', 'missing repository was published by another request');
+        }
+        repositoryHead = `runjs_commit_${callNumber}`;
+        commitCount += 1;
+        return {
+          repository: {
+            id: 'runjs_repo_race',
+            ...identity,
+            status: 'active' as const,
+            defaultRef: 'head' as const,
+            headCommitId: repositoryHead,
+            headSeq: 1,
+          },
+          commit: {
+            id: repositoryHead,
+            repoId: 'runjs_repo_race',
+            seq: 1,
+            parentCommitId: null,
+            treeHash: 'tree_race',
+            hash: 'commit_hash_race',
+            message: 'Move to inline',
+            authorId: '1',
+            metadata: {},
+          },
+          tree: { hash: 'tree_race', entryCount: 2, byteSize: 100 },
+        };
+      });
+      const adapter = {
+        kind: 'flowModel.step',
+        assertCanWrite: vi.fn(async () => undefined),
+        readLegacy: vi.fn(async () => ({
+          code: 'ctx.render("external");',
+          version: 'v1',
+          label: 'JS block',
+          surfaceStyle: 'render' as const,
+          language: 'typescript' as const,
+          ownerFingerprint: 'owner_before',
+          metadata: { modelUse: 'JSBlockModel' },
+        })),
+        writeRuntime: vi.fn(
+          async (input: {
+            artifact: { code: string; version: string; entryPath?: string; metadata?: Record<string, unknown> };
+            commitId: string;
+          }) => {
+            const runJS = flowModel.stepParams.jsSettings.runJs;
+            runJS.code = input.artifact.code;
+            runJS.version = input.artifact.version;
+            runJS.sourceRef = {
+              type: 'vsc-file',
+              repoId: String(input.artifact.metadata?.repoId || ''),
+              commitId: input.commitId,
+              entry: String(input.artifact.entryPath || ''),
+            };
+          },
+        ),
+        getFingerprint: vi.fn(async () => 'owner_after'),
+      };
+      const service = new MoveToInlineService(
+        db,
+        { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+        { getEntry: vi.fn(async () => entry) } as never,
+        {
+          compileEntry: vi.fn(async () => ({
+            accepted: true,
+            diagnostics: [],
+            surface: {
+              surface: 'js-block',
+              surfaceStyle: 'render',
+              compilerSurfaceStyle: 'render',
+              modelUse: 'JSBlockModel',
+            },
+            artifact: {
+              code: 'ctx.render("inline");',
+              version: 'v2',
+              entryPath: 'src/client/index.ts',
+              filesHash: 'light_extension_files_hash',
+              diagnostics: [],
+              metadata: {},
+            },
+          })),
+        } as never,
+        { syncFlowModelReferencesForNodeTree: vi.fn(async () => undefined) } as never,
+        () =>
+          ({
+            findRepositoryByIdentity: vi.fn(async () => null),
+            ensureAndPush,
+          }) as unknown as VscFileService,
+        () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
+        'main',
+        { recordLifecycleEvent: vi.fn(async () => undefined) } as never,
+      );
+      const input = {
+        locator,
+        repoId: binding.repoId,
+        entryId: binding.entryId,
+        entryPath: entry.entryPath,
+        kind: 'js-block' as const,
+        version: 'v2',
+        files: [{ path: entry.entryPath, content: 'ctx.render("inline");' }],
+      };
+
+      const outcomes = await Promise.allSettled([
+        service.moveToInline({ ...input, idempotencyKey: 'missing-race-a' }, { actorUserId: '1', adapterContext: {} }),
+        service.moveToInline({ ...input, idempotencyKey: 'missing-race-b' }, { actorUserId: '1', adapterContext: {} }),
+      ]);
+      const fulfilled = outcomes.filter((outcome) => outcome.status === 'fulfilled');
+      const rejected = outcomes.filter((outcome) => outcome.status === 'rejected');
+
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect(rejected[0]).toMatchObject({
+        reason: {
+          code: 'LIGHT_EXTENSION_SOURCE_ERROR',
+          details: { sourceCode: 'BASE_COMMIT_OUTDATED' },
+        },
+      });
+      expect(ensureAndPush).toHaveBeenCalledTimes(2);
+      expect(commitCount).toBe(1);
+      expect(repositoryHead).toMatch(/^runjs_commit_/u);
+      expect(flowModel.stepParams.jsSettings.runJs).toMatchObject({
+        sourceMode: 'inline',
+        sourceRef: {
+          type: 'vsc-file',
+          repoId: 'runjs_repo_race',
+          commitId: repositoryHead,
+        },
+      });
+      expect(operationModel.getAllValues().filter((values) => values.status === 'completed')).toHaveLength(1);
+      expect(operationModel.getAllValues().filter((values) => values.status === 'failed')).toHaveLength(1);
+    });
+
+    it('rolls back a newly created repository, inline host, and reference index after a late failure', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
       const operationModel = createMoveOperationModel();
       const identity = buildRunJSSourceRepositoryIdentity(locator);
@@ -1819,17 +2387,18 @@ describe('move to inline integration', () => {
         use: 'JSBlockModel',
         stepParams: { jsSettings: { runJs: clone(initialRunJS) } },
       };
-      let repository = {
-        id: 'runjs_repo',
-        ownerType: identity.ownerType,
-        ownerId: identity.ownerId,
-        name: identity.name,
-        status: 'active',
-        defaultRef: 'head',
-        headCommitId: 'runjs_head_before',
-        headSeq: 1,
+      type MockRepository = {
+        id: string;
+        ownerType: string;
+        ownerId: string;
+        name: string;
+        status: 'active';
+        defaultRef: 'head';
+        headCommitId: string;
+        headSeq: number;
       };
-      let commits = [{ id: 'runjs_head_before', repoId: repository.id, seq: 1 }];
+      let repository: MockRepository | null = null;
+      let commits: Array<{ id: string; repoId: string; seq: number }> = [];
       let references = [{ id: 'reference_sales', repoId: binding.repoId, entryId: binding.entryId }];
       const initialFlowModel = clone(flowModel);
       const initialRepository = clone(repository);
@@ -1898,29 +2467,29 @@ describe('move to inline integration', () => {
       };
       const pushedCommit = {
         id: 'runjs_head_after',
-        repoId: repository.id,
-        seq: 2,
-        parentCommitId: repository.headCommitId,
+        repoId: 'runjs_repo',
+        seq: 1,
+        parentCommitId: null,
         treeHash: 'tree_hash_after',
         hash: 'commit_hash_after',
         message: 'Move to inline',
         authorId: '1',
         metadata: {},
       };
-      const preparedPush = {};
       const vscFileService = {
-        ensureRepository: vi.fn(async () => ({ repository: clone(repository), initialCommit: null })),
-        pull: vi.fn(async () => ({
-          repository: clone(repository),
-          commit: null,
-          tree: null,
-          unchanged: false,
-          files: [],
-        })),
-        preparePush: vi.fn(async () => preparedPush),
-        publishPreparedPush: vi.fn(async () => {
-          repository = { ...repository, headCommitId: pushedCommit.id, headSeq: pushedCommit.seq };
-          commits.push({ id: pushedCommit.id, repoId: repository.id, seq: pushedCommit.seq });
+        findRepositoryByIdentity: vi.fn(async () => null),
+        ensureAndPush: vi.fn(async () => {
+          repository = {
+            id: pushedCommit.repoId,
+            ownerType: identity.ownerType,
+            ownerId: identity.ownerId,
+            name: identity.name,
+            status: 'active',
+            defaultRef: 'head',
+            headCommitId: pushedCommit.id,
+            headSeq: pushedCommit.seq,
+          };
+          commits.push({ id: pushedCommit.id, repoId: pushedCommit.repoId, seq: pushedCommit.seq });
           return {
             repository: clone(repository),
             commit: pushedCommit,
@@ -1932,7 +2501,7 @@ describe('move to inline integration', () => {
         references = [];
         const runJS = flowModel.stepParams.jsSettings.runJs;
         observedBeforeFailure.inlineHost = runJS.sourceMode === 'inline' && !('sourceBinding' in runJS);
-        observedBeforeFailure.advancedHead = repository.headCommitId === pushedCommit.id && commits.length === 2;
+        observedBeforeFailure.advancedHead = repository?.headCommitId === pushedCommit.id && commits.length === 1;
         observedBeforeFailure.removedReference = references.length === 0;
         throw new Error('forced move-to-inline reference rollback');
       });

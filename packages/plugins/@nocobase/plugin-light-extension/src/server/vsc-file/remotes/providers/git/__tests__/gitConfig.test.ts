@@ -87,6 +87,20 @@ describe('git remote config', () => {
     );
   });
 
+  it.each([
+    ['http://git.example.com/team/project.git', 'unsupported-url-protocol'],
+    ['https://token@git.example.com/team/project.git', 'url-credentials-forbidden'],
+    ['ssh://git:password@git.example.com/team/project.git', 'url-credentials-forbidden'],
+    ['https://git.example.com/team/project.git?token=secret', 'invalid-url'],
+    ['https://git.example.com/team/project.git#main', 'invalid-url'],
+    ['ssh://git@git.example.com/team\\project.git', 'invalid-url'],
+  ] as const)('preserves the reason code for invalid URL %s', (url, reasonCode) => {
+    expect(captureRemoteSyncError(() => normalizeGitRemoteConfigDraft({ url }))).toMatchObject({
+      code: 'CONFIG_INVALID',
+      details: { reasonCode },
+    });
+  });
+
   it.each(['HEAD', 'refs/heads/main', '../main', 'main..next', 'feature//x', '-danger', 'main.lock', 'main~1'])(
     'rejects unsafe branch %s',
     (branch) => {
@@ -96,7 +110,18 @@ describe('git remote config', () => {
     },
   );
 
-  it.each(['/absolute', 'a\\b', 'a/../b', 'a//b', 'a/.git/b', 'a/.GIT/b', 'a/', './a'])(
+  it('preserves the invalid branch reason code', () => {
+    expect(
+      captureRemoteSyncError(() =>
+        normalizeGitRemoteConfigDraft({
+          url: 'https://git.example.com/team/project.git',
+          branch: 'refs/heads/main',
+        }),
+      ),
+    ).toMatchObject({ code: 'CONFIG_INVALID', details: { reasonCode: 'invalid-branch' } });
+  });
+
+  it.each(['   ', '/absolute', 'a\\b', 'a/../b', 'a//b', 'a/.git/b', 'a/.GIT/b', 'a/', './a'])(
     'rejects unsafe subdirectory %s',
     (subdirectory) => {
       expect(() =>
@@ -104,6 +129,17 @@ describe('git remote config', () => {
       ).toThrowError(expect.objectContaining({ code: 'CONFIG_INVALID' }));
     },
   );
+
+  it('preserves the invalid subdirectory reason code', () => {
+    expect(
+      captureRemoteSyncError(() =>
+        normalizeGitRemoteConfigDraft({
+          url: 'https://git.example.com/team/project.git',
+          subdirectory: 'a/.GIT/b',
+        }),
+      ),
+    ).toMatchObject({ code: 'CONFIG_INVALID', details: { reasonCode: 'invalid-subdirectory' } });
+  });
 
   it('rejects a supplied transport that disagrees with the URL', () => {
     expect(

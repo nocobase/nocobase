@@ -19,9 +19,9 @@ import {
   type RunJSSourceAdapterContext,
   type RunJSSourceAdapterRegistry,
   type RunJSSourceLocator,
-  type PreparedPush,
   type VscCommitRecord,
   type VscFileChange,
+  type VscRepositoryIdentity,
   type VscRepositoryRecord,
   type VscServiceContext,
   VscFileService,
@@ -94,7 +94,9 @@ interface PreparedMoveToInline {
   surfaceStyle: string;
   artifact: RunJSRuntimeArtifact;
   commitMetadata: Record<string, unknown>;
-  preparedPush: PreparedPush;
+  repositoryIdentity: VscRepositoryIdentity;
+  expectedRepository: VscRepositoryRecord | null;
+  changes: VscFileChange[];
 }
 
 export class MoveToInlineService {
@@ -179,7 +181,6 @@ export class MoveToInlineService {
       ctx: { ...ctx.adapterContext, sourceTransition: 'external-to-inline' },
     });
     await this.repoService.assertApplicationOwnership(input.repoId, this.applicationName, ctx);
-    assertCurrentEntry(await this.entryService.getEntry(input.entryId, ctx), input);
     await vscFileService.getRepository(
       { repoId: result.runJSRepoId },
       {
@@ -223,27 +224,19 @@ export class MoveToInlineService {
     await adapter.assertCanWrite({ locator, ctx: adapterContext });
     const currentModel = await getFlowModel(this.db, locator.modelUid);
     assertCurrentLightExtensionBinding(currentModel, locator, input);
-
-    const identity = buildRunJSSourceRepositoryIdentity(locator);
-    const ensured = await vscFileService.ensureRepository(
-      {
-        ...identity,
-        authorId: ctx.actorUserId,
-        metadata: {
-          sourceKind: locator.kind,
-        },
-      },
-      vscContext,
-    );
-    const repository = ensured.repository;
-    assertRepositoryIdentity(repository, identity);
-
+    await this.repoService.assertApplicationOwnership(input.repoId, this.applicationName, serviceContext);
     const entry = await this.entryService.getEntry(input.entryId, serviceContext);
     assertCurrentEntry(entry, input);
 
     const legacy = await adapter.readLegacy({ locator, ctx: adapterContext });
     if (!isMoveToInlineHostSupported(input.kind, legacy.metadata?.modelUse)) {
       throw unsupportedLocator(locator);
+    }
+
+    const identity = buildRunJSSourceRepositoryIdentity(locator);
+    const repository = await vscFileService.findRepositoryByIdentity(identity, vscContext);
+    if (repository) {
+      assertRepositoryIdentity(repository, identity);
     }
 
     const entryPath = relocateEntryPath(input.entryPath);
@@ -275,15 +268,17 @@ export class MoveToInlineService {
       compileResult.artifact.version,
       legacy.surfaceStyle,
     );
-    const currentFiles = (
-      await vscFileService.pull(
-        {
-          repoId: repository.id,
-          includeContent: 'none',
-        },
-        vscContext,
-      )
-    ).files;
+    const currentFiles = repository
+      ? (
+          await vscFileService.pull(
+            {
+              repoId: repository.id,
+              includeContent: 'none',
+            },
+            vscContext,
+          )
+        ).files
+      : [];
     const canonicalFiles = canonicalizeRunJSCompileFiles(desiredFiles, currentFiles || []);
     assertRunJSCompileInputLimits(canonicalFiles);
     const canonicalCompileResult = await compileRunJSSourceWorkspace({
@@ -321,7 +316,6 @@ export class MoveToInlineService {
       metadata: {
         ...canonicalCompileResult.artifact.metadata,
         ...compileResult.artifact.metadata,
-        repoId: repository.id,
         runtimeCodeHash: buildRunJSRuntimeCodeHash(canonicalCompileResult.artifact.code),
       },
     };
@@ -335,19 +329,6 @@ export class MoveToInlineService {
       surfaceStyle: legacy.surfaceStyle,
       runtimeCodeHash,
     };
-    const preparedPush = await vscFileService.preparePush(
-      {
-        repoId: repository.id,
-        baseCommitId: repository.headCommitId,
-        message: `Move light extension entry ${input.entryId} to inline code`.slice(0, 200),
-        files: changes,
-        allowEmptyCommit: true,
-        authorId: ctx.actorUserId,
-        metadata: commitMetadata,
-      },
-      vscContext,
-    );
-
     return {
       locator,
       entryPath,
@@ -355,7 +336,9 @@ export class MoveToInlineService {
       surfaceStyle: legacy.surfaceStyle,
       artifact,
       commitMetadata,
-      preparedPush,
+      repositoryIdentity: identity,
+      expectedRepository: repository,
+      changes,
     };
   }
 
@@ -403,7 +386,18 @@ export class MoveToInlineService {
       throw bindingOutdated(input);
     }
 
-    const pushed = await vscFileService.publishPreparedPush(prepared.preparedPush, vscContext);
+    const pushed = await vscFileService.ensureAndPush(
+      {
+        identity: prepared.repositoryIdentity,
+        expectedRepository: prepared.expectedRepository,
+        message: `Move light extension entry ${input.entryId} to inline code`.slice(0, 200),
+        files: prepared.changes,
+        allowEmptyCommit: true,
+        authorId: ctx.actorUserId,
+        metadata: prepared.commitMetadata,
+      },
+      vscContext,
+    );
 
     await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
     assertCurrentLightExtensionBinding(
@@ -413,7 +407,13 @@ export class MoveToInlineService {
     );
     await adapter.writeRuntime({
       locator: prepared.locator,
-      artifact: prepared.artifact,
+      artifact: {
+        ...prepared.artifact,
+        metadata: {
+          ...prepared.artifact.metadata,
+          repoId: pushed.repository.id,
+        },
+      },
       commitId: pushed.commit.id,
       baseOwnerFingerprint: prepared.ownerFingerprint,
       ctx: adapterContext,
@@ -1002,6 +1002,7 @@ function readMoveToInlineOperationResult(value: unknown): LightExtensionMoveToIn
     typeof value.version !== 'string' ||
     typeof value.entryPath !== 'string' ||
     typeof value.filesHash !== 'string' ||
+    !value.filesHash.trim() ||
     !isRecord(value.sourceRef) ||
     value.sourceRef.type !== 'vsc-file' ||
     value.sourceRef.repoId !== value.runJSRepoId ||

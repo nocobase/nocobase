@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscGitRemoteConfigDraft, VscGitRemoteTransport } from '../../shared/vsc-file/public-api';
+import {
+  normalizeGitRepositoryUrlSyntax,
+  type VscGitRemoteConfigDraft,
+  type VscGitRemoteTransport,
+  validateGitBranchSyntax,
+  validateGitSubdirectorySyntax,
+} from '../../shared/vsc-file/public-api';
 import { Form, Input } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -16,10 +22,6 @@ import LightExtensionCredentialInput, {
   type LightExtensionEnvironmentVariableRecord,
   type LightExtensionCredentialValidation,
 } from './LightExtensionSecretVariableInput';
-
-const MAX_GIT_URL_LENGTH = 2048;
-const MAX_GIT_BRANCH_LENGTH = 255;
-const MAX_GIT_SUBDIRECTORY_LENGTH = 1024;
 
 export interface LightExtensionGitSourceDraft {
   url: string;
@@ -66,98 +68,36 @@ export function parseGitRepositoryUrl(input: string): GitRepositoryUrlResult {
   if (!value) {
     return { valid: false, reason: 'required' };
   }
-  if (value.length > MAX_GIT_URL_LENGTH || value !== input || /[\0\r\n]/u.test(value)) {
+  if (value !== input) {
     return { valid: false, reason: 'invalid' };
   }
-
-  const scpLikeMatch = /^(?<username>[A-Za-z0-9._-]+)@(?<hostname>[^:/\s]+):(?<path>[^\s]+)$/u.exec(value);
-  const candidate = scpLikeMatch?.groups
-    ? `ssh://${scpLikeMatch.groups.username}@${scpLikeMatch.groups.hostname}/${scpLikeMatch.groups.path.replace(
-        /^\/+/,
-        '',
-      )}`
-    : value;
-  let url: URL;
-  try {
-    url = new URL(candidate);
-  } catch {
+  const result = normalizeGitRepositoryUrlSyntax(value);
+  if (!result.valid) {
     return { valid: false, reason: 'invalid' };
   }
-
-  const transport = url.protocol === 'https:' ? 'https' : url.protocol === 'ssh:' ? 'ssh' : null;
-  if (
-    !transport ||
-    !url.hostname ||
-    !url.pathname ||
-    url.pathname === '/' ||
-    url.search ||
-    url.hash ||
-    url.password ||
-    (transport === 'https' && url.username) ||
-    url.pathname.includes('\\')
-  ) {
-    return { valid: false, reason: 'invalid' };
-  }
-  return { valid: true, url: url.toString(), transport };
+  return result;
 }
 
 export function validateGitBranch(input: string): GitBranchValidationResult {
   if (input === '') {
     return { valid: true, branch: null };
   }
-  const branch = input.trim();
-  if (!branch) {
+  const result = validateGitBranchSyntax(input);
+  if (!result.valid) {
     return { valid: false, reason: 'invalid' };
   }
-  if (
-    branch !== input ||
-    branch.length > MAX_GIT_BRANCH_LENGTH ||
-    branch === '@' ||
-    branch === 'HEAD' ||
-    branch.startsWith('-') ||
-    branch.startsWith('/') ||
-    branch.endsWith('/') ||
-    branch.endsWith('.') ||
-    branch.startsWith('refs/') ||
-    branch.includes('//') ||
-    branch.includes('..') ||
-    branch.includes('@{') ||
-    hasInvalidGitRefCharacter(branch) ||
-    branch.split('/').some((segment) => !segment || segment.startsWith('.') || segment.endsWith('.lock'))
-  ) {
-    return { valid: false, reason: 'invalid' };
-  }
-  return { valid: true, branch };
+  return result;
 }
 
 export function validateGitSubdirectory(input: string): GitSubdirectoryValidationResult {
-  const subdirectory = input.trim();
-  if (!subdirectory) {
+  if (input === '') {
     return { valid: true, subdirectory: null };
   }
-  if (
-    subdirectory !== input ||
-    subdirectory.length > MAX_GIT_SUBDIRECTORY_LENGTH ||
-    subdirectory.startsWith('/') ||
-    subdirectory.endsWith('/') ||
-    subdirectory.includes('\\')
-  ) {
+  const result = validateGitSubdirectorySyntax(input);
+  if (!result.valid) {
     return { valid: false };
   }
-  const segments = subdirectory.split('/');
-  if (
-    segments.some(
-      (segment) =>
-        !segment ||
-        segment === '.' ||
-        segment === '..' ||
-        segment.toLocaleLowerCase('en-US') === '.git' ||
-        segment.includes('\0'),
-    )
-  ) {
-    return { valid: false };
-  }
-  return { valid: true, subdirectory: segments.join('/') };
+  return result;
 }
 
 export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFieldsProps) {
@@ -287,16 +227,6 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
 
 function getRepositoryUrlError(reason: GitRepositoryUrlErrorReason, t: (key: string) => string): string {
   return reason === 'required' ? t('Git repository URL is required') : t('Git repository URL is invalid');
-}
-
-function hasInvalidGitRefCharacter(value: string): boolean {
-  for (const character of value) {
-    const code = character.charCodeAt(0);
-    if (code <= 0x20 || code === 0x7f || '~^:?*[\\'.includes(character)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 export default LightExtensionGitSourceFields;

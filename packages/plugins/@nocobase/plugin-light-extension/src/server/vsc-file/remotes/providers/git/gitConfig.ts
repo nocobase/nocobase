@@ -13,11 +13,13 @@ import type {
   VscGitRemoteConfigDraft,
   VscGitRemoteTransport,
 } from '../../../../../shared/vsc-file/remote-sync-types';
+import {
+  normalizeGitRepositoryUrlSyntax,
+  validateGitBranchSyntax,
+  validateGitSubdirectorySyntax,
+} from '../../../../../shared/vsc-file/git-config-validation';
 import { RemoteSyncError } from '../../RemoteSyncAdapter';
 
-const maxUrlLength = 2048;
-const maxBranchLength = 255;
-const maxSubdirectoryLength = 1024;
 const draftConfigKeys = new Set(['url', 'branch', 'subdirectory', 'transport']);
 
 export interface NormalizedVscGitRemoteConfigDraft {
@@ -120,56 +122,24 @@ function requireConfigObject(input: unknown, persisted: boolean): Record<string,
 }
 
 function normalizeGitRemoteUrl(value: unknown): { url: string; transport: VscGitRemoteTransport } {
-  if (
-    typeof value !== 'string' ||
-    value.length === 0 ||
-    value.length > maxUrlLength ||
-    value.trim() !== value ||
-    /[\0\r\n]/u.test(value)
-  ) {
+  if (typeof value !== 'string') {
     throw invalidConfig('Git remote URL is invalid', 'invalid-url');
   }
-
-  const scpLikeMatch = /^(?<username>[A-Za-z0-9._-]+)@(?<hostname>[^:/\s]+):(?<path>[^\s]+)$/u.exec(value);
-  const candidate = scpLikeMatch?.groups
-    ? `ssh://${scpLikeMatch.groups.username}@${scpLikeMatch.groups.hostname}/${scpLikeMatch.groups.path.replace(
-        /^\/+/,
-        '',
-      )}`
-    : value;
-
-  let url: URL;
-  try {
-    url = new URL(candidate);
-  } catch {
-    throw invalidConfig('Git remote URL is invalid', 'invalid-url');
+  const result = normalizeGitRepositoryUrlSyntax(value);
+  if (result.valid) {
+    return result;
   }
-
-  const transport = protocolToTransport(url.protocol);
-  if (!url.hostname || !url.pathname || url.pathname === '/' || url.search || url.hash) {
-    throw invalidConfig('Git remote URL is invalid', 'invalid-url');
+  if (result.reason === 'unsupported-url-protocol') {
+    throw invalidConfig('Git remote URL protocol is not supported', result.reason);
   }
-  if (transport === 'https' && (url.username || url.password)) {
-    throw invalidConfig('HTTPS Git remote URLs must not contain credentials', 'url-credentials-forbidden');
+  if (result.reason === 'url-credentials-forbidden') {
+    const message =
+      result.transport === 'https'
+        ? 'HTTPS Git remote URLs must not contain credentials'
+        : 'SSH Git remote URLs must not contain a password';
+    throw invalidConfig(message, result.reason);
   }
-  if (transport === 'ssh' && url.password) {
-    throw invalidConfig('SSH Git remote URLs must not contain a password', 'url-credentials-forbidden');
-  }
-  if (url.pathname.includes('\\')) {
-    throw invalidConfig('Git remote URL is invalid', 'invalid-url');
-  }
-
-  return { url: url.toString(), transport };
-}
-
-function protocolToTransport(protocol: string): VscGitRemoteTransport {
-  if (protocol === 'https:') {
-    return 'https';
-  }
-  if (protocol === 'ssh:') {
-    return 'ssh';
-  }
-  throw invalidConfig('Git remote URL protocol is not supported', 'unsupported-url-protocol');
+  throw invalidConfig('Git remote URL is invalid', result.reason);
 }
 
 function normalizeGitBranch(value: unknown, optional: boolean): string | null {
@@ -179,66 +149,28 @@ function normalizeGitBranch(value: unknown, optional: boolean): string | null {
     }
     throw invalidConfig('Git remote branch is invalid', 'invalid-branch');
   }
-  if (
-    typeof value !== 'string' ||
-    value.length > maxBranchLength ||
-    value.trim() !== value ||
-    !isValidGitBranch(value)
-  ) {
+  if (typeof value !== 'string') {
     throw invalidConfig('Git remote branch is invalid', 'invalid-branch');
   }
-  return value;
-}
-
-function isValidGitBranch(branch: string): boolean {
-  if (
-    !branch ||
-    branch === '@' ||
-    branch === 'HEAD' ||
-    branch.startsWith('-') ||
-    branch.startsWith('/') ||
-    branch.endsWith('/') ||
-    branch.endsWith('.') ||
-    branch.startsWith('refs/') ||
-    branch.includes('//') ||
-    branch.includes('..') ||
-    branch.includes('@{')
-  ) {
-    return false;
+  const result = validateGitBranchSyntax(value);
+  if (!result.valid) {
+    throw invalidConfig('Git remote branch is invalid', result.reason);
   }
-  for (const character of branch) {
-    const code = character.charCodeAt(0);
-    if (code <= 0x20 || code === 0x7f || '~^:?*[\\'.includes(character)) {
-      return false;
-    }
-  }
-  return branch.split('/').every((segment) => segment && !segment.startsWith('.') && !segment.endsWith('.lock'));
+  return result.branch;
 }
 
 function normalizeGitSubdirectory(value: unknown): string | null {
   if (value === undefined || value === null || value === '') {
     return null;
   }
-  if (
-    typeof value !== 'string' ||
-    value.length > maxSubdirectoryLength ||
-    value.trim() !== value ||
-    value.startsWith('/') ||
-    value.endsWith('/') ||
-    value.includes('\\') ||
-    value.includes('\0')
-  ) {
+  if (typeof value !== 'string') {
     throw invalidConfig('Git remote subdirectory is invalid', 'invalid-subdirectory');
   }
-  const segments = value.split('/');
-  if (
-    segments.some(
-      (segment) => !segment || segment === '.' || segment === '..' || segment.toLocaleLowerCase('en-US') === '.git',
-    )
-  ) {
-    throw invalidConfig('Git remote subdirectory is invalid', 'invalid-subdirectory');
+  const result = validateGitSubdirectorySyntax(value);
+  if (!result.valid) {
+    throw invalidConfig('Git remote subdirectory is invalid', result.reason);
   }
-  return segments.join('/');
+  return result.subdirectory;
 }
 
 function parseCredentialValue(input: unknown): unknown {

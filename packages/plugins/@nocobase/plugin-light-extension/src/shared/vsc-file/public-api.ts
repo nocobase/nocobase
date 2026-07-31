@@ -8,4 +8,5 @@
  */
 
 export * from '@nocobase/runjs-workspace/shared';
+export * from './git-config-validation';
 export * from './remote-sync-types';

@@ -531,7 +531,7 @@ export interface LightExtensionMoveToInlineResult {
   code: string;
   version: string;
   entryPath: string;
-  filesHash?: string;
+  filesHash: string;
   sourceRef: {
     type: 'vsc-file';
     repoId: string;

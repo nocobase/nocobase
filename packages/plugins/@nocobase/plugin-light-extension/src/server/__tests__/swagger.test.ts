@@ -137,6 +137,11 @@ describe('light-extension swagger', () => {
       $ref: '#/components/schemas/LightExtensionMoveToInlineRequest',
     });
     expect(schemas.LightExtensionMoveToInlineRequest.required).toContain('idempotencyKey');
+    expect(schemas.LightExtensionMoveToInlineResult.required).toContain('filesHash');
+    expect(schemas.LightExtensionMoveToInlineResult.properties.filesHash).toEqual({
+      type: 'string',
+      minLength: 1,
+    });
     expect(schemas.LightExtensionSelectableEntryListEnvelope.properties.data.items).toEqual({
       $ref: '#/components/schemas/LightExtensionSelectableEntry',
     });

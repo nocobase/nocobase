@@ -227,6 +227,107 @@ describe('vsc-file repository and commit services', () => {
     });
   });
 
+  it('finds repositories by owner identity without creating a missing repository', async () => {
+    const missingIdentity = {
+      ownerType: 'plugin',
+      ownerId: 'missing-owner',
+      name: 'main',
+    };
+
+    await expect(service.findRepositoryByIdentity(missingIdentity)).resolves.toBeNull();
+    expect(await db.getRepository('vscFileRepositories').count()).toBe(0);
+
+    const created = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'existing-owner',
+      name: 'main',
+      initialFiles: [{ path: 'README.md', content: '# Existing\n' }],
+    });
+    const found = await service.findRepositoryByIdentity({
+      ownerType: 'plugin',
+      ownerId: 'existing-owner',
+      name: 'main',
+    });
+    const pull = await service.pull({ repoId: found?.id || '', includeContent: 'none' });
+
+    expect(found).toEqual(created.repository);
+    expect(pull.repository.headCommitId).toBe(created.repository.headCommitId);
+    expect(pull.files).toEqual([expect.objectContaining({ path: 'README.md' })]);
+    expect(await db.getRepository('vscFileRepositories').count()).toBe(1);
+  });
+
+  it('rolls back a transaction-only ensure and push for a missing repository', async () => {
+    const identity = {
+      ownerType: 'plugin',
+      ownerId: 'rollback-owner',
+      name: 'main',
+    };
+
+    await expect(
+      db.sequelize.transaction(async (transaction) => {
+        await service.ensureAndPush(
+          {
+            identity,
+            expectedRepository: null,
+            message: 'rolled back first commit',
+            files: [{ path: 'README.md', content: '# Rolled back\n' }],
+          },
+          { transaction },
+        );
+        throw new Error('force transaction rollback');
+      }),
+    ).rejects.toThrow('force transaction rollback');
+
+    await expect(service.findRepositoryByIdentity(identity)).resolves.toBeNull();
+    expect(await db.getRepository('vscFileRepositories').count()).toBe(0);
+    expect(await db.getRepository('vscFileRefs').count()).toBe(0);
+    expect(await db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await db.getRepository('vscFileTrees').count()).toBe(0);
+    expect(await db.getRepository('vscFileTreeEntries').count()).toBe(0);
+    expect(await db.getRepository('vscFileBlobs').count()).toBe(0);
+  });
+
+  it('rejects a missing-repository snapshot after another writer publishes first', async () => {
+    const identity = {
+      ownerType: 'plugin',
+      ownerId: 'missing-race-owner',
+      name: 'main',
+    };
+    const winner = await db.sequelize.transaction((transaction) =>
+      service.ensureAndPush(
+        {
+          identity,
+          expectedRepository: null,
+          message: 'winner',
+          files: [{ path: 'README.md', content: '# Winner\n' }],
+        },
+        { transaction },
+      ),
+    );
+
+    await expect(
+      db.sequelize.transaction((transaction) =>
+        service.ensureAndPush(
+          {
+            identity,
+            expectedRepository: null,
+            message: 'loser',
+            files: [{ path: 'README.md', content: '# Loser\n' }],
+          },
+          { transaction },
+        ),
+      ),
+    ).rejects.toMatchObject<VscError>({ code: 'BASE_COMMIT_OUTDATED' });
+
+    const pull = await service.pull({ repoId: winner.repository.id, includeContent: 'all' });
+    expect(pull.repository).toMatchObject({
+      headCommitId: winner.commit.id,
+      headSeq: 1,
+    });
+    expect(pull.files).toEqual([expect.objectContaining({ path: 'README.md', content: '# Winner\n' })]);
+    expect(await db.getRepository('vscFileCommits').count({ filter: { repoId: winner.repository.id } })).toBe(1);
+  });
+
   it('increments seq and updates repository head plus refs/head on normal push', async () => {
     const { repository } = await service.createRepository({
       ownerType: 'plugin',

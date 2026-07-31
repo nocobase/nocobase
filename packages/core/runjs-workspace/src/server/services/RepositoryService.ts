@@ -58,6 +58,22 @@ export class RepositoryService {
     };
   }
 
+  async findRepositoryByIdentity(
+    input: VscRepositoryIdentity,
+    transaction?: Transaction,
+  ): Promise<VscRepositoryRecord | null> {
+    const record = await this.db.getRepository('vscFileRepositories').findOne({
+      filter: {
+        ownerType: input.ownerType,
+        ownerId: input.ownerId,
+        name: input.name,
+      },
+      transaction,
+    });
+
+    return record ? repositoryFromRecord(record) : null;
+  }
+
   async getRepository(repoId: string, transaction?: Transaction): Promise<VscRepositoryRecord> {
     const record = await this.db.getRepository('vscFileRepositories').findOne({
       filterByTk: repoId,

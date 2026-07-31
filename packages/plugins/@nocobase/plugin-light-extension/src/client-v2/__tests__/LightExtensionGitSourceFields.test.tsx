@@ -67,11 +67,14 @@ describe('generic Git source validation', () => {
     });
   });
 
-  it('rejects unsupported protocols, credentials in HTTPS URLs, query strings, and local paths', () => {
+  it('rejects unsupported protocols, URL credentials, query/hash suffixes, backslashes, and local paths', () => {
     for (const value of [
       'http://git.example.com/team/project.git',
       'https://user:secret@git.example.com/team/project.git',
+      'ssh://git:secret@git.example.com/team/project.git',
       'https://git.example.com/team/project.git?ref=main',
+      'https://git.example.com/team/project.git#main',
+      'ssh://git@git.example.com/team\\project.git',
       'file:///tmp/project.git',
       '/tmp/project.git',
     ]) {
@@ -84,12 +87,17 @@ describe('generic Git source validation', () => {
     expect(validateGitBranch('feature/sync')).toEqual({ valid: true, branch: 'feature/sync' });
     expect(validateGitBranch(' feature/sync ')).toEqual({ valid: false, reason: 'invalid' });
     expect(validateGitBranch('unsafe..branch')).toEqual({ valid: false, reason: 'invalid' });
+    expect(validateGitBranch('refs/heads/main')).toEqual({ valid: false, reason: 'invalid' });
+    expect(validateGitBranch('main~1')).toEqual({ valid: false, reason: 'invalid' });
     expect(validateGitSubdirectory('packages/light-extension')).toEqual({
       valid: true,
       subdirectory: 'packages/light-extension',
     });
     expect(validateGitSubdirectory('')).toEqual({ valid: true, subdirectory: null });
+    expect(validateGitSubdirectory('   ')).toEqual({ valid: false });
     expect(validateGitSubdirectory('a/../b')).toEqual({ valid: false });
+    expect(validateGitSubdirectory('a/.GIT/b')).toEqual({ valid: false });
+    expect(validateGitSubdirectory('a\\b')).toEqual({ valid: false });
   });
 });
 

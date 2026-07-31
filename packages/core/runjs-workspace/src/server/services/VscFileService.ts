@@ -87,6 +87,11 @@ export interface PushInput {
   metadata?: Record<string, unknown>;
 }
 
+export interface EnsureAndPushInput extends Omit<PushInput, 'repoId' | 'baseCommitId'> {
+  identity: VscRepositoryIdentity;
+  expectedRepository: Readonly<VscRepositoryRecord> | null;
+}
+
 export interface PushResult {
   repository: VscRepositoryRecord;
   commit: VscCommitRecord;
@@ -295,6 +300,24 @@ export class VscFileService {
   async getRepository(input: RepositoryIdInput, ctx: VscServiceContext = {}): Promise<VscRepositoryRecord> {
     const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
     await this.assertPermission({ action: 'getRepository', repository }, ctx);
+    return repository;
+  }
+
+  async findRepositoryByIdentity(
+    input: VscRepositoryIdentity,
+    ctx: VscServiceContext = {},
+  ): Promise<VscRepositoryRecord | null> {
+    const repository = await this.repositoryService.findRepositoryByIdentity(input, ctx.transaction);
+    await this.assertPermission(
+      repository
+        ? { action: 'getRepository', repository }
+        : {
+            action: 'getRepository',
+            ownerType: input.ownerType,
+            ownerId: input.ownerId,
+          },
+      ctx,
+    );
     return repository;
   }
 
@@ -551,6 +574,51 @@ export class VscFileService {
       commit: result.commit,
       tree: result.tree,
     };
+  }
+
+  async ensureAndPush(input: EnsureAndPushInput, ctx: VscServiceContext): Promise<PushResult> {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new VscError('INTERNAL_ERROR', 'A transaction is required to ensure and push a repository');
+    }
+
+    await this.assertPermission(
+      {
+        action: 'createRepository',
+        ownerType: input.identity.ownerType,
+        ownerId: input.identity.ownerId,
+        actionMetadata: input.metadata,
+      },
+      ctx,
+    );
+    const ensured = await this.repositoryService.ensureRepositoryRecord(input.identity, transaction);
+    const repository = await this.repositoryService.getRepositoryForUpdate(ensured.repository.id, transaction);
+    await this.assertPermission(
+      {
+        action: 'push',
+        repository,
+        actionMetadata: input.metadata,
+      },
+      ctx,
+    );
+    this.assertEnsuredRepositoryMatches(input.identity, input.expectedRepository, repository);
+
+    return this.pushInternal(
+      {
+        repoId: repository.id,
+        baseCommitId: input.expectedRepository?.headCommitId || null,
+        message: input.message,
+        files: input.files,
+        allowEmptyCommit: input.allowEmptyCommit,
+        authorId: input.authorId,
+        metadata: input.metadata,
+      },
+      ctx,
+      {
+        checkPermission: false,
+        materializeCandidate: false,
+      },
+    );
   }
 
   async preparePush(
@@ -821,6 +889,38 @@ export class VscFileService {
     };
 
     await this.permissionHooks.assertAllowed(input);
+  }
+
+  private assertEnsuredRepositoryMatches(
+    identity: VscRepositoryIdentity,
+    expected: Readonly<VscRepositoryRecord> | null,
+    repository: VscRepositoryRecord,
+  ): void {
+    const identityMatches =
+      repository.ownerType === identity.ownerType &&
+      repository.ownerId === identity.ownerId &&
+      repository.name === identity.name;
+    const snapshotMatches = expected
+      ? repository.id === expected.id &&
+        expected.ownerType === identity.ownerType &&
+        expected.ownerId === identity.ownerId &&
+        expected.name === identity.name &&
+        repository.headCommitId === expected.headCommitId &&
+        repository.headSeq === expected.headSeq
+      : repository.headCommitId === null && repository.headSeq === 0;
+
+    if (!identityMatches || !snapshotMatches) {
+      throw new VscError('BASE_COMMIT_OUTDATED', 'Repository changed after the owner snapshot was read', {
+        details: {
+          expectedRepositoryId: expected?.id || null,
+          receivedRepositoryId: repository.id,
+          expectedHeadCommitId: expected?.headCommitId || null,
+          receivedHeadCommitId: repository.headCommitId,
+          expectedHeadSeq: expected?.headSeq || 0,
+          receivedHeadSeq: repository.headSeq,
+        },
+      });
+    }
   }
 
   private assertDiffFileEndpointsAllowed(input: DiffFileInput): void {

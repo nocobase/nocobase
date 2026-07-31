@@ -942,7 +942,7 @@ export const lightExtensionSchemas = {
   },
   LightExtensionMoveToInlineResult: {
     type: 'object',
-    required: ['runJSRepoId', 'commitId', 'ownerFingerprint', 'code', 'version', 'entryPath', 'sourceRef'],
+    required: ['runJSRepoId', 'commitId', 'ownerFingerprint', 'code', 'version', 'entryPath', 'filesHash', 'sourceRef'],
     properties: {
       runJSRepoId: {
         type: 'string',
@@ -964,6 +964,7 @@ export const lightExtensionSchemas = {
       },
       filesHash: {
         type: 'string',
+        minLength: 1,
       },
       sourceRef: {
         type: 'object',
