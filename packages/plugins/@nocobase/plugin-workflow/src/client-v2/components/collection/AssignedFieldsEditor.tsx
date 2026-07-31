@@ -91,6 +91,10 @@ function normalizeAssignedValues(values: AssignedValues | undefined): AssignedVa
   );
 }
 
+function normalizeVariableExpressionValue(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
 function getFieldTitle(field: AssignedField, t: (key: string) => string) {
   return t(field.uiSchema?.title ?? field.name);
 }
@@ -213,7 +217,7 @@ export function AssignedFieldsEditor({
             >
               {VARIABLE_EXPRESSION_FIELD_TYPES.has(field.type ?? '') ? (
                 <VariableHybridInput
-                  value={typeof normalizedValue[field.name] === 'string' ? normalizedValue[field.name] : ''}
+                  value={normalizeVariableExpressionValue(normalizedValue[field.name])}
                   onChange={(nextValue) => updateValue(field.name, nextValue)}
                   disabled={mergedDisabled}
                   metaTree={workflowVariableTree}
