@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PortalEntryActionModel } from '../PortalEntryActionModel';
 import { getPortalEntryActionStore } from '../portalEntryActionStore';
@@ -221,5 +222,48 @@ describe('PortalEntryActionModel', () => {
     expect(model.getEntryActionUnavailableMessage()).toBe(
       'This entry is currently unavailable. Please check the application status.',
     );
+  });
+
+  it('keeps cross-layout title qualifiers when refreshing Portal metadata', async () => {
+    const entryPortal = {
+      uid: 'desktop-workspace',
+      appName: 'main',
+      title: 'Workspace',
+      routePath: '/desktop-workspace',
+      layout: 'desktop',
+    };
+    const app = {
+      apiClient: createAppPortalsApiClient({
+        apps: [],
+        portals: [
+          entryPortal,
+          {
+            uid: 'mobile-workspace',
+            appName: 'main',
+            title: 'Workspace',
+            routePath: '/mobile-workspace',
+            layout: 'mobile',
+          },
+        ],
+      }),
+    };
+    const flowEngine = new FlowEngine();
+    flowEngine.context.defineProperty('app', { value: app });
+    flowEngine.registerModels({ PortalEntryActionModel });
+    const model = flowEngine.createModel<PortalEntryActionModel>({
+      use: 'PortalEntryActionModel',
+      props: {
+        entryPortal,
+        entryPortalTargetTitle: 'Main / Workspace (Desktop)',
+        entryPortalTitle: 'Main / Workspace (Desktop)',
+        title: 'Main / Workspace (Desktop)',
+      },
+    });
+
+    await loadEntryPortalAvailability(model);
+
+    expect(model.props.entryPortalTitle).toBe('Workspace (Desktop)');
+    expect(model.props.entryPortalTargetTitle).toBe('Main application / Workspace (Desktop)');
+    expect(model.props.title).toBe('Workspace (Desktop)');
   });
 });
