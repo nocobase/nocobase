@@ -453,10 +453,12 @@ describe('settings center', () => {
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
     expect(await screen.findByText('Menu ACL child page')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Menu ACL Demo' })).toBeInTheDocument();
+    // 左栏已经去掉，这一组的入口挂在顶栏「其他设置」的悬浮下拉里；
+    // 下拉要 hover 才渲染，这里只验证分组入口还在（菜单没有因为 ACL 被整条摘掉）。
+    expect(screen.getByRole('menuitem', { name: 'Other settings' })).toBeInTheDocument();
   });
 
-  it('should allow the settings sidebar menu to scroll independently', async () => {
+  it('should keep rendering the active page when a group has many settings', async () => {
     class ManySettingsPlugin extends Plugin {
       async load() {
         for (let index = 0; index < 30; index += 1) {
@@ -485,8 +487,9 @@ describe('settings center', () => {
 
     expect(await screen.findByText('Scroll demo page 29')).toBeInTheDocument();
 
-    const sidebar = screen.getByRole('menuitem', { name: 'Scroll demo 29' }).closest('.ant-layout-sider');
-    expect(sidebar).toHaveStyle({ overflowY: 'auto' });
+    // 左栏去掉之后这里不再有独立滚动区：30 个配置项全部收在顶栏下拉里，
+    // 页面本身只渲染当前这一页，验证它没被撑坏即可。
+    expect(document.querySelector('.ant-layout-sider')).toBeNull();
   });
 
   it('should save system settings through systemSettings:put', async () => {

@@ -238,6 +238,38 @@ async function selectMobileLayout(container: HTMLElement, user: ReturnType<typeo
   await user.click(await screen.findByText('Mobile layout'));
 }
 
+/**
+ * 打开某张卡片右上角的「更多」菜单。
+ *
+ * 卡片上的操作（编辑 / 路由 / 设为默认 / 删除）都收在这个菜单里，测试要先展开再点。
+ * antd 的下拉渲染在 body 下的 portal，菜单本身不在卡片 DOM 里，所以返回 `within(menu)`。
+ *
+ * @param {ReturnType<typeof userEvent.setup>} user 交互实例
+ * @param {HTMLElement} card 目标卡片
+ * @returns 菜单作用域的查询器
+ */
+async function openCardMenu(user: ReturnType<typeof userEvent.setup>, card: HTMLElement) {
+  await user.click(within(card).getByRole('button', { name: 'More' }));
+  // 等菜单项真正挂上来：`role="menu"` 的容器会先出现，里面的项晚一拍。
+  // 「删除」每张卡都有，拿它当锚点定位当前这份菜单。
+  // 菜单项带图标，antd 的图标是 <span role="img" aria-label="delete">，会被算进可访问名，
+  // 所以按名字匹配要用正则而不是全等。
+  const anchor = await screen.findByRole('menuitem', { name: /Delete/ });
+  return within(anchor.closest('[role="menu"]') as HTMLElement);
+}
+
+/**
+ * 展开卡片菜单并点其中一项。
+ *
+ * @param {ReturnType<typeof userEvent.setup>} user 交互实例
+ * @param {HTMLElement} card 目标卡片
+ * @param {string} name 菜单项名称
+ */
+async function clickCardMenuItem(user: ReturnType<typeof userEvent.setup>, card: HTMLElement, name: string) {
+  const menu = await openCardMenu(user, card);
+  await user.click(menu.getByRole('menuitem', { name: new RegExp(name) }));
+}
+
 afterEach(() => {
   cleanup();
   flowContext.current = undefined;
@@ -579,24 +611,36 @@ describe('plugin-multi-portal settings page', () => {
     const customerPortalCard = screen.getByText('Customer portal').closest('.ant-card') as HTMLElement;
     const developerPortalCard = screen.getByText('Developer portal').closest('.ant-card') as HTMLElement;
     const disabledPortalCard = screen.getByText('Disabled portal').closest('.ant-card') as HTMLElement;
-    // 打开按钮和后面四个一样是图标按钮，不是链接（带 href 的按钮尺寸和颜色都对不齐）。
-    expect(within(customerPortalCard).getByRole('button', { name: 'View' })).toBeEnabled();
     expect(within(customerPortalCard).getByRole('switch', { name: 'Enabled' })).toBeChecked();
     expect(within(disabledPortalCard).getByRole('switch', { name: 'Enabled' })).not.toBeChecked();
 
-    // AI portal 没有可视化路由，禁用的 portal 也不该能点进去。
-    const routesButton = within(customerPortalCard).getByRole('button', { name: 'Routes' });
-    expect(routesButton).toBeEnabled();
-    expect(within(developerPortalCard).getByRole('button', { name: 'Routes' })).toBeDisabled();
-    expect(within(disabledPortalCard).getByRole('button', { name: 'Routes' })).toBeDisabled();
-    const setDefaultButton = within(customerPortalCard).getByRole('button', { name: 'Set as default' });
-    expect(setDefaultButton).toBeEnabled();
-    expect(within(disabledPortalCard).getByRole('button', { name: 'Set as default' })).toBeDisabled();
+    // 「打开」不再占一个操作位：点卡片本身就是打开，色块上那层 hover 覆盖是键盘可达的同一入口。
+    expect(within(customerPortalCard).getByRole('button', { name: 'View' })).toHaveClass('nb-portal-cover-overlay');
+    const openInNewTab = vi.spyOn(window, 'open').mockImplementation(() => null);
+    await user.click(within(customerPortalCard).getByText('Customer portal'));
+    expect(openInNewTab).toHaveBeenCalledWith('/v/customer-portal', '_blank', 'noopener,noreferrer');
+    openInNewTab.mockRestore();
 
-    expect(within(customerPortalCard).getByRole('button', { name: 'Delete' })).not.toHaveClass('ant-btn-dangerous');
+    // AI portal 没有可视化路由，禁用的 portal 也进不去——这两种情况菜单里直接不列这一项。
+    const customerMenu = await openCardMenu(user, customerPortalCard);
+    expect(customerMenu.getByRole('menuitem', { name: /Routes/ })).toBeInTheDocument();
+    expect(customerMenu.getByRole('menuitem', { name: /Set as default/ })).toBeInTheDocument();
+    expect(customerMenu.queryByRole('menuitem', { name: /View/ })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    const developerMenu = await openCardMenu(user, developerPortalCard);
+    expect(developerMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    const disabledMenu = await openCardMenu(user, disabledPortalCard);
+    expect(disabledMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
+    // 关着的门户设成默认，用户打开应用会落到进不去的地方，所以这一项也不列。
+    expect(disabledMenu.queryByRole('menuitem', { name: /Set as default/ })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
     expect(screen.queryByRole('button', { name: /Logs/ })).not.toBeInTheDocument();
 
-    await user.click(routesButton);
+    await clickCardMenuItem(user, customerPortalCard, 'Routes');
     expect(flowContext.current?.viewer.drawer).toHaveBeenLastCalledWith(
       expect.objectContaining({
         closable: true,
@@ -604,18 +648,19 @@ describe('plugin-multi-portal settings page', () => {
         width: '80%',
       }),
     );
-    await user.click(setDefaultButton);
+    await clickCardMenuItem(user, customerPortalCard, 'Set as default');
     expect(multiPortalsResource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
-    await user.click(within(customerPortalCard).getByRole('button', { name: 'Delete' }));
+    await clickCardMenuItem(user, customerPortalCard, 'Delete');
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
 
-    // 卡片上的标签：portal 类型 + 布局名，不出现权限 / UI layout 字样。
+    // 门户类型（AI / 无代码）由所在分组的标题表达，卡片上不再挂类型标签。
     // 测试里的 t 是恒等函数，渲染出来的是词条 key 而不是译文。
-    expect(within(customerPortalCard).getByText('No-code')).toBeInTheDocument();
-    // 卡片上的设备标签按 layoutType 映射，不直接用布局记录的名字。
-    expect(within(customerPortalCard).getByText('Mobile')).toBeInTheDocument();
-    expect(within(developerPortalCard).getByText('AI')).toBeInTheDocument();
+    expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
+    expect(screen.getByText('No-code')).toBeInTheDocument();
+    expect(screen.getByText('AI')).toBeInTheDocument();
+    // 设备变成标题右边的图标，文字进了 aria-label。
+    expect(within(customerPortalCard).getByLabelText('Mobile')).toBeInTheDocument();
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
     expect(multiPortalsResource.list).toHaveBeenCalledWith({
@@ -670,11 +715,17 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Admin')).toBeInTheDocument();
     const card = screen.getByText('Admin').closest('.ant-card') as HTMLElement;
-    // 显式默认 portal 在封面和卡片信息区都带 Default 标识，但删除入口照常给。
-    expect(within(card).getAllByText('Default')).toHaveLength(2);
-    expect(within(card).getByRole('button', { name: 'Set as default' })).toBeDisabled();
+    // 默认门户挂一条缎带徽章，写着 Default。缎带是 Badge.Ribbon 包在卡片外面的，
+    // 不在 .ant-card 里，所以从卡片的父节点找。
+    const cardWrapper = card.parentElement as HTMLElement;
+    expect(within(cardWrapper).getByText('Default')).toBeInTheDocument();
+    // 停用默认门户会让入口落空，所以启用开关置灰。
+    expect(within(card).getByRole('switch', { name: 'Enabled' })).toBeDisabled();
 
-    await user.click(within(card).getByRole('button', { name: 'Delete' }));
+    // 已经是默认了，菜单里不再列「设为默认」；删除入口照常给。
+    const menu = await openCardMenu(user, card);
+    expect(menu.queryByRole('menuitem', { name: /Set as default/ })).not.toBeInTheDocument();
+    await user.click(menu.getByRole('menuitem', { name: /Delete/ }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
   });
@@ -1165,7 +1216,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1239,7 +1291,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1323,7 +1376,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1404,7 +1458,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1488,7 +1543,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1776,7 +1832,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1845,7 +1902,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />

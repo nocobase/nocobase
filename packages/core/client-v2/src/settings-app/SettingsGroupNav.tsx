@@ -28,8 +28,8 @@ const navStyle: React.CSSProperties = {
 /**
  * 设置中心顶栏的一级导航。
  *
- * 应用、插件管理各自只有一个页面，直接当一级入口；其余全部收在「系统设置」下，
- * 鼠标移上去展开下拉，也可以点进去从左栏走。
+ * 应用、插件管理各自只有一个页面，直接当一级入口；其余全部收在「其他设置」下，
+ * 鼠标移上去展开下拉——那一组没有左栏，下拉就是进入组内各页面的唯一入口。
  */
 export const SettingsGroupNav: React.FC = observer(() => {
   const { t } = useTranslation();
@@ -70,11 +70,7 @@ export const SettingsGroupNav: React.FC = observer(() => {
           };
         }
 
-        // 已经站在这个分组里时不再弹下拉：左栏已经把同一份内容铺开了，再浮一层纯属打扰。
-        if (group.key === activeGroupKey) {
-          return { key: group.key, label: t(group.title) };
-        }
-
+        // 站在这个分组里时下拉照样弹：左栏已经去掉了，这里是进入组内其他页面的唯一入口。
         return {
           key: group.key,
           label: t(group.title),
@@ -85,11 +81,11 @@ export const SettingsGroupNav: React.FC = observer(() => {
               label: setting.label ?? setting.title,
               icon: setting.icon,
             })),
-          // 点标题本身也要能进去，而不是只能从下拉里挑。
-          onTitleClick: handleClick,
+          // 分组标题只负责展开下拉，不可点：它不是一个页面，点它没有确定的落点。
+          // 想进组内某一页，从下拉里挑。
         };
       }),
-    [activeGroupKey, groups, handleClick, t],
+    [groups, handleClick, t],
   );
 
   // 子菜单标题只有在它的某个子项被选中时才会高亮，所以两个 key 都要给。

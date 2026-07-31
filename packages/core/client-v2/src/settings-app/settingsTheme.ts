@@ -237,6 +237,13 @@ export function withSettingsHeaderTheme(theme: ThemeConfig, token: GlobalToken):
 }
 
 /**
+ * 顶栏下拉里每一条的高度。
+ *
+ * 取自用户中心下拉（`nb-user-center-item`）的 30px——顶栏上两个下拉高度对齐。
+ */
+const SETTINGS_MENU_ITEM_HEIGHT = 30;
+
+/**
  * 设置中心的全局补丁样式。
  *
  * 这几件事 antd 没给 token，只能落到 CSS：
@@ -251,20 +258,25 @@ export function withSettingsHeaderTheme(theme: ThemeConfig, token: GlobalToken):
  */
 export function buildSettingsGlobalCss(token: GlobalToken): string {
   return `
+/* 下面几组规则不加 .nb-settings-shell 前缀，因为 antd 的抽屉、弹窗、下拉是渲染到
+   body 下的 portal 里的，挂在壳上的选择器够不着——数据表那个抽屉里的「编辑」链接一直是
+   antd 默认蓝，就是这么漏出去的。这份样式只在设置中心这个独立 SPA 里注入，
+   全局选择器不会波及业务端。 */
+
 /* 最外层 body 的底色来自业务端主题（暗黑下是 #141414）。内容区一般把它整块盖住，
    但内容不满屏、或者滚动橡皮筋回弹时会漏出来，所以这里一并接管。
    设置中心是独立入口的单页应用，这条全局规则不会影响业务端。 */
 body {
   background: ${token.colorBgLayout};
 }
-.nb-settings-shell a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn):not([class*="ant-"]) {
+a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn):not([class*="ant-"]) {
   color: ${token.colorTextSecondary};
 }
-.nb-settings-shell a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn):not([class*="ant-"]):hover {
+a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn):not([class*="ant-"]):hover {
   color: ${token.colorText};
 }
-.nb-settings-shell a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn),
-.nb-settings-shell .ant-btn-link:not(:disabled) {
+a:not(.ant-btn):not(.ant-menu-item):not(.ant-tabs-tab-btn),
+.ant-btn-link:not(:disabled) {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -284,18 +296,64 @@ body {
 .nb-settings-shell .ant-layout-sider .ant-menu-submenu-title::after {
   display: none !important;
 }
-/* 未启用态保持 antd 默认的实心灰滑轨：之前做成白底描边太淡，和「禁用」几乎看不出差别。
-   禁用态不用整体压暗（插件管理器里一整屏都是不可操作的内置插件，压狠了像坏了），
-   而是把滑轨调到跟「未启用」同一档灰、滑块的小白圆点也压成浅灰——
-   整体退成一片同色系的浅灰，跟纯黑的「开着且能关」拉开距离。 */
-.nb-settings-shell .ant-switch-disabled {
+/* 悬浮下拉的条目高度对齐顶栏另一个下拉（用户中心，nb-user-center-item 是 30px）：
+   同一条顶栏里弹出来的两个下拉，高度一致才不别扭。
+   antd 给菜单项的是 controlHeightLG（紧凑下 35px），那是「一个可点控件」的高度，
+   这份下拉是十几条一列的跳转清单，35 摞起来偏松。
+
+   只写弹层里的条目——顶栏那排横向菜单和它共用一套 Menu token，改 token 会把顶栏
+   的左右间距一起吃掉。选择器要到三层，两层压不过 antd 自己那条。 */
+.ant-menu-submenu-popup .ant-menu.ant-menu-sub.ant-menu-vertical {
+  /* 条目之间的 4px 外边距去掉之后，首尾两条会贴着弹层边缘，靠容器补回上下留白。 */
+  padding-block: ${token.paddingXXS}px;
+}
+.ant-menu-submenu-popup .ant-menu-sub > .ant-menu-item,
+.ant-menu-submenu-popup .ant-menu-sub > .ant-menu-submenu > .ant-menu-submenu-title {
+  height: ${SETTINGS_MENU_ITEM_HEIGHT}px;
+  line-height: ${SETTINGS_MENU_ITEM_HEIGHT}px;
+  margin-block: 0;
+}
+
+/* 信息类 Alert：主色收成黑白之后，它的底色被派生成了几乎看不见的 rgba(0,0,0,0.02)，
+   一整条提示淡到会被当成空白。这里不靠颜色找存在感（那会把彩色带回来），
+   而是加重形状：左边一道 4px 竖条 + 更实的底和描边 + 标题加粗 + 图标放大。
+   警告 / 错误 / 成功三种自己有语义色，不动。 */
+.ant-alert-info {
+  background: ${token.colorFillSecondary};
+  border: ${token.lineWidth}px solid ${token.colorBorder};
+  border-inline-start: 4px solid ${token.colorText};
+  padding-block: ${token.paddingSM}px;
+}
+.ant-alert-info .ant-alert-icon,
+.ant-alert-info .ant-alert-message {
+  color: ${token.colorText};
+}
+.ant-alert-info .ant-alert-icon {
+  font-size: ${token.fontSizeLG}px;
+}
+.ant-alert-info .ant-alert-message {
+  font-weight: 600;
+}
+.ant-alert-info .ant-alert-description {
+  color: ${token.colorTextSecondary};
+}
+/* 开关三档灰：未开启=浅灰（colorFill，0.15），禁用=深灰（colorTextTertiary，0.45），开启=纯黑。
+   禁用比未开启更深是刻意的——「深」在这里表示"钉死了"，而不是"更强"；
+   两者一浅一深摆在一起，扫一眼就分得出，不用比对细微的明度差。
+   禁用态不整体压暗：插件管理器一屏 100 多个内置插件都是禁用的，压狠了整页像坏了。 */
+.ant-switch {
+  background: ${token.colorFill};
+}
+.ant-switch.ant-switch-checked {
+  background: ${token.colorText};
+}
+/* 选择器必须比 antd 自己那条 .ant-switch.ant-switch-disabled 权重高（去掉 shell 前缀之后
+   单个类名压不住它），否则 opacity: 0.65 还在，深灰会被压淡，正好跟未开启撞在一起，
+   看着就是同一个颜色。 */
+.ant-switch.ant-switch-disabled,
+.ant-switch.ant-switch-disabled.ant-switch-checked {
+  background: ${token.colorTextTertiary};
   opacity: 1;
-}
-.nb-settings-shell .ant-switch-disabled.ant-switch-checked {
-  background: ${token.colorTextQuaternary};
-}
-.nb-settings-shell .ant-switch-disabled .ant-switch-handle::before {
-  background: ${token.colorBorderSecondary};
 }
 `;
 }

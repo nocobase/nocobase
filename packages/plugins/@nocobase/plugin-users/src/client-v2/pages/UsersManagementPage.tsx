@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useACLRoleContext, type CompiledFilter, type TableProps } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Button, Popconfirm, Space, Tabs, Tag, theme } from 'antd';
+import { Button, Card, Popconfirm, Space, Tag, theme } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import { ResourceTablePage, SettingsActionCell, type ResourceTablePageToolbarArgs } from '../components/resource';
 import { useT } from '../locale';
@@ -214,43 +213,24 @@ function UsersTable() {
 export default function UsersManagementPage() {
   const t = useT();
   const { token } = theme.useToken();
-  const tabsClassName = css`
-    .ant-tabs-nav {
-      flex: 0 0 auto;
-      margin-bottom: 0;
-    }
+  const [activeTabKey, setActiveTabKey] = useState('usersManager');
 
-    .ant-tabs-content-holder,
-    .ant-tabs-tabpane {
-      background: ${token.colorBgContainer};
-    }
-
-    .ant-tabs-content-holder {
-      border-radius: ${token.borderRadiusLG}px;
-      overflow: hidden;
-    }
-  `;
-
+  // 页签放进卡片头部，而不是浮在页面底色上再接一张白卡：
+  // 后者上下两截看着像两个不相干的块，卡片自带的 tabList 天生就是一体的。
   return (
-    <Tabs
-      type="card"
-      className={tabsClassName}
-      items={[
-        {
-          key: 'usersManager',
-          label: t('Users manager'),
-          children: <UsersTable />,
-        },
-        {
-          key: 'usersSettings',
-          label: t('Settings'),
-          children: (
-            <div style={{ padding: token.paddingLG }}>
-              <UsersSettingsForm />
-            </div>
-          ),
-        },
+    <Card
+      tabList={[
+        { key: 'usersManager', tab: t('Users manager') },
+        { key: 'usersSettings', tab: t('Settings') },
       ]}
-    />
+      activeTabKey={activeTabKey}
+      onTabChange={setActiveTabKey}
+      // 卡片头部的页签默认是 large（16px），比页面其他文字大一号，看着像标题。
+      tabProps={{ size: 'middle' }}
+      // 表格自带内边距，表单没有，所以按页签给。
+      styles={{ body: { padding: activeTabKey === 'usersSettings' ? token.paddingLG : 0 } }}
+    >
+      {activeTabKey === 'usersSettings' ? <UsersSettingsForm /> : <UsersTable />}
+    </Card>
   );
 }

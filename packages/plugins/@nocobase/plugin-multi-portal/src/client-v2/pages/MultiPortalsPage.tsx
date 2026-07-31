@@ -10,11 +10,13 @@
 import {
   ApartmentOutlined,
   DeleteOutlined,
+  DesktopOutlined,
   EditOutlined,
+  EllipsisOutlined,
   ExportOutlined,
+  MobileOutlined,
   PlusOutlined,
   ReloadOutlined,
-  StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
 import { AttachmentUpload, DrawerFormLayout, Icon, IconPicker, type UploadedAttachment } from '@nocobase/client-v2';
@@ -26,6 +28,7 @@ import {
   Button,
   Card,
   Divider,
+  Dropdown,
   Empty,
   Flex,
   Form,
@@ -36,7 +39,6 @@ import {
   Space,
   Spin,
   Switch,
-  Tag,
   Tooltip,
   Typography,
   theme,
@@ -215,6 +217,47 @@ const describedRadioCss = `
   margin-top: 3px;
 }
 `;
+
+/**
+ * 画廊卡片的悬浮态样式。
+ *
+ * 走 CSS 而不是 React state：一页几十张卡，用 state 的话鼠标每进出一张就整页重渲染；
+ * `:focus-within` 还能顺带把键盘路径覆盖掉，不用自己接 focus / blur。
+ *
+ * @param {ReturnType<typeof theme.useToken>['token']} token 当前主题 token
+ * @returns {string} 样式文本
+ */
+function buildPortalCardCss(token: ReturnType<typeof theme.useToken>['token']) {
+  return `
+.nb-portal-card {
+  transition: box-shadow ${token.motionDurationMid};
+}
+.nb-portal-card:hover {
+  box-shadow: ${token.boxShadowSecondary};
+}
+.nb-portal-cover {
+  position: relative;
+}
+.nb-portal-cover-overlay {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  transition: opacity ${token.motionDurationMid};
+}
+.nb-portal-card:hover .nb-portal-cover-overlay,
+.nb-portal-cover-overlay:focus-visible {
+  opacity: 1;
+}
+`;
+}
 
 const portalSlugPattern = /^[a-z0-9_-]+$/;
 
@@ -409,10 +452,6 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
 }
 
 // 设置中心走中性灰白，标签统一用默认色，靠文案而不是颜色区分。
-function getLayoutTagColor(_layoutType?: string) {
-  return 'default';
-}
-
 function getUiLayoutOptionLabel(item: UiLayoutOptionRecord, t: ReturnType<typeof useT>) {
   if (item.layoutType === 'desktop') {
     return t('Desktop');
@@ -462,12 +501,14 @@ function isFixedDefaultPortal(record?: MultiPortalRecord) {
   return isDefaultLayoutMultiPortalUid(record?.uid);
 }
 
-const PORTAL_COVER_HEIGHT = 132;
+/** 行卡片左侧那块方形封面的边长 */
+const PORTAL_COVER_HEIGHT = 56;
 
 const galleryGridStyle: React.CSSProperties = {
   display: 'grid',
   gap: 16,
-  gridTemplateColumns: 'repeat(auto-fill, minmax(272px, 1fr))',
+  // 行卡片放太宽会拉出一条空荡荡的横条，300 左右刚好放下标题和地址。
+  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
 };
 
 /**
@@ -490,19 +531,25 @@ function hashString(value: string) {
 /**
  * 生成 portal 的默认封面底色。
  *
- * 设置中心整体是中性灰白，封面因此走低饱和度的柔和渐变：
- * 既能让画廊里的每张卡片彼此可区分，又不会把页面拉回彩色。
+ * 纯色而不是渐变，明度压到能承住白字的程度：色块小（56px），渐变在这个尺寸下
+ * 只会糊成一团脏色；纯色 + 白字反而干净，也更容易一眼区分不同门户。
  *
  * @param {string} seed 生成种子（portal uid）
  * @param {boolean} dark 是否深色主题
- * @returns {string} CSS 渐变
+ * @returns {string} CSS 颜色
  */
+/**
+ * 色块可选的色相。
+ *
+ * 不直接用 `hash % 360`：相邻的几十度肉眼分不出来，实测连着几个门户都是紫的。
+ * 这里挑一圈彼此拉得开的色相，两两至少差 35 度。
+ */
+const PORTAL_COVER_HUES = [210, 145, 25, 340, 265, 190, 45, 300, 165, 120];
+
 function getPortalCoverBackground(seed: string, dark: boolean) {
-  const hue = hashString(seed) % 360;
-  if (dark) {
-    return `linear-gradient(135deg, hsl(${hue}, 14%, 26%) 0%, hsl(${(hue + 40) % 360}, 16%, 18%) 100%)`;
-  }
-  return `linear-gradient(135deg, hsl(${hue}, 26%, 93%) 0%, hsl(${(hue + 40) % 360}, 22%, 85%) 100%)`;
+  const hue = PORTAL_COVER_HUES[hashString(seed) % PORTAL_COVER_HUES.length];
+  // 深色主题下同一明度会显得比浅色主题更刺眼，稍微收一点。
+  return dark ? `hsl(${hue}, 32%, 38%)` : `hsl(${hue}, 38%, 46%)`;
 }
 
 /**
@@ -522,23 +569,21 @@ function isDarkThemeColor(color?: string) {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
-function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string }) {
-  const { record } = props;
-  const { defaultLabel } = props;
+function PortalCover(props: { record: MultiPortalRecord; href: string; openLabel: string }) {
+  const { href, openLabel, record } = props;
   const { token } = theme.useToken();
   const dark = isDarkThemeColor(token.colorBgContainer);
   const background = getPortalCoverBackground(record.uid || record.portalName || '', dark);
   const initial = (record.title || record.portalName || '?').trim().charAt(0).toUpperCase();
   const coverUrl = record.options?.cover?.url;
-  const coverBorderRadius = `${token.borderRadiusLG}px ${token.borderRadiusLG}px 0 0`;
 
-  const cover = coverUrl ? (
+  const artwork = coverUrl ? (
     <div
       aria-hidden
       style={{
         background: `${token.colorFillQuaternary} center / cover no-repeat url("${coverUrl}")`,
-        borderRadius: coverBorderRadius,
-        height: PORTAL_COVER_HEIGHT,
+        height: '100%',
+        width: '100%',
       }}
     />
   ) : (
@@ -547,20 +592,20 @@ function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string })
       style={{
         alignItems: 'center',
         background,
-        borderRadius: coverBorderRadius,
         display: 'flex',
-        height: PORTAL_COVER_HEIGHT,
+        height: '100%',
         justifyContent: 'center',
         overflow: 'hidden',
+        width: '100%',
       }}
     >
       {record.icon ? (
-        <Icon type={record.icon} style={{ color: token.colorTextSecondary, fontSize: 44 }} />
+        <Icon type={record.icon} style={{ color: '#fff', fontSize: 24 }} />
       ) : (
         <span
           style={{
-            color: token.colorTextSecondary,
-            fontSize: 44,
+            color: '#fff',
+            fontSize: 22,
             fontWeight: 600,
             lineHeight: 1,
           }}
@@ -571,13 +616,32 @@ function PortalCover(props: { record: MultiPortalRecord; defaultLabel: string })
     </div>
   );
 
-  return record.isDefault ? (
-    <Badge.Ribbon text={defaultLabel} color={token.colorWarning} placement="end">
-      {cover}
-    </Badge.Ribbon>
-  ) : (
-    cover
+  const tile = (
+    <div
+      className="nb-portal-cover"
+      style={{
+        borderRadius: token.borderRadiusLG,
+        height: PORTAL_COVER_HEIGHT,
+        overflow: 'hidden',
+        width: PORTAL_COVER_HEIGHT,
+      }}
+    >
+      {artwork}
+      {/* 整块色块就是「打开」：蒙一层深色 + 居中图标，鼠标进卡片才显形。
+          用 CSS 的 :hover / :focus-within 而不是 React state —— 每张卡都挂一份
+          state 会让整页跟着鼠标重渲染，而且 focus-within 天然覆盖键盘路径。 */}
+      <button
+        type="button"
+        aria-label={openLabel}
+        className="nb-portal-cover-overlay"
+        onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
+      >
+        <ExportOutlined style={{ fontSize: 20 }} />
+      </button>
+    </div>
   );
+
+  return <div style={{ flexShrink: 0 }}>{tile}</div>;
 }
 
 const MultiPortalsPage: React.FC = () => {
@@ -602,6 +666,22 @@ const MultiPortalsPage: React.FC = () => {
   const records = useMemo(() => {
     return Array.isArray(listResp?.data) ? listResp.data : [];
   }, [listResp?.data]);
+  // AI 门户和无代码门户是两种做法（写代码 vs 可视化配置），做的事、能改的东西都不一样，
+  // 混在一格画廊里只能靠标签分辨。拆成上下两段，AI 在上。空的那一组不占位。
+  const groupedRecords = useMemo(() => {
+    // 标题直接复用卡片上原来那两个标签的词条（「AI 模式」/「无代码模式」），
+    // 说的是同一件事，不另起一套说法。
+    const groups = [
+      { key: 'ai', title: 'AI', records: [] as MultiPortalRecord[] },
+      { key: 'no-code', title: 'No-code', records: [] as MultiPortalRecord[] },
+    ];
+    for (const record of records) {
+      const isNoCode = normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE;
+      groups[isNoCode ? 1 : 0].records.push(record);
+    }
+    return groups.filter((group) => group.records.length > 0);
+  }, [records]);
+  const portalCardCss = useMemo(() => buildPortalCardCss(token), [token]);
   const pagination = useMemo(() => {
     const meta = listResp?.meta;
     if (!meta) return false as const;
@@ -728,106 +808,135 @@ const MultiPortalsPage: React.FC = () => {
           )
         : record.uiLayoutUid;
 
-      return (
+      const card = (
         <Card
-          key={record.uid}
+          className="nb-portal-card"
           size="small"
-          cover={<PortalCover record={record} defaultLabel={t('Default')} />}
-          styles={{
-            actions: { borderRadius: `0 0 ${token.borderRadiusLG}px ${token.borderRadiusLG}px` },
-            body: { padding: token.paddingSM },
+          styles={{ body: { padding: token.paddingLG } }}
+          // 缎带要探出卡片左边一点，卡片不能裁剪自己。
+          style={{ cursor: 'pointer', opacity: record.enabled ? 1 : 0.6, overflow: 'visible' }}
+          // 整张卡片就是「打开这个门户」，但有两类点击要放过：
+          // 1. 下拉菜单、弹窗这些渲染在 body 下的 portal——React 的事件冒泡走组件树而不是
+          //    DOM 树，点菜单项照样会冒到这里，用 DOM 包含关系挡掉；
+          // 2. 卡片内部自带动作的元素（开关、更多按钮、地址链接），各管各的。
+          onClick={(event) => {
+            const target = event.target as HTMLElement;
+            if (!event.currentTarget.contains(target)) {
+              return;
+            }
+            if (target.closest('button, a, .ant-switch')) {
+              return;
+            }
+            window.open(href, '_blank', 'noopener,noreferrer');
           }}
-          style={{ borderRadius: token.borderRadiusLG, opacity: record.enabled ? 1 : 0.6, overflow: 'visible' }}
-          actions={[
-            // 卡片操作只有图标，可访问名靠 aria-label 给出：tooltip 的文字不参与无障碍命名。
-            // 这一个不能用 href —— 带 href 的 antd Button 渲染成 <a>，拿不到 icon-only 的方形尺寸，
-            // 会变成一条明显更宽的悬浮区域，颜色也走链接色而不是正文色，和后面四个对不齐。
-            <Tooltip key="view" title={t('View')}>
-              <Button
-                aria-label={t('View')}
-                type="text"
-                size="small"
-                icon={<ExportOutlined />}
-                onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
-              />
-            </Tooltip>,
-            <Tooltip key="edit" title={t('Edit')}>
-              <Button
-                aria-label={t('Edit')}
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => openFormDrawer(record)}
-              />
-            </Tooltip>,
-            // 禁用态不弹提示：点不动的按钮再解释一遍反而干扰。
-            <Tooltip key="routes" title={routesDisabled ? '' : t('Routes')}>
-              <Button
-                aria-label={t('Routes')}
-                type="text"
-                size="small"
-                icon={<ApartmentOutlined />}
-                disabled={routesDisabled}
-                onClick={() => openRoutesDrawer(record)}
-              />
-            </Tooltip>,
-            <Tooltip key="default" title={t('Set as default')}>
-              <Button
-                aria-label={t('Set as default')}
-                type="text"
-                size="small"
-                icon={record.isDefault ? <StarFilled style={{ color: token.colorWarning }} /> : <StarOutlined />}
-                disabled={!record.enabled || record.isDefault === true}
-                loading={updatingDefaultRowKey === record.uid}
-                onClick={async () => {
-                  await handleSetDefault(record);
-                }}
-              />
-            </Tooltip>,
-            <Tooltip key="delete" title={t('Delete')}>
-              <Button
-                aria-label={t('Delete')}
-                type="text"
-                size="small"
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(record.uid)}
-              />
-            </Tooltip>,
-          ]}
         >
-          <Flex align="flex-start" justify="space-between" gap={token.marginXS}>
-            <div style={{ minWidth: 0 }}>
-              <Typography.Text strong ellipsis style={{ display: 'block' }}>
-                {record.title}
-              </Typography.Text>
-              <Typography.Link
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                ellipsis
-                style={{ display: 'block', fontSize: token.fontSizeSM }}
-              >
-                {/* 显示真正能访问的地址（带 /v 或 /x 前缀），而不是库里存的裸 routePath——
-                    后者复制出去打不开，和链接自身指向的 href 也对不上。 */}
-                {href}
-              </Typography.Link>
+          <Flex align="center" gap={token.margin}>
+            <PortalCover record={record} href={href} openLabel={t('View')} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* 门户类型由所在分组说明，这里只补一个设备图标；说明文字交给 tooltip。 */}
+              <Flex align="center" gap={token.marginXXS}>
+                <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
+                  {record.title}
+                </Typography.Text>
+                {layoutLabel ? (
+                  <Tooltip title={layoutLabel}>
+                    {record.uiLayout?.layoutType === 'mobile' ? (
+                      <MobileOutlined
+                        aria-label={layoutLabel}
+                        style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+                      />
+                    ) : (
+                      <DesktopOutlined
+                        aria-label={layoutLabel}
+                        style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+                      />
+                    )}
+                  </Tooltip>
+                ) : null}
+              </Flex>
+              <Flex align="center" gap={token.marginXXS} style={{ minWidth: 0 }}>
+                <Typography.Link
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ellipsis
+                  type="secondary"
+                  style={{ fontSize: token.fontSizeSM, minWidth: 0 }}
+                >
+                  {/* 显示真正能访问的地址（带 /v 或 /x 前缀），而不是库里存的裸 routePath——
+                      后者复制出去打不开，和链接自身指向的 href 也对不上。 */}
+                  {href}
+                </Typography.Link>
+              </Flex>
             </div>
-            <Switch
-              aria-label={t('Enabled')}
-              checked={record.enabled}
-              loading={updatingEnabledRowKeys.includes(record.uid)}
-              size="small"
-              onChange={async (checked) => {
-                await handleToggleEnabled(record, checked);
-              }}
-            />
+            {/* 操作钉在右上角：缎带已经挪到卡片左上角，这边不会再和它撞上。 */}
+            <Flex align="center" gap={token.marginXS} style={{ alignSelf: 'flex-start', flexShrink: 0 }}>
+              {/* 默认门户不能停用：停掉之后用户打开应用会落到一个进不去的地方，
+                  所以开关直接置灰，要停先把默认换给别人。 */}
+              <Tooltip title={record.isDefault ? t('The default portal cannot be disabled') : ''}>
+                <Switch
+                  aria-label={t('Enabled')}
+                  checked={record.enabled}
+                  disabled={record.isDefault === true}
+                  loading={updatingEnabledRowKeys.includes(record.uid) || updatingDefaultRowKey === record.uid}
+                  size="small"
+                  onChange={async (checked) => {
+                    await handleToggleEnabled(record, checked);
+                  }}
+                />
+              </Tooltip>
+              {/* 剩下的操作收进「更多」。留在外面的只有开关——它同时是状态指示，
+                  扫一眼就知道哪些门户是关着的。 */}
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: [
+                    // 「打开」不在这里：点卡片本身就是打开。
+                    { key: 'edit', icon: <EditOutlined />, label: t('Edit') },
+                    // 路由只对启用中的无代码门户有意义，其余情况直接不列这一项：
+                    // 按钮摆在外面时置灰还能提示"有这么个功能"，收进菜单之后
+                    // 置灰项只是让人多读一行点不动的字。
+                    ...(routesDisabled ? [] : [{ key: 'routes', icon: <ApartmentOutlined />, label: t('Routes') }]),
+                    // 已经是默认、或者门户是关着的，就不列这一项：关着的门户设成默认，
+                    // 用户打开应用会落到一个进不去的地方。
+                    ...(record.isDefault === true || !record.enabled
+                      ? []
+                      : [{ key: 'default', icon: <StarOutlined />, label: t('Set as default') }]),
+                    { type: 'divider' as const },
+                    { key: 'delete', icon: <DeleteOutlined />, label: t('Delete') },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'edit') {
+                      openFormDrawer(record);
+                    } else if (key === 'routes') {
+                      openRoutesDrawer(record);
+                    } else if (key === 'default') {
+                      void handleSetDefault(record);
+                    } else if (key === 'delete') {
+                      handleDelete(record.uid);
+                    }
+                  },
+                }}
+              >
+                <Button aria-label={t('More')} type="text" size="small" icon={<EllipsisOutlined />} />
+              </Dropdown>
+            </Flex>
           </Flex>
-          <Space size={[4, 4]} wrap style={{ marginTop: token.marginXS }}>
-            <Tag>{isNoCode ? t('No-code') : t('AI')}</Tag>
-            {layoutLabel ? <Tag color={getLayoutTagColor(record.uiLayout?.layoutType)}>{layoutLabel}</Tag> : null}
-            {record.isDefault ? <Tag color="gold">{t('Default')}</Tag> : null}
-          </Space>
         </Card>
+      );
+
+      // 默认门户挂一条缎带在卡片左上角。挂在 56px 的色块上试过——尺寸再压也占掉小半个图标；
+      // 卡片这么宽，缎带本来就是给这个尺寸设计的。
+      return (
+        <div key={record.uid}>
+          {record.isDefault ? (
+            <Badge.Ribbon text={t('Default')} color={token.colorWarning} placement="start">
+              {card}
+            </Badge.Ribbon>
+          ) : (
+            card
+          )}
+        </div>
       );
     },
     [
@@ -838,11 +947,13 @@ const MultiPortalsPage: React.FC = () => {
       openFormDrawer,
       openRoutesDrawer,
       t,
-      token.borderRadiusLG,
-      token.colorWarning,
       token.fontSizeSM,
+      token.colorTextDescription,
+      token.colorWarning,
+      token.margin,
       token.marginXS,
-      token.paddingSM,
+      token.marginXXS,
+      token.paddingLG,
       updatingDefaultRowKey,
       updatingEnabledRowKeys,
     ],
@@ -850,6 +961,7 @@ const MultiPortalsPage: React.FC = () => {
 
   return (
     <div>
+      <style>{portalCardCss}</style>
       <Flex justify="space-between" align="center" wrap gap={token.marginSM} style={{ marginBottom: token.marginMD }}>
         <Typography.Text type="secondary">
           {t('Each portal is a standalone front end with its own routes and menus.')}
@@ -871,30 +983,22 @@ const MultiPortalsPage: React.FC = () => {
             </Button>
           </Empty>
         ) : (
-          <div style={galleryGridStyle}>
-            {records.map(renderPortalCard)}
-            <button
-              type="button"
-              onClick={() => openFormDrawer()}
-              style={{
-                alignItems: 'center',
-                background: 'transparent',
-                border: `${token.lineWidth}px dashed ${token.colorBorder}`,
-                borderRadius: token.borderRadiusLG,
-                color: token.colorTextDescription,
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: token.marginXS,
-                justifyContent: 'center',
-                minHeight: PORTAL_COVER_HEIGHT + 96,
-                width: '100%',
-              }}
-            >
-              <PlusOutlined style={{ fontSize: 22 }} />
-              <span>{t('Add portal')}</span>
-            </button>
-          </div>
+          groupedRecords.map((group) => (
+            <div key={group.key} style={{ marginBottom: token.marginXL }}>
+              {/* 组标题：标题 + 计数 + 一条延伸到底的细线。只有一行浅灰文字的话，
+                  它会和上面那句说明混成一片，看不出这里已经换了一组。 */}
+              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
+                <Typography.Text strong>{t(group.title)}</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  {group.records.length}
+                </Typography.Text>
+                <div style={{ background: token.colorSplit, flex: 1, height: token.lineWidth }} />
+              </Flex>
+              {/* 网格里不再放虚线的新建块：右上角那个「新增门户」按钮已经是入口，
+                  分了组之后虚线块还得挑跟在哪一组后面，怎么放都像是"新建这一类"。 */}
+              <div style={galleryGridStyle}>{group.records.map(renderPortalCard)}</div>
+            </div>
+          ))
         )}
       </Spin>
       {pagination ? (
@@ -1209,7 +1313,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
             optionFilterProp="label"
           />
         </Form.Item>
-        <Form.Item name="cover" label={t('Cover')} extra={t('Shown on the portal card. A 16:9 image works best.')}>
+        <Form.Item name="cover" label={t('Cover')} extra={t('Shown on the portal card.')}>
           <AttachmentUpload
             accept="image/*"
             preview={{ width: 160, height: 90, fit: 'cover' }}
