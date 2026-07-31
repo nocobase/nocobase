@@ -252,7 +252,7 @@ const BackupSettings = () => {
           <Switch />
         </Form.Item>
 
-        <Form.Item name="enablePortalsBackup" label={t('Backup portals')} valuePropName="checked">
+        <Form.Item name="enablePortalsBackup" label={t('Backup AI mode portals')} valuePropName="checked">
           <Switch />
         </Form.Item>
 

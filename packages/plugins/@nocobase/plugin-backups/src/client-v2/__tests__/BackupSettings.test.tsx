@@ -60,7 +60,7 @@ describe('backup settings', () => {
     renderBackupSettings();
 
     expect(await screen.findByText('Backup local storage files')).toBeInTheDocument();
-    expect(screen.getByText('Backup portals')).toBeInTheDocument();
+    expect(screen.getByText('Backup AI mode portals')).toBeInTheDocument();
   });
 
   it('shows the server error when saving fails', async () => {
