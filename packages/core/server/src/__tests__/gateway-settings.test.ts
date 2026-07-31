@@ -118,10 +118,6 @@ describe('gateway standalone settings client', () => {
       '/nocobase/modern/admin/workflow/executions/99?from=workflow',
       '/nocobase/settings/workflow/executions/99?from=workflow',
     ],
-    [
-      '/nocobase/modern/admin/ai/knowledge-base/detail/orders/documents?tab=files',
-      '/nocobase/settings/ai/knowledge-base/detail/orders/documents?tab=files',
-    ],
     ['/nocobase/modern/apps/analytics/admin/settings/workflow', '/nocobase/settings/apps/analytics/workflow'],
     [
       '/nocobase/modern/_app/analytics/admin/workflow/workflows/42',

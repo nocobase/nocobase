@@ -438,10 +438,6 @@ export class Gateway extends EventEmitter {
         to: '/admin/settings/mail/oauth2',
       },
       {
-        from: '/admin/ai/knowledge-base/detail',
-        to: '/settings/ai/knowledge-base/detail',
-      },
-      {
         from: '/admin/workflow/executions',
         to: '/settings/workflow/executions',
       },
