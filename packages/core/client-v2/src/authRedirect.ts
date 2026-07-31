@@ -328,10 +328,14 @@ export function getCurrentV2RedirectPath(app: AppLike, locationLike: LocationLik
  *
  * @param app 当前 v2 应用实例
  * @param targetPath 登录后回跳地址
+ * @param options 可选的登录路由配置
  * @returns 指向 v2 登录页的 href
  */
-export function buildV2SigninHref(app: AppLike, targetPath: string) {
-  return `${getV2SigninPath(app)}?redirect=${encodeURIComponent(targetPath)}`;
+export function buildV2SigninHref(app: AppLike, targetPath: string, options?: { signInRoutePath?: string }) {
+  const signInPath = options?.signInRoutePath
+    ? normalizeV2RedirectPath(app, options.signInRoutePath, options.signInRoutePath)
+    : getV2SigninPath(app);
+  return `${signInPath}?redirect=${encodeURIComponent(targetPath)}`;
 }
 
 /**
@@ -339,10 +343,14 @@ export function buildV2SigninHref(app: AppLike, targetPath: string) {
  *
  * @param app 当前 v2 应用实例
  * @param targetPath 登录后回跳地址
- * @param options 跳转选项
+ * @param options 跳转和登录路由选项
  */
-export function redirectToV2Signin(app: AppLike, targetPath: string, options?: { replace?: boolean }) {
-  const href = buildV2SigninHref(app, targetPath);
+export function redirectToV2Signin(
+  app: AppLike,
+  targetPath: string,
+  options?: { replace?: boolean; signInRoutePath?: string },
+) {
+  const href = buildV2SigninHref(app, targetPath, options);
   if (options?.replace === false) {
     window.location.href = href;
     return;
