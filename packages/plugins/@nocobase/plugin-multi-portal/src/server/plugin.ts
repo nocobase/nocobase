@@ -442,6 +442,14 @@ function getPortalDeployBasePath(appName: string, portalName: string) {
   return resolvePortalStoragePublicPath(joinPortalStoragePublicPath(process.env.APP_PUBLIC_PATH || '/', portalPath));
 }
 
+function getPortalDeployBasePathCandidates(appName: string, portalName: string) {
+  const expectedBasePaths = [getPortalDeployBasePath(appName, portalName)];
+  if (appName !== MAIN_APP_NAME) {
+    expectedBasePaths.push(getPortalDeployBasePath(MAIN_APP_NAME, portalName));
+  }
+  return expectedBasePaths;
+}
+
 function createPortalDeployUploadMiddleware() {
   const storage = multer.diskStorage({
     destination: os.tmpdir(),
@@ -831,9 +839,9 @@ function validatePortalDeployBasePath(appName: string, portalName: string, baseP
     throw new Error('basePath cannot contain ".."');
   }
 
-  const expectedBasePath = getPortalDeployBasePath(appName, portalName);
-  if (normalizedBasePath !== expectedBasePath) {
-    throw new Error(`basePath must be ${expectedBasePath}`);
+  const expectedBasePaths = getPortalDeployBasePathCandidates(appName, portalName);
+  if (!expectedBasePaths.includes(normalizedBasePath)) {
+    throw new Error(`basePath must be ${expectedBasePaths.join(' or ')}`);
   }
 }
 
@@ -3137,6 +3145,10 @@ export class PluginMultiPortalServer extends Plugin {
     return this.app.name || MAIN_APP_NAME;
   }
 
+  private getCurrentStorageAppName() {
+    return normalizePortalStorageName(this.getAppName()) || MAIN_APP_NAME;
+  }
+
   private getMultiPortalStorageItem(multiPortal: Model, previous = false): MultiPortalStorageItem | null {
     const record = multiPortal as ModelWithPrevious;
     const readField = (field: string) =>
@@ -3379,7 +3391,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   private async deployPortalDist(ctx: ResourcerContext, next: () => Promise<void>) {
     const deployCtx = ctx as MultiPortalDeployContext;
-    const appName = normalizePortalStorageName(deployCtx.request.body?.app || MAIN_APP_NAME) || MAIN_APP_NAME;
+    const appName = this.getCurrentStorageAppName();
     const portalName = normalizePortalStorageName(deployCtx.request.body?.portal);
     const basePath = trimString(deployCtx.request.body?.basePath);
     const filePath = trimString(deployCtx.request.file?.path);
@@ -3422,7 +3434,7 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   private async pullPortalSource(ctx: ResourcerContext, next: () => Promise<void>) {
-    const appName = normalizePortalStorageName(ctx.action.params.values?.app || MAIN_APP_NAME) || MAIN_APP_NAME;
+    const appName = this.getCurrentStorageAppName();
     const portalName = normalizePortalStorageName(ctx.action.params.values?.portal);
 
     try {
@@ -3447,7 +3459,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   private async pushPortalSource(ctx: ResourcerContext, next: () => Promise<void>) {
     const sourceCtx = ctx as MultiPortalDeployContext;
-    const appName = normalizePortalStorageName(sourceCtx.request.body?.app || MAIN_APP_NAME) || MAIN_APP_NAME;
+    const appName = this.getCurrentStorageAppName();
     const portalName = normalizePortalStorageName(sourceCtx.request.body?.portal);
     const filePath = trimString(sourceCtx.request.file?.path);
 

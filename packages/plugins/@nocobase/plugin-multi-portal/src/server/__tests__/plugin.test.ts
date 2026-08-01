@@ -1926,6 +1926,49 @@ describe('plugin-multi-portal server', () => {
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
   });
 
+  it('should deploy uploaded portal dist into the current sub-app storage for custom-domain requests', async () => {
+    process.env.APP_PUBLIC_PATH = '/';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    app.options.name = 'demo6';
+    await app.db.sync();
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'index.html': '<div id="root"></div>',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'crm',
+          basePath: '/x/crm/',
+        },
+        file: archivePath,
+      });
+    const data = response.body.data as Record<string, unknown>;
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual(
+      expect.objectContaining({
+        status: 'ok',
+        app: 'demo6',
+        portal: 'crm',
+        basePath: '/x/crm/',
+        distPath: path.join('portals', 'demo6', 'crm', 'dist'),
+      }),
+    );
+    await expect(
+      readFile(path.join(storagePath as string, 'portals', 'demo6', 'crm', 'dist', 'index.html'), 'utf-8'),
+    ).resolves.toBe('<div id="root"></div>');
+    await expect(
+      access(path.join(storagePath as string, 'portals', 'main', 'crm', 'dist', 'index.html')),
+    ).rejects.toThrow();
+  });
+
   it('should reject portal dist deploy when basePath does not match the app and portal', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     app = await createMockServer({
