@@ -15,6 +15,7 @@ import path from 'node:path';
 import * as tar from 'tar';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
+import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import {
   buildPortalConfig,
   buildPortalConfigFromOptions,
@@ -34,7 +35,7 @@ import {
 } from './portal-create.js';
 import { listPortalWorkspaces } from './portal-list.js';
 import { findPortalListItem } from './portal-info.js';
-import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
+import { resolvePnpmInstallCommand, run, runPnpmCommand, runPnpmInstallCommand, type RunCommand } from './run-npm.js';
 
 type ApiRequest = typeof executeApiRequest;
 const execFileAsync = promisify(execFile);
@@ -75,6 +76,7 @@ export type PortalSourceResult = {
   changed: boolean;
   installSkipped?: boolean;
   dependenciesInstalled?: boolean;
+  installFailed?: boolean;
   sourceRevision?: string;
   noopReason?: string;
 };
@@ -319,11 +321,12 @@ async function installPortalDependencies(params: {
   portalDir: string;
   installDependencies?: boolean;
   runCommand?: RunCommand;
-}): Promise<{ dependenciesInstalled: boolean; installSkipped: boolean }> {
+}): Promise<{ dependenciesInstalled: boolean; installSkipped: boolean; installFailed: boolean }> {
   if (params.installDependencies === false) {
     return {
       dependenciesInstalled: false,
       installSkipped: true,
+      installFailed: false,
     };
   }
 
@@ -331,20 +334,31 @@ async function installPortalDependencies(params: {
     return {
       dependenciesInstalled: false,
       installSkipped: true,
+      installFailed: false,
     };
   }
 
   const runCommand = params.runCommand ?? run;
-  await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
-    cwd: params.portalDir,
-    env: buildPortalCommandEnv(),
-    envMode: 'replace',
-    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
-  });
+  const installCommand = await resolvePnpmInstallCommand(params.portalDir);
+  try {
+    await runPnpmInstallCommand(runCommand, installCommand.args, {
+      cwd: params.portalDir,
+      env: buildPortalCommandEnv(),
+      envMode: 'replace',
+      errorName: installCommand.errorName,
+    });
+  } catch {
+    return {
+      dependenciesInstalled: false,
+      installSkipped: false,
+      installFailed: true,
+    };
+  }
 
   return {
     dependenciesInstalled: true,
     installSkipped: false,
+    installFailed: false,
   };
 }
 
@@ -669,6 +683,7 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
       context: sourceContext,
       force: options.force,
     });
+    await ensurePortalBuildHtmlReadsEnvOnly(sourceContext.portalDir);
     await writePortalConfig(sourceContext.portalDir, portalConfig);
     const installResult = await installPortalDependencies({
       portalDir: sourceContext.portalDir,
@@ -733,6 +748,7 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
       portalDir: sourceContext.portalDir,
       force: options.force,
     });
+    await ensurePortalBuildHtmlReadsEnvOnly(sourceContext.portalDir);
     await writePortalConfig(sourceContext.portalDir, portalConfig);
     const installResult = await installPortalDependencies({
       portalDir: sourceContext.portalDir,

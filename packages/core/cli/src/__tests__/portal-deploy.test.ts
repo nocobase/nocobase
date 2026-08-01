@@ -73,6 +73,18 @@ async function preparePortalWorkspace(params: {
   await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"portal"}\n');
   await fsp.writeFile(path.join(portalDir, 'portal.config.json'), '{\n  "sourceStorage": "nocobase"\n}\n');
+  await fsp.mkdir(path.join(portalDir, 'scripts'), { recursive: true });
+  await fsp.writeFile(
+    path.join(portalDir, 'scripts', 'build-html.mjs'),
+    [
+      'const getEnvFilesForMode = (mode) => {',
+      '  return [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`].map(',
+      '    (file) => path.join(rootDir, file)',
+      '  );',
+      '};',
+      '',
+    ].join('\n'),
+  );
   if (params.envContent !== undefined) {
     await fsp.writeFile(path.join(portalDir, '.env'), params.envContent);
   }
@@ -169,11 +181,11 @@ test('updates env files, builds, and syncs the portal record locally without upl
     recordSynced: true,
   });
 
-  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
+  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    errorName: 'pnpm install',
   });
   expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
     cwd: portalDir,
@@ -186,13 +198,12 @@ test('updates env files, builds, and syncs the portal record locally without upl
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'http://localhost:13000/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
+  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
+  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
   expect(apiRequest).toHaveBeenCalledTimes(1);
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[0][0]);
   expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
@@ -203,6 +214,9 @@ test('updates env files, builds, and syncs the portal record locally without upl
       'LOCAL_ONLY=true\n' +
       'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n',
   );
+  const buildHtmlScript = await fsp.readFile(path.join(portalDir, 'scripts', 'build-html.mjs'), 'utf-8');
+  expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
+  expect(buildHtmlScript).not.toContain('.env.local');
   expectPosixMode((await fsp.stat(path.join(storagePath, 'portals'))).mode, 0o755);
   expectPosixMode((await fsp.stat(path.join(storagePath, 'portals', 'crm'))).mode, 0o755);
   expectPosixMode((await fsp.stat(portalDir)).mode, 0o755);
@@ -252,15 +266,15 @@ test('deploy reports a clear error when pnpm is not installed', async () => {
       apiRequest,
     }),
   ).rejects.toThrow(
-    "Couldn't run `pnpm install --frozen-lockfile --trust-lockfile` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
+    "Couldn't run `pnpm install` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
   );
 
   expect(runCommand).toHaveBeenCalledTimes(1);
   expect(runCommand).toHaveBeenCalledWith(
     'pnpm',
-    ['install', '--frozen-lockfile', '--trust-lockfile'],
+    ['install'],
     expect.objectContaining({
-      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+      errorName: 'pnpm install',
     }),
   );
   expect(apiRequest).not.toHaveBeenCalled();
@@ -351,11 +365,11 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     }),
   );
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[2][0]);
-  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
+  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    errorName: 'pnpm install',
   });
   expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
     cwd: portalDir,
@@ -368,13 +382,12 @@ test('http deploy builds, packs dist, and uploads it', async () => {
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'https://example.com/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
+  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
+  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
 });
 
 test('http deploy uses env source storage when no local storagePath is configured', async () => {

@@ -13,6 +13,7 @@ import path from 'node:path';
 import * as tar from 'tar';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
+import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
@@ -24,7 +25,7 @@ import {
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import { mergePortalConfigIntoOptions, readPortalConfig, type PortalConfig } from './portal-config.js';
-import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
+import { resolvePnpmInstallCommand, run, runPnpmCommand, runPnpmInstallCommand, type RunCommand } from './run-npm.js';
 
 type ApiRequest = typeof executeApiRequest;
 
@@ -315,13 +316,15 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     apiBaseUrl,
     portalBase,
   });
+  await ensurePortalBuildHtmlReadsEnvOnly(portalDir);
 
   const runCommand = options.runCommand ?? run;
-  await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
+  const installCommand = await resolvePnpmInstallCommand(portalDir);
+  await runPnpmInstallCommand(runCommand, installCommand.args, {
     cwd: portalDir,
     env: buildPortalCommandEnv(),
     envMode: 'replace',
-    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    errorName: installCommand.errorName,
   });
   await runPnpmCommand(runCommand, ['build'], {
     cwd: portalDir,
@@ -334,10 +337,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   });
   await runPnpmCommand(runCommand, ['build:html'], {
     cwd: portalDir,
-    env: buildPortalCommandEnv({
-      NOCOBASE_API_URL: apiBaseUrl,
-      NOCOBASE_PORTAL_BASE: portalBase,
-    }),
+    env: buildPortalCommandEnv(),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });

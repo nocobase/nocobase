@@ -192,7 +192,8 @@
         "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}。",
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
-        "sourceStorage": "源码存储：{{sourceStorage}}"
+        "sourceStorage": "源码存储：{{sourceStorage}}",
+        "installFailed": "依赖安装没有成功完成。请在 {{portalDir}} 中手动运行 `pnpm install`。"
       }
     },
     "portalConfig": {
@@ -257,6 +258,17 @@
         "path": "本地路径",
         "enabled": "启用",
         "localSynced": "本地已同步"
+      }
+    },
+    "portalPull": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。"
+      },
+      "messages": {
+        "noop": "无需执行 pull。",
+        "pulled": "Portal 源码 \"{{portal}}\" 已拉取到 {{portalDir}}。",
+        "installFailed": "依赖安装没有成功完成。请在 {{portalDir}} 中手动运行 `pnpm install`。"
       }
     },
     "swagger": {

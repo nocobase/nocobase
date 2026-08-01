@@ -192,7 +192,8 @@
         "created": "Portal \"{{portal}}\" created at {{portalDir}}.",
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
-        "sourceStorage": "Source storage: {{sourceStorage}}"
+        "sourceStorage": "Source storage: {{sourceStorage}}",
+        "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
       }
     },
     "portalConfig": {
@@ -257,6 +258,17 @@
         "path": "Local path",
         "enabled": "Enabled",
         "localSynced": "Local synced"
+      }
+    },
+    "portalPull": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first."
+      },
+      "messages": {
+        "noop": "No pull is needed.",
+        "pulled": "Pulled portal source \"{{portal}}\" into {{portalDir}}.",
+        "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
       }
     },
     "swagger": {
