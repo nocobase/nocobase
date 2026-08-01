@@ -201,7 +201,7 @@ export async function execute(context: Context, next) {
     filter: { key: workflow.key },
   });
   let newVersion;
-  if (executed == 0 && autoRevision) {
+  if (executed === 0 && Number(autoRevision) === 1) {
     newVersion = await repository.revision({
       filterByTk: workflow.id,
       filter: { key: workflow.key },
