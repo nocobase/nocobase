@@ -23,9 +23,6 @@ import PluginMultiPortalClientV2 from '../plugin';
 import { installMultiPortalRouteRepositoryScope, type MultiPortalRouteScopeDescriptor } from '../routeRepositoryScope';
 import packageJson from '../../../package.json';
 
-const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
-const UI_LAYOUT_TYPE_MOBILE = 'mobile';
-
 function createPortalScope(portalUid: string): MultiPortalRouteScopeDescriptor {
   return {
     cacheKey: getMultiPortalRouteScopeCacheKey(portalUid),
@@ -41,11 +38,7 @@ const desktopPortal: MultiPortalRuntimeRecord = {
   routePath: '/portal-desktop',
   authCheck: true,
   enabled: true,
-  uiLayout: {
-    layoutType: UI_LAYOUT_TYPE_DESKTOP,
-    routeName: 'admin',
-    routePath: '/admin',
-  },
+  uiLayoutUid: 'admin-layout-model',
 };
 
 function createLayoutManager(options: { registeredRouteNames?: string[] } = {}) {
@@ -71,9 +64,7 @@ function makeAccessiblePortal(overrides: Record<string, unknown> = {}) {
     routePath: '/customer-portal',
     authCheck: true,
     enabled: true,
-    uiLayout: {
-      layoutType: UI_LAYOUT_TYPE_DESKTOP,
-    },
+    uiLayoutUid: 'admin-layout-model',
     ...overrides,
   };
 }
@@ -209,9 +200,7 @@ describe('PluginMultiPortalClientV2', () => {
       data: [
         {
           ...desktopPortal,
-          uiLayout: {
-            layoutType: 'unsupported',
-          },
+          uiLayoutUid: 'unsupported-layout-model',
         },
       ],
     });
@@ -229,7 +218,7 @@ describe('PluginMultiPortalClientV2', () => {
     errorSpy.mockRestore();
   });
 
-  it('should build registerLayout options from portal fields and related layout type', () => {
+  it('should build registerLayout options from the two fixed layout uids', () => {
     expect(toMultiPortalLayoutRegisterOptions(desktopPortal)).toEqual({
       routeName: 'multiPortalLayout_desktop-portal-model',
       routePath: '/portal-desktop',
@@ -244,11 +233,7 @@ describe('PluginMultiPortalClientV2', () => {
         portalName: 'portalMobile',
         routePath: '/portal-mobile',
         authCheck: false,
-        uiLayout: {
-          layoutType: UI_LAYOUT_TYPE_MOBILE,
-          routeName: 'mobile',
-          routePath: '/mobile',
-        },
+        uiLayoutUid: 'mobile-layout-model',
       }),
     ).toEqual({
       routeName: 'multiPortalLayout_mobile-portal-model',
@@ -265,11 +250,7 @@ describe('PluginMultiPortalClientV2', () => {
         uid: '__default_mobile__',
         portalName: 'mobile',
         routePath: '/mobile',
-        uiLayout: {
-          layoutType: UI_LAYOUT_TYPE_MOBILE,
-          routeName: 'mobile',
-          routePath: '/mobile',
-        },
+        uiLayoutUid: 'mobile-layout-model',
       }),
     ).toEqual({
       routeName: 'multiPortalLayout___default_mobile__',
@@ -282,7 +263,7 @@ describe('PluginMultiPortalClientV2', () => {
     });
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, enabled: false })).toBeNull();
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, portalType: 'ai' })).toBeNull();
-    expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, uiLayout: { layoutType: 'unknown' } })).toBeNull();
+    expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, uiLayoutUid: 'unknown-layout-model' })).toBeNull();
   });
 
   it('should register enabled portal routes returned by the API during plugin load', async () => {
@@ -293,11 +274,7 @@ describe('PluginMultiPortalClientV2', () => {
       portalName: 'portalMobile',
       routePath: '/portal-mobile',
       authCheck: false,
-      uiLayout: {
-        layoutType: UI_LAYOUT_TYPE_MOBILE,
-        routeName: 'mobile',
-        routePath: '/mobile',
-      },
+      uiLayoutUid: 'mobile-layout-model',
     };
     const fixedMobilePortal: MultiPortalRuntimeRecord = {
       ...mobilePortal,
@@ -1059,11 +1036,6 @@ describe('PluginMultiPortalClientV2', () => {
         {
           ...desktopPortal,
           routePath: '/portal-desktop',
-          uiLayout: {
-            layoutType: UI_LAYOUT_TYPE_DESKTOP,
-            routeName: 'admin',
-            routePath: '/admin',
-          },
         },
         {
           ...desktopPortal,
@@ -1071,11 +1043,6 @@ describe('PluginMultiPortalClientV2', () => {
           portalName: 'disabledPortal',
           routePath: '/disabled-portal',
           enabled: false,
-          uiLayout: {
-            layoutType: UI_LAYOUT_TYPE_DESKTOP,
-            routeName: 'admin',
-            routePath: '/admin',
-          },
         },
       ],
     });

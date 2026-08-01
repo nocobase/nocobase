@@ -29,6 +29,7 @@ import { App as AntdApp, Button, Checkbox, Form, Input, Popover, Radio, Space, T
 import type { ColumnsType } from 'antd/es/table';
 import type { Key } from 'antd/es/table/interface';
 import React, { useCallback, useMemo, useState } from 'react';
+import { MOBILE_UI_LAYOUT_UID } from '../../constants';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
 import type { MultiPortalRecord } from './MultiPortalsPage';
@@ -562,7 +563,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes'), [ctx.api]);
   const portalUid = portal.uid;
-  const mobile = portal.uiLayout?.layoutType === 'mobile';
+  const mobile = portal.uiLayoutUid === MOBILE_UI_LAYOUT_UID;
 
   React.useEffect(() => {
     tRef.current = t;

@@ -134,7 +134,7 @@
   "filterByTk is required": "filterByTk is required",
   "Portal not found": "Portal not found",
   "Disabled Portal cannot be set as default": "Disabled Portal cannot be set as default",
-  "Portal layout must be enabled before setting it as default": "Portal layout must be enabled before setting it as default",
+  "Portal device configuration is invalid": "Portal device configuration is invalid",
   "Unsupported Portal type cannot be set as default": "Unsupported Portal type cannot be set as default",
   "No portals yet": "No portals yet",
   "Each portal is a standalone front end with its own routes and menus.": "Each portal is a standalone front end with its own routes and menus.",

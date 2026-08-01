@@ -90,6 +90,15 @@ function isDefaultLayoutMultiPortalUid(uid: unknown) {
   return uid === DEFAULT_ADMIN_MULTI_PORTAL_UID || uid === DEFAULT_MOBILE_MULTI_PORTAL_UID;
 }
 
+function getMultiPortalLayoutType(uiLayoutUid: string | undefined) {
+  if (uiLayoutUid === DEFAULT_ADMIN_UI_LAYOUT_UID) {
+    return 'desktop';
+  }
+  if (uiLayoutUid === DEFAULT_MOBILE_UI_LAYOUT_UID) {
+    return 'mobile';
+  }
+}
+
 export class FlowSurfaceNavigationTargetsService {
   constructor(private readonly db: Database) {}
 
@@ -285,37 +294,13 @@ export class FlowSurfaceNavigationTargetsService {
       });
     }
     const layoutUid = readStringField(portal, 'uiLayoutUid');
-    if (!layoutUid || !this.db.getCollection('uiLayouts')) {
-      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has no available backing UI layout`, {
+    const layoutType = getMultiPortalLayoutType(layoutUid);
+    if (!layoutUid || !layoutType) {
+      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has an unsupported UI layout uid`, {
         ruleId: 'navigation-portal-layout-not-found',
         path: options.path,
         details: { portalUid, layoutUid: layoutUid || null },
       });
-    }
-    const layout = await this.db.getRepository('uiLayouts').findOne({
-      filter: { uid: layoutUid },
-      fields: ['uid', 'layoutType', 'enabled'],
-      transaction: options.transaction,
-    });
-    if (!layout) {
-      throwBadRequest(
-        `flowSurfaces ${options.actionName} portal '${portalUid}' backing UI layout '${layoutUid}' does not exist`,
-        {
-          ruleId: 'navigation-portal-layout-not-found',
-          path: options.path,
-          details: { portalUid, layoutUid },
-        },
-      );
-    }
-    if (readRecordField(layout, 'enabled') !== true) {
-      throwBadRequest(
-        `flowSurfaces ${options.actionName} portal '${portalUid}' backing UI layout '${layoutUid}' is disabled`,
-        {
-          ruleId: 'navigation-portal-layout-disabled',
-          path: options.path,
-          details: { portalUid, layoutUid },
-        },
-      );
     }
     return {
       uid: portalUid,
@@ -326,7 +311,7 @@ export class FlowSurfaceNavigationTargetsService {
       authCheck: readRecordField(portal, 'authCheck') === true,
       enabled: true,
       layoutUid,
-      layoutType: readStringField(layout, 'layoutType'),
+      layoutType,
       portalType,
       routeScopeKind,
     };
@@ -455,11 +440,15 @@ export class FlowSurfaceNavigationTargetsService {
   }
 
   private async getEnabledPortalInventory(currentRoles?: FlowSurfaceNavigationRequestRoles, transaction?: Transaction) {
-    const enabled = await this.db.getRepository('multiPortals').find({
+    const records = await this.db.getRepository('multiPortals').find({
       filter: { enabled: true },
       fields: ['uid', 'title', 'icon', 'portalType', 'portalName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
       sort: ['uid'],
       transaction,
+    });
+    const enabled = records.filter((portal: unknown) => {
+      const uiLayoutUid = readStringField(portal, 'uiLayoutUid');
+      return !!getMultiPortalLayoutType(uiLayoutUid);
     });
     enabled.sort((left: unknown, right: unknown) =>
       String(readStringField(left, 'uid') || '').localeCompare(String(readStringField(right, 'uid') || '')),
@@ -489,7 +478,7 @@ export class FlowSurfaceNavigationTargetsService {
 
   private async listAccessiblePortalTargets(
     portals: unknown[],
-    transaction?: Transaction,
+    _transaction?: Transaction,
   ): Promise<FlowSurfaceNavigationTarget[]> {
     const targets: FlowSurfaceNavigationTarget[] = [];
     for (const portal of portals) {
@@ -499,15 +488,8 @@ export class FlowSurfaceNavigationTargetsService {
       if (!portalUid || portalType !== 'no-code') {
         continue;
       }
-      if (!layoutUid || !this.db.getCollection('uiLayouts')) {
-        continue;
-      }
-      const layout = await this.db.getRepository('uiLayouts').findOne({
-        filter: { uid: layoutUid, enabled: true },
-        fields: ['layoutType'],
-        transaction,
-      });
-      if (!layout) {
+      const layoutType = getMultiPortalLayoutType(layoutUid);
+      if (!layoutUid || !layoutType) {
         continue;
       }
       targets.push({
@@ -517,7 +499,7 @@ export class FlowSurfaceNavigationTargetsService {
         title: readStringField(portal, 'title') || portalUid,
         icon: readStringField(portal, 'icon') || null,
         layoutUid,
-        layoutType: readStringField(layout, 'layoutType'),
+        layoutType,
         routeName: readStringField(portal, 'portalName'),
         routePath: readStringField(portal, 'routePath'),
         authCheck: readRecordField(portal, 'authCheck') === true,

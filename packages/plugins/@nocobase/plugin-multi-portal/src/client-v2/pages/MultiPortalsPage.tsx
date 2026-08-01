@@ -43,8 +43,13 @@ import {
   Typography,
   theme,
 } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { isDefaultLayoutMultiPortalUid } from '../../constants';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  ADMIN_UI_LAYOUT_UID,
+  isDefaultLayoutMultiPortalUid,
+  isMultiPortalUiLayoutUid,
+  MOBILE_UI_LAYOUT_UID,
+} from '../../constants';
 import { getPortalEntryActionStore } from '../entryActions/portalEntryActionStore';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
@@ -68,11 +73,6 @@ type MultiPortalOptions = {
 
 export type MultiPortalRecord = MultiPortalFormValues & {
   isDefault?: boolean | null;
-  uiLayout?: {
-    layoutType?: string;
-    title?: string;
-    uid?: string;
-  };
 };
 
 export type MultiPortalFormValues = {
@@ -104,12 +104,6 @@ type MultiPortalListBody = {
     page?: number;
     pageSize?: number;
   };
-};
-
-type UiLayoutOptionRecord = {
-  layoutType?: string;
-  title?: string;
-  uid: string;
 };
 
 function getRecordProperty(value: unknown, key: string): unknown {
@@ -201,8 +195,9 @@ const DEFAULT_PORTAL_SOURCE_STORAGE: PortalSourceStorage = 'nocobase';
 const DEFAULT_PORTAL_GIT_BRANCH = 'main';
 const DEFAULT_PORTAL_GIT_PATH = '';
 
-const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'enabled'> = {
+const defaultFormValues: Pick<MultiPortalFormValues, 'portalType' | 'uiLayoutUid' | 'enabled'> = {
   portalType: DEFAULT_PORTAL_TYPE,
+  uiLayoutUid: ADMIN_UI_LAYOUT_UID,
   enabled: true,
 };
 
@@ -452,19 +447,14 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
   };
 }
 
-// 设置中心走中性灰白，标签统一用默认色，靠文案而不是颜色区分。
-function getUiLayoutOptionLabel(item: UiLayoutOptionRecord, t: ReturnType<typeof useT>) {
-  if (item.layoutType === 'desktop') {
+function getUiLayoutUidLabel(uid: string | null | undefined, t: ReturnType<typeof useT>) {
+  if (uid === ADMIN_UI_LAYOUT_UID) {
     return t('Desktop');
   }
-  if (item.layoutType === 'mobile') {
+  if (uid === MOBILE_UI_LAYOUT_UID) {
     return t('Mobile');
   }
-  return item.title || item.uid;
-}
-
-function getDefaultUiLayoutUid(items?: UiLayoutOptionRecord[]) {
-  return items?.find((item) => item.layoutType === 'desktop')?.uid;
+  return uid || '';
 }
 
 function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
@@ -475,7 +465,7 @@ function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
     portalType: normalizePortalType(record.portalType),
     portalName: record.portalName,
     routePath: record.routePath,
-    uiLayoutUid: record.uiLayoutUid || record.uiLayout?.uid || '',
+    uiLayoutUid: record.uiLayoutUid || '',
     icon: record.icon ?? null,
     enabled: record.enabled,
     ...(options ? { options } : {}),
@@ -661,7 +651,6 @@ const MultiPortalsPage: React.FC = () => {
       page,
       pageSize: 20,
       sort: ['createdAt'],
-      appends: ['uiLayout'],
     });
     return response?.data ?? { data: [] };
   });
@@ -763,13 +752,13 @@ const MultiPortalsPage: React.FC = () => {
     async (record: MultiPortalRecord, enabled: boolean) => {
       setUpdatingEnabledRowKeys((keys) => (keys.includes(record.uid) ? keys : [...keys, record.uid]));
       try {
+        const values = toFormValues(record);
+        delete values.uiLayoutUid;
+        values.enabled = enabled;
         await updateMultiPortal({
           resource,
           filterByTk: record.uid,
-          values: {
-            ...toFormValues(record),
-            enabled,
-          },
+          values,
           onSubmitted: refreshPortals,
         });
         message.success(t('Updated successfully'));
@@ -799,18 +788,7 @@ const MultiPortalsPage: React.FC = () => {
       const href = getMultiPortalRouteUrl(ctx.app, record.routePath, record.portalType);
       const isNoCode = normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE;
       const routesDisabled = !isNoCode || !record.enabled;
-      // 布局记录的 title 是库里存的名字（"Desktop layout" 这种），不走 i18n；
-      // 卡片上按 layoutType 映射成「桌面端 / 移动端」，跟表单里的选项文案保持一致。
-      const layoutLabel = record.uiLayout
-        ? getUiLayoutOptionLabel(
-            {
-              layoutType: record.uiLayout.layoutType,
-              title: record.uiLayout.title,
-              uid: record.uiLayout.uid || record.uiLayoutUid || '',
-            },
-            t,
-          )
-        : record.uiLayoutUid;
+      const layoutLabel = getUiLayoutUidLabel(record.uiLayoutUid, t);
 
       const card = (
         <Card
@@ -846,7 +824,7 @@ const MultiPortalsPage: React.FC = () => {
                 </Typography.Text>
                 {layoutLabel ? (
                   <Tooltip title={layoutLabel}>
-                    {record.uiLayout?.layoutType === 'mobile' ? (
+                    {record.uiLayoutUid === MOBILE_UI_LAYOUT_UID ? (
                       <MobileOutlined
                         aria-label={layoutLabel}
                         style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
@@ -922,7 +900,7 @@ const MultiPortalsPage: React.FC = () => {
                     } else if (key === 'routes') {
                       openRoutesDrawer(record);
                     } else if (key === 'default') {
-                      void handleSetDefault(record);
+                      handleSetDefault(record);
                     } else if (key === 'delete') {
                       handleDelete(record.uid);
                     }
@@ -1037,57 +1015,31 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   const [form] = Form.useForm<MultiPortalFormDraftValues>();
   const [submitting, setSubmitting] = useState(false);
   const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
-  const layoutOptionsService = useRequest(async () => {
-    const response = await ctx.api.request<{ data?: UiLayoutOptionRecord[] }>({
-      url: 'uiLayouts:listEnabled',
-      method: 'get',
-      params: {
-        pageSize: 200,
-        sort: ['uid'],
-      },
-      skipNotify: true,
-    });
-    return Array.isArray(response?.data?.data) ? response.data.data : [];
-  });
   const layoutOptions = useMemo(
-    () =>
-      (layoutOptionsService.data ?? []).map((item) => ({
-        value: item.uid,
-        label: getUiLayoutOptionLabel(item, t),
-      })),
-    [layoutOptionsService.data, t],
+    () => [
+      { value: ADMIN_UI_LAYOUT_UID, label: t('Desktop') },
+      { value: MOBILE_UI_LAYOUT_UID, label: t('Mobile') },
+    ],
+    [t],
   );
-  const watchedPortalType = Form.useWatch('portalType', form);
   const watchedEnabled = Form.useWatch('enabled', form);
-  // 设备对两种类型都有意义，新建时默认给桌面端。
-  useEffect(() => {
-    if (record || form.getFieldValue('uiLayoutUid')) {
-      return;
+  const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(() => {
+    if (record) {
+      return { ...toFormDraftValues(record), setAsDefault: false };
     }
-    const defaultUiLayoutUid = getDefaultUiLayoutUid(layoutOptionsService.data);
-    if (defaultUiLayoutUid) {
-      form.setFieldValue('uiLayoutUid', defaultUiLayoutUid);
-    }
-  }, [form, layoutOptionsService.data, record]);
-  const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(
-    () =>
-      record
-        ? {
-            ...toFormDraftValues(record),
-            setAsDefault: false,
-          }
-        : {
-            ...defaultFormValues,
-            portalType: NEW_PORTAL_DEFAULT_TYPE,
-            uid: `portal-${randomId()}`,
-            sourceStorage: DEFAULT_PORTAL_SOURCE_STORAGE,
-            gitBranch: DEFAULT_PORTAL_GIT_BRANCH,
-            gitPath: DEFAULT_PORTAL_GIT_PATH,
-            cover: null,
-          },
-    [record],
-  );
-  const accessPathPrefix = watchedPortalType === 'ai' ? '/x/' : '/v/';
+    return {
+      ...defaultFormValues,
+      portalType: NEW_PORTAL_DEFAULT_TYPE,
+      uid: `portal-${randomId()}`,
+      sourceStorage: DEFAULT_PORTAL_SOURCE_STORAGE,
+      gitBranch: DEFAULT_PORTAL_GIT_BRANCH,
+      gitPath: DEFAULT_PORTAL_GIT_PATH,
+      cover: null,
+    };
+  }, [record]);
+  const watchedPortalType = Form.useWatch('portalType', form);
+  const effectivePortalType = watchedPortalType ?? initialValues.portalType;
+  const accessPathPrefix = effectivePortalType === 'ai' ? '/x/' : '/v/';
   const fixedDefaultPortal = isFixedDefaultPortal(record);
   // 门户名和类型建好之后就是身份：名字在访问路径里、类型决定 /v 还是 /x，
   // 都已经被外部链接和已配好的路由引用，改了等于换一个门户。所以只在新建时可填。
@@ -1098,6 +1050,10 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
 
   const handleValuesChange = useCallback(
     (changed: Partial<MultiPortalFormDraftValues>) => {
+      if (!record && changed.portalType === 'ai') {
+        form.setFieldsValue({ uiLayoutUid: ADMIN_UI_LAYOUT_UID });
+      }
+
       if (!('gitRepo' in changed)) {
         return;
       }
@@ -1122,7 +1078,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         autoFilledRef.current = { ...autoFilledRef.current, ...next };
       }
     },
-    [form],
+    [form, record],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -1314,19 +1270,17 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
 
         <Divider style={{ marginBlock: token.marginSM }} />
 
-        {/*
-          设备既决定无代码 Portal 用哪套组件，也是纯代码 Portal 的归类标签
-          （应用切换器按它分组），所以两种类型都要选。
-        */}
+        {/* AI Portal 不暴露设备选择；新建时固定为 Desktop，编辑时保留记录中的值。 */}
         <Form.Item
           name="uiLayoutUid"
           label={t('Device')}
           extra={t('No-code portals render with the components of this device; AI portals use it for grouping.')}
+          hidden={effectivePortalType === 'ai'}
           dependencies={['portalType']}
           rules={[
             {
               validator: (_, value?: string | null) => {
-                if (form.getFieldValue('portalType') !== 'ai' && !value) {
+                if (!isMultiPortalUiLayoutUid(value)) {
                   return Promise.reject(new Error(t('The field value is required')));
                 }
                 return Promise.resolve();
@@ -1335,10 +1289,8 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           ]}
         >
           <Select
-            // 建好之后不允许改；但记录上本来就没有值时必须能选，
-            // 否则必填 + 置灰会把编辑表单彻底卡死。
-            disabled={fixedDefaultPortal || !!(record?.uiLayoutUid || record?.uiLayout?.uid)}
-            loading={layoutOptionsService.loading}
+            // 设备类型创建后保持不变；新建时只能从两个固定 UID 中选择。
+            disabled={Boolean(record)}
             options={layoutOptions}
             showSearch
             optionFilterProp="label"

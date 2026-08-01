@@ -1,14 +1,16 @@
 # @nocobase/plugin-multi-portal
 
 `@nocobase/plugin-multi-portal` is the built-in Portal registration and
-permission layer built on top of `@nocobase/plugin-ui-layout`. A Portal selects
-an enabled UI Layout and provides a concrete application entry point.
+permission layer built on top of `@nocobase/plugin-ui-layout`. A Portal stores
+its device type in `uiLayoutUid`: `admin-layout-model` means Desktop and
+`mobile-layout-model` means Mobile. Portal availability depends on the Portal's
+own `enabled` state, not on a matching UI Layout record.
 
 For Client V2, enabled No-code Portals are the only source of registered Portal
 routes. Fresh applications use Portal-scoped entry and route permissions.
-Portals created while upgrading an existing application continue to use the
-backing UI Layout's route ownership and role permissions, so Client V1 and
-Client V2 share the same route tree without copying ACL data.
+The fixed Admin and Mobile Portals created while upgrading an existing
+application continue to use UI Layout route ownership and role permissions, so
+Client V1 and Client V2 share the same route tree without copying ACL data.
 
 UI Layout remains the layout and route-model base, and Client V1 keeps its
 existing UI Layout registration behavior. AI Portals remain separate `/x`
