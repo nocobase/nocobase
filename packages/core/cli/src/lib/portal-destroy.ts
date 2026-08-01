@@ -13,7 +13,7 @@ import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
-  resolvePortalAppFromApiBaseUrl,
+  resolvePortalAppContext,
   resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
@@ -59,10 +59,6 @@ const DESTROY_PORTAL_OPERATION: RequestOperation = {
     },
   ],
 };
-
-function trimValue(value: unknown): string {
-  return String(value ?? '').trim();
-}
 
 async function pathExists(target: string): Promise<boolean> {
   try {
@@ -122,9 +118,8 @@ async function destroyMultiPortalRecord(params: {
 
 export async function destroyPortalWorkspace(options: PortalDestroyOptions): Promise<PortalDestroyResult> {
   const portal = validatePortalSlug(options.portal);
-  const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const { app, appPublicPath } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
   const portalParentDir = path.join(storagePath, 'portals', app);
   const portalDir = path.join(portalParentDir, portal);

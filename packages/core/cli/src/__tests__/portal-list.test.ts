@@ -53,6 +53,14 @@ async function preparePortalWorkspace(params: { storagePath: string; app?: strin
   return portalDir;
 }
 
+function appInfoData(name = 'main') {
+  return {
+    data: {
+      name,
+    },
+  };
+}
+
 function expectPortalRecordList(options: RequestOptions) {
   expect(options).toEqual(
     expect.objectContaining({
@@ -233,6 +241,65 @@ test('http list uses env source storage when no local storagePath is configured'
       process.env[NB_CLI_ROOT_ENV] = originalCliRoot;
     }
   }
+});
+
+test('http list uses app:getInfo app name for custom-domain local paths', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-list-storage-');
+  const portalDir = await preparePortalWorkspace({
+    storagePath,
+    app: 'demo6',
+    portal: 'crm',
+  });
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData('demo6') };
+    }
+    expectPortalRecordList(options);
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        data: [
+          {
+            uid: 'crm',
+            title: 'CRM',
+            portalName: 'crm',
+            routePath: '/crm',
+            portalType: 'ai',
+            enabled: true,
+          },
+        ],
+      },
+    };
+  });
+
+  await expect(
+    listPortalWorkspaces({
+      envName: 'prod',
+      cliVersion: '1.2.3',
+      env: createEnv({
+        kind: 'http',
+        storagePath,
+        apiBaseUrl: 'https://demo6.v11.demo.nocobase.com/api',
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'demo6',
+    mode: 'http',
+    storagePath,
+    items: [
+      expect.objectContaining({
+        portalName: 'crm',
+        portalDir,
+        localSynced: true,
+      }),
+    ],
+  });
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
+    '/app:getInfo',
+    '/multiPortals:list',
+  ]);
 });
 
 test('lists no-code portal records without local workspace fields', async () => {

@@ -9,10 +9,11 @@
 
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
+import { executeApiRequest } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
-  resolvePortalAppFromApiBaseUrl,
+  resolvePortalAppContext,
   resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
@@ -21,12 +22,17 @@ import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
+type ApiRequest = typeof executeApiRequest;
+
 export type PortalDevEnvLike = PortalCreateEnvLike;
 
 export type PortalDevOptions = {
   portal: string;
   env: PortalDevEnvLike;
+  envName?: string;
+  cliVersion?: string;
   runCommand?: RunCommand;
+  apiRequest?: ApiRequest;
   onStart?: (result: PortalDevResult) => void;
 };
 
@@ -81,7 +87,7 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
     );
   }
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const { app, appPublicPath } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
   const portalDir = path.join(storagePath, 'portals', app, portal);
 

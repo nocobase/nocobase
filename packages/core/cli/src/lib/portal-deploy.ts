@@ -15,7 +15,7 @@ import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
-  resolvePortalAppFromApiBaseUrl,
+  resolvePortalAppContext,
   resolvePortalStoragePath,
   titleFromPortalSlug,
   validatePortalSlug,
@@ -286,7 +286,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const { app, appPublicPath } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
   const portalDir = path.join(storagePath, 'portals', app, portal);
   const distDir = path.join(portalDir, 'dist');

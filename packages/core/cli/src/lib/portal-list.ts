@@ -14,8 +14,9 @@ import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
-  resolvePortalAppFromApiBaseUrl,
+  resolvePortalAppContext,
   resolvePortalStoragePath,
+  type ResolvedPortalApp,
   type PortalCreateEnvLike,
 } from './portal-create.js';
 
@@ -30,6 +31,7 @@ export type PortalListOptions = {
   envName?: string;
   cliVersion?: string;
   apiRequest?: ApiRequest;
+  appContext?: ResolvedPortalApp;
 };
 
 export type PortalListItem = {
@@ -246,7 +248,7 @@ async function listMultiPortalRecords(params: {
 export async function listPortalWorkspaces(options: PortalListOptions): Promise<PortalListResult> {
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const { app, appPublicPath } = options.appContext ?? (await resolvePortalAppContext(options));
   const mode = options.env.kind;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {

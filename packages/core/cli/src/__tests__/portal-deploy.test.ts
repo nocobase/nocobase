@@ -82,6 +82,14 @@ async function preparePortalWorkspace(params: {
   return portalDir;
 }
 
+function appInfoData(name = 'main') {
+  return {
+    data: {
+      name,
+    },
+  };
+}
+
 function expectPortalRecordFirstOrCreate(options: RequestOptions, portal = 'customer') {
   const body = JSON.parse(String(options.flags.body));
 
@@ -274,6 +282,9 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     await fsp.chmod(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 0o600);
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData('crm') };
+    }
     if (options.operation.pathTemplate === '/multiPortals:firstOrCreate') {
       return { ok: true, status: 200, data: { data: { uid: 'customer' } } };
     }
@@ -323,7 +334,7 @@ test('http deploy builds, packs dist, and uploads it', async () => {
   });
 
   expect(apiRequest).toHaveBeenNthCalledWith(
-    1,
+    2,
     expect.objectContaining({
       cliVersion: '1.2.3',
       envName: 'prod',
@@ -339,7 +350,7 @@ test('http deploy builds, packs dist, and uploads it', async () => {
       }),
     }),
   );
-  expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
+  expectPortalRecordFirstOrCreate(apiRequest.mock.calls[2][0]);
   expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
     env: expect.any(Object),
@@ -377,7 +388,12 @@ test('http deploy uses env source storage when no local storagePath is configure
       await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
       await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
     });
-    const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { status: 'ok' } }));
+    const apiRequest = vi.fn(async (options: RequestOptions) => {
+      if (options.operation.pathTemplate === '/app:getInfo') {
+        return { ok: true, status: 200, data: appInfoData() };
+      }
+      return { ok: true, status: 200, data: { status: 'ok' } };
+    });
 
     await expect(
       deployPortalWorkspace({
@@ -400,8 +416,8 @@ test('http deploy uses env source storage when no local storagePath is configure
       uploaded: true,
       recordSynced: true,
     });
-    expect(apiRequest).toHaveBeenCalledTimes(2);
-    expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
+    expect(apiRequest).toHaveBeenCalledTimes(3);
+    expectPortalRecordFirstOrCreate(apiRequest.mock.calls[2][0]);
   } finally {
     if (originalCliRoot === undefined) {
       delete process.env[NB_CLI_ROOT_ENV];

@@ -12,7 +12,7 @@ import path from 'node:path';
 import { executeApiRequest } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
-  resolvePortalAppFromApiBaseUrl,
+  resolvePortalAppContext,
   resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
@@ -125,9 +125,9 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
   }
 
   const portal = validatePortalSlug(options.portal);
-  const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const appContext = await resolvePortalAppContext(options);
+  const { app } = appContext;
   const portalDir = path.join(storagePath, 'portals', app, portal);
 
   if (!(await pathExists(portalDir))) {
@@ -145,6 +145,7 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
     envName: options.envName,
     cliVersion: options.cliVersion,
     apiRequest: options.apiRequest,
+    appContext,
   });
   const remoteItem = findPortalListItem(list.items, portal);
   const existingConfig =

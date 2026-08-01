@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 import { devPortalWorkspace } from '../lib/portal-dev.js';
+import type { RequestOptions } from '../lib/api-client.js';
 import type { PortalCreateEnvLike } from '../lib/portal-create.js';
 
 const tempDirs: string[] = [];
@@ -71,6 +72,14 @@ async function preparePortalWorkspace(params: {
   return portalDir;
 }
 
+function appInfoData(name = 'main') {
+  return {
+    data: {
+      name,
+    },
+  };
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
@@ -85,10 +94,15 @@ test('updates env files and starts portal dev without building or syncing record
   });
   const onStart = vi.fn();
   const runCommand = vi.fn(async () => undefined);
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    expect(options.operation.pathTemplate).toBe('/app:getInfo');
+    return { ok: true, status: 200, data: appInfoData('crm') };
+  });
 
   await expect(
     devPortalWorkspace({
       portal: 'customer',
+      envName: 'prod',
       env: createEnv({
         kind: 'http',
         storagePath,
@@ -96,6 +110,7 @@ test('updates env files and starts portal dev without building or syncing record
         apiBaseUrl: 'https://example.com/console/api/__app/crm',
       }),
       runCommand,
+      apiRequest,
       onStart,
     }),
   ).resolves.toEqual({

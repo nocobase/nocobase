@@ -42,6 +42,14 @@ async function preparePortalWorkspace(storagePath: string): Promise<string> {
   return portalDir;
 }
 
+function appInfoData(name = 'main') {
+  return {
+    data: {
+      name,
+    },
+  };
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
@@ -50,6 +58,9 @@ test('updates local Portal config and syncs remote options when the remote recor
   const storagePath = await makeTempDir('nocobase-cli-portal-config-storage-');
   const portalDir = await preparePortalWorkspace(storagePath);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
     if (options.operation.pathTemplate === '/multiPortals:list') {
       return {
         ok: true,
@@ -115,6 +126,7 @@ test('updates local Portal config and syncs remote options when the remote recor
     '{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "main",\n    "path": "portals/customer"\n  }\n}\n',
   );
   expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
+    '/app:getInfo',
     '/multiPortals:list',
     '/multiPortals:update',
   ]);
@@ -138,13 +150,16 @@ test('writes local Portal config without remote sync when the remote record is m
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
     '{\n  "sourceStorage": "nocobase"\n}\n',
   );
-  expect(apiRequest).toHaveBeenCalledTimes(1);
+  expect(apiRequest).toHaveBeenCalledTimes(2);
 });
 
 test('defaults Git path to the repository root', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-config-storage-');
   const portalDir = await preparePortalWorkspace(storagePath);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
     if (options.operation.pathTemplate === '/multiPortals:update') {
       expect(JSON.parse(String(options.flags.body))).toEqual({
         options: {
