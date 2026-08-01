@@ -11,6 +11,8 @@ import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import fs from 'fs';
+import path from 'path';
 import React, { useState } from 'react';
 import { vi } from 'vitest';
 
@@ -49,6 +51,13 @@ function renderFields(onValidSourceChange = vi.fn()) {
 }
 
 describe('generic Git source validation', () => {
+  it('loads runtime validators through the browser-safe shared module', () => {
+    const source = fs.readFileSync(path.resolve(__dirname, '../components/LightExtensionGitSourceFields.tsx'), 'utf8');
+
+    expect(source).toContain("from '../../shared/vsc-file/git-config-validation';");
+    expect(source).not.toMatch(/import\s*\{[^}]+\}\s*from\s*['"]\.\.\/\.\.\/shared\/vsc-file\/public-api['"]/u);
+  });
+
   it('accepts HTTPS, standard SSH, and scp-like SSH URLs while deriving transport', () => {
     expect(parseGitRepositoryUrl('https://git.example.com/team/project.git')).toEqual({
       valid: true,

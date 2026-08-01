@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { VscGitRemoteConfigDraft, VscGitRemoteTransport } from '../../shared/vsc-file/public-api';
 import {
   normalizeGitRepositoryUrlSyntax,
-  type VscGitRemoteConfigDraft,
-  type VscGitRemoteTransport,
   validateGitBranchSyntax,
   validateGitSubdirectorySyntax,
-} from '../../shared/vsc-file/public-api';
+} from '../../shared/vsc-file/git-config-validation';
 import { Form, Input } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
