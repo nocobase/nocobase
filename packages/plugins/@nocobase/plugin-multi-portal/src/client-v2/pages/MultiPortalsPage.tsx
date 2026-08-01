@@ -1022,7 +1022,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
     ],
     [t],
   );
-  const watchedPortalType = Form.useWatch('portalType', form);
   const watchedEnabled = Form.useWatch('enabled', form);
   const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(() => {
     if (record) {
@@ -1038,7 +1037,9 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
       cover: null,
     };
   }, [record]);
-  const accessPathPrefix = watchedPortalType === 'ai' ? '/x/' : '/v/';
+  const watchedPortalType = Form.useWatch('portalType', form);
+  const effectivePortalType = watchedPortalType ?? initialValues.portalType;
+  const accessPathPrefix = effectivePortalType === 'ai' ? '/x/' : '/v/';
   const fixedDefaultPortal = isFixedDefaultPortal(record);
   // 门户名和类型建好之后就是身份：名字在访问路径里、类型决定 /v 还是 /x，
   // 都已经被外部链接和已配好的路由引用，改了等于换一个门户。所以只在新建时可填。
@@ -1049,6 +1050,10 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
 
   const handleValuesChange = useCallback(
     (changed: Partial<MultiPortalFormDraftValues>) => {
+      if (!record && changed.portalType === 'ai') {
+        form.setFieldsValue({ uiLayoutUid: ADMIN_UI_LAYOUT_UID });
+      }
+
       if (!('gitRepo' in changed)) {
         return;
       }
@@ -1073,7 +1078,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         autoFilledRef.current = { ...autoFilledRef.current, ...next };
       }
     },
-    [form],
+    [form, record],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -1246,14 +1251,12 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
 
         <Divider style={{ marginBlock: token.marginSM }} />
 
-        {/*
-          设备既决定无代码 Portal 用哪套组件，也是纯代码 Portal 的归类标签
-          （应用切换器按它分组），所以两种类型都要选。
-        */}
+        {/* AI Portal 不暴露设备选择；新建时固定为 Desktop，编辑时保留记录中的值。 */}
         <Form.Item
           name="uiLayoutUid"
           label={t('Device')}
           extra={t('No-code portals render with the components of this device; AI portals use it for grouping.')}
+          hidden={effectivePortalType === 'ai'}
           dependencies={['portalType']}
           rules={[
             {

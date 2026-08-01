@@ -811,10 +811,10 @@ describe('plugin-multi-portal settings page', () => {
         .getByRole('radio', { name: /No-code portal/ })
         .closest('label'),
     ).toHaveStyle('align-items: flex-start');
-    // 源码存储默认 NocoBase，git 字段要选中 Git 才出现；设备两种类型都要选。
+    // 源码存储默认 NocoBase，git 字段要选中 Git 才出现；AI portal 不暴露设备选择。
     expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
     expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
@@ -1385,6 +1385,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).getByLabelText('Git repository URL')).toHaveValue('git@github.com:nocobase/customer.git');
     expect(within(dialog).getByLabelText('Git branch')).toHaveValue('develop');
     expect(within(dialog).getByLabelText('Git path')).toHaveValue('portals/customer');
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
@@ -1393,6 +1394,7 @@ describe('plugin-multi-portal settings page', () => {
         filterByTk: 'customer-portal',
         values: expect.objectContaining({
           portalType: 'ai',
+          uiLayoutUid: 'mobile-layout-model',
           options: {
             cover: null,
             sourceStorage: 'git',
@@ -1485,21 +1487,26 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should submit the device for AI portals as well', async () => {
+  it('should hide the device and submit Desktop when creating an AI portal', async () => {
     const resource = makeResource();
-    // 设备对 AI portal 同样有意义：应用切换器按它归类。
     const { container, dialog, user } = await openCreatePortalForm(resource, {
       portalType: 'ai',
     });
 
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
+    await selectMobileLayout(container, user);
+    await user.click(within(dialog).getByRole('radio', { name: /AI portal/ }));
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
+
     await user.type(within(dialog).getByLabelText('Title'), 'Agent portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'agent-portal');
-    await selectMobileLayout(container, user);
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
       expect(resource.create).toHaveBeenCalledWith({
-        values: expect.objectContaining({ portalType: 'ai', uiLayoutUid: 'mobile-layout-model' }),
+        values: expect.objectContaining({ portalType: 'ai', uiLayoutUid: 'admin-layout-model' }),
       });
     });
   });
