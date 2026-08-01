@@ -58,16 +58,19 @@ function expectPortalRecordDestroy(options: RequestOptions, portal = 'customer')
   expect(options).toEqual(
     expect.objectContaining({
       flags: {
-        filterByTk: portal,
+        filter: {
+          portalName: portal,
+        },
       },
       operation: expect.objectContaining({
         method: 'POST',
         pathTemplate: '/multiPortals:destroy',
         parameters: expect.arrayContaining([
           expect.objectContaining({
-            name: 'filterByTk',
-            flagName: 'filterByTk',
+            name: 'filter',
+            flagName: 'filter',
             in: 'query',
+            type: 'object',
             required: true,
           }),
         ]),

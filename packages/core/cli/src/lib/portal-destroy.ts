@@ -52,9 +52,10 @@ const DESTROY_PORTAL_OPERATION: RequestOperation = {
   pathTemplate: '/multiPortals:destroy',
   parameters: [
     {
-      name: 'filterByTk',
-      flagName: 'filterByTk',
+      name: 'filter',
+      flagName: 'filter',
       in: 'query',
+      type: 'object',
       required: true,
     },
   ],
@@ -94,7 +95,9 @@ async function destroyMultiPortalRecord(params: {
     cliVersion: params.cliVersion ?? '',
     envName: params.envName,
     flags: {
-      filterByTk: params.portal,
+      filter: {
+        portalName: params.portal,
+      },
     },
     operation: DESTROY_PORTAL_OPERATION,
   });
