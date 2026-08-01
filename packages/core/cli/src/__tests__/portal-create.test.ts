@@ -43,9 +43,15 @@ async function makeTempDir(prefix: string): Promise<string> {
   return dir;
 }
 
-async function writeTemplate(templateDir: string, options: { packageJson?: boolean } = { packageJson: true }) {
+async function writeTemplate(
+  templateDir: string,
+  options: { packageJson?: boolean; pnpmLock?: boolean } = { packageJson: true },
+) {
   if (options.packageJson !== false) {
     await fsp.writeFile(path.join(templateDir, 'package.json'), '{"name":"portal-template"}\n');
+  }
+  if (options.pnpmLock) {
+    await fsp.writeFile(path.join(templateDir, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
   }
   await fsp.mkdir(path.join(templateDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(templateDir, 'src', 'index.tsx'), 'export default null;\n');
@@ -201,14 +207,37 @@ test('creates a portal from a local template', async () => {
   expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
     sourceStorage: 'nocobase',
   });
+  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--no-frozen-lockfile', '--trust-lockfile'], {
+    cwd: portalDir,
+    env: expect.any(Object),
+    envMode: 'replace',
+    errorName: 'pnpm install --no-frozen-lockfile --trust-lockfile',
+  });
+  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
+  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
+});
+
+test('creates a portal with frozen pnpm install when the template includes a lockfile', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const runCommand = vi.fn().mockResolvedValue(undefined);
+  await writeTemplate(templatePath, { pnpmLock: true });
+
+  await createPortalWorkspace({
+    portal: 'customer',
+    template: templatePath,
+    env: createEnv({ storagePath }),
+    runCommand,
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await expect(fsp.access(path.join(portalDir, 'pnpm-lock.yaml'))).resolves.toBe(undefined);
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
-  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
-  expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
 });
 
 test('skips pnpm install when package.json is missing', async () => {
@@ -279,12 +308,12 @@ test('downloads npm package templates with npm pack when not installed locally',
   expect(runCommand).toHaveBeenNthCalledWith(
     2,
     'pnpm',
-    ['install', '--frozen-lockfile', '--trust-lockfile'],
+    ['install', '--no-frozen-lockfile', '--trust-lockfile'],
     expect.objectContaining({
       cwd: portalDir,
       env: expect.any(Object),
       envMode: 'replace',
-      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+      errorName: 'pnpm install --no-frozen-lockfile --trust-lockfile',
     }),
   );
 });

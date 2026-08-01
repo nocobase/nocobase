@@ -173,6 +173,20 @@ function safeTempPrefix(parentDir: string, portal: string): string {
   return path.join(parentDir, `.${portal}-create-`);
 }
 
+async function getPortalInstallCommand(portalDir: string): Promise<{ args: string[]; errorName: string }> {
+  if (await pathExists(path.join(portalDir, 'pnpm-lock.yaml'))) {
+    return {
+      args: ['install', '--frozen-lockfile', '--trust-lockfile'],
+      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    };
+  }
+
+  return {
+    args: ['install', '--no-frozen-lockfile', '--trust-lockfile'],
+    errorName: 'pnpm install --no-frozen-lockfile --trust-lockfile',
+  };
+}
+
 function assertPortalDirIsInsideParent(parentDir: string, portalDir: string): void {
   const relative = path.relative(parentDir, portalDir);
   if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
@@ -659,11 +673,12 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
     const hasPackageJson = await pathExists(path.join(portalDir, 'package.json'));
     if (hasPackageJson) {
       const runCommand = options.runCommand ?? run;
-      await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
+      const installCommand = await getPortalInstallCommand(portalDir);
+      await runPnpmCommand(runCommand, installCommand.args, {
         cwd: portalDir,
         env: buildPortalCommandEnv(),
         envMode: 'replace',
-        errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+        errorName: installCommand.errorName,
       });
     } else {
       options.onSkipInstall?.(
