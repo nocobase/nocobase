@@ -9,13 +9,13 @@
 
 import { Alert, Button, Checkbox, Form, Input, Select, message } from 'antd';
 import React, { useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Schema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '@nocobase/client-v2';
+import { useApp, usePlugin } from '@nocobase/client-v2';
 import { useAuthTranslation } from '../locale';
 import { useAuthenticator } from '../authenticator';
-import { getAuthRoutePath } from '../authRoutePaths';
+import PluginAuthClientV2 from '../plugin';
 
 type SignUpFormProps = {
   authenticatorName: string;
@@ -72,6 +72,8 @@ function renderDynamicField(field: any, t: (key: string) => string, fieldT: (key
 
 export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) {
   const app = useApp();
+  const authPlugin = usePlugin(PluginAuthClientV2);
+  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useAuthTranslation();
   const { t: fieldT } = useTranslation('lm-collections');
@@ -79,7 +81,14 @@ export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) 
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const signinPath = getAuthRoutePath(app, 'auth.signin');
+  const signinPath = authPlugin.getAuthRoutePath(location.pathname, 'auth.signin');
+  const redirect = authPlugin.isScopedAuthRoute(location.pathname)
+    ? new URLSearchParams(location.search).get('redirect')
+    : null;
+  const signinLocation = {
+    pathname: signinPath,
+    search: redirect === null ? '' : `?redirect=${encodeURIComponent(redirect)}`,
+  };
 
   const fields = useMemo(() => {
     return (authenticator?.options?.signupForm || []).filter((item: any) => item?.show);
@@ -100,7 +109,7 @@ export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) 
           await app.apiClient.auth.signUp(values, authenticatorName);
           message.success(t('Sign up successfully, and automatically jump to the sign in page'));
           window.setTimeout(() => {
-            navigate(signinPath, { replace: true });
+            navigate(signinLocation, { replace: true });
           }, 2000);
         } catch (error) {
           setErrorMessage(error?.response?.data?.errors?.[0]?.message || error?.message || String(error));
@@ -141,7 +150,7 @@ export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) 
           {t('Sign up')}
         </Button>
       </Form.Item>
-      <Link to={signinPath}>{t('Log in with an existing account')}</Link>
+      <Link to={signinLocation}>{t('Log in with an existing account')}</Link>
     </Form>
   );
 }

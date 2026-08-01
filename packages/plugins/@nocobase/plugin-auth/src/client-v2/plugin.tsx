@@ -20,7 +20,12 @@ import {
 import debounce from 'lodash/debounce';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
-import { isStandaloneSettingsApplication } from './authRoutePaths';
+import {
+  getAuthRoutePath,
+  getDefaultAuthRedirectPath,
+  isStandaloneSettingsApplication,
+  type AuthRouteName,
+} from './authRoutePaths';
 import AuthProvider from './providers/AuthProvider';
 import { NAMESPACE } from './locale';
 
@@ -50,6 +55,22 @@ class UserCenterLanguageItemModel extends UserCenterSelectItemModel {
 }
 
 type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
+
+type ScopedAuthRouteName = Extract<AuthRouteName, 'auth.signin' | 'auth.signup'>;
+
+type AuthRouteScope = Record<ScopedAuthRouteName, string> & {
+  basePath: string;
+};
+
+type AuthRouteScopeNames = {
+  signin?: string;
+  signup?: string;
+};
+
+function normalizeAuthRoutePath(path: string) {
+  const normalized = `/${path.trim().replace(/^\/+|\/+$/g, '')}`;
+  return normalized === '/' ? normalized : normalized.replace(/\/+$/g, '');
+}
 
 /**
  * V2 auth-type registration. Every form/button is registered as an async `import()` loader rather than a synchronous component reference. Consumers resolve them with `React.lazy` at render time so each auth-type contributes its own webpack chunk and is only fetched when an authenticator of that type is actually shown.
@@ -91,6 +112,7 @@ const debouncedRedirect = debounce(
 
 export class PluginAuthClientV2 extends Plugin {
   authTypes = new Registry<AuthOptions>();
+  private authRouteScopes = new Map<string, AuthRouteScope>();
 
   registerType(authType: string, options: AuthOptions) {
     this.authTypes.register(authType, options);
@@ -102,6 +124,54 @@ export class PluginAuthClientV2 extends Plugin {
       skipAuthCheck: true,
       componentLoader: () => import('./pages/SignInPage'),
     });
+  }
+
+  registerAuthRouteScope(name: string, basePath: string, routeNames?: AuthRouteScopeNames) {
+    const normalizedBasePath = normalizeAuthRoutePath(basePath);
+    const routeBasePath = normalizedBasePath === '/' ? '' : normalizedBasePath;
+    const scope: AuthRouteScope = {
+      basePath: normalizedBasePath,
+      'auth.signin': `${routeBasePath}/signin`,
+      'auth.signup': `${routeBasePath}/signup`,
+    };
+
+    this.authRouteScopes.set(name, scope);
+    this.registerSignInRoute(routeNames?.signin || `${name}Signin`, scope['auth.signin']);
+    this.router.add(`auth.${routeNames?.signup || `${name}Signup`}`, {
+      path: scope['auth.signup'],
+      skipAuthCheck: true,
+      componentLoader: () => import('./pages/SignUpPage'),
+    });
+  }
+
+  getAuthRoutePath(pathname: string, name: AuthRouteName) {
+    const normalizedPathname = normalizeAuthRoutePath(pathname);
+    for (const scope of this.authRouteScopes.values()) {
+      if (scope['auth.signin'] === normalizedPathname || scope['auth.signup'] === normalizedPathname) {
+        return name === 'auth.signin' || name === 'auth.signup' ? scope[name] : getAuthRoutePath(this.app, name);
+      }
+    }
+    return getAuthRoutePath(this.app, name);
+  }
+
+  isScopedAuthRoute(pathname: string) {
+    const normalizedPathname = normalizeAuthRoutePath(pathname);
+    for (const scope of this.authRouteScopes.values()) {
+      if (scope['auth.signin'] === normalizedPathname || scope['auth.signup'] === normalizedPathname) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getAuthRedirectFallbackPath(pathname: string) {
+    const normalizedPathname = normalizeAuthRoutePath(pathname);
+    for (const scope of this.authRouteScopes.values()) {
+      if (scope['auth.signin'] === normalizedPathname) {
+        return scope.basePath;
+      }
+    }
+    return getDefaultAuthRedirectPath(this.app);
   }
 
   async load() {
