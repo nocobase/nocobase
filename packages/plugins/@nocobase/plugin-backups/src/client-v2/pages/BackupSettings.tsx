@@ -22,6 +22,7 @@ type BackupSettingsValues = {
   keep?: number;
   storageId?: string | number;
   enableFilesBackup?: boolean;
+  enablePortalsBackup?: boolean;
   encryptionPassword?: string;
 };
 
@@ -49,6 +50,7 @@ const DEFAULT_FORM_VALUES: BackupSettingsValues = {
   cron: '0 0 * * *',
   keep: 100,
   enableFilesBackup: false,
+  enablePortalsBackup: true,
 };
 
 type BackupCronProps = Omit<ReactJsCronProps, 'setValue' | 'value'> & {
@@ -247,6 +249,10 @@ const BackupSettings = () => {
         </Form.Item>
 
         <Form.Item name="enableFilesBackup" label={t('Backup local storage files')} valuePropName="checked">
+          <Switch />
+        </Form.Item>
+
+        <Form.Item name="enablePortalsBackup" label={t('Backup AI mode portals')} valuePropName="checked">
           <Switch />
         </Form.Item>
 
