@@ -20,6 +20,7 @@ import { RestoreManager } from '../../managers/restore';
 import backupCliResource from '../../resourcers/backup-cli';
 import backupsResource from '../../resourcers/backups';
 import { EventEmitter } from 'events';
+import os from 'os';
 import { Readable, Writable } from 'stream';
 
 let mockExecImplementation = (command, _options, callback) => {
@@ -62,7 +63,11 @@ const backupFilesFolder = storagePathJoin('backups', 'main');
 const schemaMismatchBackupFilePath = path.join(backupFilesFolder, `backup_schema_mismatch.${BACKUP_EXTENSION}`);
 const createdBackupFilePaths = new Set<string>();
 
-async function createBackupArchive(filePath: string, metadata: Record<string, any>) {
+async function createBackupArchive(
+  filePath: string,
+  metadata: Record<string, any>,
+  files: Record<string, string> = {},
+) {
   createdBackupFilePaths.add(filePath);
   await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
   await new Promise<void>((resolve, reject) => {
@@ -77,8 +82,17 @@ async function createBackupArchive(filePath: string, metadata: Record<string, an
     archive.pipe(output);
     archive.append('mocked database backup', { name: 'data' });
     archive.append(JSON.stringify(metadata, null, 2), { name: '_metadata.json' });
+    for (const [name, content] of Object.entries(files)) {
+      archive.append(content, { name });
+    }
     archive.finalize().catch(reject);
   });
+}
+
+class TestRestoreManager extends RestoreManager {
+  setPortalDir(portalDir: string) {
+    this.portalDir = portalDir;
+  }
 }
 
 function createBackupFile(caseName: string) {
@@ -98,6 +112,7 @@ describe('RestoreManager', () => {
     cron: '',
     encryptionPassword: '',
     enableFilesBackup: false,
+    enablePortalsBackup: false,
     keep: 10,
   };
 
@@ -325,6 +340,72 @@ describe('RestoreManager', () => {
     settings = await app.db.getRepository(SETTINGS).findOne();
     // after the restore, the backup encryption should be disabled
     expect(settings.encryptionPassword).toBe('');
+  });
+
+  it('restores portals into the current application directory and removes stale files', async () => {
+    const { backupFilePath } = createBackupFile('restore-portals');
+    const metadata = {
+      ...(await createMetadataCompatibleWithCurrentDb()),
+      enablePortalsBackup: true,
+    };
+    await createBackupArchive(backupFilePath, metadata, {
+      'portals/customer/dist/index.html': '<html>restored portal</html>',
+    });
+    const testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-restore-portals-'));
+    const portalDir = path.join(testDir, 'target-app');
+    const staleFilePath = path.join(portalDir, 'stale', 'dist', 'index.html');
+    const restoredFilePath = path.join(portalDir, 'customer', 'dist', 'index.html');
+    const restoreManager = new TestRestoreManager(createCtx(), {
+      dialect: 'postgres',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 5432,
+      schema: 'source_schema',
+    });
+    restoreManager.setPortalDir(portalDir);
+
+    try {
+      await fs.promises.mkdir(path.dirname(staleFilePath), { recursive: true });
+      await fs.promises.writeFile(staleFilePath, 'stale portal');
+
+      await restoreManager.restoreCLI(backupFilePath, undefined, true, true);
+
+      await expect(fs.promises.readFile(restoredFilePath, 'utf8')).resolves.toBe('<html>restored portal</html>');
+      expect(fs.existsSync(staleFilePath)).toBe(false);
+    } finally {
+      await fs.promises.rm(testDir, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps existing portals when restoring a legacy backup', async () => {
+    const { backupFilePath } = createBackupFile('restore-legacy-portals');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb());
+    const testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-restore-legacy-portals-'));
+    const portalDir = path.join(testDir, 'target-app');
+    const existingFilePath = path.join(portalDir, 'customer', 'dist', 'index.html');
+    const restoreManager = new TestRestoreManager(createCtx(), {
+      dialect: 'postgres',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 5432,
+      schema: 'source_schema',
+    });
+    restoreManager.setPortalDir(portalDir);
+
+    try {
+      await fs.promises.mkdir(path.dirname(existingFilePath), { recursive: true });
+      await fs.promises.writeFile(existingFilePath, 'existing portal');
+
+      await restoreManager.restoreCLI(backupFilePath, undefined, true, true);
+
+      await expect(fs.promises.readFile(existingFilePath, 'utf8')).resolves.toBe('existing portal');
+    } finally {
+      await fs.promises.rm(testDir, { recursive: true, force: true });
+    }
   });
 
   it('restore with tolerentMode', async () => {

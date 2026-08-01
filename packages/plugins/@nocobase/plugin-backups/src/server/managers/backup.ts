@@ -33,12 +33,13 @@ import {
   resolvePathWithinBase,
 } from '../utils';
 
-const BACKUP_METADATA_VERSION = 2;
+const BACKUP_METADATA_VERSION = 3;
 
 export interface BackupSettings {
   storageId?: string | number | null;
   encryptionPassword: string;
   enableFilesBackup: boolean;
+  enablePortalsBackup?: boolean;
   keep?: number;
   scheduled: boolean;
   cron: string;
@@ -85,6 +86,7 @@ export class BackupManager {
   #backupDir: string;
   #tempDir: string;
   #uploadDir: string;
+  #portalDir: string;
   #aesKeyPath: string;
 
   constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettingsInput) {
@@ -97,6 +99,7 @@ export class BackupManager {
     this.#backupDir = storagePathJoin('backups', app.name);
     this.#tempDir = storagePathJoin('tmp', 'backups', app.name);
     this.#uploadDir = storagePathJoin('uploads');
+    this.#portalDir = storagePathJoin('portals', app.name);
     this.#aesKeyPath = storagePathJoin('apps', app.name, 'aes_key.dat');
   }
 
@@ -116,16 +119,27 @@ export class BackupManager {
     this.#uploadDir = uploadDir;
   }
 
+  protected set portalDir(portalDir: string) {
+    this.#portalDir = portalDir;
+  }
+
   protected set backupTasksCacheName(backupTasksCacheName: string) {
     this.#backupTasksCacheName = backupTasksCacheName;
   }
 
   #normalizeBackupSettings(settings: BackupSettingsInput): BackupSettings {
     if (typeof settings.toJSON === 'function') {
-      return settings.toJSON() as BackupSettings;
+      const values = settings.toJSON() as BackupSettings;
+      return {
+        ...values,
+        enablePortalsBackup: values.enablePortalsBackup ?? true,
+      };
     }
 
-    return { ...settings };
+    return {
+      ...settings,
+      enablePortalsBackup: settings.enablePortalsBackup ?? true,
+    };
   }
 
   async createBackupName() {
@@ -258,6 +272,7 @@ export class BackupManager {
       ...(opts.metadata ?? {}),
       metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
+      enablePortalsBackup: opts.enablePortalsBackup,
       version: await this.app.version.get(),
       description: opts.description,
       createdBy: opts.createdBy,
@@ -363,6 +378,10 @@ export class BackupManager {
             }
           }
         }
+      }
+
+      if (opts.enablePortalsBackup && fs.existsSync(this.#portalDir)) {
+        archive.directory(this.#portalDir, 'portals');
       }
 
       // backup the aes key
