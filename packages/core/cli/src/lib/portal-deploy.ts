@@ -317,11 +317,11 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   });
 
   const runCommand = options.runCommand ?? run;
-  await runPnpmCommand(runCommand, ['install'], {
+  await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
     env: buildPortalCommandEnv(),
     envMode: 'replace',
-    errorName: 'pnpm install',
+    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
   await runPnpmCommand(runCommand, ['build'], {
     cwd: portalDir,

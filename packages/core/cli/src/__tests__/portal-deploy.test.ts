@@ -161,11 +161,11 @@ test('updates env files, builds, and syncs the portal record locally without upl
     recordSynced: true,
   });
 
-  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install'], {
+  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install',
+    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
   expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
     cwd: portalDir,
@@ -244,15 +244,15 @@ test('deploy reports a clear error when pnpm is not installed', async () => {
       apiRequest,
     }),
   ).rejects.toThrow(
-    "Couldn't run `pnpm install` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
+    "Couldn't run `pnpm install --frozen-lockfile --trust-lockfile` because the pnpm executable could not be found. Install pnpm or update `nb config set bin.pnpm <path>` and try again.",
   );
 
   expect(runCommand).toHaveBeenCalledTimes(1);
   expect(runCommand).toHaveBeenCalledWith(
     'pnpm',
-    ['install'],
+    ['install', '--frozen-lockfile', '--trust-lockfile'],
     expect.objectContaining({
-      errorName: 'pnpm install',
+      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
     }),
   );
   expect(apiRequest).not.toHaveBeenCalled();
@@ -340,11 +340,11 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     }),
   );
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
-  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install'], {
+  expect(runCommand).toHaveBeenNthCalledWith(1, 'pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install',
+    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
   expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build'], {
     cwd: portalDir,

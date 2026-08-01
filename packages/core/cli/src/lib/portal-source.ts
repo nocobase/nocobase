@@ -197,6 +197,27 @@ async function packPortalSource(portalDir: string): Promise<{ archivePath: strin
   };
 }
 
+async function replaceExistingPortalDirectory(params: { sourceDir: string; portalDir: string }): Promise<void> {
+  if (!(await pathExists(path.join(params.portalDir, '.git')))) {
+    await rm(params.portalDir, { recursive: true, force: true });
+    await rename(params.sourceDir, params.portalDir);
+    return;
+  }
+
+  const existingEntries = await readdir(params.portalDir);
+  await Promise.all(
+    existingEntries
+      .filter((entry) => entry !== '.git')
+      .map((entry) => rm(path.join(params.portalDir, entry), { recursive: true, force: true })),
+  );
+
+  const sourceEntries = await readdir(params.sourceDir);
+  await Promise.all(
+    sourceEntries.map((entry) => rename(path.join(params.sourceDir, entry), path.join(params.portalDir, entry))),
+  );
+  await rm(params.sourceDir, { recursive: true, force: true });
+}
+
 async function replacePortalSourceFromArchive(params: {
   archivePath: string;
   portalDir: string;
@@ -223,7 +244,11 @@ async function replacePortalSourceFromArchive(params: {
       filter: validatePortalSourceTarEntry,
     });
     if (targetExists) {
-      await rm(params.portalDir, { recursive: true, force: true });
+      await replaceExistingPortalDirectory({
+        sourceDir: tempDir,
+        portalDir: params.portalDir,
+      });
+      return;
     }
     await rename(tempDir, params.portalDir);
   } catch (error) {
@@ -256,13 +281,31 @@ async function replacePortalSourceFromDirectory(params: {
       filter: (source) => shouldPackPortalSourceEntry(path.relative(params.sourceDir, source)),
     });
     if (targetExists) {
-      await rm(params.portalDir, { recursive: true, force: true });
+      await replaceExistingPortalDirectory({
+        sourceDir: tempDir,
+        portalDir: params.portalDir,
+      });
+      return;
     }
     await rename(tempDir, params.portalDir);
   } catch (error) {
     await rm(tempDir, { recursive: true, force: true });
     throw error;
   }
+}
+
+async function assertPortalDirectoryCanBeReplaced(params: { portalDir: string; force?: boolean }): Promise<boolean> {
+  const targetExists = await pathExists(params.portalDir);
+  if (targetExists && !params.force) {
+    throw new Error(
+      portalSourceText(
+        'errors.workspaceExists',
+        { portalDir: params.portalDir },
+        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
+      ),
+    );
+  }
+  return targetExists;
 }
 
 async function runGit(args: string[], cwd?: string): Promise<{ stdout: string; stderr: string }> {
@@ -292,11 +335,11 @@ async function installPortalDependencies(params: {
   }
 
   const runCommand = params.runCommand ?? run;
-  await runPnpmCommand(runCommand, ['install'], {
+  await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: params.portalDir,
     env: buildPortalCommandEnv(),
     envMode: 'replace',
-    errorName: 'pnpm install',
+    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
 
   return {
@@ -462,11 +505,87 @@ async function cloneGitSource(params: { repo: string; branch: string; cwd: strin
   return repoDir;
 }
 
+async function setGitOriginRepository(params: { repoDir: string; repo: string }): Promise<void> {
+  try {
+    await runGit(['remote', 'get-url', 'origin'], params.repoDir);
+    await runGit(['remote', 'set-url', 'origin', params.repo], params.repoDir);
+  } catch {
+    await runGit(['remote', 'add', 'origin', params.repo], params.repoDir);
+  }
+}
+
+async function checkoutExistingGitRepository(params: { repoDir: string; repo: string; branch: string }): Promise<void> {
+  await setGitOriginRepository({
+    repoDir: params.repoDir,
+    repo: params.repo,
+  });
+  try {
+    await runGit(['fetch', 'origin', params.branch], params.repoDir);
+    await runGit(['checkout', '-f', '-B', params.branch, 'FETCH_HEAD'], params.repoDir);
+  } catch (error) {
+    await runGit(['fetch', 'origin'], params.repoDir);
+    await runGit(['checkout', '-f', '-B', params.branch], params.repoDir);
+  }
+  await runGit(['clean', '-fdx'], params.repoDir);
+}
+
+async function pullGitRepositoryRootPortalSource(params: {
+  context: PortalSourceContext;
+  repo: string;
+  branch: string;
+  force?: boolean;
+}): Promise<void> {
+  const targetExists = await assertPortalDirectoryCanBeReplaced({
+    portalDir: params.context.portalDir,
+    force: params.force,
+  });
+  await mkdir(path.dirname(params.context.portalDir), { recursive: true });
+
+  if (targetExists && (await pathExists(path.join(params.context.portalDir, '.git')))) {
+    await checkoutExistingGitRepository({
+      repoDir: params.context.portalDir,
+      repo: params.repo,
+      branch: params.branch,
+    });
+    return;
+  }
+
+  if (targetExists) {
+    await rm(params.context.portalDir, { recursive: true, force: true });
+  }
+
+  const tempDir = await mkdtemp(path.join(path.dirname(params.context.portalDir), `.${path.basename(params.context.portalDir)}-git-pull-`));
+  try {
+    const repoDir = await cloneGitSource({
+      repo: params.repo,
+      branch: params.branch,
+      cwd: tempDir,
+      createBranch: true,
+    });
+    await rename(repoDir, params.context.portalDir);
+  } catch (error) {
+    await rm(params.context.portalDir, { recursive: true, force: true });
+    throw error;
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
 async function pullGitPortalSource(params: {
   context: PortalSourceContext;
   force?: boolean;
 }): Promise<void> {
   const git = assertGitSourceConfig(params.context);
+  if (isGitRepositoryRootPath(git.gitPath)) {
+    await pullGitRepositoryRootPortalSource({
+      context: params.context,
+      repo: git.repo,
+      branch: git.branch,
+      force: params.force,
+    });
+    return;
+  }
+
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-portal-git-pull-'));
   try {
     const repoDir = await cloneGitSource({

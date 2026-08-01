@@ -598,11 +598,11 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
     const hasPackageJson = await pathExists(path.join(portalDir, 'package.json'));
     if (hasPackageJson) {
       const runCommand = options.runCommand ?? run;
-      await runPnpmCommand(runCommand, ['install'], {
+      await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
         cwd: portalDir,
         env: buildPortalCommandEnv(),
         envMode: 'replace',
-        errorName: 'pnpm install',
+        errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
       });
     } else {
       options.onSkipInstall?.(

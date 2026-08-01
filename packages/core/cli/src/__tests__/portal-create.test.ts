@@ -201,11 +201,11 @@ test('creates a portal from a local template', async () => {
   expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
     sourceStorage: 'nocobase',
   });
-  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
+  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install',
+    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
   expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
   expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
@@ -279,12 +279,12 @@ test('downloads npm package templates with npm pack when not installed locally',
   expect(runCommand).toHaveBeenNthCalledWith(
     2,
     'pnpm',
-    ['install'],
+    ['install', '--frozen-lockfile', '--trust-lockfile'],
     expect.objectContaining({
       cwd: portalDir,
       env: expect.any(Object),
       envMode: 'replace',
-      errorName: 'pnpm install',
+      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
     }),
   );
 });

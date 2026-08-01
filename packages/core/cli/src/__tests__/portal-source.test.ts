@@ -127,18 +127,39 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
     dependenciesInstalled: true,
   });
 
-  await expect(
-    fsp.readFile(path.join(storagePath, 'portals', 'main', 'customer', 'src', 'index.tsx'), 'utf-8'),
-  ).resolves.toBe('export default null;\n');
-  await expect(
-    fsp.readFile(path.join(storagePath, 'portals', 'main', 'customer', 'portal.config.json'), 'utf-8'),
-  ).resolves.toBe('{\n  "sourceStorage": "nocobase"\n}\n');
-  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
-    cwd: path.join(storagePath, 'portals', 'main', 'customer'),
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await expect(fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe('export default null;\n');
+  await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
+    '{\n  "sourceStorage": "nocobase"\n}\n',
+  );
+  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
+    cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install',
+    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
+
+  await runGit(['init'], portalDir);
+  await fsp.writeFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'keep');
+  await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default "remote again";\n');
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      envName: 'prod',
+      env: createEnv({ storagePath, kind: 'http' }),
+      force: true,
+      installDependencies: false,
+      apiRequest,
+      runCommand,
+    }),
+  ).resolves.toMatchObject({
+    changed: true,
+    installSkipped: true,
+  });
+  await expect(fsp.readFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'utf-8')).resolves.toBe('keep');
+  await expect(fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+    'export default "remote again";\n',
+  );
 });
 
 test('push uploads NocoBase-managed source for http envs and excludes dist', async () => {
@@ -319,6 +340,29 @@ test('pull and push Git-managed source through the configured repository path', 
     `{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "${remoteRepoUrl}",\n    "branch": "main",\n    "path": "customer"\n  }\n}\n`,
   );
 
+  await runGit(['init'], portalDir);
+  await fsp.writeFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'keep');
+  await fsp.writeFile(path.join(seedRepo, 'customer', 'src', 'index.tsx'), 'export default "remote again";\n');
+  await runGit(['add', 'customer/src/index.tsx'], seedRepo);
+  await runGit(['commit', '-m', 'update remote'], seedRepo);
+  await runGit(['push', 'origin', 'main'], seedRepo);
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      env: createEnv({ storagePath, kind: 'http' }),
+      force: true,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    sourceStorage: 'git',
+    changed: true,
+  });
+  await expect(fsp.readFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'utf-8')).resolves.toBe('keep');
+  expect(normalizeLineEndings(await fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8'))).toBe(
+    'export default "remote again";\n',
+  );
+
   await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "local";\n');
   await expect(
     pushPortalSource({
@@ -337,6 +381,89 @@ test('pull and push Git-managed source through the configured repository path', 
   await runGit(['clone', '--branch', 'main', remoteRepo, verifyRepo]);
   expect(normalizeLineEndings(await fsp.readFile(path.join(verifyRepo, 'customer', 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "local";\n',
+  );
+});
+
+test('pull Git-managed source at the repository root as a local Git checkout', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const remoteRepo = await makeTempDir('nocobase-cli-portal-git-root-remote-');
+  const remoteRepoUrl = toFileUrl(remoteRepo);
+  const seedRepo = await makeTempDir('nocobase-cli-portal-git-root-seed-');
+  await runGit(['init', '--bare'], remoteRepo);
+  await runGit(['init', '--initial-branch=main'], seedRepo);
+  await runGit(['config', 'user.name', 'NocoBase Test'], seedRepo);
+  await runGit(['config', 'user.email', 'test@example.com'], seedRepo);
+  await fsp.mkdir(path.join(seedRepo, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(seedRepo, 'src', 'index.tsx'), 'export default "remote root";\n');
+  await fsp.writeFile(path.join(seedRepo, 'package.json'), '{"name":"customer"}\n');
+  await runGit(['add', 'src', 'package.json'], seedRepo);
+  await runGit(['commit', '-m', 'seed root'], seedRepo);
+  await runGit(['remote', 'add', 'origin', remoteRepo], seedRepo);
+  await runGit(['push', 'origin', 'main'], seedRepo);
+
+  const apiRequest = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    data: {
+      data: [
+        {
+          uid: 'customer',
+          title: 'Customer',
+          portalName: 'customer',
+          routePath: '/customer',
+          portalType: 'ai',
+          enabled: true,
+          sourceStorage: 'git',
+          gitRepo: remoteRepoUrl,
+          gitBranch: 'main',
+          gitPath: '',
+        },
+      ],
+    },
+  }));
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      env: createEnv({ storagePath, kind: 'http' }),
+      installDependencies: false,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    sourceStorage: 'git',
+    changed: true,
+    installSkipped: true,
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await expect(fsp.access(path.join(portalDir, '.git'))).resolves.toBe(undefined);
+  expect((await runGit(['rev-parse', '--is-inside-work-tree'], portalDir)).stdout.trim()).toBe('true');
+  expect(normalizeLineEndings(await fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8'))).toBe(
+    'export default "remote root";\n',
+  );
+
+  await fsp.writeFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'keep');
+  await fsp.writeFile(path.join(seedRepo, 'src', 'index.tsx'), 'export default "remote root again";\n');
+  await runGit(['add', 'src/index.tsx'], seedRepo);
+  await runGit(['commit', '-m', 'update root remote'], seedRepo);
+  await runGit(['push', 'origin', 'main'], seedRepo);
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      env: createEnv({ storagePath, kind: 'http' }),
+      force: true,
+      installDependencies: false,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    sourceStorage: 'git',
+    changed: true,
+    installSkipped: true,
+  });
+  await expect(fsp.readFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'utf-8')).resolves.toBe('keep');
+  expect(normalizeLineEndings(await fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8'))).toBe(
+    'export default "remote root again";\n',
   );
 });
 
