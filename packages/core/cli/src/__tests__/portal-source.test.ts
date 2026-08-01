@@ -72,6 +72,14 @@ function portalListData(sourceStorage = 'nocobase') {
   };
 }
 
+function appInfoData(name = 'main') {
+  return {
+    data: {
+      name,
+    },
+  };
+}
+
 async function writePortalConfig(portalDir: string, config: Record<string, unknown> = { sourceStorage: 'nocobase' }) {
   await fsp.writeFile(path.join(portalDir, 'portal.config.json'), `${JSON.stringify(config, null, 2)}\n`);
 }
@@ -96,6 +104,9 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
   await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
   const runCommand = vi.fn().mockResolvedValue(undefined);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
     if (options.operation.pathTemplate === '/multiPortals:list') {
       return { ok: true, status: 200, data: portalListData() };
     }
@@ -162,6 +173,75 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
   );
 });
 
+test('pull uses app:getInfo app name for custom-domain http envs', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const sourceDir = await makeTempDir('nocobase-cli-portal-source-custom-domain-');
+  await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default "demo6";\n');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData('demo6') };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          data: [
+            {
+              uid: 'crm',
+              title: 'CRM',
+              portalName: 'crm',
+              routePath: '/crm',
+              portalType: 'ai',
+              enabled: true,
+              sourceStorage: 'nocobase',
+              gitRepo: '',
+              gitBranch: '',
+              gitPath: '',
+            },
+          ],
+        },
+      };
+    }
+
+    expect(options.operation.pathTemplate).toBe('/multiPortals:pullSource');
+    expect(options.flags.app).toBe('demo6');
+    expect(options.flags.portal).toBe('crm');
+    await tar.create({ cwd: sourceDir, file: String(options.flags.output), gzip: true }, await fsp.readdir(sourceDir));
+    return { ok: true, status: 200, data: { output: options.flags.output } };
+  });
+
+  await expect(
+    pullPortalSource({
+      portal: 'crm',
+      envName: 'prod',
+      env: createEnv({
+        storagePath,
+        kind: 'http',
+        apiBaseUrl: 'https://demo6.v11.demo.nocobase.com/api',
+      }),
+      installDependencies: false,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'demo6',
+    portal: 'crm',
+    portalDir: path.join(storagePath, 'portals', 'demo6', 'crm'),
+    changed: true,
+  });
+
+  await expect(
+    fsp.readFile(path.join(storagePath, 'portals', 'demo6', 'crm', 'src', 'index.tsx'), 'utf-8'),
+  ).resolves.toBe('export default "demo6";\n');
+  await expect(fsp.access(path.join(storagePath, 'portals', 'main', 'crm'))).rejects.toThrow();
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
+    '/app:getInfo',
+    '/multiPortals:list',
+    '/multiPortals:pullSource',
+  ]);
+});
+
 test('push uploads NocoBase-managed source for http envs and excludes dist', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
@@ -173,6 +253,9 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
   await fsp.writeFile(path.join(portalDir, 'src', '._index.tsx'), 'appledouble');
   await writePortalConfig(portalDir);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
     if (options.operation.pathTemplate === '/multiPortals:list') {
       return { ok: true, status: 200, data: portalListData() };
     }
@@ -219,6 +302,7 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
     sourceRevision: 'src_rev1',
   });
   expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
+    '/app:getInfo',
     '/multiPortals:list',
     '/multiPortals:update',
     '/multiPortals:pushSource',
@@ -261,6 +345,9 @@ test('pull can skip dependency installation', async () => {
   await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
   const runCommand = vi.fn().mockResolvedValue(undefined);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
     if (options.operation.pathTemplate === '/multiPortals:list') {
       return { ok: true, status: 200, data: portalListData() };
     }

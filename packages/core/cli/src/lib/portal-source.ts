@@ -104,6 +104,12 @@ const PULL_SOURCE_OPERATION: RequestOperation = {
   ],
 };
 
+const APP_INFO_OPERATION: RequestOperation = {
+  method: 'GET',
+  pathTemplate: '/app:getInfo',
+  parameters: [],
+};
+
 const PUSH_SOURCE_OPERATION: RequestOperation = {
   method: 'POST',
   pathTemplate: '/multiPortals:pushSource',
@@ -359,14 +365,51 @@ function readSourceRevision(data: unknown): string | undefined {
   return readSourceRevision((data as { data?: unknown }).data);
 }
 
+function readAppNameFromInfo(data: unknown): string | undefined {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return undefined;
+  }
+  const direct = (data as { name?: unknown }).name;
+  if (typeof direct === 'string' && direct.trim()) {
+    return direct.trim();
+  }
+  return readAppNameFromInfo((data as { data?: unknown }).data);
+}
+
+function isValidPortalAppName(value: string): boolean {
+  return /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(value);
+}
+
+async function resolvePortalSourceAppFromServer(options: PortalSourceOptions): Promise<string | undefined> {
+  const apiRequest = options.apiRequest ?? executeApiRequest;
+  try {
+    const response = await apiRequest({
+      cliVersion: options.cliVersion ?? '',
+      envName: options.envName,
+      flags: {},
+      operation: APP_INFO_OPERATION,
+    });
+    if (!response.ok) {
+      return undefined;
+    }
+    const appName = readAppNameFromInfo(response.data);
+    return appName && isValidPortalAppName(appName) ? appName : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function resolvePortalSourceContext(options: PortalSourceOptions): Promise<PortalSourceContext> {
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const resolvedApp = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
+  const mode = options.env.kind;
+  const serverApp = mode === 'http' ? await resolvePortalSourceAppFromServer(options) : undefined;
+  const app = serverApp ?? resolvedApp.app;
+  const appPublicPath = resolvedApp.appPublicPath;
   const portalDir = path.join(storagePath, 'portals', app, portal);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
-  const mode = options.env.kind;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
     throw new Error(
