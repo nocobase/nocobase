@@ -83,7 +83,7 @@ test('updates local Portal config and syncs remote options when the remote recor
     }
 
     expect(options.operation.pathTemplate).toBe('/multiPortals:update');
-    expect(options.flags.filterByTk).toBe('customer');
+    expect(options.flags.filter).toEqual({ portalName: 'customer' });
     expect(JSON.parse(String(options.flags.body))).toEqual({
       options: {
         sourceRevision: 'rev0',

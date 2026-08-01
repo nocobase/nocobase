@@ -147,6 +147,61 @@ export async function runPnpmCommand(
   }
 }
 
+function createInstallArgsWithoutTrustLockfile(args: string[]): string[] | undefined {
+  if (!args.includes('install') || !args.includes('--trust-lockfile')) {
+    return undefined;
+  }
+  return args.filter((arg) => arg !== '--trust-lockfile');
+}
+
+function isFriendlyMissingPnpmError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('because the pnpm executable could not be found');
+}
+
+function formatPnpmLabel(args: string[]): string {
+  return `pnpm ${args.join(' ')}`.trim();
+}
+
+export async function resolvePnpmInstallCommand(cwd: string): Promise<{ args: string[]; errorName: string }> {
+  const hasLockfile = await fsp
+    .stat(path.join(cwd, 'pnpm-lock.yaml'))
+    .then((stats) => stats.isFile())
+    .catch(() => false);
+  if (hasLockfile) {
+    const args = ['install', '--frozen-lockfile', '--trust-lockfile'];
+    return {
+      args,
+      errorName: formatPnpmLabel(args),
+    };
+  }
+
+  const args = ['install'];
+  return {
+    args,
+    errorName: formatPnpmLabel(args),
+  };
+}
+
+export async function runPnpmInstallCommand(
+  runCommand: RunCommand,
+  args: string[],
+  options: RunProcessOptions,
+): Promise<void> {
+  try {
+    await runPnpmCommand(runCommand, args, options);
+  } catch (error) {
+    const fallbackArgs = createInstallArgsWithoutTrustLockfile(args);
+    if (!fallbackArgs || isFriendlyMissingPnpmError(error)) {
+      throw error;
+    }
+    await runPnpmCommand(runCommand, fallbackArgs, {
+      ...options,
+      errorName: formatPnpmLabel(fallbackArgs),
+    });
+  }
+}
+
 function isDockerDaemonUnavailableError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return DOCKER_DAEMON_UNAVAILABLE_PATTERNS.some((pattern) => pattern.test(message));

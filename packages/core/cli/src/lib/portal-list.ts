@@ -248,8 +248,9 @@ async function listMultiPortalRecords(params: {
 export async function listPortalWorkspaces(options: PortalListOptions): Promise<PortalListResult> {
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = options.appContext ?? (await resolvePortalAppContext(options));
+  const { app, appPublicPath, portalBaseApp } = options.appContext ?? (await resolvePortalAppContext(options));
   const mode = options.env.kind;
+  const baseApp = portalBaseApp ?? app;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
     throw new Error(
@@ -296,8 +297,8 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
           ? buildPortalAccessUrl(
               apiBaseUrl,
               isAi
-                ? buildPortalBasePath({ app, appPublicPath, portal: portalName })
-                : buildNoCodePortalBasePath({ app, appPublicPath, routePath }),
+                ? buildPortalBasePath({ app: baseApp, appPublicPath, portal: portalName })
+                : buildNoCodePortalBasePath({ app: baseApp, appPublicPath, routePath }),
             )
           : '',
         portalDir,

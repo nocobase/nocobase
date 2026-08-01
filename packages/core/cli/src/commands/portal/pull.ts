@@ -13,7 +13,7 @@ import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { pullPortalSource } from '../../lib/portal-source.js';
-import { printInfo, printSuccess } from '../../lib/ui.js';
+import { printInfo, printSuccess, printWarning } from '../../lib/ui.js';
 
 const portalPullText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalPull.${key}`, values, { fallback });
@@ -104,5 +104,14 @@ export default class PortalPull extends Command {
         `Pulled portal source "${result.portal}" into ${result.portalDir}.`,
       ),
     );
+    if (result.installFailed) {
+      printWarning(
+        portalPullText(
+          'messages.installFailed',
+          { portalDir: result.portalDir },
+          `Dependency installation did not finish successfully. Run \`pnpm install\` manually in ${result.portalDir}.`,
+        ),
+      );
+    }
   }
 }

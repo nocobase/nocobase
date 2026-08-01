@@ -13,9 +13,11 @@ import path from 'node:path';
 import * as tar from 'tar';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
+import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
+  resolvePortalEnvApiUrl,
   resolvePortalStoragePath,
   titleFromPortalSlug,
   validatePortalSlug,
@@ -24,7 +26,7 @@ import {
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import { mergePortalConfigIntoOptions, readPortalConfig, type PortalConfig } from './portal-config.js';
-import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
+import { resolvePnpmInstallCommand, run, runPnpmCommand, runPnpmInstallCommand, type RunCommand } from './run-npm.js';
 
 type ApiRequest = typeof executeApiRequest;
 
@@ -285,9 +287,11 @@ async function syncMultiPortalRecord(params: {
 export async function deployPortalWorkspace(options: PortalDeployOptions): Promise<PortalDeployResult> {
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
+  const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
+  const deployBase = buildPortalBasePath({ app, appPublicPath, portal });
   const portalDir = path.join(storagePath, 'portals', app, portal);
   const distDir = path.join(portalDir, 'dist');
 
@@ -315,13 +319,15 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     apiBaseUrl,
     portalBase,
   });
+  await ensurePortalBuildHtmlReadsEnvOnly(portalDir);
 
   const runCommand = options.runCommand ?? run;
-  await runPnpmCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
+  const installCommand = await resolvePnpmInstallCommand(portalDir);
+  await runPnpmInstallCommand(runCommand, installCommand.args, {
     cwd: portalDir,
     env: buildPortalCommandEnv(),
     envMode: 'replace',
-    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    errorName: installCommand.errorName,
   });
   await runPnpmCommand(runCommand, ['build'], {
     cwd: portalDir,
@@ -335,7 +341,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   await runPnpmCommand(runCommand, ['build:html'], {
     cwd: portalDir,
     env: buildPortalCommandEnv({
-      NOCOBASE_API_URL: apiBaseUrl,
+      NOCOBASE_API_URL: envApiUrl,
       NOCOBASE_PORTAL_BASE: portalBase,
     }),
     envMode: 'replace',
@@ -395,7 +401,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       archivePath: archive.archivePath,
       app,
       portal,
-      portalBase,
+      portalBase: deployBase,
       envName: options.envName,
       cliVersion: options.cliVersion,
       apiRequest: options.apiRequest,

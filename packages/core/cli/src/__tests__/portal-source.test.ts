@@ -102,6 +102,18 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
   await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default null;\n');
   await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  await fsp.mkdir(path.join(sourceDir, 'scripts'), { recursive: true });
+  await fsp.writeFile(
+    path.join(sourceDir, 'scripts', 'build-html.mjs'),
+    [
+      'const getEnvFilesForMode = (mode) => {',
+      '  return [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`].map(',
+      '    (file) => path.join(rootDir, file)',
+      '  );',
+      '};',
+      '',
+    ].join('\n'),
+  );
   const runCommand = vi.fn().mockResolvedValue(undefined);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/app:getInfo') {
@@ -140,14 +152,17 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
 
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await expect(fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe('export default null;\n');
+  const buildHtmlScript = await fsp.readFile(path.join(portalDir, 'scripts', 'build-html.mjs'), 'utf-8');
+  expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
+  expect(buildHtmlScript).not.toContain('.env.local');
   await expect(fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
     '{\n  "sourceStorage": "nocobase"\n}\n',
   );
-  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
+  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    errorName: 'pnpm install',
   });
 
   await runGit(['init'], portalDir);
@@ -228,6 +243,7 @@ test('pull uses app:getInfo app name for custom-domain http envs', async () => {
     app: 'demo6',
     portal: 'crm',
     portalDir: path.join(storagePath, 'portals', 'demo6', 'crm'),
+    portalBase: '/x/crm/',
     changed: true,
   });
 
@@ -240,6 +256,50 @@ test('pull uses app:getInfo app name for custom-domain http envs', async () => {
     '/multiPortals:list',
     '/multiPortals:pullSource',
   ]);
+});
+
+test('pull completes when dependency installation fails', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const sourceDir = await makeTempDir('nocobase-cli-portal-source-install-failure-');
+  await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default "install failed";\n');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  const runCommand = vi.fn(async () => {
+    throw new Error('pnpm install exited with code 1');
+  });
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+
+    expect(options.operation.pathTemplate).toBe('/multiPortals:pullSource');
+    await tar.create({ cwd: sourceDir, file: String(options.flags.output), gzip: true }, await fsp.readdir(sourceDir));
+    return { ok: true, status: 200, data: { output: options.flags.output } };
+  });
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      envName: 'prod',
+      env: createEnv({ storagePath, kind: 'http' }),
+      apiRequest,
+      runCommand,
+    }),
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    changed: true,
+    dependenciesInstalled: false,
+    installSkipped: false,
+    installFailed: true,
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await expect(fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+    'export default "install failed";\n',
+  );
 });
 
 test('push uploads NocoBase-managed source for http envs and excludes dist', async () => {
@@ -260,6 +320,7 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
       return { ok: true, status: 200, data: portalListData() };
     }
     if (options.operation.pathTemplate === '/multiPortals:update') {
+      expect(options.flags.filter).toEqual({ portalName: 'customer' });
       expect(JSON.parse(String(options.flags.body))).toEqual({
         options: {
           sourceStorage: 'nocobase',
@@ -573,6 +634,7 @@ test('push creates configured Git branch and uses repository root by default', a
 
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/multiPortals:update') {
+      expect(options.flags.filter).toEqual({ portalName: 'customer' });
       return { ok: true, status: 200, data: { data: { uid: 'customer' } } };
     }
     return {

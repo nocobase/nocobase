@@ -58,16 +58,19 @@ function expectPortalRecordDestroy(options: RequestOptions, portal = 'customer')
   expect(options).toEqual(
     expect.objectContaining({
       flags: {
-        filterByTk: portal,
+        filter: {
+          portalName: portal,
+        },
       },
       operation: expect.objectContaining({
         method: 'POST',
         pathTemplate: '/multiPortals:destroy',
         parameters: expect.arrayContaining([
           expect.objectContaining({
-            name: 'filterByTk',
-            flagName: 'filterByTk',
+            name: 'filter',
+            flagName: 'filter',
             in: 'query',
+            type: 'object',
             required: true,
           }),
         ]),
@@ -182,7 +185,7 @@ test('http destroy uses env source storage when no local storagePath is configur
   }
 });
 
-test('fails before deleting the record when workspace is missing without force', async () => {
+test('destroys the portal record when the local workspace is missing without force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
   const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
 
@@ -192,9 +195,14 @@ test('fails before deleting the record when workspace is missing without force',
       env: createEnv({ storagePath }),
       apiRequest,
     }),
-  ).rejects.toThrow(/Portal does not exist/);
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    recordDeleted: true,
+    workspaceDeleted: false,
+  });
 
-  expect(apiRequest).not.toHaveBeenCalled();
+  expect(apiRequest).toHaveBeenCalledTimes(1);
+  expectPortalRecordDestroy(apiRequest.mock.calls[0][0]);
 });
 
 test('fails when portal record destroy fails', async () => {

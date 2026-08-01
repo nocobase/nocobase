@@ -52,9 +52,10 @@ const DESTROY_PORTAL_OPERATION: RequestOperation = {
   pathTemplate: '/multiPortals:destroy',
   parameters: [
     {
-      name: 'filterByTk',
-      flagName: 'filterByTk',
+      name: 'filter',
+      flagName: 'filter',
       in: 'query',
+      type: 'object',
       required: true,
     },
   ],
@@ -94,7 +95,9 @@ async function destroyMultiPortalRecord(params: {
     cliVersion: params.cliVersion ?? '',
     envName: params.envName,
     flags: {
-      filterByTk: params.portal,
+      filter: {
+        portalName: params.portal,
+      },
     },
     operation: DESTROY_PORTAL_OPERATION,
   });
@@ -119,8 +122,8 @@ async function destroyMultiPortalRecord(params: {
 export async function destroyPortalWorkspace(options: PortalDestroyOptions): Promise<PortalDestroyResult> {
   const portal = validatePortalSlug(options.portal);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalParentDir = path.join(storagePath, 'portals', app);
   const portalDir = path.join(portalParentDir, portal);
   const mode = options.env.kind;
@@ -139,15 +142,6 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   assertPortalDirIsInsideParent(portalParentDir, portalDir);
 
   const workspaceExists = await pathExists(portalDir);
-  if (!workspaceExists && !options.force) {
-    throw new Error(
-      portalDestroyText(
-        'errors.workspaceMissing',
-        { portalDir, portal },
-        `Portal does not exist: ${portalDir}\nPass --force to ignore missing local files.`,
-      ),
-    );
-  }
 
   const recordDeleted = await destroyMultiPortalRecord({
     portal,

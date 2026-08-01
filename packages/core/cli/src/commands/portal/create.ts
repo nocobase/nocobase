@@ -13,7 +13,7 @@ import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { createPortalWorkspace } from '../../lib/portal-create.js';
-import { printInfo, printSuccess } from '../../lib/ui.js';
+import { printInfo, printSuccess, printWarning } from '../../lib/ui.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const portalCreateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
@@ -134,5 +134,14 @@ export default class PortalCreate extends Command {
         `Source storage: ${result.sourceStorage}`,
       ),
     );
+    if (result.installFailed) {
+      printWarning(
+        portalCreateText(
+          'messages.installFailed',
+          { portalDir: result.portalDir },
+          `Dependency installation did not finish successfully. Run \`pnpm install\` manually in ${result.portalDir}.`,
+        ),
+      );
+    }
   }
 }

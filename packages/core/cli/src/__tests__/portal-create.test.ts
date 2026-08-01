@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
 import { afterEach, expect, test, vi } from 'vitest';
+import type { RequestOptions } from '../lib/api-client.js';
 import {
   buildPortalBasePath,
   createPortalWorkspace,
@@ -55,6 +56,18 @@ async function writeTemplate(
   }
   await fsp.mkdir(path.join(templateDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(templateDir, 'src', 'index.tsx'), 'export default null;\n');
+  await fsp.mkdir(path.join(templateDir, 'scripts'), { recursive: true });
+  await fsp.writeFile(
+    path.join(templateDir, 'scripts', 'build-html.mjs'),
+    [
+      'const getEnvFilesForMode = (mode) => {',
+      '  return [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`].map(',
+      '    (file) => path.join(rootDir, file)',
+      '  );',
+      '};',
+      '',
+    ].join('\n'),
+  );
   await fsp.mkdir(path.join(templateDir, '.git'), { recursive: true });
   await fsp.writeFile(path.join(templateDir, '.git', 'HEAD'), 'ref: refs/heads/main\n');
   await fsp.mkdir(path.join(templateDir, 'node_modules', 'stale'), { recursive: true });
@@ -189,6 +202,8 @@ test('creates a portal from a local template', async () => {
     apiBaseUrl: 'http://localhost:13000/console/api/__app/crm',
     portalBase: '/console/x/apps/crm/customer/',
     installSkipped: false,
+    dependenciesInstalled: true,
+    installFailed: false,
   });
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.git'))).rejects.toThrow();
@@ -204,14 +219,17 @@ test('creates a portal from a local template', async () => {
     'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n' +
       'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
   );
+  const buildHtmlScript = await fsp.readFile(path.join(portalDir, 'scripts', 'build-html.mjs'), 'utf-8');
+  expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
+  expect(buildHtmlScript).not.toContain('.env.local');
   expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
     sourceStorage: 'nocobase',
   });
-  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--no-frozen-lockfile', '--trust-lockfile'], {
+  expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),
     envMode: 'replace',
-    errorName: 'pnpm install --no-frozen-lockfile --trust-lockfile',
+    errorName: 'pnpm install',
   });
   expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
   expect(runCommand.mock.calls[0]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
@@ -238,6 +256,73 @@ test('creates a portal with frozen pnpm install when the template includes a loc
     envMode: 'replace',
     errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
+});
+
+test('creates a custom-domain sub-app portal with a root portal base', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const runCommand = vi.fn().mockResolvedValue(undefined);
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: { data: { name: 'demo6' } } };
+    }
+    return { ok: true, status: 200, data: { data: { uid: 'crm' } } };
+  });
+  await writeTemplate(templatePath);
+
+  await expect(
+    createPortalWorkspace({
+      portal: 'crm',
+      template: templatePath,
+      envName: 'prod',
+      env: createEnv({
+        kind: 'http',
+        storagePath,
+        apiBaseUrl: 'https://demo6.v11.demo.nocobase.com/api',
+      }),
+      runCommand,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'demo6',
+    portal: 'crm',
+    portalDir: path.join(storagePath, 'portals', 'demo6', 'crm'),
+    portalBase: '/x/crm/',
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'demo6', 'crm');
+  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
+    'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
+  );
+  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
+    'NOCOBASE_API_URL=https://demo6.v11.demo.nocobase.com/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
+  );
+});
+
+test('creates a portal even when pnpm install fails', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const runCommand = vi.fn(async () => {
+    throw new Error('pnpm install exited with code 1');
+  });
+  await writeTemplate(templatePath);
+
+  await expect(
+    createPortalWorkspace({
+      portal: 'customer',
+      template: templatePath,
+      env: createEnv({ storagePath }),
+      runCommand,
+    }),
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    installSkipped: false,
+    dependenciesInstalled: false,
+    installFailed: true,
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
 });
 
 test('skips pnpm install when package.json is missing', async () => {
@@ -308,12 +393,12 @@ test('downloads npm package templates with npm pack when not installed locally',
   expect(runCommand).toHaveBeenNthCalledWith(
     2,
     'pnpm',
-    ['install', '--no-frozen-lockfile', '--trust-lockfile'],
+    ['install'],
     expect.objectContaining({
       cwd: portalDir,
       env: expect.any(Object),
       envMode: 'replace',
-      errorName: 'pnpm install --no-frozen-lockfile --trust-lockfile',
+      errorName: 'pnpm install',
     }),
   );
 });

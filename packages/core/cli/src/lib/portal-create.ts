@@ -21,6 +21,7 @@ import { executeApiRequest, type RequestOperation } from './api-client.js';
 import type { Env } from './auth-store.js';
 import { resolveEnvRelativePath } from './cli-home.js';
 import { translateCli } from './cli-locale.js';
+import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import {
   buildPortalConfig,
@@ -29,7 +30,7 @@ import {
   type PortalConfig,
   type PortalSourceStorage,
 } from './portal-config.js';
-import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
+import { resolvePnpmInstallCommand, run, runPnpmInstallCommand, type RunCommand } from './run-npm.js';
 
 const DEFAULT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const DEFAULT_PORTAL_APP_NAME = 'main';
@@ -66,6 +67,7 @@ export type PortalCreateOptions = {
 export type ResolvedPortalApp = {
   app: string;
   appPublicPath: string;
+  portalBaseApp?: string;
 };
 
 export type PortalAppContextOptions = {
@@ -91,6 +93,8 @@ export type PortalCreateResult = {
   portalBase: string;
   template: ResolvedPortalTemplate;
   installSkipped: boolean;
+  dependenciesInstalled: boolean;
+  installFailed: boolean;
   sourceStorage: PortalSourceStorage;
 };
 
@@ -171,20 +175,6 @@ function decodeAppSegment(value: string): string {
 
 function safeTempPrefix(parentDir: string, portal: string): string {
   return path.join(parentDir, `.${portal}-create-`);
-}
-
-async function getPortalInstallCommand(portalDir: string): Promise<{ args: string[]; errorName: string }> {
-  if (await pathExists(path.join(portalDir, 'pnpm-lock.yaml'))) {
-    return {
-      args: ['install', '--frozen-lockfile', '--trust-lockfile'],
-      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
-    };
-  }
-
-  return {
-    args: ['install', '--no-frozen-lockfile', '--trust-lockfile'],
-    errorName: 'pnpm install --no-frozen-lockfile --trust-lockfile',
-  };
 }
 
 function assertPortalDirIsInsideParent(parentDir: string, portalDir: string): void {
@@ -560,13 +550,17 @@ export async function resolvePortalAppContext(options: PortalAppContextOptions):
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const resolvedApp = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
   if (options.env.kind !== 'http') {
-    return resolvedApp;
+    return {
+      ...resolvedApp,
+      portalBaseApp: resolvedApp.app,
+    };
   }
 
   const serverApp = await resolvePortalAppFromServer(options);
   return {
     app: serverApp ?? resolvedApp.app,
     appPublicPath: resolvedApp.appPublicPath,
+    portalBaseApp: resolvedApp.app,
   };
 }
 
@@ -624,8 +618,8 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalParentDir = path.join(storagePath, 'portals', app);
   const portalDir = path.join(portalParentDir, portal);
 
@@ -651,6 +645,7 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
 
   try {
     await copyTemplate(template.dir, tempDir);
+    await ensurePortalBuildHtmlReadsEnvOnly(tempDir);
     await writeFile(
       path.join(tempDir, '.env'),
       [`NOCOBASE_API_URL=${envApiUrl}`, `NOCOBASE_PORTAL_BASE=${portalBase}`].join('\n') + '\n',
@@ -671,15 +666,22 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
     shouldCleanupTempDir = false;
 
     const hasPackageJson = await pathExists(path.join(portalDir, 'package.json'));
+    let dependenciesInstalled = false;
+    let installFailed = false;
     if (hasPackageJson) {
       const runCommand = options.runCommand ?? run;
-      const installCommand = await getPortalInstallCommand(portalDir);
-      await runPnpmCommand(runCommand, installCommand.args, {
-        cwd: portalDir,
-        env: buildPortalCommandEnv(),
-        envMode: 'replace',
-        errorName: installCommand.errorName,
-      });
+      const installCommand = await resolvePnpmInstallCommand(portalDir);
+      try {
+        await runPnpmInstallCommand(runCommand, installCommand.args, {
+          cwd: portalDir,
+          env: buildPortalCommandEnv(),
+          envMode: 'replace',
+          errorName: installCommand.errorName,
+        });
+        dependenciesInstalled = true;
+      } catch {
+        installFailed = true;
+      }
     } else {
       options.onSkipInstall?.(
         portalCreateText(
@@ -710,6 +712,8 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
       portalBase,
       template,
       installSkipped: !hasPackageJson,
+      dependenciesInstalled,
+      installFailed,
       sourceStorage: portalConfig.sourceStorage,
     };
   } finally {

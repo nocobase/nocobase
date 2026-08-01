@@ -292,6 +292,7 @@ test('http list uses app:getInfo app name for custom-domain local paths', async 
       expect.objectContaining({
         portalName: 'crm',
         portalDir,
+        portalUrl: 'https://demo6.v11.demo.nocobase.com/x/crm/',
         localSynced: true,
       }),
     ],

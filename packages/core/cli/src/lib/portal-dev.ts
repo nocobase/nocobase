@@ -87,8 +87,8 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
     );
   }
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalDir = path.join(storagePath, 'portals', app, portal);
 
   if (!(await pathExists(portalDir))) {
