@@ -202,6 +202,56 @@ describe('workflow > actions > workflows', () => {
     });
   });
 
+  describe('execute', () => {
+    it('does not create a revision when autoRevision is string zero', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const { body, status } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        autoRevision: '0',
+        values: {
+          data: post.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data).not.toHaveProperty('newVersionId');
+      await expect(WorkflowRepo.count({ filter: { key: workflow.key } })).resolves.toBe(1);
+    });
+
+    it('creates a revision when autoRevision is string one', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const { body, status } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        autoRevision: '1',
+        values: {
+          data: post.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data.newVersionId).toBeDefined();
+      await expect(WorkflowRepo.count({ filter: { key: workflow.key } })).resolves.toBe(2);
+    });
+  });
+
   describe('destroy', () => {
     it('cascading destroy all revisions, nodes, but not executions and jobs', async () => {
       const workflow = await WorkflowModel.create({
