@@ -173,7 +173,7 @@ function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortal
 /**
  * 打开新建表单。
  *
- * 新建默认落在 AI portal 上；需要 no-code 表单（布局选择、/v/ 路径）的用例把 `portalType`
+ * 新建默认落在 AI mode 上；需要 no-code 表单（布局选择、/v/ 路径）的用例把 `portalType`
  * 显式传成 `'no-code'`，helper 替它点一下单选。
  */
 async function openCreatePortalForm(
@@ -222,7 +222,7 @@ async function openCreatePortalForm(
   const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
 
   if (portalType === 'no-code') {
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
   }
 
   return {
@@ -374,13 +374,13 @@ describe('plugin-multi-portal settings page', () => {
   );
 
   it('should keep portal wording user-facing translations consistent', () => {
-    expect(enUS['Add portal']).toBe('Add portal');
+    expect(enUS['Add portal']).toBe('Add Portal');
     expect(enUS['Edit portal']).toBe('Edit portal');
     expect(enUS['Delete portal']).toBe('Delete portal');
     expect(enUS.Desktop).toBe('Desktop');
-    expect(enUS['Portal type']).toBe('Portal type');
-    expect(enUS['No-code portal']).toBe('No-code portal');
-    expect(enUS['AI portal']).toBe('AI portal');
+    expect(enUS['Development mode']).toBe('Development mode');
+    expect(enUS['No-code mode']).toBe('No-code mode');
+    expect(enUS['AI mode']).toBe('AI mode');
     expect(enUS.Icon).toBe('Icon');
     expect(enUS.Mobile).toBe('Mobile');
     expect(enUS['Multi-portal']).toBe('Portal manager');
@@ -388,22 +388,44 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
       'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
     );
-    expect(enUS['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
-      'Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>',
+    expect(enUS['Build business systems through visual configuration.']).toBe(
+      'Build business systems through visual configuration.',
     );
-    expect(enUS['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>']).toBe(
-      'Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>',
+    expect(
+      enUS[
+        'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.'
+      ],
+    ).toBe(
+      'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
     );
-    expect(enUS['Source storage']).toBe('Source storage');
+    expect(enUS['Build complete business systems with AI agents and code.']).toBe(
+      'Build complete business systems with AI agents and code.',
+    );
+    expect(
+      enUS[
+        'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.'
+      ],
+    ).toBe(
+      'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
+    );
+    expect(enUS['Source management']).toBe('Source management');
+    expect(enUS['Select how the application source code is stored and managed.']).toBe(
+      'Select how the application source code is stored and managed.',
+    );
     expect(enUS.NocoBase).toBe('NocoBase');
     expect(enUS.Git).toBe('Git');
     expect(enUS['Git repository URL']).toBe('Git repository URL');
     expect(enUS['Git branch']).toBe('Git branch');
     expect(enUS['Git path']).toBe('Git path');
-    expect(enUS['Manage portal source code in NocoBase.']).toBe('Manage portal source code in NocoBase.');
-    expect(enUS['Manage portal source code in a Git repository.']).toBe(
-      'Manage portal source code in a Git repository.',
+    expect(enUS['Store and manage application source code in NocoBase.']).toBe(
+      'Store and manage application source code in NocoBase.',
     );
+    expect(enUS['Store and manage application source code in a Git repository.']).toBe(
+      'Store and manage application source code in a Git repository.',
+    );
+    expect(enUS['Used to generate the portal URL.']).toBe('Used to generate the portal URL.');
+    expect(enUS['Display name of the portal.']).toBe('Display name of the portal.');
+    expect(enUS['Example:']).toBe('Example:');
     expect(enUS['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
       'Directory inside the Git repository for this portal. Leave empty for the root.',
     );
@@ -429,9 +451,9 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Edit portal']).toBe('编辑门户');
     expect(zhCN['Delete portal']).toBe('删除门户');
     expect(zhCN.Desktop).toBe('桌面端');
-    expect(zhCN['Portal type']).toBe('门户类型');
-    expect(zhCN['No-code portal']).toBe('无代码门户');
-    expect(zhCN['AI portal']).toBe('AI 门户');
+    expect(zhCN['Development mode']).toBe('开发模式');
+    expect(zhCN['No-code mode']).toBe('无代码模式');
+    expect(zhCN['AI mode']).toBe('AI 模式');
     expect(zhCN.Icon).toBe('图标');
     expect(zhCN.Mobile).toBe('移动端');
     expect(zhCN['Multi-portal']).toBe('门户管理');
@@ -444,20 +466,36 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
       '门户名称只能包含小写英文字母、数字、连字符和下划线',
     );
-    expect(zhCN['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
-      '通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>',
+    expect(zhCN['Build business systems through visual configuration.']).toBe('通过可视化界面配置开发业务系统。');
+    expect(
+      zhCN[
+        'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.'
+      ],
+    ).toBe('用户通过拖拽和配置方式创建应用，AI 可以协助创建、调整和优化数据模型、界面、工作流等配置。');
+    expect(zhCN['Build complete business systems with AI agents and code.']).toBe(
+      '使用 AI Agent 和代码能力开发完整业务系统。',
     );
-    expect(zhCN['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>']).toBe(
-      '通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>',
+    expect(
+      zhCN[
+        'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.'
+      ],
+    ).toBe('用户通过自然语言描述需求，AI Agent 负责创建和修改应用，包括界面、数据模型、业务逻辑、角色权限等。');
+    expect(zhCN['Source management']).toBe('源码管理');
+    expect(zhCN['Select how the application source code is stored and managed.']).toBe(
+      '选择应用源码的存储和管理方式。',
     );
-    expect(zhCN['Source storage']).toBe('源码存储');
     expect(zhCN.NocoBase).toBe('NocoBase');
     expect(zhCN.Git).toBe('Git');
     expect(zhCN['Git repository URL']).toBe('Git 仓库 URL');
     expect(zhCN['Git branch']).toBe('Git 分支');
     expect(zhCN['Git path']).toBe('Git 路径');
-    expect(zhCN['Manage portal source code in NocoBase.']).toBe('在 NocoBase 中管理门户源码。');
-    expect(zhCN['Manage portal source code in a Git repository.']).toBe('在 Git 仓库中管理门户源码。');
+    expect(zhCN['Store and manage application source code in NocoBase.']).toBe('在 NocoBase 中存储和管理应用源码。');
+    expect(zhCN['Store and manage application source code in a Git repository.']).toBe(
+      '在 Git 仓库中存储和管理应用源码。',
+    );
+    expect(zhCN['Used to generate the portal URL.']).toBe('用于生成门户访问地址。');
+    expect(zhCN['Display name of the portal.']).toBe('门户显示名称。');
+    expect(zhCN['Example:']).toBe('示例：');
     expect(zhCN['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
       '该门户在 Git 仓库内的目录，留空表示仓库根目录。',
     );
@@ -840,21 +878,44 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).queryByLabelText('UID')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Access path')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Portal name')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Portal type')).toBeInTheDocument();
-    // 新建默认就是 AI portal，源码位置不再单独选，改由 git 地址填没填决定。
-    expect(within(dialog).getByRole('radio', { name: /AI portal/ })).toBeChecked();
-    expect(within(dialog).getByRole('radio', { name: /No-code portal/ })).not.toBeChecked();
+    expect(within(dialog).getByText('Used to generate the portal URL.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Example: /x/<name>')).toBeInTheDocument();
+    expect(within(dialog).getByText('Display name of the portal.')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Development mode')).toBeInTheDocument();
+    // 新建默认就是 AI mode，源码位置不再单独选，改由 git 地址填没填决定。
+    expect(within(dialog).getByRole('radio', { name: /AI mode/ })).toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: /No-code mode/ })).not.toBeChecked();
+    expect(within(dialog).getByText('Build complete business systems with AI agents and code.')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
+      ),
+    ).toBeInTheDocument();
     expect(
       within(dialog)
-        .getByRole('radio', { name: /No-code portal/ })
+        .getByRole('radio', { name: /No-code mode/ })
         .closest('label'),
     ).toHaveStyle('align-items: flex-start');
     // 源码存储默认 NocoBase，git 字段要选中 Git 才出现；设备两种类型都要选。
-    expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Select how the application source code is stored and managed.'),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText('Store and manage application source code in NocoBase.')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Store and manage application source code in a Git repository.'),
+    ).toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
-    expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
+    expect(within(dialog).getByText('Example: /v/<name>')).toBeInTheDocument();
+    expect(within(dialog).getByText('Build business systems through visual configuration.')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
     expect(within(dialog).getByText('Cover')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Icon')).not.toBeRequired();
@@ -864,7 +925,7 @@ describe('plugin-multi-portal settings page', () => {
       within(dialog).getByText('When disabled, this portal will not be registered or accessible.'),
     ).toBeInTheDocument();
     expect(within(dialog).queryByText('UI layout')).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/permission/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Routes permissions')).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith({
@@ -1006,7 +1067,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     await user.type(within(dialog).getByLabelText('Title'), 'Admin portal');
     await user.type(within(dialog).getByLabelText('Portal name'), ' admin ');
     await user.type(within(dialog).getByLabelText('Icon'), 'homeoutlined');
@@ -1039,7 +1100,7 @@ describe('plugin-multi-portal settings page', () => {
     await user.type(within(dialog).getByLabelText('Title'), 'Developer portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'developer-portal');
     // 源码存储默认 NocoBase，git 相关字段要选中 Git 之后才出现。
-    expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
     expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
@@ -1846,7 +1907,7 @@ describe('plugin-multi-portal settings page', () => {
     // 门户名和类型建好之后就是身份（名字在访问路径里、类型决定 /v 还是 /x），编辑态一律锁死；
     // legacy default uid 的区别在于其余字段仍然可改。
     expect(within(dialog).getByLabelText('Portal name')).toBeDisabled();
-    expect(within(dialog).getByLabelText('Portal type')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Development mode')).toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
     expect(within(dialog).getByLabelText('Device')).toBeDisabled();
   });
@@ -1963,7 +2024,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     await user.type(within(dialog).getByLabelText('Title'), 'Bad portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'foo.bar');
 
@@ -2034,7 +2095,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     await user.type(within(dialog).getByLabelText('Title'), 'Duplicate portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'duplicate-portal');
 
