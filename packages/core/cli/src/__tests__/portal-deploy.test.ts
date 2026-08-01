@@ -487,7 +487,7 @@ test('http deploy uses root portal base for custom-domain sub-apps', async () =>
       flags: expect.objectContaining({
         app: 'demo6',
         portal: 'crm',
-        basePath: '/x/crm/',
+        basePath: '/x/apps/demo6/crm/',
       }),
     }),
   );
