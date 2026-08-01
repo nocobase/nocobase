@@ -139,15 +139,6 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   assertPortalDirIsInsideParent(portalParentDir, portalDir);
 
   const workspaceExists = await pathExists(portalDir);
-  if (!workspaceExists && !options.force) {
-    throw new Error(
-      portalDestroyText(
-        'errors.workspaceMissing',
-        { portalDir, portal },
-        `Portal does not exist: ${portalDir}\nPass --force to ignore missing local files.`,
-      ),
-    );
-  }
 
   const recordDeleted = await destroyMultiPortalRecord({
     portal,
