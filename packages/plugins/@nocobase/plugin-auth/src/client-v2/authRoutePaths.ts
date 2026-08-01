@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-type AuthRouteName = 'auth.signin' | 'auth.signup' | 'auth.forgotPassword' | 'auth.resetPassword';
+export type AuthRouteName = 'auth.signin' | 'auth.signup' | 'auth.forgotPassword' | 'auth.resetPassword';
 
 const authRouteFallbacks: Record<AuthRouteName, string> = {
   'auth.signin': '/signin',

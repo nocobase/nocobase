@@ -200,6 +200,90 @@ describe('plugin-users client-v2', () => {
     );
   });
 
+  it('should keep the current no-code Portal scope after signing out from a sub-app', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        origin: 'http://localhost:20000',
+        pathname: '/nocobase/v2/apps/demo/customer/orders',
+        search: '?tab=recent',
+        hash: '#summary',
+        replace,
+      },
+    });
+
+    const app = createMockClient({ publicPath: '/nocobase/v2/' });
+    app.router.setBasename('/nocobase/v2/apps/demo/');
+    app.router.add('customerPortal', {
+      path: '/customer/*',
+      authCheck: true,
+    });
+    app.router.add('customerPortalSignin', {
+      path: '/customer/signin',
+      skipAuthCheck: true,
+    });
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    await app.flowEngine.getModelClassAsync('SignOutItemModel');
+    const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as {
+      onClick: () => Promise<void>;
+    };
+    app.apiClient.auth.signOut = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          redirect: '/nocobase/v2/apps/demo/signin',
+        },
+      },
+    });
+
+    await model.onClick();
+
+    expect(replace).toHaveBeenCalledWith(
+      '/nocobase/v2/apps/demo/customer/signin?redirect=%2Fnocobase%2Fv2%2Fapps%2Fdemo%2Fcustomer%2Forders%3Ftab%3Drecent%23summary',
+    );
+  });
+
+  it('should keep the current no-code Portal scope after signing out from the main app', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        origin: 'http://localhost:20000',
+        pathname: '/nocobase/v2/customer/orders',
+        search: '',
+        hash: '',
+        replace,
+      },
+    });
+
+    const app = createMockClient({ publicPath: '/nocobase/v2/' });
+    app.router.setBasename('/nocobase/v2/');
+    app.router.add('customerPortal', {
+      path: '/customer/*',
+      authCheck: true,
+    });
+    app.router.add('customerPortalSignin', {
+      path: '/customer/signin',
+      skipAuthCheck: true,
+    });
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    await app.flowEngine.getModelClassAsync('SignOutItemModel');
+    const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as {
+      onClick: () => Promise<void>;
+    };
+    app.apiClient.auth.signOut = vi.fn().mockResolvedValue({ data: { data: {} } });
+
+    await model.onClick();
+
+    expect(replace).toHaveBeenCalledWith('/nocobase/v2/customer/signin?redirect=%2Fnocobase%2Fv2%2Fcustomer%2Forders');
+  });
+
   it('should return a standalone Settings runtime to its own signin document', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {

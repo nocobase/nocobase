@@ -46,6 +46,7 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
       authTypes: {
         getEntities: () => [],
       },
+      getAuthRedirectFallbackPath: (pathname: string) => (pathname === '/customer/signin' ? '/customer' : '/'),
     }),
   };
 });
@@ -83,6 +84,24 @@ describe('SignInPage', () => {
     );
 
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('normalizes empty redirect to the current scoped Portal root inside a sub-app', () => {
+    mockApp.basename = '/v/apps/sub-app/';
+
+    render(
+      <MemoryRouter initialEntries={['/customer/signin?redirect=']}>
+        <SignInPage />
+      </MemoryRouter>,
+    );
+
+    expect(navigateMock).toHaveBeenCalledWith(
+      {
+        pathname: '/customer/signin',
+        search: '?redirect=%2Fv%2Fapps%2Fsub-app%2Fcustomer',
+      },
+      { replace: true },
+    );
   });
 
   it('normalizes empty redirect to the current standalone Settings root', () => {

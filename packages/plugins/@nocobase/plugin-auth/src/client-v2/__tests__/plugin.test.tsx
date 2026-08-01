@@ -56,6 +56,44 @@ describe('plugin-auth client-v2', () => {
     ]);
   });
 
+  it('should register and resolve scoped signin and signup routes', async () => {
+    const app = createMockClient({
+      plugins: [PluginAuthClientV2 as unknown as typeof Plugin],
+    });
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+
+    const plugin = app.pm.get(PluginAuthClientV2);
+    plugin.registerAuthRouteScope('customerPortal', '/customer/');
+    plugin.registerAuthRouteScope('legacyPortal', '/legacy', {
+      signin: 'legacyPortalSignin',
+      signup: 'legacyPortalSignup',
+    });
+
+    expect(app.router.get('auth.customerPortalSignin')).toMatchObject({
+      path: '/customer/signin',
+      skipAuthCheck: true,
+    });
+    expect(app.router.get('auth.customerPortalSignup')).toMatchObject({
+      path: '/customer/signup',
+      skipAuthCheck: true,
+    });
+    expect(app.router.get('auth.legacyPortalSignin')?.path).toBe('/legacy/signin');
+    expect(app.router.get('auth.legacyPortalSignup')?.path).toBe('/legacy/signup');
+    expect(app.router.matchRoutes('/customer/signup')?.map((match) => match.route.id)).toEqual([
+      'auth',
+      'auth.customerPortalSignup',
+    ]);
+    expect(plugin.getAuthRoutePath('/customer/signin', 'auth.signup')).toBe('/customer/signup');
+    expect(plugin.getAuthRoutePath('/customer/signup', 'auth.signin')).toBe('/customer/signin');
+    expect(plugin.getAuthRoutePath('/signin', 'auth.signup')).toBe('/signup');
+    expect(plugin.isScopedAuthRoute('/customer/signin')).toBe(true);
+    expect(plugin.isScopedAuthRoute('/customer/signup')).toBe(true);
+    expect(plugin.isScopedAuthRoute('/signin')).toBe(false);
+    expect(plugin.getAuthRedirectFallbackPath('/customer/signin')).toBe('/customer');
+    expect(plugin.getAuthRedirectFallbackPath('/signin')).toBe('/');
+  });
+
   it('should keep runtime 401 redirects inside an explicitly registered Portal signin route', async () => {
     const navigateSpy = vi.fn();
     const app = createMockClient({

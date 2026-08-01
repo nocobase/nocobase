@@ -15,15 +15,19 @@ import { fetchMultiPortals, registerMultiPortals, type MultiPortalRuntimeRecord 
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
 import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';
 
-type SignInRouteRegistrar = {
-  registerSignInRoute: (name: string, path: string) => void;
+type AuthRouteScopeRegistrar = {
+  registerAuthRouteScope?: (name: string, basePath: string, routeNames?: { signin?: string; signup?: string }) => void;
+  registerSignInRoute?: (name: string, path: string) => void;
 };
 
-function registerMultiPortalSignInRoutes(
-  authPlugin: SignInRouteRegistrar | undefined,
+function registerMultiPortalAuthRouteScopes(
+  authPlugin: AuthRouteScopeRegistrar | undefined,
   records: MultiPortalRuntimeRecord[],
 ) {
-  if (!authPlugin || typeof authPlugin.registerSignInRoute !== 'function') {
+  if (
+    !authPlugin ||
+    (typeof authPlugin.registerAuthRouteScope !== 'function' && typeof authPlugin.registerSignInRoute !== 'function')
+  ) {
     return;
   }
 
@@ -31,9 +35,17 @@ function registerMultiPortalSignInRoutes(
     if (!record.enabled || (record.portalType || 'no-code') !== 'no-code') {
       continue;
     }
-    const routeName = `multiPortalSignin_${encodeURIComponent(record.uid).replace(/\./g, '%2E')}`;
-    const routePath = `${record.routePath.replace(/\/+$/g, '')}/signin`;
-    authPlugin.registerSignInRoute(routeName, routePath);
+    const encodedUid = encodeURIComponent(record.uid).replace(/\./g, '%2E');
+    const routeName = `multiPortal_${encodedUid}`;
+    const signinRouteName = `multiPortalSignin_${encodedUid}`;
+    if (typeof authPlugin.registerAuthRouteScope === 'function') {
+      authPlugin.registerAuthRouteScope(routeName, record.routePath, {
+        signin: signinRouteName,
+        signup: `multiPortalSignup_${encodedUid}`,
+      });
+    } else {
+      authPlugin.registerSignInRoute?.(signinRouteName, `${record.routePath.replace(/\/+$/g, '')}/signin`);
+    }
   }
 }
 
@@ -102,7 +114,7 @@ export class PluginMultiPortalClientV2 extends Plugin {
     try {
       const records = await fetchMultiPortals(this.app.apiClient);
       registerMultiPortals(this.app, records);
-      registerMultiPortalSignInRoutes(this.app.pm.get<SignInRouteRegistrar>('@nocobase/plugin-auth'), records);
+      registerMultiPortalAuthRouteScopes(this.app.pm.get<AuthRouteScopeRegistrar>('@nocobase/plugin-auth'), records);
     } catch (error) {
       console.error('[NocoBase] Failed to register multi-portals.', error);
       runtimeRegistrationFailed = true;

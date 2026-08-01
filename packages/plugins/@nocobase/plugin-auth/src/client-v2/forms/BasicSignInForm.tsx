@@ -8,16 +8,19 @@
  */
 
 import { Alert, Button, Form, Input } from 'antd';
-import { useApp } from '@nocobase/client-v2';
+import { useApp, usePlugin } from '@nocobase/client-v2';
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { type Authenticator } from '../authenticator';
 import { useAuthTranslation } from '../locale';
 import { useSignIn } from '../hooks';
 import { getAuthRoutePath } from '../authRoutePaths';
+import PluginAuthClientV2 from '../plugin';
 
 export default function BasicSignInForm({ authenticator }: { authenticator: Authenticator }) {
   const app = useApp();
+  const authPlugin = usePlugin(PluginAuthClientV2);
+  const location = useLocation();
   const { t } = useAuthTranslation();
   const [form] = Form.useForm();
   const [errorMessage, setErrorMessage] = useState('');
@@ -25,8 +28,15 @@ export default function BasicSignInForm({ authenticator }: { authenticator: Auth
   const signIn = useSignIn(authenticator.name);
   const allowSignUp = !!authenticator?.options?.allowSignUp;
   const showForgotPassword = !!authenticator?.options?.enableResetPassword;
-  const signupPath = getAuthRoutePath(app, 'auth.signup');
+  const signupPath = authPlugin.getAuthRoutePath(location.pathname, 'auth.signup');
   const forgotPasswordPath = getAuthRoutePath(app, 'auth.forgotPassword');
+  const signupParams = new URLSearchParams({ name: authenticator.name });
+  const redirect = authPlugin.isScopedAuthRoute(location.pathname)
+    ? new URLSearchParams(location.search).get('redirect')
+    : null;
+  if (redirect !== null) {
+    signupParams.set('redirect', redirect);
+  }
 
   return (
     <Form
@@ -77,7 +87,7 @@ export default function BasicSignInForm({ authenticator }: { authenticator: Auth
         </Button>
       </Form.Item>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        {allowSignUp ? <Link to={`${signupPath}?name=${authenticator.name}`}>{t('Create an account')}</Link> : null}
+        {allowSignUp ? <Link to={`${signupPath}?${signupParams}`}>{t('Create an account')}</Link> : null}
         {showForgotPassword ? (
           <Link to={`${forgotPasswordPath}?name=${authenticator.name}`}>{t('Forgot password')}</Link>
         ) : null}

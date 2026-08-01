@@ -1132,7 +1132,14 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         <Form.Item
           name="portalName"
           label={t('Portal name')}
-          extra={t('Used in the access path.')}
+          extra={
+            <>
+              <div>{t('Used to generate the portal URL.')}</div>
+              <div>
+                {t('Example:')} {`${accessPathPrefix}<name>`}
+              </div>
+            </>
+          }
           rules={[
             { required: true, whitespace: true, message: t('The field value is required') },
             {
@@ -1148,6 +1155,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         <Form.Item
           name="title"
           label={t('Title')}
+          extra={t('Display name of the portal.')}
           rules={[{ required: true, whitespace: true, message: t('Title field is required') }]}
         >
           <Input />
@@ -1155,7 +1163,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
 
         <Form.Item
           name="portalType"
-          label={t('Portal type')}
+          label={t('Development mode')}
           htmlFor="multi-portal-portal-type-ai"
           rules={[{ required: true, message: t('The field value is required') }]}
         >
@@ -1168,15 +1176,25 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
                 style={describedRadioStyle}
                 value="ai"
               >
-                <span>{t('AI portal')}</span>
+                <span>{t('AI mode')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                  {t('Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>')}
+                  {t('Build complete business systems with AI agents and code.')}
+                </div>
+                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                  {t(
+                    'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
+                  )}
                 </div>
               </Radio>
               <Radio className={describedRadioClassName} style={describedRadioStyle} value="no-code">
-                <span>{t('No-code portal')}</span>
+                <span>{t('No-code mode')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                  {t('Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>')}
+                  {t('Build business systems through visual configuration.')}
+                </div>
+                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                  {t(
+                    'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
+                  )}
                 </div>
               </Radio>
             </Space>
@@ -1189,7 +1207,8 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
               <>
                 <Form.Item
                   name="sourceStorage"
-                  label={t('Source storage')}
+                  label={t('Source management')}
+                  extra={t('Select how the application source code is stored and managed.')}
                   htmlFor="multi-portal-source-storage-nocobase"
                   rules={[{ required: true, message: t('The field value is required') }]}
                 >
@@ -1203,13 +1222,13 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
                       >
                         <span>{t('NocoBase')}</span>
                         <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                          {t('Manage portal source code in NocoBase.')}
+                          {t('Store and manage application source code in NocoBase.')}
                         </div>
                       </Radio>
                       <Radio className={describedRadioClassName} style={describedRadioStyle} value="git">
                         <span>{t('Git')}</span>
                         <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                          {t('Manage portal source code in a Git repository.')}
+                          {t('Store and manage application source code in a Git repository.')}
                         </div>
                       </Radio>
                     </Space>

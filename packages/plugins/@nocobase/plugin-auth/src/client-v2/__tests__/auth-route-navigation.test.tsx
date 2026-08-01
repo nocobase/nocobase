@@ -50,6 +50,15 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
         },
       },
     }),
+    usePlugin: () => ({
+      isScopedAuthRoute: (pathname: string) => pathname === '/customer/signin' || pathname === '/customer/signup',
+      getAuthRoutePath: (pathname: string, name: 'auth.signin' | 'auth.signup') => {
+        if (pathname === '/customer/signin' || pathname === '/customer/signup') {
+          return name === 'auth.signin' ? '/customer/signin' : '/customer/signup';
+        }
+        return routePaths[name];
+      },
+    }),
   };
 });
 
@@ -77,7 +86,7 @@ vi.mock('react-i18next', () => ({
 describe('plugin-auth route-aware navigation', () => {
   it('uses the registered Settings routes from the basic sign-in form', () => {
     render(
-      <MemoryRouter initialEntries={['/settings/signin']}>
+      <MemoryRouter initialEntries={['/settings/signin?redirect=%2Fsettings%2Fsecurity']}>
         <BasicSignInForm authenticator={authenticator} />
       </MemoryRouter>,
     );
@@ -94,7 +103,7 @@ describe('plugin-auth route-aware navigation', () => {
 
   it('returns from sign-up to the registered Settings signin route', () => {
     render(
-      <MemoryRouter initialEntries={['/settings/signup?name=basic']}>
+      <MemoryRouter initialEntries={['/settings/signup?name=basic&redirect=%2Fsettings%2Fsecurity']}>
         <BasicSignUpForm authenticatorName="basic" />
       </MemoryRouter>,
     );
@@ -102,6 +111,64 @@ describe('plugin-auth route-aware navigation', () => {
     expect(screen.getByRole('link', { name: 'Log in with an existing account' })).toHaveAttribute(
       'href',
       '/settings/signin',
+    );
+  });
+
+  it('keeps the Portal scope and redirect when navigating from sign-in to sign-up', () => {
+    render(
+      <MemoryRouter initialEntries={['/customer/signin?redirect=%2Fv%2Fcustomer%2Forders']}>
+        <BasicSignInForm authenticator={authenticator} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
+      'href',
+      '/customer/signup?name=basic&redirect=%2Fv%2Fcustomer%2Forders',
+    );
+  });
+
+  it('returns from Portal sign-up to the scoped signin route with the original redirect', () => {
+    render(
+      <MemoryRouter initialEntries={['/customer/signup?name=basic&redirect=%2Fv%2Fcustomer%2Forders']}>
+        <BasicSignUpForm authenticatorName="basic" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Log in with an existing account' })).toHaveAttribute(
+      'href',
+      '/customer/signin?redirect=%2Fv%2Fcustomer%2Forders',
+    );
+  });
+
+  it('keeps the sub-app basename when navigating between scoped Portal auth routes', () => {
+    render(
+      <MemoryRouter
+        basename="/v/apps/sub-app"
+        initialEntries={['/v/apps/sub-app/customer/signin?redirect=%2Fv%2Fapps%2Fsub-app%2Fcustomer%2Forders']}
+      >
+        <BasicSignInForm authenticator={authenticator} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
+      'href',
+      '/v/apps/sub-app/customer/signup?name=basic&redirect=%2Fv%2Fapps%2Fsub-app%2Fcustomer%2Forders',
+    );
+  });
+
+  it('returns from scoped Portal sign-up inside the current sub-app basename', () => {
+    render(
+      <MemoryRouter
+        basename="/v/apps/sub-app"
+        initialEntries={['/v/apps/sub-app/customer/signup?redirect=%2Fv%2Fapps%2Fsub-app%2Fcustomer']}
+      >
+        <BasicSignUpForm authenticatorName="basic" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Log in with an existing account' })).toHaveAttribute(
+      'href',
+      '/v/apps/sub-app/customer/signin?redirect=%2Fv%2Fapps%2Fsub-app%2Fcustomer',
     );
   });
 
