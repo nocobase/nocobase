@@ -48,9 +48,10 @@ const UPDATE_PORTAL_OPERATION: RequestOperation = {
   bodyRequired: true,
   parameters: [
     {
-      name: 'filterByTk',
-      flagName: 'filterByTk',
+      name: 'filter',
+      flagName: 'filter',
       in: 'query',
+      type: 'object',
       required: true,
     },
   ],
@@ -192,7 +193,9 @@ export async function syncPortalConfigToRemote(options: {
     cliVersion: options.cliVersion ?? '',
     envName: options.envName,
     flags: {
-      filterByTk: options.portal,
+      filter: {
+        portalName: options.portal,
+      },
       body: JSON.stringify({
         options: mergePortalConfigIntoOptions(options.config, options.currentOptions),
       }),

@@ -320,6 +320,7 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
       return { ok: true, status: 200, data: portalListData() };
     }
     if (options.operation.pathTemplate === '/multiPortals:update') {
+      expect(options.flags.filter).toEqual({ portalName: 'customer' });
       expect(JSON.parse(String(options.flags.body))).toEqual({
         options: {
           sourceStorage: 'nocobase',
@@ -633,6 +634,7 @@ test('push creates configured Git branch and uses repository root by default', a
 
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/multiPortals:update') {
+      expect(options.flags.filter).toEqual({ portalName: 'customer' });
       return { ok: true, status: 200, data: { data: { uid: 'customer' } } };
     }
     return {
