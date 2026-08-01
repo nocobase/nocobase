@@ -1474,10 +1474,12 @@ describe('plugin-multi-portal server', () => {
     });
     const disabledDistStat = await stat(path.join(portalDir, 'dist'));
     expect(disabledDistStat.isDirectory()).toBe(true);
-    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/storageTemplatePortal/',
+    );
   });
 
-  it('should rebuild storage portal HTML when an AI portal is re-enabled through multiPortals:update', async () => {
+  it('should keep storage portal HTML when an AI portal is disabled through multiPortals:update', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/api';
     app = await createMultiPortalAclMockServer();
@@ -1518,7 +1520,7 @@ describe('plugin-multi-portal server', () => {
     expect(disableResponse.status).toBe(200);
     const disabledDistStat = await stat(path.join(portalDir, 'dist'));
     expect(disabledDistStat.isDirectory()).toBe(true);
-    await expect(access(portalIndex)).rejects.toThrow();
+    await expect(readFile(portalIndex, 'utf-8')).resolves.toBe('/console/x/api-toggle-storage-portal/');
 
     spawnMock.mockClear();
     const enableResponse = await rootAgent.resource('multiPortals').update({
@@ -1531,17 +1533,7 @@ describe('plugin-multi-portal server', () => {
     expect(enableResponse.status).toBe(200);
     await waitForPath(portalIndex);
     await expect(readFile(portalIndex, 'utf-8')).resolves.toBe('/console/x/api-toggle-storage-portal/');
-    expect(spawnMock).toHaveBeenCalledWith(
-      'yarn',
-      ['build:html'],
-      expect.objectContaining({
-        cwd: portalDir,
-        env: expect.objectContaining({
-          NOCOBASE_API_URL: '/console/api',
-          NOCOBASE_PORTAL_BASE: '/console/x/api-toggle-storage-portal/',
-        }),
-      }),
-    );
+    expect(spawnMock).not.toHaveBeenCalledWith('yarn', ['build:html'], expect.any(Object));
   });
 
   it('should build storage portal HTML with the sub-app portal base path', async () => {

@@ -3264,8 +3264,6 @@ export class PluginMultiPortalServer extends Plugin {
         }
 
         this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
-        await this.removePortalStorageIndexHtml(item);
-        await appendPortalStorageLog(logPath, `Portal index.html removed for ${item.appName}/${item.portalName}.`);
       } catch (error) {
         await appendPortalStorageLog(
           logPath,
@@ -3317,8 +3315,6 @@ export class PluginMultiPortalServer extends Plugin {
     }
 
     this.logPortalBuildHtml(item, 'skipped', 'the portal is disabled');
-    await this.removePortalStorageIndexHtml(item);
-    await appendPortalStorageLog(logPath, `Portal index.html removed for ${item.appName}/${item.portalName}.`);
   }
 
   private async syncMultiPortalStorageItem(
@@ -3335,8 +3331,7 @@ export class PluginMultiPortalServer extends Plugin {
         previousItem &&
         (!currentItem ||
           previousItem.appName !== currentItem.appName ||
-          previousItem.portalName !== currentItem.portalName ||
-          !currentItem.enabled)
+          previousItem.portalName !== currentItem.portalName)
       ) {
         await this.removePortalStorageIndexHtml(previousItem);
       }
