@@ -30,6 +30,16 @@ type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; ar
 
 type ScriptArguments = Record<string, unknown> | unknown[];
 
+type WorkerOutcome =
+  | { type: 'result'; result: unknown }
+  | { type: 'error'; error: Error }
+  | { type: 'exit'; code: number }
+  | { type: 'aborted' };
+
+function isWorkerResult(message: unknown): message is { type: 'result'; result: unknown } {
+  return typeof message === 'object' && message !== null && 'type' in message && message.type === 'result';
+}
+
 export default class ScriptInstruction extends Instruction {
   /**
    * Returns the worker script path based on whether WORKFLOW_SCRIPT_MODULES is configured.
@@ -47,21 +57,9 @@ export default class ScriptInstruction extends Instruction {
     options: { logger: Logger; timeout?: number; signal?: AbortSignal },
   ) {
     const { logger, timeout, signal } = options;
-    let result: unknown;
 
     const worker = new Worker(this.workerScript, {
       workerData: { source, args, options: timeout ? { timeout } : {} },
-    });
-
-    const abortListener = () => {
-      worker.terminate();
-    };
-    signal?.addEventListener('abort', abortListener, { once: true });
-
-    worker.on('message', (message) => {
-      if (message.type === 'result') {
-        result = message.result;
-      }
     });
 
     worker.stdout.on('data', (data) => {
@@ -71,31 +69,47 @@ export default class ScriptInstruction extends Instruction {
       logger.error(data.toString());
     });
 
-    const excution = new Promise((resolve, reject) => {
-      worker.on('error', (error) => {
-        reject(error);
-      });
+    const outputClosed = Promise.all([once(worker.stdout, 'close'), once(worker.stderr, 'close')]);
+    const outcomePromise = new Promise<WorkerOutcome>((resolve) => {
+      const finish = (outcome: WorkerOutcome) => {
+        worker.removeListener('message', messageListener);
+        worker.removeListener('error', errorListener);
+        worker.removeListener('exit', exitListener);
+        signal?.removeEventListener('abort', abortListener);
+        resolve(outcome);
+      };
+      const messageListener = (message: unknown) => {
+        if (isWorkerResult(message)) {
+          finish({ type: 'result', result: message.result });
+        }
+      };
+      const errorListener = (error: Error) => {
+        finish({ type: 'error', error });
+      };
+      const exitListener = (code: number) => {
+        finish({ type: 'exit', code });
+      };
+      const abortListener = () => {
+        finish({ type: 'aborted' });
+      };
 
-      const stdoutPromise = once(worker.stdout, 'close');
-      const stderrPromise = once(worker.stderr, 'close');
-
-      worker.on('exit', (code) => {
-        Promise.all([stdoutPromise, stderrPromise])
-          .then(() => {
-            if (code !== 0) {
-              reject(new Error(`Worker stopped with exit code ${code}`));
-            }
-            resolve(result);
-          })
-          .catch(reject);
-      });
+      worker.on('message', messageListener);
+      worker.once('error', errorListener);
+      worker.once('exit', exitListener);
+      signal?.addEventListener('abort', abortListener, { once: true });
+      if (signal?.aborted) {
+        abortListener();
+      }
     });
 
+    const outcome = await outcomePromise;
     try {
-      await excution;
+      if (outcome.type !== 'exit') {
+        await worker.terminate();
+      }
+      await outputClosed;
     } catch (e) {
-      signal?.removeEventListener('abort', abortListener);
-      if (signal?.aborted) {
+      if (outcome.type === 'aborted' || signal?.aborted) {
         throw signal.reason instanceof Error ? signal.reason : new WorkflowTimeoutError();
       }
       return {
@@ -104,11 +118,27 @@ export default class ScriptInstruction extends Instruction {
       };
     }
 
-    signal?.removeEventListener('abort', abortListener);
+    if (outcome.type === 'aborted') {
+      throw signal?.reason instanceof Error ? signal.reason : new WorkflowTimeoutError();
+    }
+
+    if (outcome.type === 'error') {
+      return {
+        status: JOB_STATUS.ERROR,
+        result: outcome.error.message,
+      };
+    }
+
+    if (outcome.type === 'exit' && outcome.code !== 0) {
+      return {
+        status: JOB_STATUS.ERROR,
+        result: `Worker stopped with exit code ${outcome.code}`,
+      };
+    }
 
     return {
       status: JOB_STATUS.RESOLVED,
-      result,
+      result: outcome.type === 'result' ? outcome.result : undefined,
     };
   }
 
@@ -167,7 +197,13 @@ export default class ScriptInstruction extends Instruction {
 
     processor.logger.info(`script (#${node.id}) has been started, waiting for response...`);
 
-    await processor.exit();
+    const abortHandle = processor.createBackgroundAbortHandle();
+    try {
+      await processor.exit();
+    } catch (error) {
+      abortHandle.dispose();
+      throw error;
+    }
 
     const jobResult: IJob = {
       status: JOB_STATUS.PENDING,
@@ -175,7 +211,7 @@ export default class ScriptInstruction extends Instruction {
 
     // eslint-disable-next-line promise/catch-or-return
     (this.constructor as typeof ScriptInstruction)
-      .run(content, _args, { timeout, logger: processor.logger, signal: options?.signal })
+      .run(content, _args, { timeout, logger: processor.logger, signal: abortHandle.signal })
       .then((res) => {
         if (res.status === JOB_STATUS.RESOLVED) {
           processor.logger.info(`script (#${node.id}) get result success`);
@@ -205,6 +241,7 @@ export default class ScriptInstruction extends Instruction {
         jobResult.result = message;
       })
       .finally(() => {
+        abortHandle.dispose();
         processor.logger.debug(`script (#${node.id}) ended, resume workflow...`);
         setImmediate(async () => {
           const job = await this.workflow.db.getRepository('jobs').findOne({ filterByTk: id });
