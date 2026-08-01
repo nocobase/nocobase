@@ -379,9 +379,9 @@ async function resolvePortalSourceContext(options: PortalSourceOptions): Promise
   const storagePath = resolvePortalStoragePath(options.env);
   const mode = options.env.kind;
   const appContext = await resolvePortalAppContext(options);
-  const { app, appPublicPath } = appContext;
+  const { app, appPublicPath, portalBaseApp } = appContext;
   const portalDir = path.join(storagePath, 'portals', app, portal);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
     throw new Error(

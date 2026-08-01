@@ -243,6 +243,7 @@ test('pull uses app:getInfo app name for custom-domain http envs', async () => {
     app: 'demo6',
     portal: 'crm',
     portalDir: path.join(storagePath, 'portals', 'demo6', 'crm'),
+    portalBase: '/x/crm/',
     changed: true,
   });
 

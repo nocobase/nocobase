@@ -442,6 +442,72 @@ test('http deploy uses env source storage when no local storagePath is configure
   }
 });
 
+test('http deploy uses root portal base for custom-domain sub-apps', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
+  const portalDir = await preparePortalWorkspace({
+    storagePath,
+    app: 'demo6',
+    portal: 'crm',
+  });
+  const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+  });
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData('demo6') };
+    }
+    return { ok: true, status: 200, data: { data: { uid: 'crm', distPath: 'portals/demo6/crm/dist' } } };
+  });
+
+  await expect(
+    deployPortalWorkspace({
+      portal: 'crm',
+      envName: 'prod',
+      env: createEnv({
+        kind: 'http',
+        storagePath,
+        apiBaseUrl: 'https://demo6.v11.demo.nocobase.com/api',
+      }),
+      runCommand,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'demo6',
+    portal: 'crm',
+    portalDir,
+    portalBase: '/x/crm/',
+    uploaded: true,
+    serverDistPath: 'portals/demo6/crm/dist',
+  });
+
+  expect(apiRequest).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({
+      flags: expect.objectContaining({
+        app: 'demo6',
+        portal: 'crm',
+        basePath: '/x/crm/',
+      }),
+    }),
+  );
+  expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
+    cwd: portalDir,
+    env: expect.objectContaining({
+      NOCOBASE_API_URL: '/api',
+      NOCOBASE_PORTAL_BASE: '/x/crm/',
+    }),
+    envMode: 'replace',
+    errorName: 'pnpm build:html',
+  });
+  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
+    'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
+  );
+  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
+    'NOCOBASE_API_URL=https://demo6.v11.demo.nocobase.com/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
+  );
+});
+
 test('fails when portal record sync fails', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
   await preparePortalWorkspace({ storagePath });

@@ -119,8 +119,8 @@ async function destroyMultiPortalRecord(params: {
 export async function destroyPortalWorkspace(options: PortalDestroyOptions): Promise<PortalDestroyResult> {
   const portal = validatePortalSlug(options.portal);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalParentDir = path.join(storagePath, 'portals', app);
   const portalDir = path.join(portalParentDir, portal);
   const mode = options.env.kind;

@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
 import { afterEach, expect, test, vi } from 'vitest';
+import type { RequestOptions } from '../lib/api-client.js';
 import {
   buildPortalBasePath,
   createPortalWorkspace,
@@ -255,6 +256,47 @@ test('creates a portal with frozen pnpm install when the template includes a loc
     envMode: 'replace',
     errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
   });
+});
+
+test('creates a custom-domain sub-app portal with a root portal base', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const runCommand = vi.fn().mockResolvedValue(undefined);
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: { data: { name: 'demo6' } } };
+    }
+    return { ok: true, status: 200, data: { data: { uid: 'crm' } } };
+  });
+  await writeTemplate(templatePath);
+
+  await expect(
+    createPortalWorkspace({
+      portal: 'crm',
+      template: templatePath,
+      envName: 'prod',
+      env: createEnv({
+        kind: 'http',
+        storagePath,
+        apiBaseUrl: 'https://demo6.v11.demo.nocobase.com/api',
+      }),
+      runCommand,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'demo6',
+    portal: 'crm',
+    portalDir: path.join(storagePath, 'portals', 'demo6', 'crm'),
+    portalBase: '/x/crm/',
+  });
+
+  const portalDir = path.join(storagePath, 'portals', 'demo6', 'crm');
+  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
+    'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
+  );
+  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
+    'NOCOBASE_API_URL=https://demo6.v11.demo.nocobase.com/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
+  );
 });
 
 test('creates a portal even when pnpm install fails', async () => {

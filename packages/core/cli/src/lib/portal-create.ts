@@ -67,6 +67,7 @@ export type PortalCreateOptions = {
 export type ResolvedPortalApp = {
   app: string;
   appPublicPath: string;
+  portalBaseApp?: string;
 };
 
 export type PortalAppContextOptions = {
@@ -549,13 +550,17 @@ export async function resolvePortalAppContext(options: PortalAppContextOptions):
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const resolvedApp = resolvePortalAppFromApiBaseUrl(apiBaseUrl, options.env.config.appPublicPath);
   if (options.env.kind !== 'http') {
-    return resolvedApp;
+    return {
+      ...resolvedApp,
+      portalBaseApp: resolvedApp.app,
+    };
   }
 
   const serverApp = await resolvePortalAppFromServer(options);
   return {
     app: serverApp ?? resolvedApp.app,
     appPublicPath: resolvedApp.appPublicPath,
+    portalBaseApp: resolvedApp.app,
   };
 }
 
@@ -613,8 +618,8 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalParentDir = path.join(storagePath, 'portals', app);
   const portalDir = path.join(portalParentDir, portal);
 

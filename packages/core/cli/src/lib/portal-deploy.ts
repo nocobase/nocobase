@@ -289,8 +289,8 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
-  const { app, appPublicPath } = await resolvePortalAppContext(options);
-  const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
+  const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
+  const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalDir = path.join(storagePath, 'portals', app, portal);
   const distDir = path.join(portalDir, 'dist');
 
