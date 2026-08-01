@@ -198,12 +198,13 @@ test('updates env files, builds, and syncs the portal record locally without upl
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
     cwd: portalDir,
-    env: expect.any(Object),
+    env: expect.objectContaining({
+      NOCOBASE_API_URL: '/console/api/__app/crm',
+      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+    }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
-  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
-  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
   expect(apiRequest).toHaveBeenCalledTimes(1);
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[0][0]);
   expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
@@ -382,12 +383,13 @@ test('http deploy builds, packs dist, and uploads it', async () => {
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
     cwd: portalDir,
-    env: expect.any(Object),
+    env: expect.objectContaining({
+      NOCOBASE_API_URL: '/console/api/__app/crm',
+      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+    }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
-  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_API_URL');
-  expect(runCommand.mock.calls[2]?.[2]?.env).not.toHaveProperty('NOCOBASE_PORTAL_BASE');
 });
 
 test('http deploy uses env source storage when no local storagePath is configured', async () => {

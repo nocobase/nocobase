@@ -17,6 +17,7 @@ import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
+  resolvePortalEnvApiUrl,
   resolvePortalStoragePath,
   titleFromPortalSlug,
   validatePortalSlug,
@@ -286,6 +287,7 @@ async function syncMultiPortalRecord(params: {
 export async function deployPortalWorkspace(options: PortalDeployOptions): Promise<PortalDeployResult> {
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
+  const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app, appPublicPath, portal });
@@ -337,7 +339,10 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   });
   await runPnpmCommand(runCommand, ['build:html'], {
     cwd: portalDir,
-    env: buildPortalCommandEnv(),
+    env: buildPortalCommandEnv({
+      NOCOBASE_API_URL: envApiUrl,
+      NOCOBASE_PORTAL_BASE: portalBase,
+    }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
