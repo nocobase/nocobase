@@ -817,12 +817,12 @@ const MultiPortalsPage: React.FC = () => {
           <Flex align="center" gap={token.margin}>
             <PortalCover record={record} href={href} openLabel={t('View')} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              {/* The group heading says which type this is; only the device icon is added here, with its wording in the tooltip. */}
+              {/* The group heading says which type this is; no-code portals also show their device in a tooltip. */}
               <Flex align="center" gap={token.marginXXS}>
                 <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
                   {record.title}
                 </Typography.Text>
-                {layoutLabel ? (
+                {isNoCode && layoutLabel ? (
                   <Tooltip title={layoutLabel}>
                     {record.uiLayoutUid === MOBILE_UI_LAYOUT_UID ? (
                       <MobileOutlined

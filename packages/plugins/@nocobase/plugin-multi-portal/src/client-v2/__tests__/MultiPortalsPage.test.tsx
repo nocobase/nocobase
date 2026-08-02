@@ -670,9 +670,10 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
     expect(screen.getByText('No-code')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
-    // The device icon is mapped directly from the fixed uiLayoutUid, with its wording in the aria-label.
+    // No-code portals keep the device icon mapped from uiLayoutUid; AI portals do not expose a device layout.
     expect(within(customerPortalCard).getByLabelText('Mobile')).toHaveClass('anticon-mobile');
-    expect(within(developerPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
+    expect(within(developerPortalCard).queryByLabelText('Desktop')).not.toBeInTheDocument();
+    expect(within(developerPortalCard).queryByLabelText('Mobile')).not.toBeInTheDocument();
     expect(within(disabledPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
