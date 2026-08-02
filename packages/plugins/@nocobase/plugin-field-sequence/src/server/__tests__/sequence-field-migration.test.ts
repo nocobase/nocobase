@@ -246,6 +246,7 @@ describe('Should update sequence collection`s current base on business collectio
     it('Should repair when the sequence field is also the primary key', async () => {
       db.collection({
         name: 'tests',
+        autoGenId: false,
         fields: [
           ...presetField.slice(1),
           {
