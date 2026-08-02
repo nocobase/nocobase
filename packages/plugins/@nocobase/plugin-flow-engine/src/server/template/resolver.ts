@@ -56,7 +56,12 @@ export async function resolveAnalyzedJsonTemplate(
   ctx: unknown,
   policy: ResolvePathPolicy,
 ): Promise<any> {
-  return resolveAnalyzedNode(analysis.value, ctx, policy);
+  const policySnapshot: ResolvePathPolicy = Object.freeze({
+    allowAll: policy.allowAll,
+    allowedPaths: new Set(policy.allowedPaths),
+    unrestrictedVariables: new Set(policy.unrestrictedVariables),
+  });
+  return resolveAnalyzedNode(analysis.value, ctx, policySnapshot);
 }
 
 async function resolveAnalyzedNode(node: AnalyzedTemplateNode, ctx: unknown, policy: ResolvePathPolicy): Promise<any> {
@@ -423,20 +428,17 @@ async function evaluateAnalyzedExpression(
 ): Promise<unknown> {
   if (!expression.supported) return undefined;
   try {
-    const expressionPolicy: ResolvePathPolicy = {
-      allowAll: policy.allowAll,
-      allowedPaths: new Set(policy.allowedPaths),
-      unrestrictedVariables: new Set(policy.unrestrictedVariables),
-    };
     const scope = createSandboxScope();
     const aggregateArrays = isDotOnlyPath(expression);
     const helper = createGuardedCallable((varName, segments) =>
-      resolveGuardedPath(scope, ctx, expressionPolicy, aggregateArrays, varName, segments),
+      resolveGuardedPath(scope, ctx, policy, aggregateArrays, varName, segments),
     );
     ensureResolverLockdown();
-    const compartment = new Compartment({ __resolveVariablePath: helper });
-    const wrapped = `(async () => { try { return ${expression.compiled}; } catch (_) { return undefined; } })()`;
-    return await unwrapSandboxValue(scope, await compartment.evaluate(wrapped));
+    const compartment = new Compartment();
+    const factory = compartment.evaluate(
+      `async (${expression.helperIdentifier}) => { try { return ${expression.compiled}; } catch (_) { return undefined; } }`,
+    ) as (helper: (...args: unknown[]) => unknown) => Promise<unknown>;
+    return await unwrapSandboxValue(scope, await factory(helper));
   } catch (_) {
     return undefined;
   }

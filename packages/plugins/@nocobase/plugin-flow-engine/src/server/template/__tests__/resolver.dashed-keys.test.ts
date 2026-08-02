@@ -78,6 +78,38 @@ describe('server template resolver: dashed keys in dot-only path', () => {
     expect(out).toBe('Alice');
   });
 
+  it('copies path policy sets once per top-level resolve', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('user', { value: { id: 1, name: 'Alice' } });
+    const analysis = analyzeVariableTemplate({ id: '{{ ctx.user.id }}', name: '{{ ctx.user.name }}' });
+    const allowedValues = [getVariableCanonicalKey('user', ['id']), getVariableCanonicalKey('user', ['name'])];
+    let allowedIterations = 0;
+    let unrestrictedIterations = 0;
+    const allowedPaths = {
+      [Symbol.iterator]() {
+        allowedIterations += 1;
+        return allowedValues[Symbol.iterator]();
+      },
+    } as ReadonlySet<string>;
+    const unrestrictedVariables = {
+      [Symbol.iterator]() {
+        unrestrictedIterations += 1;
+        return [][Symbol.iterator]();
+      },
+    } as ReadonlySet<string>;
+    const policy = { allowAll: false, allowedPaths, unrestrictedVariables };
+
+    await resolveAnalyzedJsonTemplate(analysis, ctx, policy);
+
+    expect(allowedIterations).toBe(1);
+    expect(unrestrictedIterations).toBe(1);
+
+    await resolveAnalyzedJsonTemplate(analysis, ctx, policy);
+
+    expect(allowedIterations).toBe(2);
+    expect(unrestrictedIterations).toBe(2);
+  });
+
   it('does not execute ctx functions, raw ctx aliases, or direct helpers', async () => {
     const call = vi.fn(() => 'called');
     const ctx = new ServerBaseContext();
@@ -95,6 +127,42 @@ describe('server template resolver: dashed keys in dot-only path', () => {
 
     expect(call).not.toHaveBeenCalled();
     expect(out).toEqual(template);
+  });
+
+  it('keeps the runtime helper out of the compartment global', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('user', { value: { id: 1 } });
+    const attempts = [
+      '{{ globalThis.__resolveVariablePath("user", ["id"]) }}',
+      '{{ globalThis["__resolveVariablePath"]("user", ["id"]) }}',
+      '{{ globalThis["__resolveVariablePath" + 0]("user", ["id"]) }}',
+      '{{ __resolveVariablePath0("user", ["id"]) }}',
+      '{{ Function("return __resolveVariablePath0")()("user", ["id"]) }}',
+      '{{ globalThis.eval("__resolveVariablePath0")("user", ["id"]) }}',
+      '{{ (0, eval)("__resolveVariablePath0")("user", ["id"]) }}',
+    ];
+
+    for (const attempt of attempts) expect(await resolveJsonTemplate(attempt, ctx)).toBe(attempt);
+    expect(
+      await resolveJsonTemplate(
+        '{{ Object.getOwnPropertyNames(globalThis).some((key) => key.startsWith("__resolveVariablePath")) }}',
+        ctx,
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects direct eval before evaluation', async () => {
+    const ctx = new ServerBaseContext();
+    const attempts = [
+      '{{ eval("__resolveVariablePath0")("user", ["id"]) }}',
+      '{{ (eval)("__resolveVariablePath0")("user", ["id"]) }}',
+    ];
+
+    for (const attempt of attempts) {
+      const analysis = analyzeVariableTemplate(attempt);
+      expect(analysis.errors).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'unreliable-scope' })]));
+      expect(await resolveJsonTemplate(attempt, ctx)).toBe(attempt);
+    }
   });
 
   it('keeps explicit indexes and implicit dot-path aggregation', async () => {

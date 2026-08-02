@@ -505,6 +505,80 @@ describe('variables:resolve allow-list authorization', () => {
     expect(findModelById).toHaveBeenCalledTimes(2);
   });
 
+  it('fails closed only around request template analysis', async () => {
+    const findRoles = vi.fn(async () => []);
+    const template = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new TypeError('untrusted template');
+        },
+      },
+    );
+
+    const result = await authorizeVariablesResolve(createFakeCtx({ findRoles }), {
+      template,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.analysis).toBeUndefined();
+    expect(findRoles).not.toHaveBeenCalled();
+  });
+
+  it('uses an empty allow-list when flow model analysis throws', async () => {
+    const session = createTokenSession();
+    const modelUid = 'throwing-model-analysis';
+    const model = createFlowModel(modelUid, {});
+    model.props = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new TypeError('untrusted flow model');
+        },
+      },
+    );
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: { [modelUid]: model },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ctx.user.id}}',
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.policy.allowedPaths.size).toBe(0);
+  });
+
+  it('does not hide role or flow model repository failures', async () => {
+    const roleError = new Error('role repository unavailable');
+    await expect(
+      authorizeVariablesResolve(
+        createFakeCtx({
+          findRoles: async () => {
+            throw roleError;
+          },
+        }),
+        { template: '{{ctx.user.id}}' },
+      ),
+    ).rejects.toBe(roleError);
+
+    const session = createTokenSession();
+    const modelError = new Error('flow model repository unavailable');
+    await expect(
+      authorizeVariablesResolve(
+        createFakeCtx({
+          token: session.token,
+          findModelById: async () => {
+            throw modelError;
+          },
+        }),
+        { rd: session.rd('unavailable-model'), template: '{{ctx.user.id}}' },
+      ),
+    ).rejects.toBe(modelError);
+  });
+
   it('rejects unsupported dynamic ctx paths for non-configure roles', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx(), {
       template: { value: '{{ ctx[dynamicKey].record.id }}' },

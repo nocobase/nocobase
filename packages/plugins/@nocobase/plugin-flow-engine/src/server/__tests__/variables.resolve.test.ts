@@ -147,6 +147,61 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(results[templates.length]).toEqual({ id: 'allowed', data: { value: 1 } });
   });
 
+  it('should isolate thrown analysis and prototype root names per batch item', async () => {
+    const invalidTemplate = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new TypeError('untrusted template');
+        },
+      },
+    );
+    const prototypeTemplates = ['__proto__', 'constructor', 'toString', 'hasOwnProperty'].map(
+      (name) => `{{ctx.${name}.id}}`,
+    );
+    const single = await execResolve({ template: invalidTemplate }, 1);
+    const res = await execResolve(
+      {
+        batch: [
+          { id: 'thrown', template: invalidTemplate },
+          ...prototypeTemplates.map((template, index) => ({ id: `prototype-${index}`, template })),
+          { id: 'allowed', template: '{{ctx.user.id}}' },
+        ],
+      },
+      1,
+    );
+    const results = res.body?.results || [];
+
+    expect(single.body).toBe(invalidTemplate);
+    expect(results[0]).toEqual({ id: 'thrown', data: invalidTemplate });
+    prototypeTemplates.forEach((template, index) => {
+      expect(results[index + 1]).toEqual({ id: `prototype-${index}`, data: template });
+    });
+    expect(results.at(-1)).toEqual({ id: 'allowed', data: 1 });
+  });
+
+  it('should hide the runtime helper from ordinary and configure lanes', async () => {
+    const templates = [
+      '{{ eval("__resolveVariablePath0") }}',
+      '{{ (eval)("__resolveVariablePath0") }}',
+      '{{ globalThis.eval("__resolveVariablePath0") }}',
+      '{{ (0, eval)("__resolveVariablePath0") }}',
+      '{{ Function("return __resolveVariablePath0")() }}',
+      '{{ globalThis["__resolveVariablePath"] }}',
+    ];
+    const payload = {
+      batch: templates.map((template, index) => ({ id: index, template })),
+    };
+
+    for (const options of [
+      { currentRole: 'root', currentRoles: ['root'] },
+      { currentRole: 'member', currentRoles: ['member'] },
+    ]) {
+      const res = await execResolve(payload, 1, options);
+      expect(res.body?.results).toEqual(templates.map((template, id) => ({ id, data: template })));
+    }
+  });
+
   it('should keep original template when rd is missing for a non-configure role', async () => {
     const payload = {
       template: { id: '{{ ctx.view.record.id }}' },

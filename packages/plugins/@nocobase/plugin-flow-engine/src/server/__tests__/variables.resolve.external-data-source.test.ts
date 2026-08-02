@@ -10,7 +10,7 @@
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import * as variableExpression from '../template/variable-expression';
-import { resolveVariablesTemplate } from '../variables/resolve';
+import { resolveVariablesBatch, resolveVariablesTemplate } from '../variables/resolve';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables:resolve external data source records', () => {
@@ -69,5 +69,43 @@ describe('variables:resolve external data source records', () => {
     });
     expect(analyze).toHaveBeenCalledTimes(1);
     analyze.mockRestore();
+  });
+
+  it('isolates public wrapper analysis failures and hides the lexical helper', async () => {
+    const context = {
+      app: {
+        dataSourceManager: { get: vi.fn() },
+        environment: { getVariables: () => ({}) },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      state: {},
+    } as unknown as ResourcerContext;
+    const invalidTemplate = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new TypeError('untrusted template');
+        },
+      },
+    );
+
+    await expect(resolveVariablesTemplate(context, invalidTemplate)).resolves.toBe(invalidTemplate);
+    await expect(
+      resolveVariablesBatch(context, [
+        { id: 'invalid', template: invalidTemplate },
+        { id: 'valid', template: { value: 'unchanged' } },
+      ]),
+    ).resolves.toEqual([
+      { id: 'invalid', data: invalidTemplate },
+      { id: 'valid', data: { value: 'unchanged' } },
+    ]);
+
+    const helperAttempts = {
+      directEval: '{{ eval("__resolveVariablePath0") }}',
+      functionConstructor: '{{ Function("return __resolveVariablePath0")() }}',
+      globalEval: '{{ globalThis.eval("__resolveVariablePath0") }}',
+      indirectEval: '{{ (0, eval)("__resolveVariablePath0") }}',
+    };
+    await expect(resolveVariablesTemplate(context, helperAttempts, {})).resolves.toEqual(helperAttempts);
   });
 });

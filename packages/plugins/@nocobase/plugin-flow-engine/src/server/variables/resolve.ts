@@ -9,12 +9,9 @@
 
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { GlobalContext, HttpRequestContext } from '../template/contexts';
-import {
-  analyzeVariableTemplate,
-  type AnalyzedTemplate,
-  type ResolvePathPolicy,
-} from '../template/variable-expression';
+import { type AnalyzedTemplate, type ResolvePathPolicy } from '../template/variable-expression';
 import { JSONValue, resolveAnalyzedJsonTemplate } from '../template/resolver';
+import { analyzeVariableTemplateSafely } from './allow-list';
 import { variables } from './registry';
 import { prefetchRecordsForResolve } from './utils';
 
@@ -49,8 +46,10 @@ export async function resolveVariablesTemplate(
   template: JSONValue,
   contextParams: Record<string, unknown> = {},
 ) {
-  const analysis = analyzeVariableTemplate(template);
-  return resolveAnalyzedVariablesTemplate(ctx, analysis, TRUSTED_RESOLVE_POLICY, contextParams);
+  const result = analyzeVariableTemplateSafely(template);
+  return result.ok
+    ? resolveAnalyzedVariablesTemplate(ctx, result.analysis, TRUSTED_RESOLVE_POLICY, contextParams)
+    : template;
 }
 
 export async function resolveAnalyzedVariablesTemplate(
@@ -76,14 +75,28 @@ async function resolveAnalyzedVariablesTemplateWithPrefetchedRecords(
 }
 
 export async function resolveVariablesBatch(ctx: ResourcerContext, items: ResolveBatchItem[]) {
-  return resolveAnalyzedVariablesBatch(
-    ctx,
-    items.map((item) => ({
+  const analyzedItems: AnalyzedResolveBatchItem[] = [];
+  const results: Array<{ id?: string | number; data: unknown } | undefined> = [];
+  for (const [index, item] of items.entries()) {
+    const result = analyzeVariableTemplateSafely(item?.template ?? {});
+    if (!result.ok) {
+      results[index] = { id: item?.id, data: item?.template ?? {} };
+      continue;
+    }
+    analyzedItems.push({
       ...item,
-      analysis: analyzeVariableTemplate(item?.template ?? {}),
+      id: index,
+      analysis: result.analysis,
       policy: TRUSTED_RESOLVE_POLICY,
-    })),
-  );
+    });
+  }
+
+  const resolvedItems = await resolveAnalyzedVariablesBatch(ctx, analyzedItems);
+  for (const item of resolvedItems) {
+    const index = Number(item.id);
+    results[index] = { id: items[index]?.id, data: item.data };
+  }
+  return results.filter((item): item is { id?: string | number; data: unknown } => !!item);
 }
 
 export async function resolveAnalyzedVariablesBatch(ctx: ResourcerContext, items: AnalyzedResolveBatchItem[]) {

@@ -12,6 +12,7 @@ import { decodeJwtSessionPayload, getFlowModelRdSessionId, resolveFlowModelUidFr
 import FlowModelRepository from '../repository';
 import {
   analyzeVariableTemplate,
+  type AnalyzeTemplateMode,
   type AnalyzedTemplate,
   type ResolvePathPolicy,
 } from '../template/variable-expression';
@@ -41,13 +42,38 @@ type RoleRecord = {
   get?: (key: string) => unknown;
 };
 
-export type AuthorizationResult = {
-  allowed: boolean;
-  analysis: AnalyzedTemplate;
+type AuthorizationResultBase = {
   contextParams: Record<string, unknown>;
   flowModelUid?: string;
   policy: ResolvePathPolicy;
 };
+
+export type AuthorizationResult = AuthorizationResultBase &
+  (
+    | {
+        allowed: true;
+        analysis: AnalyzedTemplate;
+      }
+    | {
+        allowed: false;
+        analysis?: AnalyzedTemplate;
+      }
+  );
+
+export type TemplateAnalysisResult = { ok: true; analysis: AnalyzedTemplate } | { ok: false; errorType: string };
+
+export function analyzeVariableTemplateSafely(
+  template: unknown,
+  options: Readonly<{ mode?: AnalyzeTemplateMode }> = {},
+): TemplateAnalysisResult {
+  let analysis: AnalyzedTemplate;
+  try {
+    analysis = analyzeVariableTemplate(template, options);
+  } catch (error) {
+    return { ok: false, errorType: error instanceof Error ? error.name : typeof error };
+  }
+  return { ok: true, analysis };
+}
 
 type FlowModelPathCacheValue = Promise<ReadonlySet<string> | null> | ReadonlySet<string> | null;
 
@@ -124,8 +150,8 @@ async function getFlowModelAllowedPaths(
     const repository = ctx.db.getCollection('flowModels').repository as FlowModelRepository;
     const model = await repository.findModelById(flowModelUid, { includeAsyncNode: true });
     if (!model) return null;
-    const analysis = analyzeVariableTemplate(model, { mode: 'flow-model' });
-    return new Set(analysis.paths.map((path) => path.canonicalKey));
+    const result = analyzeVariableTemplateSafely(model, { mode: 'flow-model' });
+    return new Set(result.ok ? result.analysis.paths.map((path) => path.canonicalKey) : []);
   })();
   cache.set(flowModelUid, load);
   const allowedPaths = await load;
@@ -154,17 +180,13 @@ async function readCurrentRoleAllowsConfigure(ctx: ResourcerContext): Promise<bo
   const acl = (ctx.app as typeof ctx.app & { acl?: AclWithRoles }).acl;
   if (roleNames.some((roleName) => acl?.getRole?.(roleName)?.getStrategy?.()?.allowConfigure === true)) return true;
 
-  try {
-    const roles = (await ctx.db.getRepository('roles').find({
-      filter: { name: roleNames },
-      fields: ['name', 'allowConfigure'],
-    })) as RoleRecord[];
-    return roles.some((role) =>
-      typeof role?.get === 'function' ? role.get('allowConfigure') === true : role?.allowConfigure === true,
-    );
-  } catch {
-    return false;
-  }
+  const roles = (await ctx.db.getRepository('roles').find({
+    filter: { name: roleNames },
+    fields: ['name', 'allowConfigure'],
+  })) as RoleRecord[];
+  return roles.some((role) =>
+    typeof role?.get === 'function' ? role.get('allowConfigure') === true : role?.allowConfigure === true,
+  );
 }
 
 async function currentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolean> {
@@ -241,11 +263,16 @@ export async function authorizeVariablesResolve(
     template: JSONValue;
   },
 ): Promise<AuthorizationResult> {
-  const analysis = analyzeVariableTemplate(options.template);
   let contextParams = sanitizeContextParams(options.contextParams || {});
   const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
   const unrestrictedVariables = new Set<string>();
   let policy = createPolicy(false, new Set(), unrestrictedVariables);
+  const result = analyzeVariableTemplateSafely(options.template);
+  if (!result.ok) {
+    contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
+    return { allowed: false, contextParams, flowModelUid: flowModelUid || undefined, policy };
+  }
+  const { analysis } = result;
 
   if (!analysis.supported) {
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
