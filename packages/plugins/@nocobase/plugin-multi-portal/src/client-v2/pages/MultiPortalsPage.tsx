@@ -637,6 +637,25 @@ function PortalCover(props: { record: MultiPortalRecord; href: string; openLabel
   return <div style={{ flexShrink: 0 }}>{tile}</div>;
 }
 
+function PortalTitle({ title }: { title: string }) {
+  const titleRef = useRef<HTMLElement>(null);
+  const getTooltipTitle = useCallback(() => {
+    const titleElement = titleRef.current;
+    return titleElement && titleElement.scrollWidth > titleElement.clientWidth ? title : null;
+  }, [title]);
+
+  return (
+    <span style={{ display: 'block', minWidth: 0, position: 'relative' }}>
+      <Typography.Text ref={titleRef} strong ellipsis style={{ display: 'block', minWidth: 0 }}>
+        {title}
+      </Typography.Text>
+      <Tooltip title={getTooltipTitle}>
+        <span data-testid="portal-title-tooltip-trigger" style={{ inset: 0, position: 'absolute' }} />
+      </Tooltip>
+    </span>
+  );
+}
+
 const MultiPortalsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -819,9 +838,7 @@ const MultiPortalsPage: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* The group heading says which type this is; no-code portals also show their device in a tooltip. */}
               <Flex align="center" gap={token.marginXXS}>
-                <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
-                  {record.title}
-                </Typography.Text>
+                <PortalTitle title={record.title} />
                 {isNoCode && layoutLabel ? (
                   <Tooltip title={layoutLabel}>
                     {record.uiLayoutUid === MOBILE_UI_LAYOUT_UID ? (

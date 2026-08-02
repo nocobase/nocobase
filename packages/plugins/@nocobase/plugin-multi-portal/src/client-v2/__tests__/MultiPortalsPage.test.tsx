@@ -684,6 +684,43 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
+  it('should show the complete portal title when an ellipsized title is hovered', async () => {
+    const user = userEvent.setup();
+    const longTitle = 'Customer service and partner collaboration portal';
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [{ ...portalValues, title: longTitle }],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(longTitle);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 200 });
+
+    await user.hover(screen.getByTestId('portal-title-tooltip-trigger'));
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(longTitle);
+    expect(title).toBeVisible();
+  });
+
   it('should allow deleting default portals from the gallery', async () => {
     const user = userEvent.setup();
     const resource = makeResource({
