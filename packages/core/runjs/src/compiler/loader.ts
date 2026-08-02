@@ -8,6 +8,7 @@
  */
 
 import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 
 export type RunJSCompilerModule = typeof import('./index');
 
@@ -15,16 +16,24 @@ export { inspectRunJSSourceCode } from './source-inspection';
 
 let compilerModule: Promise<RunJSCompilerModule> | undefined;
 const requireCompiler = createRequire(__filename);
+const compilerJavaScriptUrl = new URL('./index.js', pathToFileURL(__filename)).href;
 
 export function loadRunJSCompiler(): Promise<RunJSCompilerModule> {
   return (compilerModule ||= import('./index.js').catch((error: unknown) => {
-    if (!__filename.endsWith('.ts') || !isModuleNotFoundError(error)) {
+    if (!shouldLoadCompilerFromSource(error)) {
       throw error;
     }
     return requireCompiler('./index') as RunJSCompilerModule;
   }));
 }
 
-function isModuleNotFoundError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ERR_MODULE_NOT_FOUND';
+function shouldLoadCompilerFromSource(error: unknown): error is NodeJS.ErrnoException {
+  return (
+    __filename.endsWith('.ts') &&
+    error instanceof Error &&
+    'code' in error &&
+    error.code === 'ERR_MODULE_NOT_FOUND' &&
+    'url' in error &&
+    error.url === compilerJavaScriptUrl
+  );
 }

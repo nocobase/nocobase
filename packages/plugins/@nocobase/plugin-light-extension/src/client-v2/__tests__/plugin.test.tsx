@@ -14,6 +14,7 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
   createMockClient,
+  ActionGroupModel,
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
@@ -153,6 +154,80 @@ describe('PluginLightExtensionClientV2', () => {
 
     plugin.dispose();
     expectLightExtensionRegistrations(0);
+  });
+
+  it('hands active contributions from one client instance to the next', async () => {
+    const appA = createMockClient({
+      plugins: [
+        [PluginFlowEngine, { name: 'flow-engine-a' }],
+        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine-a', packageName: '@nocobase/plugin-flow-engine' }],
+        [PluginLightExtensionClientV2, { name: 'light-extension-a', packageName: NAMESPACE }],
+      ],
+    });
+    const appB = createMockClient({
+      plugins: [
+        [PluginFlowEngine, { name: 'flow-engine-b' }],
+        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine-b', packageName: '@nocobase/plugin-flow-engine' }],
+        [PluginLightExtensionClientV2, { name: 'light-extension-b', packageName: NAMESPACE }],
+      ],
+    });
+    let pluginA: PluginLightExtensionClientV2 | undefined;
+    let pluginB: PluginLightExtensionClientV2 | undefined;
+
+    expectLightExtensionRegistrations(0);
+    expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(false);
+
+    try {
+      await appA.load();
+      pluginA = appA.pm.get(PluginLightExtensionClientV2) as PluginLightExtensionClientV2;
+      const resolverA = RunJSSourceResolverRegistry.getResolver('light-extension');
+      const editorProviderA = getLightExtensionEditorProvider();
+      const toolbarContributionA = getLightExtensionToolbarContribution();
+
+      expect(resolverA).not.toBeNull();
+      expect(editorProviderA).toBeDefined();
+      expect(toolbarContributionA).toBeDefined();
+      expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(true);
+
+      await appB.load();
+      pluginB = appB.pm.get(PluginLightExtensionClientV2) as PluginLightExtensionClientV2;
+      const resolverB = RunJSSourceResolverRegistry.getResolver('light-extension');
+      const editorProviderB = getLightExtensionEditorProvider();
+      const toolbarContributionB = getLightExtensionToolbarContribution();
+
+      expect(resolverB).not.toBe(resolverA);
+      expect(editorProviderB).not.toBe(editorProviderA);
+      expect(toolbarContributionB).not.toBe(toolbarContributionA);
+      expect(appA.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+        JSPageSourceModeField,
+      );
+      expect(appB.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+        JSPageLightExtensionSourceField,
+      );
+
+      pluginA.dispose();
+
+      expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBe(resolverB);
+      expect(getLightExtensionEditorProvider()).toBe(editorProviderB);
+      expect(getLightExtensionToolbarContribution()).toBe(toolbarContributionB);
+      expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(true);
+      expect(appB.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+        JSPageLightExtensionSourceField,
+      );
+
+      pluginB.dispose();
+
+      expectLightExtensionRegistrations(0);
+      expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(false);
+      expect(appB.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+        JSPageSourceModeField,
+      );
+    } finally {
+      pluginA?.dispose();
+      pluginB?.dispose();
+      (appA.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
+      (appB.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
+    }
   });
 
   it('renders a moved inline JS block through the modern multi-file Studio with its move-back action', async () => {
@@ -309,4 +384,21 @@ function getToolbarContributionKeys(): string[] {
       readOnly: false,
     } as unknown as RunJSStudioToolbarContext)
     .map((contribution) => contribution.key);
+}
+
+function getLightExtensionEditorProvider() {
+  return RunJSEditorRegistry.getProviders().find((provider) => provider.key === 'light-extension-runjs-value');
+}
+
+function getLightExtensionToolbarContribution() {
+  return runJSStudioToolbarRegistry
+    .list({
+      locator: { kind: 'flowModel.step' },
+      workspace: {
+        permissions: { canWrite: true },
+        source: { metadata: { modelUse: 'JSBlockModel' } },
+      },
+      readOnly: false,
+    } as unknown as RunJSStudioToolbarContext)
+    .find((contribution) => contribution.key === '@nocobase/plugin-light-extension/move-source');
 }

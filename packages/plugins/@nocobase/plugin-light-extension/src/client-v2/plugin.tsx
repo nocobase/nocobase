@@ -40,6 +40,7 @@ import { registerLightExtensionModelMenus } from './modelMenu/registerLightExten
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 import { registerLightExtensionRuntimeAuthSession } from './resolvers/LightExtensionRuntimeCacheRegistry';
 
+// Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
 
 export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, Application> {

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ImportOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   createActiveEntryContextType,
   generateClientSettingsTypes,
@@ -20,13 +19,6 @@ import {
   useFullscreenOverlay,
 } from '@nocobase/client-v2';
 import {
-  CodeTab,
-  CommitDiffModal,
-  CloseConfirmModal,
-  FilesPanel,
-  RestoreVersionModal,
-  SaveVersionModal,
-  VersionHistoryDock,
   inferLanguageFromPath,
   mergeHistoryItems,
   summarizeWorkspaceChanges,
@@ -37,9 +29,8 @@ import {
   type RunJSWorkspaceFile,
   useVscFileT,
 } from '../vsc-file/public-api';
-import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
+import { Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -58,7 +49,6 @@ import type {
   LightExtensionCommitRecord,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
-import DiagnosticsPanel from '../components/DiagnosticsPanel';
 import {
   getLightExtensionErrorDiagnostics,
   LightExtensionHookError,
@@ -82,6 +72,15 @@ import {
   readLightExtensionWorkspaceArchive,
 } from '../workspace/lightExtensionWorkspaceArchive';
 import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
+import {
+  InitialRepositoryLoadingState,
+  MissingRepositoryState,
+  WorkspaceLoadingStrip,
+  WorkspaceNotice,
+  WorkspacePageHeader,
+} from './light-extension-workspace/WorkspacePageChrome';
+import { WorkspaceOverlays } from './light-extension-workspace/WorkspaceOverlays';
+import { WorkspaceStudio } from './light-extension-workspace/WorkspaceStudio';
 
 type WorkspaceFile = RunJSWorkspaceFile;
 
@@ -151,7 +150,6 @@ function LightExtensionWorkspacePage({
 }: LightExtensionWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
   const app = useApp();
-  const { token } = theme.useToken();
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
@@ -1127,317 +1125,178 @@ function LightExtensionWorkspacePage({
 
   if (!repoId) {
     return (
-      <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
-        {!embedded ? (
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Source workspace')}
-          </Typography.Title>
-        ) : null}
-        <Empty description={t('Select a repository from the light extension list')} />
-      </Flex>
+      <MissingRepositoryState
+        description={t('Select a repository from the light extension list')}
+        embedded={embedded}
+        title={t('Source workspace')}
+      />
     );
   }
 
   if (initializedRepoId !== repoId) {
-    return (
-      <Flex
-        align="center"
-        aria-live="polite"
-        gap={12}
-        justify="center"
-        role="status"
-        style={{
-          flex: embedded ? '1 1 0' : undefined,
-          height: embedded ? '100%' : 520,
-          minHeight: embedded ? 320 : 520,
-          padding: 24,
-        }}
-        vertical
-      >
-        <Spin size="large" />
-        <Typography.Text>{t('Loading source')}</Typography.Text>
-      </Flex>
-    );
+    return <InitialRepositoryLoadingState embedded={embedded} label={t('Loading source')} />;
   }
 
   return (
     <Flex vertical gap={16} style={{ height: embedded ? '100%' : undefined, minHeight: 0, padding: embedded ? 0 : 24 }}>
-      {!embedded ? (
-        <Flex align="center" justify="space-between" wrap="wrap" gap={12}>
-          <Space direction="vertical" size={0}>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              {repo?.title || repo?.name || t('Source workspace')}
-            </Typography.Title>
-            <Typography.Text type="secondary">{repoId}</Typography.Text>
-          </Space>
-          <Space wrap>
-            <Button
-              disabled={footerActions.disabled}
-              icon={<SaveOutlined />}
-              loading={footerActions.loading}
-              onClick={footerActions.onSave}
-              type="primary"
-            >
-              {t('Save')}
-            </Button>
-          </Space>
-        </Flex>
-      ) : null}
-
-      {notice ? (
-        <Alert closable message={notice.message} onClose={() => setNotice(null)} showIcon type={notice.type} />
-      ) : null}
-
-      {loading ? (
-        <div aria-live="polite" role="status" style={{ padding: 24, textAlign: 'center' }}>
-          <Spin />
-          <Typography.Text style={{ display: 'block', marginTop: 8 }}>{t('Loading source')}</Typography.Text>
-        </div>
-      ) : null}
-
-      <div
-        ref={workspaceFullscreen.placeholderRef}
-        style={workspaceFullscreen.isFullscreen ? workspaceFullscreen.placeholderStyle : { display: 'contents' }}
+      <WorkspacePageHeader
+        disabled={footerActions.disabled}
+        embedded={embedded}
+        loading={footerActions.loading}
+        onSave={footerActions.onSave}
+        repoId={repoId}
+        saveLabel={t('Save')}
+        title={repo?.title || repo?.name || t('Source workspace')}
       />
-      {workspaceFullscreen.container
-        ? createPortal(
-            <div
-              data-testid="light-extension-runjs-studio-workspace"
-              style={{
-                background: token.colorBgContainer,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                borderRadius: token.borderRadiusLG,
-                display: 'flex',
-                flex: embedded || workspaceFullscreen.isFullscreen ? '1 1 0' : undefined,
-                flexDirection: 'column',
-                height: workspaceFullscreen.isFullscreen ? '100%' : undefined,
-                minHeight: embedded || workspaceFullscreen.isFullscreen ? 0 : 520,
-                minWidth: 0,
-                overflow: 'hidden',
-                width: workspaceFullscreen.isFullscreen ? '100%' : undefined,
-              }}
-            >
-              <div
-                style={{
-                  display: 'grid',
-                  flex: '1 1 0',
-                  gridTemplateColumns: filesCollapsed ? 'minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)',
-                  minHeight: 0,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                {!filesCollapsed ? (
-                  <div
-                    style={{
-                      background: token.colorFillAlter,
-                      borderRight: `1px solid ${token.colorBorderSecondary}`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      minHeight: 0,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <FilesPanel
-                      activePath={activePath}
-                      collapsed={filesCollapsed}
-                      defaultCreateParentPath={entryScoped ? entryRoot || LIGHT_EXTENSION_SOURCE_ROOT : undefined}
-                      exporting={exporting}
-                      files={files}
-                      fillAvailableHeight={historyCollapsed}
-                      folders={folders}
-                      getPathAccess={resolveWorkspacePathAccess}
-                      importing={importing}
-                      onCollapseChange={setFilesCollapsed}
-                      onCreate={createWorkspaceFile}
-                      onCreateFolder={createWorkspaceFolder}
-                      onDelete={removeFile}
-                      onDeleteFolder={deleteFolder}
-                      onExportWorkspace={exportWorkspace}
-                      onImportWorkspace={requestImportWorkspace}
-                      onMoveFile={moveFileToFolder}
-                      onMoveFolder={moveFolderToFolder}
-                      onOpen={openFilePath}
-                      onRefresh={loadWorkspace}
-                      onRename={renameFile}
-                      onRenameFolder={renameFolder}
-                      readOnly={!canWrite || importing}
-                      savedFiles={baseFiles}
-                      t={studioT}
-                    />
-                    <VersionHistoryDock
-                      baseVersion={formatHistoryVersion(baseCommitSeq)}
-                      collapsed={historyCollapsed}
-                      diffLoadingCommitId={diffLoadingCommitId}
-                      emptyHistoryDescription={t('No source versions yet')}
-                      hasMore={historyNextBeforeSeq !== null}
-                      hasUnsavedLocalChanges={hasUnsavedLocalChanges}
-                      historyItems={historyItems}
-                      loading={historyLoading}
-                      loadingMore={historyLoadingMore}
-                      onCollapsedChange={setHistoryCollapsed}
-                      onLoadMore={loadMoreHistory}
-                      onRefresh={refreshHistory}
-                      onSelect={setRestoreCommit}
-                      onViewDiff={viewCommitDiff}
-                      t={studioT}
-                    />
-                  </div>
-                ) : null}
 
-                <main
-                  style={{
-                    display: 'flex',
-                    flex: '1 1 0',
-                    flexDirection: 'column',
-                    minHeight: 0,
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    padding: 12,
-                  }}
-                >
-                  {files.length === 0 ? (
-                    <Empty description={t('Empty repository')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                  ) : null}
-                  {files.length > 0 ? (
-                    <>
-                      {activeFileReadOnly && entryScoped ? (
-                        <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
-                      ) : null}
-                      <CodeTab
-                        activeFile={activeFile}
-                        activePath={activePath}
-                        authoringSurfaceId={authoringSurfaceId}
-                        busy={previewing}
-                        filesCollapsed={filesCollapsed}
-                        fullscreenControl={{
-                          isFullscreen: workspaceFullscreen.isFullscreen,
-                          toggleFullscreen: workspaceFullscreen.toggleFullscreen,
-                        }}
-                        jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
-                        onChange={updateActiveFile}
-                        onCloseFile={closeOpenFile}
-                        onFilesCollapsedChange={setFilesCollapsed}
-                        onOpenFile={openFilePath}
-                        onRunPreview={canPreview ? runPreview : undefined}
-                        openPaths={openPaths}
-                        previewing={previewing}
-                        readOnly={activeFileReadOnly}
-                        savedFiles={baseFiles}
-                        showRunButton={canPreview}
-                        t={studioT}
-                        toolbarActions={
-                          canMoveToInline ? (
-                            <Tooltip title={t('Move to inline code')}>
-                              <Button
-                                aria-label={t('Move to inline code')}
-                                icon={<ImportOutlined />}
-                                loading={movingToInline}
-                                onClick={confirmMoveToInline}
-                                size="small"
-                              />
-                            </Tooltip>
-                          ) : null
-                        }
-                        version="v2"
-                        workspaceFiles={authoringFiles}
-                      />
-                    </>
-                  ) : null}
-                </main>
-              </div>
-              <div
-                data-testid="light-extension-workspace-diagnostics"
-                style={{
-                  borderTop: `1px solid ${token.colorBorderSecondary}`,
-                  flex: '0 0 auto',
-                  maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
-                  minHeight: 96,
-                  overflowX: 'hidden',
-                  overflowY: diagnostics.length > 0 ? 'auto' : 'hidden',
-                  padding: 12,
-                }}
-              >
-                <DiagnosticsPanel diagnostics={diagnostics} onOpenDiagnostic={openDiagnosticSource} />
-              </div>
-            </div>,
-            workspaceFullscreen.container,
-          )
-        : null}
+      <WorkspaceNotice notice={notice} onClose={() => setNotice(null)} />
+      <WorkspaceLoadingStrip label={t('Loading source')} loading={loading} />
 
-      <RestoreVersionModal
-        commit={restoreCommit}
-        loading={restoringVersion}
-        onCancel={() => setRestoreCommit(null)}
-        onRestore={confirmLoadVersion}
-        scopeDescription={
-          entryScoped
-            ? t('Only editable files in this workspace will be restored. Read-only files will remain unchanged.')
+      <WorkspaceStudio
+        activeFileReadOnlyNotice={activeFileReadOnly && entryScoped ? pathRestrictionReason : undefined}
+        codeTabProps={{
+          activeFile,
+          activePath,
+          authoringSurfaceId,
+          busy: previewing,
+          filesCollapsed,
+          jsonSchemaResolver: resolveLightExtensionWorkspaceJsonSchema,
+          onChange: updateActiveFile,
+          onCloseFile: closeOpenFile,
+          onFilesCollapsedChange: setFilesCollapsed,
+          onOpenFile: openFilePath,
+          onRunPreview: canPreview ? runPreview : undefined,
+          openPaths,
+          previewing,
+          readOnly: activeFileReadOnly,
+          savedFiles: baseFiles,
+          showRunButton: canPreview,
+          t: studioT,
+          version: 'v2',
+          workspaceFiles: authoringFiles,
+        }}
+        diagnostics={diagnostics}
+        embedded={embedded}
+        emptyRepositoryLabel={t('Empty repository')}
+        filesCollapsed={filesCollapsed}
+        filesPanelProps={{
+          activePath,
+          collapsed: filesCollapsed,
+          defaultCreateParentPath: entryScoped ? entryRoot || LIGHT_EXTENSION_SOURCE_ROOT : undefined,
+          exporting,
+          files,
+          fillAvailableHeight: historyCollapsed,
+          folders,
+          getPathAccess: resolveWorkspacePathAccess,
+          importing,
+          onCollapseChange: setFilesCollapsed,
+          onCreate: createWorkspaceFile,
+          onCreateFolder: createWorkspaceFolder,
+          onDelete: removeFile,
+          onDeleteFolder: deleteFolder,
+          onExportWorkspace: exportWorkspace,
+          onImportWorkspace: requestImportWorkspace,
+          onMoveFile: moveFileToFolder,
+          onMoveFolder: moveFolderToFolder,
+          onOpen: openFilePath,
+          onRefresh: loadWorkspace,
+          onRename: renameFile,
+          onRenameFolder: renameFolder,
+          readOnly: !canWrite || importing,
+          savedFiles: baseFiles,
+          t: studioT,
+        }}
+        fullscreen={{
+          container: workspaceFullscreen.container,
+          isFullscreen: workspaceFullscreen.isFullscreen,
+          placeholderRef: workspaceFullscreen.placeholderRef,
+          placeholderStyle: workspaceFullscreen.placeholderStyle,
+          toggleFullscreen: workspaceFullscreen.toggleFullscreen,
+        }}
+        hasFiles={files.length > 0}
+        moveToInline={
+          canMoveToInline
+            ? {
+                label: t('Move to inline code'),
+                loading: movingToInline,
+                onClick: confirmMoveToInline,
+              }
             : undefined
         }
-        t={studioT}
-      />
-
-      <CommitDiffModal
-        commit={commitDiffCommit}
-        diff={commitDiff}
-        loading={Boolean(diffLoadingCommitId)}
-        onCancel={closeCommitDiff}
-        t={studioT}
-      />
-
-      <input
-        accept=".zip,application/zip,application/x-zip-compressed"
-        aria-label={t('Import workspace')}
-        onChange={importWorkspaceFile}
-        ref={importInputRef}
-        style={{ display: 'none' }}
-        type="file"
-      />
-
-      <SaveVersionModal
-        loading={false}
-        onAfterClose={() => undefined}
-        onCancel={() => {
-          setSaveOpen(false);
-          const request = embeddedSaveRequestRef.current;
-          embeddedSaveRequestRef.current = null;
-          embeddedSavePromiseRef.current = null;
-          request?.resolve('cancelled');
+        onOpenDiagnostic={openDiagnosticSource}
+        versionHistoryProps={{
+          baseVersion: formatHistoryVersion(baseCommitSeq),
+          collapsed: historyCollapsed,
+          diffLoadingCommitId,
+          emptyHistoryDescription: t('No source versions yet'),
+          hasMore: historyNextBeforeSeq !== null,
+          hasUnsavedLocalChanges,
+          historyItems,
+          loading: historyLoading,
+          loadingMore: historyLoadingMore,
+          onCollapsedChange: setHistoryCollapsed,
+          onLoadMore: loadMoreHistory,
+          onRefresh: refreshHistory,
+          onSelect: setRestoreCommit,
+          onViewDiff: viewCommitDiff,
+          t: studioT,
         }}
-        onSave={saveChanges}
-        onVersionMessageChange={setVersionMessage}
-        open={saveOpen}
-        readOnly={!canWrite || hasBlockedDirtyChanges}
-        summary={saveSummary}
-        t={studioT}
-        versionMessage={versionMessage}
       />
 
-      <Modal
-        closable={false}
-        footer={null}
-        keyboard={false}
-        maskClosable={false}
-        open={saving}
-        title={t('Saving changes')}
-      >
-        <Flex align="center" gap={12}>
-          <Spin />
-          <Space direction="vertical" size={0}>
-            <Typography.Text>{t('Saving source files')}</Typography.Text>
-            <Typography.Text type="secondary">{t('Compiling light extension')}</Typography.Text>
-          </Space>
-        </Flex>
-      </Modal>
-
-      <CloseConfirmModal
-        intent="close"
-        onCancel={() => setCloseConfirmOpen(false)}
-        onCloseWithoutSaving={discardLocalAndClose}
-        open={closeConfirmOpen}
-        t={studioT}
+      <WorkspaceOverlays
+        closeConfirmProps={{
+          intent: 'close',
+          onCancel: () => setCloseConfirmOpen(false),
+          onCloseWithoutSaving: discardLocalAndClose,
+          open: closeConfirmOpen,
+          t: studioT,
+        }}
+        commitDiffProps={{
+          commit: commitDiffCommit,
+          diff: commitDiff,
+          loading: Boolean(diffLoadingCommitId),
+          onCancel: closeCommitDiff,
+          t: studioT,
+        }}
+        importInput={{
+          ariaLabel: t('Import workspace'),
+          onChange: importWorkspaceFile,
+          ref: importInputRef,
+        }}
+        restoreVersionProps={{
+          commit: restoreCommit,
+          loading: restoringVersion,
+          onCancel: () => setRestoreCommit(null),
+          onRestore: confirmLoadVersion,
+          scopeDescription: entryScoped
+            ? t('Only editable files in this workspace will be restored. Read-only files will remain unchanged.')
+            : undefined,
+          t: studioT,
+        }}
+        saveVersionProps={{
+          loading: false,
+          onAfterClose: () => undefined,
+          onCancel: () => {
+            setSaveOpen(false);
+            const request = embeddedSaveRequestRef.current;
+            embeddedSaveRequestRef.current = null;
+            embeddedSavePromiseRef.current = null;
+            request?.resolve('cancelled');
+          },
+          onSave: saveChanges,
+          onVersionMessageChange: setVersionMessage,
+          open: saveOpen,
+          readOnly: !canWrite || hasBlockedDirtyChanges,
+          summary: saveSummary,
+          t: studioT,
+          versionMessage,
+        }}
+        saving={{
+          compilingLabel: t('Compiling light extension'),
+          open: saving,
+          savingLabel: t('Saving source files'),
+          title: t('Saving changes'),
+        }}
       />
     </Flex>
   );

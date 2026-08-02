@@ -7,57 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
-import {
-  CollectionFilter,
-  DEFAULT_PAGE_SIZE,
-  ExtendCollectionsProvider,
-  Table,
-  type CompiledFilter,
-} from '@nocobase/client-v2';
+import { ExtendCollectionsProvider, type CompiledFilter } from '@nocobase/client-v2';
 import { useFlowContext, useFlowEngine, type Collection, type CollectionOptions } from '@nocobase/flow-engine';
 import { getDayRangeByParams } from '@nocobase/utils/client';
 import { uid } from '@nocobase/utils/client';
-import {
-  Alert,
-  Button,
-  Card,
-  Drawer,
-  Dropdown,
-  Empty,
-  Flex,
-  Form,
-  Input,
-  Modal,
-  Space,
-  Spin,
-  Switch,
-  Tag,
-  theme,
-  Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import type { MenuProps } from 'antd';
+import { Alert, Button, Card, Form, Space, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { LIGHT_EXTENSION_SUPPORTED_KINDS, NAMESPACE } from '../../constants';
+import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionCreateJobSummary,
-  LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
   LightExtensionSyncSourceSummary,
 } from '../../shared/types';
-import LightExtensionCreateSourceSelector, {
-  type LightExtensionCreateSource,
-} from '../components/LightExtensionCreateSourceSelector';
+import type { LightExtensionCreateSource } from '../components/LightExtensionCreateSourceSelector';
 import LightExtensionGitSourceFields, {
   createEmptyLightExtensionGitSourceDraft,
   type LightExtensionGitSourceValue,
   type LightExtensionGitSourceDraft,
 } from '../components/LightExtensionGitSourceFields';
-import LightExtensionSyncDrawer from '../components/LightExtensionSyncDrawer';
 import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
 import { useLightExtensionCreateJobs } from '../hooks/useLightExtensionCreateJobs';
 import {
@@ -69,38 +39,31 @@ import { useT } from '../locale';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
-import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
-
-interface CreateRepoFormValues {
-  name: string;
-  title: string;
-  description?: string;
-}
-
-interface EditRepoFormValues {
-  title: string;
-  description?: string;
-}
+import { LightExtensionListTable } from './light-extension-list/LightExtensionListTable';
+import { LightExtensionListToolbar } from './light-extension-list/LightExtensionListToolbar';
+import { LightExtensionRepoOverlays } from './light-extension-list/LightExtensionRepoOverlays';
+import { LightExtensionSourceDrawer } from './light-extension-list/LightExtensionSourceDrawer';
+import { LightExtensionSyncDrawerShell } from './light-extension-list/LightExtensionSyncDrawerShell';
+import type {
+  CreateRepoFormValues,
+  EditRepoFormValues,
+  LightExtensionListRow,
+  ToggleLifecycleStatus,
+} from './light-extension-list/types';
+import type { LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
 
 type Notice = {
   type: 'success' | 'info' | 'warning' | 'error';
   message: string;
 };
 
-type ToggleLifecycleStatus = 'enabled' | 'disabled';
 type DetailPanel = 'source' | 'sync';
 type SyncConfigurationRequest = 'test' | 'configure';
-type LightExtensionListRow =
-  | { rowType: 'repo'; repo: LightExtensionRepoRecord }
-  | { rowType: 'creation-job'; job: LightExtensionCreateJobSummary };
 type FlowContextWithApi = {
   api: ApiClientLike;
 };
 
-const entryKinds = LIGHT_EXTENSION_SUPPORTED_KINDS;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
-const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
-const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 export const LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES = [
   'name',
   'description',
@@ -632,202 +595,6 @@ function LightExtensionListPageInner() {
     await loadRepos();
   }, [loadRepos]);
 
-  const columns = useMemo<ColumnsType<LightExtensionListRow>>(
-    () => [
-      {
-        title: t('Title'),
-        dataIndex: 'name',
-        sorter: (left, right) =>
-          compareText(getListRowTitle(left), getListRowTitle(right)) ||
-          compareText(getListRowName(left), getListRowName(right)),
-        width: 220,
-        render: (_value, row) => (
-          <Space direction="vertical" size={0} style={{ maxWidth: 200, minWidth: 0 }}>
-            <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
-              {getListRowTitle(row)}
-            </Typography.Text>
-            {row.rowType === 'repo' ? (
-              <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
-                {row.repo.name}
-              </Typography.Text>
-            ) : null}
-          </Space>
-        ),
-      },
-      {
-        title: t('Description'),
-        dataIndex: 'description',
-        sorter: (left, right) => compareText(getListRowDescription(left), getListRowDescription(right)),
-        render: (_value, row) => {
-          const description = getListRowDescription(row);
-          return (
-            <Typography.Text ellipsis={{ tooltip: description || '-' }} style={{ maxWidth: 320 }} type="secondary">
-              {description || '-'}
-            </Typography.Text>
-          );
-        },
-      },
-      {
-        title: t('Entries'),
-        key: 'entries',
-        sorter: (left, right) => getListRowEntryCount(left) - getListRowEntryCount(right),
-        width: 250,
-        render: (_value, row) => {
-          if (row.rowType === 'creation-job') {
-            return null;
-          }
-          const repo = row.repo;
-          const kinds = entryKinds.filter((kind) => Boolean(repo.entryKinds?.[kind]));
-          return kinds.length ? (
-            <Space size={[4, 4]} wrap>
-              {kinds.map((kind) => (
-                <Tag key={kind}>
-                  {t(kind)} {repo.entryKinds?.[kind]}
-                </Tag>
-              ))}
-            </Space>
-          ) : (
-            <Typography.Text type="secondary">0</Typography.Text>
-          );
-        },
-      },
-      {
-        title: t('Updated at'),
-        dataIndex: 'updatedAt',
-        sorter: (left, right) =>
-          getDateTimestamp(getListRowUpdatedAt(left)) - getDateTimestamp(getListRowUpdatedAt(right)),
-        width: 180,
-        render: (_value, row) => {
-          if (row.rowType === 'creation-job') {
-            return null;
-          }
-          return (
-            <Space direction="vertical" size={0}>
-              <Typography.Text>{formatDate(row.repo.updatedAt)}</Typography.Text>
-              <Typography.Text type="secondary">
-                {t('Created at')}: {formatDate(row.repo.createdAt)}
-              </Typography.Text>
-            </Space>
-          );
-        },
-      },
-      {
-        title: t('Enabled'),
-        dataIndex: 'lifecycleStatus',
-        align: 'center',
-        sorter: (left, right) =>
-          Number(left.rowType === 'repo' && left.repo.lifecycleStatus === 'enabled') -
-          Number(right.rowType === 'repo' && right.repo.lifecycleStatus === 'enabled'),
-        width: 100,
-        render: (_value: LightExtensionRepoLifecycleStatus, row) => {
-          if (row.rowType === 'creation-job') {
-            return null;
-          }
-          const repo = row.repo;
-          return (
-            <span onClick={(event) => event.stopPropagation()}>
-              <Switch
-                aria-label={`${t('Enabled')} ${repo.title || repo.name}`}
-                checked={repo.lifecycleStatus === 'enabled'}
-                loading={changingRepoIds.has(repo.id)}
-                onChange={(checked) => {
-                  changeRepoLifecycle(repo, checked ? 'enabled' : 'disabled');
-                }}
-                size="small"
-              />
-            </span>
-          );
-        },
-      },
-      {
-        title: t('Actions'),
-        key: 'actions',
-        width: 350,
-        render: (_value, row) => {
-          if (row.rowType === 'creation-job') {
-            return (
-              <Space aria-live="polite" role="status" size="small">
-                <Spin size="small" />
-                <Typography.Text>{t('Creating')}</Typography.Text>
-              </Space>
-            );
-          }
-          const repo = row.repo;
-          return (
-            <Space size="small" onClick={(event) => event.stopPropagation()}>
-              <Button
-                aria-label={t('Edit code')}
-                onClick={() => selectRepo(repo.id, { panel: 'source' })}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Edit code')}
-              </Button>
-              <Button
-                aria-label={t('Sync code')}
-                onClick={() => selectRepo(repo.id, { panel: 'sync' })}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Sync code')}
-              </Button>
-              <Button
-                aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
-                onClick={() => openEditDrawer(repo)}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Edit details')}
-              </Button>
-              <Button
-                aria-label={t('Remove')}
-                danger
-                loading={removingRepoIds.has(repo.id)}
-                onClick={() => setRemoveTarget(repo)}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Remove')}
-              </Button>
-            </Space>
-          );
-        },
-      },
-    ],
-    [changeRepoLifecycle, changingRepoIds, openEditDrawer, removingRepoIds, selectRepo, t],
-  );
-
-  const batchActionItems: MenuProps['items'] = [
-    {
-      key: 'enabled',
-      label: t('Enable selected'),
-      onClick: () => batchChangeLifecycle('enabled'),
-    },
-    {
-      key: 'disabled',
-      label: t('Disable selected'),
-      onClick: () => batchChangeLifecycle('disabled'),
-    },
-  ];
-  const renderDrawerContent = () => {
-    if (activePanel === 'source') {
-      return (
-        <LightExtensionWorkspacePage
-          defaultFilesCollapsed
-          embedded
-          onFooterActionsChange={setSourceFooterActions}
-          onRequestClose={closeDetailDrawer}
-          onSaved={handleWorkspaceSaved}
-        />
-      );
-    }
-    return null;
-  };
-
   return (
     <Card variant="borderless">
       {createJobsError ? (
@@ -849,204 +616,81 @@ function LightExtensionListPageInner() {
         />
       ) : null}
 
-      <Flex align="center" justify="space-between" gap={token.marginSM} style={{ marginBottom: token.margin }} wrap>
-        <CollectionFilter
-          collection={filterCollection}
-          filterableFieldNames={[...LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES]}
-          onChange={setFilterPayload}
-          t={compileT}
-        />
-        <Space wrap>
-          {selectedRowKeys.length ? (
-            <Typography.Text type="secondary">
-              {t('Selected {{count}}').replace('{{count}}', String(selectedRowKeys.length))}
-            </Typography.Text>
-          ) : null}
-          <Button icon={<ReloadOutlined />} loading={loading} onClick={loadRepos}>
-            {t('Refresh')}
-          </Button>
-          <Dropdown disabled={!selectedRowKeys.length} menu={{ items: batchActionItems }} trigger={['click']}>
-            <Button disabled={!selectedRowKeys.length} loading={Boolean(batchChanging)}>
-              {t('Batch actions')} <DownOutlined />
-            </Button>
-          </Dropdown>
-          <Button aria-label={t('Add new')} icon={<PlusOutlined />} onClick={openCreateModal} type="primary">
-            {t('Add new')}
-          </Button>
-        </Space>
-      </Flex>
-
-      <Table<LightExtensionListRow>
-        columns={columns}
-        dataSource={tableRows}
+      <LightExtensionListToolbar
+        batchChanging={Boolean(batchChanging)}
+        compileT={compileT}
+        filterCollection={filterCollection}
+        filterFieldNames={LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES}
+        gap={token.marginSM}
         loading={loading}
-        locale={{
-          emptyText: <Empty description={t('No light extensions yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
-        }}
-        pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
-        rowKey={(row) => (row.rowType === 'repo' ? row.repo.id : `create-job:${row.job.id}`)}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-          getCheckboxProps: (row) => ({
-            disabled: row.rowType === 'creation-job',
-            'aria-label':
-              row.rowType === 'creation-job'
-                ? `${t('Creation task')} ${row.job.title || row.job.name}`
-                : `${t('Select')} ${row.repo.title || row.repo.name}`,
-          }),
-        }}
-        scroll={{ x: 1250 }}
-        showIndex={false}
+        marginBottom={token.margin}
+        onAdd={openCreateModal}
+        onBatchChangeLifecycle={batchChangeLifecycle}
+        onFilterChange={setFilterPayload}
+        onRefresh={loadRepos}
+        selectedCount={selectedRowKeys.length}
+        t={t}
       />
 
-      {createOpen ? (
-        <Modal
-          confirmLoading={creating}
-          okButtonProps={{ disabled: !createSource }}
-          okText={t('Create')}
-          onCancel={closeCreateModal}
-          onOk={createRepo}
-          open
-          title={t('Create light extension')}
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item
-              extra={t('The name is generated automatically and can be changed if needed.')}
-              label={t('Name')}
-              name="name"
-              rules={[
-                { required: true, message: t('Name is required') },
-                { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              label={t('Title')}
-              name="title"
-              rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
-            >
-              <Input autoFocus />
-            </Form.Item>
-            <Form.Item label={t('Description')} name="description">
-              <Input.TextArea rows={3} />
-            </Form.Item>
-            <LightExtensionCreateSourceSelector disabled={creating} key={createSourceKey} onChange={setCreateSource} />
-          </Form>
-        </Modal>
-      ) : null}
+      <LightExtensionListTable
+        changingRepoIds={changingRepoIds}
+        loading={loading}
+        onChangeLifecycle={changeRepoLifecycle}
+        onEditRepo={openEditDrawer}
+        onRemoveRepo={setRemoveTarget}
+        onSelectRepo={(repoId, panel) => selectRepo(repoId, { panel })}
+        onSelectedRowKeysChange={setSelectedRowKeys}
+        removingRepoIds={removingRepoIds}
+        rows={tableRows}
+        selectedRowKeys={selectedRowKeys}
+        t={t}
+      />
 
-      <Drawer
-        aria-label={t('Edit light extension')}
-        destroyOnClose
-        footer={
-          <Flex justify="flex-end">
-            <Space>
-              <Button disabled={editing} onClick={closeEditDrawer}>
-                {t('Cancel')}
-              </Button>
-              <Button form="light-extension-edit-form" htmlType="submit" loading={editing} type="primary">
-                {t('Save')}
-              </Button>
-            </Space>
-          </Flex>
-        }
-        maskClosable={!editing}
-        onClose={closeEditDrawer}
-        open={Boolean(editTarget)}
-        title={t('Edit light extension')}
-      >
-        <Form form={editForm} id="light-extension-edit-form" layout="vertical" onFinish={updateRepo}>
-          <Form.Item
-            label={t('Title')}
-            name="title"
-            rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
-          >
-            <Input autoFocus />
-          </Form.Item>
-          <Form.Item label={t('Description')} name="description">
-            <Input.TextArea rows={4} />
-          </Form.Item>
-        </Form>
-      </Drawer>
+      <LightExtensionRepoOverlays
+        createForm={form}
+        createOpen={createOpen}
+        createSource={createSource}
+        createSourceKey={createSourceKey}
+        creating={creating}
+        editForm={editForm}
+        editing={editing}
+        editTarget={editTarget}
+        marginSM={token.marginSM}
+        onCancelCreate={closeCreateModal}
+        onCancelEdit={closeEditDrawer}
+        onCancelRemove={() => setRemoveTarget(null)}
+        onConfirmCreate={createRepo}
+        onConfirmRemove={confirmRemoveRepo}
+        onCreateSourceChange={setCreateSource}
+        onUpdateRepo={updateRepo}
+        removeTarget={removeTarget}
+        removing={Boolean(removeTarget && removingRepoIds.has(removeTarget.id))}
+        t={t}
+      />
 
-      <Modal
-        cancelButtonProps={{ disabled: Boolean(removeTarget && removingRepoIds.has(removeTarget.id)) }}
-        cancelText={t('Cancel')}
-        closable={!removeTarget || !removingRepoIds.has(removeTarget.id)}
-        confirmLoading={Boolean(removeTarget && removingRepoIds.has(removeTarget.id))}
-        maskClosable={false}
-        okButtonProps={{ danger: true }}
-        okText={t('Remove')}
-        onCancel={() => setRemoveTarget(null)}
-        onOk={confirmRemoveRepo}
-        open={Boolean(removeTarget)}
-        title={t('Remove this repository?')}
-      >
-        <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
-          <Typography.Text>
-            {t('Repository to remove')}:{' '}
-            <Typography.Text strong>{removeTarget?.title || removeTarget?.name}</Typography.Text>
-          </Typography.Text>
-          <Alert message={t('This action cannot be undone')} showIcon type="warning" />
-        </Space>
-      </Modal>
-
-      <Drawer
-        destroyOnClose
-        motion={{ motionName: '' }}
+      <LightExtensionSourceDrawer
+        footerActions={sourceFooterActions}
         onClose={closeDetailDrawer}
+        onFooterActionsChange={setSourceFooterActions}
+        onSaved={handleWorkspaceSaved}
         open={detailDrawerOpen}
-        styles={{
-          body: { overflow: activePanel === 'source' ? 'hidden' : 'auto', padding: 16 },
-        }}
-        footer={
-          activePanel === 'source' ? (
-            <Flex justify="flex-end">
-              <Space>
-                <Button
-                  disabled={sourceFooterActions?.loading}
-                  onClick={sourceFooterActions?.onCancel || closeDetailDrawer}
-                >
-                  {t('Cancel')}
-                </Button>
-                <Button
-                  disabled={!sourceFooterActions || sourceFooterActions.disabled}
-                  icon={<SaveOutlined />}
-                  loading={sourceFooterActions?.loading}
-                  onClick={sourceFooterActions?.onSave}
-                  type="primary"
-                >
-                  {t('Save')}
-                </Button>
-              </Space>
-            </Flex>
+        repo={selectedRepo}
+        t={t}
+      />
+
+      <LightExtensionSyncDrawerShell
+        configurationPanel={
+          selectedRepo ? (
+            <LightExtensionSyncConfigurationPanel onConfigured={handleSyncConfigured} repoId={selectedRepo.id} />
           ) : null
         }
-        title={
-          selectedRepo && activePanel
-            ? `${detailPanelTitle(t, activePanel)}: ${selectedRepo.title || selectedRepo.name}`
-            : null
-        }
-        width={SOURCE_DRAWER_WIDTH}
-      >
-        {detailDrawerOpen ? renderDrawerContent() : null}
-      </Drawer>
-
-      {selectedRepo ? (
-        <LightExtensionSyncDrawer
-          configurationPanel={
-            <LightExtensionSyncConfigurationPanel onConfigured={handleSyncConfigured} repoId={selectedRepo.id} />
-          }
-          key={`${selectedRepo.id}:${syncDrawerVersion}`}
-          onClose={closeDetailDrawer}
-          onRepoUpdated={handleSyncRepoUpdated}
-          onSyncSourceChanged={handleSyncSourceChanged}
-          open={syncDrawerOpen}
-          repo={selectedRepo}
-        />
-      ) : null}
+        onClose={closeDetailDrawer}
+        onRepoUpdated={handleSyncRepoUpdated}
+        onSyncSourceChanged={handleSyncSourceChanged}
+        open={syncDrawerOpen}
+        repo={selectedRepo}
+        version={syncDrawerVersion}
+      />
     </Card>
   );
 }
@@ -1174,55 +818,6 @@ function useLightExtensionRepoFilterCollection(): Collection | undefined {
 
 function parseDetailPanel(value: string | null): DetailPanel | null {
   return value === 'source' || value === 'sync' ? value : null;
-}
-
-function detailPanelTitle(t: (key: string) => string, panel: DetailPanel): string {
-  if (panel === 'source') {
-    return t('Source');
-  }
-  return t('Sync code');
-}
-
-function formatDate(value?: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-}
-
-function compareText(left?: string | null, right?: string | null): number {
-  return String(left || '').localeCompare(String(right || ''), undefined, { numeric: true, sensitivity: 'base' });
-}
-
-function getRepoEntryCount(repo: LightExtensionRepoRecord): number {
-  if (typeof repo.entryCount === 'number') {
-    return repo.entryCount;
-  }
-
-  return entryKinds.reduce((total, kind) => total + (repo.entryKinds?.[kind] || 0), 0);
-}
-
-function getListRowTitle(row: LightExtensionListRow): string {
-  const record = row.rowType === 'repo' ? row.repo : row.job;
-  return record.title || record.name;
-}
-
-function getListRowName(row: LightExtensionListRow): string {
-  return row.rowType === 'repo' ? row.repo.name : row.job.name;
-}
-
-function getListRowDescription(row: LightExtensionListRow): string | null | undefined {
-  return row.rowType === 'repo' ? row.repo.description : row.job.description;
-}
-
-function getListRowEntryCount(row: LightExtensionListRow): number {
-  return row.rowType === 'repo' ? getRepoEntryCount(row.repo) : 0;
-}
-
-function getListRowUpdatedAt(row: LightExtensionListRow): string | null | undefined {
-  return row.rowType === 'repo' ? row.repo.updatedAt : row.job.updatedAt;
 }
 
 function getDateTimestamp(value?: string | null): number {
