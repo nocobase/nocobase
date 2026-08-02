@@ -243,7 +243,11 @@ export default class PluginFieldSequenceServer extends Plugin {
               }
             };
 
-            if (primaryKeyFields.length && primaryKeyFields.length === sortablePrimaryKeyFields.length) {
+            if (
+              !app.db.inDialect('sqlite') &&
+              primaryKeyFields.length &&
+              primaryKeyFields.length === sortablePrimaryKeyFields.length
+            ) {
               await collection.repository.chunkWithCursor({
                 ...latestBatchQuery,
                 chunkSize,
