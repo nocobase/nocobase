@@ -46,15 +46,6 @@ describe('ServerBaseContext', () => {
     expect((ctx as any).foo).toBe(1);
   });
 
-  it('defineMethod: accessible and bound', () => {
-    const ctx = new ServerBaseContext();
-    (ctx as any).defineMethod('add', function (a: number, b: number) {
-      return a + b;
-    });
-    expect((ctx as any).add(2, 3)).toBe(5);
-    expect('add' in (ctx as any)).toBe(true);
-  });
-
   it('delegate: property lookup falls back to delegates', () => {
     const parent = new ServerBaseContext();
     (parent as any).defineProperty('foo', { value: 42 });
@@ -67,9 +58,9 @@ describe('ServerBaseContext', () => {
   it('delegate: getter receives top-level proxy as ctx', () => {
     const parent = new ServerBaseContext();
     const child = new ServerBaseContext();
-    (child as any).defineMethod('hello', () => 'ok');
+    (child as any).defineProperty('message', { value: 'ok' });
     (parent as any).defineProperty('x', {
-      get: (ctx: any) => ctx.hello(),
+      get: (ctx: any) => ctx.message,
     });
     (child as any).delegate(parent as any);
     expect((child as any).x).toBe('ok');

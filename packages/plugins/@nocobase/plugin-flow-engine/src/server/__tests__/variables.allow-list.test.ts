@@ -7,13 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { ResourcerContext } from '@nocobase/resourcer';
 import { generateFlowModelRd } from '@nocobase/utils';
+import { vi } from 'vitest';
+import type { VariablePathRef } from '../template/variable-expression';
 import { authorizeVariablesResolve } from '../variables/allow-list';
-import { validatePopupContextParams, variables } from '../variables/registry';
+import { variables } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 type FakeCtxOptions = {
+  allowConfigure?: boolean;
   currentRole?: string;
+  findModelById?: (uid: string) => Promise<unknown>;
+  findRoles?: () => Promise<unknown[]>;
   models?: Record<string, unknown>;
   token?: string;
 };
@@ -40,7 +46,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
     app: {
       acl: {
         getRole: () => ({
-          getStrategy: () => ({ allowConfigure: false }),
+          getStrategy: () => ({ allowConfigure: options.allowConfigure === true }),
         }),
       },
       dataSourceManager: {
@@ -56,7 +62,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
-              findModelById: async (uid: string) => models[uid] || null,
+              findModelById: options.findModelById || (async (uid: string) => models[uid] || null),
             },
           };
         }
@@ -64,7 +70,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
       },
       getRepository: (name: string) => {
         if (name === 'roles') {
-          return { find: async () => [] };
+          return { find: options.findRoles || (async () => []) };
         }
         return {};
       },
@@ -74,7 +80,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
       currentRole,
       currentRoles: [currentRole],
     },
-  } as any;
+  } as unknown as ResourcerContext;
 }
 
 function createFlowModel(uid: string, template: unknown) {
@@ -180,7 +186,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.contextParams).not.toHaveProperty('user.profile');
   });
 
-  it('keeps strict source validation for ordinary record contextParams', async () => {
+  it('does not include runtime record sources in path authorization', async () => {
     const session = createTokenSession();
     const modelUid = 'strict-view-record-source';
     const ctx = createFakeCtx({
@@ -194,11 +200,24 @@ describe('variables:resolve allow-list authorization', () => {
       rd: session.rd(modelUid),
       template: { name: '{{ ctx.view.record.name }}' },
       contextParams: {
-        'view.record': { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' },
+        'view.record': {
+          associationName: 'users.roles',
+          collection: 'roles',
+          dataSourceKey: 'secondary',
+          filterByTk: ['root'],
+          sourceId: 9,
+        },
       },
     });
 
-    expect(result.allowed).toBe(false);
+    expect(result.allowed).toBe(true);
+    expect(result.contextParams['view.record']).toEqual({
+      associationName: 'users.roles',
+      collection: 'roles',
+      dataSourceKey: 'secondary',
+      filterByTk: ['root'],
+      sourceId: 9,
+    });
   });
 
   it('keeps dash field names intact when matching requested keys', async () => {
@@ -243,7 +262,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
   });
 
-  it('lets official popup record contextParams skip static source matching', async () => {
+  it('accepts popup record contextParams from arbitrary runtime sources', async () => {
     const session = createTokenSession();
     const modelUid = 'popup-official-source-skip';
     const ctx = createFakeCtx({
@@ -265,25 +284,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(true);
   });
 
-  it('does not mark non-official popup record context keys for source skip', () => {
-    const result = validatePopupContextParams({
-      recordEntries: [
-        {
-          contextKey: 'popup.parent.record',
-          params: { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' },
-        },
-        {
-          contextKey: 'popup.custom',
-          params: { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' },
-        },
-      ],
-    });
-
-    expect(result.allowed).toBe(true);
-    expect(result.skipSourceValidationContextKeys).toEqual(['popup.parent.record']);
-  });
-
-  it('rebuilds record entries when custom validators mutate contextParams in place', async () => {
+  it('does not reintroduce source checks after validators mutate contextParams', async () => {
     variables.register({
       name: 'evil',
       scope: 'request',
@@ -309,7 +310,14 @@ describe('variables:resolve allow-list authorization', () => {
       contextParams: {},
     });
 
-    expect(result.allowed).toBe(false);
+    expect(result.allowed).toBe(true);
+    expect(result.contextParams['evil.record']).toEqual({
+      associationName: undefined,
+      collection: 'roles',
+      dataSourceKey: 'main',
+      filterByTk: 'root',
+      sourceId: undefined,
+    });
   });
 
   it('still requires popup requested keys to exist in the flow model allow-list', async () => {
@@ -333,11 +341,177 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
   });
 
+  it('rejects missing, invalid, and model-external paths for ordinary roles', async () => {
+    const session = createTokenSession();
+    const otherSession = createTokenSession(2);
+    const modelUid = 'ordinary-path-gates';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: { [modelUid]: createFlowModel(modelUid, '{{ctx.user.id}}') },
+    });
+
+    const missingRd = await authorizeVariablesResolve(ctx, { template: '{{ctx.user.id}}' });
+    const invalidRd = await authorizeVariablesResolve(ctx, {
+      rd: otherSession.rd(modelUid),
+      template: '{{ctx.user.id}}',
+    });
+    const externalPath = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ctx.user.name}}',
+    });
+
+    expect([missingRd.allowed, invalidRd.allowed, externalPath.allowed]).toEqual([false, false, false]);
+  });
+
+  it('collects paths from the whole model while ignoring unsupported client expressions', async () => {
+    const session = createTokenSession();
+    const modelUid = 'whole-model-collection';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createFlowModel(modelUid, {
+          clientOnly: '{{ctx.record[field]}}',
+          nested: { value: '{{ctx.user.profile.name}}' },
+        }),
+      },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ctx.user.profile.name}}',
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.policy.allowedPaths.has(result.analysis.paths[0].canonicalKey)).toBe(true);
+  });
+
+  it('uses exact whole-object, numeric wildcard, and literal dotted-key canonical paths', async () => {
+    const session = createTokenSession();
+    const modelUid = 'canonical-path-semantics';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createFlowModel(modelUid, ['{{ctx.whole}}', '{{ctx.roles[0].name}}', '{{ctx.data["a.b"]}}']),
+      },
+    });
+    const rd = session.rd(modelUid);
+
+    const whole = await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.whole}}' });
+    const child = await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.whole.id}}' });
+    const otherIndex = await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.roles[9].name}}' });
+    const dottedKey = await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.data["a.b"]}}' });
+    const dottedPath = await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.data.a.b}}' });
+
+    expect([whole.allowed, child.allowed, otherIndex.allowed, dottedKey.allowed, dottedPath.allowed]).toEqual([
+      true,
+      false,
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it('lets configure roles bypass model paths but not server syntax restrictions', async () => {
+    const ctx = createFakeCtx({ allowConfigure: true });
+
+    const staticPath = await authorizeVariablesResolve(ctx, { template: '{{ctx.view.record.name}}' });
+    const dynamicPath = await authorizeVariablesResolve(ctx, { template: '{{ctx.view.record[field]}}' });
+    const method = await authorizeVariablesResolve(ctx, { template: '{{ctx.view.load()}}' });
+
+    expect(staticPath.allowed).toBe(true);
+    expect(staticPath.policy.allowAll).toBe(true);
+    expect([dynamicPath.allowed, method.allowed]).toEqual([false, false]);
+  });
+
+  it('passes structured usage and grants registered model-free variables without rd', async () => {
+    let receivedUsage: unknown;
+    variables.register({
+      name: 'external',
+      scope: 'request',
+      validateContextParams: ({ contextParams, usage }) => {
+        receivedUsage = usage;
+        contextParams.user = { collection: 'roles', filterByTk: 1 };
+        return { allowed: true, contextParams, requireFlowModel: false };
+      },
+      attach: () => undefined,
+    });
+
+    const result = await authorizeVariablesResolve(createFakeCtx(), {
+      template: '{{ctx.external.items[0].name}}',
+    });
+    const refs = receivedUsage as readonly VariablePathRef[];
+
+    expect(result.allowed).toBe(true);
+    expect(result.policy.unrestrictedVariables.has('external')).toBe(true);
+    expect(refs[0].runtimeSegments).toEqual(['items', 0, 'name']);
+    expect(refs[0]).toBe(result.analysis.usage.external[0]);
+    expect(result.contextParams).not.toHaveProperty('user');
+  });
+
+  it('returns sanitized contextParams when a later validator denies the request', async () => {
+    variables.register({
+      name: 'mutator',
+      scope: 'request',
+      validateContextParams: ({ contextParams }) => {
+        contextParams.user = { collection: 'roles', filterByTk: 1 };
+        return { contextParams, requireFlowModel: false };
+      },
+      attach: () => undefined,
+    });
+    variables.register({
+      name: 'denied',
+      scope: 'request',
+      validateContextParams: () => ({ allowed: false, requireFlowModel: false }),
+      attach: () => undefined,
+    });
+
+    const result = await authorizeVariablesResolve(createFakeCtx(), {
+      template: ['{{ctx.mutator.value}}', '{{ctx.denied.value}}'],
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.contextParams).not.toHaveProperty('user');
+  });
+
+  it('caches true role policies per request', async () => {
+    const findRoles = vi.fn(async () => [{ allowConfigure: true }]);
+    const ctx = createFakeCtx({ findRoles });
+
+    const first = await authorizeVariablesResolve(ctx, { template: '{{ctx.unlisted.value}}' });
+    const second = await authorizeVariablesResolve(ctx, { template: '{{ctx.unlisted.value}}' });
+
+    expect(first.policy.allowAll).toBe(true);
+    expect(second.allowed).toBe(true);
+    expect(findRoles).toHaveBeenCalledTimes(1);
+  });
+
+  it('caches false role policies and both present and missing flow models per request', async () => {
+    const session = createTokenSession();
+    const modelUid = 'request-cache-model';
+    const findRoles = vi.fn(async () => []);
+    const findModelById = vi.fn(async (uid: string) =>
+      uid === modelUid ? createFlowModel(modelUid, '{{ctx.user.id}}') : null,
+    );
+    const ctx = createFakeCtx({ findModelById, findRoles, token: session.token });
+    const rd = session.rd(modelUid);
+    const missingRd = session.rd('missing-model');
+
+    await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.user.id}}' });
+    await authorizeVariablesResolve(ctx, { rd, template: '{{ctx.user.id}}' });
+    await authorizeVariablesResolve(ctx, { rd: missingRd, template: '{{ctx.user.id}}' });
+    await authorizeVariablesResolve(ctx, { rd: missingRd, template: '{{ctx.user.id}}' });
+
+    expect(findRoles).toHaveBeenCalledTimes(1);
+    expect(findModelById).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects unsupported dynamic ctx paths for non-configure roles', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx(), {
       template: { value: '{{ ctx[dynamicKey].record.id }}' },
     });
 
     expect(result.allowed).toBe(false);
+    expect(result.analysis.supported).toBe(false);
+    expect(result.policy.allowAll).toBe(false);
   });
 });

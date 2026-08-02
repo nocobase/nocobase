@@ -8,13 +8,13 @@
  */
 
 import type { ResourcerContext } from '@nocobase/resourcer';
-import {
-  decodeJwtSessionPayload,
-  extractVariableUsage,
-  getFlowModelRdSessionId,
-  resolveFlowModelUidFromRd,
-} from '@nocobase/utils';
+import { decodeJwtSessionPayload, getFlowModelRdSessionId, resolveFlowModelUidFromRd } from '@nocobase/utils';
 import FlowModelRepository from '../repository';
+import {
+  analyzeVariableTemplate,
+  type AnalyzedTemplate,
+  type ResolvePathPolicy,
+} from '../template/variable-expression';
 import type { JSONValue } from '../template/resolver';
 import { sanitizeRegisteredVariableContextParams, variables } from './registry';
 
@@ -25,18 +25,6 @@ type RecordParams = {
   filterByTk: unknown;
   sourceId?: unknown;
 };
-
-type VariableAllowList = {
-  sourceKeysByContextVariableKey: Map<string, Set<string>>;
-  variables: Set<string>;
-};
-
-type SourceRef = {
-  collection: string;
-  dataSourceKey: string;
-};
-
-const unsupportedVariableKey = '__unsupported_dynamic_variable_path__';
 
 type RoleWithStrategy = {
   getStrategy?: () => { allowConfigure?: boolean } | null | undefined;
@@ -51,11 +39,15 @@ type RoleRecord = {
   get?: (key: string) => unknown;
 };
 
-type AuthorizationResult = {
+export type AuthorizationResult = {
   allowed: boolean;
+  analysis: AnalyzedTemplate;
   contextParams: Record<string, unknown>;
   flowModelUid?: string;
+  policy: ResolvePathPolicy;
 };
+
+type FlowModelPathCacheValue = Promise<ReadonlySet<string> | null> | ReadonlySet<string> | null;
 
 export function clearVariableAllowListCache(app?: object) {
   // Kept as a stable invalidation hook for callers; allow-lists are request-local to avoid stale cross-request caches.
@@ -86,8 +78,8 @@ export function sanitizeContextParams(value: Record<string, unknown> = {}): Reco
   const sanitize = (input: unknown): unknown => {
     if (isRecordParams(input)) {
       const { associationName, collection, filterByTk, dataSourceKey, sourceId } = input;
-      const fields = sanitizeStringArray((input as Record<string, unknown>).fields);
-      const appends = sanitizeStringArray((input as Record<string, unknown>).appends);
+      const fields = sanitizeStringArray(input.fields);
+      const appends = sanitizeStringArray(input.appends);
       return {
         associationName,
         collection,
@@ -102,203 +94,41 @@ export function sanitizeContextParams(value: Record<string, unknown> = {}): Reco
     if (!isObject(input)) return input;
 
     const output: Record<string, unknown> = {};
-    for (const [key, child] of Object.entries(input)) {
-      output[key] = sanitize(child);
-    }
+    for (const [key, child] of Object.entries(input)) output[key] = sanitize(child);
     return output;
   };
 
   return sanitize(value) as Record<string, unknown>;
 }
 
-function normalizeVariablePath(path: string): string {
-  return String(path || '')
-    .replace(/\[(?:\d+)\]/g, '')
-    .replace(/\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\]/g, (_m, g1, g2) => `.${(g1 || g2) as string}`)
-    .replace(/\.\.+/g, '.')
-    .replace(/^\./, '')
-    .replace(/\.$/, '');
+function getRequestState(ctx: ResourcerContext): Record<string, unknown> {
+  const request = ctx as ResourcerContext & { state?: Record<string, unknown> };
+  if (!request.state) request.state = {};
+  return request.state;
 }
 
-function toVariableKey(varName: string, path?: string): string {
-  const normalizedPath = normalizeVariablePath(path || '');
-  return normalizedPath ? `${varName}.${normalizedPath}` : varName;
-}
-
-export function extractVariableKeys(template: JSONValue): Set<string> {
-  const keys = new Set<string>();
-  const { unsupportedDynamicPath, usage } = extractVariableUsage(template);
-  if (unsupportedDynamicPath) {
-    keys.add(unsupportedVariableKey);
-  }
-
-  for (const [varName, paths] of Object.entries(usage)) {
-    if (!paths.length) {
-      keys.add(toVariableKey(varName));
-      continue;
-    }
-    paths.forEach((path) => keys.add(toVariableKey(varName, path)));
-  }
-  return keys;
-}
-
-function toSourceKey(recordParams: Pick<RecordParams, 'collection' | 'dataSourceKey'>): string {
-  return `${recordParams.dataSourceKey || 'main'}:${recordParams.collection}`;
-}
-
-function makeContextVariableKey(contextKey: string, variableKey: string) {
-  return `${contextKey}\n${variableKey}`;
-}
-
-function addSourceKey(map: Map<string, Set<string>>, contextKey: string, variableKey: string, sourceKey: string) {
-  if (!contextKey || !variableKey || !sourceKey) return;
-  const key = makeContextVariableKey(contextKey, variableKey);
-  let sources = map.get(key);
-  if (!sources) {
-    sources = new Set<string>();
-    map.set(key, sources);
-  }
-  sources.add(sourceKey);
-}
-
-function normalizeContextKey(contextKey: string): string {
-  return normalizeVariablePath(contextKey.replace(/(^|\.)\d+(?=\.|$)/g, '$1'));
-}
-
-function getCollectionField(ctx: ResourcerContext, source: SourceRef, fieldName: string) {
-  try {
-    const app = ctx.app as unknown as {
-      dataSourceManager?: {
-        get?: (key: string) => { collectionManager?: { getCollection?: (name: string) => unknown } };
-      };
-    };
-    const collection =
-      app.dataSourceManager?.get?.(source.dataSourceKey)?.collectionManager?.getCollection?.(source.collection) ||
-      ctx.db.getCollection(source.collection);
-    return (
-      (
-        collection as {
-          fields?: { get?: (name: string) => { target?: string; options?: { target?: string } } };
-          getField?: (name: string) => { target?: string; options?: { target?: string } };
-        }
-      )?.fields?.get?.(fieldName) ||
-      (
-        collection as {
-          getField?: (name: string) => { target?: string; options?: { target?: string } };
-        }
-      )?.getField?.(fieldName)
-    );
-  } catch {
-    return undefined;
-  }
-}
-
-function resolveContextSource(ctx: ResourcerContext, ownerSource: SourceRef, contextParts: string[]): SourceRef | null {
-  if (!contextParts.length) return null;
-
-  const recordAnchorIndex = contextParts.findIndex(
-    (part, index) => index > 0 && ['record', 'sourceRecord'].includes(part),
-  );
-  const associationPath = recordAnchorIndex >= 0 ? contextParts.slice(recordAnchorIndex + 1) : contextParts.slice(1);
-
-  let currentSource = ownerSource;
-  for (const segment of associationPath) {
-    if (!segment || /^\d+$/.test(segment)) continue;
-    const field = getCollectionField(ctx, currentSource, segment);
-    const target = field?.target || field?.options?.target;
-    if (!target) return null;
-    currentSource = { collection: target, dataSourceKey: currentSource.dataSourceKey };
-  }
-  return currentSource;
-}
-
-function addVariableSourceBindings(
+async function getFlowModelAllowedPaths(
   ctx: ResourcerContext,
-  sources: Map<string, Set<string>>,
-  ownerSource: SourceRef,
-  variableKey: string,
-) {
-  if (!variableKey || variableKey === unsupportedVariableKey) return;
-  const parts = variableKey.split('.').filter(Boolean);
-  for (let index = 1; index < parts.length; index += 1) {
-    const contextKey = normalizeContextKey(parts.slice(0, index).join('.'));
-    const source = resolveContextSource(ctx, ownerSource, contextKey.split('.').filter(Boolean));
-    if (source) {
-      addSourceKey(sources, contextKey, variableKey, toSourceKey(source));
-    }
-  }
-
-  const exactContextKey = normalizeContextKey(variableKey);
-  const exactSource = resolveContextSource(ctx, ownerSource, exactContextKey.split('.').filter(Boolean));
-  if (exactSource) {
-    addSourceKey(sources, exactContextKey, variableKey, toSourceKey(exactSource));
-  }
-}
-
-function collectSourceKeysFromModel(ctx: ResourcerContext, model: unknown): Map<string, Set<string>> {
-  const sources = new Map<string, Set<string>>();
-
-  const addTemplateSources = (source: SourceRef | undefined, template: JSONValue) => {
-    if (!source) return;
-    extractVariableKeys(template).forEach((variableKey) =>
-      addVariableSourceBindings(ctx, sources, source, variableKey),
-    );
-  };
-
-  const getSourceFromNode = (node: Record<string, unknown>) => {
-    const stepParams = node.stepParams;
-    const resourceSettings =
-      isObject(stepParams) && isObject(stepParams.resourceSettings) ? stepParams.resourceSettings : undefined;
-    const init = isObject(resourceSettings?.init) ? resourceSettings.init : undefined;
-    const collectionName = typeof init?.collectionName === 'string' ? init.collectionName : undefined;
-    if (!collectionName) return undefined;
-    return {
-      collection: collectionName,
-      dataSourceKey: typeof init?.dataSourceKey === 'string' ? init.dataSourceKey : 'main',
-    };
-  };
-
-  const visit = (node: unknown, inheritedSource?: SourceRef) => {
-    if (Array.isArray(node)) {
-      node.forEach((item) => visit(item, inheritedSource));
-      return;
-    }
-    if (typeof node === 'string') {
-      addTemplateSources(inheritedSource, node);
-      return;
-    }
-    if (!isObject(node)) return;
-
-    const source = getSourceFromNode(node) || inheritedSource;
-    Object.values(node).forEach((child) => visit(child, source));
-  };
-
-  visit(model);
-  return sources;
-}
-
-async function getVariableAllowList(ctx: ResourcerContext, flowModelUid: string): Promise<VariableAllowList | null> {
-  const state = (ctx as ResourcerContext & { state?: Record<string, unknown> }).state;
+  flowModelUid: string,
+): Promise<ReadonlySet<string> | null> {
+  const state = getRequestState(ctx);
   const cacheKey = '__variableResolveAllowListCache';
   const cache =
-    (state?.[cacheKey] as Map<string, VariableAllowList> | undefined) || new Map<string, VariableAllowList>();
-  if (state && !state[cacheKey]) {
-    state[cacheKey] = cache;
-  }
-  const cached = cache.get(flowModelUid);
-  if (cached) return cached;
+    (state[cacheKey] as Map<string, FlowModelPathCacheValue> | undefined) || new Map<string, FlowModelPathCacheValue>();
+  state[cacheKey] = cache;
+  if (cache.has(flowModelUid)) return (await cache.get(flowModelUid)) || null;
 
-  const repository = ctx.db.getCollection('flowModels').repository as FlowModelRepository;
-  const model = await repository.findModelById(flowModelUid, { includeAsyncNode: true });
-  if (!model) return null;
-
-  const variables = extractVariableKeys(model as JSONValue);
-  const allowList: VariableAllowList = {
-    sourceKeysByContextVariableKey: collectSourceKeysFromModel(ctx, model),
-    variables,
-  };
-  cache.set(flowModelUid, allowList);
-  return allowList;
+  const load = (async () => {
+    const repository = ctx.db.getCollection('flowModels').repository as FlowModelRepository;
+    const model = await repository.findModelById(flowModelUid, { includeAsyncNode: true });
+    if (!model) return null;
+    const analysis = analyzeVariableTemplate(model, { mode: 'flow-model' });
+    return new Set(analysis.paths.map((path) => path.canonicalKey));
+  })();
+  cache.set(flowModelUid, load);
+  const allowedPaths = await load;
+  cache.set(flowModelUid, allowedPaths);
+  return allowedPaths;
 }
 
 function getCurrentRoleNames(ctx: ResourcerContext): string[] {
@@ -307,29 +137,20 @@ function getCurrentRoleNames(ctx: ResourcerContext): string[] {
   const currentRoles = state?.currentRoles;
   if (Array.isArray(currentRoles)) {
     currentRoles.forEach((roleName) => {
-      if (typeof roleName === 'string' && roleName) {
-        roleNames.add(roleName);
-      }
+      if (typeof roleName === 'string' && roleName) roleNames.add(roleName);
     });
   }
-
-  const currentRole = state?.currentRole;
-  if (typeof currentRole === 'string' && currentRole) {
-    roleNames.add(currentRole);
-  }
-
+  if (typeof state?.currentRole === 'string' && state.currentRole) roleNames.add(state.currentRole);
   return Array.from(roleNames);
 }
 
-async function currentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolean> {
+async function readCurrentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolean> {
   const roleNames = getCurrentRoleNames(ctx);
   if (!roleNames.length) return false;
   if (roleNames.includes('root')) return true;
 
   const acl = (ctx.app as typeof ctx.app & { acl?: AclWithRoles }).acl;
-  if (roleNames.some((roleName) => acl?.getRole?.(roleName)?.getStrategy?.()?.allowConfigure === true)) {
-    return true;
-  }
+  if (roleNames.some((roleName) => acl?.getRole?.(roleName)?.getStrategy?.()?.allowConfigure === true)) return true;
 
   try {
     const roles = (await ctx.db.getRepository('roles').find({
@@ -344,33 +165,18 @@ async function currentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolea
   }
 }
 
-function collectRecordParamEntries(
-  value: unknown,
-  path: string[] = [],
-  output: Array<{ contextKey: string; params: RecordParams }> = [],
-): Array<{ contextKey: string; params: RecordParams }> {
-  if (isRecordParams(value)) {
-    output.push({ contextKey: path.join('.'), params: value });
-    return output;
-  }
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectRecordParamEntries(item, [...path, String(index)], output));
-    return output;
-  }
-  if (!isObject(value)) return output;
+async function currentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolean> {
+  const state = getRequestState(ctx);
+  const cacheKey = '__variableResolveRoleAllowsConfigure';
+  const cached = state[cacheKey];
+  if (typeof cached === 'boolean') return cached;
+  if (cached instanceof Promise) return await cached;
 
-  for (const [key, child] of Object.entries(value)) {
-    collectRecordParamEntries(child, [...path, key], output);
-  }
-  return output;
-}
-
-function getRequestedKeysForContext(requestedKeys: Set<string>, contextKey: string): string[] {
-  const normalizedContextKey = normalizeContextKey(contextKey);
-  const candidates = new Set([contextKey, normalizedContextKey].filter(Boolean));
-  return [...requestedKeys].filter((key) =>
-    [...candidates].some((candidate) => key === candidate || key.startsWith(`${candidate}.`)),
-  );
+  const pending = readCurrentRoleAllowsConfigure(ctx);
+  state[cacheKey] = pending;
+  const allowed = await pending;
+  state[cacheKey] = allowed;
+  return allowed;
 }
 
 function getRequestBearerToken(ctx: ResourcerContext): string {
@@ -381,32 +187,26 @@ function getRequestBearerToken(ctx: ResourcerContext): string {
   const authorization =
     typeof ctx.get === 'function' ? ctx.get('authorization') || ctx.get('Authorization') : undefined;
   if (typeof authorization !== 'string') return '';
-  const matched = authorization.match(/^Bearer\s+(.+)$/i);
-  return matched?.[1] || '';
+  return authorization.match(/^Bearer\s+(.+)$/i)?.[1] || '';
 }
 
 function getCurrentRequestRdSessionId(ctx: ResourcerContext): string {
-  const state = (ctx as ResourcerContext & { state?: Record<string, unknown> }).state;
+  const state = getRequestState(ctx);
   const cacheKey = '__variableResolveRdSessionId';
-  if (typeof state?.[cacheKey] === 'string') {
-    return state[cacheKey] as string;
-  }
+  const cached = state[cacheKey];
+  if (typeof cached === 'string') return cached;
 
   const sessionId = getFlowModelRdSessionId(decodeJwtSessionPayload(getRequestBearerToken(ctx)));
-  if (state) {
-    state[cacheKey] = sessionId;
-  }
+  state[cacheKey] = sessionId;
   return sessionId;
 }
 
 function resolveFlowModelUidFromRequestRd(ctx: ResourcerContext, rd?: string | number): string {
   if (typeof rd !== 'string' || !rd) return '';
-  const state = (ctx as ResourcerContext & { state?: Record<string, unknown> }).state;
+  const state = getRequestState(ctx);
   const cacheKey = '__variableResolveRdUidCache';
-  const cache = (state?.[cacheKey] as Map<string, string> | undefined) || new Map<string, string>();
-  if (state && !state[cacheKey]) {
-    state[cacheKey] = cache;
-  }
+  const cache = (state[cacheKey] as Map<string, string> | undefined) || new Map<string, string>();
+  state[cacheKey] = cache;
   if (cache.has(rd)) return cache.get(rd) || '';
 
   const flowModelUid = resolveFlowModelUidFromRd(rd, getCurrentRequestRdSessionId(ctx)) || '';
@@ -414,17 +214,21 @@ function resolveFlowModelUidFromRequestRd(ctx: ResourcerContext, rd?: string | n
   return flowModelUid;
 }
 
-function getVariableNameFromKey(variableKey: string): string {
-  return String(variableKey || '').split('.')[0] || '';
+function createPolicy(
+  allowAll = false,
+  allowedPaths: ReadonlySet<string> = new Set(),
+  unrestrictedVariables: ReadonlySet<string> = new Set(),
+): ResolvePathPolicy {
+  return { allowAll, allowedPaths, unrestrictedVariables };
 }
 
-function getRecordEntriesForVariable(
-  entries: Array<{ contextKey: string; params: RecordParams }>,
-  varName: string,
-): Array<{ contextKey: string; params: Record<string, unknown> }> {
-  return entries
-    .filter(({ contextKey }) => contextKey === varName || contextKey.startsWith(`${varName}.`))
-    .map(({ contextKey, params }) => ({ contextKey, params: params as Record<string, unknown> }));
+function denied(
+  analysis: AnalyzedTemplate,
+  contextParams: Record<string, unknown>,
+  policy: ResolvePathPolicy,
+  flowModelUid?: string,
+): AuthorizationResult {
+  return { allowed: false, analysis, contextParams, flowModelUid, policy };
 }
 
 export async function authorizeVariablesResolve(
@@ -435,106 +239,59 @@ export async function authorizeVariablesResolve(
     template: JSONValue;
   },
 ): Promise<AuthorizationResult> {
-  const contextParams = options.contextParams || {};
-  let sanitizedContextParams = sanitizeContextParams(contextParams);
-
+  const analysis = analyzeVariableTemplate(options.template);
+  let contextParams = sanitizeContextParams(options.contextParams || {});
   const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
-  const { usage } = extractVariableUsage(options.template);
-  let recordEntries = collectRecordParamEntries(sanitizedContextParams);
-  const flowModelRequiredVars = new Set<string>();
-  const skipSourceValidationVars = new Set<string>();
-  const skipSourceValidationContextKeys = new Set<string>();
+  const unrestrictedVariables = new Set<string>();
+  let policy = createPolicy(false, new Set(), unrestrictedVariables);
 
-  for (const [varName, usedPaths] of Object.entries(usage)) {
+  if (!analysis.supported) {
+    contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
+    return denied(analysis, contextParams, policy, flowModelUid || undefined);
+  }
+
+  const flowModelRequiredVars = new Set<string>();
+  for (const [varName, usedPaths] of Object.entries(analysis.usage)) {
     const def = variables.get(varName);
     const validation = await def?.validateContextParams?.({
-      contextParams: sanitizedContextParams,
+      contextParams,
       flowModelUid: flowModelUid || undefined,
       koaCtx: ctx,
-      recordEntries: getRecordEntriesForVariable(recordEntries, varName),
-      usage: usedPaths,
+      recordEntries: [],
+      usage: usedPaths as unknown as string[],
       varName,
     });
 
-    sanitizedContextParams = sanitizeContextParams(validation?.contextParams || sanitizedContextParams);
-    recordEntries = collectRecordParamEntries(sanitizedContextParams);
-
+    contextParams = sanitizeContextParams(validation?.contextParams || contextParams);
     if (validation?.allowed === false) {
-      return { allowed: false, contextParams: sanitizedContextParams };
+      contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
+      return denied(analysis, contextParams, policy, flowModelUid || undefined);
     }
-
-    if (validation?.skipSourceValidation) {
-      skipSourceValidationVars.add(varName);
-    }
-    validation?.skipSourceValidationContextKeys?.forEach((contextKey) => {
-      skipSourceValidationContextKeys.add(normalizeContextKey(contextKey));
-    });
-
-    if (validation?.requireFlowModel === false) {
-      continue;
-    }
-
-    flowModelRequiredVars.add(varName);
+    if (validation?.requireFlowModel === false) unrestrictedVariables.add(varName);
+    else flowModelRequiredVars.add(varName);
   }
 
-  sanitizedContextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(sanitizedContextParams));
-  recordEntries = collectRecordParamEntries(sanitizedContextParams);
+  contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
 
   if (await currentRoleAllowsConfigure(ctx)) {
-    return { allowed: true, contextParams: sanitizedContextParams };
+    policy = createPolicy(true, new Set(), unrestrictedVariables);
+    return { allowed: true, analysis, contextParams, policy };
   }
 
-  const requestedKeys = extractVariableKeys(options.template);
-  if (requestedKeys.has(unsupportedVariableKey)) {
-    return { allowed: false, contextParams: sanitizedContextParams };
+  if (flowModelRequiredVars.size > 0 && !flowModelUid) return denied(analysis, contextParams, policy);
+
+  const allowedPaths = flowModelUid ? await getFlowModelAllowedPaths(ctx, flowModelUid) : null;
+  policy = createPolicy(false, allowedPaths || new Set(), unrestrictedVariables);
+  if (flowModelRequiredVars.size > 0 && !allowedPaths) {
+    return denied(analysis, contextParams, policy, flowModelUid || undefined);
   }
 
-  if (flowModelRequiredVars.size > 0 && !flowModelUid) {
-    return { allowed: false, contextParams: sanitizedContextParams };
-  }
-
-  const allowList = flowModelUid ? await getVariableAllowList(ctx, flowModelUid) : null;
-  if (flowModelRequiredVars.size > 0 && !allowList) {
-    return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
-  }
-
-  for (const key of requestedKeys) {
-    const varName = getVariableNameFromKey(key);
-    if (!flowModelRequiredVars.has(varName)) {
-      continue;
-    }
-    if (!allowList?.variables.has(key)) {
-      return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
+  for (const path of analysis.paths) {
+    if (unrestrictedVariables.has(path.varName)) continue;
+    if (!allowedPaths?.has(path.canonicalKey)) {
+      return denied(analysis, contextParams, policy, flowModelUid || undefined);
     }
   }
 
-  for (const { contextKey, params } of recordEntries) {
-    const relevantKeys = getRequestedKeysForContext(requestedKeys, contextKey);
-    if (!relevantKeys.length) {
-      continue;
-    }
-
-    const sourceKey = toSourceKey(params);
-    const normalizedContextKey = normalizeContextKey(contextKey);
-    for (const key of relevantKeys) {
-      const varName = getVariableNameFromKey(key);
-      if (skipSourceValidationVars.has(varName) || skipSourceValidationContextKeys.has(normalizedContextKey)) {
-        continue;
-      }
-      if (!allowList) {
-        return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
-      }
-      const allowedSources = allowList.sourceKeysByContextVariableKey.get(
-        makeContextVariableKey(normalizedContextKey, key),
-      );
-      if (!allowedSources) {
-        return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
-      }
-      if (!allowedSources.has(sourceKey)) {
-        return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
-      }
-    }
-  }
-
-  return { allowed: true, contextParams: sanitizedContextParams, flowModelUid };
+  return { allowed: true, analysis, contextParams, flowModelUid: flowModelUid || undefined, policy };
 }

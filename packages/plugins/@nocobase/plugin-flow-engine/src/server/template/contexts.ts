@@ -32,13 +32,11 @@ export interface PropertyOptions {
 /**
  * 服务器端上下文基础类。
  * - 支持以 defineProperty 定义惰性/常量属性，并可选择缓存
- * - 支持以 defineMethod 定义方法
- * - 支持 delegate 机制，属性与方法可回退到被委托的上游上下文
- * - 通过 Proxy 实现按需求值与 this 绑定
+ * - 支持 delegate 机制，属性可回退到被委托的上游上下文
+ * - 通过 Proxy 实现按需求值
  */
 export class ServerBaseContext {
   protected _props: Record<string, PropertyOptions> = {};
-  protected _methods: Record<string, (...args: any[]) => any> = {};
   protected _cache: Record<string, any> = {};
   protected _delegates: ServerBaseContext[] = [];
   protected _proxy?: ServerBaseContext;
@@ -79,20 +77,9 @@ export class ServerBaseContext {
     });
   }
 
-  /** 定义一个方法（不可枚举、不可写），访问时会自动绑定到对应实例 */
-  defineMethod(name: string, fn: (...args: any[]) => any) {
-    this._methods[name] = fn;
-    Object.defineProperty(this, name, {
-      configurable: true,
-      enumerable: false,
-      writable: false,
-      value: fn, // bind at proxy access to keep delegate binding consistent
-    });
-  }
-
   /**
    * 委托到另一个 ServerBaseContext：
-   * - 访问属性/方法找不到时，会回退到被委托者进行解析
+   * - 访问属性找不到时，会回退到被委托者进行解析
    */
   delegate(ctx: ServerBaseContext) {
     if (!(ctx instanceof ServerBaseContext)) {
@@ -111,9 +98,6 @@ export class ServerBaseContext {
     for (const key of Object.keys(this._props)) {
       if (!isBlockedSandboxKey(key)) keys.add(key);
     }
-    for (const key of Object.keys(this._methods)) {
-      if (!isBlockedSandboxKey(key)) keys.add(key);
-    }
     for (const d of this._delegates) {
       for (const key of d.getSandboxKeys()) {
         if (!isBlockedSandboxKey(key)) keys.add(key);
@@ -126,10 +110,6 @@ export class ServerBaseContext {
     if (isBlockedSandboxKey(key)) return undefined;
     if (Object.prototype.hasOwnProperty.call(this._props, key)) {
       return this._getOwn(key, current);
-    }
-    if (Object.prototype.hasOwnProperty.call(this._methods, key)) {
-      const fn = this._methods[key];
-      return typeof fn === 'function' ? fn.bind(this) : fn;
     }
     for (const d of this._delegates) {
       if (!d.getSandboxKeys().includes(key)) continue;
@@ -151,17 +131,9 @@ export class ServerBaseContext {
         if (Object.prototype.hasOwnProperty.call(target._props, key)) {
           return target._getOwn(key, this.createProxy());
         }
-        if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
-          const fn = target._methods[key];
-          return typeof fn === 'function' ? fn.bind(target) : fn;
-        }
         for (const d of target._delegates) {
           const candidate = (d as any)._getOwn?.(key, this.createProxy());
           if (typeof candidate !== 'undefined') return candidate;
-          if (Object.prototype.hasOwnProperty.call((d as any)._methods || {}, key)) {
-            const fn = (d as any)._methods[key];
-            return typeof fn === 'function' ? fn.bind(d) : fn;
-          }
         }
         return undefined;
       },
@@ -169,12 +141,7 @@ export class ServerBaseContext {
         if (typeof key !== 'string') return Reflect.has(target, key);
         if (Reflect.has(target, key)) return true;
         if (Object.prototype.hasOwnProperty.call(target._props, key)) return true;
-        if (Object.prototype.hasOwnProperty.call(target._methods, key)) return true;
-        return target._delegates.some(
-          (d) =>
-            Object.prototype.hasOwnProperty.call(d._props, key) ||
-            Object.prototype.hasOwnProperty.call(d._methods, key),
-        );
+        return target._delegates.some((d) => Object.prototype.hasOwnProperty.call(d._props, key));
       },
     });
     return this._proxy as any;

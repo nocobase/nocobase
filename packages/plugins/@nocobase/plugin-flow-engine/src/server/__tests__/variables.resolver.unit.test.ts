@@ -160,46 +160,24 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.user).toBe('{{ ctx.user.id }}');
   });
 
-  it('supports custom ctx methods attached via registry', async () => {
-    if (!variables.get('twice')) {
-      variables.register({
-        name: 'twice',
-        scope: 'request',
-        attach: (flowCtx) => flowCtx.defineMethod('twice', (n: any) => Number(n) * 2),
-      });
-    }
-    const { koa, req } = makeCtx(1);
-    const tpl = { v: '{{ ctx.twice(21) }}' } as any;
-    await variables.attachUsedVariables(req, koa, tpl, {});
-    const out = await resolveJsonTemplate(tpl, req);
-    expect(out.v).toBe(42);
-  });
-
-  it('blocks constructor traversal on context values and methods', async () => {
-    if (!variables.get('twice')) {
-      variables.register({
-        name: 'twice',
-        scope: 'request',
-        attach: (flowCtx) => flowCtx.defineMethod('twice', (n: any) => Number(n) * 2),
-      });
-    }
-    const { koa, req } = makeCtx(1);
+  it('does not expose context functions or helper constructors', async () => {
+    const { req } = makeCtx(1);
+    req.defineProperty('twice', { value: (n: number) => n * 2 });
     const tpl = {
       userCtor: '{{ ctx.user.constructor }}',
       getCtor: "{{ (await __get('user')).constructor }}",
       helperCtor: '{{ __get.constructor }}',
       methodCtor: '{{ ctx.twice.constructor }}',
-      methodStillWorks: '{{ ctx.twice(21) }}',
+      methodCall: '{{ ctx.twice(21) }}',
     } as any;
 
-    await variables.attachUsedVariables(req, koa, tpl, {});
     const out = await resolveJsonTemplate(tpl, req);
 
     expect(out.userCtor).toBe('{{ ctx.user.constructor }}');
     expect(out.getCtor).toBe("{{ (await __get('user')).constructor }}");
     expect(out.helperCtor).toBe('{{ __get.constructor }}');
     expect(out.methodCtor).toBe('{{ ctx.twice.constructor }}');
-    expect(out.methodStillWorks).toBe(42);
+    expect(out.methodCall).toBe('{{ ctx.twice(21) }}');
   });
 
   it('does not read then accessors on exposed data values', async () => {
@@ -352,10 +330,10 @@ describe('variables resolver (no HTTP)', () => {
   it('passes the top-level sandbox proxy to delegated getters', async () => {
     const parent = new ServerBaseContext();
     parent.defineProperty('x', {
-      get: (flowCtx) => flowCtx.hello(),
+      get: (flowCtx) => flowCtx.message,
     });
     const child = new ServerBaseContext();
-    child.defineMethod('hello', () => 'ok');
+    child.defineProperty('message', { value: 'ok' });
     child.delegate(parent);
 
     const out = await resolveJsonTemplate('{{ ctx.x }}', child);
