@@ -126,6 +126,7 @@ export default {
   actions: {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
+      const portalName = ctx.get('x-portal') || undefined;
       const filter = ctx.action.params.filter || {};
       const scope = ctx.action.params.scope;
       ctx.action.mergeParams({
@@ -134,6 +135,7 @@ export default {
           userId,
           from: filter.from ?? 'main-agent',
           category: 'chat',
+          ...(portalName !== undefined ? { portalName } : {}),
           ...(typeof scope === 'string' && scope ? { scope } : {}),
         },
       });
@@ -192,6 +194,7 @@ export default {
       const userId = ctx.auth?.user.id;
       const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings, scope } =
         ctx.action.params.values || {};
+      const portalName = ctx.get('x-portal') || undefined;
       const normalizedScope = typeof scope === 'string' ? scope : undefined;
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
@@ -205,6 +208,7 @@ export default {
         ctx.body = await plugin.aiConversationsManager.create({
           userId,
           aiEmployee,
+          portalName,
           scope: normalizedScope,
           options: {
             systemMessage,
