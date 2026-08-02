@@ -107,14 +107,17 @@ nb portal info main
 ## 第二步：启动开发模式
 
 ```bash
+# 拉取 portal 的源码
+nb portal pull main
+# 启动源码开发服务
 nb portal dev main
 ```
 
 开发服务默认跑在 `http://localhost:5173`。这一步会先刷新本地源码目录里的 `.env` 和 `.env.local`，再执行 `pnpm dev`。
 
-<!-- 需要一张 Portal 开发服务启动后浏览器里默认页面的截图 -->
+模板自带了一个基于 NocoBase `users` 数据表的用户管理页面，可以直接登录进去看看效果——它同时也是你让 AI 参考的一个很好的初始样例。
 
-模板自带了一个基于 NocoBase `users` 数据表的用户管理页面，可以直接登录进去看看效果——它同时也是你让 AI 参考的最好样例。
+![portal dev home page](https://static-docs.nocobase.com/20260802220652.png)
 
 ## 第三步：让 AI 改一个页面
 
