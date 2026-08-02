@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.34](https://github.com/nocobase/nocobase/compare/v2.1.33...v2.1.34) - 2026-08-01
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fixed an issue where manually executing a workflow with `autoRevision=0` could still create a new revision. ([#10243](https://github.com/nocobase/nocobase/pull/10243)) by @mytharcher
+
+- **[UI templates]** Fix the issue where table blocks load data after returning to a page with empty filters ([#9890](https://github.com/nocobase/nocobase/pull/9890)) by @zhangzhonghe
+
+- **[Template print]** Fixed unwanted spacing between Latin and East Asian text in PDF files generated from DOCX templates. by @jiannx
+
+- **[Workflow: Approval]** Fix missing external data source fields in approval views by @zhangzhonghe
+
 ## [v2.1.33](https://github.com/nocobase/nocobase/compare/v2.1.32...v2.1.33) - 2026-07-31
 
 ### 🐛 Bug Fixes
