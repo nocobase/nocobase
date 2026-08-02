@@ -10,6 +10,7 @@
 import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
 import { generateFlowModelRd } from '@nocobase/utils';
+import * as variableExpression from '../template/variable-expression';
 import { inferSelectsFromUsage } from '../variables/registry';
 import FlowModelRepository from '../repository';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
@@ -148,36 +149,43 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   });
 
   it('should isolate thrown analysis and prototype root names per batch item', async () => {
-    const invalidTemplate = new Proxy(
-      {},
-      {
-        ownKeys: () => {
-          throw new TypeError('untrusted template');
-        },
-      },
-    );
+    const invalidTemplate = { value: 'invalid' };
     const prototypeTemplates = ['__proto__', 'constructor', 'toString', 'hasOwnProperty'].map(
       (name) => `{{ctx.${name}.id}}`,
     );
-    const single = await execResolve({ template: invalidTemplate }, 1);
-    const res = await execResolve(
-      {
-        batch: [
-          { id: 'thrown', template: invalidTemplate },
-          ...prototypeTemplates.map((template, index) => ({ id: `prototype-${index}`, template })),
-          { id: 'allowed', template: '{{ctx.user.id}}' },
-        ],
-      },
-      1,
-    );
-    const results = res.body?.results || [];
+    const originalAnalyze = variableExpression.analyzeVariableTemplate;
+    const analyze = vi.spyOn(variableExpression, 'analyzeVariableTemplate').mockImplementation(originalAnalyze);
 
-    expect(single.body).toBe(invalidTemplate);
-    expect(results[0]).toEqual({ id: 'thrown', data: invalidTemplate });
-    prototypeTemplates.forEach((template, index) => {
-      expect(results[index + 1]).toEqual({ id: `prototype-${index}`, data: template });
-    });
-    expect(results.at(-1)).toEqual({ id: 'allowed', data: 1 });
+    try {
+      analyze.mockImplementationOnce(() => {
+        throw new TypeError('untrusted template');
+      });
+      const single = await execResolve({ template: invalidTemplate }, 1);
+
+      analyze.mockImplementationOnce(() => {
+        throw new TypeError('untrusted template');
+      });
+      const res = await execResolve(
+        {
+          batch: [
+            { id: 'thrown', template: invalidTemplate },
+            ...prototypeTemplates.map((template, index) => ({ id: `prototype-${index}`, template })),
+            { id: 'allowed', template: '{{ctx.user.id}}' },
+          ],
+        },
+        1,
+      );
+      const results = res.body?.results || [];
+
+      expect(single.body).toEqual(invalidTemplate);
+      expect(results[0]).toEqual({ id: 'thrown', data: invalidTemplate });
+      prototypeTemplates.forEach((template, index) => {
+        expect(results[index + 1]).toEqual({ id: `prototype-${index}`, data: template });
+      });
+      expect(results.at(-1)).toEqual({ id: 'allowed', data: 1 });
+    } finally {
+      analyze.mockRestore();
+    }
   });
 
   it('should hide the runtime helper from ordinary and configure lanes', async () => {
