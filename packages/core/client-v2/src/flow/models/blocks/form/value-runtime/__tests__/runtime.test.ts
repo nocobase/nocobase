@@ -3999,6 +3999,150 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['users', 0, 'user', 'id'])).toBe(1);
   });
 
+  it('assigns a to-one association from a sibling association in the same to-many row', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const secondary = { id: 2, name: 'Secondary' };
+    const formStub = createFormStub({ users: [{ user: null, secondaryUser: null }] });
+
+    const blockModel: any = {
+      uid: 'form-assign-assoc-to-many-sibling',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userCollection: any = { getField: () => null };
+    const userField: any = { isAssociationField: () => true, type: 'belongsTo', targetCollection: userCollection };
+    const usersItemCollection: any = {
+      getField: (name: string) => (name === 'user' || name === 'secondaryUser' ? userField : null),
+    };
+    const usersField: any = { isAssociationField: () => true, type: 'hasMany', targetCollection: usersItemCollection };
+    const collection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: collection });
+
+    const rowModel: any = {
+      uid: 'users.user:users:0',
+      isFork: true,
+      forkId: 'users:0',
+      subModels: { field: { context: { collectionField: userField } } },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath: 'users.user' };
+        return undefined;
+      },
+    };
+    const rowCtx = createFieldContext(runtime);
+    rowCtx.defineProperty('blockModel', { value: blockModel });
+    rowCtx.defineProperty('collection', { value: collection });
+    rowCtx.defineProperty('fieldIndex', { value: ['users:0'] });
+    rowCtx.defineProperty('model', { value: rowModel });
+    rowModel.context = rowCtx;
+
+    blockCtx.defineProperty('engine', {
+      value: { forEachModel: (callback: (model: unknown) => void) => callback(rowModel) },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'users.user',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.item.parentItem.value.secondaryUser }}',
+      },
+    ]);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['users', 0, 'secondaryUser'], value: secondary }], {
+      source: 'user',
+    });
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(secondary));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['users', 0, 'user'], value: { id: 3, name: 'Manual' } }], {
+      source: 'user',
+    });
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(secondary));
+
+    const nextSecondary = { id: 4, name: 'Next secondary' };
+    await runtime.setFormValues(blockCtx, [{ path: ['users', 0, 'secondaryUser'], value: nextSecondary }], {
+      source: 'user',
+    });
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(nextSecondary));
+  });
+
+  it('preserves the PopupSubTable outer item chain for a top-level to-one association target', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const initialAssignee = { id: 2, name: 'Initial assignee' };
+    const nextAssignee = { id: 3, name: 'Next assignee' };
+    const outerValue = observable({ defaultAssignee: initialAssignee });
+    const formStub = createFormStub({ assignee: null });
+
+    const blockModel: any = {
+      uid: 'popup-sub-table-form-assign-parent-item',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userCollection: any = { filterTargetKey: 'id', getField: () => null };
+    const assigneeField: any = {
+      isAssociationField: () => true,
+      type: 'belongsTo',
+      targetCollection: userCollection,
+    };
+    const collection: any = { getField: (name: string) => (name === 'assignee' ? assigneeField : null) };
+    const outerItem = { index: 0, length: 1, value: outerValue };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockCtx.defineProperty('item', {
+      get: () => ({
+        index: 1,
+        length: 3,
+        __is_new__: true,
+        __is_stored__: false,
+        value: blockCtx.formValues,
+        parentItem: outerItem,
+      }),
+      cache: false,
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'assignee-from-popup-parent',
+        enable: true,
+        targetPath: 'assignee',
+        mode: 'assign',
+        condition: {
+          logic: '$and',
+          items: [
+            { path: '{{ ctx.item.parentItem.index }}', operator: '$eq', value: 1 },
+            { path: '{{ ctx.item.parentItem.length }}', operator: '$eq', value: 3 },
+            { path: '{{ ctx.item.parentItem.__is_new__ }}', operator: '$eq', value: true },
+            { path: '{{ ctx.item.parentItem.__is_stored__ }}', operator: '$eq', value: false },
+          ],
+        },
+        value: '{{ ctx.item.parentItem.parentItem.value.defaultAssignee }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['assignee'])).toEqual(initialAssignee));
+
+    outerValue.defaultAssignee = nextAssignee;
+    await waitFor(() => expect(formStub.getFieldValue(['assignee'])).toEqual(nextAssignee));
+  });
+
   it('does not write to to-many nested path without row index', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

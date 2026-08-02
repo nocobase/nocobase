@@ -83,6 +83,15 @@ type ToManyAggregateSourceInfo = {
   lastWrite?: FormValueWriteMeta;
 };
 
+type RuntimeItemChain = {
+  index?: number;
+  length?: number;
+  __is_new__?: boolean;
+  __is_stored__?: boolean;
+  value: unknown;
+  parentItem?: RuntimeItemChain;
+};
+
 export type RuleEngineOptions = {
   getBlockModelUid: () => string;
   getActionName: () => string | undefined;
@@ -2209,7 +2218,21 @@ export class RuleEngine {
         parentItem,
       };
     };
-    const defaultRoot = buildNode(trackingFormValues, undefined, undefined, undefined);
+    const blockCtx = this.options.getBlockContext();
+    const formRootItem = (() => {
+      try {
+        const item = blockCtx?.item as RuntimeItemChain | undefined;
+        if (!item || typeof item !== 'object') return undefined;
+        return item.value === blockCtx?.formValues ? item : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    const defaultRoot = {
+      ...buildNode(trackingFormValues, formRootItem?.index, formRootItem?.length, formRootItem?.parentItem),
+      __is_new__: formRootItem?.__is_new__ ?? trackingFormValues?.__is_new__,
+      __is_stored__: formRootItem?.__is_stored__ ?? trackingFormValues?.__is_stored__,
+    };
     // item 仅用于“关系字段的子路径”场景；
     // 顶层字段/非关联嵌套对象字段应使用 formValues。
     if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) return undefined;
@@ -2219,7 +2242,9 @@ export class RuleEngine {
     const prefix: NamePath = [];
     let collection = rootCollection;
 
-    for (let i = 0; i < targetNamePath.length - 1; i++) {
+    // The target itself can be a to-one association. Keep that final association in the item chain so
+    // ctx.item.parentItem continues to point at the containing row instead of skipping directly to the form root.
+    for (let i = 0; i < targetNamePath.length; i++) {
       const seg = targetNamePath[i];
       if (typeof seg !== 'string') break;
 
